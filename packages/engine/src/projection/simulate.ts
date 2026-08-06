@@ -126,6 +126,9 @@ import {
   committedOwnedNonRothIraAnnualReplayPublication,
 } from
   '../internal/ownedNonRothIraAnnualReplayPublication.js'
+import { runCounterfactualAnnualLiability, type CounterfactualAnnualLiabilityResult } from
+  '../internal/counterfactualAnnualLiability.js'
+import type { AnnualLiabilityRunTaxInput } from '../actions/annualLiabilityRunIdentity.js'
 import { deriveOwnedNonRothIraReplayAllocationIdentity } from
   '../internal/ownedNonRothIraReplayIdentity.js'
 import { effectiveBirthYear, fraForBirthYear, fraTotalMonths, survivorFraForBirthYear } from '../socialSecurity/nra.js'
@@ -196,7 +199,55 @@ export interface SimulateOptions {
    * when omitted, so a normal projection is unaffected. @see OptimizerYearProbe
    */
   captureOptimizerInputs?: (probe: OptimizerYearProbe) => void
+  /**
+   * Opt-in seam for the counterfactual (`T0`) annual pass. A no-op when
+   * omitted, which is every product call.
+   *
+   * The capability it drives — running one year's annual pass again over a
+   * modified request set, reading the liability, and rolling the run back — has
+   * no consumer yet; the group-executor slice is the consumer, and it will call
+   * it from inside the bounded attempt driver's per-attempt scope rather than
+   * through this option. It is reachable here because the capability's
+   * invariants are claims about the *real* pass over a real multi-year
+   * projection: that an empty omission set leaves the committed year byte for
+   * byte unchanged, that the rollback restores the whole checkpoint, and that a
+   * named omission actually removes that request's movement and income. None of
+   * those can be proved against a stand-in pass.
+   *
+   * @see internal/counterfactualAnnualLiability.ts
+   */
+  annualCounterfactual?: Readonly<SimulateAnnualCounterfactualRequest>
 }
+
+/**
+ * One year-by-year request for a counterfactual annual pass, plus the sink its
+ * readings go to.
+ *
+ * `taxUnitId` and `nonGroupTaxInputs` are supplied rather than derived because
+ * the filing unit's identity and its non-group tax inputs are what bind a
+ * baseline run to the candidate it will be subtracted from, and nothing in the
+ * engine produces either yet — the tax-unit snapshot the ordinary executor
+ * receives is built inside the pass, below the point a pre-pass has to run.
+ * Deriving them is the consumer slice's work.
+ */
+export interface SimulateAnnualCounterfactualRequest {
+  /** Retirement-action IDs every year's counterfactual run omits. */
+  readonly omitActionIds: readonly ActionId[]
+  readonly taxUnitId: string
+  readonly nonGroupTaxInputs: readonly Readonly<AnnualLiabilityRunTaxInput>[]
+  /** Receives one result per projected year, in year order. */
+  readonly capture: (
+    result: Readonly<CounterfactualAnnualLiabilityResult>,
+  ) => void
+}
+
+/**
+ * The omission an ordinary annual pass makes: none.
+ *
+ * Module-level and shared so an ordinary pass allocates no set, and frozen at
+ * the type level so no pass can quietly add to the omission of the next one.
+ */
+const NO_OMITTED_RETIREMENT_ACTION_IDS: ReadonlySet<ActionId> = new Set<ActionId>()
 
 function annualPassValueBinding<T>(
   read: () => T,
@@ -2640,7 +2691,62 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     const runPostContributionAnnualPass = (
       assumedEffects:
         readonly Readonly<OwnedNonRothIraAnnualSettlementEffect>[],
+      omittedRetirementActionIds:
+        ReadonlySet<ActionId> = NO_OMITTED_RETIREMENT_ACTION_IDS,
     ): { yearResult: YearResult; optimizerProbe: OptimizerYearProbe | null } => {
+    /**
+     * The Plan's retirement actions as *this* run of the pass sees them.
+     *
+     * A counterfactual run of the annual pass has to remove a named set of
+     * requests and change nothing else. The alternative — handing the pass a
+     * substituted Plan with those requests stripped out — would silently change
+     * every one of the pass's several thousand other reads of `plan`, which are
+     * about accounts, household, expenses, strategies and assumptions rather
+     * than about requests. So the modification is an omission set, and it
+     * narrows exactly here: every derivation of the year's request set below
+     * reads this array instead of the Plan's.
+     *
+     * With nothing omitted this *is* the Plan's array, by reference, so an
+     * ordinary pass performs no filter and allocates nothing.
+     *
+     * @see internal/counterfactualAnnualLiability.ts
+     */
+    const passRetirementActions = omittedRetirementActionIds.size === 0
+      ? plan.strategies.retirementActions
+      : plan.strategies.retirementActions.filter(
+        (request) => !omittedRetirementActionIds.has(request.actionId),
+      )
+    /**
+     * The Plan as this run of the pass hands it to the action executors — the
+     * same Plan in every respect except which requests it declares.
+     *
+     * Narrowing the derivations above is not enough on its own, and the reason
+     * is a check that exists for good cause. `executeOrdinaryWithdrawals`
+     * re-derives the conversion linked-withdrawal groups it can see for itself
+     * from `input.plan.strategies.retirementActions`, and throws when the
+     * verdict it was handed omits one of them: an assessment that leaves out a
+     * linked group sitting in the Plan is not a decision to release that
+     * withdrawal. Under a counterfactual, though, the request genuinely is not
+     * in this run, so the executor's own view has to be narrowed with
+     * everything else's — otherwise the very case `T0` exists for, a conversion
+     * and its dedicated linked withdrawal removed together, could never run.
+     *
+     * This is the one place a substituted Plan is right rather than dangerous:
+     * one shallow copy replacing one array, handed only to the executors, whose
+     * contract is already stated in terms of the requests the run declares. The
+     * pass's own thousands of other `plan` reads — accounts, household,
+     * expenses, strategies, assumptions — go on reading the real Plan. With
+     * nothing omitted this *is* the real Plan, by reference.
+     */
+    const passPlan: Plan = omittedRetirementActionIds.size === 0
+      ? plan
+      : {
+        ...plan,
+        strategies: {
+          ...plan.strategies,
+          retirementActions: passRetirementActions,
+        },
+      }
     let rmdNontaxable = 0
     let seppNontaxable = 0
     const assumedEffectByIdentity = new Map(
@@ -3141,7 +3247,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // request's prerequisite and nothing else, so a named QCD moves no dollars
     // yet. The guard exists so that the slice which makes one move cannot
     // silently double-count on the day it lands.
-    const hasNamedQcdRequest = plan.strategies.retirementActions.some(
+    const hasNamedQcdRequest = passRetirementActions.some(
       (request) => request.year === year && request.kind === 'qcd',
     )
     if (plan.strategies.qcdAnnual > 0 && !hasNamedQcdRequest) {
@@ -3240,7 +3346,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // The exact-cent executor owns current-year action ordering and debits named
     // sources here. Its movement remains outside the legacy withdrawal map so
     // the final legacy apply loop cannot debit an action source a second time.
-    const currentYearActions = plan.strategies.retirementActions.filter(
+    const currentYearActions = passRetirementActions.filter(
       (request) => request.year === year,
     )
     const currentYearOrdinaryActions = currentYearActions.filter(
@@ -3307,8 +3413,12 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // can derive the same groups the other would, and a group spanning a Plan
     // action and an in-flight one is visible to neither. Both are given this
     // one verdict so the pair cannot be answered two ways within a year.
+    // The Plan half of this set is `passRetirementActions`, not the Plan's own
+    // array: a counterfactual that removed a conversion from the executors but
+    // left it visible here would still have its group assessed, and the group
+    // verdict is what both executors answer to.
     const conversionLinkedWithdrawalGroups = assessConversionLinkedWithdrawalGroups([
-      ...plan.strategies.retirementActions,
+      ...passRetirementActions,
       ...currentYearOrdinaryExecutionActions,
       ...currentYearConversionActions,
     ])
@@ -3390,7 +3500,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         ? undefined
         : evaluateAnnualQcdExecutionPrerequisites({
             taxYear: year,
-            plan,
+            plan: passPlan,
             requests: currentYearQcdExecutionActions,
             runtimeEvidence: {
               personAliveEvidence: currentYearQcdExecutionActions.map((request) =>
@@ -3497,7 +3607,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       })
       const physicalInput = {
         prerequisite: qcdActionPrerequisiteResult,
-        plan,
+        plan: passPlan,
         runtimeEvidence: {
           personAliveEvidence: qcdRequests.map((request) =>
             actionPersonAliveEvidence(
@@ -3904,7 +4014,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       while (true) {
         retirementActionExecution = executeOrdinaryWithdrawals({
           year,
-          plan,
+          plan: passPlan,
           requests: currentYearOrdinaryExecutionActions,
           openingBalances,
           taxableAccountSnapshots,
@@ -4136,7 +4246,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         })
       rothConversionActionExecution = executeRothConversions({
         year,
-        plan,
+        plan: passPlan,
         requests: currentYearConversionActions,
         openingBalances,
         runtimeEvidence: {
@@ -6478,6 +6588,36 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         (value) => { targetSpendingBase = value },
       ),
       expenses,
+    }
+
+    // The counterfactual pre-pass, before anything commits this year.
+    //
+    // It has to precede the run that commits, not follow it: the pass writes the
+    // year's mutable state directly, so the only run that can be discarded
+    // wholesale is one that nothing downstream has read yet. The transaction
+    // inside the helper is what makes discarding it safe, and it is
+    // unconditional.
+    //
+    // The assumption vector here is empty — the same vector the two fallback
+    // call sites below use. That is the honest choice for a pre-pass that sits
+    // outside the attempt driver, and it is also why this is not yet the
+    // wiring: the consumer slice moves this call inside `runAttempt`, where the
+    // counterfactual and the committed run share one vector and the
+    // counterfactual is a counterfactual of *this* attempt.
+    if (opts.annualCounterfactual !== undefined) {
+      const counterfactual = opts.annualCounterfactual
+      counterfactual.capture(runCounterfactualAnnualLiability({
+        state: annualPassState,
+        request: {
+          planId: plan.id,
+          taxUnitId: counterfactual.taxUnitId,
+          taxYear: year,
+          omitActionIds: counterfactual.omitActionIds,
+          nonGroupTaxInputs: counterfactual.nonGroupTaxInputs,
+        },
+        runPass: (omittedRetirementActionIds) =>
+          runPostContributionAnnualPass([], omittedRetirementActionIds),
+      }))
     }
 
     const basisSeededOwners = new Set<string>()
