@@ -516,6 +516,29 @@ describe('what it refuses to promote', () => {
     expect(choice.intents[0]!.requestedAmount).toBe(7_256_637)
   })
 
+  it('asks a fractional-cent source only for the cents it can fund', () => {
+    // A drained source's draw carries the float balance, fraction and all. The
+    // executor snapshots that source at the whole cents it can FUND, so a
+    // half-up conversion here would mint a request one cent past capacity and
+    // the executor would block it whole. The draw floors instead: same
+    // semantics at both ends of the promotion.
+    const household = plan()
+    const alexIra = household.accounts.find((account) => account.id === 'alex-401k')!
+    if (!('balance' in alexIra)) throw new Error('expected a balance-bearing account')
+    alexIra.balance = 50_000.005
+    const choice = chosen(chooseFor(household, 500_000))
+
+    const alexIntent = choice.intents.find((intent) => intent.personId === ALEX)
+    if (alexIntent === undefined) throw new Error('expected an intent for Alex')
+    const fromAlexIra = alexIntent.sourceAllocations
+      .find((allocation) => allocation.sourceAccountId === 'alex-401k')
+    // Half-up would have asked for 5_000_001.
+    expect(fromAlexIra?.requestedAmount).toBe(5_000_000)
+    expect(alexIntent.sourceAllocations
+      .reduce((total, allocation) => total + allocation.requestedAmount, 0))
+      .toBe(alexIntent.requestedAmount)
+  })
+
   it('refuses a snapshot that omits an account the policy would weight', () => {
     const household = plan()
     const partial = openingBalances(household, TAX_YEAR)

@@ -8,6 +8,7 @@ import { asAccountId, asPersonId } from '../actions/identity.js'
 import { asPositiveUsdCents } from '../actions/money.js'
 import {
   ledgerCentsToPlanDollars,
+  planDollarsToFlooredLedgerCents,
   planDollarsToLedgerCents,
 } from '../actions/planBalanceAdapter.js'
 import type {
@@ -597,12 +598,23 @@ export function chooseAggregateConversionPromotionIntents(
       let ownerCents = 0
       for (const draw of allocation.draws) {
         if (draw.ownerPersonId !== slice.ownerPersonId) continue
-        // The policy already discharged every movement the exact-cent ledger
-        // would record as nothing, so each remaining draw is worth at least one
-        // cent and `asPositiveUsdCents` cannot refuse it.
-        const drawCents = asPositiveUsdCents(
-          planDollarsToLedgerCents(draw.amountPlanDollars),
+        // Half-up measures the draw, and the source's FUNDABLE cents cap it.
+        // The conversion executor snapshots a source at the whole cents its
+        // float balance can fund, so an uncapped half-up figure on a drained
+        // fractional-cent balance would mint a request one cent past capacity
+        // and the executor would block it whole. A partial draw sits below
+        // capacity and keeps its half-up figure — flooring it instead would
+        // lose a cent to the float noise in the policy's remainder
+        // subtraction, which is measurement, not capacity. A draw capped to
+        // zero is the same non-event the sub-cent discharge records as
+        // nothing, and is skipped on the same reasoning.
+        const fundableCents = planDollarsToFlooredLedgerCents(
+          stated.balances[draw.sourceAccount.id] ?? draw.amountPlanDollars,
         )
+        const measuredCents = planDollarsToLedgerCents(draw.amountPlanDollars)
+        const cappedCents = Math.min(measuredCents, fundableCents)
+        if (cappedCents === 0) continue
+        const drawCents = asPositiveUsdCents(cappedCents)
         sourceAllocations.push({
           sourceAccountId: asAccountId(draw.sourceAccount.id),
           requestedAmount: drawCents,
