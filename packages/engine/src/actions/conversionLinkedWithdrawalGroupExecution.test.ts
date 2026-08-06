@@ -9,6 +9,7 @@ import { parseRetirementActionRequest } from './contract.js'
 import type { RetirementActionRequest } from './contract.js'
 import { assessConversionLinkedWithdrawalGroups } from './conversionLinkedWithdrawalGroup.js'
 import {
+  authorizeConversionLinkedWithdrawalGroups,
   executeConversionLinkedWithdrawalGroups,
   type ConversionLinkedWithdrawalGroupLiabilityRun,
   type ConversionLinkedWithdrawalGroupMemberInput,
@@ -218,12 +219,14 @@ function run(input: {
 
 describe('executeConversionLinkedWithdrawalGroups', () => {
   describe('what it refuses to do', () => {
-    it('has no arm that moves anything, whatever it was handed', () => {
-      // The gate is the type, and this is the assertion that reads it as a
-      // type rather than as an arithmetic outcome. `status` and `movement` are
-      // literal, so an executable arm cannot be reached by supplying better
-      // inputs: it can only be reached by widening the union, which is the
-      // money change and belongs to its own review.
+    it('refuses a group that was handed no movement, however good its figures', () => {
+      // This used to read `status` and `movement` as literal types, which was
+      // the gate while the executor had no executable arm at all. It has one
+      // now, so the pin moves from the type to the *predicate*: perfect
+      // liabilities, a real merged ordering and a satisfied evaluation are
+      // still not permission, because nothing moved. A caller that omits the
+      // movement is a caller reporting a year in which the legs stayed still,
+      // and the answer to that is refusal whatever else it supplies.
       const result = run({
         requests: dedicatedPair(),
         members: [member('conversion-a', 50_000_00, 2_500_00)],
@@ -231,10 +234,8 @@ describe('executeConversionLinkedWithdrawalGroups', () => {
         candidate: candidateRun(1_250_000),
       })
 
-      const status: 'refused' = result.status
-      const movement: 'none' = result.movement
-      expect(status).toBe('refused')
-      expect(movement).toBe('none')
+      expect(result.status).toBe('refused')
+      expect(result.movement).toBe('none')
       expect(result.groups.map((group) => group.movement)).toEqual(['none'])
       expect(result.groups.map((group) => group.disposition))
         .toEqual(['refusedPendingGroupExecution'])
@@ -754,5 +755,234 @@ describe('executeConversionLinkedWithdrawalGroups', () => {
       expect(assessment.groups[0]!.contestingConversionActionIds)
         .toEqual(['conversion-a', 'conversion-b'])
     })
+  })
+})
+
+/**
+ * The gate itself: what releases a pair, and what refuses to.
+ *
+ * Every case below is built from a *satisfied* evaluation over two real
+ * liabilities, so satisfaction is held constant and only the thing under test
+ * varies. That is deliberate: the degenerate evaluation of a refused group is
+ * also satisfied, so a gate that read satisfaction alone would release
+ * everything that refused.
+ */
+describe('the release gate', () => {
+  const CONVERSION_CENTS = 50_000_00
+  /** The withdrawal `dedicatedPair` authors, to the cent. */
+  const WITHDRAWAL_CENTS = 10_000_00
+  /** `T1 - T0`, chosen so that the authored withdrawal funds it exactly. */
+  const REQUIRED_CENTS = WITHDRAWAL_CENTS
+  const BASELINE_CENTS = 1_000_000
+  const CANDIDATE_CENTS = BASELINE_CENTS + REQUIRED_CENTS
+
+  function authorization(
+    conversionActionId: string,
+    withdrawalActionId: string,
+  ) {
+    return {
+      conversionActionId: asActionId(conversionActionId),
+      withdrawalActionId: asActionId(withdrawalActionId),
+      funding: {
+        requiredFundingAmount: asUsdCents(REQUIRED_CENTS),
+        fundedAmount: asUsdCents(REQUIRED_CENTS),
+      },
+    }
+  }
+
+  /** One conversion, one withdrawal, and whatever the run made of them. */
+  function stagedRun(input: {
+    authorized: boolean
+    conversionExecuted: number
+    withdrawalExecuted: number
+    fundedAmount: number
+    candidateCents?: number
+  }) {
+    const requests = dedicatedPair()
+    return executeConversionLinkedWithdrawalGroups({
+      taxYear: YEAR,
+      requests,
+      assessment: assessConversionLinkedWithdrawalGroups(requests, {
+        annualLiabilityBaseline: 'read',
+        authorizedGroups: input.authorized
+          ? [authorization('conversion-a', 'withdrawal-a')]
+          : [],
+      }),
+      taxUnit,
+      baseline: baselineRun(BASELINE_CENTS),
+      candidate: candidateRun(input.candidateCents ?? CANDIDATE_CENTS),
+      members: [member('conversion-a', CONVERSION_CENTS, input.fundedAmount)],
+      movements: [{
+        conversionActionId: asActionId('conversion-a'),
+        withdrawalActionId: asActionId('withdrawal-a'),
+        conversion: {
+          authoredAmount: asUsdCents(CONVERSION_CENTS),
+          executedAmount: asUsdCents(input.conversionExecuted),
+        },
+        withdrawal: {
+          authoredAmount: asUsdCents(WITHDRAWAL_CENTS),
+          executedAmount: asUsdCents(input.withdrawalExecuted),
+        },
+      }],
+    })
+  }
+
+  it('reports executed when release, movement and fixed point agree', () => {
+    const result = stagedRun({
+      authorized: true,
+      conversionExecuted: CONVERSION_CENTS,
+      withdrawalExecuted: WITHDRAWAL_CENTS,
+      fundedAmount: WITHDRAWAL_CENTS,
+    })
+
+    expect(result.status).toBe('executed')
+    expect(result.movement).toBe('bothLegs')
+    expect(result.groups[0]).toMatchObject({
+      disposition: 'executedAsAtomicGroup',
+      refusalKind: null,
+      reasonCode: null,
+      movement: 'bothLegs',
+      movementCoherent: true,
+    })
+    // And the authorization it mints for the run that commits repeats the
+    // proved figures rather than the authored ones.
+    expect(authorizeConversionLinkedWithdrawalGroups(result)).toEqual({
+      status: 'conversionLinkedWithdrawalGroupsAuthorized',
+      taxYear: YEAR,
+      authorizations: [{
+        conversionActionId: 'conversion-a',
+        withdrawalActionId: 'withdrawal-a',
+        funding: {
+          requiredFundingAmount: REQUIRED_CENTS,
+          fundedAmount: REQUIRED_CENTS,
+        },
+      }],
+    })
+  })
+
+  it.each([
+    ['only the conversion moved', CONVERSION_CENTS, 0],
+    ['only the withdrawal moved', 0, WITHDRAWAL_CENTS],
+    ['the withdrawal moved a part of itself', CONVERSION_CENTS, WITHDRAWAL_CENTS - 1],
+  ] as const)('refuses, and calls the movement incoherent, when %s', (
+    _label, conversionExecuted, withdrawalExecuted,
+  ) => {
+    // The third row is the partial case: a cent short of the amount the
+    // household authored, which is not the withdrawal they asked for however
+    // close it came. Whole or nothing, per leg.
+    const result = stagedRun({
+      authorized: true,
+      conversionExecuted,
+      withdrawalExecuted,
+      fundedAmount: withdrawalExecuted,
+    })
+
+    expect(result.status).toBe('refused')
+    expect(result.movement).toBe('none')
+    expect(result.groups[0]?.movement).toBe('none')
+    expect(result.groups[0]?.movementCoherent).toBe(false)
+    expect(authorizeConversionLinkedWithdrawalGroups(result).status)
+      .toBe('conversionLinkedWithdrawalGroupsWithheld')
+  })
+
+  it('refuses a funded amount its own withdrawal did not move', () => {
+    // Conservation across the two legs. The evaluation would balance on the
+    // figure supplied, while the withdrawal that was supposed to raise those
+    // dollars moved a different number of them.
+    const result = stagedRun({
+      authorized: true,
+      conversionExecuted: CONVERSION_CENTS,
+      withdrawalExecuted: WITHDRAWAL_CENTS,
+      fundedAmount: WITHDRAWAL_CENTS + 1,
+    })
+
+    expect(result.groups[0]?.movementCoherent).toBe(false)
+    expect(result.status).toBe('refused')
+  })
+
+  it('withholds authorization from a group whose evaluation is a mismatch', () => {
+    // Both legs moved whole. What does not balance is the plan: the year cost
+    // a cent more than the withdrawal the household authored could raise.
+    const result = stagedRun({
+      authorized: true,
+      conversionExecuted: CONVERSION_CENTS,
+      withdrawalExecuted: WITHDRAWAL_CENTS,
+      fundedAmount: WITHDRAWAL_CENTS,
+      candidateCents: CANDIDATE_CENTS + 1,
+    })
+
+    expect(result.groups[0]?.movementCoherent).toBe(true)
+
+    expect(result.groups[0]?.fundingEvidence?.evaluation).toBe('mismatch')
+    expect(authorizeConversionLinkedWithdrawalGroups(result))
+      .toMatchObject({ reason: 'fundingMismatched' })
+  })
+
+  it('withholds authorization from a staging run that moved nothing', () => {
+    const result = stagedRun({
+      authorized: false,
+      conversionExecuted: 0,
+      withdrawalExecuted: 0,
+      fundedAmount: 0,
+    })
+
+    expect(result.status).toBe('refused')
+    expect(authorizeConversionLinkedWithdrawalGroups(result))
+      .toMatchObject({ reason: 'stagingRefused' })
+  })
+
+  it('never releases a contested pair, however it was authorized', () => {
+    // Two conversions naming one withdrawal. An authorization for each of them
+    // is still not permission, and the contest is checked before the
+    // authorization is read at all.
+    const contested = [
+      withdrawal('withdrawal-a', 'conversion-a', 1, `${YEAR}-06-14`),
+      conversion('conversion-a', 'withdrawal-a', 2, `${YEAR}-06-15`),
+      conversion('conversion-b', 'withdrawal-a', 3, `${YEAR}-06-16`),
+    ]
+    const assessed = assessConversionLinkedWithdrawalGroups(contested, {
+      annualLiabilityBaseline: 'read',
+      authorizedGroups: [
+        authorization('conversion-a', 'withdrawal-a'),
+        authorization('conversion-b', 'withdrawal-a'),
+      ],
+    })
+
+    expect(assessed.groups.map((group) => group.disposition))
+      .toEqual(['refusedPendingGroupExecution', 'refusedPendingGroupExecution'])
+    expect(assessed.groups.map((group) => group.refusalKind))
+      .toEqual(['sharedFundingWithdrawal', 'sharedFundingWithdrawal'])
+    expect(assessed.groups.every((group) => group.fundingAuthority === null))
+      .toBe(true)
+  })
+
+  it('releases nothing when the authorization does not cover every group', () => {
+    // Two independent pairs, one authorized. The required amount is the filing
+    // unit's whole annual figure, so a run that released one of them would
+    // hold a different funding vector from the one the proof was taken over.
+    const twoPairs = [
+      ...dedicatedPair(),
+      withdrawal('withdrawal-b', 'conversion-b', 3, `${YEAR}-06-16`),
+      conversion('conversion-b', 'withdrawal-b', 4, `${YEAR}-06-17`),
+    ]
+    const assessed = assessConversionLinkedWithdrawalGroups(twoPairs, {
+      annualLiabilityBaseline: 'read',
+      authorizedGroups: [authorization('conversion-a', 'withdrawal-a')],
+    })
+
+    expect(assessed.groups.map((group) => group.disposition))
+      .toEqual(['refusedPendingGroupExecution', 'refusedPendingGroupExecution'])
+  })
+
+  it('releases nothing when the authorization names the wrong withdrawal', () => {
+    const assessed = assessConversionLinkedWithdrawalGroups(dedicatedPair(), {
+      annualLiabilityBaseline: 'read',
+      authorizedGroups: [
+        authorization('conversion-a', 'withdrawal-elsewhere'),
+      ],
+    })
+
+    expect(assessed.groups[0]?.disposition)
+      .toBe('refusedPendingGroupExecution')
   })
 })

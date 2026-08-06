@@ -1,6 +1,7 @@
 import type { RetirementActionEligibilityRuntimeEvidence } from '../strategies/accountEligibility.js'
 import type { RetirementActionRequest } from './contract.js'
 import type { ActionId, PersonId } from './identity.js'
+import type { UsdCents } from './money.js'
 import type { ActionReason } from './reasons.js'
 import { compareUtf16CodeUnits, deriveActionStructuralId } from './structuralId.js'
 
@@ -8,23 +9,34 @@ import { compareUtf16CodeUnits, deriveActionStructuralId } from './structuralId.
  * What the annual group decision says about one conversion and the withdrawal
  * that funds it.
  *
- * There is exactly one disposition, and that is the whole state of the world
- * today: the atomic group executor stages, evidences and refuses every group,
- * so no pair may move. The type therefore cannot express permission, and no
- * caller can hand either executor a verdict that releases a pair. An executable
- * arm belongs to the slice that opens the gate.
+ * There are two dispositions and exactly one of them releases dollars. This is
+ * the permission gate the whole pathway hangs off: `actions/execution.ts`
+ * refuses the withdrawal leg on it and `actions/rothConversionExecution.ts`
+ * refuses the conversion leg on it, from *one* verdict, so the two legs cannot
+ * answer the same group question differently. Atomicity is that shared answer
+ * rather than a reconciliation of two.
  *
- * Note what this deliberately does *not* widen into. The contested case — two
- * conversions naming one withdrawal — also refuses, and it would have been
+ * `executedAsAtomicGroup` is not a permission a caller may simply assert. It is
+ * produced only by `assessConversionLinkedWithdrawalGroups` from an
+ * authorization the caller has to have proved, and the proof is
+ * `authorizeConversionLinkedWithdrawalGroups` in
+ * `conversionLinkedWithdrawalGroupExecution.ts`: a staging run in which both
+ * legs of every group moved their whole authored amount, whose annual funding
+ * evaluation reached a `satisfied` fixed point over the group's actual funding
+ * vector. Anything short of that keeps the refusal that shipped.
+ *
+ * Note what this still deliberately does *not* widen into. The contested case —
+ * two conversions naming one withdrawal — refuses, and it would have been
  * natural to give it its own disposition. It does not get one, because
- * `disposition` is the permission gate and both cases answer that gate
- * identically: no. What differs between them is why, and that is
- * `refusalKind` below. Keeping the two apart is what lets the compile-level pin
- * on this union go on meaning "no dollars may move" rather than degrading into
- * a count of refusal flavours.
+ * `disposition` is the permission gate and the contested case answers that gate
+ * the same way the pending one does: no. What differs between them is why, and
+ * that is `refusalKind` below. Keeping the two apart is what lets this union go
+ * on meaning "may these dollars move" rather than degrading into a count of
+ * refusal flavours.
  */
 export type ConversionLinkedWithdrawalGroupDisposition =
-  'refusedPendingGroupExecution'
+  | 'refusedPendingGroupExecution'
+  | 'executedAsAtomicGroup'
 
 /**
  * Why a refused group was refused.
@@ -83,6 +95,43 @@ export type ConversionLinkedWithdrawalGroupReasonCode = Extract<
 >
 
 /**
+ * The proved funding figures a released group carries to its conversion leg.
+ *
+ * Carried on the verdict rather than recomputed by the conversion executor, and
+ * that is the point rather than a convenience. The required amount is
+ * `max(0, T1(F) - T0)` allocated across the filing unit's conversions, which
+ * only a whole annual pass can produce; an executor that derived its own would
+ * be inventing the one figure the pathway exists to stop anyone inventing. What
+ * it publishes as `funded` is therefore what it was proved, and the proof
+ * travels with the permission.
+ *
+ * Two figures and no identifier. The filing unit and year the allocation
+ * belongs to are on the published `ConversionTaxFundingEvidence` the group
+ * executor attaches to the same record, so naming them again here would be a
+ * second copy that could disagree — and the staging run, which holds this
+ * permission before any evaluation exists, would have to invent one.
+ */
+export interface ConversionLinkedWithdrawalGroupFundingAuthority {
+  /** This conversion's share of the unit's quantized required funding. */
+  readonly requiredFundingAmount: UsdCents
+  /** Its dedicated withdrawal's executed cents, which equal that share. */
+  readonly fundedAmount: UsdCents
+}
+
+/**
+ * One (conversion, withdrawal) pair a caller has proved may move as a unit.
+ *
+ * The pair is named rather than the conversion alone because the permission is
+ * about two requests: a conversion released against a withdrawal other than the
+ * one it names would be funded by dollars nobody linked to it.
+ */
+export interface ConversionLinkedWithdrawalGroupAuthorization {
+  readonly conversionActionId: ActionId
+  readonly withdrawalActionId: ActionId
+  readonly funding: Readonly<ConversionLinkedWithdrawalGroupFundingAuthority>
+}
+
+/**
  * One conversion, the withdrawal it names, and the single answer both
  * executors owe that pair.
  *
@@ -98,9 +147,10 @@ export type ConversionLinkedWithdrawalGroupReasonCode = Extract<
  * the caller that can see both request sets, and both executors honour that
  * verdict instead of deriving a second one.
  *
- * `reasonCode` is the staging gap both sides carry, not a refusal on the
- * merits. The pair is well formed and lawful; the executor that would move it
- * as one transaction is what is missing.
+ * The two arms are a discriminated union rather than one shape with nullable
+ * fields, so the compiler is what stops a released pair from carrying a refusal
+ * reason and a refused one from carrying funding permission. Both gate sites
+ * narrow on `disposition` already; narrowing is now what gives them the rest.
  *
  * Membership is matched on `withdrawalActionId` alone. There is no person
  * predicate and no year predicate, so a conversion in one year naming a
@@ -108,13 +158,29 @@ export type ConversionLinkedWithdrawalGroupReasonCode = Extract<
  * carried as identity rather than read as constraints. That is deliberate and
  * preserved from the scan this replaced: narrowing membership to a shared
  * person-year would stop refusing the cross-year withdrawal and thereby
- * release it to move, which is a money decision and not this slice's. The
- * consequence — a cross-year pair that refuses here and then throws in
- * publication, because one year's published requests cannot contain the other
- * year's conversion — is a pre-existing latent crash, flagged in the pull
- * request description as its own slice.
+ * release it to move, which is a money decision and not this function's.
+ *
+ * **Scoping the candidate set is the caller's job, and it is not optional.**
+ * Because there is no year predicate here, a caller that hands over more than
+ * one year's requests gets one annual group spanning all of them — every year's
+ * conversion in every year's member set, every year's pair inside an
+ * all-or-nothing release. The simulator learned this the hard way and now
+ * assesses each annual pass over that year's actions alone; so does
+ * `actions/execution.ts`, whose own completeness check is keyed on the year it
+ * is executing.
+ *
+ * The cross-year pair itself is closed at the schema. `parsePlan` requires a
+ * conversion's linked withdrawal to resolve to exactly one *same-person,
+ * same-year* ordinary withdrawal whose `taxPayment` purpose references that
+ * conversion back, so no validated Plan can carry one. What remains, and is
+ * worth naming rather than declaring solved: a Plan handed straight to
+ * `simulatePlan` without validation can still carry the shape, and it still
+ * aborts in publication — `assertLinkedWithdrawalRequests` cannot resolve a
+ * withdrawal that one year's published requests do not contain. That is a
+ * pre-existing crash on an unvalidated Plan, unreachable through the front
+ * door, and its own slice.
  */
-export interface ConversionLinkedWithdrawalGroupVerdict {
+interface ConversionLinkedWithdrawalGroupVerdictBase {
   /** Structural identity of the assessed group, derived from its members. */
   readonly groupId: string
   /**
@@ -129,8 +195,6 @@ export interface ConversionLinkedWithdrawalGroupVerdict {
   readonly year: number
   readonly conversionActionId: ActionId
   readonly withdrawalActionId: ActionId
-  readonly disposition: ConversionLinkedWithdrawalGroupDisposition
-  readonly refusalKind: ConversionLinkedWithdrawalGroupRefusalKind
   /**
    * Every conversion naming this group's withdrawal, this one included, sorted
    * — and empty for the ordinary case.
@@ -142,8 +206,43 @@ export interface ConversionLinkedWithdrawalGroupVerdict {
    * nothing at all instead.
    */
   readonly contestingConversionActionIds: readonly ActionId[]
-  readonly reasonCode: ConversionLinkedWithdrawalGroupReasonCode
 }
+
+/**
+ * The pair may not move, and this is why.
+ *
+ * `reasonCode` is a staging gap or a refusal on the merits depending on
+ * `refusalKind` and on whether the run held a baseline; either way both legs
+ * carry it and neither moves.
+ */
+export interface ConversionLinkedWithdrawalGroupRefusedVerdict
+  extends ConversionLinkedWithdrawalGroupVerdictBase {
+  readonly disposition: 'refusedPendingGroupExecution'
+  readonly refusalKind: ConversionLinkedWithdrawalGroupRefusalKind
+  readonly reasonCode: ConversionLinkedWithdrawalGroupReasonCode
+  /** Null by the type: a refused pair has no funding to publish. */
+  readonly fundingAuthority: null
+}
+
+/**
+ * The pair may move, together, and this is what was proved about its funding.
+ *
+ * There is no `refusalKind` and no `reasonCode` on this arm, because a released
+ * pair is not refused for any reason and a nullable field would have let one
+ * survive an edit that changed the disposition.
+ */
+export interface ConversionLinkedWithdrawalGroupExecutedVerdict
+  extends ConversionLinkedWithdrawalGroupVerdictBase {
+  readonly disposition: 'executedAsAtomicGroup'
+  readonly refusalKind: null
+  readonly reasonCode: null
+  readonly fundingAuthority:
+    Readonly<ConversionLinkedWithdrawalGroupFundingAuthority>
+}
+
+export type ConversionLinkedWithdrawalGroupVerdict =
+  | Readonly<ConversionLinkedWithdrawalGroupRefusedVerdict>
+  | Readonly<ConversionLinkedWithdrawalGroupExecutedVerdict>
 
 /** Every linked group the caller could see across both executors' requests. */
 export interface ConversionLinkedWithdrawalGroupAssessment {
@@ -197,15 +296,49 @@ function deepFreeze<T>(value: T): Readonly<T> {
  * refusing inside it. The verdict now names the contest, both executors refuse
  * on it, and publication is left asserting that nothing moved rather than
  * aborting.
+ *
+ * **Releasing a pair.** `authorizedGroups` is how a caller that proved a group
+ * may move says so, and three properties of how it is read are the whole of the
+ * release discipline.
+ *
+ * It is *matched on the pair*, so an authorization naming this conversion
+ * against some other withdrawal releases nothing: the permission is about the
+ * two requests together.
+ *
+ * It *cannot release a contested pair*. A withdrawal two conversions both name
+ * is dedicated to neither, and no proof about funding changes that — so a
+ * contested candidate keeps `sharedFundingWithdrawal` even when it is listed.
+ * This is defence in depth: the authorizer refuses contested pairs too, and
+ * that it refuses them is not the reason they cannot move here.
+ *
+ * It is *all or nothing across the assessment*. An authorization list that does
+ * not cover every group the requests contain releases none of them. The reason
+ * is the funding vector: the required amount is `max(0, T1(F) − T0)` for the
+ * unit's whole annual group, and a run that released a subset would have a
+ * different vector from the one the authority was proved against — so the proof
+ * would no longer be a proof about the run that used it.
  */
 export function assessConversionLinkedWithdrawalGroups(
   requests: readonly Readonly<RetirementActionRequest>[],
   options?: Readonly<{
     /** Defaults to `unavailable`: the answer of every caller without a `T0`. */
     annualLiabilityBaseline?: ConversionLinkedWithdrawalGroupAnnualLiabilityBaseline
+    /** Pairs a staging run proved may move. Defaults to none. */
+    authorizedGroups?:
+      readonly Readonly<ConversionLinkedWithdrawalGroupAuthorization>[]
   }>,
 ): Readonly<ConversionLinkedWithdrawalGroupAssessment> {
   const baseline = options?.annualLiabilityBaseline ?? 'unavailable'
+  const authorizationByPair = new Map(
+    (options?.authorizedGroups ?? []).map((authorization) =>
+      [
+        JSON.stringify([
+          authorization.conversionActionId,
+          authorization.withdrawalActionId,
+        ]),
+        authorization,
+      ] as const),
+  )
   interface Candidate {
     readonly conversionActionId: ActionId
     readonly withdrawalActionId: ActionId
@@ -235,12 +368,27 @@ export function assessConversionLinkedWithdrawalGroups(
       contesting.push(request.actionId)
     }
   }
-  const groups = [...candidates.values()]
+  const candidateList = [...candidates.values()]
+  // Every group present, or none released. Counted over the candidate pairs
+  // themselves rather than over the authorization list, so an authorization for
+  // a pair these requests do not contain can neither complete the cover nor
+  // release anything.
+  const releasableCandidates = candidateList.filter((candidate) =>
+    (conversionIdsByWithdrawalId.get(candidate.withdrawalActionId)?.length ?? 0)
+      <= 1 &&
+    authorizationByPair.has(JSON.stringify([
+      candidate.conversionActionId,
+      candidate.withdrawalActionId,
+    ])))
+  const releaseCoversEveryGroup =
+    candidateList.length > 0 &&
+    releasableCandidates.length === candidateList.length
+  const groups = candidateList
     .map((candidate): ConversionLinkedWithdrawalGroupVerdict => {
       const contesting = conversionIdsByWithdrawalId
         .get(candidate.withdrawalActionId) ?? []
       const contested = contesting.length > 1
-      return {
+      const base = {
         groupId: deriveActionStructuralId(
           'retirement-action-conversion-linked-withdrawal-group',
           [
@@ -254,11 +402,29 @@ export function assessConversionLinkedWithdrawalGroups(
         year: candidate.year,
         conversionActionId: candidate.conversionActionId,
         withdrawalActionId: candidate.withdrawalActionId,
-        disposition: 'refusedPendingGroupExecution',
-        refusalKind: contested ? 'sharedFundingWithdrawal' : 'pendingGroupExecution',
         contestingConversionActionIds: contested
           ? [...contesting].sort(compareUtf16CodeUnits)
           : [],
+      }
+      const authorization = contested || !releaseCoversEveryGroup
+        ? undefined
+        : authorizationByPair.get(JSON.stringify([
+          candidate.conversionActionId,
+          candidate.withdrawalActionId,
+        ]))
+      if (authorization !== undefined) {
+        return {
+          ...base,
+          disposition: 'executedAsAtomicGroup',
+          refusalKind: null,
+          reasonCode: null,
+          fundingAuthority: { ...authorization.funding },
+        }
+      }
+      return {
+        ...base,
+        disposition: 'refusedPendingGroupExecution',
+        refusalKind: contested ? 'sharedFundingWithdrawal' : 'pendingGroupExecution',
         // A contested withdrawal is refused on the merits whatever the run
         // could compute: no baseline liability makes a shared withdrawal
         // dedicated. The uncontested pair is refused on the merits only once
@@ -266,6 +432,7 @@ export function assessConversionLinkedWithdrawalGroups(
         reasonCode: contested || baseline === 'read'
           ? 'conversion-tax-funding-unallocated'
           : 'conversion-tax-funding-evidence-unsupported',
+        fundingAuthority: null,
       }
     })
     .sort(
@@ -297,6 +464,10 @@ export function conversionLinkedWithdrawalGroupForConversion(
  * `sharedFundingWithdrawal` carrying `conversion-tax-funding-unallocated`, so
  * the candidates are indistinguishable in everything a withdrawal reads off
  * them. Which one is returned still cannot change what the withdrawal does.
+ * That survives the executable arm precisely because a contested pair can never
+ * take it — multiplicity is checked before the authorization is read, so a
+ * withdrawal with two candidates has two refusals and no release to choose
+ * between.
  * Callers checking whether an assessment is complete must key on the
  * (conversion, withdrawal) pair instead of asking this, which cannot
  * distinguish "answered" from "answered for one of several".

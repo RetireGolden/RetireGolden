@@ -83,6 +83,7 @@ import {
   asUsdCents,
   assessConversionLinkedWithdrawalGroups,
   assessOrdinaryWithdrawalPlanBoundary,
+  authorizeConversionLinkedWithdrawalGroups,
   evaluateAnnualQcdExecutionPrerequisites,
   evaluateRetirementActionSchedule,
   executeAnnualQcds,
@@ -103,14 +104,17 @@ import {
   type ActionId,
   type AnnualQcdRmdPoolOpeningSnapshot,
   type ClassifyOwnedNonRothIraAnnualWithdrawalsInput,
+  type ConversionLinkedWithdrawalGroupAuthorization,
   type ConversionLinkedWithdrawalGroupLiabilityRun,
   type ConversionLinkedWithdrawalGroupMemberInput,
+  type ConversionLinkedWithdrawalGroupMovementInput,
   type ExecuteAnnualQcdsResult,
   type ExecuteConversionLinkedWithdrawalGroupsResult,
   type ExecuteOrdinaryWithdrawalsResult,
   type ExecuteRothConversionsResult,
   type PersonId,
   type QualifiedCharitableDistributionRequest,
+  type RetirementActionRequest,
   type TaxableAccountOpeningSnapshot,
 } from '../actions/index.js'
 import {
@@ -139,6 +143,7 @@ import {
 import {
   COUNTERFACTUAL_OMISSION_TAX_INPUT_ID,
   exactAnnualLiabilityFromPlanDollars,
+  probeAnnualPassUnderTransaction,
   runCounterfactualAnnualLiability,
   type CounterfactualAnnualLiabilityResult,
 } from '../internal/counterfactualAnnualLiability.js'
@@ -250,6 +255,28 @@ export interface SimulateOptions {
  * receives is built inside the pass, below the point a pre-pass has to run.
  * Deriving them is the consumer slice's work.
  */
+/**
+ * What one run of the annual pass may do with the year's linked funding groups.
+ *
+ * Module-scope rather than inline so that `REFUSE_LINKED_GROUPS` below can be
+ * the shared default: a run that says nothing about its groups refuses them,
+ * and there is one object every such run points at rather than a fresh literal
+ * per call site that could drift.
+ */
+type LinkedGroupRelease =
+  | Readonly<{ kind: 'refuseAll' }>
+  | Readonly<{ kind: 'stageProvisionally' }>
+  | Readonly<{
+      kind: 'proven'
+      authorizations:
+        readonly Readonly<ConversionLinkedWithdrawalGroupAuthorization>[]
+    }>
+
+/** The permission every run has until a staging run earns it one. */
+const REFUSE_LINKED_GROUPS: Readonly<LinkedGroupRelease> = Object.freeze({
+  kind: 'refuseAll' as const,
+})
+
 export interface SimulateAnnualCounterfactualRequest {
   /** Retirement-action IDs every year's counterfactual run omits. */
   readonly omitActionIds: readonly ActionId[]
@@ -2938,6 +2965,37 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
        */
       annualLiabilityBaseline:
         Readonly<ConversionLinkedWithdrawalGroupLiabilityRun> | null = null,
+      /**
+       * What this run of the pass is allowed to do with its linked groups.
+       *
+       * Three modes and they are not three degrees of the same permission.
+       *
+       * `refuseAll` is every run that has nothing to release: the
+       * counterfactual, the staging run of a year that could read no `T0` or
+       * whose staging did not prove out, and any caller that says nothing at
+       * all. It is the default, so a new call site refuses by omission rather
+       * than by remembering to.
+       *
+       * Note which runs are *not* on that list. The two settlement fallbacks —
+       * after a rolled-back settlement, and when the settlement feature is off
+       * — both go through `linkedGroupPermissionForAttempt([])` like every
+       * other committed run, so each stages under the empty assumption vector
+       * and can be handed `proven`. A fallback is a different assumption
+       * vector, not a lesser permission: the group either proved out under the
+       * vector the run actually used or it did not.
+       *
+       * `stageProvisionally` belongs to the discarded staging run alone. It
+       * releases the year's groups so the run can discover what the year
+       * costs when they move — which is the only way `T1(F)` exists at all —
+       * and the release is all-or-nothing across the year's assessment: one
+       * contested pair, or one leg unfundable from the balances standing at
+       * the seam, and nothing stages. Nothing it publishes is kept.
+       *
+       * `proven` is the committed run of a year whose staging proved out, and
+       * the authorizations it carries were minted by
+       * `authorizeConversionLinkedWithdrawalGroups` from that run's own facts.
+       */
+      linkedGroupRelease: Readonly<LinkedGroupRelease> = REFUSE_LINKED_GROUPS,
     ): { yearResult: YearResult; optimizerProbe: OptimizerYearProbe | null } => {
     /**
      * The Plan's retirement actions as *this* run of the pass sees them.
@@ -3658,25 +3716,178 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // can derive the same groups the other would, and a group spanning a Plan
     // action and an in-flight one is visible to neither. Both are given this
     // one verdict so the pair cannot be answered two ways within a year.
-    // The Plan half of this set is `passRetirementActions`, not the Plan's own
-    // array: a counterfactual that removed a conversion from the executors but
-    // left it visible here would still have its group assessed, and the group
-    // verdict is what both executors answer to.
+    // The Plan half of this set is `currentYearActions` — `passRetirementActions`
+    // narrowed to this year — and both halves of that matter.
+    //
+    // It is `passRetirementActions` rather than the Plan's own array because a
+    // counterfactual that removed a conversion from the executors but left it
+    // visible here would still have its group assessed, and the group verdict
+    // is what both executors answer to.
+    //
+    // It is narrowed to this year because a pass may only answer for the year
+    // it is running. `assessConversionLinkedWithdrawalGroups` has no year
+    // predicate of its own — membership is read off the conversion side alone —
+    // so handing it the Plan's whole multi-year array made every year's groups
+    // a member of every year's annual group. Two independent consequences
+    // followed and either alone was fatal: another year's conversion has no
+    // execution evidence in this one, so its `allocationWeight` is null and the
+    // whole annual evaluation refuses `allocationWeightUnavailable`; and the
+    // release is all-or-nothing across the candidate set, so the other year's
+    // pair had to be authorized too, whereupon `withdrawalLegsMovedWhole` found
+    // no withdrawal evidence for it and revoked every release. A plan holding
+    // one self-funding pair in each of two years could therefore never move
+    // either of them. The all-or-nothing rule is right and stays; it is a rule
+    // about one filing unit in one year, and the set was what was wrong.
+    //
+    // This is also what makes the omission set above honest. It is already
+    // keyed on `request.year === year`, and its docblock claims the assessment
+    // "reads the same conversions out of the same array" — a claim that was
+    // false for exactly as long as this set was unscoped.
+    //
     // The baseline's availability is what decides between the two funding
     // reason codes. A run that read a `T0` held the inputs the funding question
     // needs, so a group it refuses is refused on the merits; a run that did not
     // is declining to answer, which is what `unsupported` says.
-    const conversionLinkedWithdrawalGroups = assessConversionLinkedWithdrawalGroups(
-      [
-        ...passRetirementActions,
-        ...currentYearOrdinaryExecutionActions,
-        ...currentYearConversionActions,
-      ],
+    const linkedGroupAssessmentRequests = [
+      ...currentYearActions,
+      ...currentYearOrdinaryExecutionActions,
+      ...currentYearConversionActions,
+    ]
+    const observedLinkedWithdrawalGroups = assessConversionLinkedWithdrawalGroups(
+      linkedGroupAssessmentRequests,
       {
         annualLiabilityBaseline:
           annualLiabilityBaseline === null ? 'unavailable' : 'read',
       },
     )
+    /**
+     * Can this action's every allocation be funded from the balances standing
+     * here, in whole cents the ledger can actually move?
+     *
+     * Floored rather than rounded, which is the discipline every capacity read
+     * in this engine answers to: half-up rounding can report up to half a cent
+     * more than an account holds, and a leg released against that figure would
+     * be released against a cent the balance cannot cover. Truncating cannot,
+     * so a movement sized against this is always fundable.
+     *
+     * Read at the seam and not at each executor's own call site, because the
+     * question a staging release has to answer is about *both* legs before
+     * *either* moves.
+     *
+     * Be precise about what this read is and is not. It is **per action**, and
+     * it is **not aggregated** — not across a group's two legs, and not across
+     * groups. Disjointness holds between one group's own two legs, because a
+     * conversion may only source an owned non-inherited traditional IRA and an
+     * ordinary withdrawal may only source cash, equity compensation or taxable;
+     * that is what makes each leg's answer independent of the other's movement.
+     * It does not extend to a year holding two groups whose withdrawals draw on
+     * one cash account: each can be individually fundable while their sum is
+     * not, and this read will say yes to both.
+     *
+     * So this is a *precondition for staging*, never a proof of movement. What
+     * actually makes the release safe is that the staging run then moves the
+     * legs for real and is read for what happened: a withdrawal the account
+     * could not cover comes back short or refused,
+     * `withdrawalLegsMovedWhole` revokes, `movementCoherent` goes false, and
+     * `authorizeConversionLinkedWithdrawalGroups` withholds. The seam read
+     * earns its place by turning the common case into a clean refusal instead
+     * of a staging run that has to be discarded through a throw — not by
+     * deciding anything on its own.
+     */
+    const legFundableFromCurrentBalances = (
+      request: Readonly<RetirementActionRequest>,
+    ): boolean => {
+      if (request.kind !== 'rothConversion' &&
+          request.kind !== 'ordinaryWithdrawal') return false
+      const requestedBySourceAccountId = new Map<string, number>()
+      for (const allocation of request.allocations) {
+        requestedBySourceAccountId.set(
+          allocation.sourceAccountId,
+          (requestedBySourceAccountId.get(allocation.sourceAccountId) ?? 0) +
+            allocation.requestedAmount,
+        )
+      }
+      for (const [accountId, requested] of requestedBySourceAccountId) {
+        const state = balances.find((entry) => entry.account.id === accountId)
+        if (state === undefined) return false
+        try {
+          if (planDollarsToFlooredLedgerCents(state.balance) < requested) {
+            return false
+          }
+        } catch {
+          // A Plan balance outside the exact-cent safe range is a capacity
+          // nobody here can state, and an unstateable capacity is not a proof
+          // of fundability.
+          return false
+        }
+      }
+      return true
+    }
+    /**
+     * The groups a staging run provisionally releases, with the hypothesis it
+     * is testing written into their figures.
+     *
+     * The required and funded amounts are both the withdrawal's own authored
+     * cents, which is exactly the claim under test: *this* withdrawal, moving
+     * whole, funds *this* conversion's share of the unit's annual liability.
+     * The staging run then computes the real allocation from two real
+     * liabilities and either agrees with the claim or does not. Nothing else in
+     * the run reads these two figures — the conversion executor republishes
+     * them and the run is discarded — so the hypothesis is stated where it can
+     * be read rather than left implicit in a placeholder.
+     */
+    const provisionalLinkedGroupAuthorizations = ():
+      readonly Readonly<ConversionLinkedWithdrawalGroupAuthorization>[] => {
+      const requestByActionId = new Map(
+        linkedGroupAssessmentRequests.map((request) =>
+          [request.actionId, request] as const),
+      )
+      const authorizations: ConversionLinkedWithdrawalGroupAuthorization[] = []
+      for (const group of observedLinkedWithdrawalGroups.groups) {
+        if (group.refusalKind === 'sharedFundingWithdrawal') continue
+        const conversion = requestByActionId.get(group.conversionActionId)
+        const withdrawal = requestByActionId.get(group.withdrawalActionId)
+        if (
+          conversion?.kind !== 'rothConversion' ||
+          withdrawal?.kind !== 'ordinaryWithdrawal' ||
+          !legFundableFromCurrentBalances(conversion) ||
+          !legFundableFromCurrentBalances(withdrawal)
+        ) continue
+        authorizations.push({
+          conversionActionId: group.conversionActionId,
+          withdrawalActionId: group.withdrawalActionId,
+          funding: {
+            requiredFundingAmount: asUsdCents(withdrawal.requestedAmount),
+            fundedAmount: asUsdCents(withdrawal.requestedAmount),
+          },
+        })
+      }
+      return authorizations
+    }
+    const linkedGroupAuthorizations = linkedGroupRelease.kind === 'proven'
+      ? linkedGroupRelease.authorizations
+      : linkedGroupRelease.kind === 'stageProvisionally'
+        ? provisionalLinkedGroupAuthorizations()
+        : []
+    const conversionLinkedWithdrawalGroups = linkedGroupAuthorizations.length === 0
+      ? observedLinkedWithdrawalGroups
+      : assessConversionLinkedWithdrawalGroups(linkedGroupAssessmentRequests, {
+        annualLiabilityBaseline:
+          annualLiabilityBaseline === null ? 'unavailable' : 'read',
+        authorizedGroups: linkedGroupAuthorizations,
+      })
+    /**
+     * The verdict as the rest of the year reads it, which is the released one
+     * until the withdrawal leg fails to arrive.
+     *
+     * Separate from `conversionLinkedWithdrawalGroups` because the withdrawal
+     * executor has already run against that one by the time the revocation is
+     * knowable, and rewriting the verdict it answered to would make the year
+     * report a decision no executor was given. This is the decision every
+     * *later* reader is given: the conversion executor, the candidate funding
+     * vector, and the group executor that publishes the year's answer.
+     */
+    let effectiveLinkedWithdrawalGroups = conversionLinkedWithdrawalGroups
     // The ordinary and QCD executors are handed disjoint request sets, so the
     // one alive fact a request carries is minted here rather than per executor:
     // a request must not change identity by moving between the two.
@@ -4449,6 +4660,40 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             return []
           }
         })
+      /**
+       * The group verdict the conversion leg answers to, narrowed by what the
+       * withdrawal leg actually did.
+       *
+       * The two legs move in different phases and the withdrawal moves first,
+       * so this is the one place in the year where "did the funding actually
+       * arrive" is a fact rather than a forecast. A release that survives to
+       * here and whose withdrawal did not move its whole authored amount is
+       * revoked, and revoking one revokes all: the assessment's own release
+       * rule is all-or-nothing across the annual group, so handing it a
+       * shortened authorization list releases nothing.
+       *
+       * This closes the direction of the atomicity hazard that ordering alone
+       * cannot: a conversion that converted on funding its withdrawal never
+       * took. The other direction — a withdrawal that moved for a conversion
+       * that then refused — is closed before either leg moves, by the seam's
+       * floored-capacity read of both legs, and backstopped by publication's
+       * `assertLinkedWithdrawalRecordAtomicity` for any refusal that read
+       * cannot see.
+       */
+      const withdrawalLegsMovedWhole = conversionLinkedWithdrawalGroups.groups
+        .filter((group) => group.disposition === 'executedAsAtomicGroup')
+        .every((group) => {
+          const evidence = retirementActionExecution?.evidence.find(
+            (entry) => entry.actionId === group.withdrawalActionId,
+          )
+          return evidence !== undefined &&
+            evidence.readiness === 'actionable' &&
+            evidence.disposition.outcome === 'executed' &&
+            evidence.disposition.executedAmount === evidence.requestedAmount
+        })
+      if (!withdrawalLegsMovedWhole) {
+        effectiveLinkedWithdrawalGroups = observedLinkedWithdrawalGroups
+      }
       rothConversionActionExecution = executeRothConversions({
         year,
         plan: passPlan,
@@ -4458,7 +4703,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           personAliveEvidence,
           ownerIraRmdSatisfactionEvidence,
           ownerAggregatedIraBasisEvidence,
-          conversionLinkedWithdrawalGroups,
+          conversionLinkedWithdrawalGroups: effectiveLinkedWithdrawalGroups,
         },
       })
 
@@ -6723,7 +6968,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         (retirementActionExecution?.evidence ?? []).map((evidence) =>
           [evidence.actionId, evidence.disposition.executedAmount] as const),
       )
-      const fundingVector = conversionLinkedWithdrawalGroups.groups
+      const fundingVector = effectiveLinkedWithdrawalGroups.groups
         .map((group) => [
           group.conversionActionId,
           group.withdrawalActionId,
@@ -6779,20 +7024,44 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
      */
     const conversionLinkedWithdrawalGroupExecution:
       Readonly<ExecuteConversionLinkedWithdrawalGroupsResult> | undefined =
-      conversionLinkedWithdrawalGroups.groups.length === 0
+      effectiveLinkedWithdrawalGroups.groups.length === 0
         ? undefined
         : executeConversionLinkedWithdrawalGroups({
             taxYear: year,
-            requests: [
-              ...passRetirementActions,
-              ...currentYearOrdinaryExecutionActions,
-              ...currentYearConversionActions,
-            ],
-            assessment: conversionLinkedWithdrawalGroups,
+            requests: linkedGroupAssessmentRequests,
+            assessment: effectiveLinkedWithdrawalGroups,
             taxUnit: conversionFundingTaxUnitEvidence,
             baseline: annualLiabilityBaseline,
             candidate: committedAnnualLiabilityRun(tax, penalties),
-            members: conversionLinkedWithdrawalGroups.groups.map(
+            movements: effectiveLinkedWithdrawalGroups.groups.map(
+              (group): ConversionLinkedWithdrawalGroupMovementInput => {
+                const conversionEvidence = rothConversionActionExecution?.evidence
+                  .find((evidence) => evidence.actionId === group.conversionActionId)
+                const withdrawalEvidence = retirementActionExecution?.evidence
+                  .find((evidence) => evidence.actionId === group.withdrawalActionId)
+                return {
+                  conversionActionId: group.conversionActionId,
+                  withdrawalActionId: group.withdrawalActionId,
+                  conversion: {
+                    authoredAmount: asUsdCents(
+                      conversionEvidence?.requestedAmount ?? 0,
+                    ),
+                    executedAmount: asUsdCents(
+                      conversionEvidence?.executedAmount ?? 0,
+                    ),
+                  },
+                  withdrawal: {
+                    authoredAmount: asUsdCents(
+                      withdrawalEvidence?.requestedAmount ?? 0,
+                    ),
+                    executedAmount: asUsdCents(
+                      withdrawalEvidence?.disposition.executedAmount ?? 0,
+                    ),
+                  },
+                }
+              },
+            ),
+            members: effectiveLinkedWithdrawalGroups.groups.map(
               (group): ConversionLinkedWithdrawalGroupMemberInput => {
                 const conversionEvidence = rothConversionActionExecution?.evidence
                   .find((evidence) => evidence.actionId === group.conversionActionId)
@@ -7033,6 +7302,69 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         : null
     }
 
+    /**
+     * `T0`, then the staging run, then the permission the committed run gets.
+     *
+     * Three passes for a year with a linked group, one for a year without, and
+     * the middle one is the one that could not be avoided. `T1(F)` is the
+     * unit's annual liability *with the conversions present and funded as
+     * stated*, so it exists only in a run where the group already moved — a
+     * gate that demanded the fixed point before letting anything move would be
+     * asking for a figure that only movement produces. So the year runs itself
+     * once with the groups provisionally released, reads what that cost and
+     * what the legs actually moved, checks the arithmetic, and throws the run
+     * away. What survives is a permission the committed run can be handed.
+     *
+     * All three share one assumption vector, which is what makes the baseline a
+     * counterfactual of *this* attempt and the staging run a rehearsal of it
+     * rather than of a different one.
+     *
+     * The staging run is discarded through the same transaction the
+     * counterfactual uses, and for the same reason: the pass mints runtime
+     * occurrences with a bare push and no dedupe, so a staging run that leaked
+     * one would not crash the year — it would silently disqualify an owner from
+     * the exact-cent replay and fall the year back to legacy pro-rata
+     * economics. Every refusal below therefore returns the committed run's
+     * default, which is to refuse the groups exactly as they refused before any
+     * of this existed. A staging run that threw is included in that: the throw
+     * is the fail-closed backstop for a conversion-side refusal the seam's
+     * capacity read could not see.
+     */
+    const linkedGroupPermissionForAttempt = (
+      assumedEffects:
+        readonly Readonly<OwnedNonRothIraAnnualSettlementEffect>[],
+    ): {
+      baseline: Readonly<ConversionLinkedWithdrawalGroupLiabilityRun> | null
+      release: Readonly<LinkedGroupRelease>
+    } => {
+      const baseline = runLinkedGroupCounterfactualBaseline(assumedEffects)
+      if (baseline === null) {
+        return { baseline: null, release: REFUSE_LINKED_GROUPS }
+      }
+      const staged = probeAnnualPassUnderTransaction({
+        state: annualPassState,
+        runProbe: () => runPostContributionAnnualPass(
+          assumedEffects,
+          undefined,
+          baseline,
+          { kind: 'stageProvisionally' as const },
+        ).yearResult.conversionLinkedWithdrawalGroupExecution ?? null,
+      })
+      if (staged.status !== 'annualPassProbeRead' || staged.observation === null) {
+        return { baseline, release: REFUSE_LINKED_GROUPS }
+      }
+      const authorized = authorizeConversionLinkedWithdrawalGroups(
+        staged.observation,
+      )
+      return {
+        baseline,
+        release:
+          authorized.status === 'conversionLinkedWithdrawalGroupsAuthorized'
+            ? { kind: 'proven' as const, authorizations: authorized.authorizations }
+            : REFUSE_LINKED_GROUPS,
+      }
+    }
+
     // The counterfactual pre-pass, before anything commits this year.
     //
     // It has to precede the run that commits, not follow it: the pass writes the
@@ -7091,10 +7423,14 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         projectionStartTaxYear: year,
         initialAssumedEffects: [],
         runAttempt: (context) => {
+          const permission = linkedGroupPermissionForAttempt(
+            context.assumedEffects,
+          )
           const attempt = runPostContributionAnnualPass(
             context.assumedEffects,
             undefined,
-            runLinkedGroupCounterfactualBaseline(context.assumedEffects),
+            permission.baseline,
+            permission.release,
           )
           finalAttempt = attempt
           return [attempt.yearResult]
@@ -7222,17 +7558,21 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         } else {
           ownedNonRothIraSettlementRolledBackOwners.add(rolledBackOwner)
         }
+        const permission = linkedGroupPermissionForAttempt([])
         settledAnnualPass = runPostContributionAnnualPass(
           [],
           undefined,
-          runLinkedGroupCounterfactualBaseline([]),
+          permission.baseline,
+          permission.release,
         )
       }
     } else {
+      const permission = linkedGroupPermissionForAttempt([])
       settledAnnualPass = runPostContributionAnnualPass(
         [],
         undefined,
-        runLinkedGroupCounterfactualBaseline([]),
+        permission.baseline,
+        permission.release,
       )
     }
     years.push(settledAnnualPass.yearResult)

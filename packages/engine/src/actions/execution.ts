@@ -1591,10 +1591,18 @@ function executeOrdinaryWithdrawalsInScope(
   // strategy list plus whatever arrived in this batch — which is strictly less
   // than the caller can see and is why the verdict exists at all.
   const suppliedGroups = input.runtimeEvidence?.conversionLinkedWithdrawalGroups
-  const observableGroups = assessConversionLinkedWithdrawalGroups([
-    ...input.plan.strategies.retirementActions,
-    ...requests,
-  ])
+  // Narrowed to the year this batch executes, on both halves. A conversion the
+  // Plan declares for another year is not a group this batch could release or
+  // refuse — it cannot move that year's withdrawal — and demanding a verdict
+  // for it would require every caller to supply an assessment spanning the
+  // whole Plan, which is the multi-year contamination the caller's own seam
+  // exists to prevent. The linkage is same-year by construction anyway:
+  // `parsePlan` requires a linked withdrawal to resolve to exactly one
+  // same-person/year ordinary withdrawal pointing back at the conversion.
+  const observableGroups = assessConversionLinkedWithdrawalGroups(
+    [...input.plan.strategies.retirementActions, ...requests]
+      .filter((request) => request.year === input.year),
+  )
   // A supplied verdict may answer for groups this executor cannot see. It may
   // not contradict one it can: an assessment that leaves out a linked group
   // sitting in the Plan is not a decision to release that withdrawal, it is an

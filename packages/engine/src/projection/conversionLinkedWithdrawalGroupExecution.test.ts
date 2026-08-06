@@ -565,9 +565,10 @@ describe('the conversion-linked withdrawal group, executed in a real projection'
             .toBe(withdrawal.executedAmount > 0)
           expect(group.movement).toBe('none')
         }
-        // And the executor itself has no arm that could disagree with them.
-        const status: 'refused' = execution.status
-        expect(status).toBe('refused')
+        // And the executor agrees with them. It has an arm that could
+        // disagree now — the pin used to be that it did not — so what is
+        // asserted is that none of these three plans reaches it.
+        expect(execution.status).toBe('refused')
       }
     })
   })

@@ -1387,17 +1387,40 @@ function assertContestedLinkedWithdrawalRecordsStill(
 }
 
 /**
- * Both legs of a linked pair moved, or neither did.
+ * Both legs of a linked pair moved whole, or neither moved at all.
  *
- * This throw has never fired and, while every group refuses, cannot: both legs
- * report `executedAmount === 0`, so both sides of the comparison are `false`
- * and they agree. It is asserted anyway rather than deleted, because it is the
- * last line of defence for the state of the world where one leg *can* move —
- * a conversion that converted on funding its withdrawal never took, or a
- * withdrawal that drained an account for a conversion that then refused. The
- * slice that opens the gate makes this a live surface for every partial and
- * insufficient case; until then its unreachability is a property worth pinning
- * rather than an omission.
+ * This is a live surface now. While every group refused it could not fire —
+ * both legs reported `executedAmount === 0`, so both sides of the first
+ * comparison were `false` and they agreed — and it was asserted anyway as the
+ * last line of defence for the state of the world where one leg *can* move. It
+ * can. What it defends against is a conversion that converted on funding its
+ * withdrawal never took, and a withdrawal that drained an account for a
+ * conversion that then refused; both are dollars moved against a fact that is
+ * not true, and neither is a diagnosis the record set can make for itself.
+ *
+ * Three pins, and the second and third are what the gate opening added.
+ *
+ * 1. **Both or neither.** The original comparison, unchanged.
+ * 2. **Whole or nothing, per leg.** A leg that moved must have moved its entire
+ *    requested amount with nothing left unexecuted. A partial withdrawal beside
+ *    a whole conversion satisfies pin 1 — both are positive — while funding the
+ *    conversion short, which is exactly the case the memo named as the one this
+ *    assertion would first meet.
+ * 3. **Each moving leg is an executed, actionable record.** A positive amount
+ *    on a record that still calls itself refused or non-actionable is a record
+ *    contradicting itself about whether it happened.
+ *
+ * What is deliberately *not* re-asserted is the schedule. `assertRecordBinding`
+ * already proves, for every record with a positive amount, that its executed
+ * date is its own effective scheduled date and its executed sequence its own
+ * scheduled sequence — and it does so through the effective date, which is what
+ * an undated ordinary withdrawal lawfully has and its request does not. Reading
+ * `request.executionDate` here would have refused that lawful pair.
+ *
+ * It stays a throw rather than becoming a typed refusal. Every path that could
+ * reach it refuses upstream — the group verdict is one answer both executors
+ * read — so reaching it means an executor disregarded that verdict, which is a
+ * defect in the engine rather than a fact about the household's plan.
  */
 function assertLinkedWithdrawalRecordAtomicity(
   requests: readonly Readonly<RetirementActionRequest>[],
@@ -1420,6 +1443,19 @@ function assertLinkedWithdrawalRecordAtomicity(
       throw new Error(
         `Linked conversion funding disposition differs for action "${request.actionId}"`,
       )
+    }
+    if (conversionRecord.executedAmount === 0) continue
+    for (const leg of [conversionRecord, withdrawalRecord]) {
+      if (
+        leg.executedAmount !== leg.requestedAmount ||
+        leg.unexecutedAmount !== 0 ||
+        leg.outcome !== 'executed' ||
+        leg.readiness !== 'actionable'
+      ) {
+        throw new Error(
+          `Linked conversion funding moved partially for action "${leg.actionId}"`,
+        )
+      }
     }
   }
 }
@@ -1966,11 +2002,20 @@ function assertRecordBinding(
  * Mutates the record array in place, before it is sorted and frozen, because
  * the alternative is rebuilding every record to add a field to a few of them.
  *
- * Three things are checked and each one is a way the evaluation could belong to
- * a different year, a different action, or a conversion that moved. The last is
- * the one worth naming: a member record is an evaluation of funding, and while
- * every group refuses, an evaluated member whose conversion executed would mean
- * the group's own gate disagreed with the executor's.
+ * Four things are checked, and the last two are where the gate opening lands.
+ *
+ * The evaluation must belong to this year and to this action. Then the record's
+ * movement and the group's own statement of movement must be the same fact:
+ * `bothLegs` with a conversion record that moved nothing, or a conversion
+ * record that moved under a group claiming nothing did, is the group's gate and
+ * the executor's disagreeing about what happened.
+ *
+ * And a conversion that moved must carry a `satisfied` fixed point. A mismatch
+ * record beside a conversion that converted would be publishing "this funding
+ * did not balance" against dollars that already moved on it. The converse is
+ * deliberately *not* asserted: a refused group's evaluation is satisfied too,
+ * degenerately — nothing required, nothing funded — which is why satisfaction
+ * alone is never read as permission anywhere in this pathway.
  */
 function attachConversionTaxFundingEvidence(
   records: AnnualRetirementActionRecord[],
@@ -1990,7 +2035,8 @@ function attachConversionTaxFundingEvidence(
       groups.taxYear !== record.year ||
       record.kind !== 'rothConversion' ||
       evidence.conversionActionId !== record.actionId ||
-      record.executedAmount > 0
+      (record.executedAmount > 0) !== (group.movement === 'bothLegs') ||
+      (record.executedAmount > 0 && evidence.evaluation !== 'satisfied')
     ) {
       throw new Error(
         `Conversion tax funding evidence differs for action "${group.conversionActionId}"`,

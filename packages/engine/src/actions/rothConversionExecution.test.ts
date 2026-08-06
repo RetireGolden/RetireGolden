@@ -1513,6 +1513,7 @@ describe('executeRothConversions', () => {
           refusalKind: 'pendingGroupExecution',
           contestingConversionActionIds: [],
           reasonCode: 'conversion-tax-funding-evidence-unsupported',
+          fundingAuthority: null,
         }])
         // The reason code follows the run, not the pair. A caller that read a
         // baseline annual liability held the inputs the funding question needs,
@@ -1534,6 +1535,7 @@ describe('executeRothConversions', () => {
           refusalKind: 'pendingGroupExecution',
           contestingConversionActionIds: [],
           reasonCode: 'conversion-tax-funding-unallocated',
+          fundingAuthority: null,
         }])
         expect(Object.isFrozen(groups)).toBe(true)
         // Either member finds the same verdict, which is what lets two

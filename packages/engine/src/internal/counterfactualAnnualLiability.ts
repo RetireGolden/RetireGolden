@@ -163,6 +163,107 @@ export type CounterfactualAnnualLiabilityResult =
 export const COUNTERFACTUAL_OMISSION_TAX_INPUT_ID =
   'counterfactualOmittedRetirementActionIds'
 
+/** Why a discarded annual pass yielded no observation. */
+export type AnnualPassProbeRefusalKind =
+  /** Opening the annual-pass checkpoint threw. Nothing ran. */
+  | 'checkpointUnavailable'
+  /** The probe pass itself threw. Its partial mutations were rolled back. */
+  | 'annualPassThrew'
+  /** The rollback did not complete. No observation may be trusted after this. */
+  | 'restorationFailed'
+
+export interface AnnualPassProbeRead<Observation> {
+  readonly status: 'annualPassProbeRead'
+  readonly restoration: 'checkpointRestored'
+  readonly observation: Observation
+}
+
+export interface AnnualPassProbeRefused {
+  readonly status: 'annualPassProbeRefused'
+  readonly restoration: 'checkpointRestored' | 'notOpened' | 'failed'
+  readonly reason: AnnualPassProbeRefusalKind
+  readonly detail: string
+}
+
+export type AnnualPassProbeResult<Observation> =
+  | Readonly<AnnualPassProbeRead<Observation>>
+  | Readonly<AnnualPassProbeRefused>
+
+/**
+ * Run one annual pass purely to observe it, and unconditionally undo it.
+ *
+ * The same discipline as the counterfactual above, over a different question.
+ * A counterfactual asks what the year would have cost with requests removed; a
+ * *staging* probe asks what the year does when a group is provisionally
+ * released — what both legs actually move, and what the run's own liability
+ * then is. Neither reading exists without running the whole pass, and neither
+ * run may survive.
+ *
+ * Generic over the observation rather than fixed to a liability, because the
+ * consumer needs the pass's group execution, not a number. What is not generic
+ * is the safety property: the rollback is in a `finally`, its failure outranks
+ * a successful observation, and a pass that throws yields a refusal rather than
+ * propagating — a probe is not permitted to abort the projection it is probing.
+ *
+ * The observation is read *inside* the transaction, before the rollback. That
+ * is deliberate and it is why the callback returns a value instead of the
+ * caller reading state afterwards: after a rollback there is nothing left of
+ * the run to read, and a caller that captured a live container instead of a
+ * detached value would be holding a restored one.
+ */
+export function probeAnnualPassUnderTransaction<Observation>(
+  input: Readonly<{
+    state: SimulatorAnnualPassStateBindings
+    runProbe: () => Observation
+  }>,
+): AnnualPassProbeResult<Observation> {
+  let transaction: SimulatorAnnualPassTransaction<never>
+  try {
+    transaction = beginSimulatorAnnualPassTransaction(input.state)
+  } catch {
+    return deepFreeze({
+      status: 'annualPassProbeRefused' as const,
+      restoration: 'notOpened' as const,
+      reason: 'checkpointUnavailable' as const,
+      detail: 'The annual-pass checkpoint could not be opened, so no probe ran.',
+    })
+  }
+  let read: Readonly<AnnualPassProbeRead<Observation>> | null = null
+  let refusal: Readonly<AnnualPassProbeRefused> | null = null
+  try {
+    read = {
+      status: 'annualPassProbeRead' as const,
+      restoration: 'checkpointRestored' as const,
+      observation: input.runProbe(),
+    }
+  } catch {
+    refusal = {
+      status: 'annualPassProbeRefused' as const,
+      restoration: 'checkpointRestored' as const,
+      reason: 'annualPassThrew' as const,
+      detail: 'The staging annual pass threw; its mutations were rolled back.',
+    }
+  } finally {
+    try {
+      transaction.rollback()
+    } catch {
+      read = null
+      refusal = {
+        status: 'annualPassProbeRefused' as const,
+        restoration: 'failed' as const,
+        reason: 'restorationFailed' as const,
+        detail: 'The staging annual pass could not be rolled back; no observation from it is usable.',
+      }
+    }
+  }
+  return read ?? refusal ?? {
+    status: 'annualPassProbeRefused' as const,
+    restoration: 'checkpointRestored' as const,
+    reason: 'annualPassThrew' as const,
+    detail: 'The staging annual pass produced no observation.',
+  }
+}
+
 interface ExactCents {
   readonly numerator: bigint
   readonly denominator: bigint

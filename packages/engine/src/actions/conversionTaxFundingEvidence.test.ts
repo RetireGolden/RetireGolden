@@ -558,15 +558,31 @@ describe('tax-unit binding', () => {
 })
 
 describe('the boundary this contract stops at', () => {
-  it('leaves the linked-withdrawal group disposition single-valued', () => {
-    // Widening the disposition is what releases a conversion and its funding
-    // withdrawal to move as one transaction. It belongs to the slice that
-    // writes the atomic group executor, and this assignment stops compiling
-    // the moment a second member appears.
-    const soleDisposition: ConversionLinkedWithdrawalGroupDisposition =
-      'refusedPendingGroupExecution'
-    const pinned: 'refusedPendingGroupExecution' = soleDisposition
-    expect(pinned).toBe('refusedPendingGroupExecution')
+  it('pins the linked-withdrawal group disposition to exactly its two members', () => {
+    // This pin used to say "single-valued", and it said it like this:
+    //
+    //   const sole: ConversionLinkedWithdrawalGroupDisposition = 'refused…'
+    //   const pinned: 'refused…' = sole
+    //
+    // which did not pin anything. A `const` with both an annotation and a
+    // literal initializer is narrowed to that literal at every read, so the
+    // second assignment went on compiling however wide the union became — the
+    // pin would have survived the very change it was written to catch. Worth
+    // recording rather than quietly replacing: the slice that opened the gate
+    // discovered it by widening the union and watching this file stay green.
+    //
+    // What replaces it is mutual assignability, which has no narrowing to hide
+    // behind. Adding a member makes the union no longer assignable to the
+    // literal list; removing one makes the list no longer assignable to the
+    // union; either way `true` stops being assignable to `false`.
+    type MutuallyAssignable<Left, Right> = [Left] extends [Right]
+      ? ([Right] extends [Left] ? true : false)
+      : false
+    const dispositionUnionIsExactly: MutuallyAssignable<
+      ConversionLinkedWithdrawalGroupDisposition,
+      'refusedPendingGroupExecution' | 'executedAsAtomicGroup'
+    > = true
+    expect(dispositionUnionIsExactly).toBe(true)
 
     const conversion = rothConversionRequestSchema.parse({
       actionId: 'conversion-a',
