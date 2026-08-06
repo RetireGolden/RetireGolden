@@ -22,6 +22,11 @@ import type { YearResult } from './types.js'
  * 2. the set is exactly the accounts the policy reads;
  * 3. presence means the policy was asked, and every way of not asking is a
  *    named, tested absence.
+ *
+ * Its sibling `aggregateRothConversionAllocationDesired` states the household
+ * amount the policy was asked FOR, which is not the amount the ledger moved
+ * whenever an owner was trimmed. The two together are what let a promotion
+ * reproduce the ledger's own allocation instead of re-trimming it.
  */
 
 const TAX_YEAR = 2026
@@ -215,6 +220,79 @@ describe('the published snapshot is what the policy consumed', () => {
     // The cash account funds the household and weights nobody, so it is absent
     // rather than published as a figure a reader might weight by.
     expect(snapshot['joint-cash']).toBeUndefined()
+  })
+})
+
+describe('the published desired amount is what the policy was asked for', () => {
+  it('states the pre-trim household figure, which the executed total is not', () => {
+    const plan = household(ACCOUNTS())
+    const year = runManual(plan, [{ year: TAX_YEAR, amount: 100_000 }])[0]!
+
+    // Asked for 100,000; moved 72,566.37, because Sam holds no Roth IRA and
+    // Sam's 310,000 : 1,130,000 slice had nowhere to land. The difference is
+    // the trim, and it is the whole reason the two figures are separate
+    // fields: re-allocating 72,566.37 across the same household would trim
+    // Sam's phantom share a second time.
+    expect(year.aggregateRothConversionAllocationDesired).toBe(100_000)
+    expect(year.rothConversion).toBeCloseTo(72_566.37, 10)
+  })
+
+  it('is the safety-net-trimmed sizing, not the raw bracket target', () => {
+    // A fillToTarget year whose conversion the taxable safety-net floor cuts
+    // back. The policy is asked for the cut-back figure, so that is what is
+    // published: the floor trim decides how much the household requests, and
+    // the identity trim decides how much of the request can land.
+    const base = household([
+      cash('joint-cash', 20_000, ALEX),
+      traditionalIra('alex-ira', 820_000, ALEX),
+      rothIra('alex-roth', 145_000, ALEX),
+    ])
+    const plan = validatePlan({
+      ...base,
+      strategies: {
+        ...base.strategies,
+        taxableSafetyNetFloor: 15_000,
+        rothConversion: {
+          mode: 'fillToTarget',
+          target: 'topOfBracket',
+          targetValue: 24,
+          startYear: TAX_YEAR,
+          endYear: TAX_YEAR,
+        },
+      },
+    })
+    const projection = simulatePlan(plan, {
+      startYear: TAX_YEAR,
+      horizonEndYear: TAX_YEAR,
+      // A real rate, so the floor trim has a tax bill to react to.
+      taxCalculator: createFlatTaxCalculator(25),
+    })
+    const year = projection.years[0]!
+
+    const desired = year.aggregateRothConversionAllocationDesired
+    if (desired === undefined) throw new Error('expected a published desired amount')
+    // One owner, one destination: nothing is trimmed for identity, so the
+    // ledger moved exactly what it was asked for.
+    expect(year.rothConversion).toBeCloseTo(desired, 8)
+    // And the floor did bite -- otherwise this case would prove nothing about
+    // which side of the sizing the published figure sits on.
+    expect(projection.warnings.some((warning) => warning.includes('safety-net floor'))).toBe(true)
+  })
+
+  it('is present in exactly the years the balances snapshot is', () => {
+    const plan = household(ACCOUNTS())
+    const years = runManual(
+      plan,
+      [{ year: TAX_YEAR + 1, amount: 25_000 }],
+      TAX_YEAR + 2,
+    )
+
+    // One call publishes both, so a consumer that has one always has the other.
+    for (const year of years) {
+      expect(year.aggregateRothConversionAllocationDesired === undefined)
+        .toBe(year.aggregateRothConversionAllocationBalances === undefined)
+    }
+    expect(years[1]!.aggregateRothConversionAllocationDesired).toBe(25_000)
   })
 })
 

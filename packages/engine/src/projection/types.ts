@@ -818,8 +818,40 @@ export interface YearResult {
    * household converted: the policy may have refused it for want of any Roth
    * IRA, or trimmed an owner who has none, and the year then publishes this
    * snapshot beside a `rothConversion` of zero.
+   *
+   * The amount it was asked FOR is the sibling field
+   * `aggregateRothConversionAllocationDesired`, published from the same call.
    */
   aggregateRothConversionAllocationBalances?: Readonly<Record<string, number>>
+  /**
+   * The household conversion amount the aggregate allocation policy was asked
+   * for this year, in Plan dollars, BEFORE the policy trimmed any owner.
+   *
+   * WHY IT IS PUBLISHED SEPARATELY FROM `rothConversion`. `rothConversion` is
+   * what the ledger moved, which for a household with an owner who holds no
+   * Roth IRA is strictly less than the figure the policy was handed: that
+   * owner's slice is dropped, and the difference never converts. A promotion
+   * path that re-allocated the executed total would slice the surviving
+   * owners' figure across the whole household a second time and trim the same
+   * absent owner again, converting less than the ledger did for no reason
+   * anyone chose. This field is the figure the ledger's own allocation
+   * answers, so re-running the policy on it reproduces that allocation exactly.
+   *
+   * It is the amount AFTER the sizing pass and after the safety-net floor trim
+   * — both decide how much the household is asking to convert — and BEFORE the
+   * identity trim, which decides how much of that request can lawfully land.
+   *
+   * PUBLISHED IN EXACTLY THE YEARS
+   * `aggregateRothConversionAllocationBalances` is, at the same instant and
+   * from the same call: presence on one is presence on the other, and every
+   * cause of absence listed on that field is a cause of absence here. Two
+   * fields rather than one nested object because the balances are a map and
+   * this is a scalar, and each is read on its own.
+   *
+   * Presence says the policy was asked for this much. It does not say the
+   * household converted it.
+   */
+  aggregateRothConversionAllocationDesired?: number
   /**
    * Projection-only raw source capture for legacy retirement-account
    * mutations. A later replay consumer owns journal validation, structural

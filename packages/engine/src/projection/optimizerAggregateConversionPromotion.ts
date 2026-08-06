@@ -128,7 +128,17 @@ import type { Account, Plan } from '../model/plan.js'
  * next slice.
  */
 
-/** One year of the winner's schedule, in Plan dollars. */
+/**
+ * One year of the schedule to promote, in Plan dollars.
+ *
+ * THE AMOUNT IS THE HOUSEHOLD FIGURE THE ALLOCATION POLICY IS ASKED FOR, which
+ * for a household with an owner who has nowhere to convert to is NOT the amount
+ * the ledger executed. The executed total is that figure minus the trimmed
+ * owner's slice; slicing it across the whole household again would trim the
+ * absent owner's phantom share a second time. The ledger publishes the figure
+ * this field wants as `YearResult.aggregateRothConversionAllocationDesired`,
+ * and `optimizerAggregateConversionPromotionRun.ts` reads it from there.
+ */
 export interface AggregateConversionPromotionYear {
   readonly year: number
   readonly amount: number
@@ -229,7 +239,11 @@ export interface AggregateConversionPromotionIssue {
 /** What the policy did with one scheduled year. */
 export interface AggregateConversionPromotionYearOutcome {
   readonly year: number
-  /** The winner's household figure for the year, in exact cents. */
+  /**
+   * The household figure the policy was asked for this year, in exact cents —
+   * the caller's stated amount, pre-trim. `allocatedCents` below is what the
+   * identity rules let land, and the difference is the trim.
+   */
   readonly winnerCents: number
   /** What the identity-complete intents actually convert, in exact cents. */
   readonly allocatedCents: number

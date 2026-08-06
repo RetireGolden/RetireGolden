@@ -4721,6 +4721,15 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
      */
     let aggregateRothConversionAllocationBalances:
       Readonly<Record<string, number>> | undefined
+    /**
+     * The household amount that policy was asked for, before it trimmed an
+     * owner who has nowhere to convert to. Set at the same call as the
+     * snapshot above and nowhere else, so the two are present together or
+     * absent together. A promotion that re-allocated the EXECUTED total would
+     * trim the absent owner a second time; this is the figure that reproduces
+     * what the ledger did.
+     */
+    let aggregateRothConversionAllocationDesired: number | undefined
     // A named request is authoritative for this year even when blocked. An
     // aggregate fallback would debit different sources and hide that result.
     const rc = currentYearConversionActions.length > 0
@@ -4827,6 +4836,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
               .map((state) => [state.account.id, state.balance]),
           ),
         )
+        aggregateRothConversionAllocationDesired = desired
         const allocation = allocateAggregateRothConversionByOwner({
           balances,
           desiredPlanDollars: desired,
@@ -6544,6 +6554,9 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       ...(aggregateRothConversionAllocationBalances === undefined
         ? {}
         : { aggregateRothConversionAllocationBalances }),
+      ...(aggregateRothConversionAllocationDesired === undefined
+        ? {}
+        : { aggregateRothConversionAllocationDesired }),
       retirementRuntimeSource,
       retirementRuntimeApplicationSource,
       ownedNonRothIraPostGrowthSource,
