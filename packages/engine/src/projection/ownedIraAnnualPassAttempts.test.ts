@@ -81,6 +81,8 @@ function state(): SimulatorAnnualPassStateBindings {
     allocationTrack: new Map(),
     seppAmortAmount: new Map(),
     magiHistory: new Map(),
+    namedQcdOffsetConsumedByDonor: new Map(),
+    namedQcdOffsetHistoryUnprovable: new Set(),
     warnings: new Set(['baseline']),
     unassignedCash: valueBinding(10),
     priorYearPortfolioReturnPct: valueBinding(0.05),

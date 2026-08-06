@@ -61,6 +61,16 @@ export interface SimulatorAnnualPassStateBindings {
   allocationTrack: Map<string, SimulatorAnnualPassAllocationTrackState>
   seppAmortAmount: Map<string, number>
   magiHistory: Map<number, number>
+  /**
+   * The two named-QCD donor ledgers. Both outlive a single year — the
+   * post-70½ deductible-contribution offset is cumulative over the donor's
+   * lifetime under Notice 2020-68, and a donor whose history became unprovable
+   * stays unprovable — but both are written *inside* the annual pass, so an
+   * attempt that is rolled back must not leave its consumption or its verdict
+   * standing for the next attempt to read.
+   */
+  namedQcdOffsetConsumedByDonor: Map<string, number>
+  namedQcdOffsetHistoryUnprovable: Set<string>
   warnings: Set<string>
   unassignedCash: SimulatorAnnualPassValueBinding<number>
   priorYearPortfolioReturnPct: SimulatorAnnualPassValueBinding<number>
@@ -145,6 +155,8 @@ interface AnnualPassSnapshot {
   allocationTrack: Array<[string, SimulatorAnnualPassAllocationTrackState]>
   seppAmortAmount: Array<[string, number]>
   magiHistory: Array<[number, number]>
+  namedQcdOffsetConsumedByDonor: Array<[string, number]>
+  namedQcdOffsetHistoryUnprovable: string[]
   warnings: string[]
   unassignedCash: number
   priorYearPortfolioReturnPct: number
@@ -270,6 +282,11 @@ function captureSnapshot(bindings: SimulatorAnnualPassStateBindings): AnnualPass
     allocationTrack: snapshotMap(bindings.allocationTrack, cloneAllocationTrackState),
     seppAmortAmount: snapshotMap(bindings.seppAmortAmount, (value) => value),
     magiHistory: snapshotMap(bindings.magiHistory, (value) => value),
+    namedQcdOffsetConsumedByDonor:
+      snapshotMap(bindings.namedQcdOffsetConsumedByDonor, (value) => value),
+    namedQcdOffsetHistoryUnprovable: [
+      ...bindings.namedQcdOffsetHistoryUnprovable,
+    ],
     warnings: [...bindings.warnings],
     unassignedCash: bindings.unassignedCash.read(),
     priorYearPortfolioReturnPct: bindings.priorYearPortfolioReturnPct.read(),
@@ -340,7 +357,16 @@ function restoreSnapshot(bindings: SimulatorAnnualPassStateBindings, snapshot: A
   restoreMap(bindings.allocationTrack, snapshot.allocationTrack, cloneAllocationTrackState)
   restoreMap(bindings.seppAmortAmount, snapshot.seppAmortAmount, (value) => value)
   restoreMap(bindings.magiHistory, snapshot.magiHistory, (value) => value)
+  restoreMap(
+    bindings.namedQcdOffsetConsumedByDonor,
+    snapshot.namedQcdOffsetConsumedByDonor,
+    (value) => value,
+  )
 
+  bindings.namedQcdOffsetHistoryUnprovable.clear()
+  for (const donorPersonId of snapshot.namedQcdOffsetHistoryUnprovable) {
+    bindings.namedQcdOffsetHistoryUnprovable.add(donorPersonId)
+  }
   bindings.warnings.clear()
   for (const warning of snapshot.warnings) bindings.warnings.add(warning)
 
