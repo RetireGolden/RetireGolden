@@ -88,6 +88,17 @@ import { isConvertibleToRoth } from '../strategies/accountEligibility.js'
  * A MILP winner is therefore refused here with a named issue rather than
  * promoted into evidence that could never be produced.
  *
+ * WHAT IT INHERITS AND CANNOT FIX. The policy's convertible set is
+ * `isConvertibleToRoth`, which admits every owned traditional account including
+ * an employer plan and applies no distributability gate --
+ * `irc-401-k-2-B-i-employer-plan-conversion-source-not-gated-by-distributability`,
+ * still `approximated`. Promotion raises the stakes on that record rather than
+ * changing it: the same ungated balance now appears as the named source account
+ * on an identity-bearing request instead of only inside a projection's
+ * aggregate arithmetic. The registry record names this module for that reason.
+ * A distributability gate belongs in `accountEligibility.ts`, where both
+ * callers would pick it up at once, and not here.
+ *
  * Two more identities the aggregate schedule does not carry and a request must:
  * the execution date is the last lawful day of the conversion year (see
  * `canonicalExecutionDate`), and the slot inside that day is numbered in
