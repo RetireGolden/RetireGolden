@@ -5175,7 +5175,10 @@ const registry = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-04',
-    implementedBy: ['packages/engine/src/projection/simulate.ts'],
+    implementedBy: [
+      'packages/engine/src/actions/aggregateRothConversionOwnerAllocation.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
   },
   'irc-408A-d-3-B-conversion-destination-must-be-a-roth-ira': {
     title: 'A conversion must land in a Roth IRA, never a designated Roth account',
@@ -5253,6 +5256,7 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-05',
     implementedBy: [
+      'packages/engine/src/actions/aggregateRothConversionOwnerAllocation.ts',
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/strategies/accountEligibility.ts',
     ],
@@ -5269,7 +5273,7 @@ const registry = {
   'irc-401-k-2-B-i-employer-plan-conversion-source-not-gated-by-distributability': {
     title: 'A pre-tax employer plan balance is treated as convertible without asking whether it may be distributed',
     statement:
-      'A qualified cash or deferred arrangement must provide that amounts attributable to the employee’s elective contributions are not distributable earlier than one of a closed list of events: severance from employment, death or disability, a 401(k)(10) event, the attainment of age 59½ in a profit-sharing or stock bonus plan, hardship, and three narrower cases. A conversion out of an employer plan is a qualified rollover contribution only under 408A(e)(1)(B)(ii), which admits it only if the rollover meets the requirements of section 402(c), 403(b)(8) or 457(e)(16) -- every one of which operates on a distribution. A balance the plan may not distribute therefore cannot be converted at all. Not modelled: isConvertibleToRoth admits every owned traditional account, employer plans included, and applies no distributability gate of any kind. The aggregate conversion path both weights an owner’s slice by that balance and drains it, so a participant who has neither separated from service nor reached 59½ is modelled converting a 401(k) balance they cannot move.',
+      'A qualified cash or deferred arrangement must provide that amounts attributable to the employee’s elective contributions are not distributable earlier than one of a closed list of events: severance from employment, death or disability, a 401(k)(10) event, the attainment of age 59½ in a profit-sharing or stock bonus plan, hardship, and three narrower cases. A conversion out of an employer plan is a qualified rollover contribution only under 408A(e)(1)(B)(ii), which admits it only if the rollover meets the requirements of section 402(c), 403(b)(8) or 457(e)(16) -- every one of which operates on a distribution. A balance the plan may not distribute therefore cannot be converted at all. Not modelled: isConvertibleToRoth admits every owned traditional account, employer plans included, and applies no distributability gate of any kind. The aggregate conversion path both weights an owner’s slice by that balance and drains it, so a participant who has neither separated from service nor reached 59½ is modelled converting a 401(k) balance they cannot move. The optimizer promotion chooser reads the same allocation, so the same ungated balance is now named as the source account on an identity-bearing conversion request rather than only inside a projection’s aggregate arithmetic — a higher bar, because a request is what a person would act on.',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'bothDirections',
@@ -5302,6 +5306,7 @@ const registry = {
     implementedBy: [
       'packages/engine/src/strategies/accountEligibility.ts',
       'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/projection/optimizerAggregateConversionPromotion.ts',
     ],
   },
 

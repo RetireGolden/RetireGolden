@@ -88,7 +88,6 @@ import {
   executeAnnualQcds,
   executeOrdinaryWithdrawals,
   executeRothConversions,
-  ledgerCentTotalToPlanDollars,
   ledgerCentsToPlanDollars,
   ordinaryWithdrawalPublicationEligibility,
   ordinaryWithdrawalPublicationSource,
@@ -110,9 +109,9 @@ import {
   type QualifiedCharitableDistributionRequest,
   type TaxableAccountOpeningSnapshot,
 } from '../actions/index.js'
+import { allocateAggregateRothConversionByOwner } from '../actions/aggregateRothConversionOwnerAllocation.js'
 import { addCalendarMonths } from '../actions/civilDate.js'
 import type { NonpersistedPriorQcdOffsetEvidence } from '../strategies/accountEligibility.js'
-import { exactCentLargestRemainderSlices } from '../actions/exactCentProRata.js'
 import { compareUtf16CodeUnits } from '../actions/structuralId.js'
 import { seppSeriesBeginsAfterSeparation } from '../actions/traditionalEmployerPlanPenaltyPrerequisite.js'
 import { type SimulatorAnnualRetirementRuntimeOccurrence } from './annualRetirementRuntimeJournal.js'
@@ -4634,121 +4633,43 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         }
       }
       if (desired > 0.01) {
-        const rothAccounts = balances.filter((b): b is BalanceState & {
-          account: Extract<Account, { type: 'roth' }>
-        } => b.account.type === 'roth')
-        // Only a Roth IRA can receive these dollars. For an IRA source the
-        // statute decides it: 408A(d)(3)(B) applies the conversion paragraph
-        // to an amount contributed to a Roth IRA, and the one route into a
-        // designated Roth account -- 402A(c)(4)(B) -- reaches only a
-        // distribution from the plan that maintains the account, which an IRA
-        // never is. The drain below also takes employer traditional balances,
-        // where that in-plan route exists in law, but the Plan schema records
-        // no plan identity linking an employer traditional account to an
-        // employer Roth account, so "the same plan" cannot be established and
-        // a Roth IRA is the only destination whose lawfulness is verifiable.
-        // The wider list survives the filter because the two reasons a person
-        // can lack a destination read differently to them: no Roth at all,
-        // against a Roth that sits where this conversion cannot go.
-        const rothDestinations = rothAccounts.filter((b) => b.account.kind === 'ira')
-        if (rothDestinations.length === 0) {
-          warnings.add(rothAccounts.length === 0
+        // A conversion is a rollover inside one individual's own accounts:
+        // IRC 408(d)(3)(A)(i) admits it only where the amount is paid out of
+        // the account maintained for an individual and paid into an account
+        // for the benefit of that same individual, and 408A(d)(3)(B) imposes
+        // the same identity requirement on conversions directly. Who converts
+        // how much, out of which account and into which, is decided by one
+        // shared policy module -- the same one the optimizer's promotion
+        // chooser reads, so a promoted schedule cannot allocate by a different
+        // rule than the ledger executes. The snapshot it weights owners by is
+        // `balances` as they stand here: after the RMD block (Treas. Reg.
+        // 1.408A-4 A-6(b) requires the forced distribution to precede the
+        // conversion) and before anything below reduces `state.balance`.
+        const allocation = allocateAggregateRothConversionByOwner({
+          balances,
+          desiredPlanDollars: desired,
+          primaryPersonId: primary.id,
+        })
+        if (allocation.status === 'refused') {
+          warnings.add(allocation.reason === 'householdHoldsNoRothAccount'
             ? 'Roth conversions were requested but the plan has no Roth account; conversions skipped.'
             : 'Roth conversions were requested but every Roth account in the plan sits inside an employer plan, ' +
               'and a Roth conversion here can land only in a Roth IRA; conversions skipped.')
         } else {
-          // A conversion is a rollover inside one individual's own accounts:
-          // IRC 408(d)(3)(A)(i) admits it only where the amount is paid out of
-          // the account maintained for an individual and paid into an account
-          // for the benefit of that same individual, and 408A(d)(3)(B) imposes
-          // the same identity requirement on conversions directly. The
-          // household target is therefore sliced by owner and each slice is
-          // drained, credited, and layered against that owner's own Roth IRA.
-          // An owner with no Roth IRA of their own converts nothing.
-          const ownerOf = (account: Account): string =>
-            account.ownerPersonId ?? primary.id
-          // Weight snapshot: gross convertible balance per owner, read here
-          // because this is after the RMD block (Treas. Reg. 1.408A-4 A-6(b)
-          // requires the forced distribution to precede the conversion) and
-          // before the drain loop below reduces `state.balance`. Reading it
-          // mid-loop would weight each owner by whatever the earlier owners
-          // happened to leave behind. The weight is gross balance and not the
-          // taxable fraction: what an owner may convert is limited by what
-          // they hold, not by how much of it is pre-tax.
-          const convertibleWeightByOwner = new Map<string, number>()
-          for (const state of balances) {
-            // Inherited accounts follow the 10-year rule and can't be
-            // converted. `isConvertibleToRoth` also admits employer
-            // traditional plans, which is deliberately a wider set than the
-            // Form 8606 basis pool (`isAggregatedIra`, IRAs only): it is the
-            // set the drain loop actually takes from, so it is the set the
-            // weight has to be built from.
-            if (!isConvertibleToRoth(state.account) || state.balance <= 0) continue
-            const ownerId = ownerOf(state.account)
-            convertibleWeightByOwner.set(
-              ownerId,
-              (convertibleWeightByOwner.get(ownerId) ?? 0) + state.balance,
-            )
+          // An owner the policy trimmed converts nothing, and the two reasons
+          // it can trim for read differently to the person: no Roth at all,
+          // against a Roth that sits where this conversion cannot go.
+          for (const trim of allocation.trims) {
+            const ownerName = personById.get(trim.ownerPersonId)?.name ?? trim.ownerPersonId
+            warnings.add(trim.reason === 'ownerHoldsOnlyEmployerDesignatedRoth'
+              ? `${ownerName}’s only Roth account is inside an employer plan, and this Roth ` +
+                `conversion can land only in ${ownerName}’s own Roth IRA, so ${ownerName}’s share ` +
+                'was skipped. ' +
+                `Opening a Roth IRA for ${ownerName} would let that share convert.`
+              : `${ownerName} has no Roth account, so ${ownerName}’s share of the Roth conversion was skipped — ` +
+                'a conversion has to land in the same person’s own Roth. ' +
+                `Opening a Roth IRA for ${ownerName} would let that share convert.`)
           }
-          const destinationByOwner = new Map<string, BalanceState>()
-          for (const state of rothDestinations) {
-            const ownerId = ownerOf(state.account)
-            if (!destinationByOwner.has(ownerId)) destinationByOwner.set(ownerId, state)
-          }
-          // Which of the two trim reasons applies to an owner the search found
-          // no destination for.
-          const rothHolders = new Set(rothAccounts.map((state) => ownerOf(state.account)))
-          // Insertion order is the Plan position of each owner's first
-          // convertible account, which is the order the drain loop visits them
-          // in and the order the exact-cent slices are allocated in.
-          const sliceOwners = [...convertibleWeightByOwner.keys()]
-          // A household with one convertible owner has nothing to split, and
-          // its slice is the sized amount itself. Routing it through cents
-          // anyway would quantize a target the sizer produced in raw Plan
-          // dollars, changing an answer the owner boundary has no quarrel
-          // with. Only a genuine split pays that price, and there it buys the
-          // exactness: the parts sum to the whole with no floating-point
-          // residue deciding whose dollars move.
-          const sliceDollars = sliceOwners.length <= 1
-            ? [desired]
-            : exactCentLargestRemainderSlices(
-              BigInt(planDollarsToLedgerCents(desired)),
-              sliceOwners.map((ownerId) => BigInt(planDollarsToLedgerCents(
-                convertibleWeightByOwner.get(ownerId)!,
-              ))),
-            ).map((slice) => ledgerCentTotalToPlanDollars(slice))
-          const remainingByOwner = new Map<string, number>()
-          for (let index = 0; index < sliceOwners.length; index += 1) {
-            const ownerId = sliceOwners[index]!
-            if (!destinationByOwner.has(ownerId)) {
-              const ownerName = personById.get(ownerId)?.name ?? ownerId
-              warnings.add(rothHolders.has(ownerId)
-                ? `${ownerName}’s only Roth account is inside an employer plan, and this Roth ` +
-                  `conversion can land only in ${ownerName}’s own Roth IRA, so ${ownerName}’s share ` +
-                  'was skipped. ' +
-                  `Opening a Roth IRA for ${ownerName} would let that share convert.`
-                : `${ownerName} has no Roth account, so ${ownerName}’s share of the Roth conversion was skipped — ` +
-                  'a conversion has to land in the same person’s own Roth. ' +
-                  `Opening a Roth IRA for ${ownerName} would let that share convert.`)
-              continue
-            }
-            remainingByOwner.set(ownerId, sliceDollars[index]!)
-          }
-          // What the household's convertible balances were asked to produce.
-          // Trimmed slices are excluded: an owner who cannot convert for want
-          // of a Roth is not a shortfall against anyone's balance, and saying
-          // so would answer the wrong question with the wrong fix.
-          //
-          // With no convertible owner at all there is nothing to sum and no
-          // owner to name, so the whole request is what the balances failed to
-          // meet. Summing an empty slice set to zero instead would make the
-          // reduction test `0 < -0.01` and leave a requested conversion that
-          // moved nothing entirely silent -- which is what the aggregate path
-          // did before this owner slice, warning against `desired` directly.
-          const convertibleTarget = sliceOwners.length === 0
-            ? desired
-            : [...remainingByOwner.values()]
-              .reduce((total, slice) => total + slice, 0)
           interface OwnerConversionCredit {
             readonly producerOccurrenceKeys: string[]
             readonly sourceOwnerPersonIds: Array<string | null>
@@ -4758,30 +4679,23 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           }
           const creditByOwner = new Map<string, OwnerConversionCredit>()
           let ownedIraConversionCaptured = false
-          for (const state of balances) {
-            if (!isConvertibleToRoth(state.account)) continue
-            const ownerId = ownerOf(state.account)
-            const ownerRemaining = remainingByOwner.get(ownerId) ?? 0
-            if (ownerRemaining <= 0) continue
-            const take = Math.min(state.balance, ownerRemaining)
-            // The same discharge the forced distributions and the aggregate
-            // gift apply. A source holding a residue the exact-cent ledger
-            // cannot express passes `take <= 0` and would convert it, which
-            // journals a `legacyRothConversion` occurrence for a gross that
-            // rounds to nothing -- and the runtime source series admits no such
-            // occurrence, so the year refuses and the annual exact-basis
-            // settlement rolls back for as long as the residue survives.
-            // Skipped whole: no movement, no occurrence, no destination credit
-            // to reconcile against a debit that never happened.
-            if (take <= 0 || planDollarsMoveNoLedgerCent(take)) continue
-            const destination = destinationByOwner.get(ownerId)!
+          // The policy decided every one of these movements, in Plan account
+          // order -- a single pass, not grouped by owner, because that is the
+          // order the ledger has always visited its balances in and the order
+          // the runtime journal records them in.
+          for (const draw of allocation.draws) {
+            const state = draw.sourceState
+            const sourceAccount = draw.sourceAccount
+            const destinationAccount = draw.destination.destinationAccount
+            const ownerId = draw.ownerPersonId
+            const take = draw.amountPlanDollars
             const sourceBalanceBefore = state.balance
             state.balance -= take
             const kind = 'legacyRothConversion' as const
             const producerOccurrenceKey = runtimeOccurrenceKey(
               kind,
-              state.account.id,
-              destination.account.id,
+              sourceAccount.id,
+              destinationAccount.id,
             )
             const credit = creditByOwner.get(ownerId) ?? {
               producerOccurrenceKeys: [],
@@ -4790,38 +4704,37 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
               nontaxablePlanDollars: 0,
             }
             credit.producerOccurrenceKeys.push(producerOccurrenceKey)
-            credit.sourceOwnerPersonIds.push(state.account.ownerPersonId)
+            credit.sourceOwnerPersonIds.push(sourceAccount.ownerPersonId)
             credit.convertedPlanDollars += take
             creditByOwner.set(ownerId, credit)
             recordAnnualRetirementRuntimeOccurrence({
               producerOccurrenceKey,
               kind,
               grossAmountPlanDollars: take,
-              ownerPersonId: state.account.ownerPersonId,
-              sourceAccountId: state.account.id,
+              ownerPersonId: sourceAccount.ownerPersonId,
+              sourceAccountId: sourceAccount.id,
               executionDate: null,
               executionSequence: null,
               movementAuthorityId: null,
             })
             let ownedIraApplication:
               SimulatorRetirementRuntimeApplication | null = null
-            if (isAggregatedIra(state.account)) {
+            if (isAggregatedIra(sourceAccount)) {
               ownedIraConversionCaptured = true
               ownedIraApplication = recordAnnualRetirementRuntimeApplication({
                 applicationKind: 'debit',
                 producerOccurrenceKey,
                 simulatorPhase: 'legacyRothConversion',
-                ownerPersonId: state.account.ownerPersonId,
-                sourceAccountId: state.account.id,
+                ownerPersonId: sourceAccount.ownerPersonId,
+                sourceAccountId: sourceAccount.id,
                 sourceBalanceBeforePlanDollars: sourceBalanceBefore,
                 appliedAmountPlanDollars: take,
                 sourceBalanceAfterPlanDollars: state.balance,
               })
             }
-            remainingByOwner.set(ownerId, ownerRemaining - take)
             // Pro-rata return of basis on converted IRA dollars (step 5): the
             // basis portion moves to Roth without creating ordinary income.
-            if (state.account.kind === 'ira') {
+            if (sourceAccount.kind === 'ira') {
               const proRata = iraProRata.get(ownerId)
               if (proRata &&
                   ownedIraApplication?.applicationKind === 'debit') {
@@ -4830,7 +4743,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
                   calculationScope: 'form8606Line8NetConversions',
                   occurrenceKind: 'legacyRothConversion',
                   producerOccurrenceKey,
-                  sourceAccountId: state.account.id,
+                  sourceAccountId: sourceAccount.id,
                   mutationOrdinal: ownedIraApplication.mutationOrdinal,
                 })
                 iraProRata.set(ownerId, split.next)
@@ -4849,13 +4762,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           // the destinations. Only an owner's own first Plan Roth IRA is
           // credited, so a second Roth IRA belonging to the same owner is
           // skipped here rather than credited twice.
-          for (const destination of rothDestinations) {
-            const ownerId = ownerOf(destination.account)
-            if (destinationByOwner.get(ownerId) !== destination) continue
-            const credit = creditByOwner.get(ownerId)
+          for (const destination of allocation.destinations) {
+            const destinationState = destination.destinationState
+            const destinationAccount = destination.destinationAccount
+            const credit = creditByOwner.get(destination.ownerPersonId)
             if (credit === undefined || credit.convertedPlanDollars <= 0) continue
-            const destinationBalanceBefore = destination.balance
-            destination.balance += credit.convertedPlanDollars
+            const destinationBalanceBefore = destinationState.balance
+            destinationState.balance += credit.convertedPlanDollars
             if (ownedIraConversionCaptured) {
               recordAnnualRetirementRuntimeApplication({
                 applicationKind: 'aggregateRothDestinationCredit',
@@ -4868,12 +4781,12 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
                 sourceBalanceAfterPlanDollars: null,
                 producerOccurrenceKeys: credit.producerOccurrenceKeys,
                 sourceOwnerPersonIds: credit.sourceOwnerPersonIds,
-                destinationRothAccountId: destination.account.id,
-                destinationOwnerPersonId: destination.account.ownerPersonId,
+                destinationRothAccountId: destinationAccount.id,
+                destinationOwnerPersonId: destinationAccount.ownerPersonId,
                 destinationBalanceBeforePlanDollars: destinationBalanceBefore,
                 destinationCreditedAmountPlanDollars:
                   credit.convertedPlanDollars,
-                destinationBalanceAfterPlanDollars: destination.balance,
+                destinationBalanceAfterPlanDollars: destinationState.balance,
               })
             }
             // Converted principal starts its own 5-year recapture clock (the
@@ -4884,7 +4797,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             // The layer is pushed per owner because the clock runs on the
             // person whose Roth holds it.
             if (credit.convertedPlanDollars > 0.01) {
-              const rb = rothBasis.get(rothPoolKey(destination.account))
+              const rb = rothBasis.get(rothPoolKey(destinationAccount))
               if (rb) {
                 rb.conversionLayers.push({
                   year,
@@ -4904,7 +4817,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           // out within a cent of its slice, neither of which is worth telling
           // anyone about. Above it, the enclosing `desired > 0.01` guarantees
           // the no-balance case clears the threshold and speaks.
-          if (rothConversion < convertibleTarget - 0.01) {
+          if (rothConversion < allocation.convertibleTargetPlanDollars - 0.01) {
             warnings.add('A requested Roth conversion exceeded the available traditional balance and was reduced.')
           }
         }
