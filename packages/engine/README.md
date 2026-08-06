@@ -44,15 +44,6 @@ Source of truth: [github.com/RetireGolden/RetireGolden](https://github.com/Retir
   opening, year-end, annual basis/line-7, line-8, and exact alive evidence. It
   remains pure and noncommitting: every result keeps movement uncommitted and
   actionability unestablished.
-- `executePlanOwnedNonRothIraAnnualWithdrawals` is the separate pure commit
-  boundary for that Plan-owned batch. It reruns the coordinator rather than
-  accepting a caller-authored coordinated result, passes every blocking arm
-  through unchanged, turns an all-zero batch into explicit non-actionable
-  refusals, and commits exact opening-to-closing cents only when annual
-  character and final penalty evidence are bound. Committed actions preserve
-  scheduled versus executed dates and publish normative dispositions,
-  per-allocation tax character and penalty evidence, and one collision-checked
-  structural execution ID. This API is not wired into the annual simulator.
 - `buildAnnualRetirementPhysicalEventInventory` is the pure chronology boundary
   in front of future simulator integration. It derives traditional-account Plan
   action allocations internally and exact-rejoins a complete Plan/year/ledger-run
@@ -87,22 +78,6 @@ Source of truth: [github.com/RetireGolden/RetireGolden](https://github.com/Retir
   transitions apply only to a detached snapshot: movement and actionability
   remain unestablished, and it publishes no December 31, tax, penalty, basis,
   or finalization claim.
-- `executePlanOwnedNonRothIraAnnualPostCandidate` is the matching pure commit
-  binder. It rebuilds that evidence, reruns the candidate-level annual
-  finalizer, exact-rejoins caller-supplied reconciliation and finalization, and
-  publishes committed/refused evidence from the already-applied candidate. It
-  never stages or applies a second balance delta and remains outside projection.
-- `probePlanOwnedNonRothIraAnnualPass` is the nonmoving annual transaction-control
-  boundary. It exact-rejoins a speculative movement with the truthful completed
-  PR107 inventory, internally builds the PR105 snapshot and finalization, and
-  invokes PR106 without applying a second delta. Its structurally bound pass
-  envelope owns the canonical assumptions and December 31 pool observation.
-  Exact effects return commit-ready or settled-no-movement control, valid
-  economic changes return reprobe, and incompatible or stale evidence rolls
-  back. A stable control binding is exposed for a later atomic consumer; this
-  boundary does not itself mutate simulator state. Caller penalty facts are
-  allow-listed planning evidence, not independent Plan, filing, or custodian
-  authority.
 - Parameters (tax brackets, limits, SSA tables, Medicare/FPL) are versioned
   data packs under `params/`, with provenance.
 

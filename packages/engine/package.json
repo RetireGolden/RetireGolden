@@ -155,10 +155,6 @@
       "types": "./dist/actions/ownedNonRothIraAnnualCandidateTransaction.d.ts",
       "default": "./dist/actions/ownedNonRothIraAnnualCandidateTransaction.js"
     },
-    "./actions/ownedNonRothIraAnnualExecution": {
-      "types": "./dist/actions/ownedNonRothIraAnnualExecution.d.ts",
-      "default": "./dist/actions/ownedNonRothIraAnnualExecution.js"
-    },
     "./actions/ownedNonRothIraAnnualFilingEvidence": {
       "types": "./dist/actions/ownedNonRothIraAnnualFilingEvidence.d.ts",
       "default": "./dist/actions/ownedNonRothIraAnnualFilingEvidence.js"
@@ -171,10 +167,6 @@
       "types": "./dist/actions/ownedNonRothIraAnnualFinalization.d.ts",
       "default": "./dist/actions/ownedNonRothIraAnnualFinalization.js"
     },
-    "./actions/ownedNonRothIraAnnualPassProbe": {
-      "types": "./dist/actions/ownedNonRothIraAnnualPassProbe.d.ts",
-      "default": "./dist/actions/ownedNonRothIraAnnualPassProbe.js"
-    },
     "./actions/ownedNonRothIraAnnualPlanCoordinator": {
       "types": "./dist/actions/ownedNonRothIraAnnualPlanCoordinator.d.ts",
       "default": "./dist/actions/ownedNonRothIraAnnualPlanCoordinator.js"
@@ -182,10 +174,6 @@
     "./actions/ownedNonRothIraAnnualPostCandidateEvidence": {
       "types": "./dist/actions/ownedNonRothIraAnnualPostCandidateEvidence.d.ts",
       "default": "./dist/actions/ownedNonRothIraAnnualPostCandidateEvidence.js"
-    },
-    "./actions/ownedNonRothIraAnnualPostCandidateExecution": {
-      "types": "./dist/actions/ownedNonRothIraAnnualPostCandidateExecution.d.ts",
-      "default": "./dist/actions/ownedNonRothIraAnnualPostCandidateExecution.js"
     },
     "./actions/ownedNonRothIraMovementCandidate": {
       "types": "./dist/actions/ownedNonRothIraMovementCandidate.d.ts",

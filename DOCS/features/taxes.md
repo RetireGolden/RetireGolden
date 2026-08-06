@@ -380,16 +380,6 @@ rules and citations: [domain rules §16](../domain/domain-rules-reference.md#16-
   and exact alive evidence before staging. The boundary derives annual totals internally, but every
   arm still reports `movement: notCommitted` and `actionability: notEstablished`; it neither commits
   movement nor supplies execution or simulation authority.
-  The separate pure `executePlanOwnedNonRothIraAnnualWithdrawals` API reruns that complete Plan-owned
-  coordinator input instead of accepting a forgeable coordinated result. Coordinator blocking arms remain
-  unchanged. An all-zero batch becomes established, normative refusals with unchanged balances and null
-  executed dates, while only a bound annual result can commit exact opening-to-closing cents and report
-  `actionability: established`. The committed result rejoins every positive allocation to its annual tax
-  character and penalty coverage, plus a final penalty evaluation only when its ordinary-income exposure
-  is positive; preserves scheduled dates for all actions but
-  reports executed dates only for positive movement; and publishes one collision-checked structural
-  execution ID with the upstream Plan/coordinator IDs still visible. This standalone commit API is not
-  integrated into projection simulation and does not prove custodian settlement or filing-grade treatment.
   The pure `buildAnnualRetirementPhysicalEventInventory` API now creates the complete chronology input
   required before that authority can be integrated. It derives Plan traditional-account allocations and
   combines them with an exact Plan/year/ledger-run runtime inventory for RMD, automatic SEPP, legacy

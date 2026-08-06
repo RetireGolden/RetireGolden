@@ -81,9 +81,6 @@ const ownedIraCandidateTransactionDeepApi = await import(
 const ownedIraPlanCoordinatorDeepApi = await import(
   '@retiregolden/engine/actions/ownedNonRothIraAnnualPlanCoordinator'
 )
-const ownedIraAnnualExecutionDeepApi = await import(
-  '@retiregolden/engine/actions/ownedNonRothIraAnnualExecution'
-)
 const ownedIraAnnualFilingEvidenceDeepApi = await import(
   '@retiregolden/engine/actions/ownedNonRothIraAnnualFilingEvidence'
 )
@@ -110,12 +107,6 @@ assert.equal(
 const ownedIraPostCandidateEvidenceDeepApi = await import(
   '@retiregolden/engine/actions/ownedNonRothIraAnnualPostCandidateEvidence'
 )
-const ownedIraPostCandidateExecutionDeepApi = await import(
-  '@retiregolden/engine/actions/ownedNonRothIraAnnualPostCandidateExecution'
-)
-const ownedIraAnnualPassProbeDeepApi = await import(
-  '@retiregolden/engine/actions/ownedNonRothIraAnnualPassProbe'
-)
 const canonicalActionDeepImports = [
   'annualHsaOpeningAuthority',
   'annualHsaPenaltyEvaluation',
@@ -138,13 +129,10 @@ const canonicalActionDeepImports = [
   'money',
   'ownedNonRothIraAnnualCandidateCoordinator',
   'ownedNonRothIraAnnualCandidateTransaction',
-  'ownedNonRothIraAnnualExecution',
   'ownedNonRothIraAnnualFilingEvidence',
   'ownedNonRothIraAnnualFilingSourceResolver',
   'ownedNonRothIraAnnualPlanCoordinator',
   'ownedNonRothIraAnnualPostCandidateEvidence',
-  'ownedNonRothIraAnnualPostCandidateExecution',
-  'ownedNonRothIraAnnualPassProbe',
   'ownedNonRothIraAnnualFinalization',
   'ownedNonRothIraMovementCandidate',
   'ownedNonRothIraPenaltyPrerequisite',
@@ -188,7 +176,6 @@ const {
   buildAnnualRetirementPhysicalEventInventory,
   buildPlanOwnedNonRothIraAnnualFilingEvidence,
   buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput,
-  buildCompletePlanOwnedNonRothIraAnnualPassEvidence,
   classifyOwnedNonRothIraAnnualWithdrawals,
   classifyIndividuallyOwnedTaxableWithdrawal,
   coordinateOwnedNonRothIraAnnualWithdrawalCandidate,
@@ -197,13 +184,10 @@ const {
   executeCashOrdinaryWithdrawals,
   executeOrdinaryWithdrawals,
   executeRothConversions,
-  executePlanOwnedNonRothIraAnnualPostCandidate,
-  executePlanOwnedNonRothIraAnnualWithdrawals,
   ledgerCentsToPlanDollars,
   parseRetirementActionRequest,
   planDollarsToLedgerCents,
   preparePlanOwnedNonRothIraAnnualCandidateTransaction,
-  probePlanOwnedNonRothIraAnnualPass,
   rothConversionPublicationEligibility,
   rothConversionPublicationSource,
   resolveOwnedNonRothIraAnnualWithdrawalEvidence,
@@ -262,15 +246,6 @@ assert.equal(
   decisionsApi.adaptFillTargetRothConversionGeneratorCandidate,
 )
 assert.equal(
-  ownedIraAnnualPassProbeDeepApi
-    .buildCompletePlanOwnedNonRothIraAnnualPassEvidence,
-  buildCompletePlanOwnedNonRothIraAnnualPassEvidence,
-)
-assert.equal(
-  ownedIraAnnualPassProbeDeepApi.probePlanOwnedNonRothIraAnnualPass,
-  probePlanOwnedNonRothIraAnnualPass,
-)
-assert.equal(
   ownedIraAnnualFilingEvidenceDeepApi
     .buildPlanOwnedNonRothIraAnnualFilingEvidence,
   buildPlanOwnedNonRothIraAnnualFilingEvidence,
@@ -300,11 +275,6 @@ assert.equal(
   coordinatePlanOwnedNonRothIraAnnualWithdrawalCandidate,
 )
 assert.equal(
-  ownedIraAnnualExecutionDeepApi
-    .executePlanOwnedNonRothIraAnnualWithdrawals,
-  executePlanOwnedNonRothIraAnnualWithdrawals,
-)
-assert.equal(
   annualRetirementInventoryDeepApi
     .buildAnnualRetirementPhysicalEventInventory,
   buildAnnualRetirementPhysicalEventInventory,
@@ -313,11 +283,6 @@ assert.equal(
   ownedIraPostCandidateEvidenceDeepApi
     .buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput,
   buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput,
-)
-assert.equal(
-  ownedIraPostCandidateExecutionDeepApi
-    .executePlanOwnedNonRothIraAnnualPostCandidate,
-  executePlanOwnedNonRothIraAnnualPostCandidate,
 )
 const moneyDeepApi = await import('@retiregolden/engine/actions/money')
 const {
