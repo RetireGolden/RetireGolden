@@ -102,13 +102,64 @@ export type RothConversionAllocationExecutionEvidence =
   | Readonly<RothConversionStagedAllocationExecutionEvidence>
   | Readonly<RothConversionExecutedAllocationExecutionEvidence>
 
+/**
+ * What a conversion's tax funding did, in the vocabulary this executor
+ * publishes.
+ *
+ * The specification this implements names four arms — `funded`, `unavailable`,
+ * `canceled`, `notRequired` — and none of the four values overlaps the three
+ * that shipped. The shipped vocabulary wins, because it is the one the
+ * publication invariants already check and the one every serialized record
+ * already carries; two of the specification's arms are the shipped names for
+ * the same states (`unavailable` is `unsupported`, `notRequired` is
+ * `notExpected`), and the two that are genuinely missing are added here rather
+ * than renaming anything.
+ *
+ * - `unsupported` — this executor cannot state what was required or paid.
+ * - `notExpected` — the request names no funding, so nothing is owed.
+ * - `externallyAttested` — funded from outside the plan, on the household's
+ *   attestation.
+ * - `funded` — the required amount was computed and the funding met it. **No
+ *   producer.** Reaching it means a linked withdrawal moved beside its
+ *   conversion, which is the movement the group disposition still refuses.
+ * - `canceled` — the funding group aborted because a peer conversion in the
+ *   same filing unit and year was non-actionable. **No producer.** The annual
+ *   group that gives "peer" a meaning exists as of this slice, but a
+ *   cancellation is a statement about a group that was going to move.
+ *
+ * The last two are landed as types ahead of their producers deliberately. The
+ * alternative is that the slice which opens the gate widens this union in the
+ * same diff that moves the dollars, and a reviewer of that diff then has to
+ * decide a vocabulary question and a money question at once.
+ */
 export interface RothConversionTaxFundingExecutionEvidence {
   kind: RothConversionRequest['taxFunding']['kind']
-  status: 'unsupported' | 'notExpected' | 'externallyAttested'
+  status:
+    | 'unsupported'
+    | 'notExpected'
+    | 'externallyAttested'
+    | 'funded'
+    | 'canceled'
   requiredFundingAmount: number | null
   fundedAmount: number | null
   evidenceId: string | null
 }
+
+/**
+ * The funding statuses a committed conversion may publish.
+ *
+ * Named positively rather than left as "anything but `unsupported`". A negative
+ * test admits every arm added later by default, which is how `canceled` would
+ * have become a lawful accompaniment to a conversion that moved.
+ */
+export const committedRothConversionTaxFundingStatuses = [
+  'notExpected',
+  'externallyAttested',
+  'funded',
+] as const
+
+export type CommittedRothConversionTaxFundingStatus =
+  (typeof committedRothConversionTaxFundingStatuses)[number]
 
 interface RothConversionExecutionEvidenceBase {
   actionId: string

@@ -574,11 +574,17 @@ describe('counterfactual annual pass, against the real annual pass', () => {
     const committedYear = committed.years[0]!
     const counterfactualYear = controller.observations[0]!.counterfactualYear
 
-    // Today both legs refuse as a group, which is what makes the pair real.
+    // Both legs still refuse as a group, which is what makes the pair real.
+    // The code they refuse under follows the run rather than the pair: this
+    // projection's own group executor reads a baseline liability for the year,
+    // so the refusal is on the merits and carries the refused-classified
+    // `unallocated` rather than the unsupported-classified
+    // `evidence-unsupported`. Nothing about the amounts moved.
     expect(ordinaryDisposition(committedYear, FUNDING_WITHDRAWAL_ACTION_ID))
       .toMatchObject({
-        outcome: 'unsupported',
-        reasons: [{ code: 'conversion-tax-funding-evidence-unsupported' }],
+        outcome: 'refused',
+        executedAmount: 0,
+        reasons: [{ code: 'conversion-tax-funding-unallocated' }],
       })
 
     // The counterfactual ran to completion rather than throwing inside the

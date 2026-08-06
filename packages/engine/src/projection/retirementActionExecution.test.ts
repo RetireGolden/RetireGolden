@@ -797,19 +797,36 @@ describe('retirement-action ordinary-withdrawal execution in the annual ledger',
     const evidence = year.retirementActionExecution?.evidence
 
     expect(evidence).toHaveLength(1)
+    // The group refuses, and it now refuses on the merits: the year's group
+    // executor read a baseline annual liability for this filing unit, so the
+    // required funding amount was computable and the withdrawal simply did not
+    // fund it. That is `conversion-tax-funding-unallocated`, classified
+    // `refused`, rather than the `unsupported` code a run with no baseline
+    // still carries. No amount moved on either leg.
     expect(evidence?.find((entry) => entry.actionId === 'tax-funding')).toMatchObject({
       disposition: {
-        outcome: 'unsupported',
+        outcome: 'refused',
         executedAmount: 0,
-        reasons: [{ code: 'conversion-tax-funding-evidence-unsupported' }],
+        reasons: [{ code: 'conversion-tax-funding-unallocated' }],
       },
     })
+    // The conversion's own outcome stays `unsupported`, and that is not the
+    // funding reason lagging behind: this conversion's IRA subtype is also
+    // unproven, and one unsupported reason among several is what makes a record
+    // unsupported. The funding half of it did move to the refused code.
     expect(year.rothConversionActionExecution?.evidence).toEqual([
       expect.objectContaining({
         actionId: 'conversion',
         outcome: 'unsupported',
         readiness: 'nonActionable',
         executedAmount: 0,
+        reasons: [
+          expect.objectContaining({ code: 'conversion-ira-subtype-unknown' }),
+          expect.objectContaining({
+            code: 'conversion-tax-funding-unallocated',
+            outcome: 'refused',
+          }),
+        ],
       }),
     ])
     expect(year.rothConversionActionExecution).toMatchObject({

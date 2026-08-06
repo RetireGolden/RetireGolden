@@ -225,17 +225,40 @@ function addExactCents(left: ExactCents, right: ExactCents): ExactCents {
   }
 }
 
-/** The exact tax-and-penalty total, with each half converted before the sum. */
-function liabilityFromYearResult(
-  yearResult: Readonly<CounterfactualAnnualPassLiabilityFigures>,
+/**
+ * The exact tax-and-penalty total a completed annual pass stands for, with each
+ * half converted before the sum and nothing rounded.
+ *
+ * Exported because the *committed* run's liability has to be read the same way
+ * this module reads a counterfactual's, and the two figures are subtracted from
+ * each other. Two conversions of a plan dollar into exact cents that agreed
+ * almost always would be worse than one that is simply shared: the residue of
+ * their disagreement would land in the group's required funding amount, where
+ * it is indistinguishable from a real cent of tax.
+ *
+ * Null rather than a throw for a negative, non-finite, or unspellable figure,
+ * because the caller is inside a projection year that must fail closed.
+ */
+export function exactAnnualLiabilityFromPlanDollars(
+  taxPlanDollars: number,
+  penaltiesPlanDollars: number,
 ): Readonly<ConversionTaxFundingExactCentAmount> | null {
-  const tax = exactCentsFromPlanDollars(yearResult.tax)
-  const penalties = exactCentsFromPlanDollars(yearResult.penalties)
+  const tax = exactCentsFromPlanDollars(taxPlanDollars)
+  const penalties = exactCentsFromPlanDollars(penaltiesPlanDollars)
   if (tax === null || penalties === null) return null
   const total = addExactCents(tax, penalties)
   return reducedConversionTaxFundingExactCentAmount(
     total.numerator,
     total.denominator,
+  )
+}
+
+function liabilityFromYearResult(
+  yearResult: Readonly<CounterfactualAnnualPassLiabilityFigures>,
+): Readonly<ConversionTaxFundingExactCentAmount> | null {
+  return exactAnnualLiabilityFromPlanDollars(
+    yearResult.tax,
+    yearResult.penalties,
   )
 }
 

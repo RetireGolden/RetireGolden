@@ -938,6 +938,74 @@ function buildRetirementActionScheduleState(
 }
 
 /**
+ * One request's place in a merged annual schedule.
+ *
+ * `effectiveDate` is the date the schedule actually ordered by, which is not
+ * always the request's own: an undated ordinary withdrawal is lawful and lands
+ * at the year's last day, while an undated conversion has no effective date at
+ * all. `order` is one-based over the merged set.
+ */
+export interface MergedRetirementActionSchedulePosition {
+  readonly actionId: ActionId
+  readonly kind: RetirementActionRequest['kind']
+  readonly scheduledDate: string | null
+  readonly effectiveDate: string | null
+  readonly executionSequence: number | null
+  readonly scheduleValid: boolean
+  readonly order: number
+}
+
+export interface MergedRetirementActionSchedule {
+  readonly orderingSource: 'mergedRetirementActionSchedule'
+  readonly positions: readonly Readonly<MergedRetirementActionSchedulePosition>[]
+  readonly scheduleIssues: readonly OrdinaryWithdrawalExecutionScheduleIssue[]
+}
+
+/**
+ * The positions a set of requests would occupy if one schedule ordered all of
+ * them, whatever executor each of them belongs to.
+ *
+ * Both exact executors already sort through `buildRetirementActionScheduleState`
+ * — the ordinary one iterates it directly, the conversion one through
+ * `evaluateRetirementActionSchedule` — but each sees only its own kind, so
+ * neither can say where a conversion sits relative to the withdrawal that funds
+ * it. A group that must move as one transaction needs exactly that, and it
+ * needs it from the same sort rather than from a second one that could disagree.
+ * So this is one call to the shared builder over the merged set, reporting
+ * where each request landed.
+ *
+ * It answers an ordering question and nothing else. Nothing here decides
+ * whether a request may move, and a caller that reads a position as permission
+ * has misread it: an invalid schedule is reported as a position too, because
+ * "this leg is not well scheduled" is the answer that refuses the group.
+ */
+export function mergedRetirementActionSchedule(
+  year: number,
+  inputRequests: readonly RetirementActionRequest[],
+): Readonly<MergedRetirementActionSchedule> {
+  const requests = inputRequests.map((request) =>
+    retirementActionRequestSchema.parse(request),
+  )
+  if (!Number.isSafeInteger(year) || year < 1 || year > 9999) {
+    throw new RangeError('Execution year must be a four-digit positive calendar year')
+  }
+  const state = buildRetirementActionScheduleState(year, requests)
+  return deepFreeze({
+    orderingSource: 'mergedRetirementActionSchedule' as const,
+    positions: state.scheduled.map((item, index) => ({
+      actionId: item.request.actionId,
+      kind: item.request.kind,
+      scheduledDate: item.scheduledDate,
+      effectiveDate: item.executionDate,
+      executionSequence: item.sequence,
+      scheduleValid: !item.scheduleInvalid,
+      order: index + 1,
+    })),
+    scheduleIssues: state.scheduleIssues,
+  })
+}
+
+/**
  * Canonical annual schedule state shared by the simulator's kind dispatch and
  * the exact executors. Requests with an invalid schedule remain visible but
  * cannot create a same-slot collision until they have a real execution date.

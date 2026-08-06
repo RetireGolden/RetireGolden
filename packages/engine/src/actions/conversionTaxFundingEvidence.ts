@@ -20,31 +20,24 @@ import { deriveActionStructuralId } from './structuralId.js'
  * cents, which share of it this conversion owes, and what was actually funded
  * against that share.
  *
- * Nothing in the engine calls this module. That is deliberate and load-bearing,
- * not an oversight to be tidied up:
+ * This module now has a producer, and the two things that used to be true of
+ * it have parted company:
  *
- * - The two liability figures are inputs, never derived here. `T0` — the
- *   filing unit's annual liability recomputed with the conversions removed —
- *   has no producer anywhere in the engine. Until the annual second pass that
- *   computes it exists, no caller can supply an honest pair, so no caller can
- *   build a record that says funding was satisfied. The types can express
- *   satisfaction because expressing satisfaction is the entire point of a
- *   fixed-point record; a version that could only say "nothing was computed"
- *   would have to be rewritten by the slice that finally computes something.
+ * - The two liability figures are still inputs, never derived here. What
+ *   changed is that they can be supplied honestly:
+ *   `internal/counterfactualAnnualLiability.ts` runs the filing unit's annual
+ *   pass again with the group's requests removed and reads `T0` off it, and
+ *   the run that commits is `T1(F)`. `actions/conversionLinkedWithdrawalGroupExecution.ts`
+ *   is the caller that holds both and builds the group.
  * - The gate that keeps money still is elsewhere and is untouched:
  *   `ConversionLinkedWithdrawalGroupDisposition` still has exactly one member
  *   and cannot express permission, and `committedTaxFunding` in
  *   `rothConversionExecution.ts` still publishes `unsupported` with null
- *   figures for the linked-withdrawal arm. Neither reads anything below.
- * - This module is not exported from `actions/index.ts` and is not a package
- *   subpath, so no builder or record type below can be reached from outside the
- *   engine. The slice that writes the first consumer publishes it. One
- *   exception, and it is a value shape rather than a capability:
- *   `ConversionTaxFundingExactCentAmount` is re-exported by
- *   `projection/simulate.ts`, because the counterfactual annual pass hands one
- *   to a caller through a published option and an amount nobody can name is
- *   not a surface. Nothing that builds, validates or parses an evidence record
- *   travels with it.
+ *   figures for the linked-withdrawal arm. Neither reads anything below, and
+ *   a record built here accompanies a refusal rather than authorising anything.
+ * - This module is exported from `actions/index.ts` now that something builds
+ *   from it, on the discipline the earlier state of it stated: the slice that
+ *   writes the first consumer publishes it.
  *
  * Two conventions differ from the specification this implements, and both are
  * the surrounding code's conventions rather than deviations of convenience.

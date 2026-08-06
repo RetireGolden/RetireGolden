@@ -183,10 +183,15 @@ const {
   coordinateOwnedNonRothIraAnnualWithdrawalCandidate,
   coordinatePlanOwnedNonRothIraAnnualWithdrawalCandidate,
   evaluateOwnedNonRothIraPenaltyPrerequisites,
+  assessConversionLinkedWithdrawalGroups,
+  buildConversionTaxFundingAnnualGroupEvidence,
   executeCashOrdinaryWithdrawals,
+  executeConversionLinkedWithdrawalGroups,
   executeOrdinaryWithdrawals,
   executeRothConversions,
   ledgerCentsToPlanDollars,
+  mergedRetirementActionSchedule,
+  parseConversionTaxFundingAnnualGroup,
   parseRetirementActionRequest,
   planDollarsToLedgerCents,
   preparePlanOwnedNonRothIraAnnualCandidateTransaction,
@@ -200,6 +205,57 @@ const {
   validateOwnedNonRothIraSeppCurrentPaymentCandidate,
 } = actionsApi
 assert.equal(typeof executeRothConversions, 'function')
+// The conversion-linked withdrawal group surface, reachable from the packed
+// artifact. It is published through the ./actions barrel rather than as its
+// own subpath, so this is the assertion that it is reachable at all — and the
+// round trip below is the assertion that the evidence contract travelled with
+// it rather than only the function that builds from it.
+assert.equal(typeof executeConversionLinkedWithdrawalGroups, 'function')
+assert.equal(typeof assessConversionLinkedWithdrawalGroups, 'function')
+assert.equal(typeof mergedRetirementActionSchedule, 'function')
+assert.equal(typeof buildConversionTaxFundingAnnualGroupEvidence, 'function')
+assert.equal(typeof parseConversionTaxFundingAnnualGroup, 'function')
+{
+  const built = buildConversionTaxFundingAnnualGroupEvidence({
+    taxUnit: {
+      taxUnitId: 'pack-smoke-unit',
+      taxYear: 2030,
+      federalFilingStatus: 'single',
+      stateFilingStatusId: 'pack-smoke-state',
+      taxUnitEvidenceId: 'pack-smoke-unit-evidence',
+      taxUnitMemberPersonIds: ['p1'],
+    },
+    baselineAnnualTaxLiabilityEvidenceId: 'pack-smoke-baseline',
+    candidateAnnualTaxLiabilityEvidenceId: 'pack-smoke-candidate',
+    baselineAnnualTaxLiability: {
+      representation: 'exactRationalMinorUnits',
+      numeratorMinorUnits: 1_000,
+      denominator: 1,
+      intermediateArithmetic: 'bigintRational',
+    },
+    candidateAnnualTaxLiability: {
+      representation: 'exactRationalMinorUnits',
+      numeratorMinorUnits: 1_500,
+      denominator: 1,
+      intermediateArithmetic: 'bigintRational',
+    },
+    members: [{
+      conversionActionId: 'pack-smoke-conversion',
+      conversionPersonId: 'p1',
+      allocationWeight: 10_000,
+      fundedAmount: 500,
+    }],
+  })
+  assert.equal(built.ok, true)
+  assert.equal(built.members[0].evaluation, 'satisfied')
+  assert.equal(built.members[0].requiredFundingAmount, 500)
+  assert.equal(
+    parseConversionTaxFundingAnnualGroup(
+      JSON.parse(JSON.stringify(built.members)),
+    ).ok,
+    true,
+  )
+}
 assert.equal(typeof rothConversionPublicationEligibility, 'function')
 assert.equal(typeof rothConversionPublicationSource, 'function')
 assert.equal(
