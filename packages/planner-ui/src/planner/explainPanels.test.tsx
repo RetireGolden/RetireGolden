@@ -276,6 +276,44 @@ describe('WhyRecommendationPanel', () => {
     unmount()
   })
 
+  it('adds what the promotion loop made of a withheld winner', () => {
+    const { container, unmount } = render(
+      <WhyRecommendationPanel
+        tournament={fakeTournament({
+          winnerSource: 'none',
+          winnerCandidateId: null,
+          winnerLabel: null,
+          winnerConversions: [],
+          winnerValidation: null,
+          retirementActionReadinessVeto: {
+            reason: 'identityIncomplete',
+            vetoedWinnerSource: 'milp',
+            vetoedCandidateId: null,
+            vetoedCandidateLabel: null,
+            vetoedConversions: [{ year: 2026, amount: 210_000 }],
+            vetoedValidation: fakeValidation(72_000, {
+              recommendationState: 'identityIncomplete',
+            }),
+            vetoedResult: fakeVetoedResult(),
+          },
+          retirementActionPromotion: {
+            outcome: 'notPromoted',
+            issues: [{
+              kind: 'milpWinnerNotPromotable',
+              field: 'readinessVeto.vetoedCandidateId',
+              detail: 'A solver winner needs optimizer provenance.',
+            }],
+          },
+        })}
+        objectiveLabel="Maximize after-tax estate"
+      />,
+    )
+    const text = container.textContent!
+    expect(text).toContain('owner, source IRA, and Roth destination')
+    expect(text).toContain('could not be named from what the plan records')
+    unmount()
+  })
+
   it('shows the withheld MILP winner row with its own exact diagnostics', () => {
     const { container, unmount } = render(
       <WhyRecommendationPanel

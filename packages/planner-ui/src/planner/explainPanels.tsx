@@ -195,7 +195,10 @@ export function WhyRecommendationPanel({
       {tournament.retirementActionReadinessVeto ? (
         <p>
           <strong>Why the calculated winner was withheld.</strong>{' '}
-          {retirementActionReadinessVetoExplanation(tournament.retirementActionReadinessVeto)}
+          {retirementActionReadinessVetoExplanation(
+            tournament.retirementActionReadinessVeto,
+            tournament.retirementActionPromotion,
+          )}
         </p>
       ) : null}
       <div className="year-table-wrap" style={{ border: 'none' }}>
