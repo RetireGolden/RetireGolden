@@ -13,7 +13,11 @@ import {
 } from './identity.js'
 import type { PositiveUsdCents } from './money.js'
 import {
+  reservePlanOwnedNonRothIraAnnualFilingSourceIdentifiers,
+} from './ownedNonRothIraAnnualFilingSourceResolver.js'
+import {
   allocateRetirementActionCandidateIdentity,
+  rejectedPlanFilingSourceRootIdentityIssue,
   type RetirementActionCandidateIdentityEvidence,
   type RetirementActionCandidateIdentityIntent,
   type RetirementActionCandidateIdentityIssue,
@@ -27,9 +31,6 @@ import {
   retirementActionPlanReservedIdentifiers,
   type Plan,
 } from '../model/plan.js'
-import {
-  planOwnedNonRothIraAnnualFilingSourceIdentifierClaims,
-} from '../model/retirementActionAnnualTaxFacts.js'
 
 export interface RetirementActionManualReviewInput {
   plan: Readonly<Plan>
@@ -251,16 +252,45 @@ function actionAllocationIds(action: RetirementActionRequest): string[] {
     : []
 }
 
-function completePlanReservedIdentifiers(plan: Readonly<Plan>): Set<string> {
-  const reserved = new Set(retirementActionPlanReservedIdentifiers(plan))
-  for (const sourceRecord of (
-    plan.retirementActionAnnualTaxFacts?.ownedNonRothIraAnnualFilingSourceRecords ?? []
-  )) {
-    for (const claim of planOwnedNonRothIraAnnualFilingSourceIdentifierClaims(sourceRecord)) {
-      reserved.add(claim.value)
+type CompletePlanIdentityNamespace =
+  | { status: 'reserved'; reserved: Set<string> }
+  | { status: 'rejected'; rejection: RetirementActionManualReviewIssue }
+
+/**
+ * The Plan identity namespace, with the annual filing-source root consulted
+ * through its canonical arbiter rather than indexed directly, so a duplicated
+ * owner/year key or a shared source identifier rejects every affected record
+ * here exactly as it does everywhere else the root is read. A rejected root
+ * yields no namespace at all rather than the survivors' claims.
+ *
+ * The refusal is the allocator's own identity issue, reported the way every
+ * other identity refusal reaches this contract: `allocatorBlocked` carrying the
+ * root problem in `allocatorIssue`. A reader that introspects one site's
+ * rejection can read this one the same way. Today the replacement Plan has
+ * already parsed by the time this runs, and `planSchema` refuses a duplicated
+ * root itself, so the rejected arm is unreachable through the public entry --
+ * which is a reason for it to speak the contract, not an excuse to invent a
+ * second vocabulary nothing else would understand.
+ */
+function completePlanIdentityNamespace(
+  plan: Readonly<Plan>,
+): CompletePlanIdentityNamespace {
+  const reservation = reservePlanOwnedNonRothIraAnnualFilingSourceIdentifiers(plan)
+  if (reservation.status === 'rejected') {
+    const allocatorIssue = rejectedPlanFilingSourceRootIdentityIssue(reservation)
+    return {
+      status: 'rejected',
+      rejection: issue(
+        'allocatorBlocked',
+        allocatorIssue.field,
+        allocatorIssue.detail,
+        allocatorIssue,
+      ),
     }
   }
-  return reserved
+  const reserved = new Set(retirementActionPlanReservedIdentifiers(plan))
+  for (const identifier of reservation.identifiers) reserved.add(identifier)
+  return { status: 'reserved', reserved }
 }
 
 type ReviewedIdentityReferences = Pick<
@@ -797,7 +827,9 @@ function reviewUnchecked(
       },
     }),
   ])
-  const reservedIdentifiers = completePlanReservedIdentifiers(replacementPlanResult.data)
+  const namespace = completePlanIdentityNamespace(replacementPlanResult.data)
+  if (namespace.status === 'rejected') return blocked([namespace.rejection], target)
+  const reservedIdentifiers = namespace.reserved
   reservedIdentifiers.add(target.actionId)
   for (const allocationId of actionAllocationIds(target)) reservedIdentifiers.add(allocationId)
   if (reservedIdentifiers.has(reviewEvidenceId)) {

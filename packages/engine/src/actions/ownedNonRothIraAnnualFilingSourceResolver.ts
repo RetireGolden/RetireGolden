@@ -47,6 +47,37 @@ export interface ResolvePlanOwnedNonRothIraAnnualFilingSourcesResult {
   issues: readonly Readonly<OwnedNonRothIraAnnualFilingSourceResolutionIssue>[]
 }
 
+/** Every persisted record survived arbitration, so the root claims these identifiers. */
+export interface ReservedPlanOwnedNonRothIraAnnualFilingSourceIdentities {
+  status: 'reserved'
+  /** Sorted identifier claims of the arbitrated sources. */
+  identifiers: readonly string[]
+}
+
+/**
+ * At least one persisted record lost arbitration, so the root proves nothing:
+ * this arm carries no identifiers at all rather than the survivors' claims,
+ * because a partially arbitrated root is not a partially usable namespace.
+ */
+export interface RejectedPlanOwnedNonRothIraAnnualFilingSourceIdentities {
+  status: 'rejected'
+  issues: readonly [
+    Readonly<OwnedNonRothIraAnnualFilingSourceResolutionIssue>,
+    ...Readonly<OwnedNonRothIraAnnualFilingSourceResolutionIssue>[],
+  ]
+}
+
+/**
+ * The persisted filing-source root arbitrated for identity-namespace use only,
+ * under the same no-precedence rule the full resolver applies. The two arms are
+ * disjoint by construction: a caller cannot read `identifiers` without first
+ * narrowing to `reserved`, so no root that lost arbitration can be mistaken for
+ * an authority.
+ */
+export type PlanOwnedNonRothIraAnnualFilingSourceIdentityReservation =
+  | ReservedPlanOwnedNonRothIraAnnualFilingSourceIdentities
+  | RejectedPlanOwnedNonRothIraAnnualFilingSourceIdentities
+
 interface Candidate extends ResolvedPlanOwnedNonRothIraAnnualFilingSource {
   sourceIndex: number
   sourceKey: string
@@ -117,89 +148,27 @@ function runtimeBindingIssue(
     : `runtime source identifier "${collision.value}" collides with the Plan identity namespace`
 }
 
-/**
- * Resolves persisted and call-boundary filing sources without precedence. Every
- * colliding Plan/owner/year key is removed in full; a Plan record never shadows
- * runtime evidence and a runtime record never shadows persisted evidence.
- */
-export function resolvePlanOwnedNonRothIraAnnualFilingSources(
-  input: Readonly<ResolvePlanOwnedNonRothIraAnnualFilingSourcesInput>,
-): Readonly<ResolvePlanOwnedNonRothIraAnnualFilingSourcesResult> {
-  const invalidPlan = () => deepFreeze({
-    status: 'blocked' as const,
-    sources: [],
-    issues: [{
-      kind: 'planInvalid' as const,
-      detail: 'annual filing sources require a valid current Plan',
-    }],
-  })
-  let plan: Plan
-  try {
-    const parsedPlan = planSchema.safeParse(input.plan)
-    if (!parsedPlan.success) return invalidPlan()
-    plan = parsedPlan.data
-  } catch {
-    return invalidPlan()
-  }
-  let runtimeSnapshots: unknown[]
-  try {
-    const supplied = input.runtimeSourceRecords ?? []
-    if (!Array.isArray(supplied)) throw new TypeError('runtime source input must be an array')
-    runtimeSnapshots = structuredClone(supplied) as unknown[]
-  } catch {
-    return deepFreeze({
-      status: 'blocked',
-      sources: [],
-      issues: [{
-        kind: 'runtimeInputInvalid',
-        detail: 'runtime annual filing source input must be one cloneable immutable array',
-      }],
-    })
-  }
-
-  const issues: OwnedNonRothIraAnnualFilingSourceResolutionIssue[] = []
-  const candidates: Candidate[] = []
+function planSourceCandidates(plan: Readonly<Plan>): Candidate[] {
   const planRecords =
     plan.retirementActionAnnualTaxFacts
       ?.ownedNonRothIraAnnualFilingSourceRecords ?? []
-  planRecords.forEach((sourceRecord, sourceIndex) => {
-    candidates.push({
-      sourceOrigin: 'plan',
-      sourceIndex,
-      sourceKey: ownedNonRothIraAnnualFilingSourceKey(sourceRecord),
-      sourceRecord: canonicalSourceRecord(sourceRecord),
-    })
-  })
-  runtimeSnapshots.forEach((snapshot, sourceIndex) => {
-    const parsed = persistedPlanOwnedNonRothIraAnnualFilingSourceRecordSchema.safeParse(snapshot)
-    if (!parsed.success) {
-      issues.push({
-        kind: 'runtimeSourceRecordInvalid',
-        detail: 'runtime annual filing source record is structurally invalid',
-        sourceOrigin: 'runtime',
-        sourceIndex,
-      })
-      return
-    }
-    const bindingIssue = runtimeBindingIssue(plan, parsed.data)
-    if (bindingIssue !== null) {
-      issues.push({
-        kind: 'runtimeSourceBindingMismatch',
-        detail: bindingIssue,
-        sourceOrigin: 'runtime',
-        sourceIndex,
-        sourceKey: ownedNonRothIraAnnualFilingSourceKey(parsed.data),
-      })
-      return
-    }
-    candidates.push({
-      sourceOrigin: 'runtime',
-      sourceIndex,
-      sourceKey: ownedNonRothIraAnnualFilingSourceKey(parsed.data),
-      sourceRecord: canonicalSourceRecord(parsed.data),
-    })
-  })
+  return planRecords.map((sourceRecord, sourceIndex) => ({
+    sourceOrigin: 'plan' as const,
+    sourceIndex,
+    sourceKey: ownedNonRothIraAnnualFilingSourceKey(sourceRecord),
+    sourceRecord: canonicalSourceRecord(sourceRecord),
+  }))
+}
 
+/**
+ * The single no-precedence rule: every candidate sharing a Plan/owner/year key,
+ * and every candidate sharing any stable identifier, is rejected in full.
+ */
+function arbitrateSourceCandidates(candidates: readonly Candidate[]): {
+  resolved: Candidate[]
+  issues: OwnedNonRothIraAnnualFilingSourceResolutionIssue[]
+} {
+  const issues: OwnedNonRothIraAnnualFilingSourceResolutionIssue[] = []
   const candidatesByKey = new Map<string, Candidate[]>()
   for (const candidate of candidates) {
     const matches = candidatesByKey.get(candidate.sourceKey)
@@ -243,17 +212,137 @@ export function resolvePlanOwnedNonRothIraAnnualFilingSources(
       })
     })
   }
-  const resolved = candidates.filter((candidate) => !rejected.has(candidate))
-  resolved.sort((left, right) =>
-    compareText(left.sourceKey, right.sourceKey) ||
-    compareText(left.sourceOrigin, right.sourceOrigin) ||
-    compareText(left.sourceRecord.sourceRecordId, right.sourceRecord.sourceRecordId))
+  return {
+    resolved: candidates.filter((candidate) => !rejected.has(candidate)),
+    issues,
+  }
+}
+
+function sortIssues(
+  issues: OwnedNonRothIraAnnualFilingSourceResolutionIssue[],
+): void {
   issues.sort((left, right) =>
     compareText(left.sourceKey ?? '', right.sourceKey ?? '') ||
     compareText(left.sourceOrigin ?? '', right.sourceOrigin ?? '') ||
     (left.sourceIndex ?? -1) - (right.sourceIndex ?? -1) ||
     compareText(left.kind, right.kind) ||
     compareText(left.identifier ?? '', right.identifier ?? ''))
+}
+
+/**
+ * Arbitrates the persisted filing-source root alone, for callers that consult it
+ * as an identity namespace rather than as annual evidence. Same rule, same
+ * refusals: a caller that reads the root directly would reserve identifiers no
+ * arbitration proved. A rejected root yields the refusals and nothing else --
+ * the survivors' claims are not offered, because a caller holding them cannot
+ * tell them apart from a namespace that arbitrated cleanly.
+ */
+export function reservePlanOwnedNonRothIraAnnualFilingSourceIdentifiers(
+  plan: Readonly<Plan>,
+): Readonly<PlanOwnedNonRothIraAnnualFilingSourceIdentityReservation> {
+  const { resolved, issues } = arbitrateSourceCandidates(planSourceCandidates(plan))
+  sortIssues(issues)
+  const [firstIssue, ...remainingIssues] = issues
+  if (firstIssue !== undefined) {
+    return deepFreeze({
+      status: 'rejected',
+      issues: [firstIssue, ...remainingIssues],
+    })
+  }
+  const identifiers = new Set<string>()
+  for (const candidate of resolved) {
+    for (const claim of planOwnedNonRothIraAnnualFilingSourceIdentifierClaims(
+      candidate.sourceRecord,
+    )) {
+      identifiers.add(claim.value)
+    }
+  }
+  return deepFreeze({
+    status: 'reserved',
+    identifiers: [...identifiers].sort(compareText),
+  })
+}
+
+/**
+ * Resolves persisted and call-boundary filing sources without precedence. Every
+ * colliding Plan/owner/year key is removed in full; a Plan record never shadows
+ * runtime evidence and a runtime record never shadows persisted evidence.
+ */
+export function resolvePlanOwnedNonRothIraAnnualFilingSources(
+  input: Readonly<ResolvePlanOwnedNonRothIraAnnualFilingSourcesInput>,
+): Readonly<ResolvePlanOwnedNonRothIraAnnualFilingSourcesResult> {
+  const invalidPlan = () => deepFreeze({
+    status: 'blocked' as const,
+    sources: [],
+    issues: [{
+      kind: 'planInvalid' as const,
+      detail: 'annual filing sources require a valid current Plan',
+    }],
+  })
+  let plan: Plan
+  try {
+    const parsedPlan = planSchema.safeParse(input.plan)
+    if (!parsedPlan.success) return invalidPlan()
+    plan = parsedPlan.data
+  } catch {
+    return invalidPlan()
+  }
+  let runtimeSnapshots: unknown[]
+  try {
+    const supplied = input.runtimeSourceRecords ?? []
+    if (!Array.isArray(supplied)) throw new TypeError('runtime source input must be an array')
+    runtimeSnapshots = structuredClone(supplied) as unknown[]
+  } catch {
+    return deepFreeze({
+      status: 'blocked',
+      sources: [],
+      issues: [{
+        kind: 'runtimeInputInvalid',
+        detail: 'runtime annual filing source input must be one cloneable immutable array',
+      }],
+    })
+  }
+
+  const issues: OwnedNonRothIraAnnualFilingSourceResolutionIssue[] = []
+  const candidates: Candidate[] = planSourceCandidates(plan)
+  runtimeSnapshots.forEach((snapshot, sourceIndex) => {
+    const parsed = persistedPlanOwnedNonRothIraAnnualFilingSourceRecordSchema.safeParse(snapshot)
+    if (!parsed.success) {
+      issues.push({
+        kind: 'runtimeSourceRecordInvalid',
+        detail: 'runtime annual filing source record is structurally invalid',
+        sourceOrigin: 'runtime',
+        sourceIndex,
+      })
+      return
+    }
+    const bindingIssue = runtimeBindingIssue(plan, parsed.data)
+    if (bindingIssue !== null) {
+      issues.push({
+        kind: 'runtimeSourceBindingMismatch',
+        detail: bindingIssue,
+        sourceOrigin: 'runtime',
+        sourceIndex,
+        sourceKey: ownedNonRothIraAnnualFilingSourceKey(parsed.data),
+      })
+      return
+    }
+    candidates.push({
+      sourceOrigin: 'runtime',
+      sourceIndex,
+      sourceKey: ownedNonRothIraAnnualFilingSourceKey(parsed.data),
+      sourceRecord: canonicalSourceRecord(parsed.data),
+    })
+  })
+
+  const arbitration = arbitrateSourceCandidates(candidates)
+  issues.push(...arbitration.issues)
+  const resolved = arbitration.resolved
+  resolved.sort((left, right) =>
+    compareText(left.sourceKey, right.sourceKey) ||
+    compareText(left.sourceOrigin, right.sourceOrigin) ||
+    compareText(left.sourceRecord.sourceRecordId, right.sourceRecord.sourceRecordId))
+  sortIssues(issues)
 
   const sources = resolved.map(({ sourceOrigin, sourceRecord }) => ({
     sourceOrigin,

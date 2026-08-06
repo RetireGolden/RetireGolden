@@ -7,6 +7,10 @@ import {
 } from '../testing/planFixtures.js'
 import type { Plan } from '../model/plan.js'
 import {
+  planOwnedNonRothIraAnnualFilingSourceIdentifierClaims,
+} from '../model/retirementActionAnnualTaxFacts.js'
+import {
+  reservePlanOwnedNonRothIraAnnualFilingSourceIdentifiers,
   resolvePlanOwnedNonRothIraAnnualFilingSources,
   type ResolvePlanOwnedNonRothIraAnnualFilingSourcesInput,
 } from './ownedNonRothIraAnnualFilingSourceResolver.js'
@@ -309,6 +313,54 @@ describe('Plan-owned annual filing-source resolver', () => {
     expect(result.issues.map((issue) => issue.kind)).toEqual([
       'runtimeSourceRecordInvalid',
     ])
+  })
+
+  it('reserves persisted identifier claims and rejects a colliding persisted root', () => {
+    const plan = filingPlan()
+    const first = ownedNonRothIraAnnualFilingSourceRecord(plan, 'p1', ['ira-1'], 2030, 'first')
+    const second = ownedNonRothIraAnnualFilingSourceRecord(plan, 'p1', ['ira-1'], 2031, 'second')
+    plan.retirementActionAnnualTaxFacts = {
+      ownedNonRothIraAnnualFilingSourceRecords: [first, second],
+    }
+
+    const reserved = reservePlanOwnedNonRothIraAnnualFilingSourceIdentifiers(plan)
+
+    expect(reserved.status).toBe('reserved')
+    if (reserved.status !== 'reserved') return
+    expect(reserved.identifiers).toEqual([...new Set([
+      ...planOwnedNonRothIraAnnualFilingSourceIdentifierClaims(first),
+      ...planOwnedNonRothIraAnnualFilingSourceIdentifierClaims(second),
+    ].map((claim) => claim.value))].sort())
+    expect(Object.isFrozen(reserved)).toBe(true)
+
+    const collidingYear = structuredClone(second)
+    collidingYear.taxYear = first.taxYear
+    plan.retirementActionAnnualTaxFacts = {
+      ownedNonRothIraAnnualFilingSourceRecords: [first, collidingYear],
+    }
+    const rejected = reservePlanOwnedNonRothIraAnnualFilingSourceIdentifiers(plan)
+
+    // The rejected arm offers no identifiers at all -- not even the survivors' --
+    // so no caller can spend a claim that lost arbitration.
+    expect(rejected).toEqual({
+      status: 'rejected',
+      issues: [
+        expect.objectContaining({ kind: 'duplicateOwnerYearSource', sourceOrigin: 'plan' }),
+        expect.objectContaining({ kind: 'duplicateOwnerYearSource', sourceOrigin: 'plan' }),
+      ],
+    })
+    expect(Object.hasOwn(rejected, 'identifiers')).toBe(false)
+    // The rejected arm declares no `identifiers` at all, so an unnarrowed read
+    // does not compile. This pin fails the typecheck if that is ever relaxed.
+    // @ts-expect-error identifiers is unreachable before narrowing to 'reserved'
+    expect(rejected.identifiers).toBeUndefined()
+  })
+
+  it('reserves nothing from an absent annual filing-source root', () => {
+    expect(reservePlanOwnedNonRothIraAnnualFilingSourceIdentifiers(filingPlan())).toEqual({
+      status: 'reserved',
+      identifiers: [],
+    })
   })
 
   it('fails closed when hostile Plan access throws', () => {

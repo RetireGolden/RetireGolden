@@ -25,6 +25,10 @@ import {
   type PositiveUsdCents,
 } from './money.js'
 import {
+  reservePlanOwnedNonRothIraAnnualFilingSourceIdentifiers,
+  type RejectedPlanOwnedNonRothIraAnnualFilingSourceIdentities,
+} from './ownedNonRothIraAnnualFilingSourceResolver.js'
+import {
   createActionReason,
   type ActionReason,
   type BlockingActionReasonCode,
@@ -38,9 +42,6 @@ import {
   type Account,
   type Plan,
 } from '../model/plan.js'
-import {
-  planOwnedNonRothIraAnnualFilingSourceIdentifierClaims,
-} from '../model/retirementActionAnnualTaxFacts.js'
 
 export interface RetirementActionCandidateSourceIntent {
   /** Existing stable Plan account identity; categories and display names are not accepted. */
@@ -206,16 +207,53 @@ function matchingAccounts(plan: Readonly<Plan>, accountId: string): readonly Acc
   return plan.accounts.filter((account) => account.id === accountId)
 }
 
-function completePlanReservedIdentifiers(plan: Readonly<Plan>): Set<string> {
-  const reserved = new Set(retirementActionPlanReservedIdentifiers(plan))
-  for (const record of (
-    plan.retirementActionAnnualTaxFacts?.ownedNonRothIraAnnualFilingSourceRecords ?? []
-  )) {
-    for (const claim of planOwnedNonRothIraAnnualFilingSourceIdentifierClaims(record)) {
-      reserved.add(claim.value)
+type CompletePlanIdentityNamespace =
+  | { status: 'reserved'; reserved: Set<string> }
+  | { status: 'rejected'; rejection: RetirementActionCandidateIdentityIssue }
+
+/** The Plan path every site names when it refuses the annual filing-source root. */
+export const PLAN_OWNED_NON_ROTH_IRA_ANNUAL_FILING_SOURCE_ROOT_FIELD =
+  'plan.retirementActionAnnualTaxFacts.ownedNonRothIraAnnualFilingSourceRecords'
+
+/**
+ * The identity refusal a rejected annual filing-source root produces. Exported
+ * so every site that consults the root refuses in one shape a consumer can
+ * introspect, rather than each inventing its own vocabulary for one rejection.
+ * No action reason honestly applies: the registered predicates describe a
+ * request the Plan refused, not a Plan whose own records cannot be arbitrated.
+ */
+export function rejectedPlanFilingSourceRootIdentityIssue(
+  reservation: Readonly<RejectedPlanOwnedNonRothIraAnnualFilingSourceIdentities>,
+): RetirementActionCandidateIdentityIssue {
+  const rejectedKinds = [...new Set(reservation.issues.map((entry) => entry.kind))]
+    .sort(compareUtf16CodeUnits)
+  return issue(
+    'ambiguousIdentity',
+    PLAN_OWNED_NON_ROTH_IRA_ANNUAL_FILING_SOURCE_ROOT_FIELD,
+    `The Plan's annual filing-source records are rejected without precedence (${rejectedKinds.join(', ')}), so the identifiers they claim cannot be proven and no identity may be allocated against them.`,
+    null,
+  )
+}
+
+/**
+ * The Plan identity namespace, with the annual filing-source root consulted
+ * through its canonical arbiter rather than indexed directly: a duplicated
+ * owner/year key or a shared source identifier rejects every affected record,
+ * and a rejected root yields no namespace at all rather than a partial one.
+ */
+function completePlanIdentityNamespace(
+  plan: Readonly<Plan>,
+): CompletePlanIdentityNamespace {
+  const reservation = reservePlanOwnedNonRothIraAnnualFilingSourceIdentifiers(plan)
+  if (reservation.status === 'rejected') {
+    return {
+      status: 'rejected',
+      rejection: rejectedPlanFilingSourceRootIdentityIssue(reservation),
     }
   }
-  return reserved
+  const reserved = new Set(retirementActionPlanReservedIdentifiers(plan))
+  for (const identifier of reservation.identifiers) reserved.add(identifier)
+  return { status: 'reserved', reserved }
 }
 
 function ordinarySourceIssue(
@@ -573,7 +611,9 @@ function allocateQcdCandidateIdentityUnchecked(
     )])
   }
 
-  const reserved = completePlanReservedIdentifiers(plan)
+  const namespace = completePlanIdentityNamespace(plan)
+  if (namespace.status === 'rejected') return blocked([namespace.rejection])
+  const reserved = namespace.reserved
   const collisionIssues: RetirementActionCandidateIdentityIssue[] = []
   for (const claim of [
     { field: 'actionId', value: actionId },
@@ -969,7 +1009,9 @@ function allocateRetirementActionCandidateIdentityUnchecked(
     }))
     .sort((left, right) => compareUtf16CodeUnits(left.allocationId, right.allocationId))
 
-  const reserved = completePlanReservedIdentifiers(plan)
+  const namespace = completePlanIdentityNamespace(plan)
+  if (namespace.status === 'rejected') return blocked([namespace.rejection])
+  const reserved = namespace.reserved
   const collisionIssues: RetirementActionCandidateIdentityIssue[] = []
   for (const claim of [
     { field: 'actionId', value: actionId },
