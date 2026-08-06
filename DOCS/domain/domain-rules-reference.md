@@ -874,10 +874,14 @@ additive with a no-op default, so plans saved before it stay byte-identical.
   evidence chain can re-join every balance change. The legacy QCD path does the same for its beyond-RMD debits,
   which carry a `legacyQcd` occurrence and a `legacyQcdDistribution` debit application with a null Form 8606 line
   — 408(d)(8)(D) keeps a QCD out of the pro-rata computation entirely, so it never belongs to a basis allocation.
-  Everything else in the actions package is still standalone and uncalled by `simulate.ts`: the Plan-owned annual
-  coordinator and executor, the post-candidate classification and execution chain, the SEPP payment validator and
-  annual reconciler, and the whole `annualQcd*` character/§170 deduction stack. Each of those reports
+  The named-QCD arm commits inside the projection too: `simulate.ts` calls the QCD execution prerequisite,
+  physical staging and executor, which run the tax-character post-pass and owner-wide pool capacity behind
+  them. What is still standalone and uncalled by `simulate.ts` is the Plan-owned annual coordinator and its
+  post-candidate evidence builder, the SEPP payment validator and annual reconciler, and the `annualQcd*`
+  evidence, finalization and §170 deduction stack below the executor. Each of those reports
   `movement: notCommitted`, and none of them establishes custodian settlement or filing-grade treatment.
+  The standalone Plan-owned commit boundary that once headed that list is gone; owned-IRA basis is settled
+  from runtime occurrences through `internal/ownedNonRothIraAnnualAttemptSettlement.ts`.
 - **Fixed-asset disposition.** Setting `costBasis` on a property switches its planned sale from the legacy
   tax-free `expectedNetProceeds` estimate to exact treatment: gain = sale price − selling costs
   (`sellingCostPct`) − basis; depreciation (`depreciationRecapture`) is ordinary income and never excludable;

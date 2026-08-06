@@ -58,13 +58,11 @@ complete opening and Form 8606 year-end snapshots, annual basis/line-7 and line-
 ledger run, plus exact alive evidence. This is Plan-identity-authoritative, runtime-snapshot-bound
 planning evidence; it still establishes neither committed movement nor actionability.
 
-The standalone Plan-owned annual executor now reruns that coordinator input and commits exact cents only
-from its `annualEvidenceBound` arm. It publishes normative full/partial/refused action dispositions,
-scheduled versus positive-movement execution dates, per-allocation character and penalty coverage, final
-penalty evaluations only for positive ordinary-income exposure,
-committed opening/closing balances, and a collision-checked structural execution ID. An all-zero batch is
-an established refusal with `movement: noMovement`; coordinator blocking arms remain unchanged. This is
-an isolated pure action API, not annual projection/simulator integration or custodian settlement proof.
+The standalone pure executor that committed exact cents from that coordinator input has been removed. The
+engine settles owned-IRA basis on the live path instead: `projection/simulate.ts` drives
+`internal/ownedNonRothIraAnnualAttemptSettlement.ts` over the generic bounded-attempt driver, settling from
+runtime occurrences rather than from a Plan-shaped candidate/execution chain. The coordinator above remains
+a pure planning-evidence boundary with no commit arm.
 The separate annual physical-event inventory now derives traditional-account Plan allocations and
 exact-rejoins a complete runtime inventory for RMD, SEPP, legacy projection, IRA/employer-plan
 in-year account-balance contribution inflows, and configured employer match into one immutable
@@ -88,10 +86,14 @@ projection. The normative contract is in
 Two identity-bearing paths now commit inside the annual projection rather than only in isolated boundaries: the
 exact-cent ordinary-withdrawal executor, and now the named Roth-conversion executor. Separately, a QCD is no longer
 conditional on an RMD, and its beyond-RMD debits carry a `legacyQcd` occurrence through the owned-IRA evidence
-chain. Neither change moves the claim boundary for an aggregate result, and every standalone boundary described
-above — the Plan-owned coordinator and executor, the post-candidate chain, the SEPP validator and annual
-reconciler, and the `annualQcd*` character and §170 deduction stack — remains uncalled by `simulate.ts` and still
-reports `movement: notCommitted`.
+chain. Neither change moves the claim boundary for an aggregate result. The named-QCD arm now also commits
+inside the annual projection: `simulate.ts` calls the QCD execution prerequisite, physical staging and
+executor, which run the tax-character post-pass and owner-wide pool capacity behind them. What remains
+uncalled by `simulate.ts` is the Plan-owned annual coordinator and its post-candidate evidence builder, the
+SEPP validator and annual reconciler, and the `annualQcd*` evidence, finalization and §170 deduction stack
+below the executor; each still reports `movement: notCommitted`. The standalone Plan-owned commit boundary
+that used to head that list has been removed — `simulate.ts` settles owned-IRA basis from runtime
+occurrences through `internal/ownedNonRothIraAnnualAttemptSettlement.ts`.
 
 ## Inventory
 
