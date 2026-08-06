@@ -606,9 +606,9 @@ need.
 - **Charitable and NUA scope:** generic itemized-charitable, QCD, and charitable-estate fields do not model a
   donor-advised fund. There is no DAF contribution/bunching/grant workflow and no appreciated-property
   transfer or DAF-specific deduction treatment. A named QCD whose charity is designated a donor-advised fund,
-  supporting organization, or split-interest entity is refused by name rather than modeled. Net unrealized appreciation (NUA) is also absent: equity-comp
-  aggregate basis is not a qualified-plan employer-stock NUA election. Neither DAF nor NUA may be presented as
-  a modeled opportunity or action.
+  supporting organization, or split-interest entity is refused by name rather than modeled.
+  Net unrealized appreciation (NUA) is also absent: equity-comp aggregate basis is not a qualified-plan
+  employer-stock NUA election. Neither DAF nor NUA may be presented as a modeled opportunity or action.
 - **Implementation actions:** annual ledger outputs are household planning estimates, not custodian-ready
   instructions. In particular, **aggregate** Roth-conversion schedules — manual, fill-to-target, and
   optimizer-produced — do not identify an owner, source account, or destination account; a named `rothConversion`
