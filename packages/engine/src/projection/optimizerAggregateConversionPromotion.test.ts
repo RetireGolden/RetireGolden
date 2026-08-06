@@ -647,6 +647,78 @@ describe('what it refuses to promote', () => {
  * Written the other way round, the suite would read as though a user could put
  * their plan in this state.
  */
+/**
+ * The other half of the exact-cent boundary: the winner's amount is validated
+ * before anything reaches the policy, but the BALANCES are not, and the
+ * arithmetic layer raises on a figure it cannot represent. Both routes to that
+ * raise are closed here, and it is worth telling them apart because the policy
+ * only takes one of them.
+ */
+describe('balances the exact-cent ledger cannot represent', () => {
+  const HUGE = 5e13
+
+  it('refuses the year when one owner’s convertible balances outrun the safe range', () => {
+    // Two convertible owners, so the policy takes the exact-cent split rather
+    // than its single-owner shortcut and measures each owner's whole weight.
+    // Alex's two accounts sum past the safe-integer cent range even though each
+    // one of them fits, which is a state no single-balance check would catch.
+    const household = exampleCoupleHousehold([
+      traditionalIra('alex-ira', HUGE, ALEX),
+      traditionalIra('alex-ira-two', HUGE, ALEX),
+      traditionalIra('sam-ira', 310_000, SAM),
+      rothIra('alex-roth', 0, ALEX),
+      rothIra('sam-roth', 0, SAM),
+    ])
+    const call = () => chooseFor(household, 100_000)
+
+    expect(call).not.toThrow()
+    const choice = call()
+    if (choice.status !== 'unallocatable') throw new Error('expected a refusal')
+    expect(choice.issues.map((entry) => entry.kind)).toEqual(['unrepresentableYearBalances'])
+    expect(choice.issues[0]!.field).toBe('yearBalances.0.balances')
+  })
+
+  it('refuses the year when a single source outruns it under the one-owner shortcut', () => {
+    // One convertible owner, so the policy never measures a weight at all and
+    // raises nowhere. The figure this refuses on is read afterwards, when the
+    // source's fundable cents cap the draw -- the same class of defect, and the
+    // reason the seam is around the year rather than around the policy call.
+    const household = exampleCoupleHousehold([
+      traditionalIra('alex-ira', HUGE * 2, ALEX),
+      rothIra('alex-roth', 0, ALEX),
+    ])
+    const call = () => chooseFor(household, 100_000)
+
+    expect(call).not.toThrow()
+    const choice = call()
+    if (choice.status !== 'unallocatable') throw new Error('expected a refusal')
+    expect(choice.issues.map((entry) => entry.kind)).toEqual(['unrepresentableYearBalances'])
+  })
+
+  it('refuses only the year it cannot represent, and names the rest as usual', () => {
+    // The seam refuses a year, not the run: a second scheduled year with no
+    // snapshot at all still reports its own issue beside this one.
+    const household = exampleCoupleHousehold([
+      traditionalIra('alex-ira', HUGE * 2, ALEX),
+      rothIra('alex-roth', 0, ALEX),
+    ])
+    const choice = chooseFor(household, 100_000, {
+      winner: {
+        source: 'candidate',
+        candidateId: 'bracket-22',
+        conversions: [
+          { year: TAX_YEAR, amount: 100_000 },
+          { year: TAX_YEAR + 1, amount: 100_000 },
+        ],
+      },
+    })
+
+    if (choice.status !== 'unallocatable') throw new Error('expected a refusal')
+    expect(choice.issues.map((entry) => entry.kind))
+      .toEqual(['unrepresentableYearBalances', 'missingYearBalances'])
+  })
+})
+
 describe('an account with no recorded owner', () => {
   it('cannot exist in a parsed Plan at all', () => {
     const ownerlessSource = parsePlan(exampleCoupleHousehold([

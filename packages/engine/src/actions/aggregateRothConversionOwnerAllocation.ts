@@ -198,6 +198,29 @@ export interface AggregateRothConversionOwnerAllocationInput<
 }
 
 /**
+ * Does this account take part in the allocation at all?
+ *
+ * The two ways to take part are supplying dollars and being a Roth account,
+ * and the second is wider than "can receive a conversion" on purpose: a
+ * designated Roth account can receive nothing, and it still decides which of
+ * the two trim reasons its owner hears. Every other account the caller holds a
+ * balance for -- cash, taxable, equity compensation, HSA, an inherited
+ * traditional account -- is read by nothing below.
+ *
+ * This is the policy's own reading set, published so the two callers cannot
+ * disagree about it. `projection/simulate.ts` publishes exactly this set of
+ * live balances as `YearResult.aggregateRothConversionAllocationBalances`, and
+ * `projection/optimizerAggregateConversionPromotion.ts` requires exactly this
+ * set on the snapshot it allocates against. One predicate, so a snapshot is
+ * complete by construction rather than by two lists kept in step by hand.
+ */
+export function participatesInAggregateRothConversionAllocation(
+  account: Account,
+): boolean {
+  return isConvertibleToRoth(account) || account.type === 'roth'
+}
+
+/**
  * Allocate one year's household conversion amount across the owners who may
  * lawfully convert it.
  *

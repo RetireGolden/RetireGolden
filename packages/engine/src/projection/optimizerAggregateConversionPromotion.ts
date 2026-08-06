@@ -1,6 +1,8 @@
 import {
   allocateAggregateRothConversionByOwner,
+  participatesInAggregateRothConversionAllocation,
   type AggregateRothConversionBalance,
+  type AggregateRothConversionOwnerAllocation,
   type AggregateRothConversionRefusalReason,
   type AggregateRothConversionTrim,
 } from '../actions/aggregateRothConversionOwnerAllocation.js'
@@ -22,7 +24,6 @@ import {
 } from '../decisions/rothConversionCandidateAdapter.js'
 import type { DecisionCandidate } from '../decisions/types.js'
 import type { Account, Plan } from '../model/plan.js'
-import { isConvertibleToRoth } from '../strategies/accountEligibility.js'
 
 /**
  * Turn an aggregate optimizer winner into identity-complete conversion intents,
@@ -117,12 +118,14 @@ import { isConvertibleToRoth } from '../strategies/accountEligibility.js'
  * canonical person order, so Plan array order cannot reach the minted action
  * IDs through it.
  *
- * No caller consumes this yet. `optimizePlan.ts` is where it belongs — the
- * comparator needs `RetirementActionReadinessVeto.vetoedResult`, which is
- * stripped at the worker boundary (`runOptimize.ts:41-54`), so promotion has to
- * happen engine-side — and the slice that runs the chooser inside the
- * tournament, prices the candidate, and records the comparator's verdict
- * without publishing anything is the next one.
+ * Its one caller is `optimizerAggregateConversionPromotionRun.ts`, which reads
+ * the ledger's published snapshots off the vetoed projection, runs this
+ * chooser, prices the minted candidate on the exact ledger, and decides the
+ * verdict with the exact-ledger equality core — `compareOptimizerAllocatedCandidate`
+ * only attaches binding evidence to an `equivalent`. No optimizer entry
+ * point calls that runner yet, and no surface publishes its answer: the veto
+ * and the `buildOptimizerInput` throw both still stand, and lifting them is the
+ * next slice.
  */
 
 /** One year of the winner's schedule, in Plan dollars. */
@@ -147,11 +150,19 @@ export interface AggregateConversionPromotionWinner {
  * One scheduled year's balances, per Plan account ID, as the ledger held them
  * after the forced distributions and before any conversion drain.
  *
+ * WHERE ONE COMES FROM. The ledger publishes exactly this, per year, as
+ * `YearResult.aggregateRothConversionAllocationBalances`, captured at the
+ * instant the policy read it. That is the snapshot to hand over, and a caller
+ * that assembles its own from the Plan's opening balances or from a year's
+ * closing ones is answering with weights the projection never used.
+ *
  * THE EXACT SET THAT MUST BE PRESENT: every Plan account for which
- * `isConvertibleToRoth` holds — an owned, non-inherited traditional account,
- * employer plans included — and every account of `type: 'roth'`, of BOTH kinds.
- * Everything else may be omitted: cash, taxable, equity comp, HSA, inherited
- * traditional, property, debt.
+ * `participatesInAggregateRothConversionAllocation` holds — an owned,
+ * non-inherited traditional account, employer plans included, and every account
+ * of `type: 'roth'`, of BOTH kinds. Everything else may be omitted: cash,
+ * taxable, equity comp, HSA, inherited traditional, property, debt. The
+ * requirement and the publication are the same predicate, so a published
+ * snapshot satisfies this by construction.
  *
  * A designated Roth account is in that set even though no conversion may land
  * in one, which is the part worth stating plainly. It is what tells an owner
@@ -164,6 +175,13 @@ export interface AggregateConversionPromotionWinner {
  *
  * At most one entry per year: a second one for the same year is refused rather
  * than resolved.
+ *
+ * THE KEY ORDER IS NOT READ, and a caller must not arrange one hoping it will
+ * be. `promotionBalancesForYear` joins these balances onto `plan.accounts` and
+ * takes Plan order from there, because Plan order decides the owner slices, the
+ * destination search and the order sources are drawn from — and a plain object
+ * cannot carry it anyway, since JavaScript enumerates integer-like keys first
+ * however they were inserted.
  */
 export interface AggregateConversionPromotionYearBalances {
   readonly year: number
@@ -193,6 +211,8 @@ export type AggregateConversionPromotionIssueKind =
   | 'duplicateYearBalances'
   /** A participating account with no stated balance in a year. */
   | 'missingAccountBalance'
+  /** A stated balance the exact-cent ledger cannot represent. */
+  | 'unrepresentableYearBalances'
   /** The Plan names nobody, so an unowned account has no owner to fall back to. */
   | 'missingPrimaryPerson'
   /** An account the year would name records no individual owner. */
@@ -281,19 +301,6 @@ function issue(
   detail: string,
 ): AggregateConversionPromotionIssue {
   return { kind, field, detail }
-}
-
-/**
- * Does this account take part in the allocation policy at all?
- *
- * The two ways to take part are supplying dollars and being a Roth account. The
- * second is wider than "can receive a conversion" on purpose: a designated Roth
- * account can receive nothing, and it still decides which of the two trim
- * reasons its owner hears. `AggregateConversionPromotionYearBalances` documents
- * this as the exact set a snapshot must state.
- */
-function participatesInAllocation(account: Account): boolean {
-  return isConvertibleToRoth(account) || account.type === 'roth'
 }
 
 /**
@@ -392,7 +399,7 @@ function promotionBalancesForYear(
 ): PromotionBalance[] | AggregateConversionPromotionIssue {
   const states: PromotionBalance[] = []
   for (const account of plan.accounts) {
-    if (!participatesInAllocation(account)) continue
+    if (!participatesInAggregateRothConversionAllocation(account)) continue
     const balance = snapshot.balances[account.id]
     if (typeof balance !== 'number' || !Number.isFinite(balance) || balance < 0) {
       return issue(
@@ -469,6 +476,141 @@ function ownerlessSelectedAccounts<TBalance extends AggregateRothConversionBalan
     if (account.ownerPersonId === null) ownerless.push({ account, role: 'destination' })
   }
   return ownerless
+}
+
+/** What one scheduled year produced: its outcome, or the issues that stopped it. */
+type YearPromotionOutcome =
+  | AggregateConversionPromotionYearOutcome
+  | AggregateConversionPromotionIssue[]
+
+/** The parts of the run that do not change from year to year. */
+interface YearPromotionContext {
+  readonly plan: Readonly<Plan>
+  readonly primaryPersonId: string
+  readonly provenanceSourceId: string
+}
+
+/**
+ * Allocate one scheduled year and mint that year's intents.
+ *
+ * Separated from the loop for one reason: it is the whole of the exact-cent
+ * arithmetic over caller-supplied balances, so the caller can put a single
+ * documented `RangeError` seam around it rather than around each of the three
+ * conversions inside. It raises nothing of its own.
+ */
+function promoteOneYear(
+  context: YearPromotionContext,
+  year: number,
+  winnerCents: number,
+  stated: IndexedYearBalances,
+  balances: readonly PromotionBalance[],
+): YearPromotionOutcome {
+  const { plan, primaryPersonId, provenanceSourceId } = context
+  const allocation: AggregateRothConversionOwnerAllocation<PromotionBalance> =
+    allocateAggregateRothConversionByOwner({
+      balances,
+      desiredPlanDollars: ledgerCentsToPlanDollars(asPositiveUsdCents(winnerCents)),
+      primaryPersonId,
+    })
+  if (allocation.status === 'refused') {
+    return {
+      year,
+      winnerCents,
+      allocatedCents: 0,
+      trims: [],
+      refusal: allocation.reason,
+      intents: [],
+    }
+  }
+
+  const ownerless = ownerlessSelectedAccounts(allocation)
+  if (ownerless.length > 0) {
+    return ownerless.map((entry) => {
+      const index = plan.accounts.findIndex((account) => account.id === entry.account.id)
+      return issue(
+        'missingAccountOwner',
+        `plan.accounts.${index}.ownerPersonId`,
+        `The Plan records no individual owner for “${entry.account.name}” (${entry.account.id}), ` +
+        `which ${entry.role === 'source' ? 'supplies' : 'receives'} the ${year} conversion. ` +
+        'A conversion request must name whose account it is, and the aggregate ledger’s fallback ' +
+        'to the primary person is not a statement of ownership. A parsed Plan cannot be in this ' +
+        'state — planSchema requires an individual owner on every traditional, roth and hsa ' +
+        'account — so this Plan reached the chooser without being parsed.',
+      )
+    })
+  }
+
+  const yearIntents: RothConversionCandidateIdentityIntent[] = []
+  let allocatedCents = 0
+  for (const slice of allocation.slices) {
+    const sourceAllocations: RetirementActionCandidateSourceIntent[] = []
+    let ownerCents = 0
+    for (const draw of allocation.draws) {
+      if (draw.ownerPersonId !== slice.ownerPersonId) continue
+      // Half-up measures the draw, and the source's FUNDABLE cents cap it.
+      // The conversion executor snapshots a source at the whole cents its
+      // float balance can fund, so an uncapped half-up figure on a drained
+      // fractional-cent balance would mint a request one cent past capacity
+      // and the executor would block it whole. A partial draw sits below
+      // capacity and keeps its half-up figure — flooring it instead would
+      // lose a cent to the float noise in the policy's remainder
+      // subtraction, which is measurement, not capacity. A draw capped to
+      // zero is the same non-event the sub-cent discharge records as
+      // nothing, and is skipped on the same reasoning.
+      const fundableCents = planDollarsToFlooredLedgerCents(
+        stated.balances[draw.sourceAccount.id] ?? draw.amountPlanDollars,
+      )
+      const measuredCents = planDollarsToLedgerCents(draw.amountPlanDollars)
+      const cappedCents = Math.min(measuredCents, fundableCents)
+      if (cappedCents === 0) continue
+      const drawCents = asPositiveUsdCents(cappedCents)
+      sourceAllocations.push({
+        sourceAccountId: asAccountId(draw.sourceAccount.id),
+        requestedAmount: drawCents,
+      })
+      ownerCents += drawCents
+    }
+    if (sourceAllocations.length === 0) continue
+    yearIntents.push({
+      kind: 'rothConversion',
+      year,
+      executionDate: canonicalExecutionDate(year),
+      // Overwritten below with the canonical slot; a placeholder here would
+      // be one more thing to keep in step with the sort.
+      executionSequence: 0,
+      requestedAmount: asPositiveUsdCents(ownerCents),
+      personId: asPersonId(slice.ownerPersonId),
+      provenance: { source: 'generator', sourceId: provenanceSourceId },
+      sourceAllocations,
+      destinationRothAccountId: asAccountId(slice.destination.destinationAccount.id),
+      // The aggregate schedule names no funding movement of its own: the
+      // year's ordinary withdrawal flow pays the tax, exactly as it does when
+      // the ledger converts. `externalCash` is the only other disposition
+      // this adapter admits and it requires an attestation about money
+      // outside the plan, which no projection can make.
+      taxFunding: { kind: 'noneExpected' },
+    })
+    allocatedCents += ownerCents
+  }
+
+  // One execution slot per converting owner, numbered in canonical person
+  // order rather than in the order the policy sliced them. Slice order is
+  // Plan array order, and the slot number reaches the minted action ID, so
+  // numbering by it would make two Plans that differ only in how their
+  // accounts were typed in mint two different candidates. What the slot
+  // cannot be is arbitrary: it has to be stable, and unique inside the year.
+  const canonicalYearIntents = [...yearIntents]
+    .sort((left, right) => compareUtf16CodeUnits(left.personId, right.personId))
+    .map((intent, index) => ({ ...intent, executionSequence: index + 1 }))
+
+  return {
+    year,
+    winnerCents,
+    allocatedCents,
+    trims: allocation.trims,
+    refusal: null,
+    intents: canonicalYearIntents,
+  }
 }
 
 /**
@@ -556,113 +698,50 @@ export function chooseAggregateConversionPromotionIntents(
       continue
     }
 
-    const allocation = allocateAggregateRothConversionByOwner({
-      balances,
-      desiredPlanDollars: ledgerCentsToPlanDollars(asPositiveUsdCents(winnerCents)),
-      primaryPersonId,
-    })
-    if (allocation.status === 'refused') {
-      years.push({
+    // THE ONE PLACE A THROW CROSSES THIS CONTRACT, AND WHY IT IS CAUGHT HERE.
+    //
+    // Everything inside `promoteOneYear` measures caller-supplied Plan-dollar
+    // figures in exact cents, and the arithmetic layer's answer to a figure it
+    // cannot represent is a `RangeError` — from the policy's per-owner weight
+    // sum (`planDollarsToLedgerCents` over a whole household's convertible
+    // balances, which can exceed the safe-integer cent range even where every
+    // account in it is fine), and from the fundable-cents read on a single
+    // source balance (`planDollarsToFlooredLedgerCents`, which the policy's
+    // single-owner shortcut never reaches through the weight sum). Both mean
+    // the same thing to this caller — the snapshot states a figure this ledger
+    // cannot hold — and this contract promises typed issues, so both are
+    // reported as one rather than escaping to a caller that has no way to tell
+    // them from a defect.
+    //
+    // The catch is by error class and refuses the year, not the run: only a
+    // `RangeError` is converted, and anything else is rethrown untouched. A
+    // future bug in the minting below therefore still surfaces as itself.
+    let outcome: YearPromotionOutcome
+    try {
+      outcome = promoteOneYear(
+        { plan, primaryPersonId, provenanceSourceId },
         year,
         winnerCents,
-        allocatedCents: 0,
-        trims: [],
-        refusal: allocation.reason,
-        intents: [],
-      })
+        stated,
+        balances,
+      )
+    } catch (error) {
+      if (!(error instanceof RangeError)) throw error
+      issues.push(issue(
+        'unrepresentableYearBalances',
+        `yearBalances.${stated.index}.balances`,
+        `The ${year} balances state a figure the exact-cent ledger cannot represent, ` +
+        'so the year cannot be allocated: a single balance, or the sum of one owner’s ' +
+        'convertible balances, exceeds the safe-integer cent range.',
+      ))
       continue
     }
-
-    const ownerless = ownerlessSelectedAccounts(allocation)
-    if (ownerless.length > 0) {
-      for (const entry of ownerless) {
-        const index = plan.accounts.findIndex((account) => account.id === entry.account.id)
-        issues.push(issue(
-          'missingAccountOwner',
-          `plan.accounts.${index}.ownerPersonId`,
-          `The Plan records no individual owner for “${entry.account.name}” (${entry.account.id}), ` +
-          `which ${entry.role === 'source' ? 'supplies' : 'receives'} the ${year} conversion. ` +
-          'A conversion request must name whose account it is, and the aggregate ledger’s fallback ' +
-          'to the primary person is not a statement of ownership. A parsed Plan cannot be in this ' +
-          'state — planSchema requires an individual owner on every traditional, roth and hsa ' +
-          'account — so this Plan reached the chooser without being parsed.',
-        ))
-      }
+    if (Array.isArray(outcome)) {
+      issues.push(...outcome)
       continue
     }
-
-    const yearIntents: RothConversionCandidateIdentityIntent[] = []
-    let allocatedCents = 0
-    for (const slice of allocation.slices) {
-      const sourceAllocations: RetirementActionCandidateSourceIntent[] = []
-      let ownerCents = 0
-      for (const draw of allocation.draws) {
-        if (draw.ownerPersonId !== slice.ownerPersonId) continue
-        // Half-up measures the draw, and the source's FUNDABLE cents cap it.
-        // The conversion executor snapshots a source at the whole cents its
-        // float balance can fund, so an uncapped half-up figure on a drained
-        // fractional-cent balance would mint a request one cent past capacity
-        // and the executor would block it whole. A partial draw sits below
-        // capacity and keeps its half-up figure — flooring it instead would
-        // lose a cent to the float noise in the policy's remainder
-        // subtraction, which is measurement, not capacity. A draw capped to
-        // zero is the same non-event the sub-cent discharge records as
-        // nothing, and is skipped on the same reasoning.
-        const fundableCents = planDollarsToFlooredLedgerCents(
-          stated.balances[draw.sourceAccount.id] ?? draw.amountPlanDollars,
-        )
-        const measuredCents = planDollarsToLedgerCents(draw.amountPlanDollars)
-        const cappedCents = Math.min(measuredCents, fundableCents)
-        if (cappedCents === 0) continue
-        const drawCents = asPositiveUsdCents(cappedCents)
-        sourceAllocations.push({
-          sourceAccountId: asAccountId(draw.sourceAccount.id),
-          requestedAmount: drawCents,
-        })
-        ownerCents += drawCents
-      }
-      if (sourceAllocations.length === 0) continue
-      yearIntents.push({
-        kind: 'rothConversion',
-        year,
-        executionDate: canonicalExecutionDate(year),
-        // Overwritten below with the canonical slot; a placeholder here would
-        // be one more thing to keep in step with the sort.
-        executionSequence: 0,
-        requestedAmount: asPositiveUsdCents(ownerCents),
-        personId: asPersonId(slice.ownerPersonId),
-        provenance: { source: 'generator', sourceId: provenanceSourceId },
-        sourceAllocations,
-        destinationRothAccountId: asAccountId(slice.destination.destinationAccount.id),
-        // The aggregate schedule names no funding movement of its own: the
-        // year's ordinary withdrawal flow pays the tax, exactly as it does when
-        // the ledger converts. `externalCash` is the only other disposition
-        // this adapter admits and it requires an attestation about money
-        // outside the plan, which no projection can make.
-        taxFunding: { kind: 'noneExpected' },
-      })
-      allocatedCents += ownerCents
-    }
-
-    // One execution slot per converting owner, numbered in canonical person
-    // order rather than in the order the policy sliced them. Slice order is
-    // Plan array order, and the slot number reaches the minted action ID, so
-    // numbering by it would make two Plans that differ only in how their
-    // accounts were typed in mint two different candidates. What the slot
-    // cannot be is arbitrary: it has to be stable, and unique inside the year.
-    const canonicalYearIntents = [...yearIntents]
-      .sort((left, right) => compareUtf16CodeUnits(left.personId, right.personId))
-      .map((intent, index) => ({ ...intent, executionSequence: index + 1 }))
-
-    years.push({
-      year,
-      winnerCents,
-      allocatedCents,
-      trims: allocation.trims,
-      refusal: null,
-      intents: canonicalYearIntents,
-    })
-    intents.push(...canonicalYearIntents)
+    years.push(outcome)
+    intents.push(...outcome.intents)
   }
 
   if (issues.length > 0) return unallocatable(years, issues)
