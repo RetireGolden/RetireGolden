@@ -125,7 +125,7 @@ export function PromotedSchedulePanel({
           <strong>{PROMOTED_SCHEDULE_UNREADABLE_FRAME}</strong>
           {read.issues.length > 0 ? (
             <ul>
-              {read.issues.map((issue) => <li key={issue}>{issue}</li>)}
+              {read.issues.map((issue, index) => <li key={`${index}:${issue}`}>{issue}</li>)}
             </ul>
           ) : null}
         </div>
