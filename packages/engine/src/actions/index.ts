@@ -847,10 +847,12 @@ export {
   type PlanOwnedNonRothIraAnnualFilingSourceRecord,
 } from './ownedNonRothIraAnnualFilingEvidence.js'
 export {
+  reservePlanOwnedNonRothIraAnnualFilingSourceIdentifiers,
   resolvePlanOwnedNonRothIraAnnualFilingSources,
   type OwnedNonRothIraAnnualFilingSourceOrigin,
   type OwnedNonRothIraAnnualFilingSourceResolutionIssue,
   type OwnedNonRothIraAnnualFilingSourceResolutionIssueKind,
+  type PlanOwnedNonRothIraAnnualFilingSourceIdentityReservation,
   type ResolvedPlanOwnedNonRothIraAnnualFilingSource,
   type ResolvePlanOwnedNonRothIraAnnualFilingSourcesInput,
   type ResolvePlanOwnedNonRothIraAnnualFilingSourcesResult,

@@ -7,6 +7,10 @@ import {
 } from '../testing/planFixtures.js'
 import type { Plan } from '../model/plan.js'
 import {
+  planOwnedNonRothIraAnnualFilingSourceIdentifierClaims,
+} from '../model/retirementActionAnnualTaxFacts.js'
+import {
+  reservePlanOwnedNonRothIraAnnualFilingSourceIdentifiers,
   resolvePlanOwnedNonRothIraAnnualFilingSources,
   type ResolvePlanOwnedNonRothIraAnnualFilingSourcesInput,
 } from './ownedNonRothIraAnnualFilingSourceResolver.js'
@@ -309,6 +313,48 @@ describe('Plan-owned annual filing-source resolver', () => {
     expect(result.issues.map((issue) => issue.kind)).toEqual([
       'runtimeSourceRecordInvalid',
     ])
+  })
+
+  it('reserves persisted identifier claims and rejects a colliding persisted root', () => {
+    const plan = filingPlan()
+    const first = ownedNonRothIraAnnualFilingSourceRecord(plan, 'p1', ['ira-1'], 2030, 'first')
+    const second = ownedNonRothIraAnnualFilingSourceRecord(plan, 'p1', ['ira-1'], 2031, 'second')
+    plan.retirementActionAnnualTaxFacts = {
+      ownedNonRothIraAnnualFilingSourceRecords: [first, second],
+    }
+
+    const reserved = reservePlanOwnedNonRothIraAnnualFilingSourceIdentifiers(plan)
+
+    expect(reserved.status).toBe('reserved')
+    expect(reserved.issues).toEqual([])
+    expect(reserved.identifiers).toEqual([...new Set([
+      ...planOwnedNonRothIraAnnualFilingSourceIdentifierClaims(first),
+      ...planOwnedNonRothIraAnnualFilingSourceIdentifierClaims(second),
+    ].map((claim) => claim.value))].sort())
+    expect(Object.isFrozen(reserved)).toBe(true)
+
+    const collidingYear = structuredClone(second)
+    collidingYear.taxYear = first.taxYear
+    plan.retirementActionAnnualTaxFacts = {
+      ownedNonRothIraAnnualFilingSourceRecords: [first, collidingYear],
+    }
+    const rejected = reservePlanOwnedNonRothIraAnnualFilingSourceIdentifiers(plan)
+
+    expect(rejected.status).toBe('rejected')
+    expect(rejected.identifiers).toEqual([])
+    expect(rejected.issues.map((issue) => issue.kind)).toEqual([
+      'duplicateOwnerYearSource',
+      'duplicateOwnerYearSource',
+    ])
+    expect(rejected.issues.every((issue) => issue.sourceOrigin === 'plan')).toBe(true)
+  })
+
+  it('reserves nothing from an absent annual filing-source root', () => {
+    expect(reservePlanOwnedNonRothIraAnnualFilingSourceIdentifiers(filingPlan())).toEqual({
+      status: 'reserved',
+      identifiers: [],
+      issues: [],
+    })
   })
 
   it('fails closed when hostile Plan access throws', () => {
