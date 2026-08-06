@@ -640,6 +640,7 @@ describe('optimizer recommendation evidence for a promoted winner', () => {
         retirementActionReadinessVeto: null,
         retirementActionPromotion: promotion,
       },
+      postProcessed: null,
       claimAge: null,
     }
   }
@@ -716,6 +717,7 @@ describe('optimizer recommendation evidence for a promoted winner', () => {
           diagnostics: ['Blocking reasons: conversion-plan-availability-unknown.'],
         },
       },
+      postProcessed: null,
       claimAge: null,
     } as never)
 
@@ -755,6 +757,7 @@ describe('optimizer recommendation evidence for a promoted winner', () => {
         },
         retirementActionPromotion: null,
       },
+      postProcessed: null,
       claimAge: null,
     } as never)
 
