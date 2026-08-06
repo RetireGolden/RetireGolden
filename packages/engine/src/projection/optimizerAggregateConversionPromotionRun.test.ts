@@ -9,6 +9,7 @@ import { createFlatTaxCalculator } from './flatTax.js'
 import { allowLegacyAggregateDecisionCalculation } from './internal/legacyAggregateDecisionCalculation.js'
 import { evaluateExactLedgerSchedule, type RetirementActionReadinessVeto } from './optimizePlan.js'
 import { runAggregateConversionPromotion } from './optimizerAggregateConversionPromotionRun.js'
+import { compareOptimizerExactLedgerResults } from './optimizerExactLedgerComparison.js'
 
 /**
  * What happens when the aggregate winner is actually promoted and priced.
@@ -18,7 +19,13 @@ import { runAggregateConversionPromotion } from './optimizerAggregateConversionP
  * where that stops being an assertion: every case below runs the real ledger on
  * both sides — a genuine aggregate projection for the winner, a genuine
  * exact-ledger evaluation for the promoted candidate — and records what
- * `compareOptimizerAllocatedCandidate` said about the pair.
+ * `compareOptimizerExactLedgerResults`, the equality core, said about the pair.
+ *
+ * WHAT THE SUITE IS MOST CAREFUL ABOUT is the difference between "these two
+ * priced differently" and "no comparison could be made". Both would arrive as a
+ * bare `null` from either comparator, and only the first is a repricing; a
+ * candidate whose requests never executed, or a projection the core cannot
+ * read, has to be reported as itself. Two cases below exist for that alone.
  *
  * Nothing here publishes a recommendation. The veto and the optimizer throw are
  * untouched by this slice, and no optimizer entry point calls the runner.
@@ -262,7 +269,7 @@ describe('a two-owner household is repriced, and the trim is why', () => {
     expect(veto.vetoedResult.years[0]!.balances['sam-ira']).toBe(310_000)
   })
 
-  it('is repriced for a second, independent reason when the source is an employer plan', () => {
+  it('is NOT called repriced when the source is an employer plan and nothing executed', () => {
     // The shipped example couple's own shape: Alex's convertible balance is a
     // 401(k). The aggregate ledger converts employer traditional balances --
     // `isConvertibleToRoth` admits them, under the still-`approximated`
@@ -274,14 +281,25 @@ describe('a two-owner household is repriced, and the trim is why', () => {
     // So promotion mints the requests and the ledger declines to execute them.
     // That is a second reason PR4's veto lift cannot reach the flagship
     // example, entirely separate from the trim.
+    //
+    // AND IT IS NOT A REPRICING. The two projections do differ -- one converted
+    // and one did not -- so a verdict read off a bare null would have called
+    // this "repriced" and described a failure to run as a difference in price.
+    // The ranking state is a precondition, checked before any equivalence
+    // question is asked, and the answer names what actually happened.
     const { run } = runFor(twoOwnerHousehold(employer401k('alex-401k', 820_000, ALEX)), 'bracket-10')
-    if (run.status !== 'repriced') {
-      throw new Error(`expected a repriced promotion, got ${run.status}`)
+    if (run.status !== 'notComparable') {
+      throw new Error(`expected an incomparable promotion, got ${run.status}`)
     }
 
+    expect(run.reason).toBe('allocatedRankingNotComparable')
     expect(run.allocatedEvaluation.recommendationState).toBe('diagnostic')
     expect(run.allocatedEvaluation.diagnostics.join(' '))
       .toContain('conversion-plan-availability-unknown')
+    // The promotion itself is still here to inspect: it was minted and priced,
+    // and only the claim about the pair is withheld.
+    expect(run.candidate.retirementActionReadiness?.state).toBe('identityComplete')
+    expect(run.choice.years).not.toHaveLength(0)
   })
 })
 
@@ -301,17 +319,25 @@ describe('the equality contract', () => {
       throw new Error(`expected an equivalent promotion, got ${run.status}`)
     }
 
-    expect(run.comparison.winnerSource).toBe('candidate')
-    expect(run.comparison.winnerCandidateId).toBe('bracket-24')
-    expect(run.comparison.winnerConversions).toEqual(veto.vetoedConversions)
-    expect(run.comparison.allocatedCandidateId).toBe(run.candidate.id)
-    expect(run.comparison.allocatedActionIds.length)
-      .toBe(veto.vetoedConversions.length)
-    expect(run.comparison.exactLedgerComparison).toMatchObject({
+    // The verdict is the equality core's, and it is what `equivalent` carries.
+    expect(run.exactLedgerComparison).toMatchObject({
       currencyMinorUnit: 0.01,
       quantization: 'nearestCentHalfUp',
       equality: 'exactMinorUnitByRequiredKey',
     })
+    expect(run.exactLedgerComparison.evaluatedAccountIds)
+      .toEqual(['cash', 'roth', 'trad'])
+
+    // The richer binding evidence rides along, because its own preconditions
+    // held too: the requests are identity-complete, carry the winner's
+    // provenance, and executed for the cents they asked for.
+    expect(run.binding).not.toBeNull()
+    expect(run.binding?.winnerSource).toBe('candidate')
+    expect(run.binding?.winnerCandidateId).toBe('bracket-24')
+    expect(run.binding?.winnerConversions).toEqual(veto.vetoedConversions)
+    expect(run.binding?.allocatedCandidateId).toBe(run.candidate.id)
+    expect(run.binding?.allocatedActionIds.length)
+      .toBe(veto.vetoedConversions.length)
     // Nothing was trimmed and nothing was lost: the promoted schedule converts
     // the winner's figure exactly.
     expect(run.choice.years.every((year) => year.trims.length === 0)).toBe(true)
@@ -383,6 +409,56 @@ describe('the equality contract', () => {
         expect(cents(allocatedYear[key])).toBe(cents(aggregateYear[key]))
       }
     }
+  })
+})
+
+describe('what it will not call a repricing', () => {
+  it('names a projection outside the equality core’s domain instead of pricing it', () => {
+    // The equality core answers `null` to two different questions -- "they
+    // differ" and "this pair was never in my structural domain" -- so the
+    // runner asks each projection whether it is in the domain by running the
+    // core over it against itself, where inequality is impossible.
+    //
+    // Here the aggregate projection is put out of the domain in the smallest
+    // way there is: one year stops publishing a balance for one account. The
+    // household is the coinciding one, so without the probe the very same
+    // corruption would have turned a proved `equivalent` into a reported
+    // `repriced` -- a claim about arithmetic manufactured out of a missing key.
+    const ctx = contextFor(singleOwnerHousehold())
+    const { exploratoryCandidate, veto } = vetoedWinner(ctx, 'bracket-24')
+    const corruptedYears = veto.vetoedResult.years.map((year, index) => {
+      if (index !== 1) return year
+      const balances = { ...year.balances }
+      delete balances['cash']
+      return { ...year, balances }
+    })
+    const corrupted: RetirementActionReadinessVeto = {
+      ...veto,
+      vetoedResult: { ...veto.vetoedResult, years: corruptedYears },
+    }
+    const run = runAggregateConversionPromotion({
+      context: ctx,
+      exploratoryCandidate,
+      readinessVeto: corrupted,
+    })
+    if (run.status !== 'notComparable') {
+      throw new Error(`expected an incomparable promotion, got ${run.status}`)
+    }
+
+    expect(run.reason).toBe('aggregateProjectionNotComparable')
+    // The candidate itself is fine -- it is the aggregate side that is
+    // unreadable -- and that is exactly the distinction being drawn.
+    expect(run.allocatedEvaluation.recommendationState).toBe('beneficial')
+    // And the naive read this replaces: the cross-comparison really is null
+    // here, so a verdict taken straight off it would have said "repriced".
+    expect(compareOptimizerExactLedgerResults(
+      corrupted.vetoedResult,
+      run.allocatedEvaluation.candidateResult,
+      ctx.plan,
+    )).toBeNull()
+    // Uncorrupted, the same pair is equivalent, so nothing but the missing key
+    // is responsible for the answer.
+    expect(runFor(singleOwnerHousehold(), 'bracket-24').run.status).toBe('equivalent')
   })
 })
 
