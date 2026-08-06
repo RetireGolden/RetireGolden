@@ -586,6 +586,8 @@ export function executeConversionLinkedWithdrawalGroups(
         conversionExecuted === conversionAuthored &&
         withdrawalExecuted === withdrawalAuthored
       const neitherLegMoved = conversionExecuted === 0 && withdrawalExecuted === 0
+      const evidence =
+        evidenceByConversionActionId.get(group.conversionActionId) ?? null
       return {
         groupId: group.groupId,
         personId: group.personId,
@@ -601,8 +603,16 @@ export function executeConversionLinkedWithdrawalGroups(
         // released pair that moved nothing is incoherent too — the release was
         // permission for a movement, and its absence means an executor
         // disregarded the verdict.
+        //
+        // And the funding the evaluation was built from has to be the cents
+        // this withdrawal actually moved. That is the conservation check across
+        // the two legs: `fundedAmount` reaches the evaluation as a caller-
+        // supplied figure, and a caller that supplied a funded amount its own
+        // withdrawal did not move would balance the allocation against dollars
+        // that never left an account.
         movementCoherent: (bothLegsWhole || neitherLegMoved) &&
-          (group.disposition === 'executedAsAtomicGroup') === bothLegsWhole,
+          (group.disposition === 'executedAsAtomicGroup') === bothLegsWhole &&
+          (evidence === null || evidence.fundedAmount === withdrawalExecuted),
         conversionExecutedAmount: conversionExecuted,
         withdrawalExecutedAmount: withdrawalExecuted,
         conversionAuthoredAmount: conversionAuthored,
@@ -613,8 +623,7 @@ export function executeConversionLinkedWithdrawalGroups(
           withdrawalPosition !== null &&
           conversionPosition.scheduleValid &&
           withdrawalPosition.scheduleValid,
-        fundingEvidence:
-          evidenceByConversionActionId.get(group.conversionActionId) ?? null,
+        fundingEvidence: evidence,
       }
     },
   )
@@ -790,7 +799,6 @@ export function authorizeConversionLinkedWithdrawalGroups(
       conversionActionId: group.conversionActionId,
       withdrawalActionId: group.withdrawalActionId,
       funding: {
-        annualGroupId: member.annualGroupId,
         requiredFundingAmount: member.requiredFundingAmount,
         fundedAmount: member.fundedAmount,
       },

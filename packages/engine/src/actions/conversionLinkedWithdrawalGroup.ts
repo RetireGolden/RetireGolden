@@ -105,12 +105,13 @@ export type ConversionLinkedWithdrawalGroupReasonCode = Extract<
  * it publishes as `funded` is therefore what it was proved, and the proof
  * travels with the permission.
  *
- * `annualGroupId` names the filing unit and year the allocation belongs to, so
- * a conversion cannot publish a share of some other unit's liability and still
- * balance.
+ * Two figures and no identifier. The filing unit and year the allocation
+ * belongs to are on the published `ConversionTaxFundingEvidence` the group
+ * executor attaches to the same record, so naming them again here would be a
+ * second copy that could disagree — and the staging run, which holds this
+ * permission before any evaluation exists, would have to invent one.
  */
 export interface ConversionLinkedWithdrawalGroupFundingAuthority {
-  readonly annualGroupId: string
   /** This conversion's share of the unit's quantized required funding. */
   readonly requiredFundingAmount: UsdCents
   /** Its dedicated withdrawal's executed cents, which equal that share. */
