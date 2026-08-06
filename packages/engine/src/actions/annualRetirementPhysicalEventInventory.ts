@@ -323,10 +323,10 @@ export interface AnnualRetirementChronologyInvalidResult
 }
 
 /**
- * The standalone Plan-driven owned-IRA commit boundary this branch was named
- * for no longer exists: `projection/simulate.ts` settles owned-IRA basis from
+ * The standalone Plan-driven owned-IRA commit boundary this arm was named for
+ * no longer exists: `projection/simulate.ts` settles owned-IRA basis from
  * runtime occurrences through `internal/ownedNonRothIraAnnualAttemptSettlement.ts`.
- * The branch is retained because it still records the narrower fact a consumer
+ * The arm is retained because it still records the narrower fact a consumer
  * needs — that the year's owned-IRA activity resolves per owner without
  * requiring the unified annual ledger.
  */
