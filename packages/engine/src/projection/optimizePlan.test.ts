@@ -2365,6 +2365,14 @@ describe('exact-ledger candidate tournament', () => {
     expect(tournament.retirementActionReadinessVeto?.vetoedConversions.length).toBeGreaterThan(0)
     expect(calculatedConversions(tournament.retirementActionReadinessVeto!.vetoedResult))
       .toEqual(tournament.retirementActionReadinessVeto!.vetoedConversions)
+    // WHY THIS STILL WITHHOLDS, now that a vetoed winner is promoted rather
+    // than abandoned. The winner was allocated to named owners and sources and
+    // priced, and the ledger then declined to execute the requests: this plan
+    // records no IRA classification, which the named-conversion executor
+    // requires and the aggregate ledger does not. Stated here so the test is
+    // green for a reason and not by accident — a plan that gains that evidence
+    // publishes, and `optimizePlan.vetoLift.test.ts` is where that is measured.
+    expect(tournament.retirementActionPromotion?.outcome).toBe('notComparable')
   })
 
   it('holds an explicitly applied incumbent schedule when nothing beats it', () => {
@@ -2477,6 +2485,11 @@ describe('objective-mode tournament (sustainable-spending plan, Step 5)', () => 
       vetoedValidation: { recommendationState: 'rejected' },
     })
     expect(tournament.retirementActionReadinessVeto?.vetoedConversions.length).toBeGreaterThan(0)
+    // The promotion loop does not run under a non-default objective at all:
+    // publishing there would mean re-ranking the promoted candidate against
+    // the same field under this policy's own primary metric, which is the
+    // policy tournament's job and not the promotion loop's.
+    expect(tournament.retirementActionPromotion).toBeNull()
   })
 
   it('updates every displayed winner metric after local search refinement', () => {
