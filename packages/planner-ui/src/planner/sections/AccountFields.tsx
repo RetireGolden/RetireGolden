@@ -20,16 +20,6 @@ function ownerOptions(plan: Plan, type: Account['type']) {
 }
 
 /**
- * Can this account pay an annuity premium of the given tax qualification?
- *
- * An inherited account is `type: 'traditional'` like any other, so a bare type
- * test offered a beneficiary's inherited IRA as a qualified funding source. Those
- * dollars cannot leave for a contract the household owns, and the engine refuses
- * the shape at parse, so keep it out of the picker in all three places that ask
- * (the option list, the still-eligible check, and the re-default) rather than in
- * only some of them.
- */
-/**
  * The lowest election year the engine's parse rule will accept for an ELECTED
  * lump sum: the later of the current UTC year (what the save stamp will carry)
  * and the document's stored stamp year (which can be ahead of the wall clock
@@ -42,6 +32,16 @@ function electionFloorYear(plan: Plan): number {
   return Math.max(new Date().getUTCFullYear(), stampYear)
 }
 
+/**
+ * Can this account pay an annuity premium of the given tax qualification?
+ *
+ * An inherited account is `type: 'traditional'` like any other, so a bare type
+ * test offered a beneficiary's inherited IRA as a qualified funding source. Those
+ * dollars cannot leave for a contract the household owns, and the engine refuses
+ * the shape at parse, so keep it out of the picker in all three places that ask
+ * (the option list, the still-eligible check, and the re-default) rather than in
+ * only some of them.
+ */
 function canFundAnnuityPurchase(account: Account, taxQualification: 'qualified' | 'nonQualified'): boolean {
   return taxQualification === 'qualified'
     ? account.type === 'traditional' && !account.inherited

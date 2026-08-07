@@ -1599,6 +1599,19 @@ export const planSchema = z
         actionReferencedAccountIds.add(action.destinationRothAccountId)
       }
     })
+    // A lump-sum rollover target and a qualified annuity's funding source get
+    // the same ambiguity protection as action-referenced accounts: their
+    // ownership validations resolve the id through a map (last duplicate wins)
+    // while the simulator resolves balances first-match-wins, so a duplicated
+    // id could pass validation against one record and move money in another.
+    plan.accounts.forEach((account) => {
+      if (account.type === 'pension' && account.lumpSumElection !== undefined && account.lumpSumOffer !== undefined) {
+        actionReferencedAccountIds.add(account.lumpSumElection.rolloverAccountId)
+      }
+      if (account.type === 'annuity' && account.purchase !== undefined) {
+        actionReferencedAccountIds.add(account.purchase.fundingAccountId)
+      }
+    })
     const personIndexesById = new Map<string, number[]>()
     plan.household.people.forEach((person, index) => {
       const indexes = personIndexesById.get(person.id)

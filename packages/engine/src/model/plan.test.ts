@@ -784,6 +784,20 @@ describe('pension lump-sum election', () => {
     expect(parsePlan(plan).ok).toBe(true)
   })
 
+  it('refuses a duplicated account id once a rollover election references it', () => {
+    // The ownership validation resolves the target through a map where the last
+    // duplicate wins, while the simulator moves balances first-match-wins. A
+    // duplicated id could therefore validate against one record and move money
+    // in the other, so a referenced duplicate is ambiguous and refused — the
+    // same protection action-referenced accounts already have.
+    const plan = planWithElection({ amount: 300_000, electionYear: 2030 }, 'a2')
+    const owned = plan.accounts.find((a) => a.id === 'a2')!
+    plan.accounts.push({ ...owned, name: 'Duplicate of a2' })
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(false)
+    expect(parsed.ok ? [] : parsed.issues.join('\n')).toContain('duplicate account id "a2"')
+  })
+
   it('refuses an inherited IRA as the rollover target', () => {
     const parsed = parsePlan(planWithElection({ amount: 300_000, electionYear: 2030 }, 'inh1'))
     expect(parsed.ok).toBe(false)
