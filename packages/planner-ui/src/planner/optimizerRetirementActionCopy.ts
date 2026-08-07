@@ -64,8 +64,9 @@ export function optimizerRetirementActionExplanation(
     count === 1
       ? 'This plan records 1 retirement action (a withdrawal, a Roth conversion, or a QCD)'
       : `This plan records ${count} retirement actions (withdrawals, Roth conversions, or QCDs)`
+  const setClause = count === 1 ? 'set for a specific amount and year' : 'each set for a specific amount and year'
   return (
-    `${subject} set for a specific amount and year. The optimizer's search does account for them: the ` +
+    `${subject} ${setClause}. The optimizer's search does account for them: the ` +
     'balances it searches against already carry the money those actions move, and the income a recorded ' +
     'conversion adds is a floor that any schedule it prices stacks on top of. This page still presents ' +
     'no schedule for a plan that records actions. A schedule shown here would sit on top of your own ' +
