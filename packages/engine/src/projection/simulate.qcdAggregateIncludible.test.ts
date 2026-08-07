@@ -26,6 +26,19 @@
  * B / D. That reading is the one the record itself carried while it was
  * approximated, and it is wrong for a reason the Form 8606 instructions state
  * outright — a QCD is not a line-7 distribution, so it is not in line 9 either.
+ *
+ * ASSERTED TO THE CENT, AND WHY THAT IS NOT A WEAKENING. Every fixture below
+ * holds the return at zero, so the pre-distribution instant the legacy fallback
+ * measures and the December 31 instant §408(d)(2)(C) requires coincide exactly
+ * and the arithmetic above is the same on either arm. What changed on
+ * 2026-08-07 is which arm runs it: the aggregate gift became source-allocatable,
+ * so these years reach the owned-non-Roth-IRA annual settlement, which allocates
+ * basis in whole cents against an exact-cent line 9 instead of in floats. The
+ * figures move by under a cent and by nothing else — the ORDER fixture by
+ * 0.077 cents and the CEILING fixture by 0.267 — while the readings they
+ * discriminate against sit 19 and 980 dollars away. A 1e-6 tolerance here would
+ * be pinning the quantization rather than the statute, which is what the
+ * settled-path suite on `irc-408-d-2-C` already says in as many words.
  */
 import { expect, it } from 'vitest'
 
@@ -34,7 +47,7 @@ import { createFlatTaxCalculator } from './flatTax.js'
 import { describeRule } from '../rules/describeRule.js'
 import { buildOptimizerInput } from './optimizePlan.js'
 import { simulatePlan } from './simulate.js'
-import type { OptimizerYearProbe } from './types.js'
+import type { OptimizerYearProbe, YearResult } from './types.js'
 
 let counter = 0
 const testIds = (): string => `qcd-d-${++counter}`
@@ -105,6 +118,10 @@ interface Observed {
   readonly magi: number
   /** Basis returned by the year's forced distribution, from the LP probe. */
   readonly basisConsumed: number
+  /** Whether the owned-IRA annual settlement priced the year, or the fallback did. */
+  readonly settled: boolean
+  /** The committed annual replay, where the settlement priced the year. */
+  readonly replay: YearResult['ownedNonRothIraAnnualReplay']
   readonly probe: OptimizerYearProbe
 }
 
@@ -122,6 +139,8 @@ function observe(plan: Plan): Observed {
     qcd: year.qcd,
     magi: year.magi,
     basisConsumed: year.rmd - (probe.rmdTaxable ?? year.rmd),
+    settled: year.ownedNonRothIraAnnualReplay !== undefined,
+    replay: year.ownedNonRothIraAnnualReplay,
     probe,
   }
 }
@@ -171,14 +190,17 @@ describeRule('irc-408-d-8-D-projection-qcd-after-pro-rata', {
     expect(observed.rmd).toBeCloseTo(ORDER_RMD, 6)
     expect(observed.qcd).toBeCloseTo(ORDER_GIFT, 6)
 
-    expect(observed.magi).toBeCloseTo(accepted, 6)
+    expect(observed.magi).toBeCloseTo(accepted, 2)
     expect(observed.magi).toBeCloseTo(3_980.77, 2)
-    expect(observed.magi).not.toBeCloseTo(readings.giftCarvedOutButLeftInTheDenominator, 6)
-    expect(observed.magi).not.toBeCloseTo(readings.engineProRatedTheWholeRequirementFirst, 6)
+    expect(observed.magi).not.toBeCloseTo(readings.giftCarvedOutButLeftInTheDenominator, 2)
+    expect(observed.magi).not.toBeCloseTo(readings.engineProRatedTheWholeRequirementFirst, 2)
 
     // The basis half, which is the half that outlives the year: 5,000 × 0.203846.
-    expect(observed.basisConsumed).toBeCloseTo(ORDER_RESIDUAL * ORDER_FRACTION, 6)
+    expect(observed.basisConsumed).toBeCloseTo(ORDER_RESIDUAL * ORDER_FRACTION, 2)
     expect(observed.basisConsumed).toBeCloseTo(1_019.23, 2)
+    // And the settlement is what priced it, which is the fact that moved: this
+    // household was on the legacy fallback until the gift became allocatable.
+    expect(observed.settled).toBe(true)
   })
 })
 
@@ -226,14 +248,15 @@ describeRule('irc-408-d-8-D-projection-qcd-after-pro-rata', {
     // The shape that separates this fixture from the one above.
     expect(CEIL_GIFT).toBeGreaterThan(CEIL_RMD * 0.8)
 
-    expect(observed.magi).toBeCloseTo(accepted, 6)
+    expect(observed.magi).toBeCloseTo(accepted, 2)
     expect(observed.magi).toBeCloseTo(1_736.99, 2)
-    expect(observed.magi).not.toBeCloseTo(readings.giftCarvedOutButLeftInTheDenominator, 6)
+    expect(observed.magi).not.toBeCloseTo(readings.giftCarvedOutButLeftInTheDenominator, 2)
     expect(observed.magi)
-      .not.toBeCloseTo(readings.engineCappedTheExclusionAtTheRequirementsTaxableShare, 6)
+      .not.toBeCloseTo(readings.engineCappedTheExclusionAtTheRequirementsTaxableShare, 2)
+    expect(observed.settled).toBe(true)
 
     // 2,194.09 × 0.208333 = 457.10, against the 8,438.82 the ledger used to burn.
-    expect(observed.basisConsumed).toBeCloseTo(CEIL_RESIDUAL * CEIL_FRACTION, 6)
+    expect(observed.basisConsumed).toBeCloseTo(CEIL_RESIDUAL * CEIL_FRACTION, 2)
     expect(observed.basisConsumed).toBeCloseTo(457.10, 2)
     expect(observed.basisConsumed).not.toBeCloseTo(8_438.82, 2)
 
@@ -298,6 +321,27 @@ describeRule('irc-408-d-8-D-projection-qcd-after-pro-rata', {
     expect(observed.magi).not.toBeCloseTo(readings.giftQualifiesInFullWithNoAggregateCeiling, 6)
     // The requirement returned itself in basis, at a fraction of exactly 1.
     expect(observed.basisConsumed).toBeCloseTo(EXCESS_RMD, 6)
+
+    // THE HALF THAT OUTLIVES THE YEAR, and the half no assertion here reached
+    // until 2026-08-07. Under (B)'s closing sentence the 10,000 of excess is
+    // not a gift at all, so it belongs on Form 8606 line 7, in the line-9
+    // denominator, and it recovers basis:
+    //
+    //   line 6 (Dec 31 value)  = 100,000 - 4,219.41 - 45,780.59 = 50,000.00
+    //   line 7                 = 4,219.41 + 5,780.59            = 10,000.00
+    //   line 9                 = 50,000 + 10,000                = 60,000.00
+    //   line 10                = 60,000 / 60,000                =  1.000
+    //   line 14 (basis fwd)    = 60,000 - 10,000                = 50,000.00
+    //
+    // The replay used to keep the whole moving draw off line 7 and hand
+    // 55,780.59 forward — and `simulate.ts` writes the replay's figure into
+    // `iraBasisByOwner`, so that was the number every later year was priced
+    // from, against the ledger's own correct 50,000.
+    const owner = observed.replay!.annualReplay.ownerReplays[0]!
+    expect(owner.line7AllocationEvidence.annualGrossAmount).toBe(1_000_000)
+    expect(owner.annualBasisRatio.denominatorMinorUnits).toBe(6_000_000)
+    expect(owner.nextYearOpeningBasisAmount).toBe(5_000_000)
+    expect(owner.nextYearOpeningBasisAmount).not.toBe(5_578_059)
   })
 })
 

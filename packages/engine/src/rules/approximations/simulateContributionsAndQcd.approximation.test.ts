@@ -187,31 +187,122 @@ describeRule('irc-401-c-2-earned-income-not-modeled', {
 })
 
 // --------------------------------------------------------------------------
-// Household substitution for the individual donor
+// One donor, one limit
 // --------------------------------------------------------------------------
 
-/** One indexed annual QCD limit, the figure the ledger applies once per household. */
+/** One taxpayer's indexed annual QCD limit for 2026. */
 const QCD_LIMIT = pack2026.rmd.qcdAnnualLimit
+
+/** A married couple, both past the applicable age, each with their own IRA. */
+function donorCouplePlan(iraBalance: number): Plan {
+  const plan = soloPlan('1946-06-15', null) // 80 in 2026, past the applicable age
+  plan.household.filingStatus = 'marriedFilingJointly'
+  plan.household.people.push({
+    id: 'p2',
+    name: 'Sam',
+    dob: '1946-06-15',
+    sex: 'average',
+    retirementAge: null,
+    longevity: { planningAge: 95, source: 'manual' },
+  })
+  plan.accounts = [
+    cash(0),
+    traditionalIra(iraBalance, 0, 'p1'),
+    traditionalIra(iraBalance, 0, 'p2'),
+  ]
+  return plan
+}
 
 describeRule('irc-408-d-8-A-projection-household-qcd-aggregation', {
   readings: {
-    // 408(d)(8)(A) limits the exclusion "with respect to a taxpayer". Two
-    // spouses filing jointly are two taxpayers, each with their own IRA large
-    // enough to fund a whole limit, so the joint return excludes two of them.
-    statuteOneLimitPerTaxpayer: QCD_LIMIT * 2,
-    engineOneLimitPerHousehold: QCD_LIMIT,
+    // 408(d)(8)(A) limits the exclusion "with respect to a taxpayer", and (G)
+    // indexes that per-taxpayer amount. Two spouses filing jointly are two
+    // taxpayers, each with their own IRA large enough to fund a whole limit, so
+    // a joint return can exclude up to two of them and a gift of one and a half
+    // is inside what the two of them may exclude.
+    statuteOneLimitPerTaxpayer: QCD_LIMIT * 1.5,
+    // The aggregate arm until 2026-08-07: one indexed figure applied once to the
+    // pooled household ask, which stopped a couple at a single taxpayer's limit.
+    oneLimitPerHousehold: QCD_LIMIT,
   },
   accepted: 'statuteOneLimitPerTaxpayer',
-  produced: 'engineOneLimitPerHousehold',
-  note: 'one annual dollar limit for two donors',
-}, ({ accepted, produced }) => {
-  it('caps two spouses giving from their own IRAs at a single annual limit', () => {
-    const plan = soloPlan('1946-06-15', null) // 80 in 2026, past the applicable age
+  note: 'a couple giving more than one limit and less than two',
+}, ({ accepted, readings }) => {
+  it('excludes a couple’s gift above one limit against their two limits', () => {
+    // Above one limit and below two, which is the band that discriminates: a
+    // gift of exactly two limits would also be excluded in full by a reading
+    // that simply doubled the household figure without charging either donor.
+    const plan = donorCouplePlan(3_000_000)
+    plan.strategies.qcdAnnual = QCD_LIMIT * 1.5
+
+    const year = year2026(plan)
+
+    // Each spouse's own required distribution alone exceeds a whole limit, so
+    // the gift is fundable from either side and nothing below can be blamed on
+    // an IRA running dry.
+    expect(year.rmd).toBeGreaterThan(QCD_LIMIT * 2)
+    expect(year.qcd).toBeCloseTo(accepted, 6)
+    expect(year.qcd).not.toBeCloseTo(readings.oneLimitPerHousehold, 6)
+  })
+})
+
+describeRule('irc-408-d-8-A-projection-household-qcd-aggregation', {
+  readings: {
+    // The other half of "per taxpayer": one donor has one limit, and the
+    // household cannot borrow a second from a spouse who is not there.
+    statuteCapsOneDonorAtOneLimit: QCD_LIMIT,
+    // The reading a naive per-donor fix invites: cap only after attribution and
+    // let the household ask through when there is nobody to reallocate it to.
+    householdAskGivenInFull: QCD_LIMIT * 1.5,
+  },
+  accepted: 'statuteCapsOneDonorAtOneLimit',
+  note: 'a single donor asking for more than their own limit',
+}, ({ accepted, readings }) => {
+  it('still clamps one donor at one limit', () => {
+    const DONOR_IRA_BALANCE = 3_000_000
+    const plan = soloPlan('1946-06-15', null) // 80 in 2026
+    plan.accounts = [cash(0), traditionalIra(DONOR_IRA_BALANCE, 0, 'p1')]
+    plan.strategies.qcdAnnual = QCD_LIMIT * 1.5
+
+    const year = year2026(plan)
+
+    // The requirement alone carries more than a whole limit, and the IRA behind
+    // it could fund the rest beyond the requirement, so nothing here clamps the
+    // gift except the donor's own 408(d)(8)(A) figure.
+    expect(year.rmd).toBeGreaterThan(QCD_LIMIT)
+    expect(DONOR_IRA_BALANCE).toBeGreaterThan(QCD_LIMIT * 1.5)
+    expect(year.qcd).toBeCloseTo(accepted, 6)
+    expect(year.qcd).not.toBeCloseTo(readings.householdAskGivenInFull, 6)
+  })
+})
+
+// The eligibility half of the same record, which #242's per-owner attribution
+// closed and this fixture pins. Registered rather than left as a bare `it`,
+// because the record's coverage obligation runs to every departure it once
+// described and this is one of the three.
+describeRule('irc-408-d-8-A-projection-household-qcd-aggregation', {
+  readings: {
+    // 408(d)(8)(B)(ii) admits only a distribution made on or after the date
+    // "the individual for whose benefit the plan is maintained has attained age
+    // 70 1/2", so a spouse years short of it contributes neither a required
+    // distribution the gift can be routed out of nor an account it can be
+    // drained from. The household is held to the eligible donor's own limit.
+    statuteFundsOnlyFromTheEligibleDonor: QCD_LIMIT,
+    // The reading the arm carried while it gated on the household: pass the
+    // eligibility test on the elder, then fund the gift from whatever IRAs the
+    // household happens to hold.
+    householdReachesTheIneligibleSpousesIra: QCD_LIMIT * 1.5,
+  },
+  accepted: 'statuteFundsOnlyFromTheEligibleDonor',
+  note: 'an eligible donor beside an ineligible spouse',
+}, ({ accepted, readings }) => {
+  it('funds a household gift only from the eligible donor', () => {
+    const plan = soloPlan('1946-06-15', null) // 80 in 2026, eligible
     plan.household.filingStatus = 'marriedFilingJointly'
     plan.household.people.push({
       id: 'p2',
       name: 'Sam',
-      dob: '1946-06-15',
+      dob: '1968-06-15', // 58 in 2026, years short of 70 1/2
       sex: 'average',
       retirementAge: null,
       longevity: { planningAge: 95, source: 'manual' },
@@ -221,16 +312,99 @@ describeRule('irc-408-d-8-A-projection-household-qcd-aggregation', {
       traditionalIra(3_000_000, 0, 'p1'),
       traditionalIra(3_000_000, 0, 'p2'),
     ]
-    plan.strategies.qcdAnnual = QCD_LIMIT * 2
+    plan.strategies.qcdAnnual = QCD_LIMIT * 1.5
 
     const year = year2026(plan)
 
-    // Each spouse's own required distribution alone exceeds a whole limit, so
-    // the accepted reading is fundable twice over from separate IRAs and the
-    // shortfall below cannot be blamed on either IRA running dry.
-    expect(year.rmd).toBeGreaterThan(QCD_LIMIT * 2)
-    expect(year.qcd).toBeCloseTo(produced, 6)
-    expect(year.qcd).not.toBeCloseTo(accepted, 6)
+    expect(year.qcd).toBeCloseTo(accepted, 6)
+    expect(year.qcd).not.toBeCloseTo(
+      readings.householdReachesTheIneligibleSpousesIra, 6,
+    )
+  })
+})
+
+// --------------------------------------------------------------------------
+// The one-cent bound the carve leaves on the published denominator
+// --------------------------------------------------------------------------
+
+// THE HONEST HALF OF THE ATTRIBUTION CONVENTION, pinned rather than asserted in
+// prose, because the `irc-408-d-8-A-projection-household-qcd-aggregation`
+// record makes a claim about order-independence that is true of one step and
+// not of the next.
+//
+// WHICH DONOR gives is decided in sorted owner id order and does not move with
+// the plan's account listing. WHERE THE FRACTIONAL CENT LANDS does. Once an
+// owner's routed share is fixed it is carved out of their own required
+// distributions greedily in mutation order, every entry the carve consumes
+// whole lands on a line-7 gross of zero, exactly one entry is left partly
+// consumed, and each entry's gross is rounded to cents on its own -- so the SUM
+// can differ by a cent depending on which entry carries the remainder.
+//
+// NOT REMOVABLE WITHOUT COST, which is why this is a bound rather than a bug.
+// The annual ledger carves in plan dollars at its commit site, and the
+// settlement matches an assumed character only when its gross agrees to the
+// cent. Rounding the carve earlier in the replay would make the two arms
+// disagree and stop the year settling at all, which is a far larger error than
+// the one cent it would remove.
+const PERMUTATIONS = [
+  ['a', 'b', 'c'], ['a', 'c', 'b'], ['b', 'a', 'c'],
+  ['b', 'c', 'a'], ['c', 'a', 'b'], ['c', 'b', 'a'],
+] as const
+const PERMUTATION_BALANCES: Readonly<Record<string, number>> =
+  { a: 333_333, b: 222_222, c: 111_111 }
+
+/** The published Form 8606 line-9 denominator, in cents, for one listing. */
+function denominatorAcrossListing(order: readonly string[], gift: number): number {
+  const plan = soloPlan('1945-01-01', null) // 81 in 2026, well past the applicable age
+  plan.expenses.baseAnnual = 0
+  plan.expenses.healthcare = {
+    pre65MonthlyPremiumPerPerson: 0,
+    applyAcaCredit: false,
+    medicareExtrasMonthlyPerPerson: 0,
+  }
+  plan.accounts = [
+    cash(50_000),
+    // The basis sits on whichever IRA is listed first, so the pool carries one
+    // basis figure however the accounts are permuted.
+    ...order.map((id, index) => {
+      const account = traditionalIra(PERMUTATION_BALANCES[id]!, 0, 'p1') as
+        Extract<Account, { type: 'traditional' }>
+      return {
+        ...account,
+        id,
+        annualReturnPct: 0,
+        ...(index === 0 ? { nondeductibleBasis: 100_000 } : {}),
+      }
+    }),
+  ]
+  if (gift > 0) plan.strategies.qcdAnnual = gift
+
+  const year = year2026(plan)
+  return year.ownedNonRothIraAnnualReplay!.annualReplay
+    .ownerReplays[0]!.annualBasisRatio.denominatorMinorUnits
+}
+
+describe('the routed carve leaves a one-cent bound on the published denominator', () => {
+  it('publishes the same denominator to the cent when nothing is gifted', () => {
+    const denominators = PERMUTATIONS
+      .map((order) => denominatorAcrossListing(order, 0))
+
+    // The control. Without a carve there is no fractional remainder to place,
+    // so account order changes nothing at all.
+    expect(new Set(denominators).size).toBe(1)
+    expect(denominators[0]).toBe(66_666_600)
+  })
+
+  it('varies by at most one cent when a gift is routed out of the requirement', () => {
+    const denominators = PERMUTATIONS
+      .map((order) => denominatorAcrossListing(order, 40_000))
+
+    // Two values, one cent apart, and no wider. If this ever spreads further
+    // the carve stopped being a single-entry remainder and the record's claim
+    // about the bound has to be re-measured.
+    expect(new Set(denominators).size).toBe(2)
+    expect(Math.max(...denominators) - Math.min(...denominators)).toBe(1)
+    expect(Math.min(...denominators)).toBe(62_666_600)
   })
 })
 
@@ -362,50 +536,73 @@ describeRule('treas-reg-1-408-8-g-projection-named-qcd-beyond-rmd', {
 // differ by exactly the growth on the retained balance, so the fallback's
 // denominator is invariant to the return assumption and the statute's is not.
 //
-// SCOPE, WHICH THIS SHAPE IS CHOSEN TO REACH. The fallback governs only a year
-// the owned-non-Roth-IRA annual settlement produced no usable characters for,
-// and the aggregate gift below is what puts this household there: a gift routed
-// out of a required distribution mints a nonmoving overlay carrying no owner and
-// no source account, so `ownedNonRothIraRuntimeSourceSeries` refuses the year
-// with `qcdStageRequired` and the pass keeps the figures the fallback committed.
-// Drop the gift and the same household settles, at the December 31 measure —
-// which is the boundary the second suite below pins, and without that suite this
-// one reads as a claim about the whole engine rather than about one arm of it.
+// SCOPE, WHICH DECIDES WHICH SHAPE THIS FIXTURE HAS TO BE BUILT ON. The fallback
+// governs only a year the owned-non-Roth-IRA annual settlement produced no usable
+// characters for, so the fixture has to reach a refusal that a plain valid Plan
+// can still reach. Until 2026-08-07 an aggregate charitable gift routed out of a
+// required distribution was such a shape — the nonmoving overlay carried no owner,
+// and `ownedNonRothIraRuntimeSourceSeries` refused the year with
+// `qcdStageRequired`. That refusal is gone: the overlay now carries the
+// 408(d)(8)(D) owner attribution the annual ledger settles when it sizes the gift,
+// so a gift year settles, and the suite below pins it doing so at the statutory
+// figure.
+//
+// What remains reachable is an owned-IRA-funded annuity purchase, which is what
+// this fixture uses. The premium leaves the captured owned-IRA pool for a
+// contract the replay does not carry, `annuityStageRequired` refuses the year,
+// and the fallback prices it. (A Plan-declared exact ordinary withdrawal sourced
+// from an owned IRA reaches the fallback the same way, through
+// `exactActionStageRequired`; one shape is enough to pin the measure.)
+//
+// THE TWO READINGS DIFFER ONLY IN THE INSTANT, deliberately. Whether the premium
+// should have left the section 72 pool at all is a different question with its own
+// refusal, and a fixture that varied it would stop being about this record. So
+// both readings below are computed over the SAME pool — the engine's, with the
+// premium out of it — and disagree only about when that pool is measured.
 //
 // The shape holds everything but the return fixed and gives line 8 far more
 // weight than line 7, which is where the departure is material: a 76-year-old
 // with a 1,000,000 dollar IRA that is 20 percent basis, taking the 42,194.09
-// requirement, routing 40,000 of it to charity, and converting 100,000.
+// requirement, converting 100,000, and paying a 50,000 dollar annuity premium
+// out of the same IRA.
 const INSTANT_IRA_BALANCE = 1_000_000
 const INSTANT_IRA_BASIS = 200_000
 const INSTANT_REQUIRED_DISTRIBUTION = INSTANT_IRA_BALANCE / 23.7
 const INSTANT_GIFT = 40_000
 const INSTANT_CONVERSION = 100_000
 const INSTANT_RETURN_PCT = 5
-/** Form 8606 lines 7 + 8: the requirement the household kept, plus the conversion. */
-const INSTANT_ANNUAL_GROSS =
-  INSTANT_REQUIRED_DISTRIBUTION - INSTANT_GIFT + INSTANT_CONVERSION
-/** Line 6 at a 5 percent return: what the account retained, grown. */
-const INSTANT_LINE_6 =
-  (INSTANT_IRA_BALANCE - INSTANT_REQUIRED_DISTRIBUTION - INSTANT_CONVERSION) *
-  (1 + INSTANT_RETURN_PCT / 100)
-/** Line 9, and the fraction it produces against the unreduced basis. */
-const INSTANT_LINE_9 = INSTANT_LINE_6 + INSTANT_ANNUAL_GROSS
-/** The fallback's denominator: pre-distribution pool less the qualified gift. */
-const INSTANT_FALLBACK_DENOMINATOR = INSTANT_IRA_BALANCE - INSTANT_GIFT
+const INSTANT_ANNUITY_PREMIUM = 50_000
+/** Form 8606 lines 7 + 8 on the annuity shape: the requirement, plus the conversion. */
+const ANNUITY_ANNUAL_GROSS =
+  INSTANT_REQUIRED_DISTRIBUTION + INSTANT_CONVERSION
+/** What the account keeps: the premium left it, and so did lines 7 and 8. */
+const ANNUITY_RETAINED =
+  INSTANT_IRA_BALANCE - INSTANT_ANNUITY_PREMIUM - ANNUITY_ANNUAL_GROSS
+/** Form 8606 line 9 at a given return: the December 31 value, plus lines 7 + 8. */
+const annuityLine9 = (returnPct: number): number =>
+  ANNUITY_RETAINED * (1 + returnPct / 100) + ANNUITY_ANNUAL_GROSS
+/** The fallback's denominator: the pool as it stood before the first distribution. */
+const ANNUITY_FALLBACK_DENOMINATOR =
+  INSTANT_IRA_BALANCE - INSTANT_ANNUITY_PREMIUM
 
 /**
- * The shared shape. `gift` is the only thing that decides which arm of the
- * engine prices the year, which is why the settled-path suite below builds its
- * household from this same function rather than a lookalike: a difference the
- * two suites did not intend would otherwise read as the boundary they exist to
- * draw.
+ * The shared shape. `gift` and `annuityPremium` are the only things that decide
+ * which arm of the engine prices the year, which is why the settled-path suite
+ * below builds its households from this same function rather than a lookalike:
+ * a difference the two suites did not intend would otherwise read as the
+ * boundary they exist to draw.
  */
-function measurementInstantPlan(returnPct: number, gift = INSTANT_GIFT): Plan {
+function measurementInstantPlan(
+  returnPct: number,
+  options: { gift?: number; annuityPremium?: number } = {},
+): Plan {
+  const gift = options.gift ?? 0
+  const annuityPremium = options.annuityPremium ?? 0
   const plan = soloPlan('1950-01-01', null) // 76 in 2026
   plan.assumptions.defaultReturnPct = returnPct
-  // Spending is funded from cash so nothing but the requirement, the gift and
-  // the conversion moves through the IRA, and the return is the only variable.
+  // Spending is funded from cash so nothing but the requirement, the gift, the
+  // premium and the conversion moves through the IRA, and the return is the
+  // only variable.
   plan.expenses.baseAnnual = 0
   plan.expenses.healthcare = {
     pre65MonthlyPremiumPerPerson: 0,
@@ -417,6 +614,25 @@ function measurementInstantPlan(returnPct: number, gift = INSTANT_GIFT): Plan {
     { ...(cash(200_000) as Extract<Account, { type: 'cash' }>), annualReturnPct: 0 },
     { ...ira, nondeductibleBasis: INSTANT_IRA_BASIS, annualReturnPct: returnPct },
     rothIra(0),
+    ...(annuityPremium > 0
+      ? [{
+        type: 'annuity' as const,
+        id: 'measurement-instant-annuity',
+        name: 'Qualified annuity',
+        ownerPersonId: 'p1',
+        annualReturnPct: null,
+        startAge: 80,
+        monthlyAmount: 0,
+        colaPct: 0,
+        taxablePct: 100,
+        purchase: {
+          year: 2026,
+          premium: annuityPremium,
+          fundingAccountId: ira.id,
+          taxQualification: 'qualified' as const,
+        },
+      }]
+      : []),
   ]
   if (gift > 0) plan.strategies.qcdAnnual = gift
   plan.strategies.rothConversion = {
@@ -426,41 +642,50 @@ function measurementInstantPlan(returnPct: number, gift = INSTANT_GIFT): Plan {
   return plan
 }
 
+/** The annuity-funded household, which is the one the fallback still prices. */
+function annuityPlan(returnPct: number): Plan {
+  return measurementInstantPlan(returnPct, {
+    annuityPremium: INSTANT_ANNUITY_PREMIUM,
+  })
+}
+
 describeRule('irc-408-d-2-C-projection-pro-rata-measurement-instant', {
   readings: {
     // 408(d)(2)(C) with Form 8606 line 6: the denominator is the December 31
-    // value grown at 5 percent, plus lines 7 and 8. 1,002,890.30, a fraction of
-    // 0.1994236, and 81,814.18 of ordinary income.
+    // value grown at 5 percent, plus lines 7 and 8. 990,390.30, a fraction of
+    // 0.2019403, and 113,479.33 of ordinary income.
     statuteMeasuresTheContractAtTheCloseOfTheYear:
-      INSTANT_ANNUAL_GROSS * (1 - INSTANT_IRA_BASIS / INSTANT_LINE_9),
-    // The fallback: the pre-distribution pool less the qualified gift, which
-    // never saw the year's return. 960,000, a fraction of 0.2083333, and
-    // 80,903.66 — the same figure at any return at all.
+      ANNUITY_ANNUAL_GROSS *
+        (1 - INSTANT_IRA_BASIS / annuityLine9(INSTANT_RETURN_PCT)),
+    // The fallback: the pool as it stood before the first distribution, which
+    // never saw the year's return. 950,000, a fraction of 0.2105263, and
+    // 112,258.49 — the same figure at any return at all.
     fallbackMeasuresBeforeTheFirstDistribution:
-      INSTANT_ANNUAL_GROSS * (1 - INSTANT_IRA_BASIS / INSTANT_FALLBACK_DENOMINATOR),
+      ANNUITY_ANNUAL_GROSS *
+        (1 - INSTANT_IRA_BASIS / ANNUITY_FALLBACK_DENOMINATOR),
   },
   accepted: 'statuteMeasuresTheContractAtTheCloseOfTheYear',
   produced: 'fallbackMeasuresBeforeTheFirstDistribution',
   note: 'the fallback ledger',
 }, ({ accepted, produced }) => {
   it('prices a gain year off a denominator that never saw the gain', () => {
-    const year = year2026(measurementInstantPlan(INSTANT_RETURN_PCT))
+    const year = year2026(annuityPlan(INSTANT_RETURN_PCT))
 
-    // Both readings rest on this exact requirement, gift and conversion.
+    // Both readings rest on this exact requirement and conversion, and on the
+    // premium having left the pool before either of them was measured.
     expect(year.rmd).toBeCloseTo(INSTANT_REQUIRED_DISTRIBUTION, 6)
-    expect(year.qcd).toBeCloseTo(INSTANT_GIFT, 6)
+    expect(year.qcd).toBe(0)
     expect(year.rothConversion).toBeCloseTo(INSTANT_CONVERSION, 6)
 
     expect(year.magi).toBeCloseTo(produced, 6)
-    expect(year.magi).toBeCloseTo(80_903.66, 2)
+    expect(year.magi).toBeCloseTo(112_258.49, 2)
     expect(year.magi).not.toBeCloseTo(accepted, 6)
-    expect(accepted).toBeCloseTo(81_814.18, 2)
+    expect(accepted).toBeCloseTo(113_479.33, 2)
     // The gap the measurement instant costs this household, in one year.
-    expect(accepted - produced).toBeCloseTo(910.52, 2)
-    // And the two intermediate figures the accepted reading is built from, so a
-    // future reader can check the derivation rather than the conclusion.
-    expect(INSTANT_LINE_6).toBeCloseTo(900_696.20, 2)
-    expect(INSTANT_LINE_9).toBeCloseTo(1_002_890.30, 2)
+    expect(accepted - produced).toBeCloseTo(1_220.84, 2)
+    // And the intermediate the accepted reading is built from, so a future
+    // reader can check the derivation rather than the conclusion.
+    expect(annuityLine9(INSTANT_RETURN_PCT)).toBeCloseTo(990_390.30, 2)
   })
 
   it('returns the same income at a 0 percent and a negative return', () => {
@@ -468,9 +693,9 @@ describeRule('irc-408-d-2-C-projection-pro-rata-measurement-instant', {
     // measured before the year's growth cannot move when the growth does. If
     // this test ever fails, the measurement instant moved and the record above
     // is what has to be reclassified.
-    const gain = year2026(measurementInstantPlan(INSTANT_RETURN_PCT))
-    const flat = year2026(measurementInstantPlan(0))
-    const loss = year2026(measurementInstantPlan(-INSTANT_RETURN_PCT))
+    const gain = year2026(annuityPlan(INSTANT_RETURN_PCT))
+    const flat = year2026(annuityPlan(0))
+    const loss = year2026(annuityPlan(-INSTANT_RETURN_PCT))
 
     expect(flat.magi).toBeCloseTo(produced, 6)
     expect(gain.magi).toBeCloseTo(flat.magi, 6)
@@ -480,7 +705,7 @@ describeRule('irc-408-d-2-C-projection-pro-rata-measurement-instant', {
     expect(accepted).not.toBeCloseTo(produced, 6)
     // And WHY this household is on the fallback at all, pinned rather than
     // asserted in prose: the settlement published nothing for the year. If the
-    // aggregate gift arm ever becomes source-allocatable this shape settles,
+    // annuity premium ever stops leaving the captured pool this shape settles,
     // and then it is this suite — not only the record — that has to be revisited.
     expect(gain).not.toHaveProperty('ownedNonRothIraAnnualReplay')
   })
@@ -492,23 +717,22 @@ describeRule('irc-408-d-2-C-projection-pro-rata-measurement-instant', {
 
 // The boundary of the record above, pinned from the other side, because the
 // record was first written as a claim about the whole engine and its one
-// fixture sat on the single shape where that claim survives.
+// fixture sat on the single shape where that claim survived.
 //
-// Drop the charitable gift and nothing else changes: same 76-year-old, same
-// 1,000,000 dollar IRA at 20 percent basis, same 42,194.09 requirement, same
-// 100,000 dollar conversion. With no gift there is no nonmoving overlay, the
-// source series does not refuse the year, and the owned-non-Roth-IRA annual
-// settlement prices it — off the December 31 pool balance, which is the instant
-// 408(d)(2)(C) names.
+// Drop the annuity and nothing else changes: same 76-year-old, same 1,000,000
+// dollar IRA at 20 percent basis, same 42,194.09 requirement, same 100,000
+// dollar conversion. There is nothing to take the year off the settled path, so
+// the owned-non-Roth-IRA annual settlement prices it — off the December 31 pool
+// balance, which is the instant 408(d)(2)(C) names.
 //
-// THE FIGURES BELOW ARE DERIVED, NOT OBSERVED. With no gift the whole of the
-// year's distributions is added back, so line 7 + line 8 is just the requirement
-// plus the conversion:
+// THE FIGURES BELOW ARE DERIVED, NOT OBSERVED. The whole of the year's
+// distributions is added back, so line 7 + line 8 is just the requirement plus
+// the conversion:
 //
 //   distributions        = 42,194.09 + 100,000     = 142,194.09
 //   retained             = 1,000,000 − 142,194.09  =   857,805.91
-//   line 6 at 5 percent  =   857,805.91 × 1.05     =   900,696.20
-//   line 9 at 5 percent  =   900,696.20 + 142,194.09 = 1,042,890.30
+//   line 6 at 5 percent  =   857,805.91 × 1.05     =   900,696.2055 (unrounded)
+//   line 9 at 5 percent  = 900,696.2055 + 142,194.09 = 1,042,890.2955 ≈ 1,042,890.30
 //   fraction             =   200,000 ÷ 1,042,890.30 =    0.1917747
 //   ordinary income      =   142,194.09 × (1 − 0.1917747) = 114,924.86
 //
@@ -519,9 +743,10 @@ describeRule('irc-408-d-2-C-projection-pro-rata-measurement-instant', {
 // signal: a denominator measured before the growth could not have produced it.
 //
 // Asserted to the cent rather than to the float. The settlement allocates basis
-// in whole cents against an exact-cent line 9, so it agrees with the closed form
-// above to the cent and not beyond; a tighter tolerance would be pinning the
-// quantization rather than the measurement instant.
+// in whole cents, and allocates Form 8606 lines 7 and 8 independently, so it
+// agrees with the closed form above to within those roundings and not beyond; a
+// tighter tolerance would be pinning the quantization rather than the
+// measurement instant.
 //
 // NOT REGISTERED THROUGH `describeRule`, deliberately. That helper's contract
 // for an approximated rule is that the fixture names the reading the engine
@@ -531,7 +756,7 @@ describeRule('irc-408-d-2-C-projection-pro-rata-measurement-instant', {
 // coverage obligation is already met by the fallback suite above; this suite
 // exists to bound it.
 
-/** Lines 7 + 8 with no gift to exclude: the requirement plus the conversion. */
+/** Lines 7 + 8 with nothing excluded: the requirement plus the conversion. */
 const SETTLED_ANNUAL_GROSS = INSTANT_REQUIRED_DISTRIBUTION + INSTANT_CONVERSION
 /** What the account keeps, before the year's return is credited to it. */
 const SETTLED_RETAINED = INSTANT_IRA_BALANCE - SETTLED_ANNUAL_GROSS
@@ -544,15 +769,15 @@ const settledOrdinaryIncome = (returnPct: number): number =>
 
 describe('irc-408-d-2-C — the settled path measures at the close of the year', () => {
   it('moves the pro-rata fraction with the year’s return', () => {
-    const gain = year2026(measurementInstantPlan(INSTANT_RETURN_PCT, 0))
-    const flat = year2026(measurementInstantPlan(0, 0))
+    const gain = year2026(measurementInstantPlan(INSTANT_RETURN_PCT))
+    const flat = year2026(measurementInstantPlan(0))
 
     // The settlement priced both years. Without this the suite could pass on a
     // household that fell through to the fallback and happened to agree.
     expect(gain.ownedNonRothIraAnnualReplay).toBeDefined()
     expect(flat.ownedNonRothIraAnnualReplay).toBeDefined()
     // Both figures rest on this exact requirement and conversion, and on there
-    // being no gift to take the year off the settled path.
+    // being nothing to take the year off the settled path.
     expect(gain.rmd).toBeCloseTo(INSTANT_REQUIRED_DISTRIBUTION, 6)
     expect(gain.rothConversion).toBeCloseTo(INSTANT_CONVERSION, 6)
     expect(gain.qcd).toBe(0)
@@ -569,5 +794,53 @@ describe('irc-408-d-2-C — the settled path measures at the close of the year',
     // can check the derivation rather than the conclusion.
     expect(settledLine9(INSTANT_RETURN_PCT)).toBeCloseTo(1_042_890.30, 2)
     expect(settledLine9(0)).toBeCloseTo(INSTANT_IRA_BALANCE, 2)
+  })
+
+  // THE FLIP, and the reason this suite is where it belongs. The household with
+  // a 40,000 dollar aggregate charitable gift routed out of the requirement was
+  // the `produced` fixture on this record until 2026-08-07: it reported
+  // 80,903.66 at every return, because the nonmoving overlay carried no owner,
+  // the source series refused the year, and the fallback's pre-distribution
+  // denominator priced it. The overlay now carries the 408(d)(8)(D) attribution,
+  // the year settles, and the figures are the statutory ones — including the one
+  // the old fixture asserted the engine could not produce.
+  //
+  //   lines 7 + 8          = (42,194.09 − 40,000) + 100,000 = 102,194.09
+  //   retained             = 1,000,000 − 42,194.09 − 100,000 =  857,805.91
+  //   line 9 at 5 percent  = 857,805.91 × 1.05 + 102,194.09  =  1,002,890.30
+  //   fraction             = 200,000 ÷ 1,002,890.30          =    0.1994236
+  //   ordinary income      = 102,194.09 × (1 − 0.1994236)    =   81,814.18
+  //
+  // The gift is in neither term, which is the whole of (D)'s proper adjustment:
+  // its dollars left the account so line 6 is already net of them, and the
+  // Form 8606 line-7 instructions keep them off line 7.
+  it('settles a gift year at the statutory denominator and moves with the return', () => {
+    const gain = year2026(measurementInstantPlan(INSTANT_RETURN_PCT, {
+      gift: INSTANT_GIFT,
+    }))
+    const flat = year2026(measurementInstantPlan(0, { gift: INSTANT_GIFT }))
+
+    expect(gain.qcd).toBeCloseTo(INSTANT_GIFT, 6)
+    expect(gain.rmd).toBeCloseTo(INSTANT_REQUIRED_DISTRIBUTION, 6)
+    expect(gain.ownedNonRothIraAnnualReplay).toBeDefined()
+    expect(flat.ownedNonRothIraAnnualReplay).toBeDefined()
+
+    const giftedAnnualGross =
+      INSTANT_REQUIRED_DISTRIBUTION - INSTANT_GIFT + INSTANT_CONVERSION
+    const giftedLine9 = (returnPct: number): number =>
+      SETTLED_RETAINED * (1 + returnPct / 100) + giftedAnnualGross
+    const giftedOrdinaryIncome = (returnPct: number): number =>
+      giftedAnnualGross * (1 - INSTANT_IRA_BASIS / giftedLine9(returnPct))
+
+    expect(giftedLine9(INSTANT_RETURN_PCT)).toBeCloseTo(1_002_890.30, 2)
+    expect(giftedLine9(0)).toBeCloseTo(INSTANT_IRA_BALANCE - INSTANT_GIFT, 2)
+    expect(gain.magi).toBeCloseTo(giftedOrdinaryIncome(INSTANT_RETURN_PCT), 1)
+    expect(gain.magi).toBeCloseTo(81_814.18, 2)
+    expect(flat.magi).toBeCloseTo(giftedOrdinaryIncome(0), 1)
+    expect(flat.magi).toBeCloseTo(80_903.66, 2)
+    // The discriminating half, and the exact assertion the old `produced`
+    // fixture made in reverse: the gift year is growth-SENSITIVE now.
+    expect(gain.magi).not.toBeCloseTo(flat.magi, 2)
+    expect(gain.magi - flat.magi).toBeCloseTo(910.52, 2)
   })
 })

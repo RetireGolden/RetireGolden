@@ -172,7 +172,14 @@ function entry(
     sourceAccountId: application.sourceAccountId,
     scheduledDate: null,
     scheduledSequence: application.mutationOrdinal,
-    grossAmount: application.amount,
+    // The Form 8606 gross, not the dollars that left the account. The two
+    // differ only on a required distribution a qualified charitable
+    // distribution was routed out of, where 408(d)(8)(D) deems the routed part
+    // includible and the line-7 instructions keep it off the line — so it is
+    // absent from the numerator this allocates over AND from the line-9
+    // denominator summed below, which is the whole of the proper adjustment
+    // (D)'s closing sentence requires.
+    grossAmount: application.form8606LineGrossAmount,
   }
 }
 

@@ -395,6 +395,19 @@ describe('private owned-IRA annual attempt settlement', () => {
       }
     }
     const blockedYears = cloneYears(project(plan))
+    if (kind === 'qcd') {
+      // A routed gift no longer blocks by existing: the nonmoving overlay
+      // carries the 408(d)(8)(D) attribution the annual ledger settled. What
+      // still blocks is an attribution the owner's own required distributions
+      // cannot absorb, which describes dollars no individual retirement plan
+      // could have routed, so the fixture corrupts exactly that.
+      const overlay = blockedYears[0]!.retirementRuntimeSource!
+        .nonmovingLegacyQcdOverlay!
+      ;(overlay.ownerAttributions[0] as {
+        qualifiedLine7ExclusionPlanDollars: number
+      }).qualifiedLine7ExclusionPlanDollars =
+        blockedYears[0]!.rmd + overlay.grossAmountPlanDollars
+    }
     if (kind === 'mixedOwnerAggregate') {
       // The simulator no longer produces this shape, so the fixture builds it:
       // p2's conversion re-pointed at p1's Roth and folded into p1's credit,

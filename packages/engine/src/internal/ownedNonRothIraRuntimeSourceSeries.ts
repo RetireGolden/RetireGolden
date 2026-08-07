@@ -1,5 +1,5 @@
 import { asAccountId, type AccountId, type PersonId } from '../actions/identity.js'
-import type { UsdCents } from '../actions/money.js'
+import { asUsdCents, type UsdCents } from '../actions/money.js'
 import { ledgerCentsToPlanDollars, planDollarsToLedgerCents } from '../actions/planBalanceAdapter.js'
 import { compareUtf16CodeUnits, deriveActionStructuralId } from '../actions/structuralId.js'
 import { planSchema, type Account, type Plan } from '../model/plan.js'
@@ -79,6 +79,20 @@ export interface NormalizedOwnedNonRothIraApplication {
    */
   readonly sourceBalanceRoundingResidualCents: -2 | -1 | 0 | 1 | 2
   readonly form8606Line: 'line7' | 'line8' | null
+  /**
+   * The gross this application presents on the Form 8606 line it belongs to,
+   * which is `amount` for every application except a required distribution a
+   * qualified charitable distribution was routed out of.
+   *
+   * The two figures answer different questions and must not be conflated. The
+   * balance chain is about DOLLARS THAT LEFT THE ACCOUNT, and every routed cent
+   * left it under this debit, so `amount` carries the whole requirement. Line 7
+   * is about DOLLARS THE RETURN REPORTS, and the Form 8606 line-7 instructions
+   * keep a qualified charitable distribution off it, so the routed and qualified
+   * part is absent here. `form8606Line` is null where the carve consumed the
+   * whole distribution, so an entry that reports nothing is not an entry at all.
+   */
+  readonly form8606LineGrossAmount: UsdCents
 }
 
 export interface NormalizedOwnedNonRothIraYearEndBalance {
@@ -1567,6 +1581,9 @@ function validateUnchecked(
         sourceBalanceRoundingResidualCents:
           Number(sourceBalanceRoundingResidual) as -2 | -1 | 0 | 1 | 2,
         form8606Line: shape.form8606Line,
+        // Provisional. The routed-gift carve below is the only thing that moves
+        // it, and it cannot run until the whole application chain is normalized.
+        form8606LineGrossAmount: occurrenceAmount,
       })
     }
     for (const occurrence of occurrenceSource.runtimeOccurrences) {
@@ -1611,11 +1628,14 @@ function validateUnchecked(
     const overlay = occurrenceSource.nonmovingLegacyQcdOverlay
     if (overlay !== null && (
       overlay.status !== 'nonmovingLegacyQcdCaptured' || overlay.kind !== 'legacyQcd' ||
-      overlay.taxYear !== taxYear || overlay.ownerPersonId !== null || overlay.sourceAccountId !== null ||
+      overlay.taxYear !== taxYear ||
       overlay.physicalMovement !== 'notAdditionalMovement' ||
-      overlay.inventoryReplay !== 'requiresSeparateQcdCharacterizationStage' ||
+      overlay.inventoryReplay !==
+        'attributedToOwnedIraRequiredDistributionGrosses' ||
+      !Array.isArray(overlay.ownerAttributions) ||
+      overlay.ownerAttributions.length === 0 ||
       cents(overlay.grossAmountPlanDollars, 'QCD overlay amount', { taxYear }) <= 0)) {
-      fail('sourceContractInvalid', 'A nonmoving QCD overlay must retain its exact captured contract and a positive amount', { taxYear })
+      fail('sourceContractInvalid', 'A nonmoving QCD overlay must retain its exact captured contract, a positive amount, and its owner attribution', { taxYear })
     }
     // The published annual gift is now reached by two routes that are not
     // interchangeable, exactly as the conversion total is. The aggregate
@@ -1649,13 +1669,157 @@ function validateUnchecked(
     )) {
       fail('sourceCoverageInvalid', 'The nonmoving QCD overlay plus every moving QCD occurrence must exact-rejoin the published annual QCD total', { taxYear })
     }
-    // The overlay's own dollars remain unallocated. Which owner's RMD carried
-    // the gift decides whose line-7 gross must shrink under 408(d)(8)(D), and
-    // one household scalar cannot answer that, so a routed gift still requires
-    // the separate characterization stage. A gift that moved on its own does
-    // not: its source account is named by its occurrence.
+    // THE MOVING HALF IS NOT ALL A GIFT, and treating it as though it were is
+    // how this replay used to overstate the basis it handed forward. IRC
+    // 408(d)(8)(B)'s closing sentence treats a distribution as a qualified
+    // charitable distribution "only to the extent that the distribution would be
+    // includible in gross income", and (D) caps that at the owner's aggregate
+    // includible amount. A draw past the cap never became a QCD, and the Form
+    // 8606 line-7 instructions exclude "Qualified charitable distributions
+    // (QCDs)" by name and nothing else -- so the unqualified part stays on line
+    // 7 and inside the line-9 denominator, exactly as the annual ledger's own
+    // pro-rata arm already treats it.
+    //
+    // Read from the year rather than re-derived. The ledger sized each draw
+    // against the cap when it committed it, and its per-occurrence answer is
+    // published with the year, so the two arms carry the same line-7 gross to
+    // the cent rather than agreeing by reconstruction.
+    const legacyQcdApplications = normalizedApplications
+      .map((application, index) => ({ application, index }))
+      .filter(({ application }) =>
+        application.simulatorPhase === 'legacyQcdDistribution')
+    const characterizations = occurrenceSource.legacyQcdCharacterizations
+    if (!Array.isArray(characterizations) ||
+        characterizations.length !== legacyQcdApplications.length) {
+      fail('qcdStageRequired', 'Every moving QCD occurrence requires exactly one published qualification characterization', { taxYear })
+    }
+    {
+      const characterizationByKey = new Map<string, number>()
+      for (const characterization of characterizations) {
+        const producerOccurrenceKey = characterization.producerOccurrenceKey
+        const context = { taxYear, producerOccurrenceKey }
+        const gross = characterization.grossAmountPlanDollars
+        const nonQualified = characterization.nonQualifiedLine7GrossPlanDollars
+        const occurrence = occurrenceByKey.get(producerOccurrenceKey)
+        if (occurrence?.kind !== 'legacyQcd' ||
+            occurrence.ownerPersonId !== characterization.ownerPersonId ||
+            occurrence.grossAmountPlanDollars !== gross ||
+            characterizationByKey.has(producerOccurrenceKey)) {
+          fail('qcdStageRequired', 'A moving QCD characterization must bind one distinct legacyQcd occurrence at its exact gross', context)
+        }
+        if (!Number.isFinite(nonQualified) || nonQualified < 0 ||
+            Object.is(nonQualified, -0) || nonQualified > gross) {
+          fail('qcdStageRequired', 'A moving QCD characterization must keep its non-qualified remainder inside its own gross', context)
+        }
+        cents(nonQualified, 'Non-qualified moving QCD remainder', context)
+        characterizationByKey.set(producerOccurrenceKey, nonQualified)
+      }
+      for (const { application, index } of legacyQcdApplications) {
+        const nonQualified =
+          characterizationByKey.get(application.producerOccurrenceKey)
+        if (nonQualified === undefined) {
+          fail('qcdStageRequired', 'Every moving QCD occurrence requires exactly one published qualification characterization', {
+            taxYear, producerOccurrenceKey: application.producerOccurrenceKey,
+          })
+        }
+        if (nonQualified <= 0) continue
+        normalizedApplications[index] = {
+          ...application,
+          form8606Line: 'line7',
+          form8606LineGrossAmount: cents(
+            nonQualified,
+            'Form 8606 line 7 gross of a non-qualified charitable draw',
+            {
+              taxYear,
+              ownerPersonId: application.ownerPersonId,
+              sourceAccountId: application.sourceAccountId,
+              producerOccurrenceKey: application.producerOccurrenceKey,
+            },
+          ),
+        }
+      }
+    }
+    // The overlay's own dollars are allocated here. Which owner's required
+    // distribution carried the gift decides whose Form 8606 line-7 gross must
+    // shrink under 408(d)(8)(D), and the annual ledger settles that question
+    // when it sizes the gift, so the overlay states the answer and this replay
+    // reproduces it against the applications rather than re-deriving it. The
+    // moving half above is read per occurrence instead, because it has one.
     if (overlay !== null) {
-      fail('qcdStageRequired', 'A QCD routed out of an RMD debit cannot be source-allocated from a household scalar', { taxYear })
+      const carveByOwner = new Map<string, number>()
+      const attributedRouted: number[] = []
+      for (const attribution of overlay.ownerAttributions) {
+        const ownerPersonId = attribution.ownerPersonId
+        const context = { taxYear, ownerPersonId }
+        const routed = attribution.routedGrossPlanDollars
+        const qualified = attribution.qualifiedLine7ExclusionPlanDollars
+        // The owner must be a Plan person who actually holds an owned pool:
+        // an attribution naming anyone else cannot describe a line-7 gross this
+        // replay carries, and reducing nothing is not the same as reducing zero.
+        if (!personIds.has(ownerPersonId) || !pools.has(ownerPersonId as PersonId) ||
+            carveByOwner.has(ownerPersonId)) {
+          fail('qcdStageRequired', 'Each routed-QCD attribution must name one distinct owner of a captured owned-IRA pool', context)
+        }
+        if (!Number.isFinite(routed) || routed <= 0 || !Number.isFinite(qualified) ||
+            qualified < 0 || Object.is(qualified, -0) || qualified > routed) {
+          fail('qcdStageRequired', 'A routed-QCD attribution must carry a positive routed gross and a qualified exclusion inside it', context)
+        }
+        cents(routed, 'Routed QCD attribution gross', context)
+        cents(qualified, 'Routed QCD qualified exclusion', context)
+        carveByOwner.set(ownerPersonId, qualified)
+        attributedRouted.push(routed)
+      }
+      // The attribution is a partition of the overlay, not a commentary on it.
+      if (!rawTotalsReconcile(
+        summedPlanDollars(attributedRouted, 'Routed QCD attribution', { taxYear }),
+        overlay.grossAmountPlanDollars,
+        attributedRouted.length,
+      )) {
+        fail('qcdStageRequired', 'Routed-QCD owner attributions must exact-rejoin the nonmoving overlay gross', { taxYear })
+      }
+      // Carved greedily across the owner's required distributions in mutation
+      // order, which is the order the annual ledger commits them in. The order
+      // is what makes this reproduction rather than invention: the settlement
+      // matches an effect only when its gross agrees to the cent, so a carve
+      // spread differently would settle nothing even though the owner's total
+      // basis recovery would be the same either way.
+      for (let index = 0; index < normalizedApplications.length; index += 1) {
+        const application = normalizedApplications[index]!
+        if (application.simulatorPhase !== 'ownerRmdDistribution') continue
+        const remainingCarve = carveByOwner.get(application.ownerPersonId) ?? 0
+        if (remainingCarve <= 0) continue
+        const context = {
+          taxYear,
+          ownerPersonId: application.ownerPersonId,
+          sourceAccountId: application.sourceAccountId,
+          producerOccurrenceKey: application.producerOccurrenceKey,
+        }
+        const grossPlanDollars = occurrenceByKey
+          .get(application.producerOccurrenceKey)!.grossAmountPlanDollars
+        const carve = Math.min(remainingCarve, grossPlanDollars)
+        carveByOwner.set(application.ownerPersonId, remainingCarve - carve)
+        const line7GrossPlanDollars = grossPlanDollars - carve
+        normalizedApplications[index] = {
+          ...application,
+          form8606Line: line7GrossPlanDollars > 0 ? 'line7' : null,
+          form8606LineGrossAmount: line7GrossPlanDollars > 0
+            ? cents(line7GrossPlanDollars, 'Form 8606 line 7 gross net of the routed gift', context)
+            : asUsdCents(0),
+        }
+      }
+      // Nothing may be left over. 408(d)(8)(B) reaches only a distribution from
+      // an individual retirement plan and Treas. Reg. 1.408-8(e)(2)(i)
+      // aggregates only one individual's own IRAs, so a carve the owner's own
+      // required distributions cannot absorb describes a gift that could not
+      // have been routed. The tolerance is the same raw one the published
+      // totals reconcile under, and nothing wider: a material residue is a
+      // disagreement between the ledger and this replay, not a rounding artefact.
+      for (const [ownerPersonId, remainingCarve] of carveByOwner) {
+        if (remainingCarve <= MAX_RAW_RECONCILIATION_TOLERANCE_DOLLARS) continue
+        fail('qcdStageRequired', 'A routed-QCD carve must be absorbed by the owner’s own required distributions', {
+          taxYear, ownerPersonId,
+        })
+      }
     }
 
     const aggregate = aggregateRothCredits(
