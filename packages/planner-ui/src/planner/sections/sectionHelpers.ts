@@ -73,7 +73,12 @@ export function annuityStartAgeCeiling(plan: Plan, account: Account): number | n
   if (owner === undefined) return null
   const birthYear = Number(owner.dob.slice(0, 4))
   if (!Number.isFinite(birthYear)) return null
-  return latestNonQlacQualifiedAnnuityStartAge(birthYear, purchase.year)
+  // The schema caps every annuity start age at 95, QLAC or not, so a computed
+  // ceiling past it is non-binding here: the field's own schema max governs,
+  // and returning a ceiling above it would let the editor offer ages the plan
+  // cannot store.
+  const ceiling = latestNonQlacQualifiedAnnuityStartAge(birthYear, purchase.year)
+  return ceiling >= 95 ? null : ceiling
 }
 
 /**
