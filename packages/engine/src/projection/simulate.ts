@@ -3219,9 +3219,15 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       }
     }
 
-    // This year's Form-8606 pro-rata denominator per owner (step 5): the
-    // aggregated pre-distribution IRA balance — after contributions, before any
-    // RMD/SEPP/conversion/withdrawal depletes it.
+    // This year's FALLBACK Form-8606 pro-rata denominator per owner (step 5):
+    // the aggregated pre-distribution IRA balance — after contributions, before
+    // any RMD/SEPP/conversion/withdrawal depletes it. Fallback because the
+    // owned-non-Roth-IRA annual settlement below measures the same denominator
+    // at the close of the year, as §408(d)(2)(C) requires, and the characters it
+    // settles come back through `resolveAssumedCharacter` and supersede every
+    // split this opens. What is opened here is what the year keeps only when the
+    // settlement publishes nothing usable for it. Registered as
+    // `irc-408-d-2-C-projection-pro-rata-measurement-instant`.
     //
     // OBSERVED HERE, OPENED LATER. The fraction cannot be fixed yet, because
     // IRC 408(d)(8)(D) takes the year's qualified charitable distribution out of
@@ -3283,8 +3289,11 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
      * -- the instant §408(d)(2)(C) fixes the §72 contract value at. The two
      * differ by that growth. Registered as
      * `irc-408-d-2-C-projection-pro-rata-measurement-instant`; it is a
-     * pre-existing departure of the pro-rata denominator, not of this pool
-     * measure's use as a 408(d)(8)(D) ceiling, and it is not corrected here.
+     * pre-existing departure of THIS LEDGER'S pro-rata denominator, not of the
+     * engine's -- the owned-non-Roth-IRA annual settlement measures at the
+     * close of the year and supersedes what is computed here wherever it
+     * publishes -- and not of this pool measure's use as a 408(d)(8)(D)
+     * ceiling. It is not corrected here.
      */
     const preDistributionOwnedIraBalance = new Map<string, number>()
     for (const state of balances) {

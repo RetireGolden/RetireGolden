@@ -1,4 +1,4 @@
-import { expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import type { QualifiedCharitableDistributionRequest } from '../../actions/contract.js'
 import { asAccountId, asActionId, asAllocationId, asPersonId } from '../../actions/identity.js'
@@ -357,10 +357,20 @@ describeRule('treas-reg-1-408-8-g-projection-named-qcd-beyond-rmd', {
 // IRC 408(d)(2)(C) computes the section 72 contract value "as of the close of
 // the calendar year" and then adds the year's distributions back, which is
 // Form 8606 line 6 — the December 31 value, AFTER a year of return on whatever
-// the account retained. The ledger measures the pre-distribution balance
-// instead, which is year-end-BEFORE-growth plus distributions. The two differ
-// by exactly the growth on the retained balance, so the ledger's denominator is
-// invariant to the return assumption and the statute's is not.
+// the account retained. The LEGACY FALLBACK ledger measures the pre-distribution
+// balance instead, which is year-end-BEFORE-growth plus distributions. The two
+// differ by exactly the growth on the retained balance, so the fallback's
+// denominator is invariant to the return assumption and the statute's is not.
+//
+// SCOPE, WHICH THIS SHAPE IS CHOSEN TO REACH. The fallback governs only a year
+// the owned-non-Roth-IRA annual settlement produced no usable characters for,
+// and the aggregate gift below is what puts this household there: a gift routed
+// out of a required distribution mints a nonmoving overlay carrying no owner and
+// no source account, so `ownedNonRothIraRuntimeSourceSeries` refuses the year
+// with `qcdStageRequired` and the pass keeps the figures the fallback committed.
+// Drop the gift and the same household settles, at the December 31 measure —
+// which is the boundary the second suite below pins, and without that suite this
+// one reads as a claim about the whole engine rather than about one arm of it.
 //
 // The shape holds everything but the return fixed and gives line 8 far more
 // weight than line 7, which is where the departure is material: a 76-year-old
@@ -381,10 +391,17 @@ const INSTANT_LINE_6 =
   (1 + INSTANT_RETURN_PCT / 100)
 /** Line 9, and the fraction it produces against the unreduced basis. */
 const INSTANT_LINE_9 = INSTANT_LINE_6 + INSTANT_ANNUAL_GROSS
-/** The ledger's denominator: pre-distribution pool less the qualified gift. */
-const INSTANT_ENGINE_DENOMINATOR = INSTANT_IRA_BALANCE - INSTANT_GIFT
+/** The fallback's denominator: pre-distribution pool less the qualified gift. */
+const INSTANT_FALLBACK_DENOMINATOR = INSTANT_IRA_BALANCE - INSTANT_GIFT
 
-function measurementInstantPlan(returnPct: number): Plan {
+/**
+ * The shared shape. `gift` is the only thing that decides which arm of the
+ * engine prices the year, which is why the settled-path suite below builds its
+ * household from this same function rather than a lookalike: a difference the
+ * two suites did not intend would otherwise read as the boundary they exist to
+ * draw.
+ */
+function measurementInstantPlan(returnPct: number, gift = INSTANT_GIFT): Plan {
   const plan = soloPlan('1950-01-01', null) // 76 in 2026
   plan.assumptions.defaultReturnPct = returnPct
   // Spending is funded from cash so nothing but the requirement, the gift and
@@ -401,7 +418,7 @@ function measurementInstantPlan(returnPct: number): Plan {
     { ...ira, nondeductibleBasis: INSTANT_IRA_BASIS, annualReturnPct: returnPct },
     rothIra(0),
   ]
-  plan.strategies.qcdAnnual = INSTANT_GIFT
+  if (gift > 0) plan.strategies.qcdAnnual = gift
   plan.strategies.rothConversion = {
     mode: 'manual',
     conversions: [{ year: 2026, amount: INSTANT_CONVERSION }],
@@ -416,14 +433,15 @@ describeRule('irc-408-d-2-C-projection-pro-rata-measurement-instant', {
     // 0.1994236, and 81,814.18 of ordinary income.
     statuteMeasuresTheContractAtTheCloseOfTheYear:
       INSTANT_ANNUAL_GROSS * (1 - INSTANT_IRA_BASIS / INSTANT_LINE_9),
-    // The ledger: the pre-distribution pool less the qualified gift, which
+    // The fallback: the pre-distribution pool less the qualified gift, which
     // never saw the year's return. 960,000, a fraction of 0.2083333, and
     // 80,903.66 — the same figure at any return at all.
-    engineMeasuresBeforeTheFirstDistribution:
-      INSTANT_ANNUAL_GROSS * (1 - INSTANT_IRA_BASIS / INSTANT_ENGINE_DENOMINATOR),
+    fallbackMeasuresBeforeTheFirstDistribution:
+      INSTANT_ANNUAL_GROSS * (1 - INSTANT_IRA_BASIS / INSTANT_FALLBACK_DENOMINATOR),
   },
   accepted: 'statuteMeasuresTheContractAtTheCloseOfTheYear',
-  produced: 'engineMeasuresBeforeTheFirstDistribution',
+  produced: 'fallbackMeasuresBeforeTheFirstDistribution',
+  note: 'the fallback ledger',
 }, ({ accepted, produced }) => {
   it('prices a gain year off a denominator that never saw the gain', () => {
     const year = year2026(measurementInstantPlan(INSTANT_RETURN_PCT))
@@ -460,5 +478,96 @@ describeRule('irc-408-d-2-C-projection-pro-rata-measurement-instant', {
     // The statute does not agree with itself across the three, which is what
     // makes the invariance above a departure rather than a coincidence.
     expect(accepted).not.toBeCloseTo(produced, 6)
+    // And WHY this household is on the fallback at all, pinned rather than
+    // asserted in prose: the settlement published nothing for the year. If the
+    // aggregate gift arm ever becomes source-allocatable this shape settles,
+    // and then it is this suite — not only the record — that has to be revisited.
+    expect(gain).not.toHaveProperty('ownedNonRothIraAnnualReplay')
+  })
+})
+
+// --------------------------------------------------------------------------
+// The same instant, on the settled path
+// --------------------------------------------------------------------------
+
+// The boundary of the record above, pinned from the other side, because the
+// record was first written as a claim about the whole engine and its one
+// fixture sat on the single shape where that claim survives.
+//
+// Drop the charitable gift and nothing else changes: same 76-year-old, same
+// 1,000,000 dollar IRA at 20 percent basis, same 42,194.09 requirement, same
+// 100,000 dollar conversion. With no gift there is no nonmoving overlay, the
+// source series does not refuse the year, and the owned-non-Roth-IRA annual
+// settlement prices it — off the December 31 pool balance, which is the instant
+// 408(d)(2)(C) names.
+//
+// THE FIGURES BELOW ARE DERIVED, NOT OBSERVED. With no gift the whole of the
+// year's distributions is added back, so line 7 + line 8 is just the requirement
+// plus the conversion:
+//
+//   distributions        = 42,194.09 + 100,000     = 142,194.09
+//   retained             = 1,000,000 − 142,194.09  =   857,805.91
+//   line 6 at 5 percent  =   857,805.91 × 1.05     =   900,696.20
+//   line 9 at 5 percent  =   900,696.20 + 142,194.09 = 1,042,890.30
+//   fraction             =   200,000 ÷ 1,042,890.30 =    0.1917747
+//   ordinary income      =   142,194.09 × (1 − 0.1917747) = 114,924.86
+//
+// At a 0 percent return line 6 is the retained balance itself, line 9 is the
+// opening 1,000,000, the fraction is exactly 0.2, and the income is 113,755.27 —
+// which is also what the fallback measure returns, because the two instants
+// coincide when nothing grows. The 1,169.59 between the two returns is the whole
+// signal: a denominator measured before the growth could not have produced it.
+//
+// Asserted to the cent rather than to the float. The settlement allocates basis
+// in whole cents against an exact-cent line 9, so it agrees with the closed form
+// above to the cent and not beyond; a tighter tolerance would be pinning the
+// quantization rather than the measurement instant.
+//
+// NOT REGISTERED THROUGH `describeRule`, deliberately. That helper's contract
+// for an approximated rule is that the fixture names the reading the engine
+// produces and asserts it does NOT produce the accepted one. Here the engine
+// produces the accepted reading, so passing it through `describeRule` would mean
+// declaring a `produced` reading the suite immediately contradicts. The rule's
+// coverage obligation is already met by the fallback suite above; this suite
+// exists to bound it.
+
+/** Lines 7 + 8 with no gift to exclude: the requirement plus the conversion. */
+const SETTLED_ANNUAL_GROSS = INSTANT_REQUIRED_DISTRIBUTION + INSTANT_CONVERSION
+/** What the account keeps, before the year's return is credited to it. */
+const SETTLED_RETAINED = INSTANT_IRA_BALANCE - SETTLED_ANNUAL_GROSS
+/** Form 8606 line 9 at a given return: the December 31 value, plus lines 7 + 8. */
+const settledLine9 = (returnPct: number): number =>
+  SETTLED_RETAINED * (1 + returnPct / 100) + SETTLED_ANNUAL_GROSS
+/** The ordinary income the close-of-year denominator produces at that return. */
+const settledOrdinaryIncome = (returnPct: number): number =>
+  SETTLED_ANNUAL_GROSS * (1 - INSTANT_IRA_BASIS / settledLine9(returnPct))
+
+describe('irc-408-d-2-C — the settled path measures at the close of the year', () => {
+  it('moves the pro-rata fraction with the year’s return', () => {
+    const gain = year2026(measurementInstantPlan(INSTANT_RETURN_PCT, 0))
+    const flat = year2026(measurementInstantPlan(0, 0))
+
+    // The settlement priced both years. Without this the suite could pass on a
+    // household that fell through to the fallback and happened to agree.
+    expect(gain.ownedNonRothIraAnnualReplay).toBeDefined()
+    expect(flat.ownedNonRothIraAnnualReplay).toBeDefined()
+    // Both figures rest on this exact requirement and conversion, and on there
+    // being no gift to take the year off the settled path.
+    expect(gain.rmd).toBeCloseTo(INSTANT_REQUIRED_DISTRIBUTION, 6)
+    expect(gain.rothConversion).toBeCloseTo(INSTANT_CONVERSION, 6)
+    expect(gain.qcd).toBe(0)
+
+    expect(gain.magi).toBeCloseTo(settledOrdinaryIncome(INSTANT_RETURN_PCT), 2)
+    expect(gain.magi).toBeCloseTo(114_924.86, 2)
+    expect(flat.magi).toBeCloseTo(settledOrdinaryIncome(0), 2)
+    expect(flat.magi).toBeCloseTo(113_755.27, 2)
+    // The discriminating half: a pre-distribution denominator never sees the
+    // return, so it would report the flat figure in the gain year too.
+    expect(gain.magi).not.toBeCloseTo(flat.magi, 2)
+    expect(gain.magi - flat.magi).toBeCloseTo(1_169.59, 2)
+    // And the intermediate the accepted figure is built from, so a future reader
+    // can check the derivation rather than the conclusion.
+    expect(settledLine9(INSTANT_RETURN_PCT)).toBeCloseTo(1_042_890.30, 2)
+    expect(settledLine9(0)).toBeCloseTo(INSTANT_IRA_BALANCE, 2)
   })
 })
