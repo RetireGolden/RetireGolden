@@ -97,6 +97,22 @@ describe('migratePlanToCurrent', () => {
       expect(pension.lumpSumElection).toBeUndefined()
     })
 
+    it('sheds the election when the stored stamp is unreadable, instead of refusing the load', () => {
+      // The staleness rule fails closed at parse when the stamp is not ISO, so
+      // a stored document with a damaged or hand-crafted stamp must lose the
+      // election here or it could not load at all. Re-saving restores the
+      // stamp, and the offer survives for re-electing.
+      const raw = storedPension({ amount: 400_000, electionYear: 2030 }, 'ira')
+      raw['updatedAtIso'] = 'not-a-timestamp'
+      const result = migratePlanToCurrent(raw)
+      expect(result.ok).toBe(true)
+      if (!result.ok) return
+      const pension = result.plan.accounts.find((a) => a.id === 'pen')!
+      if (pension.type !== 'pension') throw new Error('expected the pension back')
+      expect(pension.lumpSumElection).toBeUndefined()
+      expect(pension.lumpSumOffer).toEqual({ amount: 400_000, electionYear: 2030 })
+    })
+
     it('carries a legacy inherited-IRA rollover target back the same way', () => {
       // A future election year, so only the target is at fault.
       const result = migratePlanToCurrent(storedPension({ amount: 400_000, electionYear: 2030 }, 'inh'))

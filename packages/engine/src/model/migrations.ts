@@ -602,9 +602,13 @@ function normalizeCurrentPlan(raw: Record<string, unknown>): Record<string, unkn
           : undefined
       const yearAlreadyGone =
         planAsOfYear !== null && typeof electionYear === 'number' && electionYear < planAsOfYear
+      // A stamp the staleness rule cannot read fails closed at parse, so a
+      // stored document carrying one must shed the election here or it cannot
+      // load at all; re-saving rewrites the stamp and the field stays editable.
+      const stampUnreadable = planAsOfYear === null
       const targetNotOwnedTraditional =
         typeof target !== 'string' || !ownedTraditionalIds.includes(target)
-      if (yearAlreadyGone || targetNotOwnedTraditional) {
+      if (yearAlreadyGone || stampUnreadable || targetNotOwnedTraditional) {
         changed = true
         const repaired = { ...accountRecord }
         Reflect.deleteProperty(repaired, 'lumpSumElection')

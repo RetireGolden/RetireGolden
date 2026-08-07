@@ -2181,7 +2181,21 @@ export const planSchema = z
             path: ['accounts', i, 'lumpSumElection'],
             message: 'a lump-sum election requires a lump-sum offer (amount and election year)',
           })
-        } else if (planAsOfYear !== null && a.lumpSumOffer.electionYear < planAsOfYear) {
+        } else if (planAsOfYear === null) {
+          // Fail closed, not open: the staleness rule reads the document's own
+          // stamp, and a stamp the rule cannot read would otherwise let any
+          // election year through — including the past-year shape this rule
+          // exists to refuse. Every save writes the stamp with toISOString, so
+          // a well-formed document never lands here; a hand-crafted or damaged
+          // one is repaired at load (the migration drops the election), and a
+          // re-save restores the stamp.
+          ctx.addIssue({
+            code: 'custom',
+            path: ['accounts', i, 'lumpSumElection'],
+            message:
+              'an elected pension lump sum requires a readable plan timestamp to check its election year (re-save the plan to restore it)',
+          })
+        } else if (a.lumpSumOffer.electionYear < planAsOfYear) {
           // An election models a rollover the projection still has to perform:
           // in the election year the offer arrives in the receiving account and
           // the pension stops paying. An election year already past has no such

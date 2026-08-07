@@ -784,6 +784,19 @@ describe('pension lump-sum election', () => {
     expect(parsePlan(plan).ok).toBe(true)
   })
 
+  it('fails closed when the plan stamp is unreadable and an election is present', () => {
+    // The staleness rule reads the document's own stamp; a stamp it cannot
+    // read would otherwise wave any election year through, including the
+    // past-year shape the rule exists to refuse.
+    const plan = planWithElection({ amount: 300_000, electionYear: 2030 }, 'a2')
+    ;(plan as { updatedAtIso: string }).updatedAtIso = 'not-a-timestamp'
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(false)
+    expect(parsed.ok ? [] : parsed.issues.join('\n')).toContain(
+      'an elected pension lump sum requires a readable plan timestamp',
+    )
+  })
+
   it('refuses a duplicated account id once a rollover election references it', () => {
     // The ownership validation resolves the target through a map where the last
     // duplicate wins, while the simulator moves balances first-match-wins. A
