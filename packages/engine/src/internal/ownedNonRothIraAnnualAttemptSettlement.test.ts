@@ -408,6 +408,25 @@ describe('private owned-IRA annual attempt settlement', () => {
       }).qualifiedLine7ExclusionPlanDollars =
         blockedYears[0]!.rmd + overlay.grossAmountPlanDollars
     }
+    if (kind === 'annuity') {
+      // An annuity premium no longer blocks by existing either: the contract it
+      // paid for is carried in the value channel that Form 8606 line 6 adds, so
+      // the premium moves value between two members of one section 408(d)(2)
+      // aggregate and the replay follows it. What still blocks is a premium
+      // whose arrival is missing -- a debit off an owned IRA with no credit
+      // anywhere -- which describes value leaving an aggregate and entering
+      // nothing, so the fixture strips exactly that.
+      const applications = blockedYears[0]!
+        .retirementRuntimeApplicationSource!.applications
+      const creditIndex = applications.findIndex((application) =>
+        application.applicationKind === 'annuityContractPremiumCredit')
+      if (creditIndex < 0) throw new Error('expected an annuity premium credit')
+      ;(applications as unknown as unknown[]).splice(creditIndex, 1)
+      for (let index = creditIndex; index < applications.length; index += 1) {
+        ;(applications[index] as { mutationOrdinal: number }).mutationOrdinal =
+          index + 1
+      }
+    }
     if (kind === 'mixedOwnerAggregate') {
       // The simulator no longer produces this shape, so the fixture builds it:
       // p2's conversion re-pointed at p1's Roth and folded into p1's credit,
@@ -458,7 +477,8 @@ describe('private owned-IRA annual attempt settlement', () => {
       )
       for (const application of applications) {
         if (application.applicationKind === 'aggregateRothDestinationCredit' ||
-            application.applicationKind === 'namedRothDestinationCredit') continue
+            application.applicationKind === 'namedRothDestinationCredit' ||
+            application.applicationKind === 'annuityContractPremiumCredit') continue
         ;(application as { producerOccurrenceKey: string }).producerOccurrenceKey =
           replacementKeys.get(application.producerOccurrenceKey) ??
           application.producerOccurrenceKey

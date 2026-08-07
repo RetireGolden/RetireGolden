@@ -800,6 +800,20 @@ export interface SimulatorAnnualRetirementRuntimeSource {
 
 export type SimulatorRetirementRuntimeApplicationPhase =
   | 'annuityPurchaseFunding'
+  /**
+   * The other half of the premium. `annuityPurchaseFunding` debits the IRA the
+   * premium left; this credits the contract it arrived in, so the value the
+   * Form 8606 line-6 aggregate has to carry is recorded where it went instead
+   * of being inferred from where it came from.
+   */
+  | 'annuityPurchaseContractCredit'
+  /**
+   * A payment out of a contract an owned IRA bought. It runs after the premium
+   * and before the year's contributions, which is where the projection's income
+   * block sits, and it debits the contract's value channel rather than any IRA
+   * balance.
+   */
+  | 'annuityContractDistribution'
   | 'pensionLumpSumRollover'
   | 'employeeContribution'
   | 'ownerRmdDistribution'
@@ -889,10 +903,46 @@ export interface SimulatorRetirementRuntimeNamedRothDestinationCredit {
   readonly destinationBalanceAfterPlanDollars: number
 }
 
+/**
+ * The credit side of an annuity premium paid out of an owned IRA.
+ *
+ * Shaped like the two Roth destination credits above, and for the same reason:
+ * one physical movement has one occurrence, and a credit that rejoined that
+ * occurrence a second time would break the replay's rule that each application
+ * rejoins one unique occurrence. So the key travels in `producerOccurrenceKeys`
+ * and this application carries no key of its own.
+ *
+ * What it credits is not a balance. A Plan annuity account has no balance field
+ * and is not in the projection's ledger at all, so the destination figures
+ * below are the engine's own contract-value channel: premium in, payments out,
+ * floored at zero. That channel is a convention rather than a fair market
+ * value, registered as
+ * `engine-convention-ira-annuity-contract-value-premium-less-payments`.
+ */
+export interface SimulatorRetirementRuntimeAnnuityContractPremiumCredit {
+  readonly applicationKind: 'annuityContractPremiumCredit'
+  readonly simulatorPhase: 'annuityPurchaseContractCredit'
+  readonly mutationOrdinal: number
+  readonly producerOccurrenceKey: null
+  readonly ownerPersonId: null
+  readonly sourceAccountId: null
+  readonly sourceBalanceBeforePlanDollars: null
+  readonly sourceBalanceAfterPlanDollars: null
+  /** Exactly one key: the `annuityFundingTransfer` debit that paid the premium. */
+  readonly producerOccurrenceKeys: readonly string[]
+  readonly sourceOwnerPersonIds: readonly (string | null)[]
+  readonly destinationAnnuityAccountId: string | null
+  readonly destinationOwnerPersonId: string | null
+  readonly destinationContractValueBeforePlanDollars: number
+  readonly destinationCreditedAmountPlanDollars: number
+  readonly destinationContractValueAfterPlanDollars: number
+}
+
 export type SimulatorRetirementRuntimeApplication =
   | Readonly<SimulatorRetirementRuntimeDebitApplication>
   | Readonly<SimulatorRetirementRuntimeCreditApplication>
   | Readonly<SimulatorRetirementRuntimeNamedRothDestinationCredit>
+  | Readonly<SimulatorRetirementRuntimeAnnuityContractPremiumCredit>
   | Readonly<SimulatorRetirementRuntimeAggregateRothDestinationCredit>
 
 /**
@@ -918,11 +968,53 @@ export interface SimulatorOwnedNonRothIraPostGrowthAccountBalanceSource {
   readonly balancePlanDollars: number
 }
 
+/**
+ * One annuity contract an owned IRA bought, and what the engine says it is
+ * worth on December 31.
+ *
+ * Section 408(d)(2)(A) treats every individual retirement plan as one contract
+ * for section 72 and Form 8606 line 6 asks for the total VALUE of the
+ * traditional IRAs, so a contract bought with IRA dollars belongs in the
+ * denominator whether it is a section 408(b) individual retirement annuity or
+ * an annuity contract held inside the section 408(a) trust. No authority
+ * supplies its fair market value here -- that is an actuarial quantity, and the
+ * Form 1099-R instructions for 2026 stop requiring even the issuer to report
+ * the year-end value of an annuitized commercial contract -- so this figure is
+ * the engine's own convention: premium paid in, payments taken out, floored at
+ * zero, with no growth because the Plan carries no contract growth rate.
+ * Registered, with its direction of error, as
+ * `engine-convention-ira-annuity-contract-value-premium-less-payments`.
+ */
+export interface SimulatorOwnedNonRothIraPostGrowthAnnuityContractValueSource {
+  readonly annuityAccountId: string
+  /** The owned IRA whose dollars bought it, which is why it is in this pool. */
+  readonly fundingAccountId: string
+  /**
+   * The channel as this year opened, which the replay needs for the same reason
+   * it needs `plan.accounts[].balance`: a settlement that replays ONE year
+   * cannot derive where a multi-year channel had got to. It is bounded rather
+   * than trusted -- the value can never exceed the purchase premium, and it must
+   * be exactly zero in a year at or before the purchase -- and every credit and
+   * debit between it and the closing figure has to reconcile in exact cents.
+   */
+  readonly contractValueOpeningPlanDollars: number
+  readonly contractValuePlanDollars: number
+}
+
 export interface SimulatorOwnedNonRothIraPostGrowthOwnerPoolSource {
   /** Null is preserved only for an unvalidated malformed Plan; replay must reject it. */
   readonly ownerPersonId: string | null
   readonly accountBalances:
     readonly Readonly<SimulatorOwnedNonRothIraPostGrowthAccountBalanceSource>[]
+  /**
+   * This owner's IRA-funded annuity contracts, ascending by account id. Empty
+   * for every owner who bought none, which is almost every owner. Absent
+   * entirely on a year published before this channel existed, which the replay
+   * treats as "no contracts" rather than as a missing fact, because a
+   * projection with no annuity purchase in it has nothing to say here.
+   */
+  readonly annuityContractValues?:
+    readonly Readonly<SimulatorOwnedNonRothIraPostGrowthAnnuityContractValueSource>[]
 }
 
 /**

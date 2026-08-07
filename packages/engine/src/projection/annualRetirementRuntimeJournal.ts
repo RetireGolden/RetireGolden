@@ -133,6 +133,7 @@ function originFor(
     case 'automaticSeppDistribution': return 'seppEngine'
     case 'legacyNeedBasedWithdrawal':
     case 'legacyRothConversion':
+    case 'annuityContractDistribution':
     case 'legacyQcd': return 'legacyProjection'
     // A gift is paid directly by the custodian to the donee organization, so
     // unlike every kind on the transfer line below it has no household

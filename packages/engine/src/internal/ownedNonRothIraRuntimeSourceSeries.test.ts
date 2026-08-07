@@ -168,7 +168,8 @@ describe('private owned-IRA runtime source-series validation', () => {
           .map((key) => replacementKeys.get(key) ?? key)
         mutable.destinationRothAccountId = 'p1-roth'
         mutable.destinationOwnerPersonId = 'p1'
-      } else if (application.applicationKind !== 'namedRothDestinationCredit') {
+      } else if (application.applicationKind !== 'namedRothDestinationCredit' &&
+          application.applicationKind !== 'annuityContractPremiumCredit') {
         ;(application as { producerOccurrenceKey: string }).producerOccurrenceKey =
           replacementKeys.get(application.producerOccurrenceKey) ??
           application.producerOccurrenceKey
@@ -219,7 +220,8 @@ describe('private owned-IRA runtime source-series validation', () => {
         mutable.destinationBalanceBeforePlanDollars = 0
         mutable.destinationBalanceAfterPlanDollars =
           mutable.destinationCreditedAmountPlanDollars
-      } else if (application.applicationKind !== 'namedRothDestinationCredit') {
+      } else if (application.applicationKind !== 'namedRothDestinationCredit' &&
+          application.applicationKind !== 'annuityContractPremiumCredit') {
         ;(application as { producerOccurrenceKey: string }).producerOccurrenceKey =
           replacementKeys.get(application.producerOccurrenceKey) ??
           application.producerOccurrenceKey
@@ -894,10 +896,12 @@ describe('private owned-IRA runtime source-series validation', () => {
       .toMatchObject({ balancePlanDollars: 100_000, balanceAmount: 10_000_000 })
   })
 
-  it('allocates a routed QCD and blocks annuity pool escape in the source layer', () => {
-    // A routed gift is characterized from the overlay's owner attribution and
-    // no longer blocks; an annuity premium leaving the captured pool still does,
-    // which is what keeps the two cases in one fixture worth reading together.
+  it('allocates a routed QCD and stages an annuity premium into its contract', () => {
+    // A routed gift is characterized from the overlay's owner attribution. An
+    // annuity premium used to refuse the year beside it -- value left the
+    // section 408(d)(2) aggregate and this replay carried nothing it entered --
+    // and now it stages: the debit's dollars arrive in the contract-value
+    // channel, and that channel is Form 8606 line 6's other half.
     const qcdPlan = singlePersonPlan({ dob: '1950-01-01', planningAge: 76 })
     qcdPlan.id = 'source-qcd'
     qcdPlan.accounts = [traditional('ira', 100_000)]
@@ -919,8 +923,30 @@ describe('private owned-IRA runtime source-series validation', () => {
         },
       },
     ]
-    expect(validateOwnedNonRothIraRuntimeSourceSeries(annuityPlan, TAX_YEAR, project(annuityPlan)))
-      .toMatchObject({ status: 'ownedNonRothIraRuntimeSourceSeriesBlocked', issues: [{ kind: 'annuityStageRequired' }] })
+    const staged = validateOwnedNonRothIraRuntimeSourceSeries(
+      annuityPlan, TAX_YEAR, project(annuityPlan),
+    )
+    expect(staged).toMatchObject({
+      status: 'ownedNonRothIraRuntimeSourceSeriesComplete',
+    })
+    if (staged.status !== 'ownedNonRothIraRuntimeSourceSeriesComplete') return
+    // The premium arrived, to the cent, and it is carried where line 6 can add
+    // it: 408(d)(2)(A) with 7701(a)(37)(B) keeps the contract inside the same
+    // aggregate the account that bought it is in.
+    expect(staged.years[0]!.ownerSources[0]).toMatchObject({
+      annuityContractValueAmount: 500_000,
+      annuityContractValues: [{
+        annuityAccountId: 'annuity',
+        fundingAccountId: 'ira',
+        contractValuePlanDollars: 5_000,
+        contractValueAmount: 500_000,
+      }],
+    })
+    // And the premium is on no Form 8606 line, because 408(d)(1) reaches only
+    // an amount paid or distributed OUT and this was neither.
+    expect(staged.years[0]!.ownerSources[0]!.applications
+      .map((application) => application.occurrenceKind))
+      .not.toContain('annuityFundingTransfer')
 
     const missingAnnuitySources = copy(project(annuityPlan))
     ;(missingAnnuitySources[0]!.retirementRuntimeSource!.runtimeOccurrences as unknown as unknown[])
@@ -933,15 +959,39 @@ describe('private owned-IRA runtime source-series validation', () => {
       status: 'ownedNonRothIraRuntimeSourceSeriesBlocked',
       issues: [{ kind: 'annuityStageRequired' }],
     })
+
+    // THE CREDIT IS NOT OPTIONAL, and this is what says so. Strip it alone and
+    // the year is one in which a premium left an aggregate and entered nothing
+    // -- the exact defect the channel closed -- so the year refuses rather than
+    // settling on a denominator that quietly lost the contract again.
+    const withoutCredit = copy(project(annuityPlan))
+    const applications = withoutCredit[0]!.retirementRuntimeApplicationSource!
+      .applications as unknown as { applicationKind?: string }[]
+    const creditIndex = applications.findIndex((entry) =>
+      entry.applicationKind === 'annuityContractPremiumCredit')
+    expect(creditIndex).toBeGreaterThanOrEqual(0)
+    applications.splice(creditIndex, 1)
+    for (let index = creditIndex; index < applications.length; index += 1) {
+      ;(applications[index] as { mutationOrdinal: number }).mutationOrdinal =
+        index + 1
+    }
+    expect(validateOwnedNonRothIraRuntimeSourceSeries(
+      annuityPlan, TAX_YEAR, withoutCredit,
+    )).toMatchObject({
+      status: 'ownedNonRothIraRuntimeSourceSeriesBlocked',
+      issues: [{ kind: 'annuityStageRequired', sourceAccountId: 'ira' }],
+    })
   })
 
   it('reports a corrupt chain in an annuity year, not the annuity', () => {
-    // The annuity application's phase ranks 0, so it always sorts first in the
-    // chain. Refusing where it is found meant every integrity failure later in
-    // the same year's chain was masked by `annuityStageRequired` -- which the
-    // settlement scopes to the year, while the failure it hid is permanent.
-    // The pool-exit refusal is deferred past the chain-rejoin check for exactly
-    // this reason, and this is the fixture that says so.
+    // The annuity applications rank 0 and 1, so they always sort first in the
+    // chain. Refusing where a premium is FOUND meant every integrity failure
+    // later in the same year's chain was masked by `annuityStageRequired` --
+    // which the settlement scopes to the year, while the failure it hid is
+    // permanent. The premium no longer refuses at all; what is left of that
+    // refusal, the missing-credit check, is still raised after the chain
+    // rejoins its live observation for exactly the old reason, and this is the
+    // fixture that says so.
     const plan = singlePersonPlan({ dob: '1950-01-01', planningAge: 90 })
     plan.id = 'annuity-masks-chain'
     plan.accounts = [
@@ -960,20 +1010,20 @@ describe('private owned-IRA runtime source-series validation', () => {
       },
     ]
     const projected = project(plan)
-    // Both applications are present and the annuity one is first.
     expect(projected[0]!.retirementRuntimeApplicationSource!.applications
       .map((application) => application.simulatorPhase))
-      .toEqual(['annuityPurchaseFunding', 'ownerRmdDistribution'])
-    // Clean, the year still refuses for the premium, and it still names the
-    // owner so the disqualification stays owner-scoped.
+      .toEqual([
+        'annuityPurchaseFunding',
+        'annuityPurchaseContractCredit',
+        'ownerRmdDistribution',
+      ])
+    // Clean, the year settles: the premium moved value between two members of
+    // one aggregate and the replay carries both of them now.
     expect(validateOwnedNonRothIraRuntimeSourceSeries(plan, TAX_YEAR, projected))
-      .toMatchObject({
-        status: 'ownedNonRothIraRuntimeSourceSeriesBlocked',
-        issues: [{ kind: 'annuityStageRequired', ownerPersonId: 'p1' }],
-      })
+      .toMatchObject({ status: 'ownedNonRothIraRuntimeSourceSeriesComplete' })
 
-    // Corrupt the LATER application's closing balance. Before the deferral this
-    // reported `annuityStageRequired`; the chain failure is what must survive.
+    // Corrupt the LATER application's closing balance. The chain failure is
+    // what must survive, and it does.
     const corrupted = copy(projected)
     const rmd = corrupted[0]!.retirementRuntimeApplicationSource!.applications
       .find((application) => application.simulatorPhase === 'ownerRmdDistribution')
@@ -986,10 +1036,10 @@ describe('private owned-IRA runtime source-series validation', () => {
       })
 
     // THE LIMIT, PINNED RATHER THAN DESCRIBED. Strip the annuity occurrence and
-    // its application and the premium is unaccounted for, so the chain is
+    // both its applications and the premium is unaccounted for, so the chain is
     // corrupt too -- but the Plan-purchase pre-check still runs first and still
     // reports the stage gap. That is the masking the settlement's allow-list
-    // docblock records, and it is the disposition this slice chose: the
+    // docblock records, and it is the disposition this slice kept: the
     // alternative is a phantom `balanceChainInvalid` that would latch forever
     // on a Plan whose only oddity is an annuity.
     const stripped = copy(projected)
@@ -998,12 +1048,17 @@ describe('private owned-IRA runtime source-series validation', () => {
     occurrences.splice(
       occurrences.findIndex((entry) => entry.kind === 'annuityFundingTransfer'), 1,
     )
-    const applications = stripped[0]!.retirementRuntimeApplicationSource!
+    const strippedApplications = stripped[0]!.retirementRuntimeApplicationSource!
       .applications as unknown as { simulatorPhase?: string }[]
-    applications.splice(
-      applications.findIndex((entry) =>
-        entry.simulatorPhase === 'annuityPurchaseFunding'), 1,
-    )
+    for (const phase of ['annuityPurchaseContractCredit', 'annuityPurchaseFunding']) {
+      strippedApplications.splice(
+        strippedApplications.findIndex((entry) => entry.simulatorPhase === phase), 1,
+      )
+    }
+    for (let index = 0; index < strippedApplications.length; index += 1) {
+      ;(strippedApplications[index] as { mutationOrdinal: number })
+        .mutationOrdinal = index + 1
+    }
     expect(validateOwnedNonRothIraRuntimeSourceSeries(plan, TAX_YEAR, stripped))
       .toMatchObject({
         status: 'ownedNonRothIraRuntimeSourceSeriesBlocked',

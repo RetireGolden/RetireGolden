@@ -402,6 +402,9 @@ describe('the conversion-linked withdrawal group that funds itself', () => {
         sourceAccountId: 'ira-a',
         balancePlanDollars: IRA_OPENING_DOLLARS - CONVERSION_CENTS / 100,
       }],
+      // Line 6's other half, empty because this household bought no annuity
+      // contract with IRA dollars.
+      annuityContractValues: [],
     }])
     expect(funded.balances['ira-a'])
       .toBe(IRA_OPENING_DOLLARS - CONVERSION_CENTS / 100)

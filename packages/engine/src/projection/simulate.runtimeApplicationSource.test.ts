@@ -75,6 +75,17 @@ function expectApplicationArithmetic(
     )
     return
   }
+  // The annuity premium's credit reaches a contract-value channel rather than
+  // an account balance, so its destination figures are named for what they are.
+  // The arithmetic it has to satisfy is the same one.
+  if (application.applicationKind === 'annuityContractPremiumCredit') {
+    expect(application.destinationContractValueAfterPlanDollars).toBeCloseTo(
+      application.destinationContractValueBeforePlanDollars +
+        application.destinationCreditedAmountPlanDollars,
+      10,
+    )
+    return
+  }
   if (application.applicationKind === 'credit') {
     expect(application.sourceBalanceAfterPlanDollars).toBeCloseTo(
       application.sourceBalanceBeforePlanDollars +
@@ -146,8 +157,14 @@ describe('simulate annual owned-IRA runtime application source', () => {
       simulatorPhase,
     }))).toEqual([
       { mutationOrdinal: 1, simulatorPhase: 'annuityPurchaseFunding' },
-      { mutationOrdinal: 2, simulatorPhase: 'pensionLumpSumRollover' },
-      { mutationOrdinal: 3, simulatorPhase: 'employeeContribution' },
+      // Immediately beside its debit, and nothing between them. IRC 408(d)(1)
+      // taxes only what is paid or distributed OUT of an individual retirement
+      // plan, so the premium is a movement of value inside the section
+      // 408(d)(2) aggregate and not a departure from it; a chain that recorded
+      // the leaving without the arriving asserted the opposite by omission.
+      { mutationOrdinal: 2, simulatorPhase: 'annuityPurchaseContractCredit' },
+      { mutationOrdinal: 3, simulatorPhase: 'pensionLumpSumRollover' },
+      { mutationOrdinal: 4, simulatorPhase: 'employeeContribution' },
     ])
     expect(applications).toEqual([
       expect.objectContaining({
@@ -158,6 +175,21 @@ describe('simulate annual owned-IRA runtime application source', () => {
         sourceBalanceBeforePlanDollars: 50_000,
         appliedAmountPlanDollars: 10_000,
         sourceBalanceAfterPlanDollars: 40_000,
+      }),
+      expect.objectContaining({
+        applicationKind: 'annuityContractPremiumCredit',
+        // No key of its own: one physical movement has one occurrence, and the
+        // debit above already claimed it. The credit names it instead, exactly
+        // as the two Roth destination credits name theirs.
+        producerOccurrenceKey: null,
+        producerOccurrenceKeys: [JSON.stringify([
+          'annuityFundingTransfer', 'annuity-source', 'qualified-annuity',
+        ])],
+        destinationAnnuityAccountId: 'qualified-annuity',
+        destinationOwnerPersonId: 'p1',
+        destinationContractValueBeforePlanDollars: 0,
+        destinationCreditedAmountPlanDollars: 10_000,
+        destinationContractValueAfterPlanDollars: 10_000,
       }),
       expect.objectContaining({
         applicationKind: 'credit',

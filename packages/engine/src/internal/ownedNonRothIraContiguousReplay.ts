@@ -274,8 +274,26 @@ function replayUnchecked(
       const context = { taxYear: sourceYear.taxYear, ownerPersonId: owner }
       const line7Gross = sum(line7Entries.map((item) => item.grossAmount), 'Form 8606 line 7 total', context)
       const line8Gross = sum(line8Entries.map((item) => item.grossAmount), 'Form 8606 line 8 total', context)
+      // LINE 6 HAS TWO HALVES NOW. The accounts are the observation's own
+      // aggregate; the contracts those accounts bought are beside it. Section
+      // 408(d)(2)(A) treats all individual retirement plans as one contract and
+      // section 7701(a)(37)(B) makes a section 408(b) individual retirement
+      // annuity one of them, so a contract paid for out of an IRA is inside the
+      // same denominator whether it is an annuity in its own right or an asset
+      // the section 408(a) trust still holds; Form 8606 line 6 asks for the
+      // total VALUE of the traditional IRAs and the Form 5498 instructions make
+      // the custodian value even an asset with no readily determinable market.
+      //
+      // Added HERE rather than pushed into the observation's pool, and that is
+      // the cheap integration on purpose. `validatePoolMembers` admits owned
+      // traditional IRA accounts and throws on anything else, which is the
+      // right rule for a POOL MEMBER -- an account with a balance, a subtype,
+      // and an ownership evidence id. A contract has none of those; it has a
+      // value. Widening that validator to let one through would have cost the
+      // pool its meaning to buy one addend.
       const denominator = sum([
         observationResult.observation.aggregateYearEndApplicableBalanceAmount,
+        ownerSource.annuityContractValueAmount,
         line7Gross,
         line8Gross,
       ], 'Annual IRA basis denominator', context)

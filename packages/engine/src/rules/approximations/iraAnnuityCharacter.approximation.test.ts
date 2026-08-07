@@ -1,6 +1,6 @@
 /**
- * What an IRA-funded qualified annuity purchase IS, and the three places this
- * engine models it as something else.
+ * What an IRA-funded qualified annuity purchase IS, and what this engine now
+ * makes of it.
  *
  * The statutory chain is short and it is not in dispute. Section 408(d)(1)
  * taxes only an amount "paid or distributed out of an individual retirement
@@ -15,18 +15,20 @@
  * denominator and its payments take the same share of basis as everything else
  * the aggregate pays out that year.
  *
- * The engine gets the first sentence right and the rest wrong, for one
- * structural reason: a Plan annuity account has no balance. It is excluded from
- * the projection's balance ledger by construction, so the premium leaves the
- * owned-IRA pool at the purchase pass and there is nowhere for it to land. Three
- * consequences follow, and each has its own record because each has its own
- * authority and its own sign:
+ * THE ENGINE USED TO GET THE FIRST SENTENCE RIGHT AND THE REST WRONG, for one
+ * structural reason: a Plan annuity account has no balance, so the premium left
+ * the owned-IRA pool at the purchase pass and there was nowhere for it to land.
+ * Two of the three consequences that followed are closed here and the third is
+ * elsewhere:
  *
- *   - the line 6 denominator loses the contract, so the basis fraction is too
- *     large and the residual IRA recovers basis too fast (understates tax);
- *   - the payments are taxed in full, taking no share of the basis at all
- *     (overstates tax);
- *   - the required-distribution base loses the contract, which the regulations
+ *   - the line 6 denominator lost the contract, so the basis fraction was too
+ *     large and the residual IRA recovered basis too fast. A contract-value
+ *     channel now carries it, credited by the premium and debited by the
+ *     payments, and added to line 6 beside the December 31 pool;
+ *   - the payments were taxed in full, taking no share of the basis at all.
+ *     They are minted as their own line-7 occurrence now and priced at the
+ *     year's own fraction;
+ *   - the required-distribution base lost the contract, which the regulations
  *     permit only for a QLAC — closed on 2026-08-07 by refusing the shape
  *     rather than by pricing it, so that suite now pins a refusal.
  *
@@ -36,16 +38,14 @@
  * measures each contract against the whole of it (understates tax).
  *
  * EVERY FIXTURE BELOW RUNS AT A 0 PERCENT RETURN, and that is not decoration.
- * It collapses the measurement-instant question that
- * `irc-408-d-2-C-projection-pro-rata-measurement-instant` owns — at a flat
- * return the close-of-year denominator and the before-the-first-distribution
- * one agree — so what is left in the gap is the contract and nothing else. It
- * also makes the contract's December 31 value exactly the premium in the
- * purchase year: a single premium, no growth, and, where the fixture needs it,
- * no payments yet. The accepted figures are therefore arithmetic from the
- * quoted authority rather than a valuation convention, which matters here more
- * than usual, because the fair market value of an annuitized contract is the
- * one input none of this can supply.
+ * It makes the contract's December 31 value exactly the premium less the
+ * payments — a single premium, no growth, and nothing for a valuation to be
+ * uncertain about — so the figures are arithmetic from the quoted authority
+ * rather than a reading of the engine's contract-value convention. That
+ * convention is where the fair market value none of this can supply is
+ * registered, at `irc-408-d-2-C-annuity-contract-close-of-year-value`, and it
+ * is deliberately not exercised here: a fixture that ran at a return would be
+ * measuring the convention and calling it aggregation.
  */
 import { expect, it } from 'vitest'
 
@@ -218,16 +218,17 @@ describeRule('irc-408-d-2-A-annuity-contract-outside-the-form-8606-aggregate', {
     // ordinary income.
     statuteKeepsTheContractInTheAggregate:
       ANNUAL_GROSS * (1 - IRA_BASIS / STATUTORY_LINE9),
-    // The engine: the premium left the pool and landed nowhere, so the
-    // denominator is 800,000, the fraction is 0.25, and the same distributions
-    // carry 106,645.57.
-    engineDropsTheContractAtPurchase:
+    // What the engine used to do: the premium left the pool and landed nowhere,
+    // so the denominator was 800,000, the fraction 0.25, and the same
+    // distributions carried 106,645.57. Kept as a reading rather than deleted,
+    // because a fixture that named only the answer could not fail if the
+    // contract quietly left line 6 again.
+    poolWithoutTheContractItBought:
       ANNUAL_GROSS * (1 - IRA_BASIS / ENGINE_DENOMINATOR),
   },
   accepted: 'statuteKeepsTheContractInTheAggregate',
-  produced: 'engineDropsTheContractAtPurchase',
   note: 'the line 6 denominator',
-}, ({ accepted, produced }) => {
+}, ({ accepted, readings }) => {
   const withContract = () => household({
     dob: '1950-01-01', // 76 in 2026
     iraBalance: IRA_BALANCE,
@@ -243,42 +244,66 @@ describeRule('irc-408-d-2-A-annuity-contract-outside-the-form-8606-aggregate', {
     conversion: CONVERSION,
   })
 
-  it('recovers basis at a fraction the premium was allowed to raise', () => {
+  it('recovers basis at the fraction the whole aggregate produces', () => {
     const year = yearOf(withContract(), 2026)
 
-    // Both readings rest on this requirement and this conversion. If either
+    // The reading rests on this requirement and this conversion. If either
     // moves, the figures below stop being about the denominator.
     expect(year.rmd).toBeCloseTo(REQUIRED_DISTRIBUTION, 6)
     expect(year.rothConversion).toBeCloseTo(CONVERSION, 6)
     expect(year.qcd).toBe(0)
 
-    expect(year.magi).toBeCloseTo(produced, 6)
-    expect(year.magi).toBeCloseTo(106_645.57, 2)
-    expect(year.magi).not.toBeCloseTo(accepted, 6)
-    expect(accepted).toBeCloseTo(113_755.27, 2)
-    // What the missing contract is worth to this household in one year.
-    expect(accepted - produced).toBeCloseTo(7_109.70, 2)
+    // TO THE CENT, NOT TO THE FLOAT, and now that this shape settles it has to
+    // be. The settlement allocates basis in whole cents and allocates Form 8606
+    // lines 7 and 8 independently, so it agrees with the closed form above to
+    // within those roundings and not beyond; a tighter tolerance would be
+    // pinning the quantization rather than the aggregation.
+    expect(year.magi).toBeCloseTo(accepted, 2)
+    expect(year.magi).toBeCloseTo(113_755.27, 2)
+    expect(year.magi).not.toBeCloseTo(readings.poolWithoutTheContractItBought, 6)
+    // What the missing contract was worth to this household in one year, back
+    // when it was missing.
+    expect(accepted - readings.poolWithoutTheContractItBought)
+      .toBeCloseTo(7_109.70, 2)
   })
 
-  it('treats a purchase the form cannot see as a taxable event anyway', () => {
-    // The cleanest statement of the defect available. On the compelled reading
-    // the premium is a move between two line-6 assets, so the household that
-    // bought the contract and the household that did not report the SAME
-    // ordinary income — the form has no term that distinguishes them. The
-    // engine parts them by 7,109.70.
+  it('makes a purchase the form cannot see invisible to the engine too', () => {
+    // The cleanest statement available, and it is now an equality rather than a
+    // gap. On the compelled reading the premium is a move between two line-6
+    // assets, so the household that bought the contract and the household that
+    // did not report the SAME ordinary income — the form has no term that
+    // distinguishes them. Neither does the engine, to the cent.
     const bought = yearOf(withContract(), 2026)
     const kept = yearOf(withoutContract(), 2026)
 
     expect(kept.magi).toBeCloseTo(accepted, 2)
-    expect(bought.magi).toBeCloseTo(produced, 6)
-    expect(kept.magi - bought.magi).toBeCloseTo(7_109.70, 2)
+    // The two households agree to the FLOAT, not merely to the cent, which is
+    // stronger than either agrees with the closed form: both run the same
+    // settled allocation over the same line 9, so the same roundings fall the
+    // same way on each.
+    expect(bought.magi).toBeCloseTo(kept.magi, 9)
+    expect(bought.magi - kept.magi).toBeCloseTo(0, 9)
 
-    // And the two arms are genuinely different code paths, which is why the
-    // comparison is worth making: the household with the contract is refused by
-    // the exact settlement (`annuityStageRequired`) and priced by the fallback,
-    // the household without it settles.
+    // And both arms take the same code path now, which is the other half of the
+    // change: the household with the contract used to be refused by the exact
+    // settlement with `annuityStageRequired` and priced by the legacy fallback.
     expect(kept.ownedNonRothIraAnnualReplay).toBeDefined()
-    expect(bought).not.toHaveProperty('ownedNonRothIraAnnualReplay')
+    expect(bought.ownedNonRothIraAnnualReplay).toBeDefined()
+  })
+
+  it('carries the contract at the value the aggregate lost, and no more', () => {
+    // The mechanism, pinned so a reader can check the denominator rather than
+    // infer it from an income figure. The account keeps 657,805.91, the
+    // contract holds the 200,000 premium, and the two plus the year's lines 7
+    // and 8 are the 1,000,000 the household opened with.
+    const year = yearOf(withContract(), 2026)
+    const owner = year.ownedNonRothIraAnnualReplay!.annualReplay.ownerReplays[0]!
+    expect(owner.annualObservation.aggregateYearEndApplicableBalanceAmount)
+      .toBe(Math.round((IRA_BALANCE - PREMIUM - ANNUAL_GROSS) * 100))
+    expect(owner.annualBasisRatio.denominatorMinorUnits)
+      .toBe(Math.round(STATUTORY_LINE9 * 100))
+    expect(owner.annualBasisRatio.numeratorMinorUnits)
+      .toBe(IRA_BASIS * 100)
   })
 })
 
@@ -295,31 +320,36 @@ const PAYOUT_MONTHLY = 1_000
 const PAYOUT_ANNUAL = PAYOUT_MONTHLY * 12
 const PAYOUT_REQUIRED_DISTRIBUTION = PAYOUT_IRA_BALANCE / 20.2
 /**
- * The fraction the engine itself computed for this year, on its own pool.
+ * The year's own taxable fraction, over the whole aggregate.
  *
- * Held fixed across both readings on purpose. Whether that pool is the right
- * one is the question the record above owns; letting it move here would make
- * this fixture a second measurement of that defect instead of a measurement of
- * 408(d)(2)(B), and the two would then rise and fall together.
+ * Line 6 is the account's December 31 balance plus the contract's, and adding
+ * the year's distributions back under 408(d)(2)(C) returns the opening balance
+ * exactly: the premium moved value between two line-6 assets and the payment
+ * came out of one of them, so at a flat return nothing was created or
+ * destroyed. Written as the opening balance for that reason — line 9 is
+ * 1,000,000 and the fraction is 0.2 — rather than as the sum of the parts,
+ * which the suite above already pins from the other direction.
  */
-const ENGINE_TAXABLE_FRACTION =
-  1 - PAYOUT_BASIS / (PAYOUT_IRA_BALANCE - PAYOUT_PREMIUM)
+const STATUTORY_TAXABLE_FRACTION =
+  1 - PAYOUT_BASIS / PAYOUT_IRA_BALANCE
 
 describeRule('irc-408-d-2-B-annuity-payment-outside-the-annual-basis-fraction', {
   readings: {
     // 408(d)(2)(B) with Publication 590-B: one distribution, one fraction. The
-    // requirement and the annuity payment are 61,504.95 together, and at the
-    // year's own 0.75 that is 46,128.71.
+    // requirement and the annuity payment are 61,504.95 together; line 6 is the
+    // 750,495.05 the account kept plus the 188,000 the contract still holds, so
+    // line 9 is 1,000,000, the fraction is 0.2, and the year is 49,203.96.
     statuteAppliesOneFractionToEveryDistribution:
-      (PAYOUT_REQUIRED_DISTRIBUTION + PAYOUT_ANNUAL) * ENGINE_TAXABLE_FRACTION,
-    // The engine: 0.75 on the requirement, 1.00 on the payment, 49,128.71.
-    engineTaxesTheAnnuityPaymentInFull:
-      PAYOUT_REQUIRED_DISTRIBUTION * ENGINE_TAXABLE_FRACTION + PAYOUT_ANNUAL,
+      (PAYOUT_REQUIRED_DISTRIBUTION + PAYOUT_ANNUAL) * STATUTORY_TAXABLE_FRACTION,
+    // What the engine used to do: the year's fraction on the requirement and
+    // 1.00 on the payment. Kept as a reading so the fixture still fails if the
+    // fully-ordinary branch is ever quietly restored.
+    paymentChargedInFullBesideTheRequirement:
+      PAYOUT_REQUIRED_DISTRIBUTION * STATUTORY_TAXABLE_FRACTION + PAYOUT_ANNUAL,
   },
   accepted: 'statuteAppliesOneFractionToEveryDistribution',
-  produced: 'engineTaxesTheAnnuityPaymentInFull',
   note: 'the payment’s share of basis',
-}, ({ accepted, produced }) => {
+}, ({ accepted, readings }) => {
   const paying = (monthlyAmount: number) => household({
     dob: '1946-01-01', // 80 in 2026, so the contract pays in its purchase year
     iraBalance: PAYOUT_IRA_BALANCE,
@@ -329,33 +359,43 @@ describeRule('irc-408-d-2-B-annuity-payment-outside-the-annual-basis-fraction', 
     monthlyAmount,
   })
 
-  it('adds the whole annuity payment to income while the aggregate holds basis', () => {
+  it('prices the annuity payment at the fraction the aggregate produced', () => {
     const year = yearOf(paying(PAYOUT_MONTHLY), 2026)
 
     expect(year.rmd).toBeCloseTo(PAYOUT_REQUIRED_DISTRIBUTION, 6)
     expect(year.incomes.annuity).toBeCloseTo(PAYOUT_ANNUAL, 6)
 
-    expect(year.magi).toBeCloseTo(produced, 6)
-    expect(year.magi).toBeCloseTo(49_128.71, 2)
-    expect(year.magi).not.toBeCloseTo(accepted, 6)
-    expect(accepted).toBeCloseTo(46_128.71, 2)
-    // Exactly the basis share the payment was refused: 12,000 at 0.25.
-    expect(produced - accepted).toBeCloseTo(3_000, 6)
+    expect(year.magi).toBeCloseTo(accepted, 2)
+    expect(year.magi).toBeCloseTo(49_203.96, 2)
+    expect(year.magi)
+      .not.toBeCloseTo(readings.paymentChargedInFullBesideTheRequirement, 6)
+    // Exactly the basis share the payment used to be refused: 12,000 at 0.2.
+    expect(readings.paymentChargedInFullBesideTheRequirement - accepted)
+      .toBeCloseTo(2_400, 6)
   })
 
-  it('charges the payment in full rather than at the fraction it charged the requirement', () => {
+  it('adds the payment at its taxable share and not at its face', () => {
     // Isolating the claim from the size of the payment. Turning the contract's
-    // payments on adds their full face amount to income and moves nothing else,
-    // which is what "took no share of the basis" means arithmetically.
+    // payments on adds 9,600 to income, which is 12,000 at the year's own 0.8 —
+    // and that is what "took its share of the basis" means arithmetically. The
+    // full 12,000 is what it used to add.
     const silent = yearOf(paying(0), 2026)
     const paid = yearOf(paying(PAYOUT_MONTHLY), 2026)
 
     expect(silent.incomes.annuity).toBe(0)
-    expect(paid.magi - silent.magi).toBeCloseTo(PAYOUT_ANNUAL, 6)
-    // The requirement is priced identically in both runs, so the difference
-    // above is the payment and only the payment.
+    expect(paid.incomes.annuity).toBeCloseTo(PAYOUT_ANNUAL, 6)
+    expect(paid.magi - silent.magi)
+      .toBeCloseTo(PAYOUT_ANNUAL * STATUTORY_TAXABLE_FRACTION, 6)
+    expect(paid.magi - silent.magi).toBeCloseTo(9_600, 6)
+    expect(paid.magi - silent.magi).not.toBeCloseTo(PAYOUT_ANNUAL, 6)
+    // THE SILENT RUN IS NOT A CONTROL FOR THE FRACTION, and saying so is the
+    // point of asserting it separately: a contract that pays nothing still
+    // holds its whole 200,000 premium in line 6, so its year runs at a
+    // different denominator and a different fraction from the paying one. What
+    // the difference above isolates is the payment, not the fraction.
     expect(silent.magi).toBeCloseTo(
-      PAYOUT_REQUIRED_DISTRIBUTION * ENGINE_TAXABLE_FRACTION, 6,
+      PAYOUT_REQUIRED_DISTRIBUTION *
+        (1 - PAYOUT_BASIS / PAYOUT_IRA_BALANCE), 2,
     )
   })
 })
