@@ -75,3 +75,23 @@ export function annuityStartAgeCeiling(plan: Plan, account: Account): number | n
   if (!Number.isFinite(birthYear)) return null
   return latestNonQlacQualifiedAnnuityStartAge(birthYear, purchase.year)
 }
+
+/**
+ * The start age an edit has to store instead of the one it asks for, or null
+ * when the requested age already fits.
+ *
+ * Takes the account AS THE EDIT WOULD LEAVE IT, so every field that can move
+ * the ceiling asks the same question: the typed start age itself, the purchase
+ * (a qualified switch, a cleared QLAC box, an earlier purchase year), and the
+ * owner, whose birth year decides the applicable RMD age and therefore the
+ * ceiling. Bounding the age field's `max` is not enough on its own — a `max`
+ * is what the stepper honours, not what a typed value or an edit to some other
+ * field is held to, and the plan that results is one the engine refuses at
+ * save with no field showing the fault.
+ */
+export function clampedAnnuityStartAge(plan: Plan, account: Account): number | null {
+  if (account.type !== 'annuity') return null
+  const ceiling = annuityStartAgeCeiling(plan, account)
+  if (ceiling === null) return null
+  return account.startAge > ceiling ? ceiling : null
+}

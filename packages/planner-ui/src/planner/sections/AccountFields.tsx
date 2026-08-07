@@ -6,7 +6,7 @@ import type { Account, Plan } from '@retiregolden/engine/model/plan'
 import { analyzePensionElections } from '@retiregolden/engine/decisions/pensionElection'
 import { packForYear } from '@retiregolden/engine/params'
 import { AllocationPanel, ReturnEstimatorModal } from './AllocationPanel'
-import { ACCOUNT_LABEL, annuityStartAgeCeiling, EVEN_START_WEIGHTS, isAllocatable, isIndividuallyOwnedAccount, type AllocatableAccount } from './sectionHelpers'
+import { ACCOUNT_LABEL, annuityStartAgeCeiling, clampedAnnuityStartAge, EVEN_START_WEIGHTS, isAllocatable, isIndividuallyOwnedAccount, type AllocatableAccount } from './sectionHelpers'
 import { usePlan } from '../planContextCore'
 import { CheckboxField, MoneyField, NumberField, PercentField, ReadonlyField, SelectField, TextField } from '../fields'
 import { fmtMoney } from '../format'
@@ -57,26 +57,44 @@ export function AccountFields({ account, index }: { account: Account; index: num
     })
   const startAgeCeiling = annuityStartAgeCeiling(plan, account)
   /**
-   * Commit a purchase edit and, in the same block, pull the start age down to
-   * whatever the new purchase permits.
+   * Commit one field and, in the same update block, pull the start age down to
+   * whatever the edit leaves permitted.
    *
-   * Every field in the purchase can move the ceiling: switching to a qualified
-   * purchase, clearing the QLAC box, or moving the purchase year earlier all
-   * turn a start age that stored yesterday into one the engine refuses today.
-   * Bounding the age field alone would leave the household with a plan that
-   * will not save and no field showing the fault, so the bump travels with the
-   * edit that caused it — one update block, the way the lump-sum election
-   * revives its offer year.
+   * Three different fields can move the ceiling and each has to carry the
+   * consequence with it, because none of them is the age field: the purchase
+   * (switching to qualified, clearing the QLAC box, moving the purchase year
+   * earlier), the owner (a different birth year is a different applicable RMD
+   * age), and the age itself when it is typed rather than stepped. A `max` on
+   * the number field governs the stepper alone, so without this the household
+   * gets a plan the engine refuses at save and no field showing which value is
+   * at fault. One update block per edit, so the clamp and the change land as a
+   * single recomputation — the atomic-commit pattern the lump-sum election uses
+   * to revive its offer year.
    */
+  const commitWithStartAgeClamp = (key: string, value: unknown, edited: Account) => {
+    const clamped = clampedAnnuityStartAge(plan, edited)
+    update((d) => {
+      updateAccountField(d, index, key, value)
+      if (clamped !== null) updateAccountField(d, index, 'startAge', clamped)
+    })
+  }
   const setAnnuityPurchase = (next: Extract<Account, { type: 'annuity' }>['purchase']) => {
     if (account.type !== 'annuity') return
-    const ceiling = next === undefined ? null : annuityStartAgeCeiling(plan, { ...account, purchase: next })
-    update((d) => {
-      updateAccountField(d, index, 'purchase', next)
-      if (ceiling !== null && account.startAge > ceiling) {
-        updateAccountField(d, index, 'startAge', ceiling)
-      }
-    })
+    commitWithStartAgeClamp('purchase', next, { ...account, purchase: next })
+  }
+  const setOwner = (next: string | null) => {
+    if (account.type !== 'annuity') {
+      set('ownerPersonId', next)
+      return
+    }
+    commitWithStartAgeClamp('ownerPersonId', next, { ...account, ownerPersonId: next })
+  }
+  const setStartAge = (next: number) => {
+    if (account.type !== 'annuity') {
+      set('startAge', next)
+      return
+    }
+    set('startAge', clampedAnnuityStartAge(plan, { ...account, startAge: next }) ?? next)
   }
   return (
     <div className="form-grid">
@@ -85,7 +103,7 @@ export function AccountFields({ account, index }: { account: Account; index: num
         label="Owner"
         value={account.ownerPersonId ?? 'joint'}
         options={ownerOptions(plan, account.type)}
-        onCommit={(v) => set('ownerPersonId', v === 'joint' ? null : v)}
+        onCommit={(v) => setOwner(v === 'joint' ? null : v)}
       />
       {'balance' in account ? <MoneyField label={account.type === 'debt' ? 'Balance owed' : 'Balance'} value={account.balance} onCommit={(v) => set('balance', v ?? 0)} /> : null}
       {account.type === 'taxable' || account.type === 'equityComp' ? <MoneyField label="Cost basis" hint="Aggregate basis; gains realize pro-rata." value={account.costBasis} onCommit={(v) => set('costBasis', v ?? 0)} /> : null}
@@ -488,7 +506,7 @@ export function AccountFields({ account, index }: { account: Account; index: num
             value={account.startAge}
             min={40}
             max={startAgeCeiling ?? 95}
-            onCommit={(v) => set('startAge', Math.round(v ?? 65))}
+            onCommit={(v) => setStartAge(Math.round(v ?? 65))}
           />
           <MoneyField label="Monthly amount" value={account.monthlyAmount} onCommit={(v) => set('monthlyAmount', v ?? 0)} />
           <PercentField label="COLA" value={account.colaPct} onCommit={(v) => set('colaPct', v ?? 0)} />

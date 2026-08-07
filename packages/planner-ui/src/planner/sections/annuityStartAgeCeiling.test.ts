@@ -1,5 +1,5 @@
 /**
- * The bound the accounts editor puts on an annuity's start age.
+ * The bound that the accounts editor puts on an annuity's start age.
  *
  * The engine refuses a qualified annuity purchase that is not a QLAC and whose
  * payments commence after the owner's required beginning date (Treas. Reg.
@@ -16,7 +16,7 @@ import { describe, expect, it } from 'vitest'
 
 import { createEmptyPlan, type Account, type Plan } from '@retiregolden/engine/model/plan'
 
-import { annuityStartAgeCeiling } from './sectionHelpers'
+import { annuityStartAgeCeiling, clampedAnnuityStartAge } from './sectionHelpers'
 
 let counter = 0
 const testIds = (): string => `ceiling-${++counter}`
@@ -113,5 +113,88 @@ describe('annuityStartAgeCeiling', () => {
       survivorPct: 50,
     }
     expect(annuityStartAgeCeiling(planWithOwner(), pension)).toBeNull()
+  })
+})
+
+/**
+ * What the editor STORES, which is a different question from what it offers.
+ *
+ * `annuityStartAgeCeiling` only decides the number field's `max`, and a `max`
+ * governs the stepper — not a typed value, and not an edit to some other field
+ * that moves the ceiling underneath a start age which was valid a moment ago.
+ * Both routes end at a plan `parsePlan` refuses, with no field showing which
+ * value is at fault, so every commit that can move the ceiling asks this.
+ */
+describe('clampedAnnuityStartAge', () => {
+  /** Two owners whose ceilings differ: 1940 buys at 86, 1962 is bounded at 76. */
+  function twoOwnerPlan(): Plan {
+    const plan = planWithOwner('1940-01-01')
+    plan.household.people = [
+      plan.household.people[0]!,
+      {
+        id: 'p2',
+        name: 'Sam',
+        dob: '1962-01-01',
+        sex: 'average',
+        retirementAge: null,
+        longevity: { planningAge: 95, source: 'manual' },
+      },
+    ]
+    return plan
+  }
+
+  it('stores the ceiling when a typed start age goes past it', () => {
+    // The finding this exists for: the field offered 76 and accepted 90.
+    expect(clampedAnnuityStartAge(planWithOwner(), annuity({ startAge: 90 }))).toBe(76)
+  })
+
+  it('leaves a typed start age at the ceiling alone', () => {
+    expect(clampedAnnuityStartAge(planWithOwner(), annuity({ startAge: 76 }))).toBeNull()
+  })
+
+  it('leaves a typed start age below the ceiling alone', () => {
+    expect(clampedAnnuityStartAge(planWithOwner(), annuity({ startAge: 65 }))).toBeNull()
+  })
+
+  it('pulls the start age down when the new owner has a lower ceiling', () => {
+    // Switching a contract from the 1940 owner (who bought it at 86, so 85 was
+    // fine) to the 1962 owner, whose applicable RMD age of 75 puts the last
+    // permissible start at 76. Nothing about the contract changed; the person
+    // it is measured against did.
+    const plan = twoOwnerPlan()
+    const moved = annuity({ startAge: 85, ownerPersonId: 'p2' })
+    expect(annuityStartAgeCeiling(plan, annuity({ startAge: 85 }))).toBe(86)
+    expect(clampedAnnuityStartAge(plan, moved)).toBe(76)
+  })
+
+  it('leaves the start age alone when the new owner has a higher ceiling', () => {
+    // The other direction has to be silent: an edit that widens what is allowed
+    // must not move a value the household chose.
+    const plan = twoOwnerPlan()
+    const moved = annuity({ startAge: 76, ownerPersonId: plan.household.people[0]!.id })
+    expect(clampedAnnuityStartAge(plan, moved)).toBeNull()
+  })
+
+  it('says nothing about a contract the ceiling does not reach', () => {
+    const qlac = annuity({
+      startAge: 90,
+      purchase: { year: 2026, premium: 100_000, fundingAccountId: 'ira', taxQualification: 'qualified', qlac: true },
+    })
+    expect(clampedAnnuityStartAge(planWithOwner(), qlac)).toBeNull()
+  })
+
+  it('leaves every other account type alone', () => {
+    const pension: Account = {
+      type: 'pension',
+      id: 'pen',
+      name: 'Pension',
+      ownerPersonId: 'p1',
+      annualReturnPct: null,
+      startAge: 80,
+      monthlyAmount: 1_000,
+      colaPct: 0,
+      survivorPct: 50,
+    }
+    expect(clampedAnnuityStartAge(planWithOwner(), pension)).toBeNull()
   })
 })
