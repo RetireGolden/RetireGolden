@@ -47,7 +47,7 @@ import { createFlatTaxCalculator } from './flatTax.js'
 import { describeRule } from '../rules/describeRule.js'
 import { buildOptimizerInput } from './optimizePlan.js'
 import { simulatePlan } from './simulate.js'
-import type { OptimizerYearProbe } from './types.js'
+import type { OptimizerYearProbe, YearResult } from './types.js'
 
 let counter = 0
 const testIds = (): string => `qcd-d-${++counter}`
@@ -120,6 +120,8 @@ interface Observed {
   readonly basisConsumed: number
   /** Whether the owned-IRA annual settlement priced the year, or the fallback did. */
   readonly settled: boolean
+  /** The committed annual replay, where the settlement priced the year. */
+  readonly replay: YearResult['ownedNonRothIraAnnualReplay']
   readonly probe: OptimizerYearProbe
 }
 
@@ -138,6 +140,7 @@ function observe(plan: Plan): Observed {
     magi: year.magi,
     basisConsumed: year.rmd - (probe.rmdTaxable ?? year.rmd),
     settled: year.ownedNonRothIraAnnualReplay !== undefined,
+    replay: year.ownedNonRothIraAnnualReplay,
     probe,
   }
 }
@@ -318,6 +321,27 @@ describeRule('irc-408-d-8-D-projection-qcd-after-pro-rata', {
     expect(observed.magi).not.toBeCloseTo(readings.giftQualifiesInFullWithNoAggregateCeiling, 6)
     // The requirement returned itself in basis, at a fraction of exactly 1.
     expect(observed.basisConsumed).toBeCloseTo(EXCESS_RMD, 6)
+
+    // THE HALF THAT OUTLIVES THE YEAR, and the half no assertion here reached
+    // until 2026-08-07. Under (B)'s closing sentence the 10,000 of excess is
+    // not a gift at all, so it belongs on Form 8606 line 7, in the line-9
+    // denominator, and it recovers basis:
+    //
+    //   line 6 (Dec 31 value)  = 100,000 - 4,219.41 - 45,780.59 = 50,000.00
+    //   line 7                 = 4,219.41 + 5,780.59            = 10,000.00
+    //   line 9                 = 50,000 + 10,000                = 60,000.00
+    //   line 10                = 60,000 / 60,000                =  1.000
+    //   line 14 (basis fwd)    = 60,000 - 10,000                = 50,000.00
+    //
+    // The replay used to keep the whole moving draw off line 7 and hand
+    // 55,780.59 forward — and `simulate.ts` writes the replay's figure into
+    // `iraBasisByOwner`, so that was the number every later year was priced
+    // from, against the ledger's own correct 50,000.
+    const owner = observed.replay!.annualReplay.ownerReplays[0]!
+    expect(owner.line7AllocationEvidence.annualGrossAmount).toBe(1_000_000)
+    expect(owner.annualBasisRatio.denominatorMinorUnits).toBe(6_000_000)
+    expect(owner.nextYearOpeningBasisAmount).toBe(5_000_000)
+    expect(owner.nextYearOpeningBasisAmount).not.toBe(5_578_059)
   })
 })
 

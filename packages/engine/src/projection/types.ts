@@ -725,6 +725,38 @@ export interface SimulatorAnnualRetirementLegacyQcdOwnerAttribution {
 }
 
 /**
+ * How much of one moving charitable draw was a qualified charitable
+ * distribution, and how much of it never was.
+ *
+ * IRC 408(d)(8)(B)'s closing sentence treats a distribution as a QCD "only to
+ * the extent that the distribution would be includible in gross income", and
+ * (D) caps that at the owner's aggregate includible amount. A draw past the cap
+ * is an ordinary distribution: the Form 8606 line-7 instructions exclude
+ * "Qualified charitable distributions (QCDs)" by name and nothing else, so the
+ * unqualified part belongs on line 7, inside the line-9 denominator, recovering
+ * basis pro rata.
+ *
+ * Published per occurrence rather than per owner because the replay prices Form
+ * 8606 one occurrence at a time, and an owner-level remainder cannot say which
+ * account's draw it was. The routed half of the same gift travels on the
+ * nonmoving overlay instead, because it moves no dollars of its own and has no
+ * occurrence to ride.
+ */
+export interface SimulatorAnnualRetirementLegacyQcdCharacterization {
+  /** Exact key of the `legacyQcd` occurrence this characterizes. */
+  readonly producerOccurrenceKey: string
+  readonly ownerPersonId: string
+  readonly grossAmountPlanDollars: number
+  /**
+   * The part of that gross which was NOT a qualified charitable distribution
+   * and therefore stays on Form 8606 line 7. Never greater than the gross; zero
+   * on the ordinary household, whose gift is inside its aggregate includible
+   * amount.
+   */
+  readonly nonQualifiedLine7GrossPlanDollars: number
+}
+
+/**
  * The share of the published annual QCD total that moved no additional dollars
  * because an RMD debit already carried it out of the owned IRA. A gift taken
  * with no RMD behind it is not in here: it physically leaves an account and is
@@ -758,6 +790,12 @@ export interface SimulatorAnnualRetirementRuntimeSource {
     readonly Readonly<SimulatorAnnualRetirementRuntimeOccurrence>[]
   readonly nonmovingLegacyQcdOverlay:
     Readonly<SimulatorAnnualRetirementNonmovingLegacyQcdOverlay> | null
+  /**
+   * One entry per `legacyQcd` occurrence, in the order the draws moved. Empty
+   * in a year whose gift moved nothing on its own.
+   */
+  readonly legacyQcdCharacterizations:
+    readonly Readonly<SimulatorAnnualRetirementLegacyQcdCharacterization>[]
 }
 
 export type SimulatorRetirementRuntimeApplicationPhase =

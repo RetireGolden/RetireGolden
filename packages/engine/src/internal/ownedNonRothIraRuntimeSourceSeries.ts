@@ -1669,13 +1669,82 @@ function validateUnchecked(
     )) {
       fail('sourceCoverageInvalid', 'The nonmoving QCD overlay plus every moving QCD occurrence must exact-rejoin the published annual QCD total', { taxYear })
     }
+    // THE MOVING HALF IS NOT ALL A GIFT, and treating it as though it were is
+    // how this replay used to overstate the basis it handed forward. IRC
+    // 408(d)(8)(B)'s closing sentence treats a distribution as a qualified
+    // charitable distribution "only to the extent that the distribution would be
+    // includible in gross income", and (D) caps that at the owner's aggregate
+    // includible amount. A draw past the cap never became a QCD, and the Form
+    // 8606 line-7 instructions exclude "Qualified charitable distributions
+    // (QCDs)" by name and nothing else -- so the unqualified part stays on line
+    // 7 and inside the line-9 denominator, exactly as the annual ledger's own
+    // pro-rata arm already treats it.
+    //
+    // Read from the year rather than re-derived. The ledger sized each draw
+    // against the cap when it committed it, and its per-occurrence answer is
+    // published with the year, so the two arms carry the same line-7 gross to
+    // the cent rather than agreeing by reconstruction.
+    const legacyQcdApplications = normalizedApplications
+      .map((application, index) => ({ application, index }))
+      .filter(({ application }) =>
+        application.simulatorPhase === 'legacyQcdDistribution')
+    const characterizations = occurrenceSource.legacyQcdCharacterizations
+    if (!Array.isArray(characterizations) ||
+        characterizations.length !== legacyQcdApplications.length) {
+      fail('qcdStageRequired', 'Every moving QCD occurrence requires exactly one published qualification characterization', { taxYear })
+    }
+    {
+      const characterizationByKey = new Map<string, number>()
+      for (const characterization of characterizations) {
+        const producerOccurrenceKey = characterization.producerOccurrenceKey
+        const context = { taxYear, producerOccurrenceKey }
+        const gross = characterization.grossAmountPlanDollars
+        const nonQualified = characterization.nonQualifiedLine7GrossPlanDollars
+        const occurrence = occurrenceByKey.get(producerOccurrenceKey)
+        if (occurrence?.kind !== 'legacyQcd' ||
+            occurrence.ownerPersonId !== characterization.ownerPersonId ||
+            occurrence.grossAmountPlanDollars !== gross ||
+            characterizationByKey.has(producerOccurrenceKey)) {
+          fail('qcdStageRequired', 'A moving QCD characterization must bind one distinct legacyQcd occurrence at its exact gross', context)
+        }
+        if (!Number.isFinite(nonQualified) || nonQualified < 0 ||
+            Object.is(nonQualified, -0) || nonQualified > gross) {
+          fail('qcdStageRequired', 'A moving QCD characterization must keep its non-qualified remainder inside its own gross', context)
+        }
+        cents(nonQualified, 'Non-qualified moving QCD remainder', context)
+        characterizationByKey.set(producerOccurrenceKey, nonQualified)
+      }
+      for (const { application, index } of legacyQcdApplications) {
+        const nonQualified =
+          characterizationByKey.get(application.producerOccurrenceKey)
+        if (nonQualified === undefined) {
+          fail('qcdStageRequired', 'Every moving QCD occurrence requires exactly one published qualification characterization', {
+            taxYear, producerOccurrenceKey: application.producerOccurrenceKey,
+          })
+        }
+        if (nonQualified <= 0) continue
+        normalizedApplications[index] = {
+          ...application,
+          form8606Line: 'line7',
+          form8606LineGrossAmount: cents(
+            nonQualified,
+            'Form 8606 line 7 gross of a non-qualified charitable draw',
+            {
+              taxYear,
+              ownerPersonId: application.ownerPersonId,
+              sourceAccountId: application.sourceAccountId,
+              producerOccurrenceKey: application.producerOccurrenceKey,
+            },
+          ),
+        }
+      }
+    }
     // The overlay's own dollars are allocated here. Which owner's required
     // distribution carried the gift decides whose Form 8606 line-7 gross must
     // shrink under 408(d)(8)(D), and the annual ledger settles that question
     // when it sizes the gift, so the overlay states the answer and this replay
-    // reproduces it against the applications rather than re-deriving it. A gift
-    // that moved on its own needs none of this: its source account is named by
-    // its own occurrence and it never joined a line-7 gross to begin with.
+    // reproduces it against the applications rather than re-deriving it. The
+    // moving half above is read per occurrence instead, because it has one.
     if (overlay !== null) {
       const carveByOwner = new Map<string, number>()
       const attributedRouted: number[] = []

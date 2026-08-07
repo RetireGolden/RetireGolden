@@ -3149,6 +3149,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         | 'ownedIraRmd'
         | 'automaticSeppDistribution'
         | 'legacyNeedBasedWithdrawal'
+        | 'legacyQcd'
         | 'legacyRothConversion'
         | 'namedRothConversion'
       producerOccurrenceKey: string
@@ -3266,6 +3267,44 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     }
     const deferredRmdDistributions: DeferredForcedIraDistribution[] = []
     const deferredSeppDistributions: DeferredForcedIraDistribution[] = []
+    /**
+     * One beyond-requirement charitable draw, held back for the same reason and
+     * carrying the same identity.
+     *
+     * Its own kind, because what is deferred about it is the opposite question.
+     * A forced distribution is deferred to learn how much of it LEFT section 72
+     * as a gift; this draw is deferred to learn how much of it never became one.
+     * IRC 408(d)(8)(B)'s closing sentence treats a distribution as a qualified
+     * charitable distribution "only to the extent that the distribution would be
+     * includible in gross income", and (D) caps that at the owner's aggregate
+     * includible amount, so a gift past the cap is an ordinary distribution: it
+     * belongs on Form 8606 line 7, in the line-9 denominator, and it recovers
+     * basis pro rata.
+     */
+    interface DeferredLegacyQcdDistribution {
+      readonly ownerId: string
+      readonly amount: number
+      readonly producerOccurrenceKey: string
+      readonly sourceAccountId: string
+      readonly mutationOrdinal: number
+    }
+    const deferredLegacyQcdDistributions: DeferredLegacyQcdDistribution[] = []
+    /**
+     * Per-occurrence characterization of the moving half of the gift, published
+     * with the year so the replay never has to re-derive it.
+     *
+     * The routed half rides the nonmoving overlay because it moves no dollars of
+     * its own and has no occurrence to ride. This half does have one, so the
+     * split travels on it and the replay reads rather than reconstructs — which
+     * is what keeps the two arms' Form 8606 line-7 grosses identical to the cent
+     * instead of merely convergent.
+     */
+    const legacyQcdCharacterizations: {
+      producerOccurrenceKey: string
+      ownerPersonId: string
+      grossAmountPlanDollars: number
+      nonQualifiedLine7GrossPlanDollars: number
+    }[] = []
     /** Owned-IRA required-distribution gross by owner, for gift attribution. */
     const ownedIraRmdGrossByOwner = new Map<string, number>()
     /**
@@ -3887,16 +3926,31 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
               executionSequence: null,
               movementAuthorityId: null,
             })
-            recordAnnualRetirementRuntimeApplication({
+            const giftApplication = recordAnnualRetirementRuntimeApplication({
               applicationKind: 'debit',
               producerOccurrenceKey,
               simulatorPhase: 'legacyQcdDistribution',
               ownerPersonId: state.account.ownerPersonId,
-              sourceAccountId: state.account.id,
               sourceBalanceBeforePlanDollars: sourceBalanceBefore,
+              sourceAccountId: state.account.id,
               appliedAmountPlanDollars: take,
               sourceBalanceAfterPlanDollars: state.balance,
             })
+            // Held back for the 408(d)(8)(D) block below, exactly as the forced
+            // distributions above are and for the same reason: how much of this
+            // draw is a QUALIFIED charitable distribution is not knowable until
+            // the whole gift has been measured against the owner's aggregate
+            // includible amount, and (B)'s closing sentence makes the unqualified
+            // part an ordinary distribution rather than a gift.
+            if (giftApplication.applicationKind === 'debit') {
+              deferredLegacyQcdDistributions.push({
+                ownerId: beyondRmdOwnerId,
+                amount: take,
+                producerOccurrenceKey,
+                sourceAccountId: state.account.id,
+                mutationOrdinal: giftApplication.mutationOrdinal,
+              })
+            }
           }
         }
         qcd += qcdFromRmd
@@ -4061,27 +4115,64 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       (nontaxable) => { seppNontaxable += nontaxable },
     )
     // The beyond-RMD excess, last, because the gift moves after both forced
-    // distributions. `splitIraDistribution` directly rather than the assumed
-    // character: no named action can produce these dollars, since a named QCD
-    // request stands this whole arm down.
+    // distributions.
     //
-    // ITS TAXABLE SHARE IS PROVABLY ZERO, and the term is here anyway because
-    // the proof is what makes the surrounding arithmetic safe to change. Any
-    // excess at all means the qualified amount took the owner's WHOLE aggregate
-    // includible amount, so the residual denominator is the basis itself, the
-    // year's fraction is exactly 1, and every dollar the pool still holds is
-    // basis. The excess could only be taxed if the forced distributions had
-    // already spent that basis — and they cannot have, because the dollars
-    // available to fund a beyond-requirement gift are what survives them: a
-    // gift large enough to leave an unqualified beyond-requirement remainder
-    // requires more basis than the forced distributions could consume. The
-    // accumulator therefore books nothing today; it is the line that would
-    // catch a future change to either half of that reasoning.
-    for (const [ownerId, gross] of qcdNonQualifiedBeyondRmdByOwner) {
-      const proRata = iraProRata.get(ownerId)
-      if (proRata === undefined || gross <= 0) continue
-      const split = splitIraDistribution(proRata, gross)
-      iraProRata.set(ownerId, split.next)
+    // CHARGED TO THE OCCURRENCES THAT MOVED IT, one draw at a time, rather than
+    // as one lump per owner. IRC 408(d)(8)(B)'s closing sentence treats a
+    // distribution as a qualified charitable distribution "only to the extent
+    // that the distribution would be includible in gross income", so the part of
+    // this gift past the (D) aggregate cap was never a QCD at all: it is an
+    // ordinary distribution belonging on Form 8606 line 7, inside the line-9
+    // denominator, recovering basis pro rata. The Form 8606 line-7 instructions
+    // exclude "Qualified charitable distributions (QCDs)" by name and nothing
+    // else, which is the whole of the authority for keeping the qualified part
+    // off the line and none at all for keeping the rest off it.
+    //
+    // A LUMP CANNOT SAY WHICH ACCOUNT'S DRAW IT WAS, and the replay needs that:
+    // it prices Form 8606 line by line, per occurrence. So the owner's excess is
+    // charged greedily across their own draws in mutation order -- the same
+    // convention, and the same order, the drain above created them in -- and the
+    // per-occurrence result is published on the year so the replay reads it
+    // instead of reconstructing it.
+    //
+    // ITS TAXABLE SHARE IS PROVABLY ZERO ON THIS LEDGER, and the term is here
+    // anyway because the proof is what makes the surrounding arithmetic safe to
+    // change. Any excess at all means the qualified amount took the owner's
+    // WHOLE aggregate includible amount, so this ledger's residual denominator
+    // is the basis itself, its fraction is exactly 1, and every dollar the pool
+    // still holds is basis. The excess could only be taxed if the forced
+    // distributions had already spent that basis — and they cannot have, because
+    // the dollars available to fund a beyond-requirement gift are what survives
+    // them. The proof is about THIS ledger's pre-distribution denominator and
+    // not about the settlement's close-of-year one, which is why the split now
+    // asks for the assumed character first: where the settlement priced the
+    // year, its figure supersedes, and it is not required to agree that the
+    // fraction was 1.
+    const legacyQcdExcessByOwner = new Map(qcdNonQualifiedBeyondRmdByOwner)
+    for (const entry of deferredLegacyQcdDistributions) {
+      const remainingExcess = Math.max(
+        0, legacyQcdExcessByOwner.get(entry.ownerId) ?? 0,
+      )
+      const nonQualified = Math.min(remainingExcess, entry.amount)
+      legacyQcdCharacterizations.push({
+        producerOccurrenceKey: entry.producerOccurrenceKey,
+        ownerPersonId: entry.ownerId,
+        grossAmountPlanDollars: entry.amount,
+        nonQualifiedLine7GrossPlanDollars: nonQualified,
+      })
+      if (nonQualified <= 0) continue
+      legacyQcdExcessByOwner.set(entry.ownerId, remainingExcess - nonQualified)
+      const proRata = iraProRata.get(entry.ownerId)
+      if (proRata === undefined) continue
+      const split = splitWithAssumedCharacter(proRata, nonQualified, {
+        ownerPersonId: entry.ownerId,
+        calculationScope: 'form8606Line7Distributions',
+        occurrenceKind: 'legacyQcd',
+        producerOccurrenceKey: entry.producerOccurrenceKey,
+        sourceAccountId: entry.sourceAccountId,
+        mutationOrdinal: entry.mutationOrdinal,
+      })
+      iraProRata.set(entry.ownerId, split.next)
       qcdNonQualifiedOrdinaryIncome += split.taxable
     }
 
@@ -7676,6 +7767,14 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             'attributedToOwnedIraRequiredDistributionGrosses' as const,
         })
         : null,
+      // The moving half's characterization, in the order the draws moved. The
+      // 408(d)(8)(D) block sized each one against the owner's aggregate
+      // includible amount, so the replay reads which part of each draw was a
+      // gift and which part was an ordinary distribution rather than assuming
+      // the whole of it was the former.
+      legacyQcdCharacterizations: Object.freeze(
+        legacyQcdCharacterizations.map((entry) => Object.freeze({ ...entry })),
+      ),
     })
     const retirementRuntimeApplicationSource = Object.freeze({
       status: 'runtimeApplicationSourcesCaptured' as const,

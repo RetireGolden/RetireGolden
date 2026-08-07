@@ -99,6 +99,12 @@ interface MovingQcdOptions {
    * authorising action and allocation instead of the source account alone.
    */
   readonly named?: { readonly actionId: string; readonly allocationId: string }
+  /**
+   * How much of the moving draw was NOT a qualified charitable distribution,
+   * under 408(d)(8)(B)'s closing sentence read with (D)'s aggregate cap. Zero
+   * on every fixture whose gift fits inside the owner's includible amount.
+   */
+  readonly nonQualifiedRemainder?: number
 }
 
 /**
@@ -198,6 +204,24 @@ function withMovingQcd(
   ;(year as { qcd: number }).qcd = options.publishedTotal ?? amount
   ;(occurrenceSource as { nonmovingLegacyQcdOverlay: null })
     .nonmovingLegacyQcdOverlay = null
+  // A moving gift carries its own 408(d)(8)(D) characterization, one per
+  // occurrence. These fixtures are built on households whose gift is well
+  // inside the owner's aggregate includible amount, so none of it is the
+  // ordinary distribution (B)'s closing sentence would make it -- but the
+  // entry has to be there, because a `legacyQcd` occurrence with no
+  // characterization is a draw the replay cannot place on Form 8606 at all.
+  const characterizations = occurrenceSource
+    .legacyQcdCharacterizations as unknown as unknown[]
+  characterizations.splice(0)
+  if (options.occurrence !== false && options.named === undefined) {
+    characterizations.push({
+      producerOccurrenceKey,
+      ownerPersonId: 'p1',
+      grossAmountPlanDollars: amount,
+      nonQualifiedLine7GrossPlanDollars:
+        options.nonQualifiedRemainder ?? 0,
+    })
+  }
   return years
 }
 
@@ -423,6 +447,43 @@ describe('moving legacy QCD in the owned-IRA source series', () => {
       .toMatchObject({
         status: 'ownedNonRothIraRuntimeSourceSeriesBlocked',
         issues: [{ kind: 'sourceIdentityInvalid' }],
+      })
+  })
+
+  // A moving draw with no characterization is a draw this replay cannot place
+  // on Form 8606 at all: 408(d)(8)(B)'s closing sentence makes qualification a
+  // question of amount, not of kind, so "it is a legacyQcd occurrence" does not
+  // answer whether any of it belonged on line 7. Refused rather than assumed
+  // qualified, which is the assumption that overstated basis before this guard.
+  it('refuses a moving gift whose qualification is unstated', () => {
+    const plan = preRmdPlan('moving-qcd-uncharacterized', [
+      traditional('ira', 100_000),
+    ])
+    const years = withMovingQcd(project(plan), 'ira', 100_000, 10_000)
+    ;(years[0]!.retirementRuntimeSource!
+      .legacyQcdCharacterizations as unknown as unknown[]).splice(0)
+
+    expect(validateOwnedNonRothIraRuntimeSourceSeries(plan, TAX_YEAR, years))
+      .toMatchObject({
+        status: 'ownedNonRothIraRuntimeSourceSeriesBlocked',
+        issues: [{ kind: 'qcdStageRequired', taxYear: TAX_YEAR }],
+      })
+  })
+
+  // And a remainder larger than the draw it came out of describes an ordinary
+  // distribution bigger than the dollars that moved.
+  it('refuses a non-qualified remainder that outruns its own draw', () => {
+    const plan = preRmdPlan('moving-qcd-overcharacterized', [
+      traditional('ira', 100_000),
+    ])
+    const years = withMovingQcd(project(plan), 'ira', 100_000, 10_000, {
+      nonQualifiedRemainder: 10_001,
+    })
+
+    expect(validateOwnedNonRothIraRuntimeSourceSeries(plan, TAX_YEAR, years))
+      .toMatchObject({
+        status: 'ownedNonRothIraRuntimeSourceSeriesBlocked',
+        issues: [{ kind: 'qcdStageRequired' }],
       })
   })
 
