@@ -9,8 +9,10 @@
  */
 
 import {
+  ANNUITY_MAX_START_AGE,
   CURRENT_PLAN_SCHEMA_VERSION,
   latestNonQlacQualifiedAnnuityStartAge,
+  latestQlacAnnuityStartAge,
   parsePlan,
   type Plan,
 } from './plan.js'
@@ -557,6 +559,35 @@ export type PlanLoadRepair =
       accountName: string
       startAge: number
       latestPermittedStartAge: number
+      /**
+       * What the OTHER shape would have allowed — here, the (q)(1)(ii) ceiling a
+       * QLAC would have been under. Carried because the repair notice has to
+       * decide whether re-authoring the contract as a QLAC is a remedy or a
+       * second refusal, and the two ceilings do not order the same way for every
+       * owner. Computing it costs the migration nothing: the birth month it
+       * needs is already in hand for the branch above.
+       *
+       * Capped at `ANNUITY_MAX_START_AGE`, unlike `latestPermittedStartAge`:
+       * this one is the basis of a suggestion, so it must name a start age the
+       * plan can actually store, not merely one the regulation would allow.
+       */
+      latestPermittedStartAgeIfToggled: number
+    }
+  /** A QLAC purchase whose payments commence after the first of the month following the owner's 85th birthday. */
+  | {
+      kind: 'qlacPurchaseStoodDown'
+      accountId: string
+      accountName: string
+      startAge: number
+      latestPermittedStartAge: number
+      /**
+       * What dropping the QLAC election would have allowed — the
+       * required-beginning-date ceiling, capped at `ANNUITY_MAX_START_AGE`.
+       * That ceiling climbs with the purchase year, so a late annuitizer's runs
+       * past what the plan can store and an uncapped report would have the
+       * notice offering a purchase `parsePlan` refuses.
+       */
+      latestPermittedStartAgeIfToggled: number
     }
 
 /** The document as repaired, plus what the repairs were. */
@@ -652,14 +683,19 @@ function normalizeCurrentPlan(raw: Record<string, unknown>): NormalizedPlan {
   }
 
   /**
-   * Birth year of the person a stored account belongs to, by the same owner
-   * resolution `parsePlan` and the projection take: the named owner, or the
-   * first person in the household when the account carries none. Null when the
-   * document holds no readable birth date, in which case the deferred-annuity
-   * repair below stands aside — the parse rule stands aside on the same fact,
-   * so there is nothing to repair and nothing to lock the household out of.
+   * Birth year and birth month of the person a stored account belongs to, by
+   * the same owner resolution `parsePlan` and the projection take: the named
+   * owner, or the first person in the household when the account carries none.
+   * Null when the document holds no readable birth date, in which case the
+   * deferred-annuity repairs below stand aside — the parse rules stand aside on
+   * the same fact, so there is nothing to repair and nothing to lock the
+   * household out of.
+   *
+   * The month is here because the QLAC ceiling needs it: (q)(1)(ii)'s deadline
+   * is the first day of the month after the 85th birthday, which falls in the
+   * next calendar year for a December birth and so admits one more start age.
    */
-  const ownerBirthYear = (ownerPersonId: unknown): number | null => {
+  const ownerBirthParts = (ownerPersonId: unknown): { year: number; month: number } | null => {
     const owner =
       people.find(
         (candidate) =>
@@ -672,7 +708,9 @@ function normalizeCurrentPlan(raw: Record<string, unknown>): NormalizedPlan {
     const dob = (owner as Record<string, unknown>)['dob']
     if (typeof dob !== 'string') return null
     const year = Number(dob.slice(0, 4))
-    return Number.isFinite(year) ? year : null
+    const month = Number(dob.slice(5, 7))
+    if (!Number.isFinite(year) || !Number.isFinite(month)) return null
+    return { year, month }
   }
 
   const repairs: PlanLoadRepair[] = []
@@ -771,34 +809,49 @@ function normalizeCurrentPlan(raw: Record<string, unknown>): NormalizedPlan {
       }
     }
 
-    // A qualified annuity purchase, not declared a QLAC, whose payments do not
-    // commence until after the owner's required beginning date. Tested BEFORE
-    // the funding repair below, because a contract carrying both faults cannot
-    // be saved by retargeting its premium — the start age would still refuse —
-    // and standing the purchase down cures the funding fault along with it.
+    // A qualified annuity purchase that starts paying later than its shape
+    // permits: past the owner's required beginning date when it is not a QLAC
+    // (Treas. Reg. 1.401(a)(9)-6(a)(3)(i), excused by (q)(1)(iii) for a QLAC
+    // alone), or past the first of the month after the owner's 85th birthday
+    // when it is one ((q)(1)(ii) — a contract naming a later starting date is
+    // not a QLAC, so it holds neither the excuse nor 1.401(a)(9)-5(b)(4)'s
+    // exclusion from the required-distribution base). Every qualified purchase
+    // is under exactly one of the two bounds, so the branches below cannot both
+    // fire on one account.
+    //
+    // Tested BEFORE the funding repair below, because a contract carrying both
+    // faults cannot be saved by retargeting its premium — the start age would
+    // still refuse — and standing the purchase down cures the funding fault
+    // along with it.
     //
     // WHY THE REPAIR IS A STAND-DOWN, derived from what the stored document
     // means rather than from what is convenient. The household authored a
-    // deferred contract bought with pre-tax dollars. Treas. Reg.
-    // 1.401(a)(9)-6(a)(3)(i) says such a contract must commence by the required
-    // beginning date, and (q)(1)(iii) excuses only a QLAC, so the stored shape
-    // has no legal expression that keeps every stored fact. Three repairs were
-    // available and two are refused by the never-richer bar this seam is under:
+    // deferred contract bought with pre-tax dollars, and the stored shape has no
+    // legal expression that keeps every stored fact. The same three repairs were
+    // available for each bound, and the same two are refused by the never-richer
+    // bar this seam is under:
     //
-    //  - MARK IT A QLAC. Forbidden. QLAC status is precisely the grant that
-    //    keeps a deferred contract's value out of the required-distribution
-    //    base, and the household never chose it; conferring it here would keep
-    //    the exclusion the regulation denies and make the new parse refusal
-    //    cosmetic, since every refused document would be relabelled into the
-    //    shape that is allowed to defer. It is not even a safe relabel: the
-    //    premium would then be clamped to the statutory cap (a purchase the
-    //    household did not make), and a start age past 85 would still fail
-    //    1.401(a)(9)-6(q)(1)(ii), so the "QLAC" produced can be no more legal
-    //    than what it replaced.
+    //  - CHANGE WHICH BOUND APPLIES — mark a non-QLAC a QLAC, or untick the box
+    //    on a QLAC. Forbidden in both directions. QLAC status is precisely the
+    //    grant that keeps a deferred contract's value out of the required-
+    //    distribution base, and a household that did not tick the box never
+    //    chose it; conferring it would keep the exclusion the regulation denies
+    //    and make the parse refusal cosmetic, since every refused document
+    //    would be relabelled into the shape that is allowed to defer. It is not
+    //    even a safe relabel: the premium would then be clamped to the statutory
+    //    cap (a purchase the household did not make), and a start age past the
+    //    (q)(1)(ii) ceiling would fail on the other bound instead, so the "QLAC"
+    //    produced can be no more legal than what it replaced. Unticking the box
+    //    on a stored QLAC is the same move mirrored and is richer for a second
+    //    reason: it lifts the premium cap the household's own QLAC election put
+    //    the contract under, and it lands on the required-beginning-date bound,
+    //    which is lower than the ceiling it just failed in every case but an
+    //    annuitization bought at that very age.
     //  - ADVANCE THE START AGE. Forbidden, and richer by a wide margin. The
     //    `monthlyAmount` on record was quoted for a deferred start; paying it
-    //    from the required beginning date instead hands the household years of
-    //    payments nobody bought, at a rate nobody would have been offered.
+    //    from an earlier age instead hands the household years of payments
+    //    nobody bought, at a rate nobody would have been offered. The argument
+    //    is if anything stronger on a QLAC, whose whole pricing IS the deferral.
     //  - STAND THE PURCHASE DOWN. What is done. The premium never leaves the
     //    funding balance and the contract pays nothing, so the household keeps
     //    exactly the dollars it started with and gains no stream — the strictly
@@ -815,20 +868,67 @@ function normalizeCurrentPlan(raw: Record<string, unknown>): NormalizedPlan {
       const purchase = accountRecord['purchase'] as Record<string, unknown>
       const startAge = accountRecord['startAge']
       const purchaseYear = purchase['year']
-      const birthYear =
-        purchase['taxQualification'] === 'qualified' && purchase['qlac'] !== true
-          ? ownerBirthYear(accountRecord['ownerPersonId'])
+      const isQlac = purchase['qlac'] === true
+      const birth =
+        purchase['taxQualification'] === 'qualified'
+          ? ownerBirthParts(accountRecord['ownerPersonId'])
           : null
-      if (birthYear !== null && typeof startAge === 'number' && typeof purchaseYear === 'number') {
-        const latestPermittedStartAge = latestNonQlacQualifiedAnnuityStartAge(birthYear, purchaseYear)
+      if (birth !== null && typeof startAge === 'number' && typeof purchaseYear === 'number') {
+        const qlacCeiling = latestQlacAnnuityStartAge(birth.month)
+        const nonQlacCeiling = latestNonQlacQualifiedAnnuityStartAge(birth.year, purchaseYear)
+        // THE TRIGGER IS THE REGULATORY CEILING AND IS DELIBERATELY NOT CAPPED
+        // at `ANNUITY_MAX_START_AGE`, even though the reported counterpart below
+        // is. The two numbers answer different questions and capping them alike
+        // would be a bug rather than a tidy-up.
+        //
+        // This repair exists for one reason: the stored shape has no legal
+        // expression, so the premium was leaving the required-distribution base
+        // on an exclusion the regulation withholds. A start age of 96 against a
+        // regulatory ceiling of 98 is not that shape — it is a lawful contract
+        // that this program merely declines to project, which is a range limit
+        // and not a tax fault. Capping the trigger would fire the stand-down on
+        // it, destroying a purchase the household made for a reason that has
+        // nothing to do with section 401(a)(9).
+        //
+        // And it would not even buy the parse. The stand-down keeps `startAge`
+        // on purpose — it is the fact the household has to change, so erasing it
+        // would hide what the notice is telling them — so a document at 96 still
+        // fails `annuitySchema`'s own maximum afterwards. Verified rather than
+        // assumed: firing the repair on such a document leaves
+        // `migratePlanToCurrent` returning the same "Too big" refusal it returns
+        // without it, only now with the purchase gone. Refusing the document
+        // whole, with the schema saying exactly which field is out of range, is
+        // the honest outcome; silently gutting it and refusing anyway is not.
+        // A repair that clamped `startAge` into range instead would pay a
+        // monthly amount quoted for a later start across years nobody bought,
+        // which is the richer direction this seam is barred from taking.
+        const latestPermittedStartAge = isQlac ? qlacCeiling : nonQlacCeiling
         if (startAge > latestPermittedStartAge) {
           changed = true
           repairs.push({
-            kind: 'deferredAnnuityPurchaseStoodDown',
+            kind: isQlac ? 'qlacPurchaseStoodDown' : 'deferredAnnuityPurchaseStoodDown',
             accountId: stringField(accountRecord, 'id'),
             accountName: stringField(accountRecord, 'name'),
             startAge,
             latestPermittedStartAge,
+            // Both ceilings travel with the repair. The notice has to say
+            // whether the household can re-author this contract under the other
+            // shape, and the two do not order the same way for every owner: the
+            // required-beginning-date ceiling climbs with the purchase year, so
+            // for a late annuitizer it sits ABOVE the QLAC's fixed 85 or 86.
+            //
+            // CAPPED, unlike the trigger, because this number answers "could you
+            // re-author the contract the other way and keep this start age?" —
+            // and a start age the plan cannot store is not kept by any shape.
+            // The required-beginning-date ceiling is the later of the applicable
+            // RMD age plus one and the owner's age in the purchase year, so a
+            // late annuitizer's runs past 95 and an uncapped report would have
+            // the notice offering a purchase that `parsePlan` then refuses. Same
+            // cap, same constant, same reasoning as the accounts editor's.
+            latestPermittedStartAgeIfToggled: Math.min(
+              isQlac ? nonQlacCeiling : qlacCeiling,
+              ANNUITY_MAX_START_AGE,
+            ),
           })
           const stoodDown = { ...accountRecord, monthlyAmount: 0 }
           Reflect.deleteProperty(stoodDown, 'purchase')

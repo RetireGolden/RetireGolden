@@ -736,6 +736,67 @@ describe('guaranteed-income and estate-depth fields', () => {
     expect(parsePlan(plan).ok).toBe(true)
   })
 
+  it('rejects a QLAC whose payments commence after the owner’s 85th birthday', () => {
+    // Treas. Reg. 1.401(a)(9)-6(q)(1)(ii): the contract must provide a specified
+    // annuity starting date no later than the first of the month after the 85th
+    // anniversary of the owner's birth. This owner was born in March, so that
+    // day is April 1 of the year they attain 85, and the projection commences a
+    // start age of 86 on January 1 of the year they attain 86 — nine months
+    // late. A contract past the ceiling is not a QLAC, so (q)(1)(iii)'s excuse
+    // and 1.401(a)(9)-5(b)(4)'s exclusion are both gone with it.
+    const parsed = parsePlan(deferredQualified(86, { qlac: true }))
+    expect(parsed.ok).toBe(false)
+    expect(parsed.ok ? [] : parsed.issues.join('\n')).toContain(
+      'a QLAC must commence by the first of the month after the owner\'s 85th birthday: it must start paying by age 85',
+    )
+  })
+
+  it('accepts a QLAC that starts in the last year the owner may defer to', () => {
+    expect(parsePlan(deferredQualified(85, { qlac: true })).ok).toBe(true)
+  })
+
+  it('gives a December-born owner the extra start age their deadline gives them', () => {
+    // The deadline is the first day of the month NEXT FOLLOWING the 85th
+    // anniversary. Born in December, that day is January 1 of the next calendar
+    // year, which is exactly where the projection commences a start age of 86:
+    // the last day the regulation permits, and refusing it would be stricter
+    // than the authority for it. A birthday one day earlier gets no such year.
+    expect(parsePlan(deferredQualified(86, { qlac: true, dob: '1962-12-01' })).ok).toBe(true)
+    expect(parsePlan(deferredQualified(87, { qlac: true, dob: '1962-12-31' })).ok).toBe(false)
+    expect(parsePlan(deferredQualified(86, { qlac: true, dob: '1962-11-30' })).ok).toBe(false)
+  })
+
+  it('names the other box only where the other box would take the contract', () => {
+    // Each refusal has two conceivable remedies and the second is a dead end
+    // whenever the other bound refuses the same age too. Unticking QLAC on a
+    // start age of 86 lands this 1962-born owner on a required-beginning-date
+    // ceiling of 76, so the message says so instead of offering it.
+    const deadEnd = parsePlan(deferredQualified(86, { qlac: true }))
+    expect(deadEnd.ok ? [] : deadEnd.issues.join('\n')).toContain(
+      'unticking "QLAC (qualified longevity annuity)" would not help, because a qualified purchase that is not a QLAC must start paying by age 76',
+    )
+    // The other way round: an owner who annuitizes at 90 in the purchase year
+    // may hold that contract without the QLAC election, because an immediate
+    // purchase postpones nothing. Here the untick is a real remedy and the
+    // message offers it.
+    const realRemedy = parsePlan(deferredQualified(90, { qlac: true, dob: '1940-03-15' }))
+    expect(realRemedy.ok).toBe(false)
+    expect(realRemedy.ok ? [] : realRemedy.issues.join('\n')).toContain(
+      'untick "QLAC (qualified longevity annuity)" — a qualified purchase that is not a QLAC may start as late as age 90 here',
+    )
+  })
+
+  it('tells a non-QLAC holder that ticking the box would not help either', () => {
+    // The mirror of the case above, and the correction the (q)(1)(ii) ceiling
+    // forced on the older message: a start age of 90 is past the QLAC ceiling
+    // as well, so "tick QLAC" would send the household to a second refusal.
+    const parsed = parsePlan(deferredQualified(90))
+    expect(parsed.ok).toBe(false)
+    expect(parsed.ok ? [] : parsed.issues.join('\n')).toContain(
+      'ticking "QLAC (qualified longevity annuity)" would not help, because a QLAC must start paying by age 85',
+    )
+  })
+
   it('rejects a purchase referencing an unknown funding account', () => {
     expect(parsePlan(planWithAnnuity({ year: 2030, premium: 100_000, fundingAccountId: 'nope', taxQualification: 'nonQualified' })).ok).toBe(false)
   })

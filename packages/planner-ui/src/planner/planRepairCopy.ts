@@ -59,7 +59,22 @@ export function planRepairMessage(repair: PlanLoadRepair, plan: Plan): string {
       return `${account} was bought with a premium from ${named(repair.fromAccountName, 'an inherited account')}, which is inherited. An inherited account cannot fund an annuity purchase, so the premium now comes from ${named(repair.toAccountName, 'a traditional account you own')}. The purchase year, the premium, and its pre-tax treatment are unchanged. Open Accounts to fund it from a different account you own.`
     case 'annuityPurchaseStoodDown':
       return `${account} was bought with a premium from ${named(repair.fromAccountName, 'an inherited account')}, which is inherited. An inherited account cannot fund an annuity purchase, and this plan holds no traditional account you own that could have paid the premium instead. The purchase was cleared and ${account} pays nothing. Open Accounts to add the account the premium came from, then set the purchase up again.`
+    // The two start-age stand-downs, and the one sentence they share: whether
+    // the OTHER purchase shape would have kept the start age the household
+    // stored. It is a real question rather than a rhetorical one, because the
+    // two ceilings do not order the same way for every owner — a QLAC's is
+    // fixed at 85 (86 for a December birth) while an ordinary purchase's climbs
+    // with the purchase year, so for a late annuitizer the QLAC box LOWERS what
+    // is allowed. Naming a shape that would refuse the same age is worse than
+    // naming none, so both messages are derived from the pair of ceilings the
+    // repair carries rather than asserting which box is the generous one.
     case 'deferredAnnuityPurchaseStoodDown':
-      return `${account} was bought with pre-tax money and set to start paying at age ${repair.startAge}. Only a QLAC can start that late; a purchase like this one has to start by age ${repair.latestPermittedStartAge}. The purchase was cleared and ${account} pays nothing, so the premium stayed in the account it would have come from. Open Accounts to set it up again with an earlier start age, or to buy it as a QLAC.`
+      return repair.startAge <= repair.latestPermittedStartAgeIfToggled
+        ? `${account} was bought with pre-tax money and set to start paying at age ${repair.startAge}. Only a QLAC can start that late; a purchase like this one has to start by age ${repair.latestPermittedStartAge}. The purchase was cleared and ${account} pays nothing, so the premium stayed in the account it would have come from. Open Accounts to set it up again with an earlier start age, or to buy it as a QLAC.`
+        : `${account} was bought with pre-tax money and set to start paying at age ${repair.startAge}. A purchase like this one has to start by age ${repair.latestPermittedStartAge}, and buying it as a QLAC would not keep the later start either — a QLAC has to start by age ${repair.latestPermittedStartAgeIfToggled}. No pre-tax purchase can wait until ${repair.startAge}. The purchase was cleared and ${account} pays nothing, so the premium stayed in the account it would have come from. Open Accounts to set it up again with an earlier start age.`
+    case 'qlacPurchaseStoodDown':
+      return repair.startAge <= repair.latestPermittedStartAgeIfToggled
+        ? `${account} was bought as a QLAC and set to start paying at age ${repair.startAge}. A QLAC has to start by age ${repair.latestPermittedStartAge} — the IRA rules put the last start on the first of the month after your 85th birthday. Bought as late as this one was, an ordinary pre-tax purchase could still start at ${repair.startAge}. The purchase was cleared and ${account} pays nothing, so the premium stayed in the account it would have come from. Open Accounts to set it up again with an earlier start age, or without the QLAC box ticked.`
+        : `${account} was bought as a QLAC and set to start paying at age ${repair.startAge}. A QLAC is the longest a pre-tax purchase can wait, but it still has to start by age ${repair.latestPermittedStartAge} — the IRA rules put the last start on the first of the month after your 85th birthday. The purchase was cleared and ${account} pays nothing, so the premium stayed in the account it would have come from. Open Accounts to set it up again with an earlier start age.`
   }
 }

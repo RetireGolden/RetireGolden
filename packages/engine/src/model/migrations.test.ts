@@ -294,20 +294,27 @@ describe('migratePlanToCurrent', () => {
      * and `qlac` is absent, which is the shape parse now refuses.
      */
     function storedDeferredAnnuity(
-      overrides: { fundingAccountId?: string; ownedTraditional?: boolean; qlac?: boolean } = {},
+      overrides: {
+        fundingAccountId?: string
+        ownedTraditional?: boolean
+        qlac?: boolean
+        startAge?: number
+        dob?: string
+        purchaseYear?: number
+      } = {},
     ): Record<string, unknown> {
       const plan = createEmptyPlan({ newId: testIds, now: fixedNow })
       const primaryId = plan.household.people[0]!.id
-      plan.household.people[0]!.dob = '1950-01-01'
+      plan.household.people[0]!.dob = overrides.dob ?? '1950-01-01'
       plan.accounts = [
         ...(overrides.ownedTraditional === false
           ? []
           : [{ type: 'traditional' as const, id: 'ira', name: 'IRA', ownerPersonId: primaryId, annualReturnPct: null, kind: 'ira' as const, balance: 400_000, annualContribution: 0 }]),
         { type: 'traditional', id: 'inh', name: 'Inherited', ownerPersonId: primaryId, annualReturnPct: null, kind: 'ira', balance: 300_000, annualContribution: 0,
           inherited: { ownerDeathYear: 2022, decedentHadStartedRmds: true } },
-        { type: 'annuity', id: 'ann', name: 'Longevity annuity', ownerPersonId: primaryId, annualReturnPct: null, startAge: 85, monthlyAmount: 1_000, colaPct: 0, taxablePct: 100,
+        { type: 'annuity', id: 'ann', name: 'Longevity annuity', ownerPersonId: primaryId, annualReturnPct: null, startAge: overrides.startAge ?? 85, monthlyAmount: 1_000, colaPct: 0, taxablePct: 100,
           purchase: {
-            year: 2026,
+            year: overrides.purchaseYear ?? 2026,
             premium: 100_000,
             fundingAccountId: overrides.fundingAccountId ?? 'ira',
             taxQualification: 'qualified',
@@ -343,6 +350,31 @@ describe('migratePlanToCurrent', () => {
           accountName: 'Longevity annuity',
           startAge: 85,
           latestPermittedStartAge: 76,
+          // What a QLAC would have allowed. Carried so the repair notice can
+          // tell whether re-authoring the contract with the box ticked is a
+          // remedy or a second refusal; here 85 is exactly reachable, so it is
+          // a remedy and the notice offers it.
+          latestPermittedStartAgeIfToggled: 85,
+        },
+      ])
+    })
+
+    it('carries the other shape’s ceiling so the notice can tell if it would help', () => {
+      // A start age of 90 fails the required-beginning-date bound AND the QLAC
+      // bound, so "buy it as a QLAC" is not a remedy at all. The repair says so
+      // by carrying both numbers rather than leaving the copy to assume the
+      // QLAC box is always the generous one.
+      const result = migratePlanToCurrent(storedDeferredAnnuity({ startAge: 90 }))
+      expect(result.ok).toBe(true)
+      if (!result.ok) return
+      expect(result.repairs).toEqual([
+        {
+          kind: 'deferredAnnuityPurchaseStoodDown',
+          accountId: 'ann',
+          accountName: 'Longevity annuity',
+          startAge: 90,
+          latestPermittedStartAge: 76,
+          latestPermittedStartAgeIfToggled: 85,
         },
       ])
     })
@@ -368,6 +400,150 @@ describe('migratePlanToCurrent', () => {
       expect(annuity.purchase?.premium).toBe(100_000)
       expect(annuity.monthlyAmount).toBe(1_000)
       expect(result.repairs).toEqual([])
+    })
+
+    it('stands down a stored QLAC that commences after the owner’s 85th birthday', () => {
+      // Treas. Reg. 1.401(a)(9)-6(q)(1)(ii): a contract naming a later starting
+      // date is not a QLAC, so it holds neither (q)(1)(iii)'s excuse from the
+      // required beginning date nor 1.401(a)(9)-5(b)(4)'s exclusion from the
+      // required-distribution base — and the engine's one mechanism would hand
+      // it both. The alternatives are the mirror of the ones next door and are
+      // refused for the same reason: unticking the box lifts the premium cap the
+      // household's own election put the contract under and lands it on a lower
+      // ceiling still, and advancing the start age pays a monthly amount quoted
+      // for a deferral nobody would have priced this way.
+      const result = migratePlanToCurrent(storedDeferredAnnuity({ qlac: true, startAge: 90 }))
+      expect(result.ok).toBe(true)
+      if (!result.ok) return
+      const annuity = result.plan.accounts.find((a) => a.id === 'ann')!
+      if (annuity.type !== 'annuity') throw new Error('expected the annuity back')
+      expect(annuity.purchase).toBeUndefined()
+      expect(annuity.monthlyAmount).toBe(0)
+      expect(annuity.startAge).toBe(90)
+      expect(result.repairs).toEqual([
+        {
+          kind: 'qlacPurchaseStoodDown',
+          accountId: 'ann',
+          accountName: 'Longevity annuity',
+          startAge: 90,
+          latestPermittedStartAge: 85,
+          // This owner bought at 76, so dropping the QLAC election would land
+          // the contract on a ceiling of 76 — lower still, and not a remedy.
+          latestPermittedStartAgeIfToggled: 76,
+        },
+      ])
+    })
+
+    it('reports the higher ordinary ceiling for a household that annuitized late', () => {
+      // The required-beginning-date bound is the later of the applicable RMD age
+      // plus one and the owner's age in the purchase year, so an owner buying at
+      // 90 may hold a contract starting at 90 without the QLAC election. Here it
+      // is the BOX that refused them, and the repair carries the number that
+      // says so rather than leaving the notice to assume otherwise.
+      const result = migratePlanToCurrent(
+        storedDeferredAnnuity({ qlac: true, startAge: 90, dob: '1936-01-01' }),
+      )
+      expect(result.ok).toBe(true)
+      if (!result.ok) return
+      expect(result.repairs).toEqual([
+        {
+          kind: 'qlacPurchaseStoodDown',
+          accountId: 'ann',
+          accountName: 'Longevity annuity',
+          startAge: 90,
+          latestPermittedStartAge: 85,
+          latestPermittedStartAgeIfToggled: 90,
+        },
+      ])
+    })
+
+    /**
+     * The two limits this repair straddles, and why only one of them is capped.
+     *
+     * `latestPermittedStartAge` is regulatory: it says what section 401(a)(9)
+     * lets this contract do, and it is what decides whether the stand-down fires
+     * at all. `latestPermittedStartAgeIfToggled` is the basis of a SUGGESTION —
+     * "you could re-author it the other way" — so it has to name a start age the
+     * plan can actually store, which is a narrower question. The
+     * required-beginning-date ceiling is the later of the applicable RMD age
+     * plus one and the owner's age in the purchase year, so for a late
+     * annuitizer it runs past `ANNUITY_MAX_START_AGE` and the two part company.
+     */
+    it('never suggests a start age past what the plan can store', () => {
+      // Born 1930, buying in 2026 at 96: the ordinary ceiling computes to 96,
+      // one past the schema's maximum. The QLAC at 90 is stood down, and the
+      // notice must offer 95 rather than a 96 the editor would refuse.
+      const result = migratePlanToCurrent(
+        storedDeferredAnnuity({ qlac: true, startAge: 90, dob: '1930-01-01' }),
+      )
+      expect(result.ok).toBe(true)
+      if (!result.ok) return
+      expect(result.repairs).toEqual([
+        {
+          kind: 'qlacPurchaseStoodDown',
+          accountId: 'ann',
+          accountName: 'Longevity annuity',
+          startAge: 90,
+          latestPermittedStartAge: 85,
+          latestPermittedStartAgeIfToggled: 95,
+        },
+      ])
+      // And the repaired document opens, which is the point of the seam.
+      const annuity = result.plan.accounts.find((a) => a.id === 'ann')!
+      if (annuity.type !== 'annuity') throw new Error('expected the annuity back')
+      expect(annuity.purchase).toBeUndefined()
+    })
+
+    it('refuses a start age past the schema maximum rather than gutting the purchase', () => {
+      // The trigger is NOT capped, and this is the document that shows why. A
+      // start age of 96 against a regulatory ceiling of 98 (born 1930, buying in
+      // 2028 at 98) is a lawful contract that this program declines to project —
+      // a range limit, not a tax fault. Capping the trigger would fire the
+      // stand-down on it and destroy a purchase for a reason that has nothing to
+      // do with section 401(a)(9).
+      //
+      // And it would not buy the parse either: the stand-down keeps `startAge`
+      // by design, so the document still fails the schema's own maximum. The
+      // refusal below names the field that is out of range, which is strictly
+      // more use to the household than the same refusal with their purchase
+      // silently removed.
+      const result = migratePlanToCurrent(
+        storedDeferredAnnuity({ startAge: 96, dob: '1930-01-01', purchaseYear: 2028 }),
+      )
+      expect(result.ok).toBe(false)
+      if (result.ok) return
+      expect((result.issues ?? []).join('; ')).toContain('startAge')
+      expect((result.issues ?? []).join('; ')).toContain('95')
+    })
+
+    it('refuses a QLAC past the schema maximum for the same reason', () => {
+      // The repair DOES fire here (97 is past the QLAC ceiling of 85), and the
+      // document is still refused, because standing the purchase down never
+      // moves the start age. Pinned so nobody reads the fired repair as evidence
+      // that the load seam can rescue an out-of-range start age.
+      const result = migratePlanToCurrent(
+        storedDeferredAnnuity({ qlac: true, startAge: 97, dob: '1930-01-01', purchaseYear: 2028 }),
+      )
+      expect(result.ok).toBe(false)
+      if (result.ok) return
+      expect((result.issues ?? []).join('; ')).toContain('95')
+    })
+
+    it('keeps the extra year a December-born owner’s deadline actually gives them', () => {
+      // The deadline is the first day of the month next following the 85th
+      // anniversary, which for a December birthday is January 1 of the next
+      // calendar year — exactly where the projection commences a start age of
+      // 86. Standing that contract down would take a year of payments the
+      // household lawfully holds, which the load seam has no warrant to do.
+      const kept = migratePlanToCurrent(storedDeferredAnnuity({ qlac: true, startAge: 86, dob: '1950-12-01' }))
+      expect(kept.ok).toBe(true)
+      if (!kept.ok) return
+      expect(kept.repairs).toEqual([])
+      // One day earlier in the calendar and the deadline falls a year sooner.
+      const stoodDown = migratePlanToCurrent(storedDeferredAnnuity({ qlac: true, startAge: 86, dob: '1950-11-30' }))
+      expect(stoodDown.ok).toBe(true)
+      if (!stoodDown.ok) return
+      expect(stoodDown.repairs.map((r) => r.kind)).toEqual(['qlacPurchaseStoodDown'])
     })
 
     it('leaves an owned-traditional-funded qualified annuity untouched', () => {
