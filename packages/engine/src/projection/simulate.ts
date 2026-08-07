@@ -4791,10 +4791,19 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         namedQcdRmdSatisfied = ledgerCentsToPlanDollars(
           qcdActionExecution.totalRmdSatisfiedAmount,
         )
-        namedQcdIncomeOffset = Math.max(0, Math.min(
-          namedQcdRmdSatisfied,
-          ownedIraRmdTotal - rmdNontaxable,
-        ))
+        // Structurally zero today: the annual pass distributes the whole
+        // required amount in cash before any named gift is sized, so the
+        // executor publishes totalRmdSatisfiedAmount of zero on every current
+        // shape (treas-reg-1-408-8-g-projection-named-qcd-beyond-rmd). A cap
+        // of `ownedIraRmdTotal - rmdNontaxable` used to sit here; that is the
+        // requirement's taxable share, the pre-408(d)(8)(D) ceiling the
+        // aggregate arm no longer uses, and it was removed so it cannot go
+        // live wrong. The day the RMD-reserve slice makes this positive, the
+        // offset must be capped by the donor's aggregate includible amount,
+        // the measure the aggregate arm computes, not by the requirement's
+        // taxable share. A checkpoint pin holds this equal to the executor's
+        // published figure so that day forces the statutory-cap decision.
+        namedQcdIncomeOffset = namedQcdRmdSatisfied
         qcd += namedQcdExecuted
       } else if (isStandIn && qcdActionExecution.issues.some((issue) =>
         issue.kind === 'postPassBlocked')) {

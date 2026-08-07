@@ -278,4 +278,24 @@ describe('the named-QCD donor ledgers across a rolled-back annual pass', () => {
     expect(rolledBack.years[0]?.qcdActionExecution?.totalExcludableAmount)
       .toBe(settled.years[0]?.qcdActionExecution?.totalExcludableAmount)
   })
+
+  it('holds the income offset to the executor’s published RMD-satisfied figure', () => {
+    // The offset used to be capped at the requirement's taxable share — the
+    // pre-408(d)(8)(D) ceiling — behind a value that is structurally zero
+    // today: the annual pass distributes the whole required amount in cash
+    // before any named gift is sized, so the executor publishes
+    // totalRmdSatisfiedAmount of zero on every current shape
+    // (treas-reg-1-408-8-g-projection-named-qcd-beyond-rmd). The wrong cap is
+    // gone; this pin holds the offset equal to the published figure, so the
+    // day the RMD-reserve slice makes it positive, this fails and forces the
+    // statutory aggregate-includible cap decision rather than letting a
+    // removed formula's absence pass silently.
+    const result = project(donorPlan({
+      id: 'qcd-offset-checkpoint-dormant-cap',
+      requests: [namedQcd()],
+    }))
+    const execution = result.years[0]?.qcdActionExecution
+    expect(execution?.committed).toBe(true)
+    expect(execution?.totalRmdSatisfiedAmount).toBe(0)
+  })
 })
