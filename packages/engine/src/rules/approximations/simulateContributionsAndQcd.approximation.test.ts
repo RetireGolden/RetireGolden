@@ -482,7 +482,7 @@ describeRule('irc-408-d-2-C-projection-pro-rata-measurement-instant', {
     // asserted in prose: the settlement published nothing for the year. If the
     // aggregate gift arm ever becomes source-allocatable this shape settles,
     // and then it is this suite — not only the record — that has to be revisited.
-    expect(gain.ownedNonRothIraAnnualReplay).toBeUndefined()
+    expect(gain).not.toHaveProperty('ownedNonRothIraAnnualReplay')
   })
 })
 
