@@ -75,6 +75,63 @@ export interface OptimizerYear {
    * portion of Social Security, etc. Nominal dollars.
    */
   ordinaryIncomeBase: number
+  /**
+   * Ordinary income the household has ALREADY committed this year that
+   * `ordinaryIncomeBase` cannot carry — today, the taxable part of a named Roth
+   * conversion the exact-cent executor committed. Nominal; default 0, which
+   * emits a byte-identical LP.
+   *
+   * WHY IT IS A SEPARATE FIELD. `ordinaryIncomeBase` excludes every conversion
+   * on purpose, because the LP re-decides conversions as `conv`. A committed
+   * conversion is the one kind it may not re-decide: the dollars have moved
+   * (`committedActionMovement` above already debited the source and credited
+   * the Roth) and the income is on the return whatever the solver does next.
+   * Folding it into the base would make that field's documented exclusion
+   * false; leaving it out understates the year's tax by the tax on the whole
+   * converted amount, which is what this closes.
+   *
+   * FLOOR SEMANTICS, AND WHERE THEY COME FROM. This is added to the same
+   * `ordinaryBase` constant `ordinaryIncomeBase` becomes, so it is a CONSTANT
+   * on the right-hand side of `tifloor` — `ti ≥ ordinaryBase − ded + conv +
+   * wt + wi`. The solver has no variable with a negative coefficient there, so
+   * it can neither shrink nor offset the term; and because `ti` is partitioned
+   * into ascending convex bracket segments that a minimizing objective fills
+   * cheapest-first, the committed dollars consume the low brackets and the
+   * solver's own `conv`/`wt`/`wi` price marginally on top. The stacking is
+   * inherited from the base's existing pricing, not reimplemented here.
+   *
+   * It rides the same constant into the IRMAA/ACA MAGI base, the taxable-SS
+   * provisional-income constant, and the senior-deduction phase-out — every
+   * side channel `ordinaryIncomeBase` already feeds — because the exact ledger
+   * counts committed conversion income in all of them.
+   */
+  committedOrdinaryIncome?: number
+  /**
+   * Ordinary income the LP must NOT charge on the forced distribution it
+   * re-decides as `wt`: the charitable exclusion a QCD routed out of this
+   * year's owned-IRA RMD. Nominal; default 0, which emits a byte-identical LP.
+   *
+   * The mirror of `committedOrdinaryIncome`, and it joins the same
+   * `ordinaryBase` constant for the same reason. `ordinaryIncomeBase` is what
+   * remains after the forced distributions are netted out at their gross
+   * taxable figure, so it cannot carry an exclusion that belongs to those
+   * dollars; the LP books `traditionalWithdrawalTaxableFraction × wt` for them
+   * and this is what §408(d)(8) takes back out.
+   *
+   * SAFE AGAINST A PHANTOM DEDUCTION at the linearization point: the probe caps
+   * it at the year's taxable forced total, and the RMD floor (`rmd{t}`) forces
+   * `wt` to at least the modeled required distribution — so the income booked
+   * for those dollars is at least what this removes. Away from that point (a
+   * solve that shrinks the traditional bucket far enough to shrink the modeled
+   * RMD below the gift) it can over-remove; `ti ≥ 0` bounds the bracket side,
+   * and the exact-ledger tournament reprices the schedule regardless.
+   *
+   * It rides into MAGI with the rest of the constant, which is correct rather
+   * than incidental: an excluded distribution is out of gross income, so it is
+   * out of MAGI — and keeping IRMAA and the ACA credit down is most of what a
+   * QCD is for.
+   */
+  forcedDistributionOrdinaryIncomeExclusion?: number
   /** After-tax cash needed this year beyond non-withdrawal inflows. Nominal. */
   spendingNeed: number
   /** Net non-withdrawal cash already in hand (e.g. surplus SS/pension). Nominal. */
@@ -212,6 +269,45 @@ export interface OptimizerYear {
      * Booked as an inflow beside `exogenousCash`, because a withdrawal
      * REALLOCATES between buckets — debiting the source without crediting the
      * proceeds would make the solver poorer than the household actually is.
+     */
+    proceeds: number
+  }
+  /**
+   * Balance movement a plan STRATEGY already applied this year — dollars the
+   * ledger has moved that the solver may not re-decide, exactly like
+   * `committedActionMovement`, but produced by a strategy rather than by a
+   * recorded retirement action. Absent (the usual case) emits a byte-identical
+   * LP.
+   *
+   * Three producers (enumerated on `OptimizerYearProbe`): the aggregate
+   * `qcdAnnual` gift beyond the RMD, a 72(t) SEPP series payment, and an
+   * annuity purchase premium. Each was a one-sided booking before this term —
+   * the gift and the premium left buckets the LP kept spending from, and the
+   * series had its ordinary income charged with no debit at all.
+   *
+   * Kept separate from `committedActionMovement` rather than summed upstream so
+   * neither field's name outlives its contract, and so an action-bearing plan
+   * and a strategy-bearing plan stay independently attributable at this
+   * boundary.
+   */
+  exogenousStrategyMovement?: {
+    /** Signed movement in the owner-traditional bucket; a debit is negative. Nominal. */
+    trad: number
+    /** Signed movement in the inherited-traditional bucket. Nominal. */
+    inheritedTrad: number
+    /** Signed movement in the tax-free Roth/cash/HSA bucket. Nominal. */
+    other: number
+    /** Signed movement in the taxable brokerage / equity-comp bucket. Nominal. */
+    taxable: number
+    /**
+     * Gross cash those strategy movements delivered into this year's cash flow,
+     * booked beside `exogenousCash` exactly like the committed-action proceeds.
+     *
+     * Only the 72(t) series delivers any — it is a withdrawal, so it
+     * REALLOCATES rather than destroying net worth. A gift leaves and an
+     * annuity premium buys a contract that pays back through `exogenousCash`
+     * later, so both report zero here. Debiting the series without this would
+     * make the solver poorer than the household by every series payment.
      */
     proceeds: number
   }
@@ -401,7 +497,11 @@ export function buildOptimizerModel(input: OptimizerInput): BuiltModel {
     // A committed action can be the only thing that ever touches the taxable
     // bucket. Materialize it then too, or the movement would be silently
     // dropped instead of debited.
-    years.some((y) => (y.committedActionMovement?.taxable ?? 0) !== 0)
+    years.some((y) => (y.committedActionMovement?.taxable ?? 0) !== 0) ||
+    // Same rule for strategy movement. No producer routes to this bucket today
+    // (a QCD source is always an IRA), so this is a guard against a silent drop
+    // rather than a live path — which is exactly when a drop would go unnoticed.
+    years.some((y) => (y.exogenousStrategyMovement?.taxable ?? 0) !== 0)
   // Net cash a taxable withdrawal dollar yields after its LTCG cost, and the
   // MAGI weight of its realized gain (capital gains lift MAGI for IRMAA).
   const taxableNetCash = 1 - ltcgRate * gainFraction
@@ -419,7 +519,13 @@ export function buildOptimizerModel(input: OptimizerInput): BuiltModel {
     cumGrowth *= 1 + y.growth
     if (cumGrowth > peakGrowth) peakGrowth = cumGrowth
   }
-  const incomeSum = years.reduce((a, y) => a + y.ordinaryIncomeBase, 0)
+  // Committed ordinary income is part of what big-M has to dominate: it lifts
+  // every year's `ti` and its MAGI, and a big-M that no longer exceeds the
+  // largest MAGI would let a relaxed IRMAA constraint wrongly bind.
+  const incomeSum = years.reduce(
+    (a, y) => a + y.ordinaryIncomeBase + Math.max(0, y.committedOrdinaryIncome ?? 0),
+    0,
+  )
   const inflowSum = years.reduce((a, y) => a + y.tradInflow + y.otherInflow, 0)
   const bigM =
     (input.openingTrad + input.openingInheritedTrad + input.openingOther + (input.openingTaxable ?? 0) + inflowSum) *
@@ -459,6 +565,22 @@ export function buildOptimizerModel(input: OptimizerInput): BuiltModel {
     const conversionTaxableFraction = taxableFractionOrOne(
       y.rothConversionTaxableFraction,
     )
+    // Exogenous ordinary income the household already committed this year (a
+    // committed named conversion's taxable part). Clamped nonnegative: this is
+    // a floor the solver stacks on, and a negative one would be a deduction the
+    // LP has no authority to grant. It joins `ordinaryBase` below — the single
+    // constant that feeds `tifloor`, the taxable-SS provisional-income
+    // constant, and the MAGI base — so it is priced through the existing
+    // bracket model rather than through a second one.
+    const committedOrdinary = Math.max(0, y.committedOrdinaryIncome ?? 0)
+    // And the exclusion the LP must NOT charge on the forced dollars it books
+    // itself. Clamped nonnegative for the same reason and joined to the same
+    // constant, so a QCD year's brackets, MAGI and provisional income all read
+    // the distribution net of the gift, as the exact ledger does.
+    const forcedOrdinaryExclusion = Math.max(
+      0,
+      y.forcedDistributionOrdinaryIncomeExclusion ?? 0,
+    )
 
     // OBBBA senior deduction in-solve (ground-truth 2026 law sync, Step 2).
     // Eligible years add the full per-person deduction to the constant and a
@@ -484,8 +606,14 @@ export function buildOptimizerModel(input: OptimizerInput): BuiltModel {
     // or two — `srdBaseRaw` already carries the n and the two cancel.
     const srdRate = srdRule && srdEligible ? (srdRule.phaseOutRatePct / 100) * y.peopleAged65Plus : 0
     const srdStart = srdRule && srdEligible ? srdRule.magiPhaseOutStart[y.filingStatus] : 0
+    // The year's true no-new-conversion MAGI. Committed conversion income
+    // belongs in it for the same reason the forced distributions do: the test
+    // asks whether the deduction is already exhausted before the solver decides
+    // anything, and the ledger's MAGI counts a conversion the household has
+    // already made.
     const baselineMagi =
-      y.ordinaryIncomeBase + (y.capitalGainsBase ?? 0) + (y.baselineRmd ?? 0) + y.inheritedDistribution
+      y.ordinaryIncomeBase + committedOrdinary - forcedOrdinaryExclusion +
+      (y.capitalGainsBase ?? 0) + (y.baselineRmd ?? 0) + y.inheritedDistribution
     const srdBaseRaw = srdRule && srdEligible ? srdRule.amountPerPerson * y.peopleAged65Plus : 0
     const srdFullyPhasedOut = srdRate > 0 && baselineMagi >= srdStart + srdBaseRaw / srdRate
     const srdBase = srdFullyPhasedOut ? 0 : srdBaseRaw
@@ -511,8 +639,15 @@ export function buildOptimizerModel(input: OptimizerInput): BuiltModel {
       ssB !== undefined && ssB.ssBenefits > 1 && ssB.taxableSsBase < 0.845 * ssB.ssBenefits
     const taxSs = `taxss${t}`
     // Ordinary base with the probe's taxable-SS constant swapped out for the
-    // PWL variable when active.
-    const ordinaryBase = ssPwlActive ? y.ordinaryIncomeBase - ssB.taxableSsBase : y.ordinaryIncomeBase
+    // PWL variable when active, plus the committed ordinary-income floor. One
+    // constant carries both, which is what makes the floor stack: it is the
+    // right-hand side of `tifloor` (no variable can reduce it) and the low
+    // bracket segments fill with it first, so the solver's own `conv`, `wt` and
+    // `wi` are priced at the marginal rate above it.
+    const ordinaryBase =
+      (ssPwlActive ? y.ordinaryIncomeBase - ssB.taxableSsBase : y.ordinaryIncomeBase) +
+      committedOrdinary -
+      forcedOrdinaryExclusion
 
     // (taxable ordinary) ti ≥ grossOrdinary − deduction, ti ≥ 0. Minimising tax
     // pins ti to max(0, gross−ded) since every tax term is increasing in ti.
@@ -666,8 +801,18 @@ export function buildOptimizerModel(input: OptimizerInput): BuiltModel {
     // surplus routes to `save` (the tax-free bucket), which is where the exact
     // ledger's own surplus lands.
     const committed = y.committedActionMovement
+    // Strategy proceeds sit beside them. Only the 72(t) series delivers any: a
+    // gift leaves and an annuity premium buys a contract, so both report zero
+    // and only their bucket debits land. Debiting a series payment without its
+    // cash would make the solver poorer than the household every series year.
+    const strategyMoved = y.exogenousStrategyMovement
     constraints.push(
-      ` cash${t}: ${expr(cash)} = ${fmt(y.spendingNeed - y.exogenousCash - (committed?.proceeds ?? 0))}`,
+      ` cash${t}: ${expr(cash)} = ${fmt(
+        y.spendingNeed -
+          y.exogenousCash -
+          (committed?.proceeds ?? 0) -
+          (strategyMoved?.proceeds ?? 0),
+      )}`,
     )
 
     // RMD floor: discretionary+forced taxable distribution ≥ balance ÷ divisor.
@@ -697,22 +842,42 @@ export function buildOptimizerModel(input: OptimizerInput): BuiltModel {
     // a signed constant the solver cannot re-decide — so a debit leaves the
     // bucket the year the executor took it, and grows (or fails to grow) from
     // then on exactly as the exact ledger's balance does.
+    //
+    // Strategy movement rides it identically and is summed here rather than
+    // upstream: the two arrive from different authorities (an exact-cent action
+    // executor, and the aggregate QCD arm) and neither field may claim the
+    // other's dollars, but the recursion does not care which moved them. Note
+    // the asymmetry that is not an oversight: only the 72(t) series among the
+    // strategy producers reports `proceeds` in the cash constraint above,
+    // because a gift leaves and an annuity premium buys a contract.
     const trad: Terms = { [`trad${t + 1}`]: 1, [`trad${t}`]: -g, [conv]: g, [wt]: g }
-    constraints.push(` trad${t}: ${expr(trad)} = ${fmt(g * (y.tradInflow + (committed?.trad ?? 0)))}`)
+    constraints.push(
+      ` trad${t}: ${expr(trad)} = ${fmt(
+        g * (y.tradInflow + (committed?.trad ?? 0) + (strategyMoved?.trad ?? 0)),
+      )}`,
+    )
     const inherited: Terms = { [`inh${t + 1}`]: 1, [`inh${t}`]: -g, [wi]: g }
-    constraints.push(` inh${t}: ${expr(inherited)} = ${fmt(g * (committed?.inheritedTrad ?? 0))}`)
+    constraints.push(
+      ` inh${t}: ${expr(inherited)} = ${fmt(
+        g * ((committed?.inheritedTrad ?? 0) + (strategyMoved?.inheritedTrad ?? 0)),
+      )}`,
+    )
     // Tax-free bucket: `otherInflow` net of the taxable share lands here; the
     // taxable share seeds the taxable bucket below. Surplus `save` and Roth
     // conversions accrue to this tax-free bucket.
     const taxFreeInflow = hasTaxable ? Math.max(0, y.otherInflow - (y.taxableInflow ?? 0)) : y.otherInflow
     const other: Terms = { [`other${t + 1}`]: 1, [`other${t}`]: -g, [conv]: -g, [wo]: g, [save]: -g }
     constraints.push(
-      ` other${t}: ${expr(other)} = ${fmt(g * (taxFreeInflow + (committed?.other ?? 0)))}`,
+      ` other${t}: ${expr(other)} = ${fmt(
+        g * (taxFreeInflow + (committed?.other ?? 0) + (strategyMoved?.other ?? 0)),
+      )}`,
     )
     if (hasTaxable) {
       const taxable: Terms = { [`taxable${t + 1}`]: 1, [`taxable${t}`]: -g, [wtax]: g }
       constraints.push(
-        ` taxable${t}: ${expr(taxable)} = ${fmt(g * ((y.taxableInflow ?? 0) + (committed?.taxable ?? 0)))}`,
+        ` taxable${t}: ${expr(taxable)} = ${fmt(
+          g * ((y.taxableInflow ?? 0) + (committed?.taxable ?? 0) + (strategyMoved?.taxable ?? 0)),
+        )}`,
       )
     }
   }

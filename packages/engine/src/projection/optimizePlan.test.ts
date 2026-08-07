@@ -35,6 +35,7 @@ import {
   committedActionMovementForYear,
   evaluateExactLedgerSchedule,
   evaluateSimpleConversionCandidates,
+  exogenousStrategyMovementForYear,
   optimizePlan,
   optimizePlanCoOptimizingClaimAge,
   optimizerOpeningBuckets,
@@ -1451,6 +1452,11 @@ describe('committed retirement-action movement in the optimizer bridge', () => {
     // A conversion delivers no spendable cash — it reallocates — so the
     // proceeds term stays the ordinary withdrawal's alone.
     expect(probe.committedActionProceeds).toBe(0)
+    // The channels stay disjoint. A recorded action is not a strategy, so its
+    // movement never appears on the strategy channel; and its ordinary income
+    // is reported as income rather than a second copy of the movement.
+    expect(probe.exogenousStrategyAccountMovement).toEqual([])
+    expect(probe.committedConversionOrdinaryIncome).toBeCloseTo(60_000, 6)
 
     const buckets = optimizerOpeningBuckets(plan)
     expect(committedActionMovementForYear(buckets.bucketByAccountId, probe)).toEqual({
@@ -1477,8 +1483,9 @@ describe('committed retirement-action movement in the optimizer bridge', () => {
     // the household is genuinely poorer, and the LP has to see that.
     //
     // This one was the worse of the two to omit: the gift's income offset
-    // already rides into `ordinaryIncomeBase` through `namedQcdIncomeOffset`,
-    // so the solve was pricing the gift's tax break while keeping its dollars.
+    // reaches the LP on its own term (`namedQcdIncomeOffset` is half of
+    // `forcedDistributionOrdinaryIncomeExclusion`), so the solve was pricing
+    // the gift's tax break while keeping its dollars.
     const draft = tradHeavyPlan()
     // Born 1950-03-01: age 76 in 2026, 70½ since 2020, and an RMD is due.
     draft.household.people[0] = { ...draft.household.people[0]!, dob: '1950-03-01' }
@@ -1512,6 +1519,7 @@ describe('committed retirement-action movement in the optimizer bridge', () => {
     const ledger = simulatePlan(plan, opts).years[0]!
     expect(ledger.qcdActionExecution?.committed).toBe(true)
     expect(ledger.qcd).toBeCloseTo(20_000, 6)
+    const NAMED_QCD_INCOME_OFFSET = Number(ledger.qcdActionExecution!.totalRmdSatisfiedAmount) / 100
 
     // The gift, and nothing else. The same year takes an RMD and funds
     // spending out of the aggregate arms, and neither belongs here: the LP
@@ -1520,6 +1528,27 @@ describe('committed retirement-action movement in the optimizer bridge', () => {
       { accountId: trad.id, amount: -20_000 },
     ])
     expect(probe.committedActionProceeds).toBe(0)
+    // No overlap with the aggregate arm, and none with conversion income. A
+    // named gift stands the `qcdAnnual` strategy down for the year, so the
+    // strategy channel reports nothing — the two can never both give — and its
+    // income effect is a `namedQcdIncomeOffset` already inside
+    // `ordinaryIncomeBase`, not a committed-conversion floor.
+    expect(probe.exogenousStrategyAccountMovement).toEqual([])
+    expect(probe.committedConversionOrdinaryIncome).toBe(0)
+    // The gift's income side is `namedQcdIncomeOffset`, and it reaches the LP
+    // on the same term the aggregate arm's does — read from the executor's own
+    // published `totalRmdSatisfiedAmount` rather than assumed from the gift and
+    // the RMD, because §408(d)(8)(D) reaches only a distribution that would
+    // otherwise have been includible and the executor is the authority on how
+    // much of this gift was. In THIS fixture that figure is zero (the RMD was
+    // already satisfied before the gift executed), so the term is zero — which
+    // is exactly the point: it reports the ledger's answer and not the size of
+    // the gift. The aggregate arm's non-zero case is covered by
+    // `optimizePlan.adversarialFindings.test.ts`. The two arms are mutually
+    // exclusive (a named request stands the scalar down), so this term is one
+    // arm's or the other's and never a sum of both.
+    expect(probe.forcedDistributionOrdinaryIncomeExclusion)
+      .toBeCloseTo(NAMED_QCD_INCOME_OFFSET, 6)
     expect(committedActionMovementForYear(optimizerOpeningBuckets(plan).bucketByAccountId, probe))
       .toEqual({
         trad: -20_000,
@@ -1572,6 +1601,394 @@ describe('committed retirement-action movement in the optimizer bridge', () => {
       }),
     }
     expect(buildOptimizerModel(input).lp).toBe(buildOptimizerModel(withoutTheField).lp)
+  })
+})
+
+/**
+ * The two committed facts the LP used to book one side of.
+ *
+ * The accountant's frame, which is the whole design: a committed transaction
+ * has two sides and the LP must book both or neither.
+ *   - The aggregate `qcdAnnual` gift booked its income offset (inside
+ *     `ordinaryIncomeBase`) and not its balance debit, so the solve banked the
+ *     deduction and kept the money.
+ *   - A committed named conversion booked its balance movement (PR #229) and
+ *     not its ordinary income, so the solve spent the dollars and skipped the
+ *     tax — and then re-decided a conversion into bracket room the household
+ *     had already used.
+ */
+describe('committed facts the LP books on both sides', () => {
+  /** An identity-complete named conversion the executor will actually commit. */
+  function committedConversionRequest(
+    actionId: string,
+    sourceAccountId: string,
+    destinationRothAccountId: string,
+    year: number,
+    dollars: number,
+  ) {
+    const cents = dollars * 100
+    const parsed = parseRetirementActionRequest({
+      actionId,
+      kind: 'rothConversion',
+      year,
+      executionDate: `${year}-03-04`,
+      executionSequence: 1,
+      requestedAmount: cents,
+      provenance: { source: 'manual' },
+      personId: 'p1',
+      allocations: [{
+        allocationId: `${actionId}-allocation`,
+        sourceAccountId,
+        requestedAmount: cents,
+      }],
+      destinationRothAccountId,
+      taxFunding: { kind: 'noneExpected' },
+    })
+    if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+    return parsed.request
+  }
+
+  function probesFor(plan: Plan): OptimizerYearProbe[] {
+    const probes: OptimizerYearProbe[] = []
+    simulatePlan(plan, { ...opts, captureOptimizerInputs: (captured) => probes.push(captured) })
+    return probes
+  }
+
+  /** The right-hand-side constant of one year's `tifloor` constraint. */
+  function tiFloorConstraint(lp: string, t: number): string {
+    const line = lp.split('\n').find((row) => row.startsWith(` tifloor${t}:`))
+    if (line === undefined) throw new Error(`LP has no tifloor${t} constraint`)
+    return line
+  }
+
+  /**
+   * Retiree aged 72 in 2026 — past 70½ (so the gift is allowed) and short of
+   * the 1954 cohort's applicable RMD age of 73 (so 2026 forces no distribution
+   * at all). That is what puts the ENTIRE gift on the arm's beyond-RMD path,
+   * where it debits its sources directly, rather than routing it out of an RMD
+   * the LP already re-decides as its own `wt` variable.
+   */
+  function aggregateQcdPlan(): Plan {
+    const plan = createEmptyPlan({ newId: testIds, now: fixedNow })
+    plan.household.people[0] = {
+      id: 'p1',
+      name: 'Pat',
+      dob: '1954-01-01',
+      sex: 'average',
+      retirementAge: 65,
+      longevity: { planningAge: 76, source: 'manual' },
+    }
+    plan.assumptions.inflationPct = 0
+    plan.assumptions.defaultReturnPct = 0
+    plan.assumptions.stateEffectiveTaxPct = 0
+    plan.assumptions.heirTaxRatePct = 25
+    plan.expenses.baseAnnual = 10_000
+    plan.expenses.healthcare = {
+      pre65MonthlyPremiumPerPerson: 0,
+      applyAcaCredit: false,
+      medicareExtrasMonthlyPerPerson: 0,
+    }
+    // $30k requested against a $20,000.005 first source and a large second one:
+    // the first DRAINS (its take is the whole-cent figure the balance can fund,
+    // leaving a sub-cent residue) and the second covers the remainder. Two
+    // accounts, two different code paths through the same take.
+    plan.strategies.qcdAnnual = 30_000
+    plan.accounts = [
+      { type: 'traditional', id: 'qcd-ira-a', name: 'Small IRA', ownerPersonId: 'p1', annualReturnPct: 0, kind: 'ira', balance: 20_000.005, annualContribution: 0 },
+      { type: 'traditional', id: 'qcd-ira-b', name: 'Big IRA', ownerPersonId: 'p1', annualReturnPct: 0, kind: 'ira', balance: 500_000, annualContribution: 0 },
+      { type: 'roth', id: 'qcd-roth', name: 'Roth', ownerPersonId: 'p1', annualReturnPct: 0, kind: 'ira', balance: 0, annualContribution: 0 },
+      { type: 'cash', id: 'qcd-cash', name: 'Cash', ownerPersonId: null, annualReturnPct: 0, balance: 200_000, annualContribution: 0 },
+    ]
+    return validate(plan)
+  }
+
+  it('debits the LP’s buckets by the dollars the aggregate QCD arm gave away', () => {
+    // The discriminator, stated before the plan runs. On the parent commit the
+    // probe carried no strategy-movement channel at all, so the LP evolved its
+    // traditional bucket as though the gift never left — while the SAME solve
+    // priced the gift's tax break, which reaches the LP as
+    // `forcedDistributionOrdinaryIncomeExclusion`. One side of the entry, and
+    // the profitable side at that.
+    //
+    // The gift here is taken entirely BEYOND the RMD (this fixture's donor is
+    // pre-RMD), so it carries no exclusion of its own; the exclusion belongs to
+    // the RMD-routed part, which the two QCD fixtures in
+    // `optimizePlan.adversarialFindings.test.ts` cover.
+    const plan = aggregateQcdPlan()
+    const probes = probesFor(plan)
+    const probe = probes[0]!
+    const ledger = simulatePlan(plan, opts).years[0]!
+
+    // The ledger's own answer first, so the probe is checked against a gift
+    // that demonstrably happened rather than against itself. $30k asked for,
+    // $30k given, out of two accounts.
+    expect(ledger.qcd).toBeCloseTo(30_000, 6)
+    expect(ledger.rmd).toBe(0)
+
+    // Exact cents, per account, sorted by account id. `toEqual` on the whole
+    // array — Object.is on each amount, not a tolerance: a sub-cent residue
+    // here rides straight into the LP's own coefficients.
+    expect(probe.exogenousStrategyAccountMovement).toEqual([
+      { accountId: 'qcd-ira-a', amount: -20_000 },
+      { accountId: 'qcd-ira-b', amount: -10_000 },
+    ])
+
+    // Why the movement is measured from the take rather than inferred from the
+    // account. A drain takes the whole cents the balance can FUND, not the
+    // balance: the source opened at $20,000.005 and closes at the sub-cent
+    // residue no custodian could transfer, while the reported movement is the
+    // fundable $20,000 exactly. Reading the opening balance instead would
+    // report a gift of dollars the exact-cent ledger cannot express, and the
+    // `toEqual` above is Object.is on that amount, not a tolerance.
+    const drainedClose = ledger.balances['qcd-ira-a']!
+    expect(drainedClose).toBeGreaterThan(0)
+    expect(drainedClose).toBeLessThan(0.01)
+    expect(ledger.balances['qcd-ira-b']).toBeCloseTo(490_000, 6)
+
+    // Not the retirement-action channel. No action is recorded here at all, and
+    // `committedActionAccountMovement` documents itself as the exact-cent
+    // executors' report — putting a strategy's gift there would make its name
+    // untrue, which is why this is a second field rather than a wider one.
+    expect(probe.committedActionAccountMovement).toEqual([])
+    expect(probe.committedActionProceeds).toBe(0)
+
+    // The bridge, and then the balance recursion the solver actually reads.
+    const buckets = optimizerOpeningBuckets(plan)
+    // Proceeds zero: a gift LEAVES. The 72(t) series on this same channel does
+    // report proceeds, and that asymmetry is the whole double-entry claim.
+    expect(exogenousStrategyMovementForYear(buckets.bucketByAccountId, probe)).toEqual({
+      trad: -30_000,
+      inheritedTrad: 0,
+      other: 0,
+      taxable: 0,
+      proceeds: 0,
+    })
+    const input = buildOptimizerInput(plan, opts)
+    expect(input.years[0]!.exogenousStrategyMovement).toEqual({
+      trad: -30_000,
+      inheritedTrad: 0,
+      other: 0,
+      taxable: 0,
+      proceeds: 0,
+    })
+    expect(probe.exogenousStrategyProceeds).toBe(0)
+    // Growth is 0 here, so the year's `trad` recursion right-hand side is the
+    // movement itself: `trad1 − trad0 + conv0 + wt0 = −30000`.
+    const lp = buildOptimizerModel(input).lp
+    expect(lp).toContain(' trad0: + 1 trad1 - 1 trad0 + 1 conv0 + 1 wt0 = -30000')
+
+    // A gift delivers no cash, so there is no proceeds side to book — the
+    // asymmetry with a committed ordinary withdrawal is deliberate.
+    expect(input.years[0]!.committedActionMovement).toBeUndefined()
+  })
+
+  it('reports what the gift executed, not what the strategy asked for', () => {
+    // Same arm, capped by the sources instead of by the request: $600k asked
+    // for is first clamped to the year's statutory annual limit and then to
+    // what the accounts can fund. A term re-derived from
+    // `plan.strategies.qcdAnnual` would report the ask; this reports the take.
+    const draft = structuredClone(aggregateQcdPlan()) as Plan
+    draft.strategies.qcdAnnual = 600_000
+    draft.accounts = draft.accounts.filter((account) => account.id !== 'qcd-ira-b')
+    const plan = validate(draft)
+    const probe = probesFor(plan)[0]!
+    const ledger = simulatePlan(plan, opts).years[0]!
+
+    expect(ledger.qcd).toBeCloseTo(20_000, 6)
+    expect(probe.exogenousStrategyAccountMovement).toEqual([
+      { accountId: 'qcd-ira-a', amount: -20_000 },
+    ])
+  })
+
+  it('leaves an LP with no strategy movement byte-identical', () => {
+    const input = buildOptimizerInput(validate(tradHeavyPlan()), opts)
+
+    expect(input.years.every((year) => year.exogenousStrategyMovement === undefined)).toBe(true)
+    const withoutTheField = {
+      ...input,
+      years: input.years.map((modeled) => {
+        const stripped = { ...modeled }
+        delete stripped.exogenousStrategyMovement
+        return stripped
+      }),
+    }
+    expect(buildOptimizerModel(input).lp).toBe(buildOptimizerModel(withoutTheField).lp)
+  })
+
+  /**
+   * Pre-65 single filer, two plan years, one committed $50k conversion in the
+   * first. Nothing else the LP re-decides touches the year's income: no RMD (age
+   * 62), no inherited distribution, no Social Security, no taxable account, no
+   * capital gains, and spending is zero — so the year's whole MAGI is the
+   * committed conversion, and the reconciliation has one moving part.
+   */
+  function committedConversionPlan(): { plan: Plan; actionFree: Plan } {
+    const draft = createEmptyPlan({ newId: testIds, now: fixedNow })
+    draft.household.people[0] = {
+      id: 'p1',
+      name: 'Pat',
+      dob: '1964-01-01',
+      sex: 'average',
+      retirementAge: 60,
+      longevity: { planningAge: 63, source: 'manual' },
+    }
+    draft.assumptions.inflationPct = 0
+    draft.assumptions.defaultReturnPct = 0
+    draft.assumptions.stateEffectiveTaxPct = 0
+    // A 25% heir haircut makes conversion worth doing in the 10% and 12% bands
+    // and not above them, so the LP's answer is a bracket-room answer.
+    draft.assumptions.heirTaxRatePct = 25
+    draft.expenses.baseAnnual = 0
+    draft.expenses.healthcare = {
+      pre65MonthlyPremiumPerPerson: 0,
+      applyAcaCredit: false,
+      medicareExtrasMonthlyPerPerson: 0,
+    }
+    draft.accounts = [
+      { type: 'traditional', id: 'conv-ira', name: 'IRA', ownerPersonId: 'p1', annualReturnPct: 0, kind: 'ira', balance: 600_000, annualContribution: 0 },
+      { type: 'roth', id: 'conv-roth', name: 'Roth', ownerPersonId: 'p1', annualReturnPct: 0, kind: 'ira', balance: 0, annualContribution: 0 },
+      { type: 'cash', id: 'conv-cash', name: 'Cash', ownerPersonId: null, annualReturnPct: 0, balance: 200_000, annualContribution: 0 },
+    ]
+    const actionFree = validate(structuredClone(draft))
+    draft.retirementActionEligibilityFacts = {
+      iraClassifications: [{
+        evidenceId: 'committed-conversion-classification',
+        provenance: { source: 'manual' },
+        sourceAccountId: 'conv-ira',
+        subtype: 'traditional',
+      }],
+      sepSimpleActivities: [],
+      deductibleIraContributions: [],
+    }
+    draft.strategies.retirementActions = [
+      committedConversionRequest('committed-conversion', 'conv-ira', 'conv-roth', 2026, 50_000),
+    ]
+    return { plan: validate(draft), actionFree }
+  }
+
+  /**
+   * THE RECONCILIATION BAR, and why it is this one.
+   *
+   * The bar is TAXABLE-ORDINARY-INCOME-BASE equality: the exogenous ordinary
+   * income the LP prices for the year, net of the deduction it applies, equals
+   * the exact ledger's own published taxable ordinary income for that year.
+   * Asserted on the `tifloor` constraint's right-hand side, because that
+   * constant IS how the LP prices brackets — `ti` is partitioned into ascending
+   * convex segments and every tax term is increasing in it, so the constant
+   * pins the bracket stack and everything downstream (federal PWL, state PWL,
+   * IRMAA/ACA MAGI base, senior-deduction phase-out) reads from it.
+   *
+   * NOT tax-dollar equality. Two reasons, and only the second is about this
+   * fixture. First, the LP has no per-year tax scalar to read out: tax is
+   * defined inline in the cash constraint over segment variables the solver's
+   * own `conv`/`wt`/`wi` also load, so isolating one would mean pinning every
+   * decision variable to zero — a model the LP cannot express and a plan no
+   * household has. Second, and decisively, the LP's tax is a deliberate
+   * linearization of the ledger's: it omits NIIT and AMT, omits the 85% cap on
+   * taxable Social Security, applies the senior-deduction phase-out without its
+   * cap, and prices state retirement-income exclusions at zero. Equal bases can
+   * therefore price unequal dollars BY DESIGN, and a tax-dollar assertion would
+   * be pinning the linearization rather than the term this fixture is about.
+   * The base is what the new term is responsible for, so the base is the bar.
+   */
+  it('prices a committed conversion’s ordinary income on the ledger’s own base', () => {
+    // The discriminator, stated before the plan runs. On the parent commit
+    // `ordinaryIncomeBase` was the LP's whole exogenous ordinary income and it
+    // deliberately excludes every conversion, so the `tifloor0` constant read
+    // −16,100 (the bare standard deduction) against a ledger MAGI of 50,000.
+    // The solve was short the entire converted amount.
+    const { plan } = committedConversionPlan()
+    const probe = probesFor(plan)[0]!
+    const ledger = simulatePlan(plan, opts).years[0]!
+
+    // The ledger's own answer first. Zero-basis IRA, so the whole conversion is
+    // includible and the year's MAGI is nothing but the conversion.
+    expect(ledger.rothConversionActionExecution?.committed).toBe(true)
+    expect(ledger.rothConversion).toBeCloseTo(50_000, 6)
+    expect(ledger.magi).toBeCloseTo(50_000, 6)
+
+    // The probe reads the executor's committed taxable figure — the named
+    // authority's credited dollars less the Form 8606 line-8 basis return the
+    // settlement apportioned against them — and does NOT fold it into
+    // `ordinaryIncomeBase`, whose documented exclusion of every conversion has
+    // to stay true because the LP still re-decides all the other ones.
+    expect(probe.committedConversionOrdinaryIncome).toBeCloseTo(50_000, 6)
+    expect(probe.ordinaryIncomeBase).toBe(0)
+
+    const input = buildOptimizerInput(plan, opts)
+    expect(input.years[0]!.committedOrdinaryIncome).toBeCloseTo(50_000, 6)
+
+    // THE BAR. Pat is 62, so the LP's deduction is the plain single standard
+    // deduction with no age addition and no senior deduction, and the floor
+    // constant is the ledger's taxable ordinary income exactly.
+    const { pack } = packForYear(2026)
+    const standardDeduction = pack.federalTax.standardDeduction.single
+    const expectedFloor = ledger.magi - standardDeduction
+    expect(expectedFloor).toBeCloseTo(50_000 - standardDeduction, 6)
+    const lp = buildOptimizerModel(input).lp
+    expect(tiFloorConstraint(lp, 0)).toBe(
+      ` tifloor0: + 1 ti0 - 1 conv0 - 1 wt0 - 1 wi0 >= ${expectedFloor}`,
+    )
+
+    // FLOOR SEMANTICS, read off that same constraint. `ti0` is the only term
+    // with a positive coefficient and the committed income is the constant on
+    // the `>=` side, so no decision variable can shrink it, offset it, or trade
+    // it away; the solver's own conversion and withdrawal variables only push
+    // `ti0` further up. The stacking is the bracket model's, unchanged: the
+    // ascending `fseg0_*` partition fills the cheap bands with the constant
+    // first and prices the solver's dollars at the margin above it.
+    expect(lp).toContain(' fsplit0: + 1 ti0 - 1 fseg0_0')
+
+    // No double entry. The conversion's dollars were already netted out of the
+    // buckets by the action-movement channel (PR #229); adding its income must
+    // not touch balances again, and must not appear on the strategy channel.
+    expect(input.years[0]!.committedActionMovement).toEqual({
+      trad: -50_000,
+      inheritedTrad: 0,
+      other: 50_000,
+      taxable: 0,
+      proceeds: 0,
+    })
+    expect(input.years[0]!.exogenousStrategyMovement).toBeUndefined()
+
+    // The second year committed nothing, so its floor is the action-free one.
+    expect(input.years[1]!.committedOrdinaryIncome).toBe(0)
+  })
+
+  it('sizes its own conversion to the room the committed one left', async () => {
+    // The discriminator, stated before the solve runs. On the parent commit the
+    // LP saw an empty 2026 bracket and proposed the full bracket-top fill on
+    // top of a conversion the household had already made — pricing the same
+    // low bands twice and recommending roughly double the year's true room.
+    const { plan, actionFree } = committedConversionPlan()
+
+    // The LP layer, deliberately: a named-conversion year forces the aggregate
+    // mode to `none`, so `optimizePlan`'s post-processor drops that year from
+    // the emitted schedule whatever the solver wanted. The mispricing this
+    // fixture is about lives in the solve, so the solve is what it reads.
+    const acted = await optimizeSchedule(buildOptimizerInput(plan, opts))
+    const free = await optimizeSchedule(buildOptimizerInput(actionFree, opts))
+    expect(acted.status).toBe('optimal')
+    expect(free.status).toBe('optimal')
+
+    // The action-free twin supplies the year's true bracket-top target, so the
+    // expectation is derived from the LP's own pricing rather than typed in.
+    const target = free.conversions.find((entry) => entry.year === 2026)!.amount
+    expect(target).toBeGreaterThan(50_000)
+
+    const proposed = acted.conversions.find((entry) => entry.year === 2026)?.amount ?? 0
+    // Floor consumed first, and exactly once: the committed 50,000 plus what
+    // the solver adds lands on the same target the empty year fills to.
+    expect(50_000 + proposed).toBeCloseTo(target, 6)
+    expect(proposed).toBeCloseTo(target - 50_000, 6)
+    // And it is a real reduction, not a coincidence of a year that wanted
+    // nothing anyway.
+    expect(proposed).toBeLessThan(target)
+
+    // The control: 2027 committed nothing, so its proposal is untouched.
+    const acted2027 = acted.conversions.find((entry) => entry.year === 2027)?.amount ?? 0
+    const free2027 = free.conversions.find((entry) => entry.year === 2027)?.amount ?? 0
+    expect(acted2027).toBeCloseTo(free2027, 6)
   })
 })
 

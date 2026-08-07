@@ -237,6 +237,23 @@ function retirementActionPersonId(action: PlanRetirementAction): PersonId | unde
  * recommendation through copy that does not describe it is the failure this
  * keeps closed. Removing it is the surface slice's, once that copy exists.
  *
+ * The model side has since closed further, and the gate did NOT move with it: a
+ * committed conversion's ordinary income is now a floor the LP stacks on
+ * (`OptimizerYear.committedOrdinaryIncome`), a gift's charitable exclusion
+ * reaches the LP instead of being clamped away
+ * (`forcedDistributionOrdinaryIncomeExclusion`), and three strategy movements
+ * — the aggregate QCD beyond the RMD, a 72(t) series, an annuity premium —
+ * reach the same recursion as action movement (`exogenousStrategyMovementForYear`).
+ *
+ * One model gap remains and it is a cash one: a QCD routed out of an RMD leaves
+ * the exact ledger's cash inflows while the LP credits the whole re-decided
+ * draw, so a QCD year's solve can spend dollars the household gave away. A
+ * NAMED QCD is a recorded action, so for those plans this predicate is the only
+ * thing standing between that gap and a recommendation. (It is not for an
+ * aggregate `qcdAnnual` plan, which records no action and was never gated —
+ * which is exactly why the strategy-side defects had to be fixed rather than
+ * gated.) That is smaller than the telling, and it is still a reason.
+ *
  * Reporting per action — rather than one plan-level flag — keeps the count and
  * the named person available to the surface doing the telling.
  */
@@ -348,28 +365,12 @@ export function committedActionMovementForYear(
   probe: OptimizerYearProbe,
 ): NonNullable<OptimizerYear['committedActionMovement']> | undefined {
   const movement = {
-    trad: 0,
-    inheritedTrad: 0,
-    other: 0,
-    taxable: 0,
+    ...bucketAccountMovement(
+      bucketByAccountId,
+      probe.committedActionAccountMovement,
+      'Committed retirement-action movement',
+    ),
     proceeds: probe.committedActionProceeds,
-  }
-  for (const entry of probe.committedActionAccountMovement) {
-    const bucket = bucketByAccountId.get(entry.accountId)
-    if (bucket === undefined) {
-      // Fail closed. Dropping the entry is precisely the defect being fixed —
-      // the solver would keep spending dollars the ledger has already moved —
-      // and every source class the executor accepts (cash, taxable,
-      // equity-comp, IRA) does land in a bucket, so this is unreachable short
-      // of a plan whose accounts and recorded actions disagree.
-      throw new Error(
-        `Committed retirement-action movement names account "${entry.accountId}", which the optimizer carries in no balance bucket`,
-      )
-    }
-    if (bucket === 'traditional') movement.trad += entry.amount
-    else if (bucket === 'inheritedTraditional') movement.inheritedTrad += entry.amount
-    else if (bucket === 'taxable') movement.taxable += entry.amount
-    else movement.other += entry.amount
   }
   return movement.trad === 0 &&
     movement.inheritedTrad === 0 &&
@@ -378,6 +379,72 @@ export function committedActionMovementForYear(
     movement.proceeds === 0
     ? undefined
     : movement
+}
+
+/**
+ * Fold one probe year's already-applied STRATEGY balance movement into the LP's
+ * bucket scalars, plus the cash those movements delivered.
+ *
+ * The sibling of `committedActionMovementForYear`, over the other channel.
+ * Proceeds are the 72(t) series' alone — a gift leaves the household and an
+ * annuity premium buys a contract that pays back through `exogenousCash` later
+ * — so a QCD-only or annuity-only year books a debit with no credit and a
+ * series year books both. Returns undefined for a year that moved nothing, so
+ * plans with none of the three producers keep emitting a byte-identical LP.
+ */
+export function exogenousStrategyMovementForYear(
+  bucketByAccountId: ReadonlyMap<string, OptimizerBucket>,
+  probe: OptimizerYearProbe,
+): NonNullable<OptimizerYear['exogenousStrategyMovement']> | undefined {
+  const movement = {
+    ...bucketAccountMovement(
+      bucketByAccountId,
+      probe.exogenousStrategyAccountMovement,
+      'Exogenous strategy movement',
+    ),
+    proceeds: probe.exogenousStrategyProceeds,
+  }
+  return movement.trad === 0 &&
+    movement.inheritedTrad === 0 &&
+    movement.other === 0 &&
+    movement.taxable === 0 &&
+    movement.proceeds === 0
+    ? undefined
+    : movement
+}
+
+/**
+ * Resolve per-account movement into the LP's four bucket scalars.
+ *
+ * Shared by both movement channels so account identity is resolved in exactly
+ * one place. `bucketByAccountId` is the bridge: the executor and the strategy
+ * name accounts, the LP carries four scalars, and it never has to carry an
+ * identity it does not have.
+ */
+function bucketAccountMovement(
+  bucketByAccountId: ReadonlyMap<string, OptimizerBucket>,
+  entries: readonly { readonly accountId: string; readonly amount: number }[],
+  subject: string,
+): { trad: number; inheritedTrad: number; other: number; taxable: number } {
+  const movement = { trad: 0, inheritedTrad: 0, other: 0, taxable: 0 }
+  for (const entry of entries) {
+    const bucket = bucketByAccountId.get(entry.accountId)
+    if (bucket === undefined) {
+      // Fail closed. Dropping the entry is precisely the defect being fixed —
+      // the solver would keep spending dollars the ledger has already moved —
+      // and every source class either channel accepts (cash, taxable,
+      // equity-comp, IRA) does land in a bucket, so this is unreachable short
+      // of a plan whose accounts and its own movement records disagree.
+      throw new Error(
+        `${subject} names account "${entry.accountId}", which the optimizer carries in no balance bucket`,
+      )
+    }
+    if (bucket === 'traditional') movement.trad += entry.amount
+    else if (bucket === 'inheritedTraditional') movement.inheritedTrad += entry.amount
+    else if (bucket === 'taxable') movement.taxable += entry.amount
+    else movement.other += entry.amount
+  }
+  return movement
 }
 
 /**
@@ -468,6 +535,20 @@ export function buildOptimizerInput(plan: Plan, opts: OptimizePlanOptions, probe
       filingStatus,
       stateBrackets: useStateBrackets ? stateBracketSegmentsFor(plan.household.state, p.year, filingStatus) : undefined,
       ordinaryIncomeBase: p.ordinaryIncomeBase,
+      // The other half of a committed conversion's double entry. The movement
+      // below already debits the source and credits the Roth; this puts the
+      // income the same conversion produced on the year's return, as a floor
+      // the solver stacks its own conversions on top of rather than a figure it
+      // can re-decide. Zero for every year that committed none, which is what
+      // keeps action-free plans emitting a byte-identical LP.
+      committedOrdinaryIncome: p.committedConversionOrdinaryIncome,
+      // And the exclusion the LP must not charge on the forced distribution it
+      // re-decides as `wt`. `ordinaryIncomeBase` nets those dollars out at their
+      // gross taxable figure, so a QCD's §408(d)(8) exclusion has nowhere else
+      // to ride; without it the solve prices the low brackets as already full of
+      // income the household never had and under-converts by the whole gift.
+      forcedDistributionOrdinaryIncomeExclusion:
+        p.forcedDistributionOrdinaryIncomeExclusion,
       spendingNeed: p.spendingNeed,
       exogenousCash: p.exogenousCash,
       // Recover the divisor from the baseline ratio (startTrad / RMD) so the LP's
@@ -523,6 +604,12 @@ export function buildOptimizerInput(plan: Plan, opts: OptimizePlanOptions, probe
       // this is unchanged and returns `undefined` for every year, which is what
       // keeps action-free plans emitting a byte-identical LP.
       committedActionMovement: committedActionMovementForYear(bucketByAccountId, p),
+      // And the dollars a strategy already moved — the aggregate QCD gift, a
+      // 72(t) series payment, an annuity premium — off the same probe and
+      // through the same bucket bridge. A plan carrying none of them returns
+      // `undefined` for every year, which is what keeps it emitting a
+      // byte-identical LP.
+      exogenousStrategyMovement: exogenousStrategyMovementForYear(bucketByAccountId, p),
     }
   })
 

@@ -206,6 +206,28 @@ export interface OptimizerCommittedActionAccountMovement {
   amount: number
 }
 
+/**
+ * One account's already-applied balance movement from a plan STRATEGY, in a
+ * probe year.
+ *
+ * Same shape and same purpose as the committed-action movement above — dollars
+ * the exact ledger has already moved, which the solver may not re-decide — and
+ * deliberately a separate channel rather than a widening of that one.
+ * `committedActionAccountMovement` is the exact-cent retirement-action
+ * executors' report and nothing else; a scalar strategy that moves a balance is
+ * not an action and reporting it there would make that field's name untrue.
+ *
+ * The producers are named on `OptimizerYearProbe.exogenousStrategyAccountMovement`.
+ */
+export interface OptimizerExogenousStrategyAccountMovement {
+  accountId: string
+  /**
+   * Signed plan dollars: a debit from this account is NEGATIVE. Zero-movement
+   * accounts are omitted entirely.
+   */
+  amount: number
+}
+
 export interface OptimizerYearProbe {
   year: number
   /**
@@ -222,10 +244,104 @@ export interface OptimizerYearProbe {
    * ledger never holds: an executor debits the named source inside `simulate`
    * while the solver evolves opening buckets that never saw the debit. Worse
    * than fully blind — the action's tax consequence is already priced, by
-   * `capitalGainsBase` for a taxable withdrawal and by the `ordinaryIncomeBase`
-   * offset for a gift, so the solve pays for the action and keeps its dollars.
+   * `capitalGainsBase` for a taxable withdrawal and by
+   * `forcedDistributionOrdinaryIncomeExclusion` for a gift routed out of an
+   * RMD, so the solve pays for the action and keeps its dollars.
    */
   committedActionAccountMovement: readonly OptimizerCommittedActionAccountMovement[]
+  /**
+   * Balance movement a plan STRATEGY already applied this year, per account,
+   * sorted by account id.
+   *
+   * THREE producers, enumerated rather than described by a rule, so the field
+   * makes no universal claim it cannot enforce:
+   *   1. the aggregate `strategies.qcdAnnual` gift taken BEYOND the year's
+   *      owned-IRA RMD (`simulate.ts`, the `beyondRmd` loop). The dollars leave
+   *      the household; its charitable exclusion reaches the LP separately, as
+   *      `forcedDistributionOrdinaryIncomeExclusion` below.
+   *   2. a 72(t) SEPP series payment, which debits its account every series
+   *      year. Its ordinary income is already booked inside
+   *      `ordinaryIncomeBase` and the LP re-decides none of the movement —
+   *      `incumbentTraditionalDistribution` excludes `seppTotal` — so income
+   *      was charged with no debit until this carried it.
+   *   3. an annuity purchase premium, which leaves an LP bucket for a contract
+   *      the LP does not carry.
+   *
+   * NOT reported here, and correctly so: the RMD-routed part of the same gift.
+   * Those dollars leave through the RMD, which the LP re-decides as its own
+   * `wt` variable, so booking them here would debit the bucket twice.
+   *
+   * KNOWN AND ABSENT: an elected pension lump sum rolls money INTO a
+   * traditional account (`simulate.ts`, the `rolloverInflow` block) and the LP
+   * never sees that credit. It makes the solve poorer than the household rather
+   * than richer, and closing it is a separate slice.
+   *
+   * Read back off what each producer published — the year's runtime
+   * OCCURRENCES for the gift and the series (the occurrence is emitted at the
+   * mutation site for every account type, where the runtime APPLICATION is
+   * gated on `isAggregatedIra` and a SEPP may run on an employer plan), and a
+   * mutation-site capture for the annuity premium, whose occurrence is emitted
+   * only for a traditional funding source. Never re-derived from the strategy
+   * that asked, so a movement the arm capped, truncated, skipped as sub-cent,
+   * or could not fund reports what actually moved and nothing more.
+   */
+  exogenousStrategyAccountMovement: readonly OptimizerExogenousStrategyAccountMovement[]
+  /**
+   * Gross cash those strategy movements delivered into this year's cash flow.
+   *
+   * Only the 72(t) series delivers any: it is a withdrawal, so it REALLOCATES
+   * between buckets, and the ledger's `baseCashInflows` carries `+ seppTotal`.
+   * Debiting it without this credit would make the solver poorer than the
+   * household by the whole series payment, every year.
+   *
+   * The other two producers deliver none, and the asymmetry is the point: a
+   * gift leaves, and an annuity premium buys a contract that pays back later
+   * through `incomes.annuity`, which is already inside `exogenousCash`.
+   */
+  exogenousStrategyProceeds: number
+  /**
+   * Charitable exclusion riding on this year's forced owned-IRA distribution:
+   * `qcdIncomeOffset + namedQcdIncomeOffset`, capped at the taxable forced
+   * total, zero in a year no gift routed out of an RMD.
+   *
+   * The LP re-decides the forced distribution as its own `wt` variable and
+   * charges ordinary income on every dollar of it, so the exclusion cannot ride
+   * inside `ordinaryIncomeBase` — that field is what remains AFTER the forced
+   * distributions are netted out. It reached the LP as a negative residue until
+   * this term existed, and the base's `Math.max(0, …)` guard (written for
+   * pre-tax contributions exceeding wages) deleted the residue outright
+   * whenever non-forced income was smaller than the gift.
+   *
+   * §408(d)(8) is why it belongs on the LP's MAGI path and not only its bracket
+   * path: an excluded distribution is out of gross income entirely, so it is
+   * out of MAGI, which is most of what a QCD is for.
+   */
+  forcedDistributionOrdinaryIncomeExclusion: number
+  /**
+   * Ordinary income a COMMITTED named Roth conversion put on this year's return
+   * — the taxable (post-§408(d)(2) pro-rata) part of what the conversion
+   * executor actually moved, zero in a year no conversion action committed.
+   *
+   * Held apart from `ordinaryIncomeBase` because the two have opposite
+   * treatments in the LP even though they sum in the ledger: the base is
+   * exogenous income the solver prices around, while every OTHER conversion
+   * dollar in the year is the solver's own `conv` variable. This is a
+   * conversion the household has already made, so the solver may neither
+   * re-decide nor avoid it — the LP stacks its own conversions on top (see
+   * `OptimizerYear.committedOrdinaryIncome`).
+   *
+   * The NAMED authority only. The aggregate strategy's conversions are in the
+   * same ledger figure (`totalRothConversionTaxable`) and are excluded here:
+   * those are exactly what the LP re-decides, so including them would price a
+   * conversion twice.
+   *
+   * No overlap with the year's other action income. An ordinary-withdrawal
+   * action's income (`retirementActionOrdinaryIncome`) and a named QCD's offset
+   * (`namedQcdIncomeOffset`) both already reach `ordinaryIncomeBase` through
+   * `incomeBeforeConversion`; only conversions are excluded there, which is
+   * exactly the hole this fills.
+   */
+  committedConversionOrdinaryIncome: number
   /**
    * Gross cash those committed actions delivered into this year's cash flow —
    * the ledger's own `retirementActionProceeds` term, which sits alongside RMDs
@@ -241,6 +357,12 @@ export interface OptimizerYearProbe {
    * Ordinary taxable income EXCLUDING any traditional-account distribution or
    * Roth conversion, plus the baseline taxable Social-Security portion (which
    * the LP holds fixed rather than re-deriving as conversions change).
+   *
+   * Forced distributions are netted out at their GROSS taxable figure, so any
+   * charitable exclusion riding on them is NOT here — it is
+   * `forcedDistributionOrdinaryIncomeExclusion` below. Netting them net of the
+   * exclusion instead left it as a negative residue that this field's
+   * nonnegative clamp then deleted.
    */
   ordinaryIncomeBase: number
   /** Total cash uses besides tax/penalties this year (expenses + contributions). */
