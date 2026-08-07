@@ -57,7 +57,7 @@ State brackets are a separate question and are still held nominal (see `params/s
   from the parameter pack, which is unisex and fixed by regulation, so nothing in the SEPP path takes a sex; a
   SEPP on an employer plan additionally requires separation from service, proved in the annual ledger from the
   owner's plan retirement age (domain rules §11).
-- **QCD:** a modeled household QCD is excluded from ordinary income and counts toward an RMD when one is due. It
+- **QCD:** a modeled household QCD's qualified portion is excluded from ordinary income, and the gift counts toward an RMD when one is due. It
   is **not** conditional on an RMD: the pre-RMD window from 70½ (resolved from the birth month at annual
   granularity — attained 71, or attained 70 with a January–June birth month) to the applicable RMD age is open,
   and dollars requested beyond the owner's IRA RMD are debited straight from donor-owned aggregated IRAs, shrinking
