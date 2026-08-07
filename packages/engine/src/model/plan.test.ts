@@ -673,6 +673,69 @@ describe('guaranteed-income and estate-depth fields', () => {
     expect(parsePlan(planWithAnnuity({ year: 2030, premium: 100_000, fundingAccountId: 'a1', taxQualification: 'nonQualified', qlac: true })).ok).toBe(false)
   })
 
+  /** The shared plan with the contract's start age moved and its owner re-dated. */
+  function deferredQualified(startAge: number, opts: { dob?: string; qlac?: boolean } = {}): Plan {
+    const plan = planWithAnnuity({
+      year: 2030,
+      premium: 100_000,
+      fundingAccountId: 'a2',
+      taxQualification: 'qualified',
+      ...(opts.qlac === true ? { qlac: true } : {}),
+    })
+    if (opts.dob !== undefined) plan.household.people[0]!.dob = opts.dob
+    const annuity = plan.accounts.find((a) => a.id === 'ann1')!
+    if (annuity.type !== 'annuity') throw new Error('fixture built no annuity')
+    annuity.startAge = startAge
+    return plan
+  }
+
+  it('rejects a qualified purchase that is not a QLAC and defers past the required beginning date', () => {
+    // Treas. Reg. 1.401(a)(9)-6(a)(3)(i) requires payments to commence by the
+    // required beginning date and (q)(1)(iii) excuses only a QLAC. This owner is
+    // born in 1962, so the applicable age is 75 and the last permissible start
+    // is 76; a contract starting at 85 has no legal expression. Left admitted,
+    // the premium leaves the traditional balance for an account that holds none
+    // and the requirement is computed on a base short by the whole premium.
+    const parsed = parsePlan(deferredQualified(85))
+    expect(parsed.ok).toBe(false)
+    expect(parsed.ok ? [] : parsed.issues.join('\n')).toContain(
+      'a qualified annuity purchase that is not a QLAC cannot defer past the owner\'s required beginning date: it must start paying by age 76',
+    )
+    // The message has to name controls that exist, or a household cannot act on it.
+    expect(parsed.ok ? [] : parsed.issues.join('\n')).toContain(
+      'lower "Start age", or tick "QLAC (qualified longevity annuity)"',
+    )
+  })
+
+  it('accepts the same deferred contract once it is declared a QLAC', () => {
+    expect(parsePlan(deferredQualified(85, { qlac: true })).ok).toBe(true)
+  })
+
+  it('accepts a qualified purchase that starts in the year the owner may last defer to', () => {
+    expect(parsePlan(deferredQualified(76)).ok).toBe(true)
+  })
+
+  it('accepts an immediate purchase made after the required beginning date', () => {
+    // The rule is about deferral, not about age. An owner who annuitizes at 85
+    // passed their required beginning date years ago, so every contract they
+    // could buy commences after it; refusing on that date alone would forbid the
+    // ordinary immediate annuity, which the regulation allows.
+    expect(parsePlan(deferredQualified(85, { dob: '1945-03-15' })).ok).toBe(true)
+    // One year of deferral past the purchase is still deferral past the date.
+    expect(parsePlan(deferredQualified(86, { dob: '1945-03-15' })).ok).toBe(false)
+  })
+
+  it('leaves a non-qualified deferred purchase alone', () => {
+    // Section 401(a)(9) does not reach a contract bought with after-tax dollars,
+    // and no premium leaves a traditional balance, so there is nothing here for
+    // the required-distribution base to lose.
+    const plan = planWithAnnuity({ year: 2030, premium: 100_000, fundingAccountId: 'a1', taxQualification: 'nonQualified' })
+    const annuity = plan.accounts.find((a) => a.id === 'ann1')!
+    if (annuity.type !== 'annuity') throw new Error('fixture built no annuity')
+    annuity.startAge = 85
+    expect(parsePlan(plan).ok).toBe(true)
+  })
+
   it('rejects a purchase referencing an unknown funding account', () => {
     expect(parsePlan(planWithAnnuity({ year: 2030, premium: 100_000, fundingAccountId: 'nope', taxQualification: 'nonQualified' })).ok).toBe(false)
   })

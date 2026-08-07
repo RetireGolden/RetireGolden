@@ -948,7 +948,10 @@ describe('private owned-IRA runtime source-series validation', () => {
       traditional('ira', 100_000),
       {
         type: 'annuity', id: 'annuity', name: 'annuity', ownerPersonId: 'p1',
-        annualReturnPct: null, startAge: 90, monthlyAmount: 0, colaPct: 0,
+        // Immediate, because a qualified purchase that is not a QLAC may not
+        // defer past the owner's required beginning date; `monthlyAmount` is 0
+        // either way, so the contract pays nothing and only the premium moves.
+        annualReturnPct: null, startAge: 76, monthlyAmount: 0, colaPct: 0,
         taxablePct: 100,
         purchase: {
           year: TAX_YEAR, premium: 5_000, fundingAccountId: 'ira',

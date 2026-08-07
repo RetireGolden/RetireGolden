@@ -268,7 +268,11 @@ describeRule('irc-4974-rmd-shortfall-excise-tax', {
       name: 'qualified-annuity',
       ownerPersonId: 'p1',
       annualReturnPct: 0,
-      startAge: 90, // payouts start well past this fixture's window
+      // `monthlyAmount` is 0, so the contract never pays whatever this says. 74
+      // rather than a deferred age because a qualified purchase that is not a
+      // QLAC may not defer past the owner's required beginning date, which for
+      // this 1953 birth is the year they turn 74.
+      startAge: 74,
       monthlyAmount: 0,
       colaPct: 0,
       taxablePct: 100,
