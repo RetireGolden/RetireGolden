@@ -29,6 +29,19 @@ function ownerOptions(plan: Plan, type: Account['type']) {
  * (the option list, the still-eligible check, and the re-default) rather than in
  * only some of them.
  */
+/**
+ * The lowest election year the engine's parse rule will accept for an ELECTED
+ * lump sum: the later of the current UTC year (what the save stamp will carry)
+ * and the document's stored stamp year (which can be ahead of the wall clock
+ * when the plan was last saved on a fast clock — the parse rule compares
+ * against the stamp, so the stamp must win).
+ */
+function electionFloorYear(plan: Plan): number {
+  const stamped = /^(\d{4})-/.exec(plan.updatedAtIso)
+  const stampYear = stamped === null ? 0 : Number(stamped[1])
+  return Math.max(new Date().getUTCFullYear(), stampYear)
+}
+
 function canFundAnnuityPurchase(account: Account, taxQualification: 'qualified' | 'nonQualified'): boolean {
   return taxQualification === 'qualified'
     ? account.type === 'traditional' && !account.inherited
@@ -483,13 +496,12 @@ export function AccountFields({ account, index }: { account: Account; index: num
             // to perform the rollover in and the dollars are already inside the
             // receiving account's entered balance. The engine refuses that shape
             // at parse, so bound the field rather than letting the user author a
-            // plan that will not store. UTC, not local: checkPlanForSave stamps
-            // updatedAtIso with toISOString and the parse rule compares against
-            // that stamp's year, so near a calendar boundary a local year could
-            // pass on screen and fail at save.
-            min={account.lumpSumElection ? new Date().getUTCFullYear() : 1900}
+            // plan that will not store. The floor is the later of the UTC year
+            // the save stamp will carry and the document's stored stamp year,
+            // which is what the parse rule actually compares against.
+            min={account.lumpSumElection ? electionFloorYear(plan) : 1900}
             max={2200}
-            onCommit={(v) => set('lumpSumOffer', { ...account.lumpSumOffer!, electionYear: Math.round(v ?? new Date().getUTCFullYear()) })}
+            onCommit={(v) => set('lumpSumOffer', { ...account.lumpSumOffer!, electionYear: Math.round(v ?? electionFloorYear(plan)) })}
           />
           <SelectField
             label="Election"
@@ -505,13 +517,15 @@ export function AccountFields({ account, index }: { account: Account; index: num
               const target = plan.accounts.find((a) => a.type === 'traditional' && !a.inherited)
               // Electing revives the offer's year: an offer kept for comparison
               // may carry a past year, and an election with a past year is the
-              // shape the engine refuses at parse. Bumping to the current UTC
-              // year on elect keeps the common flow (old offer, then elect)
-              // storable; the year field stays editable after.
+              // shape the engine refuses at parse. Bumping to the election
+              // floor (the later of the UTC year and the document's own stamp
+              // year, which the parse rule compares against) keeps the common
+              // flow (old offer, then elect) storable; the year field stays
+              // editable after.
               const electionYear = account.lumpSumOffer!.electionYear
-              const currentYear = new Date().getUTCFullYear()
-              if (v === 'lumpSum' && target && electionYear < currentYear) {
-                set('lumpSumOffer', { ...account.lumpSumOffer!, electionYear: currentYear })
+              const floorYear = electionFloorYear(plan)
+              if (v === 'lumpSum' && target && electionYear < floorYear) {
+                set('lumpSumOffer', { ...account.lumpSumOffer!, electionYear: floorYear })
               }
               set('lumpSumElection', v === 'lumpSum' && target ? { rolloverAccountId: target.id } : undefined)
             }}
