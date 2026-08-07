@@ -58,9 +58,9 @@ const LOCKED_UNSUPPORTED_CODES = [
 ] as const satisfies readonly UnsupportedActionReasonCode[]
 
 describe('action reason registry', () => {
-  it('exhaustively owns 79 codes across 39 predicates and four disjoint outcomes', () => {
-    expect(actionReasonCodes).toHaveLength(79)
-    expect(new Set(actionReasonCodes).size).toBe(79)
+  it('exhaustively owns 78 codes across 39 predicates and four disjoint outcomes', () => {
+    expect(actionReasonCodes).toHaveLength(78)
+    expect(new Set(actionReasonCodes).size).toBe(78)
     expect(actionPredicateNames).toHaveLength(39)
     // Two, not three. `conversion-balance-trimmed` names the same physical fact
     // as the withdrawal and QCD trims, but the executor it belongs to commits a
@@ -69,7 +69,7 @@ describe('action reason registry', () => {
     expect(partialActionReasonCodes).toHaveLength(2)
     expect(taxTreatmentAdjustmentReasonCodes).toHaveLength(3)
     expect(unsupportedActionReasonCodes).toHaveLength(39)
-    expect(refusedActionReasonCodes).toHaveLength(35)
+    expect(refusedActionReasonCodes).toHaveLength(34)
   })
 
   it('keeps a physical trim partial only where its executor can move part of it', () => {

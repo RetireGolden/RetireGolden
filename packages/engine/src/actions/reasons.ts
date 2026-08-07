@@ -410,11 +410,6 @@ const actionReasonRegistry = {
     message:
       'This QCD is not capped by RMD, but donor-specific IRA RMD facts are required to state the amount satisfied.',
   },
-  'qcd-spouse-pooling-refused': {
-    predicate: 'qcdPersonalRemainingLimit',
-    outcome: 'refused',
-    message: "A spouse's age, IRA, QCD limit, contribution offset, or RMD cannot be pooled.",
-  },
   'qcd-balance-trimmed': {
     predicate: 'executeQcd',
     outcome: 'partial',

@@ -3627,7 +3627,7 @@ describe('annual retirement-action publication', () => {
         throw new Error('fixture drift')
       }
       const extraReason = first.kind === 'qcd'
-        ? createActionReason('qcd-spouse-pooling-refused')
+        ? createActionReason('qcd-before-age-70-half')
         : createActionReason('conversion-destination-incompatible', {
             accountId: first.destinationRothAccountId,
           })
