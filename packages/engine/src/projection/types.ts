@@ -349,6 +349,12 @@ export interface OptimizerYearProbe {
    * §408(d)(8) is why it belongs on the LP's MAGI path and not only its bracket
    * path: an excluded distribution is out of gross income entirely, so it is
    * out of MAGI, which is most of what a QCD is for.
+   *
+   * The aggregate arm contributes the routed GROSS, not a share of it, because
+   * §408(d)(8)(D) deems the gift to consist of otherwise-includible dollars up
+   * to the owner's aggregate includible amount. The cap above still holds — the
+   * required distribution's line-7 gross has the gift carved out of it before
+   * any basis is recovered, so the basis recovered can never reach the gift.
    */
   forcedDistributionOrdinaryIncomeExclusion: number
   /**
@@ -367,26 +373,24 @@ export interface OptimizerYearProbe {
    * every gifted dollar it spends is a dollar it never withdrew, so the buckets
    * it carries forward are too large as well.
    *
-   * THE GROSS, not the taxable share, and deliberately not the same figure as
-   * the exclusion. Every routed dollar left the cash flow; only the includible
-   * share left income, so on an IRA carrying nondeductible basis the two
-   * differ. They cannot double-adjust: they are subtracted from different
-   * constants on different sides of the model.
+   * THE GROSS, not the qualified share, and still deliberately a separate
+   * figure from the exclusion. Every routed dollar left the cash flow; only the
+   * part that qualified under §408(d)(8)(D) left income. They cannot
+   * double-adjust: they are subtracted from different constants on different
+   * sides of the model.
    *
-   * THE PREMISE IS STATUTORY AND THE COMPANION FIGURE IS AN APPROXIMATION —
-   * this field's contract asserts the first and must not be read as asserting
-   * the second. §408(d)(8)(D) is why a gross and an includible figure may
-   * legitimately differ at all: it deems the gift to consist of
-   * otherwise-includible dollars, so a partly-basis distribution does not
-   * exclude its whole gross. What the engine computes for the includible side
-   * is narrower than the statute — the statutory measure is the aggregate
-   * includible amount across ALL of the owner's individual retirement plans
-   * treated as one contract, and `qcdIncomeOffset` caps at the required
-   * distribution's own taxable share instead. Registered, with a produced
-   * fixture, on `taxRuleRegistry.ts`'s
-   * `irc-408-d-8-D-projection-qcd-after-pro-rata` — the record already holding
-   * the other half of the same departure, since one fix closes both. This field
-   * is the GROSS and is unaffected by that defect.
+   * THEY COINCIDE ON THE ORDINARY HOUSEHOLD, and separate only past the
+   * statutory ceiling. §408(d)(8)(D) deems the gift to consist of
+   * otherwise-includible dollars up to the owner's AGGREGATE includible amount
+   * — all of their individual retirement plans treated as one contract, less
+   * basis — so wherever the IRAs hold more pre-tax dollars than the gift, the
+   * qualified amount IS the gross and both fields carry the same number. On a
+   * near-all-basis IRA the gift outruns that amount, the excess is not a QCD,
+   * and the exclusion legitimately falls short of the cash the household still
+   * gave away. Until 2026-08-07 they differed for a different and wrong reason:
+   * `qcdIncomeOffset` capped at the required distribution's own taxable share.
+   * That is fixed, and `irc-408-d-8-D-projection-qcd-after-pro-rata` on
+   * `taxRuleRegistry.ts` is settled. This field is the GROSS and never moved.
    *
    * The gift's BEYOND-RMD part is not here. Those dollars never entered
    * `baseCashInflows`, so the LP never credited cash for them; they are on

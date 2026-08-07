@@ -3189,21 +3189,49 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       }
     }
 
-    // Fix this year's Form-8606 pro-rata fraction per owner (step 5) from the
-    // aggregated pre-distribution IRA balance — after contributions, before
-    // any RMD/SEPP/conversion/withdrawal depletes it. Forced flows and
-    // conversions commit against this state as they happen; need-based
-    // withdrawal probes stay pure and commit once at the end of the year.
-    for (const [ownerId, basis] of iraBasisByOwner) {
-      if (basis <= 0) continue
-      let aggregateBalance = 0
-      for (const state of balances) {
-        if (!isAggregatedIra(state.account)) continue
-        if ((state.account.ownerPersonId ?? primary.id) !== ownerId) continue
-        aggregateBalance += state.balance
-      }
-      iraProRata.set(ownerId, openIraProRataYear(basis, aggregateBalance))
+    // This year's Form-8606 pro-rata denominator per owner (step 5): the
+    // aggregated pre-distribution IRA balance — after contributions, before any
+    // RMD/SEPP/conversion/withdrawal depletes it.
+    //
+    // OBSERVED HERE, OPENED LATER. The fraction cannot be fixed yet, because
+    // IRC 408(d)(8)(D) takes the year's qualified charitable distribution out of
+    // the section 72 computation entirely and the gift is not sized until the
+    // forced distributions it may be routed out of are known. So the forced
+    // distributions below RECORD their Form 8606 line-7 gross instead of
+    // splitting it, and the 408(d)(8)(D) block immediately after the QCD block
+    // opens the year against the reduced denominator and commits them in the
+    // order they moved. Conversions and need-based withdrawals are sized after
+    // that point and are unaffected by the deferral.
+    const preDistributionAggregateIraBalance = new Map<string, number>()
+    for (const state of balances) {
+      if (!isAggregatedIra(state.account)) continue
+      const ownerId = state.account.ownerPersonId ?? primary.id
+      preDistributionAggregateIraBalance.set(
+        ownerId,
+        (preDistributionAggregateIraBalance.get(ownerId) ?? 0) + state.balance,
+      )
     }
+    /**
+     * One owned-IRA forced distribution, held back from the Form 8606 pro-rata
+     * split until the year's charitable gift is known.
+     *
+     * Everything the split needs travels with it — the identity the exact-cent
+     * settlement replay is keyed on, and the gross — so committing later
+     * reproduces exactly what committing in place would have, for any gift of
+     * zero.
+     */
+    interface DeferredForcedIraDistribution {
+      readonly ownerId: string
+      readonly amount: number
+      readonly occurrenceKind: 'ownedIraRmd' | 'automaticSeppDistribution'
+      readonly producerOccurrenceKey: string
+      readonly sourceAccountId: string
+      readonly mutationOrdinal: number
+    }
+    const deferredRmdDistributions: DeferredForcedIraDistribution[] = []
+    const deferredSeppDistributions: DeferredForcedIraDistribution[] = []
+    /** Owned-IRA required-distribution gross by owner, for gift attribution. */
+    const ownedIraRmdGrossByOwner = new Map<string, number>()
     /**
      * The same pre-distribution observation, kept per account and for every
      * owner rather than only the ones carrying basis.
@@ -3382,22 +3410,27 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         })
       }
       rmdTotal += take
-      if (isAggregatedIra(state.account)) ownedIraRmdTotal += take
-      // Pro-rata return of basis on IRA RMDs (step 5); committed immediately.
-      if (state.account.kind === 'ira') {
-        const proRata = iraProRata.get(ownerId)
-        if (proRata && ownedIraApplication?.applicationKind === 'debit') {
-          const split = splitWithAssumedCharacter(proRata, take, {
-            ownerPersonId: ownerId,
-            calculationScope: 'form8606Line7Distributions',
-            occurrenceKind: 'ownedIraRmd',
-            producerOccurrenceKey,
-            sourceAccountId: state.account.id,
-            mutationOrdinal: ownedIraApplication.mutationOrdinal,
-          })
-          iraProRata.set(ownerId, split.next)
-          rmdNontaxable += split.nontaxable
-        }
+      if (isAggregatedIra(state.account)) {
+        ownedIraRmdTotal += take
+        ownedIraRmdGrossByOwner.set(
+          ownerId,
+          (ownedIraRmdGrossByOwner.get(ownerId) ?? 0) + take,
+        )
+      }
+      // Pro-rata return of basis on IRA RMDs (step 5), RECORDED here and
+      // committed after the QCD block: 408(d)(8)(D) deems whatever share of this
+      // requirement is routed to charity to consist of includible dollars, and
+      // that share is not known until the gift is sized.
+      if (state.account.kind === 'ira' &&
+          ownedIraApplication?.applicationKind === 'debit') {
+        deferredRmdDistributions.push({
+          ownerId,
+          amount: take,
+          occurrenceKind: 'ownedIraRmd',
+          producerOccurrenceKey,
+          sourceAccountId: state.account.id,
+          mutationOrdinal: ownedIraApplication.mutationOrdinal,
+        })
       }
     }
 
@@ -3493,21 +3526,19 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         })
       }
       seppTotal += take
-      // Pro-rata return of basis on IRA SEPP distributions (step 5).
-      if (state.account.kind === 'ira') {
-        const proRata = iraProRata.get(ownerId)
-        if (proRata && ownedIraApplication?.applicationKind === 'debit') {
-          const split = splitWithAssumedCharacter(proRata, take, {
-            ownerPersonId: ownerId,
-            calculationScope: 'form8606Line7Distributions',
-            occurrenceKind: kind,
-            producerOccurrenceKey,
-            sourceAccountId: state.account.id,
-            mutationOrdinal: ownedIraApplication.mutationOrdinal,
-          })
-          iraProRata.set(ownerId, split.next)
-          seppNontaxable += split.nontaxable
-        }
+      // Pro-rata return of basis on IRA SEPP distributions (step 5), deferred
+      // for the same reason the required distribution above is: the year's
+      // pro-rata denominator is not settled until the charitable gift is.
+      if (state.account.kind === 'ira' &&
+          ownedIraApplication?.applicationKind === 'debit') {
+        deferredSeppDistributions.push({
+          ownerId,
+          amount: take,
+          occurrenceKind: kind,
+          producerOccurrenceKey,
+          sourceAccountId: state.account.id,
+          mutationOrdinal: ownedIraApplication.mutationOrdinal,
+        })
       }
     }
 
@@ -3575,13 +3606,25 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // plan, so an employer-plan RMD cannot carry a gift out of income and a
     // donor with no IRA RMD at all has nothing here to route.
     let qcdFromRmd = 0
-    // Income reduction. Only the RMD entered income, and 408(d)(8)(D) limits a
-    // QCD to what would otherwise be includible -- measured over the owner's
-    // individual retirement plans treated as one contract -- so this is the
-    // taxable share of the routed owned-IRA dollars: never the gross, and never
-    // the part taken beyond the RMD, which never entered income at all and
-    // would be a phantom deduction.
+    // Income reduction. Only the RMD entered income, so this is the routed
+    // owned-IRA GROSS that qualified under 408(d)(8)(D) -- never the part taken
+    // beyond the RMD, which never entered income at all and would be a phantom
+    // deduction, and never a share of the routed dollars, because (D) deems the
+    // gift to consist of includible dollars and it therefore returns no basis.
+    // Its ceiling is the statute's aggregate measure, settled per owner below.
     let qcdIncomeOffset = 0
+    /**
+     * Charitable dollars that could NOT be a QCD, because the gift ran past the
+     * owner's whole 408(d)(8)(D) aggregate includible amount, and that were
+     * taken beyond the required distribution rather than out of it.
+     *
+     * They are an ordinary distribution: they belong on Form 8606 line 7, they
+     * recover basis pro-rata, and their taxable share is income the required
+     * distribution never booked for them. The from-RMD half of the same excess
+     * needs no term of its own -- those dollars are already inside `rmdTotal`,
+     * and leaving them out of `qcdIncomeOffset` is the whole of their treatment.
+     */
+    let qcdNonQualifiedOrdinaryIncome = 0
     // A named QCD request is authoritative for the year, exactly as a named
     // conversion is at the aggregate conversion gate below: "an aggregate
     // fallback would debit different sources and hide that result". Without
@@ -3605,6 +3648,22 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     const hasNamedQcdRequest = passRetirementActions.some(
       (request) => request.year === year && request.kind === 'qcd',
     )
+    /**
+     * The scalar gift, charged to the owners whose IRAs actually funded it.
+     *
+     * 408(d)(8)(D) measures the gift against ONE owner's individual retirement
+     * plans treated as one contract, and every owner has their own Form 8606
+     * denominator, so an unattributed household scalar cannot be measured at
+     * all. The from-RMD half is attributed in proportion to each owner's share
+     * of the owned-IRA required distribution the gift is capped against; the
+     * beyond-RMD half is attributed exactly, at the account it drains.
+     */
+    const qcdGrossByOwner = new Map<string, number>()
+    /** The part of each owner's gift routed out of their required distribution. */
+    const qcdFromRmdByOwner = new Map<string, number>()
+    const addGiftGross = (
+      target: Map<string, number>, ownerId: string, amount: number,
+    ) => { target.set(ownerId, (target.get(ownerId) ?? 0) + amount) }
     if (plan.strategies.qcdAnnual > 0 && !hasNamedQcdRequest) {
       const donorIds = new Set(peopleStates
         .filter((s) => s.alive && (s.ageAttained >= 71 ||
@@ -3616,9 +3675,24 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           pack.rmd.qcdAnnualLimit * limitGrowth,
         )
         qcdFromRmd = Math.min(requested, ownedIraRmdTotal)
-        // rmdNontaxable is accumulated only on owned-IRA takes, so this is the
-        // taxable share of exactly the dollars qcdFromRmd is drawn from.
-        qcdIncomeOffset = Math.max(0, Math.min(qcdFromRmd, ownedIraRmdTotal - rmdNontaxable))
+        // Charged to owners in proportion to the owned-IRA requirement it is
+        // capped against. Every owner carrying such a requirement has reached
+        // the applicable age, which is above 70½ in every year the pack covers,
+        // so each of them is already a donor and none of this gift lands on an
+        // IRA that could not lawfully have funded it under 408(d)(8)(B)(ii).
+        // The last owner takes the rounding residue so the shares sum exactly.
+        if (qcdFromRmd > 0 && ownedIraRmdTotal > 0) {
+          const owners = [...ownedIraRmdGrossByOwner.keys()]
+          let assigned = 0
+          owners.forEach((ownerId, index) => {
+            const share = index === owners.length - 1
+              ? qcdFromRmd - assigned
+              : qcdFromRmd * (ownedIraRmdGrossByOwner.get(ownerId)! / ownedIraRmdTotal)
+            assigned += share
+            addGiftGross(qcdFromRmdByOwner, ownerId, share)
+            addGiftGross(qcdGrossByOwner, ownerId, share)
+          })
+        }
         const beyondRmd = requested - qcdFromRmd
         if (beyondRmd > 0) {
           const sources = balances.filter((state) =>
@@ -3654,6 +3728,9 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             state.balance -= take
             remaining -= take
             qcd += take
+            addGiftGross(
+              qcdGrossByOwner, state.account.ownerPersonId ?? primary.id, take,
+            )
             // These dollars leave the owned IRA on their own account, with no
             // RMD debit to explain them. Owned-IRA balance re-join validation
             // requires every such change to be captured here, at the mutation
@@ -3695,6 +3772,160 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           namedQcdOffsetHistoryUnprovable.add(donorId)
         }
       }
+    }
+
+    // --- IRC 408(d)(8)(D): the gift first, then this year's section 72 -------
+    //
+    // "Notwithstanding section 72, in determining the extent to which a
+    // distribution is a qualified charitable distribution, the entire amount of
+    // the distribution shall be treated as includible in gross income ... to the
+    // extent that such amount does not exceed the aggregate amount which would
+    // have been so includible if all amounts in all individual retirement plans
+    // of the individual were distributed during such taxable year and all such
+    // plans were treated as 1 contract ... Proper adjustments shall be made in
+    // applying section 72 to other distributions in such taxable year".
+    //
+    // Three things follow, and this block is all three:
+    //
+    // 1. THE CEILING is the owner's whole aggregate includible amount --
+    //    pre-distribution aggregated owned-IRA balance minus aggregate basis --
+    //    and not the taxable share of this year's requirement. A required
+    //    distribution is a small fraction of a balance, so the statutory ceiling
+    //    is normally far higher and simply does not bind.
+    // 2. THE GIFT RETURNS NO BASIS, because (D) deems it to consist of
+    //    includible dollars. So `qcdIncomeOffset` is the routed GROSS.
+    // 3. THE PROPER ADJUSTMENT for the year's other distributions is the one the
+    //    Form 8606 line-7 instructions spell out -- "Don't include any of the
+    //    following on line 7 ... Qualified charitable distributions (QCDs)" --
+    //    so the gift leaves the line-7 numerator AND the annual denominator,
+    //    while the whole of the year's basis survives as the numerator of the
+    //    ratio. Line 6 is already net of the gift and line 7 never gains it, so
+    //    the denominator is the pre-distribution pool less the qualified gift.
+    //
+    // This is the same arithmetic the named arm settles in exact cents --
+    // `annualQcdTaxCharacterPostPass.ts`, registered as
+    // `irc-408-d-8-D-qcd-taxable-first`, where the residual denominator is
+    // likewise `taxablePoolGrossBalanceBefore − qualifiedCharitableDistribution`
+    // against an unreduced basis numerator. Reaching it here required deferring
+    // the forced distributions' splits past the gift, not a second derivation.
+    //
+    // A gift that runs past the aggregate includible amount is NOT a QCD in the
+    // excess, under (D) read with (B)'s closing sentence ("A distribution shall
+    // be treated as a qualified charitable distribution only to the extent that
+    // the distribution would be includible in gross income"). The excess is an
+    // ordinary distribution: it stays in the denominator, stays on line 7, and
+    // recovers basis. It is charged against the from-RMD half of the gift first,
+    // where those dollars are already inside `rmdTotal` and inside the line-7
+    // gross, so no term has to be invented for them; only what is left over is
+    // carried on `qcdNonQualifiedOrdinaryIncome` below.
+    //
+    // (d)(8)(A)'s own limit is separate and applies earlier: `requested` is
+    // already capped at the year's sourced annual limit, so the exclusion can
+    // never exceed it and no second clamp is needed here. The (A) reduction for
+    // post-70½ deductible contributions is not modelled in this arm at all --
+    // that is what `namedQcdOffsetHistoryUnprovable` above records.
+    const qcdQualifiedFromRmdByOwner = new Map<string, number>()
+    const qcdNonQualifiedBeyondRmdByOwner = new Map<string, number>()
+    const proRataOwnerIds = new Set<string>([...qcdGrossByOwner.keys()])
+    for (const [ownerId, basis] of iraBasisByOwner) {
+      if (basis > 0) proRataOwnerIds.add(ownerId)
+    }
+    for (const ownerId of proRataOwnerIds) {
+      const basis = Math.max(0, iraBasisByOwner.get(ownerId) ?? 0)
+      const preDistribution =
+        preDistributionAggregateIraBalance.get(ownerId) ?? 0
+      const gift = qcdGrossByOwner.get(ownerId) ?? 0
+      const fromRmd = Math.min(gift, qcdFromRmdByOwner.get(ownerId) ?? 0)
+      const aggregateIncludible = Math.max(0, preDistribution - basis)
+      const qualified = Math.min(gift, aggregateIncludible)
+      const nonQualified = gift - qualified
+      // The excess lands on the from-RMD dollars first; whatever it cannot
+      // absorb there is beyond-RMD gift that has to be booked as income.
+      const nonQualifiedFromRmd = Math.min(fromRmd, nonQualified)
+      qcdQualifiedFromRmdByOwner.set(ownerId, fromRmd - nonQualifiedFromRmd)
+      qcdNonQualifiedBeyondRmdByOwner.set(
+        ownerId, nonQualified - nonQualifiedFromRmd,
+      )
+      qcdIncomeOffset += fromRmd - nonQualifiedFromRmd
+      if (basis > 0) {
+        iraProRata.set(
+          ownerId, openIraProRataYear(basis, preDistribution - qualified),
+        )
+      }
+    }
+    /**
+     * Commit the forced distributions held back above, in the order they moved,
+     * carving each owner's qualified gift out of the line-7 gross first.
+     *
+     * The carve is greedy across an owner's entries rather than spread over
+     * them. The year's fraction is owner-wide and `splitIraDistribution` caps
+     * every draw at the basis that is left, so the owner's TOTAL basis recovery
+     * is the same either way; what greed buys is that every entry the gift does
+     * not reach still presents its own untouched gross to the exact-cent
+     * settlement replay and keeps its assumed character. An entry the gift DOES
+     * reach presents a smaller gross, finds no matching effect, and falls back
+     * to the pro-rata computation -- which is the right answer and not a gap:
+     * a settlement effect computed for the whole distribution does not describe
+     * the part of it that went to charity.
+     */
+    const commitDeferredForcedDistributions = (
+      entries: readonly DeferredForcedIraDistribution[],
+      carveByOwner: Map<string, number>,
+      credit: (nontaxable: number) => void,
+    ) => {
+      for (const entry of entries) {
+        const carve = Math.min(carveByOwner.get(entry.ownerId) ?? 0, entry.amount)
+        if (carve > 0) {
+          carveByOwner.set(entry.ownerId, (carveByOwner.get(entry.ownerId) ?? 0) - carve)
+        }
+        const line7Gross = entry.amount - carve
+        const proRata = iraProRata.get(entry.ownerId)
+        if (proRata === undefined || line7Gross <= 0) continue
+        const split = splitWithAssumedCharacter(proRata, line7Gross, {
+          ownerPersonId: entry.ownerId,
+          calculationScope: 'form8606Line7Distributions',
+          occurrenceKind: entry.occurrenceKind,
+          producerOccurrenceKey: entry.producerOccurrenceKey,
+          sourceAccountId: entry.sourceAccountId,
+          mutationOrdinal: entry.mutationOrdinal,
+        })
+        iraProRata.set(entry.ownerId, split.next)
+        credit(split.nontaxable)
+      }
+    }
+    commitDeferredForcedDistributions(
+      deferredRmdDistributions,
+      new Map(qcdQualifiedFromRmdByOwner),
+      (nontaxable) => { rmdNontaxable += nontaxable },
+    )
+    commitDeferredForcedDistributions(
+      deferredSeppDistributions,
+      new Map<string, number>(),
+      (nontaxable) => { seppNontaxable += nontaxable },
+    )
+    // The beyond-RMD excess, last, because the gift moves after both forced
+    // distributions. `splitIraDistribution` directly rather than the assumed
+    // character: no named action can produce these dollars, since a named QCD
+    // request stands this whole arm down.
+    //
+    // ITS TAXABLE SHARE IS PROVABLY ZERO, and the term is here anyway because
+    // the proof is what makes the surrounding arithmetic safe to change. Any
+    // excess at all means the qualified amount took the owner's WHOLE aggregate
+    // includible amount, so the residual denominator is the basis itself, the
+    // year's fraction is exactly 1, and every dollar the pool still holds is
+    // basis. The excess could only be taxed if the forced distributions had
+    // already spent that basis — and they cannot have, because the dollars
+    // available to fund a beyond-requirement gift are what survives them: a
+    // gift large enough to leave an unqualified beyond-requirement remainder
+    // requires more basis than the forced distributions could consume. The
+    // accumulator therefore books nothing today; it is the line that would
+    // catch a future change to either half of that reasoning.
+    for (const [ownerId, gross] of qcdNonQualifiedBeyondRmdByOwner) {
+      const proRata = iraProRata.get(ownerId)
+      if (proRata === undefined || gross <= 0) continue
+      const split = splitIraDistribution(proRata, gross)
+      iraProRata.set(ownerId, split.next)
+      qcdNonQualifiedOrdinaryIncome += split.taxable
     }
 
     // --- exact-cent identity-bearing ordinary withdrawals ------------------
@@ -4946,8 +5177,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // Forced IRA distributions count only their taxable (post-pro-rata) part as
     // ordinary income. The QCD subtraction is qcdIncomeOffset, not the whole
     // gift: 408(d)(8)(D) treats a distribution as a QCD only to the extent it
-    // would otherwise be includible, so the offset is capped at the taxable
-    // share of the routed RMD, and the pre-RMD part never entered income at all.
+    // would otherwise be includible, so the offset carries only the routed
+    // dollars that qualified — the beyond-RMD part never entered income at all,
+    // and an excess over the owner's aggregate includible amount is not a QCD
+    // and arrives on `qcdNonQualifiedOrdinaryIncome` instead.
     const incomeBeforeConversion =
       ordinaryIncome -
       preTaxContributions +
@@ -4955,6 +5188,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       rmdNontaxable -
       qcdIncomeOffset -
       namedQcdIncomeOffset +
+      qcdNonQualifiedOrdinaryIncome +
       seppTotal -
       seppNontaxable +
       inheritedTotal +
@@ -4984,7 +5218,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     const privateRetirementBase = Math.max(
       0,
       privateRetirementOrdinary + rmdTotal - rmdNontaxable - qcdIncomeOffset -
-        namedQcdIncomeOffset + seppTotal - seppNontaxable + inheritedTotal,
+        namedQcdIncomeOffset + qcdNonQualifiedOrdinaryIncome +
+        seppTotal - seppNontaxable + inheritedTotal,
     )
     const publicPensionBase = Math.max(0, publicPensionOrdinary)
     if (plan.assumptions.stateEffectiveTaxPct <= 0) {
@@ -6432,10 +6667,23 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       // LP as a term the bracket model applies against the forced dollars it
       // books itself.
       //
-      // `Math.min` against the taxable forced total is true by construction —
-      // each arm is already capped at the owned-IRA RMD's taxable share and the
-      // named arm stands the aggregate one down — and is written down so the
-      // LP's term can promise it never exceeds the income it excludes.
+      // `Math.min` against the taxable forced total is still true by
+      // construction, but NOT for the reason it used to be. The aggregate arm no
+      // longer caps itself at the requirement's taxable share — under
+      // §408(d)(8)(D) the qualified gift is the routed GROSS — so the guarantee
+      // now comes from the other side: `rmdNontaxable` is basis recovered on the
+      // requirement AFTER the gift was carved out of its line-7 gross, so it can
+      // never exceed `ownedIraRmdTotal − qcdIncomeOffset`, which leaves
+      // `rmdTotal − rmdNontaxable ≥ qcdIncomeOffset`. The named arm still caps
+      // at the requirement's taxable share and stands the aggregate one down, so
+      // the two never sum. The `Math.min` is written down so the LP's term can
+      // promise it never exceeds the income it excludes without depending on
+      // which arm produced it.
+      //
+      // The exclusion GREW for every basis-holding household when the aggregate
+      // arm was corrected, and that is the point: the term now carries the whole
+      // gift the statute excludes instead of the clamped share the old ceiling
+      // left behind.
       const optimizerForcedDistributionOrdinaryExclusion = Math.max(
         0,
         Math.min(
@@ -6459,39 +6707,31 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       // every gifted dollar it spends is a dollar it never withdrew, so the
       // buckets it carries forward are too big as well.
       //
-      // THE GROSS, NOT THE TAXABLE SHARE, and deliberately a different figure
-      // from the exclusion above. What left the cash flow is every routed
-      // dollar; what left income is only the share of them that was includible.
-      // On an IRA carrying nondeductible basis the two differ, and using either
-      // for both would be wrong in one of the two places. There is no double
-      // adjustment between them for the same reason: they are subtracted from
-      // different constants on different sides of the model.
+      // THE GROSS, NOT THE TAXABLE SHARE, and still deliberately a different
+      // figure from the exclusion above. What left the cash flow is every routed
+      // dollar; what left income is only the part of them that qualified. There
+      // is no double adjustment between them: they are subtracted from different
+      // constants on different sides of the model.
       //
-      // THE PREMISE IS STATUTORY; THE OTHER FIGURE IS NOT, AND THIS COMMENT
-      // MUST NOT BE READ AS CERTIFYING IT. §408(d)(8)(D) is why a gross figure
-      // and an includible figure legitimately differ — it deems the gift to
-      // consist of otherwise-includible dollars, so a distribution that is
-      // partly a return of basis does not exclude its whole gross. That premise
-      // is what this term rests on and it is sound. But the includible figure
-      // the engine actually computes is NARROWER than the statute's: the
-      // §408(d)(8)(D) measure is the aggregate amount that would be includible
-      // across ALL of the owner's individual retirement plans treated as one
-      // contract, and `qcdIncomeOffset` above caps at `ownedIraRmdTotal −
-      // rmdNontaxable` — the required distribution's own taxable share — which
-      // is a smaller ceiling on every shape where the owner's IRAs hold more
-      // includible dollars than this year's RMD does. The QCD block's own
-      // comment states the aggregate measure correctly; the code below it does
-      // not implement it. That understates the year's income and burns basis
-      // that later years then do not have. It is a PRE-EXISTING defect of the
-      // income side, registered as an approximation with a produced fixture on
-      // `taxRuleRegistry.ts`'s `irc-408-d-8-D-projection-qcd-after-pro-rata` —
-      // the record that already carried the other half of the same departure,
-      // because deeming the gift pre-tax under (D) replaces this computation
-      // outright and the ceiling goes with it, so they are one defect and not
-      // two. Tracked as its own slice, because correcting it moves tax
-      // figures.
-      // The CASH term here is unaffected either way: it is the gross, and the
-      // gross is not in dispute.
+      // THE TWO NOW COINCIDE ON THE ORDINARY HOUSEHOLD, and that is a result
+      // rather than a coincidence. §408(d)(8)(D) deems the gift to consist of
+      // otherwise-includible dollars up to the owner's AGGREGATE includible
+      // amount — the whole of their individual retirement plans treated as one
+      // contract, less basis — so on any household whose IRAs hold more pre-tax
+      // dollars than the gift, the qualified amount IS the gross and the two
+      // terms carry the same number. They separate only where the gift runs past
+      // that aggregate amount, on a near-all-basis IRA: there part of the gift is
+      // not a QCD, the cash still left the household, and the income term
+      // legitimately falls short of the gross.
+      //
+      // This used to be the site of a registered defect — `qcdIncomeOffset`
+      // capped at `ownedIraRmdTotal − rmdNontaxable`, the required
+      // distribution's own taxable share, which is a far smaller ceiling than
+      // the statute's on every shape where the owner's IRAs hold more includible
+      // dollars than one year's RMD. That is fixed above and the record on
+      // `taxRuleRegistry.ts`, `irc-408-d-8-D-projection-qcd-after-pro-rata`, is
+      // settled. The CASH term never moved: it is the gross, and the gross was
+      // never in dispute.
       //
       // The BEYOND-RMD arm is deliberately not here, on the same reasoning that
       // keeps it off `exogenousStrategyAccountMovement`'s exclusion list and
