@@ -239,20 +239,22 @@ function retirementActionPersonId(action: PlanRetirementAction): PersonId | unde
  *
  * The model side has since closed further, and the gate did NOT move with it: a
  * committed conversion's ordinary income is now a floor the LP stacks on
- * (`OptimizerYear.committedOrdinaryIncome`), a gift's charitable exclusion
- * reaches the LP instead of being clamped away
- * (`forcedDistributionOrdinaryIncomeExclusion`), and three strategy movements
- * — the aggregate QCD beyond the RMD, a 72(t) series, an annuity premium —
- * reach the same recursion as action movement (`exogenousStrategyMovementForYear`).
+ * (`OptimizerYear.committedOrdinaryIncome`), a gift routed out of an RMD
+ * reaches the LP on BOTH sides — its charitable exclusion instead of being
+ * clamped away (`forcedDistributionOrdinaryIncomeExclusion`) and the cash it
+ * took out of the household's hands (`forcedDistributionCashDiversion`) — and
+ * five strategy movements (the aggregate QCD beyond the RMD, a 72(t) series, an
+ * annuity premium, a TIPS-ladder purchase, a pension lump-sum rollover) reach
+ * the same recursion as action movement (`exogenousStrategyMovementForYear`).
  *
- * One model gap remains and it is a cash one: a QCD routed out of an RMD leaves
- * the exact ledger's cash inflows while the LP credits the whole re-decided
- * draw, so a QCD year's solve can spend dollars the household gave away. A
- * NAMED QCD is a recorded action, so for those plans this predicate is the only
- * thing standing between that gap and a recommendation. (It is not for an
- * aggregate `qcdAnnual` plan, which records no action and was never gated —
- * which is exactly why the strategy-side defects had to be fixed rather than
- * gated.) That is smaller than the telling, and it is still a reason.
+ * The model gaps this comment used to name are closed. What remains is a class
+ * this predicate never covered and could not: cash and value crossing between
+ * the household and an asset the LP carries in no bucket — a property sale's
+ * proceeds, a HECM draw, a death benefit — enumerated with citations on
+ * `OptimizerYearProbe.exogenousStrategyAccountMovement`. None of those is a
+ * recorded retirement action, so gating on actions was never what stood between
+ * them and a recommendation, and closing them is a separate slice. THE TELLING
+ * is what holds this gate up now, and on its own it is enough.
  *
  * Reporting per action — rather than one plan-level flag — keeps the count and
  * the named person available to the surface doing the telling.
@@ -386,11 +388,13 @@ export function committedActionMovementForYear(
  * bucket scalars, plus the cash those movements delivered.
  *
  * The sibling of `committedActionMovementForYear`, over the other channel.
- * Proceeds are the 72(t) series' alone — a gift leaves the household and an
- * annuity premium buys a contract that pays back through `exogenousCash` later
- * — so a QCD-only or annuity-only year books a debit with no credit and a
- * series year books both. Returns undefined for a year that moved nothing, so
- * plans with none of the three producers keep emitting a byte-identical LP.
+ * Proceeds are the 72(t) series' alone — a gift leaves the household, the two
+ * purchases buy instruments that pay back through `exogenousCash` later, and a
+ * pension lump sum rolls over directly without passing through the year's cash
+ * — so every producer but the series books its bucket movement with no cash
+ * side, and the series books both. Returns undefined for a year that moved
+ * nothing, so plans with none of the five producers keep emitting a
+ * byte-identical LP.
  */
 export function exogenousStrategyMovementForYear(
   bucketByAccountId: ReadonlyMap<string, OptimizerBucket>,
@@ -549,6 +553,12 @@ export function buildOptimizerInput(plan: Plan, opts: OptimizePlanOptions, probe
       // income the household never had and under-converts by the whole gift.
       forcedDistributionOrdinaryIncomeExclusion:
         p.forcedDistributionOrdinaryIncomeExclusion,
+      // And the cash side of the same gift. The exclusion above stops the LP
+      // charging tax on dollars that went to a charity; this stops it SPENDING
+      // them. The ledger nets them out of its own inflows and the LP credits
+      // `wt` at 1.0, so without this a gift year's solve funds spending from
+      // money the household gave away.
+      forcedDistributionCashDiversion: p.forcedDistributionCashDiversion,
       spendingNeed: p.spendingNeed,
       exogenousCash: p.exogenousCash,
       // Recover the divisor from the baseline ratio (startTrad / RMD) so the LP's

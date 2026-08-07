@@ -146,31 +146,32 @@ export function OptimizePage() {
   // trips on ANY recorded action, and this page's own check is the thing that
   // declines to run.
   //
-  // THE REASON THAT USED TO STAND HERE IS GONE. "A committed conversion's
-  // income has no term" was true when this comment was written and is not now:
-  // the LP takes that income as a floor its own conversions stack on
-  // (`OptimizerYear.committedOrdinaryIncome`), a gift's charitable exclusion
-  // reaches the LP rather than being clamped away, and three strategy
-  // movements — the aggregate QCD beyond the RMD, a 72(t) series, an annuity
-  // premium — reach the same balance recursion. Both sides are booked.
+  // THE MODEL REASONS THAT USED TO STAND HERE ARE GONE. "A committed
+  // conversion's income has no term" was true when this comment was written and
+  // is not now: the LP takes that income as a floor its own conversions stack on
+  // (`OptimizerYear.committedOrdinaryIncome`). Nor is the cash-side booking that
+  // replaced it. A QCD routed out of an RMD is netted out of the exact ledger's
+  // cash inflows and the LP re-decides that RMD as its own `wt`, so the solve
+  // used to believe the household could spend dollars it gave away;
+  // `forcedDistributionCashDiversion` now takes that cash back, alongside the
+  // `forcedDistributionOrdinaryIncomeExclusion` that keeps the same dollars out
+  // of income. Five strategy movements reach the balance recursion. Both sides
+  // of every one of them are booked.
   //
   // WHAT STILL HOLDS IT UP, stated so the next attempt starts from the truth:
-  //   1. The telling. Nothing on this page explains an optimizer answer sitting
-  //      on top of a plan's own named requests — which schedule was priced,
-  //      which year the named executor already owns, what Apply would install.
-  //      The engine's post-processor drops a named-conversion year from the
-  //      emitted schedule (the named executor is authoritative there), so a
-  //      recommendation for an action-bearing plan is silent about exactly the
-  //      years the user recorded. Shipping that needs copy, not a model term.
-  //   2. One cash-side booking is still one-sided. A QCD routed out of an RMD
-  //      is netted out of the exact ledger's cash inflows (`simulate.ts`
-  //      `baseCashInflows`, less `qcdFromRmd` and `namedQcdRmdSatisfied`) while
-  //      the LP re-decides that RMD as its own `wt` and credits the whole draw
-  //      to cash — so in a QCD year the solve believes the household can spend
-  //      dollars it gave away. A NAMED gift is a recorded action, so for those
-  //      plans this predicate is what stands between that gap and a
-  //      recommendation. It is not for an aggregate `qcdAnnual` plan, which
-  //      records no action and this predicate never saw.
+  // THE TELLING, and only that. Nothing on this page explains an optimizer
+  // answer sitting on top of a plan's own named requests — which schedule was
+  // priced, which year the named executor already owns, what Apply would
+  // install. The engine's post-processor drops a named-conversion year from the
+  // emitted schedule (the named executor is authoritative there), so a
+  // recommendation for an action-bearing plan is silent about exactly the years
+  // the user recorded. Shipping that needs copy, not a model term.
+  //
+  // The model limits that remain are not this predicate's to hold and never
+  // were: they are cash and value crossing between the household and an asset
+  // the LP carries in no bucket (a property sale, a HECM draw, a death
+  // benefit), enumerated on `OptimizerYearProbe.exogenousStrategyAccountMovement`,
+  // and none of them records a retirement action for this gate to see.
   // The page states the condition rather than ranking schedules against either.
   const unsupportedActionReasons = useMemo(
     () => optimizerUnsupportedRetirementActions(plan),
