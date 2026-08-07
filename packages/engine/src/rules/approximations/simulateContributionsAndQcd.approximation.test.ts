@@ -7,7 +7,6 @@ import { createEmptyPlan, parsePlan, type Account, type IncomeStream, type Plan 
 import { packForYear } from '../../params/index.js'
 import { createFlatTaxCalculator } from '../../projection/flatTax.js'
 import { simulatePlan } from '../../projection/simulate.js'
-import type { OptimizerYearProbe } from '../../projection/types.js'
 import { describeRule } from '../describeRule.js'
 
 let counter = 0
@@ -236,140 +235,6 @@ describeRule('irc-408-d-8-A-projection-household-qcd-aggregation', {
 })
 
 // --------------------------------------------------------------------------
-// QCD ordered after pro-rata basis recovery
-// --------------------------------------------------------------------------
-
-// A 265,000 dollar IRA at age 73 distributes 265,000 / 26.5 = 10,000, of which
-// 20 percent is basis under the Form 8606 fraction below.
-const IRA_BALANCE = 265_000
-const IRA_BASIS = 53_000
-const REQUIRED_DISTRIBUTION = IRA_BALANCE / 26.5
-const GIFT = 5_000
-
-describeRule('irc-408-d-8-D-projection-qcd-after-pro-rata', {
-  note: 'the pro-rata ordering, with the ceiling not yet binding',
-  readings: {
-    // 408(d)(8)(D): the gift is deemed to consist of includible dollars, so it
-    // leaves section 72 entirely and the whole 20 percent basis fraction lands
-    // on the other 5,000 dollars. 5,000 - 1,000 = 4,000 of ordinary income.
-    statuteQcdComesOutOfPreTaxFirst: 4_000,
-    // The ledger pro-rates all 10,000 first (2,000 of basis returned) and then
-    // subtracts the whole gift: 10,000 - 2,000 - 5,000 = 3,000.
-    engineProRatesTheWholeDistributionFirst: 3_000,
-  },
-  accepted: 'statuteQcdComesOutOfPreTaxFirst',
-  produced: 'engineProRatesTheWholeDistributionFirst',
-}, ({ accepted, produced }) => {
-  it('spends basis on the charitable half of the required distribution', () => {
-    const plan = soloPlan('1953-06-15', null) // 73 in 2026, first RMD year
-    plan.accounts = [
-      cash(0),
-      { ...(traditionalIra(IRA_BALANCE) as Extract<Account, { type: 'traditional' }>), nondeductibleBasis: IRA_BASIS },
-    ]
-    plan.strategies.qcdAnnual = GIFT
-
-    const year = year2026(plan)
-
-    // Both readings depend on this exact distribution and this exact gift; if
-    // either moved, the two figures below would stop being 4,000 and 3,000.
-    expect(year.rmd).toBeCloseTo(REQUIRED_DISTRIBUTION, 6)
-    expect(year.qcd).toBeCloseTo(GIFT, 6)
-    expect(year.magi).toBeCloseTo(produced, 6)
-    expect(year.magi).not.toBeCloseTo(accepted, 6)
-  })
-})
-
-// --------------------------------------------------------------------------
-// The same record's other half: the ceiling the offset is measured against
-// --------------------------------------------------------------------------
-
-// A 1,000,000 dollar IRA at age 76 distributes 1,000,000 / 23.7 = 42,194.09,
-// of which 20 percent is basis. The gift is LARGER than the taxable part of
-// that requirement (33,755.27), which is what the fixture above deliberately
-// avoids: here the engine's `min(qcdFromRmd, ownedIraRmdTotal − rmdNontaxable)`
-// ceiling binds and clamps away 6,244.73 of gift the statute would still have
-// excluded, on top of the pro-rata ordering error. The statutory ceiling is the
-// aggregate includible amount across all of the owner's IRAs treated as one
-// contract — 800,000 dollars here — so it is nowhere near binding.
-const CEILING_IRA_BALANCE = 1_000_000
-const CEILING_IRA_BASIS = 200_000
-const CEILING_REQUIRED_DISTRIBUTION = CEILING_IRA_BALANCE / 23.7
-const CEILING_GIFT = 40_000
-/** What the household actually keeps: 42,194.09 − 40,000. */
-const CEILING_RESIDUAL_DISTRIBUTION = CEILING_REQUIRED_DISTRIBUTION - CEILING_GIFT
-
-describeRule('irc-408-d-8-D-projection-qcd-after-pro-rata', {
-  note: 'the ceiling the offset is capped at, once it binds',
-  readings: {
-    // Statute: the whole gift is deemed pre-tax and returns no basis, so only
-    // the residual distribution pro-rates — 2,194.09 × 0.8.
-    statuteTaxesTheResidualDistributionsPreTaxShare: CEILING_RESIDUAL_DISTRIBUTION * 0.8,
-    // Engine: pro-rate the whole 42,194.09 (8,438.82 of basis returned,
-    // 33,755.27 taxable), then subtract an offset capped at that same
-    // 33,755.27. Nothing is left, so the year reports no ordinary income at all.
-    engineClampsTheOffsetAtTheRequirementsTaxableShare: 0,
-  },
-  accepted: 'statuteTaxesTheResidualDistributionsPreTaxShare',
-  produced: 'engineClampsTheOffsetAtTheRequirementsTaxableShare',
-}, ({ accepted, produced }) => {
-  it('reports no income at all on a gift the statute taxes, and burns the basis', () => {
-    const plan = soloPlan('1950-01-01', null) // 76 in 2026
-    // Spending is funded entirely from cash so the IRA distributes the
-    // requirement and nothing else. A discretionary draw on top would add
-    // ordinary income of its own and neither reading would be about the gift.
-    plan.expenses.baseAnnual = 0
-    plan.expenses.healthcare = {
-      pre65MonthlyPremiumPerPerson: 0,
-      applyAcaCredit: false,
-      medicareExtrasMonthlyPerPerson: 0,
-    }
-    plan.accounts = [
-      cash(200_000),
-      {
-        ...(traditionalIra(CEILING_IRA_BALANCE) as Extract<Account, { type: 'traditional' }>),
-        nondeductibleBasis: CEILING_IRA_BASIS,
-      },
-    ]
-    plan.strategies.qcdAnnual = CEILING_GIFT
-
-    // The probe is captured for its `rmdTaxable`, which is the only published
-    // figure that separates the requirement's taxable dollars from the basis it
-    // returned — and the basis is the half of this defect that outlives the
-    // year, so it has to be asserted rather than inferred from income.
-    const probes: OptimizerYearProbe[] = []
-    const result = simulatePlan(validate(plan), {
-      startYear: 2026,
-      taxCalculator: noTax,
-      captureOptimizerInputs: (probe) => probes.push(probe),
-    })
-    const year = result.years.find((y) => y.year === 2026)!
-    const probe = probes.find((p) => p.year === 2026)!
-
-    // Both readings rest on this requirement and this gift, and on the gift
-    // exceeding the taxable part of the requirement — which is the whole
-    // difference between this fixture and the one above.
-    expect(year.rmd).toBeCloseTo(CEILING_REQUIRED_DISTRIBUTION, 2)
-    expect(year.qcd).toBeCloseTo(CEILING_GIFT, 6)
-    expect(CEILING_GIFT).toBeGreaterThan(CEILING_REQUIRED_DISTRIBUTION * 0.8)
-
-    expect(year.magi).toBeCloseTo(produced, 6)
-    expect(year.magi).not.toBeCloseTo(accepted, 6)
-    // And the accepted reading is a real number rather than an artifact of the
-    // clamp: the statute taxes 1,755.27 here.
-    expect(accepted).toBeCloseTo(1_755.27, 2)
-
-    // THE BASIS HALF, which is the part that outlives the year. The statute
-    // spends 438.82 (20 percent of the residual); the engine spends 8,438.82,
-    // the pro-rata share of the whole gross requirement, and every later
-    // distribution is taxed on a base that basis is no longer there to shelter.
-    const basisConsumed = year.rmd - (probe.rmdTaxable ?? year.rmd)
-    expect(basisConsumed).toBeCloseTo(8_438.82, 2)
-    expect(basisConsumed).not.toBeCloseTo(CEILING_RESIDUAL_DISTRIBUTION * 0.2, 2)
-    expect(CEILING_RESIDUAL_DISTRIBUTION * 0.2).toBeCloseTo(438.82, 2)
-  })
-})
-
-// --------------------------------------------------------------------------
 // Named QCD modelled as beyond the required distribution
 // --------------------------------------------------------------------------
 
@@ -482,5 +347,118 @@ describeRule('treas-reg-1-408-8-g-projection-named-qcd-beyond-rmd', {
       rmdRemainingAfter: 0,
       coordination: 'requirementAlreadyDistributedBeforeTheGift',
     })
+  })
+})
+
+// --------------------------------------------------------------------------
+// The instant the Form 8606 pro-rata denominator is measured
+// --------------------------------------------------------------------------
+
+// IRC 408(d)(2)(C) computes the section 72 contract value "as of the close of
+// the calendar year" and then adds the year's distributions back, which is
+// Form 8606 line 6 — the December 31 value, AFTER a year of return on whatever
+// the account retained. The ledger measures the pre-distribution balance
+// instead, which is year-end-BEFORE-growth plus distributions. The two differ
+// by exactly the growth on the retained balance, so the ledger's denominator is
+// invariant to the return assumption and the statute's is not.
+//
+// The shape holds everything but the return fixed and gives line 8 far more
+// weight than line 7, which is where the departure is material: a 76-year-old
+// with a 1,000,000 dollar IRA that is 20 percent basis, taking the 42,194.09
+// requirement, routing 40,000 of it to charity, and converting 100,000.
+const INSTANT_IRA_BALANCE = 1_000_000
+const INSTANT_IRA_BASIS = 200_000
+const INSTANT_REQUIRED_DISTRIBUTION = INSTANT_IRA_BALANCE / 23.7
+const INSTANT_GIFT = 40_000
+const INSTANT_CONVERSION = 100_000
+const INSTANT_RETURN_PCT = 5
+/** Form 8606 lines 7 + 8: the requirement the household kept, plus the conversion. */
+const INSTANT_ANNUAL_GROSS =
+  INSTANT_REQUIRED_DISTRIBUTION - INSTANT_GIFT + INSTANT_CONVERSION
+/** Line 6 at a 5 percent return: what the account retained, grown. */
+const INSTANT_LINE_6 =
+  (INSTANT_IRA_BALANCE - INSTANT_REQUIRED_DISTRIBUTION - INSTANT_CONVERSION) *
+  (1 + INSTANT_RETURN_PCT / 100)
+/** Line 9, and the fraction it produces against the unreduced basis. */
+const INSTANT_LINE_9 = INSTANT_LINE_6 + INSTANT_ANNUAL_GROSS
+/** The ledger's denominator: pre-distribution pool less the qualified gift. */
+const INSTANT_ENGINE_DENOMINATOR = INSTANT_IRA_BALANCE - INSTANT_GIFT
+
+function measurementInstantPlan(returnPct: number): Plan {
+  const plan = soloPlan('1950-01-01', null) // 76 in 2026
+  plan.assumptions.defaultReturnPct = returnPct
+  // Spending is funded from cash so nothing but the requirement, the gift and
+  // the conversion moves through the IRA, and the return is the only variable.
+  plan.expenses.baseAnnual = 0
+  plan.expenses.healthcare = {
+    pre65MonthlyPremiumPerPerson: 0,
+    applyAcaCredit: false,
+    medicareExtrasMonthlyPerPerson: 0,
+  }
+  const ira = traditionalIra(INSTANT_IRA_BALANCE) as Extract<Account, { type: 'traditional' }>
+  plan.accounts = [
+    { ...(cash(200_000) as Extract<Account, { type: 'cash' }>), annualReturnPct: 0 },
+    { ...ira, nondeductibleBasis: INSTANT_IRA_BASIS, annualReturnPct: returnPct },
+    rothIra(0),
+  ]
+  plan.strategies.qcdAnnual = INSTANT_GIFT
+  plan.strategies.rothConversion = {
+    mode: 'manual',
+    conversions: [{ year: 2026, amount: INSTANT_CONVERSION }],
+  }
+  return plan
+}
+
+describeRule('irc-408-d-2-C-projection-pro-rata-measurement-instant', {
+  readings: {
+    // 408(d)(2)(C) with Form 8606 line 6: the denominator is the December 31
+    // value grown at 5 percent, plus lines 7 and 8. 1,002,890.30, a fraction of
+    // 0.1994236, and 81,814.18 of ordinary income.
+    statuteMeasuresTheContractAtTheCloseOfTheYear:
+      INSTANT_ANNUAL_GROSS * (1 - INSTANT_IRA_BASIS / INSTANT_LINE_9),
+    // The ledger: the pre-distribution pool less the qualified gift, which
+    // never saw the year's return. 960,000, a fraction of 0.2083333, and
+    // 80,903.66 — the same figure at any return at all.
+    engineMeasuresBeforeTheFirstDistribution:
+      INSTANT_ANNUAL_GROSS * (1 - INSTANT_IRA_BASIS / INSTANT_ENGINE_DENOMINATOR),
+  },
+  accepted: 'statuteMeasuresTheContractAtTheCloseOfTheYear',
+  produced: 'engineMeasuresBeforeTheFirstDistribution',
+}, ({ accepted, produced }) => {
+  it('prices a gain year off a denominator that never saw the gain', () => {
+    const year = year2026(measurementInstantPlan(INSTANT_RETURN_PCT))
+
+    // Both readings rest on this exact requirement, gift and conversion.
+    expect(year.rmd).toBeCloseTo(INSTANT_REQUIRED_DISTRIBUTION, 6)
+    expect(year.qcd).toBeCloseTo(INSTANT_GIFT, 6)
+    expect(year.rothConversion).toBeCloseTo(INSTANT_CONVERSION, 6)
+
+    expect(year.magi).toBeCloseTo(produced, 6)
+    expect(year.magi).toBeCloseTo(80_903.66, 2)
+    expect(year.magi).not.toBeCloseTo(accepted, 6)
+    expect(accepted).toBeCloseTo(81_814.18, 2)
+    // The gap the measurement instant costs this household, in one year.
+    expect(accepted - produced).toBeCloseTo(910.52, 2)
+    // And the two intermediate figures the accepted reading is built from, so a
+    // future reader can check the derivation rather than the conclusion.
+    expect(INSTANT_LINE_6).toBeCloseTo(900_696.20, 2)
+    expect(INSTANT_LINE_9).toBeCloseTo(1_002_890.30, 2)
+  })
+
+  it('returns the same income at a 0 percent and a negative return', () => {
+    // The control, and the whole shape of the defect: a denominator that is
+    // measured before the year's growth cannot move when the growth does. If
+    // this test ever fails, the measurement instant moved and the record above
+    // is what has to be reclassified.
+    const gain = year2026(measurementInstantPlan(INSTANT_RETURN_PCT))
+    const flat = year2026(measurementInstantPlan(0))
+    const loss = year2026(measurementInstantPlan(-INSTANT_RETURN_PCT))
+
+    expect(flat.magi).toBeCloseTo(produced, 6)
+    expect(gain.magi).toBeCloseTo(flat.magi, 6)
+    expect(loss.magi).toBeCloseTo(flat.magi, 6)
+    // The statute does not agree with itself across the three, which is what
+    // makes the invariance above a departure rather than a coincidence.
+    expect(accepted).not.toBeCloseTo(produced, 6)
   })
 })

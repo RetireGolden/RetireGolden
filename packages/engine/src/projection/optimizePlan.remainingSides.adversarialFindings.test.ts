@@ -27,25 +27,29 @@
  * fixed: it was a false sentence in the slice's own prose rather than an engine
  * defect, so the enumeration it attacks now states the measured direction. The
  * test stays because the measurement is what makes the corrected sentence true.
- * Finding 1's approximation is REGISTERED, on the record that already carried
- * the other half of the same departure rather than on a new one: fixing the
- * pro-rata ORDERING replaces the offending computation outright and the CEILING
- * disappears with it, so they are one defect and one record. See
- * `taxRuleRegistry.ts`, `irc-408-d-8-D-projection-qcd-after-pro-rata`, whose
- * statement and rationale now state the ceiling, and whose second produced
- * fixture pins the same two figures from the ledger side.
  *
- * 1. THE §408(d)(8)(D) CAP. `forcedDistributionCashDiversion` is the GROSS
- *    routed gift and `forcedDistributionOrdinaryIncomeExclusion` is the
- *    includible share, and the new comments justify the difference by citing
- *    §408(d)(8)(D). The engine measures "otherwise includible" against the
+ * FINDING 1 IS CLOSED, on 2026-08-07, and its assertions below are FLIPPED
+ * exactly as this header always required — they now pin the statutory answer,
+ * not the engine's departure from it. Its approximation was REGISTERED on the
+ * record that carried the other half of the same departure rather than on a new
+ * one, because fixing the pro-rata ORDERING replaced the offending computation
+ * outright and the CEILING went with it: one defect, one record, one fix. See
+ * `taxRuleRegistry.ts`, `irc-408-d-8-D-projection-qcd-after-pro-rata`, now
+ * `settled`, and `simulate.qcdAggregateIncludible.test.ts`, which pins the same
+ * figures from the ledger side. Findings 2 and 4 remain open and remain pinned.
+ *
+ * 1. THE §408(d)(8)(D) CAP (CLOSED). `forcedDistributionCashDiversion` is the
+ *    GROSS routed gift and `forcedDistributionOrdinaryIncomeExclusion` is the
+ *    includible share, and the comments justify the difference by citing
+ *    §408(d)(8)(D). The engine measured "otherwise includible" against the
  *    RMD's own taxable share; the statute measures it against the aggregate
  *    includible amount of ALL the owner's IRAs treated as one contract — which
  *    the QCD block's own comment (simulate.ts, "measured over the owner's
- *    individual retirement plans treated as one contract") already states.
- *    The design premise the slice rests on is sound (the two figures CAN
- *    legitimately differ, on a near-all-basis IRA); the figure it points at is
- *    produced by the wrong cap.
+ *    individual retirement plans treated as one contract") already stated. The
+ *    design premise the slice rests on was sound and survives: the two figures
+ *    CAN legitimately differ, on a near-all-basis IRA. What changed is that
+ *    they no longer differ on the ORDINARY one, because the gift is now
+ *    excluded at its gross, so the shape below reports the two terms equal.
  *
  * 2. (CLOSED) THE PENSION LUMP SUM WITH AN ELECTION YEAR ALREADY PAST. The rollover
  *    credit is gated on `electionYear === year` while the pension stream is
@@ -114,8 +118,8 @@ function retiree(dob: string, planningAge: number): Plan {
   return plan
 }
 
-describe('FINDING 1: the QCD exclusion is capped against the RMD, not §408(d)(8)(D)', () => {
-  it('a nondeductible-basis IRA reports $0 income on a year the statute taxes', () => {
+describe('FINDING 1 (CLOSED): the QCD exclusion is measured by §408(d)(8)(D)', () => {
+  it('a nondeductible-basis IRA reports the income the statute taxes', () => {
     const plan = retiree('1950-01-01', 77) // 76 in 2026
     plan.strategies.qcdAnnual = 40_000
     plan.accounts = [
@@ -131,14 +135,20 @@ describe('FINDING 1: the QCD exclusion is capped against the RMD, not §408(d)(8
     // The year, as fact.
     expect(ledger.rmd).toBeCloseTo(42_194.09, 2)
     expect(ledger.qcd).toBeCloseTo(40_000, 2)
-    // 20% of the IRA is nondeductible basis, so the RMD returns 20% of itself.
-    expect(ledger.rmd - (probe.rmdTaxable ?? 0)).toBeCloseTo(8_438.82, 2)
+    // The gift returns no basis, so only the 2,194.09 that reached the
+    // household pro-rates — and at 200,000/960,000, the denominator the QCD has
+    // left. 2,194.09 × 0.208333 = 457.10, against the 8,438.82 the engine used
+    // to burn when it pro-rated the whole requirement first.
+    expect(ledger.rmd - (probe.rmdTaxable ?? 0)).toBeCloseTo(457.10, 2)
 
-    // THE SLICE'S OWN TERMS, and they do differ here, which is the shape the
-    // new comment predicts: gross on the cash constant, includible on the
-    // income one.
+    // THE SLICE'S OWN TERMS. They coincide on this shape now, and that is the
+    // fix rather than a collapse of the distinction: §408(d)(8)(D) deems the
+    // routed gift includible in full, so the includible figure IS the gross
+    // whenever the owner's IRAs hold more pre-tax dollars than the gift. They
+    // separate again only past the aggregate includible amount, which
+    // `simulate.qcdAggregateIncludible.test.ts` reaches.
     expect(probe.forcedDistributionCashDiversion).toBeCloseTo(40_000, 2)
-    expect(probe.forcedDistributionOrdinaryIncomeExclusion).toBeCloseTo(33_755.27, 2)
+    expect(probe.forcedDistributionOrdinaryIncomeExclusion).toBeCloseTo(40_000, 2)
 
     // Each still lands on its own constant, and both sides reconcile against
     // the exact ledger — the cash term is CORRECT.
@@ -150,21 +160,26 @@ describe('FINDING 1: the QCD exclusion is capped against the RMD, not §408(d)(8
     expect(lpOrdinaryAtLedgerDraw - ledger.magi).toBeCloseTo(0, 4)
     expect(ledger.rmd - (modeled.forcedDistributionCashDiversion ?? 0)).toBeCloseTo(2_194.09, 2)
 
-    // DEFECT (pre-existing, `simulate.ts` `qcdIncomeOffset`, not this diff).
+    // CLOSED (`simulate.ts` `qcdIncomeOffset`, fixed 2026-08-07).
     // §408(d)(8)(D) deems a QCD to consist of otherwise-includible dollars up
     // to the aggregate includible amount of ALL the owner's IRAs treated as one
     // contract — $1,000,000 − $200,000 = $800,000 here, so the whole $40,000
     // gift is excludible and returns NO basis. Only the $2,194.09 that reached
-    // the household pro-rates.
-    //   correct 2026 ordinary income ≈ 2,194.09 × 0.8 = 1,755.27
-    //   correct basis consumed       ≈   438.82  (leaving 199,561.18)
-    // The engine instead caps the exclusion at the RMD's taxable share, reports
-    // no income at all, and burns $8,438.82 of basis — a bracket-filling error
-    // in the year AND an over-taxation of every later year that inherits the
+    // the household pro-rates, at the denominator the gift has left.
+    //   2026 ordinary income = 2,194.09 × (1 − 200,000/960,000) = 1,736.99
+    //   basis consumed       =   457.10  (leaving 199,542.90)
+    // The engine used to cap the exclusion at the RMD's taxable share, report
+    // no income at all, and burn $8,438.82 of basis — a bracket-filling error
+    // in the year AND an over-taxation of every later year that inherited the
     // depleted basis.
-    expect(ledger.magi).toBeCloseTo(0, 6) // the wrong answer, pinned
-    const statutoryIncome = (ledger.rmd - ledger.qcd) * 0.8
-    expect(statutoryIncome).toBeCloseTo(1_755.27, 2) // the right one
+    //
+    // The 1,755.27 this test asserted as "the right one" while the defect was
+    // open was ITSELF wrong, by exactly the half of the statute the fix had to
+    // supply: it pro-rated the residual at 200,000/1,000,000, leaving the gift
+    // in a denominator the Form 8606 line-7 instructions keep it out of.
+    expect(ledger.magi).toBeCloseTo(1_736.99, 2)
+    expect(ledger.magi).not.toBeCloseTo(0, 6) // the old wrong answer
+    expect(ledger.magi).not.toBeCloseTo((ledger.rmd - ledger.qcd) * 0.8, 2)
   })
 })
 

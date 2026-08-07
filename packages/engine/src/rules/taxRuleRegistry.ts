@@ -3394,12 +3394,12 @@ const registry = {
   'irc-408-d-8-D-projection-qcd-after-pro-rata': {
     title: 'Annual-ledger ordering of the QCD against pro-rata basis recovery',
     statement:
-      'A QCD is deemed to consist of otherwise-includible dollars up to the aggregate pre-tax balance, so it leaves the section 72 pro-rata computation entirely and the whole of the year basis remains available to the other distributions. Not modelled in the aggregate qcdAnnual arm, which this record is about: it applies pro-rata basis recovery to the entire required distribution first, including the part later routed to charity, and then subtracts the QCD from ordinary income. THE CEILING IT SUBTRACTS AGAINST IS THE SECOND HALF OF THE SAME DEPARTURE, and it is stated here rather than in a record of its own because one fix closes both — deeming the gift pre-tax under (D) replaces this computation outright, and the ceiling disappears with it. The subtraction is qcdIncomeOffset = min(qcdFromRmd, ownedIraRmdTotal − rmdNontaxable): the measure is the taxable share of THIS YEAR REQUIRED DISTRIBUTION, where the statute measures against the aggregate amount that would be includible if every one of the individual retirement plans were distributed and all of them treated as one contract. An RMD is a small fraction of a balance, so the statutory ceiling is normally far higher, and the engine ceiling binds whenever the gift exceeds the taxable part of the requirement — at which point the excess is silently clamped away instead of being excluded as the statute allows. A named QCD request takes the statutory reading — the gift is drawn from the donor otherwise-taxable pool first, returns no basis, and enters neither Form 8606 line — which is the treatment irc-408-d-8-D-qcd-taxable-first registers as settled.',
-    classification: 'approximated',
+      'A QCD is deemed to consist of otherwise-includible dollars up to the aggregate amount that would be includible if all of the owner’s individual retirement plans were distributed in the year and treated as one contract, so the gift leaves the section 72 computation entirely: it returns no basis, it is absent from the Form 8606 line-7 numerator and from the annual denominator, and the whole of the year’s basis survives for the other distributions, which pro-rate over the reduced denominator. The aggregate qcdAnnual arm now implements exactly that, the same reading the exact-cent named arm settles under irc-408-d-8-D-qcd-taxable-first. HISTORY, APPENDED RATHER THAN DELETED. Until 2026-08-07 this record was classified approximated and described two halves of one departure in that arm. It applied pro-rata basis recovery to the entire required distribution first, including the part later routed to charity, and then subtracted the gift from ordinary income at a ceiling of its own: qcdIncomeOffset = min(qcdFromRmd, ownedIraRmdTotal − rmdNontaxable), the taxable share of THIS YEAR REQUIRED DISTRIBUTION rather than the statutory aggregate. Because a required distribution is a small fraction of a balance, that ceiling bound whenever the gift exceeded the taxable part of the requirement and silently clamped away exclusion the statute allows. Both halves closed together on that date, as the record predicted they would: deeming the gift pre-tax under (D) replaced the computation outright and the ceiling went with it.',
+    classification: 'settled',
     contraryReading: null,
-    errorDirection: 'bothDirections',
+    errorDirection: null,
     conventionRationale:
-      'Direction of error: understates current-year ordinary income and overconsumes basis, and the two are equal and opposite over time. On a $10,000 required distribution from an IRA that is 20 percent basis, with a $5,000 QCD, the statute excludes the $5,000 in full and applies the 20 percent to the remaining $5,000, giving $4,000 of income and $1,000 of basis used. The ledger applies the 20 percent to all $10,000, giving $3,000 of income and $2,000 of basis used. Income in the gift year is understated by $1,000 and the extra $1,000 of basis consumed will show up as $1,000 of additional taxable income in a later year. That example is the NON-BINDING case, chosen because it isolates the ordering: the $5,000 gift is smaller than the $8,000 taxable part of the requirement, so the engine ceiling never bites and the whole error is the pro-rata order. The ceiling case is worth writing down beside it because the two compound and the second is easy to miss. On a $1,000,000 IRA carrying $200,000 of nondeductible basis, a 76-year-old with a $42,194.09 required distribution giving $40,000, the statute deems the whole gift pre-tax against an $800,000 aggregate includible amount, so the gift returns no basis and only the $2,194.09 that reaches the household pro-rates: $1,755.27 of income and $438.82 of basis consumed. The engine pro-rates the whole requirement into $8,438.82 of basis and $33,755.27 of taxable dollars, then caps the offset at that $33,755.27 — clamping away the $6,244.73 of gift the statute would still have excluded — and reports $0 of ordinary income for the year while burning $8,438.82 of basis, over nineteen times what the statute spends. Both figures are pinned by the second fixture on this record. The comment at the subtraction site already records that the ledger is planning-grade here. The registered rule irc-408-d-8-D-qcd-taxable-first states the correct treatment and is implemented in the exact-cent path, so the two paths return different numbers for the same household.',
+      'Two engineering conventions survive inside the corrected arm, because this arm’s gift is a household scalar the statute has no way to read. FIRST, ATTRIBUTION. Section 408(d)(8)(D) measures against ONE individual’s plans, and every owner has their own Form 8606 denominator, so the scalar has to be charged to owners before it can be measured. The part routed out of the required distribution is charged in proportion to each owner’s share of the owned-IRA required-distribution total the gift is already capped against; the part taken beyond the requirement is charged exactly, at the account it drains. Nothing in the authority selects a proportion, but every owner carrying an owned-IRA required distribution has reached the applicable age, which is above 70 and a half in every year the parameter pack covers, so no share of the gift can land on an IRA that could not lawfully have funded it under 408(d)(8)(B)(ii). SECOND, THE EXCESS. A gift larger than the owner’s whole aggregate includible amount is not a QCD in the excess, and that excess is an ordinary distribution which stays in the denominator, stays on line 7, and recovers basis. Where the year has both a routed and a beyond-requirement gift, the engine charges the excess against the routed half first. No authority orders them; the ordering is chosen because those dollars are already inside the year’s required-distribution gross and its line-7 gross, so the treatment needs no separate income term and the household’s reported income is identical either way. CORRECTION HISTORY. The figures this record carried while it was approximated were: on a $10,000 required distribution from an IRA that is 20 percent basis with a $5,000 gift, $3,000 of income and $2,000 of basis consumed, against a statutory $4,000 and $1,000 stated at the time; and on a $1,000,000 IRA carrying $200,000 of basis, a 76-year-old with a $42,194.09 requirement giving $40,000, $0 of income and $8,438.82 of basis consumed, against a statutory $1,755.27 and $438.82 stated at the time. THE STATUTORY FIGURES THEMSELVES WERE ALSO WRONG, and were corrected on 2026-08-07 when they were re-derived rather than inherited: both applied the UNREDUCED basis fraction to the residual distribution, which keeps the gift in the pro-rata denominator it has just been held to leave. The Form 8606 line-7 instructions exclude a QCD by name and line 6 is already net of it, so the denominator is the pre-distribution pool less the qualified gift. The corrected statutory answers, which the engine now produces and both fixtures pin, are $3,980.77 of income with $1,019.23 of basis on the first shape (53,000 / 260,000) and $1,736.99 of income with $457.10 of basis on the second (200,000 / 960,000).',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -3413,6 +3413,17 @@ const registry = {
       url: 'https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapD-partI-subpartA-sec408.htm',
       quotedText:
         'A distribution shall be treated as a qualified charitable distribution only to the extent that the distribution would be includible in gross income without regard to subparagraph (A).',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 408(d)(2)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim',
+      quotedText:
+        'For purposes of applying section 72 to any amount described in paragraph (1)- (A) all individual retirement plans shall be treated as 1 contract, (B) all distributions during any taxable year shall be treated as 1 distribution, and (C) the value of the contract, income on the contract, and investment in the contract shall be computed as of the close of the calendar year in which the taxable year begins. For purposes of subparagraph (C), the value of the contract shall be increased by the amount of any distributions during the calendar year.',
+    }, {
+      kind: 'formInstruction',
+      citation: 'Instructions for Form 8606 (2025), Line 7',
+      url: 'https://www.irs.gov/pub/irs-pdf/i8606.pdf',
+      quotedText: 'Don’t include any of the following on line 7 ... Qualified charitable distributions (QCDs).',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -8100,6 +8111,39 @@ const registry = {
     implementedBy: [
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  'irc-408-d-2-C-projection-pro-rata-measurement-instant': {
+    title: 'The instant the Form 8606 pro-rata denominator is measured',
+    statement:
+      'Section 408(d)(2)(C) fixes the section 72 contract value at the CLOSE of the calendar year and then adds the year’s distributions back to it, which is what Form 8606 line 6 asks for — the December 31 value of the traditional IRAs, after a full year of investment return on whatever the account retained. The annual ledger measures the denominator at a different instant: the aggregated balance immediately after contributions and immediately BEFORE the year’s first distribution. Those two instants agree on the dollars that were distributed, because the ledger credits growth after distributions, and they DISAGREE by exactly the growth earned on the balance that stayed in the account. The pre-distribution measure is therefore year-end-BEFORE-growth plus distributions, not line 6 plus distributions. The engine denominator is invariant to the return assumption; the statutory one is not.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'bothDirections',
+    conventionRationale:
+      'Direction of error: the sign is the sign of the year’s return on the retained balance. In a gain year the statutory denominator is larger, the basis fraction smaller, and the engine returns MORE basis than the form does — understating that year’s income and spending basis that later years then do not have. In a loss year the denominator shrinks below the engine’s, the fraction rises, and the engine returns LESS basis, overstating income. Neither is a timing wash within the year and the two do not cancel across a lifetime unless returns do. Magnitude: the departure is (line 7 + line 8) × growth-on-the-retained-balance ÷ denominator, so it is negligible on a household whose only IRA activity is a required distribution and material on a conversion year, where line 8 can be many times line 7. Pinned by a fixture that holds the return assumption as the only moving part: a 76-year-old with a $1,000,000 IRA carrying $200,000 of basis, a $42,194.09 required distribution, a $40,000 qualified charitable distribution and a $100,000 Roth conversion reports ordinary income of $80,903.66 at a 0 percent return, at a 5 percent return, and at a negative 5 percent return alike. At 5 percent the form computes line 6 as $900,696.20, line 9 as $1,002,890.30, a basis fraction of 0.1994236, and ordinary income of $81,814.18 — $910.52 more than the ledger reports. Not corrected here: the fix is a second measurement of the aggregated balance after the year’s growth is credited, which moves tax figures for every basis-holding household whether or not it gives to charity, and it is tracked as its own slice. This record exists because irc-408-d-8-D-projection-qcd-after-pro-rata now cites 408(d)(2) INCLUDING the close-of-year sentence as authority for a denominator that is measured at a different instant, and an authority quoted for a measure the engine does not take must be registered rather than left implied.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 408(d)(2)(C)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim',
+      quotedText:
+        'the value of the contract, income on the contract, and investment in the contract shall be computed as of the close of the calendar year in which the taxable year begins. For purposes of subparagraph (C), the value of the contract shall be increased by the amount of any distributions during the calendar year.',
+    }, {
+      kind: 'formInstruction',
+      citation: 'Instructions for Form 8606 (2025), Line 6',
+      url: 'https://www.irs.gov/pub/irs-pdf/i8606.pdf',
+      quotedText:
+        'Enter the total value of all your traditional IRAs as of December 31, 2025, plus any outstanding rollovers.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-07',
+    implementedBy: [
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/strategies/iraBasis.ts',
     ],
   },
 } as const satisfies Record<string, TaxRuleRecord>

@@ -10,9 +10,18 @@
  *
  * Planning-grade simplifications (documented in domain rules §15):
  * - The nontaxable fraction uses basis ÷ (aggregate balance measured just
- *   before the year's distributions), which equals the 8606 method (year-end
- *   balance + distributions) when growth is credited after distributions —
- *   exactly the ledger's year ordering.
+ *   before the year's distributions). THAT IS NOT THE FORM 8606 DENOMINATOR,
+ *   and an earlier version of this note claimed it was. Because the ledger
+ *   credits growth after distributions, the pre-distribution balance equals
+ *   year-end-BEFORE-growth plus the year's distributions — where line 9 is
+ *   line 6 plus distributions, and line 6 is the December 31 value AFTER a
+ *   year of return on whatever the account retained. §408(d)(2)(C) fixes the
+ *   §72 contract value at the close of the calendar year for exactly that
+ *   reason. The two measures agree only in a flat year; they differ by the
+ *   growth on the retained balance, so this denominator is invariant to the
+ *   return assumption and the statute's is not. Registered as
+ *   `irc-408-d-2-C-projection-pro-rata-measurement-instant`, with a produced
+ *   fixture pinning the invariance.
  * - Employer plans are excluded from the aggregation (only IRAs aggregate),
  *   and inherited IRAs are excluded (a beneficiary files a separate 8606).
  * - Basis is entered in dollars and never indexed (basis is historical cost).
