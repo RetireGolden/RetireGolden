@@ -8153,6 +8153,241 @@ const registry = {
       'packages/engine/src/strategies/iraBasis.ts',
     ],
   },
+
+  'irc-408-d-1-ira-annuity-premium-is-not-a-distribution': {
+    title: 'Buying an annuity contract with IRA dollars is not a distribution',
+    statement:
+      'Section 408(d)(1) reaches only an amount "paid or distributed out of an individual retirement plan". Directing the trustee of a traditional IRA to spend the account on an annuity contract pays nothing out to the owner: the contract is either an individual retirement annuity described in section 408(b), which section 7701(a)(37)(B) makes an individual retirement plan in its own right, or an annuity contract held as an asset of the section 408(a) trust, which never leaves the account at all. The IRS names both structures and taxes neither at purchase. There is no Form 8606 line 7 entry, no section 72 pro-rata recovery, and no basis attaches to the contract as a separate investment; tax arrives when payments begin. The engine agrees, and its accepted-input model cannot express the contrary reading at all: a purchase drawing on a traditional account must be declared "qualified", and a "nonQualified" purchase — the distribution-and-purchase shape, where the owner takes a taxable distribution and buys a commercial annuity with the proceeds — is refused by plan validation unless it is funded from cash, taxable, or equity-compensation savings, which are dollars section 408 never governed.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'WHY THE TWO STRUCTURES DO NOT HAVE TO BE DISTINGUISHED, which is the question the Plan schema raises by carrying neither. A Plan annuity purchase records a premium, a funding account, a tax qualification and a QLAC flag; it does not record who issues the contract, and it therefore cannot say whether the result is a section 408(b) individual retirement annuity or an annuity contract sitting inside a section 408(a) trust. That silence is harmless here because the two roads arrive at the same place. On the first, the contract is itself an individual retirement plan and the movement into it is a trustee-to-trustee transfer, which Treas. Reg. 1.408-8(d)(4) states is not a distribution and which the Form 1099-R instructions direct the issuer not to report. On the second, nothing moved between plans at all — the trust exchanged cash for a contract, the way it would exchange cash for a bond. Section 408(a)(3) forbids the trust to invest in life insurance contracts and says nothing against an annuity contract, and the Form 1099-R instructions name the shape explicitly when they extend the Roth-conversion valuation rule to "a traditional IRA holds an annuity contract as an account asset". So the schema is not missing a fact the answer turns on. IT WOULD MATTER FOR A DIFFERENT QUESTION, and this is worth recording because the temptation to derive it here is real. Section 408(b)(2)(B) caps the annual premium of an individual retirement annuity at the section 219(b)(1)(A) dollar amount, and unlike section 408(a)(1) — which carves rollover contributions out of the parallel cap on an account — subsection (b) states no such exception in its text. A large single premium therefore sits uneasily with the first structure and not at all with the second. That asymmetry is not resolved here, because nothing this engine computes turns on it: the character of the purchase, the aggregation of the contract, and the taxation of the payments are the same either way. It is registered so that a later reader who needs the distinction knows it was seen and set aside rather than missed.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 408(d)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim',
+      quotedText:
+        'Except as otherwise provided in this subsection, any amount paid or distributed out of an individual retirement plan shall be included in gross income by the payee or distributee, as the case may be, in the manner provided under section 72.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 408(b)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim',
+      quotedText:
+        'For purposes of this section, the term "individual retirement annuity" means an annuity contract, or an endowment contract (as determined under regulations prescribed by the Secretary), issued by an insurance company which meets the following requirements:',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 7701(a)(37)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section7701&num=0&edition=prelim',
+      quotedText:
+        'The term "individual retirement plan" means- (A) an individual retirement account described in section 408(a), and (B) an individual retirement annuity described in section 408(b).',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.408-8(d)(4)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.408-8',
+      quotedText:
+        'In the case of a trustee-to-trustee transfer from one IRA to another IRA that is not a distribution and rollover, the transfer is not treated as a distribution by the transferor IRA for purposes of section 401(a)(9). Accordingly, the minimum distribution requirement with respect to the transferor IRA must still be satisfied.',
+    }, {
+      kind: 'irsPublication',
+      citation: 'IRS Publication 590-B, Distribution of an annuity contract from your IRA account',
+      url: 'https://www.irs.gov/pub/irs-pdf/p590b.pdf',
+      quotedText:
+        'You can tell the trustee or custodian of your traditional IRA account to use the amount in the account to buy an annuity contract for you. You aren\'t taxed when you receive the annuity contract (unless the annuity contract is being converted to an annuity held by a Roth IRA). You are taxed when you start receiving payments under that annuity contract.',
+    }, {
+      kind: 'formInstruction',
+      citation: 'Instructions for Forms 1099-R and 5498 (2026), Transfers; Roth IRA conversions',
+      url: 'https://www.irs.gov/pub/irs-pdf/i1099r.pdf',
+      quotedText:
+        'Generally, do not report a transfer between trustees or issuers that involves no payment or distribution of funds to the participant, including a trustee-to-trustee transfer from one IRA to another IRA ... When an individual retirement annuity described in section 408(b) is converted to a Roth IRA, the amount that is treated as distributed is the FMV of the annuity contract on the date the annuity contract is converted. This rule also applies when a traditional IRA holds an annuity contract as an account asset and the traditional IRA is converted to a Roth IRA.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-07',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+  },
+
+  'irc-408-d-2-A-annuity-contract-outside-the-form-8606-aggregate': {
+    title: 'The annuity contract leaves the Form 8606 aggregate the moment it is bought',
+    statement:
+      'Section 408(d)(2)(A) treats all individual retirement plans as one contract for section 72, and an individual retirement annuity described in section 408(b) is an individual retirement plan under section 7701(a)(37)(B). An annuity contract held as an asset of a section 408(a) account is inside the same aggregate by an even shorter route: it never left the account, and Form 8606 line 6 asks for the total VALUE of the traditional IRAs, which the Form 5498 instructions require the custodian to report at fair market value even for assets with no readily determinable one. Either way the contract belongs in the line 6 denominator for the purchase year and every year after it. THE ENGINE DROPS IT. A Plan annuity account carries no balance field at all, is excluded from the projection balance ledger by construction, and fails isAggregatedIra on its first conjunct, so the premium leaves the owned-IRA pool at the purchase pass and is never credited back anywhere. The denominator is understated by the contract value from that year forward, the basis fraction is correspondingly too large, and every later distribution from the residual IRA recovers more basis than the form allows.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'understatesTax',
+    conventionRationale:
+      'WHAT THE PROBE SHOWS, and why the shape was chosen to make the compelled reading arithmetic rather than argument. Take a 76-year-old with a 1,000,000 dollar traditional IRA carrying 200,000 of nondeductible basis, a 42,194.09 required distribution, a 100,000 dollar Roth conversion, and a 0 percent return assumption. Run that household twice, once as it stands and once with a 200,000 dollar qualified annuity premium paid out of the same IRA in the same year. Under the compelled reading the two households report the SAME ordinary income, to the cent, because the premium moves value from one line-6 asset to another and line 9 is 1,000,000 either way: 142,194.09 of lines 7 and 8 at a basis fraction of 0.2 is 113,755.27. The engine reports 113,755.27 for the household without the premium and 106,645.57 for the household with it — 7,109.70 less, in one year, for a transaction that changed nothing the statute measures. THE ZERO PERCENT RETURN IS DELIBERATE and does the work of isolating this record from irc-408-d-2-C-projection-pro-rata-measurement-instant, which owns a different defect on an overlapping shape. At a 0 percent return the close-of-year measure and the before-the-first-distribution measure agree, so the measurement instant contributes nothing to the gap above and the whole 7,109.70 is the missing contract. It is also what makes the contract\'s December 31 value exactly the premium: a single premium paid in the year, no growth, and no payments yet, so the accepted figure needs no actuarial valuation and no convention. DIRECTION. Understates tax, and it does so in the purchase year and in every later year the residual IRA still carries basis, because a denominator missing a positive term can only raise the fraction. The overstating half of the same mistake lives on the payments and is registered separately at irc-408-d-2-B-annuity-payment-outside-the-annual-basis-fraction; they are two records rather than one bothDirections record because they have different authorities, different fixtures, and will be fixed at different times, and a single record would have let either half be closed while the entry still read as if both were open. MAGNITUDE is the year\'s lines 7 and 8 multiplied by the difference between the two fractions, so it grows with the premium as a share of the pool and vanishes when the household has no basis. WHY IT IS NOT FIXED HERE. It cannot be, without a contract value the model does not carry: an annuity account has a start age, a monthly amount and a COLA, and nothing that answers what the contract is worth on December 31. Supplying one is a modelling decision with its own authority question — the fair market value of an annuitized contract is an actuarial quantity, and the Form 1099-R instructions for 2026 stop requiring even the issuer to report the year-end value of an annuitized commercial contract — so it belongs to the slice that adds the field, not to the slice that found the gap. What this record does is make the gap loud: the fixture pins 106,645.57, and the day a contract value enters the denominator the pin fails and names this entry.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 408(d)(2)(A), (B)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim',
+      quotedText:
+        'For purposes of applying section 72 to any amount described in paragraph (1)- (A) all individual retirement plans shall be treated as 1 contract, (B) all distributions during any taxable year shall be treated as 1 distribution,',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 7701(a)(37)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section7701&num=0&edition=prelim',
+      quotedText:
+        'The term "individual retirement plan" means- (A) an individual retirement account described in section 408(a), and (B) an individual retirement annuity described in section 408(b).',
+    }, {
+      kind: 'formInstruction',
+      citation: 'Instructions for Form 8606 (2025), IRAs Generally; Line 6',
+      url: 'https://www.irs.gov/pub/irs-pdf/i8606.pdf',
+      quotedText:
+        'An IRA is an individual retirement account or an individual retirement annuity. ... Enter the total value of all your traditional IRAs as of December 31, 2025, plus any outstanding rollovers.',
+    }, {
+      kind: 'formInstruction',
+      citation: 'Instructions for Forms 1099-R and 5498 (2026), Form 5498 Box 5',
+      url: 'https://www.irs.gov/pub/irs-pdf/i1099r.pdf',
+      quotedText:
+        'Enter the FMV of the account on December 31, 2026. ... Trustees and custodians are responsible for ensuring that all IRA assets (including those not traded on established markets or not having a readily determinable market value) are valued annually at their FMV.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-07',
+    implementedBy: [
+      'packages/engine/src/strategies/accountEligibility.ts',
+      'packages/engine/src/actions/ownedNonRothIraWithdrawalCharacter.ts',
+      'packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts',
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/strategies/iraBasis.ts',
+    ],
+  },
+
+  'irc-408-d-2-B-annuity-payment-outside-the-annual-basis-fraction': {
+    title: 'An IRA annuity payment takes no share of the year’s basis',
+    statement:
+      'Section 408(d)(2)(B) treats all distributions during a taxable year as one distribution, so a payment under an annuity contract bought with IRA dollars is not a separate transaction with its own character: it joins the year’s other IRA distributions and takes the same fraction of basis. Publication 590-B says so directly — the payments are fully taxable only if the traditional IRAs hold nothing but deductible contributions, and where they hold both, the payments are taxed under the same fully-or-partly-taxable rules the pro-rata computation implements. The engine treats a qualified annuity payment as ordinary income in full, unconditionally, and applies the year’s basis fraction only to the distributions that came out of an account it still recognises as an IRA. In a year with basis remaining, the same aggregate is therefore taxed at two different fractions at once.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'overstatesTax',
+    conventionRationale:
+      'THE FIXTURE HOLDS THE DENOMINATOR FIXED, on purpose, and that is the only reason its accepted figure is computable. Whether the contract belongs in line 6 is the question irc-408-d-2-A-annuity-contract-outside-the-form-8606-aggregate owns; letting it move here would make this fixture a second measurement of that defect rather than a measurement of this one, and the two would then rise and fall together in a way that told a reader nothing about either. So both readings below are priced over the ENGINE’S own pool and the engine’s own fraction, and they disagree about one thing: whether the annuity payment is inside the single distribution section 408(d)(2)(B) describes. An 80-year-old with a 1,000,000 dollar IRA carrying 200,000 of basis pays a 200,000 dollar qualified premium in 2026 and receives 12,000 from the contract in the same year, at a 0 percent return. The engine prices the 49,504.95 required distribution at its own fraction — 0.75 taxable on a 800,000 dollar pool — for 37,128.71, and then adds the whole 12,000, reporting 49,128.71. One fraction applied to both distributions gives 46,128.71. The gap is exactly 3,000, which is the basis share the payment was refused. DIRECTION. Overstates tax, and it is the mirror of the understatement the companion record carries: the basis the payments are denied is the same basis the shrunken denominator hands to the residual IRA too fast. Over a long enough horizon on a household that empties its IRA the two are close to a wash, but they are not a wash in any single year, and they do not cancel at all for a household whose contract outlives the account that funded it — there the basis stranded in the contract is never recovered against anything, because the engine has no mechanism that could recover it. THE TRUE STATUTORY FIGURE IS LARGER THAN 3,000 and is deliberately not claimed. Pricing the payment at the correct fraction needs the correct denominator, which needs a December 31 contract value the model does not carry; what is claimed here is the part that can be proved without one, which is that the payment must share whatever fraction the year produces and takes none of it. WHAT WOULD CLOSE IT is a single change with a wide blast radius: routing an IRA-funded annuity payment through the owned-non-Roth-IRA withdrawal character path instead of the fully-ordinary branch. That is a behaviour change and belongs to its own slice; this record exists so the branch cannot be quietly kept.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 408(d)(2)(A), (B)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim',
+      quotedText:
+        'For purposes of applying section 72 to any amount described in paragraph (1)- (A) all individual retirement plans shall be treated as 1 contract, (B) all distributions during any taxable year shall be treated as 1 distribution,',
+    }, {
+      kind: 'irsPublication',
+      citation: 'IRS Publication 590-B, Distribution of an annuity contract from your IRA account, Tax treatment',
+      url: 'https://www.irs.gov/pub/irs-pdf/p590b.pdf',
+      quotedText:
+        'If any of your traditional IRAs include both deductible and nondeductible contributions, the annuity payments are taxed as explained earlier under Distributions Fully or Partly Taxable.',
+    }, {
+      kind: 'irsPublication',
+      citation: 'IRS Publication 590-B, Distribution of an annuity contract from your IRA account',
+      url: 'https://www.irs.gov/pub/irs-pdf/p590b.pdf',
+      quotedText:
+        'You are taxed when you start receiving payments under that annuity contract.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-07',
+    implementedBy: [
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/actions/ownedNonRothIraWithdrawalCharacter.ts',
+    ],
+  },
+
+  'treas-reg-1-401-a-9-6-a-3-i-annuity-payments-commence-by-the-required-beginning-date': {
+    title: 'Only a QLAC may sit outside the RMD account balance while its payments are deferred',
+    statement:
+      'Treas. Reg. 1.401(a)(9)-5(a)(5)(iii) lets a portion of an account buy an annuity contract while the rest stays behind, and then requires only the REMAINING account balance to be distributed under the account rules — but the permission is conditional on the contract itself satisfying 1.401(a)(9)-6, whose paragraph (a)(3)(i) requires annuity payments to commence on or before the required beginning date. A contract that defers past that date has one exemption available to it and only one: paragraph (q)(1)(iii) excuses a QLAC from (a)(3), and 1.401(a)(9)-5(b)(4) is the matching rule that keeps a QLAC’s value out of the account balance. A non-QLAC contract with a deferred start has neither. The engine gives it both. Because an annuity account holds no balance, the premium simply leaves the traditional balance at purchase and never returns to any RMD base, so a deferred non-QLAC contract receives exactly the treatment the regulation reserves for a QLAC, and the required distribution is computed on a base that is short by the whole premium.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'understatesTax',
+    conventionRationale:
+      'PINNED FIGURES. A 76-year-old with a 1,000,000 dollar traditional IRA and a 0 percent return pays a 200,000 dollar qualified premium in 2026 for a contract whose payments start at age 85, which is nine years past the required beginning date and is not declared a QLAC. The 2026 requirement is unaffected either way, because it rests on the prior December 31 balance. The 2027 requirement is where the treatments part: the accepted reading leaves the contract in the base, so the base is the same 957,805.91 the identical household without the contract carries and the requirement is 41,825.59; the engine computes 33,091.96 on a base of 757,805.91. The shortfall is 8,733.62 in the second year alone and recurs, compounding, for the rest of the horizon. THE SAME HOUSEHOLD WITH qlac: true PRODUCES THE IDENTICAL 33,091.96, which is the sharpest statement of the defect available: the engine has exactly one mechanism, the dollars leaving the balance, and it cannot tell a QLAC from a non-QLAC because it never had a second one. That coincidence is what treas-reg-1-401-a-9-5-b-4-qlac-excluded-from-the-rmd-account-balance records from the other side, where the same mechanism reaches the right answer. DIRECTION. Understates tax: a smaller base is a smaller required distribution, less ordinary income in the year, and a larger balance compounding into later years, where the same understatement repeats. It is not a timing wash in the ordinary case, because the dollars deferred out of the required distribution are the dollars a projection then converts, gives, or leaves in the estate on different terms. WHAT THE ACCEPTED READING ASSUMES, stated so it can be argued with. A contract failing 1.401(a)(9)-6(a)(3) is a qualification failure rather than a valuation rule, and the regulation does not spell out an arithmetic remedy; the reading taken here is that a bifurcation the regulation does not permit does not happen, so the value stays where it was. The alternative — that the value leaves the base anyway and the failure is a separate problem for the custodian — would make 1.401(a)(9)-5(b)(4) and 1.401(a)(9)-6(q)(1)(iii) do no work at all, since every deferred contract would already enjoy what the QLAC rules were written to grant. That is why this is classified approximated rather than unsettled: the competing reading is not a live one, it is a reading that erases its own authority. WHAT IT WOULD TAKE TO FIX. Either a contract value the RMD base can re-include when the contract is not a QLAC and its payments start after the required beginning date, or a plan-validation refusal of that combination. The second is much cheaper and loses only a shape the regulation does not permit anyway; neither is done here.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.401(a)(9)-6(a)(3)(i)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-6',
+      quotedText:
+        'Annuity payments must commence on or before the employee\'s required beginning date (within the meaning of § 1.401(a)(9)-2(b)).',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.401(a)(9)-5(a)(5)(iii)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-5',
+      quotedText:
+        'A portion of an employee\'s account balance under a defined contribution plan is permitted to be used to purchase an annuity contract while another portion remains in the account, provided that the requirements of paragraphs (a)(5)(i) and (ii) of this section are satisfied (other than the requirement that the contract be purchased with the employee\'s entire individual account). In that case, in order to satisfy section 401(a)(9) for calendar years after the calendar year of purchase, the remaining account balance under the plan must be distributed in accordance with this section.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.401(a)(9)-6(q)(1)(iii)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-6',
+      quotedText:
+        'The contract provides that, after distributions under the contract commence, those distributions must satisfy the requirements of this section (other than the requirement in paragraph (a)(3) of this section that annuity payments commence on or before the required beginning date);',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.408-8(a)(1)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.408-8',
+      quotedText:
+        'An IRA is subject to the required minimum distribution requirements of section 401(a)(9). In order to satisfy section 401(a)(9), the rules of §§ 1.401(a)(9)-1 through 1.401(a)(9)-9 must be applied, except as otherwise provided in this section.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-07',
+    implementedBy: [
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/rmd/rmd.ts',
+      'packages/engine/src/model/plan.ts',
+    ],
+  },
+
+  'treas-reg-1-401-a-9-5-b-4-qlac-excluded-from-the-rmd-account-balance': {
+    title: 'A QLAC’s value is excluded from the required-distribution account balance',
+    statement:
+      'The account balance used to compute a required minimum distribution does not include the value of a qualifying longevity annuity contract held under the plan, and Treas. Reg. 1.408-8(h)(1) carries that rule to an IRA. It is what lets a QLAC defer payments to as late as the month after the owner’s eighty-fifth birthday without the deferred value driving a required distribution in the meantime. The engine reaches the same base by a different route — the premium leaves the traditional balance at purchase and the contract holds no balance of its own — and the two agree exactly, because both leave the base equal to the assets that stayed behind.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'THE MECHANISM IS NOT THE RULE, and the record says so because the coincidence is load-bearing in one direction and misleading in the other. The regulation excludes the VALUE OF THE CONTRACT from a balance that still notionally contains it; the engine never puts it there, having no contract value at all. On a QLAC the two agree for every year and every return assumption, since the base is the remaining account either way, so nothing here is approximated. On a contract that is NOT a QLAC the same single mechanism produces an exclusion the regulation does not allow, and that is registered separately at treas-reg-1-401-a-9-6-a-3-i-annuity-payments-commence-by-the-required-beginning-date. The two records pin the same pair of figures with the accepted and produced labels exchanged, which is deliberate: the day the engine learns to tell the contracts apart, one fixture flips and the other must not. THE AGGREGATION ELECTION IS A SEPARATE RULE and is not what this record covers. Treas. Reg. 1.408-8(e)(1)(ii) and 1.401(a)(9)-5(a)(5)(iv) let an owner ELECT to put the contract’s value back into the base and reduce the requirement by the annuity payments; Publication 590-B walks the same election through an example. It is an election, so declining it is the default and the engine’s silence is a permitted position rather than an omission — but it is a position, and a Plan has no field with which to take the other one. The QLAC premium cap is a third rule again, registered at treas-reg-1-401-a-9-6-q-2-qlac-premium-dollar-limit; this record says nothing about how large the premium may be, only about where its value sits once paid.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.401(a)(9)-5(b)(4)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-5',
+      quotedText:
+        'The account balance does not include the value of any qualifying longevity annuity contract (QLAC), defined in § 1.401(a)(9)-6(q), that is held under the plan.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.408-8(h)(1)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.408-8',
+      quotedText:
+        'The special rule in § 1.401(a)(9)-5(b)(4) for a QLAC, defined in § 1.401(a)(9)-6(q), applies to an IRA, subject to the modifications set forth in this paragraph (h).',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.401(a)(9)-6(q)(1)(ii)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-6',
+      quotedText:
+        'The contract provides that distributions under the contract must commence not later than a specified annuity starting date that is no later than the first day of the month next following the 85th anniversary of the employee\'s birth;',
+    }, {
+      kind: 'irsPublication',
+      citation: 'IRS Publication 590-B, annuity contract purchased with a portion of the account balance',
+      url: 'https://www.irs.gov/pub/irs-pdf/p590b.pdf',
+      quotedText:
+        'you may elect to satisfy the RMD requirement for the year by combining the value of the annuity contract with the remaining account balance and reducing the RMD by the amount of the annuity payments.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-07',
+    implementedBy: [
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/rmd/rmd.ts',
+    ],
+  },
 } as const satisfies Record<string, TaxRuleRecord>
 
 export const TAX_RULE_REGISTRY = Object.freeze(registry)
