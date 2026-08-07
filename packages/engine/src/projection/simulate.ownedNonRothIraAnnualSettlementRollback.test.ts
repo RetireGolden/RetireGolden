@@ -361,6 +361,41 @@ describe('simulator owned-IRA settlement rollback integration', () => {
       Object.hasOwn(year, 'ownedNonRothIraAnnualReplay'))).toBe(true)
   })
 
+  it.each([
+    'qcdReconciliationInvalid',
+    'balanceChainInvalid',
+    'basisReplayInvalid',
+    'carryforwardYearUnsupported',
+  ] as const)('keeps %s permanent for the owner it names', (kind) => {
+    // The counterpart to the year-scoped cases above, and the reason the
+    // allow-list is three names rather than "anything the replay raised".
+    // `qcdReconciliationInvalid` is the charitable arm's exact-cent invariant --
+    // the overlay and the replay disagreeing about a figure -- and it sits
+    // beside the arithmetic failures rather than beside `qcdStageRequired`.
+    controller.reason = 'contiguousReplayBlocked'
+    controller.issue = {
+      kind,
+      detail: `synthetic owner-named ${kind}`,
+      taxYear: TAX_YEAR,
+      ownerPersonId: 'p1',
+    }
+    controller.rollbackYears = [TAX_YEAR]
+    const plan = twoOwnerPlan(`settlement-rollback-permanent-${kind}`)
+
+    simulatePlan(validatePlan(plan), {
+      startYear: TAX_YEAR,
+      horizonEndYear: TAX_YEAR + 2,
+      taxCalculator: createFlatTaxCalculator(0),
+    })
+
+    // p1 is disqualified for good: TAX_YEAR + 1 commits a carryforward for them
+    // that TAX_YEAR + 2 must not be seeded from.
+    expect(settledYears()).toEqual([TAX_YEAR, TAX_YEAR + 1, TAX_YEAR + 2])
+    const p1Carryforward = committedCarryforwardDollars(TAX_YEAR + 1, 'p1')
+    expect(p1Carryforward).toBeGreaterThan(0)
+    expect(seededBasisDollars(TAX_YEAR + 2, 'p1')).not.toBe(p1Carryforward)
+  })
+
   it('stays household-wide when the named owner is not a basis owner', () => {
     // An issue that names someone the projection holds no basis pool for is
     // not evidence about a real owner, so it must not narrow the disposition.

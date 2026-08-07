@@ -27,6 +27,24 @@ export type OwnedNonRothIraRuntimeSourceSeriesIssueKind =
   | 'balanceChainInvalid'
   | 'postGrowthPoolInvalid'
   | 'qcdStageRequired'
+  /**
+   * The charitable arm's exact-cent invariants, held apart from
+   * `qcdStageRequired` on purpose.
+   *
+   * `qcdStageRequired` says the year's gift is in a shape the replay cannot
+   * attribute -- a stage has not run, or an attribution names nothing this
+   * replay carries. This kind says something narrower and much worse: the
+   * overlay and the replay both exist, both are well formed, and they DISAGREE
+   * about a figure. A partition that does not sum to its overlay, a remainder
+   * outside its own gross, a carve the owner's own required distributions
+   * cannot absorb -- none of those is a capability gap the engine has yet to
+   * close. Each is the ledger and the replay contradicting each other, which is
+   * exactly the evidence a permanent disqualification exists for.
+   *
+   * Splitting them is what keeps the settlement's year-scoped allow-list
+   * honest: `qcdStageRequired` belongs in it and these do not.
+   */
+  | 'qcdReconciliationInvalid'
   | 'annuityStageRequired'
   | 'exactActionStageRequired'
   | 'aggregateRothCreditInvalid'
@@ -1526,6 +1544,24 @@ function validateUnchecked(
     }
 
     const normalizedApplications: NormalizedOwnedNonRothIraApplication[] = []
+    /**
+     * An annuity pool exit seen in the chain, refused after the chain finishes
+     * rather than where it is found.
+     *
+     * The refusal itself is unconditional -- a premium that left the captured
+     * pool always refuses the year -- but WHEN it is raised decides which issue
+     * kind the settlement's disqualification sees, and the annuity application
+     * always sorts first (its `annuityPurchaseFunding` phase has rank 0), so
+     * refusing in place masked every integrity failure later in the same year's
+     * chain. Deferring costs nothing and is safe because this application's own
+     * arithmetic has already been checked and its running balance already
+     * committed by the time it is recorded: the only thing skipped is the push
+     * to `normalizedApplications`, which cannot carry an `annuityFundingTransfer`
+     * anyway. A corrupt chain in an annuity year now reports the corruption.
+     */
+    let deferredAnnuityPoolExit:
+      Readonly<Omit<OwnedNonRothIraRuntimeSourceSeriesIssue, 'kind' | 'detail'>>
+      | null = null
     const appliedKeys = new Set<string>()
     let priorPhase = -1
     let priorPhaseAccountOrder = -1
@@ -1603,7 +1639,9 @@ function validateUnchecked(
         // IRA-funded qualified premium, and what §408(b) aggregation does with
         // the contract the dollars land in. `context` carries the owner, so the
         // refusal disqualifies this owner's year rather than the household's.
-        fail('annuityStageRequired', 'Annuity funding leaves the captured owned-IRA pool and requires a broader transfer stage', context)
+        // Recorded rather than raised here -- see `deferredAnnuityPoolExit`.
+        deferredAnnuityPoolExit ??= context
+        continue
       }
       normalizedApplications.push({
         producerOccurrenceKey: occurrence.producerOccurrenceKey,
@@ -1651,6 +1689,12 @@ function validateUnchecked(
           },
         )
       }
+    }
+    // The chain is whole and rejoins the live observation, so nothing about
+    // this year's arithmetic is in question and the one thing left to say
+    // about it is that the replay does not carry where the premium went.
+    if (deferredAnnuityPoolExit !== null) {
+      fail('annuityStageRequired', 'Annuity funding leaves the captured owned-IRA pool and requires a broader transfer stage', deferredAnnuityPoolExit)
     }
 
     // A charitable gift reaches the published annual total by two routes that
@@ -1744,11 +1788,11 @@ function validateUnchecked(
             occurrence.ownerPersonId !== characterization.ownerPersonId ||
             occurrence.grossAmountPlanDollars !== gross ||
             characterizationByKey.has(producerOccurrenceKey)) {
-          fail('qcdStageRequired', 'A moving QCD characterization must bind one distinct legacyQcd occurrence at its exact gross', context)
+          fail('qcdReconciliationInvalid', 'A moving QCD characterization must bind one distinct legacyQcd occurrence at its exact gross', context)
         }
         if (!Number.isFinite(nonQualified) || nonQualified < 0 ||
             Object.is(nonQualified, -0) || nonQualified > gross) {
-          fail('qcdStageRequired', 'A moving QCD characterization must keep its non-qualified remainder inside its own gross', context)
+          fail('qcdReconciliationInvalid', 'A moving QCD characterization must keep its non-qualified remainder inside its own gross', context)
         }
         cents(nonQualified, 'Non-qualified moving QCD remainder', context)
         characterizationByKey.set(producerOccurrenceKey, nonQualified)
@@ -1801,7 +1845,7 @@ function validateUnchecked(
         }
         if (!Number.isFinite(routed) || routed <= 0 || !Number.isFinite(qualified) ||
             qualified < 0 || Object.is(qualified, -0) || qualified > routed) {
-          fail('qcdStageRequired', 'A routed-QCD attribution must carry a positive routed gross and a qualified exclusion inside it', context)
+          fail('qcdReconciliationInvalid', 'A routed-QCD attribution must carry a positive routed gross and a qualified exclusion inside it', context)
         }
         cents(routed, 'Routed QCD attribution gross', context)
         cents(qualified, 'Routed QCD qualified exclusion', context)
@@ -1814,7 +1858,7 @@ function validateUnchecked(
         overlay.grossAmountPlanDollars,
         attributedRouted.length,
       )) {
-        fail('qcdStageRequired', 'Routed-QCD owner attributions must exact-rejoin the nonmoving overlay gross', { taxYear })
+        fail('qcdReconciliationInvalid', 'Routed-QCD owner attributions must exact-rejoin the nonmoving overlay gross', { taxYear })
       }
       // Carved greedily across the owner's required distributions in mutation
       // order, which is the order the annual ledger commits them in. The order
@@ -1855,7 +1899,7 @@ function validateUnchecked(
       // disagreement between the ledger and this replay, not a rounding artefact.
       for (const [ownerPersonId, remainingCarve] of carveByOwner) {
         if (remainingCarve <= MAX_RAW_RECONCILIATION_TOLERANCE_DOLLARS) continue
-        fail('qcdStageRequired', 'A routed-QCD carve must be absorbed by the owner’s own required distributions', {
+        fail('qcdReconciliationInvalid', 'A routed-QCD carve must be absorbed by the owner’s own required distributions', {
           taxYear, ownerPersonId,
         })
       }

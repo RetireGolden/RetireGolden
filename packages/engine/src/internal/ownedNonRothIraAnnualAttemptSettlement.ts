@@ -709,24 +709,54 @@ export function ownedNonRothIraAnnualSettlementRollbackOwner(
  * The three source-series refusals that say "this year contains an event no
  * stage characterizes yet", as opposed to "a basis figure is wrong".
  *
- * Every one of them is raised while the source series is still NORMALIZING the
- * year -- before a single basis figure is computed, and therefore before any
- * claim about an owner's numerator has been made or could have been corrupted.
  * `annuityStageRequired` says a premium left the captured pool for a contract
  * the replay does not carry; `exactActionStageRequired` says an exact action
  * moved (or declared) owned-IRA dollars outside the characterizations the
- * replay knows; `qcdStageRequired` says the year's charitable overlay is not in
- * a shape the replay can attribute. All three are capability gaps in the
- * engine, dated to one tax year's event inventory, and none of them is evidence
- * about any owner's opening basis.
+ * replay knows; `qcdStageRequired` says the year's charitable gift is in a
+ * shape the replay cannot attribute -- a characterization that was never
+ * published, or an attribution naming a pool this replay does not hold. All
+ * three are capability gaps in the engine, dated to one tax year's event
+ * inventory, and none is evidence about any owner's opening basis.
  *
- * Every other rollback reason is. A replay whose arithmetic, balance chain,
- * coverage, identity, or carryforward failed IS evidence that the figure the
- * projection is carrying for that owner cannot be trusted, and a reason raised
- * outside the replay entirely (an assumption cycle, a throw, a binding
- * mismatch) is evidence that the settlement machinery could not be run at all.
- * Those stay permanent, which is why this set is a deliberate allow-list of
- * three names rather than a test on where the issue came from.
+ * `qcdReconciliationInvalid` is deliberately NOT here, and it is the reason
+ * that kind exists. The charitable arm also carries exact-cent invariants -- a
+ * partition that does not sum to its overlay, a remainder outside its own
+ * gross, a carve the owner's own required distributions cannot absorb -- and
+ * those are the ledger and the replay contradicting each other, not a stage the
+ * engine has yet to build. They used to share `qcdStageRequired`'s name and
+ * would have inherited its year-scoped horizon with it.
+ *
+ * Every other rollback reason is evidence about the numerator too. A replay
+ * whose arithmetic, balance chain, coverage, identity, or carryforward failed
+ * IS evidence that the figure the projection is carrying for that owner cannot
+ * be trusted, and a reason raised outside the replay entirely (an assumption
+ * cycle, a throw, a binding mismatch) is evidence that the settlement machinery
+ * could not be run at all. Those stay permanent, which is why this set is a
+ * deliberate allow-list of three names rather than a test on where the issue
+ * came from.
+ *
+ * THE LIMIT, STATED RATHER THAN IMPLIED. The source series reports its FIRST
+ * failure and throws, and this function reads only that one issue's kind. So a
+ * year that contains both a stage gap and a genuine integrity failure is
+ * dispositioned by whichever check runs first, and where a stage check runs
+ * first the permanent failure is masked and the year is scoped to itself.
+ *
+ * That masking is bounded three ways, and the bound is why the ordering was not
+ * simply inverted. First, it is narrow: the annuity pool-exit refusal, the one
+ * stage check that fires on every real annuity year, was moved to run after the
+ * application chain rejoins its live observation, so a corrupt chain in an
+ * annuity year now reports the corruption. What remains masked is the
+ * Plan-purchase pre-check (the declared premium whose occurrence is absent) and
+ * the two coverage helpers, which must precede the chain for their own stated
+ * reasons. Second, the permanent kinds are self-consistency invariants between
+ * the simulator's own journal and its own published year: no valid Plan reaches
+ * one, and every fixture that does reaches it by hand-mutating a projected
+ * year. Masking therefore presupposes a defect that already exists. Third,
+ * inverting the remaining order would be worse, not better -- a declared
+ * premium with no occurrence sourcing it would surface as a generic chain
+ * failure instead of the diagnosis that names it, and under this very function
+ * that phantom would latch PERMANENTLY. Trading an honest year-scoped refusal
+ * for a misleading permanent one is not a fix.
  */
 const YEAR_SCOPED_STAGE_REQUIRED_ISSUE_KINDS: ReadonlySet<string> = new Set([
   'annuityStageRequired',
