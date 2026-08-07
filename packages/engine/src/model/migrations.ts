@@ -9,6 +9,7 @@
  */
 
 import {
+  ANNUITY_MAX_START_AGE,
   CURRENT_PLAN_SCHEMA_VERSION,
   latestNonQlacQualifiedAnnuityStartAge,
   latestQlacAnnuityStartAge,
@@ -565,6 +566,10 @@ export type PlanLoadRepair =
        * second refusal, and the two ceilings do not order the same way for every
        * owner. Computing it costs the migration nothing: the birth month it
        * needs is already in hand for the branch above.
+       *
+       * Capped at `ANNUITY_MAX_START_AGE`, unlike `latestPermittedStartAge`:
+       * this one is the basis of a suggestion, so it must name a start age the
+       * plan can actually store, not merely one the regulation would allow.
        */
       latestPermittedStartAgeIfToggled: number
     }
@@ -575,7 +580,13 @@ export type PlanLoadRepair =
       accountName: string
       startAge: number
       latestPermittedStartAge: number
-      /** What dropping the QLAC election would have allowed — the required-beginning-date ceiling. */
+      /**
+       * What dropping the QLAC election would have allowed — the
+       * required-beginning-date ceiling, capped at `ANNUITY_MAX_START_AGE`.
+       * That ceiling climbs with the purchase year, so a late annuitizer's runs
+       * past what the plan can store and an uncapped report would have the
+       * notice offering a purchase `parsePlan` refuses.
+       */
       latestPermittedStartAgeIfToggled: number
     }
 
@@ -865,6 +876,32 @@ function normalizeCurrentPlan(raw: Record<string, unknown>): NormalizedPlan {
       if (birth !== null && typeof startAge === 'number' && typeof purchaseYear === 'number') {
         const qlacCeiling = latestQlacAnnuityStartAge(birth.month)
         const nonQlacCeiling = latestNonQlacQualifiedAnnuityStartAge(birth.year, purchaseYear)
+        // THE TRIGGER IS THE REGULATORY CEILING AND IS DELIBERATELY NOT CAPPED
+        // at `ANNUITY_MAX_START_AGE`, even though the reported counterpart below
+        // is. The two numbers answer different questions and capping them alike
+        // would be a bug rather than a tidy-up.
+        //
+        // This repair exists for one reason: the stored shape has no legal
+        // expression, so the premium was leaving the required-distribution base
+        // on an exclusion the regulation withholds. A start age of 96 against a
+        // regulatory ceiling of 98 is not that shape — it is a lawful contract
+        // that this program merely declines to project, which is a range limit
+        // and not a tax fault. Capping the trigger would fire the stand-down on
+        // it, destroying a purchase the household made for a reason that has
+        // nothing to do with section 401(a)(9).
+        //
+        // And it would not even buy the parse. The stand-down keeps `startAge`
+        // on purpose — it is the fact the household has to change, so erasing it
+        // would hide what the notice is telling them — so a document at 96 still
+        // fails `annuitySchema`'s own maximum afterwards. Verified rather than
+        // assumed: firing the repair on such a document leaves
+        // `migratePlanToCurrent` returning the same "Too big" refusal it returns
+        // without it, only now with the purchase gone. Refusing the document
+        // whole, with the schema saying exactly which field is out of range, is
+        // the honest outcome; silently gutting it and refusing anyway is not.
+        // A repair that clamped `startAge` into range instead would pay a
+        // monthly amount quoted for a later start across years nobody bought,
+        // which is the richer direction this seam is barred from taking.
         const latestPermittedStartAge = isQlac ? qlacCeiling : nonQlacCeiling
         if (startAge > latestPermittedStartAge) {
           changed = true
@@ -879,7 +916,19 @@ function normalizeCurrentPlan(raw: Record<string, unknown>): NormalizedPlan {
             // shape, and the two do not order the same way for every owner: the
             // required-beginning-date ceiling climbs with the purchase year, so
             // for a late annuitizer it sits ABOVE the QLAC's fixed 85 or 86.
-            latestPermittedStartAgeIfToggled: isQlac ? nonQlacCeiling : qlacCeiling,
+            //
+            // CAPPED, unlike the trigger, because this number answers "could you
+            // re-author the contract the other way and keep this start age?" —
+            // and a start age the plan cannot store is not kept by any shape.
+            // The required-beginning-date ceiling is the later of the applicable
+            // RMD age plus one and the owner's age in the purchase year, so a
+            // late annuitizer's runs past 95 and an uncapped report would have
+            // the notice offering a purchase that `parsePlan` then refuses. Same
+            // cap, same constant, same reasoning as the accounts editor's.
+            latestPermittedStartAgeIfToggled: Math.min(
+              isQlac ? nonQlacCeiling : qlacCeiling,
+              ANNUITY_MAX_START_AGE,
+            ),
           })
           const stoodDown = { ...accountRecord, monthlyAmount: 0 }
           Reflect.deleteProperty(stoodDown, 'purchase')

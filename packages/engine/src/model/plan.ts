@@ -120,6 +120,24 @@ export function latestQlacAnnuityStartAge(birthMonth: number): number {
   return birthMonth === 12 ? 86 : 85
 }
 
+/**
+ * The highest `startAge` an annuity account may STORE, which is a different
+ * kind of limit from the two above and has to be kept distinct from them.
+ *
+ * The two ceilings above are regulatory: they say what section 401(a)(9) lets a
+ * contract do. This one is the model's own range, enforced by `annuitySchema`
+ * below, and it says only how far this program is willing to project. It is not
+ * a tax rule and nothing here claims a contract commencing at 96 is unlawful.
+ *
+ * It is exported because three places have to agree on it and were each
+ * carrying their own copy: the schema that enforces it, the accounts editor
+ * (whose field `max` and help text must not offer an age the plan cannot hold),
+ * and the load repair (which reports what the OTHER purchase shape would allow,
+ * and must not name a start age the household could not store even if the
+ * regulation permitted it).
+ */
+export const ANNUITY_MAX_START_AGE = 95
+
 const isoDateRe = /^\d{4}-\d{2}-\d{2}$/
 
 const idSchema = z.string().min(1)
@@ -647,7 +665,7 @@ export type AnnuityPayoutForm = z.infer<typeof annuityPayoutFormSchema>
 export const annuitySchema = z.object({
   ...accountBase,
   type: z.literal('annuity'),
-  startAge: z.number().int().min(40).max(95),
+  startAge: z.number().int().min(40).max(ANNUITY_MAX_START_AGE),
   monthlyAmount: nonNegative,
   colaPct: pct,
   /**

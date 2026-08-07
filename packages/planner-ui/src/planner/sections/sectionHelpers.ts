@@ -5,6 +5,7 @@
 
 import type { Account, AllocationWeights, Plan } from '@retiregolden/engine/model/plan'
 import {
+  ANNUITY_MAX_START_AGE,
   latestNonQlacQualifiedAnnuityStartAge,
   latestQlacAnnuityStartAge,
 } from '@retiregolden/engine/model/plan'
@@ -104,14 +105,19 @@ export function annuityStartAgeBounds(plan: Plan, account: Account): AnnuityStar
   const birthYear = Number(owner.dob.slice(0, 4))
   const birthMonth = Number(owner.dob.slice(5, 7))
   if (!Number.isFinite(birthYear) || !Number.isFinite(birthMonth)) return null
-  // The schema caps every annuity start age at 95, QLAC or not, so each binding
-  // ceiling is the lower of the regulatory one and the schema's: a computed
-  // ceiling past 95 must not raise the field's max, and returning null there
-  // would switch the commit-time clamp off exactly where it should bind at 95.
-  // The capped pair is also what the copy has to compare — offering a toggle
-  // that reaches 97 when the field stops at 95 offers nothing.
-  const qlac = Math.min(latestQlacAnnuityStartAge(birthMonth), 95)
-  const nonQlac = Math.min(latestNonQlacQualifiedAnnuityStartAge(birthYear, purchase.year), 95)
+  // The schema caps every annuity start age, QLAC or not, so each ceiling here
+  // is the lower of the regulatory one and that cap: a computed ceiling past it
+  // must not raise the field's max, and returning null there would switch the
+  // commit-time clamp off exactly where it should bind. The capped pair is also
+  // what the copy has to compare — offering a toggle that reaches 97 when the
+  // field stops at 95 offers nothing. `ANNUITY_MAX_START_AGE` is the engine's
+  // own constant rather than a 95 written out here, so the editor, the schema
+  // that enforces it and the load repair cannot drift apart.
+  const qlac = Math.min(latestQlacAnnuityStartAge(birthMonth), ANNUITY_MAX_START_AGE)
+  const nonQlac = Math.min(
+    latestNonQlacQualifiedAnnuityStartAge(birthYear, purchase.year),
+    ANNUITY_MAX_START_AGE,
+  )
   const isQlac = purchase.qlac === true
   return {
     binding: isQlac ? qlac : nonQlac,

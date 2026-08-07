@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 
 import type { Account, Plan } from '@retiregolden/engine/model/plan'
+import { ANNUITY_MAX_START_AGE } from '@retiregolden/engine/model/plan'
 import { analyzePensionElections } from '@retiregolden/engine/decisions/pensionElection'
 import { packForYear } from '@retiregolden/engine/params'
 import { AllocationPanel, ReturnEstimatorModal } from './AllocationPanel'
@@ -504,7 +505,7 @@ export function AccountFields({ account, index }: { account: Account; index: num
             help={annuityStartAgeHelp(startAgeBounds)}
             value={account.startAge}
             min={40}
-            max={startAgeBounds?.binding ?? 95}
+            max={startAgeBounds?.binding ?? ANNUITY_MAX_START_AGE}
             onCommit={(v) => setStartAge(Math.round(v ?? 65))}
           />
           <MoneyField label="Monthly amount" value={account.monthlyAmount} onCommit={(v) => set('monthlyAmount', v ?? 0)} />
