@@ -3432,8 +3432,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       // committed after the QCD block: 408(d)(8)(D) deems whatever share of this
       // requirement is routed to charity to consist of includible dollars, and
       // that share is not known until the gift is sized.
-      if (state.account.kind === 'ira' &&
-          ownedIraApplication?.applicationKind === 'debit') {
+      if (
+        state.account.kind === 'ira' &&
+        ownedIraApplication?.applicationKind === 'debit'
+      ) {
         deferredRmdDistributions.push({
           ownerId,
           amount: take,
@@ -3540,8 +3542,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       // Pro-rata return of basis on IRA SEPP distributions (step 5), deferred
       // for the same reason the required distribution above is: the year's
       // pro-rata denominator is not settled until the charitable gift is.
-      if (state.account.kind === 'ira' &&
-          ownedIraApplication?.applicationKind === 'debit') {
+      if (
+        state.account.kind === 'ira' &&
+        ownedIraApplication?.applicationKind === 'debit'
+      ) {
         deferredSeppDistributions.push({
           ownerId,
           amount: take,
@@ -3691,9 +3695,11 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         // the applicable age, which is above 70½ in every year the pack covers,
         // so each of them is already a donor and none of this gift lands on an
         // IRA that could not lawfully have funded it under 408(d)(8)(B)(ii).
-        // The last owner takes the rounding residue so the shares sum exactly.
+        // The last owner takes the rounding residue so the shares sum exactly,
+        // and the owners iterate in sorted id order so the residue's home does
+        // not depend on plan account ordering.
         if (qcdFromRmd > 0 && ownedIraRmdTotal > 0) {
-          const owners = [...ownedIraRmdGrossByOwner.keys()]
+          const owners = [...ownedIraRmdGrossByOwner.keys()].sort()
           let assigned = 0
           owners.forEach((ownerId, index) => {
             const share = index === owners.length - 1
