@@ -521,13 +521,16 @@ export function AccountFields({ account, index }: { account: Account; index: num
               // floor (the later of the UTC year and the document's own stamp
               // year, which the parse rule compares against) keeps the common
               // flow (old offer, then elect) storable; the year field stays
-              // editable after.
+              // editable after. One update block, so the bump and the toggle
+              // land as a single edit rather than two recomputations.
               const electionYear = account.lumpSumOffer!.electionYear
               const floorYear = electionFloorYear(plan)
-              if (v === 'lumpSum' && target && electionYear < floorYear) {
-                set('lumpSumOffer', { ...account.lumpSumOffer!, electionYear: floorYear })
-              }
-              set('lumpSumElection', v === 'lumpSum' && target ? { rolloverAccountId: target.id } : undefined)
+              update((d) => {
+                if (v === 'lumpSum' && target && electionYear < floorYear) {
+                  updateAccountField(d, index, 'lumpSumOffer', { ...account.lumpSumOffer!, electionYear: floorYear })
+                }
+                updateAccountField(d, index, 'lumpSumElection', v === 'lumpSum' && target ? { rolloverAccountId: target.id } : undefined)
+              })
             }}
           />
           {account.lumpSumElection ? (
