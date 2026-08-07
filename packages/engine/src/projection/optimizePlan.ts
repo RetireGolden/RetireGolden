@@ -237,6 +237,16 @@ function retirementActionPersonId(action: PlanRetirementAction): PersonId | unde
  * recommendation through copy that does not describe it is the failure this
  * keeps closed. Removing it is the surface slice's, once that copy exists.
  *
+ * The model side has since closed further, and the gate did NOT move with it: a
+ * committed conversion's ordinary income is now a floor the LP stacks on
+ * (`OptimizerYear.committedOrdinaryIncome`) and the aggregate QCD strategy's
+ * balance debit reaches the same recursion as action movement
+ * (`exogenousStrategyMovementForYear`). One model gap remains and it is a cash
+ * one: a QCD routed out of an RMD leaves the exact ledger's cash inflows while
+ * the LP credits the whole re-decided draw, so a QCD year's solve can spend
+ * dollars the household gave away. That is smaller than the telling, and it is
+ * still a reason.
+ *
  * Reporting per action — rather than one plan-level flag — keeps the count and
  * the named person available to the surface doing the telling.
  */
@@ -348,28 +358,12 @@ export function committedActionMovementForYear(
   probe: OptimizerYearProbe,
 ): NonNullable<OptimizerYear['committedActionMovement']> | undefined {
   const movement = {
-    trad: 0,
-    inheritedTrad: 0,
-    other: 0,
-    taxable: 0,
+    ...bucketAccountMovement(
+      bucketByAccountId,
+      probe.committedActionAccountMovement,
+      'Committed retirement-action movement',
+    ),
     proceeds: probe.committedActionProceeds,
-  }
-  for (const entry of probe.committedActionAccountMovement) {
-    const bucket = bucketByAccountId.get(entry.accountId)
-    if (bucket === undefined) {
-      // Fail closed. Dropping the entry is precisely the defect being fixed —
-      // the solver would keep spending dollars the ledger has already moved —
-      // and every source class the executor accepts (cash, taxable,
-      // equity-comp, IRA) does land in a bucket, so this is unreachable short
-      // of a plan whose accounts and recorded actions disagree.
-      throw new Error(
-        `Committed retirement-action movement names account "${entry.accountId}", which the optimizer carries in no balance bucket`,
-      )
-    }
-    if (bucket === 'traditional') movement.trad += entry.amount
-    else if (bucket === 'inheritedTraditional') movement.inheritedTrad += entry.amount
-    else if (bucket === 'taxable') movement.taxable += entry.amount
-    else movement.other += entry.amount
   }
   return movement.trad === 0 &&
     movement.inheritedTrad === 0 &&
@@ -378,6 +372,67 @@ export function committedActionMovementForYear(
     movement.proceeds === 0
     ? undefined
     : movement
+}
+
+/**
+ * Fold one probe year's already-applied STRATEGY balance movement into the LP's
+ * bucket scalars.
+ *
+ * The sibling of `committedActionMovementForYear`, over the other channel and
+ * with no proceeds member: the only producer is the aggregate `qcdAnnual` gift
+ * beyond the RMD, and a gift delivers no cash to book. Returns undefined for a
+ * year that moved nothing — every year of a plan with no aggregate QCD — so
+ * those plans keep emitting a byte-identical LP.
+ */
+export function exogenousStrategyMovementForYear(
+  bucketByAccountId: ReadonlyMap<string, OptimizerBucket>,
+  probe: OptimizerYearProbe,
+): NonNullable<OptimizerYear['exogenousStrategyMovement']> | undefined {
+  const movement = bucketAccountMovement(
+    bucketByAccountId,
+    probe.exogenousStrategyAccountMovement,
+    'Exogenous strategy movement',
+  )
+  return movement.trad === 0 &&
+    movement.inheritedTrad === 0 &&
+    movement.other === 0 &&
+    movement.taxable === 0
+    ? undefined
+    : movement
+}
+
+/**
+ * Resolve per-account movement into the LP's four bucket scalars.
+ *
+ * Shared by both movement channels so account identity is resolved in exactly
+ * one place. `bucketByAccountId` is the bridge: the executor and the strategy
+ * name accounts, the LP carries four scalars, and it never has to carry an
+ * identity it does not have.
+ */
+function bucketAccountMovement(
+  bucketByAccountId: ReadonlyMap<string, OptimizerBucket>,
+  entries: readonly { readonly accountId: string; readonly amount: number }[],
+  subject: string,
+): { trad: number; inheritedTrad: number; other: number; taxable: number } {
+  const movement = { trad: 0, inheritedTrad: 0, other: 0, taxable: 0 }
+  for (const entry of entries) {
+    const bucket = bucketByAccountId.get(entry.accountId)
+    if (bucket === undefined) {
+      // Fail closed. Dropping the entry is precisely the defect being fixed —
+      // the solver would keep spending dollars the ledger has already moved —
+      // and every source class either channel accepts (cash, taxable,
+      // equity-comp, IRA) does land in a bucket, so this is unreachable short
+      // of a plan whose accounts and its own movement records disagree.
+      throw new Error(
+        `${subject} names account "${entry.accountId}", which the optimizer carries in no balance bucket`,
+      )
+    }
+    if (bucket === 'traditional') movement.trad += entry.amount
+    else if (bucket === 'inheritedTraditional') movement.inheritedTrad += entry.amount
+    else if (bucket === 'taxable') movement.taxable += entry.amount
+    else movement.other += entry.amount
+  }
+  return movement
 }
 
 /**
@@ -468,6 +523,13 @@ export function buildOptimizerInput(plan: Plan, opts: OptimizePlanOptions, probe
       filingStatus,
       stateBrackets: useStateBrackets ? stateBracketSegmentsFor(plan.household.state, p.year, filingStatus) : undefined,
       ordinaryIncomeBase: p.ordinaryIncomeBase,
+      // The other half of a committed conversion's double entry. The movement
+      // below already debits the source and credits the Roth; this puts the
+      // income the same conversion produced on the year's return, as a floor
+      // the solver stacks its own conversions on top of rather than a figure it
+      // can re-decide. Zero for every year that committed none, which is what
+      // keeps action-free plans emitting a byte-identical LP.
+      committedOrdinaryIncome: p.committedConversionOrdinaryIncome,
       spendingNeed: p.spendingNeed,
       exogenousCash: p.exogenousCash,
       // Recover the divisor from the baseline ratio (startTrad / RMD) so the LP's
@@ -523,6 +585,11 @@ export function buildOptimizerInput(plan: Plan, opts: OptimizePlanOptions, probe
       // this is unchanged and returns `undefined` for every year, which is what
       // keeps action-free plans emitting a byte-identical LP.
       committedActionMovement: committedActionMovementForYear(bucketByAccountId, p),
+      // And the dollars the aggregate QCD strategy already gave away, off the
+      // same probe and through the same bucket bridge. A plan with no aggregate
+      // QCD returns `undefined` for every year, which is what keeps it emitting
+      // a byte-identical LP.
+      exogenousStrategyMovement: exogenousStrategyMovementForYear(bucketByAccountId, p),
     }
   })
 

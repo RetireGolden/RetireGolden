@@ -6428,14 +6428,16 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       // withdrawal's alone. Neither of the other two delivers spendable cash:
       // a conversion reallocates between buckets, and a gift leaves.
       //
-      // Still absent, and deliberately so: a committed conversion's ORDINARY
-      // INCOME. `ordinaryIncomeBase` excludes every conversion because the LP
-      // re-decides conversions as its own variable, and a forced exogenous
-      // conversion-income term does not exist in `OptimizerYear`. That
-      // understates the solve's tax in a named-conversion year by the tax on
-      // the converted amount. It is strictly smaller than the balance error
-      // fixed here — one year's tax rather than a bucket that compounds — and
-      // it needs a model term, not a probe field.
+      // Absent here, and still deliberately so: a committed conversion's
+      // ORDINARY INCOME, and the aggregate QCD strategy's balance debit.
+      // Neither is a retirement action, or is one this field may carry:
+      //   - the conversion's income is income, not movement, and the LP takes
+      //     it as a forced floor (`committedConversionOrdinaryIncome` below,
+      //     read by `OptimizerYear.committedOrdinaryIncome`);
+      //   - the aggregate `strategies.qcdAnnual` gift is a strategy, not a
+      //     recorded action, so it reports through
+      //     `exogenousStrategyAccountMovement` below — putting it here would
+      //     make this field's name a lie.
       //
       // The deltas are accumulated and converted in CENTS, once per account.
       // `ledgerCentsToPlanDollars` guarantees each endpoint round-trips, not
@@ -6496,9 +6498,70 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             amount: signedLedgerCentTotalToPlanDollars(cents),
           }))
           .sort((left, right) => compareUtf16CodeUnits(left.accountId, right.accountId))
+      // Strategy movement for the same balance recursion, on its own channel.
+      //
+      // The aggregate `strategies.qcdAnnual` arm gives BEYOND the year's
+      // owned-IRA RMD by debiting its source IRAs directly. Those dollars leave
+      // the household — there is no cash side to book, which is the whole point
+      // of a gift — while the gift's tax break already reaches the LP: the
+      // RMD-routed part's `qcdIncomeOffset` rides inside `ordinaryIncomeBase`.
+      // A solve that keeps the dollars and banks the deduction is the same
+      // one-sided booking #229 fixed for named actions.
+      //
+      // Read back off the applications the arm itself published rather than
+      // re-derived from `plan.strategies.qcdAnnual`: the arm caps the request
+      // at the year's annual limit, truncates a draining take to whole cents,
+      // skips a take the ledger records as zero, and gives nothing at all when
+      // a named QCD request stands it down. Every one of those is a place a
+      // parallel recomputation would drift, and the published debit cannot.
+      //
+      // The RMD-routed part (`qcdFromRmd`) is deliberately NOT here: those
+      // dollars leave the IRA through the RMD, which the LP re-decides as its
+      // own `wt` variable, so booking them would debit the bucket twice.
+      // `legacyQcdDistribution` is the arm's beyond-RMD phase alone.
+      //
+      // Cents per account, converted once, for the reason spelled out above:
+      // differencing or summing separately-rounded dollar figures leaves a
+      // sub-cent residue that would ride into the LP's coefficients.
+      const exogenousStrategyCentsByAccountId = new Map<string, bigint>()
+      for (const application of annualRetirementRuntimeApplications) {
+        if (application.simulatorPhase !== 'legacyQcdDistribution') continue
+        if (application.applicationKind !== 'debit') continue
+        if (application.sourceAccountId === null) continue
+        const accountId = String(application.sourceAccountId)
+        exogenousStrategyCentsByAccountId.set(
+          accountId,
+          (exogenousStrategyCentsByAccountId.get(accountId) ?? 0n) -
+            BigInt(planDollarsToLedgerCents(application.appliedAmountPlanDollars)),
+        )
+      }
+      const optimizerExogenousStrategyAccountMovement =
+        [...exogenousStrategyCentsByAccountId]
+          .filter(([, cents]) => cents !== 0n)
+          .map(([accountId, cents]) => ({
+            accountId,
+            amount: signedLedgerCentTotalToPlanDollars(cents),
+          }))
+          .sort((left, right) => compareUtf16CodeUnits(left.accountId, right.accountId))
       optimizerProbe = {
         year,
         committedActionAccountMovement: optimizerCommittedActionAccountMovement,
+        exogenousStrategyAccountMovement: optimizerExogenousStrategyAccountMovement,
+        // The taxable half of what the named conversion executor committed,
+        // built from the two figures the year's own published
+        // `totalRothConversionTaxable` is built from — the named authority's
+        // credited dollars less the Form 8606 line-8 basis return the
+        // settlement apportioned against them — restricted to that authority.
+        // The aggregate strategy's share of the same published figure is
+        // excluded: it is precisely what the LP re-decides as `conv`.
+        //
+        // Both accumulators are only ever incremented inside the executor's
+        // own `committed` gate, so a refused or uncommitted conversion action
+        // reports zero here without a second gate to keep in step.
+        committedConversionOrdinaryIncome: Math.max(
+          0,
+          namedRothConversionExecuted - namedRothConversionNontaxable,
+        ),
         committedActionProceeds: retirementActionProceeds,
         ordinaryIncomeBase: optimizerOrdinaryIncomeBase,
         spendingNeed: expenses.total + contributions,

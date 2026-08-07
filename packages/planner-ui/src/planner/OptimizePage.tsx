@@ -143,11 +143,31 @@ export function OptimizePage() {
   // carrying recorded retirement actions — identity-bearing or migrated
   // aggregate — and nets their committed balance movement into the LP's
   // buckets. The predicate below is broader than any one engine limit: it
-  // trips on ANY recorded action, and this page's own check is the thing
-  // that declines to run, because the LP does not yet price every
-  // consequence of a committed action (a committed conversion's income has
-  // no term). The page states the condition rather than ranking schedules
-  // against a mispriced tax year.
+  // trips on ANY recorded action, and this page's own check is the thing that
+  // declines to run.
+  //
+  // THE REASON THAT USED TO STAND HERE IS GONE. "A committed conversion's
+  // income has no term" was true when this comment was written and is not now:
+  // the LP takes that income as a floor its own conversions stack on
+  // (`OptimizerYear.committedOrdinaryIncome`), and the aggregate QCD strategy's
+  // balance debit reaches the same balance recursion. Both sides of both
+  // movements are booked.
+  //
+  // WHAT STILL HOLDS IT UP, stated so the next attempt starts from the truth:
+  //   1. The telling. Nothing on this page explains an optimizer answer sitting
+  //      on top of a plan's own named requests — which schedule was priced,
+  //      which year the named executor already owns, what Apply would install.
+  //      The engine's post-processor drops a named-conversion year from the
+  //      emitted schedule (the named executor is authoritative there), so a
+  //      recommendation for an action-bearing plan is silent about exactly the
+  //      years the user recorded. Shipping that needs copy, not a model term.
+  //   2. One cash-side booking is still one-sided. A QCD routed out of an RMD
+  //      is netted out of the exact ledger's cash inflows (`simulate.ts`
+  //      `baseCashInflows`, less `qcdFromRmd` and `namedQcdRmdSatisfied`) while
+  //      the LP re-decides that RMD as its own `wt` and credits the whole draw
+  //      to cash — so in a QCD year the solve believes the household can spend
+  //      dollars it gave away.
+  // The page states the condition rather than ranking schedules against either.
   const unsupportedActionReasons = useMemo(
     () => optimizerUnsupportedRetirementActions(plan),
     [plan],

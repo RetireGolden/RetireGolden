@@ -206,6 +206,28 @@ export interface OptimizerCommittedActionAccountMovement {
   amount: number
 }
 
+/**
+ * One account's already-applied balance movement from a plan STRATEGY, in a
+ * probe year.
+ *
+ * Same shape and same purpose as the committed-action movement above — dollars
+ * the exact ledger has already moved, which the solver may not re-decide — and
+ * deliberately a separate channel rather than a widening of that one.
+ * `committedActionAccountMovement` is the exact-cent retirement-action
+ * executors' report and nothing else; a scalar strategy that moves a balance is
+ * not an action and reporting it there would make that field's name untrue.
+ *
+ * The producers are named on `OptimizerYearProbe.exogenousStrategyAccountMovement`.
+ */
+export interface OptimizerExogenousStrategyAccountMovement {
+  accountId: string
+  /**
+   * Signed plan dollars: a debit from this account is NEGATIVE. Zero-movement
+   * accounts are omitted entirely.
+   */
+  amount: number
+}
+
 export interface OptimizerYearProbe {
   year: number
   /**
@@ -226,6 +248,54 @@ export interface OptimizerYearProbe {
    * offset for a gift, so the solve pays for the action and keeps its dollars.
    */
   committedActionAccountMovement: readonly OptimizerCommittedActionAccountMovement[]
+  /**
+   * Balance movement a plan STRATEGY already applied this year, per account,
+   * sorted by account id; empty in a year no strategy moved a balance the LP
+   * does not otherwise re-decide.
+   *
+   * ONE producer today: the aggregate `strategies.qcdAnnual` gift taken BEYOND
+   * the year's owned-IRA RMD. That arm debits its source IRAs directly
+   * (`simulate.ts`, the `beyondRmd` loop) and the dollars leave the household.
+   * The gift's tax break is already priced — its RMD-routed income offset rides
+   * inside `ordinaryIncomeBase` — so without this the solve keeps the gifted
+   * dollars while banking the deduction, the same one-sided booking
+   * `committedActionAccountMovement` fixed for named actions.
+   *
+   * NOT reported here, and correctly so: the RMD-routed part of the same gift.
+   * Those dollars leave through the RMD, which the LP re-decides as its own
+   * `wt` variable, so booking them here would debit the bucket twice.
+   *
+   * Read back off the year's published runtime applications
+   * (`simulatorPhase: 'legacyQcdDistribution'`) rather than re-derived from the
+   * strategy scalar, so a gift the arm capped, skipped as sub-cent, or could
+   * not fund reports what actually moved and nothing more.
+   */
+  exogenousStrategyAccountMovement: readonly OptimizerExogenousStrategyAccountMovement[]
+  /**
+   * Ordinary income a COMMITTED named Roth conversion put on this year's return
+   * — the taxable (post-§408(d)(2) pro-rata) part of what the conversion
+   * executor actually moved, zero in a year no conversion action committed.
+   *
+   * Held apart from `ordinaryIncomeBase` because the two have opposite
+   * treatments in the LP even though they sum in the ledger: the base is
+   * exogenous income the solver prices around, while every OTHER conversion
+   * dollar in the year is the solver's own `conv` variable. This is a
+   * conversion the household has already made, so the solver may neither
+   * re-decide nor avoid it — the LP stacks its own conversions on top (see
+   * `OptimizerYear.committedOrdinaryIncome`).
+   *
+   * The NAMED authority only. The aggregate strategy's conversions are in the
+   * same ledger figure (`totalRothConversionTaxable`) and are excluded here:
+   * those are exactly what the LP re-decides, so including them would price a
+   * conversion twice.
+   *
+   * No overlap with the year's other action income. An ordinary-withdrawal
+   * action's income (`retirementActionOrdinaryIncome`) and a named QCD's offset
+   * (`namedQcdIncomeOffset`) both already reach `ordinaryIncomeBase` through
+   * `incomeBeforeConversion`; only conversions are excluded there, which is
+   * exactly the hole this fills.
+   */
+  committedConversionOrdinaryIncome: number
   /**
    * Gross cash those committed actions delivered into this year's cash flow —
    * the ledger's own `retirementActionProceeds` term, which sits alongside RMDs
