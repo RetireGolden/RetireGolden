@@ -187,13 +187,18 @@ describe('simulator committed owned non-Roth IRA annual replay publication', () 
         .some((owner) => owner.ownerPersonId === 'p1'))).toBe(true)
   })
 
-  it('withholds publication for the blocked year only and resumes the next', () => {
-    // The annuity premium leaves the captured owned-IRA pool, so the source
-    // series refuses TAX_YEAR + 1 with `annuityStageRequired` and that year
-    // prices on the legacy ledger. What the refusal is NOT is evidence about
-    // p1's basis numerator, so it disqualifies the year and not the projection:
-    // TAX_YEAR + 2 attempts settlement again and publishes. Under the former
-    // sticky latch this suffix was withheld for the rest of the horizon.
+  it('publishes an annuity-purchase year and carries the basis through it', () => {
+    // WHAT THIS FIXTURE USED TO PIN, and why it now pins the opposite. The
+    // annuity premium left the captured owned-IRA pool for a contract the
+    // replay did not carry, so the source series refused this year with
+    // `annuityStageRequired`, the year priced on the legacy ledger, and this
+    // test's job was to prove the refusal cost the projection one year rather
+    // than all of them. The contract is carried now: IRC 408(d)(1) taxes only
+    // an amount paid or distributed OUT and a premium is neither, so the value
+    // moved between two members of one section 408(d)(2) aggregate and the
+    // Form 8606 line-6 channel receives it. There is no withheld year left to
+    // scope, and what is worth pinning instead is the thing the refusal cost:
+    // an unbroken basis chain across the purchase.
     const plan = singlePersonPlan({ planningAge: 62 })
     plan.id = 'published-no-suffix-reseed'
     plan.accounts = [
@@ -219,32 +224,37 @@ describe('simulator committed owned non-Roth IRA annual replay publication', () 
 
     const years = run(plan, TAX_YEAR + 2)
 
-    expect(years[0]!.ownedNonRothIraAnnualReplay).toBeDefined()
-    expect(years[1]!).not.toHaveProperty('ownedNonRothIraAnnualReplay')
-    expect(years[2]!.ownedNonRothIraAnnualReplay).toMatchObject({
+    expect(years.map((year) =>
+      Object.hasOwn(year, 'ownedNonRothIraAnnualReplay')))
+      .toEqual([true, true, true])
+    expect(years[1]!.ownedNonRothIraAnnualReplay).toMatchObject({
       status: 'committedOwnedNonRothIraAnnualReplay',
-      taxYear: TAX_YEAR + 2,
+      taxYear: TAX_YEAR + 1,
     })
     expect(years[1]!.balances.ira).toBeCloseTo(95, 12)
 
-    // THE SEAM, TO THE CENT. The fallback year committed p1's basis through the
-    // same `iraBasisByOwner` the settled path writes, and TAX_YEAR + 2's replay
-    // opens on exactly that figure -- as a plan seed, which is what every annual
-    // replay's opening basis is. Nothing here is drawn from the discarded
-    // exact-cent replay of the blocked year.
-    const settledOpening = years[2]!.ownedNonRothIraAnnualReplay!
+    // THE DENOMINATOR IS WHOLE ACROSS THE PURCHASE. The account kept 95 and the
+    // contract holds the 5 it bought, and line 6 is the 100 the household
+    // started the year with -- which is what makes the purchase invisible to
+    // the form, exactly as 408(d)(2)(A) read with 7701(a)(37)(B) makes it.
+    const purchaseYear = years[1]!.ownedNonRothIraAnnualReplay!
       .annualReplay.ownerReplays[0]!
-    expect(settledOpening).toMatchObject({
-      ownerPersonId: 'p1',
-      openingBasisSource: 'planSeed',
-    })
-    const priorSettledCarryforward = years[0]!.ownedNonRothIraAnnualReplay!
-      .annualReplay.ownerReplays[0]!.nextYearOpeningBasisAmount
-    // The blocked year consumed no basis (no distribution, only the premium
-    // transfer), so the legacy pass carried the prior year's exact figure
-    // forward untouched and the two agree cent for cent across the seam.
-    expect(settledOpening.openingBasisAmount).toBe(priorSettledCarryforward)
-    expect(settledOpening.openingBasisAmount).toBe(1_000)
+    expect(purchaseYear.annualObservation
+      .aggregateYearEndApplicableBalanceAmount).toBe(9_500)
+    expect(purchaseYear.annualBasisRatio.denominatorMinorUnits).toBe(10_000)
+
+    // AND THE CHAIN IS UNBROKEN, which is what the refusal used to cost. Each
+    // annual replay is one year long and seeds from the figure the projection
+    // is carrying, so `planSeed` is what every one of them reports; what says
+    // the chain held is that the seed IS the prior year's committed
+    // carryforward, in exact cents, across the purchase.
+    expect(purchaseYear.openingBasisAmount).toBe(
+      years[0]!.ownedNonRothIraAnnualReplay!.annualReplay.ownerReplays[0]!
+        .nextYearOpeningBasisAmount,
+    )
+    expect(years[2]!.ownedNonRothIraAnnualReplay!.annualReplay.ownerReplays[0]!
+      .openingBasisAmount).toBe(purchaseYear.nextYearOpeningBasisAmount)
+    expect(purchaseYear.openingBasisAmount).toBe(1_000)
   })
 
   it('publishes the depletion commit but not later no-settlement years', () => {

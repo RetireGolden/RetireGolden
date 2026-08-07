@@ -575,6 +575,73 @@ describe('tax rule registry conformance', () => {
     }
   })
 
+  it('rejects prose that cites a rule id the registry does not have', () => {
+    // THE CLASS THIS KILLS. A record id written into a docblock is a promise
+    // that the reader can go and find the record. Nothing checked it, so this
+    // slice shipped five comments and two type docs pointing at
+    // `engine-convention-ira-annuity-contract-value-premium-less-payments`,
+    // which was never a registry key -- the record it meant is registered under
+    // its authority, as every id here is. A reader who followed any of the five
+    // would have concluded the convention was unregistered, which is exactly
+    // the impression an unregistered convention is supposed to give.
+    //
+    // TWO RULES, BOTH ZERO-FALSE-POSITIVE ON THE CURRENT TREE, and the reason
+    // there are two is that neither alone catches enough. The first is the
+    // house convention made checkable: record ids are anchored on their
+    // authority, so a backticked kebab token whose first segment is one this
+    // registry actually uses -- `irc`, `treas`, `usc`, `cfr`, `notice`, a state
+    // code -- is claiming to be a record and had better be one. The second
+    // catches the phrasing that produced the bug: whatever follows "registered
+    // as" is a citation whatever it looks like.
+    //
+    // WHAT THEY DO NOT CATCH, stated so the arm is not read as a proof. An id
+    // that is neither authority-prefixed nor introduced by "registered as"
+    // slips both -- the original phantom would have slipped the first, and was
+    // caught by the second only because four of its five sites used that
+    // phrase. The kebab-case vocabulary in this engine is not all record ids:
+    // disposition reason codes (`conversion-source-owner-mismatch`,
+    // `withdrawal-source-type-unsupported`) share the shape, which is why a
+    // blanket "every kebab token must be a key" rule was measured, found to
+    // flag thirteen legitimate codes, and rejected in favour of these two.
+    const registryPrefixes = new Set(
+      taxRuleIds.map((ruleId) => ruleId.split('-')[0]!),
+    )
+    // A token that looks like an authority-anchored record id: kebab, four
+    // segments or more, so a two-word hyphenation cannot trip it. The character
+    // class is deliberately NOT lowercase-only -- this family numbers its
+    // subparagraphs the way the Code does, `irc-408-d-2-C` and
+    // `irc-408-d-8-D`, and a lowercase-only pattern was blind to sixty-seven of
+    // the registry's own keys when this arm was first written.
+    const authorityShaped = /`([A-Za-z0-9]+(?:-[A-Za-z0-9]+){3,})`/gu
+    // "registered as `x`", "Registered, with its direction, as `x`" -- comment
+    // decoration between the phrase and the token is allowed, prose is not.
+    const citedAsRegistered =
+      /[Rr]egistered(?:,[^`]{0,80})? as[\s*/]*`([A-Za-z0-9][A-Za-z0-9-]*)`/gu
+    // A bare section reference is not a dangling citation. `irc-408-d-2-C` is
+    // the subparagraph two records are anchored on, and prose that names it is
+    // pointing at the statute rather than at a record, so a token that is a
+    // strict prefix of some key is admitted.
+    const isSectionReference = (cited: string): boolean =>
+      taxRuleIds.some((ruleId) => ruleId.startsWith(`${cited}-`))
+    const dangling: string[] = []
+    for (const [path, source] of Object.entries(engineSources)) {
+      if (path.endsWith(CONFORMANCE_SOURCE)) continue
+      const text = source as string
+      for (const match of text.matchAll(authorityShaped)) {
+        const cited = match[1]!
+        if (!registryPrefixes.has(cited.split('-')[0]!)) continue
+        if (cited in TAX_RULE_REGISTRY || isSectionReference(cited)) continue
+        dangling.push(`${path}: ${cited}`)
+      }
+      for (const match of text.matchAll(citedAsRegistered)) {
+        const cited = match[1]!
+        if (cited in TAX_RULE_REGISTRY || isSectionReference(cited)) continue
+        dangling.push(`${path}: ${cited}`)
+      }
+    }
+    expect([...new Set(dangling)].sort()).toEqual([])
+  })
+
   it('rejects a fixture claiming a rule that is not registered', () => {
     const unknown = [...claimedRuleIds.keys()].filter((ruleId) => !(ruleId in TAX_RULE_REGISTRY))
     expect(unknown).toEqual([])

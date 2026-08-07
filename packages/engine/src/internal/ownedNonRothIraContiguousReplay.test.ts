@@ -142,7 +142,7 @@ describe('private contiguous owned-IRA basis replay', () => {
     })
   })
 
-  it('replays a routed QCD and propagates the annuity block without partial basis evidence', () => {
+  it('replays a routed QCD and puts an annuity contract back on line 6', () => {
     // The routed gift replays: the overlay's attribution says whose line-7
     // gross it shrinks, so the basis fraction is built on a denominator the
     // gift has left, exactly as 408(d)(8)(D)'s proper adjustment requires.
@@ -177,13 +177,26 @@ describe('private contiguous owned-IRA basis replay', () => {
         },
       },
     ]
-    expect(replayOwnedNonRothIraContiguousYears(
+    const annuityReplay = replayOwnedNonRothIraContiguousYears(
       annuityPlan, TAX_YEAR, project(annuityPlan),
-    )).toMatchObject({
-      status: 'ownedNonRothIraContiguousReplayBlocked',
-      annualReplays: null,
-      issues: [{ kind: 'annuityStageRequired' }],
-    })
+    )
+    expect(annuityReplay.status).toBe('ownedNonRothIraContiguousReplayComplete')
+    if (annuityReplay.status === 'ownedNonRothIraContiguousReplayComplete') {
+      const owner = annuityReplay.annualReplays[0]!.ownerReplays[0]!
+      // THE PURCHASE IS INVISIBLE TO THE FORM, which is the whole claim.
+      // Line 6 is the December 31 pool -- 15,000 after the premium left it --
+      // PLUS the contract those dollars bought, and the two sum to the 20,000
+      // the household started with. Section 408(d)(2)(A) treats all individual
+      // retirement plans as one contract and 7701(a)(37)(B) makes the annuity
+      // one of them, so a transaction that changed which asset holds the value
+      // and destroyed none of it cannot move the denominator.
+      expect(owner.annualObservation.aggregateYearEndApplicableBalanceAmount)
+        .toBe(planDollarsToLedgerCents(15_000))
+      expect(owner.annualBasisRatio.denominatorMinorUnits)
+        .toBe(planDollarsToLedgerCents(20_000))
+      expect(owner.annualBasisRatio.numeratorMinorUnits)
+        .toBe(planDollarsToLedgerCents(2_000))
+    }
   })
 
   it('excludes employer-plan conversions from line 8 while retaining aggregate Roth truth', () => {

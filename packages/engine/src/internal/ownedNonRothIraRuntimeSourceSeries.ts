@@ -4,6 +4,7 @@ import { ledgerCentsToPlanDollars, planDollarsToLedgerCents } from '../actions/p
 import { compareUtf16CodeUnits, deriveActionStructuralId } from '../actions/structuralId.js'
 import { planSchema, type Account, type Plan } from '../model/plan.js'
 import { isAggregatedIra } from '../strategies/accountEligibility.js'
+import { ownedIraFundedAnnuityContracts } from './iraAnnuityContractValue.js'
 import type { SimulatorAnnualRetirementRuntimeOccurrence } from '../projection/annualRetirementRuntimeJournal.js'
 import type {
   SimulatorRetirementRuntimeAggregateRothDestinationCredit,
@@ -65,6 +66,7 @@ export interface NormalizedOwnedNonRothIraApplication {
   readonly producerOccurrenceKey: string
   readonly occurrenceKind:
     | 'ownedIraRmd'
+    | 'annuityContractDistribution'
     | 'automaticSeppDistribution'
     | 'legacyNeedBasedWithdrawal'
     | 'legacyRothConversion'
@@ -75,6 +77,7 @@ export interface NormalizedOwnedNonRothIraApplication {
     | 'rolloverInflow'
   readonly applicationKind: 'debit' | 'credit'
   readonly simulatorPhase:
+    | 'annuityContractDistribution'
     | 'pensionLumpSumRollover'
     | 'employeeContribution'
     | 'ownerRmdDistribution'
@@ -86,6 +89,14 @@ export interface NormalizedOwnedNonRothIraApplication {
     | 'legacyNeedBasedWithdrawal'
   readonly mutationOrdinal: number
   readonly ownerPersonId: PersonId
+  /**
+   * The account the dollars left, which for an `annuityContractDistribution` is
+   * the CONTRACT rather than any IRA in the balance ledger. Section
+   * 7701(a)(37)(B) makes a section 408(b) individual retirement annuity an
+   * individual retirement plan in its own right, so the aggregate it is inside
+   * has a member the projection carries no balance for; its year-end value
+   * travels on `annuityContractValueAmount` below instead.
+   */
   readonly sourceAccountId: AccountId
   readonly amount: UsdCents
   readonly sourceBalanceBefore: UsdCents
@@ -119,11 +130,36 @@ export interface NormalizedOwnedNonRothIraYearEndBalance {
   readonly balanceAmount: UsdCents
 }
 
+/**
+ * One annuity contract this owner's IRA bought, at the same December 31 the
+ * pool balances beside it are read at.
+ *
+ * It is a line-6 member with no ledger balance, so it is carried separately
+ * rather than smuggled into `yearEndBalances`: the pool members there are
+ * validated as owned traditional IRA accounts, and a contract is not one. The
+ * value is the engine's premium-less-payments convention and not a fair market
+ * value, which is why it is registered on its own.
+ */
+export interface NormalizedOwnedNonRothIraAnnuityContractValue {
+  readonly annuityAccountId: AccountId
+  readonly fundingAccountId: AccountId
+  readonly contractValuePlanDollars: number
+  readonly contractValueAmount: UsdCents
+}
+
 export interface NormalizedOwnedNonRothIraOwnerYearSource {
   readonly ownerPersonId: PersonId
   readonly taxYear: number
   readonly applications: readonly Readonly<NormalizedOwnedNonRothIraApplication>[]
   readonly yearEndBalances: readonly Readonly<NormalizedOwnedNonRothIraYearEndBalance>[]
+  /** Ascending by contract id; empty for an owner who bought no contract. */
+  readonly annuityContractValues:
+    readonly Readonly<NormalizedOwnedNonRothIraAnnuityContractValue>[]
+  /**
+   * Their sum, which is what Form 8606 line 6 adds to the pool balance. Zero
+   * where there is no contract, so the line-6 build needs no special case.
+   */
+  readonly annuityContractValueAmount: UsdCents
   readonly sourceChainEvidenceId: string
 }
 
@@ -225,6 +261,20 @@ interface ApplicationShape {
   > | 'annuityPurchaseFunding'
   form8606Line: 'line7' | 'line8' | null
 }
+
+/**
+ * The two phases whose source account is an annuity contract rather than an IRA
+ * in the balance ledger, and which the application chain therefore routes to
+ * the contract-value channel instead of to `openingBalances`.
+ *
+ * The premium's own credit is not here: it carries no `producerOccurrenceKey`
+ * at all and is handled beside the Roth destination credits, for the same
+ * reason those are -- one physical movement has one occurrence, and the debit
+ * already claimed it.
+ */
+const ANNUITY_CONTRACT_CHAIN_PHASES: ReadonlySet<string> = new Set([
+  'annuityContractDistribution',
+])
 
 class SourceSeriesFailure extends Error {
   readonly issue: OwnedNonRothIraRuntimeSourceSeriesIssue
@@ -684,7 +734,29 @@ function applicationShape(
 ): ApplicationShape | null {
   switch (kind) {
     case 'annuityFundingTransfer':
+      // A NULL LINE IS THE ANSWER HERE, not a gap. IRC 408(d)(1) taxes an
+      // amount "paid or distributed out of an individual retirement plan", and
+      // a premium paid at the owner's direction is neither: the contract is
+      // either a section 408(b) individual retirement annuity, which
+      // Treas. Reg. 1.408-8(d)(4) reaches as a trustee-to-trustee transfer and
+      // the Form 1099-R instructions direct the issuer not to report, or an
+      // annuity contract the section 408(a) trust holds as an account asset,
+      // which never left the account. Publication 590-B states the conclusion
+      // outright -- "You aren't taxed when you receive the annuity contract".
+      // So there is no line-7 entry and nothing enters the annual denominator
+      // from this movement. Registered as
+      // `irc-408-d-1-ira-annuity-premium-is-not-a-distribution`.
       return { applicationKind: 'debit', simulatorPhase: 'annuityPurchaseFunding', form8606Line: null }
+    case 'annuityContractDistribution':
+      // And this one IS a distribution, which is the whole of the pair. The
+      // same Publication 590-B passage closes with "You are taxed when you
+      // start receiving payments under that annuity contract", and IRC
+      // 408(d)(2)(B) treats all distributions during a taxable year as one
+      // distribution -- so the payment joins the year's line-7 gross and takes
+      // the same share of basis every other distribution from the aggregate
+      // takes. Registered as
+      // `irc-408-d-2-B-annuity-payment-outside-the-annual-basis-fraction`.
+      return { applicationKind: 'debit', simulatorPhase: 'annuityContractDistribution', form8606Line: 'line7' }
     case 'rolloverInflow':
       return { applicationKind: 'credit', simulatorPhase: 'pensionLumpSumRollover', form8606Line: null }
     case 'ownedIraContribution':
@@ -740,13 +812,24 @@ function applicationShape(
 function phaseRank(application: Readonly<SimulatorRetirementRuntimeApplication>): number {
   switch (application.simulatorPhase) {
     case 'annuityPurchaseFunding': return 0
-    case 'pensionLumpSumRollover': return 1
-    case 'employeeContribution': return 2
-    case 'ownerRmdDistribution': return 3
-    case 'automaticSeppDistribution': return 4
+    // The premium's credit sits immediately beside its debit, because they are
+    // two halves of one movement and nothing may run between them: a reader of
+    // the chain who stopped in the gap would see value leave an aggregate and
+    // not arrive.
+    case 'annuityPurchaseContractCredit': return 1
+    case 'pensionLumpSumRollover': return 2
+    // The projection's income block, which is where a contract's payment is
+    // credited: after the year's purchases and rollovers and before its
+    // contributions. Not a civil chronology -- a monthly annuity does not pay
+    // once, in January, before an employee defers anything -- but the order the
+    // simulator's own mutations happen in, which is what this rank records.
+    case 'annuityContractDistribution': return 3
+    case 'employeeContribution': return 4
+    case 'ownerRmdDistribution': return 5
+    case 'automaticSeppDistribution': return 6
     // The simulator computes the charitable gift once the forced distributions
     // are known and before any conversion or need-based withdrawal is sized.
-    case 'legacyQcdDistribution': return 5
+    case 'legacyQcdDistribution': return 7
     // A named gift sits beside the aggregate one and ahead of every
     // conversion. Treas. Reg. 1.408-8(g)(1) takes every IRA distribution into
     // account against section 401(a)(9) whether or not includible -- naming a
@@ -754,23 +837,39 @@ function phaseRank(application: Readonly<SimulatorRetirementRuntimeApplication>)
     // belongs after the forced distributions it may count against and before
     // the conversions, which Treas. Reg. 1.408A-4 A-6(b) forbids from
     // absorbing an RMD at all.
-    case 'namedQcdDistribution': return 6
+    case 'namedQcdDistribution': return 8
     // The exact-cent executor runs after the year's forced distributions and
     // before the aggregate strategy sizes anything, which is what Treas. Reg.
     // 1.408A-4 A-6(b) requires of the RMD and what leaves the aggregate
     // sweep looking at balances the named request has already reduced.
-    case 'namedRothConversionDebit': return 7
-    case 'namedRothConversionDestinationCredit': return 8
-    case 'legacyRothConversion': return 9
-    case 'legacyRothConversionAggregateDestinationCredit': return 10
-    case 'legacyNeedBasedWithdrawal': return 11
+    case 'namedRothConversionDebit': return 9
+    case 'namedRothConversionDestinationCredit': return 10
+    case 'legacyRothConversion': return 11
+    case 'legacyRothConversionAggregateDestinationCredit': return 12
+    case 'legacyNeedBasedWithdrawal': return 13
   }
 }
 
 function sourceCompatible(
   occurrence: Readonly<SimulatorAnnualRetirementRuntimeOccurrence>,
   account: Account,
+  plan: Plan,
 ): boolean {
+  // Checked before the traditional-account gate, because this is the one
+  // occurrence whose source is not a traditional account at all. Section
+  // 7701(a)(37)(B) puts a section 408(b) individual retirement annuity inside
+  // the same aggregate as the accounts, and a contract held by the section
+  // 408(a) trust never left it, so the payment is an IRA distribution paid out
+  // of something the Plan models as its own account type. It is admitted only
+  // where the contract is one this engine can place in an owner's aggregate:
+  // a qualified purchase, with a positive premium, funded from an owned
+  // non-inherited IRA that names its owner. Whose aggregate that is comes from
+  // the FUNDING account and not from the annuity's own owner field, which
+  // answers a different question -- whose age starts the payments.
+  if (occurrence.kind === 'annuityContractDistribution') {
+    return ownedIraFundedAnnuityContracts(plan).some(({ contract }) =>
+      contract.id === account.id)
+  }
   if (account.type !== 'traditional') return false
   switch (occurrence.kind) {
     case 'ownedIraRmd':
@@ -836,6 +935,20 @@ function occurrenceOrderAccountId(
       })
     }
     return sourceId!
+  }
+  if (occurrence.kind === 'annuityContractDistribution') {
+    // Two members. A payment names no destination -- it leaves the aggregate
+    // for the owner -- and no action, because the aggregate projection sized it
+    // from the Plan's own monthly amount and COLA rather than from a request.
+    // The contract is both the source and the ordering account.
+    const contract = plan.accounts.find((account) => account.id === sourceId)
+    if (key.length !== 2 || key[0] !== occurrence.kind || key[1] !== sourceId ||
+        contract?.type !== 'annuity') {
+      fail('sourceIdentityInvalid', 'Annuity payment key must bind the actual Plan contract it was paid out of', {
+        taxYear, producerOccurrenceKey: occurrence.producerOccurrenceKey,
+      })
+    }
+    return contract.id
   }
   if (occurrence.kind === 'annuityFundingTransfer') {
     const destinationId = key[2]
@@ -1249,6 +1362,50 @@ function validateUnchecked(
   let openingRawBalances = new Map<AccountId, number>(ownedAccounts.map((account) => [
     asAccountId(account.id), account.balance,
   ]))
+  /**
+   * The contract-value channel, carried year to year exactly as the account
+   * balances beside it are.
+   *
+   * WHERE ITS OPENING COMES FROM, which is the one place this arm cannot derive
+   * and had better say so. The settlement replays a single year against a Plan
+   * snapshot whose account balances the simulator has rewritten to that year's
+   * openings; an annuity account carries no balance field to rewrite, so the
+   * channel's opening arrives on the post-growth source instead and is trusted
+   * on the same terms `plan.accounts[].balance` is. What is NOT trusted is its
+   * size: the channel can never hold more than the premium that filled it,
+   * because nothing else ever credits it, and it must be exactly zero in any
+   * year at or before the purchase. Within the year every credit and debit
+   * between that opening and the published close has to reconcile in exact
+   * cents, and across a multi-year series each year's opening must be the prior
+   * year's close.
+   *
+   * A DERIVED SEED WAS TRIED AND IS WRONG. Re-deriving the opening as the
+   * premium less the payments made before the replay's start year is right for
+   * a contract bought before the projection began, and wrong for every contract
+   * whose funding account could not pay the whole premium -- the engine funds
+   * `min(premium, spendable)`, so a purchase against a short balance credits
+   * less than the Plan quotes, and a later single-year replay of that
+   * projection reconstructed a channel the projection never had.
+   * @see iraAnnuityContractValue.ts
+   */
+  const stagingContracts = ownedIraFundedAnnuityContracts(plan)
+  const contractOwnerById = new Map<AccountId, PersonId>(
+    stagingContracts.map(({ contract, ownerPersonId }) =>
+      [asAccountId(contract.id), ownerPersonId as PersonId]),
+  )
+  const contractFundingById = new Map<AccountId, AccountId>(
+    stagingContracts.map(({ contract, funding }) =>
+      [asAccountId(contract.id), asAccountId(funding.id)]),
+  )
+  const contractPremiumById = new Map<AccountId, number>(
+    stagingContracts.map(({ contract }) =>
+      [asAccountId(contract.id), contract.purchase!.premium]),
+  )
+  const contractPurchaseYearById = new Map<AccountId, number>(
+    stagingContracts.map(({ contract }) =>
+      [asAccountId(contract.id), contract.purchase!.year]),
+  )
+  let openingContractRawValues: Map<AccountId, number> | null = null
   const normalizedYears: NormalizedOwnedNonRothIraRuntimeSourceYear[] = []
 
   for (const yearResult of years) {
@@ -1302,7 +1459,19 @@ function validateUnchecked(
         })
       }
       const account = accountById.get(occurrence.sourceAccountId)
-      if (!account || account.ownerPersonId !== occurrence.ownerPersonId || !sourceCompatible(occurrence, account)) {
+      // The owner an annuity payment reports is the PAYMENT owner the income
+      // block used -- `ownerPersonId ?? primary` -- while the aggregate it
+      // belongs to is the funding IRA's. On a contract naming its owner the two
+      // are the same by Plan validation; on one naming nobody the equality
+      // below would compare against `null` and refuse a well-formed year, so
+      // the contract's own owner field is resolved the same way the simulator
+      // resolved it. Which aggregate the payment lands in is decided by the
+      // funding owner, in the contract chain further down, not here.
+      const expectedOwnerPersonId = account?.type === 'annuity'
+        ? account.ownerPersonId ?? (plan.household.people[0]?.id ?? null)
+        : account?.ownerPersonId
+      if (!account || expectedOwnerPersonId !== occurrence.ownerPersonId ||
+          !sourceCompatible(occurrence, account, plan)) {
         fail('sourceIdentityInvalid', 'Occurrence owner/source/kind must exact-rejoin its Plan account', {
           taxYear, producerOccurrenceKey: occurrence.producerOccurrenceKey,
         })
@@ -1443,16 +1612,32 @@ function validateUnchecked(
         'annuityFundingTransfer', funding.id, annuity.id,
       ])
       if (!occurrenceByKey.has(expectedKey)) {
-        // Refused, not staged, and deliberately so: what a stage would have to
-        // state for these dollars -- whether an IRA-funded qualified premium is
-        // a non-distribution transfer or a distribution-and-purchase, and what
-        // that makes of Form 8606 line 7 and of §408(b) individual-retirement-
-        // annuity aggregation -- is open statutory research tracked as its own
-        // task. Refusing the year is the honest disposition until it lands; the
-        // year prices on the legacy ledger and, since the refusal is about this
-        // year's inventory rather than about anyone's basis, disqualifies only
-        // this year.
         fail('annuityStageRequired', 'A funded Plan annuity purchase requires its owned-IRA transfer source', {
+          taxYear, sourceAccountId: funding.id,
+          producerOccurrenceKey: expectedKey,
+        })
+      }
+      // THE REFUSAL THAT REMAINS, and what is left of it. Until this slice, a
+      // premium leaving the captured pool refused the year outright: the
+      // contract it went into was not something the replay carried, so the
+      // Form 8606 aggregate had value leave it and arrive nowhere. It carries
+      // the contract now -- the value channel below is the arrival -- but only
+      // for a contract it can place in ONE owner's aggregate. Section
+      // 408(d)(2)(A) aggregates one individual's plans, and a contract the
+      // engine cannot assign to an individual has no aggregate to enter.
+      //
+      // NO VALID PLAN IS KNOWN TO REACH IT. Which individual the contract
+      // belongs to is read off the FUNDING account, so a contract naming the
+      // other spouse or naming nobody stages like any other; a non-qualified
+      // premium cannot be drawn on a traditional account at all, plan
+      // validation having refused that since before this slice. It is kept as a
+      // fail-closed net rather than deleted, because the alternative to
+      // refusing an unplaceable contract is pricing a section 72 aggregate that
+      // has lost value to nowhere. If it ever fires the year prices on the
+      // legacy ledger, and since the refusal is about this year's inventory
+      // rather than anyone's basis it disqualifies only this year.
+      if (!contractOwnerById.has(asAccountId(annuity.id))) {
+        fail('annuityStageRequired', 'An owned-IRA annuity premium requires a contract this replay can place in one owner’s section 408(d)(2) aggregate', {
           taxYear, sourceAccountId: funding.id,
           producerOccurrenceKey: expectedKey,
         })
@@ -1543,25 +1728,77 @@ function validateUnchecked(
       ownerBalances.set(owner, normalizedBalances)
     }
 
+    // The other half of line 6, read at the same instant and checked before the
+    // chain that moves it. Each owner's staged contracts must be present, in
+    // canonical order, bound to the funding account that put them in this pool,
+    // opening at a figure inside the only bound there is -- the premium that
+    // filled the channel -- and, in a year at or before the purchase, opening at
+    // exactly zero, because nothing could have credited it yet.
+    const publishedContractOpenings = new Map<AccountId, number>()
+    const publishedContractClosings = new Map<AccountId, number>()
+    for (let ownerIndex = 0; ownerIndex < expectedOwners.length; ownerIndex += 1) {
+      const owner = expectedOwners[ownerIndex]!
+      const rawPool = balanceSource.ownerPools[ownerIndex]!
+      const expected = stagingContracts.filter((entry) =>
+        entry.ownerPersonId === owner)
+      const published = rawPool.annuityContractValues ?? []
+      if (published.length !== expected.length) {
+        fail('postGrowthPoolInvalid', 'Post-growth source must carry every and only this owner’s staged annuity contracts', {
+          taxYear, ownerPersonId: owner,
+        })
+      }
+      for (let index = 0; index < expected.length; index += 1) {
+        const { contract, funding } = expected[index]!
+        const entry = published[index]!
+        const contractAccountId = asAccountId(contract.id)
+        const context = {
+          taxYear, ownerPersonId: owner, sourceAccountId: contract.id,
+        }
+        const opening = entry.contractValueOpeningPlanDollars
+        const premium = contractPremiumById.get(contractAccountId)!
+        const purchaseYear = contractPurchaseYearById.get(contractAccountId)!
+        const carried = openingContractRawValues?.get(contractAccountId)
+        if (entry.annuityAccountId !== contract.id ||
+            entry.fundingAccountId !== funding.id ||
+            !Number.isFinite(opening) || opening < 0 ||
+            Object.is(opening, -0) || opening > premium ||
+            (taxYear <= purchaseYear && opening !== 0) ||
+            (carried !== undefined && carried !== opening)) {
+          fail('postGrowthPoolInvalid', 'A published annuity contract value must open inside its premium and continue the prior year’s close', context)
+        }
+        cents(opening, 'Published annuity contract opening value', context)
+        publishedContractOpenings.set(contractAccountId, opening)
+        publishedContractClosings.set(
+          contractAccountId, entry.contractValuePlanDollars,
+        )
+      }
+    }
+
     const normalizedApplications: NormalizedOwnedNonRothIraApplication[] = []
     /**
-     * An annuity pool exit seen in the chain, refused after the chain finishes
-     * rather than where it is found.
+     * The year's running contract-value channel, chained the same way the
+     * account balances are.
      *
-     * The refusal itself is unconditional -- a premium that left the captured
-     * pool always refuses the year -- but WHEN it is raised decides which issue
-     * kind the settlement's disqualification sees, and the annuity application
-     * always sorts first (its `annuityPurchaseFunding` phase has rank 0), so
-     * refusing in place masked every integrity failure later in the same year's
-     * chain. Deferring costs nothing and is safe because this application's own
-     * arithmetic has already been checked and its running balance already
-     * committed by the time it is recorded: the only thing skipped is the push
-     * to `normalizedApplications`, which cannot carry an `annuityFundingTransfer`
-     * anyway. A corrupt chain in an annuity year now reports the corruption.
+     * WHERE THE REFUSAL USED TO BE. A `deferredAnnuityPoolExit` stood here and
+     * refused every year in which a premium left the captured pool, because the
+     * pool it left had a hole in it: value went out of the section 408(d)(2)
+     * aggregate and this replay carried nothing it went into. This channel is
+     * what it went into. The premium is credited here at the same ordinal the
+     * debit was taken at, the contract's payments debit it, and its December 31
+     * total is added to Form 8606 line 6 beside the accounts -- which is what
+     * 408(d)(2)(A) with 7701(a)(37)(B) requires, and what makes the purchase
+     * invisible to the form exactly as the statute makes it.
      */
-    let deferredAnnuityPoolExit:
-      Readonly<Omit<OwnedNonRothIraRuntimeSourceSeriesIssue, 'kind' | 'detail'>>
-      | null = null
+    const contractRawValues = new Map(publishedContractOpenings)
+    const contractValues = new Map(
+      [...publishedContractOpenings].map(([contractId, value]) => [
+        contractId,
+        cents(value, 'Annuity contract opening value', {
+          taxYear, sourceAccountId: contractId,
+        }),
+      ]),
+    )
+    const creditedPremiumKeys = new Set<string>()
     const appliedKeys = new Set<string>()
     let priorPhase = -1
     let priorPhaseAccountOrder = -1
@@ -1570,6 +1807,59 @@ function validateUnchecked(
       const currentPhase = phaseRank(application)
       if (application.mutationOrdinal !== index + 1 || currentPhase < priorPhase) {
         fail('applicationOrderInvalid', 'Applications must retain contiguous ordinals and annual phase order', { taxYear })
+      }
+      if (application.applicationKind === 'annuityContractPremiumCredit') {
+        const contractId = application.destinationAnnuityAccountId
+        const context = {
+          taxYear,
+          ...(contractId === null ? {} : { sourceAccountId: contractId }),
+        }
+        if (application.simulatorPhase !== 'annuityPurchaseContractCredit' ||
+            application.producerOccurrenceKey !== null ||
+            application.ownerPersonId !== null ||
+            application.sourceAccountId !== null ||
+            application.sourceBalanceBeforePlanDollars !== null ||
+            application.sourceBalanceAfterPlanDollars !== null) {
+          fail('sourceContractInvalid', 'An annuity premium credit must not impersonate per-source evidence', context)
+        }
+        const key = application.producerOccurrenceKeys[0]
+        const debit = key === undefined ? undefined : occurrenceByKey.get(key)
+        const owner = contractId === null
+          ? undefined : contractOwnerById.get(asAccountId(contractId))
+        const funding = contractId === null
+          ? undefined : contractFundingById.get(asAccountId(contractId))
+        if (contractId === null || owner === undefined || funding === undefined ||
+            application.producerOccurrenceKeys.length !== 1 ||
+            key === undefined || creditedPremiumKeys.has(key) ||
+            debit?.kind !== 'annuityFundingTransfer' ||
+            debit.sourceAccountId !== funding ||
+            application.destinationOwnerPersonId !== owner ||
+            JSON.stringify(application.sourceOwnerPersonIds) !==
+              JSON.stringify([owner]) ||
+            occurrenceOrderId.get(key) !== contractId) {
+          fail('sourceContractInvalid', 'An annuity premium credit must bind one staged contract and its own owned-IRA debit', context)
+        }
+        creditedPremiumKeys.add(key)
+        const contractAccountId = asAccountId(contractId)
+        const rawBefore = contractRawValues.get(contractAccountId)
+        const before = contractValues.get(contractAccountId)
+        const credited = application.destinationCreditedAmountPlanDollars
+        const rawAfter = application.destinationContractValueAfterPlanDollars
+        const after = cents(rawAfter, 'Annuity contract value after a premium', context)
+        cents(credited, 'Annuity premium credit', context)
+        if (rawBefore === undefined || before === undefined ||
+            application.destinationContractValueBeforePlanDollars !== rawBefore ||
+            credited !== debit.grossAmountPlanDollars ||
+            rawBefore + credited !== rawAfter ||
+            BigInt(after) - (BigInt(before) + BigInt(cents(credited, 'Annuity premium credit', context))) < -2n ||
+            BigInt(after) - (BigInt(before) + BigInt(cents(credited, 'Annuity premium credit', context))) > 2n) {
+          fail('balanceChainInvalid', 'An annuity premium credit must continue the exact contract-value chain at its debit’s gross', context)
+        }
+        contractRawValues.set(contractAccountId, rawAfter)
+        contractValues.set(contractAccountId, after)
+        priorPhase = currentPhase
+        priorPhaseAccountOrder = -1
+        continue
       }
       if (application.applicationKind === 'aggregateRothDestinationCredit' ||
           application.applicationKind === 'namedRothDestinationCredit') {
@@ -1591,6 +1881,79 @@ function validateUnchecked(
       priorPhase = currentPhase
       priorPhaseAccountOrder = currentAccountOrder
       appliedKeys.add(application.producerOccurrenceKey)
+      if (ANNUITY_CONTRACT_CHAIN_PHASES.has(application.simulatorPhase)) {
+        // The contract-value chain, run on the same before/amount/after
+        // discipline the account chain runs on and against a different ledger,
+        // because there is no account balance here to run it against.
+        const contractId = occurrence.sourceAccountId!
+        const contractAccountId = asAccountId(contractId)
+        const poolOwner = contractOwnerById.get(contractAccountId)
+        const context = {
+          taxYear, sourceAccountId: contractId,
+          producerOccurrenceKey: occurrence.producerOccurrenceKey,
+          ...(poolOwner === undefined ? {} : { ownerPersonId: poolOwner }),
+        }
+        const shape = applicationShape(occurrence.kind)
+        if (poolOwner === undefined || !shape ||
+            occurrence.kind !== 'annuityContractDistribution' ||
+            application.applicationKind !== 'debit' ||
+            shape.simulatorPhase !== application.simulatorPhase ||
+            application.ownerPersonId !== occurrence.ownerPersonId ||
+            application.sourceAccountId !== contractId) {
+          fail('sourceCoverageInvalid', 'An annuity contract application must rejoin a staged contract’s own payment occurrence', context)
+        }
+        const rawBefore = contractRawValues.get(contractAccountId)
+        const before = contractValues.get(contractAccountId)
+        const rawApplied = application.appliedAmountPlanDollars
+        const rawAfter = application.sourceBalanceAfterPlanDollars
+        const occurrenceAmount = cents(occurrence.grossAmountPlanDollars, 'Annuity payment amount', context)
+        const applied = cents(rawApplied, 'Annuity contract value debit', context)
+        const after = cents(rawAfter, 'Annuity contract value after a payment', context)
+        // THE TWO FIGURES ARE NOT THE SAME FIGURE, and this is the seam where
+        // that has to be said. `occurrenceAmount` is what the contract PAID,
+        // which is the Form 8606 line-7 gross under 408(d)(2)(B); `applied` is
+        // what the value channel could give up, which is capped by what the
+        // channel still holds because a contract value cannot go negative. They
+        // differ only once a contract has paid out more than its premium, and
+        // there the whole payment still reports while the channel contributes
+        // nothing further to line 6 -- one of the two directions the convention
+        // errs in, and registered as such.
+        if (rawBefore === undefined || before === undefined ||
+            occurrenceAmount === 0 ||
+            application.sourceBalanceBeforePlanDollars !== rawBefore ||
+            rawApplied !== Math.min(occurrence.grossAmountPlanDollars, rawBefore) ||
+            rawBefore - rawApplied !== rawAfter ||
+            BigInt(after) - (BigInt(before) - BigInt(applied)) < -2n ||
+            BigInt(after) - (BigInt(before) - BigInt(applied)) > 2n) {
+          fail('balanceChainInvalid', 'An annuity payment must continue the exact contract-value chain and debit no more than the contract holds', context)
+        }
+        contractRawValues.set(contractAccountId, rawAfter)
+        contractValues.set(contractAccountId, after)
+        normalizedApplications.push({
+          producerOccurrenceKey: occurrence.producerOccurrenceKey,
+          occurrenceKind: 'annuityContractDistribution',
+          applicationKind: 'debit',
+          simulatorPhase: 'annuityContractDistribution',
+          mutationOrdinal: application.mutationOrdinal,
+          // THE POOL OWNER, not the payment owner. Which individual's Form 8606
+          // this payment lands on is decided by whose aggregate the contract is
+          // in, and 408(d)(2)(A) puts it in the aggregate of the person whose
+          // IRA bought it. On a contract that names its owner the two are the
+          // same person, because Plan validation requires it; on one that names
+          // nobody the payment owner is a household fallback and this is the
+          // fact.
+          ownerPersonId: poolOwner,
+          sourceAccountId: contractAccountId,
+          amount: occurrenceAmount,
+          sourceBalanceBefore: before,
+          sourceBalanceAfter: after,
+          sourceBalanceRoundingResidualCents:
+            Number(BigInt(after) - (BigInt(before) - BigInt(applied))) as -2 | -1 | 0 | 1 | 2,
+          form8606Line: 'line7',
+          form8606LineGrossAmount: occurrenceAmount,
+        })
+        continue
+      }
       const shape = applicationShape(occurrence.kind)
       const account = accountById.get(occurrence.sourceAccountId!)
       if (!shape || !account || !isAggregatedIra(account) ||
@@ -1634,13 +1997,12 @@ function validateUnchecked(
         application.sourceBalanceAfterPlanDollars,
       )
       if (occurrence.kind === 'annuityFundingTransfer') {
-        // The stage this names awaits the same open statutory research as the
-        // Plan-purchase pre-check above: the Form 8606 character of an
-        // IRA-funded qualified premium, and what §408(b) aggregation does with
-        // the contract the dollars land in. `context` carries the owner, so the
-        // refusal disqualifies this owner's year rather than the household's.
-        // Recorded rather than raised here -- see `deferredAnnuityPoolExit`.
-        deferredAnnuityPoolExit ??= context
+        // The debit is whole and the balance chain has taken it. It contributes
+        // no normalized application because it contributes nothing to either
+        // Form 8606 line -- 408(d)(1) reaches only what is paid or distributed
+        // OUT, and this was neither -- so the only thing left to check is that
+        // the value it moved arrived somewhere, which the credit above records.
+        // Checked after the loop, where the credit has had its chance to run.
         continue
       }
       normalizedApplications.push({
@@ -1690,11 +2052,45 @@ function validateUnchecked(
         )
       }
     }
-    // The chain is whole and rejoins the live observation, so nothing about
-    // this year's arithmetic is in question and the one thing left to say
-    // about it is that the replay does not carry where the premium went.
-    if (deferredAnnuityPoolExit !== null) {
-      fail('annuityStageRequired', 'Annuity funding leaves the captured owned-IRA pool and requires a broader transfer stage', deferredAnnuityPoolExit)
+    // THE PREMIUM MUST HAVE ARRIVED. Every `annuityFundingTransfer` debit the
+    // chain took has to be matched by the credit that put its dollars into a
+    // contract-value channel, or the year is one in which value left a section
+    // 408(d)(2) aggregate and entered nothing -- which is exactly the defect
+    // this slice closed and exactly what a missing credit would silently
+    // reopen. Deliberately raised AFTER the chain rejoins its live observation,
+    // for the reason the pool-exit refusal was moved there: the annuity
+    // application sorts first, so refusing in place would mask every integrity
+    // failure later in the same year.
+    for (const occurrence of occurrenceSource.runtimeOccurrences) {
+      if (occurrence.kind !== 'annuityFundingTransfer') continue
+      const funding = accountById.get(occurrence.sourceAccountId!)
+      if (!funding || !isAggregatedIra(funding)) continue
+      if (creditedPremiumKeys.has(occurrence.producerOccurrenceKey)) continue
+      fail('annuityStageRequired', 'An owned-IRA annuity premium requires the contract-value credit that received it', {
+        taxYear,
+        ownerPersonId: occurrence.ownerPersonId!,
+        sourceAccountId: occurrence.sourceAccountId!,
+        producerOccurrenceKey: occurrence.producerOccurrenceKey,
+      })
+    }
+    // And the December 31 value the projection published must be the one this
+    // chain arrived at, contract by contract, in exact cents. The opening was
+    // taken on trust and bounded; everything that happened to it since was not.
+    const settledContractValues = new Map<AccountId, UsdCents>()
+    for (const { contract, ownerPersonId } of stagingContracts) {
+      const contractAccountId = asAccountId(contract.id)
+      const context = {
+        taxYear, ownerPersonId, sourceAccountId: contract.id,
+      }
+      const closing = publishedContractClosings.get(contractAccountId)
+      const chainRaw = contractRawValues.get(contractAccountId)
+      const chainCents = contractValues.get(contractAccountId)
+      if (closing === undefined || chainRaw === undefined ||
+          chainCents === undefined || closing !== chainRaw ||
+          cents(closing, 'Published annuity contract value', context) !== chainCents) {
+        fail('postGrowthPoolInvalid', 'A published annuity contract value must exact-rejoin the replay’s own contract-value chain', context)
+      }
+      settledContractValues.set(contractAccountId, chainCents)
     }
 
     // A charitable gift reaches the published annual total by two routes that
@@ -1917,7 +2313,30 @@ function validateUnchecked(
     const ownerSources = expectedOwners.map((owner) => {
       const applications = normalizedApplications.filter((entry) => entry.ownerPersonId === owner)
       const yearEndBalances = ownerBalances.get(owner)!
-      const withoutId = { ownerPersonId: owner, taxYear, applications, yearEndBalances }
+      const annuityContractValues = stagingContracts
+        .filter((entry) => entry.ownerPersonId === owner)
+        .map(({ contract, funding }) => {
+          const contractAccountId = asAccountId(contract.id)
+          return {
+            annuityAccountId: contractAccountId,
+            fundingAccountId: asAccountId(funding.id),
+            contractValuePlanDollars: contractRawValues.get(contractAccountId)!,
+            contractValueAmount: settledContractValues.get(contractAccountId)!,
+          }
+        })
+      const annuityContractValueAmount = asUsdCents(
+        annuityContractValues.reduce(
+          (sum, entry) => sum + entry.contractValueAmount, 0,
+        ),
+      )
+      const withoutId = {
+        ownerPersonId: owner,
+        taxYear,
+        applications,
+        yearEndBalances,
+        annuityContractValues,
+        annuityContractValueAmount,
+      }
       return deepFreeze({
         ...withoutId,
         sourceChainEvidenceId: deriveActionStructuralId(
@@ -1938,6 +2357,7 @@ function validateUnchecked(
     }))
     openingBalances = postGrowthBalances
     openingRawBalances = postGrowthRawBalances
+    openingContractRawValues = contractRawValues
   }
 
   const withoutId = {

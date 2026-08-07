@@ -102,12 +102,18 @@ describe('simulate owned non-Roth IRA post-growth source capture', () => {
           { sourceAccountId: 'p1-requested', balancePlanDollars: 10 },
           { sourceAccountId: 'p1-zero-sibling', balancePlanDollars: 0 },
         ],
+        // Line 6's other half, empty for an owner who bought no annuity
+        // contract. Explicit rather than absent, for the same reason the zero
+        // sibling above is: an owner with nothing to report reports nothing,
+        // and the replay can tell that from a source that never said.
+        annuityContractValues: [],
       },
       {
         ownerPersonId: 'p2',
         accountBalances: [
           { sourceAccountId: 'p2-ira', balancePlanDollars: 30 },
         ],
+        annuityContractValues: [],
       },
     ])
   })
@@ -213,6 +219,7 @@ describe('simulate owned non-Roth IRA post-growth source capture', () => {
         accountBalances: [
           { sourceAccountId: 'unowned-ira', balancePlanDollars: 10 },
         ],
+        annuityContractValues: [],
       },
     ])
     expect(sourceOf(year).annualObservationValidation)
@@ -249,6 +256,7 @@ describe('simulate owned non-Roth IRA post-growth source capture', () => {
         accountBalances: [
           { sourceAccountId: 'owned-ira', balancePlanDollars: 10 },
         ],
+        annuityContractValues: [],
       },
     ])
   })

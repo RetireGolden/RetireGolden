@@ -63,6 +63,31 @@ export const annualRetirementRuntimeEventKinds = [
   'employerPlanEmployeeContribution',
   'employerPlanEmployerMatch',
   'annuityFundingTransfer',
+  /**
+   * A payment under an annuity contract an owned IRA bought with a qualified
+   * premium.
+   *
+   * It is a distribution, and this is the kind that says so. IRC 408(d)(1)
+   * reaches an amount "paid or distributed out of an individual retirement
+   * plan"; the premium was not one, because nothing was paid out, but the
+   * payment is -- Publication 590-B states the pair in two sentences, "You
+   * aren't taxed when you receive the annuity contract" and "You are taxed when
+   * you start receiving payments under that annuity contract". Section
+   * 408(d)(2)(B) then treats every distribution in a year as one distribution,
+   * so the payment joins the year's other IRA distributions on Form 8606 line 7
+   * and takes the same share of basis they do.
+   *
+   * Its source account is the CONTRACT, not the IRA that funded it, and that is
+   * the fact this kind exists to carry: a section 408(b) individual retirement
+   * annuity is an individual retirement plan in its own right under section
+   * 7701(a)(37)(B), and a contract held inside a section 408(a) trust is an
+   * asset of the account rather than of the payee. Either way the dollars come
+   * out of the contract, which is why this is not an `ownedIraRmd` with a
+   * borrowed source. Its chronology and movement authority stay absent: the
+   * annual simulator's loop position is not an execution sequence, so like the
+   * two named kinds above this is not a resolved runtime event kind.
+   */
+  'annuityContractDistribution',
   'rolloverInflow',
   'otherTraditionalTransfer',
 ] as const
@@ -708,6 +733,14 @@ function expectedOrigin(
     case 'ownedIraEmployerContribution':
     case 'employerPlanEmployeeContribution':
     case 'employerPlanEmployerMatch': return 'contributionLedger'
+    // The contract's payment is sized by the projection's own income block from
+    // the Plan's monthly amount, COLA, and payout form -- no request names it
+    // and no executor commits it -- so it belongs with the other figures the
+    // legacy projection chose. Deliberately not `transferLedger`, which is the
+    // premium's origin one line down: the premium moved value between two of
+    // the household's own line-6 assets, and the payment leaves the aggregate
+    // for the owner's pocket.
+    case 'annuityContractDistribution': return 'legacyProjection'
     case 'namedRothConversion':
     case 'annuityFundingTransfer':
     case 'rolloverInflow':

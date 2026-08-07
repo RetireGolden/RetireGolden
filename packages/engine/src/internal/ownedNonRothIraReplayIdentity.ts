@@ -9,6 +9,16 @@ import { deriveActionStructuralId } from '../actions/structuralId.js'
 
 export type OwnedNonRothIraReplayOccurrenceKind =
   | 'ownedIraRmd'
+  /**
+   * A payment out of an annuity contract an owned IRA bought with a qualified
+   * premium. It is a distribution from the section 408(d)(2) aggregate --
+   * Publication 590-B taxes the payments where it does not tax the purchase --
+   * so it carries Form 8606 line 7 and takes the year's basis fraction like any
+   * other distribution. Its source account is the CONTRACT, which is what keeps
+   * its identity distinct from a required distribution out of the IRA that
+   * bought it in the same year.
+   */
+  | 'annuityContractDistribution'
   | 'automaticSeppDistribution'
   | 'legacyNeedBasedWithdrawal'
   | 'legacyRothConversion'
