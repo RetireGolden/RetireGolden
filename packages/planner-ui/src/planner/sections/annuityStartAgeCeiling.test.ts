@@ -100,6 +100,17 @@ describe('annuityStartAgeCeiling', () => {
     expect(annuityStartAgeCeiling(planWithOwner(), annuity({ ownerPersonId: null }))).toBe(76)
   })
 
+  it('caps the ceiling at the schema maximum instead of standing down', () => {
+    // A 1930-born owner buying in 2026 is 96 at purchase, so the regulatory
+    // ceiling computes past the schema's 95 cap. The binding ceiling is 95:
+    // returning null there would switch the commit-time clamp off exactly
+    // where it should bind, and a typed 97 would sit in plan state until
+    // save.
+    const plan = planWithOwner('1930-01-01')
+    expect(annuityStartAgeCeiling(plan, annuity())).toBe(95)
+    expect(clampedAnnuityStartAge(plan, annuity({ startAge: 97 }))).toBe(95)
+  })
+
   it('leaves every other account type alone', () => {
     const pension: Account = {
       type: 'pension',
