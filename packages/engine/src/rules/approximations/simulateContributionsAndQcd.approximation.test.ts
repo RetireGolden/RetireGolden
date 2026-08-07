@@ -277,33 +277,135 @@ describeRule('irc-408-d-8-A-projection-household-qcd-aggregation', {
 })
 
 // The eligibility half of the same record, which #242's per-owner attribution
-// closed and this fixture pins: the gift may only be funded by a donor. A
-// spouse below 70½ contributes neither a required distribution the gift can be
-// routed out of nor an account it can be drained from, so a household with one
-// eligible donor is held to that donor's own limit however large the other
-// spouse's IRA is.
-it('funds a household gift only from the eligible donor', () => {
-  const plan = soloPlan('1946-06-15', null) // 80 in 2026, eligible
-  plan.household.filingStatus = 'marriedFilingJointly'
-  plan.household.people.push({
-    id: 'p2',
-    name: 'Sam',
-    dob: '1968-06-15', // 58 in 2026, years short of 70½
-    sex: 'average',
-    retirementAge: null,
-    longevity: { planningAge: 95, source: 'manual' },
+// closed and this fixture pins. Registered rather than left as a bare `it`,
+// because the record's coverage obligation runs to every departure it once
+// described and this is one of the three.
+describeRule('irc-408-d-8-A-projection-household-qcd-aggregation', {
+  readings: {
+    // 408(d)(8)(B)(ii) admits only a distribution made on or after the date
+    // "the individual for whose benefit the plan is maintained has attained age
+    // 70 1/2", so a spouse years short of it contributes neither a required
+    // distribution the gift can be routed out of nor an account it can be
+    // drained from. The household is held to the eligible donor's own limit.
+    statuteFundsOnlyFromTheEligibleDonor: QCD_LIMIT,
+    // The reading the arm carried while it gated on the household: pass the
+    // eligibility test on the elder, then fund the gift from whatever IRAs the
+    // household happens to hold.
+    householdReachesTheIneligibleSpousesIra: QCD_LIMIT * 1.5,
+  },
+  accepted: 'statuteFundsOnlyFromTheEligibleDonor',
+  note: 'an eligible donor beside an ineligible spouse',
+}, ({ accepted, readings }) => {
+  it('funds a household gift only from the eligible donor', () => {
+    const plan = soloPlan('1946-06-15', null) // 80 in 2026, eligible
+    plan.household.filingStatus = 'marriedFilingJointly'
+    plan.household.people.push({
+      id: 'p2',
+      name: 'Sam',
+      dob: '1968-06-15', // 58 in 2026, years short of 70 1/2
+      sex: 'average',
+      retirementAge: null,
+      longevity: { planningAge: 95, source: 'manual' },
+    })
+    plan.accounts = [
+      cash(0),
+      traditionalIra(3_000_000, 0, 'p1'),
+      traditionalIra(3_000_000, 0, 'p2'),
+    ]
+    plan.strategies.qcdAnnual = QCD_LIMIT * 1.5
+
+    const year = year2026(plan)
+
+    expect(year.qcd).toBeCloseTo(accepted, 6)
+    expect(year.qcd).not.toBeCloseTo(
+      readings.householdReachesTheIneligibleSpousesIra, 6,
+    )
   })
+})
+
+// --------------------------------------------------------------------------
+// The one-cent bound the carve leaves on the published denominator
+// --------------------------------------------------------------------------
+
+// THE HONEST HALF OF THE ATTRIBUTION CONVENTION, pinned rather than asserted in
+// prose, because the `irc-408-d-8-A-projection-household-qcd-aggregation`
+// record makes a claim about order-independence that is true of one step and
+// not of the next.
+//
+// WHICH DONOR gives is decided in sorted owner id order and does not move with
+// the plan's account listing. WHERE THE FRACTIONAL CENT LANDS does. Once an
+// owner's routed share is fixed it is carved out of their own required
+// distributions greedily in mutation order, every entry the carve consumes
+// whole lands on a line-7 gross of zero, exactly one entry is left partly
+// consumed, and each entry's gross is rounded to cents on its own -- so the SUM
+// can differ by a cent depending on which entry carries the remainder.
+//
+// NOT REMOVABLE WITHOUT COST, which is why this is a bound rather than a bug.
+// The annual ledger carves in plan dollars at its commit site, and the
+// settlement matches an assumed character only when its gross agrees to the
+// cent. Rounding the carve earlier in the replay would make the two arms
+// disagree and stop the year settling at all, which is a far larger error than
+// the one cent it would remove.
+const PERMUTATIONS = [
+  ['a', 'b', 'c'], ['a', 'c', 'b'], ['b', 'a', 'c'],
+  ['b', 'c', 'a'], ['c', 'a', 'b'], ['c', 'b', 'a'],
+] as const
+const PERMUTATION_BALANCES: Readonly<Record<string, number>> =
+  { a: 333_333, b: 222_222, c: 111_111 }
+
+/** The published Form 8606 line-9 denominator, in cents, for one listing. */
+function denominatorAcrossListing(order: readonly string[], gift: number): number {
+  const plan = soloPlan('1945-01-01', null) // 81 in 2026, well past the applicable age
+  plan.expenses.baseAnnual = 0
+  plan.expenses.healthcare = {
+    pre65MonthlyPremiumPerPerson: 0,
+    applyAcaCredit: false,
+    medicareExtrasMonthlyPerPerson: 0,
+  }
   plan.accounts = [
-    cash(0),
-    traditionalIra(3_000_000, 0, 'p1'),
-    traditionalIra(3_000_000, 0, 'p2'),
+    cash(50_000),
+    // The basis sits on whichever IRA is listed first, so the pool carries one
+    // basis figure however the accounts are permuted.
+    ...order.map((id, index) => {
+      const account = traditionalIra(PERMUTATION_BALANCES[id]!, 0, 'p1') as
+        Extract<Account, { type: 'traditional' }>
+      return {
+        ...account,
+        id,
+        annualReturnPct: 0,
+        ...(index === 0 ? { nondeductibleBasis: 100_000 } : {}),
+      }
+    }),
   ]
-  plan.strategies.qcdAnnual = QCD_LIMIT * 1.5
+  if (gift > 0) plan.strategies.qcdAnnual = gift
 
   const year = year2026(plan)
+  return year.ownedNonRothIraAnnualReplay!.annualReplay
+    .ownerReplays[0]!.annualBasisRatio.denominatorMinorUnits
+}
 
-  expect(year.qcd).toBeCloseTo(QCD_LIMIT, 6)
-  expect(year.qcd).not.toBeCloseTo(QCD_LIMIT * 1.5, 6)
+describe('the routed carve leaves a one-cent bound on the published denominator', () => {
+  it('publishes the same denominator to the cent when nothing is gifted', () => {
+    const denominators = PERMUTATIONS
+      .map((order) => denominatorAcrossListing(order, 0))
+
+    // The control. Without a carve there is no fractional remainder to place,
+    // so account order changes nothing at all.
+    expect(new Set(denominators).size).toBe(1)
+    expect(denominators[0]).toBe(66_666_600)
+  })
+
+  it('varies by at most one cent when a gift is routed out of the requirement', () => {
+    const denominators = PERMUTATIONS
+      .map((order) => denominatorAcrossListing(order, 40_000))
+
+    // Two values, one cent apart, and no wider. If this ever spreads further
+    // the carve stopped being a single-entry remainder and the record's claim
+    // about the bound has to be re-measured.
+    expect(new Set(denominators).size).toBe(2)
+    expect(Math.max(...denominators) - Math.min(...denominators)).toBe(1)
+    expect(Math.min(...denominators)).toBe(62_666_600)
+  })
 })
 
 // --------------------------------------------------------------------------
