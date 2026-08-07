@@ -291,11 +291,19 @@ export interface OptimizerYearProbe {
    * `expectedNetProceeds` deposit in the property-events block) — whose GAIN
    * the LP is already charged, through `preWithdrawalCapitalResult` into
    * `capitalGainsBase`; a permanent-life death benefit deposited by the
-   * insurance block; and a HECM draw (`hecmDraw`), which is the one member that
-   * must not be booked as cash alone, because the LP carries no bucket for the
-   * loan balance it creates. Every one but the HECM draw makes the solve poorer
-   * than the household, so omitting them is the conservative answer until that
-   * channel and that bucket exist. A separate slice.
+   * insurance block; and a HECM draw (`hecmDraw`).
+   *
+   * ALL FOUR OMISSIONS RUN IN THE SAME DIRECTION: they make the solve POORER
+   * than the household, which is why omitting them is the conservative answer
+   * until the channel and the bucket that would carry them exist. The HECM draw
+   * is measured, not assumed — the draw funds the ledger's own spending while
+   * the probe reports `exogenousCash` of 0 and the full `spendingNeed`, so the
+   * LP funds the whole year out of buckets the household never had to touch.
+   * What is special about it is not its direction but its FIX: booking the
+   * draw's cash ALONE, with no bucket for the loan balance it creates and
+   * accrues, would flip the solve from poorer to richer and hand it a line of
+   * free money it never repays. That is why it needs a debt bucket rather than
+   * a cash credit, and why it cannot ride this channel. A separate slice.
    *
    * Read back off what each producer published — the year's runtime
    * OCCURRENCES for the gift, the series and the lump sum (the occurrence is
@@ -360,14 +368,36 @@ export interface OptimizerYearProbe {
    *
    * THE GROSS, not the taxable share, and deliberately not the same figure as
    * the exclusion. Every routed dollar left the cash flow; only the includible
-   * share left income (§408(d)(8)(D) measures the exclusion against what "would
-   * otherwise be includible"), so on an IRA carrying nondeductible basis the
-   * two differ. They cannot double-adjust: they are subtracted from different
+   * share left income, so on an IRA carrying nondeductible basis the two
+   * differ. They cannot double-adjust: they are subtracted from different
    * constants on different sides of the model.
+   *
+   * THE PREMISE IS STATUTORY AND THE COMPANION FIGURE IS AN APPROXIMATION —
+   * this field's contract asserts the first and must not be read as asserting
+   * the second. §408(d)(8)(D) is why a gross and an includible figure may
+   * legitimately differ at all: it deems the gift to consist of
+   * otherwise-includible dollars, so a partly-basis distribution does not
+   * exclude its whole gross. What the engine computes for the includible side
+   * is narrower than the statute — the statutory measure is the aggregate
+   * includible amount across ALL of the owner's individual retirement plans
+   * treated as one contract, and `qcdIncomeOffset` caps at the required
+   * distribution's own taxable share instead. Registered, with a produced
+   * fixture, on `taxRuleRegistry.ts`'s
+   * `irc-408-d-8-D-projection-qcd-after-pro-rata` — the record already holding
+   * the other half of the same departure, since one fix closes both. This field
+   * is the GROSS and is unaffected by that defect.
    *
    * The gift's BEYOND-RMD part is not here. Those dollars never entered
    * `baseCashInflows`, so the LP never credited cash for them; they are on
    * `exogenousStrategyAccountMovement` as a bucket debit instead.
+   *
+   * IT CAN TURN AN OPTIMAL SOLVE INFEASIBLE, and that is the term working. A
+   * gift-heavy plan whose exact ledger runs out of money used to return a
+   * confident schedule built on the gifted dollars; taking that cash back
+   * leaves some of those years with no way to fund spending at all, so the LP
+   * now reports infeasible where the ledger depletes — the LP agreeing with its
+   * own ledger instead of contradicting it. A sweep of the gift/spending/cash
+   * grid moved 7 of 24 cells from optimal to infeasible on that account.
    */
   forcedDistributionCashDiversion: number
   /**

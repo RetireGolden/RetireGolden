@@ -155,6 +155,15 @@ export interface OptimizerYear {
    * these dollars somewhere real (another withdrawal, or less `save`) or the
    * year is infeasible, which is exactly the household's position.
    *
+   * SO IT CAN TURN AN OPTIMAL SOLVE INFEASIBLE, and that is the term working
+   * rather than a regression to route around. A gift-heavy plan whose exact
+   * ledger depletes used to get a confident schedule funded out of the gifted
+   * dollars; once those are taken back, some of those years cannot be funded at
+   * all, and the honest answer is that there is no schedule. The LP now agrees
+   * with its own ledger where it used to contradict it. A sweep across the
+   * gift/spending/cash grid moved 7 of 24 cells from optimal to infeasible on
+   * exactly those plans.
+   *
    * THE PREMISE IT RESTS ON, and where it stops holding: that `wt` contains the
    * forced dollars whose cash this takes back. The RMD floor (`rmd{t}`) forces
    * `wt` to at least the modeled required distribution and the probe caps this

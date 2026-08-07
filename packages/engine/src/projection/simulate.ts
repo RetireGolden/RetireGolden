@@ -6461,13 +6461,37 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       //
       // THE GROSS, NOT THE TAXABLE SHARE, and deliberately a different figure
       // from the exclusion above. What left the cash flow is every routed
-      // dollar; what left income is only the share of them that was includible
-      // (§408(d)(8)(D) measures the exclusion against what "would otherwise be
-      // includible"). On an IRA carrying nondeductible basis the two differ by
-      // the basis share, and using either for both would be wrong in one of the
-      // two places. There is no double adjustment between them for the same
-      // reason: they are subtracted from different constants on different sides
-      // of the model.
+      // dollar; what left income is only the share of them that was includible.
+      // On an IRA carrying nondeductible basis the two differ, and using either
+      // for both would be wrong in one of the two places. There is no double
+      // adjustment between them for the same reason: they are subtracted from
+      // different constants on different sides of the model.
+      //
+      // THE PREMISE IS STATUTORY; THE OTHER FIGURE IS NOT, AND THIS COMMENT
+      // MUST NOT BE READ AS CERTIFYING IT. §408(d)(8)(D) is why a gross figure
+      // and an includible figure legitimately differ — it deems the gift to
+      // consist of otherwise-includible dollars, so a distribution that is
+      // partly a return of basis does not exclude its whole gross. That premise
+      // is what this term rests on and it is sound. But the includible figure
+      // the engine actually computes is NARROWER than the statute's: the
+      // §408(d)(8)(D) measure is the aggregate amount that would be includible
+      // across ALL of the owner's individual retirement plans treated as one
+      // contract, and `qcdIncomeOffset` above caps at `ownedIraRmdTotal −
+      // rmdNontaxable` — the required distribution's own taxable share — which
+      // is a smaller ceiling on every shape where the owner's IRAs hold more
+      // includible dollars than this year's RMD does. The QCD block's own
+      // comment states the aggregate measure correctly; the code below it does
+      // not implement it. That understates the year's income and burns basis
+      // that later years then do not have. It is a PRE-EXISTING defect of the
+      // income side, registered as an approximation with a produced fixture on
+      // `taxRuleRegistry.ts`'s `irc-408-d-8-D-projection-qcd-after-pro-rata` —
+      // the record that already carried the other half of the same departure,
+      // because deeming the gift pre-tax under (D) replaces this computation
+      // outright and the ceiling goes with it, so they are one defect and not
+      // two. Tracked as its own slice, because correcting it moves tax
+      // figures.
+      // The CASH term here is unaffected either way: it is the gross, and the
+      // gross is not in dispute.
       //
       // The BEYOND-RMD arm is deliberately not here, on the same reasoning that
       // keeps it off `exogenousStrategyAccountMovement`'s exclusion list and
@@ -6700,17 +6724,21 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       //     `capitalGainsBase` through `preWithdrawalCapitalResult`. That is
       //     tax with no cash, the SEPP's defect shape.
       //   - a coordinated or backstop HECM draw adds `hecmDraw` to the year's
-      //     cash and the same dollars to a loan balance that accrues. It is the
-      //     one member of this class that must NOT be booked as cash alone: the
-      //     LP carries no debt bucket, so crediting the draw without the loan
-      //     would hand the solve a line of free money it never repays.
+      //     cash and the same dollars to a loan balance that accrues.
       //   - a permanent-life death benefit is deposited into a cash/taxable
       //     account (the insurance block below) from a policy the LP does not
       //     carry.
-      // All four make the solve poorer than the household except the HECM draw,
-      // which is why omitting them is the conservative answer while the shape
-      // that would fix them — a channel for assets outside the four buckets,
-      // and a bucket for the debt — is designed. That is a separate slice.
+      // ALL FOUR RUN THE SAME WAY: they make the solve POORER than the
+      // household, which is why omitting them is the conservative answer while
+      // the shape that would fix them — a channel for assets outside the four
+      // buckets, and a bucket for the debt — is designed. The HECM draw is
+      // measured rather than assumed: it funds the ledger's own spending while
+      // this probe reports `exogenousCash` of 0 and the whole `spendingNeed`,
+      // so the LP pays for the year out of buckets the household never touched.
+      // What sets it apart is its FIX, not its direction — booking the draw's
+      // cash ALONE, with no bucket for the loan it creates, would flip the
+      // solve from poorer to richer and hand it a line of free money it never
+      // repays. That is a separate slice, and a debt bucket is part of it.
       //
       // Cents per account, converted once, for the reason spelled out above:
       // differencing or summing separately-rounded dollar figures leaves a
