@@ -18,7 +18,12 @@ import { describe, expect, it } from 'vitest'
 
 import { createEmptyPlan, type Account, type Plan } from '@retiregolden/engine/model/plan'
 
-import { annuityStartAgeCeiling, clampedAnnuityStartAge } from './sectionHelpers'
+import {
+  annuityStartAgeBounds,
+  annuityStartAgeCeiling,
+  annuityStartAgeHelp,
+  clampedAnnuityStartAge,
+} from './sectionHelpers'
 
 let counter = 0
 const testIds = (): string => `ceiling-${++counter}`
@@ -150,6 +155,64 @@ describe('annuityStartAgeCeiling', () => {
       survivorPct: 50,
     }
     expect(annuityStartAgeCeiling(planWithOwner(), pension)).toBeNull()
+  })
+})
+
+/**
+ * What the field SAYS, which is the half of this that can be wrong while every
+ * number above is right.
+ *
+ * The two ceilings do not order the same way for every owner. A QLAC's is fixed
+ * at 85 (86 for a December birth); an ordinary qualified purchase's is the later
+ * of the applicable RMD age plus one and the owner's age in the purchase year,
+ * so it CLIMBS with a late annuitization and overtakes the QLAC's. Copy that
+ * names one box as the way to start later is therefore true for some households
+ * and false for others, and the false half sends them to a second refusal.
+ */
+describe('annuityStartAgeHelp', () => {
+  const helpFor = (plan: Plan, account: Account) => annuityStartAgeHelp(annuityStartAgeBounds(plan, account))
+
+  it('offers the QLAC box to an owner it would actually help', () => {
+    // Born 1950, buying at 76: the ordinary ceiling is 76 and the QLAC's is 85,
+    // so ticking the box buys nine more years and the copy names it.
+    expect(helpFor(planWithOwner(), annuity())).toBe(
+      'A pre-tax annuity purchase has to start paying by age 76. To start later than that, tick "QLAC (qualified longevity annuity)" below — a QLAC is the only kind of deferred annuity the IRA rules allow, and it has to start by age 85.',
+    )
+  })
+
+  it('does not offer the QLAC box to an owner it would refuse', () => {
+    // Born 1930, buying in 2026 at 96: the ordinary ceiling is the schema's 95
+    // and the QLAC's is 85, so the box LOWERS what is allowed by ten years.
+    // This is the case the old unconditional copy got wrong.
+    const help = helpFor(planWithOwner('1930-01-01'), annuity())
+    expect(help).toBe(
+      'A pre-tax annuity purchase has to start paying by age 95. Ticking "QLAC (qualified longevity annuity)" below would not buy a later start: a QLAC has to start by age 85.',
+    )
+    expect(help).not.toContain('To start later than that')
+  })
+
+  it('offers the untick to a QLAC whose ordinary ceiling is the higher one', () => {
+    // The same 1930-born owner with the box already ticked: dropping it is the
+    // remedy, and the copy names the age it would buy back.
+    expect(helpFor(planWithOwner('1930-01-01'), qlacAnnuity())).toBe(
+      'A QLAC has to start paying by age 85. To start later than that, untick "QLAC (qualified longevity annuity)" below — bought this late, an ordinary pre-tax purchase may start as late as age 95.',
+    )
+  })
+
+  it('does not claim a QLAC is the latest start any pre-tax purchase allows', () => {
+    // Born 1950, buying at 76: here the QLAC's 85 really is the higher ceiling,
+    // so unticking would lower it to 76 and the copy says so instead of
+    // offering the untick — and, unlike the copy this replaced, it does not
+    // assert that 85 is the most any pre-tax purchase can ever reach.
+    const help = helpFor(planWithOwner(), qlacAnnuity())
+    expect(help).toBe(
+      'A QLAC has to start paying by age 85. Unticking "QLAC (qualified longevity annuity)" below would not buy a later start: a pre-tax purchase that is not a QLAC has to start by age 76.',
+    )
+    expect(help).not.toContain('the latest start the IRA rules allow')
+  })
+
+  it('says nothing where no bound applies', () => {
+    expect(helpFor(planWithOwner(), annuity({ purchase: undefined }))).toBeUndefined()
   })
 })
 

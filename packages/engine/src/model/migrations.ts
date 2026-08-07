@@ -558,6 +558,15 @@ export type PlanLoadRepair =
       accountName: string
       startAge: number
       latestPermittedStartAge: number
+      /**
+       * What the OTHER shape would have allowed — here, the (q)(1)(ii) ceiling a
+       * QLAC would have been under. Carried because the repair notice has to
+       * decide whether re-authoring the contract as a QLAC is a remedy or a
+       * second refusal, and the two ceilings do not order the same way for every
+       * owner. Computing it costs the migration nothing: the birth month it
+       * needs is already in hand for the branch above.
+       */
+      latestPermittedStartAgeIfToggled: number
     }
   /** A QLAC purchase whose payments commence after the first of the month following the owner's 85th birthday. */
   | {
@@ -566,6 +575,8 @@ export type PlanLoadRepair =
       accountName: string
       startAge: number
       latestPermittedStartAge: number
+      /** What dropping the QLAC election would have allowed — the required-beginning-date ceiling. */
+      latestPermittedStartAgeIfToggled: number
     }
 
 /** The document as repaired, plus what the repairs were. */
@@ -852,9 +863,9 @@ function normalizeCurrentPlan(raw: Record<string, unknown>): NormalizedPlan {
           ? ownerBirthParts(accountRecord['ownerPersonId'])
           : null
       if (birth !== null && typeof startAge === 'number' && typeof purchaseYear === 'number') {
-        const latestPermittedStartAge = isQlac
-          ? latestQlacAnnuityStartAge(birth.month)
-          : latestNonQlacQualifiedAnnuityStartAge(birth.year, purchaseYear)
+        const qlacCeiling = latestQlacAnnuityStartAge(birth.month)
+        const nonQlacCeiling = latestNonQlacQualifiedAnnuityStartAge(birth.year, purchaseYear)
+        const latestPermittedStartAge = isQlac ? qlacCeiling : nonQlacCeiling
         if (startAge > latestPermittedStartAge) {
           changed = true
           repairs.push({
@@ -863,6 +874,12 @@ function normalizeCurrentPlan(raw: Record<string, unknown>): NormalizedPlan {
             accountName: stringField(accountRecord, 'name'),
             startAge,
             latestPermittedStartAge,
+            // Both ceilings travel with the repair. The notice has to say
+            // whether the household can re-author this contract under the other
+            // shape, and the two do not order the same way for every owner: the
+            // required-beginning-date ceiling climbs with the purchase year, so
+            // for a late annuitizer it sits ABOVE the QLAC's fixed 85 or 86.
+            latestPermittedStartAgeIfToggled: isQlac ? nonQlacCeiling : qlacCeiling,
           })
           const stoodDown = { ...accountRecord, monthlyAmount: 0 }
           Reflect.deleteProperty(stoodDown, 'purchase')

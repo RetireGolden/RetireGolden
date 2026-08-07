@@ -349,6 +349,31 @@ describe('migratePlanToCurrent', () => {
           accountName: 'Longevity annuity',
           startAge: 85,
           latestPermittedStartAge: 76,
+          // What a QLAC would have allowed. Carried so the repair notice can
+          // tell whether re-authoring the contract with the box ticked is a
+          // remedy or a second refusal; here 85 is exactly reachable, so it is
+          // a remedy and the notice offers it.
+          latestPermittedStartAgeIfToggled: 85,
+        },
+      ])
+    })
+
+    it('carries the other shape’s ceiling so the notice can tell if it would help', () => {
+      // A start age of 90 fails the required-beginning-date bound AND the QLAC
+      // bound, so "buy it as a QLAC" is not a remedy at all. The repair says so
+      // by carrying both numbers rather than leaving the copy to assume the
+      // QLAC box is always the generous one.
+      const result = migratePlanToCurrent(storedDeferredAnnuity({ startAge: 90 }))
+      expect(result.ok).toBe(true)
+      if (!result.ok) return
+      expect(result.repairs).toEqual([
+        {
+          kind: 'deferredAnnuityPurchaseStoodDown',
+          accountId: 'ann',
+          accountName: 'Longevity annuity',
+          startAge: 90,
+          latestPermittedStartAge: 76,
+          latestPermittedStartAgeIfToggled: 85,
         },
       ])
     })
@@ -401,6 +426,32 @@ describe('migratePlanToCurrent', () => {
           accountName: 'Longevity annuity',
           startAge: 90,
           latestPermittedStartAge: 85,
+          // This owner bought at 76, so dropping the QLAC election would land
+          // the contract on a ceiling of 76 — lower still, and not a remedy.
+          latestPermittedStartAgeIfToggled: 76,
+        },
+      ])
+    })
+
+    it('reports the higher ordinary ceiling for a household that annuitized late', () => {
+      // The required-beginning-date bound is the later of the applicable RMD age
+      // plus one and the owner's age in the purchase year, so an owner buying at
+      // 90 may hold a contract starting at 90 without the QLAC election. Here it
+      // is the BOX that refused them, and the repair carries the number that
+      // says so rather than leaving the notice to assume otherwise.
+      const result = migratePlanToCurrent(
+        storedDeferredAnnuity({ qlac: true, startAge: 90, dob: '1936-01-01' }),
+      )
+      expect(result.ok).toBe(true)
+      if (!result.ok) return
+      expect(result.repairs).toEqual([
+        {
+          kind: 'qlacPurchaseStoodDown',
+          accountId: 'ann',
+          accountName: 'Longevity annuity',
+          startAge: 90,
+          latestPermittedStartAge: 85,
+          latestPermittedStartAgeIfToggled: 90,
         },
       ])
     })

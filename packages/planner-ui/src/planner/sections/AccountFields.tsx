@@ -6,7 +6,7 @@ import type { Account, Plan } from '@retiregolden/engine/model/plan'
 import { analyzePensionElections } from '@retiregolden/engine/decisions/pensionElection'
 import { packForYear } from '@retiregolden/engine/params'
 import { AllocationPanel, ReturnEstimatorModal } from './AllocationPanel'
-import { ACCOUNT_LABEL, annuityStartAgeCeiling, clampedAnnuityStartAge, EVEN_START_WEIGHTS, isAllocatable, isIndividuallyOwnedAccount, type AllocatableAccount } from './sectionHelpers'
+import { ACCOUNT_LABEL, annuityStartAgeBounds, annuityStartAgeHelp, clampedAnnuityStartAge, EVEN_START_WEIGHTS, isAllocatable, isIndividuallyOwnedAccount, type AllocatableAccount } from './sectionHelpers'
 import { usePlan } from '../planContextCore'
 import { CheckboxField, MoneyField, NumberField, PercentField, ReadonlyField, SelectField, TextField } from '../fields'
 import { fmtMoney } from '../format'
@@ -55,7 +55,10 @@ export function AccountFields({ account, index }: { account: Account; index: num
     update((d) => {
       updateAccountField(d, index, key, value)
     })
-  const startAgeCeiling = annuityStartAgeCeiling(plan, account)
+  // Both ceilings, not just the binding one: the field's `max` wants the bound
+  // that applies, and the help under it has to say whether the QLAC box would
+  // raise or lower that bound for THIS owner before it names the box at all.
+  const startAgeBounds = annuityStartAgeBounds(plan, account)
   /**
    * Commit one field and, in the same update block, pull the start age down to
    * whatever the edit leaves permitted.
@@ -498,16 +501,10 @@ export function AccountFields({ account, index }: { account: Account; index: num
         <>
           <NumberField
             label="Start age"
-            help={
-              startAgeCeiling === null
-                ? undefined
-                : account.type === 'annuity' && account.purchase?.qlac === true
-                  ? `A QLAC has to start paying by age ${startAgeCeiling}. That is the latest start the IRA rules allow any pre-tax purchase, so there is no box to tick for a later one.`
-                  : `A pre-tax annuity purchase has to start paying by age ${startAgeCeiling}. To start later than that, tick "QLAC (qualified longevity annuity)" below — a QLAC is the only kind of deferred annuity the IRA rules allow.`
-            }
+            help={annuityStartAgeHelp(startAgeBounds)}
             value={account.startAge}
             min={40}
-            max={startAgeCeiling ?? 95}
+            max={startAgeBounds?.binding ?? 95}
             onCommit={(v) => setStartAge(Math.round(v ?? 65))}
           />
           <MoneyField label="Monthly amount" value={account.monthlyAmount} onCommit={(v) => set('monthlyAmount', v ?? 0)} />
