@@ -506,6 +506,37 @@ const defaultRegistry: Record<number, MigrationStep> = {
   3: migratePlanV3ToV4,
 }
 
+/** True for a raw account record that is a beneficiary (inherited) traditional account. */
+function isInheritedTraditionalRecord(account: unknown): boolean {
+  if (typeof account !== 'object' || account === null || Array.isArray(account)) return false
+  const record = account as Record<string, unknown>
+  return record['type'] === 'traditional' && record['inherited'] !== undefined && record['inherited'] !== null
+}
+
+/** True for a raw account record that is a traditional account the household owns. */
+function isOwnedTraditionalRecord(account: unknown): boolean {
+  if (typeof account !== 'object' || account === null || Array.isArray(account)) return false
+  const record = account as Record<string, unknown>
+  return record['type'] === 'traditional' && (record['inherited'] === undefined || record['inherited'] === null)
+}
+
+/**
+ * Load-time repairs for shapes a stored document could hold but current
+ * validation refuses.
+ *
+ * This runs on EVERY load, before `parsePlan`, whatever version the document was
+ * stored at — which is why it, and not a version-keyed migration step, is the
+ * seam for retiring a newly-invalid shape. A step in the registry only runs for
+ * documents stored BELOW the current version, so a plan already stored at the
+ * current version would sail past it and die at the parse instead. The house
+ * pattern is set by the `ownerPersonId: null` repair below: a rule was added
+ * ("traditional/roth/hsa accounts must have an individual owner") and legacy
+ * documents were carried across it here rather than being refused at the door.
+ *
+ * The bar every repair meets: it never locks a household out of the plan the new
+ * message is telling them to fix, and it never leaves the projection richer than
+ * the stored facts support.
+ */
 function normalizeCurrentPlan(raw: Record<string, unknown>): Record<string, unknown> {
   const household = raw['household']
   const accounts = raw['accounts']
@@ -520,6 +551,16 @@ function normalizeCurrentPlan(raw: Record<string, unknown>): Record<string, unkn
   const primaryId = (primary as Record<string, unknown>)['id']
   if (typeof primaryId !== 'string' || primaryId.length === 0) return raw
 
+  const stamped = typeof raw['updatedAtIso'] === 'string' ? /^(\d{4})-/.exec(raw['updatedAtIso']) : null
+  const planAsOfYear = stamped === null ? null : Number(stamped[1])
+  const inheritedAccountIds = new Set(
+    accounts.filter(isInheritedTraditionalRecord).map((a) => (a as Record<string, unknown>)['id']),
+  )
+  const ownedTraditionalIds = accounts
+    .filter(isOwnedTraditionalRecord)
+    .map((a) => (a as Record<string, unknown>)['id'])
+    .filter((id): id is string => typeof id === 'string')
+
   let changed = false
   const normalizedAccounts = accounts.map((account) => {
     if (typeof account !== 'object' || account === null || Array.isArray(account)) return account
@@ -531,6 +572,68 @@ function normalizeCurrentPlan(raw: Record<string, unknown>): Record<string, unkn
       changed = true
       return { ...accountRecord, ownerPersonId: primaryId }
     }
+
+    // A pension lump-sum election a stored document may hold but parse refuses.
+    //
+    // Both refused shapes resolve the same way: drop the ELECTION, keep the
+    // OFFER. The Plan has no field anywhere that records a lump sum already
+    // taken — an executed one is representable only as a balance with no pension
+    // — so `lumpSumElection` can only ever mean "model the rollover in the
+    // election year", which the schema states outright and the editor's own
+    // wording repeats ("Take the lump sum (rollover)" against "Keep the annuity
+    // (undecided)"). An election naming a year already gone, or naming a target
+    // no beneficiary may use, therefore cannot mean the household did it; it can
+    // only be a modelled election that never happened. Undecided-with-the-offer-
+    // on-record is the state the model can actually express, and it is the state
+    // the editor would put them in.
+    if (accountRecord['type'] === 'pension' && accountRecord['lumpSumElection'] !== undefined && accountRecord['lumpSumElection'] !== null) {
+      const election = accountRecord['lumpSumElection']
+      const offer = accountRecord['lumpSumOffer']
+      const target =
+        typeof election === 'object' && election !== null && !Array.isArray(election)
+          ? (election as Record<string, unknown>)['rolloverAccountId']
+          : undefined
+      const electionYear =
+        typeof offer === 'object' && offer !== null && !Array.isArray(offer)
+          ? (offer as Record<string, unknown>)['electionYear']
+          : undefined
+      const yearAlreadyGone =
+        planAsOfYear !== null && typeof electionYear === 'number' && electionYear < planAsOfYear
+      const targetNotOwnedTraditional =
+        typeof target !== 'string' || !ownedTraditionalIds.includes(target)
+      if (yearAlreadyGone || targetNotOwnedTraditional) {
+        changed = true
+        const repaired = { ...accountRecord }
+        Reflect.deleteProperty(repaired, 'lumpSumElection')
+        return repaired
+      }
+    }
+
+    // A qualified annuity purchase funded from an inherited IRA. Unlike the
+    // election above this one already MOVED money in every stored projection —
+    // the premium left the funding balance and the contract pays — so dropping
+    // the purchase outright would hand the household a contract nobody paid for,
+    // which is the one direction a repair may never go. Retarget instead: the
+    // decision on record is "buy this with pre-tax dollars", and the household's
+    // own pre-tax dollars are exactly the owned traditional accounts, so the
+    // premium keeps its year, its size, and its pre-tax character and only
+    // changes which bucket it leaves. With no owned traditional account anywhere
+    // in the plan there is no legal shape and no source that could have paid the
+    // premium, so the contract is stood down rather than left paying.
+    if (accountRecord['type'] === 'annuity' && typeof accountRecord['purchase'] === 'object' && accountRecord['purchase'] !== null && !Array.isArray(accountRecord['purchase'])) {
+      const purchase = accountRecord['purchase'] as Record<string, unknown>
+      if (purchase['taxQualification'] === 'qualified' && inheritedAccountIds.has(purchase['fundingAccountId'])) {
+        changed = true
+        const replacement = ownedTraditionalIds.find((id) => id !== accountRecord['id'])
+        if (replacement !== undefined) {
+          return { ...accountRecord, purchase: { ...purchase, fundingAccountId: replacement } }
+        }
+        const stoodDown = { ...accountRecord, monthlyAmount: 0 }
+        Reflect.deleteProperty(stoodDown, 'purchase')
+        return stoodDown
+      }
+    }
+
     return account
   })
 

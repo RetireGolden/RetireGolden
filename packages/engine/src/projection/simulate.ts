@@ -845,10 +845,21 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
   // the receiving account's entered balance. Naming it is the whole fix here;
   // moving money on a guess is not available to this engine.
   for (const account of plan.accounts) {
-    if (account.type !== 'pension' || !account.lumpSumElection || !account.lumpSumOffer) continue
+    if (account.type !== 'pension' || !account.lumpSumOffer) continue
     if (account.lumpSumOffer.electionYear >= startYear) continue
+    if (account.lumpSumElection) {
+      warnings.add(
+        'A pension lump-sum election is dated before this projection starts, so the pension pays nothing and no rollover is credited. Update the election year, or clear the election and add the rolled-over dollars to the receiving account balance.',
+      )
+      continue
+    }
+    // The visible trace for the load-time repair in `model/migrations.ts`. A
+    // stored document whose election could not be modelled comes back undecided
+    // with its offer intact, so the pension pays again; this says why, in the
+    // same breath as the identical state a household reaches by simply letting
+    // an offer's deadline go by.
     warnings.add(
-      'A pension lump-sum election is dated before this projection starts, so the pension pays nothing and no rollover is credited. Update the election year, or clear the election and add the rolled-over dollars to the receiving account balance.',
+      'A pension lump-sum offer on record has an election year that has already passed, so no rollover is modeled and the pension pays its annuity. Update the election year to compare taking the lump sum again.',
     )
   }
   // HECM lines of credit (annuity-pension-and-home-equity, step 4), keyed by

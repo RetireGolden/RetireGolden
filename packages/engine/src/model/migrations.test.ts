@@ -48,6 +48,127 @@ describe('migratePlanToCurrent', () => {
     }
   })
 
+  // Shapes a stored document can hold that current validation refuses. Each was
+  // saveable under the old rules, so each must come back through the door rather
+  // than dying at `invalid_after_migration` — `PlanContext` surfaces only a bare
+  // reason code, so a refusal here is a household locked out of the very plan the
+  // new message tells them to edit.
+  describe('load-time repair of shapes current validation refuses', () => {
+    function storedPension(
+      offer: { amount: number; electionYear: number } | undefined,
+      rolloverAccountId: string | undefined,
+      storedAtVersion?: number,
+    ): Record<string, unknown> {
+      const plan = createEmptyPlan({ newId: testIds, now: fixedNow })
+      const primaryId = plan.household.people[0]!.id
+      plan.accounts = [
+        { type: 'traditional', id: 'ira', name: 'IRA', ownerPersonId: primaryId, annualReturnPct: null, kind: 'ira', balance: 400_000, annualContribution: 0 },
+        { type: 'traditional', id: 'inh', name: 'Inherited', ownerPersonId: primaryId, annualReturnPct: null, kind: 'ira', balance: 100_000, annualContribution: 0,
+          inherited: { ownerDeathYear: 2022, decedentHadStartedRmds: true } },
+        { type: 'pension', id: 'pen', name: 'Pension', ownerPersonId: primaryId, annualReturnPct: null, startAge: 65, monthlyAmount: 2_000, colaPct: 0, survivorPct: 0,
+          lumpSumOffer: offer, lumpSumElection: rolloverAccountId === undefined ? undefined : { rolloverAccountId } },
+      ]
+      const raw = JSON.parse(JSON.stringify(plan)) as Record<string, unknown>
+      if (storedAtVersion !== undefined) raw['schemaVersion'] = storedAtVersion
+      return raw
+    }
+
+    it('carries a legacy stale election back as an undecided offer, not a refusal', () => {
+      // Stamped 2026 (fixedNow), elected for 2025: saveable before this rule
+      // existed, and refused by `parsePlan` now.
+      const result = migratePlanToCurrent(storedPension({ amount: 400_000, electionYear: 2025 }, 'ira'))
+      expect(result.ok).toBe(true)
+      if (!result.ok) return
+      const pension = result.plan.accounts.find((a) => a.id === 'pen')!
+      expect(pension.type).toBe('pension')
+      if (pension.type !== 'pension') return
+      // The election goes; the offer stays, so the decision record survives and
+      // the household can re-elect it against a year that has not passed.
+      expect(pension.lumpSumElection).toBeUndefined()
+      expect(pension.lumpSumOffer).toEqual({ amount: 400_000, electionYear: 2025 })
+    })
+
+    it('repairs a legacy stale election stored at an older schema version too', () => {
+      const result = migratePlanToCurrent(storedPension({ amount: 400_000, electionYear: 2025 }, 'ira', 3))
+      expect(result.ok).toBe(true)
+      if (!result.ok) return
+      const pension = result.plan.accounts.find((a) => a.id === 'pen')!
+      if (pension.type !== 'pension') throw new Error('expected the pension back')
+      expect(pension.lumpSumElection).toBeUndefined()
+    })
+
+    it('carries a legacy inherited-IRA rollover target back the same way', () => {
+      // A future election year, so only the target is at fault.
+      const result = migratePlanToCurrent(storedPension({ amount: 400_000, electionYear: 2030 }, 'inh'))
+      expect(result.ok).toBe(true)
+      if (!result.ok) return
+      const pension = result.plan.accounts.find((a) => a.id === 'pen')!
+      if (pension.type !== 'pension') throw new Error('expected the pension back')
+      expect(pension.lumpSumElection).toBeUndefined()
+      expect(pension.lumpSumOffer).toEqual({ amount: 400_000, electionYear: 2030 })
+    })
+
+    it('leaves a valid election untouched', () => {
+      const result = migratePlanToCurrent(storedPension({ amount: 400_000, electionYear: 2030 }, 'ira'))
+      expect(result.ok).toBe(true)
+      if (!result.ok) return
+      const pension = result.plan.accounts.find((a) => a.id === 'pen')!
+      if (pension.type !== 'pension') throw new Error('expected the pension back')
+      expect(pension.lumpSumElection).toEqual({ rolloverAccountId: 'ira' })
+    })
+
+    function storedAnnuity(fundingAccountId: string, ownedTraditional: boolean): Record<string, unknown> {
+      const plan = createEmptyPlan({ newId: testIds, now: fixedNow })
+      const primaryId = plan.household.people[0]!.id
+      plan.accounts = [
+        ...(ownedTraditional
+          ? [{ type: 'traditional' as const, id: 'ira', name: 'IRA', ownerPersonId: primaryId, annualReturnPct: null, kind: 'ira' as const, balance: 400_000, annualContribution: 0 }]
+          : []),
+        { type: 'traditional', id: 'inh', name: 'Inherited', ownerPersonId: primaryId, annualReturnPct: null, kind: 'ira', balance: 300_000, annualContribution: 0,
+          inherited: { ownerDeathYear: 2022, decedentHadStartedRmds: true } },
+        { type: 'annuity', id: 'ann', name: 'SPIA', ownerPersonId: primaryId, annualReturnPct: null, startAge: 70, monthlyAmount: 1_000, colaPct: 0, taxablePct: 100,
+          purchase: { year: 2030, premium: 100_000, fundingAccountId, taxQualification: 'qualified' } },
+      ] as never
+      return JSON.parse(JSON.stringify(plan)) as Record<string, unknown>
+    }
+
+    it('retargets a legacy inherited-funded qualified annuity to an owned traditional account', () => {
+      // This purchase already MOVED money in every stored projection, so dropping
+      // it would hand the household a contract nobody paid for. The premium keeps
+      // its year, size, and pre-tax character; only the bucket it leaves changes.
+      const result = migratePlanToCurrent(storedAnnuity('inh', true))
+      expect(result.ok).toBe(true)
+      if (!result.ok) return
+      const annuity = result.plan.accounts.find((a) => a.id === 'ann')!
+      if (annuity.type !== 'annuity') throw new Error('expected the annuity back')
+      expect(annuity.purchase?.fundingAccountId).toBe('ira')
+      expect(annuity.purchase?.premium).toBe(100_000)
+      expect(annuity.monthlyAmount).toBe(1_000)
+    })
+
+    it('stands down a legacy inherited-funded annuity when no owned traditional account exists', () => {
+      // No source could have paid the premium, so the contract does not pay
+      // either. Standing it down is the only repair that is not richer than the
+      // stored facts support.
+      const result = migratePlanToCurrent(storedAnnuity('inh', false))
+      expect(result.ok).toBe(true)
+      if (!result.ok) return
+      const annuity = result.plan.accounts.find((a) => a.id === 'ann')!
+      if (annuity.type !== 'annuity') throw new Error('expected the annuity back')
+      expect(annuity.purchase).toBeUndefined()
+      expect(annuity.monthlyAmount).toBe(0)
+    })
+
+    it('leaves an owned-traditional-funded qualified annuity untouched', () => {
+      const result = migratePlanToCurrent(storedAnnuity('ira', true))
+      expect(result.ok).toBe(true)
+      if (!result.ok) return
+      const annuity = result.plan.accounts.find((a) => a.id === 'ann')!
+      if (annuity.type !== 'annuity') throw new Error('expected the annuity back')
+      expect(annuity.purchase?.fundingAccountId).toBe('ira')
+    })
+  })
+
   it('rejects non-objects and bad versions', () => {
     expect(migratePlanToCurrent(null)).toEqual({ ok: false, reason: 'not_object' })
     expect(migratePlanToCurrent([])).toEqual({ ok: false, reason: 'not_object' })

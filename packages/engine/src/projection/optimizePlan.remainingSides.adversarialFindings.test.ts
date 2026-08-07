@@ -74,6 +74,7 @@
 
 import { describe, expect, it } from 'vitest'
 
+import { migratePlanToCurrent } from '../model/migrations.js'
 import { createEmptyPlan, parsePlan, type Plan } from '../model/plan.js'
 import { createFederalTaxCalculator } from '../tax/federalTax.js'
 import type { OptimizerYearProbe } from './types.js'
@@ -199,6 +200,25 @@ describe('FINDING 2 (CLOSED): a lump-sum election year before the projection sta
     )
   })
 
+  it('loads a legacy stored document instead of locking the household out, and says why', () => {
+    // The shape was saveable before this rule existed, so a parse refusal on the
+    // load path would be a lockout: `loadPlan` goes through
+    // `migratePlanToCurrent`, and `PlanContext` surfaces only a bare reason code.
+    // The load-time repair returns it undecided with the offer intact, and the
+    // projection states the resulting position rather than changing it in silence.
+    const stored = JSON.parse(JSON.stringify(stalePlan(2025))) as unknown
+    const migrated = migratePlanToCurrent(stored)
+    expect(migrated.ok).toBe(true)
+    if (!migrated.ok) return
+    const result = simulatePlan(migrated.plan, opts)
+    expect(result.warnings).toContain(
+      'A pension lump-sum offer on record has an election year that has already passed, so no rollover is modeled and the pension pays its annuity. Update the election year to compare taking the lump sum again.',
+    )
+    // The pension pays again, which is the repair's whole economic effect.
+    expect(result.years[0]!.incomes.pension).toBeCloseTo(24_000, 2)
+    expect(result.years[0]!.balances['ira']).toBeCloseTo(400_000, 2)
+  })
+
   it('still parses, and says so out loud, when a plan is reopened a year later', () => {
     // The residual window the parse rule cannot reach: saved in 2026 with a 2026
     // election (valid then, and still valid on every reopen), run in 2027. The
@@ -278,6 +298,21 @@ describe('FINDING 4 (CLOSED): an inherited IRA passes the rollover-target valida
     expect(parsed.ok ? [] : parsed.issues).toContain(
       'accounts.4.lumpSumElection.rolloverAccountId: a pension lump sum must roll over into an existing traditional account you own (not an inherited IRA)',
     )
+  })
+
+  it('loads a legacy stored document with the same shape, undecided', () => {
+    // Never offered by the editor's own picker, but reachable by import, by the
+    // MCP, or by hand, so the load path still has to carry it rather than refuse.
+    const migrated = migratePlanToCurrent(JSON.parse(JSON.stringify(beneficiary('inh'))) as unknown)
+    expect(migrated.ok).toBe(true)
+    if (!migrated.ok) return
+    const pension = migrated.plan.accounts.find((a) => a.id === 'pen')!
+    if (pension.type !== 'pension') throw new Error('expected the pension back')
+    expect(pension.lumpSumElection).toBeUndefined()
+    expect(pension.lumpSumOffer).toEqual({ amount: 400_000, electionYear: 2027 })
+    // The credit that used to land in the inherited bucket is gone with it.
+    const modeled = buildOptimizerInput(migrated.plan, opts).years
+    expect(modeled.every((y) => (y.exogenousStrategyMovement?.inheritedTrad ?? 0) === 0)).toBe(true)
   })
 
   it('leaves the owned-traditional rollover exactly as it was', () => {

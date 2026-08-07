@@ -19,6 +19,22 @@ function ownerOptions(plan: Plan, type: Account['type']) {
   return isIndividuallyOwnedAccount(type) ? peopleOptions : [{ value: 'joint', label: 'Joint' }, ...peopleOptions]
 }
 
+/**
+ * Can this account pay an annuity premium of the given tax qualification?
+ *
+ * An inherited account is `type: 'traditional'` like any other, so a bare type
+ * test offered a beneficiary's inherited IRA as a qualified funding source. Those
+ * dollars cannot leave for a contract the household owns, and the engine refuses
+ * the shape at parse, so keep it out of the picker in all three places that ask
+ * (the option list, the still-eligible check, and the re-default) rather than in
+ * only some of them.
+ */
+function canFundAnnuityPurchase(account: Account, taxQualification: 'qualified' | 'nonQualified'): boolean {
+  return taxQualification === 'qualified'
+    ? account.type === 'traditional' && !account.inherited
+    : account.type === 'cash' || account.type === 'taxable' || account.type === 'equityComp'
+}
+
 export function AccountFields({ account, index }: { account: Account; index: number }) {
   const { plan, update } = usePlan()
   const [estimating, setEstimating] = useState(false)
@@ -588,15 +604,10 @@ export function AccountFields({ account, index }: { account: Account; index: num
           />
           <SelectField
             label="Funding account"
-            help="Which account the premium is withdrawn from. Non-qualified purchases must come from cash, taxable, or equity comp; qualified purchases from a traditional IRA or 401(k)."
+            help="Which account the premium is withdrawn from. Non-qualified purchases must come from cash, taxable, or equity comp; qualified purchases from a traditional IRA or 401(k) you own. An inherited IRA cannot fund one."
             value={account.purchase.fundingAccountId}
             options={plan.accounts
-              .filter((a) =>
-                a.id !== account.id &&
-                (account.purchase!.taxQualification === 'qualified'
-                  ? a.type === 'traditional'
-                  : a.type === 'cash' || a.type === 'taxable' || a.type === 'equityComp'),
-              )
+              .filter((a) => a.id !== account.id && canFundAnnuityPurchase(a, account.purchase!.taxQualification))
               .map((a) => ({ value: a.id, label: a.name }))}
             onCommit={(v) => set('purchase', { ...account.purchase!, fundingAccountId: v })}
           />
@@ -614,20 +625,11 @@ export function AccountFields({ account, index }: { account: Account; index: num
               // qualification; re-default to the first eligible source so the plan
               // stays valid instead of pointing at an impossible funding type.
               const stillEligible = plan.accounts.some(
-                (a) =>
-                  a.id === account.purchase!.fundingAccountId &&
-                  (taxQualification === 'qualified'
-                    ? a.type === 'traditional'
-                    : a.type === 'cash' || a.type === 'taxable' || a.type === 'equityComp'),
+                (a) => a.id === account.purchase!.fundingAccountId && canFundAnnuityPurchase(a, taxQualification),
               )
               const fundingAccountId = stillEligible
                 ? account.purchase!.fundingAccountId
-                : plan.accounts.find((a) =>
-                    a.id !== account.id &&
-                    (taxQualification === 'qualified'
-                      ? a.type === 'traditional'
-                      : a.type === 'cash' || a.type === 'taxable' || a.type === 'equityComp'),
-                  )?.id ?? ''
+                : plan.accounts.find((a) => a.id !== account.id && canFundAnnuityPurchase(a, taxQualification))?.id ?? ''
               set('purchase', {
                 ...account.purchase!,
                 taxQualification,
