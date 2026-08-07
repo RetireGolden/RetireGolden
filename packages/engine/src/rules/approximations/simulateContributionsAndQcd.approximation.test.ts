@@ -187,51 +187,123 @@ describeRule('irc-401-c-2-earned-income-not-modeled', {
 })
 
 // --------------------------------------------------------------------------
-// Household substitution for the individual donor
+// One donor, one limit
 // --------------------------------------------------------------------------
 
-/** One indexed annual QCD limit, the figure the ledger applies once per household. */
+/** One taxpayer's indexed annual QCD limit for 2026. */
 const QCD_LIMIT = pack2026.rmd.qcdAnnualLimit
+
+/** A married couple, both past the applicable age, each with their own IRA. */
+function donorCouplePlan(iraBalance: number): Plan {
+  const plan = soloPlan('1946-06-15', null) // 80 in 2026, past the applicable age
+  plan.household.filingStatus = 'marriedFilingJointly'
+  plan.household.people.push({
+    id: 'p2',
+    name: 'Sam',
+    dob: '1946-06-15',
+    sex: 'average',
+    retirementAge: null,
+    longevity: { planningAge: 95, source: 'manual' },
+  })
+  plan.accounts = [
+    cash(0),
+    traditionalIra(iraBalance, 0, 'p1'),
+    traditionalIra(iraBalance, 0, 'p2'),
+  ]
+  return plan
+}
 
 describeRule('irc-408-d-8-A-projection-household-qcd-aggregation', {
   readings: {
-    // 408(d)(8)(A) limits the exclusion "with respect to a taxpayer". Two
-    // spouses filing jointly are two taxpayers, each with their own IRA large
-    // enough to fund a whole limit, so the joint return excludes two of them.
-    statuteOneLimitPerTaxpayer: QCD_LIMIT * 2,
-    engineOneLimitPerHousehold: QCD_LIMIT,
+    // 408(d)(8)(A) limits the exclusion "with respect to a taxpayer", and (G)
+    // indexes that per-taxpayer amount. Two spouses filing jointly are two
+    // taxpayers, each with their own IRA large enough to fund a whole limit, so
+    // a joint return can exclude up to two of them and a gift of one and a half
+    // is inside what the two of them may exclude.
+    statuteOneLimitPerTaxpayer: QCD_LIMIT * 1.5,
+    // The aggregate arm until 2026-08-07: one indexed figure applied once to the
+    // pooled household ask, which stopped a couple at a single taxpayer's limit.
+    oneLimitPerHousehold: QCD_LIMIT,
   },
   accepted: 'statuteOneLimitPerTaxpayer',
-  produced: 'engineOneLimitPerHousehold',
-  note: 'one annual dollar limit for two donors',
-}, ({ accepted, produced }) => {
-  it('caps two spouses giving from their own IRAs at a single annual limit', () => {
-    const plan = soloPlan('1946-06-15', null) // 80 in 2026, past the applicable age
-    plan.household.filingStatus = 'marriedFilingJointly'
-    plan.household.people.push({
-      id: 'p2',
-      name: 'Sam',
-      dob: '1946-06-15',
-      sex: 'average',
-      retirementAge: null,
-      longevity: { planningAge: 95, source: 'manual' },
-    })
-    plan.accounts = [
-      cash(0),
-      traditionalIra(3_000_000, 0, 'p1'),
-      traditionalIra(3_000_000, 0, 'p2'),
-    ]
-    plan.strategies.qcdAnnual = QCD_LIMIT * 2
+  note: 'a couple giving more than one limit and less than two',
+}, ({ accepted, readings }) => {
+  it('excludes a couple’s gift above one limit against their two limits', () => {
+    // Above one limit and below two, which is the band that discriminates: a
+    // gift of exactly two limits would also be excluded in full by a reading
+    // that simply doubled the household figure without charging either donor.
+    const plan = donorCouplePlan(3_000_000)
+    plan.strategies.qcdAnnual = QCD_LIMIT * 1.5
 
     const year = year2026(plan)
 
     // Each spouse's own required distribution alone exceeds a whole limit, so
-    // the accepted reading is fundable twice over from separate IRAs and the
-    // shortfall below cannot be blamed on either IRA running dry.
+    // the gift is fundable from either side and nothing below can be blamed on
+    // an IRA running dry.
     expect(year.rmd).toBeGreaterThan(QCD_LIMIT * 2)
-    expect(year.qcd).toBeCloseTo(produced, 6)
-    expect(year.qcd).not.toBeCloseTo(accepted, 6)
+    expect(year.qcd).toBeCloseTo(accepted, 6)
+    expect(year.qcd).not.toBeCloseTo(readings.oneLimitPerHousehold, 6)
   })
+})
+
+describeRule('irc-408-d-8-A-projection-household-qcd-aggregation', {
+  readings: {
+    // The other half of "per taxpayer": one donor has one limit, and the
+    // household cannot borrow a second from a spouse who is not there.
+    statuteCapsOneDonorAtOneLimit: QCD_LIMIT,
+    // The reading a naive per-donor fix invites: cap only after attribution and
+    // let the household ask through when there is nobody to reallocate it to.
+    householdAskGivenInFull: QCD_LIMIT * 1.5,
+  },
+  accepted: 'statuteCapsOneDonorAtOneLimit',
+  note: 'a single donor asking for more than their own limit',
+}, ({ accepted, readings }) => {
+  it('still clamps one donor at one limit', () => {
+    const DONOR_IRA_BALANCE = 3_000_000
+    const plan = soloPlan('1946-06-15', null) // 80 in 2026
+    plan.accounts = [cash(0), traditionalIra(DONOR_IRA_BALANCE, 0, 'p1')]
+    plan.strategies.qcdAnnual = QCD_LIMIT * 1.5
+
+    const year = year2026(plan)
+
+    // The requirement alone carries more than a whole limit, and the IRA behind
+    // it could fund the rest beyond the requirement, so nothing here clamps the
+    // gift except the donor's own 408(d)(8)(A) figure.
+    expect(year.rmd).toBeGreaterThan(QCD_LIMIT)
+    expect(DONOR_IRA_BALANCE).toBeGreaterThan(QCD_LIMIT * 1.5)
+    expect(year.qcd).toBeCloseTo(accepted, 6)
+    expect(year.qcd).not.toBeCloseTo(readings.householdAskGivenInFull, 6)
+  })
+})
+
+// The eligibility half of the same record, which #242's per-owner attribution
+// closed and this fixture pins: the gift may only be funded by a donor. A
+// spouse below 70½ contributes neither a required distribution the gift can be
+// routed out of nor an account it can be drained from, so a household with one
+// eligible donor is held to that donor's own limit however large the other
+// spouse's IRA is.
+it('funds a household gift only from the eligible donor', () => {
+  const plan = soloPlan('1946-06-15', null) // 80 in 2026, eligible
+  plan.household.filingStatus = 'marriedFilingJointly'
+  plan.household.people.push({
+    id: 'p2',
+    name: 'Sam',
+    dob: '1968-06-15', // 58 in 2026, years short of 70½
+    sex: 'average',
+    retirementAge: null,
+    longevity: { planningAge: 95, source: 'manual' },
+  })
+  plan.accounts = [
+    cash(0),
+    traditionalIra(3_000_000, 0, 'p1'),
+    traditionalIra(3_000_000, 0, 'p2'),
+  ]
+  plan.strategies.qcdAnnual = QCD_LIMIT * 1.5
+
+  const year = year2026(plan)
+
+  expect(year.qcd).toBeCloseTo(QCD_LIMIT, 6)
+  expect(year.qcd).not.toBeCloseTo(QCD_LIMIT * 1.5, 6)
 })
 
 // --------------------------------------------------------------------------
