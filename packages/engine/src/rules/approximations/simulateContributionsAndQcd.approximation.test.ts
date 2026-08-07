@@ -507,8 +507,8 @@ describeRule('irc-408-d-2-C-projection-pro-rata-measurement-instant', {
 //
 //   distributions        = 42,194.09 + 100,000     = 142,194.09
 //   retained             = 1,000,000 − 142,194.09  =   857,805.91
-//   line 6 at 5 percent  =   857,805.91 × 1.05     =   900,696.20
-//   line 9 at 5 percent  =   900,696.20 + 142,194.09 = 1,042,890.30
+//   line 6 at 5 percent  =   857,805.91 × 1.05     =   900,696.2055 (unrounded)
+//   line 9 at 5 percent  = 900,696.2055 + 142,194.09 = 1,042,890.2955 ≈ 1,042,890.30
 //   fraction             =   200,000 ÷ 1,042,890.30 =    0.1917747
 //   ordinary income      =   142,194.09 × (1 − 0.1917747) = 114,924.86
 //
