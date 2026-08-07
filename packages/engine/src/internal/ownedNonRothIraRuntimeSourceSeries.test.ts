@@ -763,7 +763,13 @@ describe('private owned-IRA runtime source-series validation', () => {
       })
   })
 
-  it('requires execution evidence for a Plan-declared exact owned-IRA action', () => {
+  it('lets a refused Plan-declared owned-IRA withdrawal through on its own evidence', () => {
+    // The declaration is real and the refusal is real: the ordinary executor's
+    // source scope is cash, equity compensation and taxable, so an owned-IRA
+    // allocation is refused with `withdrawal-source-type-unsupported` and moves
+    // nothing. A year in which nothing happened is not a year the replay has to
+    // refuse, and the executor's own evidence is what proves it -- zero executed
+    // cents on the allocation, an opening and closing balance on the account.
     const plan = singlePersonPlan({ planningAge: 60 })
     plan.id = 'missing-exact-action-evidence'
     plan.accounts = [traditional('ira', 1_000)]
@@ -784,21 +790,53 @@ describe('private owned-IRA runtime source-series validation', () => {
       purpose: { kind: 'spending' },
     }] as Plan['strategies']['retirementActions']
     const projected = project(plan)
+    const execution = projected[0]!.retirementActionExecution
+    const evidence = execution?.evidence
+      .find((entry) => String(entry.actionId) === 'owned-ira-withdrawal')
+    expect(evidence?.readiness).toBe('nonActionable')
+    expect(evidence?.disposition.reasons.map((reason) => reason.code))
+      .toContain('withdrawal-source-type-unsupported')
+    expect(evidence?.allocations[0]).toMatchObject({
+      sourceAccountId: 'ira',
+      executedAmount: 0,
+    })
+    expect(execution?.balances.find((snapshot) =>
+      String(snapshot.accountId) === 'ira'))
+      .toMatchObject({ openingBalance: 100_000, closingBalance: 100_000 })
     expect(validateOwnedNonRothIraRuntimeSourceSeries(
       plan, TAX_YEAR, projected,
-    )).toMatchObject({
-      status: 'ownedNonRothIraRuntimeSourceSeriesBlocked',
-      issues: [{ kind: 'exactActionStageRequired' }],
-    })
+    )).toMatchObject({ status: 'ownedNonRothIraRuntimeSourceSeriesComplete' })
+  })
 
+  it('requires execution evidence for a Plan-declared exact owned-IRA action', () => {
+    // Three ways a declaration can fail to prove itself harmless, and all three
+    // still refuse. The gate is evidence, not the absence of a declaration.
+    const plan = singlePersonPlan({ planningAge: 60 })
+    plan.id = 'missing-exact-action-evidence'
+    plan.accounts = [traditional('ira', 1_000)]
+    plan.strategies.retirementActions = [{
+      actionId: 'owned-ira-withdrawal',
+      kind: 'ordinaryWithdrawal',
+      year: TAX_YEAR,
+      executionDate: '2026-06-15',
+      executionSequence: 1,
+      requestedAmount: 10_000,
+      provenance: { source: 'manual' },
+      personId: 'p1',
+      allocations: [{
+        allocationId: 'owned-ira-allocation',
+        sourceAccountId: 'ira',
+        requestedAmount: 10_000,
+      }],
+      purpose: { kind: 'spending' },
+    }] as Plan['strategies']['retirementActions']
+    const projected = project(plan)
+
+    // No evidence record for this action at all.
     const missingNestedEvidence = copy(projected)
-    const mutableExecution = missingNestedEvidence[0]!
-      .retirementActionExecution as unknown as {
-        evidence: unknown[]
-        balances: unknown[]
-      }
-    mutableExecution.evidence = []
-    mutableExecution.balances = []
+    ;(missingNestedEvidence[0]!.retirementActionExecution as unknown as {
+      evidence: unknown[]
+    }).evidence = []
     expect(validateOwnedNonRothIraRuntimeSourceSeries(
       plan, TAX_YEAR, missingNestedEvidence,
     )).toMatchObject({
@@ -806,6 +844,20 @@ describe('private owned-IRA runtime source-series validation', () => {
       issues: [{ kind: 'exactActionStageRequired' }],
     })
 
+    // An evidence record, but no opening/closing balance for the source: the
+    // year's per-account chain has nothing to reconcile the declaration against.
+    const missingBalances = copy(projected)
+    ;(missingBalances[0]!.retirementActionExecution as unknown as {
+      balances: unknown[]
+    }).balances = []
+    expect(validateOwnedNonRothIraRuntimeSourceSeries(
+      plan, TAX_YEAR, missingBalances,
+    )).toMatchObject({
+      status: 'ownedNonRothIraRuntimeSourceSeriesBlocked',
+      issues: [{ kind: 'exactActionStageRequired' }],
+    })
+
+    // No executor publication at all.
     const years = copy(projected)
     expect(years[0]!.retirementActionExecution).toBeDefined()
     delete years[0]!.retirementActionExecution
@@ -881,6 +933,79 @@ describe('private owned-IRA runtime source-series validation', () => {
       status: 'ownedNonRothIraRuntimeSourceSeriesBlocked',
       issues: [{ kind: 'annuityStageRequired' }],
     })
+  })
+
+  it('reports a corrupt chain in an annuity year, not the annuity', () => {
+    // The annuity application's phase ranks 0, so it always sorts first in the
+    // chain. Refusing where it is found meant every integrity failure later in
+    // the same year's chain was masked by `annuityStageRequired` -- which the
+    // settlement scopes to the year, while the failure it hid is permanent.
+    // The pool-exit refusal is deferred past the chain-rejoin check for exactly
+    // this reason, and this is the fixture that says so.
+    const plan = singlePersonPlan({ dob: '1950-01-01', planningAge: 90 })
+    plan.id = 'annuity-masks-chain'
+    plan.accounts = [
+      traditional('ira', 100_000),
+      {
+        type: 'annuity', id: 'annuity', name: 'annuity', ownerPersonId: 'p1',
+        annualReturnPct: null, startAge: 90, monthlyAmount: 0, colaPct: 0,
+        taxablePct: 100,
+        purchase: {
+          year: TAX_YEAR, premium: 5_000, fundingAccountId: 'ira',
+          taxQualification: 'qualified',
+        },
+      },
+    ]
+    const projected = project(plan)
+    // Both applications are present and the annuity one is first.
+    expect(projected[0]!.retirementRuntimeApplicationSource!.applications
+      .map((application) => application.simulatorPhase))
+      .toEqual(['annuityPurchaseFunding', 'ownerRmdDistribution'])
+    // Clean, the year still refuses for the premium, and it still names the
+    // owner so the disqualification stays owner-scoped.
+    expect(validateOwnedNonRothIraRuntimeSourceSeries(plan, TAX_YEAR, projected))
+      .toMatchObject({
+        status: 'ownedNonRothIraRuntimeSourceSeriesBlocked',
+        issues: [{ kind: 'annuityStageRequired', ownerPersonId: 'p1' }],
+      })
+
+    // Corrupt the LATER application's closing balance. Before the deferral this
+    // reported `annuityStageRequired`; the chain failure is what must survive.
+    const corrupted = copy(projected)
+    const rmd = corrupted[0]!.retirementRuntimeApplicationSource!.applications
+      .find((application) => application.simulatorPhase === 'ownerRmdDistribution')
+    ;(rmd as unknown as { sourceBalanceAfterPlanDollars: number })
+      .sourceBalanceAfterPlanDollars = 1
+    expect(validateOwnedNonRothIraRuntimeSourceSeries(plan, TAX_YEAR, corrupted))
+      .toMatchObject({
+        status: 'ownedNonRothIraRuntimeSourceSeriesBlocked',
+        issues: [{ kind: 'balanceChainInvalid' }],
+      })
+
+    // THE LIMIT, PINNED RATHER THAN DESCRIBED. Strip the annuity occurrence and
+    // its application and the premium is unaccounted for, so the chain is
+    // corrupt too -- but the Plan-purchase pre-check still runs first and still
+    // reports the stage gap. That is the masking the settlement's allow-list
+    // docblock records, and it is the disposition this slice chose: the
+    // alternative is a phantom `balanceChainInvalid` that would latch forever
+    // on a Plan whose only oddity is an annuity.
+    const stripped = copy(projected)
+    const occurrences = stripped[0]!.retirementRuntimeSource!
+      .runtimeOccurrences as unknown as { kind: string }[]
+    occurrences.splice(
+      occurrences.findIndex((entry) => entry.kind === 'annuityFundingTransfer'), 1,
+    )
+    const applications = stripped[0]!.retirementRuntimeApplicationSource!
+      .applications as unknown as { simulatorPhase?: string }[]
+    applications.splice(
+      applications.findIndex((entry) =>
+        entry.simulatorPhase === 'annuityPurchaseFunding'), 1,
+    )
+    expect(validateOwnedNonRothIraRuntimeSourceSeries(plan, TAX_YEAR, stripped))
+      .toMatchObject({
+        status: 'ownedNonRothIraRuntimeSourceSeriesBlocked',
+        issues: [{ kind: 'annuityStageRequired' }],
+      })
   })
 
   it('fails closed without rereading hostile rejected year input', () => {

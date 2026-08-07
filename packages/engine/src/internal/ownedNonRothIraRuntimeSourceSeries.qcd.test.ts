@@ -471,7 +471,11 @@ describe('moving legacy QCD in the owned-IRA source series', () => {
   })
 
   // And a remainder larger than the draw it came out of describes an ordinary
-  // distribution bigger than the dollars that moved.
+  // distribution bigger than the dollars that moved. Not a stage gap: the
+  // characterization is published and well formed, and it contradicts the draw
+  // it belongs to, which is the ledger and this replay disagreeing about a
+  // figure. `qcdReconciliationInvalid` is what says so, and it is outside the
+  // settlement's year-scoped allow-list for exactly that reason.
   it('refuses a non-qualified remainder that outruns its own draw', () => {
     const plan = preRmdPlan('moving-qcd-overcharacterized', [
       traditional('ira', 100_000),
@@ -483,7 +487,7 @@ describe('moving legacy QCD in the owned-IRA source series', () => {
     expect(validateOwnedNonRothIraRuntimeSourceSeries(plan, TAX_YEAR, years))
       .toMatchObject({
         status: 'ownedNonRothIraRuntimeSourceSeriesBlocked',
-        issues: [{ kind: 'qcdStageRequired' }],
+        issues: [{ kind: 'qcdReconciliationInvalid' }],
       })
   })
 
@@ -573,7 +577,7 @@ describe('moving legacy QCD in the owned-IRA source series', () => {
     expect(validateOwnedNonRothIraRuntimeSourceSeries(plan, TAX_YEAR, years))
       .toMatchObject({
         status: 'ownedNonRothIraRuntimeSourceSeriesBlocked',
-        issues: [{ kind: 'qcdStageRequired', taxYear: TAX_YEAR }],
+        issues: [{ kind: 'qcdReconciliationInvalid', taxYear: TAX_YEAR }],
       })
   })
 

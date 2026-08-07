@@ -551,8 +551,16 @@ describeRule('treas-reg-1-408-8-g-projection-named-qcd-beyond-rmd', {
 // this fixture uses. The premium leaves the captured owned-IRA pool for a
 // contract the replay does not carry, `annuityStageRequired` refuses the year,
 // and the fallback prices it. (A Plan-declared exact ordinary withdrawal sourced
-// from an owned IRA reaches the fallback the same way, through
-// `exactActionStageRequired`; one shape is enough to pin the measure.)
+// from an owned IRA used to reach the fallback the same way, through
+// `exactActionStageRequired`. It no longer does: the ordinary executor refuses
+// an owned-IRA source outright, so the declaration moves nothing, and as of
+// 2026-08-07 the source series binds to that evidence instead of refusing the
+// year on the declaration alone. `exactActionStageRequired` is still reachable
+// where cents actually move.)
+//
+// The refusal is dated to the year it names. It disqualifies the purchase year,
+// which the fallback prices, and the projection settles again the year after --
+// so a multi-year run of this shape has exactly one fallback-priced year in it.
 //
 // THE TWO READINGS DIFFER ONLY IN THE INSTANT, deliberately. Whether the premium
 // should have left the section 72 pool at all is a different question with its own
