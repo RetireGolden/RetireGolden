@@ -256,6 +256,16 @@
   margin-top: 0.75rem;
 }
 
+.plan-repair-notice {
+  margin-bottom: 1rem;
+}
+
+/* `.picker-actions` carries a `margin` shorthand, so overriding only the top
+   would leave its bottom margin hanging inside the callout. Full shorthand. */
+.plan-repair-notice .picker-actions {
+  margin: 0.75rem 0 0;
+}
+
 .plan-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));

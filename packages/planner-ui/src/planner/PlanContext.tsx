@@ -9,6 +9,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
 
+import type { PlanLoadRepair } from '@retiregolden/engine/model/migrations'
 import { parsePlan, type Plan } from '@retiregolden/engine/model/plan'
 import { loadPlanVia, savePlanVia, usePlanStore } from '../data/planStoreContext'
 import { useWorkspaceReadOnly } from '../data/workspaceReadOnly'
@@ -16,6 +17,7 @@ import { EXAMPLE_PLAN_ID_PREFIX, isExamplePlanId } from '../data/planOrigin'
 import { getExampleById } from './examples/registry'
 import { saveFreshDemo } from './examples/loadExample'
 import { PlanCtx, type PlanContextValue, type SaveState } from './planContextCore'
+import { PlanRepairCtx } from './planRepairContext'
 import { usePlannerEdition } from './editionContext'
 
 const AUTOSAVE_MS = 600
@@ -33,6 +35,20 @@ export function PlanProvider({ planId, children }: { planId: string; children: R
   const [loadError, setLoadError] = useState<string | null>(null)
   const [saveState, setSaveState] = useState<SaveState>('loading')
   const [issues, setIssues] = useState<string[]>([])
+  // What the load changed in the stored document. Set from the load result and
+  // never from an edit, so the notice describes the document as it was found.
+  //
+  // Tagged with the plan it describes rather than cleared on a switch. This
+  // provider stays mounted across a planId change (the workspace route reuses
+  // the component, whatever the mount-with-key note above hopes for), so an
+  // untagged list would sit over the next plan for the whole fetch — as would
+  // its dismissal, which is the same state. Tagging makes that unrepresentable
+  // instead of merely handled, and it reads during render rather than resetting
+  // state from inside the load effect.
+  const [loadRepairs, setLoadRepairs] = useState<{ planId: string; repairs: readonly PlanLoadRepair[] }>({
+    planId,
+    repairs: [],
+  })
   const timer = useRef<number | null>(null)
   const latestValid = useRef<Plan | null>(null)
   // Latest read-only value, read inside the debounced save. A save can be
@@ -45,16 +61,21 @@ export function PlanProvider({ planId, children }: { planId: string; children: R
 
   useEffect(() => {
     let cancelled = false
-    const adopt = (loaded: Plan) => {
+    // Every adoption states its own repairs, so no path can inherit a previous
+    // plan's list by saying nothing. `plan`, `loadError`, `saveState`, `issues`,
+    // and any pending autosave all still carry across a planId change, which is
+    // this provider's pre-existing behavior and not this change's to move.
+    const adopt = (loaded: Plan, repairs: readonly PlanLoadRepair[]) => {
       setPlan(loaded)
       latestValid.current = loaded
+      setLoadRepairs({ planId, repairs })
       setSaveState('saved')
     }
     void (async () => {
       const r = await loadPlanVia(store, planId)
       if (cancelled) return
       if (r.ok) {
-        adopt(r.plan)
+        adopt(r.plan, r.repairs)
         return
       }
       // A shared or bookmarked example URL can reference a demo that was never
@@ -70,7 +91,10 @@ export function PlanProvider({ planId, children }: { planId: string; children: R
           const seeded = await saveFreshDemo(example)
           if (cancelled) return
           if (seeded.ok) {
-            adopt(seeded.plan)
+            // A seed is built from the registry, not read from storage, so
+            // nothing was repaired. Said explicitly rather than left to the
+            // reset above, so every adoption states its own repairs.
+            adopt(seeded.plan, [])
             return
           }
         }
@@ -122,6 +146,14 @@ export function PlanProvider({ planId, children }: { planId: string; children: R
     const toSave = latestValid.current
     if (toSave) runSave(toSave)
   }, [runSave])
+
+  // Dismissal is state here rather than inside the notice so it survives the
+  // notice unmounting (a section change that swaps the workspace subtree). It
+  // is tagged like the list itself, so dismissing one plan's notice cannot
+  // dismiss the next plan's before the household has seen it.
+  const dismissLoadRepairs = useCallback(() => {
+    setLoadRepairs({ planId, repairs: [] })
+  }, [planId])
 
   const discardPendingSave = useCallback(() => {
     if (timer.current !== null) {
@@ -237,5 +269,18 @@ export function PlanProvider({ planId, children }: { planId: string; children: R
     return <div className="skeleton" style={{ height: '14rem', marginTop: '1rem' }} aria-label="Loading plan" />
   }
   const contextValue: PlanContextValue = { plan, update, discardPendingSave, saveState, issues }
-  return <PlanCtx.Provider value={contextValue}>{children}</PlanCtx.Provider>
+  return (
+    <PlanCtx.Provider value={contextValue}>
+      {/* A list tagged for a different plan belongs to the one being navigated
+          away from, so it reads as empty here rather than as that plan's news. */}
+      <PlanRepairCtx.Provider
+        value={{
+          repairs: loadRepairs.planId === planId ? loadRepairs.repairs : [],
+          dismiss: dismissLoadRepairs,
+        }}
+      >
+        {children}
+      </PlanRepairCtx.Provider>
+    </PlanCtx.Provider>
+  )
 }

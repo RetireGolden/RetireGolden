@@ -150,6 +150,12 @@ See [Monte Carlo and scenarios](monte-carlo-and-scenarios.md#scenarios).
    schema defines and only that.
 7. **Plain data, no code.** The file is inert JSON. Strings are stored and re-exported as data —
    the import path never evaluates or renders them as markup (adversarially tested).
+8. **A repaired document says so.** A stored shape that current validation refuses (a stale
+   lump-sum election, an inherited rollover target or annuity funding source, a missing account
+   owner) is repaired on load rather than refused, following one rule — never richer than the
+   stored facts support — and every repair is reported: `migratePlanToCurrent` returns a typed
+   repair list and the planner shows each repair once, on load, in plain terms
+   (`packages/engine/src/model/migrations.ts`, the load-repair records and their fixtures).
 
 ## What the file is not
 
