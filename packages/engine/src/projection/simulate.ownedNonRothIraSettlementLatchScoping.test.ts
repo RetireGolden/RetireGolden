@@ -204,7 +204,7 @@ describe('owned-IRA settlement latch scoping', () => {
    * control's dollars shrink, the denominator is larger, and less basis is
    * recovered. That is the convention's error running in both directions, and
    * these are the figures, registered as
-   * `engine-convention-ira-annuity-contract-value-premium-less-payments`.
+   * `irc-408-d-2-C-annuity-contract-close-of-year-value`.
    */
   const coupleReturns: readonly (readonly [number, number])[] = [
     // [return pct, p1's TAX_YEAR + 2 opening basis delta from control, cents]

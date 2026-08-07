@@ -917,7 +917,7 @@ export interface SimulatorRetirementRuntimeNamedRothDestinationCredit {
  * below are the engine's own contract-value channel: premium in, payments out,
  * floored at zero. That channel is a convention rather than a fair market
  * value, registered as
- * `engine-convention-ira-annuity-contract-value-premium-less-payments`.
+ * `irc-408-d-2-C-annuity-contract-close-of-year-value`.
  */
 export interface SimulatorRetirementRuntimeAnnuityContractPremiumCredit {
   readonly applicationKind: 'annuityContractPremiumCredit'
@@ -983,7 +983,7 @@ export interface SimulatorOwnedNonRothIraPostGrowthAccountBalanceSource {
  * the engine's own convention: premium paid in, payments taken out, floored at
  * zero, with no growth because the Plan carries no contract growth rate.
  * Registered, with its direction of error, as
- * `engine-convention-ira-annuity-contract-value-premium-less-payments`.
+ * `irc-408-d-2-C-annuity-contract-close-of-year-value`.
  */
 export interface SimulatorOwnedNonRothIraPostGrowthAnnuityContractValueSource {
   readonly annuityAccountId: string

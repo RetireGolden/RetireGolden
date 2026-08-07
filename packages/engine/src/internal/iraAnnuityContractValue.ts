@@ -32,7 +32,7 @@
  * still has value, which is one of the two directions this convention errs in.
  *
  * Registered, with both directions and their magnitudes, as
- * `engine-convention-ira-annuity-contract-value-premium-less-payments`.
+ * `irc-408-d-2-C-annuity-contract-close-of-year-value`.
  *
  * DERIVED IN ONE PLACE ON PURPOSE. The simulator seeds and runs this channel;
  * the runtime source series reconstructs it and refuses a published value that
@@ -47,17 +47,30 @@ type AnnuityAccount = Extract<Account, { type: 'annuity' }>
 /**
  * The contracts whose value belongs in an owner's line-6 aggregate.
  *
- * Three conditions, and each excludes a contract for its own reason. The
- * purchase must be `qualified`, because a non-qualified purchase is funded from
- * cash, taxable or equity-compensation savings -- Plan validation refuses any
- * other funding for it -- and dollars section 408 never governed do not enter a
+ * Two conditions, and each excludes a contract for its own reason. The purchase
+ * must be `qualified`, because a non-qualified purchase is funded from cash,
+ * taxable or equity-compensation savings -- Plan validation refuses any other
+ * funding for it -- and dollars section 408 never governed do not enter a
  * section 408(d)(2) aggregate by being spent on a contract. The funding account
  * must be an owned, non-inherited traditional IRA, which is what
- * `isAggregatedIra` means and what Plan validation already requires of a
- * qualified purchase; an employer plan's balance is not in this aggregate and an
- * inherited IRA is a different contract under 408(d)(2) entirely. The premium
- * must be positive, because a zero-premium purchase moves nothing and leaves
- * nothing to value.
+ * `isAggregatedIra` means; Plan validation requires a qualified purchase to be
+ * funded from an owned traditional ACCOUNT but does not require it to be an
+ * IRA, so an employer plan reaches here and is excluded on this test. That
+ * exclusion is right rather than conservative: an employer plan's pre-tax
+ * balance is not in the 408(d)(2) aggregation at all, so a contract its dollars
+ * bought is not either, and its payments carry no Form 8606 basis to share. An
+ * inherited IRA is a different contract under 408(d)(2) entirely and Plan
+ * validation already refuses it as a qualified purchase's source.
+ *
+ * A ZERO PREMIUM IS NOT A THIRD CONDITION, and it used to be. Excluding it left
+ * a contract that pays without having been paid for -- a shape the schema
+ * admits, since a premium is merely non-negative -- with no channel, no
+ * occurrence, and therefore a payment charged to income in full while the
+ * year's other distributions shared the basis. The contract is staged instead:
+ * its channel opens at zero, it contributes nothing to line 6 because it holds
+ * nothing, and its payments take the year's fraction like every other
+ * distribution the aggregate makes. Nothing about 408(d)(2)(B) turns on how the
+ * contract was acquired.
  *
  * THE POOL OWNER IS THE FUNDING ACCOUNT'S OWNER, ALWAYS, and that is not the
  * same question as whose age starts the payments. Section 408(d)(2) aggregates
@@ -96,8 +109,7 @@ export function ownedIraFundedAnnuityContracts(
   for (const account of plan.accounts) {
     if (account.type !== 'annuity') continue
     const purchase = account.purchase
-    if (purchase === undefined || purchase.taxQualification !== 'qualified' ||
-        purchase.premium <= 0) continue
+    if (purchase === undefined || purchase.taxQualification !== 'qualified') continue
     const funding = accountById.get(purchase.fundingAccountId)
     if (funding === undefined || !isAggregatedIra(funding) ||
         funding.ownerPersonId === null) continue
@@ -146,12 +158,27 @@ export function openingAnnuityContractValuePlanDollars(
   contract: Readonly<AnnuityAccount>,
   owner: Readonly<Person>,
   projectionStartTaxYear: number,
+  /**
+   * The premium the contract could actually have received, which is the Plan's
+   * quoted figure held to the QLAC cap for the purchase year. The caller
+   * supplies it because the cap is a parameter-pack figure indexed to that
+   * year, and this module holds no pack.
+   *
+   * WHAT IT STILL CANNOT KNOW is whether the funding account could pay it. A
+   * purchase inside the projection funds `min(premium, spendable)` and the
+   * channel is credited with what actually moved; a purchase before the
+   * projection started moved its dollars in a year the ledger never ran, so
+   * there is no balance to have been short of and the quoted figure is the only
+   * one there is. That residual is registered on
+   * `irc-408-d-2-C-annuity-contract-close-of-year-value`.
+   */
+  cappedPremiumPlanDollars: number,
 ): number {
   const purchase = contract.purchase
   if (purchase === undefined || purchase.year >= projectionStartTaxYear) return 0
   const startCalendarYear =
     Number(owner.dob.slice(0, 4)) + contract.startAge
-  let value = purchase.premium
+  let value = Math.max(0, Math.min(purchase.premium, cappedPremiumPlanDollars))
   const firstPayingYear = Math.max(startCalendarYear, purchase.year)
   for (let year = firstPayingYear; year < projectionStartTaxYear; year += 1) {
     value -= annuityContractAnnualPaymentPlanDollars(

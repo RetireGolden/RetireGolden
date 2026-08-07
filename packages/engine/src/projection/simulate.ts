@@ -854,22 +854,48 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
    * the same instant it measures everything else on line 6.
    *
    * It is a convention, not a valuation, and it is registered as one:
-   * `engine-convention-ira-annuity-contract-value-premium-less-payments`.
+   * `irc-408-d-2-C-annuity-contract-close-of-year-value`.
    * @see internal/iraAnnuityContractValue.ts
    */
   const annuityContractValue = new Map<string, number>()
+  /**
+   * Contract id to the owner whose section 408(d)(2) aggregate holds it, which
+   * is the funding IRA's owner and not the annuity account's own.
+   * @see annuityContractDistributions
+   */
+  const annuityContractPoolOwner = new Map<string, string>()
   const annuityStagingCandidates = ownedIraFundedAnnuityContracts(plan)
-    .filter(({ contract }) => {
+    .filter(({ contract, ownerPersonId }) => {
       // The PAYMENT owner, not the pool owner: `startAge` is measured against
       // whoever the income block below measures it against, so the pre-start
       // payments this seeds with are the same payments a projection that had
       // started earlier would have made.
       const owner = personById.get(contract.ownerPersonId ?? primary.id)
       if (owner === undefined) return false
+      // THE CAP BINDS THE SEED TOO. A purchase inside the projection is held to
+      // the QLAC premium ceiling at the purchase pass, and a purchase before it
+      // was held to the same ceiling in the year it happened -- Treas. Reg.
+      // 1.401(a)(9)-6(q)(2) is a rule about the contract, not about which year
+      // a projection starts in. Left unapplied, one contract had two values
+      // decided by nothing but the start year: a 400,000 dollar QLAC seeded at
+      // 400,000 pre-start where the same purchase inside the projection was
+      // reduced to the cap.
+      const { pack: purchasePack, isStandIn: purchaseStandIn } =
+        packForYear(contract.purchase!.year)
+      const cappedPremium = contract.purchase!.qlac === true
+        ? Math.min(
+          contract.purchase!.premium,
+          purchasePack.annuities.qlacPremiumCap *
+            limitScale(purchasePack, purchaseStandIn, contract.purchase!.year),
+        )
+        : contract.purchase!.premium
       annuityContractValue.set(
         contract.id,
-        openingAnnuityContractValuePlanDollars(contract, owner, startYear),
+        openingAnnuityContractValuePlanDollars(
+          contract, owner, startYear, cappedPremium,
+        ),
       )
+      annuityContractPoolOwner.set(contract.id, ownerPersonId)
       return true
     })
   // The same pre-start reading, said out loud for the one event that cannot
@@ -1292,7 +1318,26 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     const annuityContractDistributions: {
       producerOccurrenceKey: string
       annuityAccountId: string
-      ownerPersonId: string
+      /**
+       * WHOSE FORM 8606 THIS LANDS ON, which is not whose contract it is.
+       *
+       * Two owners travel with an annuity payment and they answer different
+       * questions. The PAYMENT owner -- the annuity account's own
+       * `ownerPersonId`, or the household's first person when it names nobody
+       * -- decides whose age starts the payments, how the payout form treats a
+       * death, and which estate rules apply; it is what the runtime occurrence
+       * records, because that is the physical fact observed at the mutation
+       * site. The POOL owner is the funding IRA's, and it decides which
+       * individual's section 408(d)(2) aggregate the contract sits in, which
+       * Form 8606 line 7 its gross joins, and therefore which owner's basis
+       * allocation prices it. The settlement publishes its effect under the
+       * pool owner, so the character lookup has to ask under the pool owner
+       * too. Asking under the payment owner is what this field is named for: on
+       * a contract where the two differ, the lookup missed, the payment kept
+       * its full face amount in income, and the settlement spent the basis
+       * anyway -- tax charged and basis gone, permanently, every paying year.
+       */
+      poolOwnerPersonId: string
       grossAmountPlanDollars: number
       mutationOrdinal: number
     }[] = []
@@ -2214,13 +2259,25 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             // other distributions are, both of which are decided in the annual
             // pass below. So the whole payment enters income here and the
             // settled basis share is subtracted there, exactly as a required
-            // distribution's is. A contract with no staging channel -- a
-            // cross-owner purchase, or one this projection never funded -- has
-            // no occurrence and keeps the full amount, and the source series
-            // refuses the year rather than letting that pass silently.
+            // distribution's is.
+            //
+            // A CONTRACT WITH NO CHANNEL keeps the whole amount, and the only
+            // contract without one is a contract this pool never bought: a
+            // non-qualified purchase, or a purchase from something that is not
+            // an owned non-inherited IRA. A CROSS-OWNER purchase is not on that
+            // list and never was -- the aggregate a contract belongs to is read
+            // off the funding account, so a contract naming the other spouse
+            // has a channel, an occurrence, and a settled character like any
+            // other. The two owners it carries are `ownerId` here, who receives
+            // the payment and whose age started it, and `poolOwnerPersonId`
+            // below, whose Form 8606 the gross lands on; the character is
+            // looked up under the second, because the settlement publishes it
+            // under the owner whose aggregate allocated the basis.
             annuityTaxable = paid
             const contractValueBefore = annuityContractValue.get(account.id)
-            if (contractValueBefore !== undefined && paid > 0) {
+            const poolOwnerPersonId = annuityContractPoolOwner.get(account.id)
+            if (contractValueBefore !== undefined &&
+                poolOwnerPersonId !== undefined && paid > 0) {
               const kind = 'annuityContractDistribution' as const
               const producerOccurrenceKey = runtimeOccurrenceKey(kind, account.id)
               recordAnnualRetirementRuntimeOccurrence({
@@ -2254,7 +2311,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
               annuityContractDistributions.push({
                 producerOccurrenceKey,
                 annuityAccountId: account.id,
-                ownerPersonId: ownerId,
+                poolOwnerPersonId,
                 grossAmountPlanDollars: paid,
                 mutationOrdinal: recorded.mutationOrdinal,
               })
@@ -4330,13 +4387,20 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
      * the first. Fully ordinary is the registered legacy treatment; a year that
      * cannot settle keeps it and says so.
      *
-     * The recovery is charged to the owner's pro-rata basis so the year's other
-     * distributions cannot recover it a second time.
+     * ASKED UNDER THE POOL OWNER, which is the funding IRA's and not the
+     * contract's. The settlement allocates the year's basis one owner-wide
+     * aggregate at a time and publishes each effect under that owner, so a
+     * lookup keyed on the contract's own `ownerPersonId` finds nothing whenever
+     * a Plan names one spouse's contract against the other's IRA -- and finding
+     * nothing here is silent, because the settlement has already spent the
+     * basis on the allocation it published. The recovery is charged to the same
+     * owner's pro-rata basis so the year's other distributions cannot recover
+     * it a second time.
      */
     let annuityPaymentNontaxable = 0
     for (const payment of annuityContractDistributions) {
       const assumed = resolveAssumedCharacter({
-        ownerPersonId: payment.ownerPersonId,
+        ownerPersonId: payment.poolOwnerPersonId,
         calculationScope: 'form8606Line7Distributions',
         occurrenceKind: 'annuityContractDistribution',
         producerOccurrenceKey: payment.producerOccurrenceKey,
@@ -4346,9 +4410,9 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       })
       if (assumed === null || assumed.basisReturn <= 0) continue
       annuityPaymentNontaxable += assumed.basisReturn
-      const proRata = iraProRata.get(payment.ownerPersonId)
+      const proRata = iraProRata.get(payment.poolOwnerPersonId)
       if (proRata !== undefined) {
-        iraProRata.set(payment.ownerPersonId, {
+        iraProRata.set(payment.poolOwnerPersonId, {
           basis: Math.max(0, proRata.basis - assumed.basisReturn),
           nontaxableFraction: proRata.nontaxableFraction,
         })

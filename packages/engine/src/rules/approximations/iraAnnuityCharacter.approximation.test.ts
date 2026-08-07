@@ -398,6 +398,311 @@ describeRule('irc-408-d-2-B-annuity-payment-outside-the-annual-basis-fraction', 
         (1 - PAYOUT_BASIS / PAYOUT_IRA_BALANCE), 2,
     )
   })
+
+  it('prices a payment the same whoever the contract is named for', () => {
+    // THE OWNER KEY, INVERTED FROM A DEFECT PIN. This assertion existed as a
+    // standalone probe that pinned the OPPOSITE figure, because the projection
+    // looked the settled character up under the contract's own owner while the
+    // settlement published it under the pool owner -- the funding IRA's. On a
+    // Plan that names one spouse's contract against the other's IRA the lookup
+    // missed, the payment kept its whole face amount in income, and the
+    // settlement spent the basis on the allocation it had already published:
+    // tax charged, basis gone, every paying year, permanently.
+    //
+    // The two households below differ in ONE field, whose name is on the
+    // contract, and the statute has no term that reads it. Section 408(d)(2)
+    // aggregates one individual's retirement plans; which individual is decided
+    // by whose dollars bought the contract, not by whose name the Plan put on
+    // it. So their settlements were always identical to the cent -- same
+    // denominator, same line-7 allocations, same carryforward -- and now their
+    // incomes are too.
+    const crossOwnerHousehold = (contractOwner: string | null): Plan => {
+      const plan = createEmptyPlan({ newId: testIds, now: fixedNow })
+      plan.household.filingStatus = 'marriedFilingJointly'
+      plan.household.people = [
+        {
+          id: 'p1', name: 'Pat', dob: '1946-01-01', sex: 'average',
+          retirementAge: null, longevity: { planningAge: 95, source: 'manual' },
+        },
+        {
+          id: 'p2', name: 'Sam', dob: '1946-01-01', sex: 'average',
+          retirementAge: null, longevity: { planningAge: 95, source: 'manual' },
+        },
+      ]
+      plan.assumptions.inflationPct = 0
+      plan.assumptions.defaultReturnPct = 0
+      plan.expenses.baseAnnual = 0
+      plan.expenses.healthcare = {
+        pre65MonthlyPremiumPerPerson: 0,
+        applyAcaCredit: false,
+        medicareExtrasMonthlyPerPerson: 0,
+      }
+      // p2 owns the IRA that pays the premium, so p2 owns the aggregate.
+      plan.accounts = [
+        {
+          type: 'cash', id: 'cross-cash', name: 'Cash', ownerPersonId: null,
+          annualReturnPct: 0, balance: 500_000, annualContribution: 0,
+        },
+        {
+          type: 'traditional', id: 'cross-ira', name: 'IRA',
+          ownerPersonId: 'p2', annualReturnPct: 0, kind: 'ira',
+          balance: PAYOUT_IRA_BALANCE, annualContribution: 0,
+          nondeductibleBasis: PAYOUT_BASIS,
+        },
+        {
+          type: 'annuity', id: 'cross-contract', name: 'Qualified annuity',
+          ownerPersonId: contractOwner, annualReturnPct: null, startAge: 80,
+          monthlyAmount: PAYOUT_MONTHLY, colaPct: 0, taxablePct: 100,
+          purchase: {
+            year: 2026, premium: PAYOUT_PREMIUM,
+            fundingAccountId: 'cross-ira', taxQualification: 'qualified',
+          },
+        },
+      ]
+      return plan
+    }
+    const settlementOf = (plan: Plan) => {
+      const year = yearOf(plan, 2026)
+      const owner = year.ownedNonRothIraAnnualReplay!.annualReplay.ownerReplays
+        .find((entry) => entry.ownerPersonId === 'p2')!
+      return { year, owner }
+    }
+
+    const sameOwner = settlementOf(crossOwnerHousehold('p2'))
+    const crossOwner = settlementOf(crossOwnerHousehold('p1'))
+    // A contract naming NOBODY takes the same route the cross-owner one does:
+    // the payment owner falls back to the household's first person, who is not
+    // the funding owner here.
+    const unnamed = settlementOf(crossOwnerHousehold(null))
+
+    // The settlements were never in question. Same pool, same denominator.
+    for (const result of [sameOwner, crossOwner, unnamed]) {
+      expect(result.owner.annualBasisRatio.denominatorMinorUnits)
+        .toBe(PAYOUT_IRA_BALANCE * 100)
+      expect(result.owner.line7AllocationEvidence.allocations.map((entry) => [
+        entry.sourceAccountId, entry.grossAmount, entry.allocatedBasisAmount,
+      ])).toEqual([
+        ['cross-contract', PAYOUT_ANNUAL * 100, PAYOUT_ANNUAL * 20],
+        ['cross-ira', 4_950_495, 990_099],
+      ])
+      expect(result.owner.nextYearOpeningBasisAmount)
+        .toBe(sameOwner.owner.nextYearOpeningBasisAmount)
+    }
+
+    // AND NOW THE INCOMES AGREE, which is what changed. Each reports the one
+    // statutory figure -- one fraction over the whole aggregate -- rather than
+    // the 51,603.96 the cross-owner arm used to report by charging the payment
+    // in full while its settlement handed the basis away.
+    expect(sameOwner.year.magi).toBeCloseTo(accepted, 2)
+    expect(crossOwner.year.magi).toBeCloseTo(accepted, 2)
+    expect(unnamed.year.magi).toBeCloseTo(accepted, 2)
+    expect(crossOwner.year.magi).toBeCloseTo(sameOwner.year.magi, 9)
+    expect(unnamed.year.magi).toBeCloseTo(sameOwner.year.magi, 9)
+    expect(crossOwner.year.magi).not.toBeCloseTo(
+      readings.paymentChargedInFullBesideTheRequirement, 2)
+    // The overstatement it used to carry, stated so the fixture names the size
+    // of what it is preventing: the payment's whole basis share, every year.
+    expect(readings.paymentChargedInFullBesideTheRequirement -
+      accepted).toBeCloseTo(2_400, 2)
+  })
+
+  it('keeps a cross-owner contract whole across every paying year', () => {
+    // The defect was permanent, not a purchase-year artefact: it recurred for
+    // as long as the contract paid, and each year's overstatement was that
+    // year's payment at that year's nontaxable fraction. A single-year fixture
+    // could not have told a one-off from a recurrence, so this runs the shape
+    // out and compares the whole series.
+    const series = (contractOwner: string | null): number[] => {
+      const plan = createEmptyPlan({ newId: testIds, now: fixedNow })
+      plan.household.filingStatus = 'marriedFilingJointly'
+      plan.household.people = [
+        {
+          id: 'p1', name: 'Pat', dob: '1950-01-01', sex: 'average',
+          retirementAge: null, longevity: { planningAge: 84, source: 'manual' },
+        },
+        {
+          id: 'p2', name: 'Sam', dob: '1950-01-01', sex: 'average',
+          retirementAge: null, longevity: { planningAge: 84, source: 'manual' },
+        },
+      ]
+      plan.assumptions.inflationPct = 0
+      plan.assumptions.defaultReturnPct = 0
+      plan.expenses.baseAnnual = 0
+      plan.expenses.healthcare = {
+        pre65MonthlyPremiumPerPerson: 0,
+        applyAcaCredit: false,
+        medicareExtrasMonthlyPerPerson: 0,
+      }
+      plan.accounts = [
+        {
+          type: 'cash', id: 'series-cash', name: 'Cash', ownerPersonId: null,
+          annualReturnPct: 0, balance: 500_000, annualContribution: 0,
+        },
+        {
+          type: 'traditional', id: 'series-ira', name: 'IRA',
+          ownerPersonId: 'p2', annualReturnPct: 0, kind: 'ira',
+          balance: 400_000, annualContribution: 0, nondeductibleBasis: 120_000,
+        },
+        {
+          // Immediate, so the contract is one the regulations permit without
+          // a QLAC declaration: 1.401(a)(9)-6(a)(3)(i) requires payments to
+          // commence by the required beginning date, which for a 1950 birth is
+          // age 76, and this owner is 76 in the purchase year.
+          type: 'annuity', id: 'series-contract', name: 'Qualified annuity',
+          ownerPersonId: contractOwner, annualReturnPct: null, startAge: 76,
+          monthlyAmount: 500, colaPct: 0, taxablePct: 100,
+          purchase: {
+            year: 2026, premium: 60_000,
+            fundingAccountId: 'series-ira', taxQualification: 'qualified',
+          },
+        },
+      ]
+      const parsed = parsePlan(plan)
+      if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+      return simulatePlan(parsed.plan, {
+        startYear: 2026, horizonEndYear: 2032, taxCalculator: noTax,
+      }).years.map((year) => year.magi)
+    }
+
+    const control = series('p2')
+    const cross = series('p1')
+    const unnamed = series(null)
+    // Every year, to the float. The contract pays from its purchase year on, so
+    // every year in the series carries a payment that could have diverged.
+    expect(cross).toEqual(control)
+    expect(unnamed).toEqual(control)
+    expect(control).toHaveLength(7)
+    expect(control.every((magi) => magi > 0)).toBe(true)
+  })
+})
+
+// --------------------------------------------------------------------------
+// The seed, which trusts a premium the engine never watched move
+// --------------------------------------------------------------------------
+
+// A contract bought BEFORE the projection starts had its premium paid in a year
+// the ledger never ran, so the channel has to open somewhere. It opens at the
+// Plan's quoted premium less the payments the contract made in the meantime —
+// and the quoted premium is not always what the contract received. A purchase
+// INSIDE the projection funds `min(premium, spendable)`, so a premium larger
+// than its funding account leaves the account empty and the contract short; a
+// purchase before the projection has no balance left to have been short of, and
+// nothing in the Plan records the shortfall.
+//
+// So one contract has two values, decided by nothing but which year the
+// projection starts in. Both households below are the SAME household at the
+// SAME instant: the second is the first, reopened a year later with the balance
+// the first ended that year holding.
+const SEED_IRA_BALANCE = 30_000
+const SEED_QUOTED_PREMIUM = 90_000
+const SEED_MONTHLY = 500
+const SEED_ANNUAL_PAYMENT = SEED_MONTHLY * 12
+
+function seedHousehold(iraBalance: number): Plan {
+  const plan = soloPlan('1950-01-01') // 76 in 2026, so the contract pays at once
+  plan.accounts = [
+    {
+      type: 'cash', id: 'seed-cash', name: 'Cash', ownerPersonId: null,
+      annualReturnPct: 0, balance: 500_000, annualContribution: 0,
+    },
+    {
+      type: 'traditional', id: 'seed-ira', name: 'IRA', ownerPersonId: 'p1',
+      annualReturnPct: 0, kind: 'ira', balance: iraBalance,
+      annualContribution: 0, nondeductibleBasis: 0,
+    },
+    {
+      type: 'annuity', id: 'seed-contract', name: 'Qualified annuity',
+      ownerPersonId: 'p1', annualReturnPct: null, startAge: 76,
+      monthlyAmount: SEED_MONTHLY, colaPct: 0, taxablePct: 100,
+      purchase: {
+        year: 2026, premium: SEED_QUOTED_PREMIUM,
+        fundingAccountId: 'seed-ira', taxQualification: 'qualified',
+      },
+    },
+  ]
+  return plan
+}
+
+/** The contract value the given projection publishes for `year`. */
+function seedContractValue(plan: Plan, startYear: number, year: number): number {
+  const parsed = parsePlan(plan)
+  if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+  const result = simulatePlan(parsed.plan, {
+    startYear, horizonEndYear: year, taxCalculator: noTax,
+  }).years.find((entry) => entry.year === year)!
+  return result.ownedNonRothIraPostGrowthSource!.ownerPools[0]!
+    .annuityContractValues![0]!.contractValuePlanDollars
+}
+
+describeRule('irc-408-d-2-C-annuity-contract-close-of-year-value', {
+  readings: {
+    // What the contract actually received. The funding IRA held 30,000 against
+    // a 90,000 quote, so 30,000 is what moved, and by the end of 2027 two
+    // annual payments of 6,000 have come back out of it.
+    contractHoldsWhatTheAccountCouldPay:
+      SEED_IRA_BALANCE - 2 * SEED_ANNUAL_PAYMENT,
+    // What the seed assumes: the whole quoted premium, less the one payment
+    // made before the later projection started, less the payment made in its
+    // first year.
+    seedTrustsTheQuotedPremium:
+      SEED_QUOTED_PREMIUM - 2 * SEED_ANNUAL_PAYMENT,
+  },
+  accepted: 'contractHoldsWhatTheAccountCouldPay',
+  produced: 'seedTrustsTheQuotedPremium',
+  note: 'the pre-projection seed',
+}, ({ accepted, produced }) => {
+  it('opens a pre-projection contract at a premium it may never have received', () => {
+    // The projection that watched the purchase happen. It funded what the
+    // account could pay and the channel carries exactly that.
+    const watched = seedContractValue(seedHousehold(SEED_IRA_BALANCE), 2026, 2027)
+    expect(watched).toBeCloseTo(accepted, 6)
+    expect(watched).toBeCloseTo(18_000, 6)
+
+    // The same household reopened a year later, carrying the balance the first
+    // projection ended 2026 with, so the two describe one household at one
+    // instant and differ only in where the projection begins.
+    const parsedWatched = parsePlan(seedHousehold(SEED_IRA_BALANCE))
+    if (!parsedWatched.ok) throw new Error(parsedWatched.issues.join('; '))
+    const balanceAfterPurchase = simulatePlan(parsedWatched.plan, {
+      startYear: 2026, horizonEndYear: 2026, taxCalculator: noTax,
+    }).years[0]!.balances['seed-ira']!
+    expect(balanceAfterPurchase).toBeCloseTo(0, 6)
+
+    const reopened = seedContractValue(
+      seedHousehold(balanceAfterPurchase), 2027, 2027,
+    )
+    expect(reopened).toBeCloseTo(produced, 6)
+    expect(reopened).toBeCloseTo(78_000, 6)
+    expect(reopened).not.toBeCloseTo(accepted, 6)
+    // The gap is exactly the part of the quote the account could not pay.
+    expect(reopened - watched)
+      .toBeCloseTo(SEED_QUOTED_PREMIUM - SEED_IRA_BALANCE, 6)
+  })
+
+  it('overstates the line 6 denominator and never understates it', () => {
+    // DIRECTION. Funding is `min(premium, spendable)`, so the quote is an upper
+    // bound on what the contract received and the seed can only be too high.
+    // Too high a contract value is too large a line 6, a smaller basis
+    // fraction, less basis recovered, and more tax — the one direction, unlike
+    // the growth question this record also covers, where the sign follows the
+    // return.
+    expect(produced).toBeGreaterThan(accepted)
+
+    // And where the quote WAS payable the two agree exactly, which is what
+    // makes the gap the shortfall rather than an artefact of reopening.
+    const payable = SEED_QUOTED_PREMIUM
+    const watched = seedContractValue(seedHousehold(payable), 2026, 2027)
+    const parsedWatched = parsePlan(seedHousehold(payable))
+    if (!parsedWatched.ok) throw new Error(parsedWatched.issues.join('; '))
+    const balanceAfterPurchase = simulatePlan(parsedWatched.plan, {
+      startYear: 2026, horizonEndYear: 2026, taxCalculator: noTax,
+    }).years[0]!.balances['seed-ira']!
+    const reopened = seedContractValue(
+      seedHousehold(balanceAfterPurchase), 2027, 2027,
+    )
+    expect(watched).toBeCloseTo(produced, 6)
+    expect(reopened).toBeCloseTo(watched, 6)
+  })
 })
 
 // --------------------------------------------------------------------------

@@ -658,68 +658,158 @@ function annuityPlan(returnPct: number): Plan {
   })
 }
 
+// --------------------------------------------------------------------------
+// The shape that still reaches the fallback, which is a magnitude and not an
+// event.
+//
+// Every refusal that used to route an ordinary year to the legacy ledger is
+// closed. What is left is the exact-cent boundary: cents are safe integers, so
+// a Plan-dollar figure above about 90.07 trillion cannot be represented, the
+// source series refuses the year with `sourceAmountInvalid`, and the fallback
+// prices it. The household below is absurd on purpose — nobody holds this
+// balance — because the question the record answers is whether the departure is
+// reachable, not whether it is common. One order of magnitude smaller settles.
+const OVERFLOW_IRA_BALANCE = 1e14
+const OVERFLOW_IRA_BASIS = OVERFLOW_IRA_BALANCE * 0.2
+const OVERFLOW_CONVERSION = 1e13
+const OVERFLOW_REQUIRED_DISTRIBUTION = OVERFLOW_IRA_BALANCE / 23.7
+const OVERFLOW_ANNUAL_GROSS =
+  OVERFLOW_REQUIRED_DISTRIBUTION + OVERFLOW_CONVERSION
+/** What the account keeps before the year's return is credited to it. */
+const OVERFLOW_RETAINED = OVERFLOW_IRA_BALANCE - OVERFLOW_ANNUAL_GROSS
+
+function overflowPlan(returnPct: number, balance = OVERFLOW_IRA_BALANCE): Plan {
+  const plan = soloPlan('1950-01-01', null) // 76 in 2026
+  plan.assumptions.defaultReturnPct = returnPct
+  plan.expenses.baseAnnual = 0
+  plan.expenses.healthcare = {
+    pre65MonthlyPremiumPerPerson: 0,
+    applyAcaCredit: false,
+    medicareExtrasMonthlyPerPerson: 0,
+  }
+  const ira = traditionalIra(balance) as Extract<Account, { type: 'traditional' }>
+  plan.accounts = [
+    { ...(cash(200_000) as Extract<Account, { type: 'cash' }>), annualReturnPct: 0 },
+    { ...ira, nondeductibleBasis: balance * 0.2, annualReturnPct: returnPct },
+    rothIra(0),
+  ]
+  plan.strategies.rothConversion = {
+    mode: 'manual',
+    conversions: [{ year: 2026, amount: balance * 0.1 }],
+  }
+  return plan
+}
+
 describeRule('irc-408-d-2-C-projection-pro-rata-measurement-instant', {
   readings: {
-    // 408(d)(2)(C) with Form 8606 line 6: the denominator is the December 31
-    // value grown at 5 percent, plus lines 7 and 8. The premium is not gone
-    // from that value — the contract it bought is inside the same aggregate —
-    // so the account's 657,805.91 grows to 690,696.20, the contract holds its
-    // 200,000... on this household the premium is 50,000, so the account's
-    // 807,805.91 grows to 848,196.21, the contract holds its 50,000, and line 9
-    // is 1,040,390.30 for 114,859.33 of ordinary income.
-    statuteMeasuresTheContractAtTheCloseOfTheYear:
-      ANNUITY_ANNUAL_GROSS *
-        (1 - INSTANT_IRA_BASIS /
-          (ANNUITY_RETAINED * (1 + INSTANT_RETURN_PCT / 100) +
-            INSTANT_ANNUITY_PREMIUM + ANNUITY_ANNUAL_GROSS)),
-    // The legacy fallback ledger, which no valid Plan is known to reach: the
-    // pool as it stood before the first distribution, which never saw the
-    // year's return, for the same 112,258.49 at any return at all. Kept as a
-    // reading because the code that produces it is kept — a fail-closed net
-    // whose door is shut is still a net — and this is what fires if it opens.
+    // 408(d)(2)(C) with Form 8606 line 6: the December 31 value grown at 5
+    // percent, plus lines 7 and 8.
+    statuteMeasuresTheCloseOfTheYear:
+      OVERFLOW_ANNUAL_GROSS *
+        (1 - OVERFLOW_IRA_BASIS /
+          (OVERFLOW_RETAINED * (1 + INSTANT_RETURN_PCT / 100) +
+            OVERFLOW_ANNUAL_GROSS)),
+    // The fallback: the pool as it stood before the first distribution, which
+    // never saw the year's return, so the fraction is the opening 0.2 at any
+    // return at all.
     fallbackMeasuresBeforeTheFirstDistribution:
-      ANNUITY_ANNUAL_GROSS *
-        (1 - INSTANT_IRA_BASIS / ANNUITY_FALLBACK_DENOMINATOR),
+      OVERFLOW_ANNUAL_GROSS *
+        (1 - OVERFLOW_IRA_BASIS / OVERFLOW_IRA_BALANCE),
   },
-  accepted: 'statuteMeasuresTheContractAtTheCloseOfTheYear',
-  note: 'the annuity shape that used to reach the fallback',
-}, ({ accepted, readings }) => {
+  accepted: 'statuteMeasuresTheCloseOfTheYear',
+  produced: 'fallbackMeasuresBeforeTheFirstDistribution',
+  note: 'the exact-cent overflow that still reaches the fallback',
+}, ({ accepted, produced }) => {
+  it('prices a gain year off a denominator that never saw the gain', () => {
+    const year = year2026(overflowPlan(INSTANT_RETURN_PCT))
+
+    // The year did not settle, which is WHY the fallback priced it. Pinned
+    // rather than asserted in prose: if this ever settles, the record above is
+    // what has to be reclassified.
+    expect(year).not.toHaveProperty('ownedNonRothIraAnnualReplay')
+    expect(year.rmd).toBeCloseTo(OVERFLOW_REQUIRED_DISTRIBUTION, 0)
+    expect(year.rothConversion).toBeCloseTo(OVERFLOW_CONVERSION, 0)
+
+    // Relative tolerance, because these figures are eleven digits wide and an
+    // absolute cent test at that scale is a test of IEEE-754 rather than of the
+    // measurement instant.
+    expect(year.magi / produced).toBeCloseTo(1, 12)
+    expect(year.magi / accepted).not.toBeCloseTo(1, 6)
+    expect(accepted).toBeGreaterThan(produced)
+  })
+
+  it('returns the same income at a 0 percent and a negative return', () => {
+    // The whole shape of the defect: a denominator measured before the year's
+    // growth cannot move when the growth does.
+    const gain = year2026(overflowPlan(INSTANT_RETURN_PCT))
+    const flat = year2026(overflowPlan(0))
+    const loss = year2026(overflowPlan(-INSTANT_RETURN_PCT))
+
+    expect(flat.magi / produced).toBeCloseTo(1, 12)
+    expect(gain.magi).toBe(flat.magi)
+    expect(loss.magi).toBe(flat.magi)
+    // The statute does not agree with itself across the three, which is what
+    // makes the invariance above a departure rather than a coincidence.
+    expect(accepted / produced).not.toBeCloseTo(1, 6)
+  })
+
+  it('settles one order of magnitude below the exact-cent ceiling', () => {
+    // THE BOUNDARY IS THE LEDGER'S, not a property of large households, and
+    // this is what says so. The same household at a tenth of the balance
+    // settles and moves with the return, so what reaches the fallback is the
+    // representation limit and nothing about the shape of the plan.
+    const gain = year2026(overflowPlan(INSTANT_RETURN_PCT, OVERFLOW_IRA_BALANCE / 10))
+    const flat = year2026(overflowPlan(0, OVERFLOW_IRA_BALANCE / 10))
+
+    expect(gain.ownedNonRothIraAnnualReplay).toBeDefined()
+    expect(flat.ownedNonRothIraAnnualReplay).toBeDefined()
+    expect(gain.magi).not.toBe(flat.magi)
+    expect(gain.magi).toBeGreaterThan(flat.magi)
+  })
+})
+
+// --------------------------------------------------------------------------
+// The annuity shape, which used to be this record's produced arm
+// --------------------------------------------------------------------------
+
+describe('irc-408-d-2-C — an annuity purchase settles at the close of the year', () => {
+  // NOT REGISTERED THROUGH `describeRule`, for the reason the settled-path
+  // suite below states: the engine produces the accepted reading here, so
+  // passing it through the helper would mean declaring a `produced` reading the
+  // suite immediately contradicts. The rule's coverage obligation is met by the
+  // overflow suite above; this bounds it on the other side.
+  const conventionLine9 = (returnPct: number): number =>
+    ANNUITY_RETAINED * (1 + returnPct / 100) + INSTANT_ANNUITY_PREMIUM +
+      ANNUITY_ANNUAL_GROSS
+
   it('measures an annuity year at the close of the year like every other', () => {
     const year = year2026(annuityPlan(INSTANT_RETURN_PCT))
 
-    // The reading rests on this exact requirement and conversion.
     expect(year.rmd).toBeCloseTo(INSTANT_REQUIRED_DISTRIBUTION, 6)
     expect(year.qcd).toBe(0)
     expect(year.rothConversion).toBeCloseTo(INSTANT_CONVERSION, 6)
+    expect(year.ownedNonRothIraAnnualReplay).toBeDefined()
 
     // To the cent, not to the float: the settlement allocates basis in whole
     // cents and allocates lines 7 and 8 independently.
-    expect(year.magi).toBeCloseTo(accepted, 2)
+    expect(year.magi).toBeCloseTo(
+      ANNUITY_ANNUAL_GROSS *
+        (1 - INSTANT_IRA_BASIS / conventionLine9(INSTANT_RETURN_PCT)), 2)
     expect(year.magi).toBeCloseTo(114_859.33, 2)
-    expect(year.magi)
-      .not.toBeCloseTo(readings.fallbackMeasuresBeforeTheFirstDistribution, 2)
-    // What the measurement instant used to cost this household in one year.
-    expect(accepted - readings.fallbackMeasuresBeforeTheFirstDistribution)
-      .toBeCloseTo(2_600.84, 2)
+    // What it used to report, at every return alike, while the fallback priced
+    // it: the pool as it stood before the first distribution.
+    expect(year.magi).not.toBeCloseTo(
+      ANNUITY_ANNUAL_GROSS *
+        (1 - INSTANT_IRA_BASIS / ANNUITY_FALLBACK_DENOMINATOR), 2)
   })
 
   it('moves the annuity year’s income with the return', () => {
-    // THE CONTROL, INVERTED. This suite used to assert that the three returns
-    // produced the SAME income, because a denominator measured before the
-    // year's growth cannot move when the growth does, and this shape was the
-    // one that reached that denominator. It settles now, so the assertion is
-    // the other way round: if these three ever coincide again the fallback has
-    // taken a shape back and the record above has to be reclassified.
     const gain = year2026(annuityPlan(INSTANT_RETURN_PCT))
     const flat = year2026(annuityPlan(0))
     const loss = year2026(annuityPlan(-INSTANT_RETURN_PCT))
 
-    expect(gain.magi).not.toBeCloseTo(flat.magi, 2)
-    expect(loss.magi).not.toBeCloseTo(flat.magi, 2)
     expect(gain.magi).toBeGreaterThan(flat.magi)
     expect(loss.magi).toBeLessThan(flat.magi)
-    // And it is on the settled path that it does so, pinned rather than
-    // asserted in prose.
     expect(gain.ownedNonRothIraAnnualReplay).toBeDefined()
     expect(flat.ownedNonRothIraAnnualReplay).toBeDefined()
     expect(loss.ownedNonRothIraAnnualReplay).toBeDefined()
