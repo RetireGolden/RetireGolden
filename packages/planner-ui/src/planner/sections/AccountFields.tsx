@@ -501,7 +501,9 @@ export function AccountFields({ account, index }: { account: Account; index: num
             help={
               startAgeCeiling === null
                 ? undefined
-                : `A pre-tax annuity purchase has to start paying by age ${startAgeCeiling}. To start later than that, tick "QLAC (qualified longevity annuity)" below — a QLAC is the only kind of deferred annuity the IRA rules allow.`
+                : account.type === 'annuity' && account.purchase?.qlac === true
+                  ? `A QLAC has to start paying by age ${startAgeCeiling}. That is the latest start the IRA rules allow any pre-tax purchase, so there is no box to tick for a later one.`
+                  : `A pre-tax annuity purchase has to start paying by age ${startAgeCeiling}. To start later than that, tick "QLAC (qualified longevity annuity)" below — a QLAC is the only kind of deferred annuity the IRA rules allow.`
             }
             value={account.startAge}
             min={40}
@@ -722,7 +724,7 @@ export function AccountFields({ account, index }: { account: Account; index: num
           {account.purchase.taxQualification === 'qualified' ? (
             <CheckboxField
               label="QLAC (qualified longevity annuity)"
-              help="A deferred-start longevity annuity purchased inside a traditional account. The premium is capped at the SECURE 2.0 statutory limit ($210,000 for 2026) and excluded from the RMD base until payouts begin."
+              help="A deferred-start longevity annuity purchased inside a traditional account. The premium is capped at the SECURE 2.0 statutory limit ($210,000 for 2026) and excluded from the RMD base until payouts begin. Payments still have to begin by the first of the month after your 85th birthday — that is what makes it a QLAC."
               value={account.purchase.qlac === true}
               onCommit={(v) => setAnnuityPurchase({ ...account.purchase!, qlac: v || undefined })}
             />

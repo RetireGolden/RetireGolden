@@ -478,6 +478,85 @@ describeRule('treas-reg-1-401-a-9-6-a-3-i-annuity-payments-commence-by-the-requi
   })
 })
 
+/**
+ * The other end of the QLAC's deferral, and the reason the excuse above is not
+ * the whole story.
+ *
+ * (q)(1)(iii) lets a QLAC ignore the required beginning date; (q)(1)(ii) then
+ * requires the same contract to name an annuity starting date no later than the
+ * first of the month after the owner's 85th birthday. A contract past that is
+ * not a QLAC, so it holds neither the excuse nor 1.401(a)(9)-5(b)(4)'s
+ * exclusion — and the engine has one mechanism, which would hand it both. The
+ * readings are in the admitted/refused form the neighbouring suite takes,
+ * because what the rule turns on is which shapes a Plan may express.
+ */
+function qlacStartingAt(startAge: number, dob = '1950-01-01'): Plan {
+  return household({ dob, iraBalance: RMD_IRA_BALANCE, basis: 0, premium: RMD_PREMIUM, startAge, qlac: true })
+}
+
+describeRule('treas-reg-1-401-a-9-6-q-1-ii-qlac-commences-by-the-85th-birthday', {
+  readings: {
+    // A January-born owner's deadline is February 1 of the year they attain 85,
+    // so a contract the engine commences on January 1 of the year they attain
+    // 86 is late and validation says so.
+    parseRefusesAQlacThatCommencesPastThe85thBirthday: 'refused',
+    // What the schema alone would take: any start age up to 95, with the
+    // required-distribution exclusion for every one of those years.
+    schemaWouldAdmitAnyStartAgeUpTo95: 'accepted',
+  },
+  accepted: 'parseRefusesAQlacThatCommencesPastThe85thBirthday',
+  note: 'a QLAC deferred past 85',
+}, ({ accepted, readings }) => {
+  it('refuses a QLAC that commences after the owner’s 85th birthday', () => {
+    const parsed = parsePlan(qlacStartingAt(86))
+    const outcome = parsed.ok ? 'accepted' : 'refused'
+    expect(outcome).toBe(accepted)
+    expect(outcome).not.toBe(readings.schemaWouldAdmitAnyStartAgeUpTo95)
+    if (parsed.ok) throw new Error('expected the QLAC deferred past 85 to be refused')
+    expect(parsed.issues.join('; ')).toContain(
+      'a QLAC must commence by the first of the month after the owner\'s 85th birthday: it must start paying by age 85',
+    )
+  })
+
+  it('admits the same contract one year earlier', () => {
+    // One field apart, opposite outcomes, so the refusal is about the ceiling
+    // and not about some unrelated defect in the fixture's plan.
+    expect(parsePlan(qlacStartingAt(85)).ok).toBe(true)
+  })
+
+  it('gives a December-born owner the extra year the deadline actually gives them', () => {
+    // (q)(1)(ii)'s deadline is the first day of the month NEXT FOLLOWING the
+    // 85th anniversary. For a December birthday that day is January 1 of the
+    // next calendar year, which is exactly where the projection commences a
+    // contract with a start age of 86 — the last day the regulation permits. A
+    // November birthday one day earlier gets no such year: its deadline is
+    // December 1 of the previous calendar year.
+    expect(parsePlan(qlacStartingAt(86, '1950-12-01')).ok).toBe(true)
+    expect(parsePlan(qlacStartingAt(87, '1950-12-01')).ok).toBe(false)
+    expect(parsePlan(qlacStartingAt(86, '1950-11-30')).ok).toBe(false)
+  })
+
+  it('does not send the household to a refusal the other box would give them', () => {
+    // The remedy the message names has to be a remedy. Unticking QLAC on a
+    // start age of 86 lands on the required-beginning-date bound, which for
+    // this owner is 76 — lower still — so the message says why that would not
+    // help rather than offering it.
+    const parsed = parsePlan(qlacStartingAt(86))
+    if (parsed.ok) throw new Error('expected a refusal')
+    expect(parsed.issues.join('; ')).toContain(
+      'unticking "QLAC (qualified longevity annuity)" would not help, because a qualified purchase that is not a QLAC must start paying by age 76',
+    )
+  })
+
+  it('warns rather than staying silent for a caller that skips the parse', () => {
+    // simulatePlan takes a Plan by type, not by parse, so the shape can still
+    // reach the purchase pass in memory — and when it does, the premium leaves
+    // the required-distribution base for a contract that is not a QLAC.
+    const projected = simulatePlan(qlacStartingAt(86), { startYear: 2026, taxCalculator: noTax })
+    expect([...projected.warnings].some((w) => w.includes('is not a QLAC; its premium still left'))).toBe(true)
+  })
+})
+
 describeRule('treas-reg-1-401-a-9-5-b-4-qlac-excluded-from-the-rmd-account-balance', {
   readings: {
     // 1.401(a)(9)-5(b)(4), carried to IRAs by 1.408-8(h)(1): the QLAC's value

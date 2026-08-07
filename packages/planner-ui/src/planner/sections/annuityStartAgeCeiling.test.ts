@@ -1,12 +1,14 @@
 /**
  * The bound that the accounts editor puts on an annuity's start age.
  *
- * The engine refuses a qualified annuity purchase that is not a QLAC and whose
- * payments commence after the owner's required beginning date (Treas. Reg.
- * 1.401(a)(9)-6(a)(3)(i), excused by (q)(1)(iii) for a QLAC alone). A field the
- * household can push past that refusal is a field that authors a plan which
- * will not save, so the editor carries the same bound — the treatment the
- * lump-sum election year already gets one section up.
+ * The engine holds every qualified annuity purchase to one of two ceilings, and
+ * the QLAC box decides which. Without it, payments must commence by the owner's
+ * required beginning date (Treas. Reg. 1.401(a)(9)-6(a)(3)(i), excused by
+ * (q)(1)(iii) for a QLAC alone); with it, that excuse is granted and (q)(1)(ii)
+ * substitutes a ceiling of its own at the first of the month after the owner's
+ * 85th birthday. A field the household can push past either refusal is a field
+ * that authors a plan which will not save, so the editor carries whichever bound
+ * applies — the treatment the lump-sum election year already gets one section up.
  *
  * Tested against the engine's own function rather than a copy of the arithmetic,
  * so the two cannot drift: what is asserted here is WHICH accounts the editor
@@ -57,6 +59,14 @@ function annuity(overrides: Partial<Extract<Account, { type: 'annuity' }>> = {})
   }
 }
 
+/** The same contract with the QLAC box ticked, which swaps which bound applies. */
+function qlacAnnuity(overrides: Partial<Extract<Account, { type: 'annuity' }>> = {}): Account {
+  return annuity({
+    purchase: { year: 2026, premium: 100_000, fundingAccountId: 'ira', taxQualification: 'qualified', qlac: true },
+    ...overrides,
+  })
+}
+
 describe('annuityStartAgeCeiling', () => {
   it('bounds a qualified purchase that is not a QLAC', () => {
     // Born 1950, buying in 2026 at 76: the required beginning date is long
@@ -71,13 +81,29 @@ describe('annuityStartAgeCeiling', () => {
     expect(annuityStartAgeCeiling(planWithOwner('1962-01-01'), annuity())).toBe(76)
   })
 
-  it('lets a QLAC go', () => {
-    // The one contract the regulation permits to defer, so the field is not
-    // bounded and the schema's own 95 stands.
-    const qlac = annuity({
-      purchase: { year: 2026, premium: 100_000, fundingAccountId: 'ira', taxQualification: 'qualified', qlac: true },
-    })
-    expect(annuityStartAgeCeiling(planWithOwner(), qlac)).toBeNull()
+  it('bounds a QLAC at its own, later ceiling', () => {
+    // The QLAC election buys an excuse from the required beginning date
+    // (Treas. Reg. 1.401(a)(9)-6(q)(1)(iii)) and a second ceiling with it:
+    // (q)(1)(ii) requires the contract to commence by the first of the month
+    // after the owner's 85th birthday. So the box raises the bound from 76 to
+    // 85 rather than removing it.
+    expect(annuityStartAgeCeiling(planWithOwner(), qlacAnnuity())).toBe(85)
+  })
+
+  it('gives a December-born owner the extra start age their deadline gives them', () => {
+    // The deadline is the first day of the month NEXT FOLLOWING the 85th
+    // anniversary, which for a December birthday is January 1 of the next
+    // calendar year — where the projection commences a start age of 86.
+    expect(annuityStartAgeCeiling(planWithOwner('1950-12-01'), qlacAnnuity())).toBe(86)
+    expect(annuityStartAgeCeiling(planWithOwner('1950-11-30'), qlacAnnuity())).toBe(85)
+  })
+
+  it('pulls a QLAC start age down on the commit that ticks the box', () => {
+    // Ticking QLAC on a contract already stored at 90 raises the ceiling from
+    // 76 to 85 and the start age is still past it, so the clamp binds on the
+    // purchase commit rather than leaving a plan that will not save.
+    expect(clampedAnnuityStartAge(planWithOwner(), qlacAnnuity({ startAge: 90 }))).toBe(85)
+    expect(clampedAnnuityStartAge(planWithOwner(), qlacAnnuity({ startAge: 85 }))).toBeNull()
   })
 
   it('lets a non-qualified purchase go', () => {
@@ -186,12 +212,16 @@ describe('clampedAnnuityStartAge', () => {
     expect(clampedAnnuityStartAge(plan, moved)).toBeNull()
   })
 
-  it('says nothing about a contract the ceiling does not reach', () => {
-    const qlac = annuity({
+  it('says nothing about a contract no ceiling reaches', () => {
+    // Section 401(a)(9) does not reach an after-tax purchase at all, so neither
+    // bound applies and a start age of 90 stores as authored. The QLAC box is
+    // NOT such a contract any more — it swaps which ceiling applies rather than
+    // removing one, and its own case is pinned above.
+    const nonQualified = annuity({
       startAge: 90,
-      purchase: { year: 2026, premium: 100_000, fundingAccountId: 'ira', taxQualification: 'qualified', qlac: true },
+      purchase: { year: 2026, premium: 100_000, fundingAccountId: 'cash', taxQualification: 'nonQualified' },
     })
-    expect(clampedAnnuityStartAge(planWithOwner(), qlac)).toBeNull()
+    expect(clampedAnnuityStartAge(planWithOwner(), nonQualified)).toBeNull()
   })
 
   it('leaves every other account type alone', () => {

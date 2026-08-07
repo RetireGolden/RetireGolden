@@ -40,6 +40,7 @@ import type { Account, AssetAllocationPolicy, Person, Plan } from '../model/plan
 import {
   ASSET_CLASS_IDS,
   latestNonQlacQualifiedAnnuityStartAge,
+  latestQlacAnnuityStartAge,
   stateForYear,
   stateResidencySegmentsForYear,
 } from '../model/plan.js'
@@ -1291,19 +1292,27 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       if (!funding) continue
       let premium = account.purchase.premium
       // Last line rather than the only one. `parsePlan` refuses a qualified
-      // purchase that is not a QLAC and does not commence by the owner's
-      // required beginning date (Treas. Reg. 1.401(a)(9)-6(a)(3)(i), excused by
-      // (q)(1)(iii) for a QLAC alone), and a stored document carrying that shape
-      // is stood down at load. `simulatePlan` still takes a `Plan` by type
-      // rather than by parse, so a caller that built one in memory can reach
-      // this pass with the shape intact — and when it does, the premium below
-      // leaves the traditional balance for a contract that holds no balance,
-      // which is the required-distribution exclusion 1.401(a)(9)-5(b)(4)
-      // reserves for a QLAC. Say so rather than let it pass silently, the same
-      // way the statutory premium cap is enforced here and not only at parse.
-      if (account.purchase.taxQualification === 'qualified' && account.purchase.qlac !== true) {
+      // purchase that starts paying later than its shape permits — past the
+      // owner's required beginning date when it is not a QLAC (Treas. Reg.
+      // 1.401(a)(9)-6(a)(3)(i), excused by (q)(1)(iii) for a QLAC alone), and
+      // past the first of the month after the owner's 85th birthday when it is
+      // one ((q)(1)(ii)) — and a stored document carrying either shape is stood
+      // down at load. `simulatePlan` still takes a `Plan` by type rather than by
+      // parse, so a caller that built one in memory can reach this pass with the
+      // shape intact — and when it does, the premium below leaves the
+      // traditional balance for a contract that holds no balance, which is the
+      // required-distribution exclusion 1.401(a)(9)-5(b)(4) reserves for a QLAC.
+      // Say so rather than let it pass silently, the same way the statutory
+      // premium cap is enforced here and not only at parse.
+      if (account.purchase.taxQualification === 'qualified') {
         const owner = personById.get(account.ownerPersonId ?? primary.id) ?? primary
-        if (
+        if (account.purchase.qlac === true) {
+          if (account.startAge > latestQlacAnnuityStartAge(dobParts(owner).m)) {
+            warnings.add(
+              'A QLAC that starts paying later than the first of the month after its owner\'s 85th birthday is not a QLAC; its premium still left the required-distribution base, which only a QLAC may do.',
+            )
+          }
+        } else if (
           account.startAge >
           latestNonQlacQualifiedAnnuityStartAge(dobYear(owner), account.purchase.year)
         ) {

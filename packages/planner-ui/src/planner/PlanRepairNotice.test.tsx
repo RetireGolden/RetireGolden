@@ -162,6 +162,24 @@ describe('PlanRepairNotice', () => {
     ])
   })
 
+  it('names the one age that fixes a QLAC stood down for starting too late', async () => {
+    // The mirror of the sentence above, and deliberately one control shorter:
+    // unticking the box would land the contract on a lower ceiling still, so
+    // offering it here would send the household to a second refusal.
+    await mount([
+      {
+        kind: 'qlacPurchaseStoodDown',
+        accountId: 'ann',
+        accountName: 'Longevity annuity',
+        startAge: 90,
+        latestPermittedStartAge: 85,
+      },
+    ])
+    expect(items()).toEqual([
+      'Longevity annuity was bought as a QLAC and set to start paying at age 90. A QLAC is the longest a pre-tax purchase can wait, but it still has to start by age 85 — the IRA rules put the last start on the first of the month after your 85th birthday. The purchase was cleared and Longevity annuity pays nothing, so the premium stayed in the account it would have come from. Open Accounts to set it up again with an earlier start age.',
+    ])
+  })
+
   it('renders the copy for both annuity kinds', async () => {
     await mount([
       {

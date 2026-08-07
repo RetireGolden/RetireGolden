@@ -652,6 +652,11 @@ export const annuityPurchaseGenerator: CandidateGenerator = {
       const capGrowth = isStandIn && startYear > LATEST_PACK_YEAR ? Math.pow(1 + inflation, startYear - qlacPack.year) : 1
       const cap = qlacPack.annuities.qlacPremiumCap * capGrowth
       const premium = Math.min(cap, traditional.balance * 0.25)
+      // The 85 is Treas. Reg. 1.401(a)(9)-6(q)(1)(ii), not a round number: a
+      // contract commencing later than the first of the month after the owner's
+      // 85th birthday is not a QLAC, and `parsePlan` refuses the candidate. The
+      // constant is safe for every owner because the regulatory ceiling is 85
+      // or, for a December birthday, 86 — see `latestQlacAnnuityStartAge`.
       const startAge = Math.min(85, Math.max(currentAge + 1, 80))
       // A QLAC bought years before it starts pays a much higher deferred rate.
       const monthly = (premium * QLAC_DEFERRED_PAYOUT_RATE) / 12

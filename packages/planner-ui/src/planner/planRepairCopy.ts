@@ -61,5 +61,7 @@ export function planRepairMessage(repair: PlanLoadRepair, plan: Plan): string {
       return `${account} was bought with a premium from ${named(repair.fromAccountName, 'an inherited account')}, which is inherited. An inherited account cannot fund an annuity purchase, and this plan holds no traditional account you own that could have paid the premium instead. The purchase was cleared and ${account} pays nothing. Open Accounts to add the account the premium came from, then set the purchase up again.`
     case 'deferredAnnuityPurchaseStoodDown':
       return `${account} was bought with pre-tax money and set to start paying at age ${repair.startAge}. Only a QLAC can start that late; a purchase like this one has to start by age ${repair.latestPermittedStartAge}. The purchase was cleared and ${account} pays nothing, so the premium stayed in the account it would have come from. Open Accounts to set it up again with an earlier start age, or to buy it as a QLAC.`
+    case 'qlacPurchaseStoodDown':
+      return `${account} was bought as a QLAC and set to start paying at age ${repair.startAge}. A QLAC is the longest a pre-tax purchase can wait, but it still has to start by age ${repair.latestPermittedStartAge} — the IRA rules put the last start on the first of the month after your 85th birthday. The purchase was cleared and ${account} pays nothing, so the premium stayed in the account it would have come from. Open Accounts to set it up again with an earlier start age.`
   }
 }

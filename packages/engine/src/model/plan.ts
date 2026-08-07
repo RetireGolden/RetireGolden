@@ -71,6 +71,55 @@ export function latestNonQlacQualifiedAnnuityStartAge(
   return Math.max(rmdStartAgeForBirthYear(birthYear) + 1, purchaseYear - birthYear)
 }
 
+/**
+ * The latest `startAge` a QLAC may carry, for an owner born in month
+ * `birthMonth` (1–12).
+ *
+ * The companion bound to the one above, and the reason that one is not the
+ * whole rule. Treas. Reg. 1.401(a)(9)-6(q)(1)(iii) excuses a QLAC from
+ * (a)(3)(i)'s "commence by the required beginning date", so the function above
+ * stands aside for a QLAC — but the excuse is not a licence to defer forever.
+ * Paragraph (q)(1)(ii) puts its own ceiling on the same contract: the contract
+ * must PROVIDE a specified annuity starting date "no later than the first day of
+ * the month next following the 85th anniversary of the employee's birth". A
+ * contract that names a later date is not a QLAC at all, so it holds neither
+ * (q)(1)(iii)'s excuse nor 1.401(a)(9)-5(b)(4)'s exclusion from the required-
+ * distribution account balance, and the engine's one mechanism — the premium
+ * leaves the traditional balance at purchase and an annuity account holds no
+ * balance of its own — would hand it both.
+ *
+ * WHY THE ANSWER IS A BIRTH MONTH AND NOT THE CONSTANT 85. The regulation's
+ * deadline is a DATE, and this model's start ages are calendar years. The
+ * bridge between them is the same one the required-beginning-date bound above
+ * is built on: `simulatePlan` pays a contract twelve monthly amounts in the
+ * calendar year the owner attains `startAge` (`startCalendarYear = dobYear +
+ * startAge`, the guaranteed-income pass), so the engine's model of commencement
+ * is January 1 of that year. Ask of each candidate start age whether that
+ * January 1 falls on or before the deadline:
+ *
+ *  - `startAge` 85 or lower puts commencement at January 1 of the year the
+ *    owner attains 85 or earlier. The deadline is at the earliest February 1 of
+ *    that same year (a January birthday), so every such contract clears it.
+ *  - `startAge` 86 puts commencement at January 1 of the year the owner attains
+ *    86. For an owner born in any month but December the deadline fell in the
+ *    PREVIOUS calendar year, so the contract is late. For an owner born in
+ *    December the 85th anniversary is in December and the first day of the next
+ *    month IS that January 1 — the contract commences on the last day the
+ *    regulation permits, exactly.
+ *  - `startAge` 87 or higher is late for everyone.
+ *
+ * So the ceiling is 85, and 86 for a December birth. The December case is not a
+ * rounding artefact to be tidied away: it is the same arithmetic that gives the
+ * bound above its `+ 1`, which exists because THAT deadline (April 1 of the
+ * year following attainment) also falls in the calendar year after the one the
+ * age names. Refusing 86 for a December-born owner would be a refusal stricter
+ * than the authority for it, and would force that household to model a contract
+ * commencing a full year before the one they hold.
+ */
+export function latestQlacAnnuityStartAge(birthMonth: number): number {
+  return birthMonth === 12 ? 86 : 85
+}
+
 const isoDateRe = /^\d{4}-\d{2}-\d{2}$/
 
 const idSchema = z.string().min(1)
@@ -2215,34 +2264,70 @@ export const planSchema = z
             message: 'a QLAC must be a qualified (traditional-funded) purchase',
           })
         }
-        // A qualified contract whose payments commence after the owner's
-        // required beginning date, not declared a QLAC, is the one shape
-        // Treas. Reg. 1.401(a)(9)-6(a)(3)(i) refuses and (q)(1)(iii) excuses
-        // only for a QLAC. It matters here rather than only in the ledger
-        // because the engine has a single mechanism for both: an annuity
+        // HOW LATE A QUALIFIED CONTRACT MAY START PAYING. Two bounds, one per
+        // shape, and every qualified purchase is under exactly one of them.
+        //
+        // Not a QLAC: Treas. Reg. 1.401(a)(9)-6(a)(3)(i) requires payments to
+        // commence by the owner's required beginning date, and (q)(1)(iii)
+        // excuses only a QLAC. A QLAC: that excuse is granted, but (q)(1)(ii)
+        // makes the contract's own specified annuity starting date no later
+        // than the first day of the month after the owner's 85th birthday, and
+        // a contract naming a later date is not a QLAC and so holds no excuse
+        // either.
+        //
+        // Both matter here rather than only in the ledger because the engine
+        // has a single mechanism for every one of these contracts: an annuity
         // account holds no balance, so the premium leaves the traditional
         // balance at purchase and never returns to any required-distribution
         // base. That is exactly the treatment 1.401(a)(9)-5(b)(4) reserves for
-        // a QLAC, and on a non-QLAC it computes the requirement on a base short
-        // by the whole premium. Teaching the base to re-include a contract value
-        // would need a contract value the Plan does not carry; refusing the
-        // shape costs only a contract the regulation does not permit anyway.
-        // A non-qualified purchase is not reached by section 401(a)(9) at all,
-        // and an already-owned annuity with no `purchase` moves no premium out
-        // of any balance, so neither is tested.
-        if (a.purchase.taxQualification === 'qualified' && a.purchase.qlac !== true) {
+        // a QLAC, and on anything else it computes the requirement on a base
+        // short by the whole premium. Teaching the base to re-include a
+        // contract value would need a contract value the Plan does not carry;
+        // refusing the shapes costs only contracts the regulation does not
+        // permit anyway. A non-qualified purchase is not reached by section
+        // 401(a)(9) at all, and an already-owned annuity with no `purchase`
+        // moves no premium out of any balance, so neither is tested.
+        if (a.purchase.taxQualification === 'qualified') {
           // Same owner resolution the guaranteed-income pass takes: an annuity
           // may be stored with no individual owner, and the projection reads it
           // as the first person's.
           const owner = personById.get(a.ownerPersonId ?? '') ?? plan.household.people[0]
           const birthYear = owner === undefined ? null : Number(owner.dob.slice(0, 4))
-          if (birthYear !== null && Number.isFinite(birthYear)) {
-            const latest = latestNonQlacQualifiedAnnuityStartAge(birthYear, a.purchase.year)
-            if (a.startAge > latest) {
+          const birthMonth = owner === undefined ? null : Number(owner.dob.slice(5, 7))
+          if (
+            birthYear !== null &&
+            Number.isFinite(birthYear) &&
+            birthMonth !== null &&
+            Number.isFinite(birthMonth)
+          ) {
+            const nonQlacLatest = latestNonQlacQualifiedAnnuityStartAge(birthYear, a.purchase.year)
+            const qlacLatest = latestQlacAnnuityStartAge(birthMonth)
+            // THE MESSAGE NAMES THE OTHER BOX ONLY WHEN THE OTHER BOX WOULD
+            // WORK. Each refusal has two possible remedies — move the start age,
+            // or change which bound applies by ticking or unticking QLAC — and
+            // the second one is a dead end whenever the other bound refuses the
+            // same age too. Telling a household to tick QLAC on a start age of
+            // 90 sends them to a second refusal, so the message is derived from
+            // which of the two shapes this plan could actually store.
+            if (a.purchase.qlac === true) {
+              if (a.startAge > qlacLatest) {
+                ctx.addIssue({
+                  code: 'custom',
+                  path: ['accounts', i, 'startAge'],
+                  message:
+                    a.startAge <= nonQlacLatest
+                      ? `a QLAC must commence by the first of the month after the owner's 85th birthday: it must start paying by age ${qlacLatest} (lower "Start age", or untick "QLAC (qualified longevity annuity)" — a qualified purchase that is not a QLAC may start as late as age ${nonQlacLatest} here)`
+                      : `a QLAC must commence by the first of the month after the owner's 85th birthday: it must start paying by age ${qlacLatest} (lower "Start age"; unticking "QLAC (qualified longevity annuity)" would not help, because a qualified purchase that is not a QLAC must start paying by age ${nonQlacLatest})`,
+                })
+              }
+            } else if (a.startAge > nonQlacLatest) {
               ctx.addIssue({
                 code: 'custom',
                 path: ['accounts', i, 'startAge'],
-                message: `a qualified annuity purchase that is not a QLAC cannot defer past the owner's required beginning date: it must start paying by age ${latest} (lower "Start age", or tick "QLAC (qualified longevity annuity)")`,
+                message:
+                  a.startAge <= qlacLatest
+                    ? `a qualified annuity purchase that is not a QLAC cannot defer past the owner's required beginning date: it must start paying by age ${nonQlacLatest} (lower "Start age", or tick "QLAC (qualified longevity annuity)" — a QLAC may start as late as age ${qlacLatest})`
+                    : `a qualified annuity purchase that is not a QLAC cannot defer past the owner's required beginning date: it must start paying by age ${nonQlacLatest} (lower "Start age"; ticking "QLAC (qualified longevity annuity)" would not help, because a QLAC must start paying by age ${qlacLatest})`,
               })
             }
           }
