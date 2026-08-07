@@ -3926,22 +3926,29 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
      * year's fraction is owner-wide and `splitIraDistribution` caps every draw
      * at the basis that is left.
      *
-     * NO ASSUMED CHARACTER IS AT RISK IN A CARVE YEAR, and this must not be read
-     * as claiming the settlement reconciles in one. A carve exists only where
-     * the gift was routed out of a required distribution, and that is exactly
-     * the shape `ownedNonRothIraRuntimeSourceSeries.ts` refuses with
-     * `qcdStageRequired` -- "a QCD routed out of an RMD debit cannot be
-     * source-allocated from a household scalar" -- so the replay commits
-     * nothing and `assumedEffects` is empty for the whole year. A gift taken
-     * wholly beyond the requirement does not trip that refusal, but it produces
-     * no carve either. The two never coexist, so no entry can lose an assumed
-     * character it was going to be given.
+     * A CARVE YEAR SETTLES, and the carve is half of what makes it settle. This
+     * note said the opposite until 2026-08-07: a carve existed only where the
+     * gift was routed out of a required distribution, that was exactly the shape
+     * `ownedNonRothIraRuntimeSourceSeries.ts` refused with `qcdStageRequired`,
+     * and `assumedEffects` was empty for the whole year. The refusal is gone.
+     * The nonmoving overlay now carries the per-owner attribution settled just
+     * above -- the routed gross, and the qualified part of it -- and the source
+     * series carves that qualified amount out of the owner's line-7 gross by
+     * walking the same applications in the same mutation order this loop walks
+     * its entries in.
      *
-     * `splitWithAssumedCharacter` is still what is called, for the day that
-     * changes. Its behaviour then would be right rather than a gap: an entry the
-     * gift reaches presents a smaller gross, finds no matching effect, and falls
-     * back to the pro-rata computation, because a settlement effect computed for
-     * the whole distribution does not describe the part that went to charity.
+     * SO THE ORDER HERE IS LOAD-BEARING, where it used to be arbitrary. The
+     * settlement matches an assumed effect only when its gross agrees to the
+     * cent, so an entry whose carve the replay placed differently would find no
+     * effect and fall back to the pro-rata computation -- correct, but not
+     * settled. Greedy-in-mutation-order on both sides is what makes the two
+     * agree; the owner's TOTAL basis recovery would be the same either way,
+     * which is why the choice is free and why it has to be the same choice.
+     *
+     * `splitWithAssumedCharacter` is therefore what is called, and its fallback
+     * is the honest one for an entry no effect describes: a settlement effect
+     * computed for a whole distribution does not describe the part that went to
+     * charity.
      */
     const commitDeferredForcedDistributions = (
       entries: readonly DeferredForcedIraDistribution[],
@@ -7562,17 +7569,36 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       // Only the routed share belongs in the nonmoving overlay. The rest of the
       // annual total left an owned IRA under its own occurrences above, and
       // publishing it here as well would double-count the gift.
+      //
+      // The attribution travels with it, which is what lets the owned-IRA
+      // runtime source series characterize a gift year instead of refusing it.
+      // Both figures are the ones the 408(d)(8)(D) block settled above:
+      // `qcdFromRmdByOwner` is the routed gross the published annual total is
+      // made of, and `qcdQualifiedFromRmdByOwner` is the carve the deferred
+      // forced distributions were committed against, so the replay reproduces
+      // the ledger's own line-7 grosses rather than deriving rival ones.
       nonmovingLegacyQcdOverlay: qcdFromRmd > 0
         ? Object.freeze({
           status: 'nonmovingLegacyQcdCaptured' as const,
           kind: 'legacyQcd' as const,
           taxYear: year,
           grossAmountPlanDollars: qcdFromRmd,
-          ownerPersonId: null,
-          sourceAccountId: null,
+          ownerAttributions: Object.freeze(
+            [...qcdFromRmdByOwner.entries()]
+              .filter(([, routed]) => routed > 0)
+              .sort(([left], [right]) => compareUtf16CodeUnits(left, right))
+              .map(([ownerPersonId, routedGrossPlanDollars]) => Object.freeze({
+                ownerPersonId,
+                routedGrossPlanDollars,
+                qualifiedLine7ExclusionPlanDollars: Math.min(
+                  routedGrossPlanDollars,
+                  qcdQualifiedFromRmdByOwner.get(ownerPersonId) ?? 0,
+                ),
+              })),
+          ),
           physicalMovement: 'notAdditionalMovement' as const,
           inventoryReplay:
-            'requiresSeparateQcdCharacterizationStage' as const,
+            'attributedToOwnedIraRequiredDistributionGrosses' as const,
         })
         : null,
     })

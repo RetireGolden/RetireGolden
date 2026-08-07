@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { Account, Plan } from '../model/plan.js'
 import {
+  couplePlan,
   singlePersonPlan,
   traditionalAccount,
   validatePlan,
@@ -18,8 +19,9 @@ function ira(
   id: string,
   balance: number,
   basis = 0,
+  ownerPersonId = 'p1',
 ): Extract<Account, { type: 'traditional' }> {
-  const account = traditionalAccount(id, balance, 'p1', 'ira')
+  const account = traditionalAccount(id, balance, ownerPersonId, 'ira')
   if (account.type !== 'traditional') throw new Error('expected IRA')
   return {
     ...account,
@@ -108,7 +110,13 @@ describe('simulator committed owned non-Roth IRA annual replay publication', () 
     )
   })
 
-  it('publishes nothing when legacy QCD blocks exact replay', () => {
+  // The inverse of what this fixture asserted until 2026-08-07, and the reason
+  // it is worth keeping in that form. A gift routed out of a required
+  // distribution used to mint an overlay carrying no owner, the source series
+  // refused the year, and the household published nothing for it; the overlay
+  // now carries the 408(d)(8)(D) attribution the ledger already settled, so the
+  // year replays and publishes like any other.
+  it('publishes a settled replay for a legacy QCD routed out of a requirement', () => {
     const plan = singlePersonPlan({ dob: '1950-01-01', planningAge: 76 })
     plan.id = 'published-qcd-block'
     plan.accounts = [ira('ira', 100_000, 20_000)]
@@ -116,9 +124,67 @@ describe('simulator committed owned non-Roth IRA annual replay publication', () 
 
     const years = run(plan, TAX_YEAR + 1)
 
-    expect(years.every((year) =>
-      !Object.hasOwn(year, 'ownedNonRothIraAnnualReplay'))).toBe(true)
     expect(years[0]!.qcd).toBeGreaterThan(0)
+    expect(years.every((year) =>
+      Object.hasOwn(year, 'ownedNonRothIraAnnualReplay'))).toBe(true)
+  })
+
+  // THE LATCH, which is what made the old refusal cost more than the gift year.
+  // A rollback that names no owner is household-wide and permanent, so the
+  // first gift year used to take the settlement away from every year after it
+  // as well -- including years with no gift at all, which had nothing wrong
+  // with them. A recurring gift is the ordinary case, so the shape to pin is a
+  // gift in every year, and then the mixed one: gift, then no gift.
+  it('keeps settling the years after a gift year', () => {
+    const plan = singlePersonPlan({ dob: '1950-01-01', planningAge: 82 })
+    plan.id = 'published-qcd-latch'
+    plan.accounts = [ira('ira', 400_000, 40_000)]
+    plan.strategies.qcdAnnual = 5_000
+
+    const years = run(plan, TAX_YEAR + 5)
+
+    expect(years).toHaveLength(6)
+    expect(years.every((year) => year.qcd > 0)).toBe(true)
+    expect(years.every((year) =>
+      Object.hasOwn(year, 'ownedNonRothIraAnnualReplay'))).toBe(true)
+  })
+
+  // The mixed shape, which is the one the old latch punished hardest: the gift
+  // ends and the years after it were still denied a settlement they had nothing
+  // wrong with. The aggregate arm has no year-scoped gift, so the gift is ended
+  // the way a real household ends it -- the only eligible donor dies -- and the
+  // surviving spouse's own pool has to keep settling afterwards.
+  it('keeps the settlement in the non-gift years that follow a gift year', () => {
+    const plan = couplePlan({
+      p1Dob: '1965-01-01', p1PlanningAge: 75,
+      p2Dob: '1950-01-01', p2PlanningAge: 77,
+    })
+    plan.id = 'published-qcd-latch-mixed'
+    plan.accounts = [
+      ira('p1-ira', 300_000, 30_000, 'p1'),
+      ira('p2-ira', 300_000, 30_000, 'p2'),
+    ]
+    plan.strategies.qcdAnnual = 5_000
+
+    const years = run(plan, TAX_YEAR + 4)
+
+    // The shape: a gift year, then years with no eligible donor left.
+    expect(years[0]!.qcd).toBeGreaterThan(0)
+    expect(years.at(-1)!.qcd).toBe(0)
+    expect(years.every((year) =>
+      Object.hasOwn(year, 'ownedNonRothIraAnnualReplay'))).toBe(true)
+    // And the donor's settled basis carries FORWARD across the gift year rather
+    // than being reseeded: a latched household would have kept publishing the
+    // stale opening figure the gift year's own distributions had already spent.
+    const donorOpening = (year: YearResult): number =>
+      year.ownedNonRothIraAnnualReplay!.annualReplay.ownerReplays
+        .find((owner) => owner.ownerPersonId === 'p2')!.openingBasisAmount
+    expect(donorOpening(years[0]!)).toBe(3_000_000)
+    expect(donorOpening(years[1]!)).toBeLessThan(donorOpening(years[0]!))
+    // The survivor's own pool is untouched by any of it, in every year.
+    expect(years.every((year) =>
+      year.ownedNonRothIraAnnualReplay!.annualReplay.ownerReplays
+        .some((owner) => owner.ownerPersonId === 'p1'))).toBe(true)
   })
 
   it('keeps a prior publication but never publishes a blocked suffix', () => {

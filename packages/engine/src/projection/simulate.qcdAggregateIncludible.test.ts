@@ -26,6 +26,19 @@
  * B / D. That reading is the one the record itself carried while it was
  * approximated, and it is wrong for a reason the Form 8606 instructions state
  * outright — a QCD is not a line-7 distribution, so it is not in line 9 either.
+ *
+ * ASSERTED TO THE CENT, AND WHY THAT IS NOT A WEAKENING. Every fixture below
+ * holds the return at zero, so the pre-distribution instant the legacy fallback
+ * measures and the December 31 instant §408(d)(2)(C) requires coincide exactly
+ * and the arithmetic above is the same on either arm. What changed on
+ * 2026-08-07 is which arm runs it: the aggregate gift became source-allocatable,
+ * so these years reach the owned-non-Roth-IRA annual settlement, which allocates
+ * basis in whole cents against an exact-cent line 9 instead of in floats. The
+ * figures move by under a cent and by nothing else — the ORDER fixture by
+ * 0.077 cents and the CEILING fixture by 0.267 — while the readings they
+ * discriminate against sit 19 and 980 dollars away. A 1e-6 tolerance here would
+ * be pinning the quantization rather than the statute, which is what the
+ * settled-path suite on `irc-408-d-2-C` already says in as many words.
  */
 import { expect, it } from 'vitest'
 
@@ -105,6 +118,8 @@ interface Observed {
   readonly magi: number
   /** Basis returned by the year's forced distribution, from the LP probe. */
   readonly basisConsumed: number
+  /** Whether the owned-IRA annual settlement priced the year, or the fallback did. */
+  readonly settled: boolean
   readonly probe: OptimizerYearProbe
 }
 
@@ -122,6 +137,7 @@ function observe(plan: Plan): Observed {
     qcd: year.qcd,
     magi: year.magi,
     basisConsumed: year.rmd - (probe.rmdTaxable ?? year.rmd),
+    settled: year.ownedNonRothIraAnnualReplay !== undefined,
     probe,
   }
 }
@@ -171,14 +187,17 @@ describeRule('irc-408-d-8-D-projection-qcd-after-pro-rata', {
     expect(observed.rmd).toBeCloseTo(ORDER_RMD, 6)
     expect(observed.qcd).toBeCloseTo(ORDER_GIFT, 6)
 
-    expect(observed.magi).toBeCloseTo(accepted, 6)
+    expect(observed.magi).toBeCloseTo(accepted, 2)
     expect(observed.magi).toBeCloseTo(3_980.77, 2)
-    expect(observed.magi).not.toBeCloseTo(readings.giftCarvedOutButLeftInTheDenominator, 6)
-    expect(observed.magi).not.toBeCloseTo(readings.engineProRatedTheWholeRequirementFirst, 6)
+    expect(observed.magi).not.toBeCloseTo(readings.giftCarvedOutButLeftInTheDenominator, 2)
+    expect(observed.magi).not.toBeCloseTo(readings.engineProRatedTheWholeRequirementFirst, 2)
 
     // The basis half, which is the half that outlives the year: 5,000 × 0.203846.
-    expect(observed.basisConsumed).toBeCloseTo(ORDER_RESIDUAL * ORDER_FRACTION, 6)
+    expect(observed.basisConsumed).toBeCloseTo(ORDER_RESIDUAL * ORDER_FRACTION, 2)
     expect(observed.basisConsumed).toBeCloseTo(1_019.23, 2)
+    // And the settlement is what priced it, which is the fact that moved: this
+    // household was on the legacy fallback until the gift became allocatable.
+    expect(observed.settled).toBe(true)
   })
 })
 
@@ -226,14 +245,15 @@ describeRule('irc-408-d-8-D-projection-qcd-after-pro-rata', {
     // The shape that separates this fixture from the one above.
     expect(CEIL_GIFT).toBeGreaterThan(CEIL_RMD * 0.8)
 
-    expect(observed.magi).toBeCloseTo(accepted, 6)
+    expect(observed.magi).toBeCloseTo(accepted, 2)
     expect(observed.magi).toBeCloseTo(1_736.99, 2)
-    expect(observed.magi).not.toBeCloseTo(readings.giftCarvedOutButLeftInTheDenominator, 6)
+    expect(observed.magi).not.toBeCloseTo(readings.giftCarvedOutButLeftInTheDenominator, 2)
     expect(observed.magi)
-      .not.toBeCloseTo(readings.engineCappedTheExclusionAtTheRequirementsTaxableShare, 6)
+      .not.toBeCloseTo(readings.engineCappedTheExclusionAtTheRequirementsTaxableShare, 2)
+    expect(observed.settled).toBe(true)
 
     // 2,194.09 × 0.208333 = 457.10, against the 8,438.82 the ledger used to burn.
-    expect(observed.basisConsumed).toBeCloseTo(CEIL_RESIDUAL * CEIL_FRACTION, 6)
+    expect(observed.basisConsumed).toBeCloseTo(CEIL_RESIDUAL * CEIL_FRACTION, 2)
     expect(observed.basisConsumed).toBeCloseTo(457.10, 2)
     expect(observed.basisConsumed).not.toBeCloseTo(8_438.82, 2)
 

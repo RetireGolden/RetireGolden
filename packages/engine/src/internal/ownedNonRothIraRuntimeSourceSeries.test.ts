@@ -842,13 +842,16 @@ describe('private owned-IRA runtime source-series validation', () => {
       .toMatchObject({ balancePlanDollars: 100_000, balanceAmount: 10_000_000 })
   })
 
-  it('blocks QCD allocation and annuity pool escape in the source layer', () => {
+  it('allocates a routed QCD and blocks annuity pool escape in the source layer', () => {
+    // A routed gift is characterized from the overlay's owner attribution and
+    // no longer blocks; an annuity premium leaving the captured pool still does,
+    // which is what keeps the two cases in one fixture worth reading together.
     const qcdPlan = singlePersonPlan({ dob: '1950-01-01', planningAge: 76 })
     qcdPlan.id = 'source-qcd'
     qcdPlan.accounts = [traditional('ira', 100_000)]
     qcdPlan.strategies.qcdAnnual = 1_000
     expect(validateOwnedNonRothIraRuntimeSourceSeries(qcdPlan, TAX_YEAR, project(qcdPlan)))
-      .toMatchObject({ status: 'ownedNonRothIraRuntimeSourceSeriesBlocked', issues: [{ kind: 'qcdStageRequired' }] })
+      .toMatchObject({ status: 'ownedNonRothIraRuntimeSourceSeriesComplete' })
 
     const annuityPlan = singlePersonPlan({ planningAge: 60 })
     annuityPlan.id = 'source-annuity'

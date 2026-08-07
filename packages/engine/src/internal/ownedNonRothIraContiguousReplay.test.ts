@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { planDollarsToLedgerCents } from '../actions/planBalanceAdapter.js'
 import type { Account, Plan } from '../model/plan.js'
 import { singlePersonPlan, traditionalAccount, validatePlan } from '../testing/planFixtures.js'
 import type { SimulatorAnnualRetirementRuntimeOccurrence } from '../projection/annualRetirementRuntimeJournal.js'
@@ -141,16 +142,26 @@ describe('private contiguous owned-IRA basis replay', () => {
     })
   })
 
-  it('propagates QCD and annuity source-layer blocks without partial basis evidence', () => {
+  it('replays a routed QCD and propagates the annuity block without partial basis evidence', () => {
+    // The routed gift replays: the overlay's attribution says whose line-7
+    // gross it shrinks, so the basis fraction is built on a denominator the
+    // gift has left, exactly as 408(d)(8)(D)'s proper adjustment requires.
     const qcdPlan = singlePersonPlan({ dob: '1950-01-01', planningAge: 76 })
     qcdPlan.id = 'basis-qcd-block'
     qcdPlan.accounts = [ira('ira', 100_000, 10_000)]
     qcdPlan.strategies.qcdAnnual = 1_000
-    expect(replayOwnedNonRothIraContiguousYears(qcdPlan, TAX_YEAR, project(qcdPlan))).toMatchObject({
-      status: 'ownedNonRothIraContiguousReplayBlocked',
-      annualReplays: null,
-      issues: [{ kind: 'qcdStageRequired' }],
-    })
+    const qcdYears = project(qcdPlan)
+    const qcdReplay = replayOwnedNonRothIraContiguousYears(
+      qcdPlan, TAX_YEAR, qcdYears,
+    )
+    expect(qcdReplay.status).toBe('ownedNonRothIraContiguousReplayComplete')
+    if (qcdReplay.status === 'ownedNonRothIraContiguousReplayComplete') {
+      const owner = qcdReplay.annualReplays[0]!.ownerReplays[0]!
+      // Line 9 is the December 31 pool plus the year's line 7, and the gift is
+      // in neither: it left the account and never joined the line.
+      expect(owner.annualBasisRatio.denominatorMinorUnits)
+        .toBe(planDollarsToLedgerCents(100_000 - 1_000))
+    }
 
     const annuityPlan = singlePersonPlan({ planningAge: 60 })
     annuityPlan.id = 'basis-annuity-block'

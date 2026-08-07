@@ -291,10 +291,18 @@ describe('simulate annual retirement runtime source capture', () => {
       kind: 'legacyQcd',
       taxYear: TAX_YEAR,
       grossAmountPlanDollars: 5_000,
-      ownerPersonId: null,
-      sourceAccountId: null,
+      // No single owner or source account, because a household gift has
+      // neither -- but the 408(d)(8)(D) attribution the annual ledger settled
+      // travels with it, which is what lets the replay characterize the year
+      // instead of refusing it. The whole gift qualified here: this IRA holds
+      // no basis, so the owner's aggregate includible amount is the balance.
+      ownerAttributions: [{
+        ownerPersonId: 'p1',
+        routedGrossPlanDollars: 5_000,
+        qualifiedLine7ExclusionPlanDollars: 5_000,
+      }],
       physicalMovement: 'notAdditionalMovement',
-      inventoryReplay: 'requiresSeparateQcdCharacterizationStage',
+      inventoryReplay: 'attributedToOwnedIraRequiredDistributionGrosses',
     })
   })
 

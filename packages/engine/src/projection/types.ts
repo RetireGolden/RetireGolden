@@ -699,20 +699,52 @@ export interface YearAcaResult {
 }
 
 /**
+ * One donor's share of a charitable gift routed out of a required distribution.
+ *
+ * IRC 408(d)(8)(D) is measured against ONE individual's retirement plans treated
+ * as one contract, and each owner has their own Form 8606 denominator, so the
+ * routed gift is only characterizable once it is charged to the owners whose
+ * required distributions carried it. Both figures are published because they are
+ * different amounts and answer different questions: the routed gross is what the
+ * published annual QCD total is made of, and the qualified amount is the part of
+ * it that (D) deems includible and that the Form 8606 line-7 instructions
+ * therefore keep off line 7. They differ exactly where the gift ran past the
+ * owner's aggregate includible amount, since the excess is not a QCD at all and
+ * stays in the section 72 computation.
+ */
+export interface SimulatorAnnualRetirementLegacyQcdOwnerAttribution {
+  readonly ownerPersonId: string
+  /** Gross routed out of THIS owner's owned-IRA required distributions. */
+  readonly routedGrossPlanDollars: number
+  /**
+   * The part of that routed gross which qualified under 408(d)(8)(D) and must
+   * therefore leave this owner's Form 8606 line-7 gross and the annual
+   * denominator built from it. Never greater than the routed gross.
+   */
+  readonly qualifiedLine7ExclusionPlanDollars: number
+}
+
+/**
  * The share of the published annual QCD total that moved no additional dollars
  * because an RMD debit already carried it out of the owned IRA. A gift taken
  * with no RMD behind it is not in here: it physically leaves an account and is
  * published as a `legacyQcd` runtime occurrence with its own application.
+ *
+ * It carries no single owner or source account because it is a household gift
+ * spread over whichever required distributions funded it; `ownerAttributions`
+ * is how the replay learns whose line-7 gross it shrinks, and it is what makes
+ * this overlay replayable instead of a refusal.
  */
 export interface SimulatorAnnualRetirementNonmovingLegacyQcdOverlay {
   readonly status: 'nonmovingLegacyQcdCaptured'
   readonly kind: 'legacyQcd'
   readonly taxYear: number
   readonly grossAmountPlanDollars: number
-  readonly ownerPersonId: null
-  readonly sourceAccountId: null
+  /** Ascending by owner id, positive routed shares only, summing to the gross. */
+  readonly ownerAttributions:
+    readonly Readonly<SimulatorAnnualRetirementLegacyQcdOwnerAttribution>[]
   readonly physicalMovement: 'notAdditionalMovement'
-  readonly inventoryReplay: 'requiresSeparateQcdCharacterizationStage'
+  readonly inventoryReplay: 'attributedToOwnedIraRequiredDistributionGrosses'
 }
 
 export interface SimulatorAnnualRetirementRuntimeSource {

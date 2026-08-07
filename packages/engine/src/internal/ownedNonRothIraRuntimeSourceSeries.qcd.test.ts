@@ -8,6 +8,7 @@ import {
   asPersonId,
 } from '../actions/identity.js'
 import { asPositiveUsdCents, asUsdCents } from '../actions/money.js'
+import { planDollarsToLedgerCents } from '../actions/planBalanceAdapter.js'
 import type { Account, Plan } from '../model/plan.js'
 import {
   singlePersonPlan,
@@ -440,30 +441,95 @@ describe('moving legacy QCD in the owned-IRA source series', () => {
     })
   })
 
-  // The other half of the split, unchanged and deliberately still blocked. A
-  // gift routed out of an RMD moves no extra dollars, but which owner's line-7
-  // gross must shrink under 408(d)(8)(D) is unanswerable from one household
-  // scalar, so it keeps the nonmoving overlay and keeps requiring the separate
-  // characterization stage. Wiring the moving half must not quietly admit this
-  // one.
-  it('still requires the characterization stage for a gift routed out of an RMD', () => {
+  // The other half of the split, and the half that used to be refused. A gift
+  // routed out of an RMD moves no extra dollars, so it keeps the nonmoving
+  // overlay -- but the overlay now carries the answer to the question that used
+  // to block it. IRC 408(d)(8)(D) is measured against one individual's plans
+  // treated as one contract, and the annual ledger settles whose requirement
+  // carried the gift when it sizes it, so the overlay states that attribution
+  // and this replay reduces exactly that owner's Form 8606 line-7 gross by it.
+  it('characterizes a gift routed out of an RMD from its owner attribution', () => {
     const plan = singlePersonPlan({ dob: '1945-01-01', planningAge: 90 })
-    plan.id = 'routed-qcd-still-blocked'
+    plan.id = 'routed-qcd-attributed'
     plan.accounts = [cash(), traditional('ira', 500_000)]
     plan.strategies.qcdAnnual = 5_000
 
     const years = project(plan)
+    const requiredDistribution = years[0]!.rmd
 
-    expect(years[0]!.qcd).toBeGreaterThan(0)
+    expect(years[0]!.qcd).toBe(5_000)
+    expect(requiredDistribution).toBeGreaterThan(5_000)
     expect(years[0]!.retirementRuntimeSource!.nonmovingLegacyQcdOverlay)
       .toMatchObject({
         kind: 'legacyQcd',
         physicalMovement: 'notAdditionalMovement',
+        grossAmountPlanDollars: 5_000,
+        ownerAttributions: [{
+          ownerPersonId: 'p1',
+          routedGrossPlanDollars: 5_000,
+          qualifiedLine7ExclusionPlanDollars: 5_000,
+        }],
       })
+
+    const result = validateOwnedNonRothIraRuntimeSourceSeries(plan, TAX_YEAR, years)
+    expect(result.status).toBe('ownedNonRothIraRuntimeSourceSeriesComplete')
+    if (result.status !== 'ownedNonRothIraRuntimeSourceSeriesComplete') return
+    const distribution = result.years[0]!.ownerSources[0]!.applications
+      .find((entry) => entry.simulatorPhase === 'ownerRmdDistribution')!
+    // The two figures the carve keeps apart. Every routed cent LEFT THE ACCOUNT
+    // under this debit, so the balance chain still carries the whole
+    // requirement; the Form 8606 line-7 instructions keep a qualified
+    // charitable distribution off the line, so the gross the return reports is
+    // the requirement less the gift.
+    expect(distribution.amount)
+      .toBe(planDollarsToLedgerCents(requiredDistribution))
+    expect(distribution.form8606Line).toBe('line7')
+    expect(distribution.form8606LineGrossAmount)
+      .toBe(planDollarsToLedgerCents(requiredDistribution - 5_000))
+  })
+
+  // The refusal is not gone, it is conditioned. An overlay whose attribution
+  // does not rejoin the requirements it claims to have been routed out of
+  // describes a gift no individual retirement plan could have funded under
+  // 408(d)(8)(B), and a replay that carved it anyway would be inventing the
+  // owner's line-7 gross rather than reproducing the ledger's.
+  it('refuses an overlay whose carve outruns the owner’s own requirement', () => {
+    const plan = singlePersonPlan({ dob: '1945-01-01', planningAge: 90 })
+    plan.id = 'routed-qcd-carve-overruns'
+    plan.accounts = [cash(), traditional('ira', 500_000)]
+    plan.strategies.qcdAnnual = 5_000
+
+    const years = project(plan)
+    const overlay = years[0]!.retirementRuntimeSource!.nonmovingLegacyQcdOverlay!
+    ;(overlay.ownerAttributions[0] as {
+      qualifiedLine7ExclusionPlanDollars: number
+    }).qualifiedLine7ExclusionPlanDollars = years[0]!.rmd + 1
+
     expect(validateOwnedNonRothIraRuntimeSourceSeries(plan, TAX_YEAR, years))
       .toMatchObject({
         status: 'ownedNonRothIraRuntimeSourceSeriesBlocked',
         issues: [{ kind: 'qcdStageRequired', taxYear: TAX_YEAR }],
+      })
+  })
+
+  // And an overlay that names nobody is the shape this whole slice removed: it
+  // states a gift and no owner to charge it to, which is the one thing the
+  // replay cannot derive for itself.
+  it('refuses an overlay carrying no owner attribution at all', () => {
+    const plan = singlePersonPlan({ dob: '1945-01-01', planningAge: 90 })
+    plan.id = 'routed-qcd-unattributed'
+    plan.accounts = [cash(), traditional('ira', 500_000)]
+    plan.strategies.qcdAnnual = 5_000
+
+    const years = project(plan)
+    const overlay = years[0]!.retirementRuntimeSource!.nonmovingLegacyQcdOverlay!
+    ;(overlay as unknown as { ownerAttributions: readonly never[] })
+      .ownerAttributions = []
+
+    expect(validateOwnedNonRothIraRuntimeSourceSeries(plan, TAX_YEAR, years))
+      .toMatchObject({
+        status: 'ownedNonRothIraRuntimeSourceSeriesBlocked',
+        issues: [{ kind: 'sourceContractInvalid', taxYear: TAX_YEAR }],
       })
   })
 
@@ -595,8 +661,12 @@ describe('moving legacy QCD through the live annual pass', () => {
   })
 
   // A gift larger than the RMD backing it splits across both routes in the same
-  // year. Neither total is the published figure on its own, and the year stays
-  // blocked because the routed share still needs its characterization stage.
+  // year. Neither total is the published figure on its own, and both routes now
+  // characterize: the routed share off the overlay's attribution, the moving
+  // share off its own occurrence. Neither reaches Form 8606 line 7, which is
+  // exactly what (D) read with the line-7 instructions requires -- one because
+  // it was carved out of the requirement's gross, the other because a QCD was
+  // never a line-7 distribution in the first place.
   it('splits a gift that outruns its RMD across the overlay and its occurrences', () => {
     const plan = singlePersonPlan({ dob: '1945-01-01', planningAge: 90 })
     plan.id = 'split-qcd-overlay-and-occurrences'
@@ -612,11 +682,26 @@ describe('moving legacy QCD through the live annual pass', () => {
     expect(overlay?.grossAmountPlanDollars).toBe(years[0]!.rmd)
     expect(moving).toBeGreaterThan(0)
     expect(overlay!.grossAmountPlanDollars + moving).toBeCloseTo(years[0]!.qcd, 6)
-    expect(validateOwnedNonRothIraRuntimeSourceSeries(validatePlan(plan), TAX_YEAR, years))
-      .toMatchObject({
-        status: 'ownedNonRothIraRuntimeSourceSeriesBlocked',
-        issues: [{ kind: 'qcdStageRequired' }],
-      })
+    expect(overlay!.ownerAttributions).toEqual([{
+      ownerPersonId: 'p1',
+      routedGrossPlanDollars: years[0]!.rmd,
+      qualifiedLine7ExclusionPlanDollars: years[0]!.rmd,
+    }])
+
+    const result = validateOwnedNonRothIraRuntimeSourceSeries(
+      validatePlan(plan), TAX_YEAR, years,
+    )
+    expect(result.status).toBe('ownedNonRothIraRuntimeSourceSeriesComplete')
+    if (result.status !== 'ownedNonRothIraRuntimeSourceSeriesComplete') return
+    // The whole requirement went to charity, so the distribution reports no
+    // line-7 gross at all -- it is not a line-7 entry, rather than a line-7
+    // entry of nothing.
+    const distribution = result.years[0]!.ownerSources[0]!.applications
+      .find((entry) => entry.simulatorPhase === 'ownerRmdDistribution')!
+    expect(distribution.form8606Line).toBeNull()
+    expect(distribution.form8606LineGrossAmount).toBe(0)
+    expect(result.years[0]!.ownerSources[0]!.applications
+      .every((entry) => entry.form8606Line !== 'line7')).toBe(true)
   })
 })
 
