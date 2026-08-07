@@ -3702,9 +3702,17 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           const owners = [...ownedIraRmdGrossByOwner.keys()].sort()
           let assigned = 0
           owners.forEach((ownerId, index) => {
+            // Each share is clamped to what is left, and the last owner's
+            // residue to zero: floating error in the proportional shares can
+            // push `assigned` a hair past the gift, and a negative share would
+            // leak into the 408(d)(8)(D) ceiling and denominator arithmetic.
+            const remaining = Math.max(0, qcdFromRmd - assigned)
             const share = index === owners.length - 1
-              ? qcdFromRmd - assigned
-              : qcdFromRmd * (ownedIraRmdGrossByOwner.get(ownerId)! / ownedIraRmdTotal)
+              ? remaining
+              : Math.min(
+                  remaining,
+                  qcdFromRmd * (ownedIraRmdGrossByOwner.get(ownerId)! / ownedIraRmdTotal),
+                )
             assigned += share
             addGiftGross(qcdFromRmdByOwner, ownerId, share)
             addGiftGross(qcdGrossByOwner, ownerId, share)
