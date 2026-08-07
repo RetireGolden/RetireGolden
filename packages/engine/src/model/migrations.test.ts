@@ -26,7 +26,12 @@ describe('migratePlanToCurrent', () => {
     const plan = createEmptyPlan({ newId: testIds, now: fixedNow })
     const result = migratePlanToCurrent(JSON.parse(JSON.stringify(plan)))
     expect(result.ok).toBe(true)
-    if (result.ok) expect(result.plan).toEqual(plan)
+    if (result.ok) {
+      expect(result.plan).toEqual(plan)
+      // A document that needed nothing reports nothing, so a host has a plain
+      // "was anything changed" test and never a notice over an untouched plan.
+      expect(result.repairs).toEqual([])
+    }
   })
 
   it('normalizes existing joint retirement and HSA accounts to the primary person', () => {
@@ -45,6 +50,13 @@ describe('migratePlanToCurrent', () => {
     if (result.ok) {
       expect(result.plan.accounts.slice(0, 3).map((a) => a.ownerPersonId)).toEqual([primaryId, primaryId, primaryId])
       expect(result.plan.accounts[3]!.ownerPersonId).toBeNull()
+      // One record per back-filled account, in stored order; the taxable account
+      // keeps its null owner and so contributes nothing.
+      expect(result.repairs).toEqual([
+        { kind: 'accountOwnerBackFilled', accountId: 'trad', accountName: '401(k)', ownerPersonId: primaryId },
+        { kind: 'accountOwnerBackFilled', accountId: 'roth', accountName: 'Roth IRA', ownerPersonId: primaryId },
+        { kind: 'accountOwnerBackFilled', accountId: 'hsa', accountName: 'HSA', ownerPersonId: primaryId },
+      ])
     }
   })
 
@@ -86,6 +98,14 @@ describe('migratePlanToCurrent', () => {
       // the household can re-elect it against a year that has not passed.
       expect(pension.lumpSumElection).toBeUndefined()
       expect(pension.lumpSumOffer).toEqual({ amount: 400_000, electionYear: 2025 })
+      expect(result.repairs).toEqual([
+        {
+          kind: 'lumpSumElectionDroppedElectionYearPassed',
+          accountId: 'pen',
+          accountName: 'Pension',
+          electionYear: 2025,
+        },
+      ])
     })
 
     it('repairs a legacy stale election stored at an older schema version too', () => {
@@ -95,6 +115,7 @@ describe('migratePlanToCurrent', () => {
       const pension = result.plan.accounts.find((a) => a.id === 'pen')!
       if (pension.type !== 'pension') throw new Error('expected the pension back')
       expect(pension.lumpSumElection).toBeUndefined()
+      expect(result.repairs.map((r) => r.kind)).toEqual(['lumpSumElectionDroppedElectionYearPassed'])
     })
 
     it('sheds an election whose rollover target id is duplicated, instead of locking out', () => {
@@ -113,6 +134,34 @@ describe('migratePlanToCurrent', () => {
       if (pension.type !== 'pension') throw new Error('expected the pension back')
       expect(pension.lumpSumElection).toBeUndefined()
       expect(pension.lumpSumOffer).toEqual({ amount: 400_000, electionYear: 2030 })
+      // A duplicated id is neither inherited nor resolvable, so it reports as
+      // unavailable and carries the name of the first record holding that id.
+      expect(result.repairs).toEqual([
+        {
+          kind: 'lumpSumElectionDroppedTargetUnavailable',
+          accountId: 'pen',
+          accountName: 'Pension',
+          targetAccountId: 'ira',
+          targetAccountName: 'IRA',
+        },
+      ])
+    })
+
+    it('reports a rollover target that is not in the plan at all as unavailable', () => {
+      const raw = storedPension({ amount: 400_000, electionYear: 2030 }, 'gone')
+      const result = migratePlanToCurrent(raw)
+      expect(result.ok).toBe(true)
+      if (!result.ok) return
+      expect(result.repairs).toEqual([
+        {
+          kind: 'lumpSumElectionDroppedTargetUnavailable',
+          accountId: 'pen',
+          accountName: 'Pension',
+          targetAccountId: 'gone',
+          // Nothing to name, and the record says so rather than inventing one.
+          targetAccountName: null,
+        },
+      ])
     })
 
     it('sheds the election when the stored stamp is unreadable, instead of refusing the load', () => {
@@ -129,6 +178,20 @@ describe('migratePlanToCurrent', () => {
       if (pension.type !== 'pension') throw new Error('expected the pension back')
       expect(pension.lumpSumElection).toBeUndefined()
       expect(pension.lumpSumOffer).toEqual({ amount: 400_000, electionYear: 2030 })
+      expect(result.repairs).toEqual([
+        { kind: 'lumpSumElectionDroppedUnreadableSaveDate', accountId: 'pen', accountName: 'Pension' },
+      ])
+    })
+
+    it('reports the unreadable stamp, not the target, when both would refuse the election', () => {
+      // A re-save is what makes the election year judgeable again, so the fault
+      // that has to be fixed first is the one reported.
+      const raw = storedPension({ amount: 400_000, electionYear: 2030 }, 'inh')
+      raw['updatedAtIso'] = 'not-a-timestamp'
+      const result = migratePlanToCurrent(raw)
+      expect(result.ok).toBe(true)
+      if (!result.ok) return
+      expect(result.repairs.map((r) => r.kind)).toEqual(['lumpSumElectionDroppedUnreadableSaveDate'])
     })
 
     it('carries a legacy inherited-IRA rollover target back the same way', () => {
@@ -140,6 +203,15 @@ describe('migratePlanToCurrent', () => {
       if (pension.type !== 'pension') throw new Error('expected the pension back')
       expect(pension.lumpSumElection).toBeUndefined()
       expect(pension.lumpSumOffer).toEqual({ amount: 400_000, electionYear: 2030 })
+      expect(result.repairs).toEqual([
+        {
+          kind: 'lumpSumElectionDroppedInheritedTarget',
+          accountId: 'pen',
+          accountName: 'Pension',
+          targetAccountId: 'inh',
+          targetAccountName: 'Inherited',
+        },
+      ])
     })
 
     it('leaves a valid election untouched', () => {
@@ -149,6 +221,7 @@ describe('migratePlanToCurrent', () => {
       const pension = result.plan.accounts.find((a) => a.id === 'pen')!
       if (pension.type !== 'pension') throw new Error('expected the pension back')
       expect(pension.lumpSumElection).toEqual({ rolloverAccountId: 'ira' })
+      expect(result.repairs).toEqual([])
     })
 
     function storedAnnuity(fundingAccountId: string, ownedTraditional: boolean): Record<string, unknown> {
@@ -178,6 +251,19 @@ describe('migratePlanToCurrent', () => {
       expect(annuity.purchase?.fundingAccountId).toBe('ira')
       expect(annuity.purchase?.premium).toBe(100_000)
       expect(annuity.monthlyAmount).toBe(1_000)
+      // This repair never shows up in the projection's shape, only in which
+      // balance the premium leaves, so the record carries both account names.
+      expect(result.repairs).toEqual([
+        {
+          kind: 'annuityPremiumRetargeted',
+          accountId: 'ann',
+          accountName: 'SPIA',
+          fromAccountId: 'inh',
+          fromAccountName: 'Inherited',
+          toAccountId: 'ira',
+          toAccountName: 'IRA',
+        },
+      ])
     })
 
     it('stands down a legacy inherited-funded annuity when no owned traditional account exists', () => {
@@ -191,6 +277,15 @@ describe('migratePlanToCurrent', () => {
       if (annuity.type !== 'annuity') throw new Error('expected the annuity back')
       expect(annuity.purchase).toBeUndefined()
       expect(annuity.monthlyAmount).toBe(0)
+      expect(result.repairs).toEqual([
+        {
+          kind: 'annuityPurchaseStoodDown',
+          accountId: 'ann',
+          accountName: 'SPIA',
+          fromAccountId: 'inh',
+          fromAccountName: 'Inherited',
+        },
+      ])
     })
 
     it('leaves an owned-traditional-funded qualified annuity untouched', () => {
@@ -200,6 +295,46 @@ describe('migratePlanToCurrent', () => {
       const annuity = result.plan.accounts.find((a) => a.id === 'ann')!
       if (annuity.type !== 'annuity') throw new Error('expected the annuity back')
       expect(annuity.purchase?.fundingAccountId).toBe('ira')
+      expect(result.repairs).toEqual([])
+    })
+
+    it('reports every repaired account in stored order, and reports it the same way twice', () => {
+      // One document, three different repairs. The list a host renders must be
+      // a function of the document alone: same input, same records, same order.
+      const plan = createEmptyPlan({ newId: testIds, now: fixedNow })
+      const primaryId = plan.household.people[0]!.id
+      plan.accounts = [
+        { type: 'traditional', id: 'ira', name: 'IRA', ownerPersonId: primaryId, annualReturnPct: null, kind: 'ira', balance: 400_000, annualContribution: 0 },
+        { type: 'traditional', id: 'inh', name: 'Inherited', ownerPersonId: primaryId, annualReturnPct: null, kind: 'ira', balance: 300_000, annualContribution: 0,
+          inherited: { ownerDeathYear: 2022, decedentHadStartedRmds: true } },
+        { type: 'roth', id: 'roth', name: 'Roth IRA', ownerPersonId: null, annualReturnPct: null, kind: 'ira', balance: 1, annualContribution: 0 },
+        { type: 'pension', id: 'pen', name: 'Pension', ownerPersonId: primaryId, annualReturnPct: null, startAge: 65, monthlyAmount: 2_000, colaPct: 0, survivorPct: 0,
+          lumpSumOffer: { amount: 400_000, electionYear: 2025 }, lumpSumElection: { rolloverAccountId: 'ira' } },
+        { type: 'annuity', id: 'ann', name: 'SPIA', ownerPersonId: primaryId, annualReturnPct: null, startAge: 70, monthlyAmount: 1_000, colaPct: 0, taxablePct: 100,
+          purchase: { year: 2030, premium: 100_000, fundingAccountId: 'inh', taxQualification: 'qualified' } },
+      ] as never
+      const raw = JSON.parse(JSON.stringify(plan)) as Record<string, unknown>
+
+      const expected = [
+        { kind: 'accountOwnerBackFilled', accountId: 'roth', accountName: 'Roth IRA', ownerPersonId: primaryId },
+        { kind: 'lumpSumElectionDroppedElectionYearPassed', accountId: 'pen', accountName: 'Pension', electionYear: 2025 },
+        {
+          kind: 'annuityPremiumRetargeted',
+          accountId: 'ann',
+          accountName: 'SPIA',
+          fromAccountId: 'inh',
+          fromAccountName: 'Inherited',
+          toAccountId: 'ira',
+          toAccountName: 'IRA',
+        },
+      ]
+      const first = migratePlanToCurrent(JSON.parse(JSON.stringify(raw)))
+      const second = migratePlanToCurrent(JSON.parse(JSON.stringify(raw)))
+      expect(first.ok).toBe(true)
+      expect(second.ok).toBe(true)
+      if (!first.ok || !second.ok) return
+      expect(first.repairs).toEqual(expected)
+      expect(second.repairs).toEqual(first.repairs)
     })
   })
 

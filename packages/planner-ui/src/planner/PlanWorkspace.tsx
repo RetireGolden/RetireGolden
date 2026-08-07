@@ -16,6 +16,7 @@ import { ExamplePreviewBanner } from './examples/ExamplePreviewBanner'
 import { EXAMPLE_SAVE_INDICATOR } from './examples/exampleCopy'
 import { usePlannerEdition } from './editionContext'
 import { PlanProvider } from './PlanContext'
+import { PlanRepairNotice } from './PlanRepairNotice'
 import { usePlan } from './planContextCore'
 import { PrivacyProvider } from './privacyContext'
 import { usePrivacy } from './privacyContextCore'
@@ -241,6 +242,7 @@ function WorkspaceInner() {
   return (
     <div className="planner-shell">
       <ExamplePreviewBanner />
+      <PlanRepairNotice />
       <div className="workspace-head">
         <div className="workspace-head-main">
           <nav className="workspace-breadcrumb" aria-label="Breadcrumb">

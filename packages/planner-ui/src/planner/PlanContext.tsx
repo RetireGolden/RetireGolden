@@ -9,6 +9,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
 
+import type { PlanLoadRepair } from '@retiregolden/engine/model/migrations'
 import { parsePlan, type Plan } from '@retiregolden/engine/model/plan'
 import { loadPlanVia, savePlanVia, usePlanStore } from '../data/planStoreContext'
 import { useWorkspaceReadOnly } from '../data/workspaceReadOnly'
@@ -16,6 +17,7 @@ import { EXAMPLE_PLAN_ID_PREFIX, isExamplePlanId } from '../data/planOrigin'
 import { getExampleById } from './examples/registry'
 import { saveFreshDemo } from './examples/loadExample'
 import { PlanCtx, type PlanContextValue, type SaveState } from './planContextCore'
+import { PlanRepairCtx } from './planRepairContext'
 import { usePlannerEdition } from './editionContext'
 
 const AUTOSAVE_MS = 600
@@ -33,6 +35,9 @@ export function PlanProvider({ planId, children }: { planId: string; children: R
   const [loadError, setLoadError] = useState<string | null>(null)
   const [saveState, setSaveState] = useState<SaveState>('loading')
   const [issues, setIssues] = useState<string[]>([])
+  // What the load changed in the stored document. Set from the load result and
+  // never from an edit, so the notice describes the document as it was found.
+  const [loadRepairs, setLoadRepairs] = useState<readonly PlanLoadRepair[]>([])
   const timer = useRef<number | null>(null)
   const latestValid = useRef<Plan | null>(null)
   // Latest read-only value, read inside the debounced save. A save can be
@@ -55,6 +60,7 @@ export function PlanProvider({ planId, children }: { planId: string; children: R
       if (cancelled) return
       if (r.ok) {
         adopt(r.plan)
+        setLoadRepairs(r.repairs)
         return
       }
       // A shared or bookmarked example URL can reference a demo that was never
@@ -122,6 +128,13 @@ export function PlanProvider({ planId, children }: { planId: string; children: R
     const toSave = latestValid.current
     if (toSave) runSave(toSave)
   }, [runSave])
+
+  // Dismissal is state here rather than inside the notice so it survives the
+  // notice unmounting (a section change that swaps the workspace subtree), and
+  // resets naturally when the load effect re-runs for a different plan.
+  const dismissLoadRepairs = useCallback(() => {
+    setLoadRepairs([])
+  }, [])
 
   const discardPendingSave = useCallback(() => {
     if (timer.current !== null) {
@@ -237,5 +250,11 @@ export function PlanProvider({ planId, children }: { planId: string; children: R
     return <div className="skeleton" style={{ height: '14rem', marginTop: '1rem' }} aria-label="Loading plan" />
   }
   const contextValue: PlanContextValue = { plan, update, discardPendingSave, saveState, issues }
-  return <PlanCtx.Provider value={contextValue}>{children}</PlanCtx.Provider>
+  return (
+    <PlanCtx.Provider value={contextValue}>
+      <PlanRepairCtx.Provider value={{ repairs: loadRepairs, dismiss: dismissLoadRepairs }}>
+        {children}
+      </PlanRepairCtx.Provider>
+    </PlanCtx.Provider>
+  )
 }

@@ -256,6 +256,14 @@
   margin-top: 0.75rem;
 }
 
+.plan-repair-notice {
+  margin-bottom: 1rem;
+}
+
+.plan-repair-notice .picker-actions {
+  margin-top: 0.75rem;
+}
+
 .plan-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));

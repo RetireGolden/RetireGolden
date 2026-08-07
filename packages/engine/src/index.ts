@@ -15,7 +15,7 @@ export { ENGINE_VERSION } from './version.js'
 // only on the `@retiregolden/engine/schema` subpath so importing this minimal
 // root (simulatePlan, planSchema) never eagerly evaluates the ~130 KB generated
 // schema constant. @see ./schema/index.ts
-export { migratePlanToCurrent } from './model/migrations.js'
+export { migratePlanToCurrent, type MigrateResult, type PlanLoadRepair } from './model/migrations.js'
 export { simulatePlan, type SimulateOptions } from './projection/simulate.js'
 export type { ProjectionResult, YearResult } from './projection/types.js'
 export { summarizeProjection } from './projection/compare.js'

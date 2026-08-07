@@ -506,6 +506,57 @@ const defaultRegistry: Record<number, MigrationStep> = {
   3: migratePlanV3ToV4,
 }
 
+/**
+ * One thing `normalizeCurrentPlan` changed on the way in, as facts rather than
+ * prose. A host renders these; the engine never phrases them.
+ *
+ * Discipline this type is under:
+ * - **Kinds and facts, never sentences.** No i18n strings, no clock, no
+ *   formatting. Every field is read out of the stored document.
+ * - **Stable `kind` strings.** A host switches on them, so a kind is renamed
+ *   only alongside the host copy that reads it.
+ * - **Deterministic.** Records appear in stored account order, one per repaired
+ *   account, and the same document always produces the same list.
+ *
+ * Names carry `''` and ids `null` only for shapes the document could not have
+ * loaded with otherwise (an election naming a non-string account id, say, whose
+ * removal is the very repair being reported).
+ */
+export type PlanLoadRepair =
+  /** An individually-owned account stored with no owner, assigned to the first person in the household. */
+  | { kind: 'accountOwnerBackFilled'; accountId: string; accountName: string; ownerPersonId: string }
+  /** A lump-sum election whose election year is already behind the plan's own save stamp. */
+  | { kind: 'lumpSumElectionDroppedElectionYearPassed'; accountId: string; accountName: string; electionYear: number }
+  /** A lump-sum election on a document whose save stamp could not be read, so staleness could not be judged. */
+  | { kind: 'lumpSumElectionDroppedUnreadableSaveDate'; accountId: string; accountName: string }
+  /** A lump-sum election whose rollover target is an inherited account. */
+  | { kind: 'lumpSumElectionDroppedInheritedTarget'; accountId: string; accountName: string; targetAccountId: string; targetAccountName: string }
+  /** A lump-sum election whose rollover target does not resolve to one owned traditional account (missing, duplicated id, or another type). */
+  | { kind: 'lumpSumElectionDroppedTargetUnavailable'; accountId: string; accountName: string; targetAccountId: string | null; targetAccountName: string | null }
+  /** A qualified annuity premium moved off an inherited funding account onto an owned traditional account. */
+  | {
+      kind: 'annuityPremiumRetargeted'
+      accountId: string
+      accountName: string
+      fromAccountId: string
+      fromAccountName: string
+      toAccountId: string
+      toAccountName: string
+    }
+  /** A qualified annuity purchase funded from an inherited account with no owned traditional account to move it to. */
+  | { kind: 'annuityPurchaseStoodDown'; accountId: string; accountName: string; fromAccountId: string; fromAccountName: string }
+
+/** The document as repaired, plus what the repairs were. */
+interface NormalizedPlan {
+  raw: Record<string, unknown>
+  repairs: PlanLoadRepair[]
+}
+
+function stringField(record: Record<string, unknown>, key: string): string {
+  const value = record[key]
+  return typeof value === 'string' ? value : ''
+}
+
 /** True for a raw account record that is a beneficiary (inherited) traditional account. */
 function isInheritedTraditionalRecord(account: unknown): boolean {
   if (typeof account !== 'object' || account === null || Array.isArray(account)) return false
@@ -536,20 +587,25 @@ function isOwnedTraditionalRecord(account: unknown): boolean {
  * The bar every repair meets: it never locks a household out of the plan the new
  * message is telling them to fix, and it never leaves the projection richer than
  * the stored facts support.
+ *
+ * Two of these repairs are invisible in the projection (a future-year election
+ * that never fired, and the annuity retarget in every case), so the second
+ * return value exists to let a host tell the household what changed. It reports
+ * facts only; the phrasing belongs to whoever is doing the telling.
  */
-function normalizeCurrentPlan(raw: Record<string, unknown>): Record<string, unknown> {
+function normalizeCurrentPlan(raw: Record<string, unknown>): NormalizedPlan {
   const household = raw['household']
   const accounts = raw['accounts']
   if (typeof household !== 'object' || household === null || Array.isArray(household) || !Array.isArray(accounts)) {
-    return raw
+    return { raw, repairs: [] }
   }
 
   const people = (household as Record<string, unknown>)['people']
-  if (!Array.isArray(people)) return raw
+  if (!Array.isArray(people)) return { raw, repairs: [] }
   const primary = people[0]
-  if (typeof primary !== 'object' || primary === null || Array.isArray(primary)) return raw
+  if (typeof primary !== 'object' || primary === null || Array.isArray(primary)) return { raw, repairs: [] }
   const primaryId = (primary as Record<string, unknown>)['id']
-  if (typeof primaryId !== 'string' || primaryId.length === 0) return raw
+  if (typeof primaryId !== 'string' || primaryId.length === 0) return { raw, repairs: [] }
 
   const stamped = typeof raw['updatedAtIso'] === 'string' ? /^(\d{4})-/.exec(raw['updatedAtIso']) : null
   const planAsOfYear = stamped === null ? null : Number(stamped[1])
@@ -572,6 +628,17 @@ function normalizeCurrentPlan(raw: Record<string, unknown>): Record<string, unkn
     .filter(([, count]) => count === 1)
     .map(([id]) => id)
 
+  /** The stored name of the first account carrying this id, for a repair record. */
+  const accountNameById = (id: string): string | null => {
+    for (const candidate of accounts) {
+      if (typeof candidate !== 'object' || candidate === null || Array.isArray(candidate)) continue
+      const record = candidate as Record<string, unknown>
+      if (record['id'] === id) return typeof record['name'] === 'string' ? record['name'] : ''
+    }
+    return null
+  }
+
+  const repairs: PlanLoadRepair[] = []
   let changed = false
   const normalizedAccounts = accounts.map((account) => {
     if (typeof account !== 'object' || account === null || Array.isArray(account)) return account
@@ -581,6 +648,12 @@ function normalizeCurrentPlan(raw: Record<string, unknown>): Record<string, unkn
       accountRecord['ownerPersonId'] === null
     ) {
       changed = true
+      repairs.push({
+        kind: 'accountOwnerBackFilled',
+        accountId: stringField(accountRecord, 'id'),
+        accountName: stringField(accountRecord, 'name'),
+        ownerPersonId: primaryId,
+      })
       return { ...accountRecord, ownerPersonId: primaryId }
     }
 
@@ -608,8 +681,12 @@ function normalizeCurrentPlan(raw: Record<string, unknown>): Record<string, unkn
         typeof offer === 'object' && offer !== null && !Array.isArray(offer)
           ? (offer as Record<string, unknown>)['electionYear']
           : undefined
-      const yearAlreadyGone =
+      // Kept as the year itself, not a boolean, so the repair record can name it.
+      const staleElectionYear =
         planAsOfYear !== null && typeof electionYear === 'number' && electionYear < planAsOfYear
+          ? electionYear
+          : null
+      const yearAlreadyGone = staleElectionYear !== null
       // A stamp the staleness rule cannot read fails closed at parse, so a
       // stored document carrying one must shed the election here or it cannot
       // load at all; re-saving rewrites the stamp and the field stays editable.
@@ -618,6 +695,39 @@ function normalizeCurrentPlan(raw: Record<string, unknown>): Record<string, unkn
         typeof target !== 'string' || !ownedTraditionalIds.includes(target)
       if (yearAlreadyGone || stampUnreadable || targetNotOwnedTraditional) {
         changed = true
+        // One record per repaired account, and the causes are reported in the
+        // order they are tested. An unreadable stamp and a refused target can
+        // both be true of the same election; the stamp is reported because it is
+        // the fault that would have to be fixed first anyway (a re-save is what
+        // makes the year judgeable at all).
+        const accountId = stringField(accountRecord, 'id')
+        const accountName = stringField(accountRecord, 'name')
+        if (staleElectionYear !== null) {
+          repairs.push({
+            kind: 'lumpSumElectionDroppedElectionYearPassed',
+            accountId,
+            accountName,
+            electionYear: staleElectionYear,
+          })
+        } else if (stampUnreadable) {
+          repairs.push({ kind: 'lumpSumElectionDroppedUnreadableSaveDate', accountId, accountName })
+        } else if (typeof target === 'string' && inheritedAccountIds.has(target)) {
+          repairs.push({
+            kind: 'lumpSumElectionDroppedInheritedTarget',
+            accountId,
+            accountName,
+            targetAccountId: target,
+            targetAccountName: accountNameById(target) ?? '',
+          })
+        } else {
+          repairs.push({
+            kind: 'lumpSumElectionDroppedTargetUnavailable',
+            accountId,
+            accountName,
+            targetAccountId: typeof target === 'string' ? target : null,
+            targetAccountName: typeof target === 'string' ? accountNameById(target) : null,
+          })
+        }
         const repaired = { ...accountRecord }
         Reflect.deleteProperty(repaired, 'lumpSumElection')
         return repaired
@@ -640,10 +750,29 @@ function normalizeCurrentPlan(raw: Record<string, unknown>): Record<string, unkn
       const fundingAccountId = purchase['fundingAccountId']
       if (purchase['taxQualification'] === 'qualified' && typeof fundingAccountId === 'string' && inheritedAccountIds.has(fundingAccountId)) {
         changed = true
+        const accountId = stringField(accountRecord, 'id')
+        const accountName = stringField(accountRecord, 'name')
+        const fromAccountName = accountNameById(fundingAccountId) ?? ''
         const replacement = ownedTraditionalIds.find((id) => id !== accountRecord['id'])
         if (replacement !== undefined) {
+          repairs.push({
+            kind: 'annuityPremiumRetargeted',
+            accountId,
+            accountName,
+            fromAccountId: fundingAccountId,
+            fromAccountName,
+            toAccountId: replacement,
+            toAccountName: accountNameById(replacement) ?? '',
+          })
           return { ...accountRecord, purchase: { ...purchase, fundingAccountId: replacement } }
         }
+        repairs.push({
+          kind: 'annuityPurchaseStoodDown',
+          accountId,
+          accountName,
+          fromAccountId: fundingAccountId,
+          fromAccountName,
+        })
         const stoodDown = { ...accountRecord, monthlyAmount: 0 }
         Reflect.deleteProperty(stoodDown, 'purchase')
         return stoodDown
@@ -653,11 +782,18 @@ function normalizeCurrentPlan(raw: Record<string, unknown>): Record<string, unkn
     return account
   })
 
-  return changed ? { ...raw, accounts: normalizedAccounts } : raw
+  return { raw: changed ? { ...raw, accounts: normalizedAccounts } : raw, repairs }
 }
 
+/**
+ * `repairs` lists what load-time repair changed on the way in, empty when the
+ * stored document needed nothing. It is additive: a caller with nobody to tell
+ * (the case runner, the backup importer, any headless host) ignores the field
+ * and keeps the behavior it always had. A failed load carries no list at all,
+ * because a document that did not open has nothing to report.
+ */
 export type MigrateResult =
-  | { ok: true; plan: Plan }
+  | { ok: true; plan: Plan; repairs: readonly PlanLoadRepair[] }
   | { ok: false; reason: 'not_object' | 'bad_version' | 'newer_than_app' | 'missing_step' | 'invalid_after_migration'; issues?: string[] }
 
 export function migratePlanToCurrent(
@@ -682,13 +818,15 @@ export function migratePlanToCurrent(
     if (!step) return { ok: false, reason: 'missing_step' }
     raw = { ...step(raw), schemaVersion: from + 1 }
   }
-  raw = normalizeCurrentPlan(raw)
+  const normalized = normalizeCurrentPlan(raw)
+  raw = normalized.raw
   const parsed = parsePlan(raw)
   if (!parsed.ok) {
     return { ok: false, reason: 'invalid_after_migration', issues: parsed.issues }
   }
   return {
     ok: true,
+    repairs: normalized.repairs,
     plan:
       v < currentVersion
         ? rebindScenarioPatchesToPlan(parsed.plan, {
