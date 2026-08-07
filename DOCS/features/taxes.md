@@ -61,9 +61,10 @@ State brackets are a separate question and are still held nominal (see `params/s
   is **not** conditional on an RMD: the pre-RMD window from 70½ (resolved from the birth month at annual
   granularity — attained 71, or attained 70 with a January–June birth month) to the applicable RMD age is open,
   and dollars requested beyond the owner's IRA RMD are debited straight from donor-owned aggregated IRAs, shrinking
-  every later RMD base. The qualified gift is deemed pre-tax under 408(d)(8)(D), so it returns no basis and leaves
-  the Form 8606 line-7 and line-9 computation; a gift past the donor's aggregate includible amount is not
-  qualified in the excess and stays on line 7. The household number is charged to the donors whose IRAs fund it
+  every later RMD base. The qualified portion of the gift is deemed pre-tax under 408(d)(8)(D), so it returns no
+  basis and leaves both the line-7 numerator and the line-9 denominator of the Form 8606 computation; the excess
+  past the donor's aggregate includible amount is not qualified and stays on line 7 with its gross in the
+  denominator. The household number is charged to the donors whose IRAs fund it
   before it is measured, each donor is then held to their own annual limit, and a couple with two eligible donors
   may exclude up to two of them. The one registered approximation left in this arm is the post-70½
   deductible-contribution offset, which it does not apply (domain rules §6). A named `qcd`
@@ -271,7 +272,7 @@ executor in sequence, and the executor is the only QCD module in the tree that c
 balances cross into the action ledger through `planDollarsToFlooredLedgerCents`, so a movement can never be
 authorized against a rounded-up half cent the account does not hold.
 
-Eligibility is per donor and exact, where the aggregate arm resolves the same donor's age at annual granularity.
+Eligibility is per donor and exact, whereas the aggregate arm resolves the same donor's age at annual granularity.
 The donor's age-70½
 threshold is the exact civil date 846 calendar months from the birth date with a month-end clamp
 (`irc-408-d-8-B-ii-age-70-half`, registered `unsettled` — no provision addressed to 408(d)(8)(B)(ii) resolves a
