@@ -554,7 +554,10 @@ function normalizeCurrentPlan(raw: Record<string, unknown>): Record<string, unkn
   const stamped = typeof raw['updatedAtIso'] === 'string' ? /^(\d{4})-/.exec(raw['updatedAtIso']) : null
   const planAsOfYear = stamped === null ? null : Number(stamped[1])
   const inheritedAccountIds = new Set(
-    accounts.filter(isInheritedTraditionalRecord).map((a) => (a as Record<string, unknown>)['id']),
+    accounts
+      .filter(isInheritedTraditionalRecord)
+      .map((a) => (a as Record<string, unknown>)['id'])
+      .filter((id): id is string => typeof id === 'string'),
   )
   const ownedTraditionalIds = accounts
     .filter(isOwnedTraditionalRecord)
@@ -622,7 +625,8 @@ function normalizeCurrentPlan(raw: Record<string, unknown>): Record<string, unkn
     // premium, so the contract is stood down rather than left paying.
     if (accountRecord['type'] === 'annuity' && typeof accountRecord['purchase'] === 'object' && accountRecord['purchase'] !== null && !Array.isArray(accountRecord['purchase'])) {
       const purchase = accountRecord['purchase'] as Record<string, unknown>
-      if (purchase['taxQualification'] === 'qualified' && inheritedAccountIds.has(purchase['fundingAccountId'])) {
+      const fundingAccountId = purchase['fundingAccountId']
+      if (purchase['taxQualification'] === 'qualified' && typeof fundingAccountId === 'string' && inheritedAccountIds.has(fundingAccountId)) {
         changed = true
         const replacement = ownedTraditionalIds.find((id) => id !== accountRecord['id'])
         if (replacement !== undefined) {

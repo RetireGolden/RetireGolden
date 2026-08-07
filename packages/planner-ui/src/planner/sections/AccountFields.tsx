@@ -483,10 +483,13 @@ export function AccountFields({ account, index }: { account: Account; index: num
             // to perform the rollover in and the dollars are already inside the
             // receiving account's entered balance. The engine refuses that shape
             // at parse, so bound the field rather than letting the user author a
-            // plan that will not store.
-            min={account.lumpSumElection ? new Date().getFullYear() : 1900}
+            // plan that will not store. UTC, not local: checkPlanForSave stamps
+            // updatedAtIso with toISOString and the parse rule compares against
+            // that stamp's year, so near a calendar boundary a local year could
+            // pass on screen and fail at save.
+            min={account.lumpSumElection ? new Date().getUTCFullYear() : 1900}
             max={2200}
-            onCommit={(v) => set('lumpSumOffer', { ...account.lumpSumOffer!, electionYear: Math.round(v ?? new Date().getFullYear()) })}
+            onCommit={(v) => set('lumpSumOffer', { ...account.lumpSumOffer!, electionYear: Math.round(v ?? new Date().getUTCFullYear()) })}
           />
           <SelectField
             label="Election"
@@ -500,6 +503,16 @@ export function AccountFields({ account, index }: { account: Account; index: num
             ]}
             onCommit={(v) => {
               const target = plan.accounts.find((a) => a.type === 'traditional' && !a.inherited)
+              // Electing revives the offer's year: an offer kept for comparison
+              // may carry a past year, and an election with a past year is the
+              // shape the engine refuses at parse. Bumping to the current UTC
+              // year on elect keeps the common flow (old offer, then elect)
+              // storable; the year field stays editable after.
+              const electionYear = account.lumpSumOffer!.electionYear
+              const currentYear = new Date().getUTCFullYear()
+              if (v === 'lumpSum' && target && electionYear < currentYear) {
+                set('lumpSumOffer', { ...account.lumpSumOffer!, electionYear: currentYear })
+              }
               set('lumpSumElection', v === 'lumpSum' && target ? { rolloverAccountId: target.id } : undefined)
             }}
           />
