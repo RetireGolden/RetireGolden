@@ -19,6 +19,35 @@ function ownerOptions(plan: Plan, type: Account['type']) {
   return isIndividuallyOwnedAccount(type) ? peopleOptions : [{ value: 'joint', label: 'Joint' }, ...peopleOptions]
 }
 
+/**
+ * The lowest election year the engine's parse rule will accept for an ELECTED
+ * lump sum: the later of the current UTC year (what the save stamp will carry)
+ * and the document's stored stamp year (which can be ahead of the wall clock
+ * when the plan was last saved on a fast clock — the parse rule compares
+ * against the stamp, so the stamp must win).
+ */
+function electionFloorYear(plan: Plan): number {
+  const stamped = /^(\d{4})-/.exec(plan.updatedAtIso)
+  const stampYear = stamped === null ? 0 : Number(stamped[1])
+  return Math.max(new Date().getUTCFullYear(), stampYear)
+}
+
+/**
+ * Can this account pay an annuity premium of the given tax qualification?
+ *
+ * An inherited account is `type: 'traditional'` like any other, so a bare type
+ * test offered a beneficiary's inherited IRA as a qualified funding source. Those
+ * dollars cannot leave for a contract the household owns, and the engine refuses
+ * the shape at parse, so keep it out of the picker in all three places that ask
+ * (the option list, the still-eligible check, and the re-default) rather than in
+ * only some of them.
+ */
+function canFundAnnuityPurchase(account: Account, taxQualification: 'qualified' | 'nonQualified'): boolean {
+  return taxQualification === 'qualified'
+    ? account.type === 'traditional' && !account.inherited
+    : account.type === 'cash' || account.type === 'taxable' || account.type === 'equityComp'
+}
+
 export function AccountFields({ account, index }: { account: Account; index: number }) {
   const { plan, update } = usePlan()
   const [estimating, setEstimating] = useState(false)
@@ -460,15 +489,23 @@ export function AccountFields({ account, index }: { account: Account; index: num
           />
           <NumberField
             label="Election year"
-            help="The year the election is due, and the year the lump sum would be paid if taken."
+            help="The year the election is due, and the year the lump sum would be paid if taken. Taking the lump sum needs a year that has not passed yet: if the rollover already happened, clear the election and add its dollars to the receiving account balance."
             value={account.lumpSumOffer.electionYear}
-            min={1900}
+            // An offer kept on record for comparison may be any year; an ELECTED
+            // one may not be in the past, because the projection has no year left
+            // to perform the rollover in and the dollars are already inside the
+            // receiving account's entered balance. The engine refuses that shape
+            // at parse, so bound the field rather than letting the user author a
+            // plan that will not store. The floor is the later of the UTC year
+            // the save stamp will carry and the document's stored stamp year,
+            // which is what the parse rule actually compares against.
+            min={account.lumpSumElection ? electionFloorYear(plan) : 1900}
             max={2200}
-            onCommit={(v) => set('lumpSumOffer', { ...account.lumpSumOffer!, electionYear: Math.round(v ?? new Date().getFullYear()) })}
+            onCommit={(v) => set('lumpSumOffer', { ...account.lumpSumOffer!, electionYear: Math.round(v ?? electionFloorYear(plan)) })}
           />
           <SelectField
             label="Election"
-            help="Take the lump sum: in the election year the offer rolls over tax-free into the chosen traditional IRA/401(k) and the pension never pays its annuity. Keep the annuity: the offer stays on record for comparison only. Taking the lump sum requires a traditional account to receive the rollover."
+            help="Take the lump sum: in the election year the offer rolls over tax-free into the chosen traditional IRA/401(k) and the pension never pays its annuity. Keep the annuity: the offer stays on record for comparison only. Taking the lump sum requires a traditional account you own to receive the rollover. An inherited IRA cannot receive it."
             value={account.lumpSumElection ? 'lumpSum' : 'annuity'}
             options={[
               { value: 'annuity', label: 'Keep the annuity (undecided)' },
@@ -478,7 +515,22 @@ export function AccountFields({ account, index }: { account: Account; index: num
             ]}
             onCommit={(v) => {
               const target = plan.accounts.find((a) => a.type === 'traditional' && !a.inherited)
-              set('lumpSumElection', v === 'lumpSum' && target ? { rolloverAccountId: target.id } : undefined)
+              // Electing revives the offer's year: an offer kept for comparison
+              // may carry a past year, and an election with a past year is the
+              // shape the engine refuses at parse. Bumping to the election
+              // floor (the later of the UTC year and the document's own stamp
+              // year, which the parse rule compares against) keeps the common
+              // flow (old offer, then elect) storable; the year field stays
+              // editable after. One update block, so the bump and the toggle
+              // land as a single edit rather than two recomputations.
+              const electionYear = account.lumpSumOffer!.electionYear
+              const floorYear = electionFloorYear(plan)
+              update((d) => {
+                if (v === 'lumpSum' && target && electionYear < floorYear) {
+                  updateAccountField(d, index, 'lumpSumOffer', { ...account.lumpSumOffer!, electionYear: floorYear })
+                }
+                updateAccountField(d, index, 'lumpSumElection', v === 'lumpSum' && target ? { rolloverAccountId: target.id } : undefined)
+              })
             }}
           />
           {account.lumpSumElection ? (
@@ -582,15 +634,10 @@ export function AccountFields({ account, index }: { account: Account; index: num
           />
           <SelectField
             label="Funding account"
-            help="Which account the premium is withdrawn from. Non-qualified purchases must come from cash, taxable, or equity comp; qualified purchases from a traditional IRA or 401(k)."
+            help="Which account the premium is withdrawn from. Non-qualified purchases must come from cash, taxable, or equity comp; qualified purchases from a traditional IRA or 401(k) you own. An inherited IRA cannot fund one."
             value={account.purchase.fundingAccountId}
             options={plan.accounts
-              .filter((a) =>
-                a.id !== account.id &&
-                (account.purchase!.taxQualification === 'qualified'
-                  ? a.type === 'traditional'
-                  : a.type === 'cash' || a.type === 'taxable' || a.type === 'equityComp'),
-              )
+              .filter((a) => a.id !== account.id && canFundAnnuityPurchase(a, account.purchase!.taxQualification))
               .map((a) => ({ value: a.id, label: a.name }))}
             onCommit={(v) => set('purchase', { ...account.purchase!, fundingAccountId: v })}
           />
@@ -608,20 +655,11 @@ export function AccountFields({ account, index }: { account: Account; index: num
               // qualification; re-default to the first eligible source so the plan
               // stays valid instead of pointing at an impossible funding type.
               const stillEligible = plan.accounts.some(
-                (a) =>
-                  a.id === account.purchase!.fundingAccountId &&
-                  (taxQualification === 'qualified'
-                    ? a.type === 'traditional'
-                    : a.type === 'cash' || a.type === 'taxable' || a.type === 'equityComp'),
+                (a) => a.id === account.purchase!.fundingAccountId && canFundAnnuityPurchase(a, taxQualification),
               )
               const fundingAccountId = stillEligible
                 ? account.purchase!.fundingAccountId
-                : plan.accounts.find((a) =>
-                    a.id !== account.id &&
-                    (taxQualification === 'qualified'
-                      ? a.type === 'traditional'
-                      : a.type === 'cash' || a.type === 'taxable' || a.type === 'equityComp'),
-                  )?.id ?? ''
+                : plan.accounts.find((a) => a.id !== account.id && canFundAnnuityPurchase(a, taxQualification))?.id ?? ''
               set('purchase', {
                 ...account.purchase!,
                 taxQualification,

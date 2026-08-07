@@ -1599,6 +1599,19 @@ export const planSchema = z
         actionReferencedAccountIds.add(action.destinationRothAccountId)
       }
     })
+    // A lump-sum rollover target and a qualified annuity's funding source get
+    // the same ambiguity protection as action-referenced accounts: their
+    // ownership validations resolve the id through a map (last duplicate wins)
+    // while the simulator resolves balances first-match-wins, so a duplicated
+    // id could pass validation against one record and move money in another.
+    plan.accounts.forEach((account) => {
+      if (account.type === 'pension' && account.lumpSumElection !== undefined && account.lumpSumOffer !== undefined) {
+        actionReferencedAccountIds.add(account.lumpSumElection.rolloverAccountId)
+      }
+      if (account.type === 'annuity' && account.purchase !== undefined) {
+        actionReferencedAccountIds.add(account.purchase.fundingAccountId)
+      }
+    })
     const personIndexesById = new Map<string, number[]>()
     plan.household.people.forEach((person, index) => {
       const indexes = personIndexesById.get(person.id)
@@ -1637,6 +1650,25 @@ export const planSchema = z
     }
     const accountTypeById = new Map(plan.accounts.map((a) => [a.id, a.type]))
     const accountById = new Map(plan.accounts.map((account) => [account.id, account]))
+
+    /**
+     * The document's own "as of" calendar year, or null when the stamp is not a
+     * plain ISO date.
+     *
+     * A projection always starts in the current calendar year (planner-ui
+     * `currentStartYear`), and every save re-stamps `updatedAtIso` from the same
+     * clock immediately before this parse runs (`checkPlanForSave`), so at the
+     * moment a plan is authored or edited this year IS the projection start.
+     * Reading the year from the document rather than the wall clock is what
+     * keeps `parsePlan` a pure function of its input: a plan that saved cleanly
+     * always reopens cleanly (`loadPlan` parses the STORED stamp), so a
+     * year-relative refusal below can never lock the household out of the very
+     * plan it is telling them to edit.
+     */
+    const planAsOfYear = ((): number | null => {
+      const stamped = /^(\d{4})-/.exec(plan.updatedAtIso)
+      return stamped === null ? null : Number(stamped[1])
+    })()
 
     const annualTaxFacts = plan.retirementActionAnnualTaxFacts
     if (annualTaxFacts !== undefined) {
@@ -2091,17 +2123,29 @@ export const planSchema = z
       }
       if (a.type === 'annuity' && a.purchase) {
         const fundingType = accountTypeById.get(a.purchase.fundingAccountId)
+        const fundingAccount = accountById.get(a.purchase.fundingAccountId)
         if (a.purchase.fundingAccountId === a.id || fundingType === undefined) {
           ctx.addIssue({
             code: 'custom',
             path: ['accounts', i, 'purchase', 'fundingAccountId'],
             message: 'annuity purchase must be funded from another existing account',
           })
-        } else if (a.purchase.taxQualification === 'qualified' && fundingType !== 'traditional') {
+        } else if (
+          // Same one-line gap the rollover target carried: an inherited account
+          // is `type: 'traditional'`, so the bare type test let a beneficiary
+          // fund an owned annuity contract out of an inherited IRA. The premium
+          // leaves the balance for an `annuity` account that carries no
+          // `inherited` marker, so the 10-year clock on those dollars simply
+          // disappears from the projection.
+          a.purchase.taxQualification === 'qualified' &&
+          (fundingAccount === undefined ||
+            fundingAccount.type !== 'traditional' ||
+            fundingAccount.inherited !== undefined)
+        ) {
           ctx.addIssue({
             code: 'custom',
             path: ['accounts', i, 'purchase', 'fundingAccountId'],
-            message: 'a qualified annuity purchase must be funded from a traditional account',
+            message: 'a qualified annuity purchase must be funded from a traditional account you own (inherited IRA dollars stay in the inherited account)',
           })
         } else if (
           a.purchase.taxQualification === 'nonQualified' &&
@@ -2137,13 +2181,62 @@ export const planSchema = z
             path: ['accounts', i, 'lumpSumElection'],
             message: 'a lump-sum election requires a lump-sum offer (amount and election year)',
           })
+        } else if (planAsOfYear === null) {
+          // Fail closed, not open: the staleness rule reads the document's own
+          // stamp, and a stamp the rule cannot read would otherwise let any
+          // election year through — including the past-year shape this rule
+          // exists to refuse. Every save writes the stamp with toISOString, so
+          // a well-formed document never lands here; a hand-crafted or damaged
+          // one is repaired at load (the migration drops the election), and a
+          // re-save restores the stamp.
+          ctx.addIssue({
+            code: 'custom',
+            path: ['accounts', i, 'lumpSumElection'],
+            message:
+              'an elected pension lump sum requires a readable plan timestamp to check its election year (re-save the plan to restore it)',
+          })
+        } else if (a.lumpSumOffer.electionYear < planAsOfYear) {
+          // An election models a rollover the projection still has to perform:
+          // in the election year the offer arrives in the receiving account and
+          // the pension stops paying. An election year already past has no such
+          // year to land in, and the rest of the product already treats it as
+          // nothing to model (`decisions/pensionElection.ts` skips it,
+          // `insights/detectors/pensionElectionPending.ts` stays quiet,
+          // planner-ui's scenario levers refuse to build one). Only the ledger
+          // acted on it, and only destructively: it skips the pension for every
+          // `year >= electionYear` while crediting the offer in no year at all.
+          //
+          // Crediting it in the first projection year instead would double-count
+          // it. Account balances are what the household holds TODAY (the
+          // accounts editor says so: "Balances as of today"), and the engine
+          // already reads every other pre-start event that way — an annuity
+          // premium and a TIPS-ladder purchase dated before the start are both
+          // "assumed already funded" and never replayed. So the honest answer is
+          // to refuse the shape and let the household restate the fact.
+          ctx.addIssue({
+            code: 'custom',
+            path: ['accounts', i, 'lumpSumOffer', 'electionYear'],
+            message:
+              'an elected pension lump sum cannot have an election year in the past (if the rollover already happened, clear the election and add its dollars to the receiving account balance)',
+          })
         }
-        const rolloverType = accountTypeById.get(a.lumpSumElection.rolloverAccountId)
-        if (rolloverType !== 'traditional') {
+        // Owned traditional only. An inherited account is `type: 'traditional'`
+        // too, so a bare type test admitted a target the message itself excludes:
+        // an inherited IRA may only ever hold the decedent's dollars, and the
+        // beneficiary's own pension money has no way into it. The engine would
+        // also drop those owned dollars into the bucket that runs the 10-year
+        // rule. `inherited` is the same discriminator the SEPP gate, the
+        // conversion source rule, and the IRA-classification rule read.
+        const rollover = accountById.get(a.lumpSumElection.rolloverAccountId)
+        if (
+          rollover === undefined ||
+          rollover.type !== 'traditional' ||
+          rollover.inherited !== undefined
+        ) {
           ctx.addIssue({
             code: 'custom',
             path: ['accounts', i, 'lumpSumElection', 'rolloverAccountId'],
-            message: 'a pension lump sum must roll over into an existing traditional account',
+            message: 'a pension lump sum must roll over into an existing traditional account you own (not an inherited IRA)',
           })
         }
       }

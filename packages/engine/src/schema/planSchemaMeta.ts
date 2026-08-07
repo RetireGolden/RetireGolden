@@ -61,9 +61,9 @@ export const PLAN_SCHEMA_UNREPRESENTABLE_CONSTRAINTS: readonly string[] = [
   // Allocation
   'account allocation weights must sum to 100% (±0.5); a linear glidepath must end after it starts.',
   // Annuity funding / form
-  'a qualified annuity purchase must be funded from a traditional account; a non-qualified purchase from cash/taxable/equity-comp; a QLAC must be a qualified purchase; a joint-and-survivor payout form requires a two-person household.',
+  'a qualified annuity purchase must be funded from an owned (non-inherited) traditional account; a non-qualified purchase from cash/taxable/equity-comp; a QLAC must be a qualified purchase; a joint-and-survivor payout form requires a two-person household.',
   // Pension election
-  'a pension lump-sum election requires a lump-sum offer and must roll over into an existing traditional account.',
+  'a pension lump-sum election requires a lump-sum offer and must roll over into an existing owned (non-inherited) traditional account; its election year cannot precede the calendar year in the plan’s updatedAtIso stamp.',
   // Insurance
   "premiumEndAge is required when premiumMode is 'untilAge'; a permanent-life policy with cashValueMode 'schedule' requires a cashValueSchedule.",
   // TIPS ladder

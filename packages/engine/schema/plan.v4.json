@@ -5701,8 +5701,8 @@
     "property depreciationRecapture requires a costBasis; a HECM line of credit requires a primary residence.",
     "an estateBeneficiary charity destination requires charityPct.",
     "account allocation weights must sum to 100% (±0.5); a linear glidepath must end after it starts.",
-    "a qualified annuity purchase must be funded from a traditional account; a non-qualified purchase from cash/taxable/equity-comp; a QLAC must be a qualified purchase; a joint-and-survivor payout form requires a two-person household.",
-    "a pension lump-sum election requires a lump-sum offer and must roll over into an existing traditional account.",
+    "a qualified annuity purchase must be funded from an owned (non-inherited) traditional account; a non-qualified purchase from cash/taxable/equity-comp; a QLAC must be a qualified purchase; a joint-and-survivor payout form requires a two-person household.",
+    "a pension lump-sum election requires a lump-sum offer and must roll over into an existing owned (non-inherited) traditional account; its election year cannot precede the calendar year in the plan’s updatedAtIso stamp.",
     "premiumEndAge is required when premiumMode is 'untilAge'; a permanent-life policy with cashValueMode 'schedule' requires a cashValueSchedule.",
     "a TIPS ladder must end in or after its first payout year, be purchased before that year, and be funded from cash/taxable/equity-comp savings.",
     "expenses.requiredAnnual cannot exceed baseAnnual; a one-time goal’s earliestYear/latestYear window must bracket its year; partial funding requires minFundingPct below 100."

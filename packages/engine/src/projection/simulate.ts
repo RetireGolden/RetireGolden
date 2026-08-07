@@ -833,6 +833,35 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     if (account.purchase.year >= startYear) continue
     annuityInvestmentInContract.set(account.id, account.purchase.premium)
   }
+  // The same pre-start reading, said out loud for the one event that cannot
+  // apply it silently. An elected pension lump sum dated before the projection
+  // start is a shape `parsePlan` now refuses ("an elected pension lump sum
+  // cannot have an election year in the past"), but a plan saved under an
+  // earlier build, or reopened in a later calendar year without being edited,
+  // still reaches the ledger carrying it. The ledger cannot tell whether the
+  // rollover already happened: it skips the pension for every
+  // `year >= electionYear` and credits the offer in no projected year, which is
+  // the right answer only when the household already folded those dollars into
+  // the receiving account's entered balance. Naming it is the whole fix here;
+  // moving money on a guess is not available to this engine.
+  for (const account of plan.accounts) {
+    if (account.type !== 'pension' || !account.lumpSumOffer) continue
+    if (account.lumpSumOffer.electionYear >= startYear) continue
+    if (account.lumpSumElection) {
+      warnings.add(
+        'A pension lump-sum election is dated before this projection starts, so the pension pays nothing and no rollover is credited. Update the election year, or clear the election and add the rolled-over dollars to the receiving account balance.',
+      )
+      continue
+    }
+    // The visible trace for the load-time repair in `model/migrations.ts`. A
+    // stored document whose election could not be modelled comes back undecided
+    // with its offer intact, so the pension pays again; this says why, in the
+    // same breath as the identical state a household reaches by simply letting
+    // an offer's deadline go by.
+    warnings.add(
+      'A pension lump-sum offer on record has an election year that has already passed, so no rollover is modeled and the pension pays its annuity. Update the election year to compare taking the lump sum again.',
+    )
+  }
   // HECM lines of credit (annuity-pension-and-home-equity, step 4), keyed by
   // property id. The principal limit and the loan balance both compound at the
   // line's growth rate; available credit is their difference. A sold property
@@ -1322,11 +1351,12 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       // This credit reaches the optimizer through the occurrence recorded just
       // below, not through a mutation-site capture like the two purchases: the
       // occurrence covers every case this line can reach, because
-      // `rolloverAccountId` is validated as an existing TRADITIONAL account
-      // (`model/plan.ts`, "a pension lump sum must roll over into an existing
-      // traditional account"), so the `type === 'traditional'` gate below can
-      // never be false where the balance moved. An offer of zero moves nothing
-      // and reports nothing.
+      // `rolloverAccountId` is validated as an existing OWNED TRADITIONAL
+      // account (`model/plan.ts`, "a pension lump sum must roll over into an
+      // existing traditional account you own (not an inherited IRA)"), so the
+      // `type === 'traditional'` gate below can never be false where the balance
+      // moved, and the account it resolves is always an owned one. An offer of
+      // zero moves nothing and reports nothing.
       if (account.lumpSumOffer.amount > 0 && target.account.type === 'traditional') {
         const kind = 'rolloverInflow' as const
         const producerOccurrenceKey = runtimeOccurrenceKey(
