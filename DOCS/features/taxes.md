@@ -61,10 +61,12 @@ State brackets are a separate question and are still held nominal (see `params/s
   is **not** conditional on an RMD: the pre-RMD window from 70½ (resolved from the birth month at annual
   granularity — attained 71, or attained 70 with a January–June birth month) to the applicable RMD age is open,
   and dollars requested beyond the owner's IRA RMD are debited straight from donor-owned aggregated IRAs, shrinking
-  every later RMD base. Only the taxable share of the routed RMD dollars reduces income; the beyond-RMD dollars
-  never entered it, so deducting them would be phantom. The annual ledger still applies eligibility and the annual
-  limit to the household rather than to each donor, and still runs pro-rata basis recovery across the whole
-  distribution before subtracting the gift — both are registered approximations (domain rules §6). A named `qcd`
+  every later RMD base. The qualified gift is deemed pre-tax under 408(d)(8)(D), so it returns no basis and leaves
+  the Form 8606 line-7 and line-9 computation; a gift past the donor's aggregate includible amount is not
+  qualified in the excess and stays on line 7. The household number is charged to the donors whose IRAs fund it
+  before it is measured, each donor is then held to their own annual limit, and a couple with two eligible donors
+  may exclude up to two of them. The one registered approximation left in this arm is the post-70½
+  deductible-contribution offset, which it does not apply (domain rules §6). A named `qcd`
   action is the separate, per-donor arm, with its own eligibility, limit, and offset treatment
   ([Named QCD actions](#named-qcd-actions)); a named request stands the aggregate arm down for its year.
 - **Planning-grade AMT screen:** AMTI starts from taxable income plus modeled AMT add-backs (the §63(c)
@@ -269,7 +271,8 @@ executor in sequence, and the executor is the only QCD module in the tree that c
 balances cross into the action ledger through `planDollarsToFlooredLedgerCents`, so a movement can never be
 authorized against a rounded-up half cent the account does not hold.
 
-Eligibility is per donor and exact, not the household approximation the aggregate arm uses. The donor's age-70½
+Eligibility is per donor and exact, where the aggregate arm resolves the same donor's age at annual granularity.
+The donor's age-70½
 threshold is the exact civil date 846 calendar months from the birth date with a month-end clamp
 (`irc-408-d-8-B-ii-age-70-half`, registered `unsettled` — no provision addressed to 408(d)(8)(B)(ii) resolves a
 month-end or leap-day birth), and the gift's scheduled date must fall in the action year and on or after it. The

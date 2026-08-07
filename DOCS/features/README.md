@@ -198,9 +198,9 @@ Annual computation inside the projection loop ([tax/federalTax.ts](../../package
 
 SECURE 2.0 start ages 73 (born 1951–1959) / **75 (born 1960+)**; Uniform Lifetime Table (Joint Life when
 a spouse is >10 yrs younger). RMDs forced into the ledger as taxable income whether or not spending needs
-them (excess reinvested into taxable). A user-set household QCD amount routes RMD dollars out of income — only the taxable
-share of the routed dollars reduces it, and beyond-RMD dollars never entered it (2026 limit $111k,
-data-driven). It is **not** conditional on an RMD — the pre-RMD window from 70½ is open, and dollars
+them (excess reinvested into taxable). A user-set household QCD amount routes RMD dollars out of income; the
+qualified gift is deemed pre-tax, so the whole routed amount leaves income and returns no basis (2026 limit $111k,
+data-driven, and every eligible donor has their own). It is **not** conditional on an RMD — the pre-RMD window from 70½ is open, and dollars
 beyond the owner's RMD are debited straight from donor-owned IRAs. Separately, a named `qcd` retirement
 action identifies the donor, the source IRA, and the charity, and the annual ledger commits it per donor
 ([taxes.md § Named QCD actions](taxes.md#named-qcd-actions)). A **QLAC** annuity purchase (§2,
