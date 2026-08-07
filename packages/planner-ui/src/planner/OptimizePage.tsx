@@ -139,12 +139,15 @@ export function OptimizePage() {
   const [coOptimizeClaim, setCoOptimizeClaim] = useState(false)
   const runToken = useRef(0)
 
-  // Precondition, checked before any dispatch: the optimizer prices conversions
-  // off aggregate opening buckets, which a plan carrying any recorded
-  // retirement action — identity-bearing or migrated aggregate — no longer
-  // describes. A run would only reach the engine's
-  // last-resort throw, so the page states the condition instead of surfacing a
-  // raw error next to a retry that can never clear it.
+  // Precondition, checked before any dispatch: the engine admits a plan
+  // carrying recorded retirement actions — identity-bearing or migrated
+  // aggregate — and nets their committed balance movement into the LP's
+  // buckets. The predicate below is broader than any one engine limit: it
+  // trips on ANY recorded action, and this page's own check is the thing
+  // that declines to run, because the LP does not yet price every
+  // consequence of a committed action (a committed conversion's income has
+  // no term). The page states the condition rather than ranking schedules
+  // against a mispriced tax year.
   const unsupportedActionReasons = useMemo(
     () => optimizerUnsupportedRetirementActions(plan),
     [plan],
