@@ -1713,9 +1713,13 @@ describe('RMDs', () => {
           ownerPersonId: 'p1', annualReturnPct: 0, balance: 265_000, annualContribution: 0,
         },
         {
-          type: 'annuity', id: 'ann1', name: 'QLAC-free deferred annuity',
+          type: 'annuity', id: 'ann1', name: 'Qualified annuity',
           ownerPersonId: 'p1', annualReturnPct: null,
-          startAge: 95, monthlyAmount: 1_000, colaPct: 0, taxablePct: 100,
+          // The owner turns 73 in 2026, so nothing is paid in the year under
+          // test. 74 is the latest a qualified purchase that is not a QLAC may
+          // carry for a 1953 birth: it may not defer past the required
+          // beginning date.
+          startAge: 74, monthlyAmount: 1_000, colaPct: 0, taxablePct: 100,
           // Empties IRA A after its RMD base was fixed at the prior Dec 31
           // balance, which is exactly the reachable shortfall.
           purchase: {
@@ -1762,9 +1766,11 @@ describe('RMDs', () => {
           ownerPersonId: 'p2', annualReturnPct: 0, balance: 530_000, annualContribution: 0,
         },
         {
-          type: 'annuity', id: 'ann1', name: 'Deferred annuity',
+          type: 'annuity', id: 'ann1', name: 'Qualified annuity',
           ownerPersonId: 'p1', annualReturnPct: null,
-          startAge: 95, monthlyAmount: 1_000, colaPct: 0, taxablePct: 100,
+          // As above: the latest start a qualified non-QLAC purchase may carry
+          // for this owner, which still leaves the year under test unpaid.
+          startAge: 74, monthlyAmount: 1_000, colaPct: 0, taxablePct: 100,
           purchase: {
             year: 2026, premium: 265_000,
             fundingAccountId: 'ira-a', taxQualification: 'qualified',
@@ -4088,7 +4094,10 @@ describe('registered rules: RMD base and RMD-before-conversion ordering', () => 
           name: 'Qualified SPIA',
           ownerPersonId: 'p1',
           annualReturnPct: null,
-          startAge: 80, // no payments in 2026; only the premium leaves the IRA
+          // The owner is 73 in 2026, so no payment lands in the year under test
+          // and only the premium leaves the IRA. 74 is the latest start a
+          // qualified purchase that is not a QLAC may carry for this owner.
+          startAge: 74,
           monthlyAmount: 1_000,
           colaPct: 0,
           taxablePct: 0,

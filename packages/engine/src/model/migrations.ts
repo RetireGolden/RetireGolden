@@ -8,7 +8,12 @@
  * their version; unknown shapes fall through to parsePlan's validation.
  */
 
-import { CURRENT_PLAN_SCHEMA_VERSION, parsePlan, type Plan } from './plan.js'
+import {
+  CURRENT_PLAN_SCHEMA_VERSION,
+  latestNonQlacQualifiedAnnuityStartAge,
+  parsePlan,
+  type Plan,
+} from './plan.js'
 import {
   persistedLegacyAggregateQcdRequestSchema,
   persistedLegacyAggregateRothConversionRequestSchema,
@@ -545,6 +550,14 @@ export type PlanLoadRepair =
     }
   /** A qualified annuity purchase funded from an inherited account with no owned traditional account to move it to. */
   | { kind: 'annuityPurchaseStoodDown'; accountId: string; accountName: string; fromAccountId: string; fromAccountName: string }
+  /** A qualified annuity purchase, not declared a QLAC, whose payments commence after the owner's required beginning date. */
+  | {
+      kind: 'deferredAnnuityPurchaseStoodDown'
+      accountId: string
+      accountName: string
+      startAge: number
+      latestPermittedStartAge: number
+    }
 
 /** The document as repaired, plus what the repairs were. */
 interface NormalizedPlan {
@@ -636,6 +649,30 @@ function normalizeCurrentPlan(raw: Record<string, unknown>): NormalizedPlan {
       if (record['id'] === id) return typeof record['name'] === 'string' ? record['name'] : ''
     }
     return null
+  }
+
+  /**
+   * Birth year of the person a stored account belongs to, by the same owner
+   * resolution `parsePlan` and the projection take: the named owner, or the
+   * first person in the household when the account carries none. Null when the
+   * document holds no readable birth date, in which case the deferred-annuity
+   * repair below stands aside — the parse rule stands aside on the same fact,
+   * so there is nothing to repair and nothing to lock the household out of.
+   */
+  const ownerBirthYear = (ownerPersonId: unknown): number | null => {
+    const owner =
+      people.find(
+        (candidate) =>
+          typeof candidate === 'object' &&
+          candidate !== null &&
+          !Array.isArray(candidate) &&
+          (candidate as Record<string, unknown>)['id'] === ownerPersonId,
+      ) ?? primary
+    if (typeof owner !== 'object' || owner === null || Array.isArray(owner)) return null
+    const dob = (owner as Record<string, unknown>)['dob']
+    if (typeof dob !== 'string') return null
+    const year = Number(dob.slice(0, 4))
+    return Number.isFinite(year) ? year : null
   }
 
   const repairs: PlanLoadRepair[] = []
@@ -731,6 +768,72 @@ function normalizeCurrentPlan(raw: Record<string, unknown>): NormalizedPlan {
         const repaired = { ...accountRecord }
         Reflect.deleteProperty(repaired, 'lumpSumElection')
         return repaired
+      }
+    }
+
+    // A qualified annuity purchase, not declared a QLAC, whose payments do not
+    // commence until after the owner's required beginning date. Tested BEFORE
+    // the funding repair below, because a contract carrying both faults cannot
+    // be saved by retargeting its premium — the start age would still refuse —
+    // and standing the purchase down cures the funding fault along with it.
+    //
+    // WHY THE REPAIR IS A STAND-DOWN, derived from what the stored document
+    // means rather than from what is convenient. The household authored a
+    // deferred contract bought with pre-tax dollars. Treas. Reg.
+    // 1.401(a)(9)-6(a)(3)(i) says such a contract must commence by the required
+    // beginning date, and (q)(1)(iii) excuses only a QLAC, so the stored shape
+    // has no legal expression that keeps every stored fact. Three repairs were
+    // available and two are refused by the never-richer bar this seam is under:
+    //
+    //  - MARK IT A QLAC. Forbidden. QLAC status is precisely the grant that
+    //    keeps a deferred contract's value out of the required-distribution
+    //    base, and the household never chose it; conferring it here would keep
+    //    the exclusion the regulation denies and make the new parse refusal
+    //    cosmetic, since every refused document would be relabelled into the
+    //    shape that is allowed to defer. It is not even a safe relabel: the
+    //    premium would then be clamped to the statutory cap (a purchase the
+    //    household did not make), and a start age past 85 would still fail
+    //    1.401(a)(9)-6(q)(1)(ii), so the "QLAC" produced can be no more legal
+    //    than what it replaced.
+    //  - ADVANCE THE START AGE. Forbidden, and richer by a wide margin. The
+    //    `monthlyAmount` on record was quoted for a deferred start; paying it
+    //    from the required beginning date instead hands the household years of
+    //    payments nobody bought, at a rate nobody would have been offered.
+    //  - STAND THE PURCHASE DOWN. What is done. The premium never leaves the
+    //    funding balance and the contract pays nothing, so the household keeps
+    //    exactly the dollars it started with and gains no stream — the strictly
+    //    poorer direction, and the same repair the funding branch below already
+    //    takes when no legal shape exists for a purchase it cannot place. The
+    //    account stays in the plan carrying its name and start age, so the
+    //    household can see what happened and re-author it either way.
+    if (
+      accountRecord['type'] === 'annuity' &&
+      typeof accountRecord['purchase'] === 'object' &&
+      accountRecord['purchase'] !== null &&
+      !Array.isArray(accountRecord['purchase'])
+    ) {
+      const purchase = accountRecord['purchase'] as Record<string, unknown>
+      const startAge = accountRecord['startAge']
+      const purchaseYear = purchase['year']
+      const birthYear =
+        purchase['taxQualification'] === 'qualified' && purchase['qlac'] !== true
+          ? ownerBirthYear(accountRecord['ownerPersonId'])
+          : null
+      if (birthYear !== null && typeof startAge === 'number' && typeof purchaseYear === 'number') {
+        const latestPermittedStartAge = latestNonQlacQualifiedAnnuityStartAge(birthYear, purchaseYear)
+        if (startAge > latestPermittedStartAge) {
+          changed = true
+          repairs.push({
+            kind: 'deferredAnnuityPurchaseStoodDown',
+            accountId: stringField(accountRecord, 'id'),
+            accountName: stringField(accountRecord, 'name'),
+            startAge,
+            latestPermittedStartAge,
+          })
+          const stoodDown = { ...accountRecord, monthlyAmount: 0 }
+          Reflect.deleteProperty(stoodDown, 'purchase')
+          return stoodDown
+        }
       }
     }
 

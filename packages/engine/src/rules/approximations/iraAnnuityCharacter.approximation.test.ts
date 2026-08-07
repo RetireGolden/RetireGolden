@@ -26,9 +26,14 @@
  *     large and the residual IRA recovers basis too fast (understates tax);
  *   - the payments are taxed in full, taking no share of the basis at all
  *     (overstates tax);
- *   - the required-distribution base loses the contract even when the contract
- *     is not a QLAC and defers past the required beginning date, which is the
- *     one exclusion the regulations reserve for QLACs (understates tax).
+ *   - the required-distribution base loses the contract, which the regulations
+ *     permit only for a QLAC — closed on 2026-08-07 by refusing the shape
+ *     rather than by pricing it, so that suite now pins a refusal.
+ *
+ * A fourth departure is registered here without being one of the three, because
+ * it is about the QLAC cap rather than the character of the purchase: the cap is
+ * one running total across every arrangement of an individual, and the engine
+ * measures each contract against the whole of it (understates tax).
  *
  * EVERY FIXTURE BELOW RUNS AT A 0 PERCENT RETURN, and that is not decoration.
  * It collapses the measurement-instant question that
@@ -134,7 +139,11 @@ function household(spec: AnnuityHousehold): Plan {
         name: 'Qualified annuity',
         ownerPersonId: 'p1',
         annualReturnPct: null,
-        startAge: spec.startAge ?? 80,
+        // 76 is this household's age in the 2026 purchase year, so the default
+        // contract is an immediate one. A deferred default would be refused at
+        // parse for every suite below that does not opt into a QLAC: only a
+        // QLAC may commence after the owner's required beginning date.
+        startAge: spec.startAge ?? 76,
         monthlyAmount: spec.monthlyAmount ?? 0,
         colaPct: 0,
         taxablePct: 100,
@@ -381,58 +390,91 @@ function deferredContract(qlac: boolean): Plan {
   })
 }
 
+/**
+ * The refusal that closed the gap, and what the gap used to be.
+ *
+ * This suite measured an arithmetic departure until 2026-08-07: a deferred
+ * contract that was not a QLAC got the QLAC's exclusion from the
+ * required-distribution base, and the second-year requirement came out at
+ * 33,091.96 against a statutory 41,825.59 — 8,733.62 short, compounding. The
+ * engine had exactly one mechanism (an annuity account holds no balance, so the
+ * premium simply left the traditional one) and could not tell the contracts
+ * apart because it never had a second.
+ *
+ * It still has one mechanism. What changed is which contracts may reach it:
+ * plan validation now refuses a qualified purchase that is not flagged qlac and
+ * whose payments commence later than the owner may defer them, so the shape the
+ * old fixture measured has no expression in an accepted input. The readings
+ * below therefore ask the question the rule now turns on — is the shape
+ * admitted or refused — which is the same form the funding-arm fixture at the
+ * bottom of this file takes for 408(d)(1). The figures the old fixture pinned
+ * are not deleted; they are carried in the registry record's history, where a
+ * later reader can find what the engine used to do without a fixture having to
+ * construct a plan that no longer parses.
+ */
 describeRule('treas-reg-1-401-a-9-6-a-3-i-annuity-payments-commence-by-the-required-beginning-date', {
   readings: {
     // 1.401(a)(9)-5(a)(5)(iii) permits the bifurcation only if the contract
     // satisfies 1.401(a)(9)-6, and (a)(3)(i) requires its payments to commence
-    // by the required beginning date. A contract starting at 85 that is not a
-    // QLAC does not, so its value stays in the base: 957,805.91 over 22.9.
-    regulationLeavesANonQlacContractInTheBase: SECOND_YEAR_WITH_CONTRACT,
-    // The engine: the premium left the balance and the contract holds none, so
-    // the base is 757,805.91 whatever the contract promises.
-    engineExcludesEveryContractFromTheBase: SECOND_YEAR_WITHOUT_CONTRACT,
+    // by the required beginning date. (q)(1)(iii) excuses a QLAC and nothing
+    // else, so a contract starting at 85 for an owner who bought it at 76 is a
+    // shape with no legal expression, and validation says so.
+    parseRefusesADeferredContractThatIsNotAQlac: 'refused',
+    // What the engine did until the refusal landed: admit it, and hand it the
+    // exclusion 1.401(a)(9)-5(b)(4) reserves for a QLAC.
+    schemaWouldAdmitItAndExcludeItFromTheBase: 'accepted',
   },
-  accepted: 'regulationLeavesANonQlacContractInTheBase',
-  produced: 'engineExcludesEveryContractFromTheBase',
+  accepted: 'parseRefusesADeferredContractThatIsNotAQlac',
   note: 'a deferred contract that is not a QLAC',
-}, ({ accepted, produced }) => {
-  it('leaves a deferred non-QLAC contract out of the second-year base', () => {
-    const deferred = project(deferredContract(false))
-    const first = deferred.years.find((y) => y.year === 2026)!
-    const second = deferred.years.find((y) => y.year === 2027)!
-
-    // The purchase year is unreachable by either reading: the requirement rests
-    // on the prior December 31, which is before the premium was paid.
-    expect(first.rmd).toBeCloseTo(FIRST_YEAR_DISTRIBUTION, 6)
-    expect(first.rmd).toBeCloseTo(42_194.09, 2)
-
-    expect(second.rmd).toBeCloseTo(produced, 6)
-    expect(second.rmd).toBeCloseTo(33_091.96, 2)
-    expect(second.rmd).not.toBeCloseTo(accepted, 6)
-    expect(accepted).toBeCloseTo(41_825.59, 2)
-    // The shortfall in the second year alone, before it compounds.
-    expect(accepted - produced).toBeCloseTo(8_733.62, 2)
+}, ({ accepted, readings }) => {
+  it('refuses a deferred contract that is not a QLAC', () => {
+    const parsed = parsePlan(deferredContract(false))
+    const outcome = parsed.ok ? 'accepted' : 'refused'
+    expect(outcome).toBe(accepted)
+    expect(outcome).not.toBe(readings.schemaWouldAdmitItAndExcludeItFromTheBase)
+    if (parsed.ok) throw new Error('expected the deferred non-QLAC contract to be refused')
+    // Named on the contract's own start age, and naming the two controls that
+    // fix it, because a refusal a household cannot act on is a lockout.
+    expect(parsed.issues.join('; ')).toContain(
+      'a qualified annuity purchase that is not a QLAC cannot defer past the owner\'s required beginning date',
+    )
+    expect(parsed.issues.join('; ')).toContain(
+      'lower "Start age", or tick "QLAC (qualified longevity annuity)"',
+    )
   })
 
-  it('reads the accepted base off the household that bought no contract at all', () => {
-    // Derivation rather than conclusion. If the contract's value stays in the
-    // base, the base is the same one an identical household without the
-    // contract carries — at a 0 percent return the premium changed which asset
-    // holds the value and not how much there is.
+  it('admits the same contract the moment it is declared a QLAC', () => {
+    // The other side of the boundary, so the refusal above is about the
+    // exemption in (q)(1)(iii) and not about some unrelated defect in the
+    // fixture's plan. One field apart, opposite outcomes.
+    expect(parsePlan(deferredContract(true)).ok).toBe(true)
+  })
+
+  it('admits an immediate contract bought after the required beginning date', () => {
+    // The refusal is about DEFERRAL, not about age. This owner's required
+    // beginning date went years ago, so every contract they could buy commences
+    // after it; refusing on the required beginning date alone would forbid the
+    // ordinary immediate annuity, which the regulation allows.
+    const immediate = household({
+      dob: '1950-01-01',
+      iraBalance: RMD_IRA_BALANCE,
+      basis: 0,
+      premium: RMD_PREMIUM,
+      startAge: 76, // the owner's age in the 2026 purchase year
+    })
+    expect(parsePlan(immediate).ok).toBe(true)
+  })
+
+  it('leaves the requirement on the household that bought no contract untouched', () => {
+    // The figure the old accepted reading named, kept as a live assertion
+    // because it is what the refusal protects: a household that keeps its
+    // 1,000,000 in the IRA takes 41,825.59 in 2027, and no admissible plan can
+    // now pay a premium out of that base and defer everything it buys.
     const untouched = household({
       dob: '1950-01-01', iraBalance: RMD_IRA_BALANCE, basis: 0, premium: 0,
     })
-    expect(yearOf(untouched, 2027).rmd).toBeCloseTo(accepted, 6)
-  })
-
-  it('gives a non-QLAC contract the treatment reserved for a QLAC', () => {
-    // The whole defect in one assertion: the engine has exactly one mechanism —
-    // the dollars leaving the balance — so it cannot tell the two contracts
-    // apart. 1.401(a)(9)-6(q)(1)(iii) is the only exemption from the
-    // commence-by-the-required-beginning-date rule, and it is a QLAC's alone.
-    const asQlac = yearOf(deferredContract(true), 2027)
-    const asOrdinaryContract = yearOf(deferredContract(false), 2027)
-    expect(asOrdinaryContract.rmd).toBeCloseTo(asQlac.rmd, 6)
+    expect(yearOf(untouched, 2027).rmd).toBeCloseTo(SECOND_YEAR_WITH_CONTRACT, 6)
+    expect(yearOf(untouched, 2027).rmd).toBeCloseTo(41_825.59, 2)
   })
 })
 
@@ -457,16 +499,102 @@ describeRule('treas-reg-1-401-a-9-5-b-4-qlac-excluded-from-the-rmd-account-balan
 
   it('reaches the regulation’s base by a mechanism that is not the regulation', () => {
     // Recorded because the coincidence is the whole reason this rule is settled
-    // while its neighbour is not. The regulation excludes the VALUE of a
-    // contract from a balance that still notionally contains it; the engine
-    // never puts a value there, because an annuity account holds no balance.
-    // On a QLAC the two agree exactly. On the contract next door they do not,
-    // and the fixture above pins that with these same two figures and the
-    // labels exchanged.
+    // while its neighbour spent time approximated. The regulation excludes the
+    // VALUE of a contract from a balance that still notionally contains it; the
+    // engine never puts a value there, because an annuity account holds no
+    // balance. On a QLAC the two agree exactly.
+    //
+    // This assertion used to run the same household with `qlac: false` and show
+    // the two requirements were identical — the engine could not tell the
+    // contracts apart. It cannot state that any more, and for the right reason:
+    // the shape is refused at parse, so there is no ordinary-contract
+    // requirement to compare against. The mirror is therefore drawn against the
+    // refusal instead, and the figures this rule pins do not move, because the
+    // mechanism that produces them never changed.
     const qlacYear = yearOf(deferredContract(true), 2027)
-    const ordinaryYear = yearOf(deferredContract(false), 2027)
-    expect(qlacYear.rmd).toBeCloseTo(ordinaryYear.rmd, 6)
+    expect(qlacYear.rmd).toBeCloseTo(SECOND_YEAR_WITHOUT_CONTRACT, 6)
+    expect(parsePlan(deferredContract(false)).ok).toBe(false)
     expect(accepted).toBeCloseTo(SECOND_YEAR_WITHOUT_CONTRACT, 6)
+  })
+})
+
+// --------------------------------------------------------------------------
+// The QLAC premium cap, as a running total rather than a per-contract
+// allowance. The same 76-year-old and the same 1,000,000 dollar IRA, buying TWO
+// QLACs of 150,000 each in 2026. Neither premium reaches the 210,000 cap on its
+// own, which is the point: the per-contract test the engine applies is silent,
+// and the pair moves 300,000 out of the required-distribution base.
+const QLAC_CAP_2026 = 210_000
+const TWIN_QLAC_PREMIUM = 150_000
+/** December 31, 2026 with only the statutory total outside the base. */
+const SECOND_YEAR_AT_THE_RUNNING_TOTAL =
+  (RMD_IRA_BALANCE - QLAC_CAP_2026 - FIRST_YEAR_DISTRIBUTION) / 22.9
+/** The same December 31 with both premiums outside it. */
+const SECOND_YEAR_AT_A_CAP_PER_CONTRACT =
+  (RMD_IRA_BALANCE - 2 * TWIN_QLAC_PREMIUM - FIRST_YEAR_DISTRIBUTION) / 22.9
+
+/** The shared household with a second QLAC of the same size and year. */
+function twoQlacs(): Plan {
+  const plan = household({
+    dob: '1950-01-01',
+    iraBalance: RMD_IRA_BALANCE,
+    basis: 0,
+    premium: TWIN_QLAC_PREMIUM,
+    startAge: DEFERRED_START_AGE,
+    qlac: true,
+  })
+  const first = plan.accounts.find((a) => a.type === 'annuity')!
+  if (first.type !== 'annuity') throw new Error('fixture built no annuity contract')
+  plan.accounts = [...plan.accounts, { ...first, id: 'annuity-fixture-contract-2', name: 'Second QLAC' }]
+  return plan
+}
+
+describeRule('treas-reg-1-401-a-9-6-q-2-ii-qlac-premium-cap-across-every-contract', {
+  readings: {
+    // (q)(2)(ii) reduces the limitation by the premiums already paid for any
+    // OTHER contract intended to be a QLAC under any 401(a)/403(a)/403(b)/408
+    // arrangement, so the second purchase has 60,000 of allowance left and the
+    // excess 90,000 stays in the base: 747,805.91 over 22.9.
+    regulationSpendsOneRunningTotal: SECOND_YEAR_AT_THE_RUNNING_TOTAL,
+    // The engine: each purchase is measured against the whole cap on its own,
+    // neither one exceeds it, and 300,000 leaves the base.
+    engineGivesEachContractTheWholeCap: SECOND_YEAR_AT_A_CAP_PER_CONTRACT,
+  },
+  accepted: 'regulationSpendsOneRunningTotal',
+  produced: 'engineGivesEachContractTheWholeCap',
+  note: 'two contracts against one cap',
+}, ({ accepted, produced }) => {
+  it('lets a second QLAC spend the whole cap again', () => {
+    const projected = project(twoQlacs())
+    const second = projected.years.find((y) => y.year === 2027)!
+
+    expect(second.rmd).toBeCloseTo(produced, 6)
+    expect(second.rmd).toBeCloseTo(28_725.15, 2)
+    expect(second.rmd).not.toBeCloseTo(accepted, 6)
+    expect(accepted).toBeCloseTo(32_655.28, 2)
+    // What the unspent-total reading is worth in the second year alone.
+    expect(accepted - produced).toBeCloseTo(3_930.13, 2)
+  })
+
+  it('says nothing while the pair passes the cap', () => {
+    // The mechanism, not just the arithmetic. The engine's only guard is a
+    // per-contract comparison, so two premiums that are each under the cap
+    // raise no warning at all — the household is never told the total was
+    // exceeded. A single over-cap purchase does warn, which is what makes the
+    // silence here a statement about aggregation rather than about the cap.
+    const pair = project(twoQlacs())
+    const capWarnings = [...pair.warnings].filter((w) => w.includes('QLAC premium above'))
+    expect(capWarnings).toEqual([])
+
+    const single = project(household({
+      dob: '1950-01-01',
+      iraBalance: RMD_IRA_BALANCE,
+      basis: 0,
+      premium: 2 * TWIN_QLAC_PREMIUM,
+      startAge: DEFERRED_START_AGE,
+      qlac: true,
+    }))
+    expect([...single.warnings].some((w) => w.includes('QLAC premium above'))).toBe(true)
   })
 })
 

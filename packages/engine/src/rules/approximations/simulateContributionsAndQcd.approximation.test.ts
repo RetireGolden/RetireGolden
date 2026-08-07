@@ -629,7 +629,11 @@ function measurementInstantPlan(
         name: 'Qualified annuity',
         ownerPersonId: 'p1',
         annualReturnPct: null,
-        startAge: 80,
+        // Immediate. The owner is 76 in 2026 and their required beginning date
+        // has gone, so a qualified purchase that is not a QLAC must commence in
+        // its purchase year; `monthlyAmount` is 0, so nothing is paid either
+        // way and the premium leaving the pool is all this fixture needs.
+        startAge: 76,
         monthlyAmount: 0,
         colaPct: 0,
         taxablePct: 100,

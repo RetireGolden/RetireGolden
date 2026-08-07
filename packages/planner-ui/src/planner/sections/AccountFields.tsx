@@ -6,7 +6,7 @@ import type { Account, Plan } from '@retiregolden/engine/model/plan'
 import { analyzePensionElections } from '@retiregolden/engine/decisions/pensionElection'
 import { packForYear } from '@retiregolden/engine/params'
 import { AllocationPanel, ReturnEstimatorModal } from './AllocationPanel'
-import { ACCOUNT_LABEL, EVEN_START_WEIGHTS, isAllocatable, isIndividuallyOwnedAccount, type AllocatableAccount } from './sectionHelpers'
+import { ACCOUNT_LABEL, annuityStartAgeCeiling, EVEN_START_WEIGHTS, isAllocatable, isIndividuallyOwnedAccount, type AllocatableAccount } from './sectionHelpers'
 import { usePlan } from '../planContextCore'
 import { CheckboxField, MoneyField, NumberField, PercentField, ReadonlyField, SelectField, TextField } from '../fields'
 import { fmtMoney } from '../format'
@@ -55,6 +55,29 @@ export function AccountFields({ account, index }: { account: Account; index: num
     update((d) => {
       updateAccountField(d, index, key, value)
     })
+  const startAgeCeiling = annuityStartAgeCeiling(plan, account)
+  /**
+   * Commit a purchase edit and, in the same block, pull the start age down to
+   * whatever the new purchase permits.
+   *
+   * Every field in the purchase can move the ceiling: switching to a qualified
+   * purchase, clearing the QLAC box, or moving the purchase year earlier all
+   * turn a start age that stored yesterday into one the engine refuses today.
+   * Bounding the age field alone would leave the household with a plan that
+   * will not save and no field showing the fault, so the bump travels with the
+   * edit that caused it — one update block, the way the lump-sum election
+   * revives its offer year.
+   */
+  const setAnnuityPurchase = (next: Extract<Account, { type: 'annuity' }>['purchase']) => {
+    if (account.type !== 'annuity') return
+    const ceiling = next === undefined ? null : annuityStartAgeCeiling(plan, { ...account, purchase: next })
+    update((d) => {
+      updateAccountField(d, index, 'purchase', next)
+      if (ceiling !== null && account.startAge > ceiling) {
+        updateAccountField(d, index, 'startAge', ceiling)
+      }
+    })
+  }
   return (
     <div className="form-grid">
       <TextField label="Name" value={account.name} onCommit={(v) => set('name', v || ACCOUNT_LABEL[account.type])} />
@@ -455,7 +478,18 @@ export function AccountFields({ account, index }: { account: Account; index: num
       ) : null}
       {account.type === 'pension' || account.type === 'annuity' ? (
         <>
-          <NumberField label="Start age" value={account.startAge} min={40} max={95} onCommit={(v) => set('startAge', Math.round(v ?? 65))} />
+          <NumberField
+            label="Start age"
+            help={
+              startAgeCeiling === null
+                ? undefined
+                : `A pre-tax annuity purchase has to start paying by age ${startAgeCeiling}. To start later than that, tick "QLAC (qualified longevity annuity)" below — a QLAC is the only kind of deferred annuity the IRA rules allow.`
+            }
+            value={account.startAge}
+            min={40}
+            max={startAgeCeiling ?? 95}
+            onCommit={(v) => set('startAge', Math.round(v ?? 65))}
+          />
           <MoneyField label="Monthly amount" value={account.monthlyAmount} onCommit={(v) => set('monthlyAmount', v ?? 0)} />
           <PercentField label="COLA" value={account.colaPct} onCommit={(v) => set('colaPct', v ?? 0)} />
         </>
@@ -603,8 +637,7 @@ export function AccountFields({ account, index }: { account: Account; index: num
             const defaultFunding = plan.accounts.find(
               (a) => a.id !== account.id && (a.type === 'cash' || a.type === 'taxable' || a.type === 'equityComp'),
             )
-            set(
-              'purchase',
+            setAnnuityPurchase(
               v
                 ? {
                     year: new Date().getFullYear(),
@@ -624,13 +657,13 @@ export function AccountFields({ account, index }: { account: Account; index: num
             value={account.purchase.year}
             min={1900}
             max={2200}
-            onCommit={(v) => set('purchase', { ...account.purchase!, year: Math.round(v ?? new Date().getFullYear()) })}
+            onCommit={(v) => setAnnuityPurchase({ ...account.purchase!, year: Math.round(v ?? new Date().getFullYear()) })}
           />
           <MoneyField
             label="Premium"
             help="The lump sum paid to purchase the annuity contract, withdrawn from the funding account in the purchase year."
             value={account.purchase.premium}
-            onCommit={(v) => set('purchase', { ...account.purchase!, premium: v ?? 0 })}
+            onCommit={(v) => setAnnuityPurchase({ ...account.purchase!, premium: v ?? 0 })}
           />
           <SelectField
             label="Funding account"
@@ -639,7 +672,7 @@ export function AccountFields({ account, index }: { account: Account; index: num
             options={plan.accounts
               .filter((a) => a.id !== account.id && canFundAnnuityPurchase(a, account.purchase!.taxQualification))
               .map((a) => ({ value: a.id, label: a.name }))}
-            onCommit={(v) => set('purchase', { ...account.purchase!, fundingAccountId: v })}
+            onCommit={(v) => setAnnuityPurchase({ ...account.purchase!, fundingAccountId: v })}
           />
           <SelectField
             label="Tax qualification"
@@ -660,7 +693,7 @@ export function AccountFields({ account, index }: { account: Account; index: num
               const fundingAccountId = stillEligible
                 ? account.purchase!.fundingAccountId
                 : plan.accounts.find((a) => a.id !== account.id && canFundAnnuityPurchase(a, taxQualification))?.id ?? ''
-              set('purchase', {
+              setAnnuityPurchase({
                 ...account.purchase!,
                 taxQualification,
                 fundingAccountId,
@@ -673,7 +706,7 @@ export function AccountFields({ account, index }: { account: Account; index: num
               label="QLAC (qualified longevity annuity)"
               help="A deferred-start longevity annuity purchased inside a traditional account. The premium is capped at the SECURE 2.0 statutory limit ($210,000 for 2026) and excluded from the RMD base until payouts begin."
               value={account.purchase.qlac === true}
-              onCommit={(v) => set('purchase', { ...account.purchase!, qlac: v || undefined })}
+              onCommit={(v) => setAnnuityPurchase({ ...account.purchase!, qlac: v || undefined })}
             />
           ) : null}
         </>

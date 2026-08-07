@@ -288,6 +288,88 @@ describe('migratePlanToCurrent', () => {
       ])
     })
 
+    /**
+     * A stored qualified purchase that defers past the owner's required
+     * beginning date. `startAge` is well past anything the owner may defer to,
+     * and `qlac` is absent, which is the shape parse now refuses.
+     */
+    function storedDeferredAnnuity(
+      overrides: { fundingAccountId?: string; ownedTraditional?: boolean; qlac?: boolean } = {},
+    ): Record<string, unknown> {
+      const plan = createEmptyPlan({ newId: testIds, now: fixedNow })
+      const primaryId = plan.household.people[0]!.id
+      plan.household.people[0]!.dob = '1950-01-01'
+      plan.accounts = [
+        ...(overrides.ownedTraditional === false
+          ? []
+          : [{ type: 'traditional' as const, id: 'ira', name: 'IRA', ownerPersonId: primaryId, annualReturnPct: null, kind: 'ira' as const, balance: 400_000, annualContribution: 0 }]),
+        { type: 'traditional', id: 'inh', name: 'Inherited', ownerPersonId: primaryId, annualReturnPct: null, kind: 'ira', balance: 300_000, annualContribution: 0,
+          inherited: { ownerDeathYear: 2022, decedentHadStartedRmds: true } },
+        { type: 'annuity', id: 'ann', name: 'Longevity annuity', ownerPersonId: primaryId, annualReturnPct: null, startAge: 85, monthlyAmount: 1_000, colaPct: 0, taxablePct: 100,
+          purchase: {
+            year: 2026,
+            premium: 100_000,
+            fundingAccountId: overrides.fundingAccountId ?? 'ira',
+            taxQualification: 'qualified',
+            ...(overrides.qlac === true ? { qlac: true } : {}),
+          } },
+      ] as never
+      return JSON.parse(JSON.stringify(plan)) as Record<string, unknown>
+    }
+
+    it('stands down a stored qualified purchase that defers past the required beginning date', () => {
+      // Only a QLAC may commence after the required beginning date, and this
+      // purchase is not one. The two alternatives are both richer than the
+      // stored facts support: marking it a QLAC confers the exclusion the
+      // household never chose, and advancing the start age pays a monthly
+      // amount quoted for a deferred start across years nobody bought. Standing
+      // the purchase down leaves the premium in the IRA and the contract silent,
+      // which is the strictly poorer direction, and the account stays in the
+      // plan so the household can re-author it either way.
+      const result = migratePlanToCurrent(storedDeferredAnnuity())
+      expect(result.ok).toBe(true)
+      if (!result.ok) return
+      const annuity = result.plan.accounts.find((a) => a.id === 'ann')!
+      if (annuity.type !== 'annuity') throw new Error('expected the annuity back')
+      expect(annuity.purchase).toBeUndefined()
+      expect(annuity.monthlyAmount).toBe(0)
+      // The start age survives the repair: it is the fact the household has to
+      // change, so erasing it would hide what the message is telling them.
+      expect(annuity.startAge).toBe(85)
+      expect(result.repairs).toEqual([
+        {
+          kind: 'deferredAnnuityPurchaseStoodDown',
+          accountId: 'ann',
+          accountName: 'Longevity annuity',
+          startAge: 85,
+          latestPermittedStartAge: 76,
+        },
+      ])
+    })
+
+    it('stands down a deferred purchase that is also funded from an inherited account', () => {
+      // Tested because the two annuity repairs are exclusive and their order
+      // decides whether the document opens at all. Retargeting the premium
+      // first would leave the start age refused and the plan would die at the
+      // parse — the one outcome this seam exists to prevent — so the deferral
+      // is tested first and the stand-down cures the funding fault with it.
+      const result = migratePlanToCurrent(storedDeferredAnnuity({ fundingAccountId: 'inh' }))
+      expect(result.ok).toBe(true)
+      if (!result.ok) return
+      expect(result.repairs.map((r) => r.kind)).toEqual(['deferredAnnuityPurchaseStoodDown'])
+    })
+
+    it('leaves a stored QLAC with the same deferred start untouched', () => {
+      const result = migratePlanToCurrent(storedDeferredAnnuity({ qlac: true }))
+      expect(result.ok).toBe(true)
+      if (!result.ok) return
+      const annuity = result.plan.accounts.find((a) => a.id === 'ann')!
+      if (annuity.type !== 'annuity') throw new Error('expected the annuity back')
+      expect(annuity.purchase?.premium).toBe(100_000)
+      expect(annuity.monthlyAmount).toBe(1_000)
+      expect(result.repairs).toEqual([])
+    })
+
     it('leaves an owned-traditional-funded qualified annuity untouched', () => {
       const result = migratePlanToCurrent(storedAnnuity('ira', true))
       expect(result.ok).toBe(true)

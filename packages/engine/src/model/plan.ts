@@ -12,6 +12,7 @@
 
 import { z } from 'zod'
 import { persistedRetirementActionRequestSchema } from '../actions/contract.js'
+import { rmdStartAgeForBirthYear } from '../params/index.js'
 import { addCalendarMonths, parseCivilIsoDate } from '../actions/civilDate.js'
 import { usdCentsSchema } from '../actions/money.js'
 import {
@@ -22,6 +23,53 @@ import {
 export type { RetirementActionAnnualTaxFacts } from './retirementActionAnnualTaxFacts.js'
 
 export const CURRENT_PLAN_SCHEMA_VERSION = 4
+
+/**
+ * The latest `startAge` a QUALIFIED annuity purchase that is not a QLAC may
+ * carry, for an owner born in `birthYear` who pays the premium in
+ * `purchaseYear`.
+ *
+ * Treas. Reg. 1.401(a)(9)-5(a)(5)(iii) permits a portion of an account to buy a
+ * contract while the rest stays behind, but only if the contract itself
+ * satisfies 1.401(a)(9)-6 — whose paragraph (a)(3)(i) requires annuity payments
+ * to commence on or before the required beginning date. Paragraph (q)(1)(iii)
+ * excuses a QLAC from (a)(3) and nothing else is excused, so a contract that
+ * DEFERS past that date without being a QLAC is a shape the regulation does not
+ * permit. The whole test is derivable from facts a Plan already carries, which
+ * is why no new field is added for it.
+ *
+ * TWO TERMS, and the second is the one that keeps this a rule about deferral
+ * rather than about age.
+ *
+ * The first term is the required beginning date itself. Under
+ * 1.401(a)(9)-2(b)(1) it is April 1 of the calendar year FOLLOWING the year the
+ * owner attains the applicable age, so the last calendar year in which payments
+ * may commence is the year the owner attains that age plus one — hence `+ 1`
+ * and not a bare equality. The projection pays a contract twelve monthly
+ * amounts in the year the owner attains `startAge` (`simulate.ts`, the
+ * guaranteed-income pass), so the engine's own model of commencement is
+ * January 1 of that year, which is before the April 1 deadline. Refusing at the
+ * applicable age itself would refuse a contract the regulation admits.
+ *
+ * The second term is the purchase year, and without it this function refuses
+ * the ordinary immediate annuity. An owner who annuitizes at 80 passed their
+ * required beginning date years ago; every contract they could possibly buy
+ * commences after it, so the first term alone would forbid a purchase the
+ * regulation plainly allows and that this engine's own Form 8606 fixtures are
+ * built on. What (a)(3)(i) is doing there is requiring that the annuity form not
+ * be used to postpone distributions, and a contract paying from the year its
+ * premium is paid postpones nothing: the account was already distributing under
+ * the account rules, and the contract takes over on purchase. Taking the later
+ * of the two terms is therefore the strictest bound the annual model can state
+ * that still admits an immediate purchase — commence by the required beginning
+ * date, or, if that date has gone, by the purchase itself.
+ */
+export function latestNonQlacQualifiedAnnuityStartAge(
+  birthYear: number,
+  purchaseYear: number,
+): number {
+  return Math.max(rmdStartAgeForBirthYear(birthYear) + 1, purchaseYear - birthYear)
+}
 
 const isoDateRe = /^\d{4}-\d{2}-\d{2}$/
 
@@ -1650,6 +1698,7 @@ export const planSchema = z
     }
     const accountTypeById = new Map(plan.accounts.map((a) => [a.id, a.type]))
     const accountById = new Map(plan.accounts.map((account) => [account.id, account]))
+    const personById = new Map(plan.household.people.map((p) => [p.id, p]))
 
     /**
      * The document's own "as of" calendar year, or null when the stamp is not a
@@ -2165,6 +2214,38 @@ export const planSchema = z
             path: ['accounts', i, 'purchase', 'qlac'],
             message: 'a QLAC must be a qualified (traditional-funded) purchase',
           })
+        }
+        // A qualified contract whose payments commence after the owner's
+        // required beginning date, not declared a QLAC, is the one shape
+        // Treas. Reg. 1.401(a)(9)-6(a)(3)(i) refuses and (q)(1)(iii) excuses
+        // only for a QLAC. It matters here rather than only in the ledger
+        // because the engine has a single mechanism for both: an annuity
+        // account holds no balance, so the premium leaves the traditional
+        // balance at purchase and never returns to any required-distribution
+        // base. That is exactly the treatment 1.401(a)(9)-5(b)(4) reserves for
+        // a QLAC, and on a non-QLAC it computes the requirement on a base short
+        // by the whole premium. Teaching the base to re-include a contract value
+        // would need a contract value the Plan does not carry; refusing the
+        // shape costs only a contract the regulation does not permit anyway.
+        // A non-qualified purchase is not reached by section 401(a)(9) at all,
+        // and an already-owned annuity with no `purchase` moves no premium out
+        // of any balance, so neither is tested.
+        if (a.purchase.taxQualification === 'qualified' && a.purchase.qlac !== true) {
+          // Same owner resolution the guaranteed-income pass takes: an annuity
+          // may be stored with no individual owner, and the projection reads it
+          // as the first person's.
+          const owner = personById.get(a.ownerPersonId ?? '') ?? plan.household.people[0]
+          const birthYear = owner === undefined ? null : Number(owner.dob.slice(0, 4))
+          if (birthYear !== null && Number.isFinite(birthYear)) {
+            const latest = latestNonQlacQualifiedAnnuityStartAge(birthYear, a.purchase.year)
+            if (a.startAge > latest) {
+              ctx.addIssue({
+                code: 'custom',
+                path: ['accounts', i, 'startAge'],
+                message: `a qualified annuity purchase that is not a QLAC cannot defer past the owner's required beginning date: it must start paying by age ${latest} (lower "Start age", or tick "QLAC (qualified longevity annuity)")`,
+              })
+            }
+          }
         }
       }
       if (a.type === 'annuity' && a.payoutForm?.kind === 'jointSurvivor' && plan.household.people.length < 2) {

@@ -143,6 +143,25 @@ describe('PlanRepairNotice', () => {
     ])
   })
 
+  it('names the age to fix and the box to tick for a deferred purchase stood down', async () => {
+    // The one repair a household can act on in two different ways, so the
+    // sentence has to offer both: an earlier start age, or the QLAC the
+    // regulation reserves the deferral for. It also says where the premium went,
+    // because the money not moving is the whole reason this repair is safe.
+    await mount([
+      {
+        kind: 'deferredAnnuityPurchaseStoodDown',
+        accountId: 'ann',
+        accountName: 'Longevity annuity',
+        startAge: 85,
+        latestPermittedStartAge: 76,
+      },
+    ])
+    expect(items()).toEqual([
+      'Longevity annuity was bought with pre-tax money and set to start paying at age 85. Only a QLAC can start that late; a purchase like this one has to start by age 76. The purchase was cleared and Longevity annuity pays nothing, so the premium stayed in the account it would have come from. Open Accounts to set it up again with an earlier start age, or to buy it as a QLAC.',
+    ])
+  })
+
   it('renders the copy for both annuity kinds', async () => {
     await mount([
       {

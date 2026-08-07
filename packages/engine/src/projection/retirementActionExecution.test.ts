@@ -2237,7 +2237,11 @@ describe('named Roth conversion RMD-reserve evidence in the annual ledger', () =
       name: id,
       ownerPersonId: 'p1',
       annualReturnPct: null,
-      startAge: 95, // no payment in 2026; only the premium leaves the IRA
+      // The owner is 73 in 2026, so no payment lands in the year under test and
+      // only the premium leaves the IRA. 74 rather than a later age because a
+      // qualified purchase that is not a QLAC may not defer past the owner's
+      // required beginning date, which for a 1953 birth is the year they turn 74.
+      startAge: 74,
       monthlyAmount: 1_000,
       colaPct: 0,
       taxablePct: 100,

@@ -52,7 +52,12 @@ function qualifiedAnnuity(
     name: 'Qualified annuity',
     ownerPersonId,
     annualReturnPct: null,
-    startAge: 90,
+    // Immediate: a qualified purchase that is not a QLAC may not defer past the
+    // owner's required beginning date, and this donor's has gone by, so the
+    // contract must commence in its purchase year. It pays nothing regardless,
+    // since `monthlyAmount` is 0 — only the premium leaving the pool matters
+    // here.
+    startAge: purchaseYear - Number(DONOR_DOB.slice(0, 4)),
     monthlyAmount: 0,
     colaPct: 0,
     taxablePct: 100,
