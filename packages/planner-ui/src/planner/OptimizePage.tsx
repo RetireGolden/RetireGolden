@@ -142,10 +142,12 @@ export function OptimizePage() {
   // Precondition, checked before any dispatch: the engine admits a plan
   // carrying recorded retirement actions — identity-bearing or migrated
   // aggregate — and nets their committed balance movement into the LP's
-  // buckets, but the LP still has no term for a committed conversion's
-  // income. This page's own check is the thing that declines to run: it
-  // states the condition rather than ranking schedules against an
-  // understated tax year.
+  // buckets. The predicate below is broader than any one engine limit: it
+  // trips on ANY recorded action, and this page's own check is the thing
+  // that declines to run, because the LP does not yet price every
+  // consequence of a committed action (a committed conversion's income has
+  // no term). The page states the condition rather than ranking schedules
+  // against a mispriced tax year.
   const unsupportedActionReasons = useMemo(
     () => optimizerUnsupportedRetirementActions(plan),
     [plan],
