@@ -20,16 +20,16 @@
  *
  * WHAT HOLDS THE PRECONDITION UP is stated in full at the predicate in
  * `OptimizePage.tsx`, and it is this page's own decision, not an engine limit:
- *   1. The telling is unwritten. The post-processor drops a named-conversion
- *      year from the emitted schedule, so a recommendation for an
- *      action-bearing plan would be silent about exactly the years the user
- *      recorded, and nothing here explains an answer sitting on top of a plan's
- *      own named requests.
- *   2. One cash-side booking is still one-sided, for a NAMED gift routed out of
- *      an RMD.
- * The strings below carry the first, which is true of every plan this
- * predicate ever sees. The second is true of a subset, and copy that stated it
- * for all of them would describe most households' plans wrongly.
+ * the telling is unwritten. The post-processor drops a named-conversion year
+ * from the emitted schedule, so a recommendation for an action-bearing plan
+ * would be silent about exactly the years the user recorded, and nothing here
+ * explains an answer sitting on top of a plan's own named requests. A second
+ * reason used to stand beside it — "one cash-side booking is still one-sided,
+ * for a NAMED gift routed out of an RMD" — and it is dead too: PR #238's
+ * `forcedDistributionCashDiversion` takes the gross routed gift off the LP's
+ * cash constant, so the solve no longer spends given-away dollars. The strings
+ * below carry the one reason that remains, which is true of every plan this
+ * predicate ever sees.
  *
  * Finding-framed per the decision-support boundary (guarded by
  * app/src/boundaryLanguage.test.ts): it reports what this page presents, what
