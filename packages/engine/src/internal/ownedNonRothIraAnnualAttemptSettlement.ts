@@ -706,6 +706,80 @@ export function ownedNonRothIraAnnualSettlementRollbackOwner(
 }
 
 /**
+ * The three source-series refusals that say "this year contains an event no
+ * stage characterizes yet", as opposed to "a basis figure is wrong".
+ *
+ * Every one of them is raised while the source series is still NORMALIZING the
+ * year -- before a single basis figure is computed, and therefore before any
+ * claim about an owner's numerator has been made or could have been corrupted.
+ * `annuityStageRequired` says a premium left the captured pool for a contract
+ * the replay does not carry; `exactActionStageRequired` says an exact action
+ * moved (or declared) owned-IRA dollars outside the characterizations the
+ * replay knows; `qcdStageRequired` says the year's charitable overlay is not in
+ * a shape the replay can attribute. All three are capability gaps in the
+ * engine, dated to one tax year's event inventory, and none of them is evidence
+ * about any owner's opening basis.
+ *
+ * Every other rollback reason is. A replay whose arithmetic, balance chain,
+ * coverage, identity, or carryforward failed IS evidence that the figure the
+ * projection is carrying for that owner cannot be trusted, and a reason raised
+ * outside the replay entirely (an assumption cycle, a throw, a binding
+ * mismatch) is evidence that the settlement machinery could not be run at all.
+ * Those stay permanent, which is why this set is a deliberate allow-list of
+ * three names rather than a test on where the issue came from.
+ */
+const YEAR_SCOPED_STAGE_REQUIRED_ISSUE_KINDS: ReadonlySet<string> = new Set([
+  'annuityStageRequired',
+  'exactActionStageRequired',
+  'qcdStageRequired',
+])
+
+export interface OwnedNonRothIraAnnualSettlementRollbackDisqualification {
+  /** The one owner the rollback is evidence about, or null for the household. */
+  readonly ownerPersonId: string | null
+  /**
+   * `thisTaxYear` disqualifies only the year that rolled back: the year falls
+   * back to the legacy ledger, the fallback pass commits its own coherent basis
+   * for every owner, and the next year attempts settlement from that figure
+   * exactly as it would from any other plan seed. `remainingProjection` is the
+   * historical permanent fail-closed disposition.
+   */
+  readonly horizon: 'thisTaxYear' | 'remainingProjection'
+}
+
+/**
+ * How far a rolled-back settlement disqualifies, and whom.
+ *
+ * The horizon is the question the owner alone could not answer. A permanent
+ * latch is the right answer to "this owner's basis numerator is untrustworthy
+ * from now on" and the wrong answer to "this year contains an annuity purchase"
+ * -- the second is a fact about 2028, not about 2029, and under one shared
+ * latch a single annuity year silently withheld every later year's settled
+ * figures for the rest of the projection.
+ *
+ * The two axes are independent and both are read from the same issue: a
+ * stage-required refusal that names an owner disqualifies that owner for that
+ * year, and one that names nobody disqualifies the household for that year.
+ */
+export function ownedNonRothIraAnnualSettlementRollbackDisqualification(
+  result: Readonly<OwnedNonRothIraAnnualSettlementResult>,
+  knownOwnerPersonIds: ReadonlySet<string>,
+): Readonly<OwnedNonRothIraAnnualSettlementRollbackDisqualification> {
+  const ownerPersonId = ownedNonRothIraAnnualSettlementRollbackOwner(
+    result,
+    knownOwnerPersonIds,
+  )
+  const kind = result.status === 'rolledBack' ? result.issue?.kind : undefined
+  return deepFreeze({
+    ownerPersonId,
+    horizon: typeof kind === 'string' &&
+      YEAR_SCOPED_STAGE_REQUIRED_ISSUE_KINDS.has(kind)
+      ? 'thisTaxYear' as const
+      : 'remainingProjection' as const,
+  })
+}
+
+/**
  * Privately settles a complete contiguous replay against bounded simulator
  * attempts. The callback must return the one current-year result whose runtime
  * sources, mutation ordinal, and end balances exactly match the active

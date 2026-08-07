@@ -296,6 +296,71 @@ describe('simulator owned-IRA settlement rollback integration', () => {
     expect(seededBasisDollars(TAX_YEAR + 2, 'p1')).toBe(p1Carryforward)
   })
 
+  it('scopes a household stage-required refusal to the year that raised it', () => {
+    // No owner named, so the disposition is household-wide -- but the refusal
+    // is a statement about TAX_YEAR's event inventory, not about anyone's
+    // numerator, so the horizon is one year. TAX_YEAR + 1 attempts settlement
+    // again and both owners are reseeded from its exact-cent carryforward.
+    controller.reason = 'contiguousReplayBlocked'
+    controller.issue = {
+      kind: 'annuityStageRequired',
+      detail: 'synthetic household stage-required refusal',
+      taxYear: TAX_YEAR,
+    }
+    controller.rollbackYears = [TAX_YEAR]
+    const plan = twoOwnerPlan('settlement-rollback-year-scoped-household')
+
+    simulatePlan(validatePlan(plan), {
+      startYear: TAX_YEAR,
+      horizonEndYear: TAX_YEAR + 2,
+      taxCalculator: createFlatTaxCalculator(0),
+    })
+
+    expect(settledYears()).toEqual([TAX_YEAR, TAX_YEAR + 1, TAX_YEAR + 2])
+    for (const owner of ['p1', 'p2']) {
+      const carryforward = committedCarryforwardDollars(TAX_YEAR + 1, owner)
+      expect(carryforward).toBeGreaterThan(0)
+      expect(seededBasisDollars(TAX_YEAR + 2, owner)).toBe(carryforward)
+    }
+  })
+
+  it.each([
+    'annuityStageRequired',
+    'exactActionStageRequired',
+    'qcdStageRequired',
+  ] as const)('scopes an owner-named %s refusal to that owner-year', (kind) => {
+    // Both axes at once: the issue names p1, so only p1 is disqualified, and the
+    // kind is stage-required, so only TAX_YEAR is. p1 is reseeded from
+    // TAX_YEAR + 1's own carryforward, which the permanent latch would have
+    // refused to apply for the rest of the projection.
+    controller.reason = 'contiguousReplayBlocked'
+    controller.issue = {
+      kind,
+      detail: `synthetic owner-named ${kind} refusal`,
+      taxYear: TAX_YEAR,
+      ownerPersonId: 'p1',
+    }
+    controller.rollbackYears = [TAX_YEAR]
+    const plan = twoOwnerPlan(`settlement-rollback-year-scoped-${kind}`)
+
+    const result = simulatePlan(validatePlan(plan), {
+      startYear: TAX_YEAR,
+      horizonEndYear: TAX_YEAR + 2,
+      taxCalculator: createFlatTaxCalculator(0),
+    })
+
+    expect(settledYears()).toEqual([TAX_YEAR, TAX_YEAR + 1, TAX_YEAR + 2])
+    const p1Carryforward = committedCarryforwardDollars(TAX_YEAR + 1, 'p1')
+    expect(p1Carryforward).toBeGreaterThan(0)
+    expect(seededBasisDollars(TAX_YEAR + 2, 'p1')).toBe(p1Carryforward)
+    // The withheld-publication window is one year wide: TAX_YEAR rolled back and
+    // publishes nothing, and every later year publishes the joined replay again.
+    expect(Object.hasOwn(result.years[0]!, 'ownedNonRothIraAnnualReplay'))
+      .toBe(false)
+    expect(result.years.slice(1).every((year) =>
+      Object.hasOwn(year, 'ownedNonRothIraAnnualReplay'))).toBe(true)
+  })
+
   it('stays household-wide when the named owner is not a basis owner', () => {
     // An issue that names someone the projection holds no basis pool for is
     // not evidence about a real owner, so it must not narrow the disposition.

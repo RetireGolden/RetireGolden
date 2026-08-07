@@ -187,7 +187,13 @@ describe('simulator committed owned non-Roth IRA annual replay publication', () 
         .some((owner) => owner.ownerPersonId === 'p1'))).toBe(true)
   })
 
-  it('keeps a prior publication but never publishes a blocked suffix', () => {
+  it('withholds publication for the blocked year only and resumes the next', () => {
+    // The annuity premium leaves the captured owned-IRA pool, so the source
+    // series refuses TAX_YEAR + 1 with `annuityStageRequired` and that year
+    // prices on the legacy ledger. What the refusal is NOT is evidence about
+    // p1's basis numerator, so it disqualifies the year and not the projection:
+    // TAX_YEAR + 2 attempts settlement again and publishes. Under the former
+    // sticky latch this suffix was withheld for the rest of the horizon.
     const plan = singlePersonPlan({ planningAge: 62 })
     plan.id = 'published-no-suffix-reseed'
     plan.accounts = [
@@ -215,8 +221,30 @@ describe('simulator committed owned non-Roth IRA annual replay publication', () 
 
     expect(years[0]!.ownedNonRothIraAnnualReplay).toBeDefined()
     expect(years[1]!).not.toHaveProperty('ownedNonRothIraAnnualReplay')
-    expect(years[2]!).not.toHaveProperty('ownedNonRothIraAnnualReplay')
+    expect(years[2]!.ownedNonRothIraAnnualReplay).toMatchObject({
+      status: 'committedOwnedNonRothIraAnnualReplay',
+      taxYear: TAX_YEAR + 2,
+    })
     expect(years[1]!.balances.ira).toBeCloseTo(95, 12)
+
+    // THE SEAM, TO THE CENT. The fallback year committed p1's basis through the
+    // same `iraBasisByOwner` the settled path writes, and TAX_YEAR + 2's replay
+    // opens on exactly that figure -- as a plan seed, which is what every annual
+    // replay's opening basis is. Nothing here is drawn from the discarded
+    // exact-cent replay of the blocked year.
+    const settledOpening = years[2]!.ownedNonRothIraAnnualReplay!
+      .annualReplay.ownerReplays[0]!
+    expect(settledOpening).toMatchObject({
+      ownerPersonId: 'p1',
+      openingBasisSource: 'planSeed',
+    })
+    const priorSettledCarryforward = years[0]!.ownedNonRothIraAnnualReplay!
+      .annualReplay.ownerReplays[0]!.nextYearOpeningBasisAmount
+    // The blocked year consumed no basis (no distribution, only the premium
+    // transfer), so the legacy pass carried the prior year's exact figure
+    // forward untouched and the two agree cent for cent across the seam.
+    expect(settledOpening.openingBasisAmount).toBe(priorSettledCarryforward)
+    expect(settledOpening.openingBasisAmount).toBe(1_000)
   })
 
   it('publishes the depletion commit but not later no-settlement years', () => {

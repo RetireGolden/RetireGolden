@@ -132,7 +132,7 @@ import { type SimulatorAnnualRetirementRuntimeOccurrence } from './annualRetirem
 import type { SimulatorAnnualPassStateBindings } from './annualPassTransaction.js'
 import {
   captureOwnedNonRothIraAnnualAttemptStateEvidence,
-  ownedNonRothIraAnnualSettlementRollbackOwner,
+  ownedNonRothIraAnnualSettlementRollbackDisqualification,
   runOwnedNonRothIraAnnualSettlementAttempts,
   type OwnedNonRothIraAnnualSettlementEffect,
 } from '../internal/ownedNonRothIraAnnualAttemptSettlement.js'
@@ -1050,16 +1050,37 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
 
   const years: YearResult[] = []
   // Owned-IRA annual settlement disposition. A rolled-back year commits no
-  // carryforward, so the owner's `iraBasisByOwner` entry keeps an opening
-  // figure the year's distributions already consumed: that owner's numerator
-  // is untrustworthy from then on, and permanently ceasing to claim or publish
-  // a settled figure for them is the right fail-closed disposition.
+  // carryforward, so the exact-cent figure the replay derived for that owner is
+  // discarded and the owner keeps whatever the legacy fallback pass wrote. When
+  // the rollback is evidence that the owner's numerator itself is wrong, that
+  // owner's figure is untrustworthy from then on, and permanently ceasing to
+  // claim or publish a settled figure for them is the right fail-closed
+  // disposition.
   //
   // The failure is per owner, though, and so is the remedy. `iraBasisByOwner`,
   // the committed carryforwards, and the replay issues are all owner-keyed, so
   // a rollback that names an owner disqualifies only that owner. A rollback
   // that names nobody is not evidence about any one owner and must stay
   // household-wide fail-closed, exactly as it was before.
+  //
+  // The HORIZON is a second axis, and it is not the owner's. A stage-required
+  // refusal -- an annuity premium leaving the pool, an exact action the replay
+  // does not characterize, a charitable overlay it cannot attribute -- is a
+  // statement about ONE YEAR'S event inventory, raised before the replay
+  // computes any basis figure at all. It disqualifies that year, which then
+  // falls back to the legacy ledger, and the next year retries clean. What
+  // makes the chain coherent across that seam is that the fallback pass commits
+  // its own basis for the year through the same `iraBasisByOwner` the settled
+  // path writes, and that every year's replay opens on that map as a plan seed
+  // (`openingBasisSource` is `planSeed` in every annual replay, because each
+  // year settles a one-year window). A fallback year's committed write-back is
+  // therefore the next year's opening basis on exactly the terms the projection
+  // start's own seed is -- neither is itself a settled figure, and the
+  // publication never claimed otherwise.
+  //
+  // `ownedNonRothIraAnnualSettlementRollbackDisqualification` is what draws that
+  // line, and it draws it by an allow-list of three issue kinds rather than by
+  // provenance: everything else stays permanent.
   const ownedNonRothIraSettlementRolledBackOwners = new Set<string>()
   let ownedNonRothIraSettlementRolledBackHousehold = false
   const ownedNonRothIraSettlementOwnerEnabled = (ownerId: string): boolean =>
@@ -8469,14 +8490,24 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           }
         }
       } else {
-        const rolledBackOwner = ownedNonRothIraAnnualSettlementRollbackOwner(
-          settlement,
-          new Set(iraBasisByOwner.keys()),
-        )
-        if (rolledBackOwner === null) {
-          ownedNonRothIraSettlementRolledBackHousehold = true
-        } else {
-          ownedNonRothIraSettlementRolledBackOwners.add(rolledBackOwner)
+        const disqualification =
+          ownedNonRothIraAnnualSettlementRollbackDisqualification(
+            settlement,
+            new Set(iraBasisByOwner.keys()),
+          )
+        // A year-scoped disqualification writes no latch at all. The year it
+        // names is already falling back below -- that IS the disqualification --
+        // and leaving both latches untouched is what lets the next year attempt
+        // settlement again. The withheld-publication window is one year wide
+        // rather than the rest of the horizon.
+        if (disqualification.horizon === 'remainingProjection') {
+          if (disqualification.ownerPersonId === null) {
+            ownedNonRothIraSettlementRolledBackHousehold = true
+          } else {
+            ownedNonRothIraSettlementRolledBackOwners.add(
+              disqualification.ownerPersonId,
+            )
+          }
         }
         const permission = linkedGroupPermissionForAttempt([])
         settledAnnualPass = runPostContributionAnnualPass(
