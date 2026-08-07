@@ -4,11 +4,17 @@
  * plan changed the stored document. The sentences are asserted verbatim, not
  * derived from the copy module, so a copy edit has to be made deliberately in
  * two places rather than sliding through under a passing test.
+ *
+ * Plus the workspace load path that carries it — including the load error, the
+ * provider's other per-document state — because the two are told apart by the
+ * same mechanism (a planId tag read during render) and the gated store that
+ * holds a switch mid-flight lives here.
  */
 import 'fake-indexeddb/auto'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
+import { MemoryRouter } from 'react-router'
 import { IDBFactory } from 'fake-indexeddb'
 
 import type { PlanLoadRepair } from '@retiregolden/engine/model/migrations'
@@ -239,15 +245,37 @@ function storedAs(id: string, name: string, doc: Record<string, unknown>): Recor
   return { ...doc, id, name }
 }
 
+/**
+ * A stored record that exists and will not open: a schema version from the
+ * future. Deliberately not the missing-record case, whose 'not_object' reason
+ * takes the softer "Plan not found" copy and, for an example id, would be
+ * auto-seeded instead of failing at all.
+ */
+function unreadableDoc(): Record<string, unknown> {
+  return { schemaVersion: 9_999 }
+}
+
+/** A clean, openable document under the given id and name. */
+function openableDoc(id: string, name: string): Record<string, unknown> {
+  return storedAs(id, name, JSON.parse(JSON.stringify(createSamplePlan())) as Record<string, unknown>)
+}
+
+const errorHeading = () => container.querySelector('.empty-state h2')?.textContent ?? null
+const planName = () => container.querySelector('[data-testid="plan-name"]')?.textContent ?? null
+const skeleton = () => container.querySelector('.skeleton[aria-label="Loading plan"]')
+
 describe('the workspace load path', () => {
   async function mountWorkspace(doc: unknown) {
     await act(async () => {
       root.render(
-        <PlanStoreProvider store={storeHolding({ p1: doc }).store}>
-          <PlanProvider planId="p1">
-            <PlanRepairNotice />
-          </PlanProvider>
-        </PlanStoreProvider>,
+        // The failure card links home, so the provider needs a router around it.
+        <MemoryRouter>
+          <PlanStoreProvider store={storeHolding({ p1: doc }).store}>
+            <PlanProvider planId="p1">
+              <PlanRepairNotice />
+            </PlanProvider>
+          </PlanStoreProvider>
+        </MemoryRouter>,
       )
     })
   }
@@ -309,6 +337,12 @@ describe('the workspace load path', () => {
     expect(container.querySelector('[data-testid="plan-name"]')?.textContent).toBe('Clean plan')
   })
 
+  it('shows the failure card for a plan that cannot be opened', async () => {
+    await mountWorkspace(unreadableDoc())
+    expect(errorHeading()).toBe('This plan could not be opened')
+    expect(container.querySelector('details')?.textContent).toContain('newer_than_app')
+  })
+
   it('seeds a missing library demo with no notice over it', async () => {
     // The auto-seed path builds the plan from the registry rather than reading
     // one, so there is nothing to report — and nothing from a previous plan may
@@ -329,5 +363,93 @@ describe('the workspace load path', () => {
     // skeleton, not children, until a plan is adopted.
     expect(container.querySelector('[data-testid="plan-name"]')?.textContent).toBe('Example couple')
     expect(container.querySelector('.plan-repair-notice')).toBeNull()
+  })
+})
+
+describe('the workspace load failure', () => {
+  const tree = (store: PlanStore, planId: string) => (
+    // The failure card links home, so the provider needs a router around it.
+    <MemoryRouter>
+      <PlanStoreProvider store={store}>
+        <PlanProvider planId={planId}>
+          <PlanNameProbe />
+        </PlanProvider>
+      </PlanStoreProvider>
+    </MemoryRouter>
+  )
+
+  it('clears the failure when the household picks a plan that opens', async () => {
+    // The defect this pins: nothing cleared the error and the error branch
+    // rendered ahead of everything else, so one plan that would not open left
+    // "This plan could not be opened" over every plan chosen afterwards — the
+    // household's only way out was a full page reload.
+    const { store } = storeHolding({ p1: unreadableDoc(), p2: openableDoc('p2', 'Clean plan') })
+    await act(async () => root.render(tree(store, 'p1')))
+    await settle()
+    expect(errorHeading()).toBe('This plan could not be opened')
+
+    await act(async () => root.render(tree(store, 'p2')))
+    await settle()
+    expect(errorHeading()).toBeNull()
+    expect(planName()).toBe('Clean plan')
+  })
+
+  it('shows no failure card while the next plan is still loading', async () => {
+    // The switch away is instant; the next load is not. An error tagged for the
+    // plan being left cannot speak for the one arriving, so this window shows
+    // the skeleton — and specifically not the plan still held in state, which
+    // the household stopped looking at when the failure card replaced it.
+    const { store, release } = storeHolding(
+      {
+        p0: openableDoc('p0', 'First plan'),
+        p1: unreadableDoc(),
+        p2: openableDoc('p2', 'Clean plan'),
+      },
+      'p2',
+    )
+    await act(async () => root.render(tree(store, 'p0')))
+    await settle()
+    expect(planName()).toBe('First plan')
+
+    await act(async () => root.render(tree(store, 'p1')))
+    await settle()
+    expect(errorHeading()).toBe('This plan could not be opened')
+
+    // p2 is still in flight here: the switch has started and nothing has arrived.
+    await act(async () => root.render(tree(store, 'p2')))
+    expect(errorHeading()).toBeNull()
+    expect(planName()).toBeNull()
+    expect(skeleton()).not.toBeNull()
+
+    await release()
+    expect(errorHeading()).toBeNull()
+    expect(planName()).toBe('Clean plan')
+  })
+
+  it('keeps the failure card across a re-render of the same failed plan', async () => {
+    const { store } = storeHolding({ p1: unreadableDoc() })
+    await act(async () => root.render(tree(store, 'p1')))
+    await settle()
+    expect(errorHeading()).toBe('This plan could not be opened')
+
+    await act(async () => root.render(tree(store, 'p1')))
+    await settle()
+    expect(errorHeading()).toBe('This plan could not be opened')
+  })
+
+  it('clears the failure when the same plan is reloaded and opens', async () => {
+    // A store swap reloads the same planId (see PlanStoreProvider), so the tag
+    // still matches and cannot be what clears this — the adoption is. Without
+    // it, a host that fixed the record would keep being told it was broken.
+    const broken = storeHolding({ p1: unreadableDoc() }).store
+    const fixed = storeHolding({ p1: openableDoc('p1', 'Repaired record') }).store
+    await act(async () => root.render(tree(broken, 'p1')))
+    await settle()
+    expect(errorHeading()).toBe('This plan could not be opened')
+
+    await act(async () => root.render(tree(fixed, 'p1')))
+    await settle()
+    expect(errorHeading()).toBeNull()
+    expect(planName()).toBe('Repaired record')
   })
 })

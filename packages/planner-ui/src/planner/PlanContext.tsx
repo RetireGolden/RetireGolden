@@ -23,25 +23,39 @@ import { usePlannerEdition } from './editionContext'
 const AUTOSAVE_MS = 600
 
 /**
- * Mount with key={planId}: a plan switch remounts the provider, so initial
- * state is naturally "loading" and the load effect only sets state
- * asynchronously.
+ * Reused across a planId change, not remounted. Both callers (PlanWorkspace and
+ * ReportPage) render this from a route whose `:planId` param changes, and
+ * neither passes a key, so a plan switch updates the prop and leaves every piece
+ * of state exactly as the previous plan left it. State that describes one
+ * particular document — the load repairs, the load error — is therefore tagged
+ * with the plan it describes and read back only on a tag match, so a previous
+ * plan's news cannot sit over the next plan for the whole fetch. Tagging also
+ * keeps the reset out of the load effect's body, where a synchronous setState is
+ * what react-hooks/set-state-in-effect forbids. `plan`, `saveState`, `issues`,
+ * and any pending autosave do still carry across; see the load effect.
  */
 export function PlanProvider({ planId, children }: { planId: string; children: ReactNode }) {
   const store = usePlanStore()
   const readOnly = useWorkspaceReadOnly()
   const { homeLabel } = usePlannerEdition()
   const [plan, setPlan] = useState<Plan | null>(null)
-  const [loadError, setLoadError] = useState<string | null>(null)
+  // Why the load failed, and for which plan. Tagged for the same reason the
+  // repair list is: this provider is reused across a planId change, so an
+  // untagged error would keep "This plan could not be opened" over the next plan
+  // for its whole fetch — a household that opened a broken plan and then picked a
+  // good one was told the good one could not be opened, permanently, because
+  // nothing ever cleared it. Read during render on a tag match rather than reset
+  // from inside the load effect.
+  const [loadError, setLoadError] = useState<{ planId: string; reason: string } | null>(null)
   const [saveState, setSaveState] = useState<SaveState>('loading')
   const [issues, setIssues] = useState<string[]>([])
   // What the load changed in the stored document. Set from the load result and
   // never from an edit, so the notice describes the document as it was found.
   //
   // Tagged with the plan it describes rather than cleared on a switch. This
-  // provider stays mounted across a planId change (the workspace route reuses
-  // the component, whatever the mount-with-key note above hopes for), so an
-  // untagged list would sit over the next plan for the whole fetch — as would
+  // provider stays mounted across a planId change (see the note above the
+  // component), so an untagged list would sit over the next plan for the whole
+  // fetch — as would
   // its dismissal, which is the same state. Tagging makes that unrepresentable
   // instead of merely handled, and it reads during render rather than resetting
   // state from inside the load effect.
@@ -61,14 +75,18 @@ export function PlanProvider({ planId, children }: { planId: string; children: R
 
   useEffect(() => {
     let cancelled = false
-    // Every adoption states its own repairs, so no path can inherit a previous
-    // plan's list by saying nothing. `plan`, `loadError`, `saveState`, `issues`,
-    // and any pending autosave all still carry across a planId change, which is
-    // this provider's pre-existing behavior and not this change's to move.
+    // Every adoption states its own repairs and its own (absent) error, so no
+    // path can inherit a previous load's by saying nothing. Clearing the error
+    // here is what the tag alone cannot do: a reload of the *same* planId that
+    // failed once and now succeeds keeps a matching tag, so the card would
+    // outlive the plan it described. `plan`, `saveState`, `issues`, and any
+    // pending autosave all still carry across a planId change, which is this
+    // provider's pre-existing behavior and not this change's to move.
     const adopt = (loaded: Plan, repairs: readonly PlanLoadRepair[]) => {
       setPlan(loaded)
       latestValid.current = loaded
       setLoadRepairs({ planId, repairs })
+      setLoadError(null)
       setSaveState('saved')
     }
     void (async () => {
@@ -99,7 +117,7 @@ export function PlanProvider({ planId, children }: { planId: string; children: R
           }
         }
       }
-      setLoadError(r.reason)
+      setLoadError({ planId, reason: r.reason })
     })()
     return () => {
       cancelled = true
@@ -225,12 +243,15 @@ export function PlanProvider({ planId, children }: { planId: string; children: R
     }
   }, [flushPendingSave])
 
-  if (loadError) {
+  // An error tagged for a different plan belongs to the plan being navigated
+  // away from, so it says nothing about this one.
+  const staleError = loadError !== null && loadError.planId !== planId
+  if (loadError !== null && !staleError) {
     // 'not_object' = no record in this browser (cross-device link, stale
     // bookmark). Everything else = a stored plan that exists but failed to
     // open (version/migration mismatch) — telling that user "not stored here"
     // would be wrong and alarming.
-    const missing = loadError === 'not_object'
+    const missing = loadError.reason === 'not_object'
     return (
       <div className="card empty-state">
         <h2>{missing ? 'Plan not found' : 'This plan could not be opened'}</h2>
@@ -260,12 +281,18 @@ export function PlanProvider({ planId, children }: { planId: string; children: R
         </div>
         <details className="ss-explainer">
           <summary>Technical details</summary>
-          <p className="muted">Load failed with reason code: {loadError}</p>
+          <p className="muted">Load failed with reason code: {loadError.reason}</p>
         </details>
       </div>
     )
   }
-  if (!plan) {
+  // A stale tag means the switch away from the failed plan has started and the
+  // next load has not resolved: the skeleton, same as any other unresolved load.
+  // Not the plan still sitting in `plan` — a plan that carried across generally
+  // does stay on screen while the next one loads (pre-existing, and left alone),
+  // but here the household was last shown the error card, not that plan, so
+  // putting it back would resurrect a plan they had already navigated away from.
+  if (staleError || !plan) {
     return <div className="skeleton" style={{ height: '14rem', marginTop: '1rem' }} aria-label="Loading plan" />
   }
   const contextValue: PlanContextValue = { plan, update, discardPendingSave, saveState, issues }
