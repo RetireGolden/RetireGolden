@@ -39,7 +39,9 @@ export function PlanRepairNotice() {
           <li key={`${repair.kind}:${repair.accountId}:${index}`}>{planRepairMessage(repair, plan)}</li>
         ))}
       </ul>
-      <div className="picker-actions" style={{ margin: 0 }}>
+      {/* Spacing lives in planner.css (`.plan-repair-notice .picker-actions`);
+          an inline style here would win over it and strand the rule. */}
+      <div className="picker-actions">
         <button type="button" className="btn btn-secondary btn-small" onClick={dismiss}>
           {PLAN_REPAIR_NOTICE_DISMISS}
         </button>
