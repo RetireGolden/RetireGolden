@@ -433,7 +433,7 @@ const actionReasonRegistry = {
   'optimizer-retirement-action-unsupported': {
     predicate: 'optimizerUnsupportedRetirementActions',
     outcome: 'unsupported',
-    message: 'The optimizer prices conversions against aggregate account balances, which do not reflect what a recorded retirement action moves.',
+    message: 'This plan records retirement actions, and the optimizer publishes no recommendation for a plan that records them.',
   },
 } as const satisfies Readonly<Record<string, RegistryEntry>>
 
