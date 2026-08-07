@@ -7,6 +7,7 @@ import { createEmptyPlan, parsePlan, type Account, type IncomeStream, type Plan 
 import { packForYear } from '../../params/index.js'
 import { createFlatTaxCalculator } from '../../projection/flatTax.js'
 import { simulatePlan } from '../../projection/simulate.js'
+import type { OptimizerYearProbe } from '../../projection/types.js'
 import { describeRule } from '../describeRule.js'
 
 let counter = 0
@@ -246,6 +247,7 @@ const REQUIRED_DISTRIBUTION = IRA_BALANCE / 26.5
 const GIFT = 5_000
 
 describeRule('irc-408-d-8-D-projection-qcd-after-pro-rata', {
+  note: 'the pro-rata ordering, with the ceiling not yet binding',
   readings: {
     // 408(d)(8)(D): the gift is deemed to consist of includible dollars, so it
     // leaves section 72 entirely and the whole 20 percent basis fraction lands
@@ -274,6 +276,96 @@ describeRule('irc-408-d-8-D-projection-qcd-after-pro-rata', {
     expect(year.qcd).toBeCloseTo(GIFT, 6)
     expect(year.magi).toBeCloseTo(produced, 6)
     expect(year.magi).not.toBeCloseTo(accepted, 6)
+  })
+})
+
+// --------------------------------------------------------------------------
+// The same record's other half: the ceiling the offset is measured against
+// --------------------------------------------------------------------------
+
+// A 1,000,000 dollar IRA at age 76 distributes 1,000,000 / 23.7 = 42,194.09,
+// of which 20 percent is basis. The gift is LARGER than the taxable part of
+// that requirement (33,755.27), which is what the fixture above deliberately
+// avoids: here the engine's `min(qcdFromRmd, ownedIraRmdTotal − rmdNontaxable)`
+// ceiling binds and clamps away 6,244.73 of gift the statute would still have
+// excluded, on top of the pro-rata ordering error. The statutory ceiling is the
+// aggregate includible amount across all of the owner's IRAs treated as one
+// contract — 800,000 dollars here — so it is nowhere near binding.
+const CEILING_IRA_BALANCE = 1_000_000
+const CEILING_IRA_BASIS = 200_000
+const CEILING_REQUIRED_DISTRIBUTION = CEILING_IRA_BALANCE / 23.7
+const CEILING_GIFT = 40_000
+/** What the household actually keeps: 42,194.09 − 40,000. */
+const CEILING_RESIDUAL_DISTRIBUTION = CEILING_REQUIRED_DISTRIBUTION - CEILING_GIFT
+
+describeRule('irc-408-d-8-D-projection-qcd-after-pro-rata', {
+  note: 'the ceiling the offset is capped at, once it binds',
+  readings: {
+    // Statute: the whole gift is deemed pre-tax and returns no basis, so only
+    // the residual distribution pro-rates — 2,194.09 × 0.8.
+    statuteTaxesTheResidualDistributionsPreTaxShare: CEILING_RESIDUAL_DISTRIBUTION * 0.8,
+    // Engine: pro-rate the whole 42,194.09 (8,438.82 of basis returned,
+    // 33,755.27 taxable), then subtract an offset capped at that same
+    // 33,755.27. Nothing is left, so the year reports no ordinary income at all.
+    engineClampsTheOffsetAtTheRequirementsTaxableShare: 0,
+  },
+  accepted: 'statuteTaxesTheResidualDistributionsPreTaxShare',
+  produced: 'engineClampsTheOffsetAtTheRequirementsTaxableShare',
+}, ({ accepted, produced }) => {
+  it('reports no income at all on a gift the statute taxes, and burns the basis', () => {
+    const plan = soloPlan('1950-01-01', null) // 76 in 2026
+    // Spending is funded entirely from cash so the IRA distributes the
+    // requirement and nothing else. A discretionary draw on top would add
+    // ordinary income of its own and neither reading would be about the gift.
+    plan.expenses.baseAnnual = 0
+    plan.expenses.healthcare = {
+      pre65MonthlyPremiumPerPerson: 0,
+      applyAcaCredit: false,
+      medicareExtrasMonthlyPerPerson: 0,
+    }
+    plan.accounts = [
+      cash(200_000),
+      {
+        ...(traditionalIra(CEILING_IRA_BALANCE) as Extract<Account, { type: 'traditional' }>),
+        nondeductibleBasis: CEILING_IRA_BASIS,
+      },
+    ]
+    plan.strategies.qcdAnnual = CEILING_GIFT
+
+    // The probe is captured for its `rmdTaxable`, which is the only published
+    // figure that separates the requirement's taxable dollars from the basis it
+    // returned — and the basis is the half of this defect that outlives the
+    // year, so it has to be asserted rather than inferred from income.
+    const probes: OptimizerYearProbe[] = []
+    const result = simulatePlan(validate(plan), {
+      startYear: 2026,
+      taxCalculator: noTax,
+      captureOptimizerInputs: (probe) => probes.push(probe),
+    })
+    const year = result.years.find((y) => y.year === 2026)!
+    const probe = probes.find((p) => p.year === 2026)!
+
+    // Both readings rest on this requirement and this gift, and on the gift
+    // exceeding the taxable part of the requirement — which is the whole
+    // difference between this fixture and the one above.
+    expect(year.rmd).toBeCloseTo(CEILING_REQUIRED_DISTRIBUTION, 2)
+    expect(year.qcd).toBeCloseTo(CEILING_GIFT, 6)
+    expect(CEILING_GIFT).toBeGreaterThan(CEILING_REQUIRED_DISTRIBUTION * 0.8)
+
+    expect(year.magi).toBeCloseTo(produced, 6)
+    expect(year.magi).not.toBeCloseTo(accepted, 6)
+    // And the accepted reading is a real number rather than an artifact of the
+    // clamp: the statute taxes 1,755.27 here.
+    expect(accepted).toBeCloseTo(1_755.27, 2)
+
+    // THE BASIS HALF, which is the part that outlives the year. The statute
+    // spends 438.82 (20 percent of the residual); the engine spends 8,438.82,
+    // the pro-rata share of the whole gross requirement, and every later
+    // distribution is taxed on a base that basis is no longer there to shelter.
+    const basisConsumed = year.rmd - (probe.rmdTaxable ?? year.rmd)
+    expect(basisConsumed).toBeCloseTo(8_438.82, 2)
+    expect(basisConsumed).not.toBeCloseTo(CEILING_RESIDUAL_DISTRIBUTION * 0.2, 2)
+    expect(CEILING_RESIDUAL_DISTRIBUTION * 0.2).toBeCloseTo(438.82, 2)
   })
 })
 

@@ -253,8 +253,8 @@ export interface OptimizerYearProbe {
    * Balance movement a plan STRATEGY already applied this year, per account,
    * sorted by account id.
    *
-   * THREE producers, enumerated rather than described by a rule, so the field
-   * makes no universal claim it cannot enforce:
+   * FIVE producers, enumerated rather than described by a rule, so the field
+   * makes no universal claim it cannot enforce. Four debit and one credits:
    *   1. the aggregate `strategies.qcdAnnual` gift taken BEYOND the year's
    *      owned-IRA RMD (`simulate.ts`, the `beyondRmd` loop). The dollars leave
    *      the household; its charitable exclusion reaches the LP separately, as
@@ -266,24 +266,56 @@ export interface OptimizerYearProbe {
    *      was charged with no debit until this carried it.
    *   3. an annuity purchase premium, which leaves an LP bucket for a contract
    *      the LP does not carry.
+   *   4. a TIPS-ladder purchase, the same transfer in the same direction (its
+   *      own block says so): the price leaves an LP bucket for a ladder the LP
+   *      carries in no bucket, and the rungs pay back through
+   *      `incomes.tipsLadder`, already inside `exogenousCash`.
+   *   5. an elected pension lump sum, which rolls the commuted offer INTO the
+   *      named traditional account (`simulate.ts`, the `rolloverInflow` block)
+   *      while the pension stream stops paying. The LP already saw the stream
+   *      vanish out of `exogenousCash`; booking only that half made the solve
+   *      poorer than the household by the whole offer, for the rest of the
+   *      horizon.
    *
    * NOT reported here, and correctly so: the RMD-routed part of the same gift.
    * Those dollars leave through the RMD, which the LP re-decides as its own
-   * `wt` variable, so booking them here would debit the bucket twice.
+   * `wt` variable, so booking them here would debit the bucket twice. Their
+   * CASH side is `forcedDistributionCashDiversion` below, which is a different
+   * kind of correction — a credit the LP made on its own variable, not a
+   * movement this channel could report.
    *
-   * KNOWN AND ABSENT: an elected pension lump sum rolls money INTO a
-   * traditional account (`simulate.ts`, the `rolloverInflow` block) and the LP
-   * never sees that credit. It makes the solve poorer than the household rather
-   * than richer, and closing it is a separate slice.
+   * KNOWN AND ABSENT, and one class rather than a list: cash and value crossing
+   * between the household and an asset the LP carries in NO bucket, where there
+   * is no far side for it to book. A planned property sale's net proceeds
+   * (`propertySaleProceedsTotal` in `baseCashInflows`, and the legacy
+   * `expectedNetProceeds` deposit in the property-events block) — whose GAIN
+   * the LP is already charged, through `preWithdrawalCapitalResult` into
+   * `capitalGainsBase`; a permanent-life death benefit deposited by the
+   * insurance block; and a HECM draw (`hecmDraw`).
+   *
+   * ALL FOUR OMISSIONS — the two property-sale paths, the HECM draw, and
+   * the death benefit — RUN IN THE SAME DIRECTION: they make the solve POORER
+   * than the household, which is why omitting them is the conservative answer
+   * until the channel and the bucket that would carry them exist. The HECM draw
+   * is measured, not assumed — the draw funds the ledger's own spending while
+   * the probe reports `exogenousCash` of 0 and the full `spendingNeed`, so the
+   * LP funds the whole year out of buckets the household never had to touch.
+   * What is special about it is not its direction but its FIX: booking the
+   * draw's cash ALONE, with no bucket for the loan balance it creates and
+   * accrues, would flip the solve from poorer to richer and hand it a line of
+   * free money it never repays. That is why it needs a debt bucket rather than
+   * a cash credit, and why it cannot ride this channel. A separate slice.
    *
    * Read back off what each producer published — the year's runtime
-   * OCCURRENCES for the gift and the series (the occurrence is emitted at the
-   * mutation site for every account type, where the runtime APPLICATION is
-   * gated on `isAggregatedIra` and a SEPP may run on an employer plan), and a
-   * mutation-site capture for the annuity premium, whose occurrence is emitted
-   * only for a traditional funding source. Never re-derived from the strategy
-   * that asked, so a movement the arm capped, truncated, skipped as sub-cent,
-   * or could not fund reports what actually moved and nothing more.
+   * OCCURRENCES for the gift, the series and the lump sum (the occurrence is
+   * emitted at the mutation site for every account shape the block can reach,
+   * where the runtime APPLICATION is gated on `isAggregatedIra`: a SEPP may run
+   * on an employer plan and a lump sum may roll into one), and a mutation-site
+   * capture for the two purchases (the annuity premium's occurrence is emitted
+   * only for a traditional funding source, and a TIPS-ladder purchase publishes
+   * none at all). Never re-derived from the strategy or election that asked, so
+   * a movement the arm capped, truncated, skipped as sub-cent, or could not
+   * fund reports what actually moved and nothing more.
    */
   exogenousStrategyAccountMovement: readonly OptimizerExogenousStrategyAccountMovement[]
   /**
@@ -294,9 +326,11 @@ export interface OptimizerYearProbe {
    * Debiting it without this credit would make the solver poorer than the
    * household by the whole series payment, every year.
    *
-   * The other two producers deliver none, and the asymmetry is the point: a
-   * gift leaves, and an annuity premium buys a contract that pays back later
-   * through `incomes.annuity`, which is already inside `exogenousCash`.
+   * The other four producers deliver none, and the asymmetry is the point: a
+   * gift leaves, the two purchases buy instruments that pay back later through
+   * `incomes.annuity` and `incomes.tipsLadder` (both already inside
+   * `exogenousCash`), and a pension lump sum is a DIRECT rollover that never
+   * passes through the household's hands.
    */
   exogenousStrategyProceeds: number
   /**
@@ -317,6 +351,56 @@ export interface OptimizerYearProbe {
    * out of MAGI, which is most of what a QCD is for.
    */
   forcedDistributionOrdinaryIncomeExclusion: number
+  /**
+   * Cash the ledger's own inflows netted back OUT of this year's forced
+   * owned-IRA distribution because it went to a charity instead of the
+   * household: `qcdFromRmd + namedQcdRmdSatisfied`, capped at the forced total,
+   * zero in a year no gift routed out of an RMD.
+   *
+   * The sibling of `forcedDistributionOrdinaryIncomeExclusion` on the other
+   * side of the same gift, and the reason both are needed: an exclusion takes
+   * dollars out of INCOME, this takes the same dollars out of SPENDABLE MONEY,
+   * and a QCD routed out of an RMD does both. `baseCashInflows` books
+   * `+ rmdTotal − qcdFromRmd − namedQcdRmdSatisfied`; the LP re-decides the
+   * whole forced distribution as `wt` and credits it at 1.0, so without this
+   * the solve funds spending out of dollars the household gave away — and
+   * every gifted dollar it spends is a dollar it never withdrew, so the buckets
+   * it carries forward are too large as well.
+   *
+   * THE GROSS, not the taxable share, and deliberately not the same figure as
+   * the exclusion. Every routed dollar left the cash flow; only the includible
+   * share left income, so on an IRA carrying nondeductible basis the two
+   * differ. They cannot double-adjust: they are subtracted from different
+   * constants on different sides of the model.
+   *
+   * THE PREMISE IS STATUTORY AND THE COMPANION FIGURE IS AN APPROXIMATION —
+   * this field's contract asserts the first and must not be read as asserting
+   * the second. §408(d)(8)(D) is why a gross and an includible figure may
+   * legitimately differ at all: it deems the gift to consist of
+   * otherwise-includible dollars, so a partly-basis distribution does not
+   * exclude its whole gross. What the engine computes for the includible side
+   * is narrower than the statute — the statutory measure is the aggregate
+   * includible amount across ALL of the owner's individual retirement plans
+   * treated as one contract, and `qcdIncomeOffset` caps at the required
+   * distribution's own taxable share instead. Registered, with a produced
+   * fixture, on `taxRuleRegistry.ts`'s
+   * `irc-408-d-8-D-projection-qcd-after-pro-rata` — the record already holding
+   * the other half of the same departure, since one fix closes both. This field
+   * is the GROSS and is unaffected by that defect.
+   *
+   * The gift's BEYOND-RMD part is not here. Those dollars never entered
+   * `baseCashInflows`, so the LP never credited cash for them; they are on
+   * `exogenousStrategyAccountMovement` as a bucket debit instead.
+   *
+   * IT CAN TURN AN OPTIMAL SOLVE INFEASIBLE, and that is the term working. A
+   * gift-heavy plan whose exact ledger runs out of money used to return a
+   * confident schedule built on the gifted dollars; taking that cash back
+   * leaves some of those years with no way to fund spending at all, so the LP
+   * now reports infeasible where the ledger depletes — the LP agreeing with its
+   * own ledger instead of contradicting it. A sweep of the gift/spending/cash
+   * grid moved 7 of 24 cells from optimal to infeasible on that account.
+   */
+  forcedDistributionCashDiversion: number
   /**
    * Ordinary income a COMMITTED named Roth conversion put on this year's return
    * — the taxable (post-§408(d)(2) pro-rata) part of what the conversion

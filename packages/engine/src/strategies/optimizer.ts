@@ -132,6 +132,50 @@ export interface OptimizerYear {
    * QCD is for.
    */
   forcedDistributionOrdinaryIncomeExclusion?: number
+  /**
+   * Cash the LP must NOT keep for the forced distribution it re-decides as
+   * `wt`: the dollars of this year's RMD that a QCD sent to a charity instead
+   * of to the household. Nominal; default 0, which emits a byte-identical LP.
+   *
+   * The CASH mirror of `forcedDistributionOrdinaryIncomeExclusion` above, and
+   * needed beside it rather than instead of it. That term stops the LP charging
+   * TAX on gifted dollars; this stops it SPENDING them. The cash constraint
+   * credits `wt` at 1.0 while the exact ledger's `baseCashInflows` books the
+   * forced distribution and nets these dollars straight back out, so without
+   * this the solve funds spending from money the household gave away — and
+   * since a spent gift dollar is a dollar it never withdrew, the buckets it
+   * carries forward are inflated too. It is the GROSS routed amount where the
+   * exclusion is the includible share, so the two are different figures and
+   * neither can stand in for the other.
+   *
+   * Added to the cash constraint's right-hand side, which is where every
+   * exogenous cash fact in this model already lives — `exogenousCash`, the
+   * committed-action proceeds and the strategy proceeds are all subtracted from
+   * the same constant, and this is added to it. The solver must therefore raise
+   * these dollars somewhere real (another withdrawal, or less `save`) or the
+   * year is infeasible, which is exactly the household's position.
+   *
+   * SO IT CAN TURN AN OPTIMAL SOLVE INFEASIBLE, and that is the term working
+   * rather than a regression to route around. A gift-heavy plan whose exact
+   * ledger depletes used to get a confident schedule funded out of the gifted
+   * dollars; once those are taken back, some of those years cannot be funded at
+   * all, and the honest answer is that there is no schedule. The LP now agrees
+   * with its own ledger where it used to contradict it. A sweep across the
+   * gift/spending/cash grid moved 7 of 24 cells from optimal to infeasible on
+   * exactly those plans.
+   *
+   * THE PREMISE IT RESTS ON, and where it stops holding: that `wt` contains the
+   * forced dollars whose cash this takes back. The RMD floor (`rmd{t}`) forces
+   * `wt` to at least the modeled required distribution and the probe caps this
+   * at the year's forced total, so at the linearization point the credit is at
+   * least what this removes. Away from it — a solve that shrinks the
+   * traditional bucket far enough that the MODELED RMD falls below the gift —
+   * this can take back more cash than the LP credited. That direction makes the
+   * solve poorer than the household, never richer, so it cannot reopen the
+   * defect it closes, and the exact-ledger tournament reprices the schedule
+   * regardless.
+   */
+  forcedDistributionCashDiversion?: number
   /** After-tax cash needed this year beyond non-withdrawal inflows. Nominal. */
   spendingNeed: number
   /** Net non-withdrawal cash already in hand (e.g. surplus SS/pension). Nominal. */
@@ -279,11 +323,14 @@ export interface OptimizerYear {
    * recorded retirement action. Absent (the usual case) emits a byte-identical
    * LP.
    *
-   * Three producers (enumerated on `OptimizerYearProbe`): the aggregate
-   * `qcdAnnual` gift beyond the RMD, a 72(t) SEPP series payment, and an
-   * annuity purchase premium. Each was a one-sided booking before this term —
-   * the gift and the premium left buckets the LP kept spending from, and the
-   * series had its ordinary income charged with no debit at all.
+   * Five producers (enumerated on `OptimizerYearProbe`): the aggregate
+   * `qcdAnnual` gift beyond the RMD, a 72(t) SEPP series payment, an annuity
+   * purchase premium, a TIPS-ladder purchase, and an elected pension lump-sum
+   * rollover. Each was a one-sided booking before this term — the gift and the
+   * two purchases left buckets the LP kept spending from, the series had its
+   * ordinary income charged with no debit at all, and the lump sum is the one
+   * that ran the other way: the LP watched the pension stream stop paying and
+   * never saw the balance that replaced it.
    *
    * Kept separate from `committedActionMovement` rather than summed upstream so
    * neither field's name outlives its contract, and so an action-bearing plan
@@ -498,9 +545,12 @@ export function buildOptimizerModel(input: OptimizerInput): BuiltModel {
     // bucket. Materialize it then too, or the movement would be silently
     // dropped instead of debited.
     years.some((y) => (y.committedActionMovement?.taxable ?? 0) !== 0) ||
-    // Same rule for strategy movement. No producer routes to this bucket today
-    // (a QCD source is always an IRA), so this is a guard against a silent drop
-    // rather than a live path — which is exactly when a drop would go unnoticed.
+    // Same rule for strategy movement, and here it is a LIVE path rather than a
+    // guard: a QCD source is always an IRA and a lump sum always rolls into a
+    // traditional account, but an annuity premium and a TIPS-ladder purchase
+    // both name their own funding account, and a brokerage or equity-comp
+    // account is an ordinary choice for one. Without this a plan whose only
+    // taxable activity is a purchase would drop the debit silently.
     years.some((y) => (y.exogenousStrategyMovement?.taxable ?? 0) !== 0)
   // Net cash a taxable withdrawal dollar yields after its LTCG cost, and the
   // MAGI weight of its realized gain (capital gains lift MAGI for IRMAA).
@@ -806,12 +856,20 @@ export function buildOptimizerModel(input: OptimizerInput): BuiltModel {
     // and only their bucket debits land. Debiting a series payment without its
     // cash would make the solver poorer than the household every series year.
     const strategyMoved = y.exogenousStrategyMovement
+    // And the one cash term with the opposite sign: dollars the LP credited on
+    // its own `wt` that the household never received, because a QCD routed them
+    // out of the forced distribution to a charity. ADDED to the constant every
+    // other cash fact is subtracted from, so the solver has to raise them
+    // somewhere real instead of spending a gift. Clamped nonnegative — this may
+    // only take cash back, never hand cash out.
+    const forcedCashDiversion = Math.max(0, y.forcedDistributionCashDiversion ?? 0)
     constraints.push(
       ` cash${t}: ${expr(cash)} = ${fmt(
         y.spendingNeed -
           y.exogenousCash -
           (committed?.proceeds ?? 0) -
-          (strategyMoved?.proceeds ?? 0),
+          (strategyMoved?.proceeds ?? 0) +
+          forcedCashDiversion,
       )}`,
     )
 
@@ -845,11 +903,14 @@ export function buildOptimizerModel(input: OptimizerInput): BuiltModel {
     //
     // Strategy movement rides it identically and is summed here rather than
     // upstream: the two arrive from different authorities (an exact-cent action
-    // executor, and the aggregate QCD arm) and neither field may claim the
-    // other's dollars, but the recursion does not care which moved them. Note
+    // executor, and the strategies and elections the ledger applies itself) and
+    // neither field may claim the other's dollars, but the recursion does not
+    // care which moved them, or in which direction — a pension lump sum's
+    // rollover credit rides the same right-hand side as the four debits. Note
     // the asymmetry that is not an oversight: only the 72(t) series among the
     // strategy producers reports `proceeds` in the cash constraint above,
-    // because a gift leaves and an annuity premium buys a contract.
+    // because a gift leaves, the two purchases buy instruments that pay back
+    // later, and a direct rollover never touches the year's cash at all.
     const trad: Terms = { [`trad${t + 1}`]: 1, [`trad${t}`]: -g, [conv]: g, [wt]: g }
     constraints.push(
       ` trad${t}: ${expr(trad)} = ${fmt(
