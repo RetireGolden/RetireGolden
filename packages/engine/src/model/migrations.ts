@@ -559,10 +559,18 @@ function normalizeCurrentPlan(raw: Record<string, unknown>): Record<string, unkn
       .map((a) => (a as Record<string, unknown>)['id'])
       .filter((id): id is string => typeof id === 'string'),
   )
-  const ownedTraditionalIds = accounts
-    .filter(isOwnedTraditionalRecord)
-    .map((a) => (a as Record<string, unknown>)['id'])
-    .filter((id): id is string => typeof id === 'string')
+  // Owned-traditional AND uniquely resolving: parsePlan refuses a duplicated
+  // account id once a rollover target or annuity funding source references it,
+  // so a repair that preserved or created a reference to a duplicated id would
+  // trade the lockout this seam exists to prevent for a different one.
+  const ownedTraditionalIdCounts = new Map<string, number>()
+  for (const a of accounts.filter(isOwnedTraditionalRecord)) {
+    const id = (a as Record<string, unknown>)['id']
+    if (typeof id === 'string') ownedTraditionalIdCounts.set(id, (ownedTraditionalIdCounts.get(id) ?? 0) + 1)
+  }
+  const ownedTraditionalIds = [...ownedTraditionalIdCounts]
+    .filter(([, count]) => count === 1)
+    .map(([id]) => id)
 
   let changed = false
   const normalizedAccounts = accounts.map((account) => {

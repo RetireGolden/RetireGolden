@@ -97,6 +97,24 @@ describe('migratePlanToCurrent', () => {
       expect(pension.lumpSumElection).toBeUndefined()
     })
 
+    it('sheds an election whose rollover target id is duplicated, instead of locking out', () => {
+      // parsePlan refuses a duplicated account id once a rollover election
+      // references it, so a repair that preserved the election would trade one
+      // lockout for another. A duplicated id is not a uniquely resolving owned
+      // account, and the repair treats it exactly like a missing one.
+      const raw = storedPension({ amount: 400_000, electionYear: 2030 }, 'ira')
+      const accounts = raw['accounts'] as Record<string, unknown>[]
+      const owned = accounts.find((a) => a['id'] === 'ira')!
+      accounts.push({ ...owned, name: 'Duplicate IRA' })
+      const result = migratePlanToCurrent(raw)
+      expect(result.ok).toBe(true)
+      if (!result.ok) return
+      const pension = result.plan.accounts.find((a) => a.id === 'pen')!
+      if (pension.type !== 'pension') throw new Error('expected the pension back')
+      expect(pension.lumpSumElection).toBeUndefined()
+      expect(pension.lumpSumOffer).toEqual({ amount: 400_000, electionYear: 2030 })
+    })
+
     it('sheds the election when the stored stamp is unreadable, instead of refusing the load', () => {
       // The staleness rule fails closed at parse when the stamp is not ISO, so
       // a stored document with a damaged or hand-crafted stamp must lose the
