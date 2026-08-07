@@ -1483,8 +1483,9 @@ describe('committed retirement-action movement in the optimizer bridge', () => {
     // the household is genuinely poorer, and the LP has to see that.
     //
     // This one was the worse of the two to omit: the gift's income offset
-    // already rides into `ordinaryIncomeBase` through `namedQcdIncomeOffset`,
-    // so the solve was pricing the gift's tax break while keeping its dollars.
+    // reaches the LP on its own term (`namedQcdIncomeOffset` is half of
+    // `forcedDistributionOrdinaryIncomeExclusion`), so the solve was pricing
+    // the gift's tax break while keeping its dollars.
     const draft = tradHeavyPlan()
     // Born 1950-03-01: age 76 in 2026, 70½ since 2020, and an RMD is due.
     draft.household.people[0] = { ...draft.household.people[0]!, dob: '1950-03-01' }
@@ -1518,6 +1519,7 @@ describe('committed retirement-action movement in the optimizer bridge', () => {
     const ledger = simulatePlan(plan, opts).years[0]!
     expect(ledger.qcdActionExecution?.committed).toBe(true)
     expect(ledger.qcd).toBeCloseTo(20_000, 6)
+    const NAMED_QCD_INCOME_OFFSET = Number(ledger.qcdActionExecution!.totalRmdSatisfiedAmount) / 100
 
     // The gift, and nothing else. The same year takes an RMD and funds
     // spending out of the aggregate arms, and neither belongs here: the LP
@@ -1533,6 +1535,20 @@ describe('committed retirement-action movement in the optimizer bridge', () => {
     // `ordinaryIncomeBase`, not a committed-conversion floor.
     expect(probe.exogenousStrategyAccountMovement).toEqual([])
     expect(probe.committedConversionOrdinaryIncome).toBe(0)
+    // The gift's income side is `namedQcdIncomeOffset`, and it reaches the LP
+    // on the same term the aggregate arm's does — read from the executor's own
+    // published `totalRmdSatisfiedAmount` rather than assumed from the gift and
+    // the RMD, because §408(d)(8)(D) reaches only a distribution that would
+    // otherwise have been includible and the executor is the authority on how
+    // much of this gift was. In THIS fixture that figure is zero (the RMD was
+    // already satisfied before the gift executed), so the term is zero — which
+    // is exactly the point: it reports the ledger's answer and not the size of
+    // the gift. The aggregate arm's non-zero case is covered by
+    // `optimizePlan.adversarialFindings.test.ts`. The two arms are mutually
+    // exclusive (a named request stands the scalar down), so this term is one
+    // arm's or the other's and never a sum of both.
+    expect(probe.forcedDistributionOrdinaryIncomeExclusion)
+      .toBeCloseTo(NAMED_QCD_INCOME_OFFSET, 6)
     expect(committedActionMovementForYear(optimizerOpeningBuckets(plan).bucketByAccountId, probe))
       .toEqual({
         trad: -20_000,
@@ -1690,9 +1706,14 @@ describe('committed facts the LP books on both sides', () => {
     // The discriminator, stated before the plan runs. On the parent commit the
     // probe carried no strategy-movement channel at all, so the LP evolved its
     // traditional bucket as though the gift never left — while the SAME solve
-    // priced the gift's tax break, because the arm's income offset already
-    // reaches `ordinaryIncomeBase`. One side of the entry, and the profitable
-    // side at that.
+    // priced the gift's tax break, which reaches the LP as
+    // `forcedDistributionOrdinaryIncomeExclusion`. One side of the entry, and
+    // the profitable side at that.
+    //
+    // The gift here is taken entirely BEYOND the RMD (this fixture's donor is
+    // pre-RMD), so it carries no exclusion of its own; the exclusion belongs to
+    // the RMD-routed part, which the two QCD fixtures in
+    // `optimizePlan.adversarialFindings.test.ts` cover.
     const plan = aggregateQcdPlan()
     const probes = probesFor(plan)
     const probe = probes[0]!
@@ -1733,11 +1754,14 @@ describe('committed facts the LP books on both sides', () => {
 
     // The bridge, and then the balance recursion the solver actually reads.
     const buckets = optimizerOpeningBuckets(plan)
+    // Proceeds zero: a gift LEAVES. The 72(t) series on this same channel does
+    // report proceeds, and that asymmetry is the whole double-entry claim.
     expect(exogenousStrategyMovementForYear(buckets.bucketByAccountId, probe)).toEqual({
       trad: -30_000,
       inheritedTrad: 0,
       other: 0,
       taxable: 0,
+      proceeds: 0,
     })
     const input = buildOptimizerInput(plan, opts)
     expect(input.years[0]!.exogenousStrategyMovement).toEqual({
@@ -1745,7 +1769,9 @@ describe('committed facts the LP books on both sides', () => {
       inheritedTrad: 0,
       other: 0,
       taxable: 0,
+      proceeds: 0,
     })
+    expect(probe.exogenousStrategyProceeds).toBe(0)
     // Growth is 0 here, so the year's `trad` recursion right-hand side is the
     // movement itself: `trad1 − trad0 + conv0 + wt0 = −30000`.
     const lp = buildOptimizerModel(input).lp

@@ -636,7 +636,9 @@ describe('exogenous strategy movement in the LP', () => {
     years: [year({
       growth: 0,
       tradInflow: 1_000,
-      exogenousStrategyMovement: { trad: -3_000, inheritedTrad: 0, other: 0, taxable: 0 },
+      exogenousStrategyMovement: {
+        trad: -3_000, inheritedTrad: 0, other: 0, taxable: 0, proceeds: 0,
+      },
     })],
     openingTrad: 100_000,
     openingInheritedTrad: 50_000,
@@ -653,6 +655,25 @@ describe('exogenous strategy movement in the LP', () => {
     // And no proceeds. A committed WITHDRAWAL reallocates, so its debit is
     // paired with cash; a gift leaves, so the cash constraint is untouched.
     expect(lp).toMatch(/^ cash0: .* = 0$/m)
+  })
+
+  it('credits the cash a 72(t) series delivered, unlike a gift', () => {
+    const series = buildOptimizerModel({
+      ...gifted(),
+      years: [{
+        ...gifted().years[0]!,
+        spendingNeed: 10_000,
+        exogenousStrategyMovement: {
+          trad: -3_000, inheritedTrad: 0, other: 0, taxable: 0, proceeds: 3_000,
+        },
+      }],
+    }).lp
+
+    // Same debit, opposite cash story. A series payment REALLOCATES — the exact
+    // ledger's `baseCashInflows` carries `+ seppTotal` — so debiting it without
+    // this credit would make the solver poorer than the household every year.
+    expect(series).toContain(' trad0: + 1 trad1 - 1 trad0 + 1 conv0 + 1 wt0 = -2000')
+    expect(series).toMatch(/^ cash0: .* = 7000$/m)
   })
 
   it('sums with committed action movement rather than replacing it', () => {
@@ -696,7 +717,9 @@ describe('exogenous strategy movement in the LP', () => {
     const lp = buildOptimizerModel({
       years: [year({
         growth: 0,
-        exogenousStrategyMovement: { trad: 0, inheritedTrad: 0, other: 0, taxable: -1_000 },
+        exogenousStrategyMovement: {
+          trad: 0, inheritedTrad: 0, other: 0, taxable: -1_000, proceeds: 0,
+        },
       })],
       openingTrad: 100_000,
       openingInheritedTrad: 0,
@@ -786,6 +809,62 @@ describe('committed ordinary income as a floor in the LP', () => {
     // Clamped rather than trusted. A negative would be a deduction, and the LP
     // has no authority to grant one off a probe field.
     expect(buildOptimizerModel(base({ committedOrdinaryIncome: -5_000 })).lp).toBe(absent)
+  })
+
+  it('takes the forced-distribution exclusion back off the same constant', () => {
+    const EXCLUSION = 12_000
+    const without = buildOptimizerModel(base()).lp
+    const excluded = buildOptimizerModel(
+      base({ forcedDistributionOrdinaryIncomeExclusion: EXCLUSION }),
+    ).lp
+
+    // The mirror of the committed floor, and deliberately on the same constant.
+    // The LP charges `traditionalWithdrawalTaxableFraction × wt` on the forced
+    // distribution it re-decides; §408(d)(8) takes the gifted part back out, and
+    // `ordinaryIncomeBase` cannot carry it because that field is what remains
+    // AFTER the forced distributions are netted out at their gross figure.
+    expect(rhs(without, 'tifloor0') - rhs(excluded, 'tifloor0')).toBeCloseTo(EXCLUSION, 6)
+    const floorTerms = (lp: string) =>
+      lp.split('\n').find((row) => row.startsWith(' tifloor0:'))!.replace(/>= -?[\d.]+$/, '')
+    expect(floorTerms(excluded)).toBe(floorTerms(without))
+
+    // And out of MAGI with it, which is most of what a QCD is for: an excluded
+    // distribution is out of gross income, so it never reaches IRMAA, the ACA
+    // ceiling, provisional income, or the senior-deduction phase-out.
+    expect(rhs(excluded, 'acamagi0') - rhs(without, 'acamagi0')).toBeCloseTo(EXCLUSION, 6)
+    expect(rhs(excluded, 'irmaa0_0') - rhs(without, 'irmaa0_0')).toBeCloseTo(EXCLUSION, 6)
+    expect(rhs(without, 'taxss0a') - rhs(excluded, 'taxss0a')).toBeCloseTo(0.5 * EXCLUSION, 6)
+    expect(rhs(without, 'taxss0b') - rhs(excluded, 'taxss0b')).toBeCloseTo(0.85 * EXCLUSION, 6)
+    const srdRule = PACK.federalTax.seniorDeduction!
+    expect(rhs(without, 'srd0') - rhs(excluded, 'srd0'))
+      .toBeCloseTo((srdRule.phaseOutRatePct / 100) * EXCLUSION, 6)
+  })
+
+  it('nets the two terms against each other on the one constant', () => {
+    // A year can carry both — a committed conversion and a gift routed out of
+    // the same year's RMD. They are opposite signs on one constant, so the
+    // bracket model sees the net and neither term has its own pricing path to
+    // disagree from.
+    const netted = buildOptimizerModel(base({
+      committedOrdinaryIncome: 30_000,
+      forcedDistributionOrdinaryIncomeExclusion: 12_000,
+    })).lp
+    const equivalent = buildOptimizerModel(base({ committedOrdinaryIncome: 18_000 })).lp
+
+    expect(rhs(netted, 'tifloor0')).toBeCloseTo(rhs(equivalent, 'tifloor0'), 6)
+    expect(rhs(netted, 'acamagi0')).toBeCloseTo(rhs(equivalent, 'acamagi0'), 6)
+  })
+
+  it('emits the identical LP for an exclusion at zero, absent, or negative', () => {
+    const absent = buildOptimizerModel(base()).lp
+
+    expect(buildOptimizerModel(base({ forcedDistributionOrdinaryIncomeExclusion: 0 })).lp)
+      .toBe(absent)
+    // Clamped rather than trusted, for the mirror-image reason the committed
+    // floor is: a negative exclusion would be income the LP has no authority to
+    // invent off a probe field.
+    expect(buildOptimizerModel(base({ forcedDistributionOrdinaryIncomeExclusion: -5_000 })).lp)
+      .toBe(absent)
   })
 
   it('is not a variable the solver can convert instead of', async () => {

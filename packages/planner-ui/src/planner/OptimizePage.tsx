@@ -149,9 +149,10 @@ export function OptimizePage() {
   // THE REASON THAT USED TO STAND HERE IS GONE. "A committed conversion's
   // income has no term" was true when this comment was written and is not now:
   // the LP takes that income as a floor its own conversions stack on
-  // (`OptimizerYear.committedOrdinaryIncome`), and the aggregate QCD strategy's
-  // balance debit reaches the same balance recursion. Both sides of both
-  // movements are booked.
+  // (`OptimizerYear.committedOrdinaryIncome`), a gift's charitable exclusion
+  // reaches the LP rather than being clamped away, and three strategy
+  // movements — the aggregate QCD beyond the RMD, a 72(t) series, an annuity
+  // premium — reach the same balance recursion. Both sides are booked.
   //
   // WHAT STILL HOLDS IT UP, stated so the next attempt starts from the truth:
   //   1. The telling. Nothing on this page explains an optimizer answer sitting
@@ -166,7 +167,10 @@ export function OptimizePage() {
   //      `baseCashInflows`, less `qcdFromRmd` and `namedQcdRmdSatisfied`) while
   //      the LP re-decides that RMD as its own `wt` and credits the whole draw
   //      to cash — so in a QCD year the solve believes the household can spend
-  //      dollars it gave away.
+  //      dollars it gave away. A NAMED gift is a recorded action, so for those
+  //      plans this predicate is what stands between that gap and a
+  //      recommendation. It is not for an aggregate `qcdAnnual` plan, which
+  //      records no action and this predicate never saw.
   // The page states the condition rather than ranking schedules against either.
   const unsupportedActionReasons = useMemo(
     () => optimizerUnsupportedRetirementActions(plan),

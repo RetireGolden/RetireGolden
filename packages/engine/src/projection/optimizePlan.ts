@@ -239,13 +239,20 @@ function retirementActionPersonId(action: PlanRetirementAction): PersonId | unde
  *
  * The model side has since closed further, and the gate did NOT move with it: a
  * committed conversion's ordinary income is now a floor the LP stacks on
- * (`OptimizerYear.committedOrdinaryIncome`) and the aggregate QCD strategy's
- * balance debit reaches the same recursion as action movement
- * (`exogenousStrategyMovementForYear`). One model gap remains and it is a cash
- * one: a QCD routed out of an RMD leaves the exact ledger's cash inflows while
- * the LP credits the whole re-decided draw, so a QCD year's solve can spend
- * dollars the household gave away. That is smaller than the telling, and it is
- * still a reason.
+ * (`OptimizerYear.committedOrdinaryIncome`), a gift's charitable exclusion
+ * reaches the LP instead of being clamped away
+ * (`forcedDistributionOrdinaryIncomeExclusion`), and three strategy movements
+ * — the aggregate QCD beyond the RMD, a 72(t) series, an annuity premium —
+ * reach the same recursion as action movement (`exogenousStrategyMovementForYear`).
+ *
+ * One model gap remains and it is a cash one: a QCD routed out of an RMD leaves
+ * the exact ledger's cash inflows while the LP credits the whole re-decided
+ * draw, so a QCD year's solve can spend dollars the household gave away. A
+ * NAMED QCD is a recorded action, so for those plans this predicate is the only
+ * thing standing between that gap and a recommendation. (It is not for an
+ * aggregate `qcdAnnual` plan, which records no action and was never gated —
+ * which is exactly why the strategy-side defects had to be fixed rather than
+ * gated.) That is smaller than the telling, and it is still a reason.
  *
  * Reporting per action — rather than one plan-level flag — keeps the count and
  * the named person available to the surface doing the telling.
@@ -376,27 +383,32 @@ export function committedActionMovementForYear(
 
 /**
  * Fold one probe year's already-applied STRATEGY balance movement into the LP's
- * bucket scalars.
+ * bucket scalars, plus the cash those movements delivered.
  *
- * The sibling of `committedActionMovementForYear`, over the other channel and
- * with no proceeds member: the only producer is the aggregate `qcdAnnual` gift
- * beyond the RMD, and a gift delivers no cash to book. Returns undefined for a
- * year that moved nothing — every year of a plan with no aggregate QCD — so
- * those plans keep emitting a byte-identical LP.
+ * The sibling of `committedActionMovementForYear`, over the other channel.
+ * Proceeds are the 72(t) series' alone — a gift leaves the household and an
+ * annuity premium buys a contract that pays back through `exogenousCash` later
+ * — so a QCD-only or annuity-only year books a debit with no credit and a
+ * series year books both. Returns undefined for a year that moved nothing, so
+ * plans with none of the three producers keep emitting a byte-identical LP.
  */
 export function exogenousStrategyMovementForYear(
   bucketByAccountId: ReadonlyMap<string, OptimizerBucket>,
   probe: OptimizerYearProbe,
 ): NonNullable<OptimizerYear['exogenousStrategyMovement']> | undefined {
-  const movement = bucketAccountMovement(
-    bucketByAccountId,
-    probe.exogenousStrategyAccountMovement,
-    'Exogenous strategy movement',
-  )
+  const movement = {
+    ...bucketAccountMovement(
+      bucketByAccountId,
+      probe.exogenousStrategyAccountMovement,
+      'Exogenous strategy movement',
+    ),
+    proceeds: probe.exogenousStrategyProceeds,
+  }
   return movement.trad === 0 &&
     movement.inheritedTrad === 0 &&
     movement.other === 0 &&
-    movement.taxable === 0
+    movement.taxable === 0 &&
+    movement.proceeds === 0
     ? undefined
     : movement
 }
@@ -530,6 +542,13 @@ export function buildOptimizerInput(plan: Plan, opts: OptimizePlanOptions, probe
       // can re-decide. Zero for every year that committed none, which is what
       // keeps action-free plans emitting a byte-identical LP.
       committedOrdinaryIncome: p.committedConversionOrdinaryIncome,
+      // And the exclusion the LP must not charge on the forced distribution it
+      // re-decides as `wt`. `ordinaryIncomeBase` nets those dollars out at their
+      // gross taxable figure, so a QCD's §408(d)(8) exclusion has nowhere else
+      // to ride; without it the solve prices the low brackets as already full of
+      // income the household never had and under-converts by the whole gift.
+      forcedDistributionOrdinaryIncomeExclusion:
+        p.forcedDistributionOrdinaryIncomeExclusion,
       spendingNeed: p.spendingNeed,
       exogenousCash: p.exogenousCash,
       // Recover the divisor from the baseline ratio (startTrad / RMD) so the LP's
@@ -585,10 +604,11 @@ export function buildOptimizerInput(plan: Plan, opts: OptimizePlanOptions, probe
       // this is unchanged and returns `undefined` for every year, which is what
       // keeps action-free plans emitting a byte-identical LP.
       committedActionMovement: committedActionMovementForYear(bucketByAccountId, p),
-      // And the dollars the aggregate QCD strategy already gave away, off the
-      // same probe and through the same bucket bridge. A plan with no aggregate
-      // QCD returns `undefined` for every year, which is what keeps it emitting
-      // a byte-identical LP.
+      // And the dollars a strategy already moved — the aggregate QCD gift, a
+      // 72(t) series payment, an annuity premium — off the same probe and
+      // through the same bucket bridge. A plan carrying none of them returns
+      // `undefined` for every year, which is what keeps it emitting a
+      // byte-identical LP.
       exogenousStrategyMovement: exogenousStrategyMovementForYear(bucketByAccountId, p),
     }
   })
