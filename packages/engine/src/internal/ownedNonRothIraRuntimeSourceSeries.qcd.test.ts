@@ -8,9 +8,13 @@ import {
   asPersonId,
 } from '../actions/identity.js'
 import { asPositiveUsdCents, asUsdCents } from '../actions/money.js'
-import { planDollarsToLedgerCents } from '../actions/planBalanceAdapter.js'
+import {
+  ledgerCentsToPlanDollars,
+  planDollarsToLedgerCents,
+} from '../actions/planBalanceAdapter.js'
 import type { Account, Plan } from '../model/plan.js'
 import {
+  couplePlan,
   singlePersonPlan,
   traditionalAccount,
   validatePlan,
@@ -702,6 +706,62 @@ describe('moving legacy QCD through the live annual pass', () => {
     expect(distribution.form8606LineGrossAmount).toBe(0)
     expect(result.years[0]!.ownerSources[0]!.applications
       .every((entry) => entry.form8606Line !== 'line7')).toBe(true)
+  })
+
+  // TWO DONORS, which is the path the single-owner fixtures above cannot
+  // exercise. The gift is charged to each owner in proportion to their own
+  // required distribution, so the overlay carries two attributions and the
+  // source series has to carve two different owners' line-7 grosses -- and each
+  // owner has their own Form 8606 denominator, which is exactly why
+  // 408(d)(8)(D) has to be settled per owner rather than per household.
+  it('carves a household gift across both donors’ requirements', () => {
+    const plan = couplePlan({
+      p1Dob: '1945-01-01', p1PlanningAge: 90,
+      p2Dob: '1945-01-01', p2PlanningAge: 90,
+    })
+    plan.id = 'routed-qcd-two-donors'
+    plan.accounts = [
+      cash(),
+      { ...traditional('ira-p1', 400_000, 'ira', 40_000), ownerPersonId: 'p1' },
+      { ...traditional('ira-p2', 200_000, 'ira', 20_000), ownerPersonId: 'p2' },
+    ]
+    plan.strategies.qcdAnnual = 9_000
+
+    const years = project(plan)
+    const validated = validatePlan(plan)
+    const overlay = years[0]!.retirementRuntimeSource!.nonmovingLegacyQcdOverlay!
+
+    // The whole gift fits inside the household requirement, so nothing moved
+    // beyond it and the overlay carries all 9,000 -- split two to one, which is
+    // how the two requirements stand.
+    expect(years[0]!.qcd).toBeCloseTo(9_000, 6)
+    expect(overlay.ownerAttributions.map((entry) => entry.ownerPersonId))
+      .toEqual(['p1', 'p2'])
+    expect(overlay.ownerAttributions[0]!.routedGrossPlanDollars)
+      .toBeCloseTo(6_000, 6)
+    expect(overlay.ownerAttributions[1]!.routedGrossPlanDollars)
+      .toBeCloseTo(3_000, 6)
+
+    const result = validateOwnedNonRothIraRuntimeSourceSeries(
+      validated, TAX_YEAR, years,
+    )
+    expect(result.status).toBe('ownedNonRothIraRuntimeSourceSeriesComplete')
+    if (result.status !== 'ownedNonRothIraRuntimeSourceSeriesComplete') return
+    for (const ownerSource of result.years[0]!.ownerSources) {
+      const attribution = overlay.ownerAttributions
+        .find((entry) => entry.ownerPersonId === ownerSource.ownerPersonId)!
+      const distribution = ownerSource.applications
+        .find((entry) => entry.simulatorPhase === 'ownerRmdDistribution')!
+      // Each owner's own gross shrinks by their own carve and by nobody else's.
+      expect(distribution.form8606LineGrossAmount).toBe(planDollarsToLedgerCents(
+        ledgerCentsToPlanDollars(distribution.amount) -
+          attribution.qualifiedLine7ExclusionPlanDollars,
+      ))
+    }
+    // And the year settles end to end, on both owners at once.
+    expect(years[0]!.ownedNonRothIraAnnualReplay).toBeDefined()
+    expect(years[0]!.ownedNonRothIraAnnualReplay!.annualReplay.ownerReplays)
+      .toHaveLength(2)
   })
 })
 
