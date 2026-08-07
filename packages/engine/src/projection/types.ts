@@ -293,7 +293,8 @@ export interface OptimizerYearProbe {
    * `capitalGainsBase`; a permanent-life death benefit deposited by the
    * insurance block; and a HECM draw (`hecmDraw`).
    *
-   * ALL FOUR OMISSIONS RUN IN THE SAME DIRECTION: they make the solve POORER
+   * ALL FOUR OMISSIONS — the two property-sale paths, the HECM draw, and
+   * the death benefit — RUN IN THE SAME DIRECTION: they make the solve POORER
    * than the household, which is why omitting them is the conservative answer
    * until the channel and the bucket that would carry them exist. The HECM draw
    * is measured, not assumed — the draw funds the ledger's own spending while

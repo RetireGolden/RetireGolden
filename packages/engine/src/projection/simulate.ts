@@ -6728,7 +6728,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       //   - a permanent-life death benefit is deposited into a cash/taxable
       //     account (the insurance block below) from a policy the LP does not
       //     carry.
-      // ALL FOUR RUN THE SAME WAY: they make the solve POORER than the
+      // ALL FOUR — the two property-sale paths, the HECM draw, and the death
+      // benefit — RUN THE SAME WAY: they make the solve POORER than the
       // household, which is why omitting them is the conservative answer while
       // the shape that would fix them — a channel for assets outside the four
       // buckets, and a bucket for the debt — is designed. The HECM draw is
@@ -6782,8 +6783,9 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         addExogenousStrategyMovementCents(debit.accountId, -debit.amountPlanDollars)
       }
       // The SEPP's cash side. Taken from the year's own `seppTotal` — the same
-      // figure `baseCashInflows` adds and the same one the occurrences above
-      // sum to — rather than re-derived from the series schedule. The other
+      // figure `baseCashInflows` adds and the same one the
+      // `automaticSeppDistribution` occurrences above sum to — rather than
+      // re-derived from the series schedule. The other
       // four producers contribute nothing: a gift leaves, the two purchases buy
       // instruments that pay back later through `exogenousCash`, and a direct
       // rollover never passes through the household's hands at all.
