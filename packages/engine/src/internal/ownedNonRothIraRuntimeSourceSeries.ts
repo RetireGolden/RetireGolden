@@ -341,36 +341,61 @@ function requireNoExactActionOwnedIraMovement(
   accountById: ReadonlyMap<string, Account>,
   taxYear: number,
 ): void {
-  const declaredOwnedIraSource = plan.strategies.retirementActions
-    .filter((request) => request.year === taxYear)
-    .flatMap((request) => {
-      // Neither a named conversion nor a named QCD is on this list any more,
-      // and now for the same reason: both publish their own occurrence with
-      // its own application, and both are bound to committed executor evidence
-      // in exact cents -- conversions by `requireNamedRothConversionCoverage`
-      // and gifts by `requireNamedQcdCoverage` below. A declared gift that
-      // never settled publishes no occurrence and leaves the year exactly as a
-      // year without the request, so declaring one still does not block. An
-      // ordinary withdrawal still moves dollars nothing accounts for, so it
-      // still blocks.
-      if (request.kind === 'ordinaryWithdrawal') return request.allocations
-      return []
-    })
-    .map((allocation) => String(allocation.sourceAccountId))
-    .find((accountId) => {
-      const account = accountById.get(accountId)
-      return account !== undefined && isAggregatedIra(account)
-    })
-  if (declaredOwnedIraSource !== undefined) {
-    fail('exactActionStageRequired', 'A Plan-declared exact action from an owned IRA requires the later identity and tax-characterization stage before source replay', {
-      taxYear, sourceAccountId: declaredOwnedIraSource,
-    })
-  }
-
   const execution = yearResult.retirementActionExecution
+  const executionEvidence = execution?.evidence ?? []
+  const executionBalances = execution?.balances ?? []
+  // Neither a named conversion nor a named QCD is on this list, and now for the
+  // same reason: both publish their own occurrence with its own application,
+  // and both are bound to committed executor evidence in exact cents --
+  // conversions by `requireNamedRothConversionCoverage` and gifts by
+  // `requireNamedQcdCoverage` below. A declared gift that never settled
+  // publishes no occurrence and leaves the year exactly as a year without the
+  // request, so declaring one does not block.
+  //
+  // A declared ordinary withdrawal is now held to the same standard, and it has
+  // to be, because the premise the old guard rested on is not true of an owned
+  // IRA. The ordinary executor's source scope is cash, equity compensation, and
+  // taxable; an owned-IRA allocation is refused there with
+  // `withdrawal-source-type-unsupported`, so the request moves no dollars,
+  // leaves the balances untouched, and contributes nothing to line 7. Refusing
+  // the year for it disqualified a year in which nothing happened. That boundary
+  // is not being widened here -- IRA withdrawals remain non-executable, and the
+  // refusal is still published on the action's own evidence.
+  //
+  // What replaces the declaration test is a binding to that evidence, and it
+  // fails closed in both directions a declaration can fail to prove itself
+  // harmless. A declared owned-IRA allocation with no evidence record of its own
+  // proves nothing about what it moved; neither does one whose source account
+  // the executor never took an opening balance for, since the year's per-account
+  // before/after chain then has no entry to reconcile against. Both refuse. Only
+  // a declaration the executor evidenced at exactly zero executed cents, over an
+  // account it snapshotted, passes.
+  for (const request of plan.strategies.retirementActions) {
+    if (request.year !== taxYear || request.kind !== 'ordinaryWithdrawal') {
+      continue
+    }
+    for (const allocation of request.allocations) {
+      const accountId = String(allocation.sourceAccountId)
+      const account = accountById.get(accountId)
+      if (account === undefined || !isAggregatedIra(account)) continue
+      const context = { taxYear, sourceAccountId: accountId }
+      const evidence = executionEvidence.find((entry) =>
+        String(entry.actionId) === String(request.actionId))
+      const evidencedAllocation = evidence?.allocations.find((entry) =>
+        String(entry.allocationId) === String(allocation.allocationId))
+      if (evidencedAllocation === undefined) {
+        fail('exactActionStageRequired', 'A Plan-declared exact action from an owned IRA requires committed executor evidence for its own allocation before source replay', context)
+      }
+      if (evidencedAllocation.executedAmount !== 0) {
+        fail('exactActionStageRequired', 'Exact-action owned-IRA movement requires an identity and tax-characterization stage before source replay', context)
+      }
+      if (!executionBalances.some((snapshot) =>
+        String(snapshot.accountId) === accountId)) {
+        fail('exactActionStageRequired', 'A Plan-declared exact action from an owned IRA requires the executor’s own opening and closing balance for its source before source replay', context)
+      }
+    }
+  }
   if (execution === undefined) return
-  const executionEvidence = execution.evidence
-  const executionBalances = execution.balances
   for (const evidence of executionEvidence) {
     for (const allocation of evidence.allocations) {
       const accountId = String(allocation.sourceAccountId)
@@ -1400,6 +1425,15 @@ function validateUnchecked(
         'annuityFundingTransfer', funding.id, annuity.id,
       ])
       if (!occurrenceByKey.has(expectedKey)) {
+        // Refused, not staged, and deliberately so: what a stage would have to
+        // state for these dollars -- whether an IRA-funded qualified premium is
+        // a non-distribution transfer or a distribution-and-purchase, and what
+        // that makes of Form 8606 line 7 and of §408(b) individual-retirement-
+        // annuity aggregation -- is open statutory research tracked as its own
+        // task. Refusing the year is the honest disposition until it lands; the
+        // year prices on the legacy ledger and, since the refusal is about this
+        // year's inventory rather than about anyone's basis, disqualifies only
+        // this year.
         fail('annuityStageRequired', 'A funded Plan annuity purchase requires its owned-IRA transfer source', {
           taxYear, sourceAccountId: funding.id,
           producerOccurrenceKey: expectedKey,
@@ -1564,6 +1598,11 @@ function validateUnchecked(
         application.sourceBalanceAfterPlanDollars,
       )
       if (occurrence.kind === 'annuityFundingTransfer') {
+        // The stage this names awaits the same open statutory research as the
+        // Plan-purchase pre-check above: the Form 8606 character of an
+        // IRA-funded qualified premium, and what §408(b) aggregation does with
+        // the contract the dollars land in. `context` carries the owner, so the
+        // refusal disqualifies this owner's year rather than the household's.
         fail('annuityStageRequired', 'Annuity funding leaves the captured owned-IRA pool and requires a broader transfer stage', context)
       }
       normalizedApplications.push({

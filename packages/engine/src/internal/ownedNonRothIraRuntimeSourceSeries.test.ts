@@ -763,7 +763,13 @@ describe('private owned-IRA runtime source-series validation', () => {
       })
   })
 
-  it('requires execution evidence for a Plan-declared exact owned-IRA action', () => {
+  it('lets a refused Plan-declared owned-IRA withdrawal through on its own evidence', () => {
+    // The declaration is real and the refusal is real: the ordinary executor's
+    // source scope is cash, equity compensation and taxable, so an owned-IRA
+    // allocation is refused with `withdrawal-source-type-unsupported` and moves
+    // nothing. A year in which nothing happened is not a year the replay has to
+    // refuse, and the executor's own evidence is what proves it -- zero executed
+    // cents on the allocation, an opening and closing balance on the account.
     const plan = singlePersonPlan({ planningAge: 60 })
     plan.id = 'missing-exact-action-evidence'
     plan.accounts = [traditional('ira', 1_000)]
@@ -784,21 +790,53 @@ describe('private owned-IRA runtime source-series validation', () => {
       purpose: { kind: 'spending' },
     }] as Plan['strategies']['retirementActions']
     const projected = project(plan)
+    const execution = projected[0]!.retirementActionExecution
+    const evidence = execution?.evidence
+      .find((entry) => String(entry.actionId) === 'owned-ira-withdrawal')
+    expect(evidence?.readiness).toBe('nonActionable')
+    expect(evidence?.disposition.reasons.map((reason) => reason.code))
+      .toContain('withdrawal-source-type-unsupported')
+    expect(evidence?.allocations[0]).toMatchObject({
+      sourceAccountId: 'ira',
+      executedAmount: 0,
+    })
+    expect(execution?.balances.find((snapshot) =>
+      String(snapshot.accountId) === 'ira'))
+      .toMatchObject({ openingBalance: 100_000, closingBalance: 100_000 })
     expect(validateOwnedNonRothIraRuntimeSourceSeries(
       plan, TAX_YEAR, projected,
-    )).toMatchObject({
-      status: 'ownedNonRothIraRuntimeSourceSeriesBlocked',
-      issues: [{ kind: 'exactActionStageRequired' }],
-    })
+    )).toMatchObject({ status: 'ownedNonRothIraRuntimeSourceSeriesComplete' })
+  })
 
+  it('requires execution evidence for a Plan-declared exact owned-IRA action', () => {
+    // Three ways a declaration can fail to prove itself harmless, and all three
+    // still refuse. The gate is evidence, not the absence of a declaration.
+    const plan = singlePersonPlan({ planningAge: 60 })
+    plan.id = 'missing-exact-action-evidence'
+    plan.accounts = [traditional('ira', 1_000)]
+    plan.strategies.retirementActions = [{
+      actionId: 'owned-ira-withdrawal',
+      kind: 'ordinaryWithdrawal',
+      year: TAX_YEAR,
+      executionDate: '2026-06-15',
+      executionSequence: 1,
+      requestedAmount: 10_000,
+      provenance: { source: 'manual' },
+      personId: 'p1',
+      allocations: [{
+        allocationId: 'owned-ira-allocation',
+        sourceAccountId: 'ira',
+        requestedAmount: 10_000,
+      }],
+      purpose: { kind: 'spending' },
+    }] as Plan['strategies']['retirementActions']
+    const projected = project(plan)
+
+    // No evidence record for this action at all.
     const missingNestedEvidence = copy(projected)
-    const mutableExecution = missingNestedEvidence[0]!
-      .retirementActionExecution as unknown as {
-        evidence: unknown[]
-        balances: unknown[]
-      }
-    mutableExecution.evidence = []
-    mutableExecution.balances = []
+    ;(missingNestedEvidence[0]!.retirementActionExecution as unknown as {
+      evidence: unknown[]
+    }).evidence = []
     expect(validateOwnedNonRothIraRuntimeSourceSeries(
       plan, TAX_YEAR, missingNestedEvidence,
     )).toMatchObject({
@@ -806,6 +844,20 @@ describe('private owned-IRA runtime source-series validation', () => {
       issues: [{ kind: 'exactActionStageRequired' }],
     })
 
+    // An evidence record, but no opening/closing balance for the source: the
+    // year's per-account chain has nothing to reconcile the declaration against.
+    const missingBalances = copy(projected)
+    ;(missingBalances[0]!.retirementActionExecution as unknown as {
+      balances: unknown[]
+    }).balances = []
+    expect(validateOwnedNonRothIraRuntimeSourceSeries(
+      plan, TAX_YEAR, missingBalances,
+    )).toMatchObject({
+      status: 'ownedNonRothIraRuntimeSourceSeriesBlocked',
+      issues: [{ kind: 'exactActionStageRequired' }],
+    })
+
+    // No executor publication at all.
     const years = copy(projected)
     expect(years[0]!.retirementActionExecution).toBeDefined()
     delete years[0]!.retirementActionExecution
