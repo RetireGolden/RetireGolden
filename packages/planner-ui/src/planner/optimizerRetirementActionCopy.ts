@@ -20,7 +20,7 @@
  *
  * WHAT HOLDS THE PRECONDITION UP is stated in full at the predicate in
  * `OptimizePage.tsx`, and it is this page's own decision, not an engine limit:
- * the telling is unwritten. The post-processor drops a named-conversion year
+ * The telling is unwritten. The post-processor drops a named-conversion year
  * from the emitted schedule, so a recommendation for an action-bearing plan
  * would be silent about exactly the years the user recorded, and nothing here
  * explains an answer sitting on top of a plan's own named requests. A second
