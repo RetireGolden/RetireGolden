@@ -677,6 +677,30 @@ describe('guaranteed-income and estate-depth fields', () => {
     expect(parsePlan(planWithAnnuity({ year: 2030, premium: 100_000, fundingAccountId: 'nope', taxQualification: 'nonQualified' })).ok).toBe(false)
   })
 
+  it('rejects a qualified purchase funded from an inherited traditional account', () => {
+    // An inherited account is `type: 'traditional'`, so a bare type test used to
+    // admit it. The premium would leave the inherited balance for an `annuity`
+    // account that carries no `inherited` marker, dropping the 10-year clock on
+    // those dollars entirely.
+    const plan = planWithAnnuity({ year: 2030, premium: 50_000, fundingAccountId: 'inh1', taxQualification: 'qualified' })
+    plan.accounts.push({
+      type: 'traditional',
+      id: 'inh1',
+      name: 'Inherited IRA',
+      ownerPersonId: 'p1',
+      annualReturnPct: null,
+      kind: 'ira',
+      balance: 150_000,
+      annualContribution: 0,
+      inherited: { ownerDeathYear: 2022, decedentHadStartedRmds: true },
+    })
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(false)
+    expect(parsed.ok ? [] : parsed.issues.join('\n')).toContain(
+      'a qualified annuity purchase must be funded from a traditional account you own (inherited IRA dollars stay in the inherited account)',
+    )
+  })
+
   it('accepts per-account estate beneficiary destinations', () => {
     const plan = validCouplePlan()
     ;(plan.accounts[1] as { estateBeneficiary?: unknown }).estateBeneficiary = { destination: 'charity', charityPct: 50 }
@@ -694,6 +718,83 @@ describe('guaranteed-income and estate-depth fields', () => {
     plan.strategies.survivorReserveTarget = 300_000
     plan.assumptions.heirTaxByClass = { traditional: 32, hsa: 12 }
     expect(parsePlan(plan).ok).toBe(true)
+  })
+})
+
+describe('pension lump-sum election', () => {
+  // `validCouplePlan` stamps `updatedAtIso` from `fixedNow`, so the document's
+  // own as-of year is 2026 throughout this block.
+  function planWithElection(
+    offer: { amount: number; electionYear: number },
+    rolloverAccountId: string,
+  ): Plan {
+    const plan = validCouplePlan()
+    plan.accounts.push({
+      type: 'traditional',
+      id: 'inh1',
+      name: 'Inherited IRA',
+      ownerPersonId: 'p1',
+      annualReturnPct: null,
+      kind: 'ira',
+      balance: 150_000,
+      annualContribution: 0,
+      inherited: { ownerDeathYear: 2022, decedentHadStartedRmds: true },
+    })
+    plan.accounts.push({
+      type: 'pension',
+      id: 'pen1',
+      name: 'Company pension',
+      ownerPersonId: 'p1',
+      annualReturnPct: null,
+      startAge: 65,
+      monthlyAmount: 2_000,
+      colaPct: 0,
+      survivorPct: 50,
+      lumpSumOffer: offer,
+      lumpSumElection: { rolloverAccountId },
+    })
+    return plan
+  }
+
+  it('accepts an owned traditional target with a future election year', () => {
+    expect(parsePlan(planWithElection({ amount: 300_000, electionYear: 2030 }, 'a2')).ok).toBe(true)
+  })
+
+  it('accepts an election year equal to the plan’s as-of year', () => {
+    expect(parsePlan(planWithElection({ amount: 300_000, electionYear: 2026 }, 'a2')).ok).toBe(true)
+  })
+
+  it('refuses an election year already past, naming the repair', () => {
+    // Crediting a past election in the first projection year would double-count
+    // it: balances are what the household holds today, so a rollover that really
+    // happened is already inside the receiving account's entered balance.
+    const parsed = parsePlan(planWithElection({ amount: 300_000, electionYear: 2025 }, 'a2'))
+    expect(parsed.ok).toBe(false)
+    expect(parsed.ok ? [] : parsed.issues.join('\n')).toContain(
+      'an elected pension lump sum cannot have an election year in the past (if the rollover already happened, clear the election and add its dollars to the receiving account balance)',
+    )
+  })
+
+  it('leaves an unelected offer with a past election year alone', () => {
+    // An offer on record with no election changes nothing in the ledger, and the
+    // decision view already ignores a past one. Only the elected shape is refused.
+    const plan = planWithElection({ amount: 300_000, electionYear: 2020 }, 'a2')
+    const pension = plan.accounts[plan.accounts.length - 1] as { lumpSumElection?: unknown }
+    pension.lumpSumElection = undefined
+    expect(parsePlan(plan).ok).toBe(true)
+  })
+
+  it('refuses an inherited IRA as the rollover target', () => {
+    const parsed = parsePlan(planWithElection({ amount: 300_000, electionYear: 2030 }, 'inh1'))
+    expect(parsed.ok).toBe(false)
+    expect(parsed.ok ? [] : parsed.issues.join('\n')).toContain(
+      'a pension lump sum must roll over into an existing traditional account you own (not an inherited IRA)',
+    )
+  })
+
+  it('refuses a rollover target that is not a traditional account at all', () => {
+    expect(parsePlan(planWithElection({ amount: 300_000, electionYear: 2030 }, 'a1')).ok).toBe(false)
+    expect(parsePlan(planWithElection({ amount: 300_000, electionYear: 2030 }, 'nope')).ok).toBe(false)
   })
 })
 

@@ -460,15 +460,21 @@ export function AccountFields({ account, index }: { account: Account; index: num
           />
           <NumberField
             label="Election year"
-            help="The year the election is due, and the year the lump sum would be paid if taken."
+            help="The year the election is due, and the year the lump sum would be paid if taken. Taking the lump sum needs a year that has not passed yet: if the rollover already happened, clear the election and add its dollars to the receiving account balance."
             value={account.lumpSumOffer.electionYear}
-            min={1900}
+            // An offer kept on record for comparison may be any year; an ELECTED
+            // one may not be in the past, because the projection has no year left
+            // to perform the rollover in and the dollars are already inside the
+            // receiving account's entered balance. The engine refuses that shape
+            // at parse, so bound the field rather than letting the user author a
+            // plan that will not store.
+            min={account.lumpSumElection ? new Date().getFullYear() : 1900}
             max={2200}
             onCommit={(v) => set('lumpSumOffer', { ...account.lumpSumOffer!, electionYear: Math.round(v ?? new Date().getFullYear()) })}
           />
           <SelectField
             label="Election"
-            help="Take the lump sum: in the election year the offer rolls over tax-free into the chosen traditional IRA/401(k) and the pension never pays its annuity. Keep the annuity: the offer stays on record for comparison only. Taking the lump sum requires a traditional account to receive the rollover."
+            help="Take the lump sum: in the election year the offer rolls over tax-free into the chosen traditional IRA/401(k) and the pension never pays its annuity. Keep the annuity: the offer stays on record for comparison only. Taking the lump sum requires a traditional account you own to receive the rollover. An inherited IRA cannot receive it."
             value={account.lumpSumElection ? 'lumpSum' : 'annuity'}
             options={[
               { value: 'annuity', label: 'Keep the annuity (undecided)' },
