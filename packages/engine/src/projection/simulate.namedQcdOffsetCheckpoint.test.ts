@@ -279,7 +279,7 @@ describe('the named-QCD donor ledgers across a rolled-back annual pass', () => {
       .toBe(settled.years[0]?.qcdActionExecution?.totalExcludableAmount)
   })
 
-  it('holds the income offset to the executor’s published RMD-satisfied figure', () => {
+  it('pins the executor’s RMD-satisfied figure at zero, the offset’s sole input', () => {
     // The offset used to be capped at the requirement's taxable share — the
     // pre-408(d)(8)(D) ceiling — behind a value that is structurally zero
     // today: the annual pass distributes the whole required amount in cash
