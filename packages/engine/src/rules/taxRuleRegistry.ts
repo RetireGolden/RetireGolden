@@ -8113,6 +8113,39 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
     ],
   },
+
+  'irc-408-d-2-C-projection-pro-rata-measurement-instant': {
+    title: 'The instant the Form 8606 pro-rata denominator is measured',
+    statement:
+      'Section 408(d)(2)(C) fixes the section 72 contract value at the CLOSE of the calendar year and then adds the year’s distributions back to it, which is what Form 8606 line 6 asks for — the December 31 value of the traditional IRAs, after a full year of investment return on whatever the account retained. The annual ledger measures the denominator at a different instant: the aggregated balance immediately after contributions and immediately BEFORE the year’s first distribution. Those two instants agree on the dollars that were distributed, because the ledger credits growth after distributions, and they DISAGREE by exactly the growth earned on the balance that stayed in the account. The pre-distribution measure is therefore year-end-BEFORE-growth plus distributions, not line 6 plus distributions. The engine denominator is invariant to the return assumption; the statutory one is not.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'bothDirections',
+    conventionRationale:
+      'Direction of error: the sign is the sign of the year’s return on the retained balance. In a gain year the statutory denominator is larger, the basis fraction smaller, and the engine returns MORE basis than the form does — understating that year’s income and spending basis that later years then do not have. In a loss year the denominator shrinks below the engine’s, the fraction rises, and the engine returns LESS basis, overstating income. Neither is a timing wash within the year and the two do not cancel across a lifetime unless returns do. Magnitude: the departure is (line 7 + line 8) × growth-on-the-retained-balance ÷ denominator, so it is negligible on a household whose only IRA activity is a required distribution and material on a conversion year, where line 8 can be many times line 7. Pinned by a fixture that holds the return assumption as the only moving part: a 76-year-old with a $1,000,000 IRA carrying $200,000 of basis, a $42,194.09 required distribution, a $40,000 qualified charitable distribution and a $100,000 Roth conversion reports ordinary income of $80,903.66 at a 0 percent return, at a 5 percent return, and at a negative 5 percent return alike. At 5 percent the form computes line 6 as $900,696.20, line 9 as $1,002,890.30, a basis fraction of 0.1994236, and ordinary income of $81,814.18 — $910.52 more than the ledger reports. Not corrected here: the fix is a second measurement of the aggregated balance after the year’s growth is credited, which moves tax figures for every basis-holding household whether or not it gives to charity, and it is tracked as its own slice. This record exists because irc-408-d-8-D-projection-qcd-after-pro-rata now cites 408(d)(2) INCLUDING the close-of-year sentence as authority for a denominator that is measured at a different instant, and an authority quoted for a measure the engine does not take must be registered rather than left implied.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 408(d)(2)(C)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim',
+      quotedText:
+        'the value of the contract, income on the contract, and investment in the contract shall be computed as of the close of the calendar year in which the taxable year begins. For purposes of subparagraph (C), the value of the contract shall be increased by the amount of any distributions during the calendar year.',
+    }, {
+      kind: 'formInstruction',
+      citation: 'Instructions for Form 8606 (2025), Line 6',
+      url: 'https://www.irs.gov/pub/irs-pdf/i8606.pdf',
+      quotedText:
+        'Enter the total value of all your traditional IRAs as of December 31, 2025, plus any outstanding rollovers.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-07',
+    implementedBy: [
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/strategies/iraBasis.ts',
+    ],
+  },
 } as const satisfies Record<string, TaxRuleRecord>
 
 export const TAX_RULE_REGISTRY = Object.freeze(registry)

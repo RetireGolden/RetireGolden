@@ -3237,13 +3237,24 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
      * owner rather than only the ones carrying basis.
      *
      * A named QCD's exclusion is capped by its donor's otherwise-taxable pool,
-     * and the pool's Form 8606 denominator is invariant to where in the year it
-     * is measured: this ledger credits growth after distributions, so every
-     * later debit moves a dollar out of the balance and into the annual line it
-     * belongs to, leaving `balance + distributions` unchanged. Measured here it
-     * is the same number the year end would produce, and it is the only point
+     * and this measure is invariant ACROSS THE YEAR'S DEBITS: the ledger credits
+     * growth after distributions, so every later debit moves a dollar out of the
+     * balance and into the annual line it belongs to, leaving
+     * `balance + distributions` unchanged. That is what makes measuring here
+     * safe against the ordering of the distributions, and here is the only point
      * at which it is available -- the gift settles before the conversions and
      * withdrawals that finish consuming the pool.
+     *
+     * IT IS NOT INVARIANT ACROSS THE GROWTH CREDIT, and an earlier version of
+     * this note overreached by saying it was "the same number the year end would
+     * produce". `balance + distributions` is year-end-BEFORE-growth plus
+     * distributions. Form 8606 line 9 is line 6 plus distributions, and line 6
+     * is the December 31 value after the year's return on the retained balance
+     * -- the instant §408(d)(2)(C) fixes the §72 contract value at. The two
+     * differ by that growth. Registered as
+     * `irc-408-d-2-C-projection-pro-rata-measurement-instant`; it is a
+     * pre-existing departure of the pro-rata denominator, not of this pool
+     * measure's use as a 408(d)(8)(D) ceiling, and it is not corrected here.
      */
     const preDistributionOwnedIraBalance = new Map<string, number>()
     for (const state of balances) {
@@ -3858,15 +3869,26 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
      * carving each owner's qualified gift out of the line-7 gross first.
      *
      * The carve is greedy across an owner's entries rather than spread over
-     * them. The year's fraction is owner-wide and `splitIraDistribution` caps
-     * every draw at the basis that is left, so the owner's TOTAL basis recovery
-     * is the same either way; what greed buys is that every entry the gift does
-     * not reach still presents its own untouched gross to the exact-cent
-     * settlement replay and keeps its assumed character. An entry the gift DOES
-     * reach presents a smaller gross, finds no matching effect, and falls back
-     * to the pro-rata computation -- which is the right answer and not a gap:
-     * a settlement effect computed for the whole distribution does not describe
-     * the part of it that went to charity.
+     * them, and the owner's TOTAL basis recovery is the same either way: the
+     * year's fraction is owner-wide and `splitIraDistribution` caps every draw
+     * at the basis that is left.
+     *
+     * NO ASSUMED CHARACTER IS AT RISK IN A CARVE YEAR, and this must not be read
+     * as claiming the settlement reconciles in one. A carve exists only where
+     * the gift was routed out of a required distribution, and that is exactly
+     * the shape `ownedNonRothIraRuntimeSourceSeries.ts` refuses with
+     * `qcdStageRequired` -- "a QCD routed out of an RMD debit cannot be
+     * source-allocated from a household scalar" -- so the replay commits
+     * nothing and `assumedEffects` is empty for the whole year. A gift taken
+     * wholly beyond the requirement does not trip that refusal, but it produces
+     * no carve either. The two never coexist, so no entry can lose an assumed
+     * character it was going to be given.
+     *
+     * `splitWithAssumedCharacter` is still what is called, for the day that
+     * changes. Its behaviour then would be right rather than a gap: an entry the
+     * gift reaches presents a smaller gross, finds no matching effect, and falls
+     * back to the pro-rata computation, because a settlement effect computed for
+     * the whole distribution does not describe the part that went to charity.
      */
     const commitDeferredForcedDistributions = (
       entries: readonly DeferredForcedIraDistribution[],

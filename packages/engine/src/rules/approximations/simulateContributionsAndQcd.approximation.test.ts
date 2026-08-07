@@ -349,3 +349,116 @@ describeRule('treas-reg-1-408-8-g-projection-named-qcd-beyond-rmd', {
     })
   })
 })
+
+// --------------------------------------------------------------------------
+// The instant the Form 8606 pro-rata denominator is measured
+// --------------------------------------------------------------------------
+
+// IRC 408(d)(2)(C) computes the section 72 contract value "as of the close of
+// the calendar year" and then adds the year's distributions back, which is
+// Form 8606 line 6 — the December 31 value, AFTER a year of return on whatever
+// the account retained. The ledger measures the pre-distribution balance
+// instead, which is year-end-BEFORE-growth plus distributions. The two differ
+// by exactly the growth on the retained balance, so the ledger's denominator is
+// invariant to the return assumption and the statute's is not.
+//
+// The shape holds everything but the return fixed and gives line 8 far more
+// weight than line 7, which is where the departure is material: a 76-year-old
+// with a 1,000,000 dollar IRA that is 20 percent basis, taking the 42,194.09
+// requirement, routing 40,000 of it to charity, and converting 100,000.
+const INSTANT_IRA_BALANCE = 1_000_000
+const INSTANT_IRA_BASIS = 200_000
+const INSTANT_REQUIRED_DISTRIBUTION = INSTANT_IRA_BALANCE / 23.7
+const INSTANT_GIFT = 40_000
+const INSTANT_CONVERSION = 100_000
+const INSTANT_RETURN_PCT = 5
+/** Form 8606 lines 7 + 8: the requirement the household kept, plus the conversion. */
+const INSTANT_ANNUAL_GROSS =
+  INSTANT_REQUIRED_DISTRIBUTION - INSTANT_GIFT + INSTANT_CONVERSION
+/** Line 6 at a 5 percent return: what the account retained, grown. */
+const INSTANT_LINE_6 =
+  (INSTANT_IRA_BALANCE - INSTANT_REQUIRED_DISTRIBUTION - INSTANT_CONVERSION) *
+  (1 + INSTANT_RETURN_PCT / 100)
+/** Line 9, and the fraction it produces against the unreduced basis. */
+const INSTANT_LINE_9 = INSTANT_LINE_6 + INSTANT_ANNUAL_GROSS
+/** The ledger's denominator: pre-distribution pool less the qualified gift. */
+const INSTANT_ENGINE_DENOMINATOR = INSTANT_IRA_BALANCE - INSTANT_GIFT
+
+function measurementInstantPlan(returnPct: number): Plan {
+  const plan = soloPlan('1950-01-01', null) // 76 in 2026
+  plan.assumptions.defaultReturnPct = returnPct
+  // Spending is funded from cash so nothing but the requirement, the gift and
+  // the conversion moves through the IRA, and the return is the only variable.
+  plan.expenses.baseAnnual = 0
+  plan.expenses.healthcare = {
+    pre65MonthlyPremiumPerPerson: 0,
+    applyAcaCredit: false,
+    medicareExtrasMonthlyPerPerson: 0,
+  }
+  const ira = traditionalIra(INSTANT_IRA_BALANCE) as Extract<Account, { type: 'traditional' }>
+  plan.accounts = [
+    { ...(cash(200_000) as Extract<Account, { type: 'cash' }>), annualReturnPct: 0 },
+    { ...ira, nondeductibleBasis: INSTANT_IRA_BASIS, annualReturnPct: returnPct },
+    rothIra(0),
+  ]
+  plan.strategies.qcdAnnual = INSTANT_GIFT
+  plan.strategies.rothConversion = {
+    mode: 'manual',
+    conversions: [{ year: 2026, amount: INSTANT_CONVERSION }],
+  }
+  return plan
+}
+
+describeRule('irc-408-d-2-C-projection-pro-rata-measurement-instant', {
+  readings: {
+    // 408(d)(2)(C) with Form 8606 line 6: the denominator is the December 31
+    // value grown at 5 percent, plus lines 7 and 8. 1,002,890.30, a fraction of
+    // 0.1994236, and 81,814.18 of ordinary income.
+    statuteMeasuresTheContractAtTheCloseOfTheYear:
+      INSTANT_ANNUAL_GROSS * (1 - INSTANT_IRA_BASIS / INSTANT_LINE_9),
+    // The ledger: the pre-distribution pool less the qualified gift, which
+    // never saw the year's return. 960,000, a fraction of 0.2083333, and
+    // 80,903.66 — the same figure at any return at all.
+    engineMeasuresBeforeTheFirstDistribution:
+      INSTANT_ANNUAL_GROSS * (1 - INSTANT_IRA_BASIS / INSTANT_ENGINE_DENOMINATOR),
+  },
+  accepted: 'statuteMeasuresTheContractAtTheCloseOfTheYear',
+  produced: 'engineMeasuresBeforeTheFirstDistribution',
+}, ({ accepted, produced }) => {
+  it('prices a gain year off a denominator that never saw the gain', () => {
+    const year = year2026(measurementInstantPlan(INSTANT_RETURN_PCT))
+
+    // Both readings rest on this exact requirement, gift and conversion.
+    expect(year.rmd).toBeCloseTo(INSTANT_REQUIRED_DISTRIBUTION, 6)
+    expect(year.qcd).toBeCloseTo(INSTANT_GIFT, 6)
+    expect(year.rothConversion).toBeCloseTo(INSTANT_CONVERSION, 6)
+
+    expect(year.magi).toBeCloseTo(produced, 6)
+    expect(year.magi).toBeCloseTo(80_903.66, 2)
+    expect(year.magi).not.toBeCloseTo(accepted, 6)
+    expect(accepted).toBeCloseTo(81_814.18, 2)
+    // The gap the measurement instant costs this household, in one year.
+    expect(accepted - produced).toBeCloseTo(910.52, 2)
+    // And the two intermediate figures the accepted reading is built from, so a
+    // future reader can check the derivation rather than the conclusion.
+    expect(INSTANT_LINE_6).toBeCloseTo(900_696.20, 2)
+    expect(INSTANT_LINE_9).toBeCloseTo(1_002_890.30, 2)
+  })
+
+  it('returns the same income at a 0 percent and a negative return', () => {
+    // The control, and the whole shape of the defect: a denominator that is
+    // measured before the year's growth cannot move when the growth does. If
+    // this test ever fails, the measurement instant moved and the record above
+    // is what has to be reclassified.
+    const gain = year2026(measurementInstantPlan(INSTANT_RETURN_PCT))
+    const flat = year2026(measurementInstantPlan(0))
+    const loss = year2026(measurementInstantPlan(-INSTANT_RETURN_PCT))
+
+    expect(flat.magi).toBeCloseTo(produced, 6)
+    expect(gain.magi).toBeCloseTo(flat.magi, 6)
+    expect(loss.magi).toBeCloseTo(flat.magi, 6)
+    // The statute does not agree with itself across the three, which is what
+    // makes the invariance above a departure rather than a coincidence.
+    expect(accepted).not.toBeCloseTo(produced, 6)
+  })
+})
