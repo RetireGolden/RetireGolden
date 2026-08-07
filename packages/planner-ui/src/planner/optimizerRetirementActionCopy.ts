@@ -78,5 +78,5 @@ export function optimizerRetirementActionExplanation(
 /** What the user can rely on, and what a plan edit changes. */
 export const OPTIMIZER_RETIREMENT_ACTION_NEXT_STEP =
   'Your Results and Monte Carlo projections still run with these actions in place, at the amounts and ' +
-  'years you recorded. Removing the recorded actions under Strategy lets this page run, on the plan that ' +
+  'years you recorded. Removing the recorded actions under Strategy lets this page run on the plan that ' +
   'remains once those actions are gone.'
