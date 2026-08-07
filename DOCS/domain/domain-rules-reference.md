@@ -149,7 +149,7 @@ Source: [IRS 2026 limits announcement](https://www.irs.gov/newsroom/401k-limit-i
   IRA, and an employer plan each stand outside the sum and must distribute their own amount
   (`treas-reg-1-408-8-e-1-i-aggregate-ira-rmd-sum`).
 - **QCD:** direct IRA-to-charity from age 70½, excluded from income, counting toward an RMD when one is due; 2026
-  limit $111,000. A QCD is **not** conditional on an RMD — 408(d)(8) turns on the donor's age and nothing in it
+  limit $111,000, and that figure is one donor's. A QCD is **not** conditional on an RMD — 408(d)(8) turns on the donor's age and nothing in it
   references section 401(a)(9) — and the ledger now models that. The pre-RMD window from 70½ to the applicable age
   is open, and dollars requested beyond the owner's IRA RMD are debited straight from donor-owned aggregated IRAs,
   shrinking every later RMD base. Age 70½ is resolved from the birth month at annual granularity (attained 71, or
@@ -158,20 +158,41 @@ Source: [IRS 2026 limits announcement](https://www.irs.gov/newsroom/401k-limit-i
   (`irc-408-d-8-B-ii-projection-annual-age-proxy`) and errs permissively by up to twelve months for every birth
   month. The threshold date it is layered on is a separate question: the six-calendar-months sentence survives only
   in a defined-benefit provision, and nothing resolves a month-end or leap-day birth, so that convention is
-  recorded `unsettled` in `irc-408-d-8-B-ii-age-70-half`. The income reduction covers only
-  the taxable share of the RMD dollars routed out; the beyond-RMD dollars never entered income, so deducting them
-  would be phantom. Three approximations remain in the annual ledger, each registered: eligibility and the annual
-  limit are applied to the **household** rather than to each donor
-  (`irc-408-d-8-A-projection-household-qcd-aggregation`), pro-rata basis recovery runs across the whole
-  distribution before the gift is subtracted instead of leaving the gift out of the section 72 computation
-  (`irc-408-d-8-D-projection-qcd-after-pro-rata`), and the post-70½ deductible-contribution offset in the second
-  sentence of 408(d)(8)(A) is not applied — the aggregate arm excludes the full gift however much the donor has
-  deducted since 70½ and keeps no running total (`irc-408-d-8-A-projection-post-70-half-contribution-offset`). No
-  charity, direct transfer, or per-donor IRA source is identified.
+  recorded `unsettled` in `irc-408-d-8-B-ii-age-70-half`. **The gift is deemed pre-tax.** Under 408(d)(8)(D) the
+  distribution is treated as includible up to the aggregate amount that would be includible if all of the donor's
+  individual retirement plans were distributed in the year and treated as one contract, so the qualified gift
+  leaves the section 72 computation entirely: it returns no basis, it is absent from the Form 8606 line-7
+  numerator and from the line-9 denominator, the whole qualified routed amount leaves income, and the year's other
+  distributions pro-rate over the reduced pool. A gift past that aggregate includible amount is not a qualified
+  charitable distribution in the excess; the excess stays on line 7, recovers basis, and is published per
+  occurrence so the basis replay reports it rather than inferring it
+  (`irc-408-d-8-D-projection-qcd-after-pro-rata`, now `settled` and carrying the corrected statutory figures it
+  was rewritten with). **The household scalar is charged to donors before it is measured.** Eligibility turns on
+  each individual's own age, the ask is capped at the sum of the living donors' own indexed limits, the routed
+  half is charged in proportion to each owner's own required distribution and never past it, the beyond-RMD half
+  is charged at the account it drains, and required distributions are not pooled across spouses
+  (`irc-408-d-8-A-projection-household-qcd-aggregation`, now `settled`). A married couple with two eligible donors
+  may therefore exclude up to two indexed limits, and a household with one eligible donor is held to one however
+  large an ineligible spouse's IRA is. Conventions the statute does not supply survive that correction. Each
+  donor's limit is applied after attribution rather than to the ask. What one donor's limit refuses is offered to
+  the other donors in sorted owner id order, because the scalar carries no donor intent to honour and plan account
+  ordering would make which donor gives depend on how the accounts happen to be listed. And dollars no donor can
+  route or drain are dropped rather than given, because giving them would exclude dollars past a taxpayer's limit.
+  The carve itself runs in plan account order and each entry's line-7 gross rounds on its own, so the published
+  line-9 denominator can differ by one cent across account permutations; the record states that bound and why
+  paying it is cheaper than a year that stops settling at all. A gift year also settles at the statutory
+  close-of-year denominator now, so it no longer reaches the legacy fallback measure, which stays `approximated`
+  (`irc-408-d-2-C-projection-pro-rata-measurement-instant`) for the two shapes that still reach it: an
+  owned-IRA-funded annuity purchase and a Plan-declared exact owned-IRA withdrawal. **One approximation remains in
+  this arm.** The post-70½ deductible-contribution offset in the second sentence of 408(d)(8)(A) is not applied:
+  the aggregate arm excludes the full gift however much the donor has deducted since 70½ and keeps no running
+  total (`irc-408-d-8-A-projection-post-70-half-contribution-offset`). The user still enters one household number,
+  no charity or direct transfer is identified, and the per-owner attribution is a modeling convention rather than
+  a source the household chose.
 - **Named QCD actions.** A `qcd` retirement action names the donor, one owned source IRA, an exact-cent
   allocation, and a charity, and the annual projection **commits** it — `simulate.ts` calls the execution
   prerequisite, the physical staging, and the executor, and only the executor can report a committed gift.
-  Everything the aggregate arm approximates at household level is answered per donor here. Age 70½ is the exact
+  What the aggregate arm still approximates is answered exactly here. Age 70½ is the exact
   civil date 846 calendar months from the birth date with a month-end clamp, published on the record as
   `calculation: 'addCalendarMonths846WithMonthEndClamp'` so a reader can see the arithmetic was chosen
   (`irc-408-d-8-B-ii-age-70-half`, `unsettled`: the six-calendar-months sentence survives only in a
