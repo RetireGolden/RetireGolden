@@ -1351,6 +1351,12 @@ const registry = {
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
+      citation: 'IRC 103(a)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section103&num=0&edition=prelim',
+      quotedText:
+        'Except as provided in subsection (b), gross income does not include interest on any State or local bond.',
+    }, {
+      kind: 'statute',
       citation: 'IRC 1411(c)(1)(A)(i)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1411&num=0&edition=prelim',
       quotedText:
