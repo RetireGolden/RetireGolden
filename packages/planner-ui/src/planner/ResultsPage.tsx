@@ -76,6 +76,7 @@ const INCOME_SOURCES = [
   { key: 'recurring', label: 'Other recurring', color: 'var(--chart-5)' },
   { key: 'oneTime', label: 'One-time', color: 'var(--chart-6)' },
   { key: 'taxableYield', label: 'Brokerage yield', color: 'var(--chart-7)' },
+  { key: 'taxExemptInterest', label: 'Tax-exempt interest', color: 'var(--chart-3)' },
 ] as const
 
 /** Spending categories, stacked bottom-to-top; sums to expenses + tax + penalties. */
@@ -269,6 +270,7 @@ export function ResultsPage() {
         recurring: adj(y.year, y.incomes.recurring),
         oneTime: adj(y.year, y.incomes.oneTime),
         taxableYield: adj(y.year, y.incomes.taxableYield),
+        taxExemptInterest: adj(y.year, y.incomes.taxExemptInterest),
       })),
     [view, adj],
   )
@@ -291,7 +293,7 @@ export function ResultsPage() {
 
   const handleCsv = () => {
     const cols = [
-      'year', 'filingStatus', 'wages', 'socialSecurity', 'pension', 'annuity', 'tipsLadder', 'recurring', 'oneTimeIncome', 'taxableInterest', 'ordinaryDividends', 'qualifiedDividends', 'taxableYield', 'totalIncome',
+      'year', 'filingStatus', 'wages', 'socialSecurity', 'pension', 'annuity', 'tipsLadder', 'recurring', 'oneTimeIncome', 'taxableInterest', 'Tax-exempt interest', 'ordinaryDividends', 'qualifiedDividends', 'taxableYield', 'totalIncome',
       'baseSpending', 'goals', 'debtService', 'propertyCosts', 'healthcare', 'insurancePremiums', 'careCost', 'ltcBenefit', 'requiredSpending', 'targetSpending', 'idealSpending', 'excessSpending', 'intendedSpending', 'totalExpenses', 'contributions', 'employerMatch', 'rmd', 'qcd',
       'rothConversion', 'tax', 'amt', 'penalties', 'magi', 'withdrawals', 'realizedGains', 'lossCarryforwardUsed', 'lossCarryforwardRemaining', 'shortfall', 'investable',
       'requiredShortfall', 'targetShortfall', 'idealShortfall', 'excessShortfall', 'guardrailAction', 'guardrailFactor', 'flexibleGoalsFunded', 'flexibleGoalsPartiallyFunded', 'flexibleGoalsDeferred', 'flexibleGoalsSkipped', 'flexibleGoalFundedAmount', 'flexibleGoalUnfundedAmount', 'insuranceCashValue', 'ladderValue', 'deathBenefit', 'netWorth',
@@ -301,7 +303,7 @@ export function ResultsPage() {
       lines.push(
         [
           y.year, y.filingStatus, y.incomes.wages, y.incomes.socialSecurity, y.incomes.pension, y.incomes.annuity, y.incomes.tipsLadder, y.incomes.recurring,
-          y.incomes.oneTime, y.incomes.taxableInterest, y.incomes.ordinaryDividends, y.incomes.qualifiedDividends, y.incomes.taxableYield, y.incomes.total, y.expenses.baseSpending, y.expenses.oneTimeGoals, y.expenses.debtService,
+          y.incomes.oneTime, y.incomes.taxableInterest, y.incomes.taxExemptInterest, y.incomes.ordinaryDividends, y.incomes.qualifiedDividends, y.incomes.taxableYield, y.incomes.total, y.expenses.baseSpending, y.expenses.oneTimeGoals, y.expenses.debtService,
           y.expenses.propertyCosts, y.expenses.healthcare, y.expenses.insurancePremiums, y.expenses.careCost, y.expenses.ltcBenefit, y.expenses.requiredSpending, y.expenses.targetSpending, y.expenses.idealSpending, y.expenses.excessSpending, y.expenses.intendedSpending, y.expenses.total, y.contributions, y.employerMatch, y.rmd, y.qcd, y.rothConversion, y.tax, y.amt, y.penalties,
           y.magi, y.withdrawals.total, y.realizedGains, y.capitalLossUsedAgainstGains + y.capitalLossUsedAgainstOrdinary, y.capitalLossCarryforwardRemaining, y.shortfall, y.investableTotal,
           y.requiredShortfall, y.targetShortfall, y.idealShortfall, y.excessShortfall, y.guardrailAction, y.expenses.guardrailFactor.toFixed(2), y.flexibleGoals.funded, y.flexibleGoals.partiallyFunded, y.flexibleGoals.deferred, y.flexibleGoals.skipped, y.flexibleGoals.fundedAmount, y.flexibleGoals.unfundedAmount, y.insuranceCashValue, y.ladderValue, y.deathBenefit, y.netWorth,

@@ -685,6 +685,7 @@ function ScenarioDetail({
           { label: 'Recurring income', metric: comparison.income.recurring, format: 'money' },
           { label: 'One-time income', metric: comparison.income.oneTime, format: 'money' },
           { label: 'Taxable yield', metric: comparison.income.taxableYield, format: 'money' },
+          { label: 'Tax-exempt interest', metric: comparison.income.taxExemptInterest, format: 'money' },
           { label: 'Total gross income', metric: comparison.income.total, format: 'money' },
         ]}
       />

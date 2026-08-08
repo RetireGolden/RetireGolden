@@ -131,6 +131,12 @@ export function AccountFields({ account, index }: { account: Account; index: num
             value={(account.qualifiedRatio ?? 0.85) * 100}
             onCommit={(v) => set('qualifiedRatio', Math.min(1, Math.max(0, (v ?? 85) / 100)))}
           />
+          <PercentField
+            label="Tax-exempt interest yield %"
+            help="Annual interest from municipal bonds held in this account, as a percent of its start-of-year balance. Enter a bond's yield here or in Interest yield, not in both fields. This income never joins ordinary taxable income, but it does raise taxable Social Security, ACA household MAGI, and the income Medicare reads for IRMAA two years later. Two limits to know: the model treats none of it as private-activity-bond interest for AMT, and it does not add any of it to state taxable income even though some states tax municipal bonds from other states."
+            value={account.taxExemptInterestYieldPct ?? 0}
+            onCommit={(v) => set('taxExemptInterestYieldPct', v ?? 0)}
+          />
           <CheckboxField
             label="Reinvest yield"
             help="When checked, interest and dividends stay in the brokerage account and add to basis. When unchecked, they flow into annual cash surplus."
@@ -164,6 +170,12 @@ export function AccountFields({ account, index }: { account: Account; index: num
             value={account.qualifiedRatio === undefined ? null : account.qualifiedRatio * 100}
             allowNull
             onCommit={(v) => set('qualifiedRatio', v === null || v === undefined ? undefined : Math.min(1, Math.max(0, v / 100)))}
+          />
+          <PercentField
+            label="Tax-exempt interest yield %"
+            help="Annual interest from municipal bonds held in this account, as a percent of its start-of-year balance. Enter a bond's yield here or in Interest yield, not in both fields. This income never joins ordinary taxable income, but it does raise taxable Social Security, ACA household MAGI, and the income Medicare reads for IRMAA two years later. Two limits to know: the model treats none of it as private-activity-bond interest for AMT, and it does not add any of it to state taxable income even though some states tax municipal bonds from other states."
+            value={account.taxExemptInterestYieldPct ?? 0}
+            onCommit={(v) => set('taxExemptInterestYieldPct', v ?? 0)}
           />
           <CheckboxField
             label="Reinvest yield"
