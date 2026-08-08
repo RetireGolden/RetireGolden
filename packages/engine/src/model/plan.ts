@@ -413,6 +413,20 @@ export const taxableAccountSchema = z.object({
   dividendYieldPct: nonNegative.optional(),
   /** Fraction of dividends taxed as qualified dividends. */
   qualifiedRatio: z.number().min(0).max(1).optional(),
+  /**
+   * Annual federally tax-exempt (municipal-bond) interest yield as a percent of
+   * start-of-year balance. Distinct from `interestYieldPct` and never derived
+   * from the allocation blend: enter a bond sleeve's yield in exactly one of the
+   * two fields — the same dollars stated in both would double-count. The income
+   * it generates is excluded from AGI/ordinary income and enters only the
+   * program bases in DOCS/domain/domain-rules-reference.md §20. On an
+   * allocated account the class blend still supplies taxable interest (e.g.
+   * the bonds class) unless `interestYieldPct` is set explicitly; a muni sleeve
+   * modeled via this field should set `interestYieldPct` explicitly (usually 0
+   * for the sleeve's share) so the blend does not also price the same bonds as
+   * taxable.
+   */
+  taxExemptInterestYieldPct: nonNegative.optional(),
   /** Reinvest generated yield into the account instead of paying it into cash flow. */
   reinvestDividends: z.boolean().optional(),
   /** Opt-in class allocation; supersedes annualReturnPct and (unless explicitly set) drives the yield fields. */

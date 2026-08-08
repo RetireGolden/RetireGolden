@@ -112,6 +112,22 @@ describe('sizeRothConversion', () => {
     expect(r.amount).toBeCloseTo(55_000, 1)
   })
 
+  it('includes top-level tax-exempt interest in the IRMAA metric outside ACA years', () => {
+    const base = { ordinaryIncomeBase: 50_000, aca: undefined }
+    // omitted → tier overshoot: MAGI metric understates characterized exempt interest.
+    const omitted = sizeRothConversion(fill('irmaaTier', 1), input(base))
+    // included → smaller conversion: metric carries the addback like ledger MAGI history.
+    const included = sizeRothConversion(
+      fill('irmaaTier', 1),
+      input({ ...base, taxExemptInterest: 10_000 }),
+    )
+    expect(omitted.ok).toBe(true)
+    expect(included.ok).toBe(true)
+    if (!omitted.ok || !included.ok) return
+    expect(included.amount).toBeLessThan(omitted.amount)
+    expect(omitted.amount - included.amount).toBeCloseTo(10_000, 1)
+  })
+
   it('caps MAGI under the ACA 400% FPL cliff', () => {
     const r = sizeRothConversion(fill('acaCliff', null), input())
     expect(r.ok).toBe(true)

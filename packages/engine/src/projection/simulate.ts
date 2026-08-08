@@ -749,6 +749,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     }
   }
   const ssa44ActiveInYear = (y: number) => ssa44EventYears.some((e) => y > e && y <= e + 2)
+  const planHasTaxExemptYieldAttestation = plan.accounts.some(
+    (account) =>
+      account.type === 'taxable' && account.taxExemptInterestYieldPct !== undefined,
+  )
 
   const endYear = opts.horizonEndYear ?? Math.max(...people.map((p) => dobYear(p) + lifeAgeOf(p)))
 
@@ -1884,6 +1888,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       ordinaryDividends: 0,
       qualifiedDividends: 0,
       taxableYield: 0,
+      taxExemptInterest: 0,
       total: 0,
     }
     let ordinaryIncome = 0
@@ -1906,23 +1911,28 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       const blendedYield = track ? blendedTaxableYield(track.weights, classParams) : null
       const interestYieldPct = Math.max(0, state.account.interestYieldPct ?? blendedYield?.interestYieldPct ?? 0)
       const dividendYieldPct = Math.max(0, state.account.dividendYieldPct ?? blendedYield?.dividendYieldPct ?? 0)
-      const totalYieldPct = interestYieldPct + dividendYieldPct
-      if (totalYieldPct <= 0) continue
+      const taxExemptYieldPct = Math.max(0, state.account.taxExemptInterestYieldPct ?? 0)
+      const totalTaxableYieldPct = interestYieldPct + dividendYieldPct
+      const totalDistributedYieldPct = totalTaxableYieldPct + taxExemptYieldPct
+      if (totalDistributedYieldPct <= 0) continue
       const interest = startBalance * (interestYieldPct / 100)
       const dividends = startBalance * (dividendYieldPct / 100)
+      const exempt = startBalance * (taxExemptYieldPct / 100)
       const qualified = dividends * Math.min(1, Math.max(0, state.account.qualifiedRatio ?? blendedYield?.qualifiedRatio ?? 0.85))
       const ordinaryDividends = dividends - qualified
-      const gross = interest + dividends
+      const taxableGross = interest + dividends
+      const gross = taxableGross + exempt
 
       incomes.taxableInterest += interest
       incomes.ordinaryDividends += ordinaryDividends
       incomes.qualifiedDividends += qualified
-      incomes.taxableYield += gross
+      incomes.taxableYield += taxableGross
+      incomes.taxExemptInterest += exempt
       ordinaryIncome += interest + ordinaryDividends
 
       const reinvest = state.account.reinvestDividends ?? true
       if (reinvest) taxableYieldReinvested += gross
-      taxableYieldByAccountId.set(state.account.id, { gross, totalYieldPct, reinvest })
+      taxableYieldByAccountId.set(state.account.id, { gross, totalYieldPct: totalDistributedYieldPct, reinvest })
     }
 
     // Pass 1: wages (must precede Social Security for the earnings test).
@@ -2410,7 +2420,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       incomes.tipsLadder +
       incomes.recurring +
       incomes.oneTime +
-      incomes.taxableYield
+      incomes.taxableYield +
+      incomes.taxExemptInterest
 
     // --- expenses ---------------------------------------------------------
     const primaryAge = stateOf(primary.id).ageAttained
@@ -2700,7 +2711,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         ) {
           acaInitialSupportCodes.push('dependent-modeled-person-overlap')
         }
-        if (acaContract.taxExemptInterest.state === 'unknown') {
+        if (
+          acaContract.taxExemptInterest.state === 'unknown' &&
+          !(planHasTaxExemptYieldAttestation && incomes.taxExemptInterest > 0)
+        ) {
           acaInitialSupportCodes.push('tax-exempt-interest-unknown')
         }
         if (acaContract.foreignExclusionAddback.state === 'unknown') {
@@ -5841,10 +5855,21 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         )
       }
     }
-    const acaTaxExemptInterest =
+    const generatedTaxExemptInterest = incomes.taxExemptInterest
+    const planDerivedTaxExemptInterest =
+      planHasTaxExemptYieldAttestation && generatedTaxExemptInterest > 0
+    // Characterization takes the max of the attested household total and the
+    // plan-generated subset — never the sum (generated dollars sit inside the
+    // attested total when the attestation is current), and never the attested
+    // figure alone (a stale attestation must not hide income the plan produces).
+    // Cash and balances always follow generated only.
+    const yearTaxExemptInterest =
       acaActive && acaContract?.taxExemptInterest.state === 'known'
-        ? Math.max(0, acaContract.taxExemptInterest.amount ?? 0)
-        : 0
+        ? Math.max(
+            Math.max(0, acaContract.taxExemptInterest.amount ?? 0),
+            generatedTaxExemptInterest,
+          )
+        : generatedTaxExemptInterest
     const acaForeignExclusionAddback =
       acaActive && acaContract?.foreignExclusionAddback.state === 'known'
         ? Math.max(0, acaContract.foreignExclusionAddback.amount ?? 0)
@@ -5985,7 +6010,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           realizedCapitalGainsBeforeCarryforward:
             preWithdrawalCapitalResult,
           taxableInterestIncome: incomes.taxableInterest + ladderTaxableInterest,
-          taxExemptInterest: acaTaxExemptInterest,
+          taxExemptInterest: yearTaxExemptInterest,
           foreignExclusionAddback: acaForeignExclusionAddback,
           usGovernmentInterest: ladderTaxableInterest,
           ordinaryDividends: incomes.ordinaryDividends,
@@ -6062,8 +6087,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
               .reduce((sum, member) => sum + member.magi, 0),
           taxExemptInterest:
             acaContract.taxExemptInterest.state === 'known'
-              ? (acaContract.taxExemptInterest.amount ?? 0)
-              : 0,
+              ? Math.max(
+                  Math.max(0, acaContract.taxExemptInterest.amount ?? 0),
+                  generatedTaxExemptInterest,
+                )
+              : planDerivedTaxExemptInterest
+                ? generatedTaxExemptInterest
+                : 0,
           foreignExclusionAddback:
             acaContract.foreignExclusionAddback.state === 'known'
               ? (acaContract.foreignExclusionAddback.amount ?? 0)
@@ -6095,6 +6125,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           ssBenefits: incomes.socialSecurity,
           peopleAged65Plus,
           householdSize: aliveCount,
+          taxExemptInterest: yearTaxExemptInterest,
           aca: acaSizingInput,
           inflationScale: inflFactorFrom(pack.year, year),
           itemizedDeductions,
@@ -6655,7 +6686,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           realizedCapitalGainsBeforeCarryforward:
             preWithdrawalCapitalResult + withdrawalPlan.realizedGains,
           taxableInterestIncome: incomes.taxableInterest + ladderTaxableInterest,
-          taxExemptInterest: acaTaxExemptInterest,
+          taxExemptInterest: yearTaxExemptInterest,
           foreignExclusionAddback: acaForeignExclusionAddback,
           usGovernmentInterest: ladderTaxableInterest,
           ordinaryDividends: incomes.ordinaryDividends,
@@ -6678,11 +6709,35 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         candidateHealthcare = healthcareExcludingAcaEnrollment + acaGrossEnrollmentPremium
         if (acaActive && acaContract) {
           const federalProbe = computeFederalTax(taxInput)
+          let acaMagiTaxExemptInterest = acaContract.taxExemptInterest
+          if (acaContract.taxExemptInterest.state === 'known') {
+            acaMagiTaxExemptInterest = {
+              state: 'known',
+              amount: Math.max(
+                Math.max(0, acaContract.taxExemptInterest.amount ?? 0),
+                generatedTaxExemptInterest,
+              ),
+            }
+          } else if (planDerivedTaxExemptInterest) {
+            if (acaContract.taxExemptInterest.state === 'unknown') {
+              acaMagiTaxExemptInterest = {
+                state: 'known',
+                amount: generatedTaxExemptInterest,
+              }
+              acaSupportCodes.push('tax-exempt-interest-plan-derived')
+            } else if (acaContract.taxExemptInterest.state === 'notApplicable') {
+              acaMagiTaxExemptInterest = {
+                state: 'known',
+                amount: generatedTaxExemptInterest,
+              }
+              acaSupportCodes.push('tax-exempt-interest-contract-contradicted')
+            }
+          }
           acaMagiProbe = buildAcaHouseholdMagi({
             federalAgi: federalProbe.agiBeforeFloor,
             grossSocialSecurity: incomes.socialSecurity,
             taxableSocialSecurity: federalProbe.taxableSocialSecurity,
-            taxExemptInterest: acaContract.taxExemptInterest,
+            taxExemptInterest: acaMagiTaxExemptInterest,
             foreignExclusionAddback: acaContract.foreignExclusionAddback,
             dependents: acaContract.taxFamilyMembers
               .filter((member) => member.relationship === 'dependent')
@@ -6693,7 +6748,15 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
               })),
           })
           acaSupportCodes.push(...acaMagiProbe.blockers)
-          if (acaSupportCodes.length === 0 && acaMagiProbe.magi !== null && !forceGrossAca) {
+          // Informational provenance codes (plan-derived, contract-contradicted)
+          // annotate the MAGI component's source; they are not blockers and must
+          // not stop the quote from pricing.
+          const blockingAcaCodes = acaSupportCodes.filter(
+            (code) =>
+              code !== 'tax-exempt-interest-plan-derived' &&
+              code !== 'tax-exempt-interest-contract-contradicted',
+          )
+          if (blockingAcaCodes.length === 0 && acaMagiProbe.magi !== null && !forceGrossAca) {
             const priced = acaEconomicPremiumByMonth(
               pack,
               acaContract.taxFamilyMembers.length,
@@ -7083,7 +7146,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       taxFilingStatusForYear,
       ordinaryRealized + gainsRealized + incomes.qualifiedDividends,
       incomes.socialSecurity,
-      acaTaxExemptInterest,
+      yearTaxExemptInterest,
       acaForeignExclusionAddback,
     )
     magiHistory.set(
@@ -7094,7 +7157,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           gainsRealized +
           incomes.qualifiedDividends +
           taxableSs +
-          acaTaxExemptInterest,
+          yearTaxExemptInterest,
       ),
     )
 
@@ -7108,7 +7171,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       capitalGains: gainsRealized,
       realizedCapitalGainsBeforeCarryforward,
       taxableInterestIncome: incomes.taxableInterest + ladderTaxableInterest,
-      taxExemptInterest: acaTaxExemptInterest,
+      taxExemptInterest: yearTaxExemptInterest,
       foreignExclusionAddback: acaForeignExclusionAddback,
       usGovernmentInterest: ladderTaxableInterest,
       ordinaryDividends: incomes.ordinaryDividends,
@@ -7129,7 +7192,18 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       if (acaFixedPointFailed || !converged) supportCodes.push('fixed-point-nonconvergent')
       if (acaConflictingCliffBasins) supportCodes.push('conflicting-cliff-fixed-points')
       const uniqueSupportCodes = [...new Set(supportCodes)]
-      const actionable = uniqueSupportCodes.length === 0 && evaluation.acaQuote !== null
+      const informationalAcaCodes = uniqueSupportCodes.filter(
+        (code) =>
+          code === 'tax-exempt-interest-plan-derived' ||
+          code === 'tax-exempt-interest-contract-contradicted',
+      )
+      const actionable =
+        uniqueSupportCodes.filter(
+          (code) =>
+            code !== 'tax-exempt-interest-plan-derived' &&
+            code !== 'tax-exempt-interest-contract-contradicted',
+        ).length === 0 &&
+        evaluation.acaQuote !== null
       const pricedQuote = evaluation.acaQuote
       const quote = actionable ? pricedQuote : null
       if (quote?.overCliff) {
@@ -7198,12 +7272,14 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
                 : 'below-cliff'
       yearAcaResult = {
         readiness: actionable ? 'actionable' : 'nonActionable',
-        supportCodes: actionable ? ['actionable'] : uniqueSupportCodes,
+        supportCodes: actionable
+          ? ['actionable', ...informationalAcaCodes]
+          : uniqueSupportCodes,
         householdMagi: actionable ? evaluation.acaMagiProbe?.magi ?? null : null,
         magiComponents: evaluation.acaMagiProbe?.components ?? {
           federalAgi: federalDetail.agiBeforeFloor,
           nontaxableSocialSecurity: Math.max(0, incomes.socialSecurity - federalDetail.taxableSocialSecurity),
-          taxExemptInterest: acaTaxExemptInterest,
+          taxExemptInterest: yearTaxExemptInterest,
           foreignExclusionAddback: acaForeignExclusionAddback,
           requiredFilerDependentMagi: 0,
         },
@@ -7681,7 +7757,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         taxableInflow,
         ssBenefits: incomes.socialSecurity,
         taxableSsBase: taxableSs,
-        ssProvisionalIncomeAddbacks: acaTaxExemptInterest + acaForeignExclusionAddback,
+        ssProvisionalIncomeAddbacks: yearTaxExemptInterest + acaForeignExclusionAddback,
         // Includes fixed taxable-action character, but excludes residual legacy
         // taxable-withdrawal realizations: the optimizer re-decides those draws
         // as its own `wtax` variable and adds their gain share itself.
@@ -8472,6 +8548,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         rebalanceRealizedGains +
         retirementActionCapitalGainOrLoss,
       taxableYield: incomes.taxableYield,
+      taxExemptInterest: yearTaxExemptInterest,
       capitalLossUsedAgainstGains: lossNetting.usedAgainstGains,
       capitalLossUsedAgainstOrdinary: lossNetting.usedAgainstOrdinary,
       capitalLossCarryforwardRemaining: lossNetting.remaining,

@@ -3335,6 +3335,337 @@ describe('taxable brokerage yield tax drag', () => {
   })
 })
 
+describe('tax-exempt interest generation and characterization', () => {
+  it('generates tax-exempt yield as cash excluded from taxable yield and ordinary income', () => {
+    const brokerageId = testIds()
+    const make = (reinvestDividends: boolean) => {
+      const plan = basePlan()
+      plan.assumptions.defaultReturnPct = 0
+      plan.accounts = [
+        {
+          ...taxable(100_000, 100_000),
+          id: brokerageId,
+          taxExemptInterestYieldPct: 3,
+          reinvestDividends,
+        },
+      ]
+      return plan
+    }
+    const noReinvest = simulatePlan(validate(make(false)), {
+      startYear: 2026,
+      horizonEndYear: 2026,
+      taxCalculator: createFederalTaxCalculator(),
+    }).years[0]!
+    expect(noReinvest.incomes.taxExemptInterest).toBeCloseTo(3_000, 6)
+    expect(noReinvest.incomes.total).toBeCloseTo(3_000, 6)
+    expect(noReinvest.taxableYield).toBe(0)
+    expect(noReinvest.incomes.taxableInterest).toBe(0)
+    expect(noReinvest.incomes.taxableYield).toBe(0)
+    expect(noReinvest.tax).toBe(0)
+    // Surplus is deposited before the growth pass carves distributed yield from
+    // balance, so the 3% carve hits (100k principal + 3k yield) and leaves
+    // brokerage $90 below opening principal.
+    expect(noReinvest.balances[brokerageId]).toBeCloseTo(99_910, 6)
+    expect(noReinvest.surplusInvested).toBeCloseTo(3_000, 6)
+
+    const withReinvest = simulatePlan(validate(make(true)), {
+      startYear: 2026,
+      horizonEndYear: 2026,
+      taxCalculator: noTax,
+    }).years[0]!
+    expect(withReinvest.incomes.taxExemptInterest).toBeCloseTo(3_000, 6)
+    // Total return already includes the distributed income: the growth pass
+    // prices the account at (return − yield) and the reinvest add-back restores
+    // the gross, so a 0% total return with a reinvested 3% distribution ends
+    // the year flat at 100,000 — not at 103,000, which would count the coupon
+    // on top of a total return that already contains it.
+    expect(withReinvest.balances[brokerageId]).toBeCloseTo(100_000, 6)
+    expect(withReinvest.surplusInvested).toBeCloseTo(0, 6)
+
+    const spendPlan = make(true)
+    spendPlan.expenses.oneTimeGoals = [{ id: 'goal', label: 'Spend', year: 2027, amount: 50_000 }]
+    const spendYear = simulatePlan(validate(spendPlan), {
+      startYear: 2026,
+      horizonEndYear: 2027,
+      taxCalculator: noTax,
+    }).years.find((y) => y.year === 2027)!
+    expect(spendYear.withdrawals.taxable).toBeCloseTo(50_000, 6)
+    // The −1,500 realized loss is the reinvested-basis signature: year-one's
+    // 3,000 of reinvested exempt interest raised cost basis to 103,000 against
+    // a 100,000 balance (0% total return), so a 50,000 sale realizes
+    // 50,000 × (1 − 103,000/100,000) = −1,500. A zero gain here would mean the
+    // reinvested coupon never reached basis and the sale was taxed on it again.
+    expect(spendYear.realizedGains).toBeCloseTo(-1_500, 6)
+  })
+
+  it('raises taxable Social Security through the section 86 cascade without entering ordinary income', () => {
+    const make = (withExemptYield: boolean) => {
+      const plan = basePlan()
+      plan.household.people[0]!.dob = '1964-06-15' // 62 in 2026 so benefits pay
+      plan.incomes = [
+        { type: 'oneTime', id: testIds(), label: 'Income', year: 2026, amount: 12_900, taxTreatment: 'ordinary' },
+        {
+          type: 'socialSecurity',
+          id: testIds(),
+          personId: 'p1',
+          piaMonthly: 2_000,
+          earnings: null,
+          claimAge: { years: 62, months: 0 },
+        },
+      ]
+      plan.accounts = withExemptYield
+        ? [
+            {
+              ...taxable(100_000, 100_000),
+              taxExemptInterestYieldPct: 13,
+              reinvestDividends: false,
+            },
+            cash(400_000),
+          ]
+        : [cash(500_000)]
+      return plan
+    }
+    const withoutExempt = simulatePlan(validate(make(false)), {
+      startYear: 2026,
+      horizonEndYear: 2026,
+      taxCalculator: createFederalTaxCalculator(),
+    }).years[0]!
+    const withExempt = simulatePlan(validate(make(true)), {
+      startYear: 2026,
+      horizonEndYear: 2026,
+      taxCalculator: createFederalTaxCalculator(),
+    }).years[0]!
+    const agiProxy = (year: typeof withExempt) => year.magi - year.taxExemptInterest
+    // MAGI = ordinary (ex-SS) + realized gains + qualified dividends + taxable SS
+    // + characterized tax-exempt interest (simulate.ts magiHistory).
+    const taxableSsFromYear = (year: typeof withExempt) =>
+      year.magi -
+      year.taxExemptInterest -
+      year.incomes.oneTime -
+      year.incomes.taxableYield -
+      year.incomes.qualifiedDividends -
+      year.realizedGains
+
+    expect(withoutExempt.incomes.socialSecurity).toBeGreaterThan(0)
+    expect(taxableSsFromYear(withoutExempt)).toBeCloseTo(0, 6)
+    expect(taxableSsFromYear(withExempt)).toBeGreaterThan(taxableSsFromYear(withoutExempt) + 500)
+    expect(withExempt.tax).toBeGreaterThan(withoutExempt.tax)
+    const agiDelta = agiProxy(withExempt) - agiProxy(withoutExempt)
+    expect(agiDelta).toBeCloseTo(taxableSsFromYear(withExempt) - taxableSsFromYear(withoutExempt), 6)
+    expect(withExempt.incomes.taxExemptInterest).toBeCloseTo(13_000, 6)
+    expect(withExempt.incomes.taxableYield).toBe(0)
+  })
+
+  it('lets a known ACA contract override generated tax-exempt interest for characterization only', () => {
+    const make = (yieldPct: number | null) => {
+      const plan = basePlan()
+      plan.household.people[0]!.dob = '1964-01-01'
+      currentYearAca(plan)
+      plan.expenses.healthcare.acaYears![0]!.taxExemptInterest = {
+        state: 'known',
+        amount: 5_000,
+      }
+      plan.incomes = [
+        { type: 'oneTime', id: testIds(), label: 'Income', year: 2026, amount: 20_000, taxTreatment: 'ordinary' },
+      ]
+      plan.accounts =
+        yieldPct === null
+          ? [cash(100_000)]
+          : [
+              {
+                ...taxable(100_000, 100_000),
+                taxExemptInterestYieldPct: yieldPct,
+                reinvestDividends: false,
+              },
+            ]
+      return plan
+    }
+    const sim = (plan: ReturnType<typeof make>) =>
+      simulatePlan(validate(plan), {
+        startYear: 2026,
+        horizonEndYear: 2026,
+        taxCalculator: createFederalTaxCalculator(),
+      }).years[0]!
+
+    const withoutYield = sim(make(null))
+    const attestedAlone = 5_000
+    const withLowYield = sim(make(3))
+    // max → 5_000; attestedAlone → 5_000; sum → 8_000; generated-governs → 3_000.
+    expect(withLowYield.taxExemptInterest).toBe(attestedAlone)
+    expect(withLowYield.aca?.magiComponents.taxExemptInterest).toBe(attestedAlone)
+    expect(withLowYield.magi).toBeCloseTo(
+      withLowYield.aca!.magiComponents.federalAgi +
+        withLowYield.aca!.magiComponents.nontaxableSocialSecurity +
+        attestedAlone +
+        withLowYield.aca!.magiComponents.foreignExclusionAddback +
+        withLowYield.aca!.magiComponents.requiredFilerDependentMagi,
+      6,
+    )
+    expect(withLowYield.incomes.taxExemptInterest).toBeCloseTo(3_000, 6)
+    expect(withLowYield.surplusInvested - withoutYield.surplusInvested).toBeCloseTo(3_000, 6)
+    expect(withLowYield.taxExemptInterest).not.toBe(8_000)
+
+    const withHighYield = sim(make(8))
+    const maxGenerated = 8_000
+    // max → 8_000; attestedAlone → 5_000; sum → 13_000.
+    expect(withHighYield.taxExemptInterest).toBe(maxGenerated)
+    expect(withHighYield.aca?.magiComponents.taxExemptInterest).toBe(maxGenerated)
+    expect(withHighYield.incomes.taxExemptInterest).toBeCloseTo(maxGenerated, 6)
+    expect(withHighYield.taxExemptInterest).not.toBe(attestedAlone)
+    expect(withHighYield.taxExemptInterest).not.toBe(13_000)
+  })
+
+  it('upgrades an unknown ACA tax-exempt contract when the plan attests a yield field', () => {
+    const make = (withYieldField: boolean) => {
+      const plan = basePlan()
+      plan.household.people[0]!.dob = '1964-01-01'
+      currentYearAca(plan)
+      plan.expenses.healthcare.acaYears![0]!.taxExemptInterest = {
+        state: 'unknown',
+        amount: null,
+      }
+      plan.incomes = [
+        { type: 'oneTime', id: testIds(), label: 'Income', year: 2026, amount: 20_000, taxTreatment: 'ordinary' },
+      ]
+      plan.accounts = withYieldField
+        ? [
+            {
+              ...taxable(100_000, 100_000),
+              taxExemptInterestYieldPct: 2,
+              reinvestDividends: false,
+            },
+          ]
+        : [cash(100_000)]
+      return plan
+    }
+    const blocked = simulatePlan(validate(make(false)), {
+      startYear: 2026,
+      horizonEndYear: 2026,
+      taxCalculator: createFederalTaxCalculator(),
+    }).years[0]!
+    expect(blocked.aca?.supportCodes).toContain('tax-exempt-interest-unknown')
+    expect(blocked.aca?.readiness).toBe('nonActionable')
+    expect(blocked.aca?.householdMagi).toBeNull()
+
+    const actionable = simulatePlan(validate(make(true)), {
+      startYear: 2026,
+      horizonEndYear: 2026,
+      taxCalculator: createFederalTaxCalculator(),
+    }).years[0]!
+    expect(actionable.aca?.supportCodes).not.toContain('tax-exempt-interest-unknown')
+    expect(actionable.aca?.supportCodes).toContain('tax-exempt-interest-plan-derived')
+    expect(actionable.aca?.readiness).toBe('actionable')
+    expect(actionable.aca?.householdMagi).toBeCloseTo(
+      actionable.aca!.magiComponents.federalAgi +
+        actionable.aca!.magiComponents.nontaxableSocialSecurity +
+        2_000 +
+        actionable.aca!.magiComponents.foreignExclusionAddback +
+        actionable.aca!.magiComponents.requiredFilerDependentMagi,
+      6,
+    )
+    expect(actionable.incomes.taxExemptInterest).toBeCloseTo(2_000, 6)
+  })
+
+  it('preserves byte-identical ledgers when the yield field is absent', () => {
+    const plan = basePlan()
+    plan.expenses.baseAnnual = 40_000
+    plan.incomes = [
+      { type: 'oneTime', id: testIds(), label: 'Income', year: 2026, amount: 15_000, taxTreatment: 'ordinary' },
+      {
+        type: 'socialSecurity',
+        id: testIds(),
+        personId: 'p1',
+        piaMonthly: 1_800,
+        earnings: null,
+        claimAge: { years: 67, months: 0 },
+      },
+    ]
+    plan.accounts = [cash(500_000), taxable(200_000, 180_000)]
+    const clone = structuredClone(plan)
+    const baseline = simulatePlan(validate(plan), {
+      startYear: 2026,
+      horizonEndYear: 2026,
+      taxCalculator: createFederalTaxCalculator(),
+    })
+    const identical = simulatePlan(validate(clone), {
+      startYear: 2026,
+      horizonEndYear: 2026,
+      taxCalculator: createFederalTaxCalculator(),
+    })
+    expect(JSON.stringify(identical.years)).toBe(JSON.stringify(baseline.years))
+    const year = baseline.years[0]!
+    expect(year.incomes.taxExemptInterest).toBe(0)
+    expect(year.taxExemptInterest).toBe(0)
+    expect(year.tax).toBe(0)
+    expect(year.magi).toBeCloseTo(15_000, 6)
+    expect(year.withdrawals.total).toBeCloseTo(25_000, 6)
+
+    const disabled = basePlan()
+    disabled.household.people[0]!.dob = '1964-06-15'
+    disabled.expenses.healthcare = {
+      pre65MonthlyPremiumPerPerson: 1_000,
+      applyAcaCredit: false,
+      medicareExtrasMonthlyPerPerson: 0,
+    }
+    disabled.accounts = [cash(100_000)]
+    disabled.incomes = [
+      { type: 'oneTime', id: testIds(), label: 'Income', year: 2026, amount: 20_000, taxTreatment: 'ordinary' },
+    ]
+    const disabledWithContract = structuredClone(disabled)
+    currentYearAca(disabledWithContract)
+    disabledWithContract.expenses.healthcare.applyAcaCredit = false
+    disabledWithContract.expenses.healthcare.acaYears![0]!.taxExemptInterest = {
+      state: 'known',
+      amount: 5_000,
+    }
+    expect(
+      simulatePlan(validate(disabledWithContract), {
+        startYear: 2026,
+        horizonEndYear: 2026,
+        taxCalculator: createFederalTaxCalculator(),
+      }),
+    ).toEqual(
+      simulatePlan(validate(disabled), {
+        startYear: 2026,
+        horizonEndYear: 2026,
+        taxCalculator: createFederalTaxCalculator(),
+      }),
+    )
+  })
+
+  it('does not change NIIT, AMT, or senior-deduction tax when only tax-exempt interest is present', () => {
+    const make = (withExemptYield: boolean) => {
+      const plan = basePlan()
+      plan.incomes = [
+        { type: 'oneTime', id: testIds(), label: 'Income', year: 2026, amount: 30_000, taxTreatment: 'ordinary' },
+      ]
+      plan.accounts = withExemptYield
+        ? [
+            {
+              ...taxable(100_000, 100_000),
+              taxExemptInterestYieldPct: 50,
+              reinvestDividends: false,
+            },
+          ]
+        : [cash(100_000)]
+      return plan
+    }
+    const withoutExempt = simulatePlan(validate(make(false)), {
+      startYear: 2026,
+      horizonEndYear: 2026,
+      taxCalculator: createFederalTaxCalculator(),
+    }).years[0]!
+    const withExempt = simulatePlan(validate(make(true)), {
+      startYear: 2026,
+      horizonEndYear: 2026,
+      taxCalculator: createFederalTaxCalculator(),
+    }).years[0]!
+    expect(withExempt.incomes.taxExemptInterest).toBeCloseTo(50_000, 6)
+    expect(withExempt.tax).toBeCloseTo(withoutExempt.tax, 6)
+    expect(withExempt.amt).toBeCloseTo(withoutExempt.amt, 6)
+  })
+})
+
 describe('state tax integration', () => {
   /** Retiree drawing from a traditional account to fund spending (taxable income). */
   function stateRetiree(state: string): Plan {

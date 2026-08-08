@@ -1225,15 +1225,18 @@ through the §86(b)(2)(B) add-back and each program MAGI only through that progr
 
 - **Private-activity-bond AMT preference is not modeled.** The plan model carries tax-exempt interest as one
   annual amount with no issue-level detail, so the §57(a)(5)(C) specified-PAB test cannot be expressed; the
-  whole amount is treated as non-preference interest. Understates tax for PAB holders — registry record
+  whole amount is treated as non-preference interest. Account generation makes the PAB gap reachable by plans
+  that never authored an ACA contract. Understates tax for PAB holders — registry record
   `irc-57-a-5-private-activity-bond-interest-amt-preference`.
 - **State sourcing is not modeled.** Many states tax municipal interest from other states' issuers while
   exempting their own. The engine adds tax-exempt interest to no state base and makes no universal
   state-exemption claim; until sourcing is modeled, state treatment is a disclosed limitation rather than
   an assumption of exemption.
-- **The characterized amount currently arrives only from an explicit ACA annual contract.** General
-  account-generated tax-exempt interest and its non-ACA ledger/strategy/optimizer/comparison cascade are the
-  open scope of the *tax-exempt-interest Social Security/MAGI cascade* plan.
+- **Characterized tax-exempt interest** comes from account generation (`taxExemptInterestYieldPct`) and, in
+  ACA years, from the contract attestation; characterization takes max(attested total, generated subset);
+  unknown contracts are satisfied by plan-derived amounts only when generation is positive and are
+  evidence-marked `tax-exempt-interest-plan-derived`; a notApplicable contract contradicted by generation is
+  used-and-flagged `tax-exempt-interest-contract-contradicted`.
 
 The machine-readable half of this matrix lives in the rule registry:
 `irc-36B-d-2-B-aca-household-magi-composition`, `irc-1411-tax-exempt-interest-outside-both-niit-legs`, and

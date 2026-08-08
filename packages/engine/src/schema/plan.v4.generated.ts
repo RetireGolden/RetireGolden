@@ -283,6 +283,10 @@ export const planJsonSchema: JsonSchemaDocument = {
                 "minimum": 0,
                 "maximum": 1
               },
+              "taxExemptInterestYieldPct": {
+                "type": "number",
+                "minimum": 0
+              },
               "reinvestDividends": {
                 "type": "boolean"
               },
