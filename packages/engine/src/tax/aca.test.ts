@@ -196,6 +196,39 @@ describe('ACA current-year contract math', () => {
     expect(acaFederalPovertyLine(regionalPack, 2, 'hawaii')).toBe(24_990)
   })
 
+  // IRC 36B(d)(2)(B) builds modified AGI from AGI plus three add-backs: the
+  // section 911 exclusion, tax-exempt interest, and nontaxable Social Security.
+  // Reading modified AGI as the AGI line drops all three; dropping only the
+  // tax-exempt-interest clause is the specific gap this engine had before the
+  // characterized input existed, and each reading prices a different credit.
+  //
+  // AGI 30,000, nontaxable SS 15,000, tax-exempt interest 1,000, foreign
+  // exclusion 2,000, one required-filer dependent with 3,000:
+  //   all three add-backs (statute):  30,000 + 15,000 + 1,000 + 2,000 + 3,000 = 51,000
+  //   without tax-exempt interest:                                             50,000
+  //   AGI plus dependents alone:                                               33,000
+  describeRule('irc-36B-d-2-B-aca-household-magi-composition', {
+    readings: { allThreeAddbacks: 51_000, withoutTaxExemptInterest: 50_000, agiPlusDependentsAlone: 33_000 },
+    accepted: 'allThreeAddbacks',
+  }, ({ accepted, readings }) => {
+    it('adds tax-exempt interest to household MAGI alongside the other add-backs', () => {
+      const result = buildAcaHouseholdMagi({
+        federalAgi: 30_000,
+        grossSocialSecurity: 20_000,
+        taxableSocialSecurity: 5_000,
+        taxExemptInterest: { state: 'known', amount: 1_000 },
+        foreignExclusionAddback: { state: 'known', amount: 2_000 },
+        dependents: [{ personId: 'required', requiredToFile: 'required', magi: 3_000 }],
+      })
+
+      expect(result.actionable).toBe(true)
+      expect(result.components.taxExemptInterest).toBe(1_000)
+      expect(result.magi).toBe(accepted)
+      expect(result.magi).not.toBe(readings.withoutTaxExemptInterest)
+      expect(result.magi).not.toBe(readings.agiPlusDependentsAlone)
+    })
+  })
+
   it('builds household MAGI from AGI, addbacks, and required-filer dependents', () => {
     const result = buildAcaHouseholdMagi({
       federalAgi: 30_000,

@@ -1340,6 +1340,41 @@ const registry = {
     ],
   },
 
+  'irc-1411-tax-exempt-interest-outside-both-niit-legs': {
+    title: 'Tax-exempt interest enters neither leg of the net investment income tax',
+    statement:
+      'Net investment income reaches gross income from interest, and interest excluded from gross income under section 103 is never gross income, so tax-exempt interest is not net investment income; the modified adjusted gross income compared against the section 1411(b) threshold adds back only the section 911 foreign exclusion. Tax-exempt interest is accordingly never counted in the income leg and never an add-back to the threshold leg — though when Social Security is present it can still lift the threshold leg indirectly, by raising taxable benefits under section 86 and with them adjusted gross income.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 103(a)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section103&num=0&edition=prelim',
+      quotedText:
+        'Except as provided in subsection (b), gross income does not include interest on any State or local bond.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 1411(c)(1)(A)(i)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1411&num=0&edition=prelim',
+      quotedText:
+        'gross income from interest, dividends, annuities, royalties, and rents, other than such income which is derived in the ordinary course of a trade or business not described in paragraph (2),',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 1411(d)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1411&num=0&edition=prelim',
+      quotedText:
+        'the term "modified adjusted gross income" means adjusted gross income increased by the excess of- (1) the amount excluded from gross income under section 911(a)(1), over (2) the amount of any deductions (taken into account in computing adjusted gross income) or exclusions disallowed under section 911(d)(6) with respect to the amounts described in paragraph (1).',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-07',
+    implementedBy: ['packages/engine/src/tax/federalTax.ts'],
+  },
+
   'irc-1211-b-capital-loss-ordinary-offset': {
     title: 'A net capital loss offsets ordinary income only up to 3,000 dollars',
     statement:
@@ -1476,6 +1511,36 @@ const registry = {
       'packages/engine/src/tax/federalTax.ts',
       'packages/engine/src/params/data/year2026.ts',
     ],
+  },
+
+  'irc-57-a-5-private-activity-bond-interest-amt-preference': {
+    title: 'Private-activity-bond interest as an AMT preference item',
+    statement:
+      'Interest on specified private activity bonds, reduced by deductions that would have been allowable were the interest includible in gross income, is an item of tax preference added to alternative minimum taxable income. Not modelled: the engine treats every tax-exempt interest amount as non-preference interest and adds none of it to AMTI, so a household holding specified private activity bonds has its AMTI and any resulting alternative minimum tax understated by the preference amount.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'understatesTax',
+    conventionRationale:
+      'The plan model carries tax-exempt interest as a single annual amount with no issue-level detail, so identifying a specified private activity bond under 57(a)(5)(C) — an issue-date test with carve-outs for qualified 501(c)(3) bonds, certain housing bonds, refundings, and 2009–2010 issues — cannot be expressed in the input model. Treating the whole amount as non-preference matches the common diversified-fund case, and the omission is disclosed here rather than guessed per issue.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 57(a)(5)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section57&num=0&edition=prelim',
+      quotedText:
+        'Interest on specified private activity bonds reduced by any deduction (not allowable in computing the regular tax) which would have been allowable if such interest were includible in gross income.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 57(a)(5)(C)(i)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section57&num=0&edition=prelim',
+      quotedText:
+        'the term "specified private activity bond" means any private activity bond (as defined in section 141) which is issued after August 7, 1986, and the interest on which is not includible in gross income under section 103.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-07',
+    implementedBy: ['packages/engine/src/tax/federalTax.ts'],
   },
 
   'irc-223-f-4-B-hsa-disability-exception': {
@@ -1935,6 +2000,29 @@ const registry = {
       'packages/engine/src/tax/aca.ts',
       'packages/engine/src/params/data/year2026.ts',
     ],
+  },
+
+  'irc-36B-d-2-B-aca-household-magi-composition': {
+    title: 'What enters ACA household modified adjusted gross income',
+    statement:
+      'For the premium tax credit, household income sums modified adjusted gross income over the taxpayer and the dependents required to file, where modified AGI is AGI increased by amounts excluded under section 911, tax-exempt interest received or accrued, and the portion of Social Security benefits not included in gross income under section 86. Tax-exempt interest therefore raises ACA household MAGI without ever entering AGI or ordinary taxable income.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 36B(d)(2)(B)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section36B&num=0&edition=prelim',
+      quotedText:
+        'The term "modified adjusted gross income" means adjusted gross income increased by- (i) any amount excluded from gross income under section 911, (ii) any amount of interest received or accrued by the taxpayer during the taxable year which is exempt from tax, and (iii) an amount equal to the portion of the taxpayer\'s social security benefits (as defined in section 86(d)) which is not included in gross income under section 86 for the taxable year.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-07',
+    implementedBy: ['packages/engine/src/tax/aca.ts'],
   },
 
   'irc-223-b-3-hsa-catch-up-not-indexed': {
