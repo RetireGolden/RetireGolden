@@ -160,6 +160,26 @@ describe('WS3 year-of-death joint-life divisor', () => {
     expect(yearOfDeath.divisor).toBeGreaterThan(16.8)
     expect(yearOfDeath.citations).toContain('Treas. Reg. §1.401(a)(9)-5(c)(2)(i)')
   })
+
+  it('uses Uniform Lifetime without a gap limitation when owner born December 31 and gap is exactly 10 birth years', () => {
+    const account = inherited(2024, true, beneficiary({
+      ownerBirthYear: 1950,
+      ownerBirthMonth: 12,
+      ownerBirthDay: 31,
+      beneficiaryBirthYear: 1960,
+      edbCategory: 'surviving-spouse',
+      election: 'remain-beneficiary',
+      ownerYearOfDeathRmdSatisfied: false,
+    }))
+    const result = classification('traditional', account)
+    const yearOfDeath = requirement(result, account, 2024)
+
+    expect(yearOfDeath.kind).toBe('year-of-death-rmd')
+    expect(yearOfDeath.divisorArm).toBe('uniform-lifetime')
+    expect(yearOfDeath.limitation).toBeUndefined()
+    expect(yearOfDeath.divisor).toBeCloseTo(25.5, 4)
+    expect(yearOfDeath.requiredAmount).toBeCloseTo(100_000 / 25.5, 4)
+  })
 })
 
 describe('WS3 year-of-death CARES 2020 waiver', () => {
@@ -253,6 +273,29 @@ describe('WS3 fixture F4: S0 spouse deferral and §327 commencement gating', () 
     const in2035 = requirement(result, account, 2035)
     expect(in2035.kind).toBe('annual-rmd')
     expect(in2035.divisor).toBeCloseTo(16.4, 4)
+    expect(in2035.divisorArm).toBe('spouse-redetermined')
+  })
+
+  it('returns plain none (no pre-2022 limitation) during deferral for a 2020 death', () => {
+    const account = inherited(2020, false, beneficiary({
+      ownerBirthYear: 1960,
+      beneficiaryBirthYear: 1962,
+      edbCategory: 'surviving-spouse',
+      election: 'remain-beneficiary',
+    }))
+    const result = classification('traditional', account)
+
+    expect(result.row).toBe('S1')
+    expect(result.regime).toBe('spouse-remain-beneficiary')
+    expect(result.rbdComparison).toBe('before-rbd')
+
+    const in2021 = requirement(result, account, 2021)
+    expect(in2021.kind).toBe('none')
+    expect(in2021.requiredAmount).toBe(0)
+    expect(in2021.limitation).toBeUndefined()
+
+    const in2035 = requirement(result, account, 2035)
+    expect(in2035.kind).toBe('annual-rmd')
     expect(in2035.divisorArm).toBe('spouse-redetermined')
   })
 

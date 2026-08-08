@@ -1098,8 +1098,16 @@ export function inheritedRequirementForYear(input: {
             extraCitations.push('Treas. Reg. §1.401(a)(9)-5(c)(2)(i)')
           }
         } else if (ageGap === 10) {
-          jointLifeLimitation = 'joint-life-gap-unresolved-at-year-precision'
-          extraCitations.push('Treas. Reg. §1.401(a)(9)-5(c)(2)(i)')
+          // Owner born December 31: every feasible spouse birth date in the
+          // later birth year is at most exactly 10 years after the owner's,
+          // so the spouse is not more than 10 years younger and Uniform
+          // Lifetime is conclusive — no joint-life-gap limitation.
+          const ownerDec31 =
+            b.ownerBirthMonth === 12 && b.ownerBirthDay === 31
+          if (!ownerDec31) {
+            jointLifeLimitation = 'joint-life-gap-unresolved-at-year-precision'
+            extraCitations.push('Treas. Reg. §1.401(a)(9)-5(c)(2)(i)')
+          }
         }
       }
       // Post-RBD deaths from 2022 on always have an attained age on the
@@ -1163,6 +1171,21 @@ export function inheritedRequirementForYear(input: {
     throw new RangeError(
       `beneficiaryBirthYear is missing on a '${regime}' classification (year ${year}); the classifier refuses this fact set, so the classification was not produced by classifyInheritedRegime`,
     )
+  }
+
+  // Spouse deferral (S0/S1, K2-spouse) before the generic pre-2022 limitation:
+  // when death is before the RBD, no annual obligation exists until the later
+  // of deathYear+1 and the owner's applicable-age attain year — years inside
+  // that deferral are plain none, not a pre-2022-table limitation.
+  if (
+    (regime === 'spouse-remain-beneficiary' ||
+      (regime === 'roth-edb-life-expectancy' && b?.edbCategory === 'surviving-spouse')) &&
+    (rbd === 'before-rbd' || rbd === 'not-applicable')
+  ) {
+    const startYear = spouseDeferralStartYear(deathYear, ownerBirth, b?.ownerBirthMonth)
+    if (year < startYear) {
+      return noneEvidence(year, citations)
+    }
   }
 
   // Annual amounts for distribution calendar years before 2022 were governed
