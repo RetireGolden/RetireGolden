@@ -293,7 +293,7 @@ export function ResultsPage() {
 
   const handleCsv = () => {
     const cols = [
-      'year', 'filingStatus', 'wages', 'socialSecurity', 'pension', 'annuity', 'tipsLadder', 'recurring', 'oneTimeIncome', 'taxableInterest', 'Tax-exempt interest', 'ordinaryDividends', 'qualifiedDividends', 'taxableYield', 'totalIncome',
+      'year', 'filingStatus', 'wages', 'socialSecurity', 'pension', 'annuity', 'tipsLadder', 'recurring', 'oneTimeIncome', 'taxableInterest', 'taxExemptInterest', 'ordinaryDividends', 'qualifiedDividends', 'taxableYield', 'totalIncome',
       'baseSpending', 'goals', 'debtService', 'propertyCosts', 'healthcare', 'insurancePremiums', 'careCost', 'ltcBenefit', 'requiredSpending', 'targetSpending', 'idealSpending', 'excessSpending', 'intendedSpending', 'totalExpenses', 'contributions', 'employerMatch', 'rmd', 'qcd',
       'rothConversion', 'tax', 'amt', 'penalties', 'magi', 'withdrawals', 'realizedGains', 'lossCarryforwardUsed', 'lossCarryforwardRemaining', 'shortfall', 'investable',
       'requiredShortfall', 'targetShortfall', 'idealShortfall', 'excessShortfall', 'guardrailAction', 'guardrailFactor', 'flexibleGoalsFunded', 'flexibleGoalsPartiallyFunded', 'flexibleGoalsDeferred', 'flexibleGoalsSkipped', 'flexibleGoalFundedAmount', 'flexibleGoalUnfundedAmount', 'insuranceCashValue', 'ladderValue', 'deathBenefit', 'netWorth',
