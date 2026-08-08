@@ -273,6 +273,41 @@ function inheritedTraditionalPlan(opts: { ownTraditional?: number; inheritedTrad
   return plan
 }
 
+/** Legacy-path (pre-2020 death) inherited-Roth sweep: liquid, never ordinary income. */
+function inheritedRothOnlyPlan(): Plan {
+  const plan = inheritedTraditionalPlan({ inheritedTraditional: 100_000 })
+  const inherited = plan.accounts.find(
+    (account) => account.type === 'traditional' && account.inherited,
+  )
+  if (inherited?.type !== 'traditional') throw new Error('missing inherited traditional fixture seed')
+  plan.accounts = plan.accounts.map((account) => account.id === inherited.id
+    ? {
+        type: 'roth',
+        id: account.id,
+        name: 'Inherited Roth IRA',
+        ownerPersonId: 'p1',
+        annualReturnPct: 0,
+        kind: 'ira',
+        balance: inherited.balance,
+        annualContribution: 0,
+        inherited: {
+          ownerDeathYear: 2016,
+          decedentHadStartedRmds: false,
+          beneficiary: {
+            beneficiaryClass: 'designated-individual',
+            edbCategory: 'none',
+            beneficiaryBirthYear: 1960,
+            soleBeneficiary: true,
+            ownerBirthYear: 1940,
+            roth5YearStartYear: 2010,
+            provenance: { source: 'test', asOf: '2026-01-01' },
+          },
+        },
+      } as Account
+    : account)
+  return plan
+}
+
 function pensionBridgePlan(): Plan {
   const plan = createEmptyPlan({ newId: testIds, now: fixedNow })
   plan.household.people[0] = {
@@ -598,6 +633,214 @@ describe('buildOptimizerInput', () => {
     expect(input.openingOther).toBe(10_000) // cash; inherited traditional is tracked separately
   })
 
+  it('remaps post-flip S2 owner-RMD obligations into the probe inherited flow', async () => {
+    // S2 treat-as-own never enters the owned-traditional LP bucket (even when
+    // the flip is after startYear). Post-flip owner-RMD obligation shares must
+    // appear on probe.inheritedDistribution (not probe.rmd) so the LP's static
+    // inheritedTraditional floor stays consistent. The remap uses each
+    // account's separately calculated owner-RMD requirement, not its executed
+    // debit (which can include IRA sweep from another account). YearResult.rmd
+    // remains on the owner path.
+    const plan = createEmptyPlan({ newId: testIds, now: fixedNow })
+    plan.household.people[0] = {
+      id: 'p1',
+      name: 'Pat',
+      dob: '1947-01-01', // age 79 in 2026 → RMD-eligible after flip
+      sex: 'average',
+      retirementAge: 65,
+      longevity: { planningAge: 95, source: 'manual' },
+    }
+    plan.assumptions.inflationPct = 0
+    plan.assumptions.defaultReturnPct = 0
+    plan.assumptions.stateEffectiveTaxPct = 0
+    plan.assumptions.heirTaxRatePct = 25
+    plan.expenses.baseAnnual = 0
+    plan.expenses.healthcare = {
+      pre65MonthlyPremiumPerPerson: 0,
+      applyAcaCredit: false,
+      medicareExtrasMonthlyPerPerson: 0,
+    }
+    plan.accounts = [
+      {
+        type: 'traditional',
+        id: testIds(),
+        name: 'S2 Inherited IRA',
+        ownerPersonId: 'p1',
+        annualReturnPct: 0,
+        kind: 'ira',
+        balance: 300_000,
+        annualContribution: 0,
+        inherited: {
+          ownerDeathYear: 2024,
+          decedentHadStartedRmds: true,
+          beneficiary: {
+            beneficiaryClass: 'designated-individual',
+            edbCategory: 'surviving-spouse',
+            beneficiaryBirthYear: 1947,
+            soleBeneficiary: true,
+            ownerBirthYear: 1945,
+            election: 'treat-as-own',
+            spouseUnlimitedWithdrawalRight: true,
+            treatAsOwnElectionYear: 2028,
+            ownerYearOfDeathRmdSatisfied: true,
+            provenance: { source: 'test', asOf: '2026-01-01' },
+          },
+        },
+      },
+      {
+        type: 'cash',
+        id: testIds(),
+        name: 'Cash',
+        ownerPersonId: null,
+        annualReturnPct: 0,
+        balance: 50_000,
+        annualContribution: 0,
+      },
+    ]
+    const validated = validate(plan)
+    const probes: OptimizerYearProbe[] = []
+    const ledger = simulatePlan(validated, {
+      startYear: 2026,
+      horizonEndYear: 2029,
+      taxCalculator: createFederalTaxCalculator(),
+      captureOptimizerInputs: (p) => probes.push(p),
+    })
+    const flipYear = ledger.years.find((y) => y.year === 2028)!
+    const probe2028 = probes.find((p) => p.year === 2028)!
+    // Ledger: owner RMD after flip, no inherited forced.
+    expect(flipYear.rmd).toBeGreaterThan(0)
+    expect(flipYear.inheritedTraditionalDistribution).toBe(0)
+    // Probe: remapped — rmd excludes the flip account; inherited includes it.
+    expect(probe2028.rmd).toBe(0)
+    expect(probe2028.inheritedDistribution).toBeCloseTo(flipYear.rmd, 2)
+    // Opening bucket remains inherited for the whole LP horizon.
+    const optOpts = { startYear: 2026, taxCalculator: createFederalTaxCalculator() }
+    const input = buildOptimizerInput(validated, optOpts)
+    expect(input.openingInheritedTrad).toBe(300_000)
+    expect(input.openingTrad).toBe(0)
+    const y2028 = input.years.find((y) => y.year === 2028)!
+    expect(y2028.inheritedDistribution).toBeCloseTo(flipYear.rmd, 2)
+    // No owner-traditional RMD floor (openingTrad is 0); inherited floor carries the flip.
+    expect(y2028.rmdDivisor).toBeNull()
+    expect(y2028.inheritedDistributionDivisor).not.toBeNull()
+    // Schedule remains feasible under the remapped floors.
+    const optimized = await optimizePlan(validated, optOpts)
+    expect(optimized.schedule.status).not.toBe('infeasible')
+  })
+
+  it('keeps pre-start S2 flips in the inherited opening bucket and remaps obligation shares', () => {
+    // Probe-consistency fixture moved here from the round-1 mid-horizon-only
+    // shape: when treatAsOwnElectionYear <= startYear the account still never
+    // enters openingTrad (the unifying rule), and every post-flip year remaps
+    // owner-RMD obligations — not only the first flip year inside the horizon.
+    const plan = createEmptyPlan({ newId: testIds, now: fixedNow })
+    plan.household.people[0] = {
+      id: 'p1',
+      name: 'Pat',
+      dob: '1947-01-01',
+      sex: 'average',
+      retirementAge: 65,
+      longevity: { planningAge: 95, source: 'manual' },
+    }
+    plan.assumptions.inflationPct = 0
+    plan.assumptions.defaultReturnPct = 0
+    plan.assumptions.stateEffectiveTaxPct = 0
+    plan.assumptions.heirTaxRatePct = 25
+    plan.expenses.baseAnnual = 0
+    plan.expenses.healthcare = {
+      pre65MonthlyPremiumPerPerson: 0,
+      applyAcaCredit: false,
+      medicareExtrasMonthlyPerPerson: 0,
+    }
+    plan.accounts = [
+      {
+        type: 'traditional',
+        id: testIds(),
+        name: 'S2 Inherited IRA',
+        ownerPersonId: 'p1',
+        annualReturnPct: 0,
+        kind: 'ira',
+        // No basis here: an inherited IRA carries no modeled nondeductible
+        // basis (the beneficiary's 8606 is separate); the owner-wide basis
+        // that exercises the pro-rata netting lives on the owned IRA below.
+        balance: 300_000,
+        annualContribution: 0,
+        inherited: {
+          ownerDeathYear: 2024,
+          decedentHadStartedRmds: true,
+          beneficiary: {
+            beneficiaryClass: 'designated-individual',
+            edbCategory: 'surviving-spouse',
+            beneficiaryBirthYear: 1947,
+            soleBeneficiary: true,
+            ownerBirthYear: 1945,
+            election: 'treat-as-own',
+            spouseUnlimitedWithdrawalRight: true,
+            treatAsOwnElectionYear: 2025,
+            ownerYearOfDeathRmdSatisfied: true,
+            provenance: { source: 'test', asOf: '2026-01-01' },
+          },
+        },
+      },
+      {
+        type: 'traditional',
+        id: testIds(),
+        name: 'Own IRA',
+        ownerPersonId: 'p1',
+        annualReturnPct: 0,
+        kind: 'ira',
+        balance: 100_000,
+        annualContribution: 0,
+        nondeductibleBasis: 50_000,
+      },
+      {
+        type: 'cash',
+        id: testIds(),
+        name: 'Cash',
+        ownerPersonId: null,
+        annualReturnPct: 0,
+        balance: 50_000,
+        annualContribution: 0,
+      },
+    ]
+    const validated = validate(plan)
+    const probes: OptimizerYearProbe[] = []
+    const ledger = simulatePlan(validated, {
+      startYear: 2026,
+      horizonEndYear: 2027,
+      taxCalculator: createFederalTaxCalculator(),
+      captureOptimizerInputs: (p) => probes.push(p),
+    })
+    const buckets = optimizerOpeningBuckets(validated)
+    expect(buckets.openingInheritedTrad).toBe(300_000)
+    expect(buckets.openingTrad).toBe(100_000)
+    const year2026 = ledger.years.find((y) => y.year === 2026)!
+    const probe2026 = probes.find((p) => p.year === 2026)!
+    // Both accounts aggregate under the owner's RMD (flip effective 2025), on
+    // the same divisor, so obligation shares split by opening balance: the S2
+    // account carries 3/4 of the year's owner RMD, the owned IRA 1/4.
+    expect(year2026.rmd).toBeGreaterThan(0)
+    expect(probe2026.rmd).toBeCloseTo(year2026.rmd / 4, 2)
+    // GROSS remapped obligation rides the inherited forced flow — the LP uses
+    // that variable as cash receipt and bucket debit as well as income, so it
+    // must not be netted of basis.
+    expect(probe2026.inheritedDistribution).toBeCloseTo((year2026.rmd * 3) / 4, 2)
+    expect(probe2026.rmd + probe2026.inheritedDistribution).toBeCloseTo(year2026.rmd, 2)
+    // LP income on the remapped S2 share equals the ledger taxable share:
+    // gross `wi` minus the nontaxable exclusion routed through
+    // `forcedDistributionOrdinaryIncomeExclusion`.
+    const remappedGross = probe2026.inheritedDistribution
+    const aggregateNontaxableFraction = 50_000 / 400_000
+    const expectedS2Taxable = remappedGross * (1 - aggregateNontaxableFraction)
+    const lpS2Income =
+      remappedGross - (probe2026.forcedDistributionOrdinaryIncomeExclusion ?? 0)
+    expect(lpS2Income).toBeCloseTo(expectedS2Taxable, 2)
+    // Owned-IRA probe share still carries basis on `rmdTaxable`.
+    expect(probe2026.rmdTaxable).toBeDefined()
+    expect(probe2026.rmdTaxable!).toBeGreaterThan(0)
+    expect(probe2026.rmdTaxable!).toBeLessThan(probe2026.rmd)
+  })
+
   it('passes forced inherited distributions as taxable liquid optimizer inputs', () => {
     const plan = inheritedTraditionalPlan({ ownTraditional: 50_000, inheritedTraditional: 300_000 })
     const inherited = plan.accounts.find((account) => account.type === 'traditional' && account.inherited)
@@ -612,6 +855,57 @@ describe('buildOptimizerInput', () => {
     expect(y2026.inheritedDistribution).toBeCloseTo(300_000, 2)
     expect(y2026.inheritedDistributionDivisor).toBeCloseTo(1, 2)
     expect(y2026.ordinaryIncomeBase).toBeCloseTo(0, 2)
+  })
+
+  it('P3/P4: optimizes a Roth-only inherited sweep without pricing it as ordinary income', async () => {
+    const plan = validate(inheritedRothOnlyPlan())
+    const control = validate({
+      ...structuredClone(plan),
+      accounts: plan.accounts.filter(
+        (account) =>
+          !((account.type === 'traditional' || account.type === 'roth') &&
+            account.inherited !== undefined),
+      ),
+    })
+    const optimized = await optimizePlan(plan, opts)
+    expect(optimized.schedule.status).not.toBe('infeasible')
+
+    const optimizerYear = optimized.input.years.find((year) => year.year === 2026)!
+    expect(optimizerYear.inheritedDistribution).toBe(0)
+    expect(optimizerYear.ordinaryIncomeBase).toBe(0)
+
+    const inheritedOrdinaryIncome: number[] = []
+    const controlOrdinaryIncome: number[] = []
+    const optimizedPlan = withOptimizedConversions(plan, optimized.schedule.conversions)
+    const inheritedResult = simulatePlan(optimizedPlan, {
+      startYear: 2026,
+      taxCalculator: {
+        compute(input) {
+          inheritedOrdinaryIncome.push(input.ordinaryIncome)
+          return federal.compute(input)
+        },
+      },
+    })
+    simulatePlan(control, {
+      startYear: 2026,
+      taxCalculator: {
+        compute(input) {
+          controlOrdinaryIncome.push(input.ordinaryIncome)
+          return federal.compute(input)
+        },
+      },
+    })
+    const sweepYear = inheritedResult.years.find((year) => year.year === 2026)!
+    expect(sweepYear.inheritedDistribution).toBeCloseTo(100_000, 2)
+    expect(sweepYear.inheritedTraditionalDistribution).toBe(0)
+    expect(inheritedOrdinaryIncome).toEqual(controlOrdinaryIncome)
+
+    // The liquid-reserve boundary excludes the Roth-character inherited sweep.
+    for (const year of inheritedResult.years) {
+      expect(
+        year.withdrawals.traditional - year.rmd - year.inheritedTraditionalDistribution,
+      ).toBeGreaterThanOrEqual(0)
+    }
   })
 
   it('includes pension and one-time ordinary income in optimizer year inputs', () => {

@@ -1,7 +1,15 @@
 import { z } from 'zod'
 
 import { planSchema, type Plan } from '../model/plan.js'
-import { rmdStartAgeForBirthYear } from '../params/index.js'
+import { packForYear, rmdStartAgeForBirthYear } from '../params/index.js'
+import {
+  classifyInheritedRegime,
+  inheritedRequirementForYear,
+} from '../strategies/inheritedIra.js'
+import {
+  acceptsContributions,
+  isTreatAsOwnEffective,
+} from '../strategies/accountEligibility.js'
 import { seppActive } from '../strategies/sepp.js'
 import { seppSeriesBeginsAfterSeparation } from './traditionalEmployerPlanPenaltyPrerequisite.js'
 import {
@@ -469,6 +477,9 @@ type TraditionalAccount = Extract<
   Plan['accounts'][number],
   { type: 'traditional' }
 >
+type RothAccount = Extract<Plan['accounts'][number], { type: 'roth' }>
+/** Traditional or Roth source that can carry an inherited-IRA runtime event. */
+type InheritedCapableAccount = TraditionalAccount | RothAccount
 
 function deepFreeze<T>(value: T): Readonly<T> {
   if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
@@ -748,8 +759,15 @@ function expectedOrigin(
   }
 }
 
-function isOwnedIra(account: TraditionalAccount): boolean {
-  return account.kind === 'ira' && account.inherited === undefined
+/**
+ * Owned (non-inherited) IRA for this tax year — including S2 treat-as-own after
+ * the election year, when the account is the spouse's own for owner RMD and
+ * Form 8606 categorization even though the plan still carries the inherited block.
+ */
+function isOwnedIra(account: TraditionalAccount, taxYear: number): boolean {
+  if (account.kind !== 'ira') return false
+  if (account.inherited === undefined) return true
+  return isTreatAsOwnEffective(account, taxYear)
 }
 
 function categoryFor(
@@ -776,7 +794,7 @@ function categoryFor(
 
 function resolvedSourceKindValid(
   kind: AnnualRetirementResolvedRuntimeEventKind,
-  account: TraditionalAccount,
+  account: InheritedCapableAccount,
   plan: Plan,
   taxYear: number,
   ownerPersonId: PersonId,
@@ -804,6 +822,91 @@ function resolvedSourceKindValid(
   const ownerRmdActive = birthYear !== undefined &&
     ownerAge !== undefined &&
     ownerAge >= rmdStartAgeForBirthYear(birthYear)
+
+  // Inherited kinds (K1/K2 execute for Roth): traditional and Roth sources.
+  if (kind === 'inheritedIraRmd') {
+    if (account.inherited === undefined) return false
+    if (!ownerModeledAlive) return false
+    const inherited = account.inherited
+    // S2 post-election: account left inherited execution for owner RMD —
+    // except the same-year flip (election year = death year), when the
+    // decedent's unsatisfied year-of-death RMD still executes as inherited
+    // (Treas. Reg. §1.408-8(c)(3)).
+    if (isTreatAsOwnEffective(account, taxYear)) {
+      if (taxYear !== inherited.ownerDeathYear) return false
+      // Fall through: structural test must accept the YOD row the ledger emits.
+    }
+    // Structural required-year test: take the WS3 engine's classified answer
+    // (annual requirement or final-sweep year). Legacy formula retained only
+    // for legacy-path accounts (X1 / refusal fallback) — including the S2
+    // synthetic-S0 refusal mirror of the simulate cache.
+    let scheduleInherited = inherited
+    const accountType = account.type
+    const accountKind = account.kind
+    let regimeResult = classifyInheritedRegime({
+      accountType,
+      accountKind,
+      inherited,
+    })
+    // S2 pre-election: synthetic S0 schedule (election overridden to 'none').
+    // When the synthetic classification refuses, mirror the simulate cache:
+    // fall back to the legacy formula for the pre-election window so inventory
+    // accepts the legacy-formula events the simulator actually emits.
+    if (
+      regimeResult.kind === 'regime' &&
+      regimeResult.regime === 'spouse-treat-as-own-transition' &&
+      inherited.beneficiary
+    ) {
+      scheduleInherited = {
+        ...inherited,
+        beneficiary: {
+          ...inherited.beneficiary,
+          election: 'none',
+          treatAsOwnElectionYear: undefined,
+        },
+      }
+      const synthetic = classifyInheritedRegime({
+        accountType,
+        accountKind,
+        inherited: scheduleInherited,
+      })
+      if (synthetic.kind === 'regime') {
+        regimeResult = synthetic
+      } else {
+        // Synthetic refusal → same legacy structural rule as path: 'legacy'.
+        regimeResult = synthetic
+      }
+    }
+    if (regimeResult.kind === 'refusal') {
+      const yearsSinceDeath = taxYear - inherited.ownerDeathYear
+      return (
+        yearsSinceDeath >= 10 ||
+        (yearsSinceDeath >= 1 && inherited.decedentHadStartedRmds)
+      )
+    }
+    const { pack } = packForYear(taxYear)
+    // priorYearEndBalance is a positive sentinel: the structural question is
+    // whether the year is an annual/sweep obligation year, not the dollar amount.
+    const req = inheritedRequirementForYear({
+      pack,
+      classification: regimeResult,
+      inherited: scheduleInherited,
+      year: taxYear,
+      priorYearEndBalance: 1,
+    })
+    // Notice-waived annual years publish evidence but execute zero — no
+    // occurrence and no structural inventory requirement (matrix §4).
+    if (req.noticeWaived === true) return false
+    return (
+      req.kind === 'year-of-death-rmd' ||
+      req.kind === 'annual-rmd' ||
+      req.kind === 'final-sweep'
+    )
+  }
+
+  // Remaining kinds require a traditional source.
+  if (account.type !== 'traditional') return false
+
   const ownerHasCurrentYearWages = owner !== undefined &&
     ownerAge !== undefined &&
     plan.incomes.some((income) => {
@@ -833,7 +936,7 @@ function resolvedSourceKindValid(
     ownerHasCurrentYearWages &&
     hasPositiveCurrentYearContributionRequest
   const ownedIraContributionPossible =
-    isOwnedIra(account) &&
+    acceptsContributions(account) &&
     ownerModeledAlive &&
     hasPositiveCurrentYearContributionRequest &&
     (hasContributionSchedule || ownerHasCurrentYearWages)
@@ -863,21 +966,13 @@ function resolvedSourceKindValid(
     legacyRothConversionRequested
 
   if (kind === 'ownedIraRmd') {
-    return isOwnedIra(account) && ownerRmdActive && ownerModeledAlive
+    return isOwnedIra(account, taxYear) && ownerRmdActive && ownerModeledAlive
   }
   if (kind === 'employerPlanRmd') {
     return account.kind === 'employer' &&
       account.inherited === undefined &&
       ownerRmdActive &&
       ownerModeledAlive
-  }
-  if (kind === 'inheritedIraRmd') {
-    if (account.inherited === undefined) return false
-    const yearsSinceDeath = taxYear - account.inherited.ownerDeathYear
-    return ownerModeledAlive &&
-      (yearsSinceDeath >= 10 ||
-        (yearsSinceDeath >= 1 &&
-          account.inherited.decedentHadStartedRmds))
   }
   if (kind === 'automaticSeppDistribution') {
     // IRC 72(t)(3)(B) bars the exception for an employer plan unless the series
@@ -919,7 +1014,7 @@ function resolvedSourceKindValid(
         activity.sourceAccountId === account.id &&
         activity.actionTaxYear === taxYear,
     )
-    return isOwnedIra(account) && ownerModeledAlive &&
+    return isOwnedIra(account, taxYear) && ownerModeledAlive &&
       classifications.length === 1 &&
       (classifications[0]!.subtype === 'sep' ||
         classifications[0]!.subtype === 'simple') &&
@@ -1073,7 +1168,7 @@ function canonicalPlanEvents(
       const sourceInheritanceStatus = account.inherited === undefined
         ? 'owned'
         : 'inherited'
-      const form8606Category = categoryFor(action.kind, isOwnedIra(account))
+      const form8606Category = categoryFor(action.kind, isOwnedIra(account, taxYear))
       const eventId = deriveActionStructuralId(
         'annual-retirement-plan-event',
         [
@@ -1123,8 +1218,10 @@ function canonicalPlanEvents(
 
 function canonicalRuntimeEvent(
   record: CanonicalResolvedRecord,
-  account: TraditionalAccount,
+  account: InheritedCapableAccount,
 ): RuntimeAnnualRetirementPhysicalEvent {
+  const ownedIra = account.type === 'traditional' &&
+    isOwnedIra(account, record.taxYear)
   return {
     eventId: record.eventId,
     planId: record.planId,
@@ -1141,7 +1238,7 @@ function canonicalRuntimeEvent(
     eventDate: record.executionDate,
     eventSequence: record.executionSequence,
     upstreamEvidenceId: record.upstreamEvidenceId,
-    form8606Category: categoryFor(record.kind, isOwnedIra(account)),
+    form8606Category: categoryFor(record.kind, ownedIra),
   }
 }
 
@@ -1455,7 +1552,14 @@ export function buildAnnualRetirementPhysicalEventInventory(
       ))
     }
     const anyAccount = accountById.get(record.sourceAccountId)
-    const account = traditionalById.get(record.sourceAccountId)
+    const traditionalAccount = traditionalById.get(record.sourceAccountId)
+    // Inherited kinds (K1/K2) execute for Roth sources; other retirement kinds
+    // still require a traditional account.
+    const account: InheritedCapableAccount | undefined =
+      traditionalAccount ??
+      (anyAccount?.type === 'roth' && record.kind === 'inheritedIraRmd'
+        ? anyAccount
+        : undefined)
     if (anyAccount === undefined) {
       inventoryIssues.push(issue(
         'sourceForeignToPlan',
@@ -1465,7 +1569,9 @@ export function buildAnnualRetirementPhysicalEventInventory(
     } else if (account === undefined) {
       inventoryIssues.push(issue(
         'sourceKindMismatch',
-        'Runtime retirement event source must be a traditional account',
+        record.kind === 'inheritedIraRmd'
+          ? 'Runtime inherited retirement event source must be a traditional or Roth account'
+          : 'Runtime retirement event source must be a traditional account',
         { recordId: record.eventId, sourceAccountId: record.sourceAccountId },
       ))
     } else {
@@ -1488,7 +1594,7 @@ export function buildAnnualRetirementPhysicalEventInventory(
       )) {
         inventoryIssues.push(issue(
           'sourceKindMismatch',
-          `Runtime event kind ${record.kind} is incompatible with this traditional-account class`,
+          `Runtime event kind ${record.kind} is incompatible with this ${account.type}-account class`,
           { recordId: record.eventId, sourceAccountId: record.sourceAccountId },
         ))
       }
@@ -1616,7 +1722,7 @@ export function buildAnnualRetirementPhysicalEventInventory(
   )
   if (typeof inventoryTotal !== 'number') return incomplete([inventoryTotal])
   const ownedAccounts = [...traditionalById.values()]
-    .filter(isOwnedIra)
+    .filter((account) => isOwnedIra(account, taxYear))
   const sourceAccountIdsByOwner = new Map<string, AccountId[]>()
   const ownedIraOwnerByAccountId = new Map<AccountId, string>()
   for (const account of ownedAccounts) {
@@ -1714,7 +1820,7 @@ export function buildAnnualRetirementPhysicalEventInventory(
         : planAction.allocations.length
       return actionEvents.length === allocationCount && actionEvents.every((event) => {
         const account = traditionalById.get(event.sourceAccountId)
-        return account !== undefined && isOwnedIra(account)
+        return account !== undefined && isOwnedIra(account, taxYear)
       })
     })
     .sort(compareUtf16CodeUnits)

@@ -476,6 +476,54 @@ describe('buildAnnualRetirementPhysicalEventInventory', () => {
     })]))).toContain('sourceKindMismatch')
   })
 
+  it('rejects owned-IRA contributions on S2 accounts past the election year', () => {
+    // Post-flip the account is owned for RMD/Form 8606, but contributions stay
+    // blocked on any account with an inherited block (WS5 residual).
+    const plan = basePlan()
+    plan.household.people[0]!.dob = '1950-01-01'
+    plan.incomes = [{
+      type: 'wages',
+      id: 'owner-current-wages',
+      personId: ownerPersonId,
+      annualGross: 100_000,
+      endAge: null,
+      realGrowthPct: 0,
+    }]
+    const inheritedAccount = plan.accounts.find((account) => account.id === inheritedId)
+    if (inheritedAccount?.type !== 'traditional' || inheritedAccount.inherited === undefined) {
+      throw new Error('fixture drift')
+    }
+    inheritedAccount.annualContribution = 7_000
+    inheritedAccount.inherited = {
+      ownerDeathYear: 2020,
+      decedentHadStartedRmds: false,
+      beneficiary: {
+        beneficiaryClass: 'designated-individual',
+        edbCategory: 'surviving-spouse',
+        beneficiaryBirthYear: 1950,
+        soleBeneficiary: true,
+        ownerBirthYear: 1945,
+        election: 'treat-as-own',
+        spouseUnlimitedWithdrawalRight: true,
+        treatAsOwnElectionYear: 2035,
+        provenance: { source: 'test', asOf: '2026-01-01' },
+      },
+    }
+    expect(issueKinds({
+      ...input(plan, [resolved({
+        kind: 'ownedIraContribution',
+        origin: 'contributionLedger',
+        sourceAccountId: inheritedId,
+        taxYear: 2036,
+      })]),
+      taxYear: 2036,
+      runtimeInventoryAttestation: {
+        ...input(plan).runtimeInventoryAttestation!,
+        taxYear: 2036,
+      },
+    })).toContain('sourceKindMismatch')
+  })
+
   it.each([
     'employerPlanEmployeeContribution',
     'employerPlanEmployerMatch',
@@ -1088,6 +1136,81 @@ describe('buildAnnualRetirementPhysicalEventInventory', () => {
       [resolved({
         kind: 'inheritedIraRmd',
         sourceAccountId: inheritedId,
+      })],
+    )).status).toBe('annualPhysicalEventInventoryBuilt')
+  })
+
+  it('rejects inherited RMD records in notice-waived annual years', () => {
+    const plan = basePlan()
+    plan.household.people[0]!.dob = '1980-01-01'
+    const inheritedAccount = plan.accounts.find((account) => account.id === inheritedId)
+    if (inheritedAccount?.type !== 'traditional' || inheritedAccount.inherited === undefined) {
+      throw new Error('fixture drift')
+    }
+    inheritedAccount.inherited = {
+      ownerDeathYear: 2020,
+      decedentHadStartedRmds: true,
+      beneficiary: {
+        beneficiaryClass: 'designated-individual',
+        beneficiaryBirthYear: 1980,
+        ownerBirthYear: 1945,
+        soleBeneficiary: true,
+        edbCategory: 'none',
+        ownerYearOfDeathRmdSatisfied: true,
+        provenance: { source: 'test', asOf: '2026-01-01' },
+      },
+    }
+    const taxYear = 2023
+    const base = input(plan, [resolved({
+      kind: 'inheritedIraRmd',
+      sourceAccountId: inheritedId,
+      taxYear,
+    })])
+    expect(issueKinds({
+      ...base,
+      taxYear,
+      runtimeInventoryAttestation: {
+        ...base.runtimeInventoryAttestation!,
+        taxYear,
+      },
+    })).toContain('sourceKindMismatch')
+  })
+
+  it('accepts legacy-formula inherited RMD events when the S2 synthetic schedule refuses', () => {
+    // Mirror of simulate's synthetic-S0 refusal fallback: primary S2 is valid,
+    // but the pre-election S0 window refuses (born-1959 contested applicable
+    // age). The ledger emits legacy-formula forced amounts; inventory must
+    // accept those years under the same structural rule.
+    const plan = basePlan()
+    const inheritedAccount = plan.accounts.find((account) => account.id === inheritedId)
+    if (inheritedAccount?.type !== 'traditional' || inheritedAccount.inherited === undefined) {
+      throw new Error('fixture drift')
+    }
+    inheritedAccount.inherited = {
+      ownerDeathYear: 2020,
+      decedentHadStartedRmds: false,
+      beneficiary: {
+        beneficiaryClass: 'designated-individual',
+        edbCategory: 'surviving-spouse',
+        beneficiaryBirthYear: 1950,
+        soleBeneficiary: true,
+        ownerBirthYear: 1959,
+        election: 'treat-as-own',
+        spouseUnlimitedWithdrawalRight: true,
+        treatAsOwnElectionYear: 2035,
+        provenance: { source: 'test', asOf: '2026-01-01' },
+      },
+    }
+    // Pre-election year with yearsSinceDeath >= 1 and decedentHadStartedRmds
+    // false: legacy formula requires yearsSinceDeath >= 10 for a force — use a
+    // post-RBD death so yearsSinceDeath >= 1 qualifies under the legacy rule.
+    inheritedAccount.inherited.decedentHadStartedRmds = true
+    expect(buildAnnualRetirementPhysicalEventInventory(input(
+      plan,
+      [resolved({
+        kind: 'inheritedIraRmd',
+        sourceAccountId: inheritedId,
+        taxYear: 2030,
       })],
     )).status).toBe('annualPhysicalEventInventoryBuilt')
   })

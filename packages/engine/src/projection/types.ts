@@ -477,7 +477,11 @@ export interface OptimizerYearProbe {
   traditionalWithdrawalTaxableFraction?: number
   /** Start-of-year owner-convertible traditional balance, used to recover the owner RMD divisor ratio. */
   startTraditional: number
-  /** Forced inherited-traditional distribution this year in the baseline. */
+  /**
+   * Forced inherited-traditional distribution this year in the baseline
+   * (traditional accounts only — Roth forced is excluded). Same meaning as
+   * `YearResult.inheritedTraditionalDistribution`.
+   */
   inheritedDistribution: number
   /** Start-of-year inherited traditional balance, used to recover the inherited distribution divisor ratio. */
   startInheritedTraditional: number
@@ -1116,6 +1120,42 @@ export interface SimulatorCommittedOwnedNonRothIraAnnualReplay {
   readonly annualReplay: Readonly<SimulatorOwnedNonRothIraAnnualReplay>
 }
 
+/**
+ * Per-account, per-year inherited-IRA execution evidence (WS4 exact ledger).
+ * Regime law is produced solely by `classifyInheritedRegime` /
+ * `inheritedRequirementForYear` in strategies/inheritedIra.ts — this surface
+ * records what the ledger forced and what the planner took beyond that.
+ */
+export interface InheritedAccountYearEvidence {
+  accountId: string
+  /** The beneficiary person holding the account. */
+  ownerPersonId: string
+  /** InheritedRegimeKey | refusal key (e.g. legacy-planning-approximation). */
+  regime: string
+  matrixRow: string
+  classification?: 'settled' | 'unsettled'
+  /**
+   * Present when the classifier refused (non-X1 → legacy fallback) OR when the
+   * successor-clock / out-of-scope condition suppresses the schedule (matrix X2
+   * beneficiary-death rows).
+   */
+  refusalReason?: string
+  requirementKind: 'year-of-death-rmd' | 'annual-rmd' | 'none' | 'final-sweep' | 'legacy'
+  /** Evidence amount on the real prior-Dec-31 balance (0 on the legacy path when forced is 0). */
+  requiredAmount: number
+  /** What the ledger actually forced (≤ live balance; entire balance on final-sweep). */
+  executedRequiredAmount: number
+  /** Planner draws beyond the requirement this year (need-based withdrawals). */
+  voluntaryAmount: number
+  divisor?: number
+  divisorArm?: string
+  noticeWaived?: boolean
+  limitation?: string
+  finalDeadlineYear?: number
+  disclosures: string[]
+  citations: string[]
+}
+
 export interface YearResult {
   year: number
   /**
@@ -1151,8 +1191,28 @@ export interface YearResult {
   rmd: number
   /** Penalty-free 72(t) SEPP distributions this year (included in withdrawals.traditional). */
   sepp: number
-  /** Forced inherited-IRA distributions this year under the 10-year rule (included in withdrawals.traditional). */
+  /**
+   * Forced inherited-IRA distributions this year (traditional + Roth character).
+   * Equals the sum of each `inheritedAccounts[]` row's executed required amount
+   * (annual/year-of-death) plus final-sweep amounts; voluntary draws are not
+   * included. Traditional forced dollars also join `withdrawals.traditional`
+   * and ordinary income; Roth forced dollars join `withdrawals.roth` only.
+   */
   inheritedDistribution: number
+  /**
+   * Forced inherited amounts from TRADITIONAL accounts only (forced-only;
+   * subset of `withdrawals.traditional`). Roth forced dollars are excluded —
+   * they are not ordinary income and never join the traditional withdrawal
+   * total. Equals the traditional share of `inheritedDistribution`.
+   */
+  inheritedTraditionalDistribution: number
+  /**
+   * Per-account inherited-IRA execution evidence for the year. Present whenever
+   * the plan carries any inherited account; one row per inherited account whose
+   * beneficiary is alive in the year (and a successor-scope flag row after a
+   * beneficiary death).
+   */
+  inheritedAccounts?: InheritedAccountYearEvidence[]
   /** Qualified charitable distributions routed out of the RMD (excluded from income). */
   qcd: number
   /** Dollars moved traditional → Roth this year (taxed as ordinary income, no penalty). */

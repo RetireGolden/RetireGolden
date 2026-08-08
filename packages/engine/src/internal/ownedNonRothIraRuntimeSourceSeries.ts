@@ -3,7 +3,7 @@ import { asUsdCents, type UsdCents } from '../actions/money.js'
 import { ledgerCentsToPlanDollars, planDollarsToLedgerCents } from '../actions/planBalanceAdapter.js'
 import { compareUtf16CodeUnits, deriveActionStructuralId } from '../actions/structuralId.js'
 import { planSchema, type Account, type Plan } from '../model/plan.js'
-import { isAggregatedIra } from '../strategies/accountEligibility.js'
+import { isAggregatedIra, isTreatAsOwnEffective } from '../strategies/accountEligibility.js'
 import { ownedIraFundedAnnuityContracts } from './iraAnnuityContractValue.js'
 import type { SimulatorAnnualRetirementRuntimeOccurrence } from '../projection/annualRetirementRuntimeJournal.js'
 import type {
@@ -716,10 +716,23 @@ function compareOccurrences(
     compareNullableString(left.movementAuthorityId, right.movementAuthorityId)
 }
 
-function ownedPools(plan: Plan): Map<PersonId, Extract<Account, { type: 'traditional' }>[]> {
+function ownedPools(
+  plan: Plan,
+  taxYear?: number,
+): Map<PersonId, Extract<Account, { type: 'traditional' }>[]> {
   const pools = new Map<PersonId, Extract<Account, { type: 'traditional' }>[]>()
   for (const account of plan.accounts) {
-    if (!isAggregatedIra(account)) continue
+    // The S2-effective arm only ever admits traditional IRAs: the flip makes
+    // an inherited traditional IRA the spouse's own aggregated IRA for the
+    // year, and no other account type carries an inherited block into this
+    // pool. Narrow before the structural helper so the full union stays out.
+    const s2Effective =
+      taxYear !== undefined &&
+      account.type === 'traditional' &&
+      account.kind === 'ira' &&
+      isTreatAsOwnEffective(account, taxYear)
+    if (!isAggregatedIra(account) && !s2Effective) continue
+    if (account.type !== 'traditional') continue
     const owner = account.ownerPersonId as PersonId
     pools.set(owner, [...(pools.get(owner) ?? []), account])
   }
@@ -854,6 +867,7 @@ function sourceCompatible(
   occurrence: Readonly<SimulatorAnnualRetirementRuntimeOccurrence>,
   account: Account,
   plan: Plan,
+  taxYear: number,
 ): boolean {
   // Checked before the traditional-account gate, because this is the one
   // occurrence whose source is not a traditional account at all. Section
@@ -870,15 +884,30 @@ function sourceCompatible(
     return ownedIraFundedAnnuityContracts(plan).some(({ contract }) =>
       contract.id === account.id)
   }
+  // Inherited RMDs execute for traditional and Roth (K1/K2). Admit Roth
+  // sources before the traditional-account gate so a forced Roth occurrence
+  // is not rejected as the wrong account type.
+  if (occurrence.kind === 'inheritedIraRmd') {
+    return (
+      (account.type === 'traditional' || account.type === 'roth') &&
+      account.inherited !== undefined
+    )
+  }
   if (account.type !== 'traditional') return false
   switch (occurrence.kind) {
+    // S2 post-election: the plan still carries the inherited block, but the
+    // year-aware treat-as-own gate makes the account owned for RMD purposes.
+    // Static `isAggregatedIra` alone would refuse every post-flip owner RMD.
     case 'ownedIraRmd':
+      return (
+        isAggregatedIra(account) ||
+        isTreatAsOwnEffective(account, taxYear)
+      )
     case 'ownedIraContribution':
     case 'ownedIraEmployerContribution': return isAggregatedIra(account)
     case 'employerPlanRmd':
     case 'employerPlanEmployeeContribution':
     case 'employerPlanEmployerMatch': return account.kind === 'employer' && account.inherited === undefined
-    case 'inheritedIraRmd': return account.inherited !== undefined
     case 'legacyRothConversion': return account.inherited === undefined
     // A named conversion is committed here only from an owned, non-inherited
     // IRA. IRC 408(d)(3)(C) bars rolling over an inherited IRA at all, and an
@@ -1410,6 +1439,11 @@ function validateUnchecked(
 
   for (const yearResult of years) {
     const taxYear = yearResult.year
+    // S2 accounts become members of their beneficiary's owned-IRA aggregate
+    // in the election year. Reconstruct each tax year's actual pool instead of
+    // holding the projection-start inventory static across that identity flip.
+    const pools = ownedPools(plan, taxYear)
+    const ownedAccounts = [...pools.values()].flat()
     const occurrenceSource = yearResult.retirementRuntimeSource
     const applicationSource = yearResult.retirementRuntimeApplicationSource
     const balanceSource = yearResult.ownedNonRothIraPostGrowthSource
@@ -1471,7 +1505,7 @@ function validateUnchecked(
         ? account.ownerPersonId ?? (plan.household.people[0]?.id ?? null)
         : account?.ownerPersonId
       if (!account || expectedOwnerPersonId !== occurrence.ownerPersonId ||
-          !sourceCompatible(occurrence, account, plan)) {
+          !sourceCompatible(occurrence, account, plan, taxYear)) {
         fail('sourceIdentityInvalid', 'Occurrence owner/source/kind must exact-rejoin its Plan account', {
           taxYear, producerOccurrenceKey: occurrence.producerOccurrenceKey,
         })
@@ -1569,9 +1603,18 @@ function validateUnchecked(
       taxYear,
       accountOrder,
     )
+    // Traditional withdrawals carry only the traditional-character forced
+    // inherited share (`inheritedTraditionalDistribution`); Roth forced dollars
+    // join `withdrawals.roth` and must not be double-counted here against the
+    // combined `inheritedDistribution` scalar.
+    if (yearResult.inheritedTraditionalDistribution === undefined) {
+      fail('sourceMissing', 'Each year requires the independently published traditional-character inherited distribution total', {
+        taxYear,
+      })
+    }
     const reconstructedTraditionalWithdrawal =
       ((legacyNeedBasedWithdrawalTotal.total + yearResult.rmd) + yearResult.sepp) +
-      yearResult.inheritedDistribution
+      yearResult.inheritedTraditionalDistribution
     if (!Number.isFinite(yearResult.withdrawals.traditional) ||
         yearResult.withdrawals.traditional < 0 ||
         Object.is(yearResult.withdrawals.traditional, -0)) {
@@ -1584,7 +1627,7 @@ function validateUnchecked(
       yearResult.withdrawals.traditional,
       legacyNeedBasedWithdrawalTotal.count + 3,
     )) {
-      fail('sourceCoverageInvalid', 'Legacy need-based withdrawal occurrences plus RMD, SEPP, and inherited totals must exact-rejoin published traditional withdrawals', {
+      fail('sourceCoverageInvalid', 'Legacy need-based withdrawal occurrences plus RMD, SEPP, and traditional-character inherited totals must exact-rejoin published traditional withdrawals', {
         taxYear,
       })
     }
@@ -1775,6 +1818,31 @@ function validateUnchecked(
     }
 
     const normalizedApplications: NormalizedOwnedNonRothIraApplication[] = []
+    // An S2 account first joins this replay at its election-year owner-side
+    // RMD. It has no prior owned-pool close to carry, so seed its chain from
+    // that first published mutation (or the unchanged pre-growth observation
+    // if it had no mutation). This is a reconstruction of the ledger's actual
+    // opening, not a Plan-balance reset.
+    for (const account of ownedAccounts) {
+      const sourceAccountId = asAccountId(account.id)
+      if (openingRawBalances.has(sourceAccountId)) continue
+      const firstApplication = applicationSource.applications.find(
+        (application) => application.sourceAccountId === account.id,
+      )
+      const opening = firstApplication?.sourceBalanceBeforePlanDollars ??
+        preGrowthRawBalances.get(sourceAccountId)
+      if (opening === undefined) {
+        fail('balanceChainInvalid', 'A newly owned IRA must publish an opening mutation or unchanged pre-growth balance', {
+          taxYear, ownerPersonId: account.ownerPersonId!, sourceAccountId: account.id,
+        })
+      }
+      openingRawBalances.set(sourceAccountId, opening)
+      openingBalances.set(sourceAccountId, cents(
+        opening,
+        'Newly owned IRA opening balance',
+        { taxYear, ownerPersonId: account.ownerPersonId!, sourceAccountId: account.id },
+      ))
+    }
     /**
      * The year's running contract-value channel, chained the same way the
      * account balances are.
@@ -1956,7 +2024,15 @@ function validateUnchecked(
       }
       const shape = applicationShape(occurrence.kind)
       const account = accountById.get(occurrence.sourceAccountId!)
-      if (!shape || !account || !isAggregatedIra(account) ||
+      // Only a traditional IRA can be S2-effective; narrow before the
+      // structural helper so the full account union stays out of it.
+      const applicationS2Effective =
+        account !== undefined &&
+        account.type === 'traditional' &&
+        account.kind === 'ira' &&
+        isTreatAsOwnEffective(account, taxYear)
+      if (!shape || !account ||
+          (!isAggregatedIra(account) && !applicationS2Effective) ||
           shape.applicationKind !== application.applicationKind || shape.simulatorPhase !== application.simulatorPhase ||
           application.ownerPersonId !== occurrence.ownerPersonId || application.sourceAccountId !== occurrence.sourceAccountId) {
         fail('sourceCoverageInvalid', 'Application kind/phase/owner/source must exact-rejoin its owned-IRA occurrence', {
@@ -2027,7 +2103,16 @@ function validateUnchecked(
     }
     for (const occurrence of occurrenceSource.runtimeOccurrences) {
       const account = accountById.get(occurrence.sourceAccountId!)
-      if (account && isAggregatedIra(account) && !appliedKeys.has(occurrence.producerOccurrenceKey)) {
+      // Only a traditional IRA can be S2-effective; narrow before the
+      // structural helper so the full account union stays out of it.
+      const s2Effective =
+        account !== undefined &&
+        account.type === 'traditional' &&
+        account.kind === 'ira' &&
+        isTreatAsOwnEffective(account, taxYear)
+      if (account &&
+          (isAggregatedIra(account) || s2Effective) &&
+          !appliedKeys.has(occurrence.producerOccurrenceKey)) {
         fail('sourceCoverageInvalid', 'Every owned-IRA occurrence must have one supported application', {
           taxYear, producerOccurrenceKey: occurrence.producerOccurrenceKey,
         })

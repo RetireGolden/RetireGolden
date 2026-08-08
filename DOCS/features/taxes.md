@@ -453,6 +453,17 @@ rules and citations: [domain rules §16](../domain/domain-rules-reference.md#16-
 - **Account eligibility service** (`engine/strategies/accountEligibility.ts`) centralizes the
   withdraw / convert / RMD / spendable / penalty rules so every consumer (ledger, optimizer input, decision
   generators) shares one implementation — e.g. the inherited-IRA "not convertible, never penalized" rule.
+- **Inherited IRA schedules.** When beneficiary facts classify a regime, `projection/simulate.ts` executes
+  `classifyInheritedRegime` / `inheritedRequirementForYear` (`strategies/inheritedIra.ts`) in the annual
+  ledger: forced year-of-death, annual, and final-sweep amounts; voluntary planner draws beyond the
+  requirement; per-account `InheritedAccountYearEvidence` (regime, limitation, disclosure, refusal); and
+  scenario-comparison inherited totals. Legacy two-field accounts (no beneficiary block) and classifier-refusal
+  fallbacks keep the labeled `legacy-planning-approximation` path. Planning-grade only — not filing-grade
+  compliance. Named residuals: §1.402(c)-2(j)(4) catch-up (S2 timing-gate disclosure
+  `treat-as-own-timing-gate-unverified`), non-qualified inherited-Roth earnings tax (K3 disclosure),
+  post-S2 contribution/conversion/QCD enablement for validators without year context, and Roth
+  S2-flip basis migration into the owned Roth pool. See
+  [inherited-IRA regime matrix](../domain/inherited-ira-regime-matrix.md).
 - **HSA medical-expense subledger.** An HSA can cap qualified (tax- and penalty-free) withdrawals at the
   household's modeled medical costs (`capByMedicalExpenses`), assume every withdrawal qualifies
   (`assumeAllQualified`), or keep the legacy behavior; `reimburseLater` accumulates unreimbursed out-of-pocket

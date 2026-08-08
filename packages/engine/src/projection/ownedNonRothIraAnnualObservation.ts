@@ -13,6 +13,7 @@ import {
   deriveActionStructuralId,
 } from '../actions/structuralId.js'
 import { asUsdCents, type UsdCents } from '../actions/money.js'
+import { isTreatAsOwnEffective } from '../strategies/accountEligibility.js'
 
 const MAX_SAFE_CENTS = BigInt(Number.MAX_SAFE_INTEGER)
 
@@ -426,12 +427,13 @@ function ordinaryFederalFilingDeadline(taxYear: number): string | null {
 function ownedIraSourceIds(
   plan: Plan,
   ownerPersonId: PersonId,
+  taxYear: number,
 ): AccountId[] {
   return plan.accounts
     .filter((account) =>
       account.type === 'traditional' &&
       account.kind === 'ira' &&
-      account.inherited === undefined &&
+      (account.inherited === undefined || isTreatAsOwnEffective(account, taxYear)) &&
       account.ownerPersonId === ownerPersonId)
     .map((account) => accountIdSchema.parse(account.id))
     .sort(compareUtf16CodeUnits)
@@ -515,7 +517,7 @@ function buildSimulatorOwnedNonRothIraAnnualObservationUnchecked(
       detail: 'Annual observation requires a Plan with a valid stable ID',
     }])
   }
-  const sourceAccountIds = ownedIraSourceIds(plan, ownerPersonId)
+  const sourceAccountIds = ownedIraSourceIds(plan, ownerPersonId, taxYear)
   if (sourceAccountIds.length === 0) {
     issues.push({
       kind: 'ownedIraPoolEmpty',

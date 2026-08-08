@@ -54,6 +54,7 @@ import {
   type UnsupportedActionReasonCode,
 } from '../actions/reasons.js'
 import type { Account, Person, Plan } from '../model/plan.js'
+import { deriveRbdComparison } from '../rmd/applicableAge.js'
 
 export type TraditionalAccount = Extract<Account, { type: 'traditional' }>
 export type EquityCompAccount = Extract<Account, { type: 'equityComp' }>
@@ -1166,9 +1167,115 @@ export const TRADITIONAL_EARLY_PENALTY_RATE = 0.1
 /** HSA non-qualified withdrawal penalty rate before age 65 (IRC §223(f)(4)). */
 export const HSA_NON_QUALIFIED_PENALTY_RATE = 0.2
 
-/** Can this account receive new contributions? (Inherited accounts cannot.) */
+type TreatAsOwnElectionAccount = Readonly<{
+  kind?: string | undefined
+  inherited?: Readonly<{
+    ownerDeathYear?: number | undefined
+    decedentHadStartedRmds?: boolean | undefined
+    beneficiary?: Readonly<{
+      election?: string | undefined
+      treatAsOwnElectionYear?: number | undefined
+      edbCategory?: string | undefined
+      soleBeneficiary?: boolean | undefined
+      spouseUnlimitedWithdrawalRight?: boolean | undefined
+      ownerBirthYear?: number | undefined
+      ownerBirthMonth?: number | undefined
+      ownerBirthDay?: number | undefined
+    }> | undefined
+  }> | undefined
+}>
+
+/**
+ * Whether an inherited IRA carries a spouse treat-as-own election the
+ * classifier would recognize (year-agnostic). Used by the optimizer probe to
+ * keep S2 accounts in the inherited-traditional LP bucket for the whole horizon
+ * and remap post-flip owner RMD obligations into that bucket's forced flow.
+ */
+export function hasSpouseTreatAsOwnElection(
+  account: TreatAsOwnElectionAccount,
+): boolean {
+  const beneficiary = account.inherited?.beneficiary
+  return (
+    account.kind === 'ira' &&
+    account.inherited !== undefined &&
+    beneficiary?.election === 'treat-as-own' &&
+    beneficiary.edbCategory === 'surviving-spouse' &&
+    beneficiary.soleBeneficiary === true &&
+    beneficiary.spouseUnlimitedWithdrawalRight === true &&
+    beneficiary.treatAsOwnElectionYear !== undefined
+  )
+}
+
+/**
+ * Whether a spouse's explicit treat-as-own election has taken effect for an
+ * account in a calendar year. Mirrors the classifier's S2 structural gate
+ * (`classifyInheritedRegime` in strategies/inheritedIra.ts): IRA kind only,
+ * ownerDeathYear on or after 2020 (SECURE Act §401(b)(1) boundary — pre-2020
+ * deaths classify X1 legacy before the classifier reaches S2), edbCategory
+ * `'surviving-spouse'`, soleBeneficiary true, spouseUnlimitedWithdrawalRight
+ * true, election `'treat-as-own'`, and a defined `treatAsOwnElectionYear` with
+ * `year >=` it. After those gates, runs the classifier's RBD screen
+ * (`deriveRbdComparison` on ownerDeathYear, decedentHadStartedRmds, and
+ * beneficiary owner birth facts) rather than mirroring piecemeal — a fact set
+ * the classifier refuses on RBD consistency/precision never flips (the S2 row
+ * itself is RBD-side-agnostic, so a resolved derivation of either side passes).
+ * This intentionally does not rewire the static eligibility predicates below;
+ * contribution/conversion validators stay pre-transition (WS5 residual).
+ */
+export function isTreatAsOwnEffective(
+  account: TreatAsOwnElectionAccount,
+  year: number,
+): boolean {
+  const inherited = account.inherited
+  const beneficiary = inherited?.beneficiary
+  if (
+    account.kind !== 'ira' ||
+    inherited === undefined ||
+    inherited.ownerDeathYear === undefined ||
+    inherited.ownerDeathYear < 2020 ||
+    beneficiary?.election !== 'treat-as-own' ||
+    beneficiary.edbCategory !== 'surviving-spouse' ||
+    beneficiary.soleBeneficiary !== true ||
+    beneficiary.spouseUnlimitedWithdrawalRight !== true ||
+    beneficiary.treatAsOwnElectionYear === undefined
+  ) {
+    return false
+  }
+  const rbdDerivation = deriveRbdComparison({
+    ownerDeathYear: inherited.ownerDeathYear,
+    decedentHadStartedRmds: inherited.decedentHadStartedRmds ?? false,
+    ownerBirthYear: beneficiary.ownerBirthYear,
+    ownerBirthMonth: beneficiary.ownerBirthMonth,
+    ownerBirthDay: beneficiary.ownerBirthDay,
+  })
+  if (rbdDerivation.kind === 'needs-review') {
+    return false
+  }
+  // A death-year election leaves the death year itself to the decedent's own
+  // RMD (§1.408-8(c)(3): the spouse owes no owner RMD that year and takes the
+  // decedent's unsatisfied amount instead); owner treatment begins the
+  // following calendar year. Every consumer — ledger, settlement, replay,
+  // inventory — takes this one boundary from here.
+  const effectiveFromYear =
+    beneficiary.treatAsOwnElectionYear === inherited.ownerDeathYear
+      ? beneficiary.treatAsOwnElectionYear + 1
+      : beneficiary.treatAsOwnElectionYear
+  return year >= effectiveFromYear
+}
+
+/**
+ * Can this account receive new contributions? Any inherited account is blocked
+ * (traditional and Roth; the plan still carries the inherited block after an
+ * S2 flip, so post-flip contributions stay blocked — WS5 residual).
+ */
 export function acceptsContributions(account: Account): boolean {
-  return !(account.type === 'traditional' && account.inherited !== undefined)
+  if (
+    (account.type === 'traditional' || account.type === 'roth') &&
+    account.inherited !== undefined
+  ) {
+    return false
+  }
+  return true
 }
 
 /**

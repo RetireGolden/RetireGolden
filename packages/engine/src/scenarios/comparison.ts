@@ -127,6 +127,8 @@ export interface ScenarioWithdrawalComparison {
   total: ScalarComparison
   rothConversions: ScalarComparison
   rmd: ScalarComparison
+  /** Forced inherited distribution only (voluntary draws are `inheritedVoluntary` annually). */
+  inherited: ScalarComparison
   qcd: ScalarComparison
 }
 
@@ -202,6 +204,10 @@ export interface AnnualComparisonValues {
   rothWithdrawals: number
   rothConversion: number
   rmd: number
+  inheritedDistribution: number
+  inheritedRequired: number
+  /** Sum of evidence-row `voluntaryAmount` for the year (planner draws beyond forced). */
+  inheritedVoluntary: number
   qcd: number
   acaGrossEnrollmentPremium: number
   acaModeledAllowablePtc: number
@@ -238,6 +244,9 @@ const ANNUAL_VALUE_KEYS: Array<keyof AnnualComparisonValues> = [
   'rothWithdrawals',
   'rothConversion',
   'rmd',
+  'inheritedDistribution',
+  'inheritedRequired',
+  'inheritedVoluntary',
   'qcd',
   'acaGrossEnrollmentPremium',
   'acaModeledAllowablePtc',
@@ -416,6 +425,15 @@ function annualValues(year: YearResult): AnnualComparisonValues {
     rothWithdrawals: year.withdrawals.roth,
     rothConversion: year.rothConversion,
     rmd: year.rmd,
+    inheritedDistribution: year.inheritedDistribution,
+    inheritedRequired: year.inheritedAccounts?.reduce(
+      (total, account) => total + account.executedRequiredAmount,
+      0,
+    ) ?? 0,
+    inheritedVoluntary: year.inheritedAccounts?.reduce(
+      (total, account) => total + account.voluntaryAmount,
+      0,
+    ) ?? 0,
     qcd: year.qcd,
     acaGrossEnrollmentPremium: year.aca?.grossEnrollmentPremium ?? 0,
     acaModeledAllowablePtc: year.aca?.modeledAllowablePtc ?? 0,
@@ -436,6 +454,14 @@ function annualComparison(baseline: ProjectionResult, proposal: ProjectionResult
     ) as AnnualComparisonValue
     return { year, values }
   })
+}
+
+function sumAnnualValue(
+  annual: AnnualScenarioComparisonRow[],
+  key: keyof AnnualComparisonValues,
+  side: 'baseline' | 'proposal',
+): number {
+  return safeNumber(annual.reduce((total, row) => total + (row.values[key][side] ?? 0), 0))
 }
 
 function cumulativeAt(summary: MonteCarloSummary, year: number): number {
@@ -541,10 +567,18 @@ export function compareScenarioPlans(
   const proposalResult = simulatePlan(proposalPlan, { startYear: options.startYear, taxCalculator: proposalTax })
   const baselineSummary = summarizeProjection(baselinePlan, baselineResult)
   const proposalSummary = summarizeProjection(proposalPlan, proposalResult)
+  const annual = annualComparison(baselineResult, proposalResult)
   const baselineIncome = aggregateIncome(baselineResult.years)
   const proposalIncome = aggregateIncome(proposalResult.years)
   const baselineWithdrawals = aggregateWithdrawals(baselineResult.years)
   const proposalWithdrawals = aggregateWithdrawals(proposalResult.years)
+  const withdrawals: ScenarioWithdrawalComparison = {
+    ...compareRecord(baselineWithdrawals, proposalWithdrawals),
+    inherited: scalar(
+      sumAnnualValue(annual, 'inheritedDistribution', 'baseline'),
+      sumAnnualValue(annual, 'inheritedDistribution', 'proposal'),
+    ),
+  }
   const baselineEndingByCategory = endingByCategory(baselinePlan, baselineResult)
   const proposalEndingByCategory = endingByCategory(proposalPlan, proposalResult)
 
@@ -657,7 +691,7 @@ export function compareScenarioPlans(
     },
     spending,
     income: compareRecord(baselineIncome, proposalIncome),
-    withdrawals: compareRecord(baselineWithdrawals, proposalWithdrawals),
+    withdrawals,
     irmaa: {
       surcharge: scalar(
         sum(baselineResult.years, (y) => y.irmaaSurcharge),
@@ -711,7 +745,7 @@ export function compareScenarioPlans(
         hsa: scalar(baselineEndingByCategory.hsa, proposalEndingByCategory.hsa),
       },
     },
-    annual: annualComparison(baselineResult, proposalResult),
+    annual,
     actionRows: compareScenarioActionRows(baselineResult.years, proposalResult.years),
     spendingCapacity,
     risk,

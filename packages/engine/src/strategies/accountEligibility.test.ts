@@ -30,6 +30,7 @@ import {
   isConvertibleToRoth,
   isEquityCompVested,
   isSpendableInYear,
+  isTreatAsOwnEffective,
   parseCivilIsoDate,
   reconcileRequestedAllocations,
   traditionalWithdrawalPenaltyRate,
@@ -111,6 +112,106 @@ describe('contributions / convertibility / RMD eligibility', () => {
     expect(isConvertibleToRoth(roth)).toBe(false)
     expect(followsOwnerRmds(roth)).toBe(false)
     expect(acceptsContributions(roth)).toBe(true)
+  })
+
+  it('blocks contributions to any inherited account, including Roth', () => {
+    const inheritedRoth: Account = {
+      type: 'roth',
+      id: 'ir',
+      name: 'Inherited Roth',
+      ownerPersonId: 'p1',
+      annualReturnPct: null,
+      kind: 'ira',
+      balance: 50_000,
+      annualContribution: 7_000,
+      inherited: { ownerDeathYear: 2024, decedentHadStartedRmds: false },
+    }
+    expect(acceptsContributions(inheritedRoth)).toBe(false)
+  })
+
+  it('isTreatAsOwnEffective requires the classifier S2 structural preconditions', () => {
+    // Election alone is not enough — missing sole/unlimited/edb never flips.
+    expect(isTreatAsOwnEffective({
+      inherited: {
+        beneficiary: {
+          election: 'treat-as-own',
+          treatAsOwnElectionYear: 2026,
+        },
+      },
+    }, 2026)).toBe(false)
+    expect(isTreatAsOwnEffective({
+      kind: 'ira',
+      inherited: {
+        ownerDeathYear: 2024,
+        beneficiary: {
+          election: 'treat-as-own',
+          treatAsOwnElectionYear: 2026,
+          edbCategory: 'surviving-spouse',
+          soleBeneficiary: true,
+          spouseUnlimitedWithdrawalRight: true,
+        },
+      },
+    }, 2026)).toBe(true)
+    expect(isTreatAsOwnEffective({
+      kind: 'ira',
+      inherited: {
+        ownerDeathYear: 2024,
+        beneficiary: {
+          election: 'treat-as-own',
+          treatAsOwnElectionYear: 2026,
+          edbCategory: 'surviving-spouse',
+          soleBeneficiary: true,
+          spouseUnlimitedWithdrawalRight: true,
+        },
+      },
+    }, 2025)).toBe(false)
+    // Inherited employer accounts never flip — matrix scope is IRAs only.
+    expect(isTreatAsOwnEffective({
+      kind: '401k',
+      inherited: {
+        beneficiary: {
+          election: 'treat-as-own',
+          treatAsOwnElectionYear: 2026,
+          edbCategory: 'surviving-spouse',
+          soleBeneficiary: true,
+          spouseUnlimitedWithdrawalRight: true,
+        },
+      },
+    }, 2026)).toBe(false)
+    // Pre-SECURE death: classifier never reaches S2 (X1 legacy first).
+    expect(isTreatAsOwnEffective({
+      kind: 'ira',
+      inherited: {
+        ownerDeathYear: 2019,
+        beneficiary: {
+          election: 'treat-as-own',
+          treatAsOwnElectionYear: 2026,
+          edbCategory: 'surviving-spouse',
+          soleBeneficiary: true,
+          spouseUnlimitedWithdrawalRight: true,
+        },
+      },
+    }, 2026)).toBe(false)
+  })
+
+  it('isTreatAsOwnEffective returns false when RBD derivation needs review', () => {
+    // Born-1960 owner died 2025 with decedentHadStartedRmds true contradicts
+    // derivation (RBD 2036) — classifier refuses; flip never takes effect.
+    expect(isTreatAsOwnEffective({
+      kind: 'ira',
+      inherited: {
+        ownerDeathYear: 2025,
+        decedentHadStartedRmds: true,
+        beneficiary: {
+          election: 'treat-as-own',
+          treatAsOwnElectionYear: 2026,
+          edbCategory: 'surviving-spouse',
+          soleBeneficiary: true,
+          spouseUnlimitedWithdrawalRight: true,
+          ownerBirthYear: 1960,
+        },
+      },
+    }, 2026)).toBe(false)
   })
 })
 

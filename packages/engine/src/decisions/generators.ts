@@ -50,7 +50,8 @@ function conversionWindowBoundaries(ctx: DecisionContext, startYear: number, end
   // the classic optimal shape is "convert hard while reserves last, then stop."
   // Reads the already-computed baseline result — no new simulation.
   const firstTraditionalDrawYear = ctx.baselineResult.years.find(
-    (year) => year.withdrawals.traditional - year.rmd - year.inheritedDistribution > 1,
+    (year) =>
+      year.withdrawals.traditional - year.rmd - year.inheritedTraditionalDistribution > 1,
   )?.year
   if (firstTraditionalDrawYear !== undefined && firstTraditionalDrawYear > startYear && firstTraditionalDrawYear <= endYear) {
     boundaries.set(firstTraditionalDrawYear, `while cash and taxable cover spending (through ${firstTraditionalDrawYear - 1})`)
