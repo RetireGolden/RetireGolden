@@ -600,6 +600,7 @@ export function buildOptimizerModel(input: OptimizerInput): BuiltModel {
   // 2-year lookback (Step 4) can reference an earlier year's MAGI.
   const magiBase: number[] = []
   const magiTerms: Terms[] = []
+  const magiTaxExemptInterestByYear: number[] = []
 
   const taxableFractionOrOne = (value: number | undefined): number =>
     Number.isFinite(value)
@@ -638,6 +639,8 @@ export function buildOptimizerModel(input: OptimizerInput): BuiltModel {
       0,
       y.forcedDistributionOrdinaryIncomeExclusion ?? 0,
     )
+    const exemptRaw = y.magiTaxExemptInterest ?? 0
+    const magiTaxExemptInterest = Number.isFinite(exemptRaw) ? Math.max(0, exemptRaw) : 0
 
     // OBBBA senior deduction in-solve (ground-truth 2026 law sync, Step 2).
     // Eligible years add the full per-person deduction to the constant and a
@@ -768,6 +771,7 @@ export function buildOptimizerModel(input: OptimizerInput): BuiltModel {
     // ledger prices the surcharge. Matches the pre-PWL behavior exactly when
     // both are absent (constant taxable SS rides inside ordinaryIncomeBase).
     magiBase.push(ordinaryBase + (y.capitalGainsBase ?? 0))
+    magiTaxExemptInterestByYear.push(magiTaxExemptInterest)
     const myMagiTerms: Terms = {
       [conv]: conversionTaxableFraction,
       [wt]: traditionalTaxableFraction,
@@ -825,7 +829,7 @@ export function buildOptimizerModel(input: OptimizerInput): BuiltModel {
     if (hasIrmaaBinaries) {
       const srcTerms = magiTerms[irmaaSrc]!
       const srcBase = magiBase[irmaaSrc]!
-      const srcExempt = input.years[irmaaSrc]?.magiTaxExemptInterest ?? 0
+      const srcExempt = magiTaxExemptInterestByYear[irmaaSrc]!
       irmaa.forEach((tier, k) => {
         const thr = tier.threshold(y.filingStatus) * y.inflationScale
         const step: Terms = { ...srcTerms, [irmaaVars[k]!]: -bigM }
@@ -894,9 +898,12 @@ export function buildOptimizerModel(input: OptimizerInput): BuiltModel {
     }
 
     if (y.acaMagiMax !== undefined) {
-      // Delta-constructed: `acaMagiMax` embeds incumbent ledger MAGI (which
-      // already includes exempt interest) minus the same LP `magiBase`, so the
-      // exempt component cancels and this constraint needs no separate term.
+      // `acaMagiMax` embeds the exact ledger's remaining MAGI headroom before
+      // the cliff — incumbent ledger MAGI (which already includes exempt
+      // interest) minus the same LP `magiBase`. The constraint stays correct
+      // because that headroom is measured on the ledger's MAGI, not because
+      // exempt interest cancels out of `magiBase`. If the LP's MAGI expression
+      // later gains an explicit exempt term, this constraint must be reconciled.
       constraints.push(
         ` acamagi${t}: ${expr(myMagiTerms)} <= ${fmt(Math.max(0, y.acaMagiMax) - magiBase[t]!)}`,
       )
