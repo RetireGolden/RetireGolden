@@ -61,7 +61,7 @@ function canFundAnnuityPurchase(account: Account, taxQualification: 'qualified' 
 }
 
 const TAX_EXEMPT_INTEREST_HELP =
-  "Annual interest from municipal bonds held in this account, as a percent of its start-of-year balance. Enter a bond's yield here or in Interest yield, not in both fields. This income never joins ordinary taxable income, but it does raise taxable Social Security, ACA household MAGI, and the income Medicare reads for IRMAA two years later. Two limits to know: the model treats none of it as private-activity-bond interest for AMT, and it does not add any of it to state taxable income even though some states tax municipal bonds from other states."
+  "Annual interest from municipal bonds held in this account, as a percent of its start-of-year balance. Enter a bond's yield here or in Interest yield, not in both fields. This income never joins ordinary taxable income, but it counts toward the income that decides how much of your Social Security is taxable, and it raises ACA household MAGI and the income Medicare reads for IRMAA two years later. Two limits to know: the model treats none of it as private-activity-bond interest for AMT, and it does not add any of it to state taxable income even though some states tax municipal bonds from other states."
 
 function TaxExemptInterestYieldField({
   account,

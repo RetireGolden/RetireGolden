@@ -486,6 +486,7 @@ const ANNUAL_METRICS: Array<{
   key: keyof ScenarioPlanComparison['annual'][number]['values']
   format: MetricFormat
 }> = [
+  { label: 'Tax-exempt interest', key: 'taxExemptInterest', format: 'money' },
   { label: 'Gross income', key: 'income', format: 'money' },
   { label: 'Intended spending', key: 'spendingIntended', format: 'money' },
   { label: 'Funded spending', key: 'spendingFunded', format: 'money' },
