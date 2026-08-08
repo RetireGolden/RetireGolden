@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest'
 
 import { asUsdCents } from '../actions/money.js'
-import { createEmptyPlan, parsePlan, stateForYear, stateResidencySegmentsForYear, type Plan } from './plan.js'
+import {
+  createEmptyPlan,
+  parsePlan,
+  stateForYear,
+  stateResidencySegmentsForYear,
+  type InheritedAccount,
+  type Plan,
+} from './plan.js'
 import {
   ownedNonRothIraAnnualFilingSourceRecord,
   setAcaYearContract,
@@ -1467,6 +1474,415 @@ describe('Plan v3 retirement-action eligibility facts', () => {
           ),
         ).toBe(true)
       }
+    }
+  })
+})
+
+describe('inherited-IRA beneficiary facts (WS2)', () => {
+  const fullBeneficiary = {
+    beneficiaryClass: 'designated-individual' as const,
+    edbCategory: 'none' as const,
+    beneficiaryBirthYear: 1980,
+    soleBeneficiary: true,
+    provenance: { source: 'custodian statement', asOf: 2026 },
+  }
+
+  function withTraditionalInherited(inherited: InheritedAccount): Plan {
+    const plan = validCouplePlan()
+    plan.accounts[1] = {
+      type: 'traditional',
+      id: 'inh-trad',
+      name: 'Inherited traditional',
+      ownerPersonId: 'p1',
+      annualReturnPct: null,
+      kind: 'ira',
+      balance: 200_000,
+      annualContribution: 0,
+      inherited,
+    } as Plan['accounts'][number]
+    return plan
+  }
+
+  function withRothInherited(inherited: InheritedAccount): Plan {
+    const plan = validCouplePlan()
+    plan.accounts.push({
+      type: 'roth',
+      id: 'inh-roth',
+      name: 'Inherited Roth',
+      ownerPersonId: 'p1',
+      annualReturnPct: null,
+      kind: 'ira',
+      balance: 100_000,
+      annualContribution: 0,
+      inherited,
+    } as Plan['accounts'][number])
+    return plan
+  }
+
+  it('round-trips a traditional inherited account with a full beneficiary block', () => {
+    const plan = withTraditionalInherited({
+      ownerDeathYear: 2022,
+      decedentHadStartedRmds: true,
+      beneficiary: {
+        ...fullBeneficiary,
+        election: 'none',
+        spouseUnlimitedWithdrawalRight: false,
+        ownerBirthYear: 1950,
+        ownerBirthMonth: 6,
+        ownerYearOfDeathRmdSatisfied: true,
+        roth5YearStartYear: 2015,
+      },
+    })
+    const serialized = JSON.parse(JSON.stringify(plan))
+    const first = parsePlan(serialized)
+    expect(first.ok).toBe(true)
+    if (!first.ok) return
+    const second = parsePlan(JSON.parse(JSON.stringify(first.plan)))
+    expect(second.ok).toBe(true)
+    if (second.ok) expect(second.plan).toEqual(first.plan)
+  })
+
+  it('parses a legacy two-field traditional inherited account unchanged', () => {
+    const plan = withTraditionalInherited({
+      ownerDeathYear: 2024,
+      decedentHadStartedRmds: false,
+    })
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(true)
+    if (!parsed.ok) return
+    const account = parsed.plan.accounts.find((a) => a.id === 'inh-trad')
+    expect(account).toMatchObject({
+      type: 'traditional',
+      inherited: { ownerDeathYear: 2024, decedentHadStartedRmds: false },
+    })
+    expect(
+      account && account.type === 'traditional' ? account.inherited?.beneficiary : undefined,
+    ).toBeUndefined()
+  })
+
+  it("rejects remain-beneficiary / treat-as-own when edbCategory is not surviving-spouse", () => {
+    for (const election of ['remain-beneficiary', 'treat-as-own'] as const) {
+      const plan = withTraditionalInherited({
+        ownerDeathYear: 2022,
+        decedentHadStartedRmds: false,
+        beneficiary: {
+          ...fullBeneficiary,
+          edbCategory: 'disabled',
+          election,
+          soleBeneficiary: true,
+        },
+      })
+      const parsed = parsePlan(plan)
+      expect(parsed.ok).toBe(false)
+      if (!parsed.ok) {
+        expect(parsed.issues.join('\n')).toContain(
+          `election '${election}' requires edbCategory 'surviving-spouse'`,
+        )
+      }
+    }
+  })
+
+  it("rejects ten-year-election when edbCategory is none", () => {
+    const plan = withTraditionalInherited({
+      ownerDeathYear: 2022,
+      decedentHadStartedRmds: false,
+      beneficiary: {
+        ...fullBeneficiary,
+        edbCategory: 'none',
+        election: 'ten-year-election',
+      },
+    })
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(false)
+    if (!parsed.ok) {
+      expect(parsed.issues.join('\n')).toContain(
+        "election 'ten-year-election' requires an EDB category other than 'none'",
+      )
+    }
+  })
+
+  it('accepts ten-year-election for a non-spouse EDB category', () => {
+    const plan = withTraditionalInherited({
+      ownerDeathYear: 2022,
+      decedentHadStartedRmds: false,
+      beneficiary: {
+        ...fullBeneficiary,
+        edbCategory: 'disabled',
+        election: 'ten-year-election',
+      },
+    })
+    expect(parsePlan(plan).ok).toBe(true)
+  })
+
+  it('rejects treat-as-own without soleBeneficiary true', () => {
+    const plan = withTraditionalInherited({
+      ownerDeathYear: 2022,
+      decedentHadStartedRmds: false,
+      beneficiary: {
+        ...fullBeneficiary,
+        edbCategory: 'surviving-spouse',
+        election: 'treat-as-own',
+        soleBeneficiary: false,
+      },
+    })
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(false)
+    if (!parsed.ok) {
+      expect(parsed.issues.join('\n')).toContain(
+        "election 'treat-as-own' requires soleBeneficiary true",
+      )
+    }
+  })
+
+  it('rejects treat-as-own when spouseUnlimitedWithdrawalRight is explicitly false', () => {
+    const plan = withTraditionalInherited({
+      ownerDeathYear: 2022,
+      decedentHadStartedRmds: false,
+      beneficiary: {
+        ...fullBeneficiary,
+        edbCategory: 'surviving-spouse',
+        election: 'treat-as-own',
+        soleBeneficiary: true,
+        spouseUnlimitedWithdrawalRight: false,
+      },
+    })
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(false)
+    if (!parsed.ok) {
+      expect(parsed.issues.join('\n')).toContain(
+        "election 'treat-as-own' requires spouseUnlimitedWithdrawalRight true",
+      )
+    }
+  })
+
+  it('accepts treat-as-own when spouseUnlimitedWithdrawalRight is absent', () => {
+    const plan = withTraditionalInherited({
+      ownerDeathYear: 2022,
+      decedentHadStartedRmds: false,
+      beneficiary: {
+        ...fullBeneficiary,
+        edbCategory: 'surviving-spouse',
+        election: 'treat-as-own',
+        soleBeneficiary: true,
+      },
+    })
+    expect(parsePlan(plan).ok).toBe(true)
+  })
+
+  it('rejects ownerYearOfDeathRmdSatisfied when decedentHadStartedRmds is false', () => {
+    const plan = withTraditionalInherited({
+      ownerDeathYear: 2022,
+      decedentHadStartedRmds: false,
+      beneficiary: {
+        ...fullBeneficiary,
+        ownerYearOfDeathRmdSatisfied: true,
+      },
+    })
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(false)
+    if (!parsed.ok) {
+      expect(parsed.issues.join('\n')).toContain(
+        'ownerYearOfDeathRmdSatisfied applies only when decedentHadStartedRmds is true',
+      )
+    }
+  })
+
+  it('rejects ten-year-election when decedentHadStartedRmds is true', () => {
+    const plan = withTraditionalInherited({
+      ownerDeathYear: 2022,
+      decedentHadStartedRmds: true,
+      beneficiary: {
+        ...fullBeneficiary,
+        edbCategory: 'disabled',
+        election: 'ten-year-election',
+      },
+    })
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(false)
+    if (!parsed.ok) {
+      expect(parsed.issues.join('\n')).toContain(
+        "election 'ten-year-election' applies only when decedentHadStartedRmds is false",
+      )
+    }
+  })
+
+  it('rejects minor-child whose age in the death year is already ≥ 21', () => {
+    const plan = withTraditionalInherited({
+      ownerDeathYear: 2022,
+      decedentHadStartedRmds: false,
+      beneficiary: {
+        ...fullBeneficiary,
+        edbCategory: 'minor-child',
+        beneficiaryBirthYear: 2000, // age 22 in 2022
+      },
+    })
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(false)
+    if (!parsed.ok) {
+      expect(parsed.issues.join('\n')).toContain(
+        "edbCategory 'minor-child' is contradicted by beneficiaryBirthYear",
+      )
+    }
+  })
+
+  it('accepts minor-child under 21 in the death year', () => {
+    const plan = withTraditionalInherited({
+      ownerDeathYear: 2022,
+      decedentHadStartedRmds: false,
+      beneficiary: {
+        ...fullBeneficiary,
+        edbCategory: 'minor-child',
+        beneficiaryBirthYear: 2005, // age 17 in 2022
+      },
+    })
+    expect(parsePlan(plan).ok).toBe(true)
+  })
+
+  it('accepts minor-child exactly age 20 in the death year', () => {
+    const plan = withTraditionalInherited({
+      ownerDeathYear: 2022,
+      decedentHadStartedRmds: false,
+      beneficiary: {
+        ...fullBeneficiary,
+        edbCategory: 'minor-child',
+        beneficiaryBirthYear: 2002, // age 20 in 2022
+      },
+    })
+    expect(parsePlan(plan).ok).toBe(true)
+  })
+
+  it('rejects minor-child exactly age 21 in the death year', () => {
+    const plan = withTraditionalInherited({
+      ownerDeathYear: 2022,
+      decedentHadStartedRmds: false,
+      beneficiary: {
+        ...fullBeneficiary,
+        edbCategory: 'minor-child',
+        beneficiaryBirthYear: 2001, // age 21 in 2022
+      },
+    })
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(false)
+    if (!parsed.ok) {
+      expect(parsed.issues.join('\n')).toContain(
+        "edbCategory 'minor-child' is contradicted by beneficiaryBirthYear",
+      )
+    }
+  })
+
+  it('rejects not-more-than-10-years-younger when birth years show a clear >10 gap', () => {
+    const plan = withTraditionalInherited({
+      ownerDeathYear: 2022,
+      decedentHadStartedRmds: false,
+      beneficiary: {
+        ...fullBeneficiary,
+        edbCategory: 'not-more-than-10-years-younger',
+        ownerBirthYear: 1950,
+        beneficiaryBirthYear: 1965, // 15 years younger by year arithmetic
+      },
+    })
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(false)
+    if (!parsed.ok) {
+      expect(parsed.issues.join('\n')).toContain(
+        "edbCategory 'not-more-than-10-years-younger' is contradicted by birth years",
+      )
+    }
+  })
+
+  it('does not reject a year-boundary 10-year gap for not-more-than-10-years-younger', () => {
+    // Exactly 10 years by year arithmetic is a birth-date-to-birth-date tie the
+    // engine cannot resolve at year precision — not a parse contradiction.
+    const plan = withTraditionalInherited({
+      ownerDeathYear: 2022,
+      decedentHadStartedRmds: false,
+      beneficiary: {
+        ...fullBeneficiary,
+        edbCategory: 'not-more-than-10-years-younger',
+        ownerBirthYear: 1950,
+        beneficiaryBirthYear: 1960,
+      },
+    })
+    expect(parsePlan(plan).ok).toBe(true)
+  })
+
+  it('rejects an EDB category on a non-designated-individual beneficiary class', () => {
+    const plan = withTraditionalInherited({
+      ownerDeathYear: 2022,
+      decedentHadStartedRmds: false,
+      beneficiary: {
+        ...fullBeneficiary,
+        beneficiaryClass: 'estate',
+        edbCategory: 'surviving-spouse',
+      },
+    })
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(false)
+    if (!parsed.ok) {
+      expect(parsed.issues.join('\n')).toContain(
+        "edbCategory other than 'none' applies only when beneficiaryClass is 'designated-individual'",
+      )
+    }
+  })
+
+  it('still rejects nondeductible basis on an inherited traditional account', () => {
+    const plan = withTraditionalInherited({
+      ownerDeathYear: 2024,
+      decedentHadStartedRmds: false,
+      beneficiary: { ...fullBeneficiary },
+    })
+    ;(plan.accounts.find((a) => a.id === 'inh-trad') as { nondeductibleBasis?: number })
+      .nondeductibleBasis = 1_000
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(false)
+    if (!parsed.ok) {
+      expect(parsed.issues.join('\n')).toContain(
+        'nondeductible basis is not modeled on inherited IRAs',
+      )
+    }
+  })
+
+  it('rejects any Roth account carrying an inherited block at parse time', () => {
+    const plan = withRothInherited({
+      ownerDeathYear: 2023,
+      decedentHadStartedRmds: false,
+      beneficiary: { ...fullBeneficiary },
+    })
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(false)
+    if (!parsed.ok) {
+      expect(parsed.issues.join('\n')).toContain(
+        'inherited Roth accounts are schema-defined (regime matrix K1/K2) but not yet executable',
+      )
+    }
+  })
+
+  it('rejects a Roth inherited block without beneficiary facts', () => {
+    const plan = withRothInherited({
+      ownerDeathYear: 2023,
+      decedentHadStartedRmds: false,
+    })
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(false)
+    if (!parsed.ok) {
+      expect(parsed.issues.join('\n')).toContain(
+        'an inherited Roth account must carry beneficiary facts',
+      )
+    }
+  })
+
+  it('rejects decedentHadStartedRmds true on a Roth inherited account', () => {
+    const plan = withRothInherited({
+      ownerDeathYear: 2023,
+      decedentHadStartedRmds: true,
+      beneficiary: { ...fullBeneficiary },
+    })
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(false)
+    if (!parsed.ok) {
+      expect(parsed.issues.join('\n')).toContain(
+        'a Roth inherited account cannot have decedentHadStartedRmds true',
+      )
     }
   })
 })

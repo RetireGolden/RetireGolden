@@ -860,6 +860,95 @@
                   },
                   "decedentHadStartedRmds": {
                     "type": "boolean"
+                  },
+                  "beneficiary": {
+                    "type": "object",
+                    "properties": {
+                      "beneficiaryClass": {
+                        "type": "string",
+                        "enum": [
+                          "designated-individual",
+                          "estate",
+                          "trust",
+                          "entity",
+                          "successor-beneficiary"
+                        ]
+                      },
+                      "edbCategory": {
+                        "type": "string",
+                        "enum": [
+                          "none",
+                          "surviving-spouse",
+                          "minor-child",
+                          "disabled",
+                          "chronically-ill",
+                          "not-more-than-10-years-younger"
+                        ]
+                      },
+                      "beneficiaryBirthYear": {
+                        "type": "integer",
+                        "minimum": 1900,
+                        "maximum": 2200
+                      },
+                      "soleBeneficiary": {
+                        "type": "boolean"
+                      },
+                      "election": {
+                        "type": "string",
+                        "enum": [
+                          "none",
+                          "remain-beneficiary",
+                          "treat-as-own",
+                          "ten-year-election"
+                        ]
+                      },
+                      "spouseUnlimitedWithdrawalRight": {
+                        "type": "boolean"
+                      },
+                      "ownerBirthYear": {
+                        "type": "integer",
+                        "minimum": 1900,
+                        "maximum": 2200
+                      },
+                      "ownerBirthMonth": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 12
+                      },
+                      "ownerYearOfDeathRmdSatisfied": {
+                        "type": "boolean"
+                      },
+                      "roth5YearStartYear": {
+                        "type": "integer",
+                        "minimum": 1900,
+                        "maximum": 2200
+                      },
+                      "provenance": {
+                        "type": "object",
+                        "properties": {
+                          "source": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "asOf": {
+                            "type": "integer",
+                            "minimum": 1900,
+                            "maximum": 2200
+                          }
+                        },
+                        "required": [
+                          "source",
+                          "asOf"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "beneficiaryClass",
+                      "edbCategory",
+                      "beneficiaryBirthYear",
+                      "soleBeneficiary",
+                      "provenance"
+                    ]
                   }
                 },
                 "required": [
@@ -1332,6 +1421,112 @@
               "contributionBasis": {
                 "type": "number",
                 "minimum": 0
+              },
+              "inherited": {
+                "type": "object",
+                "properties": {
+                  "ownerDeathYear": {
+                    "type": "integer",
+                    "minimum": 1900,
+                    "maximum": 2200
+                  },
+                  "decedentHadStartedRmds": {
+                    "type": "boolean"
+                  },
+                  "beneficiary": {
+                    "type": "object",
+                    "properties": {
+                      "beneficiaryClass": {
+                        "type": "string",
+                        "enum": [
+                          "designated-individual",
+                          "estate",
+                          "trust",
+                          "entity",
+                          "successor-beneficiary"
+                        ]
+                      },
+                      "edbCategory": {
+                        "type": "string",
+                        "enum": [
+                          "none",
+                          "surviving-spouse",
+                          "minor-child",
+                          "disabled",
+                          "chronically-ill",
+                          "not-more-than-10-years-younger"
+                        ]
+                      },
+                      "beneficiaryBirthYear": {
+                        "type": "integer",
+                        "minimum": 1900,
+                        "maximum": 2200
+                      },
+                      "soleBeneficiary": {
+                        "type": "boolean"
+                      },
+                      "election": {
+                        "type": "string",
+                        "enum": [
+                          "none",
+                          "remain-beneficiary",
+                          "treat-as-own",
+                          "ten-year-election"
+                        ]
+                      },
+                      "spouseUnlimitedWithdrawalRight": {
+                        "type": "boolean"
+                      },
+                      "ownerBirthYear": {
+                        "type": "integer",
+                        "minimum": 1900,
+                        "maximum": 2200
+                      },
+                      "ownerBirthMonth": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 12
+                      },
+                      "ownerYearOfDeathRmdSatisfied": {
+                        "type": "boolean"
+                      },
+                      "roth5YearStartYear": {
+                        "type": "integer",
+                        "minimum": 1900,
+                        "maximum": 2200
+                      },
+                      "provenance": {
+                        "type": "object",
+                        "properties": {
+                          "source": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "asOf": {
+                            "type": "integer",
+                            "minimum": 1900,
+                            "maximum": 2200
+                          }
+                        },
+                        "required": [
+                          "source",
+                          "asOf"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "beneficiaryClass",
+                      "edbCategory",
+                      "beneficiaryBirthYear",
+                      "soleBeneficiary",
+                      "provenance"
+                    ]
+                  }
+                },
+                "required": [
+                  "ownerDeathYear",
+                  "decedentHadStartedRmds"
+                ]
               },
               "employerMatch": {
                 "type": "object",
