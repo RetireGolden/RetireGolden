@@ -1897,7 +1897,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     let publicPensionOrdinary = 0
     let oneTimeGains = 0
     let taxableYieldReinvested = 0
-    const taxableYieldByAccountId = new Map<string, { gross: number; totalYieldPct: number; reinvest: boolean }>()
+    const distributedYieldByAccountId = new Map<string, { gross: number; distributedYieldPct: number; reinvest: boolean }>()
     const wagesByPerson = new Map<string, number>()
 
     for (const state of balances) {
@@ -1932,7 +1932,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
 
       const reinvest = state.account.reinvestDividends ?? true
       if (reinvest) taxableYieldReinvested += gross
-      taxableYieldByAccountId.set(state.account.id, { gross, totalYieldPct: totalDistributedYieldPct, reinvest })
+      distributedYieldByAccountId.set(state.account.id, { gross, distributedYieldPct: totalDistributedYieldPct, reinvest })
     }
 
     // Pass 1: wages (must precede Social Security for the earnings test).
@@ -6434,6 +6434,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           ssBenefits: incomes.socialSecurity,
           peopleAged65Plus,
           householdSize: aliveCount,
+          taxExemptInterest: yearTaxExemptInterest,
           aca: acaSizingInput,
           inflationScale: inflFactorFrom(pack.year, year),
           itemizedDeductions,
@@ -8009,17 +8010,17 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
 
     const shockPct = returnShockAt(year)
     // Wealth-weighted total return the ledger actually applies this year
-    // (including distributed taxable yield — a distribution, not a loss).
+    // (including distributed yield — interest, dividends, and tax-exempt interest; a distribution, not a loss).
     // Next year's coordinated HECM check reads it, so the down-market signal
     // is the realized portfolio return, not the raw additive shock.
     let returnWeightedSum = 0
     let returnWeightBase = 0
     for (const state of balances) {
-      const taxableYieldPct = state.account.type === 'taxable' ? (taxableYieldByAccountId.get(state.account.id)?.totalYieldPct ?? 0) : 0
+      const distributedYieldPct = state.account.type === 'taxable' ? (distributedYieldByAccountId.get(state.account.id)?.distributedYieldPct ?? 0) : 0
       const track = allocationTrack.get(state.account.id)
       if (track) {
         // Allocated account: growth is the class blend at this year's weights
-        // (superseding annualReturnPct); distributed taxable yield is carved
+        // (superseding annualReturnPct); distributed yield is carved
         // out of price growth exactly like the single-return path. Weights
         // then drift with the differential class returns until the next
         // rebalance (or forever, when rebalancing is 'none').
@@ -8027,23 +8028,23 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         const blendedPct = classRates.reduce((sum, r, i) => sum + r * (track.weights[i] ?? 0), 0)
         returnWeightedSum += state.balance * blendedPct
         returnWeightBase += state.balance
-        state.balance *= Math.max(0, 1 + (blendedPct - taxableYieldPct) / 100)
+        state.balance *= Math.max(0, 1 + (blendedPct - distributedYieldPct) / 100)
         track.weights = driftWeights(track.weights, classRates)
         continue
       }
       const expectedPct = state.account.annualReturnPct ?? plan.assumptions.defaultReturnPct
       // Cash is a stable-value bucket: the market shock hits invested accounts only.
-      const ratePct = state.account.type === 'cash' ? expectedPct : expectedPct + shockPct - taxableYieldPct
+      const ratePct = state.account.type === 'cash' ? expectedPct : expectedPct + shockPct - distributedYieldPct
       returnWeightedSum += state.balance * (state.account.type === 'cash' ? expectedPct : expectedPct + shockPct)
       returnWeightBase += state.balance
       state.balance *= Math.max(0, 1 + ratePct / 100)
     }
     priorYearPortfolioReturnPct = returnWeightBase > 0 ? returnWeightedSum / returnWeightBase : 0
     for (const state of balances) {
-      const taxableYield = taxableYieldByAccountId.get(state.account.id)
-      if (!taxableYield?.reinvest || taxableYield.gross <= 0) continue
-      state.balance += taxableYield.gross
-      if (state.account.type === 'taxable') state.costBasis += taxableYield.gross
+      const distributedYield = distributedYieldByAccountId.get(state.account.id)
+      if (!distributedYield?.reinvest || distributedYield.gross <= 0) continue
+      state.balance += distributedYield.gross
+      if (state.account.type === 'taxable') state.costBasis += distributedYield.gross
     }
 
     const ownedNonRothIraBalancesByOwner = new Map<

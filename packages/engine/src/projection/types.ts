@@ -1367,7 +1367,7 @@ export interface YearResult {
   realizedGains: number
   /** Taxable account interest + dividends generated this year. */
   taxableYield: number
-  /** Tax-exempt interest characterized for this year's program bases: the ACA contract's attested amount in a known-contract year, else the account-generated total. */
+  /** Tax-exempt interest characterized for this year's program bases: in a known ACA contract year, the greater of the attested household total and the plan-generated subset; otherwise the account-generated total. */
   taxExemptInterest: number
   /** Capital-loss carryforward applied against this year's realized gains. */
   capitalLossUsedAgainstGains: number

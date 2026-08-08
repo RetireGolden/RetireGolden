@@ -3264,6 +3264,50 @@ describe('withdrawal strategies', () => {
     expect(y1.withdrawals.traditional).toBe(0)
     expect(y1.withdrawals.cash).toBeGreaterThan(0)
   })
+
+  it('bracket-targeted caps traditional lower when exempt interest raises taxable Social Security', () => {
+    const make = (withExemptYield: boolean) => {
+      const plan = basePlan()
+      plan.household.people[0]! = { ...plan.household.people[0]!, dob: '1960-06-15', retirementAge: null } // 66
+      plan.expenses.baseAnnual = 90_000
+      plan.strategies.withdrawalOrder = { mode: 'bracketTargeted', bracketPct: 10 }
+      plan.incomes = [
+        {
+          type: 'socialSecurity',
+          id: testIds(),
+          personId: 'p1',
+          // ~$40k/yr at 66y0m (8 months before FRA 66y8m for 1960 birth).
+          piaMonthly: 3_489,
+          earnings: null,
+          claimAge: { years: 66, months: 0 },
+        },
+      ]
+      plan.accounts = [
+        traditional(1_000_000),
+        withExemptYield
+          ? { ...taxable(100_000, 100_000), taxExemptInterestYieldPct: 8, reinvestDividends: true }
+          : taxable(100_000, 100_000),
+      ]
+      return plan
+    }
+    const sim = (withExemptYield: boolean) =>
+      simulatePlan(validate(make(withExemptYield)), {
+        startYear: 2026,
+        taxCalculator: createFederalTaxCalculator(),
+      }).years[0]!
+    const withoutYield = sim(false)
+    const withYield = sim(true)
+    // At the 10% top, ordinary income ≈ 12,400 taxable + deductions ≈ mid-30k;
+    // provisional ≈ ordinary + 20,000 (half of SS) ≈ 55k without exempt interest;
+    // saturation ≈ 68,700, so the band has room. +8,000 exempt interest raises
+    // taxable SS by ~0.85 × 8,000 = 6,800 and the traditional cap falls by
+    // roughly 6,800/1.85 ≈ 3,700.
+    expect(withYield.incomes.taxExemptInterest).toBeCloseTo(8_000, 0)
+    expect(withYield.withdrawals.traditional).toBeLessThan(withoutYield.withdrawals.traditional)
+    const capDelta = withoutYield.withdrawals.traditional - withYield.withdrawals.traditional
+    expect(capDelta).toBeGreaterThan(2_000)
+    expect(capDelta).toBeLessThan(6_000)
+  })
 })
 
 describe('determinism', () => {
