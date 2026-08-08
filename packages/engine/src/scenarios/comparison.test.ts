@@ -3,15 +3,20 @@ import { describe, expect, it } from 'vitest'
 import { asAccountId, asActionId, asAllocationId, asPersonId } from '../actions/identity.js'
 import { asPositiveUsdCents } from '../actions/money.js'
 import { createFlatTaxCalculator } from '../projection/flatTax.js'
+import { createFederalTaxCalculator } from '../tax/federalTax.js'
 import {
   cashAccount,
   recurringOrdinaryIncome,
   setAcaYearContract,
   singlePersonPlan,
+  socialSecurityIncome,
+  taxableAccount,
   validatePlan,
 } from '../testing/planFixtures.js'
 import { compareScenarioPlans, compareScenarioSpendingCapacityResults } from './comparison.js'
 import { scenarioPlanSnapshotHash } from './patch.js'
+
+const federalTax = createFederalTaxCalculator()
 
 const noTax = createFlatTaxCalculator(0)
 const stochastic = {
@@ -400,5 +405,247 @@ describe('compareScenarioPlans', () => {
         stochastic: { ...stochastic, pathCount: 0 },
       }),
     ).toThrow('pathCount')
+  })
+
+  it('reconciles lifetime tax-exempt interest to annual ledger rows and raises tax through the §86 cascade', () => {
+    const baseline = singlePersonPlan({
+      dob: '1964-06-15',
+      planningAge: 70,
+      retirementAge: null,
+    })
+    baseline.accounts = [cashAccount('cash', 400_000), taxableAccount('brokerage', 100_000, 100_000)]
+    baseline.incomes = [
+      {
+        type: 'oneTime',
+        id: 'ordinary',
+        label: 'Ordinary',
+        year: 2026,
+        amount: 12_900,
+        taxTreatment: 'ordinary',
+      },
+      socialSecurityIncome('ss', 2_000, 62),
+    ]
+    const proposal = structuredClone(baseline)
+    const brokerage = proposal.accounts.find((a) => a.id === 'brokerage')
+    if (!brokerage || brokerage.type !== 'taxable') throw new Error('expected brokerage')
+    brokerage.taxExemptInterestYieldPct = 13
+    brokerage.reinvestDividends = false
+
+    const result = compareScenarioPlans(validatePlan(baseline), validatePlan(proposal), {
+      startYear: 2026,
+      taxCalculatorForPlan: () => federalTax,
+    })
+
+    const annualSum = result.annual.reduce(
+      (total, row) => total + (row.values.taxExemptInterest.proposal ?? 0),
+      0,
+    )
+    expect(result.income.taxExemptInterest.baseline).toBe(0)
+    expect(result.income.taxExemptInterest.proposal).toBeCloseTo(annualSum, 6)
+    expect(result.income.taxExemptInterest.delta).toBeCloseTo(annualSum, 6)
+    expect(result.income.taxExemptInterest.delta).toBeGreaterThan(0)
+    // Proposal pays more ordinary tax via higher taxable Social Security; the
+    // exempt coupon itself never enters AGI as ordinary income.
+    expect(result.headline.lifetimeTax.delta).toBeGreaterThan(0)
+  })
+
+  it('places §86 phase-in below / within / above saturation for single-year tax deltas', () => {
+    // Three regimes for single-filer §86 (tier50 = 25k, tier85 = 34k):
+    // 1. Below both thresholds → zero taxable-SS delta from the exempt coupon.
+    // 2. Inside the 50% phase-in band → taxable-SS rises at ~½ × exempt.
+    // 3. Above 85% saturation → zero marginal tax delta from more exempt interest.
+    // Early-claim SS: PIA $2,000/mo × 0.70 factor at 62 × 12 = $16,800/yr.
+    const ssAnnual = 16_800
+    const compareRegime = (ordinary: number, yieldPct: number) => {
+      const baseline = singlePersonPlan({
+        dob: '1964-06-15',
+        planningAge: 62,
+        retirementAge: null,
+      })
+      baseline.accounts = [
+        cashAccount('cash', 400_000),
+        taxableAccount('brokerage', 100_000, 100_000),
+      ]
+      baseline.incomes = [
+        {
+          type: 'oneTime',
+          id: 'ordinary',
+          label: 'Ordinary',
+          year: 2026,
+          amount: ordinary,
+          taxTreatment: 'ordinary',
+        },
+        socialSecurityIncome('ss', 2_000, 62),
+      ]
+      const proposal = structuredClone(baseline)
+      const brokerage = proposal.accounts.find((a) => a.id === 'brokerage')
+      if (!brokerage || brokerage.type !== 'taxable') throw new Error('expected brokerage')
+      brokerage.taxExemptInterestYieldPct = yieldPct
+      brokerage.reinvestDividends = false
+      return compareScenarioPlans(validatePlan(baseline), validatePlan(proposal), {
+        startYear: 2026,
+        taxCalculatorForPlan: () => federalTax,
+      })
+    }
+
+    // Below: provisional without exempt = 0 + ½×16,800 = 8,400 < 25k;
+    // +2k exempt still < 25k → no taxable SS on either side.
+    const below = compareRegime(0, 2)
+    expect(below.income.taxExemptInterest.delta).toBeCloseTo(2_000, 6)
+    expect(below.headline.lifetimeTax.delta).toBe(0)
+
+    // Within 50% band (not a below→85% jump):
+    //   provisional₀ = ordinary 20,600 + ½×16,800 SS = 20,600 + 8,400 = 29,000
+    //   which sits strictly in (25,000, 34,000). +3k exempt → provisional₁ = 32,000
+    //   still ≤ 34k, so both sides stay in the 50% formula:
+    //     taxable SS = min(½×SS, ½×(provisional − 25k))
+    //   ⇒ ΔtaxableSS = ½ × Δexempt (not the 0.85 slope).
+    const inside = compareRegime(20_600, 3)
+    expect(inside.income.socialSecurity.baseline).toBeCloseTo(ssAnnual, 6)
+    const ordinaryBaseline = inside.income.oneTime.baseline ?? 0
+    const halfSs = 0.5 * (inside.income.socialSecurity.baseline ?? 0)
+    const provisionalBaseline = ordinaryBaseline + halfSs
+    expect(provisionalBaseline).toBeGreaterThan(25_000)
+    expect(provisionalBaseline).toBeLessThan(34_000)
+    const exempt = inside.income.taxExemptInterest.delta
+    expect(exempt).toBeCloseTo(3_000, 6)
+    const provisionalProposal = provisionalBaseline + exempt
+    expect(provisionalProposal).toBeGreaterThan(25_000)
+    expect(provisionalProposal).toBeLessThanOrEqual(34_000)
+    // MAGI = ordinary + taxable SS + tax-exempt interest (no other income here),
+    // so ΔtaxableSS = ΔMAGI − Δexempt.
+    const magiDelta = inside.annual[0]!.values.magi.delta ?? 0
+    const taxableSsDelta = magiDelta - exempt
+    expect(Math.abs(taxableSsDelta - 0.5 * exempt)).toBeLessThan(5)
+    expect(Math.abs(taxableSsDelta - 0.85 * exempt)).toBeGreaterThan(100)
+    expect(inside.headline.lifetimeTax.delta).toBeGreaterThan(0)
+
+    // Saturated: ordinary 50k + half SS already past the 85% cap; +5k exempt
+    // cannot raise taxable SS further, so the tax delta stays 0.
+    const above = compareRegime(50_000, 5)
+    expect(above.income.taxExemptInterest.delta).toBeCloseTo(5_000, 6)
+    expect(above.headline.lifetimeTax.delta).toBe(0)
+  })
+
+  it('lowers modeled ACA PTC pre-65 and moves IRMAA two years later from lookback MAGI', () => {
+    // Pre-65 ACA: higher characterized MAGI from account-generated exempt yield
+    // reduces modeled allowable PTC; delta reconciles to the year row.
+    const acaBaseline = singlePersonPlan({
+      dob: '1964-01-01',
+      planningAge: 62,
+      retirementAge: null,
+    })
+    acaBaseline.accounts = [taxableAccount('brokerage', 100_000, 100_000)]
+    acaBaseline.incomes = [
+      {
+        type: 'oneTime',
+        id: 'ordinary',
+        label: 'Ordinary',
+        year: 2026,
+        amount: 40_000,
+        taxTreatment: 'ordinary',
+      },
+    ]
+    setAcaYearContract(acaBaseline, {
+      year: 2026,
+      monthlyEnrollment: 1_000,
+      monthlySlcsp: 1_000,
+    })
+    const acaProposal = structuredClone(acaBaseline)
+    const acaBrokerage = acaProposal.accounts.find((a) => a.id === 'brokerage')
+    if (!acaBrokerage || acaBrokerage.type !== 'taxable') throw new Error('expected brokerage')
+    acaBrokerage.taxExemptInterestYieldPct = 20
+    acaBrokerage.reinvestDividends = false
+
+    const acaResult = compareScenarioPlans(validatePlan(acaBaseline), validatePlan(acaProposal), {
+      startYear: 2026,
+      taxCalculatorForPlan: () => federalTax,
+    })
+    const acaYear = acaResult.annual[0]!.values
+    expect(acaResult.income.taxExemptInterest.delta).toBeCloseTo(20_000, 6)
+    expect(acaResult.aca.modeledAllowablePtc.delta).toBe(
+      acaYear.acaModeledAllowablePtc.delta,
+    )
+    expect(acaResult.aca.modeledAllowablePtc.delta).toBeLessThan(0)
+
+    // 65+ IRMAA: exempt yield in the lookback year (2026) moves the premium in
+    // 2028; surcharge delta reconciles to the 2028 annual row.
+    const irmaaBaseline = singlePersonPlan({
+      dob: '1960-06-15',
+      planningAge: 68,
+      retirementAge: null,
+    })
+    irmaaBaseline.assumptions.recentAnnualMagi = 0
+    irmaaBaseline.accounts = [
+      cashAccount('cash', 500_000),
+      taxableAccount('brokerage', 100_000, 100_000),
+    ]
+    irmaaBaseline.incomes = [
+      {
+        type: 'oneTime',
+        id: 'ordinary',
+        label: 'Ordinary',
+        year: 2026,
+        amount: 105_000,
+        taxTreatment: 'ordinary',
+      },
+    ]
+    const irmaaProposal = structuredClone(irmaaBaseline)
+    const irmaaBrokerage = irmaaProposal.accounts.find((a) => a.id === 'brokerage')
+    if (!irmaaBrokerage || irmaaBrokerage.type !== 'taxable') throw new Error('expected brokerage')
+    irmaaBrokerage.taxExemptInterestYieldPct = 5
+    irmaaBrokerage.reinvestDividends = false
+
+    const irmaaResult = compareScenarioPlans(
+      validatePlan(irmaaBaseline),
+      validatePlan(irmaaProposal),
+      {
+        startYear: 2026,
+        taxCalculatorForPlan: () => federalTax,
+      },
+    )
+    const lookbackYear = irmaaResult.annual.find((row) => row.year === 2026)!
+    const premiumYear = irmaaResult.annual.find((row) => row.year === 2028)!
+    expect(lookbackYear.values.taxExemptInterest.delta).toBeCloseTo(5_000, 6)
+    expect(lookbackYear.values.magi.delta).toBeCloseTo(5_000, 6)
+    expect(premiumYear.values.irmaaSurcharge.delta).toBeGreaterThan(0)
+    expect(irmaaResult.irmaa.surcharge.delta).toBe(
+      irmaaResult.annual.reduce((total, row) => total + (row.values.irmaaSurcharge.delta ?? 0), 0),
+    )
+    expect(irmaaResult.irmaa.surcharge.delta).toBe(premiumYear.values.irmaaSurcharge.delta)
+  })
+
+  it('keeps tax delta exactly 0 when exempt yield cannot reach SS, ACA, or NIIT', () => {
+    const baseline = singlePersonPlan({
+      dob: '1966-01-01',
+      planningAge: 60,
+      retirementAge: null,
+    })
+    baseline.accounts = [taxableAccount('brokerage', 100_000, 100_000)]
+    baseline.incomes = [
+      {
+        type: 'oneTime',
+        id: 'ordinary',
+        label: 'Ordinary',
+        year: 2026,
+        amount: 30_000,
+        taxTreatment: 'ordinary',
+      },
+    ]
+    // No Social Security, ACA off, MAGI well under NIIT thresholds.
+    const proposal = structuredClone(baseline)
+    const brokerage = proposal.accounts.find((a) => a.id === 'brokerage')
+    if (!brokerage || brokerage.type !== 'taxable') throw new Error('expected brokerage')
+    brokerage.taxExemptInterestYieldPct = 50
+    brokerage.reinvestDividends = false
+
+    const result = compareScenarioPlans(validatePlan(baseline), validatePlan(proposal), {
+      startYear: 2026,
+      taxCalculatorForPlan: () => federalTax,
+    })
+
+    expect(result.income.taxExemptInterest.delta).toBeCloseTo(50_000, 6)
+    expect(result.headline.lifetimeTax.delta).toBe(0)
+    expect(result.annual[0]!.values.tax.delta).toBe(0)
   })
 })

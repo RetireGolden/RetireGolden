@@ -114,6 +114,7 @@ export interface ScenarioIncomeComparison {
   ordinaryDividends: ScalarComparison
   qualifiedDividends: ScalarComparison
   taxableYield: ScalarComparison
+  taxExemptInterest: ScalarComparison
   total: ScalarComparison
 }
 
@@ -205,6 +206,7 @@ export interface AnnualComparisonValues {
   acaGrossEnrollmentPremium: number
   acaModeledAllowablePtc: number
   acaEconomicNetPremium: number
+  taxExemptInterest: number
 }
 
 export type AnnualComparisonValue = {
@@ -240,6 +242,7 @@ const ANNUAL_VALUE_KEYS: Array<keyof AnnualComparisonValues> = [
   'acaGrossEnrollmentPremium',
   'acaModeledAllowablePtc',
   'acaEconomicNetPremium',
+  'taxExemptInterest',
 ]
 
 export interface ScenarioRiskComparison {
@@ -354,6 +357,7 @@ function aggregateIncome(years: YearResult[]) {
     ordinaryDividends: sum(years, (y) => y.incomes.ordinaryDividends),
     qualifiedDividends: sum(years, (y) => y.incomes.qualifiedDividends),
     taxableYield: sum(years, (y) => y.incomes.taxableYield),
+    taxExemptInterest: sum(years, (y) => y.incomes.taxExemptInterest),
     total: sum(years, (y) => y.incomes.total),
   }
 }
@@ -416,6 +420,7 @@ function annualValues(year: YearResult): AnnualComparisonValues {
     acaGrossEnrollmentPremium: year.aca?.grossEnrollmentPremium ?? 0,
     acaModeledAllowablePtc: year.aca?.modeledAllowablePtc ?? 0,
     acaEconomicNetPremium: year.aca?.economicNetPremium ?? 0,
+    taxExemptInterest: year.incomes.taxExemptInterest,
   }
 }
 

@@ -486,6 +486,7 @@ const ANNUAL_METRICS: Array<{
   key: keyof ScenarioPlanComparison['annual'][number]['values']
   format: MetricFormat
 }> = [
+  { label: 'Tax-exempt interest', key: 'taxExemptInterest', format: 'money' },
   { label: 'Gross income', key: 'income', format: 'money' },
   { label: 'Intended spending', key: 'spendingIntended', format: 'money' },
   { label: 'Funded spending', key: 'spendingFunded', format: 'money' },
@@ -685,6 +686,7 @@ function ScenarioDetail({
           { label: 'Recurring income', metric: comparison.income.recurring, format: 'money' },
           { label: 'One-time income', metric: comparison.income.oneTime, format: 'money' },
           { label: 'Taxable yield', metric: comparison.income.taxableYield, format: 'money' },
+          { label: 'Tax-exempt interest', metric: comparison.income.taxExemptInterest, format: 'money' },
           { label: 'Total gross income', metric: comparison.income.total, format: 'money' },
         ]}
       />

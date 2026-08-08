@@ -91,10 +91,14 @@ State brackets are a separate question and are still held nominal (see `params/s
 - **ACA planning-year premium tax credit** (pre-65): the exact ledger reconciles current-year healthcare
   cash need, withdrawals, tax, and ACA household MAGI before reporting a result
   ([aca.ts](../../packages/engine/src/tax/aca.ts)). ACA MAGI is final federal AGI plus nontaxable Social
-  Security, characterized tax-exempt interest, explicit foreign-exclusion addbacks, and required-filer
-  dependent MAGI. Addbacks affect ACA MAGI without becoming ordinary taxable income; the foreign-exclusion
-  amount also participates in Social Security provisional income under §86. Signed federal AGI is preserved
-  through ACA component assembly and only the final household total is floored at zero.
+  Security, characterized tax-exempt interest (which can now be account-generated, with an attested ACA
+  contract amount governing its year via max(attested, generated), and the plan-derived/contradicted
+  support codes marking provenance), explicit foreign-exclusion addbacks, and required-filer
+  dependent MAGI. An unknown contract amount is satisfied by plan-generated interest only when that year's
+  generation is positive, marked `tax-exempt-interest-plan-derived`. Addbacks affect ACA MAGI without
+  becoming ordinary taxable income; the foreign-exclusion amount also participates in Social Security
+  provisional income under §86. Signed federal AGI is preserved through ACA component assembly and only
+  the final household total is floored at zero.
 - An explicit per-year contract separates the tax family and required-filer dependents from covered members
   and months, carries the 48/DC versus Alaska/Hawaii poverty table, and supplies separate enrollment and
   SLCSP benchmark premiums. The result labels gross enrollment premium, applicable SLCSP, modeled allowable
@@ -328,6 +332,11 @@ Taxable brokerage accounts can model annual tax drag before withdrawals. Each ta
 - `interestYieldPct`: taxable interest generated from the start-of-year balance.
 - `dividendYieldPct`: dividends generated from the start-of-year balance.
 - `qualifiedRatio`: share of dividends taxed federally at qualified-dividend / long-term capital-gain rates.
+- `taxExemptInterestYieldPct`: municipal-bond (and similar) interest generated as a percent of start-of-year
+  balance. Excluded from ordinary income and AGI; included in Social Security provisional income, ACA household
+  MAGI, and IRMAA MAGI history per the domain rules section 20 matrix. Follows `reinvestDividends` and the
+  total-return yield subtraction like the taxable yields. Never derived from the allocation blend, and a bond
+  sleeve's yield belongs in exactly one of the two interest fields (`interestYieldPct` or this field).
 - `reinvestDividends`: whether generated yield is reinvested into the account or paid into annual cash flow.
 
 Interest and non-qualified dividends are ordinary income. Qualified dividends are **not** treated as realized
