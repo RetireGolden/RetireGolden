@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { asAccountId, asActionId, asAllocationId, asPersonId } from '../actions/identity.js'
 import { asPositiveUsdCents } from '../actions/money.js'
 import { createFlatTaxCalculator } from '../projection/flatTax.js'
+import { simulatePlan } from '../projection/simulate.js'
 import { createFederalTaxCalculator } from '../tax/federalTax.js'
 import {
   cashAccount,
@@ -11,6 +12,7 @@ import {
   singlePersonPlan,
   socialSecurityIncome,
   taxableAccount,
+  traditionalAccount,
   validatePlan,
 } from '../testing/planFixtures.js'
 import { compareScenarioPlans, compareScenarioSpendingCapacityResults } from './comparison.js'
@@ -34,6 +36,39 @@ function comparisonPlan() {
   plan.accounts = [cashAccount('cash', 600_000)]
   plan.incomes = [recurringOrdinaryIncome('income', 35_000)]
   plan.expenses.baseAnnual = 45_000
+  return validatePlan(plan)
+}
+
+function classifiedInheritedComparisonPlan() {
+  const plan = singlePersonPlan({
+    dob: '1960-01-01',
+    planningAge: 75,
+    retirementAge: 65,
+  })
+  const inherited = traditionalAccount('inherited', 100_000)
+  if (inherited.type !== 'traditional') throw new Error('fixture must be traditional')
+  inherited.inherited = {
+    ownerDeathYear: 2025,
+    decedentHadStartedRmds: true,
+    beneficiary: {
+      beneficiaryClass: 'designated-individual',
+      edbCategory: 'none',
+      beneficiaryBirthYear: 1960,
+      soleBeneficiary: true,
+      ownerBirthYear: 1940,
+      ownerYearOfDeathRmdSatisfied: true,
+      provenance: { source: 'comparison-test', asOf: '2026-08-08' },
+    },
+  }
+  plan.accounts = [inherited]
+  return validatePlan(plan)
+}
+
+/** E8 shape: spending must draw beyond the annual inherited requirement. */
+function voluntaryInheritedComparisonPlan() {
+  const plan = structuredClone(classifiedInheritedComparisonPlan())
+  plan.accounts.push(cashAccount('cash', 1))
+  plan.expenses.baseAnnual = 100_000
   return validatePlan(plan)
 }
 
@@ -133,6 +168,106 @@ describe('compareScenarioPlans', () => {
       result.annual.reduce((total, row) => total + (row.values.withdrawals.proposal ?? 0), 0),
     )
     expect(result.spending.intended.delta).toBeGreaterThan(0)
+  })
+
+  it('reconciles inherited annual values and withdrawal totals to the simulated ledger', () => {
+    const baseline = classifiedInheritedComparisonPlan()
+    const proposal = structuredClone(baseline)
+    const baselineLedger = simulatePlan(baseline, { startYear: 2026, taxCalculator: noTax })
+    const proposalLedger = simulatePlan(proposal, { startYear: 2026, taxCalculator: noTax })
+    const result = compareScenarioPlans(baseline, proposal, {
+      startYear: 2026,
+      taxCalculatorForPlan: () => noTax,
+    })
+
+    expect(
+      baselineLedger.years.some((year) =>
+        (year.inheritedAccounts ?? []).some((account) => account.classification === 'settled'),
+      ),
+    ).toBe(true)
+    for (const row of result.annual) {
+      const baselineYear = baselineLedger.years.find((year) => year.year === row.year)!
+      const proposalYear = proposalLedger.years.find((year) => year.year === row.year)!
+      expect(row.values.inheritedDistribution.baseline).toBe(baselineYear.inheritedDistribution)
+      expect(row.values.inheritedDistribution.proposal).toBe(proposalYear.inheritedDistribution)
+      expect(row.values.inheritedRequired.baseline).toBe(
+        (baselineYear.inheritedAccounts ?? []).reduce(
+          (total, account) => total + account.executedRequiredAmount,
+          0,
+        ),
+      )
+      expect(row.values.inheritedRequired.proposal).toBe(
+        (proposalYear.inheritedAccounts ?? []).reduce(
+          (total, account) => total + account.executedRequiredAmount,
+          0,
+        ),
+      )
+    }
+
+    for (const side of ['baseline', 'proposal'] as const) {
+      const ledger = side === 'baseline' ? baselineLedger : proposalLedger
+      expect(result.withdrawals.inherited[side]).toBe(
+        ledger.years.reduce((total, year) => total + year.inheritedDistribution, 0),
+      )
+      expect(result.withdrawals.inherited[side]).toBe(
+        result.annual.reduce((total, row) => total + (row.values.inheritedDistribution[side] ?? 0), 0),
+      )
+    }
+    expect(result.withdrawals.inherited.baseline).toBeGreaterThan(0)
+  })
+
+  it('reconciles E8-style inherited voluntary draws from annual evidence', () => {
+    const baseline = voluntaryInheritedComparisonPlan()
+    const proposal = structuredClone(baseline)
+    const baselineLedger = simulatePlan(baseline, { startYear: 2026, taxCalculator: noTax })
+    const proposalLedger = simulatePlan(proposal, { startYear: 2026, taxCalculator: noTax })
+    const result = compareScenarioPlans(baseline, proposal, {
+      startYear: 2026,
+      taxCalculatorForPlan: () => noTax,
+    })
+
+    for (const row of result.annual) {
+      const baselineYear = baselineLedger.years.find((year) => year.year === row.year)!
+      const proposalYear = proposalLedger.years.find((year) => year.year === row.year)!
+      expect(row.values.inheritedVoluntary.baseline).toBe(
+        (baselineYear.inheritedAccounts ?? []).reduce(
+          (total, account) => total + account.voluntaryAmount,
+          0,
+        ),
+      )
+      expect(row.values.inheritedVoluntary.proposal).toBe(
+        (proposalYear.inheritedAccounts ?? []).reduce(
+          (total, account) => total + account.voluntaryAmount,
+          0,
+        ),
+      )
+    }
+    expect(result.annual.some((row) => (row.values.inheritedVoluntary.baseline ?? 0) > 0)).toBe(true)
+  })
+
+  it('adds zero inherited values without changing withdrawal aggregates for plans without inherited accounts', () => {
+    const baseline = comparisonPlan()
+    const proposal = structuredClone(baseline)
+    const ledger = simulatePlan(baseline, { startYear: 2026, taxCalculator: noTax })
+    const result = compareScenarioPlans(baseline, proposal, {
+      startYear: 2026,
+      taxCalculatorForPlan: () => noTax,
+    })
+
+    for (const row of result.annual) {
+      expect(row.values.inheritedDistribution).toEqual({ baseline: 0, proposal: 0, delta: 0 })
+      expect(row.values.inheritedRequired).toEqual({ baseline: 0, proposal: 0, delta: 0 })
+    }
+    expect(result.withdrawals.inherited).toEqual({ baseline: 0, proposal: 0, delta: 0 })
+    expect(result.withdrawals.total.baseline).toBe(
+      ledger.years.reduce((total, year) => total + year.withdrawals.total, 0),
+    )
+    expect(result.withdrawals.rmd.baseline).toBe(
+      ledger.years.reduce((total, year) => total + year.rmd, 0),
+    )
+    expect(result.withdrawals.qcd.baseline).toBe(
+      ledger.years.reduce((total, year) => total + year.qcd, 0),
+    )
   })
 
   it('includes canonical action rows from each already-computed projection', () => {

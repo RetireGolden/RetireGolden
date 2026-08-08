@@ -482,15 +482,32 @@ describe('inherited IRA — SECURE Act 10-year rule', () => {
     })))
   })
 
-  it('refuses a hand-built inherited Roth at simulatePlan entry', () => {
+  it('parses and simulates an inherited Roth with complete beneficiary facts', () => {
     const plan = inheritedPlan({ decedentHadStartedRmds: false, baseAnnual: 5_000, withCash: true })
     const traditional = plan.accounts[0]!
-    plan.accounts[0] = { ...traditional, type: 'roth', kind: 'ira' } as Account
-    const before = structuredClone(plan)
+    plan.accounts[0] = {
+      ...traditional,
+      type: 'roth',
+      kind: 'ira',
+      inherited: {
+        ownerDeathYear: 2022,
+        decedentHadStartedRmds: false,
+        beneficiary: {
+          beneficiaryClass: 'designated-individual',
+          edbCategory: 'none',
+          beneficiaryBirthYear: 1976,
+          soleBeneficiary: true,
+          ownerBirthYear: 1948,
+          provenance: { source: 'ws4-roth-guard-removal', asOf: '2026-08-08' },
+        },
+      },
+    } as Account
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(true)
+    if (!parsed.ok) return
+    const before = structuredClone(parsed.plan)
 
-    expect(() => simulatePlan(plan, { startYear: 2026, taxCalculator: noTax })).toThrowError(
-      /regime matrix K1\/K2.*parse-level refusal/,
-    )
-    expect(plan).toEqual(before)
+    expect(() => simulatePlan(parsed.plan, { startYear: 2026, taxCalculator: noTax })).not.toThrow()
+    expect(parsed.plan).toEqual(before)
   })
 })

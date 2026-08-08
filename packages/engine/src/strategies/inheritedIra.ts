@@ -172,6 +172,12 @@ export type RegimeDisclosure =
   // 10-year clock of §1.401(a)(9)-5(e)(3) is out of scope (matrix X2), so the
   // schedule is flagged as terminating on an unmodeled rule, never extended.
   | 'successor-clock-out-of-scope'
+  /**
+   * S2: §1.408-8(c)(1)(iii)–(iv) timing bar is not consulted because the prior
+   * ten-year-election fact is unrepresentable alongside `treat-as-own`; the
+   * flip is executed as asserted on `treatAsOwnElectionYear`.
+   */
+  | 'treat-as-own-timing-gate-unverified'
 
 export interface InheritedRegimeClassification {
   kind: 'regime'
@@ -654,7 +660,11 @@ export function classifyInheritedRegime(input: {
         classification: 'settled',
         rbdComparison: accountType === 'roth' ? 'before-rbd' : rbdComparison,
         citations: [...CITATIONS.S2],
-        disclosures: [...baseDisclosures, ...rothTaxabilityDisclosure()],
+        disclosures: [
+          ...baseDisclosures,
+          'treat-as-own-timing-gate-unverified',
+          ...rothTaxabilityDisclosure(),
+        ],
       }
     }
 
@@ -872,20 +882,29 @@ export interface InheritedRequirementEvidence {
    * computed from the wrong table. From 2022 on, the fixed-expectancy formula
    * over the current tables is exactly the §1.401(a)(9)-9(f)(2)(ii)(A) reset.
    *
-   * 'treat-as-own-election-year-not-carried': the plan schema records the S2
-   * election but not its calendar year, so the years between death and the
-   * election — in which the spouse owes beneficiary RMDs — cannot be placed;
-   * the amount is a typed limitation rather than a silent zero. WS4 executes
-   * the transition with a real election year.
+   * 'treat-as-own-election-year-not-carried': retained for the standalone
+   * calculator path. The plan schema records `treatAsOwnElectionYear` since
+   * WS4, and the projection ledger executes the S2 flip year-by-year; this
+   * limitation remains only when `inheritedRequirementForYear` is called on
+   * an S2 classification without that year-aware path (standalone users).
    *
    * 'joint-life-gap-unresolved-at-year-precision': an exact 10-birth-year gap
    * cannot resolve "more than 10 years younger" at year precision
    * (§1.401(a)(9)-5(c)(2)(i)).
+   *
+   * 'pre-horizon-year-of-death-rmd-unresolved': the decedent died on or after
+   * the RBD with `ownerYearOfDeathRmdSatisfied !== true`, and the death year
+   * predates the projection start year. Treas. Reg. §1.408-8(e)(4)(i) still
+   * makes the year-of-death RMD an obligation of the beneficiary, but that
+   * obligation predates the horizon and is not modeled as satisfied — no
+   * amount is forced; the evidence row carries this limitation on the first
+   * projection year only.
    */
   limitation?:
     | 'pre-2022-tables-not-carried'
     | 'treat-as-own-election-year-not-carried'
     | 'joint-life-gap-unresolved-at-year-precision'
+    | 'pre-horizon-year-of-death-rmd-unresolved'
   citations: string[]
 }
 
@@ -1148,11 +1167,12 @@ export function inheritedRequirementForYear(input: {
     return noneEvidence(year, citations)
   }
 
-  // S2: the schema records the treat-as-own election but not its calendar
-  // year, so the beneficiary RMDs owed between death and the election cannot
-  // be placed on specific years — a typed limitation, not a silent zero
-  // (matrix §7). The year-of-death entry above still applies; WS4 executes
-  // the transition against a real election year.
+  // S2 standalone calculator: the schema records treatAsOwnElectionYear
+  // since WS4, but this pure calculator has no year-aware ledger flip, so
+  // beneficiary RMDs between death and the election cannot be placed here —
+  // a typed limitation, not a silent zero (matrix §7). The projection ledger
+  // executes the transition against the real election year and does not
+  // consult this arm for pre-election S0 schedules.
   if (regime === 'spouse-treat-as-own-transition') {
     return {
       ...noneEvidence(year, citations),
@@ -1366,20 +1386,25 @@ export function inheritedRequirementSchedule(input: {
  *
  * Evidence only: amounts are gross hypotheticals on the caller's per-year
  * balances; the §1.402(c)-2(j)(4)(ii)–(iii) netting of actual distributions
- * against adjusted balances is WS4 ledger work. Traditional accounts only (an
- * inherited Roth cannot enter a plan until the WS4 execution arm lands).
+ * against adjusted balances is not performed here (the projection ledger
+ * does not yet schedule the catch-up — matrix §7 residual). Traditional
+ * accounts only (an inherited Roth under treat-as-own has no lifetime RMDs).
  * Throws when the (j)(4) computation cannot be settled from the supplied
  * facts — never silently computing past an ambiguity (fail closed, matrix §2).
+ *
+ * The plan schema records `treatAsOwnElectionYear` since WS4; this helper
+ * remains evidence-only and is not wired into the ledger's S2 flip.
  *
  * `spouseWasUnderTenYearRule` is the (j)(4)(i) applicability fact: the gate
  * reaches only a spouse to whom the §1.401(a)(9)-3(c)(3) 10-year rule applied
  * before the election — for an IRA, a death-before-RBD spouse under an
- * affirmative ten-year election. The plan schema's single election field
- * cannot record that prior state alongside 'treat-as-own', so the caller
- * asserts it. A spouse under the §1.401(a)(9)-3(c)(5)(i) life-expectancy
- * default owed ordinary beneficiary RMDs each year instead (the S0/S1
- * schedule), and a missed one triggers the out-of-scope §1.408-8(c)(2)(i)
- * deemed election — no (j)(4) catch-up exists for them.
+ * affirmative ten-year election. The schema's single election field cannot
+ * record that prior ten-year-election state alongside 'treat-as-own', so the
+ * caller asserts it (see disclosure `treat-as-own-timing-gate-unverified`).
+ * A spouse under the §1.401(a)(9)-3(c)(5)(i) life-expectancy default owed
+ * ordinary beneficiary RMDs each year instead (the S0/S1 schedule), and a
+ * missed one triggers the out-of-scope §1.408-8(c)(2)(i) deemed election —
+ * no (j)(4) catch-up exists for them.
  */
 export function spouseTreatAsOwnCatchUp(input: {
   pack: ParameterPack

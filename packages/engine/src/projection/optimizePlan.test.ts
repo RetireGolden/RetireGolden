@@ -273,6 +273,41 @@ function inheritedTraditionalPlan(opts: { ownTraditional?: number; inheritedTrad
   return plan
 }
 
+/** Legacy-path (pre-2020 death) inherited-Roth sweep: liquid, never ordinary income. */
+function inheritedRothOnlyPlan(): Plan {
+  const plan = inheritedTraditionalPlan({ inheritedTraditional: 100_000 })
+  const inherited = plan.accounts.find(
+    (account) => account.type === 'traditional' && account.inherited,
+  )
+  if (inherited?.type !== 'traditional') throw new Error('missing inherited traditional fixture seed')
+  plan.accounts = plan.accounts.map((account) => account.id === inherited.id
+    ? {
+        type: 'roth',
+        id: account.id,
+        name: 'Inherited Roth IRA',
+        ownerPersonId: 'p1',
+        annualReturnPct: 0,
+        kind: 'ira',
+        balance: inherited.balance,
+        annualContribution: 0,
+        inherited: {
+          ownerDeathYear: 2016,
+          decedentHadStartedRmds: false,
+          beneficiary: {
+            beneficiaryClass: 'designated-individual',
+            edbCategory: 'none',
+            beneficiaryBirthYear: 1960,
+            soleBeneficiary: true,
+            ownerBirthYear: 1940,
+            roth5YearStartYear: 2010,
+            provenance: { source: 'test', asOf: '2026-01-01' },
+          },
+        },
+      } as Account
+    : account)
+  return plan
+}
+
 function pensionBridgePlan(): Plan {
   const plan = createEmptyPlan({ newId: testIds, now: fixedNow })
   plan.household.people[0] = {
@@ -612,6 +647,57 @@ describe('buildOptimizerInput', () => {
     expect(y2026.inheritedDistribution).toBeCloseTo(300_000, 2)
     expect(y2026.inheritedDistributionDivisor).toBeCloseTo(1, 2)
     expect(y2026.ordinaryIncomeBase).toBeCloseTo(0, 2)
+  })
+
+  it('P3/P4: optimizes a Roth-only inherited sweep without pricing it as ordinary income', async () => {
+    const plan = validate(inheritedRothOnlyPlan())
+    const control = validate({
+      ...structuredClone(plan),
+      accounts: plan.accounts.filter(
+        (account) =>
+          !((account.type === 'traditional' || account.type === 'roth') &&
+            account.inherited !== undefined),
+      ),
+    })
+    const optimized = await optimizePlan(plan, opts)
+    expect(optimized.schedule.status).not.toBe('infeasible')
+
+    const optimizerYear = optimized.input.years.find((year) => year.year === 2026)!
+    expect(optimizerYear.inheritedDistribution).toBe(0)
+    expect(optimizerYear.ordinaryIncomeBase).toBe(0)
+
+    const inheritedOrdinaryIncome: number[] = []
+    const controlOrdinaryIncome: number[] = []
+    const optimizedPlan = withOptimizedConversions(plan, optimized.schedule.conversions)
+    const inheritedResult = simulatePlan(optimizedPlan, {
+      startYear: 2026,
+      taxCalculator: {
+        compute(input) {
+          inheritedOrdinaryIncome.push(input.ordinaryIncome)
+          return federal.compute(input)
+        },
+      },
+    })
+    simulatePlan(control, {
+      startYear: 2026,
+      taxCalculator: {
+        compute(input) {
+          controlOrdinaryIncome.push(input.ordinaryIncome)
+          return federal.compute(input)
+        },
+      },
+    })
+    const sweepYear = inheritedResult.years.find((year) => year.year === 2026)!
+    expect(sweepYear.inheritedDistribution).toBeCloseTo(100_000, 2)
+    expect(sweepYear.inheritedTraditionalDistribution).toBe(0)
+    expect(inheritedOrdinaryIncome).toEqual(controlOrdinaryIncome)
+
+    // The liquid-reserve boundary excludes the Roth-character inherited sweep.
+    for (const year of inheritedResult.years) {
+      expect(
+        year.withdrawals.traditional - year.rmd - year.inheritedTraditionalDistribution,
+      ).toBeGreaterThanOrEqual(0)
+    }
   })
 
   it('includes pension and one-time ordinary income in optimizer year inputs', () => {
@@ -1203,7 +1289,7 @@ describe('committed retirement-action movement in the optimizer bridge', () => {
     expect(moved.amount).toBe(-50_000)
 
     // And it survives the bridge into the bucket scalar the LP actually reads.
-    const buckets = optimizerOpeningBuckets(plan)
+    const buckets = optimizerOpeningBuckets(plan, 2026)
     expect(committedActionMovementForYear(buckets.bucketByAccountId, probe)).toEqual({
       trad: 0,
       inheritedTrad: 0,
@@ -1225,7 +1311,7 @@ describe('committed retirement-action movement in the optimizer bridge', () => {
     // `committedActionMovementForYear` is the exact function
     // `buildOptimizerInput` calls, fed the acted run's own probe.
     const bridged = buildOptimizerInput(actionFree, solverOpts)
-    const buckets = optimizerOpeningBuckets(plan)
+    const buckets = optimizerOpeningBuckets(plan, 2026)
     const movement = committedActionMovementForYear(buckets.bucketByAccountId, probes[0]!)
     const preAction = { ...bridged, years: [bridged.years[0]!] }
     const postAction = {
@@ -1270,7 +1356,7 @@ describe('committed retirement-action movement in the optimizer bridge', () => {
   it('leaves every bucket scalar unchanged when plan.accounts is reordered', () => {
     const { plan, taxableId } = actedTaxablePlan()
     const probe = probesFor(plan)[0]!
-    const canonicalBuckets = optimizerOpeningBuckets(plan)
+    const canonicalBuckets = optimizerOpeningBuckets(plan, 2026)
     const canonicalMovement = committedActionMovementForYear(
       canonicalBuckets.bucketByAccountId,
       probe,
@@ -1288,7 +1374,7 @@ describe('committed retirement-action movement in the optimizer bridge', () => {
     expect(orders).toHaveLength(24)
     for (const accounts of orders) {
       const reordered = validate({ ...structuredClone(plan), accounts: structuredClone(accounts) })
-      const buckets = optimizerOpeningBuckets(reordered)
+      const buckets = optimizerOpeningBuckets(reordered, 2026)
       // The pre-action bug is invisible to order — both readings sum the same
       // way — so this fixture exists to catch the OTHER failure: a fix that
       // reaches the source account by position instead of by id.
@@ -1343,7 +1429,7 @@ describe('committed retirement-action movement in the optimizer bridge', () => {
       committedWithdrawal('pat-draw', 'pat-brokerage', 2026, 50_000),
     ]
     const plan = validate(draft)
-    const buckets = optimizerOpeningBuckets(plan)
+    const buckets = optimizerOpeningBuckets(plan, 2026)
     const probe = probesFor(plan)[0]!
     const movement = committedActionMovementForYear(buckets.bucketByAccountId, probe)
 
@@ -1383,7 +1469,7 @@ describe('committed retirement-action movement in the optimizer bridge', () => {
       committedWithdrawal('zero-basis-draw', 'zero-basis', 2026, 25_000),
     ]
     const plan = validate(raw)
-    const buckets = optimizerOpeningBuckets(plan)
+    const buckets = optimizerOpeningBuckets(plan, 2026)
 
     // Heterogeneous basis is what makes the readings differ: draining the
     // zero-basis account alone lifts the remaining aggregate ratio.
@@ -1408,7 +1494,7 @@ describe('committed retirement-action movement in the optimizer bridge', () => {
     expect(gainWeight).toBeCloseTo(0.5, 6)
     // The action does not move the anchor: the opening precedes it, so the
     // acted plan and its action-free twin hand the LP the same ratio.
-    expect(optimizerOpeningBuckets(actionFree).taxableBasisRatio)
+    expect(optimizerOpeningBuckets(actionFree, 2026).taxableBasisRatio)
       .toBe(buckets.taxableBasisRatio)
     // And that is the weight the real bridge puts on the ACA bound. Note what
     // the weight multiplies: `incumbentTaxableWithdrawal`, the LP's OWN
@@ -1478,7 +1564,7 @@ describe('committed retirement-action movement in the optimizer bridge', () => {
     expect(probe.exogenousStrategyAccountMovement).toEqual([])
     expect(probe.committedConversionOrdinaryIncome).toBeCloseTo(60_000, 6)
 
-    const buckets = optimizerOpeningBuckets(plan)
+    const buckets = optimizerOpeningBuckets(plan, 2026)
     expect(committedActionMovementForYear(buckets.bucketByAccountId, probe)).toEqual({
       trad: -60_000,
       inheritedTrad: 0,
@@ -1569,7 +1655,7 @@ describe('committed retirement-action movement in the optimizer bridge', () => {
     // arm's or the other's and never a sum of both.
     expect(probe.forcedDistributionOrdinaryIncomeExclusion)
       .toBeCloseTo(NAMED_QCD_INCOME_OFFSET, 6)
-    expect(committedActionMovementForYear(optimizerOpeningBuckets(plan).bucketByAccountId, probe))
+    expect(committedActionMovementForYear(optimizerOpeningBuckets(plan, 2026).bucketByAccountId, probe))
       .toEqual({
         trad: -20_000,
         inheritedTrad: 0,
@@ -1601,7 +1687,7 @@ describe('committed retirement-action movement in the optimizer bridge', () => {
     const input = buildOptimizerInput(plan, opts)
     expect(input.years.map((year) => year.committedActionMovement)).toEqual(
       probes.map((probe) =>
-        committedActionMovementForYear(optimizerOpeningBuckets(plan).bucketByAccountId, probe)),
+        committedActionMovementForYear(optimizerOpeningBuckets(plan, 2026).bucketByAccountId, probe)),
     )
     expect(input.years[0]!.committedActionMovement).toBeDefined()
     expect(input.years.slice(1).every((year) => year.committedActionMovement === undefined))
@@ -1773,7 +1859,7 @@ describe('committed facts the LP books on both sides', () => {
     expect(probe.committedActionProceeds).toBe(0)
 
     // The bridge, and then the balance recursion the solver actually reads.
-    const buckets = optimizerOpeningBuckets(plan)
+    const buckets = optimizerOpeningBuckets(plan, 2026)
     // Proceeds zero: a gift LEAVES. The 72(t) series on this same channel does
     // report proceeds, and that asymmetry is the whole double-entry claim.
     expect(exogenousStrategyMovementForYear(buckets.bucketByAccountId, probe)).toEqual({

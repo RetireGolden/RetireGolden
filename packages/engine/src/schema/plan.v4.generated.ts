@@ -911,6 +911,11 @@ export const planJsonSchema: JsonSchemaDocument = {
                           "ten-year-election"
                         ]
                       },
+                      "treatAsOwnElectionYear": {
+                        "type": "integer",
+                        "minimum": 1900,
+                        "maximum": 2200
+                      },
                       "spouseUnlimitedWithdrawalRight": {
                         "type": "boolean"
                       },
@@ -1482,6 +1487,11 @@ export const planJsonSchema: JsonSchemaDocument = {
                           "treat-as-own",
                           "ten-year-election"
                         ]
+                      },
+                      "treatAsOwnElectionYear": {
+                        "type": "integer",
+                        "minimum": 1900,
+                        "maximum": 2200
                       },
                       "spouseUnlimitedWithdrawalRight": {
                         "type": "boolean"

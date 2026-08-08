@@ -19,6 +19,7 @@ import { indexFederalTaxPack, packForYear, LATEST_PACK_YEAR } from '../params/in
 import { stateParamsFor } from '../params/state/index.js'
 import type { FilingStatus } from '../params/types.js'
 import type { Account, Plan } from '../model/plan.js'
+import { isTreatAsOwnEffective } from '../strategies/accountEligibility.js'
 import { createActionReason, type ActionReason } from '../actions/reasons.js'
 import type { PersonId } from '../actions/identity.js'
 import {
@@ -307,8 +308,18 @@ export interface OptimizerOpeningBuckets {
  * Keyed by account id and summed — never indexed by position — so the LP's
  * scalars cannot depend on the order `plan.accounts` happens to be persisted
  * in.
+ *
+ * S2 treat-as-own: bucket by status AT PROJECTION START
+ * (`electionYear <= startYear` → owned; else inherited for the whole LP
+ * horizon). Mid-horizon flips are a documented LP granularity approximation —
+ * the exact ledger flips year-by-year, but one static bucket keeps the opening
+ * scalars and `rmdDivisor` / `inheritedDistributionDivisor` numerators aligned
+ * with `simulate`'s `startTraditional` / `startInheritedTraditional` split.
  */
-export function optimizerOpeningBuckets(plan: Plan): OptimizerOpeningBuckets {
+export function optimizerOpeningBuckets(
+  plan: Plan,
+  startYear: number,
+): OptimizerOpeningBuckets {
   let openingTrad = 0
   let openingInheritedTrad = 0
   let openingOther = 0 // tax-free bucket: cash + roth + hsa
@@ -317,7 +328,7 @@ export function optimizerOpeningBuckets(plan: Plan): OptimizerOpeningBuckets {
   const bucketByAccountId = new Map<string, OptimizerBucket>()
   for (const a of plan.accounts) {
     if (a.type === 'traditional') {
-      if (!a.inherited) {
+      if (!a.inherited || isTreatAsOwnEffective(a, startYear)) {
         openingTrad += a.balance
         bucketByAccountId.set(a.id, 'traditional')
       } else {
@@ -496,7 +507,7 @@ export function buildOptimizerInput(plan: Plan, opts: OptimizePlanOptions, probe
     openingTaxable,
     taxableBasisRatio,
     bucketByAccountId,
-  } = optimizerOpeningBuckets(plan)
+  } = optimizerOpeningBuckets(plan, opts.startYear)
   const taxableGainWeight = Math.min(1, Math.max(0, 1 - taxableBasisRatio))
 
   const growth = blendedGrowth(plan, opts.startYear)
@@ -570,6 +581,8 @@ export function buildOptimizerInput(plan: Plan, opts: OptimizePlanOptions, probe
       traditionalWithdrawalTaxableFraction:
         p.traditionalWithdrawalTaxableFraction,
       rothConversionTaxableFraction: p.rothConversionTaxableFraction,
+      // Probe field is traditional forced only (Roth forced never enters the
+      // ordinary-income base or the inhrmd floor).
       inheritedDistribution: p.inheritedDistribution,
       inheritedDistributionDivisor:
         p.inheritedDistribution > 0 && p.startInheritedTraditional > 0

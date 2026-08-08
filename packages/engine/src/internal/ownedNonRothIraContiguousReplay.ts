@@ -9,7 +9,7 @@ import { asPositiveUsdCents, asUsdCents, type UsdCents } from '../actions/money.
 import { planDollarsToLedgerCents } from '../actions/planBalanceAdapter.js'
 import { compareUtf16CodeUnits, deriveActionStructuralId } from '../actions/structuralId.js'
 import { planSchema, type Account, type Plan } from '../model/plan.js'
-import { isAggregatedIra } from '../strategies/accountEligibility.js'
+import { isAggregatedIra, isTreatAsOwnEffective } from '../strategies/accountEligibility.js'
 import {
   buildSimulatorOwnedNonRothIraAnnualObservation,
   type CompleteSimulatorOwnedNonRothIraAnnualObservation,
@@ -140,10 +140,22 @@ function sum(values: readonly UsdCents[], label: string, context: {
   return asUsdCents(Number(total))
 }
 
-function pools(plan: Plan): Map<PersonId, Extract<Account, { type: 'traditional' }>[]> {
+function pools(
+  plan: Plan,
+  taxYear?: number,
+): Map<PersonId, Extract<Account, { type: 'traditional' }>[]> {
   const result = new Map<PersonId, Extract<Account, { type: 'traditional' }>[]>()
   for (const account of plan.accounts) {
-    if (!isAggregatedIra(account)) continue
+    // The S2-effective arm only ever admits traditional IRAs (the flip makes
+    // an inherited traditional IRA the spouse's own aggregated IRA for the
+    // year); narrow before the structural helper so the full union stays out.
+    const s2Effective =
+      taxYear !== undefined &&
+      account.type === 'traditional' &&
+      account.kind === 'ira' &&
+      isTreatAsOwnEffective(account, taxYear)
+    if (!isAggregatedIra(account) && !s2Effective) continue
+    if (account.type !== 'traditional') continue
     const owner = account.ownerPersonId as PersonId
     result.set(owner, [...(result.get(owner) ?? []), account])
   }
@@ -239,7 +251,7 @@ function replayUnchecked(
     const ownerReplays: OwnedNonRothIraAnnualOwnerReplay[] = []
     for (const ownerSource of sourceYear.ownerSources) {
       const owner = ownerSource.ownerPersonId
-      const openingBasisAmount = basisByOwner.get(owner)!
+      const openingBasisAmount = basisByOwner.get(owner) ?? asUsdCents(0)
       const ledgerRunId = deriveActionStructuralId(
         'projection-owned-ira-runtime-replay-annual-ledger-run',
         [plan.id, sourceYear.taxYear, owner, ownerSource.sourceChainEvidenceId,
@@ -310,7 +322,7 @@ function replayUnchecked(
           denominatorMinorUnits: asPositiveUsdCents(denominator),
           intermediateArithmetic: 'bigintRational',
         }
-      const accounts = ownerPools.get(owner)!
+      const accounts = pools(plan, sourceYear.taxYear).get(owner)!
       const poolId = deriveActionStructuralId(
         'projection-owned-non-roth-ira-pool',
         [plan.id, owner, accounts.map((account) => account.id)],

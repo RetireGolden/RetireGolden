@@ -1166,6 +1166,31 @@ export const TRADITIONAL_EARLY_PENALTY_RATE = 0.1
 /** HSA non-qualified withdrawal penalty rate before age 65 (IRC §223(f)(4)). */
 export const HSA_NON_QUALIFIED_PENALTY_RATE = 0.2
 
+/**
+ * Whether a spouse's explicit treat-as-own election has taken effect for an
+ * account in a calendar year. This intentionally does not rewire the static
+ * eligibility predicates below; callers without a year remain pre-transition
+ * until the year-aware follow-up lands.
+ */
+export function isTreatAsOwnEffective(
+  account: Readonly<{
+    inherited?: Readonly<{
+      beneficiary?: Readonly<{
+        election?: string | undefined
+        treatAsOwnElectionYear?: number | undefined
+      }> | undefined
+    }> | undefined
+  }>,
+  year: number,
+): boolean {
+  const beneficiary = account.inherited?.beneficiary
+  return (
+    beneficiary?.election === 'treat-as-own' &&
+    beneficiary.treatAsOwnElectionYear !== undefined &&
+    year >= beneficiary.treatAsOwnElectionYear
+  )
+}
+
 /** Can this account receive new contributions? (Inherited accounts cannot.) */
 export function acceptsContributions(account: Account): boolean {
   return !(account.type === 'traditional' && account.inherited !== undefined)

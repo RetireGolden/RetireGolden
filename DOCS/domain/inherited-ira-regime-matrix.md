@@ -222,3 +222,25 @@ in the exact ledger with `year-of-death` / `required` / `voluntary` / `final-swe
 regime, deadline, disclosures (§327, born-1959, IRA-agreement elections), and §5's refusals in
 plain language. Every `unsupported` and `needs-review` outcome is a typed refusal, not a silent
 fallback.
+
+**WS4 reconciliation (shipped).** `projection/simulate.ts` consumes `classifyInheritedRegime` and
+`inheritedRequirementForYear` from `strategies/inheritedIra.ts` and never re-derives divisors or
+deadlines. Classified accounts execute R1/R2/R3/R3a (greater-of owner arm, ten-year sweeps,
+EDB life-expectancy, notice-waived annuals), S0/S1 (spouse remain-beneficiary, including annual
+redetermination), S2 window-and-flip (synthetic S0 before `treatAsOwnElectionYear`, then owner RMD
+aggregation), S3, and inherited-Roth K1/K2 (K1 ten-year sweep; K2 annual life-expectancy). Each
+year publishes `InheritedAccountYearEvidence` with regime, matrix row, requirement kind, executed
+amounts, limitations, disclosures, and citations; scenario comparison surfaces inherited totals
+from the ledger. Schema fact `treatAsOwnElectionYear` (calendar year, required when election is
+`treat-as-own`) gates the S2 flip. Classifier refusals other than X1 (`legacy-planning-approximation`)
+project on the labeled legacy two-field path for planning continuity; the evidence row carries the
+refusal so no consumer can call the schedule compliant. The `YearResult.inheritedDistribution`
+scalar is the **forced** total (its long-standing public contract); voluntary inherited draws are
+visible per account on the evidence rows' `voluntaryAmount`. `YearResult.inheritedTraditionalDistribution`
+is the traditional-character subset (ordinary income / traditional withdrawals). Named residuals out of
+scope: §1.402(c)-2(j)(4) catch-up execution (prior ten-year-election fact not representable; S2 carries
+`treat-as-own-timing-gate-unverified` because §1.408-8(c)(1)(iii)–(iv) is not consulted), non-qualified
+inherited-Roth earnings taxation (K3 `roth-taxability-needs-review` disclosure only), post-S2
+contribution/conversion/QCD enablement for validators that lack a year context (WS5), and Roth S2-flip
+basis migration into the owned Roth pool (post-flip draws keep the inherited non-taxed / non-penalized
+path; contribution basis was never seeded).
