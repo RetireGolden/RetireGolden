@@ -191,6 +191,40 @@ describe('modified adjusted gross income', () => {
       expect(d.seniorDeduction).toBeCloseTo(readings.agiAlone.seniorDeduction, 6)
     })
   })
+
+  // IRC 1411(c)(1)(A)(i) reaches gross income from interest, and section 103
+  // interest never enters gross income, so tax-exempt interest is not net
+  // investment income; 1411(d) adds back only the section 911 exclusion, so it
+  // does not lift the threshold leg either. Both misreadings are natural
+  // because sections 86 and 36B DO add tax-exempt interest back, and each one
+  // produces a different wrong tax here.
+  //
+  // Single, 190,000 of ordinary income of which 10,000 is taxable interest,
+  // plus 50,000 of tax-exempt interest and no Social Security:
+  //   outside both legs: MAGI 190,000 stays under the 200,000 threshold -> 0
+  //   in the MAGI leg:   min(10,000, 240,000 - 200,000) = 10,000       -> 380
+  //   in both legs:      min(60,000, 240,000 - 200,000) = 40,000     -> 1,520
+  describeRule('irc-1411-tax-exempt-interest-outside-both-niit-legs', {
+    readings: { outsideBothLegs: 0, inTheMagiLegOnly: 380, inBothLegs: 1_520 },
+    accepted: 'outsideBothLegs',
+  }, ({ accepted, readings }) => {
+    it('keeps tax-exempt interest out of investment income and out of the threshold leg', () => {
+      const d = computeFederalTax(input({
+        ordinaryIncome: 190_000,
+        taxableInterestIncome: 10_000,
+        taxExemptInterest: 50_000,
+      }))
+
+      // Section 103(a): the amount never reaches AGI or taxable income either.
+      expect(d.agi).toBeCloseTo(190_000, 6)
+      expect(d.magi).toBeCloseTo(190_000, 6)
+      expect(d.taxableIncome).toBeCloseTo(173_900, 6)
+
+      expect(d.niit).toBeCloseTo(accepted, 6)
+      expect(d.niit).not.toBeCloseTo(readings.inTheMagiLegOnly, 6)
+      expect(d.niit).not.toBeCloseTo(readings.inBothLegs, 6)
+    })
+  })
 })
 
 describe('section 1211 capital loss limitation', () => {
@@ -1097,6 +1131,34 @@ describe('registered rules: rate schedules, deductions, AMT, NIIT', () => {
       expect(result.magi).toBe(270_000) // the distribution still lifts the MAGI leg
       expect(result.niit).toBeCloseTo(accepted, 6)
       expect(result.niit).not.toBeCloseTo(readings.distributionIsInvestmentIncome, 6)
+    })
+  })
+
+  // IRC 57(a)(5)(A) adds interest on specified private activity bonds to AMTI.
+  // The plan model carries tax-exempt interest as one annual amount with no
+  // issue-level detail, so the engine treats all of it as non-preference and
+  // adds none of it back — disclosed in the registry, pinned here so the day a
+  // PAB path lands this fixture fails and the record gets reclassified.
+  //
+  // Single, 300,000 of ordinary income and 100,000 of tax-exempt interest that
+  // is stipulated to be entirely specified-PAB interest, no Social Security.
+  // Taxable income 283,900 plus the 16,100 standard-deduction add-back:
+  //   treated as non-preference (engine): AMTI 300,000
+  //   specified-PAB interest added back:  AMTI 400,000
+  describeRule('irc-57-a-5-private-activity-bond-interest-amt-preference', {
+    readings: { treatedAsNonPreference: 300_000, specifiedPabInterestAddedBack: 400_000 },
+    accepted: 'specifiedPabInterestAddedBack',
+    produced: 'treatedAsNonPreference',
+  }, ({ accepted, produced }) => {
+    it('adds no tax-exempt interest to AMTI, even when it is all PAB interest', () => {
+      const result = computeFederalTax(input({
+        ordinaryIncome: 300_000,
+        taxExemptInterest: 100_000,
+      }))
+
+      expect(result.taxableIncome).toBe(283_900)
+      expect(result.alternativeMinimumTaxableIncome).toBeCloseTo(produced, 6)
+      expect(result.alternativeMinimumTaxableIncome).not.toBeCloseTo(accepted, 6)
     })
   })
 })
