@@ -20,6 +20,7 @@ import {
   buildInheritedSchedules,
   buildReportModel,
   chartDataCsv,
+  inheritedDeadlineExplanation,
   serializeReportModel,
   yearLedgerCsv,
   type ReportModel,
@@ -664,6 +665,57 @@ describe('buildInheritedSchedules', () => {
         'Owner birth day: 15',
       ]),
     )
+  })
+
+  it('routes refused treat-as-own missing election year to legacy deadline copy', () => {
+    const plan = fixturePlan((p) => {
+      p.accounts.push({
+        type: 'traditional',
+        id: 's2-refused',
+        name: 'Spouse Treat-as-Own IRA',
+        ownerPersonId: 'p1',
+        annualReturnPct: null,
+        kind: 'ira',
+        balance: 300_000,
+        annualContribution: 0,
+        inherited: {
+          ownerDeathYear: 2024,
+          decedentHadStartedRmds: true,
+          beneficiary: {
+            beneficiaryClass: 'designated-individual',
+            edbCategory: 'surviving-spouse',
+            beneficiaryBirthYear: 1965,
+            soleBeneficiary: true,
+            election: 'treat-as-own',
+            spouseUnlimitedWithdrawalRight: true,
+            ownerBirthYear: 1945,
+            provenance: { source: 'user-entered', asOf: '2026-01-01' },
+          },
+        },
+      })
+    })
+    const evidence: InheritedAccountYearEvidence = {
+      accountId: 's2-refused',
+      ownerPersonId: 'p1',
+      regime: 'needs-review',
+      matrixRow: 'X5',
+      refusalReason:
+        "election 'treat-as-own' requires treatAsOwnElectionYear (the calendar year the spouse redesignates this account as their own IRA, Treas. Reg. §1.408-8(c)(1)-(2)); supply treatAsOwnElectionYear on or after ownerDeathYear",
+      requirementKind: 'legacy',
+      requiredAmount: 15_000,
+      executedRequiredAmount: 15_000,
+      voluntaryAmount: 0,
+      disclosures: [],
+      citations: ['Treas. Reg. §1.408-8(c)'],
+    }
+    const account = buildInheritedSchedules(plan, [year(2026, [evidence])]).accounts[0]!
+    expect(account.isRefusal).toBe(true)
+    expect(account.isLegacyApproximation).toBe(true)
+    expect(inheritedDeadlineExplanation(account)).toBe(
+      "The simpler planning estimate empties the account by the 10th year after the owner's death.",
+    )
+    expect(inheritedDeadlineExplanation(account)).not.toContain('transition')
+    expect(inheritedDeadlineExplanation(account)).not.toContain('own RMD')
   })
 
   it('aggregates classification across years: unsettled in an early year wins over later settled', () => {

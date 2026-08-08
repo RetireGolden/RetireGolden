@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, type ReactNode } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { MemoryRouter } from 'react-router'
@@ -9,7 +9,7 @@ import { createEmptyPlan, parsePlan, type Account, type Plan } from '@retiregold
 
 import { PlanCtx } from '../planContextCore'
 import { AccountFields } from './AccountFields'
-import { EVEN_START_WEIGHTS, TAX_EXEMPT_ALLOCATION_DOUBLE_COUNT_WARNING } from './sectionHelpers'
+import { EVEN_START_WEIGHTS, TAX_EXEMPT_ALLOCATION_DOUBLE_COUNT_WARNING, localCalendarDateIso } from './sectionHelpers'
 import { Issues } from './shared'
 
 ;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true
@@ -223,6 +223,14 @@ describe('AccountFields tax-exempt interest double-count warning', () => {
 })
 
 describe('AccountFields inherited beneficiary details', () => {
+  it('labels traditional inherited enable as Inherited account without universal 10-year copy', () => {
+    renderFields(planWithAccount(retirementAccount()))
+
+    expect(container?.textContent).toContain('Inherited account')
+    expect(container?.textContent).not.toContain('Inherited account (10-year rule)')
+    expect(container?.textContent).toContain('distribution schedule depends on the beneficiary facts')
+  })
+
   it('keeps legacy inherited accounts on the optional planning-estimate path', () => {
     renderFields(planWithAccount(retirementAccount({ inherited: { ownerDeathYear: 2024, decedentHadStartedRmds: false } })))
 
@@ -331,6 +339,7 @@ describe('AccountFields inherited beneficiary details', () => {
     if (account.type !== 'traditional') throw new Error('expected traditional')
     expect(account.inherited?.beneficiary?.election).toBe('remain-beneficiary')
     expect(account.inherited?.beneficiary?.treatAsOwnElectionYear).toBeUndefined()
+    expect(account.inherited?.beneficiary?.spouseUnlimitedWithdrawalRight).toBeUndefined()
     const parsed = parsePlan(structuredClone(mounted.plan))
     expect(parsed.ok).toBe(true)
   })
@@ -419,6 +428,35 @@ describe('AccountFields inherited beneficiary details', () => {
     expect(parsed.ok).toBe(true)
   })
 
+  it('records soleBeneficiary false when several beneficiaries are selected (parse-valid)', () => {
+    const plan = planWithAccount(retirementAccount({
+      ownerPersonId: 'af-owner',
+      inherited: {
+        ownerDeathYear: 2024,
+        decedentHadStartedRmds: false,
+        beneficiary: {
+          beneficiaryClass: 'designated-individual',
+          edbCategory: 'none',
+          beneficiaryBirthYear: 1970,
+          provenance: { source: 'user-entered', asOf: '2026-08-08' },
+        },
+      },
+    }))
+    plan.accounts[0]!.ownerPersonId = plan.household.people[0]!.id
+    const mounted = mountEditable(plan)
+
+    act(() => {
+      const select = controlByLabel<HTMLSelectElement>(mounted.container(), 'Sole beneficiary')
+      select.value = 'false'
+      select.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+
+    const account = mounted.plan.accounts[0]!
+    expect(account.inherited?.beneficiary?.soleBeneficiary).toBe(false)
+    const parsed = parsePlan(structuredClone(mounted.plan))
+    expect(parsed.ok).toBe(true)
+  })
+
   it('clears ownerYearOfDeathRmdSatisfied when decedentHadStartedRmds is toggled off (parse-valid)', () => {
     const plan = planWithAccount(retirementAccount({
       inherited: {
@@ -451,6 +489,20 @@ describe('AccountFields inherited beneficiary details', () => {
     expect(account.inherited?.beneficiary?.ownerYearOfDeathRmdSatisfied).toBeUndefined()
     const parsed = parsePlan(structuredClone(mounted.plan))
     expect(parsed.ok).toBe(true)
+  })
+})
+
+describe('localCalendarDateIso', () => {
+  it('uses the local calendar date, not UTC from toISOString', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-01-01T02:00:00Z'))
+    const utcDate = new Date().toISOString().slice(0, 10)
+    const localDate = localCalendarDateIso()
+    expect(localDate).not.toBe(utcDate)
+    expect(localDate).toBe(
+      `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`,
+    )
+    vi.useRealTimers()
   })
 })
 

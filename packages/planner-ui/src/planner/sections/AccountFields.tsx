@@ -99,14 +99,10 @@ const ELECTION_SOURCE = {
   url: 'https://www.ecfr.gov/current/title-26/section-1.408-8',
 }
 
-function todayIsoDate(): string {
-  return new Date().toISOString().slice(0, 10)
-}
-
 function newBeneficiary(beneficiaryClass: InheritedBeneficiary['beneficiaryClass']): InheritedBeneficiary {
   return {
     beneficiaryClass,
-    provenance: { source: 'user-entered', asOf: todayIsoDate() },
+    provenance: { source: 'user-entered', asOf: localCalendarDateIso() },
   }
 }
 
@@ -203,12 +199,25 @@ function BeneficiaryDetails({
                 max={2100}
                 onCommit={(value) => commit({ ...beneficiary, beneficiaryBirthYear: value ?? undefined })}
               />
-              <CheckboxField
+              <SelectField
                 label="Sole beneficiary"
-                help="Confirm whether this person is the sole beneficiary. Multiple beneficiaries can require separate-account facts that this planner does not infer."
+                help="Whether this person is the sole beneficiary. If there are several beneficiaries, this planner does not model separate-account facts and will show that limitation instead of a classified schedule."
                 source={{ label: 'eCFR §1.401(a)(9)-8(a)', url: 'https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-8' }}
-                value={beneficiary.soleBeneficiary === true}
-                onCommit={(soleBeneficiary) => commit({ ...beneficiary, soleBeneficiary })}
+                value={
+                  beneficiary.soleBeneficiary === true
+                    ? 'true'
+                    : beneficiary.soleBeneficiary === false
+                      ? 'false'
+                      : ''
+                }
+                placeholder="Choose..."
+                options={[
+                  { value: 'true', label: 'Yes, sole beneficiary' },
+                  { value: 'false', label: 'No, one of several' },
+                ]}
+                onCommit={(value) =>
+                  commit({ ...beneficiary, soleBeneficiary: value === 'true' })
+                }
               />
               {isSpouse || mayElectTenYear ? (
                 <SelectField
@@ -237,6 +246,7 @@ function BeneficiaryDetails({
                       ...beneficiary,
                       election,
                       treatAsOwnElectionYear: undefined,
+                      spouseUnlimitedWithdrawalRight: undefined,
                     })
                   }}
                 />
@@ -568,10 +578,10 @@ export function AccountFields({ account, index }: { account: Account; index: num
       ) : null}
       {account.type === 'traditional' || account.type === 'roth' ? (
         <CheckboxField
-          label={account.type === 'roth' ? 'Inherited Roth account' : 'Inherited account (10-year rule)'}
+          label={account.type === 'roth' ? 'Inherited Roth account' : 'Inherited account'}
           help={account.type === 'roth'
             ? "An inherited Roth account follows beneficiary distribution rules and requires beneficiary details in this planner. The original Roth owner is treated as dying before the required beginning date."
-            : "A non-spouse beneficiary must empty an inherited IRA/401(k) by the end of the 10th year after the original owner's death. Distributions are taxable but never carry the 10% early-withdrawal penalty, and the account is exempt from your own age-based RMDs."}
+            : "An account inherited from its original owner. The distribution schedule depends on the beneficiary facts below: many beneficiaries must empty the account within 10 years, while a surviving spouse or other eligible beneficiary may follow a life-expectancy schedule. Distributions are taxable but never carry the 10% early-withdrawal penalty, and the account is exempt from your own age-based RMDs."}
           value={account.inherited !== undefined}
           onCommit={(v) => {
             if (!v) {

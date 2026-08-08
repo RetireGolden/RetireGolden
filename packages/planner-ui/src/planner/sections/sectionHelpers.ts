@@ -195,3 +195,12 @@ export function clampedAnnuityStartAge(plan: Plan, account: Account): number | n
   if (ceiling === null) return null
   return account.startAge > ceiling ? ceiling : null
 }
+
+/** Local calendar date as YYYY-MM-DD (not UTC from toISOString). */
+export function localCalendarDateIso(): string {
+  const now = new Date()
+  const y = now.getFullYear()
+  const m = String(now.getMonth() + 1).padStart(2, '0')
+  const d = String(now.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}

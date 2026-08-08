@@ -722,9 +722,6 @@ export function inheritedDeadlineExplanation(account: ReportInheritedScheduleAcc
   if (account.finalDeadlineYear !== null) {
     return `${account.finalDeadlineYear} (entire interest by end of that calendar year, when the schedule fixes one).`
   }
-  if (account.regime === 'spouse-treat-as-own-transition') {
-    return "After the transition the account follows the owner's own RMD rules."
-  }
   if (
     account.isLegacyApproximation ||
     account.isRefusal ||
@@ -734,6 +731,9 @@ export function inheritedDeadlineExplanation(account: ReportInheritedScheduleAcc
     account.years.some((row) => row.requirementKind === 'legacy')
   ) {
     return "The simpler planning estimate empties the account by the 10th year after the owner's death."
+  }
+  if (account.regime === 'spouse-treat-as-own-transition') {
+    return "After the transition the account follows the owner's own RMD rules."
   }
   return "No fixed deadline year: amounts continue over the beneficiary's life expectancy."
 }
