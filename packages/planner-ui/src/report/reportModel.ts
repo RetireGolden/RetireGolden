@@ -38,7 +38,10 @@ import type {
 import { acaLedgerSummary } from '../planner/acaReportStatus'
 import { fmtMoney } from '../planner/format'
 import { isPlanIncomplete } from '../planner/planCompleteness'
-import { needsProfessionalConfirmation } from '../planner/professionalConfirmation'
+import {
+  needsProfessionalConfirmation,
+  ROTH_FIVE_YEAR_INCOMPLETE_DISCLOSURE,
+} from '../planner/professionalConfirmation'
 
 export const REPORT_MODEL_KIND = 'retiregolden.report-model'
 export const REPORT_MODEL_VERSION = 3
@@ -631,6 +634,8 @@ const DISCLOSURE_NOTE_LABELS: Record<string, string> = {
 const LIMITATION_NOTE_LABELS: Record<string, string> = {
   'pre-horizon-year-of-death-rmd-unresolved':
     'Year-of-death RMD before the projection horizon is unresolved on this path.',
+  'joint-life-gap-unresolved-at-year-precision':
+    'The birth years alone cannot settle whether the spouse is more than 10 years younger, which affects the death-year required amount; shown using the standard table.',
 }
 
 /** User-visible notice-waived copy. Amounts are computed for reference; the engine does not take them. */
@@ -670,6 +675,24 @@ function isSpouseDeferralNoneEvidence(evidence: InheritedAccountYearEvidence): b
   )
 }
 
+/** §1.408-8(c)(3): same-year treat-as-own with the death-year RMD already satisfied. */
+function isSameYearTreatAsOwnDeferral(
+  account: Account,
+  year: number,
+  evidence: InheritedAccountYearEvidence,
+): boolean {
+  if (evidence.requirementKind !== 'none') return false
+  if (!('inherited' in account) || account.inherited === undefined) return false
+  const beneficiary = account.inherited.beneficiary
+  const electionYear = beneficiary?.treatAsOwnElectionYear
+  if (beneficiary?.election !== 'treat-as-own' || electionYear === undefined) return false
+  return (
+    year === electionYear &&
+    electionYear === account.inherited.ownerDeathYear &&
+    beneficiary.ownerYearOfDeathRmdSatisfied === true
+  )
+}
+
 /** Requirement-kind label for one schedule year, with treat-as-own post-flip routing. */
 export function inheritedRequirementKindLabelForYear(
   account: Account,
@@ -686,6 +709,9 @@ export function inheritedRequirementKindLabelForYear(
       ? account.inherited.beneficiary
       : undefined
   const electionYear = beneficiary?.treatAsOwnElectionYear
+  if (isSameYearTreatAsOwnDeferral(account, year, evidence)) {
+    return 'Owner RMD rules apply from next year'
+  }
   if (
     evidence.requirementKind === 'none' &&
     beneficiary?.election === 'treat-as-own' &&
@@ -919,7 +945,12 @@ export function buildInheritedSchedules(
       account,
       yearRows.map((row) => row.year),
     )
-    if (rothFiveYearNote) notes.add(rothFiveYearNote)
+    if (rothFiveYearNote) {
+      notes.add(rothFiveYearNote)
+      needsConfirm =
+        needsConfirm ||
+        needsProfessionalConfirmation({ disclosures: [ROTH_FIVE_YEAR_INCOMPLETE_DISCLOSURE] })
+    }
 
     const classification: 'settled' | 'unsettled' | null = hasUnsettledClassification
       ? 'unsettled'

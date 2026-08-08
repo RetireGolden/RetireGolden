@@ -575,6 +575,52 @@ describe('buildInheritedSchedules', () => {
     )
   })
 
+  it('labels same-year treat-as-own none years with deferral copy when the death-year RMD is satisfied', () => {
+    const plan = fixturePlan((p) => {
+      p.accounts.push({
+        type: 'traditional',
+        id: 's2-same-year',
+        name: 'Same-Year Treat-as-Own IRA',
+        ownerPersonId: 'p1',
+        annualReturnPct: null,
+        kind: 'ira',
+        balance: 300_000,
+        annualContribution: 0,
+        inherited: {
+          ownerDeathYear: 2026,
+          decedentHadStartedRmds: true,
+          beneficiary: {
+            beneficiaryClass: 'designated-individual',
+            edbCategory: 'surviving-spouse',
+            beneficiaryBirthYear: 1947,
+            soleBeneficiary: true,
+            election: 'treat-as-own',
+            treatAsOwnElectionYear: 2026,
+            spouseUnlimitedWithdrawalRight: true,
+            ownerBirthYear: 1945,
+            ownerYearOfDeathRmdSatisfied: true,
+            provenance: { source: 'user-entered', asOf: '2026-01-01' },
+          },
+        },
+      })
+    })
+    const sameYearFlip: InheritedAccountYearEvidence = {
+      accountId: 's2-same-year',
+      ownerPersonId: 'p1',
+      regime: 'spouse-treat-as-own-transition',
+      matrixRow: 'S2',
+      classification: 'settled',
+      requirementKind: 'none',
+      requiredAmount: 0,
+      executedRequiredAmount: 0,
+      voluntaryAmount: 0,
+      disclosures: [],
+      citations: [],
+    }
+    const account = buildInheritedSchedules(plan, [year(2026, [sameYearFlip])]).accounts[0]!
+    expect(account.years[0]!.kindLabel).toBe('Owner RMD rules apply from next year')
+  })
+
   it('labels post-flip treat-as-own none years with owner RMD copy', () => {
     const plan = fixturePlan((p) => {
       p.accounts.push({
@@ -876,6 +922,98 @@ describe('buildInheritedSchedules', () => {
       'Waived by IRS notice for this year; shown for reference, not taken.',
     )
     expect(account.notes.join(' ')).not.toContain('still executed')
+  })
+
+  it('maps joint-life-gap-unresolved-at-year-precision to plain language in notes', () => {
+    const plan = fixturePlan((p) => {
+      p.accounts.push({
+        type: 'traditional',
+        id: 'joint-gap-ira',
+        name: 'Joint Gap IRA',
+        ownerPersonId: 'p1',
+        annualReturnPct: null,
+        kind: 'ira',
+        balance: 200_000,
+        annualContribution: 0,
+        inherited: {
+          ownerDeathYear: 2024,
+          decedentHadStartedRmds: true,
+          beneficiary: {
+            beneficiaryClass: 'designated-individual',
+            edbCategory: 'surviving-spouse',
+            beneficiaryBirthYear: 1964,
+            soleBeneficiary: true,
+            election: 'remain-beneficiary',
+            ownerBirthYear: 1954,
+            ownerYearOfDeathRmdSatisfied: true,
+            provenance: { source: 'user-entered', asOf: '2026-01-01' },
+          },
+        },
+      })
+    })
+    const evidence: InheritedAccountYearEvidence = {
+      accountId: 'joint-gap-ira',
+      ownerPersonId: 'p1',
+      regime: 'spouse-remain-beneficiary',
+      matrixRow: 'S1',
+      classification: 'settled',
+      requirementKind: 'year-of-death-rmd',
+      requiredAmount: 10_000,
+      executedRequiredAmount: 10_000,
+      voluntaryAmount: 0,
+      limitation: 'joint-life-gap-unresolved-at-year-precision',
+      disclosures: [],
+      citations: ['Treas. Reg. §1.401(a)(9)-5(c)(2)(i)'],
+    }
+    const account = buildInheritedSchedules(plan, [year(2024, [evidence])]).accounts[0]!
+    expect(account.notes).toContain(
+      'The birth years alone cannot settle whether the spouse is more than 10 years younger, which affects the death-year required amount; shown using the standard table.',
+    )
+    expect(account.notes.join(' ')).not.toContain('joint-life-gap-unresolved-at-year-precision')
+    expect(account.needsProfessionalConfirmation).toBe(true)
+  })
+
+  it('sets professional confirmation when the recent Roth five-year warning is added', () => {
+    const plan = fixturePlan((p) => {
+      p.accounts.push({
+        type: 'roth',
+        id: 'recent-roth',
+        name: 'Recent Inherited Roth',
+        ownerPersonId: 'p1',
+        annualReturnPct: null,
+        kind: 'ira',
+        balance: 50_000,
+        annualContribution: 0,
+        inherited: {
+          ownerDeathYear: 2022,
+          decedentHadStartedRmds: false,
+          beneficiary: {
+            beneficiaryClass: 'designated-individual',
+            edbCategory: 'none',
+            beneficiaryBirthYear: 1980,
+            soleBeneficiary: true,
+            roth5YearStartYear: 2024,
+            provenance: { source: 'user-entered', asOf: '2026-01-01' },
+          },
+        },
+      })
+    })
+    const evidence: InheritedAccountYearEvidence = {
+      accountId: 'recent-roth',
+      ownerPersonId: 'p1',
+      regime: 'roth-ten-year-no-annual',
+      matrixRow: 'K3',
+      classification: 'settled',
+      requirementKind: 'none',
+      requiredAmount: 0,
+      executedRequiredAmount: 0,
+      voluntaryAmount: 0,
+      disclosures: [],
+      citations: [],
+    }
+    const account = buildInheritedSchedules(plan, [year(2026, [evidence])]).accounts[0]!
+    expect(account.notes.some((note) => note.includes('five-year period may not be complete'))).toBe(true)
+    expect(account.needsProfessionalConfirmation).toBe(true)
   })
 })
 

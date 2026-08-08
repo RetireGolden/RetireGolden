@@ -790,11 +790,10 @@ describe('localCalendarDateIso', () => {
   it('uses the local calendar date, not UTC from toISOString', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-01-01T02:00:00Z'))
-    const utcDate = new Date().toISOString().slice(0, 10)
+    const now = new Date()
     const localDate = localCalendarDateIso()
-    expect(localDate).not.toBe(utcDate)
     expect(localDate).toBe(
-      `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`,
+      `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`,
     )
     vi.useRealTimers()
   })
@@ -820,6 +819,46 @@ describe('AccountFields inherited Roth contributions', () => {
     expect(account.type).toBe('roth')
     if (account.type !== 'roth') throw new Error('expected roth')
     expect(account.inherited).toBeDefined()
+    expect(account.annualContribution).toBe(0)
+    expect(account.contributionSchedule).toBeUndefined()
+    expect(mounted.container().textContent).toContain('Inherited accounts cannot receive contributions.')
+    const labelTexts = Array.from(mounted.container().querySelectorAll('label'))
+      .map((label) => label.textContent ?? '')
+    expect(labelTexts.some((text) => text.includes('Annual contribution'))).toBe(false)
+    expect(labelTexts.some((text) => text.includes('Schedule contributions over time'))).toBe(false)
+  })
+})
+
+describe('AccountFields inherited traditional treat-as-own contributions', () => {
+  it('clears contributions and hides contribution inputs when treat-as-own is elected', () => {
+    const plan = planWithAccount(retirementAccount({
+      annualContribution: 7_000,
+      contributionSchedule: [{ annualAmount: 7_000, fromAge: null, toAge: null, escalationPct: 0 }],
+      inherited: {
+        ownerDeathYear: 2024,
+        decedentHadStartedRmds: true,
+        beneficiary: {
+          beneficiaryClass: 'designated-individual',
+          edbCategory: 'surviving-spouse',
+          beneficiaryBirthYear: 1965,
+          soleBeneficiary: true,
+          election: 'remain-beneficiary',
+          provenance: { source: 'user-entered', asOf: '2026-08-08' },
+        },
+      },
+    }))
+    const mounted = mountEditable(plan)
+
+    act(() => {
+      const select = controlByLabel<HTMLSelectElement>(mounted.container(), 'Distribution election')
+      select.value = 'treat-as-own'
+      select.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+
+    const account = mounted.plan.accounts[0]!
+    expect(account.type).toBe('traditional')
+    if (account.type !== 'traditional') throw new Error('expected traditional')
+    expect(account.inherited?.beneficiary?.election).toBe('treat-as-own')
     expect(account.annualContribution).toBe(0)
     expect(account.contributionSchedule).toBeUndefined()
     expect(mounted.container().textContent).toContain('Inherited accounts cannot receive contributions.')

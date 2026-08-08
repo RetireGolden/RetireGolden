@@ -1,3 +1,6 @@
+/** Synthetic disclosure when a known Roth five-year start year may still be open (UI-side). */
+export const ROTH_FIVE_YEAR_INCOMPLETE_DISCLOSURE = 'roth-five-year-incomplete'
+
 /**
  * True when an inherited-account evidence row carries anything a household
  * cannot rely on without professional confirmation: an unsettled reading, a

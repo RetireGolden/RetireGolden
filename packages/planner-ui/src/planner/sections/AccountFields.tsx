@@ -108,6 +108,17 @@ const INHERITED_ROTH_CONTRIBUTION_BASIS_HINT =
   'The model does not use contribution basis on an inherited Roth; its withdrawals are modeled untaxed with the five-year caution below.'
 const INHERITED_ROTH_EMPLOYER_HINT =
   'Workplace-plan schedules are not modeled; this account uses the simpler planning estimate, and these facts are kept for review.'
+const INHERITED_CONTRIBUTIONS_BLOCKED_HINT = 'Inherited accounts cannot receive contributions.'
+
+/** Contributions stay blocked on inherited Roth accounts and on treat-as-own traditional accounts (WS5 residual). */
+function inheritedContributionsBlocked(account: Account): boolean {
+  if (!('inherited' in account) || account.inherited === undefined) return false
+  if (account.type === 'roth') return true
+  if (account.type === 'traditional') {
+    return account.inherited.beneficiary?.election === 'treat-as-own'
+  }
+  return false
+}
 
 function beneficiaryWithClass(
   beneficiaryClass: InheritedBeneficiary['beneficiaryClass'],
@@ -732,7 +743,20 @@ export function AccountFields({ account, index }: { account: Account; index: num
                 account={account}
                 inherited={account.inherited}
                 planningYear={planningYear}
-                onCommit={(inherited) => set('inherited', inherited)}
+                onCommit={(inherited) => {
+                  const wasTreatAsOwn = account.inherited.beneficiary?.election === 'treat-as-own'
+                  const isTreatAsOwn = inherited.beneficiary?.election === 'treat-as-own'
+                  if (account.type === 'traditional' && isTreatAsOwn && !wasTreatAsOwn) {
+                    update((draft) => {
+                      const target = draft.accounts[index] as Extract<Account, { type: 'traditional' }>
+                      target.inherited = inherited
+                      target.annualContribution = 0
+                      target.contributionSchedule = undefined
+                    })
+                    return
+                  }
+                  set('inherited', inherited)
+                }}
               />
             </>
           )}
@@ -857,10 +881,10 @@ export function AccountFields({ account, index }: { account: Account; index: num
       {isAllocatable(account) && account.allocation !== undefined ? (
         <AllocationPanel account={account} plan={plan} onCommit={(a) => set('allocation', a)} />
       ) : null}
-      {account.type === 'roth' && account.inherited ? (
-        <p className="field-hint">Inherited accounts cannot receive contributions.</p>
+      {inheritedContributionsBlocked(account) ? (
+        <p className="field-hint">{INHERITED_CONTRIBUTIONS_BLOCKED_HINT}</p>
       ) : null}
-      {'annualContribution' in account && !(account.type === 'roth' && account.inherited) ? (
+      {'annualContribution' in account && !inheritedContributionsBlocked(account) ? (
         <>
           <CheckboxField
             label="Schedule contributions over time"
