@@ -391,9 +391,15 @@ function factConsistencyScreen(input: {
           `edbCategory 'not-more-than-10-years-younger' is contradicted by birth years (beneficiary birth year ${benBirth} is ${gap} years after owner birth year ${ownerBirth}; Treas. Reg. §1.401(a)(9)-4(e)(6) measures birth-date to birth-date and a ≥11-year gap is certain) — correct ownerBirthYear, beneficiaryBirthYear, or edbCategory`,
         )
       }
-      // Gap of exactly 10 birth years is date-ambiguous.
+      // Gap of exactly 10 birth years is date-ambiguous unless the owner's full
+      // birth date is December 31 — then every feasible beneficiary date in the
+      // later birth year is at most exactly 10 years after the owner's date.
       if (gap === 10) {
-        disclosures.push('edb-category-year-precision-unverified')
+        const ownerDec31 =
+          b.ownerBirthMonth === 12 && b.ownerBirthDay === 31
+        if (!ownerDec31) {
+          disclosures.push('edb-category-year-precision-unverified')
+        }
       }
     }
   }
@@ -411,6 +417,15 @@ function factConsistencyScreen(input: {
       )
     }
     if (gap === 10) {
+      const ownerDec31 =
+        b.ownerBirthMonth === 12 && b.ownerBirthDay === 31
+      if (ownerDec31) {
+        return refusal(
+          'needs-review',
+          'X5',
+          `edbCategory 'none' is contradicted by birth dates (owner born December 31, ${ownerBirth}, beneficiary birth year ${benBirth} places the beneficiary as not more than 10 years younger under Treas. Reg. §1.401(a)(9)-4(e)(6); the December 31 boundary makes the gap certain) — assert edbCategory 'not-more-than-10-years-younger' (or another applicable EDB class) or correct the birth facts`,
+        )
+      }
       disclosures.push('edb-category-year-precision-unverified')
     }
   }
@@ -921,6 +936,12 @@ function noneEvidence(year: number, citations: string[]): InheritedRequirementEv
   return { year, kind: 'none', requiredAmount: 0, citations }
 }
 
+/**
+ * Final deadline sweep evidence. The stated requiredAmount uses the same prior-
+ * December-31 balance base as every other evidence amount (Treas. Reg.
+ * §1.401(a)(9)-5(b)); WS4 reconciles the entire remaining interest at execution
+ * time against the live balance in the ledger.
+ */
 function finalSweepEvidence(
   year: number,
   priorYearEndBalance: number,
@@ -1010,6 +1031,10 @@ export function inheritedRequirementForYear(input: {
   }
 
   // Year-of-death RMD: post-RBD only, when not already satisfied (§1.408-8(e)(4)(i)).
+  // The schema carries only ownerYearOfDeathRmdSatisfied (a boolean); evidence here
+  // states the decedent's gross death-year RMD. Partial amounts the decedent already
+  // took net out in WS4 ledger execution against actual distributions, mirroring the
+  // catch-up helper's gross-hypotheticals contract.
   if (year === deathYear) {
     if (
       rbd === 'on-or-after-rbd' &&

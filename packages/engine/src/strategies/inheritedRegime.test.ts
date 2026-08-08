@@ -438,6 +438,13 @@ describe('WS3 fixture F10: X precedence and refusals', () => {
     expectRefusal('traditional', inherited(2023, true, beneficiary({
       ownerBirthYear: 1948, beneficiaryBirthYear: 1940,
     })), 'X5', 'needs-review', "edbCategory 'none' is contradicted")
+    expectRefusal('traditional', inherited(2022, true, beneficiary({
+      ownerBirthYear: 1940,
+      ownerBirthMonth: 12,
+      ownerBirthDay: 31,
+      beneficiaryBirthYear: 1950,
+      edbCategory: 'none',
+    })), 'X5', 'needs-review', "edbCategory 'none' is contradicted")
     expectRefusal('traditional', inherited(2022, false, beneficiary({
       ownerBirthYear: 1970, beneficiaryBirthYear: 1981,
       edbCategory: 'not-more-than-10-years-younger',
