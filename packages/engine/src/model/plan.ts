@@ -504,11 +504,12 @@ export const inheritedBeneficiarySchema = z
     beneficiaryBirthYear: calendarYear.optional(),
     /**
      * Whether this beneficiary is the account's sole beneficiary. Required for
-     * spouse treat-as-own and annual-RMD regimes; multiple beneficiaries without
+     * designated-individual beneficiaries (and for spouse treat-as-own); estates,
+     * trusts, entities, and successors may omit it. Multiple beneficiaries without
      * separate-account facts are unsupported (matrix X4).
      * @see Treas. Reg. §1.401(a)(9)-8(a)
      */
-    soleBeneficiary: z.boolean(),
+    soleBeneficiary: z.boolean().optional(),
     /**
      * Explicit beneficiary distribution election. Spouse-only values
      * (`remain-beneficiary`, `treat-as-own`) and the EDB `ten-year-election`
@@ -559,11 +560,19 @@ export const inheritedBeneficiarySchema = z
     roth5YearStartYear: calendarYear.optional(),
     /**
      * Provenance for the facts above: who/what asserted them and as-of which
-     * calendar year (review workflows).
+     * ISO calendar date (review workflows).
      */
     provenance: z.object({
-      source: z.string().min(1),
-      asOf: calendarYear,
+      source: z.string().refine((value) => value.trim().length > 0, {
+        message: 'provenance.source must be non-blank after trimming; provide the asserting source',
+      }),
+      asOf: z
+        .string()
+        .regex(isoDateRe, 'provenance.asOf must be an ISO date (YYYY-MM-DD)')
+        .refine(
+          (value) => parseCivilIsoDate(value) !== null,
+          'provenance.asOf must be a real calendar date (YYYY-MM-DD)',
+        ),
     }),
   })
   .superRefine((beneficiary, ctx) => {
@@ -590,6 +599,62 @@ export const inheritedBeneficiarySchema = z
         message:
           "edbCategory other than 'none' applies only when beneficiaryClass is 'designated-individual'; set beneficiaryClass to 'designated-individual' or set edbCategory to 'none'",
       })
+    }
+
+    if (
+      beneficiary.beneficiaryClass === 'designated-individual' &&
+      beneficiary.soleBeneficiary === undefined
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['soleBeneficiary'],
+        message:
+          "soleBeneficiary is required when beneficiaryClass is 'designated-individual'; set it to true or false",
+      })
+    }
+
+    if (beneficiary.ownerBirthDay !== undefined && beneficiary.ownerBirthMonth === undefined) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['ownerBirthMonth'],
+        message:
+          'ownerBirthMonth is required when ownerBirthDay is provided; supply the birth month or remove the birth day',
+      })
+    }
+
+    if (
+      beneficiary.ownerBirthYear === undefined &&
+      beneficiary.ownerBirthMonth !== undefined &&
+      beneficiary.ownerBirthDay !== undefined
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['ownerBirthYear'],
+        message:
+          'ownerBirthYear is required when ownerBirthMonth and ownerBirthDay are both provided; supply the birth year or remove the date components',
+      })
+    }
+
+    if (
+      beneficiary.ownerBirthYear !== undefined &&
+      beneficiary.ownerBirthMonth !== undefined &&
+      beneficiary.ownerBirthDay !== undefined
+    ) {
+      const date = new Date(
+        Date.UTC(beneficiary.ownerBirthYear, beneficiary.ownerBirthMonth - 1, beneficiary.ownerBirthDay),
+      )
+      if (
+        date.getUTCFullYear() !== beneficiary.ownerBirthYear ||
+        date.getUTCMonth() !== beneficiary.ownerBirthMonth - 1 ||
+        date.getUTCDate() !== beneficiary.ownerBirthDay
+      ) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['ownerBirthDay'],
+          message:
+            'ownerBirthYear, ownerBirthMonth, and ownerBirthDay must form a real calendar date; correct the owner birth date components',
+        })
+      }
     }
 
     const election = beneficiary.election
@@ -691,6 +756,18 @@ export const inheritedAccountSchema = z
   .superRefine((inherited, ctx) => {
     const beneficiary = inherited.beneficiary
     if (beneficiary === undefined) return
+
+    if (
+      beneficiary.ownerBirthYear !== undefined &&
+      beneficiary.ownerBirthYear > inherited.ownerDeathYear
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['beneficiary', 'ownerBirthYear'],
+        message:
+          'ownerBirthYear cannot be after ownerDeathYear (the owner cannot be born after their own death); correct ownerBirthYear or ownerDeathYear',
+      })
+    }
 
     // A designated beneficiary born after the calendar year of death cannot
     // have been a designated beneficiary as of the date of death

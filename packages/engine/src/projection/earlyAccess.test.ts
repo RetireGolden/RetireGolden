@@ -453,7 +453,7 @@ describe('inherited IRA — SECURE Act 10-year rule', () => {
           soleBeneficiary: true,
           ownerBirthYear: 1948,
           ownerYearOfDeathRmdSatisfied: true,
-          provenance: { source: 'ws2-pin', asOf: 2026 },
+          provenance: { source: 'ws2-pin', asOf: '2026-08-08' },
         },
       }
     }

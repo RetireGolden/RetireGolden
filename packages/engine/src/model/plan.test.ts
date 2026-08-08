@@ -1484,7 +1484,7 @@ describe('inherited-IRA beneficiary facts (WS2)', () => {
     edbCategory: 'none' as const,
     beneficiaryBirthYear: 1980,
     soleBeneficiary: true,
-    provenance: { source: 'custodian statement', asOf: 2026 },
+    provenance: { source: 'custodian statement', asOf: '2026-08-08' },
   }
 
   function withTraditionalInherited(inherited: InheritedAccount): Plan {
@@ -1868,11 +1868,128 @@ describe('inherited-IRA beneficiary facts (WS2)', () => {
       beneficiary: {
         beneficiaryClass: 'estate',
         edbCategory: 'none',
-        soleBeneficiary: false,
-        provenance: { source: 'custodian statement', asOf: 2026 },
+        provenance: { source: 'custodian statement', asOf: '2026-08-08' },
       },
     })
     expect(parsePlan(plan).ok).toBe(true)
+  })
+
+  it('rejects an owner birth year after the owner death year', () => {
+    const plan = withTraditionalInherited({
+      ownerDeathYear: 2022,
+      decedentHadStartedRmds: false,
+      beneficiary: { ...fullBeneficiary, ownerBirthYear: 2023 },
+    })
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(false)
+    if (!parsed.ok) {
+      expect(parsed.issues.join('\n')).toContain(
+        'ownerBirthYear cannot be after ownerDeathYear (the owner cannot be born after their own death)',
+      )
+    }
+  })
+
+  it('accepts an owner born 30 years before death', () => {
+    const plan = withTraditionalInherited({
+      ownerDeathYear: 2022,
+      decedentHadStartedRmds: false,
+      beneficiary: {
+        ...fullBeneficiary,
+        ownerBirthYear: 1992,
+        ownerBirthMonth: 6,
+        ownerBirthDay: 15,
+      },
+    })
+    expect(parsePlan(plan).ok).toBe(true)
+  })
+
+  it('accepts February 29 on a leap year', () => {
+    const plan = withTraditionalInherited({
+      ownerDeathYear: 2022,
+      decedentHadStartedRmds: false,
+      beneficiary: {
+        ...fullBeneficiary,
+        ownerBirthYear: 1960,
+        ownerBirthMonth: 2,
+        ownerBirthDay: 29,
+      },
+    })
+    expect(parsePlan(plan).ok).toBe(true)
+  })
+
+  it.each([
+    ['February 31', 2, 31],
+    ['April 31', 4, 31],
+  ])('rejects %s as an impossible owner birth date', (_label, month, day) => {
+    const plan = withTraditionalInherited({
+      ownerDeathYear: 2022,
+      decedentHadStartedRmds: false,
+      beneficiary: {
+        ...fullBeneficiary,
+        ownerBirthYear: 1960,
+        ownerBirthMonth: month,
+        ownerBirthDay: day,
+      },
+    })
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(false)
+    if (!parsed.ok) {
+      expect(parsed.issues.join('\n')).toContain('must form a real calendar date')
+    }
+  })
+
+  it('rejects an owner birth day without a birth month', () => {
+    const plan = withTraditionalInherited({
+      ownerDeathYear: 2022,
+      decedentHadStartedRmds: false,
+      beneficiary: { ...fullBeneficiary, ownerBirthYear: 1960, ownerBirthDay: 15 },
+    })
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(false)
+    if (!parsed.ok) {
+      expect(parsed.issues.join('\n')).toContain('ownerBirthMonth is required when ownerBirthDay is provided')
+    }
+  })
+
+  it('rejects an owner birth month and day without a birth year', () => {
+    const plan = withTraditionalInherited({
+      ownerDeathYear: 2022,
+      decedentHadStartedRmds: false,
+      beneficiary: { ...fullBeneficiary, ownerBirthMonth: 2, ownerBirthDay: 29 },
+    })
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(false)
+    if (!parsed.ok) {
+      expect(parsed.issues.join('\n')).toContain('ownerBirthYear is required when ownerBirthMonth and ownerBirthDay are both provided')
+    }
+  })
+
+  it('rejects a blank provenance source', () => {
+    const plan = withTraditionalInherited({
+      ownerDeathYear: 2022,
+      decedentHadStartedRmds: false,
+      beneficiary: {
+        ...fullBeneficiary,
+        provenance: { source: '   ', asOf: '2026-08-08' },
+      },
+    })
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(false)
+    if (!parsed.ok) expect(parsed.issues.join('\n')).toContain('provenance.source must be non-blank')
+  })
+
+  it('rejects a non-real provenance date', () => {
+    const plan = withTraditionalInherited({
+      ownerDeathYear: 2022,
+      decedentHadStartedRmds: false,
+      beneficiary: {
+        ...fullBeneficiary,
+        provenance: { source: 'custodian statement', asOf: '2026-02-30' },
+      },
+    })
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(false)
+    if (!parsed.ok) expect(parsed.issues.join('\n')).toContain('provenance.asOf must be a real calendar date')
   })
 
   it('rejects a designated-individual beneficiary without a birth year', () => {
@@ -1883,7 +2000,7 @@ describe('inherited-IRA beneficiary facts (WS2)', () => {
         beneficiaryClass: 'designated-individual',
         edbCategory: 'none',
         soleBeneficiary: true,
-        provenance: { source: 'custodian statement', asOf: 2026 },
+        provenance: { source: 'custodian statement', asOf: '2026-08-08' },
       },
     })
     const parsed = parsePlan(plan)
@@ -1891,6 +2008,26 @@ describe('inherited-IRA beneficiary facts (WS2)', () => {
     if (!parsed.ok) {
       expect(parsed.issues.join('\n')).toContain(
         "beneficiaryBirthYear is required when beneficiaryClass is 'designated-individual'",
+      )
+    }
+  })
+
+  it('rejects a designated-individual beneficiary without soleBeneficiary', () => {
+    const plan = withTraditionalInherited({
+      ownerDeathYear: 2022,
+      decedentHadStartedRmds: false,
+      beneficiary: {
+        beneficiaryClass: 'designated-individual',
+        edbCategory: 'none',
+        beneficiaryBirthYear: 1980,
+        provenance: { source: 'custodian statement', asOf: '2026-08-08' },
+      },
+    })
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(false)
+    if (!parsed.ok) {
+      expect(parsed.issues.join('\n')).toContain(
+        "soleBeneficiary is required when beneficiaryClass is 'designated-individual'",
       )
     }
   })

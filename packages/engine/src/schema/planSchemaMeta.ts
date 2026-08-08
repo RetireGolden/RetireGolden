@@ -69,6 +69,10 @@ export const PLAN_SCHEMA_UNREPRESENTABLE_CONSTRAINTS: readonly string[] = [
   'ownerYearOfDeathRmdSatisfied is allowed only for a post-RBD decedent (decedentHadStartedRmds true).',
   "election 'ten-year-election' is refused for post-RBD deaths (decedentHadStartedRmds true).",
   "beneficiaryClass 'designated-individual' requires beneficiaryBirthYear.",
+  'beneficiary ownerBirthYear cannot be after ownerDeathYear; an owner cannot be born after their own death (equality is permitted at year precision).',
+  'when ownerBirthYear, ownerBirthMonth, and ownerBirthDay are all present they must form a real calendar date; ownerBirthDay requires ownerBirthMonth, and ownerBirthMonth plus ownerBirthDay require ownerBirthYear.',
+  'beneficiary provenance.source must contain at least one non-whitespace character, and provenance.asOf must be a real ISO calendar date (YYYY-MM-DD).',
+  "beneficiaryClass 'designated-individual' requires soleBeneficiary; non-individual and successor classes may omit it.",
   'the designated-individual beneficiaryBirthYear cannot be after ownerDeathYear; successor beneficiaries and non-individual classes are exempt from this chronology check.',
   // Allocation
   'account allocation weights must sum to 100% (±0.5); a linear glidepath must end after it starts.',
