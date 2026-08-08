@@ -53,6 +53,7 @@ export const REPORT_BLOCK_IDS = [
   'modeled-findings',
   'household',
   'accounts',
+  'inherited-schedules',
   'income-sources',
   'assumptions',
   'aca-ledger',
@@ -287,6 +288,8 @@ export interface ReportInheritedScheduleAccount {
   isLegacyApproximation: boolean
   /** True when any year carried a classifier refusal or unsupported flag. */
   isRefusal: boolean
+  /** True when post-death years use the successor-clock-out-of-scope path. */
+  isSuccessorScope: boolean
   needsProfessionalConfirmation: boolean
   /** Short labeled notes for limitations / disclosures / notice-waived. */
   notes: string[]
@@ -385,6 +388,8 @@ export interface ReportModel {
     'modeled-findings': ReportRecommendationEvidence | null
     'household': ReportHouseholdBlock
     'accounts': ReportAccountsBlock
+    /** Present only when the plan carries inherited accounts. */
+    'inherited-schedules': ReportInheritedSchedulesBlock
     'income-sources': ReportIncomeSourcesBlock
     'assumptions': ReportAssumptionsBlock
     'aca-ledger': ReportAcaLedgerBlock
@@ -610,7 +615,7 @@ const DISCLOSURE_NOTE_LABELS: Record<string, string> = {
   'deemed-election-risk':
     'A missed beneficiary RMD or an owner-style contribution can silently convert the account.',
   'roth-taxability-needs-review':
-    'Roth earnings taxability is uncertain; the 5-year start year is not recorded.',
+    "The owner's five-year start is unknown, so some earnings could be taxable when withdrawn; this model does not compute that tax.",
   'edb-category-year-precision-unverified':
     'EDB category is uncertain at year-only birth precision.',
   'successor-clock-out-of-scope':
@@ -642,6 +647,35 @@ export function inheritedRequirementKindLabel(
   kind: InheritedAccountYearEvidence['requirementKind'],
 ): string {
   return INHERITED_REQUIREMENT_KIND_LABELS[kind] ?? kind
+}
+
+/** Requirement-kind label for one schedule year, with treat-as-own post-flip routing. */
+export function inheritedRequirementKindLabelForYear(
+  account: Account,
+  year: number,
+  kind: InheritedAccountYearEvidence['requirementKind'],
+): string {
+  const beneficiary =
+    'inherited' in account && account.inherited !== undefined
+      ? account.inherited.beneficiary
+      : undefined
+  const electionYear = beneficiary?.treatAsOwnElectionYear
+  if (
+    kind === 'none' &&
+    beneficiary?.election === 'treat-as-own' &&
+    electionYear !== undefined &&
+    year >= electionYear
+  ) {
+    return 'Owner RMD rules apply from the election year.'
+  }
+  return inheritedRequirementKindLabel(kind)
+}
+
+function isSuccessorScopeEvidence(evidence: InheritedAccountYearEvidence): boolean {
+  return (
+    evidence.requirementKind === 'none' &&
+    evidence.disclosures.includes('successor-clock-out-of-scope')
+  )
 }
 
 /**
@@ -801,14 +835,18 @@ export function buildInheritedSchedules(
     const citations = new Set<string>()
     let needsConfirm = false
     let isRefusal = false
+    let isSuccessorScope = false
     let refusalReason: string | null = null
     let finalDeadlineYear: number | null = null
-    let classification: 'settled' | 'unsettled' | null = null
+    let hasUnsettledClassification = false
+    let hasSettledClassification = false
 
     for (const { evidence } of yearRows) {
-      if (evidence.classification) classification = evidence.classification
+      if (evidence.classification === 'unsettled') hasUnsettledClassification = true
+      if (evidence.classification === 'settled') hasSettledClassification = true
       if (evidence.finalDeadlineYear !== undefined) finalDeadlineYear = evidence.finalDeadlineYear
-      if (evidence.refusalReason) {
+      if (isSuccessorScopeEvidence(evidence)) isSuccessorScope = true
+      if (evidence.refusalReason && !isSuccessorScopeEvidence(evidence)) {
         isRefusal = true
         refusalReason = evidence.refusalReason
       }
@@ -820,6 +858,12 @@ export function buildInheritedSchedules(
       for (const citation of evidence.citations) citations.add(citation)
       if (needsProfessionalConfirmation(evidence)) needsConfirm = true
     }
+
+    const classification: 'settled' | 'unsettled' | null = hasUnsettledClassification
+      ? 'unsettled'
+      : hasSettledClassification
+        ? 'settled'
+        : null
 
     const isLegacyApproximation =
       primary.regime === 'legacy-planning-approximation' ||
@@ -838,6 +882,7 @@ export function buildInheritedSchedules(
       refusalReason,
       isLegacyApproximation,
       isRefusal,
+      isSuccessorScope,
       needsProfessionalConfirmation: needsConfirm,
       notes: [...notes],
       citations: [...citations],
@@ -845,7 +890,7 @@ export function buildInheritedSchedules(
       years: yearRows.map(({ year, evidence }) => ({
         year,
         requirementKind: evidence.requirementKind,
-        kindLabel: inheritedRequirementKindLabel(evidence.requirementKind),
+        kindLabel: inheritedRequirementKindLabelForYear(account, year, evidence.requirementKind),
         requiredAmount: roundDollar(evidence.requiredAmount),
         executedRequiredAmount: roundDollar(evidence.executedRequiredAmount),
         voluntaryAmount: roundDollar(evidence.voluntaryAmount),
@@ -917,6 +962,7 @@ export function buildReportModel(input: ReportModelInput): ReportModel {
           annualReturnPct: 'annualReturnPct' in a ? a.annualReturnPct : null,
         })),
       },
+      'inherited-schedules': buildInheritedSchedules(plan, result.years),
       'income-sources': {
         rows: plan.incomes.map((s) => ({
           id: s.id,

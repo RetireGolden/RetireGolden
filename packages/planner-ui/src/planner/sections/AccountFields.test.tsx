@@ -372,6 +372,49 @@ describe('AccountFields inherited beneficiary details', () => {
     expect(account.inherited?.beneficiary?.edbCategory).toBe('disabled')
     expect(account.inherited?.beneficiary?.election).toBeUndefined()
     expect(account.inherited?.beneficiary?.treatAsOwnElectionYear).toBeUndefined()
+    expect(account.inherited?.beneficiary?.spouseUnlimitedWithdrawalRight).toBeUndefined()
+    const parsed = parsePlan(structuredClone(mounted.plan))
+    expect(parsed.ok).toBe(true)
+  })
+
+  it('clears spouseUnlimitedWithdrawalRight when the EDB category leaves surviving-spouse (parse-valid)', () => {
+    const plan = planWithAccount(retirementAccount({
+      inherited: {
+        ownerDeathYear: 2024,
+        decedentHadStartedRmds: true,
+        beneficiary: {
+          beneficiaryClass: 'designated-individual',
+          edbCategory: 'surviving-spouse',
+          beneficiaryBirthYear: 1965,
+          soleBeneficiary: true,
+          election: 'treat-as-own',
+          treatAsOwnElectionYear: 2025,
+          spouseUnlimitedWithdrawalRight: true,
+          ownerBirthYear: 1945,
+          ownerYearOfDeathRmdSatisfied: true,
+          provenance: { source: 'user-entered', asOf: '2026-08-08' },
+        },
+      },
+    }))
+    plan.accounts[0]!.ownerPersonId = plan.household.people[0]!.id
+    const mounted = mountEditable(plan)
+
+    act(() => {
+      const select = controlByLabel<HTMLSelectElement>(
+        mounted.container(),
+        'Eligible designated beneficiary category',
+      )
+      // 'disabled' keeps the fixture parse-coherent: a 1965-born beneficiary
+      // cannot be a minor child of a 2024 decedent (parse rejects age >= 22).
+      select.value = 'disabled'
+      select.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+
+    const account = mounted.plan.accounts[0]!
+    expect(account.inherited?.beneficiary?.edbCategory).toBe('disabled')
+    expect(account.inherited?.beneficiary?.spouseUnlimitedWithdrawalRight).toBeUndefined()
+    expect(account.inherited?.beneficiary?.election).toBeUndefined()
+    expect(account.inherited?.beneficiary?.treatAsOwnElectionYear).toBeUndefined()
     const parsed = parsePlan(structuredClone(mounted.plan))
     expect(parsed.ok).toBe(true)
   })
@@ -408,5 +451,35 @@ describe('AccountFields inherited beneficiary details', () => {
     expect(account.inherited?.beneficiary?.ownerYearOfDeathRmdSatisfied).toBeUndefined()
     const parsed = parsePlan(structuredClone(mounted.plan))
     expect(parsed.ok).toBe(true)
+  })
+})
+
+describe('AccountFields inherited Roth contributions', () => {
+  it('clears contributions and hides contribution inputs when inherited is enabled on a Roth account', () => {
+    const plan = planWithAccount(rothAccount({
+      annualContribution: 7_000,
+      contributionSchedule: [{ annualAmount: 7_000, fromAge: null, toAge: null, escalationPct: 0 }],
+    }))
+    const mounted = mountEditable(plan)
+
+    // The contribution controls may render collapsed at mount; the load-bearing
+    // behavior is that enabling inherited clears the stored amounts and shows
+    // the hint while no contribution control remains labeled on the panel.
+    act(() => {
+      const box = controlByLabel<HTMLInputElement>(mounted.container(), 'Inherited Roth account')
+      box.click()
+    })
+
+    const account = mounted.plan.accounts[0]!
+    expect(account.type).toBe('roth')
+    if (account.type !== 'roth') throw new Error('expected roth')
+    expect(account.inherited).toBeDefined()
+    expect(account.annualContribution).toBe(0)
+    expect(account.contributionSchedule).toBeUndefined()
+    expect(mounted.container().textContent).toContain('Inherited accounts cannot receive contributions.')
+    const labelTexts = Array.from(mounted.container().querySelectorAll('label'))
+      .map((label) => label.textContent ?? '')
+    expect(labelTexts.some((text) => text.includes('Annual contribution'))).toBe(false)
+    expect(labelTexts.some((text) => text.includes('Schedule contributions over time'))).toBe(false)
   })
 })

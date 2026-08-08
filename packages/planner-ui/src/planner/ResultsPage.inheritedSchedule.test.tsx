@@ -202,6 +202,7 @@ describe('InheritedSchedulesSection', () => {
     expect(html).toContain(
       'The simpler planning estimate empties the account by the 10th year after the owner',
     )
+    expect(html).toContain('Confirm this schedule with a tax professional')
   })
 
   it('names a treat-as-own account from primary classification and routes the null deadline', () => {
@@ -290,7 +291,9 @@ describe('InheritedSchedulesSection', () => {
     const html = renderSection(plan, [yearWithEvidence(2026, [evidence])])
     expect(html).toContain('Needs review')
     expect(html).toContain('simpler planning estimate')
-    expect(html).toContain('The model does not cover these facts: estates and trusts are not modeled')
+    expect(html).toContain(
+      'The model does not cover these facts: estates, trusts, and other entities are not modeled',
+    )
     expect(html).toContain('Technical detail')
     // renderToStaticMarkup HTML-escapes apostrophes in text nodes.
     expect(html).toMatch(/beneficiaryClass &#x27;estate&#x27; is unsupported/)
@@ -304,5 +307,53 @@ describe('InheritedSchedulesSection', () => {
     const plan = basePlan()
     const html = renderSection(plan, [yearWithEvidence(2026, [])])
     expect(html).toBe('')
+  })
+
+  it('shows a successor-scope note without the refusal callout', () => {
+    const plan = basePlan((p) => {
+      p.accounts.push({
+        type: 'traditional',
+        id: 'edb-ira',
+        name: 'EDB Inherited IRA',
+        ownerPersonId: 'p1',
+        annualReturnPct: null,
+        kind: 'ira',
+        balance: 200_000,
+        annualContribution: 0,
+        inherited: {
+          ownerDeathYear: 2020,
+          decedentHadStartedRmds: true,
+          beneficiary: {
+            beneficiaryClass: 'designated-individual',
+            edbCategory: 'disabled',
+            beneficiaryBirthYear: 1960,
+            soleBeneficiary: true,
+            ownerBirthYear: 1940,
+            ownerYearOfDeathRmdSatisfied: true,
+            provenance: { source: 'user-entered', asOf: '2026-01-01' },
+          },
+        },
+      })
+    })
+    const evidence: InheritedAccountYearEvidence = {
+      accountId: 'edb-ira',
+      ownerPersonId: 'p1',
+      regime: 'edb-life-expectancy',
+      matrixRow: 'E1',
+      classification: 'settled',
+      requirementKind: 'none',
+      requiredAmount: 0,
+      executedRequiredAmount: 0,
+      voluntaryAmount: 0,
+      refusalReason:
+        'beneficiary death starts the successor 10-year clock (IRC §401(a)(9)(H)(iii); Treas. Reg. §1.401(a)(9)-5(e)(3); matrix X2); successor schedules are out of scope',
+      disclosures: ['successor-clock-out-of-scope'],
+      citations: ['IRC §401(a)(9)(H)(iii)'],
+    }
+    const html = renderSection(plan, [yearWithEvidence(2028, [evidence])])
+    expect(html).toContain('successor schedules are not modeled')
+    expect(html).not.toContain('Needs review')
+    expect(html).not.toContain('The model does not cover these facts, so it shows the limitation')
+    expect(html).toContain('Confirm this schedule with a tax professional')
   })
 })

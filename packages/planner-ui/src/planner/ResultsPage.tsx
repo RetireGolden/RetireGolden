@@ -40,6 +40,7 @@ import {
   type ReportInheritedScheduleAccount,
 } from '../report/reportModel'
 import { needsProfessionalConfirmation } from './professionalConfirmation'
+import { csvEscape, inheritedCsvColumnHeaders } from './inheritedCsv'
 import { fmtMoney, fmtMoneyCompact } from './format'
 import { useProjection } from './useProjection'
 import { BucketLensCard } from './BucketLensCard'
@@ -136,19 +137,12 @@ function plainRefusalCause(refusalReason: string): string {
     lower.includes('entity') ||
     lower.includes('non-individual')
   ) {
-    return 'estates and trusts are not modeled'
+    return 'estates, trusts, and other entities are not modeled'
   }
   if (lower.includes('before 2020') || lower.includes('pre-secure')) {
     return 'death before 2020 predates the modeled rules'
   }
   return 'facts are contradictory or incomplete'
-}
-
-/** Quote a CSV cell when it contains commas, quotes, or newlines. */
-function csvEscape(value: string): string {
-  if (value === '') return value
-  if (/[",\n\r]/.test(value)) return `"${value.replace(/"/g, '""')}"`
-  return value
 }
 
 /**
@@ -201,6 +195,12 @@ function InheritedAccountSchedule({
       <summary>
         {details.accountName}: {details.regimeLabel}
       </summary>
+      {details.isSuccessorScope ? (
+        <p className="field-hint">
+          After the beneficiary&apos;s death the account passes to a successor; successor schedules are not modeled and
+          no amounts are forced.
+        </p>
+      ) : null}
       {details.isRefusal ? (
         <div className="callout callout--warn" role="status">
           <strong>Needs review</strong>
@@ -512,14 +512,7 @@ export function ResultsPage() {
     const inheritedIds = inheritedAccountIds(plan)
     // Per-account inherited columns, flattened in plan account order (same
     // convention as the rest of this ledger export).
-    const inheritedCols = inheritedIds.flatMap((id) => [
-      `inherited_${id}_requiredAmount`,
-      `inherited_${id}_executedRequiredAmount`,
-      `inherited_${id}_voluntaryAmount`,
-      `inherited_${id}_requirementKind`,
-      `inherited_${id}_confirmWithProfessional`,
-      `inherited_${id}_note`,
-    ])
+    const inheritedCols = inheritedCsvColumnHeaders(inheritedIds)
     const cols = [
       'year', 'filingStatus', 'wages', 'socialSecurity', 'pension', 'annuity', 'tipsLadder', 'recurring', 'oneTimeIncome', 'taxableInterest', 'taxExemptInterest', 'ordinaryDividends', 'qualifiedDividends', 'taxableYield', 'totalIncome',
       'baseSpending', 'goals', 'debtService', 'propertyCosts', 'healthcare', 'insurancePremiums', 'careCost', 'ltcBenefit', 'requiredSpending', 'targetSpending', 'idealSpending', 'excessSpending', 'intendedSpending', 'totalExpenses', 'contributions', 'employerMatch', 'rmd', 'qcd',
@@ -539,8 +532,8 @@ export function ResultsPage() {
           row.requiredAmount,
           row.executedRequiredAmount,
           row.voluntaryAmount,
-          row.requirementKind,
-          confirm,
+          csvEscape(row.requirementKind),
+          csvEscape(confirm),
           note,
         ]
       })

@@ -181,12 +181,16 @@ function BeneficiaryDetails({
                 onCommit={(edbCategory) => {
                   // Changing category always drops election-scoped fields so a
                   // prior spouse or treat-as-own fact cannot linger under a new class.
-                  commit({
+                  const next = {
                     ...beneficiary,
                     edbCategory,
                     election: undefined,
                     treatAsOwnElectionYear: undefined,
-                  })
+                  }
+                  if (edbCategory !== 'surviving-spouse') {
+                    next.spouseUnlimitedWithdrawalRight = undefined
+                  }
+                  commit(next)
                 }}
               />
               <NumberField
@@ -569,7 +573,26 @@ export function AccountFields({ account, index }: { account: Account; index: num
             ? "An inherited Roth account follows beneficiary distribution rules and requires beneficiary details in this planner. The original Roth owner is treated as dying before the required beginning date."
             : "A non-spouse beneficiary must empty an inherited IRA/401(k) by the end of the 10th year after the original owner's death. Distributions are taxable but never carry the 10% early-withdrawal penalty, and the account is exempt from your own age-based RMDs."}
           value={account.inherited !== undefined}
-          onCommit={(v) => set('inherited', v ? { ownerDeathYear: new Date().getFullYear() - 1, decedentHadStartedRmds: false } : undefined)}
+          onCommit={(v) => {
+            if (!v) {
+              set('inherited', undefined)
+              return
+            }
+            const inherited = {
+              ownerDeathYear: new Date().getFullYear() - 1,
+              decedentHadStartedRmds: false,
+            }
+            if (account.type === 'roth') {
+              update((draft) => {
+                const target = draft.accounts[index] as Extract<Account, { type: 'roth' }>
+                target.inherited = inherited
+                target.annualContribution = 0
+                target.contributionSchedule = undefined
+              })
+              return
+            }
+            set('inherited', inherited)
+          }}
         />
       ) : null}
       {(account.type === 'traditional' || account.type === 'roth') && account.inherited ? (
@@ -730,7 +753,10 @@ export function AccountFields({ account, index }: { account: Account; index: num
       {isAllocatable(account) && account.allocation !== undefined ? (
         <AllocationPanel account={account} plan={plan} onCommit={(a) => set('allocation', a)} />
       ) : null}
-      {'annualContribution' in account ? (
+      {account.type === 'roth' && account.inherited ? (
+        <p className="field-hint">Inherited accounts cannot receive contributions.</p>
+      ) : null}
+      {'annualContribution' in account && !(account.type === 'roth' && account.inherited) ? (
         <>
           <CheckboxField
             label="Schedule contributions over time"

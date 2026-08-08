@@ -31,7 +31,7 @@ export function provenanceSource(id: string): SourceLink {
 /**
  * Base eCFR section for a Treas. Reg. citation. Subparagraph suffixes
  * (e.g. `(d)(1)(i)–(ii)`) fall outside the section stem so the link targets
- * the published section page. Returns null when the string is not a mapable
+ * the published section page. Returns null when the string is not a mappable
  * Treasury regulation (IRC, Notices, internal docs stay unlinked).
  */
 export function citationHref(citation: string): string | null {

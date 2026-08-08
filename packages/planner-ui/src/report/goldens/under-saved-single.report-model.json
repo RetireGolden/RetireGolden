@@ -404,6 +404,9 @@
         }
       ]
     },
+    "inherited-schedules": {
+      "accounts": []
+    },
     "modeled-findings": null,
     "modeling-notes": {
       "warnings": []

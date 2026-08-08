@@ -10,7 +10,11 @@ export function needsProfessionalConfirmation(row: {
   limitation?: string
   disclosures?: readonly string[]
   refusalReason?: string
+  requirementKind?: string
+  regime?: string
 }): boolean {
+  if (row.requirementKind === 'legacy') return true
+  if (row.regime === 'legacy-planning-approximation') return true
   if (row.classification === 'unsettled') return true
   if (row.limitation) return true
   if (row.refusalReason) return true

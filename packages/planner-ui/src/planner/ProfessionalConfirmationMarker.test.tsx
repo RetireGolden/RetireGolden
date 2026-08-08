@@ -15,11 +15,15 @@ describe('needsProfessionalConfirmation', () => {
     ).toBe(false)
   })
 
-  it('is true for unsettled, limitation, disclosure, or refusal', () => {
+  it('is true for unsettled, limitation, disclosure, refusal, or legacy schedule', () => {
     expect(needsProfessionalConfirmation({ classification: 'unsettled', disclosures: [] })).toBe(true)
     expect(needsProfessionalConfirmation({ limitation: 'pre-horizon-year-of-death-rmd-unresolved', disclosures: [] })).toBe(true)
     expect(needsProfessionalConfirmation({ disclosures: ['deemed-election-risk'] })).toBe(true)
     expect(needsProfessionalConfirmation({ refusalReason: 'estate not modeled', disclosures: [] })).toBe(true)
+    expect(needsProfessionalConfirmation({ requirementKind: 'legacy', disclosures: [] })).toBe(true)
+    expect(
+      needsProfessionalConfirmation({ regime: 'legacy-planning-approximation', disclosures: [] }),
+    ).toBe(true)
   })
 })
 

@@ -568,6 +568,9 @@
         }
       ]
     },
+    "inherited-schedules": {
+      "accounts": []
+    },
     "modeled-findings": {
       "candidates": [
         {
