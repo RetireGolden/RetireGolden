@@ -41,7 +41,7 @@ import { isPlanIncomplete } from '../planner/planCompleteness'
 import { needsProfessionalConfirmation } from '../planner/professionalConfirmation'
 
 export const REPORT_MODEL_KIND = 'retiregolden.report-model'
-export const REPORT_MODEL_VERSION = 2
+export const REPORT_MODEL_VERSION = 3
 
 /**
  * Stable identities of every block the model carries. Downstream templates

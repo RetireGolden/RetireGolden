@@ -490,6 +490,180 @@ describe('AccountFields inherited beneficiary details', () => {
     const parsed = parsePlan(structuredClone(mounted.plan))
     expect(parsed.ok).toBe(true)
   })
+
+  it('clears ten-year-election when decedentHadStartedRmds is toggled on (parse-valid)', () => {
+    const plan = planWithAccount(retirementAccount({
+      inherited: {
+        ownerDeathYear: 2024,
+        decedentHadStartedRmds: false,
+        beneficiary: {
+          beneficiaryClass: 'designated-individual',
+          edbCategory: 'disabled',
+          beneficiaryBirthYear: 1970,
+          soleBeneficiary: true,
+          election: 'ten-year-election',
+          ownerBirthYear: 1945,
+          provenance: { source: 'user-entered', asOf: '2026-08-08' },
+        },
+      },
+    }))
+    plan.accounts[0]!.ownerPersonId = plan.household.people[0]!.id
+    const mounted = mountEditable(plan)
+
+    act(() => {
+      const box = controlByLabel<HTMLInputElement>(mounted.container(), 'Owner had started RMDs')
+      box.click()
+    })
+
+    const account = mounted.plan.accounts[0]!
+    expect(account.inherited?.decedentHadStartedRmds).toBe(true)
+    expect(account.inherited?.beneficiary?.election).toBeUndefined()
+    const parsed = parsePlan(structuredClone(mounted.plan))
+    expect(parsed.ok).toBe(true)
+  })
+
+  it('does not offer ten-year-election when decedentHadStartedRmds is true', () => {
+    renderFields(planWithAccount(retirementAccount({
+      inherited: {
+        ownerDeathYear: 2024,
+        decedentHadStartedRmds: true,
+        beneficiary: {
+          beneficiaryClass: 'designated-individual',
+          edbCategory: 'surviving-spouse',
+          beneficiaryBirthYear: 1965,
+          soleBeneficiary: false,
+          ownerBirthYear: 1945,
+          ownerYearOfDeathRmdSatisfied: true,
+          provenance: { source: 'user-entered', asOf: '2026-08-08' },
+        },
+      },
+    })))
+
+    const select = controlByLabel<HTMLSelectElement>(container!, 'Distribution election')
+    const labels = Array.from(select.options).map((option) => option.label)
+    expect(labels).toContain('Remain beneficiary')
+    expect(labels).not.toContain('Elect 10-year rule')
+  })
+
+  it('clears treat-as-own and dependent facts when sole beneficiary becomes false (parse-valid)', () => {
+    const plan = planWithAccount(retirementAccount({
+      inherited: {
+        ownerDeathYear: 2024,
+        decedentHadStartedRmds: true,
+        beneficiary: {
+          beneficiaryClass: 'designated-individual',
+          edbCategory: 'surviving-spouse',
+          beneficiaryBirthYear: 1965,
+          soleBeneficiary: true,
+          election: 'treat-as-own',
+          treatAsOwnElectionYear: 2025,
+          spouseUnlimitedWithdrawalRight: true,
+          ownerBirthYear: 1945,
+          ownerYearOfDeathRmdSatisfied: true,
+          provenance: { source: 'user-entered', asOf: '2026-08-08' },
+        },
+      },
+    }))
+    plan.accounts[0]!.ownerPersonId = plan.household.people[0]!.id
+    const mounted = mountEditable(plan)
+
+    act(() => {
+      const select = controlByLabel<HTMLSelectElement>(mounted.container(), 'Sole beneficiary')
+      select.value = 'false'
+      select.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+
+    const account = mounted.plan.accounts[0]!
+    expect(account.inherited?.beneficiary?.soleBeneficiary).toBe(false)
+    expect(account.inherited?.beneficiary?.election).toBeUndefined()
+    expect(account.inherited?.beneficiary?.treatAsOwnElectionYear).toBeUndefined()
+    expect(account.inherited?.beneficiary?.spouseUnlimitedWithdrawalRight).toBeUndefined()
+    const parsed = parsePlan(structuredClone(mounted.plan))
+    expect(parsed.ok).toBe(true)
+  })
+
+  it('does not offer treat-as-own when the spouse is not the sole beneficiary', () => {
+    renderFields(planWithAccount(retirementAccount({
+      inherited: {
+        ownerDeathYear: 2024,
+        decedentHadStartedRmds: true,
+        beneficiary: {
+          beneficiaryClass: 'designated-individual',
+          edbCategory: 'surviving-spouse',
+          beneficiaryBirthYear: 1965,
+          soleBeneficiary: false,
+          ownerBirthYear: 1945,
+          ownerYearOfDeathRmdSatisfied: true,
+          provenance: { source: 'user-entered', asOf: '2026-08-08' },
+        },
+      },
+    })))
+
+    const select = controlByLabel<HTMLSelectElement>(container!, 'Distribution election')
+    const labels = Array.from(select.options).map((option) => option.label)
+    expect(labels).toContain('Remain beneficiary')
+    expect(labels).not.toContain('Treat as own IRA')
+  })
+
+  it('preserves class-independent beneficiary facts when beneficiary class changes (parse-valid)', () => {
+    const plan = planWithAccount(retirementAccount({
+      inherited: {
+        ownerDeathYear: 2024,
+        decedentHadStartedRmds: true,
+        beneficiary: {
+          beneficiaryClass: 'designated-individual',
+          edbCategory: 'surviving-spouse',
+          beneficiaryBirthYear: 1965,
+          soleBeneficiary: true,
+          election: 'remain-beneficiary',
+          ownerBirthYear: 1945,
+          ownerBirthMonth: 6,
+          ownerBirthDay: 15,
+          ownerYearOfDeathRmdSatisfied: true,
+          provenance: { source: 'custodian statement', asOf: '2026-08-08' },
+        },
+      },
+    }))
+    plan.accounts[0]!.ownerPersonId = plan.household.people[0]!.id
+    const mounted = mountEditable(plan)
+
+    act(() => {
+      const select = controlByLabel<HTMLSelectElement>(mounted.container(), 'Beneficiary class')
+      select.value = 'estate'
+      select.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+
+    const beneficiary = mounted.plan.accounts[0]!.type === 'traditional'
+      ? mounted.plan.accounts[0]!.inherited?.beneficiary
+      : undefined
+    expect(beneficiary?.beneficiaryClass).toBe('estate')
+    expect(beneficiary?.ownerBirthYear).toBe(1945)
+    expect(beneficiary?.ownerBirthMonth).toBe(6)
+    expect(beneficiary?.ownerBirthDay).toBe(15)
+    expect(beneficiary?.ownerYearOfDeathRmdSatisfied).toBe(true)
+    expect(beneficiary?.provenance).toEqual({ source: 'custodian statement', asOf: '2026-08-08' })
+    expect(beneficiary?.edbCategory).toBeUndefined()
+    expect(beneficiary?.beneficiaryBirthYear).toBeUndefined()
+    expect(beneficiary?.soleBeneficiary).toBeUndefined()
+    expect(beneficiary?.election).toBeUndefined()
+    expect(beneficiary?.treatAsOwnElectionYear).toBeUndefined()
+    expect(beneficiary?.spouseUnlimitedWithdrawalRight).toBeUndefined()
+    const parsed = parsePlan(structuredClone(mounted.plan))
+    expect(parsed.ok).toBe(true)
+  })
+
+  it('shows a workplace hint instead of beneficiary details for inherited employer accounts', () => {
+    renderFields(planWithAccount(retirementAccount({
+      kind: 'employer',
+      inherited: { ownerDeathYear: 2024, decedentHadStartedRmds: false },
+    })))
+
+    expect(container?.querySelector('[data-testid="inherited-employer-hint"]')?.textContent).toBe(
+      'Beneficiary details apply to inherited IRAs. Inherited workplace plans stay on the simpler planning estimate.',
+    )
+    expect(container?.querySelector('[data-testid="beneficiary-details-panel"]')).toBeNull()
+    expect(container?.textContent).not.toContain('Use beneficiary details')
+  })
 })
 
 describe('localCalendarDateIso', () => {

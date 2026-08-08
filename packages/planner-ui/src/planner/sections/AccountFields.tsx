@@ -15,6 +15,7 @@ import {
   EVEN_START_WEIGHTS,
   isAllocatable,
   isIndividuallyOwnedAccount,
+  localCalendarDateIso,
   showTaxExemptAllocationDoubleCountWarning,
   TAX_EXEMPT_ALLOCATION_DOUBLE_COUNT_WARNING,
   type AllocatableAccount,
@@ -99,11 +100,22 @@ const ELECTION_SOURCE = {
   url: 'https://www.ecfr.gov/current/title-26/section-1.408-8',
 }
 
-function newBeneficiary(beneficiaryClass: InheritedBeneficiary['beneficiaryClass']): InheritedBeneficiary {
-  return {
+function beneficiaryWithClass(
+  beneficiaryClass: InheritedBeneficiary['beneficiaryClass'],
+  prior?: InheritedBeneficiary,
+): InheritedBeneficiary {
+  const next: InheritedBeneficiary = {
     beneficiaryClass,
-    provenance: { source: 'user-entered', asOf: localCalendarDateIso() },
+    provenance: prior?.provenance ?? { source: 'user-entered', asOf: localCalendarDateIso() },
   }
+  if (prior?.ownerBirthYear !== undefined) next.ownerBirthYear = prior.ownerBirthYear
+  if (prior?.ownerBirthMonth !== undefined) next.ownerBirthMonth = prior.ownerBirthMonth
+  if (prior?.ownerBirthDay !== undefined) next.ownerBirthDay = prior.ownerBirthDay
+  if (prior?.ownerYearOfDeathRmdSatisfied !== undefined) {
+    next.ownerYearOfDeathRmdSatisfied = prior.ownerYearOfDeathRmdSatisfied
+  }
+  if (prior?.roth5YearStartYear !== undefined) next.roth5YearStartYear = prior.roth5YearStartYear
+  return next
 }
 
 function BeneficiaryDetails({
@@ -123,7 +135,12 @@ function BeneficiaryDetails({
   const commit = (next: InheritedBeneficiary) => onCommit({ ...inherited, beneficiary: next })
   const isDesignatedIndividual = beneficiary?.beneficiaryClass === 'designated-individual'
   const isSpouse = beneficiary?.edbCategory === 'surviving-spouse'
-  const mayElectTenYear = isDesignatedIndividual && beneficiary?.edbCategory !== undefined && beneficiary.edbCategory !== 'none'
+  const mayElectTenYear =
+    isDesignatedIndividual &&
+    beneficiary?.edbCategory !== undefined &&
+    beneficiary.edbCategory !== 'none' &&
+    !inherited.decedentHadStartedRmds
+  const mayElectTreatAsOwn = isSpouse && beneficiary?.soleBeneficiary === true
 
   return (
     <div className="nested-form-section field-span-full" data-testid="beneficiary-details-panel">
@@ -156,7 +173,7 @@ function BeneficiaryDetails({
               { value: 'entity', label: 'Entity (not modeled)' },
               { value: 'successor-beneficiary', label: 'Successor beneficiary (not modeled)' },
             ]}
-            onCommit={(beneficiaryClass) => commit(newBeneficiary(beneficiaryClass))}
+            onCommit={(beneficiaryClass) => commit(beneficiaryWithClass(beneficiaryClass, beneficiary))}
           />
           {beneficiary && isDesignatedIndividual ? (
             <>
@@ -215,9 +232,20 @@ function BeneficiaryDetails({
                   { value: 'true', label: 'Yes, sole beneficiary' },
                   { value: 'false', label: 'No, one of several' },
                 ]}
-                onCommit={(value) =>
-                  commit({ ...beneficiary, soleBeneficiary: value === 'true' })
-                }
+                onCommit={(value) => {
+                  const soleBeneficiary = value === 'true'
+                  if (!soleBeneficiary && beneficiary.election === 'treat-as-own') {
+                    commit({
+                      ...beneficiary,
+                      soleBeneficiary,
+                      election: undefined,
+                      treatAsOwnElectionYear: undefined,
+                      spouseUnlimitedWithdrawalRight: undefined,
+                    })
+                    return
+                  }
+                  commit({ ...beneficiary, soleBeneficiary })
+                }}
               />
               {isSpouse || mayElectTenYear ? (
                 <SelectField
@@ -227,12 +255,8 @@ function BeneficiaryDetails({
                   value={beneficiary.election ?? 'none'}
                   options={[
                     { value: 'none', label: 'No separate election recorded' },
-                    ...(isSpouse
-                      ? [
-                          { value: 'remain-beneficiary', label: 'Remain beneficiary' },
-                          { value: 'treat-as-own', label: 'Treat as own IRA' },
-                        ]
-                      : []),
+                    ...(isSpouse ? [{ value: 'remain-beneficiary', label: 'Remain beneficiary' }] : []),
+                    ...(mayElectTreatAsOwn ? [{ value: 'treat-as-own', label: 'Treat as own IRA' }] : []),
                     ...(mayElectTenYear ? [{ value: 'ten-year-election', label: 'Elect 10-year rule' }] : []),
                   ]}
                   onCommit={(election) => {
@@ -621,7 +645,16 @@ export function AccountFields({ account, index }: { account: Account; index: num
               help="If the original owner had reached their required beginning date, you must also take an annual RMD in years 1–9 of the window (based on your single life expectancy), not just empty it by year 10."
               value={account.inherited.decedentHadStartedRmds}
               onCommit={(v) => {
-                if (v || account.inherited.beneficiary === undefined) {
+                const ben = account.inherited.beneficiary
+                if (v || ben === undefined) {
+                  if (v && ben?.election === 'ten-year-election') {
+                    set('inherited', {
+                      ...account.inherited,
+                      decedentHadStartedRmds: true,
+                      beneficiary: { ...ben, election: undefined },
+                    })
+                    return
+                  }
                   set('inherited', { ...account.inherited, decedentHadStartedRmds: v })
                   return
                 }
@@ -637,11 +670,17 @@ export function AccountFields({ account, index }: { account: Account; index: num
               }}
             />
           ) : null}
-          <BeneficiaryDetails
-            account={account}
-            inherited={account.inherited}
-            onCommit={(inherited) => set('inherited', inherited)}
-          />
+          {account.kind === 'employer' ? (
+            <p className="field-hint" data-testid="inherited-employer-hint">
+              Beneficiary details apply to inherited IRAs. Inherited workplace plans stay on the simpler planning estimate.
+            </p>
+          ) : (
+            <BeneficiaryDetails
+              account={account}
+              inherited={account.inherited}
+              onCommit={(inherited) => set('inherited', inherited)}
+            />
+          )}
         </>
       ) : null}
       {account.type === 'traditional' && !account.inherited ? (

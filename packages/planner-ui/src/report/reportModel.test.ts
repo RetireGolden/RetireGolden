@@ -51,7 +51,7 @@ describe('buildReportModel', () => {
   it('stamps identity, span, and provenance', () => {
     const model = modelFor(fixturePlan())
     expect(model.kind).toBe('retiregolden.report-model')
-    expect(model.version).toBe(2)
+    expect(model.version).toBe(3)
     expect(model.planName).toBe('Test plan')
     expect(model.generatedAtIso).toBe(GENERATED_AT)
     expect(model.startYear).toBe(START_YEAR)
@@ -216,7 +216,7 @@ describe('serializeReportModel', () => {
     expect(first.endsWith('\n')).toBe(true)
     // Sorted keys: "blocks" precedes "kind" precedes "version".
     expect(first.indexOf('"blocks"')).toBeLessThan(first.indexOf('"kind"'))
-    expect(JSON.parse(first)).toMatchObject({ kind: 'retiregolden.report-model', version: 2 })
+    expect(JSON.parse(first)).toMatchObject({ kind: 'retiregolden.report-model', version: 3 })
   })
 })
 
