@@ -902,6 +902,11 @@
                           "ten-year-election"
                         ]
                       },
+                      "treatAsOwnElectionYear": {
+                        "type": "integer",
+                        "minimum": 1900,
+                        "maximum": 2200
+                      },
                       "spouseUnlimitedWithdrawalRight": {
                         "type": "boolean"
                       },
@@ -1473,6 +1478,11 @@
                           "treat-as-own",
                           "ten-year-election"
                         ]
+                      },
+                      "treatAsOwnElectionYear": {
+                        "type": "integer",
+                        "minimum": 1900,
+                        "maximum": 2200
                       },
                       "spouseUnlimitedWithdrawalRight": {
                         "type": "boolean"

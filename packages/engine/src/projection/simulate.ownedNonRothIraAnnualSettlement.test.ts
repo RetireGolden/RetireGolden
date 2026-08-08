@@ -319,6 +319,181 @@ describe('simulator owned non-Roth IRA exact annual settlement', () => {
       .toBeCloseTo(0.5, 12)
   })
 
+  it('P1: settles owned basis alongside a K1 inherited-Roth final sweep', () => {
+    settlementController.calls.mockClear()
+    const plan = singlePersonPlan({ dob: '1960-01-01', planningAge: 80 })
+    plan.id = 'settled-owned-basis-k1-final-sweep'
+    plan.accounts = [
+      ira('owner-ira', 100_000, 25_000),
+      {
+        type: 'roth',
+        id: 'inherited-roth',
+        name: 'Inherited Roth IRA',
+        ownerPersonId: 'p1',
+        annualReturnPct: 0,
+        kind: 'ira',
+        balance: 50_000,
+        annualContribution: 0,
+        inherited: {
+          ownerDeathYear: 2022,
+          decedentHadStartedRmds: false,
+          beneficiary: {
+            beneficiaryClass: 'designated-individual',
+            edbCategory: 'none',
+            beneficiaryBirthYear: 1960,
+            soleBeneficiary: true,
+            ownerBirthYear: 1940,
+            roth5YearStartYear: 2010,
+            provenance: { source: 'test', asOf: '2026-01-01' },
+          },
+        },
+      },
+    ]
+
+    const result = project(plan, 2032)
+    const sweepYear = result.years.find((year) => year.year === 2032)!
+    expect(sweepYear.inheritedDistribution).toBeCloseTo(50_000, 2)
+    expect(sweepYear.inheritedTraditionalDistribution).toBe(0)
+    expect(sweepYear.withdrawals.roth).toBeCloseTo(50_000, 2)
+
+    const settlements = settlementController.calls.mock.calls
+      .map(([, result]) => result)
+    expect(settlements.length).toBeGreaterThan(0)
+    expect(settlements).toEqual(expect.arrayContaining([
+      expect.objectContaining({ status: 'committed' }),
+    ]))
+    expect(JSON.stringify(settlements)).not.toMatch(/sourceIdentityInvalid|sourceCoverageInvalid/)
+  })
+
+  it('P2: settles basis through S2 ownership flip and post-flip owner RMDs', () => {
+    settlementController.calls.mockClear()
+    const plan = singlePersonPlan({ dob: '1950-01-01', planningAge: 80 })
+    plan.id = 'settled-owned-basis-s2-owner-rmd'
+    plan.accounts = [
+      ira('owner-ira', 10_000, 5_000),
+      {
+        ...ira('s2-ira', 100_000),
+        inherited: {
+          ownerDeathYear: 2024,
+          decedentHadStartedRmds: true,
+          beneficiary: {
+            beneficiaryClass: 'designated-individual',
+            edbCategory: 'surviving-spouse',
+            beneficiaryBirthYear: 1950,
+            soleBeneficiary: true,
+            ownerBirthYear: 1945,
+            ownerYearOfDeathRmdSatisfied: true,
+            election: 'treat-as-own',
+            spouseUnlimitedWithdrawalRight: true,
+            treatAsOwnElectionYear: 2027,
+            provenance: { source: 'test', asOf: '2026-01-01' },
+          },
+        },
+      },
+    ]
+
+    const result = project(plan, 2028)
+    const replay = replayOwnedNonRothIraContiguousYears(
+      validatePlan(plan), TAX_YEAR, result.years,
+    )
+    expect(replay.status).toBe('ownedNonRothIraContiguousReplayComplete')
+    if (replay.status !== 'ownedNonRothIraContiguousReplayComplete') {
+      throw new Error(`expected complete replay, received ${replay.status}`)
+    }
+    for (const calendarYear of [2027, 2028]) {
+      const year = result.years.find((candidate) => candidate.year === calendarYear)!
+      const owner = replay.annualReplays.find(
+        (annual) => annual.taxYear === calendarYear,
+      )!.ownerReplays[0]!
+      const line7 = owner.line7AllocationEvidence
+      expect(year.inheritedDistribution).toBe(0)
+      expect(year.rmd).toBeGreaterThan(0)
+      expect(line7.annualGrossAmount / 100).toBeCloseTo(year.rmd, 2)
+      expect(Math.abs(line7.annualTaxableAmount / 100 - year.magi)).toBeLessThan(0.01)
+      expect(line7.allocations).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ sourceAccountId: 's2-ira' }),
+        ]),
+      )
+    }
+
+    const settlements = settlementController.calls.mock.calls
+      .map(([, result]) => result)
+    expect(settlements).toEqual(expect.arrayContaining([
+      expect.objectContaining({ status: 'committed' }),
+    ]))
+    expect(JSON.stringify(settlements)).not.toMatch(/sourceIdentityInvalid|sourceCoverageInvalid/)
+  })
+
+  it('P3: defers S2 settlement aggregation until the year after a same-year death flip', () => {
+    settlementController.calls.mockClear()
+    const plan = singlePersonPlan({ dob: '1950-01-01', planningAge: 80 })
+    plan.id = 'settled-s2-same-year-death-flip-deferral'
+    plan.accounts = [
+      ira('owner-ira', 10_000, 5_000),
+      {
+        // Basis stays on the spouse's own IRA above: an inherited IRA carries
+        // no modeled nondeductible basis (the beneficiary's 8606 is separate).
+        ...ira('s2-ira', 100_000, 0),
+        inherited: {
+          ownerDeathYear: TAX_YEAR,
+          decedentHadStartedRmds: true,
+          beneficiary: {
+            beneficiaryClass: 'designated-individual',
+            edbCategory: 'surviving-spouse',
+            beneficiaryBirthYear: 1950,
+            soleBeneficiary: true,
+            ownerBirthYear: 1945,
+            ownerYearOfDeathRmdSatisfied: true,
+            election: 'treat-as-own',
+            spouseUnlimitedWithdrawalRight: true,
+            treatAsOwnElectionYear: TAX_YEAR,
+            provenance: { source: 'test', asOf: '2026-01-01' },
+          },
+        },
+      },
+    ]
+
+    const result = project(plan, TAX_YEAR + 1)
+    for (const [calendarYear, expectS2InOwnerRmd] of [
+      [TAX_YEAR, false],
+      [TAX_YEAR + 1, true],
+    ] as const) {
+      const year = result.years.find((candidate) => candidate.year === calendarYear)!
+      // The replay chains from the plan's balances, so a later year must be
+      // fed its own opening balances (the prior year's closing map) — the same
+      // adjustment the in-run settlement applies per year.
+      const prior = result.years.find((candidate) => candidate.year === calendarYear - 1)
+      const replayPlan = prior === undefined
+        ? plan
+        : {
+            ...plan,
+            accounts: plan.accounts.map((account) =>
+              'balance' in account && prior.balances[account.id] !== undefined
+                ? { ...account, balance: prior.balances[account.id]! }
+                : account),
+          }
+      const replay = replayOwnedNonRothIraContiguousYears(
+        validatePlan(replayPlan), calendarYear, [year],
+      )
+      expect(replay.status).toBe('ownedNonRothIraContiguousReplayComplete')
+      if (replay.status !== 'ownedNonRothIraContiguousReplayComplete') {
+        throw new Error(`expected complete replay, received ${replay.status}`)
+      }
+      const owner = replay.annualReplays[0]!.ownerReplays[0]!
+      const line7 = owner.line7AllocationEvidence
+      const s2Allocation = line7.allocations.find(
+        (allocation) => allocation.sourceAccountId === 's2-ira',
+      )
+      if (expectS2InOwnerRmd) {
+        expect(year.rmd).toBeGreaterThan(0)
+        expect(s2Allocation).toBeDefined()
+      } else {
+        expect(s2Allocation).toBeUndefined()
+      }
+    }
+  })
+
   it('linearizes an empty incumbent from the committed post-growth ratio', () => {
     const plan = singlePersonPlan({ planningAge: 60 })
     plan.id = 'settled-optimizer-empty-incumbent'

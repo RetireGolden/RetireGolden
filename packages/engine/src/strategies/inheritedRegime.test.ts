@@ -570,6 +570,13 @@ describe('WS3 fixture F10: X precedence and refusals', () => {
       spouseUnlimitedWithdrawalRight: undefined,
     })), 'X5', 'needs-review', 'spouseUnlimitedWithdrawalRight true')
 
+    expectRefusal('traditional', inherited(2024, true, beneficiary({
+      ownerBirthYear: 1945, beneficiaryBirthYear: 1947,
+      edbCategory: 'surviving-spouse', election: 'treat-as-own',
+      spouseUnlimitedWithdrawalRight: true,
+      // treatAsOwnElectionYear omitted — parse-optional, classifier refuses.
+    })), 'X5', 'needs-review', 'treatAsOwnElectionYear')
+
     const employerPlan = classifyInheritedRegime({
       accountType: 'traditional',
       accountKind: 'employer',
@@ -681,13 +688,12 @@ describe('WS3 fixture F11: parsed completeness join', () => {
         "R3a": 292,
         "S0": 72,
         "S1": 36,
-        "S2": 60,
         "S3": 96,
         "X1": 77160,
         "X2": 960,
         "X3": 2880,
         "X4": 3120,
-        "X5": 37848,
+        "X5": 37908,
       }
     `)
   })
@@ -735,6 +741,12 @@ describe('WS3 fixtures F12 and F13', () => {
     // annualEvidence preserves its noticeWaived flag defensively for that branch.
   })
 
+  // No fixture for R1 relief-year exhaustion: a divisor that exhausts inside
+  // the 2021-2024 window needs a beneficiary far older than any the R1 facts
+  // admit (an older-than-owner beneficiary is certainly an EDB, contradicting
+  // edbCategory 'none'), so the noticeWaived-on-sweep branch is defensive and
+  // its waiver-before-execution ordering is covered by the annual P6 fixture.
+
   it('F13 computes Uniform Lifetime catch-up from the first applicable year', () => {
     const account = inherited(2021, false, beneficiary({
       ownerBirthYear: 1950,
@@ -742,6 +754,7 @@ describe('WS3 fixtures F12 and F13', () => {
       edbCategory: 'surviving-spouse',
       election: 'treat-as-own',
       spouseUnlimitedWithdrawalRight: true,
+      treatAsOwnElectionYear: 2027,
     }))
     const result = classification('traditional', account)
     expect(result.row).toBe('S2')

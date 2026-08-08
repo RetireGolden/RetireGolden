@@ -1092,6 +1092,45 @@ describe('buildAnnualRetirementPhysicalEventInventory', () => {
     )).status).toBe('annualPhysicalEventInventoryBuilt')
   })
 
+  it('accepts legacy-formula inherited RMD events when the S2 synthetic schedule refuses', () => {
+    // Mirror of simulate's synthetic-S0 refusal fallback: primary S2 is valid,
+    // but the pre-election S0 window refuses (born-1959 contested applicable
+    // age). The ledger emits legacy-formula forced amounts; inventory must
+    // accept those years under the same structural rule.
+    const plan = basePlan()
+    const inheritedAccount = plan.accounts.find((account) => account.id === inheritedId)
+    if (inheritedAccount?.type !== 'traditional' || inheritedAccount.inherited === undefined) {
+      throw new Error('fixture drift')
+    }
+    inheritedAccount.inherited = {
+      ownerDeathYear: 2020,
+      decedentHadStartedRmds: false,
+      beneficiary: {
+        beneficiaryClass: 'designated-individual',
+        edbCategory: 'surviving-spouse',
+        beneficiaryBirthYear: 1950,
+        soleBeneficiary: true,
+        ownerBirthYear: 1959,
+        election: 'treat-as-own',
+        spouseUnlimitedWithdrawalRight: true,
+        treatAsOwnElectionYear: 2035,
+        provenance: { source: 'test', asOf: '2026-01-01' },
+      },
+    }
+    // Pre-election year with yearsSinceDeath >= 1 and decedentHadStartedRmds
+    // false: legacy formula requires yearsSinceDeath >= 10 for a force — use a
+    // post-RBD death so yearsSinceDeath >= 1 qualifies under the legacy rule.
+    inheritedAccount.inherited.decedentHadStartedRmds = true
+    expect(buildAnnualRetirementPhysicalEventInventory(input(
+      plan,
+      [resolved({
+        kind: 'inheritedIraRmd',
+        sourceAccountId: inheritedId,
+        taxYear: 2030,
+      })],
+    )).status).toBe('annualPhysicalEventInventoryBuilt')
+  })
+
   it('rejects inherited sources for legacy Roth conversions', () => {
     const plan = basePlan()
     plan.strategies.rothConversion = {

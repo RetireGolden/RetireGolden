@@ -1566,10 +1566,11 @@ describe('inherited-IRA beneficiary facts (WS2)', () => {
         ownerDeathYear: 2022,
         decedentHadStartedRmds: false,
         beneficiary: {
-          ...fullBeneficiary,
-          edbCategory: 'disabled',
-          election,
-          soleBeneficiary: true,
+        ...fullBeneficiary,
+        edbCategory: 'disabled',
+        election,
+        ...(election === 'treat-as-own' ? { treatAsOwnElectionYear: 2024 } : {}),
+        soleBeneficiary: true,
         },
       })
       const parsed = parsePlan(plan)
@@ -1622,6 +1623,7 @@ describe('inherited-IRA beneficiary facts (WS2)', () => {
         ...fullBeneficiary,
         edbCategory: 'surviving-spouse',
         election: 'treat-as-own',
+        treatAsOwnElectionYear: 2024,
         soleBeneficiary: false,
       },
     })
@@ -1642,6 +1644,7 @@ describe('inherited-IRA beneficiary facts (WS2)', () => {
         ...fullBeneficiary,
         edbCategory: 'surviving-spouse',
         election: 'treat-as-own',
+        treatAsOwnElectionYear: 2024,
         soleBeneficiary: true,
         spouseUnlimitedWithdrawalRight: false,
       },
@@ -1663,6 +1666,7 @@ describe('inherited-IRA beneficiary facts (WS2)', () => {
         ...fullBeneficiary,
         edbCategory: 'surviving-spouse',
         election: 'treat-as-own',
+        treatAsOwnElectionYear: 2024,
         soleBeneficiary: true,
       },
     })
@@ -1677,11 +1681,71 @@ describe('inherited-IRA beneficiary facts (WS2)', () => {
         ...fullBeneficiary,
         edbCategory: 'surviving-spouse',
         election: 'treat-as-own',
+        treatAsOwnElectionYear: 2024,
         soleBeneficiary: true,
         spouseUnlimitedWithdrawalRight: true,
       },
     })
     expect(parsePlan(plan).ok).toBe(true)
+  })
+
+  it('parses treat-as-own without treatAsOwnElectionYear (classifier refuses closed)', () => {
+    // Migration safety: pre-WS4 plans that only asserted the election must
+    // still parse; the classifier returns X5 needs-review when the year is
+    // missing so projection fails closed onto the labeled legacy path.
+    const plan = withTraditionalInherited({
+      ownerDeathYear: 2022,
+      decedentHadStartedRmds: false,
+      beneficiary: {
+        ...fullBeneficiary,
+        edbCategory: 'surviving-spouse',
+        election: 'treat-as-own',
+        soleBeneficiary: true,
+        spouseUnlimitedWithdrawalRight: true,
+      },
+    })
+    expect(parsePlan(plan).ok).toBe(true)
+  })
+
+  it('forbids treatAsOwnElectionYear without a treat-as-own election', () => {
+    const plan = withTraditionalInherited({
+      ownerDeathYear: 2022,
+      decedentHadStartedRmds: false,
+      beneficiary: {
+        ...fullBeneficiary,
+        edbCategory: 'surviving-spouse',
+        election: 'remain-beneficiary',
+        treatAsOwnElectionYear: 2024,
+      },
+    })
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(false)
+    if (!parsed.ok) {
+      expect(parsed.issues.join('\n')).toContain(
+        "treatAsOwnElectionYear applies only when election is 'treat-as-own'",
+      )
+    }
+  })
+
+  it('rejects a treat-as-own election year before the owner death year', () => {
+    const plan = withTraditionalInherited({
+      ownerDeathYear: 2022,
+      decedentHadStartedRmds: false,
+      beneficiary: {
+        ...fullBeneficiary,
+        edbCategory: 'surviving-spouse',
+        election: 'treat-as-own',
+        treatAsOwnElectionYear: 2021,
+        soleBeneficiary: true,
+      },
+    })
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(false)
+    if (!parsed.ok) {
+      expect(parsed.issues.join('\n')).toContain(
+        'treatAsOwnElectionYear cannot be before ownerDeathYear',
+      )
+    }
   })
 
   it('rejects ownerYearOfDeathRmdSatisfied when decedentHadStartedRmds is false', () => {
@@ -2101,19 +2165,18 @@ describe('inherited-IRA beneficiary facts (WS2)', () => {
     }
   })
 
-  it('rejects any Roth account carrying an inherited block at parse time', () => {
+  it('round-trips a Roth account carrying a complete inherited block', () => {
     const plan = withRothInherited({
       ownerDeathYear: 2023,
       decedentHadStartedRmds: false,
       beneficiary: { ...fullBeneficiary },
     })
-    const parsed = parsePlan(plan)
-    expect(parsed.ok).toBe(false)
-    if (!parsed.ok) {
-      expect(parsed.issues.join('\n')).toContain(
-        'inherited Roth accounts are schema-defined (regime matrix K1/K2) but not yet executable',
-      )
-    }
+    const first = parsePlan(plan)
+    expect(first.ok).toBe(true)
+    if (!first.ok) return
+    const second = parsePlan(JSON.parse(JSON.stringify(first.plan)))
+    expect(second.ok).toBe(true)
+    if (second.ok) expect(second.plan).toEqual(first.plan)
   })
 
   it('rejects a Roth inherited block without beneficiary facts', () => {

@@ -522,6 +522,18 @@ export const inheritedBeneficiarySchema = z
       .enum(['none', 'remain-beneficiary', 'treat-as-own', 'ten-year-election'])
       .optional(),
     /**
+     * Calendar year the surviving spouse's treat-as-own election takes effect.
+     * This is a deliberate state-transition contract: before this year the
+     * account remains an inherited IRA; from this year it is the spouse's own
+     * IRA. The engine never infers this transition from a deemed election.
+     * Parse-optional with `election: 'treat-as-own'` so pre-WS4 persisted plans
+     * still parse; the classifier refuses S2 with an actionable X5 when the
+     * year is missing (fail closed onto the labeled legacy path). When present,
+     * must be on or after `ownerDeathYear`.
+     * @see Treas. Reg. §1.408-8(c)(1)-(2)
+     */
+    treatAsOwnElectionYear: calendarYear.optional(),
+    /**
      * Surviving spouse has an unlimited withdrawal right — a precondition of
      * the treat-as-own election.
      * @see Treas. Reg. §1.408-8(c)(1)
@@ -772,6 +784,30 @@ export const inheritedAccountSchema = z
     const beneficiary = inherited.beneficiary
     if (beneficiary === undefined) return
 
+    // treatAsOwnElectionYear is parse-optional with treat-as-own (migration
+    // safety for pre-WS4 plans). Missing year classifies X5 needs-review
+    // downstream; present year must be on/after ownerDeathYear.
+    if (beneficiary.election === 'treat-as-own') {
+      if (
+        beneficiary.treatAsOwnElectionYear !== undefined &&
+        beneficiary.treatAsOwnElectionYear < inherited.ownerDeathYear
+      ) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['beneficiary', 'treatAsOwnElectionYear'],
+          message:
+            'treatAsOwnElectionYear cannot be before ownerDeathYear (a spouse can elect only after inheriting the IRA, Treas. Reg. §1.408-8(c)(1)-(2)); set it to ownerDeathYear or later',
+        })
+      }
+    } else if (beneficiary.treatAsOwnElectionYear !== undefined) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['beneficiary', 'treatAsOwnElectionYear'],
+        message:
+          "treatAsOwnElectionYear applies only when election is 'treat-as-own'; remove it or set election to 'treat-as-own'",
+      })
+    }
+
     if (
       beneficiary.ownerBirthYear !== undefined &&
       beneficiary.ownerBirthYear > inherited.ownerDeathYear
@@ -898,10 +934,8 @@ export const rothAccountSchema = z.object({
    */
   contributionBasis: nonNegative.optional(),
   /**
-   * Inherited (beneficiary) Roth IRA facts. Recognized by the schema per the
-   * regime matrix (inherited Roth arms K1/K2), but not yet executable — the
-   * projection refuses an inherited Roth until the regime engine lands. When
-   * present, the block MUST carry full `beneficiary` facts (the legacy
+   * Inherited (beneficiary) Roth IRA facts for the regime matrix K1/K2 paths.
+   * When present, the block MUST carry full `beneficiary` facts (the legacy
    * two-field approximation never covered Roth) and `decedentHadStartedRmds`
    * must be false (a Roth owner is always treated as dying before the RBD,
    * §1.408A-6 A-14(b)).
@@ -1200,16 +1234,7 @@ export const accountSchema = accountUnionSchema.superRefine((account, ctx) => {
       message: 'Employer match can only be set on employer retirement accounts.',
     })
   }
-  // Inherited Roth: schema-recognized (regime matrix K1/K2) but not yet
-  // executable — reject at parse so no plan carrying one reaches simulatePlan.
-  // The refinements below document the expected shape for WS3.
   if (account.type === 'roth' && account.inherited !== undefined) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ['inherited'],
-      message:
-        'inherited Roth accounts are schema-defined (regime matrix K1/K2) but not yet executable; remove the inherited block until the regime engine lands',
-    })
     if (account.inherited.beneficiary === undefined) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
