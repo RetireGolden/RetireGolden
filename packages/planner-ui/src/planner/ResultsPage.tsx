@@ -76,7 +76,7 @@ const INCOME_SOURCES = [
   { key: 'recurring', label: 'Other recurring', color: 'var(--chart-5)' },
   { key: 'oneTime', label: 'One-time', color: 'var(--chart-6)' },
   { key: 'taxableYield', label: 'Brokerage yield', color: 'var(--chart-7)' },
-  { key: 'taxExemptInterest', label: 'Tax-exempt interest', color: 'var(--chart-3)' },
+  { key: 'taxExemptInterest', label: 'Tax-exempt interest', color: 'var(--muted)' },
 ] as const
 
 /** Spending categories, stacked bottom-to-top; sums to expenses + tax + penalties. */
