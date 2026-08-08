@@ -624,15 +624,92 @@ const LIMITATION_NOTE_LABELS: Record<string, string> = {
     'Year-of-death RMD before the projection horizon is unresolved on this path.',
 }
 
+/** User-visible notice-waived copy. Amounts are computed for reference; the engine does not take them. */
+export const NOTICE_WAIVED_NOTE =
+  'Waived by IRS notice for this year; shown for reference, not taken.'
+
+/**
+ * Plain-language regime name for a schedule. Matrix row codes stay off the
+ * user-visible string (they remain on the model for tests and diagnostics).
+ */
 export function inheritedRegimeLabel(regime: string, matrixRow?: string): string {
-  const base = INHERITED_REGIME_LABELS[regime] ?? regime
-  return matrixRow ? `${base} (matrix ${matrixRow})` : base
+  // matrixRow remains accepted for call-site compatibility; it is never shown.
+  void matrixRow
+  return INHERITED_REGIME_LABELS[regime] ?? regime
 }
 
 export function inheritedRequirementKindLabel(
   kind: InheritedAccountYearEvidence['requirementKind'],
 ): string {
   return INHERITED_REQUIREMENT_KIND_LABELS[kind] ?? kind
+}
+
+/**
+ * Account-level schedule name from the primary classification. A treat-as-own
+ * election names the account even while pre-election years publish spouse
+ * life-expectancy phase rows.
+ */
+export function primaryInheritedRegimeLabel(
+  account: Account,
+  yearRows: ReadonlyArray<{ year: number; evidence: InheritedAccountYearEvidence }>,
+): { regime: string; matrixRow: string; regimeLabel: string } {
+  const first = yearRows[0]!.evidence
+  const beneficiary =
+    'inherited' in account && account.inherited !== undefined
+      ? account.inherited.beneficiary
+      : undefined
+  const electionYear = beneficiary?.treatAsOwnElectionYear
+  const isTreatAsOwn =
+    beneficiary?.election === 'treat-as-own' ||
+    yearRows.some((row) => row.evidence.regime === 'spouse-treat-as-own-transition')
+
+  if (isTreatAsOwn) {
+    const s2 = yearRows.find((row) => row.evidence.regime === 'spouse-treat-as-own-transition')
+    const matrixRow = s2?.evidence.matrixRow ?? first.matrixRow
+    const regimeLabel =
+      electionYear !== undefined
+        ? `Spouse treats account as own (from ${electionYear})`
+        : 'Spouse treats account as own'
+    return { regime: 'spouse-treat-as-own-transition', matrixRow, regimeLabel }
+  }
+
+  return {
+    regime: first.regime,
+    matrixRow: first.matrixRow,
+    regimeLabel: inheritedRegimeLabel(first.regime),
+  }
+}
+
+/**
+ * Null-deadline explanation routed on the account's primary regime / path —
+ * never a single generic sentence for every schedule without a fixed year.
+ */
+export function inheritedDeadlineExplanation(account: ReportInheritedScheduleAccount): string {
+  if (account.finalDeadlineYear !== null) {
+    return `${account.finalDeadlineYear} (entire interest by end of that calendar year, when the schedule fixes one).`
+  }
+  if (account.regime === 'spouse-treat-as-own-transition') {
+    return "After the transition the account follows the owner's own RMD rules."
+  }
+  if (
+    account.isLegacyApproximation ||
+    account.isRefusal ||
+    account.regime === 'legacy-planning-approximation' ||
+    account.regime === 'unsupported' ||
+    account.regime === 'needs-review' ||
+    account.years.some((row) => row.requirementKind === 'legacy')
+  ) {
+    return "The simpler planning estimate empties the account by the 10th year after the owner's death."
+  }
+  return "No fixed deadline year: amounts continue over the beneficiary's life expectancy."
+}
+
+/** Short CSV/note text for waiver or limitation on one evidence year. */
+export function inheritedEvidenceNote(evidence: InheritedAccountYearEvidence): string {
+  const parts: string[] = []
+  if (evidence.noticeWaived) parts.push(NOTICE_WAIVED_NOTE)
+  if (evidence.limitation) parts.push(noteForLimitation(evidence.limitation))
+  return parts.join(' ')
 }
 
 function inheritedFactsFromAccount(account: Account): string[] {
@@ -658,8 +735,22 @@ function inheritedFactsFromAccount(account: Account): string[] {
   if (beneficiary.election !== undefined && beneficiary.election !== 'none') {
     facts.push(`Election: ${beneficiary.election}`)
   }
+  if (beneficiary.treatAsOwnElectionYear !== undefined) {
+    facts.push(`Treat-as-own election year: ${beneficiary.treatAsOwnElectionYear}`)
+  }
+  if (beneficiary.spouseUnlimitedWithdrawalRight !== undefined) {
+    facts.push(
+      `Spouse unlimited withdrawal right: ${beneficiary.spouseUnlimitedWithdrawalRight ? 'yes' : 'no'}`,
+    )
+  }
   if (beneficiary.ownerBirthYear !== undefined) {
     facts.push(`Owner birth year: ${beneficiary.ownerBirthYear}`)
+  }
+  if (beneficiary.ownerBirthMonth !== undefined) {
+    facts.push(`Owner birth month: ${beneficiary.ownerBirthMonth}`)
+  }
+  if (beneficiary.ownerBirthDay !== undefined) {
+    facts.push(`Owner birth day: ${beneficiary.ownerBirthDay}`)
   }
   if (beneficiary.ownerYearOfDeathRmdSatisfied !== undefined) {
     facts.push(
@@ -705,6 +796,7 @@ export function buildInheritedSchedules(
     if (yearRows.length === 0) continue
 
     const first = yearRows[0]!.evidence
+    const primary = primaryInheritedRegimeLabel(account, yearRows)
     const notes = new Set<string>()
     const citations = new Set<string>()
     let needsConfirm = false
@@ -722,7 +814,7 @@ export function buildInheritedSchedules(
       }
       if (evidence.limitation) notes.add(noteForLimitation(evidence.limitation))
       if (evidence.noticeWaived) {
-        notes.add('Annual amount in this window is notice-waived under IRS relief notices (still executed in the ledger).')
+        notes.add(NOTICE_WAIVED_NOTE)
       }
       for (const disclosure of evidence.disclosures) notes.add(noteForDisclosure(disclosure))
       for (const citation of evidence.citations) citations.add(citation)
@@ -730,14 +822,17 @@ export function buildInheritedSchedules(
     }
 
     const isLegacyApproximation =
-      first.regime === 'legacy-planning-approximation' || first.requirementKind === 'legacy'
+      primary.regime === 'legacy-planning-approximation' ||
+      first.regime === 'legacy-planning-approximation' ||
+      first.requirementKind === 'legacy' ||
+      yearRows.some((row) => row.evidence.requirementKind === 'legacy')
 
     accounts.push({
       accountId: account.id,
       accountName: account.name,
-      regime: first.regime,
-      regimeLabel: inheritedRegimeLabel(first.regime, first.matrixRow),
-      matrixRow: first.matrixRow,
+      regime: primary.regime,
+      regimeLabel: primary.regimeLabel,
+      matrixRow: primary.matrixRow,
       classification,
       finalDeadlineYear,
       refusalReason,

@@ -159,7 +159,8 @@ describe('InheritedSchedulesSection', () => {
     const html = renderSection(plan, [yearWithEvidence(2026, [evidence])])
     expect(html).toContain('Spouse Inherited IRA')
     expect(html).toContain('Spouse life-expectancy schedule')
-    expect(html).toContain('matrix S1')
+    expect(html).not.toContain('matrix S1')
+    expect(html).toContain('No fixed deadline year: amounts continue over the beneficiary')
     expect(html).toContain('Annual RMD')
     expect(html).toContain('EDB category: surviving-spouse')
     expect(html).toContain('Treas. Reg. §1.401(a)(9)-5(d)(3)(iv)')
@@ -198,7 +199,57 @@ describe('InheritedSchedulesSection', () => {
     const html = renderSection(plan, [yearWithEvidence(2026, [evidence])])
     expect(html).toContain('Planning estimate')
     expect(html).toContain('Beneficiary details: not provided')
-    expect(html).toContain('Planning estimate')
+    expect(html).toContain(
+      'The simpler planning estimate empties the account by the 10th year after the owner',
+    )
+  })
+
+  it('names a treat-as-own account from primary classification and routes the null deadline', () => {
+    const plan = basePlan((p) => {
+      p.accounts.push({
+        type: 'traditional',
+        id: 's2-ira',
+        name: 'Spouse Treat-as-Own IRA',
+        ownerPersonId: 'p1',
+        annualReturnPct: null,
+        kind: 'ira',
+        balance: 300_000,
+        annualContribution: 0,
+        inherited: {
+          ownerDeathYear: 2024,
+          decedentHadStartedRmds: true,
+          beneficiary: {
+            beneficiaryClass: 'designated-individual',
+            edbCategory: 'surviving-spouse',
+            beneficiaryBirthYear: 1965,
+            soleBeneficiary: true,
+            election: 'treat-as-own',
+            treatAsOwnElectionYear: 2027,
+            spouseUnlimitedWithdrawalRight: true,
+            ownerBirthYear: 1945,
+            ownerYearOfDeathRmdSatisfied: true,
+            provenance: { source: 'user-entered', asOf: '2026-01-01' },
+          },
+        },
+      })
+    })
+    const evidence: InheritedAccountYearEvidence = {
+      accountId: 's2-ira',
+      ownerPersonId: 'p1',
+      regime: 'spouse-remain-beneficiary',
+      matrixRow: 'S0',
+      classification: 'settled',
+      requirementKind: 'annual-rmd',
+      requiredAmount: 20_000,
+      executedRequiredAmount: 20_000,
+      voluntaryAmount: 0,
+      disclosures: [],
+      citations: [],
+    }
+    const html = renderSection(plan, [yearWithEvidence(2026, [evidence])])
+    expect(html).toContain('Spouse treats account as own (from 2027)')
+    expect(html).toContain("After the transition the account follows the owner")
+    expect(html).not.toContain('matrix')
   })
 
   it('renders a prominent refusal note for an estate beneficiary path', () => {
@@ -239,9 +290,14 @@ describe('InheritedSchedulesSection', () => {
     const html = renderSection(plan, [yearWithEvidence(2026, [evidence])])
     expect(html).toContain('Needs review')
     expect(html).toContain('simpler planning estimate')
+    expect(html).toContain('The model does not cover these facts: estates and trusts are not modeled')
+    expect(html).toContain('Technical detail')
     // renderToStaticMarkup HTML-escapes apostrophes in text nodes.
     expect(html).toMatch(/beneficiaryClass &#x27;estate&#x27; is unsupported/)
     expect(html).toContain('Confirm this schedule with a tax professional')
+    expect(html).toContain(
+      'The simpler planning estimate empties the account by the 10th year after the owner',
+    )
   })
 
   it('renders nothing when the plan has no inherited accounts', () => {

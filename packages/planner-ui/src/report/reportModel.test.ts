@@ -334,7 +334,9 @@ describe('buildInheritedSchedules', () => {
     expect(block.accounts).toHaveLength(1)
     const account = block.accounts[0]!
     expect(account.regimeLabel).toContain('Spouse life-expectancy schedule')
-    expect(account.regimeLabel).toContain('S1')
+    expect(account.regimeLabel).not.toContain('matrix')
+    expect(account.regimeLabel).not.toContain('S1')
+    expect(account.matrixRow).toBe('S1')
     expect(account.isLegacyApproximation).toBe(false)
     expect(account.isRefusal).toBe(false)
     expect(account.needsProfessionalConfirmation).toBe(false)
@@ -422,6 +424,113 @@ describe('buildInheritedSchedules', () => {
 
   it('returns an empty block when the plan has no inherited accounts', () => {
     expect(buildInheritedSchedules(fixturePlan(), [year(2026, [])]).accounts).toEqual([])
+  })
+
+  it('names a treat-as-own account from the primary classification even when pre-election years are spouse LE', () => {
+    const plan = fixturePlan((p) => {
+      p.accounts.push({
+        type: 'traditional',
+        id: 's2-ira',
+        name: 'Spouse Treat-as-Own IRA',
+        ownerPersonId: 'p1',
+        annualReturnPct: null,
+        kind: 'ira',
+        balance: 300_000,
+        annualContribution: 0,
+        inherited: {
+          ownerDeathYear: 2024,
+          decedentHadStartedRmds: true,
+          beneficiary: {
+            beneficiaryClass: 'designated-individual',
+            edbCategory: 'surviving-spouse',
+            beneficiaryBirthYear: 1965,
+            soleBeneficiary: true,
+            election: 'treat-as-own',
+            treatAsOwnElectionYear: 2027,
+            spouseUnlimitedWithdrawalRight: true,
+            ownerBirthYear: 1945,
+            ownerBirthMonth: 6,
+            ownerBirthDay: 15,
+            ownerYearOfDeathRmdSatisfied: true,
+            provenance: { source: 'user-entered', asOf: '2026-01-01' },
+          },
+        },
+      })
+    })
+    // Pre-election synthetic S0 evidence (spouse LE), not yet the S2 phase row.
+    const preElection: InheritedAccountYearEvidence = {
+      accountId: 's2-ira',
+      ownerPersonId: 'p1',
+      regime: 'spouse-remain-beneficiary',
+      matrixRow: 'S0',
+      classification: 'settled',
+      requirementKind: 'annual-rmd',
+      requiredAmount: 20_000,
+      executedRequiredAmount: 20_000,
+      voluntaryAmount: 0,
+      disclosures: [],
+      citations: [],
+    }
+    const account = buildInheritedSchedules(plan, [year(2026, [preElection])]).accounts[0]!
+    expect(account.regime).toBe('spouse-treat-as-own-transition')
+    expect(account.regimeLabel).toBe('Spouse treats account as own (from 2027)')
+    expect(account.regimeLabel).not.toContain('matrix')
+    expect(account.years[0]!.kindLabel).toBe('Annual RMD')
+    expect(account.facts).toEqual(
+      expect.arrayContaining([
+        'Treat-as-own election year: 2027',
+        'Spouse unlimited withdrawal right: yes',
+        'Owner birth month: 6',
+        'Owner birth day: 15',
+      ]),
+    )
+  })
+
+  it('labels notice-waived amounts as shown for reference, not taken', () => {
+    const plan = fixturePlan((p) => {
+      p.accounts.push({
+        type: 'traditional',
+        id: 'r1-ira',
+        name: 'R1 Inherited IRA',
+        ownerPersonId: 'p1',
+        annualReturnPct: null,
+        kind: 'ira',
+        balance: 100_000,
+        annualContribution: 0,
+        inherited: {
+          ownerDeathYear: 2022,
+          decedentHadStartedRmds: true,
+          beneficiary: {
+            beneficiaryClass: 'designated-individual',
+            edbCategory: 'none',
+            beneficiaryBirthYear: 1980,
+            soleBeneficiary: true,
+            ownerBirthYear: 1950,
+            ownerYearOfDeathRmdSatisfied: true,
+            provenance: { source: 'user-entered', asOf: '2026-01-01' },
+          },
+        },
+      })
+    })
+    const evidence: InheritedAccountYearEvidence = {
+      accountId: 'r1-ira',
+      ownerPersonId: 'p1',
+      regime: 'ten-year-with-annual-rmds',
+      matrixRow: 'R1',
+      classification: 'settled',
+      requirementKind: 'annual-rmd',
+      requiredAmount: 4_000,
+      executedRequiredAmount: 0,
+      voluntaryAmount: 0,
+      noticeWaived: true,
+      disclosures: [],
+      citations: ['Notices 2022-53/2023-54/2024-35'],
+    }
+    const account = buildInheritedSchedules(plan, [year(2024, [evidence])]).accounts[0]!
+    expect(account.notes).toContain(
+      'Waived by IRS notice for this year; shown for reference, not taken.',
+    )
+    expect(account.notes.join(' ')).not.toContain('still executed')
   })
 })
 

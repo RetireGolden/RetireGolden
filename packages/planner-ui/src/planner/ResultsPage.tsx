@@ -35,8 +35,11 @@ import { downloadStandaloneReport } from '../report/downloadReport'
 import { useReportBranding } from '../report/brandingContext'
 import {
   buildInheritedSchedules,
+  inheritedDeadlineExplanation,
+  inheritedEvidenceNote,
   type ReportInheritedScheduleAccount,
 } from '../report/reportModel'
+import { needsProfessionalConfirmation } from './professionalConfirmation'
 import { fmtMoney, fmtMoneyCompact } from './format'
 import { useProjection } from './useProjection'
 import { BucketLensCard } from './BucketLensCard'
@@ -122,6 +125,33 @@ function inheritedAccountIds(plan: Plan): string[] {
 }
 
 /**
+ * Map a technical classifier refusal into a plain-language cause for the
+ * Results callout. Verbatim technical text stays in a collapsed detail.
+ */
+function plainRefusalCause(refusalReason: string): string {
+  const lower = refusalReason.toLowerCase()
+  if (
+    lower.includes('estate') ||
+    lower.includes('trust') ||
+    lower.includes('entity') ||
+    lower.includes('non-individual')
+  ) {
+    return 'estates and trusts are not modeled'
+  }
+  if (lower.includes('before 2020') || lower.includes('pre-secure')) {
+    return 'death before 2020 predates the modeled rules'
+  }
+  return 'facts are contradictory or incomplete'
+}
+
+/** Quote a CSV cell when it contains commas, quotes, or newlines. */
+function csvEscape(value: string): string {
+  if (value === '') return value
+  if (/[",\n\r]/.test(value)) return `"${value.replace(/"/g, '""')}"`
+  return value
+}
+
+/**
  * Expandable per-account inherited schedule (WS5 Chunk B). Primary explanation
  * surface — draft copy, non-final. Fed from engine evidence rows already on the
  * year ledger; no extra simulation.
@@ -178,7 +208,17 @@ function InheritedAccountSchedule({
             The model does not cover these facts, so it shows the limitation rather than guessing. The schedule below
             uses the simpler planning estimate.
           </p>
-          {details.refusalReason ? <p className="field-hint">{details.refusalReason}</p> : null}
+          {details.refusalReason ? (
+            <>
+              <p>
+                The model does not cover these facts: {plainRefusalCause(details.refusalReason)}.
+              </p>
+              <details>
+                <summary>Technical detail</summary>
+                <p className="field-hint">{details.refusalReason}</p>
+              </details>
+            </>
+          ) : null}
         </div>
       ) : null}
       {details.isLegacyApproximation && !details.isRefusal ? (
@@ -195,17 +235,9 @@ function InheritedAccountSchedule({
             ? '. This schedule follows a reading of rules that are not yet settled.'
             : '.'}
         </li>
-        {details.finalDeadlineYear !== null ? (
-          <li>
-            <strong>Final deadline year</strong>: {details.finalDeadlineYear} (entire interest by end of that calendar
-            year, when the schedule fixes one).
-          </li>
-        ) : (
-          <li>
-            <strong>Final deadline year</strong>: No fixed deadline year: amounts continue over the beneficiary&apos;s
-            life expectancy.
-          </li>
-        )}
+        <li>
+          <strong>Final deadline year</strong>: {inheritedDeadlineExplanation(details)}
+        </li>
         {thisYear ? (
           <li>
             <strong>This year ({thisYear.year})</strong>: {thisYear.kindLabel}, required{' '}
@@ -485,6 +517,8 @@ export function ResultsPage() {
       `inherited_${id}_executedRequiredAmount`,
       `inherited_${id}_voluntaryAmount`,
       `inherited_${id}_requirementKind`,
+      `inherited_${id}_confirmWithProfessional`,
+      `inherited_${id}_note`,
     ])
     const cols = [
       'year', 'filingStatus', 'wages', 'socialSecurity', 'pension', 'annuity', 'tipsLadder', 'recurring', 'oneTimeIncome', 'taxableInterest', 'taxExemptInterest', 'ordinaryDividends', 'qualifiedDividends', 'taxableYield', 'totalIncome',
@@ -498,8 +532,17 @@ export function ResultsPage() {
       const byAccount = new Map((y.inheritedAccounts ?? []).map((row) => [row.accountId, row]))
       const inheritedValues = inheritedIds.flatMap((id) => {
         const row = byAccount.get(id)
-        if (!row) return ['', '', '', '']
-        return [row.requiredAmount, row.executedRequiredAmount, row.voluntaryAmount, row.requirementKind]
+        if (!row) return ['', '', '', '', '', '']
+        const confirm = needsProfessionalConfirmation(row) ? 'yes' : ''
+        const note = csvEscape(inheritedEvidenceNote(row))
+        return [
+          row.requiredAmount,
+          row.executedRequiredAmount,
+          row.voluntaryAmount,
+          row.requirementKind,
+          confirm,
+          note,
+        ]
       })
       lines.push(
         [

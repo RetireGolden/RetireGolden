@@ -179,14 +179,14 @@ function BeneficiaryDetails({
                   { value: 'not-more-than-10-years-younger', label: 'Not more than 10 years younger' },
                 ]}
                 onCommit={(edbCategory) => {
-                  const election = edbCategory === 'surviving-spouse'
-                    ? beneficiary.election
-                    : edbCategory === 'none'
-                      ? undefined
-                      : beneficiary.election === 'remain-beneficiary' || beneficiary.election === 'treat-as-own'
-                        ? undefined
-                        : beneficiary.election
-                  commit({ ...beneficiary, edbCategory, election })
+                  // Changing category always drops election-scoped fields so a
+                  // prior spouse or treat-as-own fact cannot linger under a new class.
+                  commit({
+                    ...beneficiary,
+                    edbCategory,
+                    election: undefined,
+                    treatAsOwnElectionYear: undefined,
+                  })
                 }}
               />
               <NumberField
@@ -222,7 +222,19 @@ function BeneficiaryDetails({
                       : []),
                     ...(mayElectTenYear ? [{ value: 'ten-year-election', label: 'Elect 10-year rule' }] : []),
                   ]}
-                  onCommit={(election) => commit({ ...beneficiary, election })}
+                  onCommit={(election) => {
+                    if (election === 'treat-as-own') {
+                      commit({ ...beneficiary, election })
+                      return
+                    }
+                    // Leaving treat-as-own clears the election-year fact; parse
+                    // rejects treatAsOwnElectionYear without that election.
+                    commit({
+                      ...beneficiary,
+                      election,
+                      treatAsOwnElectionYear: undefined,
+                    })
+                  }}
                 />
               ) : null}
               {beneficiary.election === 'treat-as-own' ? (
@@ -575,7 +587,21 @@ export function AccountFields({ account, index }: { account: Account; index: num
               label="Owner had started RMDs"
               help="If the original owner had reached their required beginning date, you must also take an annual RMD in years 1–9 of the window (based on your single life expectancy), not just empty it by year 10."
               value={account.inherited.decedentHadStartedRmds}
-              onCommit={(v) => set('inherited', { ...account.inherited, decedentHadStartedRmds: v })}
+              onCommit={(v) => {
+                if (v || account.inherited.beneficiary === undefined) {
+                  set('inherited', { ...account.inherited, decedentHadStartedRmds: v })
+                  return
+                }
+                // year-of-death RMD satisfaction only applies when the owner
+                // had started RMDs; keep the fact set parse-valid on toggle-off.
+                const nextBeneficiary = { ...account.inherited.beneficiary }
+                delete nextBeneficiary.ownerYearOfDeathRmdSatisfied
+                set('inherited', {
+                  ...account.inherited,
+                  decedentHadStartedRmds: false,
+                  beneficiary: nextBeneficiary,
+                })
+              }}
             />
           ) : null}
           <BeneficiaryDetails

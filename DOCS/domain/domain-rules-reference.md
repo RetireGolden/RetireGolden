@@ -230,15 +230,17 @@ Source: [IRS 2026 limits announcement](https://www.irs.gov/newsroom/401k-limit-i
   (`treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy`, settled for classified facts); EDB
   life-expectancy uses the beneficiary's expectancy (`irc-401-a-9-E-ii-eligible-designated-beneficiary`, settled
   for classified facts). **Fail closed:** death before 2020, successor beneficiary, estate/trust/entity,
-  multiple beneficiaries without separate-account facts, missing or contradictory facts, a post-RBD ten-year
-  election, and asserted §327 spouse-as-employee treatment → typed refusal; classifier refusals other than X1
-  project on the labeled `legacy-planning-approximation` path with the refusal on the evidence row. Legacy
-  two-field accounts (no beneficiary block) stay on that labeled path. Named residuals: §1.402(c)-2(j)(4)
-  catch-up (`treat-as-own-timing-gate-unverified`), non-qualified inherited-Roth earnings tax (K3 disclosure only),
-  post-S2 contribution/conversion/QCD enablement for validators without year context, and Roth S2-flip basis
-  migration into the owned Roth pool. WS5 surfaces regime, deadline, disclosures, and refusals on **Accounts**
-  (beneficiary-details panel), **Results** (per-account inherited schedule), CSV export, report appendix, and the
-  Learning Center article. Planning-grade only — not filing-grade.
+  multiple beneficiaries without separate-account facts, missing or contradictory facts, and a post-RBD ten-year
+  election → typed refusal; classifier refusals other than X1 project on the labeled
+  `legacy-planning-approximation` path with the refusal on the evidence row. Legacy two-field accounts (no
+  beneficiary block) stay on that labeled path. No schema fact can assert SECURE 2.0 §327 spouse-as-employee
+  treatment; that posture is disclosed on spouse life-expectancy rows rather than refused as an assertion the plan
+  cannot make. Named residuals: §1.402(c)-2(j)(4) catch-up (`treat-as-own-timing-gate-unverified`), non-qualified
+  inherited-Roth earnings tax (K3 disclosure only), post-S2 contribution/conversion/QCD enablement for validators
+  without year context, and Roth S2-flip basis migration into the owned Roth pool. WS5: **Accounts** is the input
+  surface (beneficiary-details panel); **Results** is the full per-account schedule (regime, deadline, disclosures,
+  refusals, professional-confirmation marker); **Report** is compact; CSV export carries amounts, kinds, and the
+  confirmation flag; the Learning Center article explains the schedules. Planning-grade only — not filing-grade.
 - Sources: [IRS Pub 590-B](https://www.irs.gov/publications/p590b), [IRS RMD FAQs](https://www.irs.gov/retirement-plans/retirement-plan-and-ira-required-minimum-distributions-faqs), [eCFR 26 CFR 1.401(a)(9)-9, Table 1 (Single Life) and Table 3 (Joint Life)](https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-9).
 
 ## 7. Medicare and IRMAA (2026)

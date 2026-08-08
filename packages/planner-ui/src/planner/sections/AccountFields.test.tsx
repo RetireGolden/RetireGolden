@@ -47,14 +47,22 @@ function planWithAccount(account: Account): Plan {
   return plan
 }
 
-function renderFields(plan: Plan, accountIndex = 0) {
+function renderFields(plan: Plan, accountIndex = 0, onUpdate?: (mutator: (draft: Plan) => void) => void) {
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
   const account = plan.accounts[accountIndex]!
   const panel: ReactNode = (
     <MemoryRouter>
-      <PlanCtx.Provider value={{ plan, update: () => undefined, discardPendingSave: () => undefined, saveState: 'saved', issues: [] }}>
+      <PlanCtx.Provider
+        value={{
+          plan,
+          update: onUpdate ?? (() => undefined),
+          discardPendingSave: () => undefined,
+          saveState: 'saved',
+          issues: [],
+        }}
+      >
         <AccountFields account={account} index={accountIndex} />
       </PlanCtx.Provider>
     </MemoryRouter>
@@ -63,6 +71,57 @@ function renderFields(plan: Plan, accountIndex = 0) {
     root!.render(panel)
   })
   return container
+}
+
+function controlByLabel<T extends HTMLElement = HTMLElement>(rootEl: HTMLElement, label: string): T {
+  const labels = Array.from(rootEl.querySelectorAll('label'))
+  const match = labels.find((el) => el.textContent?.trim() === label)
+  if (!match) throw new Error(`no label "${label}"`)
+  const id = match.getAttribute('for')
+  if (!id) throw new Error(`label "${label}" has no for=`)
+  const control = rootEl.querySelector(`[id="${id.replace(/"/g, '\\"')}"]`)
+  if (!control) throw new Error(`no control for label "${label}"`)
+  return control as T
+}
+
+/** Mount AccountFields with a live draft so commits can be asserted as parse-valid. */
+function mountEditable(plan: Plan) {
+  let current = structuredClone(plan)
+  container = document.createElement('div')
+  document.body.appendChild(container)
+  root = createRoot(container)
+  const render = () => {
+    const account = current.accounts[0]!
+    act(() => {
+      root!.render(
+        <MemoryRouter>
+          <PlanCtx.Provider
+            value={{
+              plan: current,
+              update: (mutator) => {
+                const draft = structuredClone(current)
+                mutator(draft)
+                current = draft
+                render()
+              },
+              discardPendingSave: () => undefined,
+              saveState: 'saved',
+              issues: [],
+            }}
+          >
+            <AccountFields account={account} index={0} />
+          </PlanCtx.Provider>
+        </MemoryRouter>,
+      )
+    })
+  }
+  render()
+  return {
+    get plan() {
+      return current
+    },
+    container: () => container!,
+  }
 }
 
 function retirementAccount(overrides: Partial<Extract<Account, { type: 'traditional' }>> = {}): Extract<Account, { type: 'traditional' }> {
@@ -236,5 +295,118 @@ describe('AccountFields inherited beneficiary details', () => {
     renderIssues(plan, parsed.issues)
     expect(container?.textContent).toContain("edbCategory 'minor-child' is contradicted by beneficiaryBirthYear")
     expect(container?.textContent).toContain('correct beneficiaryBirthYear, ownerDeathYear, or edbCategory')
+  })
+
+  it('clears treatAsOwnElectionYear when the election leaves treat-as-own (parse-valid)', () => {
+    const plan = planWithAccount(retirementAccount({
+      ownerPersonId: 'af-owner',
+      inherited: {
+        ownerDeathYear: 2024,
+        decedentHadStartedRmds: true,
+        beneficiary: {
+          beneficiaryClass: 'designated-individual',
+          edbCategory: 'surviving-spouse',
+          beneficiaryBirthYear: 1965,
+          soleBeneficiary: true,
+          election: 'treat-as-own',
+          treatAsOwnElectionYear: 2025,
+          spouseUnlimitedWithdrawalRight: true,
+          ownerBirthYear: 1945,
+          ownerYearOfDeathRmdSatisfied: true,
+          provenance: { source: 'user-entered', asOf: '2026-08-08' },
+        },
+      },
+    }))
+    plan.accounts[0]!.ownerPersonId = plan.household.people[0]!.id
+    const mounted = mountEditable(plan)
+
+    act(() => {
+      const select = controlByLabel<HTMLSelectElement>(mounted.container(), 'Distribution election')
+      select.value = 'remain-beneficiary'
+      select.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+
+    const account = mounted.plan.accounts[0]!
+    expect(account.type).toBe('traditional')
+    if (account.type !== 'traditional') throw new Error('expected traditional')
+    expect(account.inherited?.beneficiary?.election).toBe('remain-beneficiary')
+    expect(account.inherited?.beneficiary?.treatAsOwnElectionYear).toBeUndefined()
+    const parsed = parsePlan(structuredClone(mounted.plan))
+    expect(parsed.ok).toBe(true)
+  })
+
+  it('clears election and treatAsOwnElectionYear when the EDB category changes (parse-valid)', () => {
+    const plan = planWithAccount(retirementAccount({
+      inherited: {
+        ownerDeathYear: 2024,
+        decedentHadStartedRmds: true,
+        beneficiary: {
+          beneficiaryClass: 'designated-individual',
+          edbCategory: 'surviving-spouse',
+          beneficiaryBirthYear: 1965,
+          soleBeneficiary: true,
+          election: 'treat-as-own',
+          treatAsOwnElectionYear: 2025,
+          spouseUnlimitedWithdrawalRight: true,
+          ownerBirthYear: 1945,
+          ownerYearOfDeathRmdSatisfied: true,
+          provenance: { source: 'user-entered', asOf: '2026-08-08' },
+        },
+      },
+    }))
+    plan.accounts[0]!.ownerPersonId = plan.household.people[0]!.id
+    const mounted = mountEditable(plan)
+
+    act(() => {
+      const select = controlByLabel<HTMLSelectElement>(
+        mounted.container(),
+        'Eligible designated beneficiary category',
+      )
+      select.value = 'disabled'
+      select.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+
+    const account = mounted.plan.accounts[0]!
+    expect(account.type).toBe('traditional')
+    if (account.type !== 'traditional') throw new Error('expected traditional')
+    expect(account.inherited?.beneficiary?.edbCategory).toBe('disabled')
+    expect(account.inherited?.beneficiary?.election).toBeUndefined()
+    expect(account.inherited?.beneficiary?.treatAsOwnElectionYear).toBeUndefined()
+    const parsed = parsePlan(structuredClone(mounted.plan))
+    expect(parsed.ok).toBe(true)
+  })
+
+  it('clears ownerYearOfDeathRmdSatisfied when decedentHadStartedRmds is toggled off (parse-valid)', () => {
+    const plan = planWithAccount(retirementAccount({
+      inherited: {
+        ownerDeathYear: 2024,
+        decedentHadStartedRmds: true,
+        beneficiary: {
+          beneficiaryClass: 'designated-individual',
+          edbCategory: 'surviving-spouse',
+          beneficiaryBirthYear: 1965,
+          soleBeneficiary: true,
+          election: 'remain-beneficiary',
+          ownerBirthYear: 1945,
+          ownerYearOfDeathRmdSatisfied: true,
+          provenance: { source: 'user-entered', asOf: '2026-08-08' },
+        },
+      },
+    }))
+    plan.accounts[0]!.ownerPersonId = plan.household.people[0]!.id
+    const mounted = mountEditable(plan)
+
+    act(() => {
+      const box = controlByLabel<HTMLInputElement>(mounted.container(), 'Owner had started RMDs')
+      box.click()
+    })
+
+    const account = mounted.plan.accounts[0]!
+    expect(account.type).toBe('traditional')
+    if (account.type !== 'traditional') throw new Error('expected traditional')
+    expect(account.inherited?.decedentHadStartedRmds).toBe(false)
+    expect(account.inherited?.beneficiary?.ownerYearOfDeathRmdSatisfied).toBeUndefined()
+    const parsed = parsePlan(structuredClone(mounted.plan))
+    expect(parsed.ok).toBe(true)
   })
 })
