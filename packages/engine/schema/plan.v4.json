@@ -947,7 +947,6 @@
                     },
                     "required": [
                       "beneficiaryClass",
-                      "edbCategory",
                       "provenance"
                     ]
                   }
@@ -1520,7 +1519,6 @@
                     },
                     "required": [
                       "beneficiaryClass",
-                      "edbCategory",
                       "provenance"
                     ]
                   }
@@ -5905,12 +5903,12 @@
     "an EDB category other than 'none' requires beneficiaryClass 'designated-individual'.",
     "remain-beneficiary and treat-as-own elections require edbCategory 'surviving-spouse'.",
     "a ten-year-election requires an EDB category other than 'none'.",
-    "treat-as-own requires soleBeneficiary true and, when asserted false, spouseUnlimitedWithdrawalRight true.",
+    "treat-as-own requires edbCategory 'surviving-spouse' and soleBeneficiary true; an explicitly false spouseUnlimitedWithdrawalRight is rejected, while an omitted one parses and classifies needs-review downstream.",
     "edbCategory 'minor-child' is rejected when beneficiary age is at least 22 in the owner death year by year arithmetic.",
     "edbCategory 'not-more-than-10-years-younger' is rejected only when the beneficiary is clearly more than 10 years younger than the owner by year arithmetic.",
     "ownerYearOfDeathRmdSatisfied is allowed only for a post-RBD decedent (decedentHadStartedRmds true).",
     "election 'ten-year-election' is refused for post-RBD deaths (decedentHadStartedRmds true).",
-    "beneficiaryClass 'designated-individual' requires beneficiaryBirthYear.",
+    "beneficiaryClass 'designated-individual' requires beneficiaryBirthYear and edbCategory.",
     "beneficiary ownerBirthYear cannot be after ownerDeathYear; an owner cannot be born after their own death (equality is permitted at year precision).",
     "when ownerBirthYear, ownerBirthMonth, and ownerBirthDay are all present they must form a real calendar date; ownerBirthDay requires ownerBirthMonth, and ownerBirthMonth plus ownerBirthDay require ownerBirthYear.",
     "beneficiary provenance.source must contain at least one non-whitespace character, and provenance.asOf must be a real ISO calendar date (YYYY-MM-DD).",

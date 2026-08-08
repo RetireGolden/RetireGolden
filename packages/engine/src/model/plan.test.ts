@@ -2032,6 +2032,39 @@ describe('inherited-IRA beneficiary facts (WS2)', () => {
     }
   })
 
+  it('parses an estate beneficiary without edbCategory', () => {
+    const plan = withTraditionalInherited({
+      ownerDeathYear: 2022,
+      decedentHadStartedRmds: false,
+      beneficiary: {
+        beneficiaryClass: 'estate',
+        provenance: { source: 'estate counsel', asOf: '2026-08-08' },
+      },
+    })
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(true)
+  })
+
+  it('rejects a designated-individual beneficiary without edbCategory', () => {
+    const plan = withTraditionalInherited({
+      ownerDeathYear: 2022,
+      decedentHadStartedRmds: false,
+      beneficiary: {
+        beneficiaryClass: 'designated-individual',
+        beneficiaryBirthYear: 1980,
+        soleBeneficiary: true,
+        provenance: { source: 'custodian statement', asOf: '2026-08-08' },
+      },
+    })
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(false)
+    if (!parsed.ok) {
+      expect(parsed.issues.join('\n')).toContain(
+        "edbCategory is required when beneficiaryClass is 'designated-individual'",
+      )
+    }
+  })
+
   it('rejects an EDB category on a non-designated-individual beneficiary class', () => {
     const plan = withTraditionalInherited({
       ownerDeathYear: 2022,

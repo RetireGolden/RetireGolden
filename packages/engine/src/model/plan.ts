@@ -488,14 +488,16 @@ export const inheritedBeneficiarySchema = z
      * disabled/chronically-ill.
      * @see IRC §401(a)(9)(E)(ii); Treas. Reg. §1.401(a)(9)-4(e)
      */
-    edbCategory: z.enum([
-      'none',
-      'surviving-spouse',
-      'minor-child',
-      'disabled',
-      'chronically-ill',
-      'not-more-than-10-years-younger',
-    ]),
+    edbCategory: z
+      .enum([
+        'none',
+        'surviving-spouse',
+        'minor-child',
+        'disabled',
+        'chronically-ill',
+        'not-more-than-10-years-younger',
+      ])
+      .optional(),
     /**
      * Beneficiary's calendar year of birth. Required for designated-individual
      * life-expectancy regimes and consistency checks; non-individual classes
@@ -588,9 +590,22 @@ export const inheritedBeneficiarySchema = z
       })
     }
 
+    if (
+      beneficiary.beneficiaryClass === 'designated-individual' &&
+      beneficiary.edbCategory === undefined
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['edbCategory'],
+        message:
+          "edbCategory is required when beneficiaryClass is 'designated-individual'; set an EDB category (or 'none' for a non-EDB designated beneficiary)",
+      })
+    }
+
     // EDB categories exist only for designated individuals (matrix §2 / X5).
     if (
       beneficiary.beneficiaryClass !== 'designated-individual' &&
+      beneficiary.edbCategory != null &&
       beneficiary.edbCategory !== 'none'
     ) {
       ctx.addIssue({
