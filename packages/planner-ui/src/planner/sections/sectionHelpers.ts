@@ -48,6 +48,20 @@ export type AllocatableAccount = Extract<Account, { type: 'taxable' | 'tradition
 
 export const EVEN_START_WEIGHTS: AllocationWeights = { usStocks: 60, intlStocks: 10, bonds: 25, cash: 5 }
 
+export const TAX_EXEMPT_ALLOCATION_DOUBLE_COUNT_WARNING =
+  "This account's allocation still supplies a taxable interest yield. Set Interest yield explicitly, often 0 for a municipal sleeve, so the same bonds are not counted twice."
+
+/** Warn when muni yield is entered but taxable interest still comes from the class blend. */
+export function showTaxExemptAllocationDoubleCountWarning(account: Account): boolean {
+  return (
+    account.type === 'taxable' &&
+    account.allocation !== undefined &&
+    account.taxExemptInterestYieldPct != null &&
+    account.taxExemptInterestYieldPct > 0 &&
+    account.interestYieldPct === undefined
+  )
+}
+
 export function isAllocatable(account: Account): account is AllocatableAccount {
   return account.type === 'taxable' || account.type === 'traditional' || account.type === 'roth' || account.type === 'hsa'
 }

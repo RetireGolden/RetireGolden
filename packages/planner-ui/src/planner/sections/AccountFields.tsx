@@ -7,7 +7,18 @@ import { ANNUITY_MAX_START_AGE } from '@retiregolden/engine/model/plan'
 import { analyzePensionElections } from '@retiregolden/engine/decisions/pensionElection'
 import { packForYear } from '@retiregolden/engine/params'
 import { AllocationPanel, ReturnEstimatorModal } from './AllocationPanel'
-import { ACCOUNT_LABEL, annuityStartAgeBounds, annuityStartAgeHelp, clampedAnnuityStartAge, EVEN_START_WEIGHTS, isAllocatable, isIndividuallyOwnedAccount, type AllocatableAccount } from './sectionHelpers'
+import {
+  ACCOUNT_LABEL,
+  annuityStartAgeBounds,
+  annuityStartAgeHelp,
+  clampedAnnuityStartAge,
+  EVEN_START_WEIGHTS,
+  isAllocatable,
+  isIndividuallyOwnedAccount,
+  showTaxExemptAllocationDoubleCountWarning,
+  TAX_EXEMPT_ALLOCATION_DOUBLE_COUNT_WARNING,
+  type AllocatableAccount,
+} from './sectionHelpers'
 import { usePlan } from '../planContextCore'
 import { CheckboxField, MoneyField, NumberField, PercentField, ReadonlyField, SelectField, TextField } from '../fields'
 import { fmtMoney } from '../format'
@@ -47,6 +58,33 @@ function canFundAnnuityPurchase(account: Account, taxQualification: 'qualified' 
   return taxQualification === 'qualified'
     ? account.type === 'traditional' && !account.inherited
     : account.type === 'cash' || account.type === 'taxable' || account.type === 'equityComp'
+}
+
+const TAX_EXEMPT_INTEREST_HELP =
+  "Annual interest from municipal bonds held in this account, as a percent of its start-of-year balance. Enter a bond's yield here or in Interest yield, not in both fields. This income never joins ordinary taxable income, but it does raise taxable Social Security, ACA household MAGI, and the income Medicare reads for IRMAA two years later. Two limits to know: the model treats none of it as private-activity-bond interest for AMT, and it does not add any of it to state taxable income even though some states tax municipal bonds from other states."
+
+function TaxExemptInterestYieldField({
+  account,
+  onCommit,
+}: {
+  account: Extract<Account, { type: 'taxable' }>
+  onCommit: (value: number) => void
+}) {
+  return (
+    <>
+      <PercentField
+        label="Tax-exempt interest yield"
+        help={TAX_EXEMPT_INTEREST_HELP}
+        value={account.taxExemptInterestYieldPct ?? 0}
+        onCommit={(v) => onCommit(v ?? 0)}
+      />
+      {showTaxExemptAllocationDoubleCountWarning(account) ? (
+        <p className="field-hint" style={{ color: 'var(--warn)' }} role="status">
+          {TAX_EXEMPT_ALLOCATION_DOUBLE_COUNT_WARNING}
+        </p>
+      ) : null}
+    </>
+  )
 }
 
 export function AccountFields({ account, index }: { account: Account; index: number }) {
@@ -131,12 +169,7 @@ export function AccountFields({ account, index }: { account: Account; index: num
             value={(account.qualifiedRatio ?? 0.85) * 100}
             onCommit={(v) => set('qualifiedRatio', Math.min(1, Math.max(0, (v ?? 85) / 100)))}
           />
-          <PercentField
-            label="Tax-exempt interest yield"
-            help="Annual interest from municipal bonds held in this account, as a percent of its start-of-year balance. Enter a bond's yield here or in Interest yield, not in both fields. This income never joins ordinary taxable income, but it does raise taxable Social Security, ACA household MAGI, and the income Medicare reads for IRMAA two years later. Two limits to know: the model treats none of it as private-activity-bond interest for AMT, and it does not add any of it to state taxable income even though some states tax municipal bonds from other states."
-            value={account.taxExemptInterestYieldPct ?? 0}
-            onCommit={(v) => set('taxExemptInterestYieldPct', v ?? 0)}
-          />
+          <TaxExemptInterestYieldField account={account} onCommit={(v) => set('taxExemptInterestYieldPct', v)} />
           <CheckboxField
             label="Reinvest yield"
             help="When checked, interest and dividends stay in the brokerage account and add to basis. When unchecked, they flow into annual cash surplus."
@@ -171,12 +204,7 @@ export function AccountFields({ account, index }: { account: Account; index: num
             allowNull
             onCommit={(v) => set('qualifiedRatio', v === null || v === undefined ? undefined : Math.min(1, Math.max(0, v / 100)))}
           />
-          <PercentField
-            label="Tax-exempt interest yield"
-            help="Annual interest from municipal bonds held in this account, as a percent of its start-of-year balance. Enter a bond's yield here or in Interest yield, not in both fields. This income never joins ordinary taxable income, but it does raise taxable Social Security, ACA household MAGI, and the income Medicare reads for IRMAA two years later. Two limits to know: the model treats none of it as private-activity-bond interest for AMT, and it does not add any of it to state taxable income even though some states tax municipal bonds from other states."
-            value={account.taxExemptInterestYieldPct ?? 0}
-            onCommit={(v) => set('taxExemptInterestYieldPct', v ?? 0)}
-          />
+          <TaxExemptInterestYieldField account={account} onCommit={(v) => set('taxExemptInterestYieldPct', v)} />
           <CheckboxField
             label="Reinvest yield"
             help="When checked, interest and dividends stay in the brokerage account and add to basis. When unchecked, they flow into annual cash surplus."
