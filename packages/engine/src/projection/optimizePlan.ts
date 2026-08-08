@@ -315,6 +315,10 @@ export interface OptimizerOpeningBuckets {
  * the exact ledger flips year-by-year, but one static bucket keeps the opening
  * scalars and `rmdDivisor` / `inheritedDistributionDivisor` numerators aligned
  * with `simulate`'s `startTraditional` / `startInheritedTraditional` split.
+ * Probe years remap a mid-horizon-flipped account's post-flip owner RMD into
+ * the inherited-traditional forced flow (`inheritedDistribution`, excluded
+ * from probe `rmd`) so that static bucket sees consistent floors; YearResult
+ * fields are unchanged.
  */
 export function optimizerOpeningBuckets(
   plan: Plan,

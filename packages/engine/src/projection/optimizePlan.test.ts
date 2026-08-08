@@ -633,6 +633,98 @@ describe('buildOptimizerInput', () => {
     expect(input.openingOther).toBe(10_000) // cash; inherited traditional is tracked separately
   })
 
+  it('remaps mid-horizon S2 flip owner RMDs into the probe inherited flow', async () => {
+    // Opening bucket is inherited (election after startYear); post-flip owner
+    // RMD must appear on probe.inheritedDistribution (not probe.rmd) so the
+    // LP's static inheritedTraditional floor stays consistent. YearResult.rmd
+    // remains on the owner path.
+    const plan = createEmptyPlan({ newId: testIds, now: fixedNow })
+    plan.household.people[0] = {
+      id: 'p1',
+      name: 'Pat',
+      dob: '1947-01-01', // age 79 in 2026 → RMD-eligible after flip
+      sex: 'average',
+      retirementAge: 65,
+      longevity: { planningAge: 95, source: 'manual' },
+    }
+    plan.assumptions.inflationPct = 0
+    plan.assumptions.defaultReturnPct = 0
+    plan.assumptions.stateEffectiveTaxPct = 0
+    plan.assumptions.heirTaxRatePct = 25
+    plan.expenses.baseAnnual = 0
+    plan.expenses.healthcare = {
+      pre65MonthlyPremiumPerPerson: 0,
+      applyAcaCredit: false,
+      medicareExtrasMonthlyPerPerson: 0,
+    }
+    plan.accounts = [
+      {
+        type: 'traditional',
+        id: testIds(),
+        name: 'S2 Inherited IRA',
+        ownerPersonId: 'p1',
+        annualReturnPct: 0,
+        kind: 'ira',
+        balance: 300_000,
+        annualContribution: 0,
+        inherited: {
+          ownerDeathYear: 2024,
+          decedentHadStartedRmds: true,
+          beneficiary: {
+            beneficiaryClass: 'designated-individual',
+            edbCategory: 'surviving-spouse',
+            beneficiaryBirthYear: 1947,
+            soleBeneficiary: true,
+            ownerBirthYear: 1945,
+            election: 'treat-as-own',
+            spouseUnlimitedWithdrawalRight: true,
+            treatAsOwnElectionYear: 2028,
+            ownerYearOfDeathRmdSatisfied: true,
+            provenance: { source: 'test', asOf: '2026-01-01' },
+          },
+        },
+      },
+      {
+        type: 'cash',
+        id: testIds(),
+        name: 'Cash',
+        ownerPersonId: null,
+        annualReturnPct: 0,
+        balance: 50_000,
+        annualContribution: 0,
+      },
+    ]
+    const validated = validate(plan)
+    const probes: OptimizerYearProbe[] = []
+    const ledger = simulatePlan(validated, {
+      startYear: 2026,
+      horizonEndYear: 2029,
+      taxCalculator: createFederalTaxCalculator(),
+      captureOptimizerInputs: (p) => probes.push(p),
+    })
+    const flipYear = ledger.years.find((y) => y.year === 2028)!
+    const probe2028 = probes.find((p) => p.year === 2028)!
+    // Ledger: owner RMD after flip, no inherited forced.
+    expect(flipYear.rmd).toBeGreaterThan(0)
+    expect(flipYear.inheritedTraditionalDistribution).toBe(0)
+    // Probe: remapped — rmd excludes the flip account; inherited includes it.
+    expect(probe2028.rmd).toBe(0)
+    expect(probe2028.inheritedDistribution).toBeCloseTo(flipYear.rmd, 2)
+    // Opening bucket remains inherited for the whole LP horizon.
+    const optOpts = { startYear: 2026, taxCalculator: createFederalTaxCalculator() }
+    const input = buildOptimizerInput(validated, optOpts)
+    expect(input.openingInheritedTrad).toBe(300_000)
+    expect(input.openingTrad).toBe(0)
+    const y2028 = input.years.find((y) => y.year === 2028)!
+    expect(y2028.inheritedDistribution).toBeCloseTo(flipYear.rmd, 2)
+    // No owner-traditional RMD floor (openingTrad is 0); inherited floor carries the flip.
+    expect(y2028.rmdDivisor).toBeNull()
+    expect(y2028.inheritedDistributionDivisor).not.toBeNull()
+    // Schedule remains feasible under the remapped floors.
+    const optimized = await optimizePlan(validated, optOpts)
+    expect(optimized.schedule.status).not.toBe('infeasible')
+  })
+
   it('passes forced inherited distributions as taxable liquid optimizer inputs', () => {
     const plan = inheritedTraditionalPlan({ ownTraditional: 50_000, inheritedTraditional: 300_000 })
     const inherited = plan.accounts.find((account) => account.type === 'traditional' && account.inherited)

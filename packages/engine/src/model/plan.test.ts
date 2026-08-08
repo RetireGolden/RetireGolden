@@ -1689,7 +1689,10 @@ describe('inherited-IRA beneficiary facts (WS2)', () => {
     expect(parsePlan(plan).ok).toBe(true)
   })
 
-  it('requires treatAsOwnElectionYear for a treat-as-own election', () => {
+  it('parses treat-as-own without treatAsOwnElectionYear (classifier refuses closed)', () => {
+    // Migration safety: pre-WS4 plans that only asserted the election must
+    // still parse; the classifier returns X5 needs-review when the year is
+    // missing so projection fails closed onto the labeled legacy path.
     const plan = withTraditionalInherited({
       ownerDeathYear: 2022,
       decedentHadStartedRmds: false,
@@ -1698,15 +1701,10 @@ describe('inherited-IRA beneficiary facts (WS2)', () => {
         edbCategory: 'surviving-spouse',
         election: 'treat-as-own',
         soleBeneficiary: true,
+        spouseUnlimitedWithdrawalRight: true,
       },
     })
-    const parsed = parsePlan(plan)
-    expect(parsed.ok).toBe(false)
-    if (!parsed.ok) {
-      expect(parsed.issues.join('\n')).toContain(
-        "treatAsOwnElectionYear is required when election is 'treat-as-own'",
-      )
-    }
+    expect(parsePlan(plan).ok).toBe(true)
   })
 
   it('forbids treatAsOwnElectionYear without a treat-as-own election', () => {

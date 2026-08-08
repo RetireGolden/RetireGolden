@@ -1134,7 +1134,11 @@ export interface InheritedAccountYearEvidence {
   regime: string
   matrixRow: string
   classification?: 'settled' | 'unsettled'
-  /** Present when the classifier refused (non-X1 → legacy fallback). */
+  /**
+   * Present when the classifier refused (non-X1 → legacy fallback) OR when the
+   * successor-clock / out-of-scope condition suppresses the schedule (matrix X2
+   * beneficiary-death rows).
+   */
   refusalReason?: string
   requirementKind: 'year-of-death-rmd' | 'annual-rmd' | 'none' | 'final-sweep' | 'legacy'
   /** Evidence amount on the real prior-Dec-31 balance (0 on the legacy path when forced is 0). */

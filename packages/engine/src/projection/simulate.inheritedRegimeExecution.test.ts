@@ -185,6 +185,71 @@ describe('WS4 inherited-regime execution fixtures', () => {
     expect(evidence(result, 2028).requirementKind).toBe('none')
   })
 
+  it('E6b S2 same-year flip: keeps the decedent year-of-death RMD and suppresses owner RMD', () => {
+    // §1.408-8(c)(3): election year equals ownerDeathYear → spouse takes no
+    // owner RMD that year but must take the decedent's unsatisfied YOD RMD.
+    // Owner born 1945, dies 2026 post-RBD → death-year age 81 → ULT 19.4.
+    const ultAge81 = packForYear(2026).pack.rmd.uniformLifetimeTable[81]
+    expect(ultAge81).toBe(19.4)
+    const plan = planFor(1947)
+    inherited(plan, 'traditional', {
+      ownerDeathYear: 2026,
+      decedentHadStartedRmds: true,
+      beneficiary: facts({
+        beneficiaryBirthYear: 1947,
+        ownerBirthYear: 1945,
+        edbCategory: 'surviving-spouse',
+        election: 'treat-as-own',
+        spouseUnlimitedWithdrawalRight: true,
+        treatAsOwnElectionYear: 2026,
+        // ownerYearOfDeathRmdSatisfied omitted → unsatisfied.
+      }),
+    }, 300_000)
+    const result = run(plan, 2027)
+    const y2026 = year(result, 2026)
+    const e2026 = evidence(result, 2026)
+    expect(e2026.requirementKind).toBe('year-of-death-rmd')
+    expect(e2026.divisor).toBe(19.4)
+    expect(e2026.executedRequiredAmount).toBeCloseTo(300_000 / 19.4, 2)
+    expect(y2026.inheritedDistribution).toBeCloseTo(300_000 / 19.4, 2)
+    // No owner RMD aggregation for this account in the flip/death year.
+    expect(y2026.rmd).toBe(0)
+    // Following year: owner-side treatment (spouse age 80 in 2027 → ULT 20.2).
+    const y2027 = year(result, 2027)
+    expect(y2027.inheritedDistribution).toBe(0)
+    expect(evidence(result, 2027).requirementKind).toBe('none')
+    expect(y2027.rmd).toBeCloseTo(year(result, 2026).balances.inherited! / 20.2, 2)
+  })
+
+  it('blocks scheduled contributions to an inherited Roth', () => {
+    const plan = planFor(1980)
+    inherited(plan, 'roth', {
+      ownerDeathYear: 2022,
+      decedentHadStartedRmds: false,
+      beneficiary: facts({
+        beneficiaryBirthYear: 1980,
+        ownerBirthYear: 1950,
+        edbCategory: 'none',
+        roth5YearStartYear: 2010,
+      }),
+    }, 100_000)
+    const roth = plan.accounts.find((a) => a.id === 'inherited')
+    if (roth?.type !== 'roth') throw new Error('fixture drift')
+    roth.annualContribution = 7_000
+    // Wages so a non-inherited Roth would contribute.
+    plan.incomes = [{
+      type: 'wages',
+      id: 'w',
+      personId: 'beneficiary',
+      annualGross: 80_000,
+      endAge: null,
+      realGrowthPct: 0,
+    }]
+    const result = run(plan, 2026)
+    expect(year(result, 2026).contributions).toBe(0)
+    expect(year(result, 2026).balances.inherited).toBe(100_000)
+  })
+
   it('E7: falls back to the legacy schedule for an estate and labels the refusal', () => {
     const plan = planFor(1995)
     inherited(plan, 'traditional', {

@@ -824,12 +824,19 @@ function resolvedSourceKindValid(
   if (kind === 'inheritedIraRmd') {
     if (account.inherited === undefined) return false
     if (!ownerModeledAlive) return false
-    // S2 post-election: account left inherited execution for owner RMD.
-    if (isTreatAsOwnEffective(account, taxYear)) return false
+    const inherited = account.inherited
+    // S2 post-election: account left inherited execution for owner RMD —
+    // except the same-year flip (election year = death year), when the
+    // decedent's unsatisfied year-of-death RMD still executes as inherited
+    // (Treas. Reg. §1.408-8(c)(3)).
+    if (isTreatAsOwnEffective(account, taxYear)) {
+      if (taxYear !== inherited.ownerDeathYear) return false
+      // Fall through: structural test must accept the YOD row the ledger emits.
+    }
     // Structural required-year test: take the WS3 engine's classified answer
     // (annual requirement or final-sweep year). Legacy formula retained only
-    // for legacy-path accounts (X1 / refusal fallback).
-    const inherited = account.inherited
+    // for legacy-path accounts (X1 / refusal fallback) — including the S2
+    // synthetic-S0 refusal mirror of the simulate cache.
     let scheduleInherited = inherited
     const accountType = account.type
     const accountKind = account.kind
@@ -839,6 +846,9 @@ function resolvedSourceKindValid(
       inherited,
     })
     // S2 pre-election: synthetic S0 schedule (election overridden to 'none').
+    // When the synthetic classification refuses, mirror the simulate cache:
+    // fall back to the legacy formula for the pre-election window so inventory
+    // accepts the legacy-formula events the simulator actually emits.
     if (
       regimeResult.kind === 'regime' &&
       regimeResult.regime === 'spouse-treat-as-own-transition' &&
@@ -846,14 +856,23 @@ function resolvedSourceKindValid(
     ) {
       scheduleInherited = {
         ...inherited,
-        beneficiary: { ...inherited.beneficiary, election: 'none' },
+        beneficiary: {
+          ...inherited.beneficiary,
+          election: 'none',
+          treatAsOwnElectionYear: undefined,
+        },
       }
       const synthetic = classifyInheritedRegime({
         accountType,
         accountKind,
         inherited: scheduleInherited,
       })
-      if (synthetic.kind === 'regime') regimeResult = synthetic
+      if (synthetic.kind === 'regime') {
+        regimeResult = synthetic
+      } else {
+        // Synthetic refusal → same legacy structural rule as path: 'legacy'.
+        regimeResult = synthetic
+      }
     }
     if (regimeResult.kind === 'refusal') {
       const yearsSinceDeath = taxYear - inherited.ownerDeathYear

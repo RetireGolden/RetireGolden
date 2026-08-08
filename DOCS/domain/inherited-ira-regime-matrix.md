@@ -231,8 +231,9 @@ redetermination), S2 window-and-flip (synthetic S0 before `treatAsOwnElectionYea
 aggregation), S3, and inherited-Roth K1/K2 (K1 ten-year sweep; K2 annual life-expectancy). Each
 year publishes `InheritedAccountYearEvidence` with regime, matrix row, requirement kind, executed
 amounts, limitations, disclosures, and citations; scenario comparison surfaces inherited totals
-from the ledger. Schema fact `treatAsOwnElectionYear` (calendar year, required when election is
-`treat-as-own`) gates the S2 flip. Classifier refusals other than X1 (`legacy-planning-approximation`)
+from the ledger. Schema fact `treatAsOwnElectionYear` (calendar year; parse-optional with
+`treat-as-own` for pre-WS4 migration, required by the classifier for a settled S2 row — missing year
+is X5 needs-review) gates the S2 flip. Classifier refusals other than X1 (`legacy-planning-approximation`)
 project on the labeled legacy two-field path for planning continuity; the evidence row carries the
 refusal so no consumer can call the schedule compliant. The `YearResult.inheritedDistribution`
 scalar is the **forced** total (its long-standing public contract); voluntary inherited draws are
@@ -241,6 +242,8 @@ is the traditional-character subset (ordinary income / traditional withdrawals).
 scope: §1.402(c)-2(j)(4) catch-up execution (prior ten-year-election fact not representable; S2 carries
 `treat-as-own-timing-gate-unverified` because §1.408-8(c)(1)(iii)–(iv) is not consulted), non-qualified
 inherited-Roth earnings taxation (K3 `roth-taxability-needs-review` disclosure only), post-S2
-contribution/conversion/QCD enablement for validators that lack a year context (WS5), and Roth S2-flip
-basis migration into the owned Roth pool (post-flip draws keep the inherited non-taxed / non-penalized
-path; contribution basis was never seeded).
+contribution/conversion/QCD enablement for validators that lack a year context (WS5; contributions
+remain blocked post-flip because the plan still carries the inherited block and
+`acceptsContributions` refuses any inherited traditional or Roth), and Roth S2-flip basis migration
+into the owned Roth pool (post-flip draws keep the inherited non-taxed / non-penalized path;
+contribution basis was never seeded).

@@ -1390,6 +1390,12 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         // its evidence rows. The S2 identity flip still applies from the
         // election year — the refusal is about the beneficiary-window amounts,
         // not the election itself.
+        //
+        // Flip agreement: primary here is a valid S2 classification (the
+        // classifier's structural gate already held), so isTreatAsOwnEffective
+        // — which mirrors that gate — also returns true from the election year.
+        // A fact set the classifier would refuse never reaches isS2: true; the
+        // cache-driven flip path and the helper therefore agree.
         inheritedClassCache.set(account.id, {
           accountId: account.id,
           accountType,
@@ -3712,15 +3718,24 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // Written without `isAggregatedIra`/`followsOwnerRmds` type predicates: those
     // return `account is TraditionalAccount`, so a false result wrongly excludes
     // every traditional account (including post-election S2).
+    //
+    // §1.408-8(c)(3): when the treat-as-own election year equals ownerDeathYear,
+    // the spouse takes no owner RMD that year (owner-side aggregation begins the
+    // following year) but must still take the decedent's unsatisfied year-of-
+    // death RMD on the inherited path below.
     const isAggregatedIraThisYear = (account: Account): boolean => {
       if (account.type !== 'traditional' || account.kind !== 'ira') return false
       if (account.inherited === undefined) return true
-      return isTreatAsOwnEffective(account, year)
+      if (!isTreatAsOwnEffective(account, year)) return false
+      if (year === account.inherited.ownerDeathYear) return false
+      return true
     }
     const followsOwnerRmdsThisYear = (account: Account): boolean => {
       if (account.type !== 'traditional') return false
       if (account.inherited === undefined) return true
-      return isTreatAsOwnEffective(account, year)
+      if (!isTreatAsOwnEffective(account, year)) return false
+      if (year === account.inherited.ownerDeathYear) return false
+      return true
     }
     const preDistributionAggregateIraBalance = new Map<string, number>()
     for (const state of balances) {
@@ -4186,7 +4201,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         })
         continue
       }
-      // S2 post-election: owned-side bookkeeping owns the account this year.
+      // S2 post-election: owned-side bookkeeping owns the account this year
+      // (except the same-year-flip death-year arm immediately below).
       if (isTreatAsOwnEffective(state.account, year)) {
         const primaryClass =
           cache.primary.kind === 'regime' ? cache.primary : undefined
@@ -4194,6 +4210,81 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           year === startYear && cache.preHorizonYearOfDeathRmdUnresolved === true
             ? 'pre-horizon-year-of-death-rmd-unresolved' as const
             : undefined
+        // §1.408-8(c)(3): when the treat-as-own election year equals the
+        // owner's death year, the spouse takes no owner RMD that year but MUST
+        // take the decedent's unsatisfied year-of-death RMD. Owner-side
+        // treatment (followsOwnerRmdsThisYear / isAggregatedIraThisYear) is
+        // already suppressed for this death year above; execute and evidence
+        // the YOD requirement here before owner-side treatment begins the
+        // following year.
+        const sameYearFlipYodDue =
+          year === state.account.inherited.ownerDeathYear &&
+          primaryClass !== undefined &&
+          primaryClass.rbdComparison === 'on-or-after-rbd' &&
+          state.account.inherited.beneficiary?.ownerYearOfDeathRmdSatisfied !== true
+        if (sameYearFlipYodDue) {
+          const priorYearEndBalance = startOfYearBalance.get(state.account.id) ?? 0
+          const req = inheritedRequirementForYear({
+            pack,
+            classification: primaryClass,
+            inherited: state.account.inherited,
+            year,
+            priorYearEndBalance,
+          })
+          const requiredAmount = req.requiredAmount
+          const take =
+            req.kind === 'year-of-death-rmd'
+              ? Math.min(req.requiredAmount, state.balance)
+              : 0
+          const executed =
+            take > 0 && !planDollarsMoveNoLedgerCent(take) ? take : 0
+          if (executed > 0) {
+            state.balance -= executed
+            const kind = 'inheritedIraRmd' as const
+            const producerOccurrenceKey = runtimeOccurrenceKey(kind, state.account.id)
+            recordAnnualRetirementRuntimeOccurrence({
+              producerOccurrenceKey,
+              kind,
+              grossAmountPlanDollars: executed,
+              ownerPersonId: state.account.ownerPersonId,
+              sourceAccountId: state.account.id,
+              executionDate: null,
+              executionSequence: null,
+              movementAuthorityId: null,
+            })
+            if (state.account.type === 'roth') {
+              inheritedRothForced += executed
+            } else {
+              inheritedOrdinaryIncome += executed
+            }
+            inheritedTotal += executed
+          }
+          let limitation = req.limitation
+          if (
+            year === startYear &&
+            cache.preHorizonYearOfDeathRmdUnresolved === true
+          ) {
+            limitation = 'pre-horizon-year-of-death-rmd-unresolved'
+          }
+          inheritedYearEvidenceDraft.push({
+            accountId: state.account.id,
+            ownerPersonId: cache.ownerPersonId,
+            regime: primaryClass.regime,
+            matrixRow: primaryClass.row,
+            classification: primaryClass.classification,
+            requirementKind: req.kind,
+            requiredAmount,
+            executedRequiredAmount: executed,
+            // Owner-side draws after the flip are not inherited voluntary draws.
+            voluntaryAmount: 0,
+            ...(req.divisor !== undefined ? { divisor: req.divisor } : {}),
+            ...(req.divisorArm !== undefined ? { divisorArm: req.divisorArm } : {}),
+            ...(limitation !== undefined ? { limitation } : {}),
+            disclosures: [...primaryClass.disclosures],
+            citations: [...req.citations],
+          })
+          continue
+        }
         inheritedYearEvidenceDraft.push({
           accountId: state.account.id,
           ownerPersonId: cache.ownerPersonId,
@@ -7737,7 +7828,12 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       // whole LP horizon; else inherited. Mid-horizon S2 flips are a documented
       // LP granularity approximation — the exact ledger flips year-by-year, but
       // the LP holds one static bucket so rmdDivisor's numerator and the opening
-      // bucket stay consistent.
+      // bucket stay consistent. Probe remapping below publishes a mid-horizon-
+      // flipped account's post-flip owner RMD as part of the inherited-
+      // traditional forced flow (added to probe `inheritedDistribution`,
+      // excluded from probe `rmd`) so the LP's static inheritedTraditional
+      // bucket sees consistent floors; YearResult.rmd / inherited* fields are
+      // unchanged.
       let startTraditional = 0
       let startInheritedTraditional = 0
       for (const state of balances) {
@@ -7752,6 +7848,29 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           startInheritedTraditional += opening
         }
       }
+      // Mid-horizon S2 flip: accounts still in the inheritedTraditional opening
+      // bucket whose owner RMD executed this year after the flip. Remap those
+      // dollars into the probe's inherited forced flow only (ledger YearResult
+      // fields stay on the owner-RMD path).
+      let midHorizonFlipOwnerRmd = 0
+      for (const state of balances) {
+        if (state.account.type !== 'traditional') continue
+        if (state.account.inherited === undefined) continue
+        if (isTreatAsOwnEffective(state.account, startYear)) continue
+        if (!isTreatAsOwnEffective(state.account, year)) continue
+        const take = rmdTakeByAccount.get(state.account.id) ?? 0
+        if (take > 0 && !planDollarsMoveNoLedgerCent(take)) {
+          midHorizonFlipOwnerRmd += take
+        }
+      }
+      const probeRmd = Math.max(0, rmdTotal - midHorizonFlipOwnerRmd)
+      const probeInheritedDistribution =
+        inheritedOrdinaryIncome + midHorizonFlipOwnerRmd
+      const rmdTaxableTotal = Math.max(0, rmdTotal - rmdNontaxable)
+      const probeRmdTaxable =
+        rmdTotal > 0
+          ? rmdTaxableTotal * (probeRmd / rmdTotal)
+          : 0
       // The charitable exclusion riding on this year's forced owned-IRA
       // distribution, carried on its own term instead of inside the base.
       //
@@ -8233,8 +8352,12 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
               ? conversionTaxableAmountForGross(remainingConvertibleGross) /
                 remainingConvertibleGross
               : 1,
-        rmd: rmdTotal,
-        rmdTaxable: Math.max(0, rmdTotal - rmdNontaxable),
+        // Probe-only remap: mid-horizon S2 flip owner RMDs ride the inherited
+        // forced flow so the LP's static inheritedTraditional bucket stays
+        // consistent (see comment at startTraditional). YearResult.rmd is
+        // unchanged.
+        rmd: probeRmd,
+        rmdTaxable: probeRmdTaxable,
         incumbentTraditionalDistribution: optimizerTraditionalGross,
         traditionalWithdrawalTaxableFraction:
           optimizerTraditionalGross > 0
@@ -8250,7 +8373,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
               : 1,
         startTraditional,
         // Traditional forced only — matches OptimizerYearProbe / LP ordinary base.
-        inheritedDistribution: inheritedOrdinaryIncome,
+        // Includes mid-horizon-flip owner RMDs remapped above (probe only).
+        inheritedDistribution: probeInheritedDistribution,
         startInheritedTraditional,
         peopleAged65Plus,
         ssa44IrmaaRedetermination: ssa44ActiveInYear(year),
@@ -8263,9 +8387,12 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // the need-based plan is voluntary-only for each still-inherited account.
     // S2 POST-FLIP rows keep voluntaryAmount 0: owner-side draws are not
     // inherited voluntary draws (the flip already moved the account out of
-    // the inherited schedule).
+    // the inherited schedule). Map built once per year — avoid per-row find.
+    const balanceStateByAccountId = new Map(
+      balances.map((state) => [state.account.id, state] as const),
+    )
     for (const row of inheritedYearEvidenceDraft) {
-      const evidenceState = balances.find((b) => b.account.id === row.accountId)
+      const evidenceState = balanceStateByAccountId.get(row.accountId)
       // Only traditional/roth accounts carry an inherited block; narrowing here
       // keeps the helper's structural parameter honest for the full union.
       const evidenceAccount = evidenceState?.account

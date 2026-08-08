@@ -526,7 +526,10 @@ export const inheritedBeneficiarySchema = z
      * This is a deliberate state-transition contract: before this year the
      * account remains an inherited IRA; from this year it is the spouse's own
      * IRA. The engine never infers this transition from a deemed election.
-     * Required only with `election: 'treat-as-own'`.
+     * Parse-optional with `election: 'treat-as-own'` so pre-WS4 persisted plans
+     * still parse; the classifier refuses S2 with an actionable X5 when the
+     * year is missing (fail closed onto the labeled legacy path). When present,
+     * must be on or after `ownerDeathYear`.
      * @see Treas. Reg. §1.408-8(c)(1)-(2)
      */
     treatAsOwnElectionYear: calendarYear.optional(),
@@ -781,15 +784,14 @@ export const inheritedAccountSchema = z
     const beneficiary = inherited.beneficiary
     if (beneficiary === undefined) return
 
+    // treatAsOwnElectionYear is parse-optional with treat-as-own (migration
+    // safety for pre-WS4 plans). Missing year classifies X5 needs-review
+    // downstream; present year must be on/after ownerDeathYear.
     if (beneficiary.election === 'treat-as-own') {
-      if (beneficiary.treatAsOwnElectionYear === undefined) {
-        ctx.addIssue({
-          code: 'custom',
-          path: ['beneficiary', 'treatAsOwnElectionYear'],
-          message:
-            "treatAsOwnElectionYear is required when election is 'treat-as-own'; provide the calendar year the spouse redesignates this account as their own IRA",
-        })
-      } else if (beneficiary.treatAsOwnElectionYear < inherited.ownerDeathYear) {
+      if (
+        beneficiary.treatAsOwnElectionYear !== undefined &&
+        beneficiary.treatAsOwnElectionYear < inherited.ownerDeathYear
+      ) {
         ctx.addIssue({
           code: 'custom',
           path: ['beneficiary', 'treatAsOwnElectionYear'],

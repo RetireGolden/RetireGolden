@@ -653,6 +653,16 @@ export function classifyInheritedRegime(input: {
           "election 'treat-as-own' requires spouseUnlimitedWithdrawalRight true (Treas. Reg. §1.408-8(c)(1)); set spouseUnlimitedWithdrawalRight to true or choose a different election",
         )
       }
+      // Parse-optional for migration: pre-WS4 plans may carry treat-as-own
+      // without a year. Refuse closed so the ledger falls onto the labeled
+      // legacy path rather than inventing a flip year.
+      if (b.treatAsOwnElectionYear === undefined) {
+        return refusal(
+          'needs-review',
+          'X5',
+          "election 'treat-as-own' requires treatAsOwnElectionYear (the calendar year the spouse redesignates this account as their own IRA, Treas. Reg. §1.408-8(c)(1)-(2)); supply treatAsOwnElectionYear on or after ownerDeathYear",
+        )
+      }
       return {
         kind: 'regime',
         regime: 'spouse-treat-as-own-transition',
