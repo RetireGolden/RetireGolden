@@ -891,6 +891,9 @@ function resolvedSourceKindValid(
       year: taxYear,
       priorYearEndBalance: 1,
     })
+    // Notice-waived annual years publish evidence but execute zero — no
+    // occurrence and no structural inventory requirement (matrix §4).
+    if (req.noticeWaived === true) return false
     return (
       req.kind === 'year-of-death-rmd' ||
       req.kind === 'annual-rmd' ||

@@ -1205,7 +1205,9 @@ export function hasSpouseTreatAsOwnElection(
  * Whether a spouse's explicit treat-as-own election has taken effect for an
  * account in a calendar year. Mirrors the classifier's S2 structural gate
  * (`classifyInheritedRegime` in strategies/inheritedIra.ts): IRA kind only,
- * edbCategory `'surviving-spouse'`, soleBeneficiary true, spouseUnlimitedWithdrawalRight
+ * ownerDeathYear on or after 2020 (SECURE Act §401(b)(1) boundary — pre-2020
+ * deaths classify X1 legacy before the classifier reaches S2), edbCategory
+ * `'surviving-spouse'`, soleBeneficiary true, spouseUnlimitedWithdrawalRight
  * true, election `'treat-as-own'`, and a defined `treatAsOwnElectionYear` with
  * `year >=` it. A fact set the classifier would refuse never flips. This
  * intentionally does not rewire the static eligibility predicates below;
@@ -1218,6 +1220,9 @@ export function isTreatAsOwnEffective(
   const beneficiary = account.inherited?.beneficiary
   if (
     account.kind !== 'ira' ||
+    account.inherited === undefined ||
+    account.inherited.ownerDeathYear === undefined ||
+    account.inherited.ownerDeathYear < 2020 ||
     beneficiary?.election !== 'treat-as-own' ||
     beneficiary.edbCategory !== 'surviving-spouse' ||
     beneficiary.soleBeneficiary !== true ||

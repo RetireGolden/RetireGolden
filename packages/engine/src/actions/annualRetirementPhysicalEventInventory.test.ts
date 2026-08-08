@@ -1092,6 +1092,42 @@ describe('buildAnnualRetirementPhysicalEventInventory', () => {
     )).status).toBe('annualPhysicalEventInventoryBuilt')
   })
 
+  it('rejects inherited RMD records in notice-waived annual years', () => {
+    const plan = basePlan()
+    plan.household.people[0]!.dob = '1980-01-01'
+    const inheritedAccount = plan.accounts.find((account) => account.id === inheritedId)
+    if (inheritedAccount?.type !== 'traditional' || inheritedAccount.inherited === undefined) {
+      throw new Error('fixture drift')
+    }
+    inheritedAccount.inherited = {
+      ownerDeathYear: 2020,
+      decedentHadStartedRmds: true,
+      beneficiary: {
+        beneficiaryClass: 'designated-individual',
+        beneficiaryBirthYear: 1980,
+        ownerBirthYear: 1945,
+        soleBeneficiary: true,
+        edbCategory: 'none',
+        ownerYearOfDeathRmdSatisfied: true,
+        provenance: { source: 'test', asOf: '2026-01-01' },
+      },
+    }
+    const taxYear = 2023
+    const base = input(plan, [resolved({
+      kind: 'inheritedIraRmd',
+      sourceAccountId: inheritedId,
+      taxYear,
+    })])
+    expect(issueKinds({
+      ...base,
+      taxYear,
+      runtimeInventoryAttestation: {
+        ...base.runtimeInventoryAttestation!,
+        taxYear,
+      },
+    })).toContain('sourceKindMismatch')
+  })
+
   it('accepts legacy-formula inherited RMD events when the S2 synthetic schedule refuses', () => {
     // Mirror of simulate's synthetic-S0 refusal fallback: primary S2 is valid,
     // but the pre-election S0 window refuses (born-1959 contested applicable

@@ -4423,6 +4423,23 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         finalDeadlineYear = scheduleClass.finalDeadlineYear
       }
 
+      // Death-year treat-as-own election: isTreatAsOwnEffective defers the flip,
+      // but matrix identity for the election year is S2 (primary), not the
+      // synthetic S0 schedule used for year-of-death arithmetic.
+      const beneficiaryForIdentity = state.account.inherited.beneficiary
+      if (
+        cache.isS2 &&
+        cache.primary.kind === 'regime' &&
+        beneficiaryForIdentity?.election === 'treat-as-own' &&
+        beneficiaryForIdentity.treatAsOwnElectionYear === state.account.inherited.ownerDeathYear &&
+        year === state.account.inherited.ownerDeathYear
+      ) {
+        regime = cache.primary.regime
+        matrixRow = cache.primary.row
+        classification = cache.primary.classification
+        disclosures = [...cache.primary.disclosures]
+      }
+
       // Pre-horizon year-of-death RMD: obligation predates startYear and is not
       // modeled as satisfied (§1.408-8(e)(4)(i)). First projection year only;
       // no amount is forced beyond the year's ordinary schedule.
@@ -7880,8 +7897,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       // income at coefficient 1 (optimizer.ts cash / inh recursion / tifloor),
       // so netting Form 8606 basis here understates spendable cash and
       // inherited-bucket depletion. Basis rides the income side only, through
-      // `probeRmdTaxable` and `s2FlipOwnerRmdObligationRemapNontaxable` below
-      // (the same owned-RMD nontaxable pathway `rmdTaxable` already serves).
+      // `forcedDistributionOrdinaryIncomeExclusion` (S2 nontaxable share) and
+      // the owned-RMD `probeRmdTaxable` pathway.
       const probeInheritedDistribution =
         inheritedOrdinaryIncome + s2FlipOwnerRmdObligationRemap
       const rmdTaxableTotal = Math.max(0, rmdTotal - rmdNontaxable)
@@ -7932,7 +7949,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         Math.min(
           qcdIncomeOffset + namedQcdIncomeOffset,
           rmdTotal - rmdNontaxable,
-        ),
+        ) + s2FlipOwnerRmdObligationRemapNontaxable,
       )
       // The CASH side of the same gift, which the exclusion above does not
       // touch and cannot: one is dollars taken out of the year's INCOME, the
@@ -7998,7 +8015,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           incomeBeforeConversion -
             (probeRmdTaxable - optimizerForcedDistributionOrdinaryExclusion) -
             inheritedOrdinaryIncome -
-            s2FlipOwnerRmdObligationRemapNontaxable,
+            s2FlipOwnerRmdObligationRemap,
         ) + taxableSs
       // Deliberate conservative MILP boundary: the linear optimizer does not
       // model a signed capital-loss pool, so it never receives a negative base.
@@ -8394,7 +8411,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         // Traditional forced only — matches OptimizerYearProbe / LP ordinary base.
         // Includes post-flip S2 owner-RMD obligation shares remapped above at
         // GROSS (probe only); basis is netted on the income side via
-        // `probeRmdTaxable` and `s2FlipOwnerRmdObligationRemapNontaxable`.
+        // `forcedDistributionOrdinaryIncomeExclusion`.
         inheritedDistribution: probeInheritedDistribution,
         startInheritedTraditional,
         peopleAged65Plus,

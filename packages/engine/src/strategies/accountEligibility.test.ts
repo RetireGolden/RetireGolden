@@ -142,6 +142,7 @@ describe('contributions / convertibility / RMD eligibility', () => {
     expect(isTreatAsOwnEffective({
       kind: 'ira',
       inherited: {
+        ownerDeathYear: 2024,
         beneficiary: {
           election: 'treat-as-own',
           treatAsOwnElectionYear: 2026,
@@ -154,6 +155,7 @@ describe('contributions / convertibility / RMD eligibility', () => {
     expect(isTreatAsOwnEffective({
       kind: 'ira',
       inherited: {
+        ownerDeathYear: 2024,
         beneficiary: {
           election: 'treat-as-own',
           treatAsOwnElectionYear: 2026,
@@ -167,6 +169,20 @@ describe('contributions / convertibility / RMD eligibility', () => {
     expect(isTreatAsOwnEffective({
       kind: '401k',
       inherited: {
+        beneficiary: {
+          election: 'treat-as-own',
+          treatAsOwnElectionYear: 2026,
+          edbCategory: 'surviving-spouse',
+          soleBeneficiary: true,
+          spouseUnlimitedWithdrawalRight: true,
+        },
+      },
+    }, 2026)).toBe(false)
+    // Pre-SECURE death: classifier never reaches S2 (X1 legacy first).
+    expect(isTreatAsOwnEffective({
+      kind: 'ira',
+      inherited: {
+        ownerDeathYear: 2019,
         beneficiary: {
           election: 'treat-as-own',
           treatAsOwnElectionYear: 2026,

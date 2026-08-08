@@ -826,8 +826,16 @@ describe('buildOptimizerInput', () => {
     // must not be netted of basis.
     expect(probe2026.inheritedDistribution).toBeCloseTo((year2026.rmd * 3) / 4, 2)
     expect(probe2026.rmd + probe2026.inheritedDistribution).toBeCloseTo(year2026.rmd, 2)
-    // The basis netting happens on the income side only: with 8606 basis in
-    // the pool, the probe's taxable RMD share sits strictly below its gross.
+    // LP income on the remapped S2 share equals the ledger taxable share:
+    // gross `wi` minus the nontaxable exclusion routed through
+    // `forcedDistributionOrdinaryIncomeExclusion`.
+    const remappedGross = probe2026.inheritedDistribution
+    const aggregateNontaxableFraction = 50_000 / 400_000
+    const expectedS2Taxable = remappedGross * (1 - aggregateNontaxableFraction)
+    const lpS2Income =
+      remappedGross - (probe2026.forcedDistributionOrdinaryIncomeExclusion ?? 0)
+    expect(lpS2Income).toBeCloseTo(expectedS2Taxable, 2)
+    // Owned-IRA probe share still carries basis on `rmdTaxable`.
     expect(probe2026.rmdTaxable).toBeDefined()
     expect(probe2026.rmdTaxable!).toBeGreaterThan(0)
     expect(probe2026.rmdTaxable!).toBeLessThan(probe2026.rmd)

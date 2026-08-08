@@ -208,6 +208,8 @@ describe('WS4 inherited-regime execution fixtures', () => {
     const result = run(plan, 2027)
     const y2026 = year(result, 2026)
     const e2026 = evidence(result, 2026)
+    expect(e2026.regime).toBe('spouse-treat-as-own-transition')
+    expect(e2026.matrixRow).toBe('S2')
     expect(e2026.requirementKind).toBe('year-of-death-rmd')
     expect(e2026.divisor).toBe(19.4)
     expect(e2026.executedRequiredAmount).toBeCloseTo(300_000 / 19.4, 2)
