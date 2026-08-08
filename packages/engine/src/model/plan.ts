@@ -664,17 +664,30 @@ export const inheritedAccountSchema = z
     const beneficiary = inherited.beneficiary
     if (beneficiary === undefined) return
 
-    // Minor-child EDB ends at the 21st birthday (§1.401(a)(9)-4(e)(3)). Age in
-    // the death year is year arithmetic only; a beneficiary already 21+ cannot
-    // hold the minor-child category.
+    // A beneficiary born after the calendar year of death cannot have been a
+    // designated beneficiary as of the date of death (§1.401(a)(9)-4(c)).
+    if (beneficiary.beneficiaryBirthYear > inherited.ownerDeathYear) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['beneficiary', 'beneficiaryBirthYear'],
+        message:
+          'beneficiaryBirthYear cannot be after ownerDeathYear (a designated beneficiary must be alive on the date of death, §1.401(a)(9)-4(c)) — correct beneficiaryBirthYear or ownerDeathYear',
+      })
+    }
+
+    // Minor-child EDB ends at the 21st birthday (§1.401(a)(9)-4(e)(3)). At year
+    // precision, age exactly 21 attained in the death year is ambiguous (the
+    // beneficiary may still have been 20 on the date of death); parse rejects
+    // only clear contradictions (age ≥ 22 by year arithmetic) and the
+    // classifier marks year-precision ambiguity needs-review.
     if (beneficiary.edbCategory === 'minor-child') {
       const ageInDeathYear = inherited.ownerDeathYear - beneficiary.beneficiaryBirthYear
-      if (ageInDeathYear >= 21) {
+      if (ageInDeathYear >= 22) {
         ctx.addIssue({
           code: 'custom',
           path: ['beneficiary', 'edbCategory'],
           message:
-            "edbCategory 'minor-child' is contradicted by beneficiaryBirthYear (age ≥ 21 in the owner death year; majority is the 21st birthday, §1.401(a)(9)-4(e)(3)) — correct beneficiaryBirthYear, ownerDeathYear, or edbCategory",
+            "edbCategory 'minor-child' is contradicted by beneficiaryBirthYear (age ≥ 22 in the owner death year; majority is the 21st birthday, §1.401(a)(9)-4(e)(3)) — correct beneficiaryBirthYear, ownerDeathYear, or edbCategory",
         })
       }
     }

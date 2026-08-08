@@ -1706,7 +1706,7 @@ describe('inherited-IRA beneficiary facts (WS2)', () => {
     }
   })
 
-  it('rejects minor-child whose age in the death year is already ≥ 21', () => {
+  it('rejects minor-child whose age in the death year is already ≥ 22', () => {
     const plan = withTraditionalInherited({
       ownerDeathYear: 2022,
       decedentHadStartedRmds: false,
@@ -1751,7 +1751,8 @@ describe('inherited-IRA beneficiary facts (WS2)', () => {
     expect(parsePlan(plan).ok).toBe(true)
   })
 
-  it('rejects minor-child exactly age 21 in the death year', () => {
+  it('accepts minor-child exactly age 21 in the death year (year-precision ambiguity)', () => {
+    // Age 21 by year arithmetic may still have been 20 on the date of death.
     const plan = withTraditionalInherited({
       ownerDeathYear: 2022,
       decedentHadStartedRmds: false,
@@ -1761,11 +1762,23 @@ describe('inherited-IRA beneficiary facts (WS2)', () => {
         beneficiaryBirthYear: 2001, // age 21 in 2022
       },
     })
+    expect(parsePlan(plan).ok).toBe(true)
+  })
+
+  it('rejects beneficiaryBirthYear after ownerDeathYear', () => {
+    const plan = withTraditionalInherited({
+      ownerDeathYear: 2022,
+      decedentHadStartedRmds: false,
+      beneficiary: {
+        ...fullBeneficiary,
+        beneficiaryBirthYear: 2023,
+      },
+    })
     const parsed = parsePlan(plan)
     expect(parsed.ok).toBe(false)
     if (!parsed.ok) {
       expect(parsed.issues.join('\n')).toContain(
-        "edbCategory 'minor-child' is contradicted by beneficiaryBirthYear",
+        'beneficiaryBirthYear cannot be after ownerDeathYear',
       )
     }
   })
