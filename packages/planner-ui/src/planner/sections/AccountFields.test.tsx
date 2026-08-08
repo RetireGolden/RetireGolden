@@ -664,6 +664,126 @@ describe('AccountFields inherited beneficiary details', () => {
     expect(container?.querySelector('[data-testid="beneficiary-details-panel"]')).toBeNull()
     expect(container?.textContent).not.toContain('Use beneficiary details')
   })
+
+  it('shows beneficiary details for inherited Roth employer accounts with the workplace note', () => {
+    const plan = planWithAccount(rothAccount({
+      kind: 'employer',
+      inherited: {
+        ownerDeathYear: 2024,
+        decedentHadStartedRmds: false,
+        beneficiary: {
+          beneficiaryClass: 'designated-individual',
+          edbCategory: 'none',
+          beneficiaryBirthYear: 1985,
+          soleBeneficiary: true,
+          roth5YearStartYear: 2015,
+          provenance: { source: 'user-entered', asOf: '2026-08-08' },
+        },
+      },
+    }))
+    plan.accounts[0]!.ownerPersonId = plan.household.people[0]!.id
+    renderFields(plan)
+
+    expect(container?.querySelector('[data-testid="inherited-roth-employer-hint"]')?.textContent).toBe(
+      'Workplace-plan schedules are not modeled; this account uses the simpler planning estimate, and these facts are kept for review.',
+    )
+    expect(container?.querySelector('[data-testid="beneficiary-details-panel"]')).not.toBeNull()
+    expect(container?.textContent).toContain('Roth 5-year start year')
+    const parsed = parsePlan(structuredClone(plan))
+    expect(parsed.ok).toBe(true)
+  })
+
+  it('hides contribution basis for inherited Roth accounts and clears it when inherited is enabled', () => {
+    const plan = planWithAccount(rothAccount({ contributionBasis: 25_000 }))
+    const mounted = mountEditable(plan)
+
+    expect(mounted.container().textContent).toContain('Contribution basis')
+    expect(mounted.container().querySelector('[data-testid="inherited-roth-contribution-basis-hint"]')).toBeNull()
+
+    act(() => {
+      const box = controlByLabel<HTMLInputElement>(mounted.container(), 'Inherited Roth account')
+      box.click()
+    })
+
+    const account = mounted.plan.accounts[0]!
+    expect(account.type).toBe('roth')
+    if (account.type !== 'roth') throw new Error('expected roth')
+    expect(account.contributionBasis).toBeUndefined()
+    expect(mounted.container().textContent).not.toContain('Contribution basis')
+    expect(mounted.container().querySelector('[data-testid="inherited-roth-contribution-basis-hint"]')?.textContent).toBe(
+      'The model does not use contribution basis on an inherited Roth; its withdrawals are modeled untaxed with the five-year caution below.',
+    )
+  })
+
+  it('clears sepp when inherited is enabled on a traditional account (parse-valid)', () => {
+    const plan = planWithAccount(retirementAccount({
+      sepp: { startAge: 55, method: 'rmd' },
+    }))
+    plan.accounts[0]!.ownerPersonId = plan.household.people[0]!.id
+    const mounted = mountEditable(plan)
+
+    expect(mounted.container().textContent).toContain('72(t) SEPP')
+
+    act(() => {
+      const box = controlByLabel<HTMLInputElement>(mounted.container(), 'Inherited account')
+      box.click()
+    })
+
+    const account = mounted.plan.accounts[0]!
+    expect(account.type).toBe('traditional')
+    if (account.type !== 'traditional') throw new Error('expected traditional')
+    expect(account.inherited).toBeDefined()
+    expect(account.sepp).toBeUndefined()
+    expect(mounted.container().textContent).not.toContain('72(t) SEPP')
+    const parsed = parsePlan(structuredClone(mounted.plan))
+    expect(parsed.ok).toBe(true)
+  })
+
+  it('shows the five-year caution for a recent Roth start year but not an old one', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-08-08T12:00:00Z'))
+
+    renderFields(planWithAccount(rothAccount({
+      inherited: {
+        ownerDeathYear: 2024,
+        decedentHadStartedRmds: false,
+        beneficiary: {
+          beneficiaryClass: 'designated-individual',
+          edbCategory: 'none',
+          beneficiaryBirthYear: 1985,
+          soleBeneficiary: true,
+          roth5YearStartYear: 2024,
+          provenance: { source: 'user-entered', asOf: '2026-08-08' },
+        },
+      },
+    })))
+    expect(container?.querySelector('[data-testid="roth-five-year-incomplete-hint"]')?.textContent).toContain(
+      'The five-year period may not be complete',
+    )
+
+    if (root) act(() => root!.unmount())
+    container?.remove()
+    root = null
+    container = null
+
+    renderFields(planWithAccount(rothAccount({
+      inherited: {
+        ownerDeathYear: 2024,
+        decedentHadStartedRmds: false,
+        beneficiary: {
+          beneficiaryClass: 'designated-individual',
+          edbCategory: 'none',
+          beneficiaryBirthYear: 1985,
+          soleBeneficiary: true,
+          roth5YearStartYear: 2010,
+          provenance: { source: 'user-entered', asOf: '2026-08-08' },
+        },
+      },
+    })))
+    expect(container?.querySelector('[data-testid="roth-five-year-incomplete-hint"]')).toBeNull()
+
+    vi.useRealTimers()
+  })
 })
 
 describe('localCalendarDateIso', () => {

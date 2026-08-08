@@ -649,32 +649,63 @@ export function inheritedRequirementKindLabel(
   return INHERITED_REQUIREMENT_KIND_LABELS[kind] ?? kind
 }
 
+function firstCommencementYearAfter(
+  year: number,
+  yearRows: ReadonlyArray<{ year: number; evidence: InheritedAccountYearEvidence }>,
+): number | undefined {
+  for (const row of yearRows) {
+    if (row.year > year && row.evidence.requirementKind === 'annual-rmd') return row.year
+  }
+  return undefined
+}
+
+function isSpouseDeferralNoneEvidence(evidence: InheritedAccountYearEvidence): boolean {
+  return (
+    evidence.requirementKind === 'none' &&
+    (evidence.regime === 'spouse-remain-beneficiary' || evidence.regime === 'roth-edb-life-expectancy')
+  )
+}
+
 /** Requirement-kind label for one schedule year, with treat-as-own post-flip routing. */
 export function inheritedRequirementKindLabelForYear(
   account: Account,
   year: number,
-  kind: InheritedAccountYearEvidence['requirementKind'],
+  evidence: InheritedAccountYearEvidence,
+  yearRows: ReadonlyArray<{ year: number; evidence: InheritedAccountYearEvidence }>,
 ): string {
+  if (isSuccessorScopeEvidence(evidence)) {
+    return DISCLOSURE_NOTE_LABELS['successor-clock-out-of-scope']!
+  }
+
   const beneficiary =
     'inherited' in account && account.inherited !== undefined
       ? account.inherited.beneficiary
       : undefined
   const electionYear = beneficiary?.treatAsOwnElectionYear
   if (
-    kind === 'none' &&
+    evidence.requirementKind === 'none' &&
     beneficiary?.election === 'treat-as-own' &&
     electionYear !== undefined &&
     year >= electionYear
   ) {
     return 'Owner RMD rules apply from the election year.'
   }
-  return inheritedRequirementKindLabel(kind)
+
+  if (evidence.requirementKind === 'none' && isSpouseDeferralNoneEvidence(evidence)) {
+    const commencementYear = firstCommencementYearAfter(year, yearRows)
+    return commencementYear !== undefined
+      ? `No amount required until ${commencementYear}`
+      : 'No amount required until commencement'
+  }
+
+  return inheritedRequirementKindLabel(evidence.requirementKind)
 }
 
 function isSuccessorScopeEvidence(evidence: InheritedAccountYearEvidence): boolean {
   return (
     evidence.requirementKind === 'none' &&
-    evidence.disclosures.includes('successor-clock-out-of-scope')
+    evidence.disclosures.includes('successor-clock-out-of-scope') &&
+    evidence.refusalReason !== undefined
   )
 }
 
@@ -890,7 +921,7 @@ export function buildInheritedSchedules(
       years: yearRows.map(({ year, evidence }) => ({
         year,
         requirementKind: evidence.requirementKind,
-        kindLabel: inheritedRequirementKindLabelForYear(account, year, evidence.requirementKind),
+        kindLabel: inheritedRequirementKindLabelForYear(account, year, evidence, yearRows),
         requiredAmount: roundDollar(evidence.requiredAmount),
         executedRequiredAmount: roundDollar(evidence.executedRequiredAmount),
         voluntaryAmount: roundDollar(evidence.voluntaryAmount),

@@ -408,6 +408,12 @@ function ReportBody() {
                   The schedule below uses the simpler planning estimate.
                 </p>
               ) : null}
+              {account.isSuccessorScope ? (
+                <p className="muted small">
+                  After the beneficiary&apos;s death the account passes to a successor; successor schedules are not
+                  modeled and no amounts are forced.
+                </p>
+              ) : null}
               {account.isLegacyApproximation && !account.isRefusal ? (
                 <p className="muted small">Planning estimate (beneficiary details not supplied).</p>
               ) : null}

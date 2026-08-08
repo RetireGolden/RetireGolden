@@ -99,6 +99,16 @@ const ELECTION_SOURCE = {
   label: 'eCFR §1.408-8(c)',
   url: 'https://www.ecfr.gov/current/title-26/section-1.408-8',
 }
+const TEN_YEAR_ELECTION_SOURCE = {
+  label: 'eCFR §1.401(a)(9)-3(c)(5)(iii)',
+  url: 'https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-3',
+}
+const INHERITED_ROTH_CONTRIBUTION_BASIS_HINT =
+  'The model does not use contribution basis on an inherited Roth; its withdrawals are modeled untaxed with the five-year caution below.'
+const ROTH_FIVE_YEAR_INCOMPLETE_HINT =
+  'The five-year period may not be complete; some earnings could be taxable when withdrawn. This model does not compute that tax.'
+const INHERITED_ROTH_EMPLOYER_HINT =
+  'Workplace-plan schedules are not modeled; this account uses the simpler planning estimate, and these facts are kept for review.'
 
 function beneficiaryWithClass(
   beneficiaryClass: InheritedBeneficiary['beneficiaryClass'],
@@ -121,10 +131,12 @@ function beneficiaryWithClass(
 function BeneficiaryDetails({
   account,
   inherited,
+  planningYear,
   onCommit,
 }: {
   account: InheritedRetirementAccount
   inherited: InheritedDetails
+  planningYear: number
   onCommit: (inherited: InheritedDetails) => void
 }) {
   const [showDetails, setShowDetails] = useState(account.type === 'roth' || inherited.beneficiary !== undefined)
@@ -250,8 +262,12 @@ function BeneficiaryDetails({
               {isSpouse || mayElectTenYear ? (
                 <SelectField
                   label="Distribution election"
-                  help="Record an explicit election only when it was made. The available choices depend on the beneficiary category; this planner does not infer an election from inaction."
-                  source={ELECTION_SOURCE}
+                  help="Record an explicit election only when it was made. The available choices depend on the beneficiary category; this planner does not infer an election from inaction. Spouse remain-beneficiary and treat-as-own elections are governed by Treas. Reg. §1.408-8(c); electing the 10-year rule is governed by Treas. Reg. §1.401(a)(9)-3(c)(5)(iii)."
+                  source={
+                    beneficiary.election === 'ten-year-election'
+                      ? TEN_YEAR_ELECTION_SOURCE
+                      : ELECTION_SOURCE
+                  }
                   value={beneficiary.election ?? 'none'}
                   options={[
                     { value: 'none', label: 'No separate election recorded' },
@@ -351,16 +367,24 @@ function BeneficiaryDetails({
                 />
               ) : null}
               {account.type === 'roth' ? (
-                <NumberField
-                  label="Roth 5-year start year"
-                  help="The original owner's first Roth contribution year starts the five-taxable-year evidence used for inherited-Roth taxability. It is planning evidence, not a filing record."
-                  source={{ label: 'eCFR §1.408A-6', url: 'https://www.ecfr.gov/current/title-26/section-1.408A-6' }}
-                  value={beneficiary.roth5YearStartYear ?? null}
-                  allowNull
-                  min={1900}
-                  max={2100}
-                  onCommit={(value) => commit({ ...beneficiary, roth5YearStartYear: value ?? undefined })}
-                />
+                <>
+                  <NumberField
+                    label="Roth 5-year start year"
+                    help="The original owner's first Roth contribution year starts the five-taxable-year evidence used for inherited-Roth taxability. It is planning evidence, not a filing record."
+                    source={{ label: 'eCFR §1.408A-6', url: 'https://www.ecfr.gov/current/title-26/section-1.408A-6' }}
+                    value={beneficiary.roth5YearStartYear ?? null}
+                    allowNull
+                    min={1900}
+                    max={2100}
+                    onCommit={(value) => commit({ ...beneficiary, roth5YearStartYear: value ?? undefined })}
+                  />
+                  {beneficiary.roth5YearStartYear !== undefined &&
+                  beneficiary.roth5YearStartYear + 4 >= planningYear ? (
+                    <p className="field-hint" data-testid="roth-five-year-incomplete-hint">
+                      {ROTH_FIVE_YEAR_INCOMPLETE_HINT}
+                    </p>
+                  ) : null}
+                </>
               ) : null}
               <TextField
                 label="Fact source"
@@ -384,6 +408,7 @@ function BeneficiaryDetails({
 
 export function AccountFields({ account, index }: { account: Account; index: number }) {
   const { plan, update } = usePlan()
+  const planningYear = currentStartYear()
   const [estimating, setEstimating] = useState(false)
   const set = <K extends string>(key: K, value: unknown) =>
     update((d) => {
@@ -535,7 +560,7 @@ export function AccountFields({ account, index }: { account: Account; index: num
           onCommit={(v) => set('kind', v)}
         />
       ) : null}
-      {account.type === 'roth' ? (
+      {account.type === 'roth' && !account.inherited ? (
         <MoneyField
           label="Contribution basis"
           help="Your total direct Roth contributions (today's dollars). Contributions come out tax- and penalty-free at any age, before conversions and earnings, so this is what you can tap penalty-free in early retirement. Leave blank to treat the whole current balance as contributions (the safe default). Roth conversions made inside this app automatically start their own 5-year clocks."
@@ -544,6 +569,11 @@ export function AccountFields({ account, index }: { account: Account; index: num
           allowNull
           onCommit={(v) => set('contributionBasis', v ?? undefined)}
         />
+      ) : null}
+      {account.type === 'roth' && account.inherited ? (
+        <p className="field-hint" data-testid="inherited-roth-contribution-basis-hint">
+          {INHERITED_ROTH_CONTRIBUTION_BASIS_HINT}
+        </p>
       ) : null}
       {account.type === 'traditional' && account.kind === 'ira' && !account.inherited ? (
         <MoneyField
@@ -622,10 +652,15 @@ export function AccountFields({ account, index }: { account: Account; index: num
                 target.inherited = inherited
                 target.annualContribution = 0
                 target.contributionSchedule = undefined
+                target.contributionBasis = undefined
               })
               return
             }
-            set('inherited', inherited)
+            update((draft) => {
+              const target = draft.accounts[index] as Extract<Account, { type: 'traditional' }>
+              target.inherited = inherited
+              target.sepp = undefined
+            })
           }}
         />
       ) : null}
@@ -670,16 +705,24 @@ export function AccountFields({ account, index }: { account: Account; index: num
               }}
             />
           ) : null}
-          {account.kind === 'employer' ? (
+          {account.kind === 'employer' && account.type === 'traditional' ? (
             <p className="field-hint" data-testid="inherited-employer-hint">
               Beneficiary details apply to inherited IRAs. Inherited workplace plans stay on the simpler planning estimate.
             </p>
           ) : (
-            <BeneficiaryDetails
-              account={account}
-              inherited={account.inherited}
-              onCommit={(inherited) => set('inherited', inherited)}
-            />
+            <>
+              {account.kind === 'employer' ? (
+                <p className="field-hint" data-testid="inherited-roth-employer-hint">
+                  {INHERITED_ROTH_EMPLOYER_HINT}
+                </p>
+              ) : null}
+              <BeneficiaryDetails
+                account={account}
+                inherited={account.inherited}
+                planningYear={planningYear}
+                onCommit={(inherited) => set('inherited', inherited)}
+              />
+            </>
           )}
         </>
       ) : null}

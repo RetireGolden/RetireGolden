@@ -471,6 +471,60 @@ describe('buildInheritedSchedules', () => {
     expect(model.blocks['inherited-schedules'].accounts[0]!.accountId).toBe('legacy-ira')
   })
 
+  it('labels spouse deferral none years without successor copy', () => {
+    const plan = fixturePlan((p) => {
+      p.accounts.push({
+        type: 'traditional',
+        id: 'spouse-ira',
+        name: 'Spouse Inherited IRA',
+        ownerPersonId: 'p1',
+        annualReturnPct: null,
+        kind: 'ira',
+        balance: 300_000,
+        annualContribution: 0,
+        inherited: {
+          ownerDeathYear: 2021,
+          decedentHadStartedRmds: false,
+          beneficiary: {
+            beneficiaryClass: 'designated-individual',
+            edbCategory: 'surviving-spouse',
+            beneficiaryBirthYear: 1962,
+            soleBeneficiary: true,
+            election: 'none',
+            ownerBirthYear: 1960,
+            provenance: { source: 'user-entered', asOf: '2026-01-01' },
+          },
+        },
+      })
+    })
+    const deferral: InheritedAccountYearEvidence = {
+      accountId: 'spouse-ira',
+      ownerPersonId: 'p1',
+      regime: 'spouse-remain-beneficiary',
+      matrixRow: 'S0',
+      classification: 'unsettled',
+      requirementKind: 'none',
+      requiredAmount: 0,
+      executedRequiredAmount: 0,
+      voluntaryAmount: 0,
+      disclosures: ['deemed-election-risk', 'successor-clock-out-of-scope'],
+      citations: ['Treas. Reg. §1.401(a)(9)-3(d)'],
+    }
+    const annual: InheritedAccountYearEvidence = {
+      ...deferral,
+      requirementKind: 'annual-rmd',
+      requiredAmount: 18_000,
+      executedRequiredAmount: 18_000,
+    }
+    const account = buildInheritedSchedules(plan, [
+      year(2026, [deferral]),
+      year(2035, [annual]),
+    ]).accounts[0]!
+    expect(account.isSuccessorScope).toBe(false)
+    expect(account.isRefusal).toBe(false)
+    expect(account.years[0]!.kindLabel).toBe('No amount required until 2035')
+  })
+
   it('treats successor-scope rows as out of scope, not refusals', () => {
     const plan = fixturePlan((p) => {
       p.accounts.push({
@@ -516,6 +570,9 @@ describe('buildInheritedSchedules', () => {
     expect(account.isSuccessorScope).toBe(true)
     expect(account.isRefusal).toBe(false)
     expect(account.needsProfessionalConfirmation).toBe(true)
+    expect(account.years[0]!.kindLabel).toBe(
+      'Successor 10-year clock after the beneficiary dies is out of scope.',
+    )
   })
 
   it('labels post-flip treat-as-own none years with owner RMD copy', () => {
