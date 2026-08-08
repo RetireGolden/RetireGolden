@@ -31,6 +31,7 @@ import { buildAll401kNoBridge } from './buildAll401kNoBridge'
 import { buildBrokerageBridge401k } from './buildBrokerageBridge401k'
 import { buildNoHeadStartGrad } from './buildNoHeadStartGrad'
 import { buildTrumpAccountHeadStart } from './buildTrumpAccountHeadStart'
+import { buildInheritedIraBeneficiary } from './buildInheritedIraBeneficiary'
 
 export type ExampleTheme =
   | 'overview'
@@ -112,6 +113,16 @@ export const EXAMPLE_PLANS: ExamplePlan[] = [
     learnSlug: 'example-rmd-irmaa',
     lookFor: 'RMD amounts, QCD relief, and Medicare surcharge years in the results ledger.',
     build: buildRmdIrmaa,
+  },
+  {
+    id: 'inherited-ira-beneficiary',
+    title: 'Inherited IRA beneficiary schedules',
+    summary: 'Surviving-spouse beneficiary facts beside a legacy inherited IRA planning estimate.',
+    teaches: 'How beneficiary facts produce a fact-matched inherited-IRA schedule, while older two-field accounts use the simpler planning estimate.',
+    themeTags: ['rmd-irmaa', 'survivor'],
+    learnSlug: 'example-inherited-ira-beneficiary',
+    lookFor: 'The classified spouse account’s inherited schedule and the planning estimate label on the second inherited IRA.',
+    build: buildInheritedIraBeneficiary,
   },
   {
     id: 'survivor-years',

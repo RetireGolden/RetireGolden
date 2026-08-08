@@ -24,6 +24,7 @@ import type { Account, IncomeStream, Plan } from '@retiregolden/engine/model/pla
 import type { YearResult } from '@retiregolden/engine/projection/types'
 import { downloadStandaloneReport } from '../report/downloadReport'
 import { useReportBranding } from '../report/brandingContext'
+import { buildInheritedSchedules } from '../report/reportModel'
 import { acaLedgerSummary, acaReportStatus } from './acaReportStatus'
 import { PlanProvider } from './PlanContext'
 import { usePlan } from './planContextCore'
@@ -31,6 +32,7 @@ import { fmtMoney, fmtMoneyCompact, fmtPct } from './format'
 import { useProjection } from './useProjection'
 import { US_STATES } from './usStates'
 import { hasCapitalLossCarryforward } from './capitalLossCarryforwardVisibility'
+import { ProfessionalConfirmationMarker } from './ProfessionalConfirmationMarker'
 
 const CATEGORIES = ['cash', 'taxable', 'equityComp', 'traditional', 'roth', 'hsa'] as const
 const CAT_LABEL: Record<(typeof CATEGORIES)[number], string> = {
@@ -112,6 +114,7 @@ function ReportBody() {
   const view = useProjection(plan)
   const { result, summary } = view
   const acaLedgerRows = acaLedgerSummary(result.years)
+  const inheritedSchedules = buildInheritedSchedules(plan, result.years).accounts
   const hasCarryforward = hasCapitalLossCarryforward(
     plan.household.capitalLossCarryforward,
     result.years,
@@ -386,6 +389,56 @@ function ReportBody() {
           </tbody>
         </table>
       </section>
+
+      {inheritedSchedules.length > 0 ? (
+        <section className="report-section report-appendix">
+          {/* Draft copy (non-final): orchestrator rewrites after WS5 implementation. */}
+          <h2>Inherited account schedules (nominal $)</h2>
+          <p className="muted small">
+            Compact schedule per inherited account. Full notes and citations are on the Results page.
+          </p>
+          {inheritedSchedules.map((account) => (
+            <div key={account.accountId} style={{ marginTop: '0.75rem' }}>
+              <h3 style={{ fontSize: '1rem', margin: '0 0 0.35rem' }}>
+                {account.accountName}: {account.regimeLabel}
+              </h3>
+              {account.isRefusal ? (
+                <p className="muted small">
+                  Needs review: the model does not cover these facts, so it shows the limitation rather than guessing.
+                  The schedule below uses the simpler planning estimate.
+                </p>
+              ) : null}
+              {account.isLegacyApproximation && !account.isRefusal ? (
+                <p className="muted small">Planning estimate (beneficiary details not supplied).</p>
+              ) : null}
+              {account.finalDeadlineYear !== null ? (
+                <p className="muted small">Final deadline year: {account.finalDeadlineYear}</p>
+              ) : null}
+              {account.needsProfessionalConfirmation ? <ProfessionalConfirmationMarker compact /> : null}
+              <table className="report-table report-appendix-table">
+                <thead>
+                  <tr>
+                    <th>Year</th>
+                    <th>Kind</th>
+                    <th style={{ textAlign: 'right' }}>Required</th>
+                    <th style={{ textAlign: 'right' }}>Executed</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {account.years.map((row) => (
+                    <tr key={row.year}>
+                      <td style={td}>{row.year}</td>
+                      <td style={td}>{row.kindLabel}</td>
+                      <td style={{ ...td, textAlign: 'right' }}>{fmtMoney(row.requiredAmount)}</td>
+                      <td style={{ ...td, textAlign: 'right' }}>{fmtMoney(row.executedRequiredAmount)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ))}
+        </section>
+      ) : null}
     </article>
   )
 }

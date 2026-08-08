@@ -12,10 +12,12 @@ import { draftPlanFromBrokerAccounts, parseBrokerPositionsCsv } from '../import/
 import { projectPlan } from '../planner/useProjection'
 import { fmtMoney } from '../planner/format'
 import { renderStandaloneReportHtml, reportEvidenceFromOptimizeResult } from './reportHtml'
+import type { InheritedAccountYearEvidence, YearResult } from '@retiregolden/engine/projection/types'
 import {
   REPORT_BLOCK_IDS,
   REPORT_EDUCATIONAL_DISCLAIMER,
   accountsCsv,
+  buildInheritedSchedules,
   buildReportModel,
   chartDataCsv,
   serializeReportModel,
@@ -278,6 +280,148 @@ describe('table export helpers', () => {
     for (const line of csv.split('\n').slice(1)) {
       expect(line).not.toMatch(/^[=+\-@]/)
     }
+  })
+})
+
+describe('buildInheritedSchedules', () => {
+  function year(year: number, rows: InheritedAccountYearEvidence[]): YearResult {
+    return { year, inheritedAccounts: rows } as YearResult
+  }
+
+  it('builds a classified S1 schedule with facts, kinds, and no professional flag when settled/clean', () => {
+    const plan = fixturePlan((p) => {
+      p.household.people[0]!.dob = '1965-06-15'
+      p.household.people[0]!.longevity = { planningAge: 95, source: 'manual' }
+      p.accounts.push({
+        type: 'traditional',
+        id: 'spouse-ira',
+        name: 'Spouse Inherited IRA',
+        ownerPersonId: 'p1',
+        annualReturnPct: null,
+        kind: 'ira',
+        balance: 300_000,
+        annualContribution: 0,
+        inherited: {
+          ownerDeathYear: 2024,
+          decedentHadStartedRmds: true,
+          beneficiary: {
+            beneficiaryClass: 'designated-individual',
+            edbCategory: 'surviving-spouse',
+            beneficiaryBirthYear: 1965,
+            soleBeneficiary: true,
+            election: 'remain-beneficiary',
+            ownerBirthYear: 1945,
+            ownerYearOfDeathRmdSatisfied: true,
+            provenance: { source: 'user-entered', asOf: '2026-01-01' },
+          },
+        },
+      })
+    })
+    const evidence: InheritedAccountYearEvidence = {
+      accountId: 'spouse-ira',
+      ownerPersonId: 'p1',
+      regime: 'spouse-remain-beneficiary',
+      matrixRow: 'S1',
+      classification: 'settled',
+      requirementKind: 'annual-rmd',
+      requiredAmount: 25_210.4,
+      executedRequiredAmount: 25_210.4,
+      voluntaryAmount: 100.2,
+      disclosures: [],
+      citations: ['Treas. Reg. §1.401(a)(9)-5(d)(3)(iv)'],
+    }
+    const block = buildInheritedSchedules(plan, [year(2026, [evidence])])
+    expect(block.accounts).toHaveLength(1)
+    const account = block.accounts[0]!
+    expect(account.regimeLabel).toContain('Spouse life-expectancy schedule')
+    expect(account.regimeLabel).toContain('S1')
+    expect(account.isLegacyApproximation).toBe(false)
+    expect(account.isRefusal).toBe(false)
+    expect(account.needsProfessionalConfirmation).toBe(false)
+    expect(account.facts.some((f) => f.includes('surviving-spouse'))).toBe(true)
+    expect(account.years[0]).toMatchObject({
+      year: 2026,
+      kindLabel: 'Annual RMD',
+      requiredAmount: 25_210,
+      executedRequiredAmount: 25_210,
+      voluntaryAmount: 100,
+    })
+  })
+
+  it('labels a legacy two-field account as the planning approximation', () => {
+    const plan = fixturePlan((p) => {
+      p.accounts.push({
+        type: 'traditional',
+        id: 'legacy-ira',
+        name: 'Legacy Inherited IRA',
+        ownerPersonId: 'p1',
+        annualReturnPct: null,
+        kind: 'ira',
+        balance: 100_000,
+        annualContribution: 0,
+        inherited: { ownerDeathYear: 2022, decedentHadStartedRmds: false },
+      })
+    })
+    const evidence: InheritedAccountYearEvidence = {
+      accountId: 'legacy-ira',
+      ownerPersonId: 'p1',
+      regime: 'legacy-planning-approximation',
+      matrixRow: 'X1',
+      requirementKind: 'legacy',
+      requiredAmount: 10_000,
+      executedRequiredAmount: 10_000,
+      voluntaryAmount: 0,
+      disclosures: [],
+      citations: ['SECURE Act §401(b)(1)'],
+    }
+    const account = buildInheritedSchedules(plan, [year(2026, [evidence])]).accounts[0]!
+    expect(account.isLegacyApproximation).toBe(true)
+    expect(account.regimeLabel).toContain('Planning estimate')
+    expect(account.facts.some((f) => f.includes('not provided'))).toBe(true)
+  })
+
+  it('flags an estate refusal for professional confirmation and the refusal note path', () => {
+    const plan = fixturePlan((p) => {
+      p.accounts.push({
+        type: 'traditional',
+        id: 'estate-ira',
+        name: 'Estate Inherited IRA',
+        ownerPersonId: 'p1',
+        annualReturnPct: null,
+        kind: 'ira',
+        balance: 80_000,
+        annualContribution: 0,
+        inherited: {
+          ownerDeathYear: 2023,
+          decedentHadStartedRmds: false,
+          beneficiary: {
+            beneficiaryClass: 'estate',
+            provenance: { source: 'user-entered', asOf: '2026-01-01' },
+          },
+        },
+      })
+    })
+    const evidence: InheritedAccountYearEvidence = {
+      accountId: 'estate-ira',
+      ownerPersonId: 'p1',
+      regime: 'unsupported',
+      matrixRow: 'X3',
+      refusalReason: "beneficiaryClass 'estate' is unsupported",
+      requirementKind: 'legacy',
+      requiredAmount: 8_000,
+      executedRequiredAmount: 8_000,
+      voluntaryAmount: 0,
+      disclosures: [],
+      citations: ['Treas. Reg. §1.401(a)(9)-4(f)'],
+    }
+    const account = buildInheritedSchedules(plan, [year(2026, [evidence])]).accounts[0]!
+    expect(account.isRefusal).toBe(true)
+    expect(account.refusalReason).toContain('estate')
+    expect(account.needsProfessionalConfirmation).toBe(true)
+  })
+
+  it('returns an empty block when the plan has no inherited accounts', () => {
+    expect(buildInheritedSchedules(fixturePlan(), [year(2026, [])]).accounts).toEqual([])
   })
 })
 

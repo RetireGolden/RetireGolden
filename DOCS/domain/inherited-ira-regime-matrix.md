@@ -1,12 +1,12 @@
 # Inherited IRA regime matrix — authority, facts, and the supported-regime boundary
 
 **Status:** Authored 2026-08-07 for WS1 of the *Inherited IRA compliance depth* plan
-(`enhancements/inherited-ira-compliance-depth.md` in the RetireGolden-Docs repo). This document is
-the normative supported-regime boundary for inherited-IRA work until its content is folded into
-[taxes.md](../features/taxes.md), [domain-rules-reference.md](domain-rules-reference.md), and
-[tax-strategy-coverage-inventory.md](tax-strategy-coverage-inventory.md) at plan completion. Later
-workstreams (schema, table engine, ledger execution) implement against this matrix; they must not
-widen it silently.
+(`enhancements/inherited-ira-compliance-depth.md` in the RetireGolden-Docs repo). Folded into ground
+truth at WS5 (2026-08-08); this document remains the normative boundary for regime-law changes. The
+executed-and-surfaced summary lives in [taxes.md](../features/taxes.md),
+[domain-rules-reference.md](domain-rules-reference.md), and
+[tax-strategy-coverage-inventory.md](tax-strategy-coverage-inventory.md). Later workstreams (schema,
+table engine, ledger execution) implement against this matrix; they must not widen it silently.
 
 Scope note: this matrix classifies planning regimes for inherited traditional and Roth IRAs. It is
 implementation ground truth, not legal or tax advice, and nothing here is filing-grade.

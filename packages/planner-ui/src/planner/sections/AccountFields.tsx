@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 
-import type { Account, Plan } from '@retiregolden/engine/model/plan'
+import type { Account, InheritedBeneficiary, Plan } from '@retiregolden/engine/model/plan'
 import { ANNUITY_MAX_START_AGE } from '@retiregolden/engine/model/plan'
 import { analyzePensionElections } from '@retiregolden/engine/decisions/pensionElection'
 import { packForYear } from '@retiregolden/engine/params'
@@ -20,7 +20,7 @@ import {
   type AllocatableAccount,
 } from './sectionHelpers'
 import { usePlan } from '../planContextCore'
-import { CheckboxField, MoneyField, NumberField, PercentField, ReadonlyField, SelectField, TextField } from '../fields'
+import { CheckboxField, DateField, MoneyField, NumberField, PercentField, ReadonlyField, SelectField, TextField } from '../fields'
 import { fmtMoney } from '../format'
 import { currentStartYear } from '../useProjection'
 import { LEARN } from '../learnLinks'
@@ -84,6 +84,251 @@ function TaxExemptInterestYieldField({
         </p>
       ) : null}
     </>
+  )
+}
+
+type InheritedRetirementAccount = Extract<Account, { type: 'traditional' | 'roth' }>
+type InheritedDetails = NonNullable<InheritedRetirementAccount['inherited']>
+
+const EDB_SOURCE = {
+  label: 'eCFR §1.401(a)(9)-4(e)',
+  url: 'https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-4',
+}
+const ELECTION_SOURCE = {
+  label: 'eCFR §1.408-8(c)',
+  url: 'https://www.ecfr.gov/current/title-26/section-1.408-8',
+}
+
+function todayIsoDate(): string {
+  return new Date().toISOString().slice(0, 10)
+}
+
+function newBeneficiary(beneficiaryClass: InheritedBeneficiary['beneficiaryClass']): InheritedBeneficiary {
+  return {
+    beneficiaryClass,
+    provenance: { source: 'user-entered', asOf: todayIsoDate() },
+  }
+}
+
+function BeneficiaryDetails({
+  account,
+  inherited,
+  onCommit,
+}: {
+  account: InheritedRetirementAccount
+  inherited: InheritedDetails
+  onCommit: (inherited: InheritedDetails) => void
+}) {
+  const [showDetails, setShowDetails] = useState(account.type === 'roth' || inherited.beneficiary !== undefined)
+  const [showBirthPrecision, setShowBirthPrecision] = useState(
+    inherited.beneficiary?.ownerBirthMonth !== undefined || inherited.beneficiary?.ownerBirthDay !== undefined,
+  )
+  const beneficiary = inherited.beneficiary
+  const commit = (next: InheritedBeneficiary) => onCommit({ ...inherited, beneficiary: next })
+  const isDesignatedIndividual = beneficiary?.beneficiaryClass === 'designated-individual'
+  const isSpouse = beneficiary?.edbCategory === 'surviving-spouse'
+  const mayElectTenYear = isDesignatedIndividual && beneficiary?.edbCategory !== undefined && beneficiary.edbCategory !== 'none'
+
+  return (
+    <div className="nested-form-section field-span-full" data-testid="beneficiary-details-panel">
+      <h4>Beneficiary details</h4>
+      {account.type === 'traditional' ? (
+        <CheckboxField
+          label="Use beneficiary details"
+          help="Optional. Without these details the account keeps the simpler planning estimate. Adding them lets the projection follow the IRS schedule that matches your facts."
+          value={showDetails}
+          onCommit={(value) => {
+            setShowDetails(value)
+            if (!value) onCommit({ ...inherited, beneficiary: undefined })
+          }}
+        />
+      ) : (
+        <p className="field-hint">Inherited Roth accounts need beneficiary details; the simpler planning estimate never covered Roth.</p>
+      )}
+      {showDetails ? (
+        <div className="form-grid nested-control-grid">
+          <SelectField
+            label="Beneficiary class"
+            help="Choose the person or legal recipient named for this account at the owner's death. Estate, trust, entity, and successor cases are recorded but not modeled; the planner shows the limitation rather than guessing a schedule."
+            source={{ label: 'eCFR §1.401(a)(9)-4(c)', url: 'https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-4' }}
+            value={beneficiary?.beneficiaryClass ?? ''}
+            placeholder="Choose beneficiary class"
+            options={[
+              { value: 'designated-individual', label: 'Designated individual' },
+              { value: 'estate', label: 'Estate (not modeled)' },
+              { value: 'trust', label: 'Trust (not modeled)' },
+              { value: 'entity', label: 'Entity (not modeled)' },
+              { value: 'successor-beneficiary', label: 'Successor beneficiary (not modeled)' },
+            ]}
+            onCommit={(beneficiaryClass) => commit(newBeneficiary(beneficiaryClass))}
+          />
+          {beneficiary && isDesignatedIndividual ? (
+            <>
+              <SelectField
+                label="Eligible designated beneficiary category"
+                help="A category fixed at the owner's death. Select None for an ordinary designated beneficiary. Disability and chronic illness are legal determinations; enter them only if they have been established."
+                source={EDB_SOURCE}
+                value={beneficiary.edbCategory ?? ''}
+                placeholder="Choose EDB category"
+                options={[
+                  { value: 'none', label: 'None (ordinary designated beneficiary)' },
+                  { value: 'surviving-spouse', label: 'Surviving spouse' },
+                  { value: 'minor-child', label: 'Minor child of the owner' },
+                  { value: 'disabled', label: 'Disabled' },
+                  { value: 'chronically-ill', label: 'Chronically ill' },
+                  { value: 'not-more-than-10-years-younger', label: 'Not more than 10 years younger' },
+                ]}
+                onCommit={(edbCategory) => {
+                  const election = edbCategory === 'surviving-spouse'
+                    ? beneficiary.election
+                    : edbCategory === 'none'
+                      ? undefined
+                      : beneficiary.election === 'remain-beneficiary' || beneficiary.election === 'treat-as-own'
+                        ? undefined
+                        : beneficiary.election
+                  commit({ ...beneficiary, edbCategory, election })
+                }}
+              />
+              <NumberField
+                label="Beneficiary birth year"
+                help="The beneficiary's year of birth supports life-expectancy schedules and checks that the asserted beneficiary was alive when the owner died."
+                source={{ label: 'eCFR §1.401(a)(9)-4', url: 'https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-4' }}
+                value={beneficiary.beneficiaryBirthYear ?? null}
+                allowNull
+                min={1900}
+                max={2100}
+                onCommit={(value) => commit({ ...beneficiary, beneficiaryBirthYear: value ?? undefined })}
+              />
+              <CheckboxField
+                label="Sole beneficiary"
+                help="Confirm whether this person is the sole beneficiary. Multiple beneficiaries can require separate-account facts that this planner does not infer."
+                source={{ label: 'eCFR §1.401(a)(9)-8(a)', url: 'https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-8' }}
+                value={beneficiary.soleBeneficiary === true}
+                onCommit={(soleBeneficiary) => commit({ ...beneficiary, soleBeneficiary })}
+              />
+              {isSpouse || mayElectTenYear ? (
+                <SelectField
+                  label="Distribution election"
+                  help="Record an explicit election only when it was made. The available choices depend on the beneficiary category; this planner does not infer an election from inaction."
+                  source={ELECTION_SOURCE}
+                  value={beneficiary.election ?? 'none'}
+                  options={[
+                    { value: 'none', label: 'No separate election recorded' },
+                    ...(isSpouse
+                      ? [
+                          { value: 'remain-beneficiary', label: 'Remain beneficiary' },
+                          { value: 'treat-as-own', label: 'Treat as own IRA' },
+                        ]
+                      : []),
+                    ...(mayElectTenYear ? [{ value: 'ten-year-election', label: 'Elect 10-year rule' }] : []),
+                  ]}
+                  onCommit={(election) => commit({ ...beneficiary, election })}
+                />
+              ) : null}
+              {beneficiary.election === 'treat-as-own' ? (
+                <>
+                  <NumberField
+                    label="Treat-as-own election year"
+                    help="The calendar year the surviving spouse's election takes effect. Before that year, this remains an inherited account in the model."
+                    source={ELECTION_SOURCE}
+                    value={beneficiary.treatAsOwnElectionYear ?? null}
+                    allowNull
+                    min={inherited.ownerDeathYear}
+                    max={2100}
+                    onCommit={(value) => commit({ ...beneficiary, treatAsOwnElectionYear: value ?? undefined })}
+                  />
+                  <CheckboxField
+                    label="Spouse has unlimited withdrawal right"
+                    help="A treat-as-own election requires the surviving spouse to have an unlimited right to withdraw from the account. Confirm the account terms with a professional if uncertain."
+                    source={ELECTION_SOURCE}
+                    value={beneficiary.spouseUnlimitedWithdrawalRight === true}
+                    onCommit={(spouseUnlimitedWithdrawalRight) => commit({ ...beneficiary, spouseUnlimitedWithdrawalRight })}
+                  />
+                </>
+              ) : null}
+            </>
+          ) : null}
+          {beneficiary ? (
+            <>
+              <NumberField
+                label="Original owner birth year"
+                help="The original owner's birth year helps check the required-beginning-date boundary and, in some schedules, the applicable life-expectancy divisor. Year-only information can leave a boundary unsettled."
+                source={{ label: 'eCFR §1.401(a)(9)-5', url: 'https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-5' }}
+                value={beneficiary.ownerBirthYear ?? null}
+                allowNull
+                min={1900}
+                max={inherited.ownerDeathYear}
+                onCommit={(value) => commit({ ...beneficiary, ownerBirthYear: value ?? undefined })}
+              />
+              {showBirthPrecision ? (
+                <>
+                  <NumberField
+                    label="Original owner birth month"
+                    help="Optional month precision for required-beginning-date boundary cases. Supply a real birth date when you add day precision."
+                    source={{ label: 'eCFR §1.401(a)(9)-5', url: 'https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-5' }}
+                    value={beneficiary.ownerBirthMonth ?? null}
+                    allowNull
+                    min={1}
+                    max={12}
+                    onCommit={(value) => commit({ ...beneficiary, ownerBirthMonth: value ?? undefined })}
+                  />
+                  <NumberField
+                    label="Original owner birth day"
+                    help="Optional day precision for required-beginning-date boundary cases. Month and day must form a real calendar date with the birth year."
+                    source={{ label: 'eCFR §1.401(a)(9)-5', url: 'https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-5' }}
+                    value={beneficiary.ownerBirthDay ?? null}
+                    allowNull
+                    min={1}
+                    max={31}
+                    onCommit={(value) => commit({ ...beneficiary, ownerBirthDay: value ?? undefined })}
+                  />
+                </>
+              ) : (
+                <div className="field">
+                  <span className="field-label">Original owner birth date</span>
+                  <button type="button" className="btn btn-secondary btn-small" onClick={() => setShowBirthPrecision(true)}>
+                    Add month/day precision
+                  </button>
+                </div>
+              )}
+              {inherited.decedentHadStartedRmds ? (
+                <CheckboxField
+                  label="Owner's year-of-death RMD was satisfied"
+                  help="If the owner had started RMDs, confirm whether the owner's final-year RMD was already distributed. If it was not, the schedule must carry that requirement."
+                  source={{ label: 'eCFR §1.408-8(e)', url: 'https://www.ecfr.gov/current/title-26/section-1.408-8' }}
+                  value={beneficiary.ownerYearOfDeathRmdSatisfied === true}
+                  onCommit={(ownerYearOfDeathRmdSatisfied) => commit({ ...beneficiary, ownerYearOfDeathRmdSatisfied })}
+                />
+              ) : null}
+              {account.type === 'roth' ? (
+                <NumberField
+                  label="Roth 5-year start year"
+                  help="The original owner's first Roth contribution year starts the five-taxable-year evidence used for inherited-Roth taxability. It is planning evidence, not a filing record."
+                  source={{ label: 'eCFR §1.408A-6', url: 'https://www.ecfr.gov/current/title-26/section-1.408A-6' }}
+                  value={beneficiary.roth5YearStartYear ?? null}
+                  allowNull
+                  min={1900}
+                  max={2100}
+                  onCommit={(value) => commit({ ...beneficiary, roth5YearStartYear: value ?? undefined })}
+                />
+              ) : null}
+              <TextField
+                label="Fact source"
+                help="Who or what supplied these beneficiary facts. The default records that you entered them; use a concise source such as a plan document or custodian statement when appropriate."
+                value={beneficiary.provenance.source}
+                onCommit={(source) => commit({ ...beneficiary, provenance: { ...beneficiary.provenance, source } })}
+              />
+              <DateField
+                label="Facts as of"
+                help="The calendar date these beneficiary facts were checked. Review dates help keep planning inputs distinct from legal or tax administration records."
+                value={beneficiary.provenance.asOf}
+                onCommit={(asOf) => commit({ ...beneficiary, provenance: { ...beneficiary.provenance, asOf } })}
+              />
+            </>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
   )
 }
 
@@ -305,15 +550,17 @@ export function AccountFields({ account, index }: { account: Account; index: num
           onCommit={(v) => set('spouseSoleBeneficiary', v)}
         />
       ) : null}
-      {account.type === 'traditional' ? (
+      {account.type === 'traditional' || account.type === 'roth' ? (
         <CheckboxField
-          label="Inherited account (10-year rule)"
-          help="A non-spouse beneficiary must empty an inherited IRA/401(k) by the end of the 10th year after the original owner's death. Distributions are taxable but never carry the 10% early-withdrawal penalty, and the account is exempt from your own age-based RMDs."
+          label={account.type === 'roth' ? 'Inherited Roth account' : 'Inherited account (10-year rule)'}
+          help={account.type === 'roth'
+            ? "An inherited Roth account follows beneficiary distribution rules and requires beneficiary details in this planner. The original Roth owner is treated as dying before the required beginning date."
+            : "A non-spouse beneficiary must empty an inherited IRA/401(k) by the end of the 10th year after the original owner's death. Distributions are taxable but never carry the 10% early-withdrawal penalty, and the account is exempt from your own age-based RMDs."}
           value={account.inherited !== undefined}
           onCommit={(v) => set('inherited', v ? { ownerDeathYear: new Date().getFullYear() - 1, decedentHadStartedRmds: false } : undefined)}
         />
       ) : null}
-      {account.type === 'traditional' && account.inherited ? (
+      {(account.type === 'traditional' || account.type === 'roth') && account.inherited ? (
         <>
           <NumberField
             label="Original owner's death year"
@@ -323,11 +570,18 @@ export function AccountFields({ account, index }: { account: Account; index: num
             max={2100}
             onCommit={(v) => set('inherited', { ...account.inherited, ownerDeathYear: Math.round(v ?? new Date().getFullYear() - 1) })}
           />
-          <CheckboxField
-            label="Owner had started RMDs"
-            help="If the original owner had reached their required beginning date, you must also take an annual RMD in years 1–9 of the window (based on your single life expectancy), not just empty it by year 10."
-            value={account.inherited.decedentHadStartedRmds}
-            onCommit={(v) => set('inherited', { ...account.inherited, decedentHadStartedRmds: v })}
+          {account.type === 'traditional' ? (
+            <CheckboxField
+              label="Owner had started RMDs"
+              help="If the original owner had reached their required beginning date, you must also take an annual RMD in years 1–9 of the window (based on your single life expectancy), not just empty it by year 10."
+              value={account.inherited.decedentHadStartedRmds}
+              onCommit={(v) => set('inherited', { ...account.inherited, decedentHadStartedRmds: v })}
+            />
+          ) : null}
+          <BeneficiaryDetails
+            account={account}
+            inherited={account.inherited}
+            onCommit={(inherited) => set('inherited', inherited)}
           />
         </>
       ) : null}

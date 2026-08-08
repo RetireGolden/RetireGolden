@@ -216,15 +216,29 @@ Source: [IRS 2026 limits announcement](https://www.irs.gov/newsroom/401k-limit-i
   two arms answer the same household differently. And the executor refuses the whole batch whenever any gift
   leaves a positive section 170 amount to deduct, so no named QCD produces a charitable deduction. The ordering
   rule that makes an earlier cash distribution irrevocable is `treas-reg-1-408-8-b-3-rmd-first-dollars-out`.
-- **Inherited accounts.** A designated beneficiary's annual amount uses the **Single Life Table** divisor fixed at
-  the age attained in the year after the owner's death and reduced by one for each later year (Treas. Reg.
-  1.401(a)(9)-5(d)(3)(iii)) — not a life expectancy recomputed at the beneficiary's current age
-  (`treas-reg-1-401-a-9-5-d-3-beneficiary-single-life-denominator`). Years 1–9 force a distribution only when the
-  decedent had started RMDs; the remaining balance is swept in year 10. Two approximations remain, both recorded
-  as overstating tax: the greater-of-employee-life-expectancy test of 1.401(a)(9)-5(d)(1)(ii) is not applied
-  because the schema carries no decedent age (`treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy`),
-  and eligible designated beneficiaries are not modeled at all, so a whole-of-life stretch is compressed into ten
-  years (`irc-401-a-9-E-ii-eligible-designated-beneficiary`).
+- **Inherited accounts.** When beneficiary facts classify a schedule, `projection/simulate.ts` executes
+  `classifyInheritedRegime` / `inheritedRequirementForYear` (`strategies/inheritedIra.ts`) in the annual
+  ledger with per-account `InheritedAccountYearEvidence` (regime key, matrix row, requirement kind, executed and
+  voluntary amounts, limitations, disclosures, refusals, citations). Supported regime keys (matrix §3,
+  condensed): `ten-year-with-annual-rmds` (post-RBD designated individual), `ten-year-no-annual` (pre-RBD),
+  `edb-life-expectancy`, `edb-ten-year-elected` (unsettled — IRA-agreement election), `spouse-remain-beneficiary`,
+  `spouse-treat-as-own-transition`, `spouse-ten-year-elected` (unsettled), `roth-ten-year-no-annual`,
+  `roth-edb-life-expectancy`, plus `roth-taxability-evidence` attached to every Roth row. Divisor mechanics use
+  the Single Life Table (Treas. Reg. 1.401(a)(9)-5(d)(3)(iii);
+  `treas-reg-1-401-a-9-5-d-3-beneficiary-single-life-denominator`, settled for classified facts); post-RBD deaths
+  apply the greater-of-owner test when facts support it
+  (`treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy`, settled for classified facts); EDB
+  life-expectancy uses the beneficiary's expectancy (`irc-401-a-9-E-ii-eligible-designated-beneficiary`, settled
+  for classified facts). **Fail closed:** death before 2020, successor beneficiary, estate/trust/entity,
+  multiple beneficiaries without separate-account facts, missing or contradictory facts, a post-RBD ten-year
+  election, and asserted §327 spouse-as-employee treatment → typed refusal; classifier refusals other than X1
+  project on the labeled `legacy-planning-approximation` path with the refusal on the evidence row. Legacy
+  two-field accounts (no beneficiary block) stay on that labeled path. Named residuals: §1.402(c)-2(j)(4)
+  catch-up (`treat-as-own-timing-gate-unverified`), non-qualified inherited-Roth earnings tax (K3 disclosure only),
+  post-S2 contribution/conversion/QCD enablement for validators without year context, and Roth S2-flip basis
+  migration into the owned Roth pool. WS5 surfaces regime, deadline, disclosures, and refusals on **Accounts**
+  (beneficiary-details panel), **Results** (per-account inherited schedule), CSV export, report appendix, and the
+  Learning Center article. Planning-grade only — not filing-grade.
 - Sources: [IRS Pub 590-B](https://www.irs.gov/publications/p590b), [IRS RMD FAQs](https://www.irs.gov/retirement-plans/retirement-plan-and-ira-required-minimum-distributions-faqs), [eCFR 26 CFR 1.401(a)(9)-9, Table 1 (Single Life) and Table 3 (Joint Life)](https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-9).
 
 ## 7. Medicare and IRMAA (2026)
