@@ -206,6 +206,26 @@ function ssTorpedoPlan(): Plan {
   return plan
 }
 
+/** WS3 acceptance: taxable exempt yield + SS torpedo band + MAGI near IRMAA at 65+. */
+function ws3ExemptInterestTorpedoIrmaaPlan(withYield = true): Plan {
+  const plan = ssTorpedoPlan()
+  if (withYield) {
+    plan.accounts.push({
+      type: 'taxable',
+      id: testIds(),
+      name: 'Muni Brokerage',
+      ownerPersonId: null,
+      annualReturnPct: 0,
+      balance: 500_000,
+      costBasis: 500_000,
+      annualContribution: 0,
+      taxExemptInterestYieldPct: 5,
+      reinvestDividends: false,
+    })
+  }
+  return plan
+}
+
 /** Inherited IRA assets are traditional-like, but they are not owner-convertible. */
 function inheritedTraditionalPlan(opts: { ownTraditional?: number; inheritedTraditional?: number } = {}): Plan {
   const plan = createEmptyPlan({ newId: testIds, now: fixedNow })
@@ -1815,6 +1835,21 @@ describe('committed facts the LP books on both sides', () => {
     expect(buildOptimizerModel(input).lp).toBe(buildOptimizerModel(withoutTheField).lp)
   })
 
+  it('leaves an LP byte-identical when tax-exempt yield is absent', () => {
+    const input = buildOptimizerInput(validate(tradHeavyPlan()), opts)
+
+    expect(input.years.every((year) => (year.magiTaxExemptInterest ?? 0) === 0)).toBe(true)
+    const withoutTheField = {
+      ...input,
+      years: input.years.map((modeled) => {
+        const stripped = { ...modeled }
+        delete stripped.magiTaxExemptInterest
+        return stripped
+      }),
+    }
+    expect(buildOptimizerModel(input).lp).toBe(buildOptimizerModel(withoutTheField).lp)
+  })
+
   /**
    * Pre-65 single filer, two plan years, one committed $50k conversion in the
    * first. Nothing else the LP re-decides touches the year's income: no RMD (age
@@ -2267,6 +2302,47 @@ describe('optimizePlan end-to-end', () => {
     expect(exact.aca?.readiness).toBe('actionable')
     expect(exact.aca?.modeledAllowablePtc).toBeGreaterThan(0)
     expect(exact.aca?.householdMagi).toBeLessThanOrEqual(62_600.01)
+  })
+
+  it('SS-torpedo + IRMAA agreement fixture (WS3 acceptance)', async () => {
+    const plan = validate(ws3ExemptInterestTorpedoIrmaaPlan())
+    const control = validate(ws3ExemptInterestTorpedoIrmaaPlan(false))
+    const input = buildOptimizerInput(plan, opts)
+    expect(input.years[0]!.magiTaxExemptInterest).toBeGreaterThan(0)
+
+    const { schedule } = await optimizePlan(plan, opts)
+    expect(schedule.status).toBe('optimal')
+
+    const exact = simulatePlan(
+      validate(withOptimizedConversions(plan, schedule.conversions, '2026-06-17T00:00:00.000Z')),
+      opts,
+    )
+    const controlExact = simulatePlan(
+      validate(withOptimizedConversions(control, schedule.conversions, '2026-06-17T00:00:00.000Z')),
+      opts,
+    )
+
+    const provisionalOrdinary = (year: ProjectionResult['years'][number]) =>
+      year.magi -
+      year.taxExemptInterest -
+      year.incomes.taxableYield -
+      year.incomes.qualifiedDividends -
+      year.realizedGains
+    const y2026 = exact.years.find((year) => year.year === 2026)!
+    const y2026Control = controlExact.years.find((year) => year.year === 2026)!
+    expect(y2026.incomes.taxExemptInterest).toBeGreaterThan(0)
+    expect(provisionalOrdinary(y2026)).toBeGreaterThan(provisionalOrdinary(y2026Control) + 500)
+
+    // IRMAA leg: exact ledger honors tier-0 premiums the LP priced safe. ACA
+    // cancels by construction; §86 landed in WS2 (`ssProvisionalIncomeAddbacks`).
+    for (const modeled of schedule.schedule) {
+      if (modeled.irmaaTier > 0) continue
+      const lookbackYear = modeled.year - 2
+      const lookback = exact.years.find((year) => year.year === lookbackYear)
+      if (lookback === undefined) continue
+      const threshold = packForYear(modeled.year).pack.medicare.irmaaTiers[0]!.magiOver.single
+      expect(lookback.magi).toBeLessThanOrEqual(threshold + 0.01)
+    }
   })
 
   it.each([
