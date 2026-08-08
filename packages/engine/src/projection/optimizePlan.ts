@@ -19,7 +19,6 @@ import { indexFederalTaxPack, packForYear, LATEST_PACK_YEAR } from '../params/in
 import { stateParamsFor } from '../params/state/index.js'
 import type { FilingStatus } from '../params/types.js'
 import type { Account, Plan } from '../model/plan.js'
-import { isTreatAsOwnEffective } from '../strategies/accountEligibility.js'
 import { createActionReason, type ActionReason } from '../actions/reasons.js'
 import type { PersonId } from '../actions/identity.js'
 import {
@@ -309,21 +308,23 @@ export interface OptimizerOpeningBuckets {
  * scalars cannot depend on the order `plan.accounts` happens to be persisted
  * in.
  *
- * S2 treat-as-own: bucket by status AT PROJECTION START
- * (`electionYear <= startYear` → owned; else inherited for the whole LP
- * horizon). Mid-horizon flips are a documented LP granularity approximation —
- * the exact ledger flips year-by-year, but one static bucket keeps the opening
- * scalars and `rmdDivisor` / `inheritedDistributionDivisor` numerators aligned
- * with `simulate`'s `startTraditional` / `startInheritedTraditional` split.
- * Probe years remap a mid-horizon-flipped account's post-flip owner RMD into
- * the inherited-traditional forced flow (`inheritedDistribution`, excluded
- * from probe `rmd`) so that static bucket sees consistent floors; YearResult
- * fields are unchanged.
+ * S2 treat-as-own: any traditional account whose inherited block carries a
+ * spouse treat-as-own election stays in the inherited-traditional bucket for
+ * the LP's whole horizon — never the owned-traditional bucket, whether the
+ * flip is before or after startYear. The exact executor still refuses post-S2
+ * Roth conversions (`isConvertibleToRoth` requires `inherited === undefined`;
+ * named WS5 residual), so promoting those dollars to the owned bucket would
+ * propose conversions the ledger rejects. Mid-horizon flips remain a documented
+ * LP granularity approximation: the exact ledger flips year-by-year, but one
+ * static bucket keeps the opening scalars and `rmdDivisor` /
+ * `inheritedDistributionDivisor` numerators aligned with `simulate`'s
+ * `startTraditional` / `startInheritedTraditional` split. Probe years remap a
+ * post-flip S2 account's owner-RMD obligation share into the inherited-
+ * traditional forced flow (`inheritedDistribution`, excluded from probe `rmd`,
+ * net of pro-rata Form 8606 basis) so that static bucket sees consistent
+ * floors; YearResult fields are unchanged.
  */
-export function optimizerOpeningBuckets(
-  plan: Plan,
-  startYear: number,
-): OptimizerOpeningBuckets {
+export function optimizerOpeningBuckets(plan: Plan): OptimizerOpeningBuckets {
   let openingTrad = 0
   let openingInheritedTrad = 0
   let openingOther = 0 // tax-free bucket: cash + roth + hsa
@@ -332,7 +333,7 @@ export function optimizerOpeningBuckets(
   const bucketByAccountId = new Map<string, OptimizerBucket>()
   for (const a of plan.accounts) {
     if (a.type === 'traditional') {
-      if (!a.inherited || isTreatAsOwnEffective(a, startYear)) {
+      if (!a.inherited) {
         openingTrad += a.balance
         bucketByAccountId.set(a.id, 'traditional')
       } else {
@@ -511,7 +512,7 @@ export function buildOptimizerInput(plan: Plan, opts: OptimizePlanOptions, probe
     openingTaxable,
     taxableBasisRatio,
     bucketByAccountId,
-  } = optimizerOpeningBuckets(plan, opts.startYear)
+  } = optimizerOpeningBuckets(plan)
   const taxableGainWeight = Math.min(1, Math.max(0, 1 - taxableBasisRatio))
 
   const growth = blendedGrowth(plan, opts.startYear)

@@ -633,10 +633,13 @@ describe('buildOptimizerInput', () => {
     expect(input.openingOther).toBe(10_000) // cash; inherited traditional is tracked separately
   })
 
-  it('remaps mid-horizon S2 flip owner RMDs into the probe inherited flow', async () => {
-    // Opening bucket is inherited (election after startYear); post-flip owner
-    // RMD must appear on probe.inheritedDistribution (not probe.rmd) so the
-    // LP's static inheritedTraditional floor stays consistent. YearResult.rmd
+  it('remaps post-flip S2 owner-RMD obligations into the probe inherited flow', async () => {
+    // S2 treat-as-own never enters the owned-traditional LP bucket (even when
+    // the flip is after startYear). Post-flip owner-RMD obligation shares must
+    // appear on probe.inheritedDistribution (not probe.rmd) so the LP's static
+    // inheritedTraditional floor stays consistent. The remap uses each
+    // account's separately calculated owner-RMD requirement, not its executed
+    // debit (which can include IRA sweep from another account). YearResult.rmd
     // remains on the owner path.
     const plan = createEmptyPlan({ newId: testIds, now: fixedNow })
     plan.household.people[0] = {
@@ -723,6 +726,85 @@ describe('buildOptimizerInput', () => {
     // Schedule remains feasible under the remapped floors.
     const optimized = await optimizePlan(validated, optOpts)
     expect(optimized.schedule.status).not.toBe('infeasible')
+  })
+
+  it('keeps pre-start S2 flips in the inherited opening bucket and remaps obligation shares', () => {
+    // Probe-consistency fixture moved here from the round-1 mid-horizon-only
+    // shape: when treatAsOwnElectionYear <= startYear the account still never
+    // enters openingTrad (the unifying rule), and every post-flip year remaps
+    // owner-RMD obligations — not only the first flip year inside the horizon.
+    const plan = createEmptyPlan({ newId: testIds, now: fixedNow })
+    plan.household.people[0] = {
+      id: 'p1',
+      name: 'Pat',
+      dob: '1947-01-01',
+      sex: 'average',
+      retirementAge: 65,
+      longevity: { planningAge: 95, source: 'manual' },
+    }
+    plan.assumptions.inflationPct = 0
+    plan.assumptions.defaultReturnPct = 0
+    plan.assumptions.stateEffectiveTaxPct = 0
+    plan.assumptions.heirTaxRatePct = 25
+    plan.expenses.baseAnnual = 0
+    plan.expenses.healthcare = {
+      pre65MonthlyPremiumPerPerson: 0,
+      applyAcaCredit: false,
+      medicareExtrasMonthlyPerPerson: 0,
+    }
+    plan.accounts = [
+      {
+        type: 'traditional',
+        id: testIds(),
+        name: 'S2 Inherited IRA',
+        ownerPersonId: 'p1',
+        annualReturnPct: 0,
+        kind: 'ira',
+        balance: 300_000,
+        annualContribution: 0,
+        inherited: {
+          ownerDeathYear: 2024,
+          decedentHadStartedRmds: true,
+          beneficiary: {
+            beneficiaryClass: 'designated-individual',
+            edbCategory: 'surviving-spouse',
+            beneficiaryBirthYear: 1947,
+            soleBeneficiary: true,
+            ownerBirthYear: 1945,
+            election: 'treat-as-own',
+            spouseUnlimitedWithdrawalRight: true,
+            treatAsOwnElectionYear: 2025,
+            ownerYearOfDeathRmdSatisfied: true,
+            provenance: { source: 'test', asOf: '2026-01-01' },
+          },
+        },
+      },
+      {
+        type: 'cash',
+        id: testIds(),
+        name: 'Cash',
+        ownerPersonId: null,
+        annualReturnPct: 0,
+        balance: 50_000,
+        annualContribution: 0,
+      },
+    ]
+    const validated = validate(plan)
+    const probes: OptimizerYearProbe[] = []
+    const ledger = simulatePlan(validated, {
+      startYear: 2026,
+      horizonEndYear: 2027,
+      taxCalculator: createFederalTaxCalculator(),
+      captureOptimizerInputs: (p) => probes.push(p),
+    })
+    const buckets = optimizerOpeningBuckets(validated)
+    expect(buckets.openingInheritedTrad).toBe(300_000)
+    expect(buckets.openingTrad).toBe(0)
+    const year2026 = ledger.years.find((y) => y.year === 2026)!
+    const probe2026 = probes.find((p) => p.year === 2026)!
+    expect(year2026.rmd).toBeGreaterThan(0)
+    expect(probe2026.rmd).toBe(0)
+    expect(probe2026.inheritedDistribution).toBeCloseTo(year2026.rmd, 2)
   })
 
   it('passes forced inherited distributions as taxable liquid optimizer inputs', () => {
@@ -1381,7 +1463,7 @@ describe('committed retirement-action movement in the optimizer bridge', () => {
     expect(moved.amount).toBe(-50_000)
 
     // And it survives the bridge into the bucket scalar the LP actually reads.
-    const buckets = optimizerOpeningBuckets(plan, 2026)
+    const buckets = optimizerOpeningBuckets(plan)
     expect(committedActionMovementForYear(buckets.bucketByAccountId, probe)).toEqual({
       trad: 0,
       inheritedTrad: 0,
@@ -1403,7 +1485,7 @@ describe('committed retirement-action movement in the optimizer bridge', () => {
     // `committedActionMovementForYear` is the exact function
     // `buildOptimizerInput` calls, fed the acted run's own probe.
     const bridged = buildOptimizerInput(actionFree, solverOpts)
-    const buckets = optimizerOpeningBuckets(plan, 2026)
+    const buckets = optimizerOpeningBuckets(plan)
     const movement = committedActionMovementForYear(buckets.bucketByAccountId, probes[0]!)
     const preAction = { ...bridged, years: [bridged.years[0]!] }
     const postAction = {
@@ -1448,7 +1530,7 @@ describe('committed retirement-action movement in the optimizer bridge', () => {
   it('leaves every bucket scalar unchanged when plan.accounts is reordered', () => {
     const { plan, taxableId } = actedTaxablePlan()
     const probe = probesFor(plan)[0]!
-    const canonicalBuckets = optimizerOpeningBuckets(plan, 2026)
+    const canonicalBuckets = optimizerOpeningBuckets(plan)
     const canonicalMovement = committedActionMovementForYear(
       canonicalBuckets.bucketByAccountId,
       probe,
@@ -1466,7 +1548,7 @@ describe('committed retirement-action movement in the optimizer bridge', () => {
     expect(orders).toHaveLength(24)
     for (const accounts of orders) {
       const reordered = validate({ ...structuredClone(plan), accounts: structuredClone(accounts) })
-      const buckets = optimizerOpeningBuckets(reordered, 2026)
+      const buckets = optimizerOpeningBuckets(reordered)
       // The pre-action bug is invisible to order — both readings sum the same
       // way — so this fixture exists to catch the OTHER failure: a fix that
       // reaches the source account by position instead of by id.
@@ -1521,7 +1603,7 @@ describe('committed retirement-action movement in the optimizer bridge', () => {
       committedWithdrawal('pat-draw', 'pat-brokerage', 2026, 50_000),
     ]
     const plan = validate(draft)
-    const buckets = optimizerOpeningBuckets(plan, 2026)
+    const buckets = optimizerOpeningBuckets(plan)
     const probe = probesFor(plan)[0]!
     const movement = committedActionMovementForYear(buckets.bucketByAccountId, probe)
 
@@ -1561,7 +1643,7 @@ describe('committed retirement-action movement in the optimizer bridge', () => {
       committedWithdrawal('zero-basis-draw', 'zero-basis', 2026, 25_000),
     ]
     const plan = validate(raw)
-    const buckets = optimizerOpeningBuckets(plan, 2026)
+    const buckets = optimizerOpeningBuckets(plan)
 
     // Heterogeneous basis is what makes the readings differ: draining the
     // zero-basis account alone lifts the remaining aggregate ratio.
@@ -1586,7 +1668,7 @@ describe('committed retirement-action movement in the optimizer bridge', () => {
     expect(gainWeight).toBeCloseTo(0.5, 6)
     // The action does not move the anchor: the opening precedes it, so the
     // acted plan and its action-free twin hand the LP the same ratio.
-    expect(optimizerOpeningBuckets(actionFree, 2026).taxableBasisRatio)
+    expect(optimizerOpeningBuckets(actionFree).taxableBasisRatio)
       .toBe(buckets.taxableBasisRatio)
     // And that is the weight the real bridge puts on the ACA bound. Note what
     // the weight multiplies: `incumbentTaxableWithdrawal`, the LP's OWN
@@ -1656,7 +1738,7 @@ describe('committed retirement-action movement in the optimizer bridge', () => {
     expect(probe.exogenousStrategyAccountMovement).toEqual([])
     expect(probe.committedConversionOrdinaryIncome).toBeCloseTo(60_000, 6)
 
-    const buckets = optimizerOpeningBuckets(plan, 2026)
+    const buckets = optimizerOpeningBuckets(plan)
     expect(committedActionMovementForYear(buckets.bucketByAccountId, probe)).toEqual({
       trad: -60_000,
       inheritedTrad: 0,
@@ -1747,7 +1829,7 @@ describe('committed retirement-action movement in the optimizer bridge', () => {
     // arm's or the other's and never a sum of both.
     expect(probe.forcedDistributionOrdinaryIncomeExclusion)
       .toBeCloseTo(NAMED_QCD_INCOME_OFFSET, 6)
-    expect(committedActionMovementForYear(optimizerOpeningBuckets(plan, 2026).bucketByAccountId, probe))
+    expect(committedActionMovementForYear(optimizerOpeningBuckets(plan).bucketByAccountId, probe))
       .toEqual({
         trad: -20_000,
         inheritedTrad: 0,
@@ -1779,7 +1861,7 @@ describe('committed retirement-action movement in the optimizer bridge', () => {
     const input = buildOptimizerInput(plan, opts)
     expect(input.years.map((year) => year.committedActionMovement)).toEqual(
       probes.map((probe) =>
-        committedActionMovementForYear(optimizerOpeningBuckets(plan, 2026).bucketByAccountId, probe)),
+        committedActionMovementForYear(optimizerOpeningBuckets(plan).bucketByAccountId, probe)),
     )
     expect(input.years[0]!.committedActionMovement).toBeDefined()
     expect(input.years.slice(1).every((year) => year.committedActionMovement === undefined))
@@ -1951,7 +2033,7 @@ describe('committed facts the LP books on both sides', () => {
     expect(probe.committedActionProceeds).toBe(0)
 
     // The bridge, and then the balance recursion the solver actually reads.
-    const buckets = optimizerOpeningBuckets(plan, 2026)
+    const buckets = optimizerOpeningBuckets(plan)
     // Proceeds zero: a gift LEAVES. The 72(t) series on this same channel does
     // report proceeds, and that asymmetry is the whole double-entry claim.
     expect(exogenousStrategyMovementForYear(buckets.bucketByAccountId, probe)).toEqual({

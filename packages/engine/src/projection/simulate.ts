@@ -76,6 +76,7 @@ import {
   acceptsContributions,
   hsaNonQualifiedPenaltyRate,
   isAggregatedIra,
+  hasSpouseTreatAsOwnElection,
   isConvertibleToRoth,
   isSpendableInYear,
   isTreatAsOwnEffective,
@@ -3882,6 +3883,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     let ownedIraRmdTotal = 0
     /** Dollars this account must distribute, own share plus any swept share. */
     const rmdTakeByAccount = new Map<string, number>()
+    /** Per-account owner-RMD obligation before balance cap and IRA sweep. */
+    const rmdObligationByAccount = new Map<string, number>()
     const unmetIraRmdByOwner = new Map<string, number>()
     /**
      * The owner's (e)(1)(i) sum: the separately calculated amounts of the IRAs
@@ -3915,6 +3918,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         { ownerSex: owner.sex, spouse },
       )
       if (rmd <= 0) continue
+      rmdObligationByAccount.set(state.account.id, rmd)
       if (isAggregatedIraThisYear(state.account)) {
         iraRmdRequiredByOwner.set(ownerId, (iraRmdRequiredByOwner.get(ownerId) ?? 0) + rmd)
       }
@@ -7832,54 +7836,53 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // income; the baseline taxable-SS portion is folded in as a constant.
     let optimizerProbe: OptimizerYearProbe | null = null
     if (opts.captureOptimizerInputs) {
-      // Bucket by status AT PROJECTION START only (same rule as
-      // `optimizerOpeningBuckets`): electionYear <= startYear → owned for the
-      // whole LP horizon; else inherited. Mid-horizon S2 flips are a documented
-      // LP granularity approximation — the exact ledger flips year-by-year, but
-      // the LP holds one static bucket so rmdDivisor's numerator and the opening
-      // bucket stay consistent. Probe remapping below publishes a mid-horizon-
-      // flipped account's post-flip owner RMD as part of the inherited-
-      // traditional forced flow (added to probe `inheritedDistribution`,
-      // excluded from probe `rmd`) so the LP's static inheritedTraditional
-      // bucket sees consistent floors; YearResult.rmd / inherited* fields are
-      // unchanged.
+      // Bucket by inherited vs owned only (same rule as `optimizerOpeningBuckets`):
+      // S2 treat-as-own stays inherited-traditional for the whole LP horizon.
+      // Post-flip owner-RMD obligation shares remap into the inherited forced
+      // flow below so the LP's static inheritedTraditional bucket sees
+      // consistent floors; YearResult.rmd / inherited* fields are unchanged.
       let startTraditional = 0
       let startInheritedTraditional = 0
       for (const state of balances) {
         if (state.account.type !== 'traditional') continue
         const opening = startOfYearBalance.get(state.account.id) ?? 0
-        if (
-          !state.account.inherited ||
-          isTreatAsOwnEffective(state.account, startYear)
-        ) {
+        if (!state.account.inherited) {
           startTraditional += opening
         } else {
           startInheritedTraditional += opening
         }
       }
-      // Mid-horizon S2 flip: accounts still in the inheritedTraditional opening
-      // bucket whose owner RMD executed this year after the flip. Remap those
-      // dollars into the probe's inherited forced flow only (ledger YearResult
-      // fields stay on the owner-RMD path).
-      let midHorizonFlipOwnerRmd = 0
+      // S2 post-flip: accounts in the inheritedTraditional opening bucket
+      // whose owner-RMD obligation executed this year after the flip. Remap the
+      // obligation share — not the account-keyed executed debit, which can
+      // include IRA sweep from another account — into the probe's inherited
+      // forced flow only (ledger YearResult fields stay on the owner-RMD path).
+      let s2FlipOwnerRmdObligationRemap = 0
+      let s2FlipOwnerRmdObligationRemapTaxable = 0
+      const ownerRmdNontaxableFraction =
+        rmdTotal > 0 ? rmdNontaxable / rmdTotal : 0
       for (const state of balances) {
         if (state.account.type !== 'traditional') continue
-        if (state.account.inherited === undefined) continue
-        if (isTreatAsOwnEffective(state.account, startYear)) continue
+        if (!hasSpouseTreatAsOwnElection(state.account)) continue
         if (!isTreatAsOwnEffective(state.account, year)) continue
-        const take = rmdTakeByAccount.get(state.account.id) ?? 0
-        if (take > 0 && !planDollarsMoveNoLedgerCent(take)) {
-          midHorizonFlipOwnerRmd += take
-        }
+        const obligation = rmdObligationByAccount.get(state.account.id) ?? 0
+        if (obligation <= 0 || planDollarsMoveNoLedgerCent(obligation)) continue
+        // Pro-rata attribution: each remapped obligation dollar carries the
+        // same nontaxable share as the year's aggregate owner-RMD gross, so
+        // the LP's ordinary-income base does not tax Form 8606 basis the
+        // ledger excluded on the owner path.
+        const shareNontaxable = obligation * ownerRmdNontaxableFraction
+        s2FlipOwnerRmdObligationRemap += obligation
+        s2FlipOwnerRmdObligationRemapTaxable += obligation - shareNontaxable
       }
-      const probeRmd = Math.max(0, rmdTotal - midHorizonFlipOwnerRmd)
+      const probeRmd = Math.max(0, rmdTotal - s2FlipOwnerRmdObligationRemap)
       const probeInheritedDistribution =
-        inheritedOrdinaryIncome + midHorizonFlipOwnerRmd
+        inheritedOrdinaryIncome + s2FlipOwnerRmdObligationRemapTaxable
       const rmdTaxableTotal = Math.max(0, rmdTotal - rmdNontaxable)
-      const probeRmdTaxable =
-        rmdTotal > 0
-          ? rmdTaxableTotal * (probeRmd / rmdTotal)
-          : 0
+      const probeRmdTaxable = Math.max(
+        0,
+        rmdTaxableTotal - s2FlipOwnerRmdObligationRemapTaxable,
+      )
       // The charitable exclusion riding on this year's forced owned-IRA
       // distribution, carried on its own term instead of inside the base.
       //
@@ -8361,9 +8364,9 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
               ? conversionTaxableAmountForGross(remainingConvertibleGross) /
                 remainingConvertibleGross
               : 1,
-        // Probe-only remap: mid-horizon S2 flip owner RMDs ride the inherited
-        // forced flow so the LP's static inheritedTraditional bucket stays
-        // consistent (see comment at startTraditional). YearResult.rmd is
+        // Probe-only remap: post-flip S2 owner-RMD obligation shares ride the
+        // inherited forced flow so the LP's static inheritedTraditional bucket
+        // stays consistent (see comment at startTraditional). YearResult.rmd is
         // unchanged.
         rmd: probeRmd,
         rmdTaxable: probeRmdTaxable,
@@ -8382,7 +8385,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
               : 1,
         startTraditional,
         // Traditional forced only — matches OptimizerYearProbe / LP ordinary base.
-        // Includes mid-horizon-flip owner RMDs remapped above (probe only).
+        // Includes post-flip S2 owner-RMD obligation shares remapped above
+        // (probe only; net of pro-rata Form 8606 basis).
         inheritedDistribution: probeInheritedDistribution,
         startInheritedTraditional,
         peopleAged65Plus,

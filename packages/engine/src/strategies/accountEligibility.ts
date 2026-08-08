@@ -1166,6 +1166,41 @@ export const TRADITIONAL_EARLY_PENALTY_RATE = 0.1
 /** HSA non-qualified withdrawal penalty rate before age 65 (IRC §223(f)(4)). */
 export const HSA_NON_QUALIFIED_PENALTY_RATE = 0.2
 
+type TreatAsOwnElectionAccount = Readonly<{
+  kind?: string | undefined
+  inherited?: Readonly<{
+    ownerDeathYear?: number | undefined
+    beneficiary?: Readonly<{
+      election?: string | undefined
+      treatAsOwnElectionYear?: number | undefined
+      edbCategory?: string | undefined
+      soleBeneficiary?: boolean | undefined
+      spouseUnlimitedWithdrawalRight?: boolean | undefined
+    }> | undefined
+  }> | undefined
+}>
+
+/**
+ * Whether an inherited IRA carries a spouse treat-as-own election the
+ * classifier would recognize (year-agnostic). Used by the optimizer probe to
+ * keep S2 accounts in the inherited-traditional LP bucket for the whole horizon
+ * and remap post-flip owner RMD obligations into that bucket's forced flow.
+ */
+export function hasSpouseTreatAsOwnElection(
+  account: TreatAsOwnElectionAccount,
+): boolean {
+  const beneficiary = account.inherited?.beneficiary
+  return (
+    account.kind === 'ira' &&
+    account.inherited !== undefined &&
+    beneficiary?.election === 'treat-as-own' &&
+    beneficiary.edbCategory === 'surviving-spouse' &&
+    beneficiary.soleBeneficiary === true &&
+    beneficiary.spouseUnlimitedWithdrawalRight === true &&
+    beneficiary.treatAsOwnElectionYear !== undefined
+  )
+}
+
 /**
  * Whether a spouse's explicit treat-as-own election has taken effect for an
  * account in a calendar year. Mirrors the classifier's S2 structural gate
@@ -1177,19 +1212,7 @@ export const HSA_NON_QUALIFIED_PENALTY_RATE = 0.2
  * contribution/conversion validators stay pre-transition (WS5 residual).
  */
 export function isTreatAsOwnEffective(
-  account: Readonly<{
-    kind?: string | undefined
-    inherited?: Readonly<{
-      ownerDeathYear?: number | undefined
-      beneficiary?: Readonly<{
-        election?: string | undefined
-        treatAsOwnElectionYear?: number | undefined
-        edbCategory?: string | undefined
-        soleBeneficiary?: boolean | undefined
-        spouseUnlimitedWithdrawalRight?: boolean | undefined
-      }> | undefined
-    }> | undefined
-  }>,
+  account: TreatAsOwnElectionAccount,
   year: number,
 ): boolean {
   const beneficiary = account.inherited?.beneficiary
