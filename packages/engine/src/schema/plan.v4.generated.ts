@@ -924,6 +924,11 @@ export const planJsonSchema: JsonSchemaDocument = {
                         "minimum": 1,
                         "maximum": 12
                       },
+                      "ownerBirthDay": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 31
+                      },
                       "ownerYearOfDeathRmdSatisfied": {
                         "type": "boolean"
                       },
@@ -954,7 +959,6 @@ export const planJsonSchema: JsonSchemaDocument = {
                     "required": [
                       "beneficiaryClass",
                       "edbCategory",
-                      "beneficiaryBirthYear",
                       "soleBeneficiary",
                       "provenance"
                     ]
@@ -1496,6 +1500,11 @@ export const planJsonSchema: JsonSchemaDocument = {
                         "minimum": 1,
                         "maximum": 12
                       },
+                      "ownerBirthDay": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 31
+                      },
                       "ownerYearOfDeathRmdSatisfied": {
                         "type": "boolean"
                       },
@@ -1526,7 +1535,6 @@ export const planJsonSchema: JsonSchemaDocument = {
                     "required": [
                       "beneficiaryClass",
                       "edbCategory",
-                      "beneficiaryBirthYear",
                       "soleBeneficiary",
                       "provenance"
                     ]
@@ -5908,6 +5916,17 @@ export const planJsonSchema: JsonSchemaDocument = {
     "hsa reimburse-later accumulation requires the capByMedicalExpenses withdrawal treatment.",
     "property depreciationRecapture requires a costBasis; a HECM line of credit requires a primary residence.",
     "an estateBeneficiary charity destination requires charityPct.",
+    "inherited Roth accounts are refused by accountSchema and simulatePlan (regime matrix K1/K2); this is temporary until the inherited-Roth regime engine is executable.",
+    "an EDB category other than 'none' requires beneficiaryClass 'designated-individual'.",
+    "remain-beneficiary and treat-as-own elections require edbCategory 'surviving-spouse'.",
+    "a ten-year-election requires an EDB category other than 'none'.",
+    "treat-as-own requires soleBeneficiary true and, when asserted false, spouseUnlimitedWithdrawalRight true.",
+    "edbCategory 'minor-child' is rejected when beneficiary age is at least 22 in the owner death year by year arithmetic.",
+    "edbCategory 'not-more-than-10-years-younger' is rejected only when the beneficiary is clearly more than 10 years younger than the owner by year arithmetic.",
+    "ownerYearOfDeathRmdSatisfied is allowed only for a post-RBD decedent (decedentHadStartedRmds true).",
+    "election 'ten-year-election' is refused for post-RBD deaths (decedentHadStartedRmds true).",
+    "beneficiaryClass 'designated-individual' requires beneficiaryBirthYear.",
+    "the designated-individual beneficiaryBirthYear cannot be after ownerDeathYear; successor beneficiaries and non-individual classes are exempt from this chronology check.",
     "account allocation weights must sum to 100% (±0.5); a linear glidepath must end after it starts.",
     "a qualified annuity purchase must be funded from an owned (non-inherited) traditional account; a non-qualified purchase from cash/taxable/equity-comp; a QLAC must be a qualified purchase; a joint-and-survivor payout form requires a two-person household.",
     "a pension lump-sum election requires a lump-sum offer and must roll over into an existing owned (non-inherited) traditional account; its election year cannot precede the calendar year in the plan’s updatedAtIso stamp.",

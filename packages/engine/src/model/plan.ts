@@ -497,10 +497,11 @@ export const inheritedBeneficiarySchema = z
       'not-more-than-10-years-younger',
     ]),
     /**
-     * Beneficiary's calendar year of birth. Required for life-expectancy regimes
-     * and for the minor-child / ≤10-years-younger consistency checks.
+     * Beneficiary's calendar year of birth. Required for designated-individual
+     * life-expectancy regimes and consistency checks; non-individual classes
+     * and successor beneficiaries may not have a birth year.
      */
-    beneficiaryBirthYear: calendarYear,
+    beneficiaryBirthYear: calendarYear.optional(),
     /**
      * Whether this beneficiary is the account's sole beneficiary. Required for
      * spouse treat-as-own and annual-RMD regimes; multiple beneficiaries without
@@ -538,6 +539,12 @@ export const inheritedBeneficiarySchema = z
      */
     ownerBirthMonth: z.number().int().min(1).max(12).optional(),
     /**
+     * Decedent's birth day (1–31). Day precision matters only at the July 1,
+     * 1949 70½ boundary and similar date-exact cutoffs; year/month ambiguity
+     * classifies needs-review downstream.
+     */
+    ownerBirthDay: z.number().int().min(1).max(31).optional(),
+    /**
      * Whether the decedent's unsatisfied year-of-death RMD was already taken.
      * Required for correct year-0 scheduling when death is on/after the RBD;
      * unknown/`false` means the schedule must carry it.
@@ -560,6 +567,18 @@ export const inheritedBeneficiarySchema = z
     }),
   })
   .superRefine((beneficiary, ctx) => {
+    if (
+      beneficiary.beneficiaryClass === 'designated-individual' &&
+      beneficiary.beneficiaryBirthYear === undefined
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['beneficiaryBirthYear'],
+        message:
+          "beneficiaryBirthYear is required when beneficiaryClass is 'designated-individual'; provide the beneficiary's birth year for the life-expectancy regime and consistency checks",
+      })
+    }
+
     // EDB categories exist only for designated individuals (matrix §2 / X5).
     if (
       beneficiary.beneficiaryClass !== 'designated-individual' &&
@@ -624,7 +643,9 @@ export const inheritedBeneficiarySchema = z
     // years by year subtraction) is NOT rejected here.
     if (
       beneficiary.edbCategory === 'not-more-than-10-years-younger' &&
+      beneficiary.beneficiaryClass === 'designated-individual' &&
       beneficiary.ownerBirthYear !== undefined &&
+      beneficiary.beneficiaryBirthYear !== undefined &&
       beneficiary.beneficiaryBirthYear > beneficiary.ownerBirthYear + 10
     ) {
       ctx.addIssue({
@@ -650,7 +671,14 @@ export const inheritedAccountSchema = z
   .object({
     /** Calendar year the original owner died (starts the 10-year clock). */
     ownerDeathYear: calendarYear,
-    /** Decedent had reached their required beginning date → annual RMDs in years 1–9. */
+    /**
+     * Asserted required-beginning-date-status fact: whether the decedent had
+     * started RMDs, as this field has meant since the two-field era. The WS3
+     * classifier derives death-vs-RBD from ownerBirthYear/month and death year
+     * and marks any contradiction with this assertion needs-review; the
+     * parse-level coherence refinements below intentionally read this asserted
+     * fact.
+     */
     decedentHadStartedRmds: z.boolean(),
     /**
      * Explicit beneficiary facts (regime matrix §2). Optional on traditional
@@ -664,9 +692,15 @@ export const inheritedAccountSchema = z
     const beneficiary = inherited.beneficiary
     if (beneficiary === undefined) return
 
-    // A beneficiary born after the calendar year of death cannot have been a
-    // designated beneficiary as of the date of death (§1.401(a)(9)-4(c)).
-    if (beneficiary.beneficiaryBirthYear > inherited.ownerDeathYear) {
+    // A designated beneficiary born after the calendar year of death cannot
+    // have been a designated beneficiary as of the date of death
+    // (§1.401(a)(9)-4(c)). Successor beneficiaries may be born later under
+    // §401(a)(9)(H)(iii), and non-individual classes have no birth year.
+    if (
+      beneficiary.beneficiaryClass === 'designated-individual' &&
+      beneficiary.beneficiaryBirthYear !== undefined &&
+      beneficiary.beneficiaryBirthYear > inherited.ownerDeathYear
+    ) {
       ctx.addIssue({
         code: 'custom',
         path: ['beneficiary', 'beneficiaryBirthYear'],
@@ -680,7 +714,11 @@ export const inheritedAccountSchema = z
     // beneficiary may still have been 20 on the date of death); parse rejects
     // only clear contradictions (age ≥ 22 by year arithmetic) and the
     // classifier marks year-precision ambiguity needs-review.
-    if (beneficiary.edbCategory === 'minor-child') {
+    if (
+      beneficiary.beneficiaryClass === 'designated-individual' &&
+      beneficiary.edbCategory === 'minor-child' &&
+      beneficiary.beneficiaryBirthYear !== undefined
+    ) {
       const ageInDeathYear = inherited.ownerDeathYear - beneficiary.beneficiaryBirthYear
       if (ageInDeathYear >= 22) {
         ctx.addIssue({

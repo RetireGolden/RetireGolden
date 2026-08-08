@@ -58,6 +58,18 @@ export const PLAN_SCHEMA_UNREPRESENTABLE_CONSTRAINTS: readonly string[] = [
   'hsa reimburse-later accumulation requires the capByMedicalExpenses withdrawal treatment.',
   'property depreciationRecapture requires a costBasis; a HECM line of credit requires a primary residence.',
   'an estateBeneficiary charity destination requires charityPct.',
+  // Inherited-IRA WS2 refinements
+  'inherited Roth accounts are refused by accountSchema and simulatePlan (regime matrix K1/K2); this is temporary until the inherited-Roth regime engine is executable.',
+  "an EDB category other than 'none' requires beneficiaryClass 'designated-individual'.",
+  "remain-beneficiary and treat-as-own elections require edbCategory 'surviving-spouse'.",
+  "a ten-year-election requires an EDB category other than 'none'.",
+  'treat-as-own requires soleBeneficiary true and, when asserted false, spouseUnlimitedWithdrawalRight true.',
+  "edbCategory 'minor-child' is rejected when beneficiary age is at least 22 in the owner death year by year arithmetic.",
+  "edbCategory 'not-more-than-10-years-younger' is rejected only when the beneficiary is clearly more than 10 years younger than the owner by year arithmetic.",
+  'ownerYearOfDeathRmdSatisfied is allowed only for a post-RBD decedent (decedentHadStartedRmds true).',
+  "election 'ten-year-election' is refused for post-RBD deaths (decedentHadStartedRmds true).",
+  "beneficiaryClass 'designated-individual' requires beneficiaryBirthYear.",
+  'the designated-individual beneficiaryBirthYear cannot be after ownerDeathYear; successor beneficiaries and non-individual classes are exempt from this chronology check.',
   // Allocation
   'account allocation weights must sum to 100% (±0.5); a linear glidepath must end after it starts.',
   // Annuity funding / form

@@ -1669,6 +1669,21 @@ describe('inherited-IRA beneficiary facts (WS2)', () => {
     expect(parsePlan(plan).ok).toBe(true)
   })
 
+  it('accepts treat-as-own with an explicit unlimited withdrawal right', () => {
+    const plan = withTraditionalInherited({
+      ownerDeathYear: 2022,
+      decedentHadStartedRmds: false,
+      beneficiary: {
+        ...fullBeneficiary,
+        edbCategory: 'surviving-spouse',
+        election: 'treat-as-own',
+        soleBeneficiary: true,
+        spouseUnlimitedWithdrawalRight: true,
+      },
+    })
+    expect(parsePlan(plan).ok).toBe(true)
+  })
+
   it('rejects ownerYearOfDeathRmdSatisfied when decedentHadStartedRmds is false', () => {
     const plan = withTraditionalInherited({
       ownerDeathYear: 2022,
@@ -1817,6 +1832,67 @@ describe('inherited-IRA beneficiary facts (WS2)', () => {
       },
     })
     expect(parsePlan(plan).ok).toBe(true)
+  })
+
+  it('accepts not-more-than-10-years-younger when the beneficiary is older', () => {
+    const plan = withTraditionalInherited({
+      ownerDeathYear: 2022,
+      decedentHadStartedRmds: false,
+      beneficiary: {
+        ...fullBeneficiary,
+        edbCategory: 'not-more-than-10-years-younger',
+        ownerBirthYear: 1950,
+        beneficiaryBirthYear: 1940,
+      },
+    })
+    expect(parsePlan(plan).ok).toBe(true)
+  })
+
+  it('accepts a successor beneficiary born after the original owner died', () => {
+    const plan = withTraditionalInherited({
+      ownerDeathYear: 2022,
+      decedentHadStartedRmds: false,
+      beneficiary: {
+        ...fullBeneficiary,
+        beneficiaryClass: 'successor-beneficiary',
+        beneficiaryBirthYear: 2023,
+      },
+    })
+    expect(parsePlan(plan).ok).toBe(true)
+  })
+
+  it('accepts an estate beneficiary without a birth year', () => {
+    const plan = withTraditionalInherited({
+      ownerDeathYear: 2022,
+      decedentHadStartedRmds: false,
+      beneficiary: {
+        beneficiaryClass: 'estate',
+        edbCategory: 'none',
+        soleBeneficiary: false,
+        provenance: { source: 'custodian statement', asOf: 2026 },
+      },
+    })
+    expect(parsePlan(plan).ok).toBe(true)
+  })
+
+  it('rejects a designated-individual beneficiary without a birth year', () => {
+    const plan = withTraditionalInherited({
+      ownerDeathYear: 2022,
+      decedentHadStartedRmds: false,
+      beneficiary: {
+        beneficiaryClass: 'designated-individual',
+        edbCategory: 'none',
+        soleBeneficiary: true,
+        provenance: { source: 'custodian statement', asOf: 2026 },
+      },
+    })
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(false)
+    if (!parsed.ok) {
+      expect(parsed.issues.join('\n')).toContain(
+        "beneficiaryBirthYear is required when beneficiaryClass is 'designated-individual'",
+      )
+    }
   })
 
   it('rejects an EDB category on a non-designated-individual beneficiary class', () => {

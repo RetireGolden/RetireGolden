@@ -694,6 +694,16 @@ function planWithdrawals(
 }
 
 export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResult {
+  // Defense in depth for callers that construct a Plan programmatically (and
+  // therefore bypass accountSchema): inherited Roth is schema-defined in
+  // regime matrix K1/K2 but not executable yet. Keep this check before any
+  // balance state is created or mutated, matching the parse-level refusal.
+  if (plan.accounts.some((account) => account.type === 'roth' && account.inherited !== undefined)) {
+    throw new Error(
+      'inherited Roth accounts are schema-defined (regime matrix K1/K2) but not yet executable; remove the inherited block until the regime engine lands (accountSchema parse-level refusal)',
+    )
+  }
+
   const { startYear, taxCalculator, market } = opts
   const warnings = new Set<string>()
   const inflation = plan.assumptions.inflationPct / 100
