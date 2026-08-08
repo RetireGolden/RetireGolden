@@ -328,11 +328,23 @@ function factConsistencyScreen(input: {
   if (b === undefined) return { disclosures: [] }
 
   const disclosures: RegimeDisclosure[] = []
-  const deathYear = input.inherited.ownerDeathYear
   const ownerBirth = b.ownerBirthYear
   const benBirth = b.beneficiaryBirthYear
   const edb = b.edbCategory
   const election = b.election
+  const deathYear = input.inherited.ownerDeathYear
+
+  if (
+    input.accountType === 'roth' &&
+    b.roth5YearStartYear !== undefined &&
+    b.roth5YearStartYear > deathYear
+  ) {
+    return refusal(
+      'needs-review',
+      'X5',
+      `roth5YearStartYear ${b.roth5YearStartYear} is after ownerDeathYear ${deathYear}; an owner cannot make their first Roth contribution after death — correct roth5YearStartYear or ownerDeathYear`,
+    )
+  }
 
   // Spouse-only elections with a non-spouse EDB category.
   if (
@@ -429,8 +441,17 @@ export function classifyInheritedRegime(input: {
     )
   }
 
-  // Traditional without beneficiary block → X1-style legacy approximation.
+  // Without a beneficiary block: traditional → X1-style legacy approximation; Roth → required facts (never legacy).
   if (b === undefined) {
+    if (accountType === 'roth') {
+      // No legacy path exists for Roth (the two-field era never covered it),
+      // so the refusal is a missing-facts needs-review, not X1.
+      return refusal(
+        'needs-review',
+        'X5',
+        'beneficiary block is required on inherited Roth accounts (no legacy approximation covers Roth); supply beneficiaryClass, edbCategory, beneficiaryBirthYear, soleBeneficiary, and provenance',
+      )
+    }
     return refusal(
       'legacy-planning-approximation',
       'X1',
@@ -616,14 +637,22 @@ export function classifyInheritedRegime(input: {
     if (!isExplicitRemain) disclosures.push('deemed-election-risk')
 
     if (accountType === 'roth') {
-      // Roth spouse remain/none → K2 (always before-RBD arm, §327 disclosure).
-      disclosures.push('prop-reg-spouse-as-employee')
+      // Roth spouse remain/none → K2 (always before-RBD arm; §327 disclosure only from 2024 commencement).
+      const commencementYear = spouseDeferralStartYear(
+        deathYear,
+        b.ownerBirthYear,
+        b.ownerBirthMonth,
+      )
+      const section327Unsettled = commencementYear >= 2024
+      if (section327Unsettled) {
+        disclosures.push('prop-reg-spouse-as-employee')
+      }
       disclosures.push(...rothTaxabilityDisclosure())
       return {
         kind: 'regime',
         regime: 'roth-edb-life-expectancy',
         row: 'K2',
-        classification: 'unsettled',
+        classification: section327Unsettled ? 'unsettled' : 'settled',
         rbdComparison: 'before-rbd',
         citations: [...CITATIONS.K2],
         disclosures,
@@ -631,14 +660,27 @@ export function classifyInheritedRegime(input: {
     }
 
     // Traditional spouse remain/none.
-    if (rbdComparison === 'before-rbd') {
-      disclosures.push('prop-reg-spouse-as-employee')
+    let spouseClassification: 'settled' | 'unsettled'
+    if (rbdComparison === 'on-or-after-rbd') {
+      spouseClassification = 'settled'
+    } else {
+      const commencementYear = spouseDeferralStartYear(
+        deathYear,
+        b.ownerBirthYear,
+        b.ownerBirthMonth,
+      )
+      if (commencementYear >= 2024) {
+        disclosures.push('prop-reg-spouse-as-employee')
+        spouseClassification = 'unsettled'
+      } else {
+        spouseClassification = 'settled'
+      }
     }
     return {
       kind: 'regime',
       regime: 'spouse-remain-beneficiary',
       row,
-      classification: rbdComparison === 'on-or-after-rbd' ? 'settled' : 'unsettled',
+      classification: spouseClassification,
       rbdComparison,
       citations: [...(isExplicitRemain ? CITATIONS.S1 : CITATIONS.S0)],
       disclosures,
@@ -789,8 +831,15 @@ export interface InheritedRequirementEvidence {
    * election — in which the spouse owes beneficiary RMDs — cannot be placed;
    * the amount is a typed limitation rather than a silent zero. WS4 executes
    * the transition with a real election year.
+   *
+   * 'joint-life-gap-unresolved-at-year-precision': an exact 10-birth-year gap
+   * cannot resolve "more than 10 years younger" at year precision
+   * (§1.401(a)(9)-5(c)(2)(i)).
    */
-  limitation?: 'pre-2022-tables-not-carried' | 'treat-as-own-election-year-not-carried'
+  limitation?:
+    | 'pre-2022-tables-not-carried'
+    | 'treat-as-own-election-year-not-carried'
+    | 'joint-life-gap-unresolved-at-year-precision'
   citations: string[]
 }
 
@@ -953,14 +1002,18 @@ export function inheritedRequirementForYear(input: {
       // carry — the amount is not computed rather than computed wrongly.
       if (deathYear < 2022) {
         return {
-          ...noneEvidence(year, [...citations, 'Treas. Reg. §1.401(a)(9)-9(f)(1)']),
+          year,
+          kind: 'year-of-death-rmd',
+          requiredAmount: 0,
           limitation: 'pre-2022-tables-not-carried',
+          citations: [...citations, 'Treas. Reg. §1.401(a)(9)-9(f)(1)'],
         }
       }
       const ownerAge = deathYear - b.ownerBirthYear
       let divisor = uniformLifetimeDivisor(pack, ownerAge)
       let arm: InheritedRequirementEvidence['divisorArm'] = 'uniform-lifetime'
       const extraCitations: string[] = ['Treas. Reg. §1.408-8(e)(4)(i)']
+      let jointLifeLimitation: InheritedRequirementEvidence['limitation'] | undefined
       // The decedent's lifetime denominator — which the death-year RMD is —
       // uses the Joint and Last Survivor Table when the sole beneficiary is a
       // spouse more than 10 years younger (§1.401(a)(9)-5(c)(2)(i)).
@@ -970,13 +1023,17 @@ export function inheritedRequirementForYear(input: {
         b.beneficiaryBirthYear !== undefined
       ) {
         const spouseAge = deathYear - b.beneficiaryBirthYear
-        if (ownerAge - spouseAge > 10) {
+        const ageGap = ownerAge - spouseAge
+        if (ageGap > 10) {
           const joint = jointLifeTableDivisor(ownerAge, spouseAge)
           if (joint !== undefined && divisor !== undefined && joint > divisor) {
             divisor = joint
             arm = 'joint-life'
             extraCitations.push('Treas. Reg. §1.401(a)(9)-5(c)(2)(i)')
           }
+        } else if (ageGap === 10) {
+          jointLifeLimitation = 'joint-life-gap-unresolved-at-year-precision'
+          extraCitations.push('Treas. Reg. §1.401(a)(9)-5(c)(2)(i)')
         }
       }
       // Post-RBD deaths from 2022 on always have an attained age on the
@@ -992,6 +1049,7 @@ export function inheritedRequirementForYear(input: {
         requiredAmount: amountFromDivisor(priorYearEndBalance, divisor),
         divisor,
         divisorArm: arm,
+        ...(jointLifeLimitation !== undefined ? { limitation: jointLifeLimitation } : {}),
         citations: [...citations, ...extraCitations],
       }
     }
@@ -1048,8 +1106,11 @@ export function inheritedRequirementForYear(input: {
   // formula over the current tables is the §1.401(a)(9)-9(f)(2)(ii)(A) reset.
   if (year < 2022) {
     return {
-      ...noneEvidence(year, [...citations, 'Treas. Reg. §1.401(a)(9)-9(f)(1)']),
+      year,
+      kind: 'annual-rmd',
+      requiredAmount: 0,
       limitation: 'pre-2022-tables-not-carried',
+      citations: [...citations, 'Treas. Reg. §1.401(a)(9)-9(f)(1)'],
     }
   }
 
@@ -1222,6 +1283,7 @@ export function inheritedRequirementSchedule(input: {
  */
 export function spouseTreatAsOwnCatchUp(input: {
   pack: ParameterPack
+  accountType: 'traditional' | 'roth'
   inherited: InheritedAccount
   electionYear: number
   /** §1.402(c)-2(j)(4)(i): was the spouse under the 10-year rule before electing? */
@@ -1230,12 +1292,19 @@ export function spouseTreatAsOwnCatchUp(input: {
 }): InheritedRequirementEvidence[] {
   const {
     pack,
+    accountType,
     inherited,
     electionYear,
     spouseWasUnderTenYearRule,
     priorYearEndBalancesByYear,
   } = input
   const b = inherited.beneficiary
+
+  if (accountType === 'roth') {
+    throw new Error(
+      'spouse treat-as-own catch-up does not apply to inherited Roth IRAs (a spouse who treats a Roth as their own has no lifetime RMDs under Treas. Reg. §1.408-8(b)(1)(ii)); no Uniform Lifetime catch-up exists',
+    )
+  }
 
   if (
     b === undefined ||
@@ -1246,6 +1315,12 @@ export function spouseTreatAsOwnCatchUp(input: {
     // unlimited withdrawal right — verified against the eCFR text 2026-08-08.
     throw new Error(
       'spouse treat-as-own catch-up requires a sole surviving-spouse beneficiary (Treas. Reg. §1.408-8(c)(1)(ii)); the §1.402(c)-2(j)(4) hypothetical-RMD gate has no other addressee',
+    )
+  }
+
+  if (b.spouseUnlimitedWithdrawalRight !== true) {
+    throw new Error(
+      "spouse treat-as-own catch-up requires spouseUnlimitedWithdrawalRight true (Treas. Reg. §1.408-8(c)(1)(ii) eligibility requires the unlimited withdrawal right)",
     )
   }
 
@@ -1267,21 +1342,29 @@ export function spouseTreatAsOwnCatchUp(input: {
 
   const spouseAttainYears = applicableAgeAttainYears(b.beneficiaryBirthYear)
   const ownerAttainYears = applicableAgeAttainYears(b.ownerBirthYear, b.ownerBirthMonth)
-  if (spouseAttainYears.length !== 1 || ownerAttainYears.length !== 1) {
+  const firstApplicableCandidates = new Set(
+    spouseAttainYears.flatMap((s) => ownerAttainYears.map((o) => Math.max(s, o))),
+  )
+  if (firstApplicableCandidates.size > 1) {
     throw new Error(
       'spouse treat-as-own catch-up cannot settle the §1.402(c)-2(j)(4)(iv) first applicable year (an applicable-age attain year is contested or birth-date precision is insufficient); resolve the applicable age before computing the catch-up',
     )
   }
 
   // §1.402(c)-2(j)(4)(iv): later of the two applicable-age years.
-  const firstApplicableYear = Math.max(spouseAttainYears[0]!, ownerAttainYears[0]!)
+  const firstApplicableYear = [...firstApplicableCandidates][0]!
   // §1.408-8(c)(1)(iii): the bar exists only in years the (j)(4) rule would
   // apply — an election before the first applicable year needs no catch-up.
   if (electionYear < firstApplicableYear) return []
 
   const out: InheritedRequirementEvidence[] = []
   for (let year = firstApplicableYear; year <= electionYear; year++) {
-    const balance = priorYearEndBalancesByYear[year] ?? 0
+    if (priorYearEndBalancesByYear[year] === undefined) {
+      throw new Error(
+        `spouse treat-as-own catch-up requires a prior-year-end balance for every year from ${firstApplicableYear} through ${electionYear} (year ${year} is missing); a missing balance must not publish a zero hypothetical`,
+      )
+    }
+    const balance = priorYearEndBalancesByYear[year]
     const spouseAge = year - b.beneficiaryBirthYear
     const divisor = uniformLifetimeDivisor(pack, spouseAge)
     // The first applicable year is at or after the spouse attains the

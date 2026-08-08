@@ -84,7 +84,7 @@ describe('WS3 fixture F1: R1 relief years and the 2022 reset', () => {
     expect(result.finalDeadlineYear).toBe(2030)
 
     const in2021 = requirement(result, account, 2021)
-    expect(in2021.kind).toBe('none')
+    expect(in2021.kind).toBe('annual-rmd')
     expect(in2021.requiredAmount).toBe(0)
     expect(in2021.limitation).toBe('pre-2022-tables-not-carried')
 
@@ -188,7 +188,7 @@ describe('WS3 fixture F3: spouse redetermination', () => {
   })
 })
 
-describe('WS3 fixture F4: S0 spouse deferral', () => {
+describe('WS3 fixture F4: S0 spouse deferral and §327 commencement gating', () => {
   it('defers to the year the owner would have attained 75', () => {
     const account = inherited(2021, false, beneficiary({
       ownerBirthYear: 1960,
@@ -218,6 +218,34 @@ describe('WS3 fixture F4: S0 spouse deferral', () => {
     expect(in2035.kind).toBe('annual-rmd')
     expect(in2035.divisor).toBeCloseTo(16.4, 4)
     expect(in2035.divisorArm).toBe('spouse-redetermined')
+  })
+
+  it('settles S1 without §327 disclosure when commencement is 2022', () => {
+    const account = inherited(2021, false, beneficiary({
+      ownerBirthYear: 1950,
+      beneficiaryBirthYear: 1952,
+      edbCategory: 'surviving-spouse',
+      election: 'remain-beneficiary',
+    }))
+    const result = classification('traditional', account)
+    expect(result.row).toBe('S1')
+    expect(result.classification).toBe('settled')
+    expect(result.disclosures).not.toContain('prop-reg-spouse-as-employee')
+  })
+
+  it('settles Roth K2 without §327 disclosure when commencement is 2022', () => {
+    const account = inherited(2021, false, beneficiary({
+      ownerBirthYear: 1950,
+      beneficiaryBirthYear: 1952,
+      edbCategory: 'surviving-spouse',
+      election: 'remain-beneficiary',
+      roth5YearStartYear: 2015,
+    }))
+    const result = classification('roth', account)
+    expect(result.row).toBe('K2')
+    expect(result.classification).toBe('settled')
+    expect(result.disclosures).not.toContain('prop-reg-spouse-as-employee')
+    expect(result.disclosures).not.toContain('roth-taxability-needs-review')
   })
 })
 
@@ -249,7 +277,7 @@ describe('WS3 fixtures F5 through F8', () => {
     expect(result.finalDeadlineYear).toBe(2041)
 
     const in2021 = requirement(result, account, 2021)
-    expect(in2021.kind).toBe('none')
+    expect(in2021.kind).toBe('annual-rmd')
     expect(in2021.requiredAmount).toBe(0)
     expect(in2021.limitation).toBe('pre-2022-tables-not-carried')
     const in2022 = requirement(result, account, 2022)
@@ -410,6 +438,12 @@ describe('WS3 fixture F10: X precedence and refusals', () => {
       edbCategory: 'not-more-than-10-years-younger',
     })), 'X5', 'needs-review', "edbCategory 'not-more-than-10-years-younger' is contradicted")
 
+    expectRefusal('roth', inherited(2022, false, beneficiary({
+      ownerBirthYear: 1970,
+      beneficiaryBirthYear: 1980,
+      roth5YearStartYear: 2023,
+    })), 'X5', 'needs-review', 'roth5YearStartYear 2023 is after ownerDeathYear 2022')
+
     const exactTen = classification('traditional', inherited(2022, false, beneficiary({
       ownerBirthYear: 1970, beneficiaryBirthYear: 1980,
       edbCategory: 'not-more-than-10-years-younger',
@@ -537,11 +571,11 @@ describe('WS3 fixture F11: parsed completeness join', () => {
         "S1": 36,
         "S2": 90,
         "S3": 96,
-        "X1": 113160,
+        "X1": 77160,
         "X2": 960,
         "X3": 2880,
         "X4": 3120,
-        "X5": 1286,
+        "X5": 37286,
       }
     `)
   })
@@ -570,7 +604,7 @@ describe('WS3 fixtures F12 and F13', () => {
     expect(exhaustion!.requiredAmount).toBe(100_000)
   })
 
-  it('F12 sweeps when a divisor reaches the 1.0 boundary without a notice waiver', () => {
+  it('F12 divisor boundary sweep without a notice waiver', () => {
     const account = inherited(2022, true, beneficiary({
       ownerBirthYear: 1910,
       beneficiaryBirthYear: 1903,
@@ -607,6 +641,7 @@ describe('WS3 fixtures F12 and F13', () => {
 
     const catchUp = spouseTreatAsOwnCatchUp({
       pack,
+      accountType: 'traditional',
       inherited: account,
       electionYear: 2027,
       spouseWasUnderTenYearRule: true,
@@ -629,6 +664,7 @@ describe('WS3 fixtures F12 and F13', () => {
     }
     expect(spouseTreatAsOwnCatchUp({
       pack,
+      accountType: 'traditional',
       inherited: account,
       electionYear: 2023,
       spouseWasUnderTenYearRule: true,
@@ -636,6 +672,7 @@ describe('WS3 fixtures F12 and F13', () => {
     })).toEqual([])
     expect(spouseTreatAsOwnCatchUp({
       pack,
+      accountType: 'traditional',
       inherited: account,
       electionYear: 2027,
       spouseWasUnderTenYearRule: false,
@@ -644,6 +681,7 @@ describe('WS3 fixtures F12 and F13', () => {
 
     expect(() => spouseTreatAsOwnCatchUp({
       pack,
+      accountType: 'traditional',
       inherited: inherited(2021, true, beneficiary({
         ownerBirthYear: 1950,
         beneficiaryBirthYear: 1951,
@@ -658,6 +696,7 @@ describe('WS3 fixtures F12 and F13', () => {
 
     expect(() => spouseTreatAsOwnCatchUp({
       pack,
+      accountType: 'traditional',
       inherited: inherited(2021, false, beneficiary({
         ownerBirthYear: 1950, beneficiaryBirthYear: 1951, edbCategory: 'disabled',
       })),
@@ -667,6 +706,7 @@ describe('WS3 fixtures F12 and F13', () => {
     })).toThrow('requires a sole surviving-spouse beneficiary')
     expect(() => spouseTreatAsOwnCatchUp({
       pack,
+      accountType: 'traditional',
       inherited: inherited(2021, false, beneficiary({
         ownerBirthYear: undefined, beneficiaryBirthYear: 1951,
         edbCategory: 'surviving-spouse', election: 'treat-as-own',
@@ -678,6 +718,7 @@ describe('WS3 fixtures F12 and F13', () => {
     })).toThrow('requires both beneficiaryBirthYear and ownerBirthYear')
     expect(() => spouseTreatAsOwnCatchUp({
       pack,
+      accountType: 'traditional',
       inherited: inherited(2021, false, beneficiary({
         ownerBirthYear: 1950, beneficiaryBirthYear: undefined,
         edbCategory: 'surviving-spouse', election: 'treat-as-own',
@@ -689,6 +730,7 @@ describe('WS3 fixtures F12 and F13', () => {
     })).toThrow('requires both beneficiaryBirthYear and ownerBirthYear')
     expect(() => spouseTreatAsOwnCatchUp({
       pack,
+      accountType: 'traditional',
       inherited: inherited(2021, false, beneficiary({
         ownerBirthYear: 1959, beneficiaryBirthYear: 1951,
         edbCategory: 'surviving-spouse', election: 'treat-as-own',
