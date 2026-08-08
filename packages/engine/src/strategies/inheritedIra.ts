@@ -426,11 +426,22 @@ function factConsistencyScreen(input: {
  */
 export function classifyInheritedRegime(input: {
   accountType: 'traditional' | 'roth'
+  /** Omitted → IRA (existing callers). Employer plans are refused before X1. */
+  accountKind?: 'ira' | 'employer'
   inherited: InheritedAccount
 }): InheritedRegimeResult {
   const { accountType, inherited } = input
+  const accountKind = input.accountKind ?? 'ira'
   const deathYear = inherited.ownerDeathYear
   const b = inherited.beneficiary
+
+  if (accountKind === 'employer') {
+    return refusal(
+      'unsupported',
+      'X5',
+      'this matrix scopes inherited support to IRAs (DOCS/domain/inherited-ira-regime-matrix.md scope note); employer-plan beneficiary rules — plan-permitted elections, still-working RBD, §402(c)(11) transfers — are not modeled — supply an IRA account or leave the employer account on the legacy path',
+    )
+  }
 
   // X1: pre-SECURE deaths (even with a full beneficiary block).
   if (deathYear < 2020) {
@@ -1105,12 +1116,23 @@ export function inheritedRequirementForYear(input: {
   // computed rather than computed from the wrong table; from 2022 on the fixed
   // formula over the current tables is the §1.401(a)(9)-9(f)(2)(ii)(A) reset.
   if (year < 2022) {
+    const noticeWaived =
+      regime === 'ten-year-with-annual-rmds' &&
+      deathYear >= 2020 &&
+      deathYear <= 2023 &&
+      year >= 2021 &&
+      year <= 2024
     return {
       year,
       kind: 'annual-rmd',
       requiredAmount: 0,
       limitation: 'pre-2022-tables-not-carried',
-      citations: [...citations, 'Treas. Reg. §1.401(a)(9)-9(f)(1)'],
+      citations: [
+        ...citations,
+        'Treas. Reg. §1.401(a)(9)-9(f)(1)',
+        ...(noticeWaived ? (['Notices 2022-53/2023-54/2024-35'] as const) : []),
+      ],
+      ...(noticeWaived ? { noticeWaived: true } : {}),
     }
   }
 
@@ -1340,6 +1362,26 @@ export function spouseTreatAsOwnCatchUp(input: {
     )
   }
 
+  const rbdDerivation = deriveRbdComparison({
+    ownerDeathYear: inherited.ownerDeathYear,
+    decedentHadStartedRmds: inherited.decedentHadStartedRmds,
+    ownerBirthYear: b.ownerBirthYear,
+    ownerBirthMonth: b.ownerBirthMonth,
+    ownerBirthDay: b.ownerBirthDay,
+  })
+  if (
+    rbdDerivation.kind === 'needs-review' ||
+    (rbdDerivation.kind === 'resolved' && rbdDerivation.comparison === 'on-or-after-rbd')
+  ) {
+    const outcome =
+      rbdDerivation.kind === 'needs-review'
+        ? `needs-review (${rbdDerivation.reason})`
+        : 'on-or-after-rbd'
+    throw new Error(
+      `spouse treat-as-own catch-up requires death before the RBD under Treas. Reg. §1.401(a)(9)-3(c)(3) (the §1.402(c)-2(j)(4) gate reaches only a spouse under the 10-year rule); RBD derivation outcome: ${outcome}`,
+    )
+  }
+
   const spouseAttainYears = applicableAgeAttainYears(b.beneficiaryBirthYear)
   const ownerAttainYears = applicableAgeAttainYears(b.ownerBirthYear, b.ownerBirthMonth)
   const firstApplicableCandidates = new Set(
@@ -1351,11 +1393,21 @@ export function spouseTreatAsOwnCatchUp(input: {
     )
   }
 
-  // §1.402(c)-2(j)(4)(iv): later of the two applicable-age years.
-  const firstApplicableYear = [...firstApplicableCandidates][0]!
+  // §1.402(c)-2(j)(4)(iv): later of the two applicable-age years, but no
+  // earlier than the first distribution calendar year after death.
+  const firstApplicableYear = Math.max(
+    [...firstApplicableCandidates][0]!,
+    inherited.ownerDeathYear + 1,
+  )
   // §1.408-8(c)(1)(iii): the bar exists only in years the (j)(4) rule would
   // apply — an election before the first applicable year needs no catch-up.
   if (electionYear < firstApplicableYear) return []
+
+  const catchUpCitations = [
+    'Treas. Reg. §1.408-8(c)(1)(iii)–(iv)',
+    'Treas. Reg. §1.402(c)-2(j)(4)(i)–(v)',
+    'Treas. Reg. §1.401(a)(9)-5(g)(3)(i)',
+  ] as const
 
   const out: InheritedRequirementEvidence[] = []
   for (let year = firstApplicableYear; year <= electionYear; year++) {
@@ -1363,6 +1415,16 @@ export function spouseTreatAsOwnCatchUp(input: {
       throw new Error(
         `spouse treat-as-own catch-up requires a prior-year-end balance for every year from ${firstApplicableYear} through ${electionYear} (year ${year} is missing); a missing balance must not publish a zero hypothetical`,
       )
+    }
+    if (year < 2022) {
+      out.push({
+        year,
+        kind: 'annual-rmd',
+        requiredAmount: 0,
+        limitation: 'pre-2022-tables-not-carried',
+        citations: [...catchUpCitations, 'Treas. Reg. §1.401(a)(9)-9(f)(1)'],
+      })
+      continue
     }
     const balance = priorYearEndBalancesByYear[year]
     const spouseAge = year - b.beneficiaryBirthYear
@@ -1380,11 +1442,7 @@ export function spouseTreatAsOwnCatchUp(input: {
       requiredAmount: amountFromDivisor(balance, divisor),
       divisor,
       divisorArm: 'uniform-lifetime',
-      citations: [
-        'Treas. Reg. §1.408-8(c)(1)(iii)–(iv)',
-        'Treas. Reg. §1.402(c)-2(j)(4)(i)–(v)',
-        'Treas. Reg. §1.401(a)(9)-5(g)(3)(i)',
-      ],
+      citations: [...catchUpCitations],
     })
   }
   return out

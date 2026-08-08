@@ -87,6 +87,8 @@ describe('WS3 fixture F1: R1 relief years and the 2022 reset', () => {
     expect(in2021.kind).toBe('annual-rmd')
     expect(in2021.requiredAmount).toBe(0)
     expect(in2021.limitation).toBe('pre-2022-tables-not-carried')
+    expect(in2021.noticeWaived).toBe(true)
+    expect(in2021.citations).toContain('Notices 2022-53/2023-54/2024-35')
 
     const in2022 = requirement(result, account, 2022)
     expect(in2022.divisor).toBeCloseTo(18.6, 4)
@@ -469,6 +471,18 @@ describe('WS3 fixture F10: X precedence and refusals', () => {
       edbCategory: 'surviving-spouse', election: 'treat-as-own',
       spouseUnlimitedWithdrawalRight: undefined,
     })), 'X5', 'needs-review', 'spouseUnlimitedWithdrawalRight true')
+
+    const employerPlan = classifyInheritedRegime({
+      accountType: 'traditional',
+      accountKind: 'employer',
+      inherited: inherited(2024, false, beneficiary()),
+    })
+    expect(employerPlan.kind).toBe('refusal')
+    if (employerPlan.kind === 'refusal') {
+      expect(employerPlan.refusal).toBe('unsupported')
+      expect(employerPlan.row).toBe('X5')
+      expect(employerPlan.reason).toContain('employer-plan')
+    }
   })
 })
 
@@ -693,6 +707,50 @@ describe('WS3 fixtures F12 and F13', () => {
       spouseWasUnderTenYearRule: true,
       priorYearEndBalancesByYear: {},
     })).toThrow('§1.401(a)(9)-3(c)(3)')
+
+    expect(() => spouseTreatAsOwnCatchUp({
+      pack,
+      accountType: 'traditional',
+      inherited: inherited(2021, false, beneficiary({
+        ownerBirthYear: 1940,
+        beneficiaryBirthYear: 1951,
+        edbCategory: 'surviving-spouse',
+        election: 'treat-as-own',
+        spouseUnlimitedWithdrawalRight: true,
+      })),
+      electionYear: 2027,
+      spouseWasUnderTenYearRule: true,
+      priorYearEndBalancesByYear: {},
+    })).toThrow('§1.401(a)(9)-3(c)(3)')
+
+    const clampAccount = inherited(2022, false, beneficiary({
+      ownerBirthYear: 1950,
+      beneficiaryBirthYear: 1948,
+      edbCategory: 'surviving-spouse',
+      election: 'treat-as-own',
+      spouseUnlimitedWithdrawalRight: true,
+    }))
+    expect(spouseTreatAsOwnCatchUp({
+      pack,
+      accountType: 'traditional',
+      inherited: clampAccount,
+      electionYear: 2022,
+      spouseWasUnderTenYearRule: true,
+      priorYearEndBalancesByYear: { 2022: 100_000 },
+    })).toEqual([])
+    const clampedCatchUp = spouseTreatAsOwnCatchUp({
+      pack,
+      accountType: 'traditional',
+      inherited: clampAccount,
+      electionYear: 2024,
+      spouseWasUnderTenYearRule: true,
+      priorYearEndBalancesByYear: {
+        2023: 100_000,
+        2024: 100_000,
+      },
+    })
+    expect(clampedCatchUp).toHaveLength(2)
+    expect(clampedCatchUp[0]!.year).toBe(2023)
 
     expect(() => spouseTreatAsOwnCatchUp({
       pack,
