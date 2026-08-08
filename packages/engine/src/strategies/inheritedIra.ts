@@ -1,5 +1,6 @@
 /**
- * Inherited (beneficiary) IRA 10-year rule (roadmap V8, §4 tax depth).
+ * Inherited (beneficiary) IRA 10-year rule (roadmap V8, §4 tax depth) and the
+ * WS3 regime engine (classifier + annual requirement calculator).
  *
  * Post-SECURE-Act, a non-spouse beneficiary must empty an inherited IRA by the
  * end of the 10th year after the original owner's death. If the owner had
@@ -24,20 +25,26 @@
  * non-spouse designated beneficiary reads the table once, at the age reached in
  * the calendar year FOLLOWING the year of death, and then reduces that entry by
  * one for each later calendar year. Only a surviving spouse who is the sole
- * beneficiary redetermines annually, under (d)(3)(iv) — and a surviving spouse
- * does not hold an inherited IRA at all under IRC 408(d)(3)(C)(ii), so the
- * subtract-one method is the only one an account reaching this module can use.
+ * beneficiary redetermines annually, under (d)(3)(iv).
  *
- * NOT modelled: the greater-of test of 1.401(a)(9)-5(d)(1)(ii), which takes the
- * greater of the beneficiary's and the EMPLOYEE's remaining life expectancy.
- * The plan model records the year the owner died but never their age, so the
- * decedent's expectancy cannot be looked up at all. See the registry record
- * treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy for the
- * direction of the resulting error.
+ * The legacy `inheritedForcedAmount` path still omits the greater-of owner arm
+ * of §1.401(a)(9)-5(d)(1)(ii); `inheritedRequirementForYear` implements that arm
+ * for classified regimes. WS4 wires the schedule into the projection ledger.
+ *
+ * @see DOCS/domain/inherited-ira-regime-matrix.md
  */
 
-import { singleLifeExpectancyYears } from '../params/index.js'
+import type { InheritedAccount } from '../model/plan.js'
+import {
+  singleLifeExpectancyYears,
+  uniformLifetimeDivisor,
+} from '../params/index.js'
 import type { ParameterPack } from '../params/types.js'
+import {
+  applicableAgeAttainYears,
+  deriveRbdComparison,
+} from '../rmd/applicableAge.js'
+import { jointLifeTableDivisor } from '../rmd/jointLifeTable.js'
 
 /** The account must be fully distributed by the END of this year. */
 export function inheritedTenYearDeadline(ownerDeathYear: number): number {
@@ -114,4 +121,1188 @@ export function inheritedForcedAmount(input: InheritedForcedInput): number {
     return Math.min(input.startBalance / le, balance)
   }
   return 0
+}
+
+// ---------------------------------------------------------------------------
+// WS3 regime engine — classifier + annual requirement calculator
+// ---------------------------------------------------------------------------
+
+export type InheritedRegimeKey =
+  | 'ten-year-with-annual-rmds' // R1
+  | 'ten-year-no-annual' // R2
+  | 'edb-life-expectancy' // R3
+  | 'edb-ten-year-elected' // R3a
+  | 'spouse-remain-beneficiary' // S0 (default) and S1 (explicit)
+  | 'spouse-treat-as-own-transition' // S2
+  | 'spouse-ten-year-elected' // S3
+  | 'roth-ten-year-no-annual' // K1
+  | 'roth-edb-life-expectancy' // K2
+
+export type InheritedRefusalKey =
+  | 'legacy-planning-approximation' // X1 and traditional accounts without a beneficiary block
+  | 'unsupported' // X2/X3/X4, S4
+  | 'needs-review' // X5, S3x, RBD needs-review
+
+export type MatrixRow =
+  | 'R1'
+  | 'R2'
+  | 'R3'
+  | 'R3a'
+  | 'S0'
+  | 'S1'
+  | 'S2'
+  | 'S3'
+  | 'S3x'
+  | 'S4'
+  | 'K1'
+  | 'K2'
+  | 'X1'
+  | 'X2'
+  | 'X3'
+  | 'X4'
+  | 'X5'
+
+export type RegimeDisclosure =
+  | 'prop-reg-spouse-as-employee' // S1/K2 death-before-RBD spouse rows (§327 overlay)
+  | 'ira-agreement-election' // R3a/S3 (the §1.401(a)(9)-3(c)(5)(iii) election)
+  | 'deemed-election-risk' // S0 (§1.408-8(c)(2))
+  | 'roth-taxability-needs-review' // K rows without roth5YearStartYear (K3)
+  | 'edb-category-year-precision-unverified' // 10-year-gap arithmetic ambiguous at year precision
+  // Life-expectancy regimes end early if the beneficiary dies: the successor
+  // 10-year clock of §1.401(a)(9)-5(e)(3) is out of scope (matrix X2), so the
+  // schedule is flagged as terminating on an unmodeled rule, never extended.
+  | 'successor-clock-out-of-scope'
+
+export interface InheritedRegimeClassification {
+  kind: 'regime'
+  regime: InheritedRegimeKey
+  row: MatrixRow
+  classification: 'settled' | 'unsettled'
+  rbdComparison: 'before-rbd' | 'on-or-after-rbd' | 'not-applicable' // Roth: always 'before-rbd'
+  citations: string[] // operative subparagraphs from the matrix row
+  disclosures: RegimeDisclosure[]
+  /** End of the calendar year by which the entire interest must be distributed, when fixed. */
+  finalDeadlineYear?: number // deathYear+10 for the 10-year rows; majority+10 for minor child
+  /** Minor child: the calendar year of the 21st birthday (birthYear + 21). */
+  minorMajorityYear?: number
+}
+
+export interface InheritedRegimeRefusal {
+  kind: 'refusal'
+  refusal: InheritedRefusalKey
+  row: MatrixRow
+  citations: string[]
+  /** Actionable, names the missing rule or fact — matches the repo's message style. */
+  reason: string
+}
+
+export type InheritedRegimeResult = InheritedRegimeClassification | InheritedRegimeRefusal
+
+const CITATIONS = {
+  R1: [
+    'IRC §401(a)(9)(B)(i)',
+    'IRC §401(a)(9)(H)(i)–(ii)',
+    'Treas. Reg. §1.401(a)(9)-5(d)(1)(i)–(ii)',
+    'Treas. Reg. §1.401(a)(9)-5(d)(3)(i)–(iii)',
+    'Treas. Reg. §1.401(a)(9)-5(e)(2)',
+    'Notices 2022-53/2023-54/2024-35',
+  ],
+  R2: [
+    'IRC §401(a)(9)(B)(ii)',
+    'IRC §401(a)(9)(H)(i)',
+    'Treas. Reg. §1.401(a)(9)-3(c)(3)',
+    'Treas. Reg. §1.401(a)(9)-3(c)(5)(i)',
+    'Treas. Reg. §1.401(a)(9)-5(e)(2)',
+  ],
+  R3: [
+    'IRC §401(a)(9)(B)(iii)',
+    'IRC §401(a)(9)(E)(ii)–(iii)',
+    'IRC §401(a)(9)(H)(ii)',
+    'Treas. Reg. §1.401(a)(9)-4(e)',
+    'Treas. Reg. §1.401(a)(9)-3(c)(4)',
+    'Treas. Reg. §1.401(a)(9)-3(c)(5)(i)',
+    'Treas. Reg. §1.401(a)(9)-5(d)(1)(ii)',
+    'Treas. Reg. §1.401(a)(9)-5(d)(2)',
+    'Treas. Reg. §1.401(a)(9)-5(d)(3)(iii)',
+    'Treas. Reg. §1.401(a)(9)-5(e)(1)',
+    'Treas. Reg. §1.401(a)(9)-5(e)(4)',
+  ],
+  R3a: ['Treas. Reg. §1.401(a)(9)-3(c)(5)(iii)'],
+  S0: [
+    'Treas. Reg. §1.401(a)(9)-3(c)(5)(i)',
+    'IRC §401(a)(9)(B)(i)',
+    'Treas. Reg. §1.401(a)(9)-3(d)',
+    'Treas. Reg. §1.401(a)(9)-5(d)(1)',
+    'Treas. Reg. §1.401(a)(9)-5(d)(2)',
+    'Treas. Reg. §1.401(a)(9)-5(d)(3)(iv)',
+    'Treas. Reg. §1.408-8(c)(2)',
+  ],
+  S1: [
+    'IRC §401(a)(9)(B)(iii)–(iv)',
+    'Treas. Reg. §1.401(a)(9)-3(d)',
+    'Treas. Reg. §1.401(a)(9)-5(d)(1)(ii)',
+    'Treas. Reg. §1.401(a)(9)-5(d)(2)',
+    'Treas. Reg. §1.401(a)(9)-5(d)(3)(ii)',
+    'Treas. Reg. §1.401(a)(9)-5(d)(3)(iv)',
+  ],
+  S2: [
+    'IRC §408(d)(3)(C)(ii)',
+    'Treas. Reg. §1.408-8(c)(1)(i)–(iv)',
+    'Treas. Reg. §1.408-8(c)(3)',
+  ],
+  S3: [
+    'Treas. Reg. §1.401(a)(9)-3(c)(3)',
+    'Treas. Reg. §1.401(a)(9)-3(c)(5)(iii)',
+  ],
+  S3x: [
+    'Treas. Reg. §1.401(a)(9)-3(c)(5)(iii)',
+  ],
+  // S4 is presently unreachable: the WS2 schema carries no fact by which a
+  // household could assert §327 spouse-as-employee treatment as governing, so
+  // the fail-closed refusal the matrix specifies has no trigger until a later
+  // workstream adds that assertion path. The row and citations are kept so the
+  // matrix row numbering and the eventual refusal share one source of truth.
+  S4: [
+    'Treas. Reg. §1.401(a)(9)-5(g)(3)(ii)',
+    'REG-103529-23',
+    'Announcement 2026-7',
+  ],
+  K1: [
+    'Treas. Reg. §1.408A-6, A-14(b)',
+    'IRC §401(a)(9)(H)(i) via §408(a)(6)',
+    'Treas. Reg. §1.401(a)(9)-3(c)(3)',
+    'Treas. Reg. §1.401(a)(9)-5(e)(2)',
+  ],
+  K2: [
+    'Treas. Reg. §1.408A-6, A-14(b)',
+    'Treas. Reg. §1.401(a)(9)-3(c)(4)',
+    'Treas. Reg. §1.401(a)(9)-3(d)',
+    'Treas. Reg. §1.401(a)(9)-5(d)(2)',
+    'Treas. Reg. §1.401(a)(9)-5(d)(3)(iii)–(iv)',
+  ],
+  X1: ['SECURE Act §401(b)(1)'],
+  X2: [
+    'IRC §401(a)(9)(H)(iii)',
+    'Treas. Reg. §1.401(a)(9)-5(e)(3)',
+    'SECURE Act §401(b)(5)',
+  ],
+  X3: ['Treas. Reg. §1.401(a)(9)-4(f)'],
+  X4: ['Treas. Reg. §1.401(a)(9)-8(a)'],
+  X5: ['DOCS/domain/inherited-ira-regime-matrix.md §2'],
+} as const
+
+function refusal(
+  refusalKey: InheritedRefusalKey,
+  row: MatrixRow,
+  reason: string,
+  citations?: string[],
+): InheritedRegimeRefusal {
+  return {
+    kind: 'refusal',
+    refusal: refusalKey,
+    row,
+    citations: citations ?? [...CITATIONS[row]],
+    reason,
+  }
+}
+
+/**
+ * Birth-year gap of beneficiary minus owner. Positive means the beneficiary is
+ * younger. §1.401(a)(9)-4(e)(6) measures birth-date to birth-date; year-only
+ * arithmetic is certain only outside the exact-10-year boundary.
+ */
+function birthYearGap(ownerBirthYear: number, beneficiaryBirthYear: number): number {
+  return beneficiaryBirthYear - ownerBirthYear
+}
+
+/**
+ * Fact-consistency screens (matrix X5) that do not depend on RBD derivation.
+ * Returns a refusal when a contradiction is certain, or a disclosure to attach
+ * when year-precision arithmetic is ambiguous but the assertion is kept.
+ */
+function factConsistencyScreen(input: {
+  accountType: 'traditional' | 'roth'
+  inherited: InheritedAccount
+}): InheritedRegimeRefusal | { disclosures: RegimeDisclosure[] } {
+  const b = input.inherited.beneficiary
+  if (b === undefined) return { disclosures: [] }
+
+  const disclosures: RegimeDisclosure[] = []
+  const deathYear = input.inherited.ownerDeathYear
+  const ownerBirth = b.ownerBirthYear
+  const benBirth = b.beneficiaryBirthYear
+  const edb = b.edbCategory
+  const election = b.election
+
+  // Spouse-only elections with a non-spouse EDB category.
+  if (
+    (election === 'remain-beneficiary' || election === 'treat-as-own') &&
+    edb !== 'surviving-spouse'
+  ) {
+    return refusal(
+      'needs-review',
+      'X5',
+      `election '${election}' requires edbCategory 'surviving-spouse'; set edbCategory to 'surviving-spouse' or clear/change the election`,
+    )
+  }
+
+  // Minor-child majority checks at year precision (§1.401(a)(9)-4(e)(3)).
+  if (edb === 'minor-child' && benBirth !== undefined) {
+    const majorityYear = benBirth + 21
+    if (deathYear > majorityYear) {
+      return refusal(
+        'needs-review',
+        'X5',
+        `edbCategory 'minor-child' is contradicted by the death year (owner died in ${deathYear} after the beneficiary's majority year ${majorityYear}; majority is the 21st birthday under Treas. Reg. §1.401(a)(9)-4(e)(3)) — correct beneficiaryBirthYear, ownerDeathYear, or edbCategory`,
+      )
+    }
+    if (deathYear === majorityYear) {
+      return refusal(
+        'needs-review',
+        'X5',
+        `edbCategory 'minor-child' is ambiguous at year precision (death year ${deathYear} equals the majority year ${majorityYear}; the beneficiary may still have been 20 on the date of death under Treas. Reg. §1.401(a)(9)-4(e)(3)) — confirm the beneficiary was under 21 on the date of death or correct the facts`,
+      )
+    }
+  }
+
+  // not-more-than-10-years-younger arithmetic (§1.401(a)(9)-4(e)(6)).
+  if (edb === 'not-more-than-10-years-younger' && benBirth !== undefined) {
+    if (ownerBirth === undefined) {
+      disclosures.push('edb-category-year-precision-unverified')
+    } else {
+      const gap = birthYearGap(ownerBirth, benBirth)
+      // Certain contradiction: beneficiary younger by ≥ 11 birth years.
+      if (gap >= 11) {
+        return refusal(
+          'needs-review',
+          'X5',
+          `edbCategory 'not-more-than-10-years-younger' is contradicted by birth years (beneficiary birth year ${benBirth} is ${gap} years after owner birth year ${ownerBirth}; Treas. Reg. §1.401(a)(9)-4(e)(6) measures birth-date to birth-date and a ≥11-year gap is certain) — correct ownerBirthYear, beneficiaryBirthYear, or edbCategory`,
+        )
+      }
+      // Gap of exactly 10 birth years is date-ambiguous.
+      if (gap === 10) {
+        disclosures.push('edb-category-year-precision-unverified')
+      }
+    }
+  }
+
+  // edbCategory 'none' contradicted by certain not-more-than-10-years-younger arithmetic.
+  if (edb === 'none' && benBirth !== undefined && ownerBirth !== undefined) {
+    const gap = birthYearGap(ownerBirth, benBirth)
+    // Beneficiary not younger, or younger by ≤ 9 birth years → certainly an EDB
+    // under the not-more-than-10-years-younger class, contradicting 'none'.
+    if (gap <= 9) {
+      return refusal(
+        'needs-review',
+        'X5',
+        `edbCategory 'none' is contradicted by birth years (beneficiary birth year ${benBirth} and owner birth year ${ownerBirth} place the beneficiary as not more than 10 years younger under Treas. Reg. §1.401(a)(9)-4(e)(6)); assert edbCategory 'not-more-than-10-years-younger' (or another applicable EDB class) or correct the birth years`,
+      )
+    }
+    if (gap === 10) {
+      disclosures.push('edb-category-year-precision-unverified')
+    }
+  }
+
+  return { disclosures }
+}
+
+/**
+ * Classify an inherited IRA into a matrix regime row or a typed refusal.
+ * Precedence: X rows → S rows → R/K rows. Total over parsed plan facts.
+ *
+ * @see DOCS/domain/inherited-ira-regime-matrix.md §3
+ */
+export function classifyInheritedRegime(input: {
+  accountType: 'traditional' | 'roth'
+  inherited: InheritedAccount
+}): InheritedRegimeResult {
+  const { accountType, inherited } = input
+  const deathYear = inherited.ownerDeathYear
+  const b = inherited.beneficiary
+
+  // X1: pre-SECURE deaths (even with a full beneficiary block).
+  if (deathYear < 2020) {
+    return refusal(
+      'legacy-planning-approximation',
+      'X1',
+      `ownerDeathYear ${deathYear} is before 2020 (SECURE Act §401(b)(1) boundary); pre-SECURE beneficiary regimes are not modeled — use the labeled legacy-planning-approximation path`,
+    )
+  }
+
+  // Traditional without beneficiary block → X1-style legacy approximation.
+  if (b === undefined) {
+    return refusal(
+      'legacy-planning-approximation',
+      'X1',
+      "beneficiary block is missing on this traditional inherited account; supply beneficiaryClass, edbCategory, beneficiaryBirthYear, soleBeneficiary, and provenance, or keep the labeled legacy-planning-approximation path",
+    )
+  }
+
+  // X2: successor beneficiary.
+  if (b.beneficiaryClass === 'successor-beneficiary') {
+    return refusal(
+      'unsupported',
+      'X2',
+      "beneficiaryClass 'successor-beneficiary' is unsupported (IRC §401(a)(9)(H)(iii); Treas. Reg. §1.401(a)(9)-5(e)(3)); successor 10-year schedules are out of scope",
+    )
+  }
+
+  // X3: estate / trust / entity.
+  if (
+    b.beneficiaryClass === 'estate' ||
+    b.beneficiaryClass === 'trust' ||
+    b.beneficiaryClass === 'entity'
+  ) {
+    return refusal(
+      'unsupported',
+      'X3',
+      `beneficiaryClass '${b.beneficiaryClass}' is unsupported (see-through trust and non-individual rules of Treas. Reg. §1.401(a)(9)-4(f) are not modeled)`,
+    )
+  }
+
+  // From here the beneficiary is a designated individual.
+  // X4: multiple beneficiaries without separate-account facts.
+  if (b.soleBeneficiary === false) {
+    return refusal(
+      'unsupported',
+      'X4',
+      'soleBeneficiary is false (multiple beneficiaries without separate-account facts are unsupported under Treas. Reg. §1.401(a)(9)-8(a)); set soleBeneficiary to true or supply separate-account facts outside this engine',
+    )
+  }
+  // Missing sole-beneficiary status is a missing required fact (matrix §2): the
+  // parser requires it for designated individuals, but the classifier is total
+  // over its input type and never lets an unknown status reach an R/S/K row.
+  if (b.beneficiaryClass === 'designated-individual' && b.soleBeneficiary === undefined) {
+    return refusal(
+      'needs-review',
+      'X5',
+      'soleBeneficiary is required for a designated-individual beneficiary (matrix §2; the R/S/K rows bind only for a sole beneficiary); set it to true or false',
+    )
+  }
+  if (b.beneficiaryClass === 'designated-individual' && b.beneficiaryBirthYear === undefined) {
+    return refusal(
+      'needs-review',
+      'X5',
+      "beneficiaryBirthYear is required for a designated-individual beneficiary (matrix §2: required for any regime with an annual life-expectancy amount and for consistency checks); supply the beneficiary's birth year",
+    )
+  }
+
+  // Fact consistency (X5).
+  const consistency = factConsistencyScreen(input)
+  if ('kind' in consistency) return consistency
+  const baseDisclosures = [...consistency.disclosures]
+
+  // RBD derivation — traditional only. Roth is always before-RBD (§1.408A-6, A-14(b)).
+  let rbdComparison: 'before-rbd' | 'on-or-after-rbd'
+  if (accountType === 'roth') {
+    rbdComparison = 'before-rbd'
+  } else {
+    const derivation = deriveRbdComparison({
+      ownerDeathYear: deathYear,
+      decedentHadStartedRmds: inherited.decedentHadStartedRmds,
+      ownerBirthYear: b.ownerBirthYear,
+      ownerBirthMonth: b.ownerBirthMonth,
+      ownerBirthDay: b.ownerBirthDay,
+    })
+    if (derivation.kind === 'needs-review') {
+      return refusal('needs-review', 'X5', derivation.detail)
+    }
+    rbdComparison = derivation.comparison
+  }
+
+  // S3x: ten-year-election when derived (or asserted) post-RBD.
+  if (b.election === 'ten-year-election' && rbdComparison === 'on-or-after-rbd') {
+    return refusal(
+      'needs-review',
+      'S3x',
+      "election 'ten-year-election' applies only when death is before the RBD (Treas. Reg. §1.401(a)(9)-3(c)(5)(iii)); the derived RBD comparison is on-or-after-rbd — set decedentHadStartedRmds/owner birth facts consistently or clear the election",
+      [...CITATIONS.S3x],
+    )
+  }
+
+  const edb = b.edbCategory
+  const election = b.election
+  const isSpouse = edb === 'surviving-spouse'
+  const isNonSpouseEdb =
+    edb === 'minor-child' ||
+    edb === 'disabled' ||
+    edb === 'chronically-ill' ||
+    edb === 'not-more-than-10-years-younger'
+
+  // Spouse life-expectancy regimes (S0/S1 and the K2 spouse arm) depend on the
+  // §1.401(a)(9)-3(d) deferral end year — the year the owner would have
+  // attained the applicable age — whenever death is before the RBD (always,
+  // for Roth). That year is underivable without the owner's birth year and
+  // contested for a born-1959 owner, so both classify needs-review rather
+  // than commencing the spouse schedule on a guessed year. Non-deferral
+  // spouse rows (S2, S3) are unaffected.
+  if (
+    isSpouse &&
+    (election === 'remain-beneficiary' || election === 'none' || election === undefined) &&
+    (accountType === 'roth' || rbdComparison === 'before-rbd')
+  ) {
+    if (b.ownerBirthYear === undefined) {
+      return refusal(
+        'needs-review',
+        'X5',
+        'ownerBirthYear is required for a spouse remain-beneficiary classification when death is before the RBD (the Treas. Reg. §1.401(a)(9)-3(d) commencement deferral runs to the year the owner would have attained the applicable age); supply ownerBirthYear',
+      )
+    }
+    const attainYears = applicableAgeAttainYears(b.ownerBirthYear, b.ownerBirthMonth)
+    // Ambiguity matters only when it survives the §-3(d) "later of" clamp:
+    // commencement is the later of deathYear+1 and the attain year, so attain
+    // years that both fall at or before deathYear+1 yield one start year.
+    const startYears = new Set(attainYears.map((y) => Math.max(deathYear + 1, y)))
+    if (startYears.size > 1) {
+      return refusal(
+        'needs-review',
+        'X5',
+        `owner born ${b.ownerBirthYear} has an ambiguous applicable-age attain year (${attainYears.join(' vs ')}), so the spouse life-expectancy deferral end year under Treas. Reg. §1.401(a)(9)-3(d) cannot be settled; supply owner birth month or a settled applicable-age resolution`,
+      )
+    }
+  }
+
+  const rothTaxabilityDisclosure = (): RegimeDisclosure[] => {
+    if (accountType === 'roth' && b.roth5YearStartYear === undefined) {
+      return ['roth-taxability-needs-review']
+    }
+    return []
+  }
+
+  // ---- Spouse rows (S0–S3) ----
+  if (isSpouse) {
+    if (election === 'treat-as-own') {
+      // spouseUnlimitedWithdrawalRight false is a parse error; undefined → needs-review.
+      if (b.spouseUnlimitedWithdrawalRight !== true) {
+        return refusal(
+          'needs-review',
+          'X5',
+          "election 'treat-as-own' requires spouseUnlimitedWithdrawalRight true (Treas. Reg. §1.408-8(c)(1)); set spouseUnlimitedWithdrawalRight to true or choose a different election",
+        )
+      }
+      return {
+        kind: 'regime',
+        regime: 'spouse-treat-as-own-transition',
+        row: 'S2',
+        classification: 'settled',
+        rbdComparison: accountType === 'roth' ? 'before-rbd' : rbdComparison,
+        citations: [...CITATIONS.S2],
+        disclosures: [...baseDisclosures, ...rothTaxabilityDisclosure()],
+      }
+    }
+
+    if (election === 'ten-year-election') {
+      // Before-RBD only (S3x handled above). Traditional or Roth → S3.
+      return {
+        kind: 'regime',
+        regime: 'spouse-ten-year-elected',
+        row: 'S3',
+        classification: 'unsettled',
+        rbdComparison: accountType === 'roth' ? 'before-rbd' : rbdComparison,
+        citations: [...CITATIONS.S3],
+        disclosures: [
+          ...baseDisclosures,
+          'ira-agreement-election',
+          ...rothTaxabilityDisclosure(),
+        ],
+        finalDeadlineYear: deathYear + 10,
+      }
+    }
+
+    // remain-beneficiary (S1) or none/undefined (S0).
+    const isExplicitRemain = election === 'remain-beneficiary'
+    const row: MatrixRow = isExplicitRemain ? 'S1' : 'S0'
+    const disclosures: RegimeDisclosure[] = [...baseDisclosures, 'successor-clock-out-of-scope']
+    if (!isExplicitRemain) disclosures.push('deemed-election-risk')
+
+    if (accountType === 'roth') {
+      // Roth spouse remain/none → K2 (always before-RBD arm, §327 disclosure).
+      disclosures.push('prop-reg-spouse-as-employee')
+      disclosures.push(...rothTaxabilityDisclosure())
+      return {
+        kind: 'regime',
+        regime: 'roth-edb-life-expectancy',
+        row: 'K2',
+        classification: 'unsettled',
+        rbdComparison: 'before-rbd',
+        citations: [...CITATIONS.K2],
+        disclosures,
+      }
+    }
+
+    // Traditional spouse remain/none.
+    if (rbdComparison === 'before-rbd') {
+      disclosures.push('prop-reg-spouse-as-employee')
+    }
+    return {
+      kind: 'regime',
+      regime: 'spouse-remain-beneficiary',
+      row,
+      classification: rbdComparison === 'on-or-after-rbd' ? 'settled' : 'unsettled',
+      rbdComparison,
+      citations: [...(isExplicitRemain ? CITATIONS.S1 : CITATIONS.S0)],
+      disclosures,
+    }
+  }
+
+  // ---- Non-spouse EDB (R3 / R3a / K2) ----
+  if (isNonSpouseEdb) {
+    if (election === 'ten-year-election') {
+      return {
+        kind: 'regime',
+        regime: 'edb-ten-year-elected',
+        row: 'R3a',
+        classification: 'unsettled',
+        rbdComparison: accountType === 'roth' ? 'before-rbd' : rbdComparison,
+        citations: [...CITATIONS.R3a],
+        disclosures: [
+          ...baseDisclosures,
+          'ira-agreement-election',
+          ...rothTaxabilityDisclosure(),
+        ],
+        finalDeadlineYear: deathYear + 10,
+      }
+    }
+
+    // Life-expectancy default.
+    if (accountType === 'roth') {
+      return {
+        kind: 'regime',
+        regime: 'roth-edb-life-expectancy',
+        row: 'K2',
+        classification: 'settled',
+        rbdComparison: 'before-rbd',
+        citations: [...CITATIONS.K2],
+        disclosures: [
+          ...baseDisclosures,
+          'successor-clock-out-of-scope',
+          ...rothTaxabilityDisclosure(),
+        ],
+        ...(edb === 'minor-child' && b.beneficiaryBirthYear !== undefined
+          ? {
+              minorMajorityYear: b.beneficiaryBirthYear + 21,
+              finalDeadlineYear: b.beneficiaryBirthYear + 21 + 10,
+            }
+          : {}),
+      }
+    }
+
+    // Traditional R3.
+    const minorFields =
+      edb === 'minor-child' && b.beneficiaryBirthYear !== undefined
+        ? {
+            minorMajorityYear: b.beneficiaryBirthYear + 21,
+            finalDeadlineYear: b.beneficiaryBirthYear + 21 + 10,
+          }
+        : {}
+    return {
+      kind: 'regime',
+      regime: 'edb-life-expectancy',
+      row: 'R3',
+      classification: 'settled',
+      rbdComparison,
+      citations: [...CITATIONS.R3],
+      disclosures: [...baseDisclosures, 'successor-clock-out-of-scope'],
+      ...minorFields,
+    }
+  }
+
+  // ---- Designated individual, edbCategory 'none' (R1 / R2 / K1) ----
+  if (edb === 'none') {
+    if (accountType === 'roth') {
+      return {
+        kind: 'regime',
+        regime: 'roth-ten-year-no-annual',
+        row: 'K1',
+        classification: 'settled',
+        rbdComparison: 'before-rbd',
+        citations: [...CITATIONS.K1],
+        disclosures: [...baseDisclosures, ...rothTaxabilityDisclosure()],
+        finalDeadlineYear: deathYear + 10,
+      }
+    }
+    if (rbdComparison === 'on-or-after-rbd') {
+      return {
+        kind: 'regime',
+        regime: 'ten-year-with-annual-rmds',
+        row: 'R1',
+        classification: 'settled',
+        rbdComparison,
+        citations: [...CITATIONS.R1],
+        disclosures: [...baseDisclosures],
+        finalDeadlineYear: deathYear + 10,
+      }
+    }
+    return {
+      kind: 'regime',
+      regime: 'ten-year-no-annual',
+      row: 'R2',
+      classification: 'settled',
+      rbdComparison,
+      citations: [...CITATIONS.R2],
+      disclosures: [...baseDisclosures],
+      finalDeadlineYear: deathYear + 10,
+    }
+  }
+
+  // Completeness: any combination the rows above do not claim is an X5 defect.
+  return refusal(
+    'needs-review',
+    'X5',
+    `inherited-IRA facts do not match any supported regime row (accountType '${accountType}', beneficiaryClass '${b.beneficiaryClass}', edbCategory '${edb ?? 'undefined'}', election '${election ?? 'undefined'}'); correct the beneficiary facts or see DOCS/domain/inherited-ira-regime-matrix.md §3`,
+  )
+}
+
+// ---- Annual requirement calculator ------------------------------------------------
+
+export type InheritedRequirementKind =
+  | 'year-of-death-rmd'
+  | 'annual-rmd'
+  | 'none'
+  | 'final-sweep'
+
+export interface InheritedRequirementEvidence {
+  year: number
+  kind: InheritedRequirementKind
+  /** Required minimum for the year, before comparing to the balance. 0 when kind is 'none'. */
+  requiredAmount: number
+  /** The divisor applied, when kind is 'annual-rmd' or 'year-of-death-rmd'. */
+  divisor?: number
+  /** Which arm produced the divisor. */
+  divisorArm?:
+    | 'beneficiary-fixed'
+    | 'spouse-redetermined'
+    | 'owner-fixed'
+    | 'uniform-lifetime'
+    | 'joint-life'
+  /** True for R1 amounts due 2021–2024 for deaths 2020–2023 (Notices 2022-53/2023-54/2024-35). */
+  noticeWaived?: boolean
+  /**
+   * Distribution calendar years before 2022 were governed by the formerly
+   * applicable §1.401(a)(9)-9 tables (§1.401(a)(9)-9(f)(1)), which this engine
+   * does not carry; the amount for such a year is not computed rather than
+   * computed from the wrong table. From 2022 on, the fixed-expectancy formula
+   * over the current tables is exactly the §1.401(a)(9)-9(f)(2)(ii)(A) reset.
+   *
+   * 'treat-as-own-election-year-not-carried': the plan schema records the S2
+   * election but not its calendar year, so the years between death and the
+   * election — in which the spouse owes beneficiary RMDs — cannot be placed;
+   * the amount is a typed limitation rather than a silent zero. WS4 executes
+   * the transition with a real election year.
+   */
+  limitation?: 'pre-2022-tables-not-carried' | 'treat-as-own-election-year-not-carried'
+  citations: string[]
+}
+
+function amountFromDivisor(priorYearEndBalance: number, divisor: number): number {
+  if (priorYearEndBalance <= 0) return 0
+  if (divisor <= 0) return priorYearEndBalance
+  return priorYearEndBalance / divisor
+}
+
+/**
+ * Owner fixed-minus-one arm under Treas. Reg. §1.401(a)(9)-5(d)(3)(ii): Single
+ * Life at the owner's attained age in the death year, reduced by one per
+ * calendar year elapsed after the death year. In deathYear+1 the arm is already
+ * entry−1.
+ */
+function ownerFixedDivisor(
+  pack: ParameterPack,
+  ownerBirthYear: number,
+  ownerDeathYear: number,
+  year: number,
+): number {
+  const ageInDeathYear = ownerDeathYear - ownerBirthYear
+  const entry = singleLifeExpectancyYears(pack, ageInDeathYear)
+  const elapsedAfterDeath = year - ownerDeathYear
+  return entry - elapsedAfterDeath
+}
+
+/**
+ * Beneficiary fixed arm via the existing subtract-one helper
+ * (§1.401(a)(9)-5(d)(3)(iii)).
+ */
+function beneficiaryFixedDivisor(
+  pack: ParameterPack,
+  beneficiaryBirthYear: number,
+  ownerDeathYear: number,
+  year: number,
+): number {
+  const beneficiaryAge = year - beneficiaryBirthYear
+  return beneficiaryRemainingLifeExpectancy(pack, {
+    year,
+    ownerDeathYear,
+    beneficiaryAge,
+  })
+}
+
+/**
+ * Spouse redetermined arm: Single Life at the spouse's attained age in `year`,
+ * recomputed each year (§1.401(a)(9)-5(d)(3)(iv)).
+ */
+function spouseRedeterminedDivisor(
+  pack: ParameterPack,
+  spouseBirthYear: number,
+  year: number,
+): number {
+  const age = year - spouseBirthYear
+  return singleLifeExpectancyYears(pack, age)
+}
+
+function noneEvidence(year: number, citations: string[]): InheritedRequirementEvidence {
+  return { year, kind: 'none', requiredAmount: 0, citations }
+}
+
+function finalSweepEvidence(
+  year: number,
+  priorYearEndBalance: number,
+  citations: string[],
+): InheritedRequirementEvidence {
+  return {
+    year,
+    kind: 'final-sweep',
+    requiredAmount: Math.max(0, priorYearEndBalance),
+    citations,
+  }
+}
+
+function annualEvidence(input: {
+  year: number
+  divisor: number
+  arm: InheritedRequirementEvidence['divisorArm']
+  priorYearEndBalance: number
+  citations: string[]
+  noticeWaived?: boolean
+}): InheritedRequirementEvidence {
+  const { year, divisor, arm, priorYearEndBalance, citations, noticeWaived } = input
+  // Divisor ≤ 1 (or exhausted ≤ 0) → entire remaining interest (§1.401(a)(9)-5(d)(1)).
+  // An exhaustion sweep in a relief year is still a specified-RMD annual amount
+  // (not the 10-year deadline), so the notice-waived mark rides along.
+  if (divisor <= 1) {
+    return {
+      ...finalSweepEvidence(year, priorYearEndBalance, [
+        ...citations,
+        'Treas. Reg. §1.401(a)(9)-5(d)(1)',
+      ]),
+      ...(noticeWaived === true ? { noticeWaived } : {}),
+    }
+  }
+  return {
+    year,
+    kind: 'annual-rmd',
+    requiredAmount: amountFromDivisor(priorYearEndBalance, divisor),
+    divisor,
+    divisorArm: arm,
+    ...(noticeWaived !== undefined ? { noticeWaived } : {}),
+    citations,
+  }
+}
+
+/**
+ * First calendar year spouse/owner life-expectancy amounts begin when death is
+ * before the RBD: the later of deathYear+1 and the latest applicable-age attain
+ * year (§1.401(a)(9)-3(d)).
+ */
+function spouseDeferralStartYear(
+  ownerDeathYear: number,
+  ownerBirthYear: number | undefined,
+  ownerBirthMonth: number | undefined,
+): number {
+  if (ownerBirthYear === undefined) return ownerDeathYear + 1
+  const attainYears = applicableAgeAttainYears(ownerBirthYear, ownerBirthMonth)
+  const latestAttain = attainYears[attainYears.length - 1] ?? ownerDeathYear + 1
+  return Math.max(ownerDeathYear + 1, latestAttain)
+}
+
+/**
+ * Annual (or year-of-death / final-sweep) required amount for one calendar year
+ * under a classified inherited-IRA regime. Pure evidence: does not mutate
+ * balances; WS4 reconciles to the live ledger.
+ *
+ * @see DOCS/domain/inherited-ira-regime-matrix.md §4
+ */
+export function inheritedRequirementForYear(input: {
+  pack: ParameterPack
+  classification: InheritedRegimeClassification
+  inherited: InheritedAccount
+  year: number
+  /** Prior-year-end (Dec 31) balance — the RMD denominator base. */
+  priorYearEndBalance: number
+}): InheritedRequirementEvidence {
+  const { pack, classification, inherited, year, priorYearEndBalance } = input
+  const deathYear = inherited.ownerDeathYear
+  const b = inherited.beneficiary
+  const citations = classification.citations
+  const rbd = classification.rbdComparison
+  const regime = classification.regime
+
+  // Before the death year: nothing is due from this inherited account.
+  if (year < deathYear) {
+    return noneEvidence(year, citations)
+  }
+
+  // Year-of-death RMD: post-RBD only, when not already satisfied (§1.408-8(e)(4)(i)).
+  if (year === deathYear) {
+    if (
+      rbd === 'on-or-after-rbd' &&
+      b?.ownerYearOfDeathRmdSatisfied !== true &&
+      b?.ownerBirthYear !== undefined
+    ) {
+      // A 2020 or 2021 death-year RMD was computed under the formerly
+      // applicable tables (§1.401(a)(9)-9(f)(1)), which this engine does not
+      // carry — the amount is not computed rather than computed wrongly.
+      if (deathYear < 2022) {
+        return {
+          ...noneEvidence(year, [...citations, 'Treas. Reg. §1.401(a)(9)-9(f)(1)']),
+          limitation: 'pre-2022-tables-not-carried',
+        }
+      }
+      const ownerAge = deathYear - b.ownerBirthYear
+      let divisor = uniformLifetimeDivisor(pack, ownerAge)
+      let arm: InheritedRequirementEvidence['divisorArm'] = 'uniform-lifetime'
+      const extraCitations: string[] = ['Treas. Reg. §1.408-8(e)(4)(i)']
+      // The decedent's lifetime denominator — which the death-year RMD is —
+      // uses the Joint and Last Survivor Table when the sole beneficiary is a
+      // spouse more than 10 years younger (§1.401(a)(9)-5(c)(2)(i)).
+      if (
+        b.edbCategory === 'surviving-spouse' &&
+        b.soleBeneficiary === true &&
+        b.beneficiaryBirthYear !== undefined
+      ) {
+        const spouseAge = deathYear - b.beneficiaryBirthYear
+        if (ownerAge - spouseAge > 10) {
+          const joint = jointLifeTableDivisor(ownerAge, spouseAge)
+          if (joint !== undefined && divisor !== undefined && joint > divisor) {
+            divisor = joint
+            arm = 'joint-life'
+            extraCitations.push('Treas. Reg. §1.401(a)(9)-5(c)(2)(i)')
+          }
+        }
+      }
+      // Post-RBD deaths from 2022 on always have an attained age on the
+      // current Uniform Lifetime Table; a miss means the pack is wrong.
+      if (divisor === undefined || !(divisor > 0)) {
+        throw new RangeError(
+          `Uniform Lifetime Table has no usable divisor for age ${ownerAge} (year-of-death RMD, death year ${deathYear})`,
+        )
+      }
+      return {
+        year,
+        kind: 'year-of-death-rmd',
+        requiredAmount: amountFromDivisor(priorYearEndBalance, divisor),
+        divisor,
+        divisorArm: arm,
+        citations: [...citations, ...extraCitations],
+      }
+    }
+    return noneEvidence(year, citations)
+  }
+
+  // Final deadline sweep (10-year rows and minor-child majority+10).
+  if (
+    classification.finalDeadlineYear !== undefined &&
+    year >= classification.finalDeadlineYear
+  ) {
+    return finalSweepEvidence(year, priorYearEndBalance, citations)
+  }
+
+  // Regimes with no annual amounts during the window.
+  if (
+    regime === 'ten-year-no-annual' ||
+    regime === 'roth-ten-year-no-annual' ||
+    regime === 'edb-ten-year-elected' ||
+    regime === 'spouse-ten-year-elected'
+  ) {
+    return noneEvidence(year, citations)
+  }
+
+  // S2: the schema records the treat-as-own election but not its calendar
+  // year, so the beneficiary RMDs owed between death and the election cannot
+  // be placed on specific years — a typed limitation, not a silent zero
+  // (matrix §7). The year-of-death entry above still applies; WS4 executes
+  // the transition against a real election year.
+  if (regime === 'spouse-treat-as-own-transition') {
+    return {
+      ...noneEvidence(year, citations),
+      limitation: 'treat-as-own-election-year-not-carried',
+    }
+  }
+
+  // --- Life-expectancy / R1 annual amounts (year > deathYear) ---
+
+  const ownerBirth = b?.ownerBirthYear
+  const benBirth = b?.beneficiaryBirthYear
+  // The classifier refuses a designated individual without a birth year, so a
+  // classification reaching an annual-amount regime always carries one; a miss
+  // here is an invariant violation, not a zero-requirement year.
+  if (benBirth === undefined) {
+    throw new RangeError(
+      `beneficiaryBirthYear is missing on a '${regime}' classification (year ${year}); the classifier refuses this fact set, so the classification was not produced by classifyInheritedRegime`,
+    )
+  }
+
+  // Annual amounts for distribution calendar years before 2022 were governed
+  // by the formerly applicable tables (§1.401(a)(9)-9(f)(1)); reachable only
+  // for a 2020 death's 2021 first distribution year. The amount is not
+  // computed rather than computed from the wrong table; from 2022 on the fixed
+  // formula over the current tables is the §1.401(a)(9)-9(f)(2)(ii)(A) reset.
+  if (year < 2022) {
+    return {
+      ...noneEvidence(year, [...citations, 'Treas. Reg. §1.401(a)(9)-9(f)(1)']),
+      limitation: 'pre-2022-tables-not-carried',
+    }
+  }
+
+  // R1: greater-of beneficiary fixed and owner fixed; notice waiver 2021–2024
+  // for deaths 2020–2023 (Notices 2022-53/2023-54/2024-35).
+  if (regime === 'ten-year-with-annual-rmds') {
+    const benDiv = beneficiaryFixedDivisor(pack, benBirth, deathYear, year)
+    let divisor = benDiv
+    let arm: InheritedRequirementEvidence['divisorArm'] = 'beneficiary-fixed'
+    if (ownerBirth !== undefined) {
+      const ownDiv = ownerFixedDivisor(pack, ownerBirth, deathYear, year)
+      if (ownDiv > divisor) {
+        divisor = ownDiv
+        arm = 'owner-fixed'
+      }
+    }
+    const noticeWaived =
+      deathYear >= 2020 &&
+      deathYear <= 2023 &&
+      year >= 2021 &&
+      year <= 2024
+    return annualEvidence({
+      year,
+      divisor,
+      arm,
+      priorYearEndBalance,
+      citations,
+      noticeWaived,
+    })
+  }
+
+  // R3 / K2 non-spouse: beneficiary fixed; traditional post-RBD also greater-of owner.
+  // Spouse K2 (edbCategory surviving-spouse) uses the redetermined path below.
+  if (
+    (regime === 'edb-life-expectancy' || regime === 'roth-edb-life-expectancy') &&
+    b?.edbCategory !== 'surviving-spouse'
+  ) {
+    const benDiv = beneficiaryFixedDivisor(pack, benBirth, deathYear, year)
+    let divisor = benDiv
+    let arm: InheritedRequirementEvidence['divisorArm'] = 'beneficiary-fixed'
+    // Greater-of only for traditional on-or-after-RBD (§1.401(a)(9)-5(d)(1)(ii));
+    // K2 has no post-RBD arm; before-RBD R3 uses beneficiary only (§(d)(2)).
+    if (
+      regime === 'edb-life-expectancy' &&
+      rbd === 'on-or-after-rbd' &&
+      ownerBirth !== undefined
+    ) {
+      const ownDiv = ownerFixedDivisor(pack, ownerBirth, deathYear, year)
+      if (ownDiv > divisor) {
+        divisor = ownDiv
+        arm = 'owner-fixed'
+      }
+    }
+    return annualEvidence({
+      year,
+      divisor,
+      arm,
+      priorYearEndBalance,
+      citations,
+    })
+  }
+
+  // S0/S1 and K2-spouse: spouse redetermined arm.
+  if (
+    regime === 'spouse-remain-beneficiary' ||
+    (regime === 'roth-edb-life-expectancy' && b?.edbCategory === 'surviving-spouse')
+  ) {
+    // Death before RBD: defer until the later of deathYear+1 and applicable-age attain year.
+    if (rbd === 'before-rbd' || rbd === 'not-applicable') {
+      const startYear = spouseDeferralStartYear(deathYear, ownerBirth, b?.ownerBirthMonth)
+      if (year < startYear) {
+        return noneEvidence(year, citations)
+      }
+      // Before-RBD: spouse redetermined only — no greater-of owner arm (§(d)(2)).
+      const divisor = spouseRedeterminedDivisor(pack, benBirth, year)
+      return annualEvidence({
+        year,
+        divisor,
+        arm: 'spouse-redetermined',
+        priorYearEndBalance,
+        citations,
+      })
+    }
+
+    // On-or-after RBD: greater of spouse redetermined vs owner fixed.
+    const spouseDiv = spouseRedeterminedDivisor(pack, benBirth, year)
+    let divisor = spouseDiv
+    let arm: InheritedRequirementEvidence['divisorArm'] = 'spouse-redetermined'
+    if (ownerBirth !== undefined) {
+      const ownDiv = ownerFixedDivisor(pack, ownerBirth, deathYear, year)
+      if (ownDiv > divisor) {
+        divisor = ownDiv
+        arm = 'owner-fixed'
+      }
+    }
+    return annualEvidence({
+      year,
+      divisor,
+      arm,
+      priorYearEndBalance,
+      citations,
+    })
+  }
+
+  return noneEvidence(year, citations)
+}
+
+/**
+ * Pure bounded schedule of annual requirement evidence for tests and WS5.
+ * Uses a constant prior-year-end balance model; WS4 owns real balances.
+ */
+export function inheritedRequirementSchedule(input: {
+  pack: ParameterPack
+  classification: InheritedRegimeClassification
+  inherited: InheritedAccount
+  fromYear: number
+  toYear: number
+  /** Balance model for evidence: constant prior-year-end balance (tests) — WS4 owns real balances. */
+  priorYearEndBalance: number
+}): InheritedRequirementEvidence[] {
+  const out: InheritedRequirementEvidence[] = []
+  for (let year = input.fromYear; year <= input.toYear; year++) {
+    out.push(
+      inheritedRequirementForYear({
+        pack: input.pack,
+        classification: input.classification,
+        inherited: input.inherited,
+        year,
+        priorYearEndBalance: input.priorYearEndBalance,
+      }),
+    )
+  }
+  return out
+}
+
+/**
+ * Hypothetical required minimum distributions gating a late treat-as-own
+ * election (Treas. Reg. §1.408-8(c)(1)(iii)–(iv) via §1.402(c)-2(j)(4)).
+ *
+ * The timing bar reaches only a surviving spouse to whom the 10-year rule of
+ * §1.401(a)(9)-3(c)(3) applies (§1.402(c)-2(j)(4)(i)) — a spouse under the
+ * life-expectancy default owes ordinary beneficiary RMDs each year instead,
+ * and missing one triggers the out-of-scope §1.408-8(c)(2)(i) deemed
+ * election. The hypothetical amount for each catch-up year is the RMD that
+ * would have applied had the §1.401(a)(9)-5(g)(3)(i) spouse-as-employee
+ * election been in effect — the Uniform Lifetime denominator at the SPOUSE's
+ * attained age (§1.402(c)-2(j)(4)(iii)) — not the spouse's Single Life
+ * beneficiary amount. The catch-up period runs from the first applicable year
+ * (the later of the year the spouse attains the applicable age and the year
+ * the owner would have, §1.402(c)-2(j)(4)(iv)) through the election year
+ * inclusive (§1.402(c)-2(j)(4)(v); §1.408-8(c)(1)(iv) permits the election
+ * only after that year's amount is out).
+ *
+ * Evidence only: amounts are gross hypotheticals on the caller's per-year
+ * balances; the §1.402(c)-2(j)(4)(ii)–(iii) netting of actual distributions
+ * against adjusted balances is WS4 ledger work. Traditional accounts only (an
+ * inherited Roth cannot enter a plan until the WS4 execution arm lands).
+ * Throws when the (j)(4) computation cannot be settled from the supplied
+ * facts — never silently computing past an ambiguity (fail closed, matrix §2).
+ *
+ * `spouseWasUnderTenYearRule` is the (j)(4)(i) applicability fact: the gate
+ * reaches only a spouse to whom the §1.401(a)(9)-3(c)(3) 10-year rule applied
+ * before the election — for an IRA, a death-before-RBD spouse under an
+ * affirmative ten-year election. The plan schema's single election field
+ * cannot record that prior state alongside 'treat-as-own', so the caller
+ * asserts it. A spouse under the §1.401(a)(9)-3(c)(5)(i) life-expectancy
+ * default owed ordinary beneficiary RMDs each year instead (the S0/S1
+ * schedule), and a missed one triggers the out-of-scope §1.408-8(c)(2)(i)
+ * deemed election — no (j)(4) catch-up exists for them.
+ */
+export function spouseTreatAsOwnCatchUp(input: {
+  pack: ParameterPack
+  inherited: InheritedAccount
+  electionYear: number
+  /** §1.402(c)-2(j)(4)(i): was the spouse under the 10-year rule before electing? */
+  spouseWasUnderTenYearRule: boolean
+  priorYearEndBalancesByYear: Record<number, number>
+}): InheritedRequirementEvidence[] {
+  const {
+    pack,
+    inherited,
+    electionYear,
+    spouseWasUnderTenYearRule,
+    priorYearEndBalancesByYear,
+  } = input
+  const b = inherited.beneficiary
+
+  if (
+    b === undefined ||
+    b.edbCategory !== 'surviving-spouse' ||
+    b.soleBeneficiary !== true
+  ) {
+    // (c)(1)(ii) is the eligibility subparagraph — sole beneficiary with an
+    // unlimited withdrawal right — verified against the eCFR text 2026-08-08.
+    throw new Error(
+      'spouse treat-as-own catch-up requires a sole surviving-spouse beneficiary (Treas. Reg. §1.408-8(c)(1)(ii)); the §1.402(c)-2(j)(4) hypothetical-RMD gate has no other addressee',
+    )
+  }
+
+  // §1.402(c)-2(j)(4)(i): the gate reaches only a spouse under the
+  // §1.401(a)(9)-3(c)(3) 10-year rule, which exists only for a
+  // death-before-RBD spouse. The life-expectancy-default spouse owes the
+  // ordinary S0/S1 schedule instead and has no (j)(4) catch-up.
+  if (!spouseWasUnderTenYearRule) return []
+  if (inherited.decedentHadStartedRmds) {
+    throw new Error(
+      'spouseWasUnderTenYearRule contradicts decedentHadStartedRmds: the §1.401(a)(9)-3(c)(3) 10-year rule exists only for a death before the RBD, so a post-RBD-death spouse was never under it; correct one of the two facts',
+    )
+  }
+  if (b.beneficiaryBirthYear === undefined || b.ownerBirthYear === undefined) {
+    throw new Error(
+      'spouse treat-as-own catch-up requires both beneficiaryBirthYear and ownerBirthYear (the §1.402(c)-2(j)(4)(iv) first applicable year is the later of the year each would attain the applicable age)',
+    )
+  }
+
+  const spouseAttainYears = applicableAgeAttainYears(b.beneficiaryBirthYear)
+  const ownerAttainYears = applicableAgeAttainYears(b.ownerBirthYear, b.ownerBirthMonth)
+  if (spouseAttainYears.length !== 1 || ownerAttainYears.length !== 1) {
+    throw new Error(
+      'spouse treat-as-own catch-up cannot settle the §1.402(c)-2(j)(4)(iv) first applicable year (an applicable-age attain year is contested or birth-date precision is insufficient); resolve the applicable age before computing the catch-up',
+    )
+  }
+
+  // §1.402(c)-2(j)(4)(iv): later of the two applicable-age years.
+  const firstApplicableYear = Math.max(spouseAttainYears[0]!, ownerAttainYears[0]!)
+  // §1.408-8(c)(1)(iii): the bar exists only in years the (j)(4) rule would
+  // apply — an election before the first applicable year needs no catch-up.
+  if (electionYear < firstApplicableYear) return []
+
+  const out: InheritedRequirementEvidence[] = []
+  for (let year = firstApplicableYear; year <= electionYear; year++) {
+    const balance = priorYearEndBalancesByYear[year] ?? 0
+    const spouseAge = year - b.beneficiaryBirthYear
+    const divisor = uniformLifetimeDivisor(pack, spouseAge)
+    // The first applicable year is at or after the spouse attains the
+    // applicable age, so the Uniform Lifetime Table always has the row.
+    if (divisor === undefined || !(divisor > 0)) {
+      throw new RangeError(
+        `Uniform Lifetime Table has no usable divisor for age ${spouseAge} (treat-as-own catch-up year ${year})`,
+      )
+    }
+    out.push({
+      year,
+      kind: 'annual-rmd',
+      requiredAmount: amountFromDivisor(balance, divisor),
+      divisor,
+      divisorArm: 'uniform-lifetime',
+      citations: [
+        'Treas. Reg. §1.408-8(c)(1)(iii)–(iv)',
+        'Treas. Reg. §1.402(c)-2(j)(4)(i)–(v)',
+        'Treas. Reg. §1.401(a)(9)-5(g)(3)(i)',
+      ],
+    })
+  }
+  return out
 }
