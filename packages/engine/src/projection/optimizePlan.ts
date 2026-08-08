@@ -320,8 +320,9 @@ export interface OptimizerOpeningBuckets {
  * `inheritedDistributionDivisor` numerators aligned with `simulate`'s
  * `startTraditional` / `startInheritedTraditional` split. Probe years remap a
  * post-flip S2 account's owner-RMD obligation share into the inherited-
- * traditional forced flow (`inheritedDistribution`, excluded from probe `rmd`,
- * net of pro-rata Form 8606 basis) so that static bucket sees consistent
+ * traditional forced flow (`inheritedDistribution` at gross, excluded from
+ * probe `rmd`; basis netted on the income side only) so that static bucket
+ * sees consistent
  * floors; YearResult fields are unchanged.
  */
 export function optimizerOpeningBuckets(plan: Plan): OptimizerOpeningBuckets {

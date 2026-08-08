@@ -760,6 +760,9 @@ describe('buildOptimizerInput', () => {
         ownerPersonId: 'p1',
         annualReturnPct: 0,
         kind: 'ira',
+        // No basis here: an inherited IRA carries no modeled nondeductible
+        // basis (the beneficiary's 8606 is separate); the owner-wide basis
+        // that exercises the pro-rata netting lives on the owned IRA below.
         balance: 300_000,
         annualContribution: 0,
         inherited: {
@@ -778,6 +781,17 @@ describe('buildOptimizerInput', () => {
             provenance: { source: 'test', asOf: '2026-01-01' },
           },
         },
+      },
+      {
+        type: 'traditional',
+        id: testIds(),
+        name: 'Own IRA',
+        ownerPersonId: 'p1',
+        annualReturnPct: 0,
+        kind: 'ira',
+        balance: 100_000,
+        annualContribution: 0,
+        nondeductibleBasis: 50_000,
       },
       {
         type: 'cash',
@@ -799,12 +813,24 @@ describe('buildOptimizerInput', () => {
     })
     const buckets = optimizerOpeningBuckets(validated)
     expect(buckets.openingInheritedTrad).toBe(300_000)
-    expect(buckets.openingTrad).toBe(0)
+    expect(buckets.openingTrad).toBe(100_000)
     const year2026 = ledger.years.find((y) => y.year === 2026)!
     const probe2026 = probes.find((p) => p.year === 2026)!
+    // Both accounts aggregate under the owner's RMD (flip effective 2025), on
+    // the same divisor, so obligation shares split by opening balance: the S2
+    // account carries 3/4 of the year's owner RMD, the owned IRA 1/4.
     expect(year2026.rmd).toBeGreaterThan(0)
-    expect(probe2026.rmd).toBe(0)
-    expect(probe2026.inheritedDistribution).toBeCloseTo(year2026.rmd, 2)
+    expect(probe2026.rmd).toBeCloseTo(year2026.rmd / 4, 2)
+    // GROSS remapped obligation rides the inherited forced flow — the LP uses
+    // that variable as cash receipt and bucket debit as well as income, so it
+    // must not be netted of basis.
+    expect(probe2026.inheritedDistribution).toBeCloseTo((year2026.rmd * 3) / 4, 2)
+    expect(probe2026.rmd + probe2026.inheritedDistribution).toBeCloseTo(year2026.rmd, 2)
+    // The basis netting happens on the income side only: with 8606 basis in
+    // the pool, the probe's taxable RMD share sits strictly below its gross.
+    expect(probe2026.rmdTaxable).toBeDefined()
+    expect(probe2026.rmdTaxable!).toBeGreaterThan(0)
+    expect(probe2026.rmdTaxable!).toBeLessThan(probe2026.rmd)
   })
 
   it('passes forced inherited distributions as taxable liquid optimizer inputs', () => {

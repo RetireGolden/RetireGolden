@@ -7859,6 +7859,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       // forced flow only (ledger YearResult fields stay on the owner-RMD path).
       let s2FlipOwnerRmdObligationRemap = 0
       let s2FlipOwnerRmdObligationRemapTaxable = 0
+      let s2FlipOwnerRmdObligationRemapNontaxable = 0
       const ownerRmdNontaxableFraction =
         rmdTotal > 0 ? rmdNontaxable / rmdTotal : 0
       for (const state of balances) {
@@ -7868,16 +7869,21 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         const obligation = rmdObligationByAccount.get(state.account.id) ?? 0
         if (obligation <= 0 || planDollarsMoveNoLedgerCent(obligation)) continue
         // Pro-rata attribution: each remapped obligation dollar carries the
-        // same nontaxable share as the year's aggregate owner-RMD gross, so
-        // the LP's ordinary-income base does not tax Form 8606 basis the
-        // ledger excluded on the owner path.
+        // same nontaxable share as the year's aggregate owner-RMD gross.
         const shareNontaxable = obligation * ownerRmdNontaxableFraction
         s2FlipOwnerRmdObligationRemap += obligation
         s2FlipOwnerRmdObligationRemapTaxable += obligation - shareNontaxable
+        s2FlipOwnerRmdObligationRemapNontaxable += shareNontaxable
       }
       const probeRmd = Math.max(0, rmdTotal - s2FlipOwnerRmdObligationRemap)
+      // GROSS remapped obligation — the LP's `wi` is cash, bucket debit, and
+      // income at coefficient 1 (optimizer.ts cash / inh recursion / tifloor),
+      // so netting Form 8606 basis here understates spendable cash and
+      // inherited-bucket depletion. Basis rides the income side only, through
+      // `probeRmdTaxable` and `s2FlipOwnerRmdObligationRemapNontaxable` below
+      // (the same owned-RMD nontaxable pathway `rmdTaxable` already serves).
       const probeInheritedDistribution =
-        inheritedOrdinaryIncome + s2FlipOwnerRmdObligationRemapTaxable
+        inheritedOrdinaryIncome + s2FlipOwnerRmdObligationRemap
       const rmdTaxableTotal = Math.max(0, rmdTotal - rmdNontaxable)
       const probeRmdTaxable = Math.max(
         0,
@@ -7990,8 +7996,9 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         Math.max(
           0,
           incomeBeforeConversion -
-            (rmdTotal - rmdNontaxable - optimizerForcedDistributionOrdinaryExclusion) -
-            inheritedOrdinaryIncome,
+            (probeRmdTaxable - optimizerForcedDistributionOrdinaryExclusion) -
+            inheritedOrdinaryIncome -
+            s2FlipOwnerRmdObligationRemapNontaxable,
         ) + taxableSs
       // Deliberate conservative MILP boundary: the linear optimizer does not
       // model a signed capital-loss pool, so it never receives a negative base.
@@ -8385,8 +8392,9 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
               : 1,
         startTraditional,
         // Traditional forced only — matches OptimizerYearProbe / LP ordinary base.
-        // Includes post-flip S2 owner-RMD obligation shares remapped above
-        // (probe only; net of pro-rata Form 8606 basis).
+        // Includes post-flip S2 owner-RMD obligation shares remapped above at
+        // GROSS (probe only); basis is netted on the income side via
+        // `probeRmdTaxable` and `s2FlipOwnerRmdObligationRemapNontaxable`.
         inheritedDistribution: probeInheritedDistribution,
         startInheritedTraditional,
         peopleAged65Plus,
