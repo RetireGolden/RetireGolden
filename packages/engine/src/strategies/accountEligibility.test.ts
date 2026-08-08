@@ -193,6 +193,26 @@ describe('contributions / convertibility / RMD eligibility', () => {
       },
     }, 2026)).toBe(false)
   })
+
+  it('isTreatAsOwnEffective returns false when RBD derivation needs review', () => {
+    // Born-1960 owner died 2025 with decedentHadStartedRmds true contradicts
+    // derivation (RBD 2036) — classifier refuses; flip never takes effect.
+    expect(isTreatAsOwnEffective({
+      kind: 'ira',
+      inherited: {
+        ownerDeathYear: 2025,
+        decedentHadStartedRmds: true,
+        beneficiary: {
+          election: 'treat-as-own',
+          treatAsOwnElectionYear: 2026,
+          edbCategory: 'surviving-spouse',
+          soleBeneficiary: true,
+          spouseUnlimitedWithdrawalRight: true,
+          ownerBirthYear: 1960,
+        },
+      },
+    }, 2026)).toBe(false)
+  })
 })
 
 describe('equity-comp vesting / spendability', () => {

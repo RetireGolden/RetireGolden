@@ -6,7 +6,10 @@ import {
   classifyInheritedRegime,
   inheritedRequirementForYear,
 } from '../strategies/inheritedIra.js'
-import { isTreatAsOwnEffective } from '../strategies/accountEligibility.js'
+import {
+  acceptsContributions,
+  isTreatAsOwnEffective,
+} from '../strategies/accountEligibility.js'
 import { seppActive } from '../strategies/sepp.js'
 import { seppSeriesBeginsAfterSeparation } from './traditionalEmployerPlanPenaltyPrerequisite.js'
 import {
@@ -933,7 +936,7 @@ function resolvedSourceKindValid(
     ownerHasCurrentYearWages &&
     hasPositiveCurrentYearContributionRequest
   const ownedIraContributionPossible =
-    isOwnedIra(account, taxYear) &&
+    acceptsContributions(account) &&
     ownerModeledAlive &&
     hasPositiveCurrentYearContributionRequest &&
     (hasContributionSchedule || ownerHasCurrentYearWages)

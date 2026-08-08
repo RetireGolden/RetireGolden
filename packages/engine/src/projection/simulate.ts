@@ -4041,7 +4041,14 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // penalty — and is taxable ordinary income that also supplies spending cash.
     let seppTotal = 0
     for (const state of balances) {
-      if (state.account.type !== 'traditional' || !state.account.sepp || state.account.inherited) continue
+      if (state.account.type !== 'traditional' || !state.account.sepp) continue
+      // Year-aware inherited gate (mirrors owner-RMD gates above): pre-flip S2
+      // stays on the inherited path; post-election the account is the spouse's
+      // own IRA and an active SEPP series distributes from it.
+      if (
+        state.account.inherited !== undefined &&
+        !isTreatAsOwnEffective(state.account, year)
+      ) continue
       const ownerId = state.account.ownerPersonId ?? primary.id
       const ownerState = stateOf(ownerId)
       if (!ownerState.alive) continue

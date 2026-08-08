@@ -54,6 +54,7 @@ import {
   type UnsupportedActionReasonCode,
 } from '../actions/reasons.js'
 import type { Account, Person, Plan } from '../model/plan.js'
+import { deriveRbdComparison } from '../rmd/applicableAge.js'
 
 export type TraditionalAccount = Extract<Account, { type: 'traditional' }>
 export type EquityCompAccount = Extract<Account, { type: 'equityComp' }>
@@ -1170,12 +1171,16 @@ type TreatAsOwnElectionAccount = Readonly<{
   kind?: string | undefined
   inherited?: Readonly<{
     ownerDeathYear?: number | undefined
+    decedentHadStartedRmds?: boolean | undefined
     beneficiary?: Readonly<{
       election?: string | undefined
       treatAsOwnElectionYear?: number | undefined
       edbCategory?: string | undefined
       soleBeneficiary?: boolean | undefined
       spouseUnlimitedWithdrawalRight?: boolean | undefined
+      ownerBirthYear?: number | undefined
+      ownerBirthMonth?: number | undefined
+      ownerBirthDay?: number | undefined
     }> | undefined
   }> | undefined
 }>
@@ -1209,20 +1214,25 @@ export function hasSpouseTreatAsOwnElection(
  * deaths classify X1 legacy before the classifier reaches S2), edbCategory
  * `'surviving-spouse'`, soleBeneficiary true, spouseUnlimitedWithdrawalRight
  * true, election `'treat-as-own'`, and a defined `treatAsOwnElectionYear` with
- * `year >=` it. A fact set the classifier would refuse never flips. This
- * intentionally does not rewire the static eligibility predicates below;
+ * `year >=` it. After those gates, runs the classifier's RBD screen
+ * (`deriveRbdComparison` on ownerDeathYear, decedentHadStartedRmds, and
+ * beneficiary owner birth facts) rather than mirroring piecemeal — a fact set
+ * the classifier refuses on RBD consistency/precision never flips (the S2 row
+ * itself is RBD-side-agnostic, so a resolved derivation of either side passes).
+ * This intentionally does not rewire the static eligibility predicates below;
  * contribution/conversion validators stay pre-transition (WS5 residual).
  */
 export function isTreatAsOwnEffective(
   account: TreatAsOwnElectionAccount,
   year: number,
 ): boolean {
-  const beneficiary = account.inherited?.beneficiary
+  const inherited = account.inherited
+  const beneficiary = inherited?.beneficiary
   if (
     account.kind !== 'ira' ||
-    account.inherited === undefined ||
-    account.inherited.ownerDeathYear === undefined ||
-    account.inherited.ownerDeathYear < 2020 ||
+    inherited === undefined ||
+    inherited.ownerDeathYear === undefined ||
+    inherited.ownerDeathYear < 2020 ||
     beneficiary?.election !== 'treat-as-own' ||
     beneficiary.edbCategory !== 'surviving-spouse' ||
     beneficiary.soleBeneficiary !== true ||
@@ -1231,13 +1241,23 @@ export function isTreatAsOwnEffective(
   ) {
     return false
   }
+  const rbdDerivation = deriveRbdComparison({
+    ownerDeathYear: inherited.ownerDeathYear,
+    decedentHadStartedRmds: inherited.decedentHadStartedRmds ?? false,
+    ownerBirthYear: beneficiary.ownerBirthYear,
+    ownerBirthMonth: beneficiary.ownerBirthMonth,
+    ownerBirthDay: beneficiary.ownerBirthDay,
+  })
+  if (rbdDerivation.kind === 'needs-review') {
+    return false
+  }
   // A death-year election leaves the death year itself to the decedent's own
   // RMD (§1.408-8(c)(3): the spouse owes no owner RMD that year and takes the
   // decedent's unsatisfied amount instead); owner treatment begins the
   // following calendar year. Every consumer — ledger, settlement, replay,
   // inventory — takes this one boundary from here.
   const effectiveFromYear =
-    beneficiary.treatAsOwnElectionYear === account.inherited?.ownerDeathYear
+    beneficiary.treatAsOwnElectionYear === inherited.ownerDeathYear
       ? beneficiary.treatAsOwnElectionYear + 1
       : beneficiary.treatAsOwnElectionYear
   return year >= effectiveFromYear

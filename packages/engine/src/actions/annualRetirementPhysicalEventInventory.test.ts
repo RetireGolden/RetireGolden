@@ -476,6 +476,54 @@ describe('buildAnnualRetirementPhysicalEventInventory', () => {
     })]))).toContain('sourceKindMismatch')
   })
 
+  it('rejects owned-IRA contributions on S2 accounts past the election year', () => {
+    // Post-flip the account is owned for RMD/Form 8606, but contributions stay
+    // blocked on any account with an inherited block (WS5 residual).
+    const plan = basePlan()
+    plan.household.people[0]!.dob = '1950-01-01'
+    plan.incomes = [{
+      type: 'wages',
+      id: 'owner-current-wages',
+      personId: ownerPersonId,
+      annualGross: 100_000,
+      endAge: null,
+      realGrowthPct: 0,
+    }]
+    const inheritedAccount = plan.accounts.find((account) => account.id === inheritedId)
+    if (inheritedAccount?.type !== 'traditional' || inheritedAccount.inherited === undefined) {
+      throw new Error('fixture drift')
+    }
+    inheritedAccount.annualContribution = 7_000
+    inheritedAccount.inherited = {
+      ownerDeathYear: 2020,
+      decedentHadStartedRmds: false,
+      beneficiary: {
+        beneficiaryClass: 'designated-individual',
+        edbCategory: 'surviving-spouse',
+        beneficiaryBirthYear: 1950,
+        soleBeneficiary: true,
+        ownerBirthYear: 1945,
+        election: 'treat-as-own',
+        spouseUnlimitedWithdrawalRight: true,
+        treatAsOwnElectionYear: 2035,
+        provenance: { source: 'test', asOf: '2026-01-01' },
+      },
+    }
+    expect(issueKinds({
+      ...input(plan, [resolved({
+        kind: 'ownedIraContribution',
+        origin: 'contributionLedger',
+        sourceAccountId: inheritedId,
+        taxYear: 2036,
+      })]),
+      taxYear: 2036,
+      runtimeInventoryAttestation: {
+        ...input(plan).runtimeInventoryAttestation!,
+        taxYear: 2036,
+      },
+    })).toContain('sourceKindMismatch')
+  })
+
   it.each([
     'employerPlanEmployeeContribution',
     'employerPlanEmployerMatch',

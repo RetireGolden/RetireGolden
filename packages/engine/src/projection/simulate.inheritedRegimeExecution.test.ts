@@ -223,6 +223,31 @@ describe('WS4 inherited-regime execution fixtures', () => {
     expect(y2027.rmd).toBeCloseTo(year(result, 2026).balances.inherited! / 20.2, 2)
   })
 
+  it('S2 post-election: SEPP distributes from the flipped account', () => {
+    const plan = planFor(1970)
+    inherited(plan, 'traditional', {
+      ownerDeathYear: 2024,
+      decedentHadStartedRmds: true,
+      beneficiary: facts({
+        beneficiaryBirthYear: 1970,
+        ownerBirthYear: 1945,
+        edbCategory: 'surviving-spouse',
+        election: 'treat-as-own',
+        spouseUnlimitedWithdrawalRight: true,
+        treatAsOwnElectionYear: 2028,
+        ownerYearOfDeathRmdSatisfied: true,
+      }),
+    }, 500_000)
+    const account = plan.accounts.find((candidate) => candidate.id === 'inherited')
+    if (account?.type !== 'traditional') throw new Error('fixture drift')
+    account.sepp = { startAge: 56, method: 'rmd' }
+    const result = run(plan, 2028)
+    // Pre-election: inherited gate still bars SEPP on the inherited block.
+    expect(year(result, 2027).sepp).toBe(0)
+    // Post-election: spouse's own IRA — active series distributes.
+    expect(year(result, 2028).sepp).toBeGreaterThan(0)
+  })
+
   it('blocks scheduled contributions to an inherited Roth', () => {
     const plan = planFor(1980)
     inherited(plan, 'roth', {
