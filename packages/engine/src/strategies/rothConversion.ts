@@ -44,6 +44,8 @@ export interface ConversionSizingInput {
   peopleAged65Plus: number
   /** Living household size (FPL). */
   householdSize: number
+  /** Characterized tax-exempt interest for IRMAA/fixed-MAGI sizing; ACA-independent. */
+  taxExemptInterest?: number
   /** Required for ACA-cliff sizing; absent/non-actionable fails closed. */
   aca?: {
     actionable: boolean
@@ -65,13 +67,18 @@ export type SizingResult =
   | { ok: true; amount: number }
   | { ok: false; reason: 'bad_target' | 'already_over_ceiling' | 'aca_nonactionable' }
 
+function characterizedTaxExemptInterest(input: ConversionSizingInput): number {
+  return input.taxExemptInterest ?? input.aca?.taxExemptInterest ?? 0
+}
+
 function metricFor(target: FillTarget['target'], detail: FederalTaxDetail, input: ConversionSizingInput): number {
+  const taxExemptInterest = characterizedTaxExemptInterest(input)
   if (target === 'topOfBracket') return detail.taxableIncome
   if (target === 'acaCliff') {
     return (
       detail.agiBeforeFloor +
       Math.max(0, input.ssBenefits - detail.taxableSocialSecurity) +
-      (input.aca?.taxExemptInterest ?? 0) +
+      taxExemptInterest +
       (input.aca?.fixedMagiAddbacks ?? 0)
     )
   }
@@ -79,7 +86,7 @@ function metricFor(target: FillTarget['target'], detail: FederalTaxDetail, input
   // fixed-MAGI reporting: signed pre-floor AGI plus characterized tax-exempt
   // interest, floored only after the addition. Foreign-exclusion addback can
   // affect taxable Social Security, but is not itself part of this metric.
-  return Math.max(0, detail.agiBeforeFloor + (input.aca?.taxExemptInterest ?? 0))
+  return Math.max(0, detail.agiBeforeFloor + taxExemptInterest)
 }
 
 function ceilingFor(strategy: FillTarget, input: ConversionSizingInput): number | null {
@@ -130,7 +137,7 @@ export function sizeRothConversion(strategy: FillTarget, input: ConversionSizing
         ordinaryIncome: input.ordinaryIncomeBase + conversion,
         capitalGains: input.capitalGains,
         qualifiedDividends: input.qualifiedDividends ?? 0,
-        taxExemptInterest: input.aca?.taxExemptInterest,
+        taxExemptInterest: characterizedTaxExemptInterest(input),
         foreignExclusionAddback: input.aca?.foreignExclusionAddback,
         ssBenefits: input.ssBenefits,
         peopleAged65Plus: input.peopleAged65Plus,
