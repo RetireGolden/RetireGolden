@@ -267,7 +267,7 @@ export interface ReportYearLedgerBlock {
 export interface ReportInheritedScheduleYearRow {
   year: number
   requirementKind: InheritedAccountYearEvidence['requirementKind']
-  /** Draft plain-language label for the requirement kind (non-final). */
+  /** Plain-language label for the requirement kind. */
   kindLabel: string
   requiredAmount: number
   executedRequiredAmount: number
@@ -278,7 +278,7 @@ export interface ReportInheritedScheduleAccount {
   accountId: string
   accountName: string
   regime: string
-  /** Draft plain-language regime name (non-final). */
+  /** Plain-language regime name. */
   regimeLabel: string
   matrixRow: string
   classification: 'settled' | 'unsettled' | null
@@ -580,7 +580,7 @@ function yearLedgerRow(y: YearResult): ReportYearLedgerRow {
   }
 }
 
-/** Draft plain-language regime names (non-final; orchestrator rewrites later). */
+/** Plain-language schedule names for the engine's regime keys. */
 export const INHERITED_REGIME_LABELS: Record<string, string> = {
   'ten-year-with-annual-rmds': '10-year rule with annual distributions',
   'ten-year-no-annual': '10-year rule, no annual amounts',
@@ -596,7 +596,7 @@ export const INHERITED_REGIME_LABELS: Record<string, string> = {
   'needs-review': 'Needs review',
 }
 
-/** Draft plain-language requirement-kind labels (non-final). */
+/** Plain-language requirement-kind labels. */
 export const INHERITED_REQUIREMENT_KIND_LABELS: Record<
   InheritedAccountYearEvidence['requirementKind'],
   string
@@ -607,6 +607,10 @@ export const INHERITED_REQUIREMENT_KIND_LABELS: Record<
   'final-sweep': 'Final distribution (deadline year)',
   legacy: 'Planning estimate',
 }
+
+/** UI-side earnings-taxability caution when the Roth five-year window may still be open. */
+export const ROTH_FIVE_YEAR_INCOMPLETE_NOTE =
+  'The five-year period may not be complete; some earnings could be taxable when withdrawn. This model does not compute that tax.'
 
 const DISCLOSURE_NOTE_LABELS: Record<string, string> = {
   'prop-reg-spouse-as-employee':
@@ -825,7 +829,26 @@ function inheritedFactsFromAccount(account: Account): string[] {
   if (beneficiary.roth5YearStartYear !== undefined) {
     facts.push(`Roth 5-year start year: ${beneficiary.roth5YearStartYear}`)
   }
+  if (beneficiary.provenance.source) {
+    const asOf = beneficiary.provenance.asOf
+    facts.push(
+      asOf
+        ? `Facts provided by ${beneficiary.provenance.source}, as of ${asOf}`
+        : `Facts provided by ${beneficiary.provenance.source}`,
+    )
+  }
   return facts
+}
+
+/** When the five-year start year is known but still open for schedule years, surface the caution in notes. */
+function inheritedRothFiveYearIncompleteNote(
+  account: Account,
+  scheduleYears: readonly number[],
+): string | null {
+  if (account.type !== 'roth' || account.inherited?.beneficiary === undefined) return null
+  const startYear = account.inherited.beneficiary.roth5YearStartYear
+  if (startYear === undefined) return null
+  return scheduleYears.some((year) => startYear + 4 >= year) ? ROTH_FIVE_YEAR_INCOMPLETE_NOTE : null
 }
 
 function noteForLimitation(limitation: string): string {
@@ -889,6 +912,14 @@ export function buildInheritedSchedules(
       for (const citation of evidence.citations) citations.add(citation)
       if (needsProfessionalConfirmation(evidence)) needsConfirm = true
     }
+
+    if (isSuccessorScope) finalDeadlineYear = null
+
+    const rothFiveYearNote = inheritedRothFiveYearIncompleteNote(
+      account,
+      yearRows.map((row) => row.year),
+    )
+    if (rothFiveYearNote) notes.add(rothFiveYearNote)
 
     const classification: 'settled' | 'unsettled' | null = hasUnsettledClassification
       ? 'unsettled'

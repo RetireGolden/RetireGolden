@@ -392,7 +392,6 @@ function ReportBody() {
 
       {inheritedSchedules.length > 0 ? (
         <section className="report-section report-appendix">
-          {/* Draft copy (non-final): orchestrator rewrites after WS5 implementation. */}
           <h2>Inherited account schedules (nominal $)</h2>
           <p className="muted small">
             Compact schedule per inherited account. Full notes and citations are on the Results page.

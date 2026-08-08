@@ -142,13 +142,19 @@ function plainRefusalCause(refusalReason: string): string {
   if (lower.includes('before 2020') || lower.includes('pre-secure')) {
     return 'death before 2020 predates the modeled rules'
   }
+  if (lower.includes('successor-beneficiary')) {
+    return 'accounts already inherited from a prior beneficiary are not modeled'
+  }
+  if (lower.includes('employer-plan') || lower.includes('scopes inherited support to iras')) {
+    return 'inherited workplace-plan schedules are not modeled'
+  }
   return 'facts are contradictory or incomplete'
 }
 
 /**
- * Expandable per-account inherited schedule (WS5 Chunk B). Primary explanation
- * surface — draft copy, non-final. Fed from engine evidence rows already on the
- * year ledger; no extra simulation.
+ * Expandable per-account inherited schedule: the primary explanation surface,
+ * fed from engine evidence rows already on the year ledger; no extra
+ * simulation.
  */
 export function InheritedSchedulesSection({
   plan,
@@ -167,11 +173,10 @@ export function InheritedSchedulesSection({
   return (
     <div className="chart-card" id="inherited-schedules">
       <h2>Inherited account schedules</h2>
-      {/* Draft copy (non-final): orchestrator rewrites after WS5 implementation. */}
       <p className="card-hint">
-        Forced distribution schedules for inherited IRAs and 401(k)s on this plan. Accounts with beneficiary details
-        follow IRS schedules matched to the facts when supported; accounts without beneficiary details use the simpler
-        planning estimate. Planning illustration only, not tax or legal advice.
+        Required distribution schedules for the inherited accounts on this plan. Accounts with beneficiary details
+        follow IRS schedules matched to the facts when supported; accounts without beneficiary details, and inherited
+        workplace plans, use the simpler planning estimate. Planning illustration only, not tax or legal advice.
       </p>
       {schedules.map((account) => (
         <InheritedAccountSchedule details={account} startYear={startYear} adj={adj} key={account.accountId} />

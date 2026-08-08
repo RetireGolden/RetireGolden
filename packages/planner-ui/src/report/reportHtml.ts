@@ -342,11 +342,12 @@ function appendixSection(model: ReportModel): string {
       ? ''
       : `<section><h2>Inherited account schedules (nominal $)</h2><p class="muted">Compact schedule per inherited account. Full notes and citations are on the Results page.</p>${inherited
           .map((account) => {
-            const refusalNote = account.isSuccessorScope
-              ? ''
-              : account.isRefusal
-                ? '<p class="muted">Needs review: the model does not cover these facts, so it shows the limitation rather than guessing. The schedule below uses the simpler planning estimate.</p>'
-                : ''
+            const refusalNote = account.isRefusal
+              ? '<p class="muted">Needs review: the model does not cover these facts, so it shows the limitation rather than guessing. The schedule below uses the simpler planning estimate.</p>'
+              : ''
+            const successorNote = account.isSuccessorScope
+              ? '<p class="muted">After the beneficiary&apos;s death the account passes to a successor; successor schedules are not modeled and no amounts are forced.</p>'
+              : ''
             const legacyNote =
               account.isLegacyApproximation && !account.isRefusal
                 ? '<p class="muted">Planning estimate (beneficiary details not supplied).</p>'
@@ -364,7 +365,7 @@ function appendixSection(model: ReportModel): string {
               fmtMoney(row.requiredAmount),
               fmtMoney(row.executedRequiredAmount),
             ])
-            return `<div style="margin-top:12px"><h3>${escapeHtml(account.accountName)}: ${escapeHtml(account.regimeLabel)}</h3>${refusalNote}${legacyNote}${deadlineNote}${confirmNote}${table(['Year', 'Kind', 'Required', 'Executed'], rows)}</div>`
+            return `<div style="margin-top:12px"><h3>${escapeHtml(account.accountName)}: ${escapeHtml(account.regimeLabel)}</h3>${refusalNote}${successorNote}${legacyNote}${deadlineNote}${confirmNote}${table(['Year', 'Kind', 'Required', 'Executed'], rows)}</div>`
           })
           .join('')}</section>`
   return `${inheritedHtml}<section><h2>Year-by-year ledger appendix</h2>${table(

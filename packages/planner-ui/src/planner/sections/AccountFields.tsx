@@ -21,6 +21,7 @@ import {
   type AllocatableAccount,
 } from './sectionHelpers'
 import { usePlan } from '../planContextCore'
+import { ROTH_FIVE_YEAR_INCOMPLETE_NOTE } from '../../report/reportModel'
 import { CheckboxField, DateField, MoneyField, NumberField, PercentField, ReadonlyField, SelectField, TextField } from '../fields'
 import { fmtMoney } from '../format'
 import { currentStartYear } from '../useProjection'
@@ -105,8 +106,6 @@ const TEN_YEAR_ELECTION_SOURCE = {
 }
 const INHERITED_ROTH_CONTRIBUTION_BASIS_HINT =
   'The model does not use contribution basis on an inherited Roth; its withdrawals are modeled untaxed with the five-year caution below.'
-const ROTH_FIVE_YEAR_INCOMPLETE_HINT =
-  'The five-year period may not be complete; some earnings could be taxable when withdrawn. This model does not compute that tax.'
 const INHERITED_ROTH_EMPLOYER_HINT =
   'Workplace-plan schedules are not modeled; this account uses the simpler planning estimate, and these facts are kept for review.'
 
@@ -358,12 +357,25 @@ function BeneficiaryDetails({
                 </div>
               )}
               {inherited.decedentHadStartedRmds ? (
-                <CheckboxField
+                <SelectField
                   label="Owner's year-of-death RMD was satisfied"
-                  help="If the owner had started RMDs, confirm whether the owner's final-year RMD was already distributed. If it was not, the schedule must carry that requirement."
+                  help="If the owner had started RMDs, record whether the owner's final-year RMD was already distributed. Leaving this unanswered treats the RMD as not taken in the schedule; choose No or not sure to commit that explicitly."
                   source={{ label: 'eCFR §1.408-8(e)', url: 'https://www.ecfr.gov/current/title-26/section-1.408-8' }}
-                  value={beneficiary.ownerYearOfDeathRmdSatisfied === true}
-                  onCommit={(ownerYearOfDeathRmdSatisfied) => commit({ ...beneficiary, ownerYearOfDeathRmdSatisfied })}
+                  value={
+                    beneficiary.ownerYearOfDeathRmdSatisfied === true
+                      ? 'true'
+                      : beneficiary.ownerYearOfDeathRmdSatisfied === false
+                        ? 'false'
+                        : ''
+                  }
+                  placeholder="Choose..."
+                  options={[
+                    { value: 'true', label: 'Yes, already taken' },
+                    { value: 'false', label: 'No or not sure' },
+                  ]}
+                  onCommit={(value) =>
+                    commit({ ...beneficiary, ownerYearOfDeathRmdSatisfied: value === 'true' })
+                  }
                 />
               ) : null}
               {account.type === 'roth' ? (
@@ -381,7 +393,7 @@ function BeneficiaryDetails({
                   {beneficiary.roth5YearStartYear !== undefined &&
                   beneficiary.roth5YearStartYear + 4 >= planningYear ? (
                     <p className="field-hint" data-testid="roth-five-year-incomplete-hint">
-                      {ROTH_FIVE_YEAR_INCOMPLETE_HINT}
+                      {ROTH_FIVE_YEAR_INCOMPLETE_NOTE}
                     </p>
                   ) : null}
                 </>
@@ -668,7 +680,7 @@ export function AccountFields({ account, index }: { account: Account; index: num
         <>
           <NumberField
             label="Original owner's death year"
-            hint="Starts the 10-year clock; the account must be empty by the end of this year + 10."
+            hint="Starts the distribution clock. What is due each year depends on the beneficiary facts below."
             value={account.inherited.ownerDeathYear}
             min={1990}
             max={2100}
