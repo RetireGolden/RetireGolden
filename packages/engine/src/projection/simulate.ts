@@ -1328,11 +1328,12 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     /**
      * Year-of-death RMD obligation predates the projection horizon and is not
      * modeled as satisfied (Treas. Reg. §1.408-8(e)(4)(i)). Stamped on the
-     * first projection year's evidence only; no amount is forced.
+     * first projection year's evidence only; no amount is forced. Applies on
+     * both classified and legacy/refusal paths when decedentHadStartedRmds is
+     * true and ownerYearOfDeathRmdSatisfied is not modeled as satisfied.
      */
     const preHorizonYearOfDeathRmdUnresolved =
-      regimeResult.kind === 'regime' &&
-      regimeResult.rbdComparison === 'on-or-after-rbd' &&
+      inherited.decedentHadStartedRmds === true &&
       inherited.beneficiary?.ownerYearOfDeathRmdSatisfied !== true &&
       inherited.ownerDeathYear < startYear
     if (regimeResult.kind === 'refusal') {
@@ -4386,8 +4387,16 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         noticeWaived = req.noticeWaived
         limitation = req.limitation
         if (req.kind === 'final-sweep') {
-          // Ledger reconciles the live balance, not the prior-year-end figure.
-          take = state.balance
+          if (req.noticeWaived === true) {
+            // Matrix §4 relief-year exhaustion: evidence publishes final-sweep
+            // with noticeWaived; executedRequiredAmount stays 0 (mirror annual).
+            // Unreachable at currently supported projection start years; implement
+            // per the matrix regardless so a pre-2025 start never forces them.
+            take = 0
+          } else {
+            // Ledger reconciles the live balance, not the prior-year-end figure.
+            take = state.balance
+          }
         } else if (req.kind === 'none') {
           take = 0
         } else if (req.noticeWaived === true) {
@@ -9375,7 +9384,11 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     ): account is TraditionalAccount => {
       if (account.type !== 'traditional' || account.kind !== 'ira') return false
       if (account.inherited === undefined) return true
-      return isTreatAsOwnEffective(account, year)
+      if (!isTreatAsOwnEffective(account, year)) return false
+      // §1.408-8(c)(3): same-year death flip — owner aggregation begins the
+      // following year (mirrors pass-scoped `isAggregatedIraThisYear`).
+      if (year === account.inherited.ownerDeathYear) return false
+      return true
     }
     const annualSettlementPlan: Plan = {
       ...plan,

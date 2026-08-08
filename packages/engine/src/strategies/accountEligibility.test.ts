@@ -140,6 +140,7 @@ describe('contributions / convertibility / RMD eligibility', () => {
       },
     }, 2026)).toBe(false)
     expect(isTreatAsOwnEffective({
+      kind: 'ira',
       inherited: {
         beneficiary: {
           election: 'treat-as-own',
@@ -151,6 +152,7 @@ describe('contributions / convertibility / RMD eligibility', () => {
       },
     }, 2026)).toBe(true)
     expect(isTreatAsOwnEffective({
+      kind: 'ira',
       inherited: {
         beneficiary: {
           election: 'treat-as-own',
@@ -161,6 +163,19 @@ describe('contributions / convertibility / RMD eligibility', () => {
         },
       },
     }, 2025)).toBe(false)
+    // Inherited employer accounts never flip — matrix scope is IRAs only.
+    expect(isTreatAsOwnEffective({
+      kind: '401k',
+      inherited: {
+        beneficiary: {
+          election: 'treat-as-own',
+          treatAsOwnElectionYear: 2026,
+          edbCategory: 'surviving-spouse',
+          soleBeneficiary: true,
+          spouseUnlimitedWithdrawalRight: true,
+        },
+      },
+    }, 2026)).toBe(false)
   })
 })
 

@@ -425,6 +425,75 @@ describe('simulator owned non-Roth IRA exact annual settlement', () => {
     expect(JSON.stringify(settlements)).not.toMatch(/sourceIdentityInvalid|sourceCoverageInvalid/)
   })
 
+  it('P3: defers S2 settlement aggregation until the year after a same-year death flip', () => {
+    settlementController.calls.mockClear()
+    const plan = singlePersonPlan({ dob: '1950-01-01', planningAge: 80 })
+    plan.id = 'settled-s2-same-year-death-flip-deferral'
+    plan.accounts = [
+      ira('owner-ira', 10_000, 5_000),
+      {
+        // Basis stays on the spouse's own IRA above: an inherited IRA carries
+        // no modeled nondeductible basis (the beneficiary's 8606 is separate).
+        ...ira('s2-ira', 100_000, 0),
+        inherited: {
+          ownerDeathYear: TAX_YEAR,
+          decedentHadStartedRmds: true,
+          beneficiary: {
+            beneficiaryClass: 'designated-individual',
+            edbCategory: 'surviving-spouse',
+            beneficiaryBirthYear: 1950,
+            soleBeneficiary: true,
+            ownerBirthYear: 1945,
+            ownerYearOfDeathRmdSatisfied: true,
+            election: 'treat-as-own',
+            spouseUnlimitedWithdrawalRight: true,
+            treatAsOwnElectionYear: TAX_YEAR,
+            provenance: { source: 'test', asOf: '2026-01-01' },
+          },
+        },
+      },
+    ]
+
+    const result = project(plan, TAX_YEAR + 1)
+    for (const [calendarYear, expectS2InOwnerRmd] of [
+      [TAX_YEAR, false],
+      [TAX_YEAR + 1, true],
+    ] as const) {
+      const year = result.years.find((candidate) => candidate.year === calendarYear)!
+      // The replay chains from the plan's balances, so a later year must be
+      // fed its own opening balances (the prior year's closing map) — the same
+      // adjustment the in-run settlement applies per year.
+      const prior = result.years.find((candidate) => candidate.year === calendarYear - 1)
+      const replayPlan = prior === undefined
+        ? plan
+        : {
+            ...plan,
+            accounts: plan.accounts.map((account) =>
+              'balance' in account && prior.balances[account.id] !== undefined
+                ? { ...account, balance: prior.balances[account.id]! }
+                : account),
+          }
+      const replay = replayOwnedNonRothIraContiguousYears(
+        validatePlan(replayPlan), calendarYear, [year],
+      )
+      expect(replay.status).toBe('ownedNonRothIraContiguousReplayComplete')
+      if (replay.status !== 'ownedNonRothIraContiguousReplayComplete') {
+        throw new Error(`expected complete replay, received ${replay.status}`)
+      }
+      const owner = replay.annualReplays[0]!.ownerReplays[0]!
+      const line7 = owner.line7AllocationEvidence
+      const s2Allocation = line7.allocations.find(
+        (allocation) => allocation.sourceAccountId === 's2-ira',
+      )
+      if (expectS2InOwnerRmd) {
+        expect(year.rmd).toBeGreaterThan(0)
+        expect(s2Allocation).toBeDefined()
+      } else {
+        expect(s2Allocation).toBeUndefined()
+      }
+    }
+  })
+
   it('linearizes an empty incumbent from the committed post-growth ratio', () => {
     const plan = singlePersonPlan({ planningAge: 60 })
     plan.id = 'settled-optimizer-empty-incumbent'

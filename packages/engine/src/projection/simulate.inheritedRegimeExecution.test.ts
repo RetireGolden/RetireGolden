@@ -426,4 +426,21 @@ describe('WS4 inherited-regime execution fixtures', () => {
     expect(executed.executedRequiredAmount).toBe(0)
     expect(year(result as ReturnType<typeof run>, 2024).inheritedDistribution).toBe(0)
   })
+
+  it('P7: stamps pre-horizon year-of-death RMD limitation on the legacy refusal path', () => {
+    const plan = planFor(1950)
+    inherited(plan, 'traditional', {
+      ownerDeathYear: 2019,
+      decedentHadStartedRmds: true,
+      beneficiary: facts({
+        beneficiaryBirthYear: 1950,
+        ownerBirthYear: 1940,
+        ownerYearOfDeathRmdSatisfied: false,
+      }),
+    })
+    const result = run(plan, 2026)
+    const row = evidence(result, 2026)
+    expect(row.regime).toBe('legacy-planning-approximation')
+    expect(row.limitation).toBe('pre-horizon-year-of-death-rmd-unresolved')
+  })
 })

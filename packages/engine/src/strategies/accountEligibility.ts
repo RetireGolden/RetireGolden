@@ -1169,8 +1169,8 @@ export const HSA_NON_QUALIFIED_PENALTY_RATE = 0.2
 /**
  * Whether a spouse's explicit treat-as-own election has taken effect for an
  * account in a calendar year. Mirrors the classifier's S2 structural gate
- * (`classifyInheritedRegime` in strategies/inheritedIra.ts): edbCategory
- * `'surviving-spouse'`, soleBeneficiary true, spouseUnlimitedWithdrawalRight
+ * (`classifyInheritedRegime` in strategies/inheritedIra.ts): IRA kind only,
+ * edbCategory `'surviving-spouse'`, soleBeneficiary true, spouseUnlimitedWithdrawalRight
  * true, election `'treat-as-own'`, and a defined `treatAsOwnElectionYear` with
  * `year >=` it. A fact set the classifier would refuse never flips. This
  * intentionally does not rewire the static eligibility predicates below;
@@ -1178,7 +1178,9 @@ export const HSA_NON_QUALIFIED_PENALTY_RATE = 0.2
  */
 export function isTreatAsOwnEffective(
   account: Readonly<{
+    kind?: string | undefined
     inherited?: Readonly<{
+      ownerDeathYear?: number | undefined
       beneficiary?: Readonly<{
         election?: string | undefined
         treatAsOwnElectionYear?: number | undefined
@@ -1191,14 +1193,26 @@ export function isTreatAsOwnEffective(
   year: number,
 ): boolean {
   const beneficiary = account.inherited?.beneficiary
-  return (
-    beneficiary?.election === 'treat-as-own' &&
-    beneficiary.edbCategory === 'surviving-spouse' &&
-    beneficiary.soleBeneficiary === true &&
-    beneficiary.spouseUnlimitedWithdrawalRight === true &&
-    beneficiary.treatAsOwnElectionYear !== undefined &&
-    year >= beneficiary.treatAsOwnElectionYear
-  )
+  if (
+    account.kind !== 'ira' ||
+    beneficiary?.election !== 'treat-as-own' ||
+    beneficiary.edbCategory !== 'surviving-spouse' ||
+    beneficiary.soleBeneficiary !== true ||
+    beneficiary.spouseUnlimitedWithdrawalRight !== true ||
+    beneficiary.treatAsOwnElectionYear === undefined
+  ) {
+    return false
+  }
+  // A death-year election leaves the death year itself to the decedent's own
+  // RMD (§1.408-8(c)(3): the spouse owes no owner RMD that year and takes the
+  // decedent's unsatisfied amount instead); owner treatment begins the
+  // following calendar year. Every consumer — ledger, settlement, replay,
+  // inventory — takes this one boundary from here.
+  const effectiveFromYear =
+    beneficiary.treatAsOwnElectionYear === account.inherited?.ownerDeathYear
+      ? beneficiary.treatAsOwnElectionYear + 1
+      : beneficiary.treatAsOwnElectionYear
+  return year >= effectiveFromYear
 }
 
 /**
