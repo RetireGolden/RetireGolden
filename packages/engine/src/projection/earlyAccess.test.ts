@@ -432,4 +432,65 @@ describe('inherited IRA — SECURE Act 10-year rule', () => {
     expect(y2026.withdrawals.traditional).toBeGreaterThanOrEqual(40_000 - 1)
     expect(y2026.penalties).toBe(0)
   })
+
+  it('produces the same projection for a traditional inherited account with or without beneficiary facts', () => {
+    // WS2 carries the beneficiary block but does not consume it — the legacy
+    // forced-distribution path is pinned unchanged.
+    const base = inheritedPlan({ decedentHadStartedRmds: true, baseAnnual: 5_000, withCash: true })
+    const withoutFacts = parsePlan(base)
+    expect(withoutFacts.ok).toBe(true)
+    if (!withoutFacts.ok) return
+
+    const withFactsPlan = structuredClone(base)
+    const inh = withFactsPlan.accounts.find((a) => a.id === 'inh1')
+    if (inh && inh.type === 'traditional' && inh.inherited) {
+      inh.inherited = {
+        ...inh.inherited,
+        beneficiary: {
+          beneficiaryClass: 'designated-individual',
+          edbCategory: 'none',
+          beneficiaryBirthYear: 1976,
+          soleBeneficiary: true,
+          ownerBirthYear: 1948,
+          ownerYearOfDeathRmdSatisfied: true,
+          provenance: { source: 'ws2-pin', asOf: '2026-08-08' },
+        },
+      }
+    }
+    const withFacts = parsePlan(withFactsPlan)
+    expect(withFacts.ok).toBe(true)
+    if (!withFacts.ok) return
+
+    const left = simulatePlan(withoutFacts.plan, { startYear: 2026, taxCalculator: noTax })
+    const right = simulatePlan(withFacts.plan, { startYear: 2026, taxCalculator: noTax })
+    expect(right.years.map((y) => ({
+      year: y.year,
+      inheritedDistribution: y.inheritedDistribution,
+      rmd: y.rmd,
+      withdrawalsTraditional: y.withdrawals.traditional,
+      balancesInh: y.balances['inh1'] ?? 0,
+      netWorth: y.netWorth,
+      investableTotal: y.investableTotal,
+    }))).toEqual(left.years.map((y) => ({
+      year: y.year,
+      inheritedDistribution: y.inheritedDistribution,
+      rmd: y.rmd,
+      withdrawalsTraditional: y.withdrawals.traditional,
+      balancesInh: y.balances['inh1'] ?? 0,
+      netWorth: y.netWorth,
+      investableTotal: y.investableTotal,
+    })))
+  })
+
+  it('refuses a hand-built inherited Roth at simulatePlan entry', () => {
+    const plan = inheritedPlan({ decedentHadStartedRmds: false, baseAnnual: 5_000, withCash: true })
+    const traditional = plan.accounts[0]!
+    plan.accounts[0] = { ...traditional, type: 'roth', kind: 'ira' } as Account
+    const before = structuredClone(plan)
+
+    expect(() => simulatePlan(plan, { startYear: 2026, taxCalculator: noTax })).toThrowError(
+      /regime matrix K1\/K2.*parse-level refusal/,
+    )
+    expect(plan).toEqual(before)
+  })
 })

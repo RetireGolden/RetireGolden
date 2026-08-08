@@ -860,6 +860,95 @@
                   },
                   "decedentHadStartedRmds": {
                     "type": "boolean"
+                  },
+                  "beneficiary": {
+                    "type": "object",
+                    "properties": {
+                      "beneficiaryClass": {
+                        "type": "string",
+                        "enum": [
+                          "designated-individual",
+                          "estate",
+                          "trust",
+                          "entity",
+                          "successor-beneficiary"
+                        ]
+                      },
+                      "edbCategory": {
+                        "type": "string",
+                        "enum": [
+                          "none",
+                          "surviving-spouse",
+                          "minor-child",
+                          "disabled",
+                          "chronically-ill",
+                          "not-more-than-10-years-younger"
+                        ]
+                      },
+                      "beneficiaryBirthYear": {
+                        "type": "integer",
+                        "minimum": 1900,
+                        "maximum": 2200
+                      },
+                      "soleBeneficiary": {
+                        "type": "boolean"
+                      },
+                      "election": {
+                        "type": "string",
+                        "enum": [
+                          "none",
+                          "remain-beneficiary",
+                          "treat-as-own",
+                          "ten-year-election"
+                        ]
+                      },
+                      "spouseUnlimitedWithdrawalRight": {
+                        "type": "boolean"
+                      },
+                      "ownerBirthYear": {
+                        "type": "integer",
+                        "minimum": 1900,
+                        "maximum": 2200
+                      },
+                      "ownerBirthMonth": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 12
+                      },
+                      "ownerBirthDay": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 31
+                      },
+                      "ownerYearOfDeathRmdSatisfied": {
+                        "type": "boolean"
+                      },
+                      "roth5YearStartYear": {
+                        "type": "integer",
+                        "minimum": 1900,
+                        "maximum": 2200
+                      },
+                      "provenance": {
+                        "type": "object",
+                        "properties": {
+                          "source": {
+                            "type": "string"
+                          },
+                          "asOf": {
+                            "type": "string",
+                            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                          }
+                        },
+                        "required": [
+                          "source",
+                          "asOf"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "beneficiaryClass",
+                      "provenance"
+                    ]
                   }
                 },
                 "required": [
@@ -1332,6 +1421,112 @@
               "contributionBasis": {
                 "type": "number",
                 "minimum": 0
+              },
+              "inherited": {
+                "type": "object",
+                "properties": {
+                  "ownerDeathYear": {
+                    "type": "integer",
+                    "minimum": 1900,
+                    "maximum": 2200
+                  },
+                  "decedentHadStartedRmds": {
+                    "type": "boolean"
+                  },
+                  "beneficiary": {
+                    "type": "object",
+                    "properties": {
+                      "beneficiaryClass": {
+                        "type": "string",
+                        "enum": [
+                          "designated-individual",
+                          "estate",
+                          "trust",
+                          "entity",
+                          "successor-beneficiary"
+                        ]
+                      },
+                      "edbCategory": {
+                        "type": "string",
+                        "enum": [
+                          "none",
+                          "surviving-spouse",
+                          "minor-child",
+                          "disabled",
+                          "chronically-ill",
+                          "not-more-than-10-years-younger"
+                        ]
+                      },
+                      "beneficiaryBirthYear": {
+                        "type": "integer",
+                        "minimum": 1900,
+                        "maximum": 2200
+                      },
+                      "soleBeneficiary": {
+                        "type": "boolean"
+                      },
+                      "election": {
+                        "type": "string",
+                        "enum": [
+                          "none",
+                          "remain-beneficiary",
+                          "treat-as-own",
+                          "ten-year-election"
+                        ]
+                      },
+                      "spouseUnlimitedWithdrawalRight": {
+                        "type": "boolean"
+                      },
+                      "ownerBirthYear": {
+                        "type": "integer",
+                        "minimum": 1900,
+                        "maximum": 2200
+                      },
+                      "ownerBirthMonth": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 12
+                      },
+                      "ownerBirthDay": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 31
+                      },
+                      "ownerYearOfDeathRmdSatisfied": {
+                        "type": "boolean"
+                      },
+                      "roth5YearStartYear": {
+                        "type": "integer",
+                        "minimum": 1900,
+                        "maximum": 2200
+                      },
+                      "provenance": {
+                        "type": "object",
+                        "properties": {
+                          "source": {
+                            "type": "string"
+                          },
+                          "asOf": {
+                            "type": "string",
+                            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                          }
+                        },
+                        "required": [
+                          "source",
+                          "asOf"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "beneficiaryClass",
+                      "provenance"
+                    ]
+                  }
+                },
+                "required": [
+                  "ownerDeathYear",
+                  "decedentHadStartedRmds"
+                ]
               },
               "employerMatch": {
                 "type": "object",
@@ -5704,6 +5899,21 @@
     "hsa reimburse-later accumulation requires the capByMedicalExpenses withdrawal treatment.",
     "property depreciationRecapture requires a costBasis; a HECM line of credit requires a primary residence.",
     "an estateBeneficiary charity destination requires charityPct.",
+    "inherited Roth accounts are refused by accountSchema and simulatePlan (regime matrix K1/K2); this is temporary until the inherited-Roth regime engine is executable.",
+    "an EDB category other than 'none' requires beneficiaryClass 'designated-individual'.",
+    "remain-beneficiary and treat-as-own elections require edbCategory 'surviving-spouse'.",
+    "a ten-year-election requires an EDB category other than 'none'.",
+    "treat-as-own requires edbCategory 'surviving-spouse' and soleBeneficiary true; an explicitly false spouseUnlimitedWithdrawalRight is rejected, while an omitted one parses and classifies needs-review downstream.",
+    "edbCategory 'minor-child' is rejected when beneficiary age is at least 22 in the owner death year by year arithmetic.",
+    "edbCategory 'not-more-than-10-years-younger' is rejected only when the beneficiary is clearly more than 10 years younger than the owner by year arithmetic.",
+    "ownerYearOfDeathRmdSatisfied is allowed only for a post-RBD decedent (decedentHadStartedRmds true).",
+    "election 'ten-year-election' is refused for post-RBD deaths (decedentHadStartedRmds true).",
+    "beneficiaryClass 'designated-individual' requires beneficiaryBirthYear and edbCategory.",
+    "beneficiary ownerBirthYear cannot be after ownerDeathYear; an owner cannot be born after their own death (equality is permitted at year precision).",
+    "when ownerBirthYear, ownerBirthMonth, and ownerBirthDay are all present they must form a real calendar date; ownerBirthDay requires ownerBirthMonth, and ownerBirthMonth plus ownerBirthDay require ownerBirthYear.",
+    "beneficiary provenance.source must contain at least one non-whitespace character, and provenance.asOf must be a real ISO calendar date (YYYY-MM-DD).",
+    "beneficiaryClass 'designated-individual' requires soleBeneficiary; non-individual and successor classes may omit it.",
+    "the designated-individual beneficiaryBirthYear cannot be after ownerDeathYear; successor beneficiaries and non-individual classes are exempt from this chronology check.",
     "account allocation weights must sum to 100% (±0.5); a linear glidepath must end after it starts.",
     "a qualified annuity purchase must be funded from an owned (non-inherited) traditional account; a non-qualified purchase from cash/taxable/equity-comp; a QLAC must be a qualified purchase; a joint-and-survivor payout form requires a two-person household.",
     "a pension lump-sum election requires a lump-sum offer and must roll over into an existing owned (non-inherited) traditional account; its election year cannot precede the calendar year in the plan’s updatedAtIso stamp.",

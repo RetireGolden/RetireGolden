@@ -462,15 +462,391 @@ export const seppElectionSchema = z.object({
 })
 
 /**
+ * Explicit beneficiary facts for an inherited IRA (regime matrix §2). Asserted
+ * by the plan author; the classifier never infers legal status from age or
+ * relationship alone. Absent on a traditional inherited account ⇒ the labeled
+ * `legacy-planning-approximation` path (migration never fabricates these facts).
+ */
+export const inheritedBeneficiarySchema = z
+  .object({
+    /**
+     * Who stands as beneficiary of the account. Non-individual and successor
+     * classes are out of scope for the regime engine (matrix X2/X3).
+     * @see Treas. Reg. §1.401(a)(9)-4(c)
+     */
+    beneficiaryClass: z.enum([
+      'designated-individual',
+      'estate',
+      'trust',
+      'entity',
+      'successor-beneficiary',
+    ]),
+    /**
+     * Eligible designated beneficiary category fixed at the owner's death.
+     * Asserted, not inferred — the engine may check arithmetic consistency for
+     * minor-child and not-more-than-10-years-younger, but never promotes into
+     * disabled/chronically-ill.
+     * @see IRC §401(a)(9)(E)(ii); Treas. Reg. §1.401(a)(9)-4(e)
+     */
+    edbCategory: z
+      .enum([
+        'none',
+        'surviving-spouse',
+        'minor-child',
+        'disabled',
+        'chronically-ill',
+        'not-more-than-10-years-younger',
+      ])
+      .optional(),
+    /**
+     * Beneficiary's calendar year of birth. Required for designated-individual
+     * life-expectancy regimes and consistency checks; non-individual classes
+     * and successor beneficiaries may not have a birth year.
+     */
+    beneficiaryBirthYear: calendarYear.optional(),
+    /**
+     * Whether this beneficiary is the account's sole beneficiary. Required for
+     * designated-individual beneficiaries (and for spouse treat-as-own); estates,
+     * trusts, entities, and successors may omit it. Multiple beneficiaries without
+     * separate-account facts are unsupported (matrix X4).
+     * @see Treas. Reg. §1.401(a)(9)-8(a)
+     */
+    soleBeneficiary: z.boolean().optional(),
+    /**
+     * Explicit beneficiary distribution election. Spouse-only values
+     * (`remain-beneficiary`, `treat-as-own`) and the EDB `ten-year-election`
+     * are constrained by refinements below; never inferred from inactivity.
+     * @see Treas. Reg. §1.401(a)(9)-3(c)(5); §1.408-8(c)
+     */
+    election: z
+      .enum(['none', 'remain-beneficiary', 'treat-as-own', 'ten-year-election'])
+      .optional(),
+    /**
+     * Surviving spouse has an unlimited withdrawal right — a precondition of
+     * the treat-as-own election.
+     * @see Treas. Reg. §1.408-8(c)(1)
+     */
+    spouseUnlimitedWithdrawalRight: z.boolean().optional(),
+    /**
+     * Decedent's calendar year of birth. Needed for RBD derivation and the
+     * greater-of life-expectancy arm when death is on/after the RBD. Year
+     * precision alone can leave the before/on-after-RBD answer ambiguous; that
+     * is a needs-review classification downstream, not a parse error.
+     * @see IRC §401(a)(9)(C); Treas. Reg. §1.401(a)(9)-5(d)(1)(ii)
+     */
+    ownerBirthYear: calendarYear.optional(),
+    /**
+     * Decedent's birth month (1–12). Matters only when the RBD boundary turns
+     * on month precision (e.g. the July 1, 1949 70½ cutoff). Year-only ambiguity
+     * classifies needs-review downstream — not a parse error.
+     */
+    ownerBirthMonth: z.number().int().min(1).max(12).optional(),
+    /**
+     * Decedent's birth day (1–31). Day precision matters only at the July 1,
+     * 1949 70½ boundary and similar date-exact cutoffs; year/month ambiguity
+     * classifies needs-review downstream.
+     */
+    ownerBirthDay: z.number().int().min(1).max(31).optional(),
+    /**
+     * Whether the decedent's unsatisfied year-of-death RMD was already taken.
+     * Required for correct year-0 scheduling when death is on/after the RBD;
+     * unknown/`false` means the schedule must carry it.
+     * @see Treas. Reg. §1.408-8(e)(4)(i)
+     */
+    ownerYearOfDeathRmdSatisfied: z.boolean().optional(),
+    /**
+     * Calendar year of the owner's first Roth contribution — starts the
+     * 5-taxable-year period for inherited-Roth taxability evidence (matrix K3).
+     * @see Treas. Reg. §1.408A-6, A-4, A-14(c)
+     */
+    roth5YearStartYear: calendarYear.optional(),
+    /**
+     * Provenance for the facts above: who/what asserted them and as-of which
+     * ISO calendar date (review workflows).
+     */
+    provenance: z.object({
+      source: z.string().refine((value) => value.trim().length > 0, {
+        message: 'provenance.source must be non-blank after trimming; provide the asserting source',
+      }),
+      asOf: z
+        .string()
+        .regex(isoDateRe, 'provenance.asOf must be an ISO date (YYYY-MM-DD)')
+        .refine(
+          (value) => parseCivilIsoDate(value) !== null,
+          'provenance.asOf must be a real calendar date (YYYY-MM-DD)',
+        ),
+    }),
+  })
+  .superRefine((beneficiary, ctx) => {
+    if (
+      beneficiary.beneficiaryClass === 'designated-individual' &&
+      beneficiary.beneficiaryBirthYear === undefined
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['beneficiaryBirthYear'],
+        message:
+          "beneficiaryBirthYear is required when beneficiaryClass is 'designated-individual'; provide the beneficiary's birth year for the life-expectancy regime and consistency checks",
+      })
+    }
+
+    if (
+      beneficiary.beneficiaryClass === 'designated-individual' &&
+      beneficiary.edbCategory === undefined
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['edbCategory'],
+        message:
+          "edbCategory is required when beneficiaryClass is 'designated-individual'; set an EDB category (or 'none' for a non-EDB designated beneficiary)",
+      })
+    }
+
+    // EDB categories exist only for designated individuals (matrix §2 / X5).
+    if (
+      beneficiary.beneficiaryClass !== 'designated-individual' &&
+      beneficiary.edbCategory != null &&
+      beneficiary.edbCategory !== 'none'
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['edbCategory'],
+        message:
+          "edbCategory other than 'none' applies only when beneficiaryClass is 'designated-individual'; set beneficiaryClass to 'designated-individual' or set edbCategory to 'none'",
+      })
+    }
+
+    if (
+      beneficiary.beneficiaryClass === 'designated-individual' &&
+      beneficiary.soleBeneficiary === undefined
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['soleBeneficiary'],
+        message:
+          "soleBeneficiary is required when beneficiaryClass is 'designated-individual'; set it to true or false",
+      })
+    }
+
+    if (beneficiary.ownerBirthDay !== undefined && beneficiary.ownerBirthMonth === undefined) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['ownerBirthMonth'],
+        message:
+          'ownerBirthMonth is required when ownerBirthDay is provided; supply the birth month or remove the birth day',
+      })
+    }
+
+    if (
+      beneficiary.ownerBirthYear === undefined &&
+      beneficiary.ownerBirthMonth !== undefined &&
+      beneficiary.ownerBirthDay !== undefined
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['ownerBirthYear'],
+        message:
+          'ownerBirthYear is required when ownerBirthMonth and ownerBirthDay are both provided; supply the birth year or remove the date components',
+      })
+    }
+
+    if (
+      beneficiary.ownerBirthYear !== undefined &&
+      beneficiary.ownerBirthMonth !== undefined &&
+      beneficiary.ownerBirthDay !== undefined
+    ) {
+      const date = new Date(
+        Date.UTC(beneficiary.ownerBirthYear, beneficiary.ownerBirthMonth - 1, beneficiary.ownerBirthDay),
+      )
+      if (
+        date.getUTCFullYear() !== beneficiary.ownerBirthYear ||
+        date.getUTCMonth() !== beneficiary.ownerBirthMonth - 1 ||
+        date.getUTCDate() !== beneficiary.ownerBirthDay
+      ) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['ownerBirthDay'],
+          message:
+            'ownerBirthYear, ownerBirthMonth, and ownerBirthDay must form a real calendar date; correct the owner birth date components',
+        })
+      }
+    }
+
+    const election = beneficiary.election
+    if (election !== undefined && election !== 'none') {
+      if (election === 'remain-beneficiary' || election === 'treat-as-own') {
+        if (beneficiary.edbCategory !== 'surviving-spouse') {
+          ctx.addIssue({
+            code: 'custom',
+            path: ['election'],
+            message: `election '${election}' requires edbCategory 'surviving-spouse'; set edbCategory to 'surviving-spouse' or clear/change the election`,
+          })
+        }
+      } else if (election === 'ten-year-election') {
+        // Allowed for any EDB category except none (spouse or non-spouse EDB).
+        if (beneficiary.edbCategory === 'none') {
+          ctx.addIssue({
+            code: 'custom',
+            path: ['election'],
+            message:
+              "election 'ten-year-election' requires an EDB category other than 'none'; set edbCategory to an eligible designated beneficiary class or clear the election",
+          })
+        }
+      }
+    }
+
+    if (election === 'treat-as-own' && beneficiary.soleBeneficiary !== true) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['soleBeneficiary'],
+        message:
+          "election 'treat-as-own' requires soleBeneficiary true (§1.408-8(c)(1)); set soleBeneficiary to true or choose a different election",
+      })
+    }
+
+    // spouseUnlimitedWithdrawalRight absent/undefined stays parse-legal — the
+    // classifier marks needs-review when treat-as-own is asserted without it.
+    if (
+      election === 'treat-as-own' &&
+      beneficiary.spouseUnlimitedWithdrawalRight === false
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['spouseUnlimitedWithdrawalRight'],
+        message:
+          "election 'treat-as-own' requires spouseUnlimitedWithdrawalRight true (§1.408-8(c)(1)); set spouseUnlimitedWithdrawalRight to true or choose a different election",
+      })
+    }
+
+    // Year-arithmetic contradiction only: the reg measures birth-date to
+    // birth-date (§1.401(a)(9)-4(e)(6)), so a boundary-year tie (exactly 10
+    // years by year subtraction) is NOT rejected here.
+    if (
+      beneficiary.edbCategory === 'not-more-than-10-years-younger' &&
+      beneficiary.beneficiaryClass === 'designated-individual' &&
+      beneficiary.ownerBirthYear !== undefined &&
+      beneficiary.beneficiaryBirthYear !== undefined &&
+      beneficiary.beneficiaryBirthYear > beneficiary.ownerBirthYear + 10
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['edbCategory'],
+        message:
+          "edbCategory 'not-more-than-10-years-younger' is contradicted by birth years (beneficiary more than 10 years younger than the owner by year arithmetic; §1.401(a)(9)-4(e)(6) measures birth-date to birth-date, so only a clear >10-year gap is a parse error) — correct ownerBirthYear, beneficiaryBirthYear, or edbCategory",
+      })
+    }
+  })
+export type InheritedBeneficiary = z.infer<typeof inheritedBeneficiarySchema>
+
+/**
  * Inherited (beneficiary) account under the SECURE Act 10-year rule (roadmap
  * V8). Optional — omitted means a normal owned account, so no migration needed.
+ *
+ * The two legacy fields (`ownerDeathYear`, `decedentHadStartedRmds`) are the
+ * pre-WS2 planning approximation. When `beneficiary` is omitted the account
+ * remains the labeled `legacy-planning-approximation` (regime matrix X1 /
+ * missing-facts handling); migration never fabricates a beneficiary block.
  */
-export const inheritedAccountSchema = z.object({
-  /** Calendar year the original owner died (starts the 10-year clock). */
-  ownerDeathYear: calendarYear,
-  /** Decedent had reached their required beginning date → annual RMDs in years 1–9. */
-  decedentHadStartedRmds: z.boolean(),
-})
+export const inheritedAccountSchema = z
+  .object({
+    /** Calendar year the original owner died (starts the 10-year clock). */
+    ownerDeathYear: calendarYear,
+    /**
+     * Asserted required-beginning-date-status fact: whether the decedent had
+     * started RMDs, as this field has meant since the two-field era. The WS3
+     * classifier derives death-vs-RBD from ownerBirthYear/month and death year
+     * and marks any contradiction with this assertion needs-review; the
+     * parse-level coherence refinements below intentionally read this asserted
+     * fact.
+     */
+    decedentHadStartedRmds: z.boolean(),
+    /**
+     * Explicit beneficiary facts (regime matrix §2). Optional on traditional
+     * inherited accounts: without this block the account remains the labeled
+     * `legacy-planning-approximation` and migration never fabricates it. Required
+     * on Roth inherited accounts (see Roth refinements on accountSchema).
+     */
+    beneficiary: inheritedBeneficiarySchema.optional(),
+  })
+  .superRefine((inherited, ctx) => {
+    const beneficiary = inherited.beneficiary
+    if (beneficiary === undefined) return
+
+    if (
+      beneficiary.ownerBirthYear !== undefined &&
+      beneficiary.ownerBirthYear > inherited.ownerDeathYear
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['beneficiary', 'ownerBirthYear'],
+        message:
+          'ownerBirthYear cannot be after ownerDeathYear (the owner cannot be born after their own death); correct ownerBirthYear or ownerDeathYear',
+      })
+    }
+
+    // A designated beneficiary born after the calendar year of death cannot
+    // have been a designated beneficiary as of the date of death
+    // (§1.401(a)(9)-4(c)). Successor beneficiaries may be born later under
+    // §401(a)(9)(H)(iii), and non-individual classes have no birth year.
+    if (
+      beneficiary.beneficiaryClass === 'designated-individual' &&
+      beneficiary.beneficiaryBirthYear !== undefined &&
+      beneficiary.beneficiaryBirthYear > inherited.ownerDeathYear
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['beneficiary', 'beneficiaryBirthYear'],
+        message:
+          'beneficiaryBirthYear cannot be after ownerDeathYear (a designated beneficiary must be alive on the date of death, §1.401(a)(9)-4(c)) — correct beneficiaryBirthYear or ownerDeathYear',
+      })
+    }
+
+    // Minor-child EDB ends at the 21st birthday (§1.401(a)(9)-4(e)(3)). At year
+    // precision, age exactly 21 attained in the death year is ambiguous (the
+    // beneficiary may still have been 20 on the date of death); parse rejects
+    // only clear contradictions (age ≥ 22 by year arithmetic) and the
+    // classifier marks year-precision ambiguity needs-review.
+    if (
+      beneficiary.beneficiaryClass === 'designated-individual' &&
+      beneficiary.edbCategory === 'minor-child' &&
+      beneficiary.beneficiaryBirthYear !== undefined
+    ) {
+      const ageInDeathYear = inherited.ownerDeathYear - beneficiary.beneficiaryBirthYear
+      if (ageInDeathYear >= 22) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['beneficiary', 'edbCategory'],
+          message:
+            "edbCategory 'minor-child' is contradicted by beneficiaryBirthYear (age ≥ 22 in the owner death year; majority is the 21st birthday, §1.401(a)(9)-4(e)(3)) — correct beneficiaryBirthYear, ownerDeathYear, or edbCategory",
+        })
+      }
+    }
+
+    if (
+      beneficiary.ownerYearOfDeathRmdSatisfied !== undefined &&
+      !inherited.decedentHadStartedRmds
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['beneficiary', 'ownerYearOfDeathRmdSatisfied'],
+        message:
+          'ownerYearOfDeathRmdSatisfied applies only when decedentHadStartedRmds is true (year-of-death RMD facts exist only for on/after-RBD deaths, Treas. Reg. §1.408-8(e)(4)(i)); set decedentHadStartedRmds to true or remove ownerYearOfDeathRmdSatisfied',
+      })
+    }
+
+    if (
+      beneficiary.election === 'ten-year-election' &&
+      inherited.decedentHadStartedRmds
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['beneficiary', 'election'],
+        message:
+          "election 'ten-year-election' applies only when decedentHadStartedRmds is false (the §1.401(a)(9)-3(c)(5)(iii) election exists only in the death-before-RBD regime; regime matrix S3x); set decedentHadStartedRmds to false or clear the election",
+      })
+    }
+  })
+export type InheritedAccount = z.infer<typeof inheritedAccountSchema>
 
 export const traditionalAccountSchema = z.object({
   ...accountBase,
@@ -521,6 +897,16 @@ export const rothAccountSchema = z.object({
    * add to basis; in-projection conversions start their own 5-year seasoning clocks.
    */
   contributionBasis: nonNegative.optional(),
+  /**
+   * Inherited (beneficiary) Roth IRA facts. Recognized by the schema per the
+   * regime matrix (inherited Roth arms K1/K2), but not yet executable — the
+   * projection refuses an inherited Roth until the regime engine lands. When
+   * present, the block MUST carry full `beneficiary` facts (the legacy
+   * two-field approximation never covered Roth) and `decedentHadStartedRmds`
+   * must be false (a Roth owner is always treated as dying before the RBD,
+   * §1.408A-6 A-14(b)).
+   */
+  inherited: inheritedAccountSchema.optional(),
   employerMatch: employerMatchSchema.optional(),
   contributionSchedule: z.array(contributionPhaseSchema).optional(),
   /** Opt-in class allocation; supersedes annualReturnPct. Rebalancing here is tax-free. */
@@ -813,6 +1199,33 @@ export const accountSchema = accountUnionSchema.superRefine((account, ctx) => {
       path: ['employerMatch'],
       message: 'Employer match can only be set on employer retirement accounts.',
     })
+  }
+  // Inherited Roth: schema-recognized (regime matrix K1/K2) but not yet
+  // executable — reject at parse so no plan carrying one reaches simulatePlan.
+  // The refinements below document the expected shape for WS3.
+  if (account.type === 'roth' && account.inherited !== undefined) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['inherited'],
+      message:
+        'inherited Roth accounts are schema-defined (regime matrix K1/K2) but not yet executable; remove the inherited block until the regime engine lands',
+    })
+    if (account.inherited.beneficiary === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['inherited', 'beneficiary'],
+        message:
+          'an inherited Roth account must carry beneficiary facts (the legacy two-field approximation never covered Roth); supply beneficiaryClass, edbCategory, beneficiaryBirthYear, soleBeneficiary, and provenance',
+      })
+    }
+    if (account.inherited.decedentHadStartedRmds === true) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['inherited', 'decedentHadStartedRmds'],
+        message:
+          'a Roth inherited account cannot have decedentHadStartedRmds true (a Roth owner is always treated as dying before the RBD, §1.408A-6 A-14(b)); set decedentHadStartedRmds to false',
+      })
+    }
   }
 })
 export type Account = z.infer<typeof accountSchema>
