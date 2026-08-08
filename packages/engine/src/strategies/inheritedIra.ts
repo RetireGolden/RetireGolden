@@ -426,12 +426,11 @@ function factConsistencyScreen(input: {
  */
 export function classifyInheritedRegime(input: {
   accountType: 'traditional' | 'roth'
-  /** Omitted → IRA (existing callers). Employer plans are refused before X1. */
-  accountKind?: 'ira' | 'employer'
+  /** IRA vs employer plan; employer plans are refused before X1. */
+  accountKind: 'ira' | 'employer'
   inherited: InheritedAccount
 }): InheritedRegimeResult {
-  const { accountType, inherited } = input
-  const accountKind = input.accountKind ?? 'ira'
+  const { accountType, accountKind, inherited } = input
   const deathYear = inherited.ownerDeathYear
   const b = inherited.beneficiary
 
@@ -523,6 +522,15 @@ export function classifyInheritedRegime(input: {
   const consistency = factConsistencyScreen(input)
   if ('kind' in consistency) return consistency
   const baseDisclosures = [...consistency.disclosures]
+
+  // Roth is always before-RBD (§1.408A-6, A-14(b)); an asserted post-RBD fact is contradictory.
+  if (accountType === 'roth' && inherited.decedentHadStartedRmds) {
+    return refusal(
+      'needs-review',
+      'X5',
+      'decedentHadStartedRmds true is contradictory for an inherited Roth account (Treas. Reg. §1.408A-6, A-14(b) treats a Roth owner as dying before the RBD; the account has no lifetime RMDs and cannot have started RMDs) — set decedentHadStartedRmds to false',
+    )
+  }
 
   // RBD derivation — traditional only. Roth is always before-RBD (§1.408A-6, A-14(b)).
   let rbdComparison: 'before-rbd' | 'on-or-after-rbd'
@@ -1384,8 +1392,11 @@ export function spouseTreatAsOwnCatchUp(input: {
 
   const spouseAttainYears = applicableAgeAttainYears(b.beneficiaryBirthYear)
   const ownerAttainYears = applicableAgeAttainYears(b.ownerBirthYear, b.ownerBirthMonth)
+  const deathClampedStart = inherited.ownerDeathYear + 1
   const firstApplicableCandidates = new Set(
-    spouseAttainYears.flatMap((s) => ownerAttainYears.map((o) => Math.max(s, o))),
+    spouseAttainYears.flatMap((s) =>
+      ownerAttainYears.map((o) => Math.max(s, o, deathClampedStart)),
+    ),
   )
   if (firstApplicableCandidates.size > 1) {
     throw new Error(
@@ -1393,12 +1404,13 @@ export function spouseTreatAsOwnCatchUp(input: {
     )
   }
 
-  // §1.402(c)-2(j)(4)(iv): later of the two applicable-age years, but no
-  // earlier than the first distribution calendar year after death.
-  const firstApplicableYear = Math.max(
-    [...firstApplicableCandidates][0]!,
-    inherited.ownerDeathYear + 1,
-  )
+  const firstApplicableYear = [...firstApplicableCandidates][0]!
+
+  if (electionYear < inherited.ownerDeathYear) {
+    throw new Error(
+      'spouse treat-as-own catch-up cannot apply when electionYear precedes ownerDeathYear (a spouse cannot elect before inheriting); supply electionYear on or after the owner\'s death year',
+    )
+  }
   // §1.408-8(c)(1)(iii): the bar exists only in years the (j)(4) rule would
   // apply — an election before the first applicable year needs no catch-up.
   if (electionYear < firstApplicableYear) return []

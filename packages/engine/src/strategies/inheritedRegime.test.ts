@@ -49,7 +49,7 @@ function classification(
   accountType: 'traditional' | 'roth',
   account: InheritedAccount,
 ): InheritedRegimeClassification {
-  const result = classifyInheritedRegime({ accountType, inherited: account })
+  const result = classifyInheritedRegime({ accountType, accountKind: 'ira', inherited: account })
   expect(result.kind).toBe('regime')
   if (result.kind !== 'regime') throw new Error(result.reason)
   return result
@@ -348,6 +348,7 @@ describe('WS3 fixture F9: born-1959 sensitivity', () => {
 
     const contested = classifyInheritedRegime({
       accountType: 'traditional',
+      accountKind: 'ira',
       inherited: inherited(2033, true, beneficiary({
         ownerBirthYear: 1959,
         beneficiaryBirthYear: 1990,
@@ -362,6 +363,7 @@ describe('WS3 fixture F9: born-1959 sensitivity', () => {
 
     const spouse = classifyInheritedRegime({
       accountType: 'traditional',
+      accountKind: 'ira',
       inherited: inherited(2020, false, beneficiary({
         ownerBirthYear: 1959,
         beneficiaryBirthYear: 1962,
@@ -379,6 +381,7 @@ describe('WS3 fixture F9: born-1959 sensitivity', () => {
     for (const accountType of ['traditional', 'roth'] as const) {
       const unknownOwner = classifyInheritedRegime({
         accountType,
+        accountKind: 'ira',
         inherited: inherited(2020, false, beneficiary({
           ownerBirthYear: undefined,
           beneficiaryBirthYear: 1962,
@@ -404,7 +407,7 @@ describe('WS3 fixture F10: X precedence and refusals', () => {
     refusal: string,
     reasonFragment: string,
   ) {
-    const result = classifyInheritedRegime({ accountType, inherited: account })
+    const result = classifyInheritedRegime({ accountType, accountKind: 'ira', inherited: account })
     expect(result.kind).toBe('refusal')
     if (result.kind === 'refusal') {
       expect(result.row).toBe(row)
@@ -461,6 +464,11 @@ describe('WS3 fixture F10: X precedence and refusals', () => {
     expectRefusal('traditional', inherited(2024, false, beneficiary({
       beneficiaryBirthYear: undefined,
     })), 'X5', 'needs-review', 'beneficiaryBirthYear')
+
+    expectRefusal('roth', inherited(2024, true, beneficiary({
+      beneficiaryBirthYear: 1980,
+      ownerBirthYear: 1945,
+    })), 'X5', 'needs-review', 'decedentHadStartedRmds true is contradictory for an inherited Roth')
 
     expectRefusal('traditional', inherited(2024, true, beneficiary({
       ownerBirthYear: 1945, beneficiaryBirthYear: 1947,
@@ -536,7 +544,7 @@ describe('WS3 fixture F11: parsed completeness join', () => {
 
                           let result: ReturnType<typeof classifyInheritedRegime> | undefined
                           expect(() => {
-                            result = classifyInheritedRegime({ accountType, inherited: parsed.data })
+                            result = classifyInheritedRegime({ accountType, accountKind: 'ira', inherited: parsed.data })
                           }).not.toThrow()
                           expect(result).toBeDefined()
                           expect(result!.kind === 'regime' || result!.kind === 'refusal').toBe(true)
@@ -575,21 +583,21 @@ describe('WS3 fixture F11: parsed completeness join', () => {
 
     expect(tally).toMatchInlineSnapshot(`
       {
-        "K1": 128,
-        "K2": 936,
+        "K1": 64,
+        "K2": 468,
         "R1": 24,
         "R2": 40,
         "R3": 360,
         "R3a": 292,
         "S0": 72,
         "S1": 36,
-        "S2": 90,
+        "S2": 60,
         "S3": 96,
         "X1": 77160,
         "X2": 960,
         "X3": 2880,
         "X4": 3120,
-        "X5": 37286,
+        "X5": 37848,
       }
     `)
   })
@@ -692,6 +700,51 @@ describe('WS3 fixtures F12 and F13', () => {
       spouseWasUnderTenYearRule: false,
       priorYearEndBalancesByYear: {},
     })).toEqual([])
+
+    expect(() => spouseTreatAsOwnCatchUp({
+      pack,
+      accountType: 'traditional',
+      inherited: inherited(2021, false, beneficiary({
+        ownerBirthYear: 1950,
+        beneficiaryBirthYear: 1951,
+        edbCategory: 'surviving-spouse',
+        election: 'treat-as-own',
+        spouseUnlimitedWithdrawalRight: true,
+      })),
+      electionYear: 2020,
+      spouseWasUnderTenYearRule: true,
+      priorYearEndBalancesByYear: {},
+    })).toThrow('electionYear precedes ownerDeathYear')
+
+    const born1949Account = inherited(2020, false, beneficiary({
+      ownerBirthYear: 1949,
+      beneficiaryBirthYear: 1949,
+      edbCategory: 'surviving-spouse',
+      election: 'treat-as-own',
+      spouseUnlimitedWithdrawalRight: true,
+    }))
+    expect(spouseTreatAsOwnCatchUp({
+      pack,
+      accountType: 'traditional',
+      inherited: born1949Account,
+      electionYear: 2020,
+      spouseWasUnderTenYearRule: true,
+      priorYearEndBalancesByYear: {},
+    })).toEqual([])
+    const born1949CatchUp = spouseTreatAsOwnCatchUp({
+      pack,
+      accountType: 'traditional',
+      inherited: born1949Account,
+      electionYear: 2023,
+      spouseWasUnderTenYearRule: true,
+      priorYearEndBalancesByYear: {
+        2021: 100_000,
+        2022: 100_000,
+        2023: 100_000,
+      },
+    })
+    expect(born1949CatchUp).toHaveLength(3)
+    expect(born1949CatchUp[0]!.year).toBe(2021)
 
     expect(() => spouseTreatAsOwnCatchUp({
       pack,
