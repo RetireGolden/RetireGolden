@@ -520,6 +520,13 @@ export interface OptimizerYearProbe {
    */
   ssProvisionalIncomeAddbacks: number
   /**
+   * The year's characterized tax-exempt interest as the realized-MAGI history
+   * counts it (IRMAA lookback). Kept separate from `ssProvisionalIncomeAddbacks`
+   * because §86 adds both exempt interest and the foreign exclusion while IRMAA
+   * MAGI adds only the former.
+   */
+  magiTaxExemptInterest: number
+  /**
    * Realized capital gains + qualified dividends at the probe run, EXCLUDING
    * gains from taxable-account withdrawals (the optimizer re-decides those as
    * its own variable, so including them would double-count). Counts toward the

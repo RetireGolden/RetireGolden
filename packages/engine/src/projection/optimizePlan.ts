@@ -593,6 +593,7 @@ export function buildOptimizerInput(plan: Plan, opts: OptimizePlanOptions, probe
           }
         : undefined,
       capitalGainsBase: p.capitalGainsBase,
+      magiTaxExemptInterest: p.magiTaxExemptInterest,
       acaMagiMax:
         p.acaConversionMagiHeadroom === null ||
         (p.acaModeledAllowablePtc ?? 0) <= 0 ||

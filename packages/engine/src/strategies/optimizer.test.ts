@@ -962,6 +962,112 @@ describe('IRMAA two-year lookback in the solve (Step 4)', () => {
   })
 })
 
+describe('IRMAA MAGI tax-exempt interest (WS3)', () => {
+  /** Right-hand-side constant of a named LP constraint. */
+  function rhs(lp: string, name: string): number {
+    const line = lp.split('\n').find((row) => row.startsWith(` ${name}:`))
+    if (line === undefined) throw new Error(`LP has no ${name} constraint`)
+    const parsed = /(?:>=|<=|=) (-?[\d.]+)$/.exec(line)
+    if (parsed === null) throw new Error(`Cannot read a right-hand side from "${line}"`)
+    return Number(parsed[1])
+  }
+
+  const threshold = PACK.medicare.irmaaTiers[0]!.magiOver.single
+  const EXEMPT = 6_000
+  // Baseline MAGI leaves `conversionHeadroom` to tier-1; with liquidationRate
+  // 0.24 the post-cliff gain (≈2¢/converted dollar above the 22% band) stays
+  // below the ~$1.1k tier-1 surcharge, so the optimum parks on the boundary.
+  const conversionHeadroom = 25_000
+  const magiBase = threshold - conversionHeadroom
+
+  const baseInput = (exempt?: number): OptimizerInput => ({
+    years: [year({
+      peopleAged65Plus: 1,
+      ordinaryIncomeBase: magiBase,
+      magiTaxExemptInterest: exempt,
+    })],
+    openingTrad: conversionHeadroom + 5_000,
+    openingInheritedTrad: 0,
+    openingOther: 50_000,
+    liquidationRate: 0.24,
+  })
+
+  it('IRMAA binary discriminates on exempt interest', async () => {
+    // Component folded into the IRMAA constant → boundary shifts down by E.
+    const withoutLp = buildOptimizerModel(baseInput()).lp
+    const withLp = buildOptimizerModel(baseInput(EXEMPT)).lp
+    expect(rhs(withLp, 'irmaa0_0') - rhs(withoutLp, 'irmaa0_0')).toBeCloseTo(-EXEMPT, 6)
+
+    // Omitted → identical conversions and a ledger-priced surcharge the LP
+    // never saw; folded → both solves park at tier-0 with E less headroom.
+    const [withoutSolve, withSolve] = await Promise.all([
+      optimizeSchedule(baseInput()),
+      optimizeSchedule(baseInput(EXEMPT)),
+    ])
+    expect(withoutSolve.status).toBe('optimal')
+    expect(withSolve.status).toBe('optimal')
+    expect(withoutSolve.schedule[0]!.irmaaTier).toBe(0)
+    expect(withSolve.schedule[0]!.irmaaTier).toBe(0)
+    const conversionDelta =
+      withoutSolve.schedule[0]!.conversion - withSolve.schedule[0]!.conversion
+    expect(conversionDelta).toBeGreaterThanOrEqual(EXEMPT - 1_000)
+    expect(conversionDelta).toBeLessThanOrEqual(EXEMPT + 1_000)
+
+    // Both solves park on the tier-0 boundary (not merely a consistent delta).
+    const tier0Headroom = threshold - magiBase
+    expect(Math.abs(withoutSolve.schedule[0]!.conversion - tier0Headroom))
+      .toBeLessThanOrEqual(1_000)
+    expect(Math.abs(withSolve.schedule[0]!.conversion - (tier0Headroom - EXEMPT)))
+      .toBeLessThanOrEqual(1_000)
+  })
+
+  it('folds lookback-source exempt interest into the premium-year IRMAA constant', () => {
+    const y65 = { peopleAged65Plus: 1 }
+    const lookbackBase = (over: {
+      y0Exempt?: number
+      y1Exempt?: number
+      ssa44?: boolean
+    } = {}): OptimizerInput => ({
+      years: [
+        year({ ...y65, magiTaxExemptInterest: over.y0Exempt }),
+        year({ ...y65, magiTaxExemptInterest: over.y1Exempt }),
+        year({ ...y65, ssa44Redetermination: over.ssa44 }),
+      ],
+      openingTrad: 500_000,
+      openingInheritedTrad: 0,
+      openingOther: 500_000,
+      liquidationRate: 0.5,
+      irmaaLookback: true,
+    })
+
+    // Year 2 premium is driven by year 0 MAGI (t−2 lookback).
+    const withoutExempt = buildOptimizerModel(lookbackBase()).lp
+    const withYear0Exempt = buildOptimizerModel(lookbackBase({ y0Exempt: EXEMPT })).lp
+    expect(rhs(withYear0Exempt, 'irmaa2_0') - rhs(withoutExempt, 'irmaa2_0')).toBeCloseTo(-EXEMPT, 6)
+    const lookbackLine = withYear0Exempt.split('\n').find((l) => l.includes(' irmaa2_0:'))!
+    expect(lookbackLine).toContain('conv0')
+    expect(lookbackLine).not.toContain('conv2')
+
+    // SSA-44 shifts the source to year 1: year-0 exempt is invisible there.
+    const ssa44NoExempt = buildOptimizerModel(lookbackBase({ ssa44: true })).lp
+    const ssa44Year0Exempt = buildOptimizerModel(lookbackBase({ y0Exempt: EXEMPT, ssa44: true })).lp
+    expect(rhs(ssa44Year0Exempt, 'irmaa2_0')).toBe(rhs(ssa44NoExempt, 'irmaa2_0'))
+    const ssa44Year1Exempt = buildOptimizerModel(lookbackBase({ y1Exempt: EXEMPT, ssa44: true })).lp
+    expect(rhs(ssa44Year1Exempt, 'irmaa2_0') - rhs(ssa44NoExempt, 'irmaa2_0')).toBeCloseTo(-EXEMPT, 6)
+    const ssa44Line = ssa44Year1Exempt.split('\n').find((l) => l.includes(' irmaa2_0:'))!
+    expect(ssa44Line).toContain('conv1')
+    expect(ssa44Line).not.toContain('conv0')
+  })
+
+  it('emits a byte-identical LP when exempt interest is zero or absent', () => {
+    const absent = buildOptimizerModel(baseInput()).lp
+    expect(buildOptimizerModel(baseInput(0)).lp).toBe(absent)
+    const stripped = { ...baseInput().years[0]! }
+    delete stripped.magiTaxExemptInterest
+    expect(buildOptimizerModel({ ...baseInput(), years: [stripped] }).lp).toBe(absent)
+  })
+})
+
 describe('hand-computed economic optima', () => {
   it('drains traditional when the terminal haircut exceeds every bracket', async () => {
     // 1 year, no growth/spending/income. Converting moves trad -> Roth and incurs

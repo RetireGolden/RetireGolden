@@ -7759,6 +7759,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         ssBenefits: incomes.socialSecurity,
         taxableSsBase: taxableSs,
         ssProvisionalIncomeAddbacks: yearTaxExemptInterest + acaForeignExclusionAddback,
+        magiTaxExemptInterest: yearTaxExemptInterest,
         // Includes fixed taxable-action character, but excludes residual legacy
         // taxable-withdrawal realizations: the optimizer re-decides those draws
         // as its own `wtax` variable and adds their gain share itself.

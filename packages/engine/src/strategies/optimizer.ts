@@ -266,6 +266,13 @@ export interface OptimizerYear {
    */
   capitalGainsBase?: number
   /**
+   * Characterized tax-exempt interest counted in the exact ledger's IRMAA
+   * lookback MAGI (`magiHistory`). Folded into the IRMAA binary's threshold
+   * constant, not `magiBase` (senior-deduction phase-out must not pick it up).
+   * Absent or zero emits a byte-identical LP.
+   */
+  magiTaxExemptInterest?: number
+  /**
    * Maximum modeled total MAGI that preserves the actionable current-year ACA
    * result. This constrains the same MAGI expression used by the optimizer's
    * IRMAA model, including taxable-SS phase-in and taxable withdrawals.
@@ -818,10 +825,11 @@ export function buildOptimizerModel(input: OptimizerInput): BuiltModel {
     if (hasIrmaaBinaries) {
       const srcTerms = magiTerms[irmaaSrc]!
       const srcBase = magiBase[irmaaSrc]!
+      const srcExempt = input.years[irmaaSrc]?.magiTaxExemptInterest ?? 0
       irmaa.forEach((tier, k) => {
         const thr = tier.threshold(y.filingStatus) * y.inflationScale
         const step: Terms = { ...srcTerms, [irmaaVars[k]!]: -bigM }
-        constraints.push(` irmaa${t}_${k}: ${expr(step)} <= ${fmt(thr - srcBase)}`)
+        constraints.push(` irmaa${t}_${k}: ${expr(step)} <= ${fmt(thr - srcBase - srcExempt)}`)
         binaries.push(irmaaVars[k]!)
       })
     }
@@ -886,6 +894,9 @@ export function buildOptimizerModel(input: OptimizerInput): BuiltModel {
     }
 
     if (y.acaMagiMax !== undefined) {
+      // Delta-constructed: `acaMagiMax` embeds incumbent ledger MAGI (which
+      // already includes exempt interest) minus the same LP `magiBase`, so the
+      // exempt component cancels and this constraint needs no separate term.
       constraints.push(
         ` acamagi${t}: ${expr(myMagiTerms)} <= ${fmt(Math.max(0, y.acaMagiMax) - magiBase[t]!)}`,
       )
