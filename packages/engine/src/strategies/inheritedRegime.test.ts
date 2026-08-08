@@ -162,6 +162,40 @@ describe('WS3 year-of-death joint-life divisor', () => {
   })
 })
 
+describe('WS3 year-of-death CARES 2020 waiver', () => {
+  it('returns none for a 2020 death year — calendar-year-2020 RMDs were waived entirely', () => {
+    const account = inherited(2020, true, beneficiary({
+      ownerBirthYear: 1940,
+      beneficiaryBirthYear: 1965,
+      edbCategory: 'surviving-spouse',
+      election: 'remain-beneficiary',
+      ownerYearOfDeathRmdSatisfied: false,
+    }))
+    const result = classification('traditional', account)
+    const yearOfDeath = requirement(result, account, 2020)
+
+    expect(yearOfDeath.kind).toBe('none')
+    expect(yearOfDeath.requiredAmount).toBe(0)
+    expect(yearOfDeath.citations).toContain('IRC §401(a)(9)(I) (CARES Act §2203)')
+  })
+
+  it('keeps the pre-2022-tables limitation for a 2021 death year', () => {
+    const account = inherited(2021, true, beneficiary({
+      ownerBirthYear: 1940,
+      beneficiaryBirthYear: 1965,
+      edbCategory: 'surviving-spouse',
+      election: 'remain-beneficiary',
+      ownerYearOfDeathRmdSatisfied: false,
+    }))
+    const result = classification('traditional', account)
+    const yearOfDeath = requirement(result, account, 2021)
+
+    expect(yearOfDeath.kind).toBe('year-of-death-rmd')
+    expect(yearOfDeath.requiredAmount).toBe(0)
+    expect(yearOfDeath.limitation).toBe('pre-2022-tables-not-carried')
+  })
+})
+
 describe('WS3 fixture F3: spouse redetermination', () => {
   it('redetermines the spouse arm rather than subtracting one from its prior value', () => {
     const account = inherited(2024, true, beneficiary({
@@ -456,6 +490,12 @@ describe('WS3 fixture F10: X precedence and refusals', () => {
       roth5YearStartYear: 2023,
     })), 'X5', 'needs-review', 'roth5YearStartYear 2023 is after ownerDeathYear 2022')
 
+    expectRefusal('roth', inherited(2022, false, beneficiary({
+      ownerBirthYear: 1970,
+      beneficiaryBirthYear: 1980,
+      roth5YearStartYear: 1965,
+    })), 'X5', 'needs-review', 'roth5YearStartYear 1965 is before ownerBirthYear 1970')
+
     const exactTen = classification('traditional', inherited(2022, false, beneficiary({
       ownerBirthYear: 1970, beneficiaryBirthYear: 1980,
       edbCategory: 'not-more-than-10-years-younger',
@@ -723,9 +763,9 @@ describe('WS3 fixtures F12 and F13', () => {
       priorYearEndBalancesByYear: {},
     })).toThrow('electionYear precedes ownerDeathYear')
 
-    const born1949Account = inherited(2020, false, beneficiary({
-      ownerBirthYear: 1949,
-      beneficiaryBirthYear: 1949,
+    const born1950Account = inherited(2020, false, beneficiary({
+      ownerBirthYear: 1950,
+      beneficiaryBirthYear: 1950,
       edbCategory: 'surviving-spouse',
       election: 'treat-as-own',
       spouseUnlimitedWithdrawalRight: true,
@@ -733,25 +773,39 @@ describe('WS3 fixtures F12 and F13', () => {
     expect(spouseTreatAsOwnCatchUp({
       pack,
       accountType: 'traditional',
-      inherited: born1949Account,
+      inherited: born1950Account,
       electionYear: 2020,
       spouseWasUnderTenYearRule: true,
       priorYearEndBalancesByYear: {},
     })).toEqual([])
-    const born1949CatchUp = spouseTreatAsOwnCatchUp({
+    const born1950CatchUp = spouseTreatAsOwnCatchUp({
       pack,
       accountType: 'traditional',
-      inherited: born1949Account,
+      inherited: born1950Account,
       electionYear: 2023,
       spouseWasUnderTenYearRule: true,
       priorYearEndBalancesByYear: {
-        2021: 100_000,
         2022: 100_000,
         2023: 100_000,
       },
     })
-    expect(born1949CatchUp).toHaveLength(3)
-    expect(born1949CatchUp[0]!.year).toBe(2021)
+    expect(born1950CatchUp).toHaveLength(2)
+    expect(born1950CatchUp[0]!.year).toBe(2022)
+
+    expect(() => spouseTreatAsOwnCatchUp({
+      pack,
+      accountType: 'traditional',
+      inherited: inherited(2019, false, beneficiary({
+        ownerBirthYear: 1950,
+        beneficiaryBirthYear: 1951,
+        edbCategory: 'surviving-spouse',
+        election: 'treat-as-own',
+        spouseUnlimitedWithdrawalRight: true,
+      })),
+      electionYear: 2023,
+      spouseWasUnderTenYearRule: true,
+      priorYearEndBalancesByYear: {},
+    })).toThrow('ownerDeathYear on or after 2020')
 
     expect(() => spouseTreatAsOwnCatchUp({
       pack,
@@ -790,14 +844,16 @@ describe('WS3 fixtures F12 and F13', () => {
       election: 'treat-as-own',
       spouseUnlimitedWithdrawalRight: true,
     }))
-    expect(spouseTreatAsOwnCatchUp({
+    const electionInDeathYear = spouseTreatAsOwnCatchUp({
       pack,
       accountType: 'traditional',
       inherited: clampAccount,
       electionYear: 2022,
       spouseWasUnderTenYearRule: true,
       priorYearEndBalancesByYear: { 2022: 100_000 },
-    })).toEqual([])
+    })
+    expect(electionInDeathYear).toHaveLength(1)
+    expect(electionInDeathYear[0]!.year).toBe(2022)
     const clampedCatchUp = spouseTreatAsOwnCatchUp({
       pack,
       accountType: 'traditional',
@@ -805,12 +861,13 @@ describe('WS3 fixtures F12 and F13', () => {
       electionYear: 2024,
       spouseWasUnderTenYearRule: true,
       priorYearEndBalancesByYear: {
+        2022: 100_000,
         2023: 100_000,
         2024: 100_000,
       },
     })
-    expect(clampedCatchUp).toHaveLength(2)
-    expect(clampedCatchUp[0]!.year).toBe(2023)
+    expect(clampedCatchUp).toHaveLength(3)
+    expect(clampedCatchUp[0]!.year).toBe(2022)
 
     expect(() => spouseTreatAsOwnCatchUp({
       pack,

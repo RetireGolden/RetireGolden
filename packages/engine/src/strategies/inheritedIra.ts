@@ -346,6 +346,18 @@ function factConsistencyScreen(input: {
     )
   }
 
+  if (
+    b.roth5YearStartYear !== undefined &&
+    b.ownerBirthYear !== undefined &&
+    b.roth5YearStartYear < b.ownerBirthYear
+  ) {
+    return refusal(
+      'needs-review',
+      'X5',
+      `roth5YearStartYear ${b.roth5YearStartYear} is before ownerBirthYear ${b.ownerBirthYear}; a first Roth contribution cannot precede the owner's birth — correct roth5YearStartYear or ownerBirthYear`,
+    )
+  }
+
   // Spouse-only elections with a non-spouse EDB category.
   if (
     (election === 'remain-beneficiary' || election === 'treat-as-own') &&
@@ -1041,9 +1053,17 @@ export function inheritedRequirementForYear(input: {
       b?.ownerYearOfDeathRmdSatisfied !== true &&
       b?.ownerBirthYear !== undefined
     ) {
-      // A 2020 or 2021 death-year RMD was computed under the formerly
-      // applicable tables (§1.401(a)(9)-9(f)(1)), which this engine does not
-      // carry — the amount is not computed rather than computed wrongly.
+      // Calendar-year-2020 RMDs were waived entirely (IRC §401(a)(9)(I), CARES
+      // Act §2203) — no death-year obligation exists for a 2020 death.
+      if (deathYear === 2020) {
+        return noneEvidence(year, [
+          ...citations,
+          'IRC §401(a)(9)(I) (CARES Act §2203)',
+        ])
+      }
+      // A 2021 death-year RMD was computed under the formerly applicable tables
+      // (§1.401(a)(9)-9(f)(1)), which this engine does not carry — the amount is
+      // not computed rather than computed wrongly.
       if (deathYear < 2022) {
         return {
           year,
@@ -1070,7 +1090,9 @@ export function inheritedRequirementForYear(input: {
         const ageGap = ownerAge - spouseAge
         if (ageGap > 10) {
           const joint = jointLifeTableDivisor(ownerAge, spouseAge)
-          if (joint !== undefined && divisor !== undefined && joint > divisor) {
+          // §1.401(a)(9)-5(c)(2)(i) selects the Joint table when the condition
+          // holds — not a greater-of against Uniform Lifetime.
+          if (joint !== undefined && joint > 0) {
             divisor = joint
             arm = 'joint-life'
             extraCitations.push('Treas. Reg. §1.401(a)(9)-5(c)(2)(i)')
@@ -1361,6 +1383,12 @@ export function spouseTreatAsOwnCatchUp(input: {
     )
   }
 
+  if (inherited.ownerDeathYear < 2020) {
+    throw new Error(
+      `spouse treat-as-own catch-up requires ownerDeathYear on or after 2020 (SECURE Act §401(b)(1) boundary); the §1.401(a)(9)-3(c)(3) ten-year rule is a SECURE Act regime for deaths after 12/31/2019 — ownerDeathYear ${inherited.ownerDeathYear} cannot have a spouse under it`,
+    )
+  }
+
   if (
     b === undefined ||
     b.edbCategory !== 'surviving-spouse' ||
@@ -1417,7 +1445,7 @@ export function spouseTreatAsOwnCatchUp(input: {
 
   const spouseAttainYears = applicableAgeAttainYears(b.beneficiaryBirthYear)
   const ownerAttainYears = applicableAgeAttainYears(b.ownerBirthYear, b.ownerBirthMonth)
-  const deathClampedStart = inherited.ownerDeathYear + 1
+  const deathClampedStart = inherited.ownerDeathYear
   const firstApplicableCandidates = new Set(
     spouseAttainYears.flatMap((s) =>
       ownerAttainYears.map((o) => Math.max(s, o, deathClampedStart)),

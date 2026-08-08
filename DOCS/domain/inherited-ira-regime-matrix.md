@@ -159,7 +159,8 @@ matrix must enumerate the join and prove it.
   Single Life amount. The denominator is the decedent's lifetime denominator: Uniform Lifetime at
   the owner's attained age, except that a sole-beneficiary spouse more than 10 years younger takes
   the Joint and Last Survivor Table (§1.401(a)(9)-5(c)(2)(i)) — a WS3 correction to this bullet's
-  earlier unconditional Uniform Lifetime statement.
+  earlier unconditional Uniform Lifetime statement. A 2020 death year carries no year-of-death RMD
+  at all (IRC §401(a)(9)(I), CARES Act §2203).
 - **Spouse treat-as-own catch-up.** A late S2 election first distributes the §1.408-8(c)(1)(iv)
   hypothetical RMDs of §1.402(c)-2(j)(4): spouse-as-employee Uniform Lifetime amounts at the
   spouse's attained age, from the later applicable-age year through the election year (see the S2
