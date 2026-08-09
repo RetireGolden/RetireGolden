@@ -862,4 +862,95 @@ describe('taxOpportunityView', () => {
       /year 2099|action /,
     )
   })
+
+  it('verifyTaxOpportunityViewBinding rejects tampered ledger and rmdPressure fields', () => {
+    const { baseline, proposal } = actionBearingPlans()
+    const { evaluation, view } = buildViewFromPlans(baseline, proposal)
+    const tamperedYear = view.years[0]!.year
+
+    const tamperedTax = asRecord(view)
+    const taxYears = tamperedTax['years'] as Array<Record<string, unknown>>
+    const taxLedger = taxYears[0]!['ledger'] as Record<string, unknown>
+    taxLedger['tax'] = (taxLedger['tax'] as number) + 1
+    const parsedTax = parseTaxOpportunityView(tamperedTax)
+    expect(() => verifyTaxOpportunityViewBinding(parsedTax, evaluation)).toThrow(
+      new RegExp(`year ${tamperedYear} ledger\\.tax diverges`),
+    )
+
+    const tamperedRmd = asRecord(view)
+    const rmdYears = tamperedRmd['years'] as Array<Record<string, unknown>>
+    const rmdPressure = rmdYears[0]!['rmdPressure'] as Record<string, unknown>
+    rmdPressure['required'] =
+      rmdPressure['required'] === null ? 1 : (rmdPressure['required'] as number) + 1
+    const parsedRmd = parseTaxOpportunityView(tamperedRmd)
+    expect(() => verifyTaxOpportunityViewBinding(parsedRmd, evaluation)).toThrow(
+      new RegExp(`year ${tamperedYear} rmdPressure\\.required diverges`),
+    )
+  })
+
+  it('builds baseline-only trailing years without proposal YearResult rows', () => {
+    const baseline = coupleWithCash()
+    baseline.household.people[0]!.longevity = { planningAge: 75, source: 'manual' }
+    baseline.household.people[1]!.longevity = { planningAge: 75, source: 'manual' }
+    const proposal = structuredClone(baseline)
+    proposal.household.people[0]!.longevity = { planningAge: 70, source: 'manual' }
+    proposal.household.people[1]!.longevity = { planningAge: 70, source: 'manual' }
+    const validatedBaseline = validatePlan(baseline)
+    const validatedProposal = validatePlan(proposal)
+
+    const comparison = compareScenarioPlans(validatedBaseline, validatedProposal, {
+      startYear: 2026,
+      taxCalculatorForPlan: () => noTax,
+    })
+    const evaluation = buildTaxStrategyEvaluation({
+      comparison,
+      objective: maximizeAfterTaxEstate,
+    })
+    const proposalResult = simulatePlan(validatedProposal, {
+      startYear: 2026,
+      taxCalculator: noTax,
+    })
+
+    const baselineOnlyRows = comparison.annual.filter((row) =>
+      Object.values(row.values).every((value) => value.proposal === null),
+    )
+    expect(baselineOnlyRows.length).toBeGreaterThan(0)
+    const trailingBaselineOnly = baselineOnlyRows[baselineOnlyRows.length - 1]!
+    expect(
+      proposalResult.years.some((year) => year.year === trailingBaselineOnly.year),
+    ).toBe(false)
+
+    const view = buildTaxOpportunityView({
+      evaluation,
+      proposalYears: proposalResult.years,
+    })
+
+    const trailingRow = view.years.find((row) => row.year === trailingBaselineOnly.year)!
+    expect(trailingRow.ledger).toEqual({
+      tax: null,
+      magi: null,
+      irmaaTier: null,
+      irmaaSurcharge: null,
+      rmd: null,
+      qcd: null,
+      rothConversion: null,
+      traditionalWithdrawals: null,
+      withdrawals: null,
+      inheritedRequired: null,
+      taxExemptInterest: null,
+      acaGrossEnrollmentPremium: null,
+      acaModeledAllowablePtc: null,
+      acaEconomicNetPremium: null,
+    })
+    expect(trailingRow.bracket).toBeNull()
+    expect(trailingRow.irmaa).toBeNull()
+    expect(trailingRow.aca).toBeNull()
+    expect(trailingRow.rmdPressure).toEqual({
+      required: null,
+      inheritedRequired: null,
+      traditionalWithdrawals: null,
+      qcd: null,
+    })
+    expect(() => verifyTaxOpportunityViewBinding(view, evaluation)).not.toThrow()
+  })
 })

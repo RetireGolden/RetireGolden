@@ -737,11 +737,18 @@ function yearResultAcaFigure(
   return aca[field] ?? 0
 }
 
+function isBaselineOnlyAnnualRow(
+  row: TaxStrategyEvaluation['comparison']['annual'][number],
+): boolean {
+  return Object.values(row.values).every((comparison) => comparison.proposal === null)
+}
+
 function bindProposalYears(
   evaluation: TaxStrategyEvaluation,
   proposalYears: readonly Readonly<YearResult>[],
 ): Map<number, Readonly<YearResult>> {
   const annual = evaluation.comparison.annual
+  const annualYearSet = new Set(annual.map((row) => row.year))
   const byYear = new Map<number, Readonly<YearResult>>()
   for (const yearResult of proposalYears) {
     if (byYear.has(yearResult.year)) {
@@ -751,7 +758,17 @@ function bindProposalYears(
     }
     byYear.set(yearResult.year, yearResult)
   }
+  for (const year of byYear.keys()) {
+    if (!annualYearSet.has(year)) {
+      throw new Error(
+        'buildTaxOpportunityView: proposalYears must cover every comparison.annual year exactly once',
+      )
+    }
+  }
   for (const row of annual) {
+    if (isBaselineOnlyAnnualRow(row)) {
+      continue
+    }
     const yearResult = byYear.get(row.year)
     if (yearResult === undefined) {
       throw new Error(
@@ -806,11 +823,6 @@ function bindProposalYears(
         )
       }
     }
-  }
-  if (byYear.size !== annual.length) {
-    throw new Error(
-      'buildTaxOpportunityView: proposalYears must cover every comparison.annual year exactly once',
-    )
   }
   return byYear
 }
@@ -968,8 +980,23 @@ export function buildTaxOpportunityView(
   const yearsByCalendar = bindProposalYears(evaluation, input.proposalYears)
 
   const years: TaxOpportunityYearRow[] = evaluation.comparison.annual.map((annualRow) => {
-    const yearResult = yearsByCalendar.get(annualRow.year)!
     const ledger = ledgerFromAnnualProposal(annualRow)
+    if (isBaselineOnlyAnnualRow(annualRow)) {
+      return {
+        year: annualRow.year,
+        ledger,
+        bracket: null,
+        irmaa: null,
+        aca: null,
+        rmdPressure: {
+          required: null,
+          inheritedRequired: null,
+          traditionalWithdrawals: null,
+          qcd: null,
+        },
+      }
+    }
+    const yearResult = yearsByCalendar.get(annualRow.year)!
     return {
       year: annualRow.year,
       ledger,
@@ -1028,9 +1055,21 @@ export function buildTaxOpportunityView(
   return deepFreezeTaxOpportunityView(parseTaxOpportunityView(draft))
 }
 
+const RMD_PRESSURE_LEDGER_FIELDS = [
+  ['required', 'rmd'],
+  ['inheritedRequired', 'inheritedRequired'],
+  ['traditionalWithdrawals', 'traditionalWithdrawals'],
+  ['qcd', 'qcd'],
+] as const satisfies ReadonlyArray<
+  readonly [keyof TaxOpportunityYearRow['rmdPressure'], keyof TaxOpportunityYearLedger]
+>
+
 /**
  * The schema proves internal coherence; only this binding check proves the view
  * says what the evaluation says. Consumers rendering readiness MUST call it.
+ *
+ * Bracket, IRMAA, and ACA sections are not verified here — they are derived from
+ * proposalYears, which this function deliberately does not take.
  */
 export function verifyTaxOpportunityViewBinding(
   view: TaxOpportunityView,
@@ -1079,6 +1118,26 @@ export function verifyTaxOpportunityViewBinding(
       `verifyTaxOpportunityViewBinding: years diverge from evaluation.comparison.annual` +
         (divergentYear === undefined ? '' : ` (year ${divergentYear})`),
     )
+  }
+
+  for (let index = 0; index < parsedEvaluation.comparison.annual.length; index++) {
+    const annualRow = parsedEvaluation.comparison.annual[index]!
+    const viewRow = view.years[index]!
+    const expectedLedger = ledgerFromAnnualProposal(annualRow)
+    for (const field of Object.keys(expectedLedger) as Array<keyof TaxOpportunityYearLedger>) {
+      if (viewRow.ledger[field] !== expectedLedger[field]) {
+        throw new Error(
+          `verifyTaxOpportunityViewBinding: year ${annualRow.year} ledger.${field} diverges from evaluation.comparison.annual`,
+        )
+      }
+    }
+    for (const [rmdField, ledgerField] of RMD_PRESSURE_LEDGER_FIELDS) {
+      if (viewRow.rmdPressure[rmdField] !== expectedLedger[ledgerField]) {
+        throw new Error(
+          `verifyTaxOpportunityViewBinding: year ${annualRow.year} rmdPressure.${rmdField} diverges from evaluation.comparison.annual`,
+        )
+      }
+    }
   }
 
   const seenViewActionIds = new Set<string>()
