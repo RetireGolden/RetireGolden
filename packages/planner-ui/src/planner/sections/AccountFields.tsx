@@ -285,7 +285,10 @@ function BeneficiaryDetails({
                     ...(mayElectTreatAsOwn ? [{ value: 'treat-as-own', label: 'Treat as own IRA' }] : []),
                     ...(mayElectTenYear ? [{ value: 'ten-year-election', label: 'Elect 10-year rule' }] : []),
                   ]}
-                  onCommit={(election) => {
+                  onCommit={(committed) => {
+                    // The select's options are drawn from the schema's own
+                    // election values, so the committed string narrows safely.
+                    const election = committed as NonNullable<InheritedBeneficiary['election']>
                     if (election === 'treat-as-own') {
                       commit({ ...beneficiary, election })
                       return
@@ -701,27 +704,30 @@ export function AccountFields({ account, index }: { account: Account; index: num
             <CheckboxField
               label="Owner had started RMDs"
               help="If the original owner had reached their required beginning date, you must also take an annual RMD in years 1–9 of the window (based on your single life expectancy), not just empty it by year 10."
-              value={account.inherited.decedentHadStartedRmds}
+              value={account.inherited!.decedentHadStartedRmds}
               onCommit={(v) => {
-                const ben = account.inherited.beneficiary
+                // The surrounding guard renders this control only when the
+                // inherited block exists; closures cannot carry the narrowing.
+                const inheritedBlock = account.inherited!
+                const ben = inheritedBlock.beneficiary
                 if (v || ben === undefined) {
                   if (v && ben?.election === 'ten-year-election') {
                     set('inherited', {
-                      ...account.inherited,
+                      ...inheritedBlock,
                       decedentHadStartedRmds: true,
                       beneficiary: { ...ben, election: undefined },
                     })
                     return
                   }
-                  set('inherited', { ...account.inherited, decedentHadStartedRmds: v })
+                  set('inherited', { ...inheritedBlock, decedentHadStartedRmds: v })
                   return
                 }
                 // year-of-death RMD satisfaction only applies when the owner
                 // had started RMDs; keep the fact set parse-valid on toggle-off.
-                const nextBeneficiary = { ...account.inherited.beneficiary }
+                const nextBeneficiary = { ...inheritedBlock.beneficiary }
                 delete nextBeneficiary.ownerYearOfDeathRmdSatisfied
                 set('inherited', {
-                  ...account.inherited,
+                  ...inheritedBlock,
                   decedentHadStartedRmds: false,
                   beneficiary: nextBeneficiary,
                 })
@@ -741,10 +747,10 @@ export function AccountFields({ account, index }: { account: Account; index: num
               ) : null}
               <BeneficiaryDetails
                 account={account}
-                inherited={account.inherited}
+                inherited={account.inherited!}
                 planningYear={planningYear}
                 onCommit={(inherited) => {
-                  const wasTreatAsOwn = account.inherited.beneficiary?.election === 'treat-as-own'
+                  const wasTreatAsOwn = account.inherited!.beneficiary?.election === 'treat-as-own'
                   const isTreatAsOwn = inherited.beneficiary?.election === 'treat-as-own'
                   if (account.type === 'traditional' && isTreatAsOwn && !wasTreatAsOwn) {
                     update((draft) => {

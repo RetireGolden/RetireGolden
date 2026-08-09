@@ -152,6 +152,11 @@ function rothAccount(overrides: Partial<Extract<Account, { type: 'roth' }>> = {}
   }
 }
 
+function inheritedOf(account: Account) {
+  if (account.type !== 'traditional' && account.type !== 'roth') throw new Error('expected a retirement account')
+  return account.inherited
+}
+
 function renderIssues(plan: Plan, issues: string[]) {
   container = document.createElement('div')
   document.body.appendChild(container)
@@ -337,9 +342,9 @@ describe('AccountFields inherited beneficiary details', () => {
     const account = mounted.plan.accounts[0]!
     expect(account.type).toBe('traditional')
     if (account.type !== 'traditional') throw new Error('expected traditional')
-    expect(account.inherited?.beneficiary?.election).toBe('remain-beneficiary')
-    expect(account.inherited?.beneficiary?.treatAsOwnElectionYear).toBeUndefined()
-    expect(account.inherited?.beneficiary?.spouseUnlimitedWithdrawalRight).toBeUndefined()
+    expect(inheritedOf(account)?.beneficiary?.election).toBe('remain-beneficiary')
+    expect(inheritedOf(account)?.beneficiary?.treatAsOwnElectionYear).toBeUndefined()
+    expect(inheritedOf(account)?.beneficiary?.spouseUnlimitedWithdrawalRight).toBeUndefined()
     const parsed = parsePlan(structuredClone(mounted.plan))
     expect(parsed.ok).toBe(true)
   })
@@ -378,10 +383,10 @@ describe('AccountFields inherited beneficiary details', () => {
     const account = mounted.plan.accounts[0]!
     expect(account.type).toBe('traditional')
     if (account.type !== 'traditional') throw new Error('expected traditional')
-    expect(account.inherited?.beneficiary?.edbCategory).toBe('disabled')
-    expect(account.inherited?.beneficiary?.election).toBeUndefined()
-    expect(account.inherited?.beneficiary?.treatAsOwnElectionYear).toBeUndefined()
-    expect(account.inherited?.beneficiary?.spouseUnlimitedWithdrawalRight).toBeUndefined()
+    expect(inheritedOf(account)?.beneficiary?.edbCategory).toBe('disabled')
+    expect(inheritedOf(account)?.beneficiary?.election).toBeUndefined()
+    expect(inheritedOf(account)?.beneficiary?.treatAsOwnElectionYear).toBeUndefined()
+    expect(inheritedOf(account)?.beneficiary?.spouseUnlimitedWithdrawalRight).toBeUndefined()
     const parsed = parsePlan(structuredClone(mounted.plan))
     expect(parsed.ok).toBe(true)
   })
@@ -420,10 +425,10 @@ describe('AccountFields inherited beneficiary details', () => {
     })
 
     const account = mounted.plan.accounts[0]!
-    expect(account.inherited?.beneficiary?.edbCategory).toBe('disabled')
-    expect(account.inherited?.beneficiary?.spouseUnlimitedWithdrawalRight).toBeUndefined()
-    expect(account.inherited?.beneficiary?.election).toBeUndefined()
-    expect(account.inherited?.beneficiary?.treatAsOwnElectionYear).toBeUndefined()
+    expect(inheritedOf(account)?.beneficiary?.edbCategory).toBe('disabled')
+    expect(inheritedOf(account)?.beneficiary?.spouseUnlimitedWithdrawalRight).toBeUndefined()
+    expect(inheritedOf(account)?.beneficiary?.election).toBeUndefined()
+    expect(inheritedOf(account)?.beneficiary?.treatAsOwnElectionYear).toBeUndefined()
     const parsed = parsePlan(structuredClone(mounted.plan))
     expect(parsed.ok).toBe(true)
   })
@@ -452,7 +457,7 @@ describe('AccountFields inherited beneficiary details', () => {
     })
 
     const account = mounted.plan.accounts[0]!
-    expect(account.inherited?.beneficiary?.soleBeneficiary).toBe(false)
+    expect(inheritedOf(account)?.beneficiary?.soleBeneficiary).toBe(false)
     const parsed = parsePlan(structuredClone(mounted.plan))
     expect(parsed.ok).toBe(true)
   })
@@ -485,8 +490,8 @@ describe('AccountFields inherited beneficiary details', () => {
     const account = mounted.plan.accounts[0]!
     expect(account.type).toBe('traditional')
     if (account.type !== 'traditional') throw new Error('expected traditional')
-    expect(account.inherited?.decedentHadStartedRmds).toBe(false)
-    expect(account.inherited?.beneficiary?.ownerYearOfDeathRmdSatisfied).toBeUndefined()
+    expect(inheritedOf(account)?.decedentHadStartedRmds).toBe(false)
+    expect(inheritedOf(account)?.beneficiary?.ownerYearOfDeathRmdSatisfied).toBeUndefined()
     const parsed = parsePlan(structuredClone(mounted.plan))
     expect(parsed.ok).toBe(true)
   })
@@ -516,8 +521,8 @@ describe('AccountFields inherited beneficiary details', () => {
     })
 
     const account = mounted.plan.accounts[0]!
-    expect(account.inherited?.decedentHadStartedRmds).toBe(true)
-    expect(account.inherited?.beneficiary?.election).toBeUndefined()
+    expect(inheritedOf(account)?.decedentHadStartedRmds).toBe(true)
+    expect(inheritedOf(account)?.beneficiary?.election).toBeUndefined()
     const parsed = parsePlan(structuredClone(mounted.plan))
     expect(parsed.ok).toBe(true)
   })
@@ -574,10 +579,10 @@ describe('AccountFields inherited beneficiary details', () => {
     })
 
     const account = mounted.plan.accounts[0]!
-    expect(account.inherited?.beneficiary?.soleBeneficiary).toBe(false)
-    expect(account.inherited?.beneficiary?.election).toBeUndefined()
-    expect(account.inherited?.beneficiary?.treatAsOwnElectionYear).toBeUndefined()
-    expect(account.inherited?.beneficiary?.spouseUnlimitedWithdrawalRight).toBeUndefined()
+    expect(inheritedOf(account)?.beneficiary?.soleBeneficiary).toBe(false)
+    expect(inheritedOf(account)?.beneficiary?.election).toBeUndefined()
+    expect(inheritedOf(account)?.beneficiary?.treatAsOwnElectionYear).toBeUndefined()
+    expect(inheritedOf(account)?.beneficiary?.spouseUnlimitedWithdrawalRight).toBeUndefined()
     const parsed = parsePlan(structuredClone(mounted.plan))
     expect(parsed.ok).toBe(true)
   })
@@ -633,9 +638,7 @@ describe('AccountFields inherited beneficiary details', () => {
       select.dispatchEvent(new Event('change', { bubbles: true }))
     })
 
-    const beneficiary = mounted.plan.accounts[0]!.type === 'traditional'
-      ? mounted.plan.accounts[0]!.inherited?.beneficiary
-      : undefined
+    const beneficiary = inheritedOf(mounted.plan.accounts[0]!)?.beneficiary
     expect(beneficiary?.beneficiaryClass).toBe('estate')
     expect(beneficiary?.ownerBirthYear).toBe(1945)
     expect(beneficiary?.ownerBirthMonth).toBe(6)
@@ -732,7 +735,7 @@ describe('AccountFields inherited beneficiary details', () => {
     const account = mounted.plan.accounts[0]!
     expect(account.type).toBe('traditional')
     if (account.type !== 'traditional') throw new Error('expected traditional')
-    expect(account.inherited).toBeDefined()
+    expect(inheritedOf(account)).toBeDefined()
     expect(account.sepp).toBeUndefined()
     expect(mounted.container().textContent).not.toContain('72(t) SEPP')
     const parsed = parsePlan(structuredClone(mounted.plan))
@@ -743,7 +746,7 @@ describe('AccountFields inherited beneficiary details', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-08-08T12:00:00Z'))
 
-    renderFields(planWithAccount(rothAccount({
+    const recentRoot = renderFields(planWithAccount(rothAccount({
       inherited: {
         ownerDeathYear: 2024,
         decedentHadStartedRmds: false,
@@ -757,7 +760,7 @@ describe('AccountFields inherited beneficiary details', () => {
         },
       },
     })))
-    expect(container?.querySelector('[data-testid="roth-five-year-incomplete-hint"]')?.textContent).toContain(
+    expect(recentRoot.querySelector('[data-testid="roth-five-year-incomplete-hint"]')?.textContent).toContain(
       'The five-year period may not be complete',
     )
 
@@ -766,7 +769,7 @@ describe('AccountFields inherited beneficiary details', () => {
     root = null
     container = null
 
-    renderFields(planWithAccount(rothAccount({
+    const oldStartRoot: HTMLElement = renderFields(planWithAccount(rothAccount({
       inherited: {
         ownerDeathYear: 2024,
         decedentHadStartedRmds: false,
@@ -780,7 +783,7 @@ describe('AccountFields inherited beneficiary details', () => {
         },
       },
     })))
-    expect(container?.querySelector('[data-testid="roth-five-year-incomplete-hint"]')).toBeNull()
+    expect(oldStartRoot.querySelector('[data-testid="roth-five-year-incomplete-hint"]')).toBeNull()
 
     vi.useRealTimers()
   })
@@ -818,7 +821,7 @@ describe('AccountFields inherited Roth contributions', () => {
     const account = mounted.plan.accounts[0]!
     expect(account.type).toBe('roth')
     if (account.type !== 'roth') throw new Error('expected roth')
-    expect(account.inherited).toBeDefined()
+    expect(inheritedOf(account)).toBeDefined()
     expect(account.annualContribution).toBe(0)
     expect(account.contributionSchedule).toBeUndefined()
     expect(mounted.container().textContent).toContain('Inherited accounts cannot receive contributions.')
@@ -858,7 +861,7 @@ describe('AccountFields inherited traditional treat-as-own contributions', () =>
     const account = mounted.plan.accounts[0]!
     expect(account.type).toBe('traditional')
     if (account.type !== 'traditional') throw new Error('expected traditional')
-    expect(account.inherited?.beneficiary?.election).toBe('treat-as-own')
+    expect(inheritedOf(account)?.beneficiary?.election).toBe('treat-as-own')
     expect(account.annualContribution).toBe(0)
     expect(account.contributionSchedule).toBeUndefined()
     expect(mounted.container().textContent).toContain('Inherited accounts cannot receive contributions.')

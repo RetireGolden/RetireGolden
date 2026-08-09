@@ -98,7 +98,7 @@ function yearWithEvidence(
     ladderValue: 0,
     deathBenefit: 0,
     netWorth: 0,
-  } as YearResult
+  } as unknown as YearResult // Fixture supplies only the fields InheritedSchedulesSection reads.
 }
 
 const identityAdj = (_year: number, v: number) => v
