@@ -900,16 +900,27 @@ function buildBracketSection(
   }
 }
 
+/**
+ * IRMAA lookback evidence copied from simulator-published `YearResult` fields.
+ *
+ * Full binding to an independent second source is impossible here by design:
+ * these fields exist only on the simulator output (no parallel column in the
+ * comparison), and reconstructing thresholds from pack tables / `inflationScale`
+ * is the second-truth defect this module explicitly refuses.
+ *
+ * Within the `proposalYears` trust boundary, the builder enforces coherence
+ * invariants on the published tuple instead. Consumers needing independent
+ * verification must obtain the projection from the simulator, not from an
+ * untrusted intermediary.
+ *
+ * Source/year ride with lookbackMagi so consumers can reject `planFallback`
+ * stand-ins. `irmaaNextTierThreshold === null` is published evidence (no
+ * Medicare activity or top tier) — only `undefined` is evidence-absent.
+ */
 function buildIrmaaSection(
   yearResult: Readonly<YearResult>,
   ledgerTier: number | null,
 ): TaxOpportunityYearRow['irmaa'] {
-  // Both lookback MAGI and the next-tier boundary must be simulator-published;
-  // reconstructing either from pack tables / inflationScale is a second truth
-  // source (non-constant inflation paths diverge from `inflFactorFrom`).
-  // Source/year ride with lookbackMagi so consumers can reject planFallback
-  // stand-ins. `irmaaNextTierThreshold === null` is published evidence (no
-  // Medicare activity or top tier) — only `undefined` is evidence-absent.
   if (
     yearResult.irmaaLookbackMagi === undefined ||
     yearResult.irmaaLookbackMagiSource === undefined ||
@@ -919,9 +930,38 @@ function buildIrmaaSection(
     return null
   }
 
+  const year = yearResult.year
   const lookbackMagi = yearResult.irmaaLookbackMagi
+  const lookbackYear = yearResult.irmaaLookbackMagiYear
   const nextTierThreshold = yearResult.irmaaNextTierThreshold
   const tier = ledgerTier ?? yearResult.irmaaTier
+
+  if (lookbackYear !== year - 1 && lookbackYear !== year - 2) {
+    throw new Error(
+      `buildTaxOpportunityView: year ${year} irmaaLookbackMagiYear must be year-1 or year-2`,
+    )
+  }
+
+  if (nextTierThreshold !== null) {
+    const { pack } = packForYear(year)
+    const topTierIndex = pack.medicare.irmaaTiers.length
+    if (tier >= topTierIndex) {
+      throw new Error(
+        `buildTaxOpportunityView: year ${year} irmaaNextTierThreshold requires tier below top`,
+      )
+    }
+    if (nextTierThreshold <= 0) {
+      throw new Error(
+        `buildTaxOpportunityView: year ${year} irmaaNextTierThreshold must be positive`,
+      )
+    }
+    if (lookbackMagi >= nextTierThreshold) {
+      throw new Error(
+        `buildTaxOpportunityView: year ${year} irmaaLookbackMagi must be below irmaaNextTierThreshold`,
+      )
+    }
+  }
+
   return {
     lookbackMagi,
     source: yearResult.irmaaLookbackMagiSource,
@@ -1069,7 +1109,11 @@ const RMD_PRESSURE_LEDGER_FIELDS = [
  * says what the evaluation says. Consumers rendering readiness MUST call it.
  *
  * Bracket, IRMAA, and ACA sections are not verified here — they are derived from
- * proposalYears, which this function deliberately does not take.
+ * proposalYears, which this function deliberately does not take. IRMAA lookback
+ * figures are simulator-single-source evidence inside the `proposalYears` trust
+ * boundary; `buildIrmaaSection` enforces coherence invariants on that tuple, and
+ * consumers needing independent verification must obtain the projection from the
+ * simulator, not from an untrusted intermediary.
  */
 export function verifyTaxOpportunityViewBinding(
   view: TaxOpportunityView,

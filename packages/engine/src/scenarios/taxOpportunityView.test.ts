@@ -429,6 +429,75 @@ describe('taxOpportunityView', () => {
     }
   })
 
+  it('rejects incoherent IRMAA lookback evidence and accepts genuine simulator rows', () => {
+    const { baseline, proposal } = actionBearingPlans()
+    const comparison = compareScenarioPlans(baseline, proposal, {
+      startYear: 2026,
+      taxCalculatorForPlan: () => noTax,
+    })
+    const evaluation = buildTaxStrategyEvaluation({
+      comparison,
+      objective: maximizeAfterTaxEstate,
+    })
+    const proposalResult = simulatePlan(proposal, {
+      startYear: 2026,
+      taxCalculator: noTax,
+    })
+
+    expect(() =>
+      buildTaxOpportunityView({
+        evaluation,
+        proposalYears: proposalResult.years,
+      }),
+    ).not.toThrow()
+
+    const withThreshold = proposalResult.years.find(
+      (year) =>
+        year.irmaaLookbackMagi !== undefined &&
+        year.irmaaNextTierThreshold !== undefined &&
+        year.irmaaNextTierThreshold !== null,
+    )
+    expect(withThreshold).toBeDefined()
+    const targetYear = withThreshold!.year
+    const threshold = withThreshold!.irmaaNextTierThreshold!
+
+    const lookbackAtBoundary = proposalResult.years.map((year) =>
+      year.year === targetYear
+        ? { ...year, irmaaLookbackMagi: threshold }
+        : year,
+    )
+    expect(() =>
+      buildTaxOpportunityView({
+        evaluation,
+        proposalYears: lookbackAtBoundary,
+      }),
+    ).toThrow(new RegExp(`year ${targetYear}.*irmaaLookbackMagi`))
+
+    const lookbackAboveBoundary = proposalResult.years.map((year) =>
+      year.year === targetYear
+        ? { ...year, irmaaLookbackMagi: threshold + 1 }
+        : year,
+    )
+    expect(() =>
+      buildTaxOpportunityView({
+        evaluation,
+        proposalYears: lookbackAboveBoundary,
+      }),
+    ).toThrow(new RegExp(`year ${targetYear}.*irmaaLookbackMagi`))
+
+    const invalidLookbackYear = proposalResult.years.map((year) =>
+      year.year === targetYear
+        ? { ...year, irmaaLookbackMagiYear: targetYear - 3 }
+        : year,
+    )
+    expect(() =>
+      buildTaxOpportunityView({
+        evaluation,
+        proposalYears: invalidLookbackYear,
+      }),
+    ).toThrow(new RegExp(`year ${targetYear}.*irmaaLookbackMagiYear`))
+  })
+
   it('populates irmaa sections from published lookback MAGI and next-tier threshold', () => {
     const { baseline, proposal } = actionBearingPlans()
     const { proposalResult, view } = buildViewFromPlans(baseline, proposal)
