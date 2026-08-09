@@ -14,6 +14,7 @@ import type {
   PlanId,
   UsdCents,
 } from '../actions/index.js'
+import type { FederalTaxDetail } from '../tax/federalTax.js'
 import type { SimulatorAnnualRetirementRuntimeOccurrence } from './annualRetirementRuntimeJournal.js'
 import type { CompleteSimulatorOwnedNonRothIraAnnualObservation } from
   './ownedNonRothIraAnnualObservation.js'
@@ -1420,6 +1421,53 @@ export interface YearResult {
   irmaaSurcharge: number
   /** IRMAA tier the year's Medicare premiums were priced at (0 = standard premium; 1–5 = surcharge tiers). */
   irmaaTier: number
+  /**
+   * MAGI figure the year's IRMAA tier decision actually read (SSA-44 / two-year
+   * lookback), not the current-year MAGI on `magi`. `simulatePlan` always
+   * publishes it; optionality preserves compatibility for external consumers
+   * that construct partial `YearResult` fixtures. Absence is evidence-absent —
+   * never approximate the lookback from `magi`.
+   */
+  irmaaLookbackMagi?: number
+  /**
+   * Which arm of the MAGI fallback chain
+   * (`magiHistory` → `historicalAnnualMagiByYear` → `recentAnnualMagi`)
+   * supplied the SELECTED lookback figure on `irmaaLookbackMagi`.
+   * `'planFallback'` is the coarse `recentAnnualMagi` stand-in (often 0) — not
+   * evidence for implementation claims. Published beside `irmaaLookbackMagi`
+   * whenever that field is; absence is evidence-absent.
+   */
+  irmaaLookbackMagiSource?: 'projected' | 'historicalInput' | 'planFallback'
+  /**
+   * Calendar year whose MAGI was selected for `irmaaLookbackMagi`. Under SSA-44
+   * `min(year-2, year-1)`, this is the year of the minimum (ties keep year-2).
+   * Published beside `irmaaLookbackMagi` whenever that field is; absence is
+   * evidence-absent.
+   */
+  irmaaLookbackMagiYear?: number
+  /**
+   * MAGI boundary the household would have to stay under to avoid the NEXT
+   * surcharge tier, priced by the simulator with its own inflation path and
+   * IRMAA filing status (POMS HI 01101.020 QSS-on-single mapping). `null` when
+   * no alive person had Medicare months this year (pre-enrollment — do not
+   * treat as a live boundary) OR at the frozen top tier. Gate is Medicare
+   * activity, not `irmaaTier === 0` (a low-MAGI enrollee still gets distance
+   * to the first surcharge). `simulatePlan` always publishes it; optionality
+   * preserves compatibility for external consumers that construct partial
+   * `YearResult` fixtures. Absence (`undefined`) is evidence-absent — never
+   * reconstruct the threshold from `inflationScale` or pack tables.
+   */
+  irmaaNextTierThreshold?: number | null
+  /**
+   * Advisory recomputation for planning surfaces: the exact `TaxYearInput`
+   * handed to `computeFederalTax` for the gain-harvesting headroom probe, and
+   * the `FederalTaxDetail` it returned. `detail.totalTax` is NOT the year's
+   * settled liability (`tax` is — the funding solves can differ). Consumers
+   * must treat absence as evidence-absent, never approximate. `simulatePlan`
+   * always publishes it; optionality preserves compatibility for external
+   * consumers that construct partial `YearResult` fixtures.
+   */
+  advisoryFederalTax?: Readonly<{ input: TaxYearInput; detail: FederalTaxDetail }>
   /** Federal alternative minimum tax included in `tax` when the planning-grade AMT screen binds. */
   amt: number
   /** Additional long-term gains realizable this year still taxed at 0% (gain-harvesting advisory). */
