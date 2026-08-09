@@ -76,7 +76,7 @@ type-checks against the real `dist/` through a project reference). No React/DOM/
 | `decisions/` | Shared exact-ledger decision engine: `objectives.ts` (objective policies), candidate `generators.ts`, `evaluateCandidate.ts`, `tournament.ts`, `search.ts`, `spendingSolver.ts`, `swrComparator.ts` (published SWR rules on the user's plan) |
 | `spending/` | Spending layers, guardrails, flexible goals, ABW, and shape presets (`layers.ts`, `guardrails.ts`, `flexibleGoals.ts`, `abw.ts`, `shapePresets.ts`) |
 | `insights/` | Insight detectors + registry (`runInsights.ts`, `detectors/`) surfaced on the planner Insights page |
-| `scenarios/` | `scenarios.ts` |
+| `scenarios/` | `scenarios.ts`, `taxStrategyEvaluation.ts` (shared TaxStrategyEvaluation evidence contract for the Advisor tax cockpit), `taxStrategyEvaluationRegistryCheck.ts` (opt-in registry validation for limitation refs) |
 | `testing/` | Test fixtures shared with the app's suites (`planFixtures.ts`, `money.ts`), exported as `@retiregolden/engine/testing/*` |
 
 ## `packages/planner-ui/` — `@retiregolden/planner-ui`, the planner UI
