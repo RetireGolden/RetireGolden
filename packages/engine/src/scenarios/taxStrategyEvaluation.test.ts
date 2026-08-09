@@ -1470,4 +1470,126 @@ describe('taxStrategyEvaluation', () => {
       objective: maximizeAfterTaxEstate,
     })).toThrow()
   })
+
+  it('rejects round-5 structural tamper on comparison sections, roth alias, refused reasons, annual years, collision diagnostic reason, alternatives, and qcd charity id', () => {
+    const evaluation = buildTaxStrategyEvaluation({
+      comparison: actionBearingComparison(),
+      objective: maximizeAfterTaxEstate,
+      alternatives: [
+        mockRanked('alt-b', 'B alternative', 50, false, 'trails winner'),
+        mockRanked('alt-a', 'A alternative', 100, true, null),
+      ],
+    })
+    const refusedEvaluation = buildTaxStrategyEvaluation({
+      comparison: refusedActionComparison(),
+      objective: maximizeAfterTaxEstate,
+    })
+    const asRecord = (value: TaxStrategyEvaluation): Record<string, unknown> =>
+      JSON.parse(JSON.stringify(value)) as Record<string, unknown>
+
+    const proposalBearingIndex = evaluation.comparison.actionRows.findIndex(
+      (row) => row.proposal !== null,
+    )
+    expect(proposalBearingIndex).toBeGreaterThanOrEqual(0)
+
+    const emptyIrmaa = asRecord(evaluation)
+    ;(emptyIrmaa['comparison'] as Record<string, unknown>)['irmaa'] = {}
+    expect(() => parseTaxStrategyEvaluation(emptyIrmaa)).toThrow()
+    expect(() => buildTaxStrategyEvaluation({
+      comparison: emptyIrmaa['comparison'] as typeof evaluation.comparison,
+      objective: maximizeAfterTaxEstate,
+    })).toThrow()
+
+    const rothAlias = asRecord(evaluation)
+    const rothAction = (rothAlias['actions'] as Array<Record<string, unknown>>)[0]!
+    const sourceAccountId = (
+      (rothAction['sourceAllocations'] as Array<Record<string, unknown>>)[0]! as Record<
+        string,
+        unknown
+      >
+    )['sourceAccountId']
+    rothAction['kind'] = 'rothConversion'
+    rothAction['destinationAccountId'] = sourceAccountId
+    const rothProposal = (
+      (rothAlias['comparison'] as Record<string, unknown>)['actionRows'] as Array<
+        Record<string, unknown>
+      >
+    )[proposalBearingIndex]!['proposal'] as Record<string, unknown>
+    rothProposal['kind'] = 'rothConversion'
+    rothProposal['destinationAccountId'] = sourceAccountId
+    expect(() => parseTaxStrategyEvaluation(rothAlias)).toThrow()
+
+    const baselineRefusedEmptyReasons = asRecord(refusedEvaluation)
+    const baselineRefusedRow = (
+      (baselineRefusedEmptyReasons['comparison'] as Record<string, unknown>)['actionRows'] as Array<
+        Record<string, unknown>
+      >
+    ).find((row) => {
+      const baseline = row['baseline'] as Record<string, unknown> | null | undefined
+      return baseline !== null && baseline !== undefined && baseline['outcome'] === 'refused'
+    })!
+    const baselineRefused = baselineRefusedRow['baseline'] as Record<string, unknown>
+    baselineRefused['reasons'] = []
+    expect(() => parseTaxStrategyEvaluation(baselineRefusedEmptyReasons)).toThrow()
+    expect(() => buildTaxStrategyEvaluation({
+      comparison: baselineRefusedEmptyReasons['comparison'] as typeof refusedEvaluation.comparison,
+      objective: maximizeAfterTaxEstate,
+    })).toThrow()
+
+    const duplicateAnnualYear = asRecord(evaluation)
+    const annualRows = (duplicateAnnualYear['comparison'] as Record<string, unknown>)[
+      'annual'
+    ] as Array<Record<string, unknown>>
+    expect(annualRows.length).toBeGreaterThan(1)
+    annualRows[1]!['year'] = annualRows[0]!['year']
+    expect(() => parseTaxStrategyEvaluation(duplicateAnnualYear)).toThrow()
+    expect(() => buildTaxStrategyEvaluation({
+      comparison: duplicateAnnualYear['comparison'] as typeof evaluation.comparison,
+      objective: maximizeAfterTaxEstate,
+    })).toThrow()
+
+    const wrongCollisionReason = asRecord(refusedEvaluation)
+    const collisionDiagnosticRow = (
+      (wrongCollisionReason['comparison'] as Record<string, unknown>)['actionRows'] as Array<
+        Record<string, unknown>
+      >
+    ).find((row) => (row['baselineScheduleDiagnostics'] as unknown[]).length > 0)!
+    const collisionDiagnostics = collisionDiagnosticRow[
+      'baselineScheduleDiagnostics'
+    ] as Array<Record<string, unknown>>
+    const collisionDiagnostic = collisionDiagnostics.find(
+      (diagnostic) => diagnostic['kind'] === 'executionSequenceConflict',
+    )!
+    expect(collisionDiagnostic).toBeDefined()
+    collisionDiagnostic['reason'] = createActionReason('source-account-not-found', {
+      accountId: asAccountId('cash'),
+    })
+    expect(() => parseTaxStrategyEvaluation(wrongCollisionReason)).toThrow()
+    expect(() => buildTaxStrategyEvaluation({
+      comparison: wrongCollisionReason['comparison'] as typeof refusedEvaluation.comparison,
+      objective: maximizeAfterTaxEstate,
+    })).toThrow()
+
+    const ineligibleWithoutLossReason = asRecord(evaluation)
+    const ineligibleAlternative = (ineligibleWithoutLossReason['alternatives'] as Array<
+      Record<string, unknown>
+    >).find((alternative) => alternative['eligible'] === false)!
+    ineligibleAlternative['lossReason'] = null
+    expect(() => parseTaxStrategyEvaluation(ineligibleWithoutLossReason)).toThrow()
+
+    const blankQcdCharityId = asRecord(evaluation)
+    const qcdAction = (blankQcdCharityId['actions'] as Array<Record<string, unknown>>)[0]!
+    qcdAction['kind'] = 'qcd'
+    qcdAction['destinationAccountId'] = null
+    qcdAction['charityDesignationId'] = '   '
+    const qcdProposal = (
+      (blankQcdCharityId['comparison'] as Record<string, unknown>)['actionRows'] as Array<
+        Record<string, unknown>
+      >
+    )[proposalBearingIndex]!['proposal'] as Record<string, unknown>
+    qcdProposal['kind'] = 'qcd'
+    qcdProposal['destinationAccountId'] = null
+    qcdProposal['charityDesignationId'] = '   '
+    expect(() => parseTaxStrategyEvaluation(blankQcdCharityId)).toThrow()
+  })
 })

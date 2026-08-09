@@ -76,10 +76,16 @@ import type {
 } from './actionRows.js'
 import {
   ANNUAL_VALUE_KEYS,
+  type ScenarioAcaComparison,
+  type ScenarioEstateComparison,
   type ScenarioHeadlineComparison,
+  type ScenarioIncomeComparison,
+  type ScenarioIrmaaComparison,
   type ScenarioPlanComparison,
   type ScenarioRiskComparison,
   type ScenarioSpendingCapacityComparison,
+  type ScenarioSpendingComparison,
+  type ScenarioWithdrawalComparison,
 } from './comparison.js'
 import { canonicalScenarioJson } from './patch.js'
 
@@ -221,6 +227,29 @@ function nullableScalarComparisonIsStructural(value: unknown): boolean {
     if (scalar !== null && (typeof scalar !== 'number' || !Number.isFinite(scalar))) {
       return false
     }
+  }
+  return true
+}
+
+function scalarComparisonIsStructural(value: unknown): boolean {
+  if (!isPlainObject(value)) return false
+  for (const side of ['baseline', 'proposal', 'delta'] as const) {
+    const scalar = value[side]
+    if (typeof scalar !== 'number' || !Number.isFinite(scalar)) return false
+  }
+  return true
+}
+
+function nonBlankStringIsStructural(value: unknown): boolean {
+  return typeof value === 'string' && value.trim().length > 0
+}
+
+function scalarComparisonSectionIsStructural(
+  value: Record<string, unknown>,
+  keys: readonly string[],
+): boolean {
+  for (const key of keys) {
+    if (!scalarComparisonIsStructural(value[key])) return false
   }
   return true
 }
@@ -420,6 +449,7 @@ function actionReasonsMatchOutcomeRules(
   }
 
   if (outcome === 'refused') {
+    if (reasons.length === 0) return false
     return reasons.every((reason) => reason.outcome === 'refused')
   }
 
@@ -603,6 +633,43 @@ function refineActionKindIdentities(
       path: [...pathPrefix, 'charityDesignationId'],
       message: 'qcd actions require a non-null charityDesignationId',
     })
+  } else if (action.charityDesignationId.trim().length === 0) {
+    ctx.addIssue({
+      code: 'custom',
+      path: [...pathPrefix, 'charityDesignationId'],
+      message: 'qcd actions require a non-blank charityDesignationId',
+    })
+  }
+}
+
+function rothDestinationAliasesSourceAccount(
+  destinationAccountId: string | null,
+  sourceAllocations: ReadonlyArray<{ sourceAccountId: string }>,
+): boolean {
+  if (destinationAccountId === null) return false
+  return sourceAllocations.some(
+    (allocation) => allocation.sourceAccountId === destinationAccountId,
+  )
+}
+
+function refineRothConversionDestinationNotAliasingSource(
+  action: Readonly<{
+    kind: RetirementActionKind
+    destinationAccountId: string | null
+    sourceAllocations: ReadonlyArray<{ sourceAccountId: string }>
+  }>,
+  ctx: z.RefinementCtx,
+  pathPrefix: readonly (string | number)[] = [],
+): void {
+  if (action.kind !== 'rothConversion') return
+  if (
+    rothDestinationAliasesSourceAccount(action.destinationAccountId, action.sourceAllocations)
+  ) {
+    ctx.addIssue({
+      code: 'custom',
+      path: [...pathPrefix, 'destinationAccountId'],
+      message: 'conversion destination aliases a source account',
+    })
   }
 }
 
@@ -681,9 +748,7 @@ function actionKindIdentitiesAreStructural(
   }
   if (kind === 'qcd') {
     return (
-      destinationAccountId === null &&
-      typeof charityDesignationId === 'string' &&
-      charityDesignationId.length > 0
+      destinationAccountId === null && nonBlankStringIsStructural(charityDesignationId)
     )
   }
   return false
@@ -813,7 +878,12 @@ const taxStrategyEvaluationActionSchema = z
     year: z.number().int().min(1).max(9999),
     personId: personIdSchema.nullable(),
     destinationAccountId: accountIdSchema.nullable(),
-    charityDesignationId: z.string().min(1).nullable(),
+    charityDesignationId: z
+      .string()
+      .nullable()
+      .refine((value) => value === null || value.trim().length > 0, {
+        message: 'Value must not be blank',
+      }),
     requestedAmountCents: positiveUsdCentsSchema,
     executedAmountCents: usdCentsSchema,
     unexecutedAmountCents: usdCentsSchema,
@@ -879,6 +949,7 @@ const taxStrategyEvaluationActionSchema = z
     refineSourceAllocationResolutions(action, ctx)
     refineUniqueSourceAllocationIdentities(action.sourceAllocations, ctx)
     refineActionKindIdentities(action, ctx)
+    refineRothConversionDestinationNotAliasingSource(action, ctx)
     if (action.kind === 'qcd' && action.sourceAllocations.length !== 1) {
       ctx.addIssue({
         code: 'custom',
@@ -897,17 +968,37 @@ const decisionDeltasSchema = z.strictObject({
   moneyLastsYears: z.number().finite(),
 })
 
-const taxStrategyAlternativeSchema = z.strictObject({
-  candidateId: z.string().min(1),
-  label: z.string().min(1),
-  source: decisionSourceSchema,
-  category: decisionCategorySchema,
-  recommendationState: recommendationStateSchema,
-  primaryValue: z.number().finite(),
-  eligible: z.boolean(),
-  lossReason: z.string().nullable(),
-  deltas: decisionDeltasSchema,
-})
+const taxStrategyAlternativeSchema = z
+  .strictObject({
+    candidateId: z.string().min(1),
+    label: z.string().min(1),
+    source: decisionSourceSchema,
+    category: decisionCategorySchema,
+    recommendationState: recommendationStateSchema,
+    primaryValue: z.number().finite(),
+    eligible: z.boolean(),
+    lossReason: z.string().nullable(),
+    deltas: decisionDeltasSchema,
+  })
+  .superRefine((alternative, ctx) => {
+    // Mirror rankEvaluations: ineligible rows always carry an explanation; the
+    // winner alone keeps lossReason null among eligible candidates.
+    if (!alternative.eligible) {
+      if (alternative.lossReason === null || alternative.lossReason.trim().length === 0) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['lossReason'],
+          message: 'ineligible alternatives require a non-blank lossReason',
+        })
+      }
+    } else if (alternative.lossReason !== null && alternative.lossReason.trim().length === 0) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['lossReason'],
+        message: 'eligible alternatives cannot carry a blank lossReason',
+      })
+    }
+  })
 
 export type TaxStrategyAlternative = Readonly<{
   candidateId: string
@@ -1032,6 +1123,87 @@ const SCENARIO_SPENDING_CAPACITY_KEYS = [
   'proposalDiagnostics',
 ] as const satisfies readonly (keyof ScenarioSpendingCapacityComparison)[]
 
+const SCENARIO_SPENDING_COMPARISON_KEYS = [
+  'intended',
+  'funded',
+  'totalShortfall',
+  'requiredShortfall',
+  'targetShortfall',
+  'idealShortfall',
+  'excessShortfall',
+] as const satisfies readonly (keyof ScenarioSpendingComparison)[]
+
+const SCENARIO_INCOME_COMPARISON_KEYS = [
+  'wages',
+  'socialSecurity',
+  'pension',
+  'annuity',
+  'tipsLadder',
+  'recurring',
+  'oneTime',
+  'taxableInterest',
+  'ordinaryDividends',
+  'qualifiedDividends',
+  'taxableYield',
+  'taxExemptInterest',
+  'total',
+] as const satisfies readonly (keyof ScenarioIncomeComparison)[]
+
+const SCENARIO_WITHDRAWAL_COMPARISON_KEYS = [
+  'cash',
+  'taxable',
+  'traditional',
+  'roth',
+  'hsa',
+  'total',
+  'rothConversions',
+  'rmd',
+  'inherited',
+  'qcd',
+] as const satisfies readonly (keyof ScenarioWithdrawalComparison)[]
+
+const SCENARIO_IRMAA_COMPARISON_KEYS = [
+  'surcharge',
+  'totalMedicarePremiums',
+  'surchargeTierYears',
+  'maxTier',
+] as const satisfies readonly (keyof ScenarioIrmaaComparison)[]
+
+const SCENARIO_ACA_COMPARISON_KEYS = [
+  'grossEnrollmentPremium',
+  'modeledAllowablePtc',
+  'economicNetPremium',
+  'actionableYears',
+  'nonActionableYears',
+] as const satisfies readonly (keyof ScenarioAcaComparison)[]
+
+const SCENARIO_ESTATE_COMPARISON_KEYS = [
+  'grossNetWorth',
+  'afterTaxEstate',
+  'heirTax',
+  'charity',
+] as const satisfies readonly Exclude<keyof ScenarioEstateComparison, 'byCategory'>[]
+
+const SCENARIO_ESTATE_BY_CATEGORY_KEYS = [
+  'cash',
+  'taxable',
+  'traditional',
+  'roth',
+  'hsa',
+] as const satisfies readonly (keyof ScenarioEstateComparison['byCategory'])[]
+
+function estateComparisonIsStructural(value: Record<string, unknown>): boolean {
+  if (!scalarComparisonSectionIsStructural(value, SCENARIO_ESTATE_COMPARISON_KEYS)) {
+    return false
+  }
+  const byCategory = value['byCategory']
+  if (!isPlainObject(byCategory)) return false
+  return scalarComparisonSectionIsStructural(
+    byCategory,
+    SCENARIO_ESTATE_BY_CATEGORY_KEYS,
+  )
+}
+
 function spendingCapacityIsStructural(value: Record<string, unknown>): boolean {
   for (const key of SCENARIO_SPENDING_CAPACITY_KEYS) {
     if (!(key in value)) return false
@@ -1117,7 +1289,8 @@ function isScenarioActionScheduleDiagnosticShape(
     ) {
       return false
     }
-    return actionReasonSchema.safeParse(value['reason']).success
+    const parsedReason = actionReasonSchema.safeParse(value['reason'])
+    return parsedReason.success && parsedReason.data.code === 'action-sequence-conflict'
   }
 
   return false
@@ -1221,6 +1394,50 @@ function isScenarioPlanComparisonShape(value: unknown): value is ScenarioPlanCom
     if (!isPlainObject(value[section])) return false
   }
 
+  if (
+    !scalarComparisonSectionIsStructural(
+      value['spending'] as Record<string, unknown>,
+      SCENARIO_SPENDING_COMPARISON_KEYS,
+    )
+  ) {
+    return false
+  }
+  if (
+    !scalarComparisonSectionIsStructural(
+      value['income'] as Record<string, unknown>,
+      SCENARIO_INCOME_COMPARISON_KEYS,
+    )
+  ) {
+    return false
+  }
+  if (
+    !scalarComparisonSectionIsStructural(
+      value['withdrawals'] as Record<string, unknown>,
+      SCENARIO_WITHDRAWAL_COMPARISON_KEYS,
+    )
+  ) {
+    return false
+  }
+  if (
+    !scalarComparisonSectionIsStructural(
+      value['irmaa'] as Record<string, unknown>,
+      SCENARIO_IRMAA_COMPARISON_KEYS,
+    )
+  ) {
+    return false
+  }
+  if (
+    !scalarComparisonSectionIsStructural(
+      value['aca'] as Record<string, unknown>,
+      SCENARIO_ACA_COMPARISON_KEYS,
+    )
+  ) {
+    return false
+  }
+  if (!estateComparisonIsStructural(value['estate'] as Record<string, unknown>)) {
+    return false
+  }
+
   const headline = value['headline']
   if (!isPlainObject(headline)) return false
   for (const key of SCENARIO_HEADLINE_COMPARISON_KEYS) {
@@ -1248,10 +1465,13 @@ function isScenarioPlanComparisonShape(value: unknown): value is ScenarioPlanCom
 
   if (!Array.isArray(value['actionRows'])) return false
   if (!Array.isArray(value['annual'])) return false
+  let previousAnnualYear = Number.NEGATIVE_INFINITY
   for (const row of value['annual']) {
     if (!isPlainObject(row) || typeof row['year'] !== 'number' || !Number.isInteger(row['year'])) {
       return false
     }
+    if (row['year'] <= previousAnnualYear) return false
+    previousAnnualYear = row['year']
     if (!('values' in row) || !isPlainObject(row['values'])) return false
     const values = row['values']
     for (const key of ANNUAL_VALUE_KEYS) {
@@ -1297,6 +1517,20 @@ function isScenarioPlanComparisonShape(value: unknown): value is ScenarioPlanCom
       if (side['kind'] === 'qcd') {
         const sideAllocations = side['sourceAllocations']
         if (!Array.isArray(sideAllocations) || sideAllocations.length !== 1) return false
+      }
+      if (side['kind'] === 'rothConversion') {
+        const destinationAccountId = side['destinationAccountId']
+        const sideAllocations = side['sourceAllocations']
+        if (
+          typeof destinationAccountId === 'string' &&
+          Array.isArray(sideAllocations) &&
+          sideAllocations.some(
+            (allocation) =>
+              isPlainObject(allocation) && allocation['sourceAccountId'] === destinationAccountId,
+          )
+        ) {
+          return false
+        }
       }
     }
   }
