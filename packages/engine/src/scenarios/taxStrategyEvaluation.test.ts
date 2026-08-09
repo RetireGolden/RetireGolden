@@ -1184,4 +1184,165 @@ describe('taxStrategyEvaluation', () => {
     actionRows.push(structuredClone(actionRows[0]!))
     expect(() => parseTaxStrategyEvaluation(duplicateRows)).toThrow()
   })
+
+  it('rejects round-3 structural tamper on risk metrics, diagnostics, allocations, sides, identities, rows, and plain objects', () => {
+    const evaluation = buildTaxStrategyEvaluation({
+      comparison: actionBearingComparison(),
+      objective: maximizeAfterTaxEstate,
+    })
+    const stochasticEvaluation = buildTaxStrategyEvaluation({
+      comparison: (() => {
+        const baseline = coupleWithCash()
+        const proposal = structuredClone(baseline)
+        proposal.expenses.baseAnnual += 5_000
+        return compareScenarioPlans(baseline, validatePlan(proposal), {
+          startYear: 2026,
+          taxCalculatorForPlan: () => noTax,
+          stochastic: {
+            model: { type: 'lognormal', inflationMeanPct: 0 },
+            pathCount: 8,
+            seed: 731,
+          },
+        })
+      })(),
+      objective: maximizeAfterTaxEstate,
+    })
+    const asRecord = (value: TaxStrategyEvaluation): Record<string, unknown> =>
+      JSON.parse(JSON.stringify(value)) as Record<string, unknown>
+
+    const missingSuccessRate = asRecord(stochasticEvaluation)
+    delete ((missingSuccessRate['comparison'] as Record<string, unknown>)['risk'] as Record<
+      string,
+      unknown
+    >)['successRate']
+    expect(() => parseTaxStrategyEvaluation(missingSuccessRate)).toThrow()
+    expect(() => buildTaxStrategyEvaluation({
+      comparison: missingSuccessRate['comparison'] as typeof evaluation.comparison,
+      objective: maximizeAfterTaxEstate,
+    })).toThrow()
+
+    const proposalBearingIndex = evaluation.comparison.actionRows.findIndex(
+      (row) => row.proposal !== null,
+    )
+    expect(proposalBearingIndex).toBeGreaterThanOrEqual(0)
+
+    const nullDiagnostic = asRecord(evaluation)
+    const nullDiagnosticRow = (
+      (nullDiagnostic['comparison'] as Record<string, unknown>)['actionRows'] as Array<
+        Record<string, unknown>
+      >
+    )[proposalBearingIndex]!
+    nullDiagnosticRow['proposalScheduleDiagnostics'] = [null]
+    expect(() => parseTaxStrategyEvaluation(nullDiagnostic)).toThrow()
+    expect(() => buildTaxStrategyEvaluation({
+      comparison: nullDiagnostic['comparison'] as typeof evaluation.comparison,
+      objective: maximizeAfterTaxEstate,
+    })).toThrow()
+
+    const emptyDiagnostic = asRecord(evaluation)
+    const emptyDiagnosticRow = (
+      (emptyDiagnostic['comparison'] as Record<string, unknown>)['actionRows'] as Array<
+        Record<string, unknown>
+      >
+    )[proposalBearingIndex]!
+    emptyDiagnosticRow['baselineScheduleDiagnostics'] = [{}]
+    expect(() => parseTaxStrategyEvaluation(emptyDiagnostic)).toThrow()
+    expect(() => buildTaxStrategyEvaluation({
+      comparison: emptyDiagnostic['comparison'] as typeof evaluation.comparison,
+      objective: maximizeAfterTaxEstate,
+    })).toThrow()
+
+    const inflatedRequested = asRecord(evaluation)
+    const inflatedAction = (inflatedRequested['actions'] as Array<Record<string, unknown>>)[0]!
+    const inflatedAllocations = inflatedAction['sourceAllocations'] as Array<Record<string, unknown>>
+    expect(inflatedAllocations.length).toBeGreaterThan(0)
+    inflatedAllocations[0]!['requestedAmountCents'] =
+      (inflatedAllocations[0]!['requestedAmountCents'] as number) + 1
+    const inflatedProposal = (
+      (inflatedRequested['comparison'] as Record<string, unknown>)['actionRows'] as Array<
+        Record<string, unknown>
+      >
+    )[proposalBearingIndex]!['proposal'] as Record<string, unknown>
+    const inflatedProposalAllocations = inflatedProposal['sourceAllocations'] as Array<
+      Record<string, unknown>
+    >
+    inflatedProposalAllocations[0]!['requestedAmountCents'] =
+      (inflatedProposalAllocations[0]!['requestedAmountCents'] as number) + 1
+    expect(() => parseTaxStrategyEvaluation(inflatedRequested)).toThrow()
+
+    const refusedEvaluation = buildTaxStrategyEvaluation({
+      comparison: refusedActionComparison(),
+      objective: maximizeAfterTaxEstate,
+    })
+    const baselineRefusedIndex = refusedEvaluation.comparison.actionRows.findIndex(
+      (row) => row.baseline?.outcome === 'refused',
+    )
+    expect(baselineRefusedIndex).toBeGreaterThanOrEqual(0)
+    const baselineExecutedTamper = asRecord(refusedEvaluation)
+    const baselineExecutedRow = (
+      (baselineExecutedTamper['comparison'] as Record<string, unknown>)['actionRows'] as Array<
+        Record<string, unknown>
+      >
+    )[baselineRefusedIndex]!
+    const baselineRefused = baselineExecutedRow['baseline'] as Record<string, unknown>
+    baselineRefused['executedAmountCents'] = 1
+    baselineRefused['unexecutedAmountCents'] =
+      (baselineRefused['requestedAmountCents'] as number) - 1
+    expect(() => parseTaxStrategyEvaluation(baselineExecutedTamper)).toThrow()
+    expect(() => buildTaxStrategyEvaluation({
+      comparison: baselineExecutedTamper['comparison'] as typeof evaluation.comparison,
+      objective: maximizeAfterTaxEstate,
+    })).toThrow()
+
+    const rothKindTamper = asRecord(evaluation)
+    const rothAction = (rothKindTamper['actions'] as Array<Record<string, unknown>>)[0]!
+    rothAction['kind'] = 'rothConversion'
+    rothAction['destinationAccountId'] = null
+    const rothProposal = (
+      (rothKindTamper['comparison'] as Record<string, unknown>)['actionRows'] as Array<
+        Record<string, unknown>
+      >
+    )[proposalBearingIndex]!['proposal'] as Record<string, unknown>
+    rothProposal['kind'] = 'rothConversion'
+    rothProposal['destinationAccountId'] = null
+    expect(() => parseTaxStrategyEvaluation(rothKindTamper)).toThrow()
+
+    const qcdKindTamper = asRecord(evaluation)
+    const qcdAction = (qcdKindTamper['actions'] as Array<Record<string, unknown>>)[0]!
+    qcdAction['kind'] = 'qcd'
+    qcdAction['charityDesignationId'] = null
+    const qcdProposal = (
+      (qcdKindTamper['comparison'] as Record<string, unknown>)['actionRows'] as Array<
+        Record<string, unknown>
+      >
+    )[proposalBearingIndex]!['proposal'] as Record<string, unknown>
+    qcdProposal['kind'] = 'qcd'
+    qcdProposal['charityDesignationId'] = null
+    expect(() => parseTaxStrategyEvaluation(qcdKindTamper)).toThrow()
+
+    const emptyRow = asRecord(evaluation)
+    const emptyRowEntry = (
+      (emptyRow['comparison'] as Record<string, unknown>)['actionRows'] as Array<
+        Record<string, unknown>
+      >
+    )[proposalBearingIndex]!
+    emptyRowEntry['baseline'] = null
+    emptyRowEntry['proposal'] = null
+    emptyRowEntry['baselineScheduleDiagnostics'] = []
+    emptyRowEntry['proposalScheduleDiagnostics'] = []
+    expect(() => parseTaxStrategyEvaluation(emptyRow)).toThrow()
+    expect(() => buildTaxStrategyEvaluation({
+      comparison: emptyRow['comparison'] as typeof evaluation.comparison,
+      objective: maximizeAfterTaxEstate,
+    })).toThrow()
+
+    const dateSpending = asRecord(evaluation)
+    ;(dateSpending['comparison'] as Record<string, unknown>)['spending'] = new Date('2030-01-01')
+    expect(() => parseTaxStrategyEvaluation(dateSpending)).toThrow()
+    expect(() => buildTaxStrategyEvaluation({
+      comparison: dateSpending['comparison'] as typeof evaluation.comparison,
+      objective: maximizeAfterTaxEstate,
+    })).toThrow()
+    expect(isTaxStrategyEvaluationDocument(dateSpending)).toBe(false)
+  })
 })

@@ -195,12 +195,6 @@ const CLOSED_ACTION_KINDS: ReadonlySet<string> = new Set([
   'rothConversion',
   'qcd',
 ])
-const CLOSED_ACTION_OUTCOMES: ReadonlySet<string> = new Set([
-  'executed',
-  'partial',
-  'refused',
-  'unsupported',
-])
 
 /**
  * Canonical disposition amount invariants mirrored from
@@ -447,6 +441,177 @@ function refinePartialActionReasons(
   validateAdjustedReasonOrder(reasons, 1, ctx, pathPrefix)
 }
 
+function refineAllocationRequestedTotals(
+  action: Readonly<{
+    requestedAmountCents: number
+    sourceAllocations: ReadonlyArray<{ requestedAmountCents: number }>
+  }>,
+  ctx: z.RefinementCtx,
+  pathPrefix: readonly (string | number)[] = [],
+): void {
+  const total = action.sourceAllocations.reduce(
+    (sum, allocation) => sum + BigInt(allocation.requestedAmountCents),
+    0n,
+  )
+  if (total !== BigInt(action.requestedAmountCents)) {
+    ctx.addIssue({
+      code: 'custom',
+      path: [...pathPrefix, 'sourceAllocations'],
+      message: 'allocation requested cents must exactly sum to the action requested amount',
+    })
+  }
+}
+
+function refineActionKindIdentities(
+  action: Readonly<{
+    kind: RetirementActionKind
+    personId: string | null
+    destinationAccountId: string | null
+    charityDesignationId: string | null
+  }>,
+  ctx: z.RefinementCtx,
+  pathPrefix: readonly (string | number)[] = [],
+): void {
+  if (action.personId === null) {
+    ctx.addIssue({
+      code: 'custom',
+      path: [...pathPrefix, 'personId'],
+      message: 'retirement actions require a non-null personId',
+    })
+  }
+  if (action.kind === 'ordinaryWithdrawal') {
+    if (action.destinationAccountId !== null) {
+      ctx.addIssue({
+        code: 'custom',
+        path: [...pathPrefix, 'destinationAccountId'],
+        message: 'ordinaryWithdrawal actions require a null destinationAccountId',
+      })
+    }
+    if (action.charityDesignationId !== null) {
+      ctx.addIssue({
+        code: 'custom',
+        path: [...pathPrefix, 'charityDesignationId'],
+        message: 'ordinaryWithdrawal actions require a null charityDesignationId',
+      })
+    }
+    return
+  }
+  if (action.kind === 'rothConversion') {
+    if (action.destinationAccountId === null) {
+      ctx.addIssue({
+        code: 'custom',
+        path: [...pathPrefix, 'destinationAccountId'],
+        message: 'rothConversion actions require a non-null destinationAccountId',
+      })
+    }
+    if (action.charityDesignationId !== null) {
+      ctx.addIssue({
+        code: 'custom',
+        path: [...pathPrefix, 'charityDesignationId'],
+        message: 'rothConversion actions require a null charityDesignationId',
+      })
+    }
+    return
+  }
+  if (action.destinationAccountId !== null) {
+    ctx.addIssue({
+      code: 'custom',
+      path: [...pathPrefix, 'destinationAccountId'],
+      message: 'qcd actions require a null destinationAccountId',
+    })
+  }
+  if (action.charityDesignationId === null) {
+    ctx.addIssue({
+      code: 'custom',
+      path: [...pathPrefix, 'charityDesignationId'],
+      message: 'qcd actions require a non-null charityDesignationId',
+    })
+  }
+}
+
+/**
+ * Readiness/outcome binding and disposition amount rules mirrored from the
+ * action superRefine — used by the structural gate for every non-null side.
+ */
+function comparisonSideDispositionIsStructural(side: Record<string, unknown>): boolean {
+  const readiness = side['readiness']
+  const outcome = side['outcome']
+  if (readiness !== 'actionable' && readiness !== 'nonActionable') return false
+  if (
+    outcome !== 'executed' &&
+    outcome !== 'partial' &&
+    outcome !== 'refused' &&
+    outcome !== 'unsupported'
+  ) {
+    return false
+  }
+
+  const requested = side['requestedAmountCents']
+  const executed = side['executedAmountCents']
+  const unexecuted = side['unexecutedAmountCents']
+  if (typeof requested !== 'number' || !Number.isInteger(requested)) return false
+  if (typeof executed !== 'number' || !Number.isInteger(executed)) return false
+  if (typeof unexecuted !== 'number' || !Number.isInteger(unexecuted)) return false
+  if (BigInt(executed) + BigInt(unexecuted) !== BigInt(requested)) return false
+
+  if (readiness === 'nonActionable') {
+    if (outcome !== 'refused' && outcome !== 'unsupported') return false
+    if (executed !== 0) return false
+    if (unexecuted !== requested) return false
+  } else if (outcome !== 'executed' && outcome !== 'partial') {
+    return false
+  }
+
+  if (outcome === 'executed') {
+    if (executed !== requested) return false
+    if (unexecuted !== 0) return false
+  }
+  if (outcome === 'partial') {
+    if (executed === 0) return false
+    if (unexecuted === 0) return false
+  }
+
+  return true
+}
+
+function comparisonSideKindIdentitiesAreStructural(side: Record<string, unknown>): boolean {
+  const kind = side['kind']
+  if (typeof kind !== 'string' || !CLOSED_ACTION_KINDS.has(kind)) return false
+  return actionKindIdentitiesAreStructural(
+    kind,
+    side['personId'],
+    side['destinationAccountId'],
+    side['charityDesignationId'],
+  )
+}
+
+function actionKindIdentitiesAreStructural(
+  kind: string,
+  personId: unknown,
+  destinationAccountId: unknown,
+  charityDesignationId: unknown,
+): boolean {
+  if (typeof personId !== 'string' || personId.length === 0) return false
+  if (kind === 'ordinaryWithdrawal') {
+    return destinationAccountId === null && charityDesignationId === null
+  }
+  if (kind === 'rothConversion') {
+    return (
+      typeof destinationAccountId === 'string' &&
+      destinationAccountId.length > 0 &&
+      charityDesignationId === null
+    )
+  }
+  if (kind === 'qcd') {
+    return (
+      destinationAccountId === null &&
+      typeof charityDesignationId === 'string' &&
+      charityDesignationId.length > 0
+    )
+  }
+  return false
+}
+
 function comparisonSideSourceAllocationsAreStructural(
   side: Record<string, unknown>,
 ): boolean {
@@ -454,6 +619,10 @@ function comparisonSideSourceAllocationsAreStructural(
   const sourceAllocations = side['sourceAllocations']
   if (!Array.isArray(sourceAllocations)) return false
 
+  const sideRequested = side['requestedAmountCents']
+  if (typeof sideRequested !== 'number' || !Number.isInteger(sideRequested)) return false
+
+  let requestedAllocationTotal = 0n
   let executedAllocationTotal = 0n
   for (const allocation of sourceAllocations) {
     if (!isPlainObject(allocation)) return false
@@ -480,8 +649,11 @@ function comparisonSideSourceAllocationsAreStructural(
     if (side['readiness'] === 'actionable' && allocation['resolution'] !== 'resolved') {
       return false
     }
+    requestedAllocationTotal += BigInt(requested)
     executedAllocationTotal += BigInt(executed)
   }
+
+  if (requestedAllocationTotal !== BigInt(sideRequested)) return false
 
   const sideExecuted = side['executedAmountCents']
   if (typeof sideExecuted !== 'number' || !Number.isInteger(sideExecuted)) return false
@@ -624,7 +796,9 @@ const taxStrategyEvaluationActionSchema = z
       refineUnsupportedActionReasons(action.reasons, ctx)
     }
 
+    refineAllocationRequestedTotals(action, ctx)
     refineSourceAllocationResolutions(action, ctx)
+    refineActionKindIdentities(action, ctx)
   })
 
 export type TaxStrategyEvaluationAction = z.infer<typeof taxStrategyEvaluationActionSchema>
@@ -675,7 +849,9 @@ const comparisonProvenanceSchema = z.strictObject({
 })
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false
+  const prototype = Object.getPrototypeOf(value)
+  return prototype === Object.prototype || prototype === null
 }
 
 /**
@@ -732,14 +908,78 @@ const SCENARIO_HEADLINE_COMPARISON_KEYS = [
   'projectionEndYear',
 ] as const
 
-function comparisonSideConservesAmounts(side: Record<string, unknown>): boolean {
-  const requested = side['requestedAmountCents']
-  const executed = side['executedAmountCents']
-  const unexecuted = side['unexecutedAmountCents']
-  if (typeof requested !== 'number' || !Number.isInteger(requested)) return false
-  if (typeof executed !== 'number' || !Number.isInteger(executed)) return false
-  if (typeof unexecuted !== 'number' || !Number.isInteger(unexecuted)) return false
-  return BigInt(executed) + BigInt(unexecuted) === BigInt(requested)
+const SCENARIO_RISK_COMPARISON_KEYS = [
+  'successRate',
+  'requiredFloorSuccessRate',
+  'targetLifestyleSuccessRate',
+  'targetAttainmentP50',
+  'expectedShortfallDollars',
+  'expectedRequiredShortfallDollars',
+  'expectedTargetShortfallDollars',
+  'averageTotalShortfallDollars',
+  'averageRequiredShortfallDollars',
+  'averageTargetShortfallDollars',
+  'probabilityOfAdjustment',
+  'medianMaxCutDepth',
+  'p90MaxCutDepth',
+  'estateP10',
+  'estateP50',
+  'estateP90',
+] as const
+
+function isActionReasonShape(value: unknown): boolean {
+  if (!isPlainObject(value)) return false
+  return (
+    typeof value['code'] === 'string' &&
+    typeof value['predicate'] === 'string' &&
+    typeof value['outcome'] === 'string' &&
+    typeof value['message'] === 'string'
+  )
+}
+
+function isScenarioActionScheduleDiagnosticShape(value: unknown): boolean {
+  if (!isPlainObject(value)) return false
+  const kind = value['kind']
+  if (typeof value['actionId'] !== 'string' || value['actionId'].length === 0) return false
+
+  if (kind === 'actionYearMismatch') {
+    return (
+      typeof value['expectedYear'] === 'number' &&
+      Number.isInteger(value['expectedYear']) &&
+      typeof value['actualYear'] === 'number' &&
+      Number.isInteger(value['actualYear'])
+    )
+  }
+
+  if (kind === 'duplicateActionId') {
+    const inputIndexes = value['inputIndexes']
+    if (!Array.isArray(inputIndexes) || inputIndexes.length < 2) return false
+    return inputIndexes.every(
+      (index) => typeof index === 'number' && Number.isInteger(index),
+    )
+  }
+
+  if (kind === 'executionSequenceConflict') {
+    if (typeof value['year'] !== 'number' || !Number.isInteger(value['year'])) return false
+    if (value['scheduledDate'] !== null && typeof value['scheduledDate'] !== 'string') {
+      return false
+    }
+    if (typeof value['executionSequence'] !== 'number' || !Number.isInteger(value['executionSequence'])) {
+      return false
+    }
+    const collidingActionIds = value['collidingActionIds']
+    if (!Array.isArray(collidingActionIds) || collidingActionIds.length < 2) return false
+    if (
+      !collidingActionIds.every(
+        (actionId) => typeof actionId === 'string' && actionId.length > 0,
+      )
+    ) {
+      return false
+    }
+    return isActionReasonShape(value['reason'])
+  }
+
+  return false
 }
 
 function sourceAllocationsMatch(
@@ -850,7 +1090,15 @@ function isScenarioPlanComparisonShape(value: unknown): value is ScenarioPlanCom
     if (!isPlainObject(value['risk'])) return false
     const risk = value['risk']
     if (!isPlainObject(risk['provenance'])) return false
+    for (const key of SCENARIO_RISK_COMPARISON_KEYS) {
+      if (!isPlainObject(risk[key])) return false
+    }
     if (!Array.isArray(risk['depletionProbabilityByYear'])) return false
+    for (const entry of risk['depletionProbabilityByYear']) {
+      if (!isPlainObject(entry)) return false
+      if (typeof entry['year'] !== 'number' || !Number.isInteger(entry['year'])) return false
+      if (!isPlainObject(entry['cumulativeProbability'])) return false
+    }
   }
   if (value['spendingCapacity'] !== null && !isPlainObject(value['spendingCapacity'])) {
     return false
@@ -868,6 +1116,22 @@ function isScenarioPlanComparisonShape(value: unknown): value is ScenarioPlanCom
     if (typeof row['actionId'] !== 'string' || row['actionId'].length === 0) return false
     if (!Array.isArray(row['baselineScheduleDiagnostics'])) return false
     if (!Array.isArray(row['proposalScheduleDiagnostics'])) return false
+    for (const diagnostic of row['baselineScheduleDiagnostics']) {
+      if (!isScenarioActionScheduleDiagnosticShape(diagnostic)) return false
+    }
+    for (const diagnostic of row['proposalScheduleDiagnostics']) {
+      if (!isScenarioActionScheduleDiagnosticShape(diagnostic)) return false
+    }
+    const baseline = row['baseline']
+    const proposal = row['proposal']
+    if (
+      baseline === null &&
+      proposal === null &&
+      row['baselineScheduleDiagnostics'].length === 0 &&
+      row['proposalScheduleDiagnostics'].length === 0
+    ) {
+      return false
+    }
     const outerActionId = row['actionId']
     const sideKeys = ['baseline', 'proposal'] as const
     for (const sideKey of sideKeys) {
@@ -878,11 +1142,8 @@ function isScenarioPlanComparisonShape(value: unknown): value is ScenarioPlanCom
       if (!isPlainObject(side)) return false
       if (side['actionId'] !== outerActionId) return false
       if (typeof side['kind'] !== 'string' || !CLOSED_ACTION_KINDS.has(side['kind'])) return false
-      if (side['readiness'] !== 'actionable' && side['readiness'] !== 'nonActionable') return false
-      if (typeof side['outcome'] !== 'string' || !CLOSED_ACTION_OUTCOMES.has(side['outcome'])) {
-        return false
-      }
-      if (!comparisonSideConservesAmounts(side)) return false
+      if (!comparisonSideDispositionIsStructural(side)) return false
+      if (!comparisonSideKindIdentitiesAreStructural(side)) return false
       if (!comparisonSideSourceAllocationsAreStructural(side)) return false
       if (!comparisonSideReasonsAreStructural(side)) return false
     }
