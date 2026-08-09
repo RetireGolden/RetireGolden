@@ -29,6 +29,8 @@
  * section is `absent` (not approximated). Mismatched first-survivor windows
  * between sides are `absent` — longevity is plan-level, so a differing window
  * means the caller mixed projections and nothing may be summed across them.
+ * One-sided (exempt) `comparison.annual` rows inside the survivor window are
+ * treated the same way: the two sides do not share the full window.
  * Survivor window and filing-status path are derived only from years actually
  * bound for each side (non-exempt annual rows); supplied exempt-side rows are
  * ignored for derivation.
@@ -587,6 +589,25 @@ function firstSurvivorYearFromYears(
   return null
 }
 
+/**
+ * True when `comparison.annual` has a one-sided (exempt) row inside the
+ * survivor window. Horizons that diverge inside the survivor window mean the
+ * two sides do not share the full window (longevity is plan-level), so nothing
+ * may be summed — same reasoning as the differing-firstSurvivorYear branch.
+ */
+function survivorWindowHasExemptAnnualRow(
+  evaluation: TaxStrategyEvaluation,
+  firstSurvivorYear: number,
+): boolean {
+  for (const row of evaluation.comparison.annual) {
+    if (row.year < firstSurvivorYear) continue
+    if (isBaselineOnlyAnnualRow(row) || isProposalOnlyAnnualRow(row)) {
+      return true
+    }
+  }
+  return false
+}
+
 function filingStatusPathFromProposal(
   years: readonly Readonly<YearResult>[],
   firstSurvivorYear: number,
@@ -714,6 +735,9 @@ function buildSurvivorDimension(
   }
   if (baselineFirst === null || proposalFirst === null || baselineFirst !== proposalFirst) {
     // Longevity is plan-level: a differing window means mixed projections.
+    return { status: 'absent', reason: 'survivor-window-mismatch' }
+  }
+  if (survivorWindowHasExemptAnnualRow(evaluation, baselineFirst)) {
     return { status: 'absent', reason: 'survivor-window-mismatch' }
   }
 

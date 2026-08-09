@@ -664,6 +664,46 @@ describe('taxStrategyTradeoffs', () => {
     })
   })
 
+  it('survivor: one-sided annual row inside survivor window → absent(survivor-window-mismatch)', () => {
+    // Same p1 death year on both sides; shorter proposal p2 horizon leaves
+    // baseline-only comparison rows after firstSurvivorYear.
+    const baseline = coupleWithCash({
+      p1PlanningAge: 68,
+      p2PlanningAge: 80,
+      hasQualifyingDependent: true,
+    })
+    const proposal = coupleWithCash({
+      p1PlanningAge: 68,
+      p2PlanningAge: 72,
+      hasQualifyingDependent: true,
+    })
+    const { evaluation, baselineYears, proposalYears, tradeoffs } =
+      buildTradeoffsFromPlans(baseline, proposal, { withYears: true })
+
+    const expectedFirst = firstSurvivorTransitionYear(proposalYears)
+    expect(expectedFirst).not.toBeNull()
+    expect(firstSurvivorTransitionYear(baselineYears)).toBe(expectedFirst)
+
+    const exemptInWindow = evaluation.comparison.annual.filter(
+      (row) =>
+        row.year >= expectedFirst! &&
+        (Object.values(row.values).every((comparison) => comparison.proposal === null) ||
+          Object.values(row.values).every((comparison) => comparison.baseline === null)),
+    )
+    expect(exemptInWindow.length).toBeGreaterThan(0)
+
+    expect(tradeoffs.dimensions.survivor).toEqual({
+      status: 'absent',
+      reason: 'survivor-window-mismatch',
+    })
+    expect(() =>
+      verifyTaxStrategyTradeoffsBinding(tradeoffs, evaluation, {
+        baselineYears,
+        proposalYears,
+      }),
+    ).not.toThrow()
+  })
+
   it('survivor: tampered year magi → throws naming year', () => {
     const baseline = coupleWithCash({ p1PlanningAge: 68, p2PlanningAge: 80 })
     const proposal = structuredClone(baseline)
@@ -1164,7 +1204,7 @@ describe('taxStrategyTradeoffs', () => {
     expect(() => verifyTaxStrategyTradeoffsBinding(tradeoffs, evaluation)).not.toThrow()
   })
 
-  it('survivor null-propagation: one null annual side value nulls that side sum and delta', () => {
+  it('survivor null-propagation: one null field on a shared annual row nulls that side sum and delta', () => {
     const baseline = coupleWithCash({
       p1PlanningAge: 68,
       p2PlanningAge: 80,
@@ -1184,13 +1224,13 @@ describe('taxStrategyTradeoffs', () => {
     const row = evalClone.comparison.annual.find((r) => r.year >= first)
     expect(row).toBeDefined()
     const nulledYear = row!.year
+    // Partial null on a non-exempt row still null-propagates sums; exempt rows fail closed.
     row!.values.tax = {
       baseline: row!.values.tax.baseline,
       proposal: null,
       delta: null,
     }
     const patchedEvaluation = parseTaxStrategyEvaluation(evalClone)
-    // Keep ledger bind consistent with the nulled annual side (exempt match is ===).
     const patchedProposalYears = proposalYears.map((yearResult) =>
       yearResult.year === nulledYear
         ? ({ ...yearResult, tax: null as unknown as number } as YearResult)
@@ -1206,7 +1246,6 @@ describe('taxStrategyTradeoffs', () => {
     expect(patchedTradeoffs.dimensions.survivor.tax.proposal).toBeNull()
     expect(patchedTradeoffs.dimensions.survivor.tax.delta).toBeNull()
     expect(patchedTradeoffs.dimensions.survivor.tax.adverse).toBeNull()
-    // baseline side still sums when non-null throughout the window
     expect(patchedTradeoffs.dimensions.survivor.tax.baseline).not.toBeNull()
   })
 
