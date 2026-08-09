@@ -1022,4 +1022,166 @@ describe('taxStrategyEvaluation', () => {
       },
     })).toThrow()
   })
+
+  it('rejects round-2 structural tamper on comparison sides, allocations, confidence, and duplicates', () => {
+    const evaluation = buildTaxStrategyEvaluation({
+      comparison: actionBearingComparison(),
+      objective: maximizeAfterTaxEstate,
+    })
+    const stochasticEvaluation = buildTaxStrategyEvaluation({
+      comparison: (() => {
+        const baseline = coupleWithCash()
+        const proposal = structuredClone(baseline)
+        proposal.expenses.baseAnnual += 5_000
+        return compareScenarioPlans(baseline, validatePlan(proposal), {
+          startYear: 2026,
+          taxCalculatorForPlan: () => noTax,
+          stochastic: {
+            model: { type: 'lognormal', inflationMeanPct: 0 },
+            pathCount: 8,
+            seed: 731,
+          },
+        })
+      })(),
+      objective: maximizeAfterTaxEstate,
+    })
+    const asRecord = (value: TaxStrategyEvaluation): Record<string, unknown> =>
+      JSON.parse(JSON.stringify(value)) as Record<string, unknown>
+
+    const proposalBearingIndex = evaluation.comparison.actionRows.findIndex(
+      (row) => row.proposal !== null,
+    )
+    expect(proposalBearingIndex).toBeGreaterThanOrEqual(0)
+
+    const missingReasons = asRecord(evaluation)
+    const missingReasonsRow = (
+      (missingReasons['comparison'] as Record<string, unknown>)['actionRows'] as Array<
+        Record<string, unknown>
+      >
+    )[proposalBearingIndex]!
+    const missingReasonsProposal = missingReasonsRow['proposal'] as Record<string, unknown>
+    delete missingReasonsProposal['reasons']
+    expect(() => parseTaxStrategyEvaluation(missingReasons)).toThrow()
+    expect(() => buildTaxStrategyEvaluation({
+      comparison: missingReasons['comparison'] as typeof evaluation.comparison,
+      objective: maximizeAfterTaxEstate,
+    })).toThrow()
+
+    const missingProposal = asRecord(evaluation)
+    const missingProposalRow = (
+      (missingProposal['comparison'] as Record<string, unknown>)['actionRows'] as Array<
+        Record<string, unknown>
+      >
+    )[proposalBearingIndex]!
+    delete missingProposalRow['proposal']
+    expect(() => parseTaxStrategyEvaluation(missingProposal)).toThrow()
+    expect(() => buildTaxStrategyEvaluation({
+      comparison: missingProposal['comparison'] as typeof evaluation.comparison,
+      objective: maximizeAfterTaxEstate,
+    })).toThrow()
+
+    const missingSourceAllocations = asRecord(evaluation)
+    const missingAllocRow = (
+      (missingSourceAllocations['comparison'] as Record<string, unknown>)['actionRows'] as Array<
+        Record<string, unknown>
+      >
+    )[proposalBearingIndex]!
+    delete (missingAllocRow['proposal'] as Record<string, unknown>)['sourceAllocations']
+    expect(() => parseTaxStrategyEvaluation(missingSourceAllocations)).toThrow()
+    expect(() => buildTaxStrategyEvaluation({
+      comparison: missingSourceAllocations['comparison'] as typeof evaluation.comparison,
+      objective: maximizeAfterTaxEstate,
+    })).toThrow()
+
+    const actionableUnresolved = asRecord(evaluation)
+    const unresolvedAction = (actionableUnresolved['actions'] as Array<Record<string, unknown>>)[0]!
+    const unresolvedAllocations = unresolvedAction['sourceAllocations'] as Array<Record<string, unknown>>
+    expect(unresolvedAllocations.length).toBeGreaterThan(0)
+    unresolvedAction['readiness'] = 'actionable'
+    unresolvedAction['outcome'] = 'executed'
+    unresolvedAction['reasons'] = []
+    unresolvedAllocations[0]!['resolution'] = 'unresolved'
+    const unresolvedProposal = (
+      (actionableUnresolved['comparison'] as Record<string, unknown>)['actionRows'] as Array<
+        Record<string, unknown>
+      >
+    )[proposalBearingIndex]!['proposal'] as Record<string, unknown>
+    unresolvedProposal['readiness'] = 'actionable'
+    unresolvedProposal['outcome'] = 'executed'
+    unresolvedProposal['reasons'] = []
+    const unresolvedProposalAllocations = unresolvedProposal['sourceAllocations'] as Array<
+      Record<string, unknown>
+    >
+    unresolvedProposalAllocations[0]!['resolution'] = 'unresolved'
+    expect(() => parseTaxStrategyEvaluation(actionableUnresolved)).toThrow()
+
+    const unresolvedWithExecuted = asRecord(evaluation)
+    const executedAllocAction = (unresolvedWithExecuted['actions'] as Array<Record<string, unknown>>)[0]!
+    const executedAllocations = executedAllocAction['sourceAllocations'] as Array<Record<string, unknown>>
+    executedAllocAction['readiness'] = 'nonActionable'
+    executedAllocAction['outcome'] = 'refused'
+    executedAllocAction['executedAmountCents'] = 0
+    executedAllocations[0]!['resolution'] = 'unresolved'
+    executedAllocations[0]!['executedAmountCents'] = 1
+    executedAllocations[0]!['unexecutedAmountCents'] =
+      (executedAllocations[0]!['requestedAmountCents'] as number) - 1
+    const executedAllocProposal = (
+      (unresolvedWithExecuted['comparison'] as Record<string, unknown>)['actionRows'] as Array<
+        Record<string, unknown>
+      >
+    )[proposalBearingIndex]!['proposal'] as Record<string, unknown>
+    executedAllocProposal['readiness'] = 'nonActionable'
+    executedAllocProposal['outcome'] = 'refused'
+    executedAllocProposal['executedAmountCents'] = 0
+    const executedAllocProposalAllocations = executedAllocProposal['sourceAllocations'] as Array<
+      Record<string, unknown>
+    >
+    executedAllocProposalAllocations[0]!['resolution'] = 'unresolved'
+    executedAllocProposalAllocations[0]!['executedAmountCents'] = 1
+    executedAllocProposalAllocations[0]!['unexecutedAmountCents'] =
+      (executedAllocProposalAllocations[0]!['requestedAmountCents'] as number) - 1
+    expect(() => parseTaxStrategyEvaluation(unresolvedWithExecuted)).toThrow()
+
+    const stochasticOnNullRisk = asRecord(evaluation)
+    stochasticOnNullRisk['confidence'] = {
+      basis: 'exactLedger',
+      stochastic: { pathCount: 1, seed: 0, model: '{}' },
+    }
+    expect(() => parseTaxStrategyEvaluation(stochasticOnNullRisk)).toThrow()
+
+    const mismatchedSeed = asRecord(stochasticEvaluation)
+    ;(mismatchedSeed['confidence'] as Record<string, unknown>)['stochastic'] = {
+      pathCount: stochasticEvaluation.confidence.stochastic!.pathCount,
+      seed: stochasticEvaluation.confidence.stochastic!.seed + 1,
+      model: stochasticEvaluation.confidence.stochastic!.model,
+    }
+    expect(() => parseTaxStrategyEvaluation(mismatchedSeed)).toThrow()
+
+    const missingDiagnostics = asRecord(evaluation)
+    const diagnosticsRow = (
+      (missingDiagnostics['comparison'] as Record<string, unknown>)['actionRows'] as Array<
+        Record<string, unknown>
+      >
+    )[proposalBearingIndex]!
+    delete diagnosticsRow['proposalScheduleDiagnostics']
+    expect(() => parseTaxStrategyEvaluation(missingDiagnostics)).toThrow()
+    expect(() => buildTaxStrategyEvaluation({
+      comparison: missingDiagnostics['comparison'] as typeof evaluation.comparison,
+      objective: maximizeAfterTaxEstate,
+    })).toThrow()
+
+    const duplicateActions = asRecord(evaluation)
+    const actions = duplicateActions['actions'] as Array<Record<string, unknown>>
+    expect(actions.length).toBeGreaterThan(0)
+    actions.push(structuredClone(actions[0]!))
+    expect(() => parseTaxStrategyEvaluation(duplicateActions)).toThrow()
+
+    const duplicateRows = asRecord(evaluation)
+    const actionRows = (duplicateRows['comparison'] as Record<string, unknown>)['actionRows'] as Array<
+      Record<string, unknown>
+    >
+    expect(actionRows.length).toBeGreaterThan(0)
+    actionRows.push(structuredClone(actionRows[0]!))
+    expect(() => parseTaxStrategyEvaluation(duplicateRows)).toThrow()
+  })
 })

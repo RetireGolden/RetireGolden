@@ -447,10 +447,51 @@ function refinePartialActionReasons(
   validateAdjustedReasonOrder(reasons, 1, ctx, pathPrefix)
 }
 
+function comparisonSideSourceAllocationsAreStructural(
+  side: Record<string, unknown>,
+): boolean {
+  if (!('sourceAllocations' in side)) return false
+  const sourceAllocations = side['sourceAllocations']
+  if (!Array.isArray(sourceAllocations)) return false
+
+  let executedAllocationTotal = 0n
+  for (const allocation of sourceAllocations) {
+    if (!isPlainObject(allocation)) return false
+    if (typeof allocation['allocationId'] !== 'string' || allocation['allocationId'].length === 0) {
+      return false
+    }
+    if (
+      typeof allocation['sourceAccountId'] !== 'string' ||
+      allocation['sourceAccountId'].length === 0
+    ) {
+      return false
+    }
+    if (allocation['resolution'] !== 'resolved' && allocation['resolution'] !== 'unresolved') {
+      return false
+    }
+    const requested = allocation['requestedAmountCents']
+    const executed = allocation['executedAmountCents']
+    const unexecuted = allocation['unexecutedAmountCents']
+    if (typeof requested !== 'number' || !Number.isInteger(requested)) return false
+    if (typeof executed !== 'number' || !Number.isInteger(executed)) return false
+    if (typeof unexecuted !== 'number' || !Number.isInteger(unexecuted)) return false
+    if (BigInt(executed) + BigInt(unexecuted) !== BigInt(requested)) return false
+    if (allocation['resolution'] === 'unresolved' && executed !== 0) return false
+    if (side['readiness'] === 'actionable' && allocation['resolution'] !== 'resolved') {
+      return false
+    }
+    executedAllocationTotal += BigInt(executed)
+  }
+
+  const sideExecuted = side['executedAmountCents']
+  if (typeof sideExecuted !== 'number' || !Number.isInteger(sideExecuted)) return false
+  return executedAllocationTotal === BigInt(sideExecuted)
+}
+
 function comparisonSideReasonsAreStructural(
   side: Record<string, unknown>,
 ): boolean {
-  if (!('reasons' in side) || side['reasons'] === undefined) return true
+  if (!('reasons' in side) || side['reasons'] === undefined) return false
   const reasonsValue = side['reasons']
   if (!Array.isArray(reasonsValue)) return false
 
@@ -468,6 +509,50 @@ function comparisonSideReasonsAreStructural(
     return false
   }
   return actionReasonsMatchOutcomeRules(reasons, outcome)
+}
+
+/**
+ * Allocation resolution and total invariants mirrored from
+ * `packages/engine/src/actions/annualRetirementActionPublication.ts`
+ * (executor allocation binding loop).
+ */
+function refineSourceAllocationResolutions(
+  action: Readonly<{
+    readiness: 'actionable' | 'nonActionable'
+    executedAmountCents: number
+    sourceAllocations: ReadonlyArray<{
+      resolution: 'resolved' | 'unresolved'
+      executedAmountCents: number
+    }>
+  }>,
+  ctx: z.RefinementCtx,
+  pathPrefix: readonly (string | number)[] = [],
+): void {
+  let executedAllocationTotal = 0n
+  action.sourceAllocations.forEach((allocation, index) => {
+    executedAllocationTotal += BigInt(allocation.executedAmountCents)
+    if (allocation.resolution === 'unresolved' && allocation.executedAmountCents !== 0) {
+      ctx.addIssue({
+        code: 'custom',
+        path: [...pathPrefix, 'sourceAllocations', index, 'executedAmountCents'],
+        message: 'An unresolved allocation cannot move money (executedAmountCents must be 0)',
+      })
+    }
+    if (action.readiness === 'actionable' && allocation.resolution !== 'resolved') {
+      ctx.addIssue({
+        code: 'custom',
+        path: [...pathPrefix, 'sourceAllocations', index, 'resolution'],
+        message: "an actionable action requires every sourceAllocation resolution 'resolved'",
+      })
+    }
+  })
+  if (executedAllocationTotal !== BigInt(action.executedAmountCents)) {
+    ctx.addIssue({
+      code: 'custom',
+      path: [...pathPrefix, 'executedAmountCents'],
+      message: 'Source allocation executed cents must sum to the action executedAmountCents',
+    })
+  }
 }
 
 const taxStrategyEvaluationActionSchema = z
@@ -538,6 +623,8 @@ const taxStrategyEvaluationActionSchema = z
     } else if (action.outcome === 'unsupported') {
       refineUnsupportedActionReasons(action.reasons, ctx)
     }
+
+    refineSourceAllocationResolutions(action, ctx)
   })
 
 export type TaxStrategyEvaluationAction = z.infer<typeof taxStrategyEvaluationActionSchema>
@@ -779,10 +866,15 @@ function isScenarioPlanComparisonShape(value: unknown): value is ScenarioPlanCom
   for (const row of value['actionRows']) {
     if (!isPlainObject(row)) return false
     if (typeof row['actionId'] !== 'string' || row['actionId'].length === 0) return false
+    if (!Array.isArray(row['baselineScheduleDiagnostics'])) return false
+    if (!Array.isArray(row['proposalScheduleDiagnostics'])) return false
     const outerActionId = row['actionId']
-    const sides = [row['baseline'], row['proposal']] as const
-    for (const side of sides) {
-      if (side === null || side === undefined) continue
+    const sideKeys = ['baseline', 'proposal'] as const
+    for (const sideKey of sideKeys) {
+      if (!(sideKey in row)) return false
+      const side = row[sideKey]
+      if (side === null) continue
+      if (side === undefined) return false
       if (!isPlainObject(side)) return false
       if (side['actionId'] !== outerActionId) return false
       if (typeof side['kind'] !== 'string' || !CLOSED_ACTION_KINDS.has(side['kind'])) return false
@@ -791,6 +883,7 @@ function isScenarioPlanComparisonShape(value: unknown): value is ScenarioPlanCom
         return false
       }
       if (!comparisonSideConservesAmounts(side)) return false
+      if (!comparisonSideSourceAllocationsAreStructural(side)) return false
       if (!comparisonSideReasonsAreStructural(side)) return false
     }
   }
@@ -886,6 +979,76 @@ export const taxStrategyEvaluationSchema = z
         message: "deltaConvention must be 'proposal-minus-baseline'",
       })
     }
+
+    const risk = evaluation.comparison.risk
+    if (risk === null || risk === undefined) {
+      if (evaluation.confidence.stochastic !== null) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['confidence', 'stochastic'],
+          message: 'confidence.stochastic must be null when comparison.risk is null',
+        })
+      }
+    } else {
+      const stochastic = evaluation.confidence.stochastic
+      if (stochastic === null) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['confidence', 'stochastic'],
+          message: 'confidence.stochastic is required when comparison.risk is present',
+        })
+      } else {
+        if (stochastic.pathCount !== risk.provenance.pathCount) {
+          ctx.addIssue({
+            code: 'custom',
+            path: ['confidence', 'stochastic', 'pathCount'],
+            message: 'confidence.stochastic.pathCount must match comparison.risk.provenance.pathCount',
+          })
+        }
+        if (stochastic.seed !== risk.provenance.seed) {
+          ctx.addIssue({
+            code: 'custom',
+            path: ['confidence', 'stochastic', 'seed'],
+            message: 'confidence.stochastic.seed must match comparison.risk.provenance.seed',
+          })
+        }
+        const expectedModel = canonicalScenarioJson(risk.provenance.model)
+        if (stochastic.model !== expectedModel) {
+          ctx.addIssue({
+            code: 'custom',
+            path: ['confidence', 'stochastic', 'model'],
+            message:
+              'confidence.stochastic.model must be the canonical JSON of comparison.risk.provenance.model',
+          })
+        }
+      }
+    }
+
+    const seenActionIds = new Map<string, number>()
+    evaluation.actions.forEach((action, index) => {
+      if (seenActionIds.has(action.actionId)) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['actions', index],
+          message: `duplicate actionId "${action.actionId}" in evaluation.actions`,
+        })
+      } else {
+        seenActionIds.set(action.actionId, index)
+      }
+    })
+
+    const seenComparisonActionIds = new Map<string, number>()
+    evaluation.comparison.actionRows.forEach((row, index) => {
+      if (seenComparisonActionIds.has(row.actionId)) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['comparison', 'actionRows', index],
+          message: `duplicate actionId "${row.actionId}" in comparison.actionRows`,
+        })
+      } else {
+        seenComparisonActionIds.set(row.actionId, index)
+      }
+    })
 
     // 1:1 reconcile evaluation.actions against proposal-side comparison rows in
     // published actionRows order so comparison.actionRows cannot forge evidence.
