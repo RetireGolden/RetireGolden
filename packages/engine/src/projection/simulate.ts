@@ -53,7 +53,7 @@ import {
   resolveAssetClassParams,
   targetWeightsAt,
 } from '../allocation/assetClasses.js'
-import { packForYear, LATEST_PACK_YEAR, hecmPrincipalLimitFactorPct, EMBEDDED_REAL_YIELD_CURVE } from '../params/index.js'
+import { packForYear, LATEST_PACK_YEAR, hecmPrincipalLimitFactorPct, EMBEDDED_REAL_YIELD_CURVE, irmaaTierThreshold } from '../params/index.js'
 import { annuityExclusionMultiple, annuityPayoutForm, annuityPayoutFraction } from './annuityForms.js'
 import { buildLadder, ladderRealFlowsAtOffset, ladderRemainingFace, type LadderRung } from '../ladder/ladderMath.js'
 import { stateParamsFor } from '../params/state/index.js'
@@ -211,6 +211,7 @@ import {
   type ProjectionResult,
   type SimulatorRetirementRuntimeApplication,
   type TaxCalculator,
+  type TaxYearInput,
   type YearExpenses,
   type YearAcaResult,
   type AcaSupportCode,
@@ -1078,10 +1079,25 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
    * history entry and retain recentAnnualMagi as the legacy fallback.
    */
   const magiHistory = new Map<number, number>()
-  const magiFor = (y: number) =>
-    magiHistory.get(y) ??
-    plan.assumptions.historicalAnnualMagiByYear?.[String(y)] ??
-    plan.assumptions.recentAnnualMagi
+  type IrmaaLookbackMagiSource = 'projected' | 'historicalInput' | 'planFallback'
+  /**
+   * Resolve the lookback MAGI for calendar year `y` and name which arm of the
+   * fallback chain (`magiHistory` → `historicalAnnualMagiByYear` →
+   * `recentAnnualMagi`) supplied it. `'planFallback'` is the coarse
+   * `recentAnnualMagi` stand-in — not evidence.
+   */
+  const resolveMagiFor = (
+    y: number,
+  ): { magi: number; source: IrmaaLookbackMagiSource; year: number } => {
+    if (magiHistory.has(y)) {
+      return { magi: magiHistory.get(y)!, source: 'projected', year: y }
+    }
+    const historical = plan.assumptions.historicalAnnualMagiByYear?.[String(y)]
+    if (historical !== undefined) {
+      return { magi: historical, source: 'historicalInput', year: y }
+    }
+    return { magi: plan.assumptions.recentAnnualMagi, source: 'planFallback', year: y }
+  }
 
   const stableDepositTarget = (
     type: 'cash' | 'taxable',
@@ -2676,9 +2692,19 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     const acaContract = acaContractsForYear.length === 1 ? acaContractsForYear[0] : undefined
     // SSA-44 (see setup above): in the two years after a qualifying event, the
     // premium MAGI is the lower of the lookback and the prior-year stand-in.
-    const irmaaMagi = ssa44ActiveInYear(year)
-      ? Math.min(magiFor(year - 2), magiFor(year - 1))
-      : magiFor(year - 2)
+    // Source/year name which fallback arm supplied the SELECTED figure; under
+    // SSA-44 min(), the year of the minimum (ties keep the standard year-2
+    // lookback). `'planFallback'` is a coarse stand-in, not evidence.
+    const lookbackPrimary = resolveMagiFor(year - 2)
+    const lookbackSelected = ssa44ActiveInYear(year)
+      ? (() => {
+          const alternate = resolveMagiFor(year - 1)
+          return alternate.magi < lookbackPrimary.magi ? alternate : lookbackPrimary
+        })()
+      : lookbackPrimary
+    const irmaaMagi = lookbackSelected.magi
+    const irmaaLookbackMagiSource = lookbackSelected.source
+    const irmaaLookbackMagiYear = lookbackSelected.year
     // IRMAA's filing categories differ from the income-tax tables: SSA groups
     // qualifying-surviving-spouse filers with single/HOH on the individual
     // threshold table (POMS HI 01101.020), so QSS years price premiums at the
@@ -2687,6 +2713,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     let medicarePremiums = 0
     let irmaaSurcharge = 0
     let irmaaTier = 0
+    /** True when any alive person had Medicare months this calendar year. */
+    let anyMedicareActivity = false
     const marketplaceMonthsBeforeMedicare = (person: PersonYearState): number =>
       !person.alive
         ? 0
@@ -2713,6 +2741,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         }
       }
       if (medicareMonths > 0) {
+        anyMedicareActivity = true
         const med = medicareAnnualPremiumPerPerson(
           pack,
           irmaaMagi,
@@ -2737,6 +2766,19 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         healthcare += premium + hc.medicareExtrasMonthlyPerPerson * medicareMonths * healthInflFactor
       }
     }
+    // Next-tier MAGI boundary under the same inflation path / IRMAA filing
+    // status the premiums above were priced with. Published so planning
+    // surfaces never reconstruct pack inflation from `inflationScale`.
+    // Null when nobody was on Medicare this year (pre-enrollment — not a live
+    // boundary) or at the frozen top tier. Do not gate on `irmaaTier === 0`:
+    // a low-MAGI enrollee still needs distance to the first surcharge.
+    const irmaaNextTierThreshold =
+      !anyMedicareActivity || irmaaTier >= pack.medicare.irmaaTiers.length
+        ? null
+        : irmaaTierThreshold(pack, irmaaTier, irmaaFilingStatus, {
+            premiumYear: year,
+            inflationFactorToYear: (toYear: number) => inflFactorFrom(pack.year, toYear),
+          })
     const exampleContractInputMismatch =
       plan.exampleSourceId !== undefined &&
       acaContract !== undefined &&
@@ -7701,7 +7743,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // Gain-harvesting advisory: room left in the 0% LTCG bracket this year, given
     // the realized income and deductions (roadmap V8 §4). Advisory only — the
     // engine doesn't auto-harvest. Federal-law boundary, so computed federally.
-    const federalDetail = computeFederalTax({
+    // Capture the input + detail for planning surfaces; do not recompute later.
+    const advisoryFederalTaxInput: TaxYearInput = {
       year,
       filingStatus: filingStatusForYear,
       ordinaryIncome: ordinaryRealized,
@@ -7717,7 +7760,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       peopleAged65Plus,
       inflationScale: limitGrowth,
       itemizedDeductions,
-    })
+    }
+    const federalDetail = computeFederalTax(advisoryFederalTaxInput)
     const ltcgZeroHeadroom = federalDetail.zeroRateLtcgHeadroom
     if (federalDetail.alternativeMinimumTax > EPSILON) {
       warnings.add('The planning-grade AMT screen bound in at least one year; tax includes the AMT excess.')
@@ -9168,6 +9212,11 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       medicarePremiums,
       irmaaSurcharge,
       irmaaTier,
+      irmaaLookbackMagi: irmaaMagi,
+      irmaaLookbackMagiSource,
+      irmaaLookbackMagiYear,
+      irmaaNextTierThreshold,
+      advisoryFederalTax: { input: advisoryFederalTaxInput, detail: federalDetail },
       amt: federalDetail.alternativeMinimumTax,
       ltcgZeroHeadroom,
       ssEarningsTestWithheld,
