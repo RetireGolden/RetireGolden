@@ -1081,6 +1081,22 @@ export function verifyTaxOpportunityViewBinding(
     )
   }
 
+  const seenViewActionIds = new Set<string>()
+  for (const action of view.actions) {
+    if (seenViewActionIds.has(action.actionId)) {
+      throw new Error(
+        `verifyTaxOpportunityViewBinding: duplicate actionId in view.actions (action ${action.actionId})`,
+      )
+    }
+    seenViewActionIds.add(action.actionId)
+  }
+
+  if (view.actions.length !== parsedEvaluation.actions.length) {
+    throw new Error(
+      'verifyTaxOpportunityViewBinding: actions diverge from evaluation',
+    )
+  }
+
   const evaluationById = new Map(
     parsedEvaluation.actions.map((action) => [action.actionId, action]),
   )

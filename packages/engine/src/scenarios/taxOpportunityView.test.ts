@@ -785,6 +785,17 @@ describe('taxOpportunityView', () => {
     expect(() => parseTaxOpportunityView(duplicated)).toThrow(/duplicate actionId/)
   })
 
+  it('verifyTaxOpportunityViewBinding rejects duplicate action rows that bypass parse', () => {
+    const { baseline, proposal } = refusedActionPlans()
+    const { evaluation, view } = buildViewFromPlans(baseline, proposal)
+    const duplicated = structuredClone(view)
+    const first = duplicated.actions[0]!
+    duplicated.actions = [first, structuredClone(first), ...duplicated.actions.slice(1)]
+    expect(() => verifyTaxOpportunityViewBinding(duplicated, evaluation)).toThrow(
+      new RegExp(`duplicate actionId.*action ${first.actionId}`),
+    )
+  })
+
   it('verifyTaxOpportunityViewBinding rejects coherent forgeries that still parse', () => {
     const { baseline, proposal } = refusedActionPlans()
     const { evaluation, view } = buildViewFromPlans(baseline, proposal)
