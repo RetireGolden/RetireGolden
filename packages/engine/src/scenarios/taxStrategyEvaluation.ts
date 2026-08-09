@@ -92,7 +92,8 @@ import { canonicalScenarioJson } from './patch.js'
 export const TAX_STRATEGY_EVALUATION_KIND = 'retiregolden.tax-strategy-evaluation' as const
 export const CURRENT_TAX_STRATEGY_EVALUATION_VERSION = 1 as const
 
-const OBJECTIVE_POLICY_IDS = [
+/** Closed objective-policy id tuple shared with tradeoffs (WS4) and other cockpit surfaces. */
+export const TAX_STRATEGY_OBJECTIVE_POLICY_IDS = [
   'max-after-tax-estate',
   'max-spending-durability',
   'min-lifetime-tax-estate-floor',
@@ -102,7 +103,7 @@ const OBJECTIVE_POLICY_IDS = [
   'max-downside-resilience',
 ] as const satisfies readonly ObjectivePolicyId[]
 
-const objectivePolicyIdSchema = z.enum(OBJECTIVE_POLICY_IDS)
+const objectivePolicyIdSchema = z.enum(TAX_STRATEGY_OBJECTIVE_POLICY_IDS)
 
 const decisionSourceSchema = z.enum([
   'milp',
@@ -1978,4 +1979,4 @@ export function taxStrategyEvaluationHash(evaluation: TaxStrategyEvaluation): st
   return `fnv1a64:${hash.toString(16).padStart(16, '0')}`
 }
 
-Object.freeze(OBJECTIVE_POLICY_IDS)
+Object.freeze(TAX_STRATEGY_OBJECTIVE_POLICY_IDS)
