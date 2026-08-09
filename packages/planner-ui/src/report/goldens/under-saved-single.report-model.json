@@ -404,6 +404,9 @@
         }
       ]
     },
+    "inherited-schedules": {
+      "accounts": []
+    },
     "modeled-findings": null,
     "modeling-notes": {
       "warnings": []
@@ -871,5 +874,5 @@
     "stateParameterPackYear": 2026
   },
   "startYear": 2026,
-  "version": 2
+  "version": 3
 }

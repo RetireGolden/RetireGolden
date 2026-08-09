@@ -33,6 +33,14 @@ import { isPlanIncomplete } from './planCompleteness'
 import { LearnAboutScreen } from '../learn/LearnAboutScreen'
 import { downloadStandaloneReport } from '../report/downloadReport'
 import { useReportBranding } from '../report/brandingContext'
+import {
+  buildInheritedSchedules,
+  inheritedDeadlineExplanation,
+  inheritedEvidenceNote,
+  type ReportInheritedScheduleAccount,
+} from '../report/reportModel'
+import { needsProfessionalConfirmation } from './professionalConfirmation'
+import { csvEscape, inheritedCsvColumnHeaders } from './inheritedCsv'
 import { fmtMoney, fmtMoneyCompact } from './format'
 import { useProjection } from './useProjection'
 import { BucketLensCard } from './BucketLensCard'
@@ -45,6 +53,8 @@ import {
   capitalLossCarryforwardHighlight,
   hasCapitalLossCarryforward,
 } from './capitalLossCarryforwardVisibility'
+import { ProfessionalConfirmationMarker } from './ProfessionalConfirmationMarker'
+import { citationHref } from './provenanceLinks'
 
 type Dollars = 'nominal' | 'today'
 
@@ -103,6 +113,218 @@ function categoryBalances(plan: Plan, y: YearResult): Record<(typeof CATEGORIES)
 
 function moneyTick(v: number): string {
   return fmtMoneyCompact(v)
+}
+
+/** Plan accounts that publish inherited-IRA evidence rows (CSV column order). */
+function inheritedAccountIds(plan: Plan): string[] {
+  return plan.accounts
+    .filter(
+      (account) =>
+        (account.type === 'traditional' || account.type === 'roth') && account.inherited !== undefined,
+    )
+    .map((account) => account.id)
+}
+
+/**
+ * Map a technical classifier refusal into a plain-language cause for the
+ * Results callout. Verbatim technical text stays in a collapsed detail.
+ */
+function plainRefusalCause(refusalReason: string): string {
+  const lower = refusalReason.toLowerCase()
+  if (
+    lower.includes('estate') ||
+    lower.includes('trust') ||
+    lower.includes('entity') ||
+    lower.includes('non-individual')
+  ) {
+    return 'estates, trusts, and other entities are not modeled'
+  }
+  if (lower.includes('before 2020') || lower.includes('pre-secure')) {
+    return 'death before 2020 predates the modeled rules'
+  }
+  if (lower.includes('successor-beneficiary')) {
+    return 'accounts already inherited from a prior beneficiary are not modeled'
+  }
+  if (lower.includes('employer-plan') || lower.includes('scopes inherited support to iras')) {
+    return 'inherited workplace-plan schedules are not modeled'
+  }
+  return 'facts are contradictory or incomplete'
+}
+
+/**
+ * Expandable per-account inherited schedule: the primary explanation surface,
+ * fed from engine evidence rows already on the year ledger; no extra
+ * simulation.
+ */
+export function InheritedSchedulesSection({
+  plan,
+  years,
+  startYear,
+  adj,
+}: {
+  plan: Plan
+  years: readonly YearResult[]
+  startYear: number
+  adj: (year: number, v: number) => number
+}) {
+  const schedules = useMemo(() => buildInheritedSchedules(plan, years).accounts, [plan, years])
+  if (schedules.length === 0) return null
+
+  return (
+    <div className="chart-card" id="inherited-schedules">
+      <h2>Inherited account schedules</h2>
+      <p className="card-hint">
+        Required distribution schedules for the inherited accounts on this plan. Accounts with beneficiary details
+        follow IRS schedules matched to the facts when supported; accounts without beneficiary details, and inherited
+        workplace plans, use the simpler planning estimate. Planning illustration only, not tax or legal advice.
+      </p>
+      {schedules.map((account) => (
+        <InheritedAccountSchedule details={account} startYear={startYear} adj={adj} key={account.accountId} />
+      ))}
+    </div>
+  )
+}
+
+function InheritedAccountSchedule({
+  details,
+  startYear,
+  adj,
+}: {
+  details: ReportInheritedScheduleAccount
+  startYear: number
+  adj: (year: number, v: number) => number
+}) {
+  const thisYear = details.years.find((row) => row.year === startYear) ?? details.years[0]
+  return (
+    <details className="ss-explainer" data-testid={`inherited-schedule-${details.accountId}`}>
+      <summary>
+        {details.accountName}: {details.regimeLabel}
+      </summary>
+      {details.isSuccessorScope ? (
+        <p className="field-hint">
+          After the beneficiary&apos;s death the account passes to a successor; successor schedules are not modeled and
+          no amounts are forced.
+        </p>
+      ) : null}
+      {details.isRefusal ? (
+        <div className="callout callout--warn" role="status">
+          <strong>Needs review</strong>
+          <p>
+            The model does not cover these facts, so it shows the limitation rather than guessing. The schedule below
+            uses the simpler planning estimate.
+          </p>
+          {details.refusalReason ? (
+            <>
+              <p>
+                The model does not cover these facts: {plainRefusalCause(details.refusalReason)}.
+              </p>
+              <details>
+                <summary>Technical detail</summary>
+                <p className="field-hint">{details.refusalReason}</p>
+              </details>
+            </>
+          ) : null}
+        </div>
+      ) : null}
+      {details.isLegacyApproximation && !details.isRefusal ? (
+        <p className="field-hint">
+          <strong>Planning estimate.</strong> Beneficiary details were not supplied (or the death was before 2020), so
+          this account uses the simpler planning estimate rather than a fact-matched IRS schedule.
+        </p>
+      ) : null}
+      {details.needsProfessionalConfirmation ? <ProfessionalConfirmationMarker /> : null}
+      <ul>
+        <li>
+          <strong>Why this schedule</strong>: {details.regimeLabel}
+          {details.classification === 'unsettled'
+            ? '. This schedule follows a reading of rules that are not yet settled.'
+            : '.'}
+        </li>
+        <li>
+          <strong>Final deadline year</strong>: {inheritedDeadlineExplanation(details)}
+        </li>
+        {thisYear ? (
+          <li>
+            <strong>This year ({thisYear.year})</strong>: {thisYear.kindLabel}, required{' '}
+            {fmtMoney(adj(thisYear.year, thisYear.requiredAmount))}, executed{' '}
+            {fmtMoney(adj(thisYear.year, thisYear.executedRequiredAmount))}, voluntary{' '}
+            {fmtMoney(adj(thisYear.year, thisYear.voluntaryAmount))}.
+          </li>
+        ) : null}
+      </ul>
+      {details.facts.length > 0 ? (
+        <>
+          <p>
+            <strong>Facts used</strong>
+          </p>
+          <ul>
+            {details.facts.map((fact) => (
+              <li key={fact}>{fact}</li>
+            ))}
+          </ul>
+        </>
+      ) : null}
+      {details.notes.length > 0 ? (
+        <>
+          <p>
+            <strong>Notes</strong>
+          </p>
+          <ul>
+            {details.notes.map((note) => (
+              <li key={note}>{note}</li>
+            ))}
+          </ul>
+        </>
+      ) : null}
+      {details.citations.length > 0 ? (
+        <>
+          <p>
+            <strong>Citations</strong>
+          </p>
+          <ul>
+            {details.citations.map((citation) => {
+              const href = citationHref(citation)
+              return (
+                <li key={citation}>
+                  {href ? (
+                    <a href={href} target="_blank" rel="noopener noreferrer">
+                      {citation} ↗
+                    </a>
+                  ) : (
+                    citation
+                  )}
+                </li>
+              )
+            })}
+          </ul>
+        </>
+      ) : null}
+      <div className="year-table-wrap" style={{ border: 'none', marginTop: '0.5rem' }}>
+        <table className="year-table">
+          <thead>
+            <tr>
+              <th>Year</th>
+              <th>Kind</th>
+              <th>Required</th>
+              <th>Executed</th>
+              <th>Voluntary</th>
+            </tr>
+          </thead>
+          <tbody>
+            {details.years.map((row) => (
+              <tr key={row.year}>
+                <td>{row.year}</td>
+                <td>{row.kindLabel}</td>
+                <td>{fmtMoney(adj(row.year, row.requiredAmount))}</td>
+                <td>{fmtMoney(adj(row.year, row.executedRequiredAmount))}</td>
+                <td>{row.voluntaryAmount > 0.5 ? fmtMoney(adj(row.year, row.voluntaryAmount)) : ''}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </details>
+  )
 }
 
 function DollarsToggle({ value, onChange }: { value: Dollars; onChange: (v: Dollars) => void }) {
@@ -292,14 +514,34 @@ export function ResultsPage() {
   )
 
   const handleCsv = () => {
+    const inheritedIds = inheritedAccountIds(plan)
+    // Per-account inherited columns, flattened in plan account order (same
+    // convention as the rest of this ledger export).
+    const inheritedCols = inheritedCsvColumnHeaders(inheritedIds)
     const cols = [
       'year', 'filingStatus', 'wages', 'socialSecurity', 'pension', 'annuity', 'tipsLadder', 'recurring', 'oneTimeIncome', 'taxableInterest', 'taxExemptInterest', 'ordinaryDividends', 'qualifiedDividends', 'taxableYield', 'totalIncome',
       'baseSpending', 'goals', 'debtService', 'propertyCosts', 'healthcare', 'insurancePremiums', 'careCost', 'ltcBenefit', 'requiredSpending', 'targetSpending', 'idealSpending', 'excessSpending', 'intendedSpending', 'totalExpenses', 'contributions', 'employerMatch', 'rmd', 'qcd',
       'rothConversion', 'tax', 'amt', 'penalties', 'magi', 'withdrawals', 'realizedGains', 'lossCarryforwardUsed', 'lossCarryforwardRemaining', 'shortfall', 'investable',
       'requiredShortfall', 'targetShortfall', 'idealShortfall', 'excessShortfall', 'guardrailAction', 'guardrailFactor', 'flexibleGoalsFunded', 'flexibleGoalsPartiallyFunded', 'flexibleGoalsDeferred', 'flexibleGoalsSkipped', 'flexibleGoalFundedAmount', 'flexibleGoalUnfundedAmount', 'insuranceCashValue', 'ladderValue', 'deathBenefit', 'netWorth',
+      ...inheritedCols,
     ]
     const lines = [cols.join(',')]
     for (const y of view.result.years) {
+      const byAccount = new Map((y.inheritedAccounts ?? []).map((row) => [row.accountId, row]))
+      const inheritedValues = inheritedIds.flatMap((id) => {
+        const row = byAccount.get(id)
+        if (!row) return ['', '', '', '', '', '']
+        const confirm = needsProfessionalConfirmation(row) ? 'yes' : ''
+        const note = csvEscape(inheritedEvidenceNote(row))
+        return [
+          row.requiredAmount,
+          row.executedRequiredAmount,
+          row.voluntaryAmount,
+          csvEscape(row.requirementKind),
+          csvEscape(confirm),
+          note,
+        ]
+      })
       lines.push(
         [
           y.year, y.filingStatus, y.incomes.wages, y.incomes.socialSecurity, y.incomes.pension, y.incomes.annuity, y.incomes.tipsLadder, y.incomes.recurring,
@@ -307,6 +549,7 @@ export function ResultsPage() {
           y.expenses.propertyCosts, y.expenses.healthcare, y.expenses.insurancePremiums, y.expenses.careCost, y.expenses.ltcBenefit, y.expenses.requiredSpending, y.expenses.targetSpending, y.expenses.idealSpending, y.expenses.excessSpending, y.expenses.intendedSpending, y.expenses.total, y.contributions, y.employerMatch, y.rmd, y.qcd, y.rothConversion, y.tax, y.amt, y.penalties,
           y.magi, y.withdrawals.total, y.realizedGains, y.capitalLossUsedAgainstGains + y.capitalLossUsedAgainstOrdinary, y.capitalLossCarryforwardRemaining, y.shortfall, y.investableTotal,
           y.requiredShortfall, y.targetShortfall, y.idealShortfall, y.excessShortfall, y.guardrailAction, y.expenses.guardrailFactor.toFixed(2), y.flexibleGoals.funded, y.flexibleGoals.partiallyFunded, y.flexibleGoals.deferred, y.flexibleGoals.skipped, y.flexibleGoals.fundedAmount, y.flexibleGoals.unfundedAmount, y.insuranceCashValue, y.ladderValue, y.deathBenefit, y.netWorth,
+          ...inheritedValues,
         ]
           .map((v) => (typeof v === 'number' ? Math.round(v) : v))
           .join(','),
@@ -823,6 +1066,13 @@ export function ResultsPage() {
           </ul>
         </details>
       </details>
+
+      <InheritedSchedulesSection
+        plan={plan}
+        years={view.result.years}
+        startYear={view.startYear}
+        adj={adj}
+      />
 
       <p className="field-hint">
         Every figure above comes from the single year-by-year ledger in this table, the same ledger Monte Carlo and

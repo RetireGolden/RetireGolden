@@ -336,7 +336,39 @@ function advisorSection(block: ReportAdvisorRecommendationsBlock | null): string
 }
 
 function appendixSection(model: ReportModel): string {
-  return `<section><h2>Year-by-year ledger appendix</h2>${table(
+  const inherited = model.blocks['inherited-schedules'].accounts
+  const inheritedHtml =
+    inherited.length === 0
+      ? ''
+      : `<section><h2>Inherited account schedules (nominal $)</h2><p class="muted">Compact schedule per inherited account. Full notes and citations are on the Results page.</p>${inherited
+          .map((account) => {
+            const refusalNote = account.isRefusal
+              ? '<p class="muted">Needs review: the model does not cover these facts, so it shows the limitation rather than guessing. The schedule below uses the simpler planning estimate.</p>'
+              : ''
+            const successorNote = account.isSuccessorScope
+              ? '<p class="muted">After the beneficiary&apos;s death the account passes to a successor; successor schedules are not modeled and no amounts are forced.</p>'
+              : ''
+            const legacyNote =
+              account.isLegacyApproximation && !account.isRefusal
+                ? '<p class="muted">Planning estimate (beneficiary details not supplied).</p>'
+                : ''
+            const deadlineNote =
+              account.finalDeadlineYear !== null
+                ? `<p class="muted">Final deadline year: ${account.finalDeadlineYear}</p>`
+                : ''
+            const confirmNote = account.needsProfessionalConfirmation
+              ? '<p class="muted">Confirm with a tax professional.</p>'
+              : ''
+            const rows = account.years.map((row) => [
+              `${row.year}`,
+              escapeHtml(row.kindLabel),
+              fmtMoney(row.requiredAmount),
+              fmtMoney(row.executedRequiredAmount),
+            ])
+            return `<div style="margin-top:12px"><h3>${escapeHtml(account.accountName)}: ${escapeHtml(account.regimeLabel)}</h3>${refusalNote}${successorNote}${legacyNote}${deadlineNote}${confirmNote}${table(['Year', 'Kind', 'Required', 'Executed'], rows)}</div>`
+          })
+          .join('')}</section>`
+  return `${inheritedHtml}<section><h2>Year-by-year ledger appendix</h2>${table(
     ['Year', 'Income', 'Expenses', 'Contrib.', 'RMD', 'Roth conv.', 'Tax + penalties', 'MAGI', 'Withdrawals', 'Investable', 'Net worth'],
     model.blocks['year-ledger'].rows.map((y) => [
       `${y.year}`,

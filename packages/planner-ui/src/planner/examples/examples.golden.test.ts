@@ -234,6 +234,7 @@ const EXPECTED: Record<string, { depletionYear: number | null; endingInvestable:
   'brokerage-bridge-401k': { depletionYear: 2068, endingInvestable: 0, lifetimeTax: 876_459.16, lifetimeRoth: 0 },
   'no-head-start-grad': { depletionYear: null, endingInvestable: 17_943_027.61, lifetimeTax: 3_342_541.68, lifetimeRoth: 0 },
   'trump-account-head-start': { depletionYear: null, endingInvestable: 26_312_459.52, lifetimeTax: 4_849_292.59, lifetimeRoth: 0 },
+  'inherited-ira-beneficiary': { depletionYear: 2032, endingInvestable: 0, lifetimeTax: 49_647.74, lifetimeRoth: 0 },
 }
 
 describe('example plan golden KPIs', () => {

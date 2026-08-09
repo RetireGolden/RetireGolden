@@ -30,13 +30,21 @@ import {
 } from '@retiregolden/engine/params'
 import { LATEST_STATE_PACK_YEAR } from '@retiregolden/engine/params/state'
 import type { ProjectionSummary } from '@retiregolden/engine/projection/compare'
-import type { ProjectionResult, YearResult } from '@retiregolden/engine/projection/types'
+import type {
+  InheritedAccountYearEvidence,
+  ProjectionResult,
+  YearResult,
+} from '@retiregolden/engine/projection/types'
 import { acaLedgerSummary } from '../planner/acaReportStatus'
 import { fmtMoney } from '../planner/format'
 import { isPlanIncomplete } from '../planner/planCompleteness'
+import {
+  needsProfessionalConfirmation,
+  ROTH_FIVE_YEAR_INCOMPLETE_DISCLOSURE,
+} from '../planner/professionalConfirmation'
 
 export const REPORT_MODEL_KIND = 'retiregolden.report-model'
-export const REPORT_MODEL_VERSION = 2
+export const REPORT_MODEL_VERSION = 3
 
 /**
  * Stable identities of every block the model carries. Downstream templates
@@ -48,6 +56,7 @@ export const REPORT_BLOCK_IDS = [
   'modeled-findings',
   'household',
   'accounts',
+  'inherited-schedules',
   'income-sources',
   'assumptions',
   'aca-ledger',
@@ -253,6 +262,50 @@ export interface ReportYearLedgerBlock {
   rows: ReportYearLedgerRow[]
 }
 
+/**
+ * Compact per-account inherited schedule for the report appendix (WS5 Chunk B).
+ * ResultsPage is the primary surface; this keeps the report small and factual.
+ * Dollar fields are whole nominal dollars (same convention as the year ledger).
+ */
+export interface ReportInheritedScheduleYearRow {
+  year: number
+  requirementKind: InheritedAccountYearEvidence['requirementKind']
+  /** Plain-language label for the requirement kind. */
+  kindLabel: string
+  requiredAmount: number
+  executedRequiredAmount: number
+  voluntaryAmount: number
+}
+
+export interface ReportInheritedScheduleAccount {
+  accountId: string
+  accountName: string
+  regime: string
+  /** Plain-language regime name. */
+  regimeLabel: string
+  matrixRow: string
+  classification: 'settled' | 'unsettled' | null
+  finalDeadlineYear: number | null
+  refusalReason: string | null
+  /** True when the schedule is the labeled planning approximation path. */
+  isLegacyApproximation: boolean
+  /** True when any year carried a classifier refusal or unsupported flag. */
+  isRefusal: boolean
+  /** True when post-death years use the successor-clock-out-of-scope path. */
+  isSuccessorScope: boolean
+  needsProfessionalConfirmation: boolean
+  /** Short labeled notes for limitations / disclosures / notice-waived. */
+  notes: string[]
+  citations: string[]
+  /** Facts the classification relied on, as short labels from the plan inputs. */
+  facts: string[]
+  years: ReportInheritedScheduleYearRow[]
+}
+
+export interface ReportInheritedSchedulesBlock {
+  accounts: ReportInheritedScheduleAccount[]
+}
+
 export const REPORT_CHART_CATEGORIES = ['cash', 'taxable', 'equityComp', 'traditional', 'roth', 'hsa'] as const
 
 export type ReportChartCategory = (typeof REPORT_CHART_CATEGORIES)[number]
@@ -338,6 +391,8 @@ export interface ReportModel {
     'modeled-findings': ReportRecommendationEvidence | null
     'household': ReportHouseholdBlock
     'accounts': ReportAccountsBlock
+    /** Present only when the plan carries inherited accounts. */
+    'inherited-schedules': ReportInheritedSchedulesBlock
     'income-sources': ReportIncomeSourcesBlock
     'assumptions': ReportAssumptionsBlock
     'aca-ledger': ReportAcaLedgerBlock
@@ -528,6 +583,417 @@ function yearLedgerRow(y: YearResult): ReportYearLedgerRow {
   }
 }
 
+/** Plain-language schedule names for the engine's regime keys. */
+export const INHERITED_REGIME_LABELS: Record<string, string> = {
+  'ten-year-with-annual-rmds': '10-year rule with annual distributions',
+  'ten-year-no-annual': '10-year rule, no annual amounts',
+  'edb-life-expectancy': 'Life-expectancy schedule (eligible designated beneficiary)',
+  'edb-ten-year-elected': '10-year rule election (eligible designated beneficiary)',
+  'spouse-remain-beneficiary': 'Spouse life-expectancy schedule',
+  'spouse-treat-as-own-transition': 'Spouse treats account as own',
+  'spouse-ten-year-elected': 'Spouse 10-year rule election',
+  'roth-ten-year-no-annual': 'Inherited Roth 10-year rule',
+  'roth-edb-life-expectancy': 'Inherited Roth life-expectancy schedule',
+  'legacy-planning-approximation': 'Planning estimate',
+  unsupported: 'Not supported',
+  'needs-review': 'Needs review',
+}
+
+/** Plain-language requirement-kind labels. */
+export const INHERITED_REQUIREMENT_KIND_LABELS: Record<
+  InheritedAccountYearEvidence['requirementKind'],
+  string
+> = {
+  'year-of-death-rmd': 'Year-of-death RMD',
+  'annual-rmd': 'Annual RMD',
+  none: 'No required distribution',
+  'final-sweep': 'Final distribution (deadline year)',
+  legacy: 'Planning estimate',
+}
+
+/** UI-side earnings-taxability caution when the Roth five-year window may still be open. */
+export const ROTH_FIVE_YEAR_INCOMPLETE_NOTE =
+  'The five-year period may not be complete; some earnings could be taxable when withdrawn. This model does not compute that tax.'
+
+const DISCLOSURE_NOTE_LABELS: Record<string, string> = {
+  'prop-reg-spouse-as-employee':
+    'Proposed spouse-as-employee rule is not final; this plan uses the Single Life reading.',
+  'ira-agreement-election': 'Election validity depends on the IRA agreement (not confirmed here).',
+  'deemed-election-risk':
+    'A missed beneficiary RMD or an owner-style contribution can silently convert the account.',
+  'roth-taxability-needs-review':
+    "The owner's five-year start is unknown, so some earnings could be taxable when withdrawn; this model does not compute that tax.",
+  'edb-category-year-precision-unverified':
+    'EDB category is uncertain at year-only birth precision.',
+  'successor-clock-out-of-scope':
+    'Successor 10-year clock after the beneficiary dies is out of scope.',
+  'treat-as-own-timing-gate-unverified':
+    'Treat-as-own timing gate is not fully verified against prior elections.',
+}
+
+const LIMITATION_NOTE_LABELS: Record<string, string> = {
+  'pre-horizon-year-of-death-rmd-unresolved':
+    'Year-of-death RMD before the projection horizon is unresolved on this path.',
+  'joint-life-gap-unresolved-at-year-precision':
+    'The birth years alone cannot settle whether the spouse is more than 10 years younger, which affects the death-year required amount; shown using the standard table.',
+}
+
+/** User-visible notice-waived copy. Amounts are computed for reference; the engine does not take them. */
+export const NOTICE_WAIVED_NOTE =
+  'Waived by IRS notice for this year; shown for reference, not taken.'
+
+/**
+ * Plain-language regime name for a schedule. Matrix row codes stay off the
+ * user-visible string (they remain on the model for tests and diagnostics).
+ */
+export function inheritedRegimeLabel(regime: string, matrixRow?: string): string {
+  // matrixRow remains accepted for call-site compatibility; it is never shown.
+  void matrixRow
+  return INHERITED_REGIME_LABELS[regime] ?? regime
+}
+
+export function inheritedRequirementKindLabel(
+  kind: InheritedAccountYearEvidence['requirementKind'],
+): string {
+  return INHERITED_REQUIREMENT_KIND_LABELS[kind] ?? kind
+}
+
+function firstCommencementYearAfter(
+  year: number,
+  yearRows: ReadonlyArray<{ year: number; evidence: InheritedAccountYearEvidence }>,
+): number | undefined {
+  for (const row of yearRows) {
+    if (row.year > year && row.evidence.requirementKind === 'annual-rmd') return row.year
+  }
+  return undefined
+}
+
+function isSpouseDeferralNoneEvidence(evidence: InheritedAccountYearEvidence): boolean {
+  return (
+    evidence.requirementKind === 'none' &&
+    (evidence.regime === 'spouse-remain-beneficiary' || evidence.regime === 'roth-edb-life-expectancy')
+  )
+}
+
+/** §1.408-8(c)(3): same-year treat-as-own with the death-year RMD already satisfied. */
+function isSameYearTreatAsOwnDeferral(
+  account: Account,
+  year: number,
+  evidence: InheritedAccountYearEvidence,
+): boolean {
+  if (evidence.requirementKind !== 'none') return false
+  if (!('inherited' in account) || account.inherited === undefined) return false
+  const beneficiary = account.inherited.beneficiary
+  const electionYear = beneficiary?.treatAsOwnElectionYear
+  if (beneficiary?.election !== 'treat-as-own' || electionYear === undefined) return false
+  return (
+    year === electionYear &&
+    electionYear === account.inherited.ownerDeathYear &&
+    beneficiary.ownerYearOfDeathRmdSatisfied === true
+  )
+}
+
+/** Requirement-kind label for one schedule year, with treat-as-own post-flip routing. */
+export function inheritedRequirementKindLabelForYear(
+  account: Account,
+  year: number,
+  evidence: InheritedAccountYearEvidence,
+  yearRows: ReadonlyArray<{ year: number; evidence: InheritedAccountYearEvidence }>,
+): string {
+  if (isSuccessorScopeEvidence(evidence)) {
+    return DISCLOSURE_NOTE_LABELS['successor-clock-out-of-scope']!
+  }
+
+  const beneficiary =
+    'inherited' in account && account.inherited !== undefined
+      ? account.inherited.beneficiary
+      : undefined
+  const electionYear = beneficiary?.treatAsOwnElectionYear
+  if (isSameYearTreatAsOwnDeferral(account, year, evidence)) {
+    return 'Owner RMD rules apply from next year'
+  }
+  if (
+    evidence.requirementKind === 'none' &&
+    beneficiary?.election === 'treat-as-own' &&
+    electionYear !== undefined &&
+    year >= electionYear
+  ) {
+    return 'Owner RMD rules apply from the election year.'
+  }
+
+  if (evidence.requirementKind === 'none' && isSpouseDeferralNoneEvidence(evidence)) {
+    const commencementYear = firstCommencementYearAfter(year, yearRows)
+    return commencementYear !== undefined
+      ? `No amount required until ${commencementYear}`
+      : 'No amount required until commencement'
+  }
+
+  return inheritedRequirementKindLabel(evidence.requirementKind)
+}
+
+function isSuccessorScopeEvidence(evidence: InheritedAccountYearEvidence): boolean {
+  return (
+    evidence.requirementKind === 'none' &&
+    evidence.disclosures.includes('successor-clock-out-of-scope') &&
+    evidence.refusalReason !== undefined
+  )
+}
+
+/**
+ * Account-level schedule name from the primary classification. A treat-as-own
+ * election names the account even while pre-election years publish spouse
+ * life-expectancy phase rows.
+ */
+export function primaryInheritedRegimeLabel(
+  account: Account,
+  yearRows: ReadonlyArray<{ year: number; evidence: InheritedAccountYearEvidence }>,
+): { regime: string; matrixRow: string; regimeLabel: string } {
+  const first = yearRows[0]!.evidence
+  const beneficiary =
+    'inherited' in account && account.inherited !== undefined
+      ? account.inherited.beneficiary
+      : undefined
+  const electionYear = beneficiary?.treatAsOwnElectionYear
+  const isTreatAsOwn =
+    beneficiary?.election === 'treat-as-own' ||
+    yearRows.some((row) => row.evidence.regime === 'spouse-treat-as-own-transition')
+
+  if (isTreatAsOwn) {
+    const s2 = yearRows.find((row) => row.evidence.regime === 'spouse-treat-as-own-transition')
+    const matrixRow = s2?.evidence.matrixRow ?? first.matrixRow
+    const regimeLabel =
+      electionYear !== undefined
+        ? `Spouse treats account as own (from ${electionYear})`
+        : 'Spouse treats account as own'
+    return { regime: 'spouse-treat-as-own-transition', matrixRow, regimeLabel }
+  }
+
+  return {
+    regime: first.regime,
+    matrixRow: first.matrixRow,
+    regimeLabel: inheritedRegimeLabel(first.regime),
+  }
+}
+
+/**
+ * Null-deadline explanation routed on the account's primary regime / path —
+ * never a single generic sentence for every schedule without a fixed year.
+ */
+export function inheritedDeadlineExplanation(account: ReportInheritedScheduleAccount): string {
+  if (account.finalDeadlineYear !== null) {
+    return `${account.finalDeadlineYear} (entire interest by end of that calendar year, when the schedule fixes one).`
+  }
+  if (
+    account.isLegacyApproximation ||
+    account.isRefusal ||
+    account.regime === 'legacy-planning-approximation' ||
+    account.regime === 'unsupported' ||
+    account.regime === 'needs-review' ||
+    account.years.some((row) => row.requirementKind === 'legacy')
+  ) {
+    return "The simpler planning estimate empties the account by the 10th year after the owner's death."
+  }
+  if (account.regime === 'spouse-treat-as-own-transition') {
+    return "After the transition the account follows the owner's own RMD rules."
+  }
+  return "No fixed deadline year: amounts continue over the beneficiary's life expectancy."
+}
+
+/** Short CSV/note text for waiver or limitation on one evidence year. */
+export function inheritedEvidenceNote(evidence: InheritedAccountYearEvidence): string {
+  const parts: string[] = []
+  if (evidence.noticeWaived) parts.push(NOTICE_WAIVED_NOTE)
+  if (evidence.limitation) parts.push(noteForLimitation(evidence.limitation))
+  return parts.join(' ')
+}
+
+function inheritedFactsFromAccount(account: Account): string[] {
+  if (!('inherited' in account) || account.inherited === undefined) return []
+  const inherited = account.inherited
+  const facts: string[] = [
+    `Owner death year: ${inherited.ownerDeathYear}`,
+    `Owner had started RMDs: ${inherited.decedentHadStartedRmds ? 'yes' : 'no'}`,
+  ]
+  const beneficiary = inherited.beneficiary
+  if (beneficiary === undefined) {
+    facts.push('Beneficiary details: not provided (planning estimate)')
+    return facts
+  }
+  facts.push(`Beneficiary class: ${beneficiary.beneficiaryClass}`)
+  if (beneficiary.edbCategory !== undefined) facts.push(`EDB category: ${beneficiary.edbCategory}`)
+  if (beneficiary.beneficiaryBirthYear !== undefined) {
+    facts.push(`Beneficiary birth year: ${beneficiary.beneficiaryBirthYear}`)
+  }
+  if (beneficiary.soleBeneficiary !== undefined) {
+    facts.push(`Sole beneficiary: ${beneficiary.soleBeneficiary ? 'yes' : 'no'}`)
+  }
+  if (beneficiary.election !== undefined && beneficiary.election !== 'none') {
+    facts.push(`Election: ${beneficiary.election}`)
+  }
+  if (beneficiary.treatAsOwnElectionYear !== undefined) {
+    facts.push(`Treat-as-own election year: ${beneficiary.treatAsOwnElectionYear}`)
+  }
+  if (beneficiary.spouseUnlimitedWithdrawalRight !== undefined) {
+    facts.push(
+      `Spouse unlimited withdrawal right: ${beneficiary.spouseUnlimitedWithdrawalRight ? 'yes' : 'no'}`,
+    )
+  }
+  if (beneficiary.ownerBirthYear !== undefined) {
+    facts.push(`Owner birth year: ${beneficiary.ownerBirthYear}`)
+  }
+  if (beneficiary.ownerBirthMonth !== undefined) {
+    facts.push(`Owner birth month: ${beneficiary.ownerBirthMonth}`)
+  }
+  if (beneficiary.ownerBirthDay !== undefined) {
+    facts.push(`Owner birth day: ${beneficiary.ownerBirthDay}`)
+  }
+  if (beneficiary.ownerYearOfDeathRmdSatisfied !== undefined) {
+    facts.push(
+      `Year-of-death RMD satisfied: ${beneficiary.ownerYearOfDeathRmdSatisfied ? 'yes' : 'no'}`,
+    )
+  }
+  if (beneficiary.roth5YearStartYear !== undefined) {
+    facts.push(`Roth 5-year start year: ${beneficiary.roth5YearStartYear}`)
+  }
+  if (beneficiary.provenance.source) {
+    const asOf = beneficiary.provenance.asOf
+    facts.push(
+      asOf
+        ? `Facts provided by ${beneficiary.provenance.source}, as of ${asOf}`
+        : `Facts provided by ${beneficiary.provenance.source}`,
+    )
+  }
+  return facts
+}
+
+/** When the five-year start year is known but still open for schedule years, surface the caution in notes. */
+function inheritedRothFiveYearIncompleteNote(
+  account: Account,
+  scheduleYears: readonly number[],
+): string | null {
+  if (account.type !== 'roth' || account.inherited?.beneficiary === undefined) return null
+  const startYear = account.inherited.beneficiary.roth5YearStartYear
+  if (startYear === undefined) return null
+  return scheduleYears.some((year) => startYear + 4 >= year) ? ROTH_FIVE_YEAR_INCOMPLETE_NOTE : null
+}
+
+function noteForLimitation(limitation: string): string {
+  return LIMITATION_NOTE_LABELS[limitation] ?? `Limitation: ${limitation}`
+}
+
+function noteForDisclosure(disclosure: string): string {
+  return DISCLOSURE_NOTE_LABELS[disclosure] ?? `Disclosure: ${disclosure}`
+}
+
+/**
+ * Assemble compact inherited-schedule rows from the projection evidence.
+ * Pure selection/formatting — no simulation. Empty when the plan has no
+ * inherited accounts (or the years publish no evidence rows).
+ */
+export function buildInheritedSchedules(
+  plan: Plan,
+  years: readonly YearResult[],
+): ReportInheritedSchedulesBlock {
+  const inheritedAccounts = plan.accounts.filter(
+    (account) =>
+      (account.type === 'traditional' || account.type === 'roth') && account.inherited !== undefined,
+  )
+  if (inheritedAccounts.length === 0) return { accounts: [] }
+
+  const accounts: ReportInheritedScheduleAccount[] = []
+  for (const account of inheritedAccounts) {
+    const yearRows: Array<{ year: number; evidence: InheritedAccountYearEvidence }> = []
+    for (const year of years) {
+      const evidence = year.inheritedAccounts?.find((row) => row.accountId === account.id)
+      if (evidence) yearRows.push({ year: year.year, evidence })
+    }
+    if (yearRows.length === 0) continue
+
+    const first = yearRows[0]!.evidence
+    const primary = primaryInheritedRegimeLabel(account, yearRows)
+    const notes = new Set<string>()
+    const citations = new Set<string>()
+    let needsConfirm = false
+    let isRefusal = false
+    let isSuccessorScope = false
+    let refusalReason: string | null = null
+    let finalDeadlineYear: number | null = null
+    let hasUnsettledClassification = false
+    let hasSettledClassification = false
+
+    for (const { evidence } of yearRows) {
+      if (evidence.classification === 'unsettled') hasUnsettledClassification = true
+      if (evidence.classification === 'settled') hasSettledClassification = true
+      if (evidence.finalDeadlineYear !== undefined) finalDeadlineYear = evidence.finalDeadlineYear
+      if (isSuccessorScopeEvidence(evidence)) isSuccessorScope = true
+      if (evidence.refusalReason && !isSuccessorScopeEvidence(evidence)) {
+        isRefusal = true
+        refusalReason = evidence.refusalReason
+      }
+      if (evidence.limitation) notes.add(noteForLimitation(evidence.limitation))
+      if (evidence.noticeWaived) {
+        notes.add(NOTICE_WAIVED_NOTE)
+      }
+      for (const disclosure of evidence.disclosures) notes.add(noteForDisclosure(disclosure))
+      for (const citation of evidence.citations) citations.add(citation)
+      if (needsProfessionalConfirmation(evidence)) needsConfirm = true
+    }
+
+    if (isSuccessorScope) finalDeadlineYear = null
+
+    const rothFiveYearNote = inheritedRothFiveYearIncompleteNote(
+      account,
+      yearRows.map((row) => row.year),
+    )
+    if (rothFiveYearNote) {
+      notes.add(rothFiveYearNote)
+      needsConfirm =
+        needsConfirm ||
+        needsProfessionalConfirmation({ disclosures: [ROTH_FIVE_YEAR_INCOMPLETE_DISCLOSURE] })
+    }
+
+    const classification: 'settled' | 'unsettled' | null = hasUnsettledClassification
+      ? 'unsettled'
+      : hasSettledClassification
+        ? 'settled'
+        : null
+
+    const isLegacyApproximation =
+      primary.regime === 'legacy-planning-approximation' ||
+      first.regime === 'legacy-planning-approximation' ||
+      first.requirementKind === 'legacy' ||
+      yearRows.some((row) => row.evidence.requirementKind === 'legacy')
+
+    accounts.push({
+      accountId: account.id,
+      accountName: account.name,
+      regime: primary.regime,
+      regimeLabel: primary.regimeLabel,
+      matrixRow: primary.matrixRow,
+      classification,
+      finalDeadlineYear,
+      refusalReason,
+      isLegacyApproximation,
+      isRefusal,
+      isSuccessorScope,
+      needsProfessionalConfirmation: needsConfirm,
+      notes: [...notes],
+      citations: [...citations],
+      facts: inheritedFactsFromAccount(account),
+      years: yearRows.map(({ year, evidence }) => ({
+        year,
+        requirementKind: evidence.requirementKind,
+        kindLabel: inheritedRequirementKindLabelForYear(account, year, evidence, yearRows),
+        requiredAmount: roundDollar(evidence.requiredAmount),
+        executedRequiredAmount: roundDollar(evidence.executedRequiredAmount),
+        voluntaryAmount: roundDollar(evidence.voluntaryAmount),
+      })),
+    })
+  }
+
+  return { accounts }
+}
+
 /**
  * Assemble the edition-neutral report model from an already-computed
  * projection. Pure selection/formatting — this function runs no simulation
@@ -589,6 +1055,7 @@ export function buildReportModel(input: ReportModelInput): ReportModel {
           annualReturnPct: 'annualReturnPct' in a ? a.annualReturnPct : null,
         })),
       },
+      'inherited-schedules': buildInheritedSchedules(plan, result.years),
       'income-sources': {
         rows: plan.incomes.map((s) => ({
           id: s.id,

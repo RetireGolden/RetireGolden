@@ -88,6 +88,47 @@ function evidence(result: ReturnType<typeof run>, value: number) {
 }
 
 describe('WS4 inherited-regime execution fixtures', () => {
+  it('R1: executes each non-relief annual amount from the verified Single Life schedule before the final sweep', () => {
+    // The pack confirms the spec's referenced age-59 table entry. With the
+    // specified 1965 beneficiary, however, the 2023 lookup age is 58, so the
+    // 2026 divisor is 28.9 - 3 = 25.9 rather than the age-59 25.0 result.
+    const pack = packForYear(2026).pack
+    expect(pack.rmd.singleLifeTable[59]).toBe(28.0)
+    expect(pack.rmd.singleLifeTable[58]).toBe(28.9)
+
+    const plan = planFor(1965)
+    inherited(plan, 'traditional', {
+      ownerDeathYear: 2022,
+      decedentHadStartedRmds: true,
+      beneficiary: facts({
+        beneficiaryBirthYear: 1965,
+        ownerBirthYear: 1940,
+        ownerYearOfDeathRmdSatisfied: true,
+      }),
+    })
+    const { result, ordinaryIncome } = runCapturingOrdinaryIncome(plan, 2032)
+
+    for (const [calendarYear, divisor] of [
+      [2026, 25.9], [2027, 24.9], [2028, 23.9], [2029, 22.9], [2030, 21.9], [2031, 20.9],
+    ] as const) {
+      const e = evidence(result, calendarYear)
+      const priorYearEnd = calendarYear === 2026 ? 300_000 : year(result, calendarYear - 1).balances.inherited!
+      expect(e.regime).toBe('ten-year-with-annual-rmds')
+      expect(e.matrixRow).toBe('R1')
+      expect(e.requirementKind).toBe('annual-rmd')
+      expect(e.divisorArm).toBe('beneficiary-fixed')
+      expect(e.divisor).toBe(divisor)
+      expect(e.executedRequiredAmount).toBeCloseTo(priorYearEnd / divisor, 2)
+      expect(year(result, calendarYear).inheritedDistribution).toBeCloseTo(e.executedRequiredAmount, 8)
+      expect(ordinaryIncome.some((amount) => Math.abs(amount - e.executedRequiredAmount) < 0.005)).toBe(true)
+    }
+
+    const finalYear = evidence(result, 2032)
+    expect(finalYear.requirementKind).toBe('final-sweep')
+    expect(finalYear.executedRequiredAmount).toBeCloseTo(year(result, 2031).balances.inherited!, 2)
+    expect(year(result, 2032).balances.inherited).toBeCloseTo(0, 2)
+  })
+
   it('E1 S1: executes the post-RBD spouse redetermined arm, not the shorter owner arm', () => {
     const plan = planFor(1947)
     inherited(plan, 'traditional', {

@@ -457,12 +457,24 @@ rules and citations: [domain rules §16](../domain/domain-rules-reference.md#16-
   `classifyInheritedRegime` / `inheritedRequirementForYear` (`strategies/inheritedIra.ts`) in the annual
   ledger: forced year-of-death, annual, and final-sweep amounts; voluntary planner draws beyond the
   requirement; per-account `InheritedAccountYearEvidence` (regime, limitation, disclosure, refusal); and
-  scenario-comparison inherited totals. Legacy two-field accounts (no beneficiary block) and classifier-refusal
-  fallbacks keep the labeled `legacy-planning-approximation` path. Planning-grade only — not filing-grade
+  scenario-comparison inherited totals. Supported regime keys (matrix §3, condensed):
+  `ten-year-with-annual-rmds`, `ten-year-no-annual`, `edb-life-expectancy`, `edb-ten-year-elected` (unsettled),
+  `spouse-remain-beneficiary`, `spouse-treat-as-own-transition`, `spouse-ten-year-elected` (unsettled),
+  `roth-ten-year-no-annual`, `roth-edb-life-expectancy`, plus `roth-taxability-evidence` on every Roth row.
+  **Fail closed:** death before 2020, successor beneficiary, estate/trust/entity, multiple beneficiaries without
+  separate-account facts, missing or contradictory facts, and a post-RBD ten-year election → typed refusal;
+  classifier refusals other than X1 project on the labeled `legacy-planning-approximation` path with the refusal
+  on the evidence row. Legacy two-field accounts (no beneficiary block) stay on that labeled path. No schema fact
+  can assert SECURE 2.0 §327 spouse-as-employee treatment; that posture is disclosed on spouse life-expectancy
+  rows rather than refused as an assertion the plan cannot make. Planning-grade only — not filing-grade
   compliance. Named residuals: §1.402(c)-2(j)(4) catch-up (S2 timing-gate disclosure
-  `treat-as-own-timing-gate-unverified`), non-qualified inherited-Roth earnings tax (K3 disclosure),
-  post-S2 contribution/conversion/QCD enablement for validators without year context, and Roth
-  S2-flip basis migration into the owned Roth pool. See
+  `treat-as-own-timing-gate-unverified`), non-qualified inherited-Roth earnings tax (K3 disclosure), post-S2
+  contribution/conversion/QCD enablement for validators without year context, and Roth S2-flip basis migration
+  into the owned Roth pool. **Accounts** is the input surface (beneficiary-details panel). **Results** is the full
+  per-account inherited schedule (professional-confirmation marker when classification is unsettled or a
+  limitation, disclosure, or refusal is present). **Report** keeps a compact appendix. CSV export carries
+  required/executed/voluntary amounts, requirement kinds, and a confirm-with-professional flag (plus a short note
+  when a waiver or limitation is present). The Learning Center inherited-IRA article explains the schedules. See
   [inherited-IRA regime matrix](../domain/inherited-ira-regime-matrix.md).
 - **HSA medical-expense subledger.** An HSA can cap qualified (tax- and penalty-free) withdrawals at the
   household's modeled medical costs (`capByMedicalExpenses`), assume every withdrawal qualifies

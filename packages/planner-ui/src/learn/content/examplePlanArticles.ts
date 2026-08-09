@@ -147,6 +147,17 @@ export const exampleRmdIrmaaArticle = exampleArticle(
   ['/plan/:planId/results', '/plan/:planId/accounts'],
 )
 
+export const exampleInheritedIraBeneficiaryArticle = exampleArticle(
+  'example-inherited-ira-beneficiary',
+  'Inherited IRA beneficiary schedules',
+  'A surviving-spouse inherited IRA with beneficiary facts beside a legacy two-field inherited IRA.',
+  'inherited-ira-beneficiary',
+  'Robin’s classified inherited IRA records a sole surviving spouse who elects to remain beneficiary, so the engine can show its sourced schedule. The second inherited IRA has only the older two fields, so it uses the simpler planning estimate. Compare the two evidence rows before relying on an inherited-account schedule; confirm beneficiary facts and the applicable rules with a tax professional.',
+  'Open Accounts to compare the classified beneficiary details with the legacy account, then inspect their separate inherited schedule rows in Results.',
+  ['inherited-ira-10-year-rule', 'rmds-required-minimum-distributions'],
+  ['/plan/:planId/accounts', '/plan/:planId/results'],
+)
+
 export const exampleSurvivorYearsArticle = exampleArticle(
   'example-survivor-years',
   'Survivor years and the widow\'s penalty',
@@ -680,6 +691,7 @@ export const EXAMPLE_PLAN_ARTICLES = [
   exampleBracketFillRothArticle,
   exampleEarlyRetireeAcaArticle,
   exampleRmdIrmaaArticle,
+  exampleInheritedIraBeneficiaryArticle,
   exampleSurvivorYearsArticle,
   exampleMovingStateTaxArticle,
   exampleLtcShockArticle,
