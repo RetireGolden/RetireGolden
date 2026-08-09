@@ -74,7 +74,13 @@ import type {
   ScenarioActionComparisonRow,
   ScenarioActionRow,
 } from './actionRows.js'
-import type { ScenarioPlanComparison } from './comparison.js'
+import {
+  ANNUAL_VALUE_KEYS,
+  type ScenarioHeadlineComparison,
+  type ScenarioPlanComparison,
+  type ScenarioRiskComparison,
+  type ScenarioSpendingCapacityComparison,
+} from './comparison.js'
 import { canonicalScenarioJson } from './patch.js'
 
 export const TAX_STRATEGY_EVALUATION_KIND = 'retiregolden.tax-strategy-evaluation' as const
@@ -195,6 +201,77 @@ const CLOSED_ACTION_KINDS: ReadonlySet<string> = new Set([
   'rothConversion',
   'qcd',
 ])
+
+const retirementActionYearSchema = z.number().int().min(1).max(9999)
+
+function positiveMoneyCentsIsStructural(value: unknown): value is number {
+  if (typeof value !== 'number' || !Number.isSafeInteger(value)) return false
+  return positiveUsdCentsSchema.safeParse(value).success
+}
+
+function usdMoneyCentsIsStructural(value: unknown): value is number {
+  if (typeof value !== 'number' || !Number.isSafeInteger(value)) return false
+  return usdCentsSchema.safeParse(value).success
+}
+
+function nullableScalarComparisonIsStructural(value: unknown): boolean {
+  if (!isPlainObject(value)) return false
+  for (const side of ['baseline', 'proposal', 'delta'] as const) {
+    const scalar = value[side]
+    if (scalar !== null && (typeof scalar !== 'number' || !Number.isFinite(scalar))) {
+      return false
+    }
+  }
+  return true
+}
+
+function sourceAllocationIdentitiesAreUnique(
+  sourceAllocations: ReadonlyArray<Record<string, unknown>>,
+): boolean {
+  const allocationIds = new Set<string>()
+  const sourceAccountIds = new Set<string>()
+  for (const allocation of sourceAllocations) {
+    const allocationId = allocation['allocationId']
+    const sourceAccountId = allocation['sourceAccountId']
+    if (typeof allocationId !== 'string' || typeof sourceAccountId !== 'string') return false
+    if (allocationIds.has(allocationId) || sourceAccountIds.has(sourceAccountId)) return false
+    allocationIds.add(allocationId)
+    sourceAccountIds.add(sourceAccountId)
+  }
+  return true
+}
+
+function refineUniqueSourceAllocationIdentities(
+  sourceAllocations: ReadonlyArray<{
+    allocationId: string
+    sourceAccountId: string
+  }>,
+  ctx: z.RefinementCtx,
+  pathPrefix: readonly (string | number)[] = [],
+): void {
+  const allocationIds = new Set<string>()
+  const sourceAccountIds = new Set<string>()
+  sourceAllocations.forEach((allocation, index) => {
+    if (allocationIds.has(allocation.allocationId)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: [...pathPrefix, 'sourceAllocations', index, 'allocationId'],
+        message: `duplicate allocation id "${allocation.allocationId}"`,
+      })
+    } else {
+      allocationIds.add(allocation.allocationId)
+    }
+    if (sourceAccountIds.has(allocation.sourceAccountId)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: [...pathPrefix, 'sourceAllocations', index, 'sourceAccountId'],
+        message: `duplicate source account id "${allocation.sourceAccountId}"`,
+      })
+    } else {
+      sourceAccountIds.add(allocation.sourceAccountId)
+    }
+  })
+}
 
 /**
  * Canonical disposition amount invariants mirrored from
@@ -549,9 +626,9 @@ function comparisonSideDispositionIsStructural(side: Record<string, unknown>): b
   const requested = side['requestedAmountCents']
   const executed = side['executedAmountCents']
   const unexecuted = side['unexecutedAmountCents']
-  if (typeof requested !== 'number' || !Number.isInteger(requested)) return false
-  if (typeof executed !== 'number' || !Number.isInteger(executed)) return false
-  if (typeof unexecuted !== 'number' || !Number.isInteger(unexecuted)) return false
+  if (!positiveMoneyCentsIsStructural(requested)) return false
+  if (!usdMoneyCentsIsStructural(executed)) return false
+  if (!usdMoneyCentsIsStructural(unexecuted)) return false
   if (BigInt(executed) + BigInt(unexecuted) !== BigInt(requested)) return false
 
   if (readiness === 'nonActionable') {
@@ -620,12 +697,14 @@ function comparisonSideSourceAllocationsAreStructural(
   if (!Array.isArray(sourceAllocations)) return false
 
   const sideRequested = side['requestedAmountCents']
-  if (typeof sideRequested !== 'number' || !Number.isInteger(sideRequested)) return false
+  if (!positiveMoneyCentsIsStructural(sideRequested)) return false
 
+  const allocationRecords: Record<string, unknown>[] = []
   let requestedAllocationTotal = 0n
   let executedAllocationTotal = 0n
   for (const allocation of sourceAllocations) {
     if (!isPlainObject(allocation)) return false
+    allocationRecords.push(allocation)
     if (typeof allocation['allocationId'] !== 'string' || allocation['allocationId'].length === 0) {
       return false
     }
@@ -641,9 +720,9 @@ function comparisonSideSourceAllocationsAreStructural(
     const requested = allocation['requestedAmountCents']
     const executed = allocation['executedAmountCents']
     const unexecuted = allocation['unexecutedAmountCents']
-    if (typeof requested !== 'number' || !Number.isInteger(requested)) return false
-    if (typeof executed !== 'number' || !Number.isInteger(executed)) return false
-    if (typeof unexecuted !== 'number' || !Number.isInteger(unexecuted)) return false
+    if (!positiveMoneyCentsIsStructural(requested)) return false
+    if (!usdMoneyCentsIsStructural(executed)) return false
+    if (!usdMoneyCentsIsStructural(unexecuted)) return false
     if (BigInt(executed) + BigInt(unexecuted) !== BigInt(requested)) return false
     if (allocation['resolution'] === 'unresolved' && executed !== 0) return false
     if (side['readiness'] === 'actionable' && allocation['resolution'] !== 'resolved') {
@@ -653,10 +732,12 @@ function comparisonSideSourceAllocationsAreStructural(
     executedAllocationTotal += BigInt(executed)
   }
 
+  if (!sourceAllocationIdentitiesAreUnique(allocationRecords)) return false
+
   if (requestedAllocationTotal !== BigInt(sideRequested)) return false
 
   const sideExecuted = side['executedAmountCents']
-  if (typeof sideExecuted !== 'number' || !Number.isInteger(sideExecuted)) return false
+  if (!usdMoneyCentsIsStructural(sideExecuted)) return false
   return executedAllocationTotal === BigInt(sideExecuted)
 }
 
@@ -669,11 +750,9 @@ function comparisonSideReasonsAreStructural(
 
   const reasons: ActionReasonOutcomeFields[] = []
   for (const reason of reasonsValue) {
-    if (!isPlainObject(reason)) return false
-    if (typeof reason['code'] !== 'string' || typeof reason['outcome'] !== 'string') {
-      return false
-    }
-    reasons.push({ code: reason['code'], outcome: reason['outcome'] })
+    const parsed = actionReasonSchema.safeParse(reason)
+    if (!parsed.success) return false
+    reasons.push({ code: parsed.data.code, outcome: parsed.data.outcome })
   }
 
   const outcome = side['outcome']
@@ -798,7 +877,15 @@ const taxStrategyEvaluationActionSchema = z
 
     refineAllocationRequestedTotals(action, ctx)
     refineSourceAllocationResolutions(action, ctx)
+    refineUniqueSourceAllocationIdentities(action.sourceAllocations, ctx)
     refineActionKindIdentities(action, ctx)
+    if (action.kind === 'qcd' && action.sourceAllocations.length !== 1) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['sourceAllocations'],
+        message: 'qcd actions require exactly one source allocation',
+      })
+    }
   })
 
 export type TaxStrategyEvaluationAction = z.infer<typeof taxStrategyEvaluationActionSchema>
@@ -895,7 +982,7 @@ const COMPARISON_REQUIRED_OBJECT_SECTIONS = [
   'irmaa',
   'aca',
   'estate',
-] as const
+] as const satisfies readonly (keyof ScenarioPlanComparison)[]
 
 const SCENARIO_HEADLINE_COMPARISON_KEYS = [
   'endingInvestable',
@@ -906,7 +993,12 @@ const SCENARIO_HEADLINE_COMPARISON_KEYS = [
   'lifetimeTaxesAndPenalties',
   'depletionYear',
   'projectionEndYear',
-] as const
+] as const satisfies readonly (keyof ScenarioHeadlineComparison)[]
+
+type ScenarioRiskMetricComparisonKey = Exclude<
+  keyof ScenarioRiskComparison,
+  'provenance' | 'depletionProbabilityByYear'
+>
 
 const SCENARIO_RISK_COMPARISON_KEYS = [
   'successRate',
@@ -925,22 +1017,71 @@ const SCENARIO_RISK_COMPARISON_KEYS = [
   'estateP10',
   'estateP50',
   'estateP90',
-] as const
+] as const satisfies readonly ScenarioRiskMetricComparisonKey[]
 
-function isActionReasonShape(value: unknown): boolean {
-  if (!isPlainObject(value)) return false
-  return (
-    typeof value['code'] === 'string' &&
-    typeof value['predicate'] === 'string' &&
-    typeof value['outcome'] === 'string' &&
-    typeof value['message'] === 'string'
-  )
+const SCENARIO_SPENDING_CAPACITY_KEYS = [
+  'maxBaseAnnual',
+  'spendingSlack',
+  'baselineConverged',
+  'proposalConverged',
+  'baselineSimulationCount',
+  'proposalSimulationCount',
+  'baselineLimitingConstraint',
+  'proposalLimitingConstraint',
+  'baselineDiagnostics',
+  'proposalDiagnostics',
+] as const satisfies readonly (keyof ScenarioSpendingCapacityComparison)[]
+
+function spendingCapacityIsStructural(value: Record<string, unknown>): boolean {
+  for (const key of SCENARIO_SPENDING_CAPACITY_KEYS) {
+    if (!(key in value)) return false
+    const field = value[key]
+    switch (key) {
+      case 'maxBaseAnnual':
+      case 'spendingSlack':
+        if (!nullableScalarComparisonIsStructural(field)) return false
+        break
+      case 'baselineConverged':
+      case 'proposalConverged':
+        if (typeof field !== 'boolean') return false
+        break
+      case 'baselineSimulationCount':
+      case 'proposalSimulationCount':
+        if (typeof field !== 'number' || !Number.isInteger(field)) return false
+        break
+      case 'baselineLimitingConstraint':
+      case 'proposalLimitingConstraint':
+        if (
+          field !== null &&
+          field !== 'depletion' &&
+          field !== 'estate-floor'
+        ) {
+          return false
+        }
+        break
+      case 'baselineDiagnostics':
+      case 'proposalDiagnostics':
+        if (!Array.isArray(field) || !field.every((entry) => typeof entry === 'string')) {
+          return false
+        }
+        break
+      default: {
+        const _exhaustive: never = key
+        return _exhaustive === undefined
+      }
+    }
+  }
+  return true
 }
 
-function isScenarioActionScheduleDiagnosticShape(value: unknown): boolean {
+function isScenarioActionScheduleDiagnosticShape(
+  value: unknown,
+  containingActionId: string,
+): boolean {
   if (!isPlainObject(value)) return false
   const kind = value['kind']
   if (typeof value['actionId'] !== 'string' || value['actionId'].length === 0) return false
+  if (value['actionId'] !== containingActionId) return false
 
   if (kind === 'actionYearMismatch') {
     return (
@@ -976,7 +1117,7 @@ function isScenarioActionScheduleDiagnosticShape(value: unknown): boolean {
     ) {
       return false
     }
-    return isActionReasonShape(value['reason'])
+    return actionReasonSchema.safeParse(value['reason']).success
   }
 
   return false
@@ -1100,8 +1241,9 @@ function isScenarioPlanComparisonShape(value: unknown): value is ScenarioPlanCom
       if (!isPlainObject(entry['cumulativeProbability'])) return false
     }
   }
-  if (value['spendingCapacity'] !== null && !isPlainObject(value['spendingCapacity'])) {
-    return false
+  if (value['spendingCapacity'] !== null) {
+    if (!isPlainObject(value['spendingCapacity'])) return false
+    if (!spendingCapacityIsStructural(value['spendingCapacity'])) return false
   }
 
   if (!Array.isArray(value['actionRows'])) return false
@@ -1110,17 +1252,23 @@ function isScenarioPlanComparisonShape(value: unknown): value is ScenarioPlanCom
     if (!isPlainObject(row) || typeof row['year'] !== 'number' || !Number.isInteger(row['year'])) {
       return false
     }
+    if (!('values' in row) || !isPlainObject(row['values'])) return false
+    const values = row['values']
+    for (const key of ANNUAL_VALUE_KEYS) {
+      if (!nullableScalarComparisonIsStructural(values[key])) return false
+    }
   }
   for (const row of value['actionRows']) {
     if (!isPlainObject(row)) return false
     if (typeof row['actionId'] !== 'string' || row['actionId'].length === 0) return false
+    const outerActionId = row['actionId']
     if (!Array.isArray(row['baselineScheduleDiagnostics'])) return false
     if (!Array.isArray(row['proposalScheduleDiagnostics'])) return false
     for (const diagnostic of row['baselineScheduleDiagnostics']) {
-      if (!isScenarioActionScheduleDiagnosticShape(diagnostic)) return false
+      if (!isScenarioActionScheduleDiagnosticShape(diagnostic, outerActionId)) return false
     }
     for (const diagnostic of row['proposalScheduleDiagnostics']) {
-      if (!isScenarioActionScheduleDiagnosticShape(diagnostic)) return false
+      if (!isScenarioActionScheduleDiagnosticShape(diagnostic, outerActionId)) return false
     }
     const baseline = row['baseline']
     const proposal = row['proposal']
@@ -1132,7 +1280,6 @@ function isScenarioPlanComparisonShape(value: unknown): value is ScenarioPlanCom
     ) {
       return false
     }
-    const outerActionId = row['actionId']
     const sideKeys = ['baseline', 'proposal'] as const
     for (const sideKey of sideKeys) {
       if (!(sideKey in row)) return false
@@ -1141,11 +1288,16 @@ function isScenarioPlanComparisonShape(value: unknown): value is ScenarioPlanCom
       if (side === undefined) return false
       if (!isPlainObject(side)) return false
       if (side['actionId'] !== outerActionId) return false
+      if (!retirementActionYearSchema.safeParse(side['year']).success) return false
       if (typeof side['kind'] !== 'string' || !CLOSED_ACTION_KINDS.has(side['kind'])) return false
       if (!comparisonSideDispositionIsStructural(side)) return false
       if (!comparisonSideKindIdentitiesAreStructural(side)) return false
       if (!comparisonSideSourceAllocationsAreStructural(side)) return false
       if (!comparisonSideReasonsAreStructural(side)) return false
+      if (side['kind'] === 'qcd') {
+        const sideAllocations = side['sourceAllocations']
+        if (!Array.isArray(sideAllocations) || sideAllocations.length !== 1) return false
+      }
     }
   }
 
@@ -1238,6 +1390,20 @@ export const taxStrategyEvaluationSchema = z
         code: 'custom',
         path: ['comparison', 'moneyBasis', 'deltaConvention'],
         message: "deltaConvention must be 'proposal-minus-baseline'",
+      })
+    }
+
+    const expectedStandInYears = standInYearsFromComparison(evaluation.comparison)
+    const actualStandInYears = evaluation.provenance.parameterBasis.standInYears
+    if (
+      actualStandInYears.length !== expectedStandInYears.length ||
+      actualStandInYears.some((year, index) => year !== expectedStandInYears[index])
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['provenance', 'parameterBasis', 'standInYears'],
+        message:
+          'provenance.parameterBasis.standInYears must match stand-in years derived from comparison.annual',
       })
     }
 

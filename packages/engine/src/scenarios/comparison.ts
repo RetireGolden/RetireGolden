@@ -224,7 +224,7 @@ export interface AnnualScenarioComparisonRow {
   values: AnnualComparisonValue
 }
 
-const ANNUAL_VALUE_KEYS: Array<keyof AnnualComparisonValues> = [
+export const ANNUAL_VALUE_KEYS = [
   'income',
   'spendingIntended',
   'spendingFunded',
@@ -252,7 +252,7 @@ const ANNUAL_VALUE_KEYS: Array<keyof AnnualComparisonValues> = [
   'acaModeledAllowablePtc',
   'acaEconomicNetPremium',
   'taxExemptInterest',
-]
+] as const satisfies readonly (keyof AnnualComparisonValues)[]
 
 export interface ScenarioRiskComparison {
   provenance: {

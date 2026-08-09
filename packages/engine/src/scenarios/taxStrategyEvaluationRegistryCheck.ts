@@ -30,7 +30,7 @@ function checkLimitation(
 ): void {
   if (!Object.hasOwn(TAX_RULE_REGISTRY, limitation.ruleId)) {
     issues.push({
-      path,
+      path: [...path, 'ruleId'],
       ruleId: limitation.ruleId,
       message: `limitation ruleId "${limitation.ruleId}" is not a shipped TaxRuleId`,
     })

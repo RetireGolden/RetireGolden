@@ -1345,4 +1345,129 @@ describe('taxStrategyEvaluation', () => {
     })).toThrow()
     expect(isTaxStrategyEvaluationDocument(dateSpending)).toBe(false)
   })
+
+  it('rejects round-4 structural tamper on diagnostics, allocations, reasons, money, annual, spending capacity, qcd, standInYears, and side year', () => {
+    const evaluation = buildTaxStrategyEvaluation({
+      comparison: actionBearingComparison(),
+      objective: maximizeAfterTaxEstate,
+    })
+    const refusedEvaluation = buildTaxStrategyEvaluation({
+      comparison: refusedActionComparison(),
+      objective: maximizeAfterTaxEstate,
+    })
+    const asRecord = (value: TaxStrategyEvaluation): Record<string, unknown> =>
+      JSON.parse(JSON.stringify(value)) as Record<string, unknown>
+
+    const proposalBearingIndex = evaluation.comparison.actionRows.findIndex(
+      (row) => row.proposal !== null,
+    )
+    expect(proposalBearingIndex).toBeGreaterThanOrEqual(0)
+
+    const diagnosticMismatch = asRecord(refusedEvaluation)
+    const diagnosticRow = (
+      (diagnosticMismatch['comparison'] as Record<string, unknown>)['actionRows'] as Array<
+        Record<string, unknown>
+      >
+    ).find((row) => (row['baselineScheduleDiagnostics'] as unknown[]).length > 0)!
+    const diagnostics = diagnosticRow['baselineScheduleDiagnostics'] as Array<Record<string, unknown>>
+    expect(diagnostics.length).toBeGreaterThan(0)
+    diagnostics[0]!['actionId'] = asActionId('forged-diagnostic-action')
+    expect(() => parseTaxStrategyEvaluation(diagnosticMismatch)).toThrow()
+    expect(() => buildTaxStrategyEvaluation({
+      comparison: diagnosticMismatch['comparison'] as typeof refusedEvaluation.comparison,
+      objective: maximizeAfterTaxEstate,
+    })).toThrow()
+
+    const duplicateAllocation = asRecord(evaluation)
+    const duplicateAction = (duplicateAllocation['actions'] as Array<Record<string, unknown>>)[0]!
+    const duplicateAllocations = duplicateAction['sourceAllocations'] as Array<Record<string, unknown>>
+    expect(duplicateAllocations.length).toBeGreaterThan(0)
+    duplicateAllocations.push(structuredClone(duplicateAllocations[0]!))
+    expect(() => parseTaxStrategyEvaluation(duplicateAllocation)).toThrow()
+
+    const invalidReasonPersonId = asRecord(refusedEvaluation)
+    const reasonBearingIndex = refusedEvaluation.actions.findIndex(
+      (action) => action.reasons.length > 0,
+    )
+    expect(reasonBearingIndex).toBeGreaterThanOrEqual(0)
+    const reasonAction = (invalidReasonPersonId['actions'] as Array<Record<string, unknown>>)[
+      reasonBearingIndex
+    ]!
+    const reasons = reasonAction['reasons'] as Array<Record<string, unknown>>
+    reasons[0]!['personId'] = {}
+    expect(() => parseTaxStrategyEvaluation(invalidReasonPersonId)).toThrow()
+
+    const negativeBaselineCents = asRecord(refusedEvaluation)
+    const negativeRow = (
+      (negativeBaselineCents['comparison'] as Record<string, unknown>)['actionRows'] as Array<
+        Record<string, unknown>
+      >
+    ).find((row) => row['baseline'] !== null)!
+    const negativeBaseline = negativeRow['baseline'] as Record<string, unknown>
+    negativeBaseline['requestedAmountCents'] = -1
+    expect(() => parseTaxStrategyEvaluation(negativeBaselineCents)).toThrow()
+    expect(() => buildTaxStrategyEvaluation({
+      comparison: negativeBaselineCents['comparison'] as typeof refusedEvaluation.comparison,
+      objective: maximizeAfterTaxEstate,
+    })).toThrow()
+
+    const missingAnnualValues = asRecord(evaluation)
+    const annualRows = (missingAnnualValues['comparison'] as Record<string, unknown>)['annual'] as Array<
+      Record<string, unknown>
+    >
+    expect(annualRows.length).toBeGreaterThan(0)
+    delete annualRows[0]!['values']
+    expect(() => parseTaxStrategyEvaluation(missingAnnualValues)).toThrow()
+    expect(() => buildTaxStrategyEvaluation({
+      comparison: missingAnnualValues['comparison'] as typeof evaluation.comparison,
+      objective: maximizeAfterTaxEstate,
+    })).toThrow()
+
+    const emptySpendingCapacity = asRecord(evaluation)
+    ;(emptySpendingCapacity['comparison'] as Record<string, unknown>)['spendingCapacity'] = {}
+    expect(() => parseTaxStrategyEvaluation(emptySpendingCapacity)).toThrow()
+    expect(() => buildTaxStrategyEvaluation({
+      comparison: emptySpendingCapacity['comparison'] as typeof evaluation.comparison,
+      objective: maximizeAfterTaxEstate,
+    })).toThrow()
+
+    const twoAllocationQcd = asRecord(evaluation)
+    const qcdAction = (twoAllocationQcd['actions'] as Array<Record<string, unknown>>)[0]!
+    qcdAction['kind'] = 'qcd'
+    qcdAction['destinationAccountId'] = null
+    qcdAction['charityDesignationId'] = 'charity-designation'
+    const qcdAllocations = qcdAction['sourceAllocations'] as Array<Record<string, unknown>>
+    qcdAllocations.push(structuredClone(qcdAllocations[0]!))
+    const qcdProposal = (
+      (twoAllocationQcd['comparison'] as Record<string, unknown>)['actionRows'] as Array<
+        Record<string, unknown>
+      >
+    )[proposalBearingIndex]!['proposal'] as Record<string, unknown>
+    qcdProposal['kind'] = 'qcd'
+    qcdProposal['destinationAccountId'] = null
+    qcdProposal['charityDesignationId'] = 'charity-designation'
+    const qcdProposalAllocations = qcdProposal['sourceAllocations'] as Array<Record<string, unknown>>
+    qcdProposalAllocations.push(structuredClone(qcdProposalAllocations[0]!))
+    expect(() => parseTaxStrategyEvaluation(twoAllocationQcd)).toThrow()
+
+    const emptiedStandInYears = asRecord(evaluation)
+    ;(emptiedStandInYears['provenance'] as Record<string, unknown>)['parameterBasis'] = {
+      ...(evaluation.provenance.parameterBasis as object),
+      standInYears: [],
+    }
+    expect(() => parseTaxStrategyEvaluation(emptiedStandInYears)).toThrow()
+
+    const missingBaselineYear = asRecord(refusedEvaluation)
+    const missingYearRow = (
+      (missingBaselineYear['comparison'] as Record<string, unknown>)['actionRows'] as Array<
+        Record<string, unknown>
+      >
+    ).find((row) => row['baseline'] !== null)!
+    delete (missingYearRow['baseline'] as Record<string, unknown>)['year']
+    expect(() => parseTaxStrategyEvaluation(missingBaselineYear)).toThrow()
+    expect(() => buildTaxStrategyEvaluation({
+      comparison: missingBaselineYear['comparison'] as typeof refusedEvaluation.comparison,
+      objective: maximizeAfterTaxEstate,
+    })).toThrow()
+  })
 })
