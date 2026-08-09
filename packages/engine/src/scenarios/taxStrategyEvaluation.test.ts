@@ -807,6 +807,66 @@ describe('taxStrategyEvaluation', () => {
     expect(() => assertTaxStrategyEvaluationLimitations(misclassified)).toThrow()
   })
 
+  it('rejects reason-outcome swaps on evaluation actions and comparison actionRows', () => {
+    const refusedEvaluation = buildTaxStrategyEvaluation({
+      comparison: refusedActionComparison(),
+      objective: maximizeAfterTaxEstate,
+    })
+    const executedEvaluation = buildTaxStrategyEvaluation({
+      comparison: actionBearingComparison(),
+      objective: maximizeAfterTaxEstate,
+    })
+    const asRecord = (value: TaxStrategyEvaluation): Record<string, unknown> =>
+      JSON.parse(JSON.stringify(value)) as Record<string, unknown>
+
+    const refusedIndex = refusedEvaluation.actions.findIndex(
+      (action) => action.outcome === 'refused' && action.reasons.length > 0,
+    )
+    expect(refusedIndex).toBeGreaterThanOrEqual(0)
+    const refusedAction = refusedEvaluation.actions[refusedIndex]!
+    expect(refusedAction.readiness).toBe('nonActionable')
+    expect(refusedAction.executedAmountCents).toBe(0)
+    expect(refusedAction.unexecutedAmountCents).toBe(refusedAction.requestedAmountCents)
+
+    const adjustedReason = createActionReason('qcd-person-limit-trimmed', {})
+    expect(adjustedReason.outcome).toBe('adjusted')
+    const refusedReasonSwap = asRecord(refusedEvaluation)
+    const refusedActionTamper = (refusedReasonSwap['actions'] as Array<Record<string, unknown>>)[
+      refusedIndex
+    ]!
+    refusedActionTamper['reasons'] = [adjustedReason]
+    expect(() => parseTaxStrategyEvaluation(refusedReasonSwap)).toThrow()
+
+    const executedIndex = executedEvaluation.actions.findIndex(
+      (action) => action.outcome === 'executed',
+    )
+    expect(executedIndex).toBeGreaterThanOrEqual(0)
+    const refusedReason = createActionReason('source-account-not-found', {
+      accountId: asAccountId('cash'),
+    })
+    expect(refusedReason.outcome).toBe('refused')
+    const executedReasonSwap = asRecord(executedEvaluation)
+    const executedActionTamper = (executedReasonSwap['actions'] as Array<Record<string, unknown>>)[
+      executedIndex
+    ]!
+    executedActionTamper['reasons'] = [refusedReason]
+    expect(() => parseTaxStrategyEvaluation(executedReasonSwap)).toThrow()
+
+    const comparison = refusedActionComparison()
+    const comparisonRecord = JSON.parse(JSON.stringify(comparison)) as Record<string, unknown>
+    const actionRows = comparisonRecord['actionRows'] as Array<Record<string, unknown>>
+    const refusedRow = actionRows.find((row) => {
+      const proposal = row['proposal'] as Record<string, unknown> | null | undefined
+      return proposal !== null && proposal !== undefined && proposal['outcome'] === 'refused'
+    })!
+    const proposal = refusedRow['proposal'] as Record<string, unknown>
+    proposal['reasons'] = [adjustedReason]
+    expect(() => buildTaxStrategyEvaluation({
+      comparison: comparisonRecord as unknown as typeof comparison,
+      objective: maximizeAfterTaxEstate,
+    })).toThrow()
+  })
+
   it('rejects reconciliation tampers on identities, sourceAllocations, and reasons', () => {
     const evaluation = buildTaxStrategyEvaluation({
       comparison: actionBearingComparison(),

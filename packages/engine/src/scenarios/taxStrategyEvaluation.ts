@@ -157,6 +157,7 @@ export const taxStrategyLimitationRefSchema = z
     }
   })
 
+/** `ruleId` uses `TaxRuleId` as a compile-time authoring aid; parsed documents expose a plain string. Registry truth comes only from the opt-in `taxStrategyEvaluationRegistryCheck` module. */
 export type TaxStrategyLimitationRef = Readonly<{
   ruleId: TaxRuleId
   classification: z.infer<typeof limitationClassificationSchema>
@@ -302,11 +303,120 @@ function validateAdjustedReasonOrder(
   })
 }
 
+type ActionReasonOutcomeFields = Readonly<{
+  code: string
+  outcome: string
+}>
+
+function adjustedReasonOrderIsCanonical(
+  reasons: ReadonlyArray<ActionReasonOutcomeFields>,
+  startIndex: number,
+): boolean {
+  let previousOrder = -1
+  const seen = new Set<string>()
+
+  for (let offset = 0; offset < reasons.length - startIndex; offset++) {
+    const reason = reasons[startIndex + offset]!
+    if (reason.outcome !== 'adjusted') continue
+    const order = ADJUSTED_REASON_CANONICAL_ORDER.indexOf(
+      reason.code as (typeof ADJUSTED_REASON_CANONICAL_ORDER)[number],
+    )
+    if (seen.has(reason.code) || order < previousOrder) return false
+    seen.add(reason.code)
+    previousOrder = Math.max(previousOrder, order)
+  }
+  return true
+}
+
+/**
+ * Reason-outcome rules mirrored from `validatedActionExecutionDispositionSchema`
+ * superRefine in `packages/engine/src/actions/contract.ts`.
+ */
+function actionReasonsMatchOutcomeRules(
+  reasons: ReadonlyArray<ActionReasonOutcomeFields>,
+  outcome: 'executed' | 'partial' | 'refused' | 'unsupported',
+): boolean {
+  if (outcome === 'executed') {
+    if (!reasons.every((reason) => reason.outcome === 'adjusted')) return false
+    return adjustedReasonOrderIsCanonical(reasons, 0)
+  }
+
+  if (outcome === 'partial') {
+    if (reasons.length === 0) return false
+    if (reasons[0]?.outcome !== 'partial') return false
+    if (!reasons.slice(1).every((reason) => reason.outcome === 'adjusted')) return false
+    return adjustedReasonOrderIsCanonical(reasons, 1)
+  }
+
+  if (outcome === 'refused') {
+    return reasons.every((reason) => reason.outcome === 'refused')
+  }
+
+  if (reasons.length === 0) return false
+  if (reasons[0]?.outcome !== 'unsupported') return false
+  return reasons
+    .slice(1)
+    .every((reason) => reason.outcome === 'unsupported' || reason.outcome === 'refused')
+}
+
+function refineExecutedActionReasons(
+  reasons: ReadonlyArray<ActionReasonOutcomeFields>,
+  ctx: z.RefinementCtx,
+  pathPrefix: readonly (string | number)[] = [],
+): void {
+  reasons.forEach((reason, index) => {
+    if (reason.outcome !== 'adjusted') {
+      ctx.addIssue({
+        code: 'custom',
+        path: [...pathPrefix, 'reasons', index],
+        message: 'Executed actions may contain only adjusted reasons',
+      })
+    }
+  })
+  validateAdjustedReasonOrder(reasons, 0, ctx, pathPrefix)
+}
+
+function refineRefusedActionReasons(
+  reasons: ReadonlyArray<ActionReasonOutcomeFields>,
+  ctx: z.RefinementCtx,
+  pathPrefix: readonly (string | number)[] = [],
+): void {
+  reasons.forEach((reason, index) => {
+    if (reason.outcome !== 'refused') {
+      ctx.addIssue({
+        code: 'custom',
+        path: [...pathPrefix, 'reasons', index],
+        message: 'Refused actions may contain only refused reasons',
+      })
+    }
+  })
+}
+
+function refineUnsupportedActionReasons(
+  reasons: ReadonlyArray<ActionReasonOutcomeFields>,
+  ctx: z.RefinementCtx,
+  pathPrefix: readonly (string | number)[] = [],
+): void {
+  if (reasons[0]?.outcome !== 'unsupported') {
+    ctx.addIssue({
+      code: 'custom',
+      path: [...pathPrefix, 'reasons', 0],
+      message: 'The first unsupported-action reason must be unsupported',
+    })
+  }
+  reasons.slice(1).forEach((reason, index) => {
+    if (reason.outcome !== 'unsupported' && reason.outcome !== 'refused') {
+      ctx.addIssue({
+        code: 'custom',
+        path: [...pathPrefix, 'reasons', index + 1],
+        message: 'Unsupported actions may retain only unsupported or refused reasons',
+      })
+    }
+  })
+}
+
 function refinePartialActionReasons(
-  reasons: ReadonlyArray<{
-    code: string
-    outcome: string
-  }>,
+  reasons: ReadonlyArray<ActionReasonOutcomeFields>,
   ctx: z.RefinementCtx,
   pathPrefix: readonly (string | number)[] = [],
 ): void {
@@ -335,6 +445,29 @@ function refinePartialActionReasons(
     }
   })
   validateAdjustedReasonOrder(reasons, 1, ctx, pathPrefix)
+}
+
+function comparisonSideReasonsAreStructural(
+  side: Record<string, unknown>,
+): boolean {
+  if (!('reasons' in side) || side['reasons'] === undefined) return true
+  const reasonsValue = side['reasons']
+  if (!Array.isArray(reasonsValue)) return false
+
+  const reasons: ActionReasonOutcomeFields[] = []
+  for (const reason of reasonsValue) {
+    if (!isPlainObject(reason)) return false
+    if (typeof reason['code'] !== 'string' || typeof reason['outcome'] !== 'string') {
+      return false
+    }
+    reasons.push({ code: reason['code'], outcome: reason['outcome'] })
+  }
+
+  const outcome = side['outcome']
+  if (outcome !== 'executed' && outcome !== 'partial' && outcome !== 'refused' && outcome !== 'unsupported') {
+    return false
+  }
+  return actionReasonsMatchOutcomeRules(reasons, outcome)
 }
 
 const taxStrategyEvaluationActionSchema = z
@@ -396,8 +529,14 @@ const taxStrategyEvaluationActionSchema = z
       })
     }
 
-    if (action.outcome === 'partial') {
+    if (action.outcome === 'executed') {
+      refineExecutedActionReasons(action.reasons, ctx)
+    } else if (action.outcome === 'partial') {
       refinePartialActionReasons(action.reasons, ctx)
+    } else if (action.outcome === 'refused') {
+      refineRefusedActionReasons(action.reasons, ctx)
+    } else if (action.outcome === 'unsupported') {
+      refineUnsupportedActionReasons(action.reasons, ctx)
     }
   })
 
@@ -652,6 +791,7 @@ function isScenarioPlanComparisonShape(value: unknown): value is ScenarioPlanCom
         return false
       }
       if (!comparisonSideConservesAmounts(side)) return false
+      if (!comparisonSideReasonsAreStructural(side)) return false
     }
   }
 
