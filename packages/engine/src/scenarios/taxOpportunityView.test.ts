@@ -613,6 +613,127 @@ describe('taxOpportunityView', () => {
     })
   })
 
+  it('rejects flipped ACA readiness that preserves premium money but diverges actionable-year count', () => {
+    const baseline = coupleWithCash()
+    baseline.household.people[0]!.dob = '1970-01-01'
+    baseline.household.people[1]!.dob = '1972-01-01'
+    baseline.household.people[0]!.retirementAge = 65
+    baseline.household.people[1]!.retirementAge = 65
+    baseline.household.people[0]!.longevity = { planningAge: 70, source: 'manual' }
+    baseline.household.people[1]!.longevity = { planningAge: 70, source: 'manual' }
+    setAcaYearContract(baseline, {
+      year: 2026,
+      monthlyEnrollment: 500,
+      monthlySlcsp: 450,
+    })
+    const proposal = structuredClone(baseline)
+    const validatedBaseline = validatePlan(baseline)
+    const validatedProposal = validatePlan(proposal)
+    const comparison = compareScenarioPlans(validatedBaseline, validatedProposal, {
+      startYear: 2026,
+      taxCalculatorForPlan: () => noTax,
+    })
+    const evaluation = buildTaxStrategyEvaluation({
+      comparison,
+      objective: maximizeAfterTaxEstate,
+    })
+    const proposalResult = simulatePlan(validatedProposal, {
+      startYear: 2026,
+      taxCalculator: noTax,
+    })
+
+    expect(() =>
+      buildTaxOpportunityView({
+        evaluation,
+        proposalYears: proposalResult.years,
+      }),
+    ).not.toThrow()
+
+    const withAca = proposalResult.years.find((year) => year.aca !== undefined)
+    expect(withAca).toBeDefined()
+    const flippedReadiness: 'actionable' | 'nonActionable' =
+      withAca!.aca!.readiness === 'actionable' ? 'nonActionable' : 'actionable'
+    const expectedActionableCount = evaluation.comparison.aca.actionableYears.proposal
+
+    const tampered = proposalResult.years.map((year) =>
+      year.year === withAca!.year
+        ? {
+            ...year,
+            aca: {
+              ...year.aca!,
+              readiness: flippedReadiness,
+            },
+          }
+        : year,
+    )
+    expect(() =>
+      buildTaxOpportunityView({
+        evaluation,
+        proposalYears: tampered,
+      }),
+    ).toThrow(
+      new RegExp(
+        `aca actionable-year count .* does not match comparison \\(${expectedActionableCount}\\)`,
+      ),
+    )
+  })
+
+  it('rejects advisory taxExemptInterest that diverges from comparison while staying self-consistent', () => {
+    const { baseline, proposal } = actionBearingPlans()
+    const comparison = compareScenarioPlans(baseline, proposal, {
+      startYear: 2026,
+      taxCalculatorForPlan: () => noTax,
+    })
+    const evaluation = buildTaxStrategyEvaluation({
+      comparison,
+      objective: maximizeAfterTaxEstate,
+    })
+    const proposalResult = simulatePlan(proposal, {
+      startYear: 2026,
+      taxCalculator: noTax,
+    })
+
+    expect(() =>
+      buildTaxOpportunityView({
+        evaluation,
+        proposalYears: proposalResult.years,
+      }),
+    ).not.toThrow()
+
+    const withAdvisory = proposalResult.years.find(
+      (year) => year.advisoryFederalTax !== undefined,
+    )
+    expect(withAdvisory).toBeDefined()
+    const annualRow = comparison.annual.find((row) => row.year === withAdvisory!.year)!
+    const expectedExempt = annualRow.values.taxExemptInterest.proposal
+    expect(expectedExempt).not.toBeNull()
+
+    const donorInput = withAdvisory!.advisoryFederalTax!.input
+    const forgedInput: TaxYearInput = {
+      ...donorInput,
+      taxExemptInterest: (donorInput.taxExemptInterest ?? 0) + 5_000,
+    }
+    const forgedDetail = computeFederalTax(forgedInput)
+    const tampered = proposalResult.years.map((year) =>
+      year.year === withAdvisory!.year
+        ? {
+            ...year,
+            ltcgZeroHeadroom: forgedDetail.zeroRateLtcgHeadroom,
+            amt: forgedDetail.alternativeMinimumTax,
+            advisoryFederalTax: { input: forgedInput, detail: forgedDetail },
+          }
+        : year,
+    )
+    expect(() =>
+      buildTaxOpportunityView({
+        evaluation,
+        proposalYears: tampered,
+      }),
+    ).toThrow(
+      new RegExp(`year ${withAdvisory!.year} taxExemptInterest does not match comparison`),
+    )
+  })
+
   it('pins provenance.evaluationHash and stays deterministic', () => {
     const { baseline, proposal } = actionBearingPlans()
     const first = buildViewFromPlans(baseline, proposal)

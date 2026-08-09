@@ -829,6 +829,7 @@ function bindProposalYears(
 
 function buildBracketSection(
   yearResult: Readonly<YearResult>,
+  expectedTaxExemptInterest: number | null,
 ): TaxOpportunityYearRow['bracket'] {
   const advisory = yearResult.advisoryFederalTax
   if (advisory === undefined) return null
@@ -852,6 +853,14 @@ function buildBracketSection(
     throw new Error(
       `buildTaxOpportunityView: advisoryFederalTax alternativeMinimumTax does not match YearResult amt for year ${yearResult.year}`,
     )
+  }
+  if (expectedTaxExemptInterest !== null) {
+    const inputTaxExemptInterest = advisory.input.taxExemptInterest ?? 0
+    if (inputTaxExemptInterest !== expectedTaxExemptInterest) {
+      throw new Error(
+        `buildTaxOpportunityView: proposal year ${yearResult.year} taxExemptInterest does not match comparison`,
+      )
+    }
   }
 
   const recomputed = computeFederalTax(advisory.input)
@@ -975,6 +984,18 @@ function buildIrmaaSection(
   }
 }
 
+/**
+ * ACA support evidence copied from simulator-published `YearResult.aca` fields.
+ *
+ * Per-year readiness, cliffState, householdMagi, and fplPct are copied
+ * unvalidated from the projection; aggregate readiness counts are enforced in
+ * `buildTaxOpportunityView` against
+ * `comparison.aca.actionableYears.proposal` and
+ * `comparison.aca.nonActionableYears.proposal`. Per-year readiness swaps that
+ * preserve both aggregate counts remain inside the `proposalYears` trust
+ * boundary (same boundary as the IRMAA lookback note), pending projection
+ * authentication in a later workstream.
+ */
 function buildAcaSection(yearResult: Readonly<YearResult>): TaxOpportunityYearRow['aca'] {
   const aca = yearResult.aca
   if (aca === undefined) return null
@@ -1042,7 +1063,10 @@ export function buildTaxOpportunityView(
     return {
       year: annualRow.year,
       ledger,
-      bracket: buildBracketSection(yearResult),
+      bracket: buildBracketSection(
+        yearResult,
+        annualRow.values.taxExemptInterest.proposal,
+      ),
       irmaa: buildIrmaaSection(yearResult, ledger.irmaaTier),
       aca: buildAcaSection(yearResult),
       rmdPressure: {
@@ -1053,6 +1077,26 @@ export function buildTaxOpportunityView(
       },
     }
   })
+
+  const viewAcaActionableYears = years.filter(
+    (row) => row.aca?.readiness === 'actionable',
+  ).length
+  const viewAcaNonActionableYears = years.filter(
+    (row) => row.aca?.readiness === 'nonActionable',
+  ).length
+  const expectedAcaActionableYears = evaluation.comparison.aca.actionableYears.proposal
+  const expectedAcaNonActionableYears =
+    evaluation.comparison.aca.nonActionableYears.proposal
+  if (viewAcaActionableYears !== expectedAcaActionableYears) {
+    throw new Error(
+      `buildTaxOpportunityView: aca actionable-year count ${viewAcaActionableYears} does not match comparison (${expectedAcaActionableYears})`,
+    )
+  }
+  if (viewAcaNonActionableYears !== expectedAcaNonActionableYears) {
+    throw new Error(
+      `buildTaxOpportunityView: aca nonActionable-year count ${viewAcaNonActionableYears} does not match comparison (${expectedAcaNonActionableYears})`,
+    )
+  }
 
   const yearSet = new Set(years.map((row) => row.year))
   for (const action of evaluation.actions) {
@@ -1115,7 +1159,11 @@ const RMD_PRESSURE_LEDGER_FIELDS = [
  * figures are simulator-single-source evidence inside the `proposalYears` trust
  * boundary; `buildIrmaaSection` enforces coherence invariants on that tuple, and
  * consumers needing independent verification must obtain the projection from the
- * simulator, not from an untrusted intermediary.
+ * simulator, not from an untrusted intermediary. With equal MAGI, tax, exempt
+ * interest, headroom, AMT, filing status, and all IRMAA/ACA figures, a differing
+ * ordinary/preferential decomposition is not independently detectable from
+ * evaluation-held evidence, and full authentication of the proposal projection is
+ * deferred (same boundary note as IRMAA).
  */
 export function verifyTaxOpportunityViewBinding(
   view: TaxOpportunityView,
