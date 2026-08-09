@@ -471,7 +471,7 @@ describe('taxOpportunityView', () => {
         evaluation,
         proposalYears: lookbackAtBoundary,
       }),
-    ).toThrow(new RegExp(`year ${targetYear}.*irmaaLookbackMagi`))
+    ).not.toThrow()
 
     const lookbackAboveBoundary = proposalResult.years.map((year) =>
       year.year === targetYear

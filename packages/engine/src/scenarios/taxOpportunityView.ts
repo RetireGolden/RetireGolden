@@ -916,6 +916,8 @@ function buildBracketSection(
  * Source/year ride with lookbackMagi so consumers can reject `planFallback`
  * stand-ins. `irmaaNextTierThreshold === null` is published evidence (no
  * Medicare activity or top tier) — only `undefined` is evidence-absent.
+ * Lookback MAGI may equal the published next-tier floor (CMS lower tiers use
+ * strict greater-than); only strictly above that floor is incoherent.
  */
 function buildIrmaaSection(
   yearResult: Readonly<YearResult>,
@@ -955,9 +957,9 @@ function buildIrmaaSection(
         `buildTaxOpportunityView: year ${year} irmaaNextTierThreshold must be positive`,
       )
     }
-    if (lookbackMagi >= nextTierThreshold) {
+    if (lookbackMagi > nextTierThreshold) {
       throw new Error(
-        `buildTaxOpportunityView: year ${year} irmaaLookbackMagi must be below irmaaNextTierThreshold`,
+        `buildTaxOpportunityView: year ${year} irmaaLookbackMagi must not exceed irmaaNextTierThreshold`,
       )
     }
   }
