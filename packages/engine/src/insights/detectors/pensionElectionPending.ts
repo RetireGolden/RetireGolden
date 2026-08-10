@@ -60,7 +60,7 @@ export const pensionElectionPending: Detector = {
       evidence: [
         { label: 'Lump-sum offer', value: `$${Math.round(analysis.lumpSum).toLocaleString()}`, year: analysis.electionYear },
         { label: 'Election year', value: `${analysis.electionYear}`, year: analysis.electionYear },
-        { label: 'Annuity present value', value: `$${Math.round(pv).toLocaleString()}` },
+        { label: 'Annuity present value (today\'s $)', value: `$${Math.round(pv).toLocaleString()}`, year: startYear },
         { label: 'Curve-anchored discount rate', value: `${analysis.curveRatePct.toFixed(1)}%` },
       ],
       learnSlug: 'pensions-and-annuities',

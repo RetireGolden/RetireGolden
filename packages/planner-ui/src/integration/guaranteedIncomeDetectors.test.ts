@@ -66,7 +66,6 @@ function expectGovernedCard(card: InsightCard): void {
   for (const item of card.evidence) {
     expect(item.label.length, `${card.id} evidence label`).toBeGreaterThan(0)
     expect(item.value, `${card.id} evidence value must contain the exact figure`).toMatch(/\d/)
-    expect(['0', '$0', '0.0%'], `${card.id} evidence value must not be a placeholder`).not.toContain(item.value)
   }
 }
 

@@ -48,21 +48,25 @@ export const stateRelocation: Detector = {
     const stateMarginalRatePct = params
       ? Math.max(...params.brackets[ctx.plan.household.filingStatus].map((bracket) => bracket.ratePct))
       : null
+    const firstProjectionYear = ctx.projection.result.years[0]
+    if (overridePct <= 0 && stateMarginalRatePct === null && !firstProjectionYear) {
+      return null
+    }
     const currentStateValue =
       overridePct > 0
         ? `${currentState} (${overridePct.toFixed(1)}% modeled override)`
         : stateMarginalRatePct !== null
-          ? `${currentState} (${stateMarginalRatePct.toFixed(1)}% state income tax)`
-          : `${currentState} ($${Math.round(ctx.projection.result.years[0]!.tax).toLocaleString()} projected annual total tax)`
+          ? `${currentState} (up to ${stateMarginalRatePct.toFixed(1)}% top statutory income-tax rate)`
+          : `${currentState} ($${Math.round(firstProjectionYear!.tax).toLocaleString()} projected annual total tax)`
     const evidence = [{ label: 'Current state', value: currentStateValue, year: startYear }]
     if (overridePct > 0) {
       evidence.push({ label: 'Modeled state income-tax override', value: `${overridePct.toFixed(1)}%`, year: startYear })
     } else if (stateMarginalRatePct !== null) {
-      evidence.push({ label: `${currentState} state income tax`, value: `${stateMarginalRatePct.toFixed(1)}%`, year: startYear })
+      evidence.push({ label: `${currentState} top statutory income-tax rate`, value: `up to ${stateMarginalRatePct.toFixed(1)}%`, year: startYear })
     } else {
       evidence.push({
         label: 'Projected annual total tax (state tax data unavailable)',
-        value: `$${Math.round(ctx.projection.result.years[0]!.tax).toLocaleString()}`,
+        value: `$${Math.round(firstProjectionYear!.tax).toLocaleString()}`,
         year: startYear,
       })
     }

@@ -162,7 +162,7 @@ export const widowsPenalty: Detector = {
         { label: 'Last joint-filing year', value: `${lastJointYear}`, year: lastJointYear },
         { label: 'First survivor year', value: `${firstSingleYear}`, year: firstSingleYear },
         ...(bracketJumpToday > 100
-          ? [{ label: 'Estimated survivor bracket jump', value: `$${bracketJumpToday.toLocaleString('en-US')}` }]
+          ? [{ label: 'Estimated survivor bracket jump', value: `$${bracketJumpToday.toLocaleString('en-US')}`, year: singleFiledYearObj!.year }]
           : []),
       ],
       learnSlug: 'widows-penalty-and-survivor-brackets',

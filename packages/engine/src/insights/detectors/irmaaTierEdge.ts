@@ -107,7 +107,7 @@ export const irmaaTierEdge: Detector = {
             evidence: [
               { label: `Nominal MAGI in ${y.year}`, value: magiStr, year: y.year },
               { label: `IRMAA tier threshold (${premiumYearNumber} premiums)`, value: threshStr, year: y.year },
-              { label: 'Amount over threshold', value: `$${Math.round(diff).toLocaleString()}`, year: y.year },
+              { label: 'Amount over threshold', value: `$${Math.ceil(diff).toLocaleString()}`, year: y.year },
               { label: `Medicare premium cliff in ${premiumYearNumber}`, value: `$${Math.round(annualPremiumCliff).toLocaleString()}`, year: premiumYearNumber },
             ],
             learnSlug: 'irmaa-two-year-lookback',
