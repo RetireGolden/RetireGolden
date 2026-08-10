@@ -1184,6 +1184,71 @@ describe('missing data basis detector', () => {
     ])
   })
 
+  it('flags when $10 known basis meets a $100 IRA-funded annuity payment with no residual IRA', () => {
+    // Form 8606 line 7 includes the contract payment; residual IRA balances alone
+    // are $0. Omitting the payment from the saturation denominator yields pool 0
+    // → openIraProRataYear($10, $0) nontaxableFraction 1 and wrongly silences.
+    // With the payment (and any residual contract value) in the pool, fraction
+    // is 10/100 and missing basis on the second IRA still changes tax character.
+    const ctx = context()
+    const year = ctx.projection.result.years[0] as {
+      ownedTraditionalIraAggregateActivity?: { ownerPersonId: string; distributions: number; conversions: number }[]
+      qualifiedAnnuityPayments?: { annuityAccountId: string; payment: number; fundingOwnerPersonId: string }[]
+      balances?: Record<string, number>
+    }
+    year.ownedTraditionalIraAggregateActivity = [
+      { ownerPersonId: 'p1', distributions: 0, conversions: 0 },
+    ]
+    year.qualifiedAnnuityPayments = [
+      { annuityAccountId: 'annuity', payment: 100, fundingOwnerPersonId: 'p1' },
+    ]
+    year.balances = { 'trad-basis': 0, 'trad-missing': 0 }
+    ctx.plan.accounts = [
+      {
+        id: 'trad-basis',
+        name: 'Basis IRA',
+        type: 'traditional',
+        kind: 'ira',
+        ownerPersonId: 'p1',
+        balance: 0,
+        nondeductibleBasis: 10,
+      },
+      {
+        id: 'trad-missing',
+        name: 'Missing-basis IRA',
+        type: 'traditional',
+        kind: 'ira',
+        ownerPersonId: 'p1',
+        balance: 0,
+        nondeductibleBasis: undefined,
+      },
+      {
+        id: 'annuity',
+        name: 'IRA annuity',
+        type: 'annuity',
+        ownerPersonId: 'p1',
+        startAge: 60,
+        monthlyAmount: 100,
+        colaPct: 0,
+        taxablePct: 100,
+        // Fully paid out this year: residual contract value floors at 0; the
+        // $100 payment alone is the Form 8606 line-7 contribution to the pool.
+        purchase: {
+          year: 2020,
+          premium: 100,
+          fundingAccountId: 'trad-basis',
+          taxQualification: 'qualified',
+        },
+      },
+    ] as never
+    ctx.plan.incomes = []
+
+    expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
+      { label: 'Missing-basis IRA IRA-funded annuity payments (projection)', value: '$100', year: 2026 },
+      { label: 'Missing-basis IRA balance (assumed zero after-tax basis)', value: '$0' },
+    ])
+  })
+
   it('stays silent for a qualified IRA annuity without modeled payments', () => {
     const ctx = context()
     const year = ctx.projection.result.years[0] as {

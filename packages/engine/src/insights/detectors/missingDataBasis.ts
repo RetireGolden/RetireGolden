@@ -162,10 +162,10 @@ function firstInsufficientPreQualifiedYear(options: {
  * falls back to year-end `balances`.
  *
  * Form 8606 / `openIraProRataYear` apply the nontaxable fraction to a
- * denominator that still includes the year's distributions and conversions
- * (residual + those debits). Callers that need the pro-rata pool must add
- * published owned-IRA distributions+conversions back — see
- * `form8606OwnedIraPoolDenominator`.
+ * denominator that still includes the year's distributions, conversions, and
+ * IRA-funded qualified-annuity payments (residual + those line-7/8 amounts),
+ * plus year-end funded-contract value on line 6. Callers that need the pro-rata
+ * pool must add those back — see `form8606OwnedIraPoolDenominator`.
  */
 function publishedOwnedTraditionalIraResidual(
   year: {
@@ -225,24 +225,181 @@ function publishedOwnedIraDistributionsAndConversions(
 }
 
 /**
+ * Year's published IRA-funded qualified-annuity payments attributed to this
+ * funding owner (Form 8606 line 7 under 408(d)(2)(B) — payments join the
+ * year's other IRA distributions and take the same pro-rata fraction).
+ */
+function publishedOwnedIraQualifiedAnnuityPayments(
+  year:
+    | {
+        qualifiedAnnuityPayments?: readonly QualifiedAnnuityPaymentActivity[]
+      }
+    | undefined,
+  ownerPersonId: string,
+): number {
+  if (year === undefined) return 0
+  let total = 0
+  for (const payment of year.qualifiedAnnuityPayments ?? []) {
+    if (payment.fundingOwnerPersonId === ownerPersonId && payment.payment > 0) {
+      total += payment.payment
+    }
+  }
+  return total
+}
+
+/**
+ * Year-end IRA-funded annuity contract value in this owner's Form 8606 line-6
+ * aggregate (premium − payments convention the sim publishes). Prefer the
+ * post-growth source the ledger already settled; when that channel is absent
+ * but payments land this year, derive a residual from plan purchase premiums
+ * less this year's published payments (floored at zero) so the denominator is
+ * not understated relative to line 6 + line 7.
+ *
+ * Understating this figure overstates the nontaxable fraction and can wrongly
+ * silence a missing-basis gap — the conservative direction for this detector.
+ */
+function ownedIraAnnuityContractValueForDenominator(
+  year:
+    | {
+        year?: number
+        qualifiedAnnuityPayments?: readonly QualifiedAnnuityPaymentActivity[]
+        ownedNonRothIraPostGrowthSource?: {
+          ownerPools: readonly {
+            ownerPersonId: string | null
+            annuityContractValues?: readonly {
+              annuityAccountId: string
+              contractValuePlanDollars: number
+            }[]
+          }[]
+        }
+      }
+    | undefined,
+  ownerPersonId: string,
+  planAccounts: readonly Account[],
+): number {
+  if (year === undefined) return 0
+
+  const postGrowth = year.ownedNonRothIraPostGrowthSource
+  if (postGrowth !== undefined) {
+    let total = 0
+    let any = false
+    for (const pool of postGrowth.ownerPools) {
+      if (pool.ownerPersonId !== ownerPersonId) continue
+      for (const entry of pool.annuityContractValues ?? []) {
+        if (typeof entry.contractValuePlanDollars === 'number'
+          && Number.isFinite(entry.contractValuePlanDollars)
+        ) {
+          total += Math.max(0, entry.contractValuePlanDollars)
+          any = true
+        }
+      }
+    }
+    if (any) return total
+  }
+
+  // Post-growth channel absent (fixture / pre-channel year). Derive residual
+  // contract value for contracts that paid this owner this year: premium −
+  // this year's published payments, floored at zero — the same convention as
+  // iraAnnuityContractValue when only the current-year debit is known.
+  const paymentsByContract = new Map<string, number>()
+  for (const payment of year.qualifiedAnnuityPayments ?? []) {
+    if (payment.fundingOwnerPersonId !== ownerPersonId || payment.payment <= 0) continue
+    paymentsByContract.set(
+      payment.annuityAccountId,
+      (paymentsByContract.get(payment.annuityAccountId) ?? 0) + payment.payment,
+    )
+  }
+  if (paymentsByContract.size === 0) return 0
+
+  const accountById = new Map(planAccounts.map((account) => [account.id, account]))
+  let derived = 0
+  for (const [annuityAccountId, paymentTotal] of paymentsByContract) {
+    const annuity = accountById.get(annuityAccountId)
+    if (annuity === undefined || annuity.type !== 'annuity') continue
+    const purchase = annuity.purchase
+    if (purchase === undefined || purchase.taxQualification !== 'qualified') continue
+    const funding = accountById.get(purchase.fundingAccountId)
+    if (
+      funding === undefined
+      || funding.type !== 'traditional'
+      || funding.kind !== 'ira'
+      || funding.inherited !== undefined
+    ) continue
+    const fundingOwner = funding.ownerPersonId
+    // Match funding-owner attribution; null owner is not a Form 8606 pool key.
+    if (fundingOwner !== ownerPersonId) continue
+    derived += Math.max(0, purchase.premium - paymentTotal)
+  }
+  return derived
+}
+
+/**
+ * Form 8606 line-7/8-side amounts plus line-6 annuity contract value that the
+ * residual-balance channel does not carry: owned-IRA distributions/conversions,
+ * IRA-funded qualified-annuity payments, and year-end funded-contract value.
+ * Always a lower bound on the activity/contract side of the pro-rata pool
+ * (never understates that side when the figures are published or plan-derived).
+ */
+function form8606OwnedIraActivityAndContractSide(
+  year:
+    | {
+        year?: number
+        ownedTraditionalIraAggregateActivity?: readonly OwnedTraditionalIraAggregateActivity[]
+        qualifiedAnnuityPayments?: readonly QualifiedAnnuityPaymentActivity[]
+        ownedNonRothIraPostGrowthSource?: {
+          ownerPools: readonly {
+            ownerPersonId: string | null
+            annuityContractValues?: readonly {
+              annuityAccountId: string
+              contractValuePlanDollars: number
+            }[]
+          }[]
+        }
+      }
+    | undefined,
+  ownerPersonId: string,
+  planAccounts: readonly Account[],
+): number {
+  return (
+    publishedOwnedIraDistributionsAndConversions(year, ownerPersonId)
+    + publishedOwnedIraQualifiedAnnuityPayments(year, ownerPersonId)
+    + ownedIraAnnuityContractValueForDenominator(year, ownerPersonId, planAccounts)
+  )
+}
+
+/**
  * Form 8606-style pool denominator for saturation: residual published balances
- * plus the year's owned-IRA distributions and conversions (the pool the
- * pro-rata fraction applies to). Returns null when no residual is published.
+ * plus the year's owned-IRA distributions, conversions, IRA-funded qualified-
+ * annuity payments, and year-end funded-contract value (line 6 + lines 7/8 —
+ * the pool the pro-rata fraction applies to). Returns null when no residual is
+ * published (callers fall back, then still floor on the activity/contract side).
  */
 function form8606OwnedIraPoolDenominator(
   year:
     | {
+        year?: number
         ownedNonRothIraBalancesBeforeGrowth?: Readonly<Record<string, number>>
         balances?: Readonly<Record<string, number>>
         ownedTraditionalIraAggregateActivity?: readonly OwnedTraditionalIraAggregateActivity[]
+        qualifiedAnnuityPayments?: readonly QualifiedAnnuityPaymentActivity[]
+        ownedNonRothIraPostGrowthSource?: {
+          ownerPools: readonly {
+            ownerPersonId: string | null
+            annuityContractValues?: readonly {
+              annuityAccountId: string
+              contractValuePlanDollars: number
+            }[]
+          }[]
+        }
       }
     | undefined,
   ownedTraditionalIraIds: readonly string[],
   ownerPersonId: string,
+  planAccounts: readonly Account[],
 ): number | null {
   const residual = publishedOwnedTraditionalIraResidual(year, ownedTraditionalIraIds)
   if (residual === null) return null
-  return residual + publishedOwnedIraDistributionsAndConversions(year, ownerPersonId)
+  return residual + form8606OwnedIraActivityAndContractSide(year, ownerPersonId, planAccounts)
 }
 
 /** Surfaces optional tax facts for which the engine must use a legacy default. */
@@ -431,20 +588,31 @@ export const missingDataBasis: Detector = {
         if (tx !== null) {
           const txYearRow = ctx.projection.result.years.find((year) => year.year === tx.year)
           // Pro-rata denominator = residual balances + year's distributions +
-          // conversions (ownedNonRothIraBalancesBeforeGrowth is post-debit
-          // residual; Form 8606 applies the fraction to the full pre-debit pool).
+          // conversions + IRA-funded qualified-annuity payments + year-end
+          // funded-contract value (ownedNonRothIraBalancesBeforeGrowth is
+          // post-debit residual of the IRA accounts only; Form 8606 line 6 also
+          // carries the funded contract, and line 7 carries its payments).
           const publishedTxPool = form8606OwnedIraPoolDenominator(
             txYearRow,
             ownedTraditionalIraIds,
             ownerPersonId,
+            ctx.plan.accounts,
+          )
+          // Activity/contract side alone is a lower bound on the Form 8606 pool
+          // even when residual balances are unpublished — understating it would
+          // overstate the nontaxable fraction and wrongly silence.
+          const txActivityAndContractSide = form8606OwnedIraActivityAndContractSide(
+            txYearRow,
+            ownerPersonId,
+            ctx.plan.accounts,
           )
           let poolValueForSaturation: number
           if (publishedTxPool !== null) {
             poolValueForSaturation = publishedTxPool
           } else {
-            // Pool value for the transaction year is not published. Skip only when
-            // saturation holds conservatively: known basis ≥ the largest pool
-            // value across transaction years derivable from published year
+            // Pool residual for the transaction year is not published. Skip only
+            // when saturation holds conservatively: known basis ≥ the largest
+            // pool value across transaction years derivable from published year
             // balances or plan opening balances (growth can only enlarge the pool
             // relative to a smaller observed figure, so the max is the hard case).
             const poolCandidates: number[] = [openingPoolValue]
@@ -478,11 +646,32 @@ export const missingDataBasis: Detector = {
                 year,
                 ownedTraditionalIraIds,
                 ownerPersonId,
+                ctx.plan.accounts,
               )
-              if (published !== null) poolCandidates.push(published)
+              if (published !== null) {
+                poolCandidates.push(published)
+              } else {
+                // Residual unpublished: still count opening residual proxy plus
+                // that year's published activity/contract side so a zero residual
+                // IRA + QA payment year is not treated as a zero pool.
+                poolCandidates.push(
+                  openingPoolValue
+                    + form8606OwnedIraActivityAndContractSide(
+                      year,
+                      ownerPersonId,
+                      ctx.plan.accounts,
+                    ),
+                )
+              }
             }
             poolValueForSaturation = Math.max(...poolCandidates)
           }
+          // Floor on the decisive year's activity/contract side so residual-null
+          // or residual-zero paths never drop QA payments/contract value.
+          poolValueForSaturation = Math.max(
+            poolValueForSaturation,
+            txActivityAndContractSide,
+          )
           const aggregateAlreadyFullyNontaxable =
             openIraProRataYear(knownAggregateBasis, poolValueForSaturation)
               .nontaxableFraction >= 1
