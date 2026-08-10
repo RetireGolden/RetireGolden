@@ -106,7 +106,7 @@ export const irmaaTierEdge: Detector = {
             severity: 'attention',
             evidence: [
               { label: `Nominal MAGI in ${y.year}`, value: magiStr, year: y.year },
-              { label: `IRMAA tier threshold (${premiumYearNumber} premiums)`, value: threshStr, year: y.year },
+              { label: `IRMAA tier threshold (${premiumYearNumber} premiums)`, value: threshStr, year: premiumYearNumber },
               { label: 'Amount over threshold', value: `$${Math.ceil(diff).toLocaleString()}`, year: y.year },
               { label: `Medicare premium cliff in ${premiumYearNumber}`, value: `$${Math.round(annualPremiumCliff).toLocaleString()}`, year: premiumYearNumber },
             ],

@@ -73,7 +73,7 @@ export const assetLocation: Detector = {
       confidence: 'medium',
       severity: 'info',
       evidence: [
-        { label: 'Swappable class exposure', value: `$${Math.round(swapped).toLocaleString()}` },
+        { label: 'Swappable class exposure', value: `$${Math.round(swapped).toLocaleString()}`, year: ctx.projection.startYear },
       ],
       learnSlug: 'assumption-investment-returns',
       plannerRoute: 'accounts',

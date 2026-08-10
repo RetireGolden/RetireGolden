@@ -51,7 +51,7 @@ export const incomeFloorFunded: Detector = {
       confidence: 'medium',
       severity: 'attention',
       evidence: [
-        { label: 'Funded ratio', value: `${pct}%` },
+        { label: 'Funded ratio', value: `${fr.fundedRatioPct.toFixed(1)}%` },
         { label: 'Essential spending present value (today\'s $)', value: `$${Math.round(fr.essentialSpendingPv).toLocaleString()}`, year: ctx.projection.startYear },
         { label: 'Guaranteed income present value (today\'s $)', value: `$${Math.round(fr.guaranteedIncomePv).toLocaleString()}`, year: ctx.projection.startYear },
         { label: 'Unfunded present value (today\'s $)', value: `$${Math.round(fr.unfundedPv).toLocaleString()}`, year: ctx.projection.startYear },
