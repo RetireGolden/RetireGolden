@@ -67,7 +67,7 @@ export const annuitizationHeadroom: Detector = {
       severity: 'info',
       evidence: [
         { label: 'Planning age', value: `${maxPlanningAge}` },
-        { label: 'Liquid savings', value: `$${Math.round(liquid.balance).toLocaleString()}`, year: startYear },
+        { label: 'Largest liquid account balance (SPIA funding source)', value: `$${Math.round(liquid.balance).toLocaleString()}`, year: startYear },
         { label: 'Illustrative SPIA premium', value: `$${Math.round(premium).toLocaleString()}`, year: startYear },
         { label: 'Illustrative monthly income', value: `$${Math.round(monthly).toLocaleString()}/mo`, year: startYear },
       ],

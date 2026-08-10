@@ -81,7 +81,7 @@ export const ssBridgeGap: Detector = {
         { label: 'First Social Security gap year', value: `${firstYear}`, year: firstYear },
         { label: 'Last Social Security gap year', value: `${lastYear}`, year: lastYear },
         { label: 'TIPS bridge cost', value: `$${Math.round(totalCost).toLocaleString()}`, year: startYear },
-        { label: 'Annual bridge income', value: `$${Math.round(annualTotal).toLocaleString()}/yr` },
+        { label: 'Approximate annual bridge income (all ladders combined)', value: `~$${Math.round(annualTotal).toLocaleString()}/yr` },
       ],
       learnSlug: 'social-security-bridge',
       plannerRoute: 'income-floor',

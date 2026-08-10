@@ -52,9 +52,9 @@ export const incomeFloorFunded: Detector = {
       severity: 'attention',
       evidence: [
         { label: 'Funded ratio', value: `${pct}%` },
-        { label: 'Essential spending present value', value: `$${Math.round(fr.essentialSpendingPv).toLocaleString()}` },
-        { label: 'Guaranteed income present value', value: `$${Math.round(fr.guaranteedIncomePv).toLocaleString()}` },
-        { label: 'Unfunded present value', value: `$${Math.round(fr.unfundedPv).toLocaleString()}` },
+        { label: 'Essential spending present value (today\'s $)', value: `$${Math.round(fr.essentialSpendingPv).toLocaleString()}`, year: ctx.projection.startYear },
+        { label: 'Guaranteed income present value (today\'s $)', value: `$${Math.round(fr.guaranteedIncomePv).toLocaleString()}`, year: ctx.projection.startYear },
+        { label: 'Unfunded present value (today\'s $)', value: `$${Math.round(fr.unfundedPv).toLocaleString()}`, year: ctx.projection.startYear },
       ],
       learnSlug: 'funded-ratio',
       plannerRoute: 'income-floor',
