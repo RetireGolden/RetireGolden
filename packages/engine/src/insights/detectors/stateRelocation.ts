@@ -30,7 +30,10 @@ export const stateRelocation: Detector = {
 
     // If already in a tax-free state and no flat override, it's not applicable
     const params = stateParamsFor(currentState, startYear)
-    const currentHasIncomeTax = overridePct > 0 || (params ? params.hasIncomeTax : true)
+    // Unknown states price as $0 state tax in the ledger; stay silent rather
+    // than assert an income tax the engine does not charge (GOVERNANCE
+    // false-positive policy).
+    const currentHasIncomeTax = overridePct > 0 || (params?.hasIncomeTax ?? false)
 
     if (!currentHasIncomeTax) {
       return null
@@ -48,27 +51,15 @@ export const stateRelocation: Detector = {
     const stateMarginalRatePct = params
       ? Math.max(...params.brackets[ctx.plan.household.filingStatus].map((bracket) => bracket.ratePct))
       : null
-    const firstProjectionYear = ctx.projection.result.years[0]
-    if (overridePct <= 0 && stateMarginalRatePct === null && !firstProjectionYear) {
-      return null
-    }
     const currentStateValue =
       overridePct > 0
         ? `${currentState} (${overridePct.toFixed(1)}% modeled override)`
-        : stateMarginalRatePct !== null
-          ? `${currentState} (up to ${stateMarginalRatePct.toFixed(1)}% top statutory income-tax rate)`
-          : `${currentState} ($${Math.round(firstProjectionYear!.tax).toLocaleString()} projected annual total tax)`
+        : `${currentState} (up to ${stateMarginalRatePct!.toFixed(1)}% top statutory income-tax rate)`
     const evidence = [{ label: 'Current state', value: currentStateValue, year: startYear }]
     if (overridePct > 0) {
       evidence.push({ label: 'Modeled state income-tax override', value: `${overridePct.toFixed(1)}%`, year: startYear })
-    } else if (stateMarginalRatePct !== null) {
-      evidence.push({ label: `${currentState} top statutory income-tax rate`, value: `up to ${stateMarginalRatePct.toFixed(1)}%`, year: startYear })
     } else {
-      evidence.push({
-        label: 'Projected annual total tax (state tax data unavailable)',
-        value: `$${Math.round(firstProjectionYear!.tax).toLocaleString()}`,
-        year: startYear,
-      })
+      evidence.push({ label: `${currentState} top statutory income-tax rate`, value: `up to ${stateMarginalRatePct!.toFixed(1)}%`, year: startYear })
     }
 
     return {

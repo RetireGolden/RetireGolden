@@ -60,9 +60,9 @@ export const spendingHeadroom: Detector = {
       confidence: 'medium',
       severity: 'info',
       evidence: [
-        { label: 'Ending after-tax estate', value: `$${Math.round(endingEstateToday).toLocaleString()}`, year: endYear },
+        { label: 'Ending after-tax estate (today\'s $)', value: `$${Math.round(endingEstateToday).toLocaleString()}`, year: endYear },
         { label: 'Bequest target', value: `$${Math.round(bequestTarget).toLocaleString()}` },
-        { label: 'Rough annual spending headroom', value: `$${Math.round(roughHeadroomPerYear).toLocaleString()}/yr` },
+        { label: 'Rough annual spending headroom (today\'s $)', value: `$${Math.round(roughHeadroomPerYear).toLocaleString()}/yr` },
       ],
       learnSlug: 'building-a-retirement-spending-budget',
       plannerRoute: 'spending-solver',
