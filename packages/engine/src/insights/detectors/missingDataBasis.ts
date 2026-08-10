@@ -85,8 +85,11 @@ export const missingDataBasis: Detector = {
 
     /**
      * First projection year with a qualifying owned-IRA distribution, conversion,
-     * or IRA-funded annuity payment while the owner is alive. Evidence cites that
-     * year's amount (not a horizon sum) so the decisive year is stamped.
+     * or IRA-funded annuity payment. Distributions and conversions require the
+     * owner alive that year; qualified annuity payments are inspected regardless
+     * of the funding owner's alive flag (joint/survivor contracts can keep paying
+     * while Form 8606 character still attributes to the funding owner's aggregate).
+     * Evidence cites that year's amount (not a horizon sum) so the decisive year is stamped.
      */
     const firstOwnedIraTransactionWhileAlive = (ownerPersonId: string): {
       distributions: number
@@ -96,17 +99,21 @@ export const missingDataBasis: Detector = {
     } | null => {
       for (const year of ctx.projection.result.years) {
         const owner = year.people.find((person) => person.personId === ownerPersonId)
-        if (owner?.alive !== true) continue
+        const ownerAlive = owner?.alive === true
         let distributions = 0
         let conversions = 0
         let annuityPayments = 0
-        const activity = year.ownedTraditionalIraAggregateActivity?.find(
-          (entry: OwnedTraditionalIraAggregateActivity) => entry.ownerPersonId === ownerPersonId,
-        )
-        if (activity !== undefined) {
-          distributions = activity.distributions
-          conversions = activity.conversions
+        if (ownerAlive) {
+          const activity = year.ownedTraditionalIraAggregateActivity?.find(
+            (entry: OwnedTraditionalIraAggregateActivity) => entry.ownerPersonId === ownerPersonId,
+          )
+          if (activity !== undefined) {
+            distributions = activity.distributions
+            conversions = activity.conversions
+          }
         }
+        // Post-death payments on a funded contract still land on the funding
+        // owner's Form 8606 pool — match the sim's published attribution.
         for (const payment of year.qualifiedAnnuityPayments ?? []) {
           const row = payment as QualifiedAnnuityPaymentActivity
           if (row.fundingOwnerPersonId === ownerPersonId && row.payment > 0) {
@@ -127,7 +134,6 @@ export const missingDataBasis: Detector = {
       if (
         account.type === 'roth' &&
         account.inherited === undefined &&
-        account.balance > 0 &&
         account.contributionBasis === undefined &&
         owner !== undefined &&
         owner.ageAttained < 60 &&
@@ -192,7 +198,6 @@ export const missingDataBasis: Detector = {
         account.type === 'traditional' &&
         account.kind === 'ira' &&
         account.inherited === undefined &&
-        account.balance > 0 &&
         account.nondeductibleBasis === undefined &&
         ownerPersonId !== undefined
       ) {

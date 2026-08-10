@@ -885,6 +885,106 @@ describe('missing data basis detector', () => {
       { label: 'Roth 401(k) known contribution basis', value: '$0', year: 2026 },
     ])
   })
+
+  it('flags IRA-funded annuity payments after the funding owner dies (surviving-spouse contract)', () => {
+    // Alive-guard must not skip published qualifiedAnnuityPayments: the sim still
+    // attributes post-death payments to the deceased funding owner's Form 8606 pool.
+    const ctx = context()
+    ctx.projection.result.years = [
+      {
+        year: 2026,
+        people: [{ personId: 'p1', ageAttained: 70, alive: false }],
+        ownedTraditionalIraAggregateActivity: [],
+        ownedRothIraPoolActivity: [],
+        employerRothAccountActivity: [],
+        qualifiedAnnuityPayments: [
+          { annuityAccountId: 'annuity', payment: 1_200, fundingOwnerPersonId: 'p1' },
+        ],
+      },
+    ] as never
+    ctx.plan.accounts = [
+      { id: 'trad', name: 'Traditional IRA', type: 'traditional', kind: 'ira', ownerPersonId: 'p1', balance: 300_000 },
+      {
+        id: 'annuity', name: 'IRA annuity', type: 'annuity', ownerPersonId: 'p1', startAge: 60,
+        monthlyAmount: 100, colaPct: 0, taxablePct: 100,
+        purchase: { year: 2020, premium: 25_000, fundingAccountId: 'trad', taxQualification: 'qualified' },
+      },
+    ] as never
+    ctx.plan.incomes = []
+
+    expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
+      { label: 'Traditional IRA IRA-funded annuity payments (projection)', value: '$1,200', year: 2026 },
+      { label: 'Traditional IRA balance (assumed zero after-tax basis)', value: '$300,000' },
+    ])
+  })
+
+  it('flags a zero-balance Roth when owner-pool activity shows an under-age withdrawal exceeding known basis', () => {
+    // Market balance can be $0 while missing contributionBasis still matters once
+    // modeled credits/growth fund a pre-60 withdrawal.
+    const ctx = context()
+    ctx.projection.result.years[0]!.people[0]!.ageAttained = 55
+    const year = ctx.projection.result.years[0] as {
+      ownedRothIraPoolActivity?: { ownerPersonId: string; withdrawals: number; creditedContributions: number }[]
+      ownedTraditionalIraAggregateActivity?: unknown[]
+    }
+    year.ownedRothIraPoolActivity = [
+      { ownerPersonId: 'p1', withdrawals: 3_000, creditedContributions: 2_000 },
+    ]
+    year.ownedTraditionalIraAggregateActivity = []
+    ctx.plan.accounts = [{
+      id: 'roth',
+      name: 'Roth IRA',
+      type: 'roth',
+      kind: 'ira',
+      ownerPersonId: 'p1',
+      balance: 0,
+      contributionBasis: undefined,
+    }] as never
+    ctx.plan.incomes = []
+
+    expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
+      { label: 'Roth IRA owner-pool pre-qualified-age withdrawals', value: '$3,000', year: 2026 },
+      { label: 'Roth IRA known contribution basis', value: '$2,000', year: 2026 },
+    ])
+  })
+
+  it('flags a zero-balance funding IRA when published contract payments attribute to its owner', () => {
+    // Pre-projection annuity fully funded from the IRA: balance is $0 but Form 8606
+    // basis still feeds contract payments published under fundingOwnerPersonId.
+    const ctx = context()
+    const year = ctx.projection.result.years[0] as {
+      ownedTraditionalIraAggregateActivity?: { ownerPersonId: string; distributions: number; conversions: number }[]
+      qualifiedAnnuityPayments?: { annuityAccountId: string; payment: number; fundingOwnerPersonId: string }[]
+    }
+    year.ownedTraditionalIraAggregateActivity = [
+      { ownerPersonId: 'p1', distributions: 0, conversions: 0 },
+    ]
+    year.qualifiedAnnuityPayments = [
+      { annuityAccountId: 'annuity', payment: 1_200, fundingOwnerPersonId: 'p1' },
+    ]
+    ctx.plan.accounts = [
+      {
+        id: 'trad',
+        name: 'Traditional IRA',
+        type: 'traditional',
+        kind: 'ira',
+        ownerPersonId: 'p1',
+        balance: 0,
+        nondeductibleBasis: undefined,
+      },
+      {
+        id: 'annuity', name: 'IRA annuity', type: 'annuity', ownerPersonId: 'p1', startAge: 60,
+        monthlyAmount: 100, colaPct: 0, taxablePct: 100,
+        purchase: { year: 2020, premium: 200_000, fundingAccountId: 'trad', taxQualification: 'qualified' },
+      },
+    ] as never
+    ctx.plan.incomes = []
+
+    expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
+      { label: 'Traditional IRA IRA-funded annuity payments (projection)', value: '$1,200', year: 2026 },
+      { label: 'Traditional IRA balance (assumed zero after-tax basis)', value: '$0' },
+    ])
+  })
 })
 
 function usd(amount: number): string {

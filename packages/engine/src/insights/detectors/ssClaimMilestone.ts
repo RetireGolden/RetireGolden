@@ -52,7 +52,29 @@ export const ssClaimMilestone: Detector = {
       )
       if (projectedPerson === undefined) continue
 
-      // Earliest claim-in-force year among this person's non-SSDI streams.
+      // Streams already claim-in-force at the horizon start whose claim age is
+      // behind the person's age are pre-horizon filings — skip those streams,
+      // not the person, so a sibling stream that claims later still surfaces.
+      const preHorizonStreamIds = new Set<string>()
+      for (const entry of firstProjectionYear.socialSecurityStreams ?? []) {
+        if (
+          entry.personId !== person.id ||
+          !entry.claimInForce ||
+          entry.source === 'ssdi'
+        ) continue
+        const streamIncome = ctx.plan.incomes.find(
+          (candidate): candidate is SocialSecurityIncome =>
+            candidate.type === 'socialSecurity' && candidate.id === entry.streamId,
+        )
+        if (
+          streamIncome !== undefined &&
+          projectedPerson.ageAttained > streamIncome.claimAge.years
+        ) {
+          preHorizonStreamIds.add(entry.streamId)
+        }
+      }
+
+      // Earliest claim-in-force year among this person's non-SSDI, non-pre-horizon streams.
       let firstClaimYear: number | null = null
       let firstClaimStream: SocialSecurityStreamActivity | null = null
       for (const year of ctx.projection.result.years) {
@@ -60,13 +82,15 @@ export const ssClaimMilestone: Detector = {
           (entry: SocialSecurityStreamActivity) =>
             entry.personId === person.id &&
             entry.claimInForce &&
-            entry.source !== 'ssdi',
+            entry.source !== 'ssdi' &&
+            !preHorizonStreamIds.has(entry.streamId),
         )
         if (streams.length === 0) continue
-        // Prefer the gate stream when several become in force the same year;
-        // otherwise first published stream for that person.
+        // Same-year preference: positive published payment, then gate stream, then order.
         const preferred =
-          streams.find((entry) => entry.isSpousalSurvivorGateStream) ?? streams[0]!
+          streams.find((entry) => entry.annualAmount > 0) ??
+          streams.find((entry) => entry.isSpousalSurvivorGateStream) ??
+          streams[0]!
         firstClaimYear = year.year
         firstClaimStream = preferred
         break
@@ -89,16 +113,6 @@ export const ssClaimMilestone: Detector = {
           entry.type === 'socialSecurity' && entry.id === firstClaimStream!.streamId,
       )
       if (income === undefined) continue
-
-      // Pre-horizon claims are not imminent: if the first published in-force row
-      // is the start year and the person is already older than the stream's claim
-      // age, the filing decision happened before the horizon — skip.
-      if (
-        firstClaimYear === ctx.projection.startYear &&
-        projectedPerson.ageAttained > income.claimAge.years
-      ) {
-        continue
-      }
 
       const claimMonths = income.claimAge.years * 12 + income.claimAge.months
 
