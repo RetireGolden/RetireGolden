@@ -55,38 +55,49 @@ function simulatedSsStreamByPerson(
   return streams
 }
 
-function planHasAnotherSsBenefitAnchor(
+/**
+ * The first annual-ledger year in which a zero-own-PIA claimant can actually
+ * receive a current-spouse or survivor benefit on the other household stream.
+ */
+function firstAnchoredBenefitStartYear(
   plan: Plan,
   claimantPersonId: string,
   claimantBenefitStartYear: number,
-  lastProjectionYear: number | undefined,
   projectionYears: readonly { year: number; people: { personId: string; alive: boolean }[] }[],
-): boolean {
-  if (plan.household.people.length !== 2 || lastProjectionYear === undefined) return false
+): number | null {
+  if (plan.household.people.length !== 2) return null
   const streams = simulatedSsStreamByPerson(plan)
-  if (!streams.has(claimantPersonId)) return false
+  if (!streams.has(claimantPersonId)) return null
   const anchorPerson = plan.household.people.find((person) => person.id !== claimantPersonId)
-  if (anchorPerson === undefined) return false
+  if (anchorPerson === undefined) return null
   const anchorStream = streams.get(anchorPerson.id)
-  if (anchorStream === undefined || anchorStream.pia <= 0) return false
+  if (anchorStream === undefined || anchorStream.pia <= 0) return null
 
-  const anchorDobYear = Number(anchorPerson.dob.slice(0, 4))
-  if (!Number.isInteger(anchorDobYear)) return false
-  const anchorBenefitStartYear = anchorDobYear + anchorStream.income.claimAge.years
-  const firstSharedPayableYear = Math.max(claimantBenefitStartYear, anchorBenefitStartYear)
-  if (firstSharedPayableYear > lastProjectionYear) return false
+  const [anchorDobYear, anchorDobMonth, anchorDobDay] = anchorPerson.dob.split('-').map(Number)
+  if (!Number.isInteger(anchorDobYear) || !Number.isInteger(anchorDobMonth) || !Number.isInteger(anchorDobDay)) return null
+  const anchorRetirementStartYear = anchorDobYear + anchorStream.income.claimAge.years
+  const anchorFra = fraForBirthYear(effectiveBirthYear(anchorDobYear, anchorDobMonth, anchorDobDay))
+  const anchorSsdiStartYear = anchorStream.income.disability?.onsetAge !== undefined &&
+    anchorStream.income.disability.onsetAge < anchorFra.years
+    ? anchorDobYear + anchorStream.income.disability.onsetAge
+    : null
 
-  return projectionYears.some((year) => {
-    if (year.year < firstSharedPayableYear) return false
+  for (const year of projectionYears) {
     const claimant = year.people.find((candidate) => candidate.personId === claimantPersonId)
     const anchor = year.people.find((candidate) => candidate.personId === anchorPerson.id)
-    if (claimant?.alive !== true || anchor === undefined) return false
+    if (claimant?.alive !== true || anchor === undefined) continue
 
-    // The spousal pass needs both people alive. The survivor pass instead
-    // needs the spouse dead, a positive resolved PIA, and a stream that has
-    // reached its claim age, all of which the checks above mirror.
-    return true
-  })
+    // The spousal pass gates on both configured retirement claim ages, even
+    // when the worker's own stream is SSDI. The survivor pass instead reads
+    // the deceased stream's actual monthly amount, which starts at SSDI onset
+    // when onset is pre-FRA.
+    const anchorFirstPayableYear = anchor.alive
+      ? anchorRetirementStartYear
+      : anchorSsdiStartYear ?? anchorRetirementStartYear
+    const firstSharedPayableYear = Math.max(claimantBenefitStartYear, anchorFirstPayableYear)
+    if (year.year >= firstSharedPayableYear) return year.year
+  }
+  return null
 }
 
 /** A positive former-spouse PIA can make an otherwise zero-own-PIA claim decision meaningful. */
@@ -128,8 +139,6 @@ export const ssClaimMilestone: Detector = {
   screen(ctx): InsightCard | null {
     const firstProjectionYear = ctx.projection.result.years[0]
     if (firstProjectionYear === undefined || firstProjectionYear.year !== ctx.projection.startYear) return null
-    const lastProjectionYear = ctx.projection.result.years.at(-1)?.year
-
     let selectedCard: InsightCard | null = null
     let smallestYearsToClaim = Infinity
     for (const income of ctx.plan.incomes) {
@@ -150,25 +159,28 @@ export const ssClaimMilestone: Detector = {
       }
 
       const claimMonths = income.claimAge.years * 12 + income.claimAge.months
-      const benefitStartYear = birthYear + income.claimAge.years
+      const claimantBenefitStartYear = birthYear + income.claimAge.years
+      const anchoredStartYear = streamResolvesNoOwnBenefit(income, person)
+        ? firstAnchoredBenefitStartYear(
+          ctx.plan,
+          person.id,
+          claimantBenefitStartYear,
+          ctx.projection.result.years,
+        )
+        : null
       if (
         streamResolvesNoOwnBenefit(income, person) &&
         !hasFormerSpouseBenefitAnchor(
           ctx.plan,
           income,
           person,
-          benefitStartYear,
+          claimantBenefitStartYear,
           ctx.projection.result.years,
         ) &&
-        !planHasAnotherSsBenefitAnchor(
-          ctx.plan,
-          person.id,
-          benefitStartYear,
-          lastProjectionYear,
-          ctx.projection.result.years,
-        )
+        anchoredStartYear === null
       ) continue
 
+      const benefitStartYear = anchoredStartYear ?? claimantBenefitStartYear
       const yearsToClaim = benefitStartYear - ctx.projection.startYear
       if (yearsToClaim < 0 || yearsToClaim > 2) continue
 

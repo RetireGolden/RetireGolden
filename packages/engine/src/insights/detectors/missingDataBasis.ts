@@ -110,6 +110,97 @@ export const missingDataBasis: Detector = {
         0,
       )
 
+    const modeledOwnedRothIraContributionsInYear = (
+      ownerPersonId: string,
+      year: {
+        year: number
+        inflationScale?: number
+        contributions?: number
+        incomes?: { wages?: number }
+        people: { personId: string; ageAttained: number }[]
+      },
+    ): number => {
+      let scheduled = 0
+      for (const account of ownedRothIraAccounts) {
+        if (ownerPersonIdFor(account) !== ownerPersonId) continue
+        const owner = ctx.plan.household.people.find((person) => person.id === ownerPersonId)
+        if (owner === undefined) continue
+        const birthYear = Number(owner.dob.slice(0, 4))
+        if (!Number.isInteger(birthYear)) continue
+        const projectedOwner = year.people.find((person) => person.personId === ownerPersonId)
+        const age = projectedOwner?.ageAttained ?? year.year - birthYear
+        const inflationScale = year.inflationScale ?? 1
+        if (account.contributionSchedule && account.contributionSchedule.length > 0) {
+          const ageAtProjectionStart = firstProjectionYear?.people.find(
+            (person) => person.personId === ownerPersonId,
+          )?.ageAttained ?? ctx.projection.startYear - birthYear
+          for (const phase of account.contributionSchedule) {
+            const fromAge = phase.fromAge ?? 0
+            const toAge = phase.toAge ?? 120
+            if (age < fromAge || age > toAge) continue
+            const phaseStartYear = phase.fromAge === null
+              ? ctx.projection.startYear
+              : ctx.projection.startYear + (phase.fromAge - ageAtProjectionStart)
+            scheduled += phase.annualAmount *
+              Math.pow(1 + phase.escalationPct / 100, Math.max(0, year.year - phaseStartYear)) *
+              inflationScale
+          }
+        } else if (account.annualContribution > 0 && (year.incomes?.wages ?? 0) > 0) {
+          scheduled += account.annualContribution * inflationScale
+        }
+      }
+
+      // YearResult exposes only household-total contributions, not their Roth
+      // destination. The account schedule is therefore the closest available
+      // source without another simulation; cap it at an observed total when
+      // present, which is conservative when another account shares the total.
+      return year.contributions === undefined ? scheduled : Math.min(scheduled, year.contributions)
+    }
+
+    const hasInsufficientRothBasisBeforeAge60 = (ownerPersonId: string): boolean => {
+      let availableBasis = suppliedOwnedRothIraBasis(ownerPersonId)
+      let withdrawals = 0
+      for (const year of ctx.projection.result.years) {
+        // The simulator credits direct Roth contributions before applying this
+        // year's withdrawals, so a same-year scheduled contribution is basis
+        // available to that year's pre-60 draw.
+        availableBasis += modeledOwnedRothIraContributionsInYear(ownerPersonId, year)
+        const underAgeOwners = underQualifiedAgeRothOwnerIdsInYear(year)
+        if (!underAgeOwners.has(ownerPersonId)) continue
+        withdrawals += year.withdrawals?.roth ?? 0
+        if (withdrawals > availableBasis) return true
+      }
+      return false
+    }
+
+    const hasQualifiedIraAnnuityPaymentWhileOwnerAlive = (ownerPersonId: string | null): boolean => {
+      const resolvedOwnerPersonId = ownerPersonId ?? primaryPersonId
+      if (resolvedOwnerPersonId === undefined) return false
+      const qualifiedContracts = ctx.plan.accounts.filter((account): account is Extract<Account, { type: 'annuity' }> => {
+        if (account.type !== 'annuity' || account.purchase?.taxQualification !== 'qualified') return false
+        const funding = ctx.plan.accounts.find((candidate) => candidate.id === account.purchase?.fundingAccountId)
+        return funding?.type === 'traditional' &&
+          funding.kind === 'ira' &&
+          funding.inherited === undefined &&
+          ownerPersonIdFor(funding) === resolvedOwnerPersonId
+      })
+      if (qualifiedContracts.length === 0) return false
+
+      return ctx.projection.result.years.some((year) => {
+        const fundingOwner = year.people.find((person) => person.personId === resolvedOwnerPersonId)
+        if (fundingOwner?.alive !== true || (year.incomes?.annuity ?? 0) <= 0) return false
+        return qualifiedContracts.some((contract) => {
+          const annuitantId = ownerPersonIdFor(contract)
+          const annuitant = ctx.plan.household.people.find((person) => person.id === annuitantId)
+          const annuitantBirthYear = annuitant === undefined ? NaN : Number(annuitant.dob.slice(0, 4))
+          return contract.monthlyAmount > 0 &&
+            Number.isInteger(annuitantBirthYear) &&
+            year.year >= annuitantBirthYear + contract.startAge &&
+            year.year >= contract.purchase!.year
+        })
+      })
+    }
+
     const hasTraditionalTransactionWhileOwnerAlive = (ownerPersonId: string | null): boolean => {
       const resolvedOwnerPersonId = ownerPersonId ?? primaryPersonId
       if (
@@ -133,7 +224,12 @@ export const missingDataBasis: Detector = {
           !hasEmployerTraditionalAccount
         const ownedIraConversion =
           (year.rothConversion ?? 0) > 0 && !hasEmployerTraditionalAccount
-        return ownedIraWithdrawal || ownedIraConversion
+        const qualifiedIraAnnuityPayment =
+          hasQualifiedIraAnnuityPaymentWhileOwnerAlive(ownerPersonId) &&
+          !hasInheritedTraditionalAccount &&
+          !hasEmployerTraditionalAccount
+        return ownedIraWithdrawal || ownedIraConversion ||
+          qualifiedIraAnnuityPayment
       })
     }
 
@@ -154,7 +250,7 @@ export const missingDataBasis: Detector = {
         (
           account.kind === 'employer' ||
           ownerPersonId === undefined ||
-          preQualifiedRothWithdrawals > suppliedOwnedRothIraBasis(ownerPersonId)
+          hasInsufficientRothBasisBeforeAge60(ownerPersonId)
         )
       ) {
         gaps.push({

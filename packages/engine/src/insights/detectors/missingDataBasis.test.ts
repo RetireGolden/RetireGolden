@@ -491,6 +491,73 @@ describe('missing data basis detector', () => {
     ])
   })
 
+  it('stays silent when modeled Roth contributions cover a pre-60 withdrawal', () => {
+    const ctx = context()
+    ctx.projection.result.years[0]!.people[0]!.ageAttained = 59
+    const firstProjectionYear = ctx.projection.result.years[0] as { withdrawals?: { roth: number } }
+    firstProjectionYear.withdrawals = { roth: 5_000 }
+    ctx.plan.accounts = [{
+      id: 'roth', name: 'Roth IRA', type: 'roth', kind: 'ira', ownerPersonId: 'p1', balance: 125_000,
+      contributionSchedule: [{ annualAmount: 5_000, fromAge: 50, toAge: 59, escalationPct: 0 }],
+    }] as never
+    ctx.plan.incomes = []
+
+    expect(missingDataBasis.screen(ctx)).toBeNull()
+  })
+
+  it('flags a missing Roth IRA basis when modeled contributions do not cover a pre-60 withdrawal', () => {
+    const ctx = context()
+    ctx.projection.result.years[0]!.people[0]!.ageAttained = 59
+    const firstProjectionYear = ctx.projection.result.years[0] as { withdrawals?: { roth: number } }
+    firstProjectionYear.withdrawals = { roth: 5_000 }
+    ctx.plan.accounts = [{
+      id: 'roth', name: 'Roth IRA', type: 'roth', kind: 'ira', ownerPersonId: 'p1', balance: 125_000,
+      contributionSchedule: [{ annualAmount: 4_999, fromAge: 50, toAge: 59, escalationPct: 0 }],
+    }] as never
+    ctx.plan.incomes = []
+
+    expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
+      { label: 'Roth IRA balance (assumed seasoned contribution basis)', value: '$125,000' },
+    ])
+  })
+
+  it('flags a sole traditional IRA with payments from its qualified annuity', () => {
+    const ctx = context()
+    const firstProjectionYear = ctx.projection.result.years[0] as { incomes?: { annuity: number } }
+    firstProjectionYear.incomes = { annuity: 1_200 }
+    ctx.plan.accounts = [
+      { id: 'trad', name: 'Traditional IRA', type: 'traditional', kind: 'ira', ownerPersonId: 'p1', balance: 300_000 },
+      {
+        id: 'annuity', name: 'IRA annuity', type: 'annuity', ownerPersonId: 'p1', startAge: 60,
+        monthlyAmount: 100, colaPct: 0, taxablePct: 100,
+        purchase: { year: 2026, premium: 25_000, fundingAccountId: 'trad', taxQualification: 'qualified' },
+      },
+    ] as never
+    ctx.plan.incomes = []
+
+    expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
+      { label: 'Traditional IRA balance (assumed zero after-tax basis)', value: '$300,000' },
+    ])
+  })
+
+  it('stays silent for a qualified IRA annuity without modeled payments', () => {
+    const ctx = context()
+    const firstProjectionYear = ctx.projection.result.years[0] as { withdrawals?: { traditional: number }; incomes?: { annuity: number } }
+    firstProjectionYear.withdrawals = { traditional: 0 }
+    firstProjectionYear.incomes = { annuity: 0 }
+    ctx.plan.accounts = [
+      { id: 'trad', name: 'Traditional IRA', type: 'traditional', kind: 'ira', ownerPersonId: 'p1', balance: 300_000 },
+      {
+        id: 'annuity', name: 'IRA annuity', type: 'annuity', ownerPersonId: 'p1', startAge: 60,
+        monthlyAmount: 100, colaPct: 0, taxablePct: 100,
+        purchase: { year: 2026, premium: 25_000, fundingAccountId: 'trad', taxQualification: 'qualified' },
+      },
+    ] as never
+    ctx.plan.incomes = []
+
+    expect(missingDataBasis.screen(ctx)).toBeNull()
+  })
+
   it('resolves a null Roth owner to the primary person', () => {
     const ctx = context()
     ctx.projection.result.years[0]!.people[0]!.ageAttained = 59
