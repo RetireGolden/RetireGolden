@@ -1,0 +1,82 @@
+import { describe, expect, it } from 'vitest'
+
+import { singlePersonPlan } from '../../testing/planFixtures.js'
+import type { DetectorContext } from '../types.js'
+import { acaThresholdProximity } from './acaThresholdProximity.js'
+
+function context(fplPct = 405): DetectorContext {
+  const plan = singlePersonPlan()
+  return {
+    plan,
+    params: { year: 2026, aca: { maxFplPctForCredit: 400 } },
+    projection: {
+      startYear: 2026,
+      result: {
+        years: [
+          {
+            year: 2027,
+            aca: {
+              householdMagi: 81_000,
+              federalPovertyLine: 20_000,
+              fplPct,
+              cliffState: 'above-cliff',
+            },
+          },
+        ],
+      },
+    },
+  } as unknown as DetectorContext
+}
+
+describe('ACA threshold proximity detector', () => {
+  it('flags the first Marketplace year just over the published FPL cliff', () => {
+    const card = acaThresholdProximity.screen(context())
+
+    expect(card).toMatchObject({
+      severity: 'attention',
+      confidence: 'medium',
+      evidence: [
+        { label: 'Household MAGI in 2027', value: '$81,000', year: 2027 },
+        { label: 'Federal poverty line in 2027', value: '$20,000', year: 2027 },
+        { label: 'FPL percentage in 2027', value: '405.0%', year: 2027 },
+        { label: 'ACA credit boundary', value: '400.0%' },
+      ],
+    })
+  })
+
+  it('stays silent just under the boundary', () => {
+    const ctx = context(399.9)
+    ctx.projection.result.years[0]!.aca = {
+      ...ctx.projection.result.years[0]!.aca!,
+      cliffState: 'below-cliff',
+    }
+
+    expect(acaThresholdProximity.screen(ctx)).toBeNull()
+  })
+
+  it('includes the upper end of the 25-point above-cliff band', () => {
+    expect(acaThresholdProximity.screen(context(425))).not.toBeNull()
+    expect(acaThresholdProximity.screen(context(425.1))).toBeNull()
+  })
+
+  it('flags an epsilon-published at-cliff result with its no-headroom impact and evidence', () => {
+    const ctx = context(400.0000000001)
+    ctx.projection.result.years[0]!.aca = {
+      ...ctx.projection.result.years[0]!.aca!,
+      cliffState: 'at-cliff',
+    }
+
+    expect(acaThresholdProximity.screen(ctx)).toMatchObject({
+      rationale: expect.stringMatching(/exactly at the 400% FPL/i),
+      impact: {
+        qualitative: 'A small MAGI increase would eliminate the modeled premium tax credit; there is no headroom at the boundary.',
+      },
+      evidence: [
+        { label: 'Household MAGI in 2027', value: '$81,000', year: 2027 },
+        { label: 'Federal poverty line in 2027', value: '$20,000', year: 2027 },
+        { label: 'FPL percentage in 2027', value: '400.0%', year: 2027 },
+        { label: 'ACA credit boundary', value: '400.0%' },
+      ],
+    })
+  })
+})

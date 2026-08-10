@@ -123,3 +123,20 @@ detector-level assertions for the domain facts and thresholds.
 
 When adding a detector, add it to the default registry only after its stable
 ID, version, fixtures, severity, and evidence are complete.
+
+## Catalog
+
+| WS2 catalog item | Detector ID | Delivery |
+| --- | --- | --- |
+| Stale balances/income | `stale-plan-data` | Advisory |
+| Missing dates/basis | `missing-data-basis` | Advisory |
+| RMD/QCD | `qcd-efficiency` | Preview scenario |
+| Roth window | `roth-bridge-headroom` | Preview scenario |
+| IRMAA | `irmaa-tier-edge` | Advisory or preview scenario |
+| ACA threshold | `aca-threshold-proximity` | Advisory |
+| SS claim milestone | `ss-claim-milestone` | Advisory |
+| Pension/annuity decision | `pension-election-pending` / `annuitization-headroom` | Advisory or preview scenario (pension); preview scenario (annuitization) |
+| Guardrail adjustment | `spending-guardrails` | Preview scenario |
+| Survivor/beneficiary review | `widows-penalty-roth` | Preview scenario / advisory |
+| Relocation | `state-relocation` | Preview scenario |
+| Assumption/law-pack drift | `law-pack-drift` | Advisory |
