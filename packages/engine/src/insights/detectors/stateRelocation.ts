@@ -9,7 +9,7 @@
  * is one relocation factor, so the card says "worth a look", never "move".
  */
 
-import type { Detector } from '../types.js'
+import type { Detector, InsightEvidence } from '../types.js'
 import { stateParamsFor } from '../../params/state/index.js'
 import {
   compareRelocationCandidates,
@@ -56,7 +56,9 @@ export const stateRelocation: Detector = {
       overridePct > 0
         ? `${currentState} (${formatPct(overridePct)}% modeled override)`
         : `${currentState} (up to ${stateMarginalRatePct!.toFixed(1)}% top statutory income-tax rate)`
-    const evidence = [{ label: 'Current state', value: currentStateValue, year: startYear }]
+    const evidence: [InsightEvidence, ...InsightEvidence[]] = [
+      { label: 'Current state', value: currentStateValue, year: startYear },
+    ]
     if (overridePct > 0) {
       evidence.push({ label: 'Modeled state income-tax override', value: `${formatPct(overridePct)}%`, year: startYear })
     } else {

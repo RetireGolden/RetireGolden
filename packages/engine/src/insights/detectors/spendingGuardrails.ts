@@ -1,7 +1,7 @@
 import { probabilityBandSpendingGuardrailGenerator } from '../../decisions/generators.js'
 import type { DecisionContext } from '../../decisions/types.js'
 import type { Plan } from '../../model/plan.js'
-import type { Detector } from '../types.js'
+import type { Detector, InsightEvidence } from '../types.js'
 
 function guardrailPatchFromGenerator(plan: Plan) {
   const ctx = { plan } as DecisionContext
@@ -46,7 +46,7 @@ export const spendingGuardrails: Detector = {
     const { requiredAnnual, patch } = generated
     const floorIsUserProvided =
       typeof ctx.plan.expenses.requiredAnnual === 'number' && Number.isFinite(ctx.plan.expenses.requiredAnnual)
-    const evidence = [
+    const evidence: [InsightEvidence, ...InsightEvidence[]] = [
       {
         label: floorIsUserProvided
           ? 'Required spending floor'

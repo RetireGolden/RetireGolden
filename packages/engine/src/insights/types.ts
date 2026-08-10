@@ -51,8 +51,8 @@ export interface InsightCard {
   confidence: 'high' | 'medium' | 'low'
   /** Finding-level severity. */
   severity: InsightSeverity
-  /** Exact triggering values; every emitted card must include at least one. */
-  evidence: InsightEvidence[]
+  /** Exact triggering values; the tuple type enforces at least one entry. */
+  evidence: [InsightEvidence, ...InsightEvidence[]]
   learnSlug?: string               // registry slug for LearnLink (validated)
   plannerRoute?: string            // deep link, e.g. 'strategy' or 'social-security-analysis'
   action: InsightAction
