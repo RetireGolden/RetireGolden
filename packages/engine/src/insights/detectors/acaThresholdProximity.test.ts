@@ -35,7 +35,7 @@ describe('ACA threshold proximity detector', () => {
     const card = acaThresholdProximity.screen(ctx)
 
     expect(card).toMatchObject({
-      severity: 'attention',
+      severity: 'info',
       confidence: 'medium',
       rationale: expect.stringContaining(
         'whether a credit is payable then depends on benchmark premiums versus the required contribution',
@@ -76,6 +76,7 @@ describe('ACA threshold proximity detector', () => {
     }
 
     expect(acaThresholdProximity.screen(ctx)).toMatchObject({
+      severity: 'attention',
       rationale: expect.stringMatching(/exactly at the 400% FPL/i),
       impact: {
         qualitative: 'A small MAGI increase would eliminate the modeled premium tax credit; there is no headroom at the boundary.',

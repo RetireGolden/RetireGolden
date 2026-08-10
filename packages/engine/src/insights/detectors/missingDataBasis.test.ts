@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { singlePersonPlan } from '../../testing/planFixtures.js'
+import { couplePlan, singlePersonPlan } from '../../testing/planFixtures.js'
 import type { DetectorContext } from '../types.js'
 import { missingDataBasis } from './missingDataBasis.js'
 
@@ -245,6 +245,52 @@ describe('missing data basis detector', () => {
     const ctx = context()
     ctx.plan.accounts = []
     ctx.projection.result.years[0]!.people[0]!.alive = false
+
+    expect(missingDataBasis.screen(ctx)).toBeNull()
+  })
+
+  it('stays silent when two under-60 Roth owners share an aggregate household withdrawal', () => {
+    const plan = couplePlan({ p1Dob: '1970-01-01', p2Dob: '1970-01-01' })
+    plan.accounts = [
+      {
+        id: 'roth-p1',
+        name: 'Pat Roth IRA',
+        type: 'roth',
+        kind: 'ira',
+        ownerPersonId: 'p1',
+        balance: 125_000,
+        contributionBasis: undefined,
+      },
+      {
+        id: 'roth-p2',
+        name: 'Robin Roth IRA',
+        type: 'roth',
+        kind: 'ira',
+        ownerPersonId: 'p2',
+        balance: 80_000,
+        contributionBasis: undefined,
+      },
+    ] as never
+    plan.incomes = []
+    const ctx = {
+      plan,
+      params: { year: 2026 },
+      projection: {
+        startYear: 2026,
+        result: {
+          years: [
+            {
+              year: 2026,
+              people: [
+                { personId: 'p1', ageAttained: 56, alive: true },
+                { personId: 'p2', ageAttained: 56, alive: true },
+              ],
+              withdrawals: { roth: 5_000 },
+            },
+          ],
+        },
+      },
+    } as unknown as DetectorContext
 
     expect(missingDataBasis.screen(ctx)).toBeNull()
   })

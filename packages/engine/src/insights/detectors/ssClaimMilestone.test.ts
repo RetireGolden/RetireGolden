@@ -103,6 +103,47 @@ describe('Social Security claim milestone detector', () => {
     expect(ssClaimMilestone.screen(ctx)).toBeNull()
   })
 
+  it('stays silent when pia is null with an all-zero earnings history and no other SS stream', () => {
+    const ctx = context()
+    const income = ctx.plan.incomes[0] as { piaMonthly: number | null; earnings: { year: number; amount: number }[] | null }
+    income.piaMonthly = null
+    income.earnings = [{ year: 2020, amount: 0 }, { year: 2021, amount: 0 }]
+
+    expect(ssClaimMilestone.screen(ctx)).toBeNull()
+  })
+
+  it('fires for a zero-own-PIA claimant when another SS stream has positive PIA', () => {
+    const ctx = context(66, 68, 0)
+    const income = ctx.plan.incomes[0] as { piaMonthly: number }
+    income.piaMonthly = 0
+    ctx.plan.household.people.push({
+      id: 'p2',
+      name: 'Sam',
+      dob: '1960-01-01',
+      sex: 'average',
+      retirementAge: null,
+      longevity: { planningAge: 95, source: 'manual' },
+    })
+    ctx.plan.incomes.push({
+      id: 'ss-spouse',
+      type: 'socialSecurity',
+      personId: 'p2',
+      piaMonthly: 2_000,
+      earnings: null,
+      // Out of the two-year window so the anchor spouse's own card cannot win
+      // most-imminent selection — this test isolates the zero-PIA keep.
+      claimAge: { years: 70, months: 0 },
+    } as never)
+    for (const year of ctx.projection.result.years) {
+      year.people.push({ personId: 'p2', ageAttained: year.year - 1960, alive: true } as never)
+    }
+
+    expect(ssClaimMilestone.screen(ctx)).toMatchObject({
+      title: "Pat's Social Security claim is imminent",
+      severity: 'info',
+    })
+  })
+
   it('stays silent when the stream has zero PIA despite earnings history', () => {
     const ctx = context()
     const income = ctx.plan.incomes[0] as { piaMonthly: number; earnings: unknown[] | null }

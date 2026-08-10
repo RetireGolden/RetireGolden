@@ -17,11 +17,36 @@ export const missingDataBasis: Detector = {
     const gaps: DataGap[] = []
     const firstProjectionYear = ctx.projection.result.years[0]
     const lastProjectionYear = ctx.projection.result.years.at(-1)?.year
-    const hasPreQualifiedRothWithdrawal = (ownerPersonId: string | null): boolean =>
-      ctx.projection.result.years.some((year) => {
+
+    const underQualifiedAgeRothOwnerIdsInYear = (year: {
+      people: { personId: string; ageAttained: number }[]
+      withdrawals?: { roth?: number }
+    }): Set<string> => {
+      const ids = new Set<string>()
+      if ((year.withdrawals?.roth ?? 0) <= 0) return ids
+      for (const account of ctx.plan.accounts) {
+        if (account.type !== 'roth' || account.inherited !== undefined || account.balance <= 0) continue
+        const ownerPersonId = account.ownerPersonId
+        if (ownerPersonId === null) continue
         const owner = year.people.find((person) => person.personId === ownerPersonId)
-        return owner !== undefined && owner.ageAttained < 60 && (year.withdrawals?.roth ?? 0) > 0
+        if (owner !== undefined && owner.ageAttained < 60) ids.add(ownerPersonId)
+      }
+      return ids
+    }
+
+    // Household Roth withdrawals are aggregate — skip basis gaps when multiple under-60 Roth
+    // owners coexist in a withdrawal year (withdrawal source is ambiguous; silence per GOVERNANCE).
+    const ambiguousUnderAgeRothWithdrawals = ctx.projection.result.years.some(
+      (year) => underQualifiedAgeRothOwnerIdsInYear(year).size >= 2,
+    )
+
+    const hasPreQualifiedRothWithdrawal = (ownerPersonId: string | null): boolean => {
+      if (ambiguousUnderAgeRothWithdrawals) return false
+      return ctx.projection.result.years.some((year) => {
+        const underAgeOwners = underQualifiedAgeRothOwnerIdsInYear(year)
+        return underAgeOwners.size === 1 && underAgeOwners.has(ownerPersonId ?? '')
       })
+    }
 
     for (const account of ctx.plan.accounts) {
       const owner = firstProjectionYear?.people.find((person) => person.personId === account.ownerPersonId)

@@ -1,10 +1,35 @@
 import type { Detector, InsightCard } from '../types.js'
+import type { Plan } from '../../model/plan.js'
 import { effectiveBirthYear, fraForBirthYear, fraTotalMonths } from '../../socialSecurity/nra.js'
 
 function formatAge(totalMonths: number): string {
   const years = Math.floor(totalMonths / 12)
   const months = totalMonths % 12
   return `${years} years ${months} months`
+}
+
+function hasPositiveEarnings(earnings: { amount: number }[] | null): boolean {
+  return earnings !== null && earnings.some((entry) => entry.amount > 0)
+}
+
+/** Own-record PIA is absent; null PIA with only zero earnings also resolves no own benefit. */
+function streamResolvesNoOwnBenefit(income: {
+  piaMonthly: number | null
+  earnings: { amount: number }[] | null
+}): boolean {
+  if (income.piaMonthly === 0) return true
+  if (income.piaMonthly !== null) return false
+  return income.earnings === null || income.earnings.length === 0 || !hasPositiveEarnings(income.earnings)
+}
+
+/** Another SS stream with modeled own benefit — claim age on a zero-PIA stream can still time spousal/auxiliary benefits. */
+function planHasAnotherSsBenefitAnchor(incomes: Plan['incomes'], excludeId: string): boolean {
+  return incomes.some(
+    (other) =>
+      other.type === 'socialSecurity' &&
+      other.id !== excludeId &&
+      ((other.piaMonthly !== null && other.piaMonthly > 0) || hasPositiveEarnings(other.earnings)),
+  )
 }
 
 /** Highlights Social Security claim decisions occurring in the next two model years. */
@@ -36,8 +61,8 @@ export const ssClaimMilestone: Detector = {
       }
 
       if (
-        income.piaMonthly === 0 ||
-        (income.piaMonthly === null && (income.earnings === null || income.earnings.length === 0))
+        streamResolvesNoOwnBenefit(income) &&
+        !planHasAnotherSsBenefitAnchor(ctx.plan.incomes, income.id)
       ) continue
 
       const claimMonths = income.claimAge.years * 12 + income.claimAge.months

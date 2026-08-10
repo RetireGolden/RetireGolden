@@ -57,7 +57,7 @@ export const acaThresholdProximity: Detector = {
         },
         exact: false,
         confidence: 'medium',
-        severity: 'attention',
+        severity: justOverBoundary ? 'info' : 'attention',
         evidence: [
           { label: `Household MAGI in ${year.year}`, value: usd(aca.householdMagi), year: year.year },
           { label: `Federal poverty line in ${year.year}`, value: usd(aca.federalPovertyLine), year: year.year },
