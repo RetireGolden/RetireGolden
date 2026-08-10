@@ -141,7 +141,7 @@ describe('Social Security claim milestone detector', () => {
       earnings: null,
       // Out of the two-year window so the anchor spouse's own card cannot win
       // most-imminent selection — this test isolates the zero-PIA keep.
-      claimAge: { years: 70, months: 0 },
+      claimAge: { years: 68, months: 0 },
     } as never)
     for (const year of ctx.projection.result.years) {
       year.people.push({ personId: 'p2', ageAttained: year.year - 1960, alive: true } as never)
@@ -151,6 +151,25 @@ describe('Social Security claim milestone detector', () => {
       title: "Pat's Social Security claim is imminent",
       severity: 'info',
     })
+  })
+
+  it('stays silent when a positive spouse stream starts beyond the projection horizon', () => {
+    const ctx = context(66, 68, 0)
+    const income = ctx.plan.incomes[0] as { piaMonthly: number }
+    income.piaMonthly = 0
+    ctx.plan.household.people.push({
+      id: 'p2', name: 'Sam', dob: '1960-01-01', sex: 'average', retirementAge: null,
+      longevity: { planningAge: 95, source: 'manual' },
+    })
+    ctx.plan.incomes.push({
+      id: 'ss-spouse', type: 'socialSecurity', personId: 'p2', piaMonthly: 2_000,
+      earnings: null, claimAge: { years: 70, months: 0 },
+    } as never)
+    for (const year of ctx.projection.result.years) {
+      year.people.push({ personId: 'p2', ageAttained: year.year - 1960, alive: true } as never)
+    }
+
+    expect(ssClaimMilestone.screen(ctx)).toBeNull()
   })
 
   it('fires for a zero-own-PIA claimant with a positive eligible former-spouse record', () => {
@@ -170,6 +189,18 @@ describe('Social Security claim milestone detector', () => {
       title: "Pat's Social Security claim is imminent",
       severity: 'info',
     })
+  })
+
+  it('stays silent for a zero-own-PIA claimant with a divorced record under 10 marriage years', () => {
+    const ctx = context(66, 68, 0)
+    const income = ctx.plan.incomes[0] as { piaMonthly: number; formerSpouses?: unknown[] }
+    income.piaMonthly = 0
+    income.formerSpouses = [{
+      id: 'former-spouse', relationship: 'divorced', dob: '1950-01-01', piaMonthly: 2_000,
+      marriageYears: 9, remarriedAtAge: null,
+    }]
+
+    expect(ssClaimMilestone.screen(ctx)).toBeNull()
   })
 
   it('stays silent when the stream has zero PIA despite earnings history', () => {

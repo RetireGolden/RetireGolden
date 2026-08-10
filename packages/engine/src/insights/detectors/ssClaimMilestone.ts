@@ -7,6 +7,7 @@ import {
   piaInputFromEarnings,
   resolveEarningsProjection,
 } from '../../socialSecurity/piaFromEarnings.js'
+import { maritalBenefitFor } from '../../socialSecurity/maritalBenefits.js'
 
 type SocialSecurityIncome = Extract<Plan['incomes'][number], { type: 'socialSecurity' }>
 
@@ -39,17 +40,61 @@ function streamResolvesNoOwnBenefit(
 }
 
 /** Another SS stream with modeled own benefit — claim age on a zero-PIA stream can still time spousal/auxiliary benefits. */
-function planHasAnotherSsBenefitAnchor(plan: Plan, excludeId: string): boolean {
+function planHasAnotherSsBenefitAnchor(
+  plan: Plan,
+  claimantPersonId: string,
+  excludeId: string,
+  claimantBenefitStartYear: number,
+  lastProjectionYear: number | undefined,
+  projectionYears: readonly { year: number; people: { personId: string; alive: boolean }[] }[],
+): boolean {
+  if (plan.household.people.length !== 2 || lastProjectionYear === undefined) return false
   return plan.incomes.some((other) => {
-    if (other.type !== 'socialSecurity' || other.id === excludeId) return false
+    if (
+      other.type !== 'socialSecurity' ||
+      other.id === excludeId ||
+      other.personId === claimantPersonId
+    ) return false
     const person = plan.household.people.find((candidate) => candidate.id === other.personId)
-    return person !== undefined && (resolvedOwnPia(other, person) ?? 0) > 0
+    if (person === undefined || (resolvedOwnPia(other, person) ?? 0) <= 0) return false
+
+    const otherDobYear = Number(person.dob.slice(0, 4))
+    if (!Number.isInteger(otherDobYear)) return false
+    const otherBenefitStartYear = otherDobYear + other.claimAge.years
+    const firstSharedPayableYear = Math.max(claimantBenefitStartYear, otherBenefitStartYear)
+    if (firstSharedPayableYear > lastProjectionYear) return false
+    return projectionYears.some((year) =>
+      year.year >= firstSharedPayableYear &&
+      year.people.some((candidate) => candidate.personId === claimantPersonId && candidate.alive) &&
+      year.people.some((candidate) => candidate.personId === other.personId && candidate.alive),
+    )
   })
 }
 
 /** A positive former-spouse PIA can make an otherwise zero-own-PIA claim decision meaningful. */
-function hasFormerSpouseBenefitAnchor(income: SocialSecurityIncome): boolean {
-  return income.formerSpouses?.some((formerSpouse) => formerSpouse.piaMonthly > 0) ?? false
+function hasFormerSpouseBenefitAnchor(
+  plan: Plan,
+  income: SocialSecurityIncome,
+  person: Plan['household']['people'][number],
+  projectionYears: readonly { year: number; people: { personId: string; ageAttained: number; alive: boolean }[] }[],
+): boolean {
+  const [birthYear, birthMonth, birthDay] = person.dob.split('-').map(Number)
+  if (!Number.isInteger(birthYear) || !Number.isInteger(birthMonth) || !Number.isInteger(birthDay)) return false
+
+  return projectionYears.some((year) => {
+    const projectedPerson = year.people.find((candidate) => candidate.personId === person.id)
+    if (projectedPerson === undefined || !projectedPerson.alive) return false
+
+    return income.formerSpouses?.some((formerSpouse) =>
+      formerSpouse.piaMonthly > 0 && maritalBenefitFor(formerSpouse, {
+        claimantDob: { year: birthYear, month: birthMonth, day: birthDay },
+        claimantClaimAge: income.claimAge,
+        claimantAge: projectedPerson.ageAttained,
+        year: year.year,
+        claimantIsSingle: plan.household.people.length === 1,
+      }) !== null,
+    ) ?? false
+  })
 }
 
 /** Highlights Social Security claim decisions occurring in the next two model years. */
@@ -60,6 +105,7 @@ export const ssClaimMilestone: Detector = {
   screen(ctx): InsightCard | null {
     const firstProjectionYear = ctx.projection.result.years[0]
     if (firstProjectionYear === undefined || firstProjectionYear.year !== ctx.projection.startYear) return null
+    const lastProjectionYear = ctx.projection.result.years.at(-1)?.year
 
     let selectedCard: InsightCard | null = null
     let smallestYearsToClaim = Infinity
@@ -80,14 +126,21 @@ export const ssClaimMilestone: Detector = {
         continue
       }
 
-      if (
-        streamResolvesNoOwnBenefit(income, person) &&
-        !hasFormerSpouseBenefitAnchor(income) &&
-        !planHasAnotherSsBenefitAnchor(ctx.plan, income.id)
-      ) continue
-
       const claimMonths = income.claimAge.years * 12 + income.claimAge.months
       const benefitStartYear = birthYear + income.claimAge.years
+      if (
+        streamResolvesNoOwnBenefit(income, person) &&
+        !hasFormerSpouseBenefitAnchor(ctx.plan, income, person, ctx.projection.result.years) &&
+        !planHasAnotherSsBenefitAnchor(
+          ctx.plan,
+          person.id,
+          income.id,
+          benefitStartYear,
+          lastProjectionYear,
+          ctx.projection.result.years,
+        )
+      ) continue
+
       const yearsToClaim = benefitStartYear - ctx.projection.startYear
       if (yearsToClaim < 0 || yearsToClaim > 2) continue
 

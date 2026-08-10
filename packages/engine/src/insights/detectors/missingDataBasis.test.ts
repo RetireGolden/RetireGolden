@@ -8,7 +8,7 @@ function context(): DetectorContext {
   const plan = singlePersonPlan({ retirementAge: null })
   plan.accounts = [
     { id: 'roth', name: 'Roth IRA', type: 'roth', balance: 125_000, contributionBasis: undefined },
-    { id: 'trad', name: 'Traditional IRA', type: 'traditional', kind: 'ira', balance: 300_000, nondeductibleBasis: undefined },
+    { id: 'trad', name: 'Traditional IRA', type: 'traditional', kind: 'ira', ownerPersonId: 'p1', balance: 300_000, nondeductibleBasis: undefined },
     {
       id: 'home',
       name: 'Lake home',
@@ -28,7 +28,7 @@ function context(): DetectorContext {
       startYear: 2026,
       result: {
         years: [
-          { year: 2026, people: [{ personId: 'p1', ageAttained: 60, alive: true }] },
+          { year: 2026, people: [{ personId: 'p1', ageAttained: 60, alive: true }], withdrawals: { traditional: 1 } },
           { year: 2029, people: [{ personId: 'p1', ageAttained: 63, alive: true }] },
         ],
       },
@@ -64,6 +64,32 @@ describe('missing data basis detector', () => {
     wages.endAge = 65
 
     expect(missingDataBasis.screen(ctx)).toBeNull()
+  })
+
+  it('stays silent for an untouched traditional IRA', () => {
+    const ctx = context()
+    const firstProjectionYear = ctx.projection.result.years[0] as { withdrawals?: { traditional: number }; rothConversion?: number }
+    firstProjectionYear.withdrawals = { traditional: 0 }
+    firstProjectionYear.rothConversion = 0
+    ctx.plan.accounts = [ctx.plan.accounts[1]!]
+    ctx.plan.incomes = []
+
+    expect(missingDataBasis.screen(ctx)).toBeNull()
+  })
+
+  it.each([
+    ['a traditional withdrawal', { withdrawals: { traditional: 1 } }],
+    ['a Roth conversion', { rothConversion: 1 }],
+  ])('flags a traditional IRA with %s while its owner is alive', (_label, yearValues) => {
+    const ctx = context()
+    const firstProjectionYear = ctx.projection.result.years[0] as { withdrawals?: { traditional: number }; rothConversion?: number }
+    Object.assign(firstProjectionYear, yearValues)
+    ctx.plan.accounts = [ctx.plan.accounts[1]!]
+    ctx.plan.incomes = []
+
+    expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
+      { label: 'Traditional IRA balance (assumed zero after-tax basis)', value: '$300,000' },
+    ])
   })
 
   it.each([
@@ -288,6 +314,34 @@ describe('missing data basis detector', () => {
               withdrawals: { roth: 5_000 },
             },
           ],
+        },
+      },
+    } as unknown as DetectorContext
+
+    expect(missingDataBasis.screen(ctx)).toBeNull()
+  })
+
+  it('stays silent when a 60-or-older spouse also owns a Roth account', () => {
+    const plan = couplePlan({ p1Dob: '1970-01-01', p2Dob: '1950-01-01' })
+    plan.accounts = [
+      { id: 'roth-p1', name: 'Pat Roth IRA', type: 'roth', kind: 'ira', ownerPersonId: 'p1', balance: 125_000, contributionBasis: undefined },
+      { id: 'roth-p2', name: 'Robin Roth IRA', type: 'roth', kind: 'ira', ownerPersonId: 'p2', balance: 80_000, contributionBasis: undefined },
+    ] as never
+    plan.incomes = []
+    const ctx = {
+      plan,
+      params: { year: 2026 },
+      projection: {
+        startYear: 2026,
+        result: {
+          years: [{
+            year: 2026,
+            people: [
+              { personId: 'p1', ageAttained: 56, alive: true },
+              { personId: 'p2', ageAttained: 76, alive: true },
+            ],
+            withdrawals: { roth: 5_000 },
+          }],
         },
       },
     } as unknown as DetectorContext

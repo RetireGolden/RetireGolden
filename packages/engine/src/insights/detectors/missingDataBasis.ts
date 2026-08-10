@@ -22,6 +22,24 @@ export const missingDataBasis: Detector = {
     const hasInheritedRothAccount = ctx.plan.accounts.some(
       (account) => account.type === 'roth' && account.inherited !== undefined,
     )
+    const ownedRothOwnerIds = new Set(
+      ctx.plan.accounts
+        .filter((account) => account.type === 'roth' && account.inherited === undefined)
+        .map((account) => account.ownerPersonId)
+        .filter((ownerPersonId): ownerPersonId is string => ownerPersonId !== null),
+    )
+    const hasUnownedRothAccount = ctx.plan.accounts.some(
+      (account) => account.type === 'roth' && account.inherited === undefined && account.ownerPersonId === null,
+    )
+    const traditionalOwnerIds = new Set(
+      ctx.plan.accounts
+        .filter((account) => account.type === 'traditional')
+        .map((account) => account.ownerPersonId)
+        .filter((ownerPersonId): ownerPersonId is string => ownerPersonId !== null),
+    )
+    const hasUnownedTraditionalAccount = ctx.plan.accounts.some(
+      (account) => account.type === 'traditional' && account.ownerPersonId === null,
+    )
 
     const underQualifiedAgeRothOwnerIdsInYear = (year: {
       people: { personId: string; ageAttained: number }[]
@@ -50,9 +68,29 @@ export const missingDataBasis: Detector = {
 
     const hasPreQualifiedRothWithdrawal = (ownerPersonId: string | null): boolean => {
       if (ambiguousUnderAgeRothWithdrawals) return false
+      if (
+        ownerPersonId === null ||
+        hasUnownedRothAccount ||
+        ownedRothOwnerIds.size !== 1 ||
+        !ownedRothOwnerIds.has(ownerPersonId)
+      ) return false
       return ctx.projection.result.years.some((year) => {
         const underAgeOwners = underQualifiedAgeRothOwnerIdsInYear(year)
         return underAgeOwners.size === 1 && underAgeOwners.has(ownerPersonId ?? '')
+      })
+    }
+
+    const hasTraditionalTransactionWhileOwnerAlive = (ownerPersonId: string | null): boolean => {
+      if (
+        ownerPersonId === null ||
+        hasUnownedTraditionalAccount ||
+        traditionalOwnerIds.size !== 1 ||
+        !traditionalOwnerIds.has(ownerPersonId)
+      ) return false
+
+      return ctx.projection.result.years.some((year) => {
+        const owner = year.people.find((person) => person.personId === ownerPersonId)
+        return owner?.alive === true && ((year.withdrawals?.traditional ?? 0) > 0 || (year.rothConversion ?? 0) > 0)
       })
     }
 
@@ -79,7 +117,11 @@ export const missingDataBasis: Detector = {
         account.kind === 'ira' &&
         account.inherited === undefined &&
         account.balance > 0 &&
-        account.nondeductibleBasis === undefined
+        account.nondeductibleBasis === undefined &&
+        // Traditional withdrawals are aggregate. Attribute a gap only when this
+        // owner is the household's sole traditional-account owner; otherwise the
+        // distributed or converted source is ambiguous.
+        hasTraditionalTransactionWhileOwnerAlive(account.ownerPersonId)
       ) {
         gaps.push({
           evidence: {
