@@ -648,6 +648,97 @@ describe('missing data basis detector', () => {
     expect(missingDataBasis.screen(ctx)).toBeNull()
   })
 
+  it('stays silent when seasoned conversion principal covers a pre-60 withdrawal', () => {
+    // splitRothWithdrawal: year - conversionYear >= 5 is seasoned (tax- and penalty-free).
+    // Conversion in 2021 is seasoned by 2026 (2026 - 2021 = 5); covers the draw without
+    // contribution basis.
+    const ctx = context()
+    ctx.projection.result.years = [
+      {
+        year: 2021,
+        people: [{ personId: 'p1', ageAttained: 54, alive: true }],
+        ownedRothIraPoolActivity: [
+          {
+            ownerPersonId: 'p1',
+            withdrawals: 0,
+            creditedContributions: 0,
+            creditedConversionPrincipal: 5_000,
+            conversionYear: 2021,
+          },
+        ],
+        ownedTraditionalIraAggregateActivity: [],
+        employerRothAccountActivity: [],
+      },
+      {
+        year: 2026,
+        people: [{ personId: 'p1', ageAttained: 59, alive: true }],
+        ownedRothIraPoolActivity: [
+          {
+            ownerPersonId: 'p1',
+            withdrawals: 5_000,
+            creditedContributions: 0,
+            creditedConversionPrincipal: 0,
+            conversionYear: null,
+          },
+        ],
+        ownedTraditionalIraAggregateActivity: [],
+        employerRothAccountActivity: [],
+      },
+    ] as never
+    ctx.plan.accounts = [{
+      id: 'roth', name: 'Roth IRA', type: 'roth', kind: 'ira', ownerPersonId: 'p1', balance: 125_000,
+    }] as never
+    ctx.plan.incomes = []
+
+    expect(missingDataBasis.screen(ctx)).toBeNull()
+  })
+
+  it('flags when unseasoned conversion principal does not free-cover a pre-60 withdrawal', () => {
+    // Conversion in 2022 is still unseasoned in 2026 (2026 - 2022 = 4 < 5).
+    const ctx = context()
+    ctx.projection.result.years = [
+      {
+        year: 2022,
+        people: [{ personId: 'p1', ageAttained: 55, alive: true }],
+        ownedRothIraPoolActivity: [
+          {
+            ownerPersonId: 'p1',
+            withdrawals: 0,
+            creditedContributions: 0,
+            creditedConversionPrincipal: 5_000,
+            conversionYear: 2022,
+          },
+        ],
+        ownedTraditionalIraAggregateActivity: [],
+        employerRothAccountActivity: [],
+      },
+      {
+        year: 2026,
+        people: [{ personId: 'p1', ageAttained: 59, alive: true }],
+        ownedRothIraPoolActivity: [
+          {
+            ownerPersonId: 'p1',
+            withdrawals: 5_000,
+            creditedContributions: 0,
+            creditedConversionPrincipal: 0,
+            conversionYear: null,
+          },
+        ],
+        ownedTraditionalIraAggregateActivity: [],
+        employerRothAccountActivity: [],
+      },
+    ] as never
+    ctx.plan.accounts = [{
+      id: 'roth', name: 'Roth IRA', type: 'roth', kind: 'ira', ownerPersonId: 'p1', balance: 125_000,
+    }] as never
+    ctx.plan.incomes = []
+
+    expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
+      { label: 'Roth IRA owner-pool pre-qualified-age withdrawals', value: '$5,000', year: 2026 },
+      { label: 'Roth IRA known contribution basis', value: '$0', year: 2026 },
+    ])
+  })
+
   it('does not count a limit-clipped published credit as its scheduled amount', () => {
     const ctx = context()
     ctx.projection.result.years[0]!.people[0]!.ageAttained = 59

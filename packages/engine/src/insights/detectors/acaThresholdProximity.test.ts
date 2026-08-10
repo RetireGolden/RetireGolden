@@ -74,6 +74,15 @@ describe('ACA threshold proximity detector', () => {
     expect(card?.evidence).toContainEqual({ label: 'ACA credit boundary', value: '400.00%' })
   })
 
+  it('extends FPL percentage precision when 400.001% would otherwise round to 400.00%', () => {
+    // Two-decimal renderings of 400.001 and 400 both read "400.00%", which
+    // would contradict the over-boundary claim — adaptive precision must show the gap.
+    const card = acaThresholdProximity.screen(context(400.001))
+
+    expect(card?.evidence).toContainEqual({ label: 'FPL percentage in 2027', value: '400.001%', year: 2027 })
+    expect(card?.evidence).toContainEqual({ label: 'ACA credit boundary', value: '400.000%' })
+  })
+
   it('flags an epsilon-published at-cliff result with its no-headroom impact and evidence', () => {
     const ctx = context(400.0000000001)
     ctx.projection.result.years[0]!.aca = {

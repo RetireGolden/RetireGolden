@@ -136,6 +136,44 @@ describe('Social Security claim milestone detector', () => {
     expect(ssClaimMilestone.screen(ctx)).toBeNull()
   })
 
+  it('stays silent when an SSDI-at-start stream later transitions to survivor', () => {
+    // Stream already paying SSDI at horizon start; source becomes 'survivor' later.
+    // That is not a new filing decision — pre-horizon must include SSDI-at-start rows.
+    const ctx = context(55, 67, 0)
+    const income = ctx.plan.incomes[0] as { disability?: { onsetAge: number }; piaMonthly: number }
+    income.disability = { onsetAge: 50 }
+    income.piaMonthly = 2_000
+    const years = ctx.projection.result.years as Array<{
+      year: number
+      people: { personId: string; ageAttained: number; alive: boolean }[]
+      socialSecurityStreams?: {
+        personId: string
+        streamId: string
+        source: StreamSource
+        annualAmount: number
+        claimInForce: boolean
+        preWithholdingAnnual: number
+        isSpousalSurvivorGateStream: boolean
+      }[]
+    }>
+    for (const year of years) {
+      const survivor = year.year >= 2027
+      year.socialSecurityStreams = [
+        {
+          personId: 'p1',
+          streamId: 'ss',
+          source: survivor ? 'survivor' : 'ssdi',
+          annualAmount: 24_000,
+          claimInForce: true,
+          preWithholdingAnnual: 24_000,
+          isSpousalSurvivorGateStream: true,
+        },
+      ]
+    }
+
+    expect(ssClaimMilestone.screen(ctx)).toBeNull()
+  })
+
   it('fires for a claim at 68 years 1 month exactly two model years away', () => {
     const card = ssClaimMilestone.screen(context(66, 68, 1))
 

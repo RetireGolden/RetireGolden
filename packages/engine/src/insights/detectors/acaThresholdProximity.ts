@@ -5,6 +5,28 @@ function usd(amount: number): string {
   return `$${Math.round(amount).toLocaleString()}`
 }
 
+/**
+ * Format two FPL percentages so an over-boundary gap is visible in evidence.
+ * Starts at 2 decimals; when values differ but two-decimal renderings collide,
+ * extends precision until they differ (cap 4).
+ */
+function formatDistinctFplPcts(fplPct: number, boundary: number): {
+  fplPct: string
+  boundary: string
+} {
+  for (let decimals = 2; decimals <= 4; decimals++) {
+    const fpl = fplPct.toFixed(decimals)
+    const bound = boundary.toFixed(decimals)
+    if (fpl !== bound || fplPct === boundary) {
+      return { fplPct: `${fpl}%`, boundary: `${bound}%` }
+    }
+  }
+  return {
+    fplPct: `${fplPct.toFixed(4)}%`,
+    boundary: `${boundary.toFixed(4)}%`,
+  }
+}
+
 /** Flags Marketplace years just above the parameter-pack ACA credit cliff. */
 export const acaThresholdProximity: Detector = {
   id: 'aca-threshold-proximity',
@@ -47,6 +69,12 @@ export const acaThresholdProximity: Detector = {
         : `Household MAGI is exactly at the ${boundary}% FPL ACA credit boundary in ${year.year}. ` +
           'A small increase can eliminate the modeled premium tax credit, so review income and conversion timing before the year closes.'
 
+      // At-cliff evidence stays at two decimals (values are equal for the claim).
+      // Just-over must keep the overage visible when two-decimal renders collide.
+      const { fplPct: fplPctEvidence, boundary: boundaryEvidence } = justOverBoundary
+        ? formatDistinctFplPcts(aca.fplPct, boundary)
+        : { fplPct: `${aca.fplPct.toFixed(2)}%`, boundary: `${boundary.toFixed(2)}%` }
+
       return {
         id: 'aca-threshold-proximity',
         category: 'tax-brackets',
@@ -63,8 +91,8 @@ export const acaThresholdProximity: Detector = {
         evidence: [
           { label: `Household MAGI in ${year.year}`, value: usd(aca.householdMagi), year: year.year },
           { label: `Federal poverty line in ${year.year}`, value: usd(aca.federalPovertyLine), year: year.year },
-          { label: `FPL percentage in ${year.year}`, value: `${aca.fplPct.toFixed(2)}%`, year: year.year },
-          { label: 'ACA credit boundary', value: `${boundary.toFixed(2)}%` },
+          { label: `FPL percentage in ${year.year}`, value: fplPctEvidence, year: year.year },
+          { label: 'ACA credit boundary', value: boundaryEvidence },
           ...(atCliff
             ? [{ label: 'Modeled premium tax credit at stake', value: usd(aca.modeledAllowablePtc ?? 0), year: year.year }]
             : []),

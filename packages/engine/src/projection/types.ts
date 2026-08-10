@@ -1175,6 +1175,14 @@ export interface OwnedRothIraPoolActivity {
    * amounts, not scheduled/configured figures).
    */
   creditedContributions: number
+  /**
+   * Conversion principal credited to this owner's Roth-IRA basis pool this year
+   * (destination credits only). Starts the 5-taxable-year seasoning clock at
+   * `conversionYear` (this projection year) — see `splitRothWithdrawal`.
+   */
+  creditedConversionPrincipal: number
+  /** Calendar year the conversion principal was credited (starts its 5-year clock). */
+  conversionYear: number | null
 }
 
 /**

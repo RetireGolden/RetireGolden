@@ -52,16 +52,19 @@ export const ssClaimMilestone: Detector = {
       )
       if (projectedPerson === undefined) continue
 
-      // Streams already claim-in-force at the horizon start whose claim age is
-      // behind the person's age are pre-horizon filings — skip those streams,
-      // not the person, so a sibling stream that claims later still surfaces.
+      // Streams already claim-in-force at the horizon start are pre-horizon
+      // filings — skip those streams, not the person, so a sibling stream that
+      // claims later still surfaces. Include SSDI-at-start rows: a later source
+      // transition (e.g. SSDI→survivor) is not a new filing decision.
       const preHorizonStreamIds = new Set<string>()
       for (const entry of firstProjectionYear.socialSecurityStreams ?? []) {
-        if (
-          entry.personId !== person.id ||
-          !entry.claimInForce ||
-          entry.source === 'ssdi'
-        ) continue
+        if (entry.personId !== person.id || !entry.claimInForce) continue
+        // SSDI (or any in-force source) at horizon start is already claimed;
+        // claim-age may still point at a future FRA switch and must not exclude it.
+        if (entry.source === 'ssdi') {
+          preHorizonStreamIds.add(entry.streamId)
+          continue
+        }
         const streamIncome = ctx.plan.incomes.find(
           (candidate): candidate is SocialSecurityIncome =>
             candidate.type === 'socialSecurity' && candidate.id === entry.streamId,

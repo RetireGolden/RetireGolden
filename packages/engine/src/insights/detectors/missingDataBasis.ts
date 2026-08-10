@@ -6,6 +6,7 @@ import type {
   OwnedTraditionalIraAggregateActivity,
   QualifiedAnnuityPaymentActivity,
 } from '../../projection/types.js'
+import { ROTH_SEASONING_YEARS } from '../../strategies/rothBasis.js'
 
 interface DataGap {
   evidence: InsightEvidence
@@ -16,10 +17,21 @@ function usd(amount: number): string {
 }
 
 /**
+ * Conversion principal is seasoned (tax- and penalty-free before earnings) once
+ * `withdrawalYear - conversionYear >= ROTH_SEASONING_YEARS`, matching
+ * `splitRothWithdrawal` (`year - layer.year < ROTH_SEASONING_YEARS` is unseasoned).
+ */
+function isSeasonedConversion(withdrawalYear: number, conversionYear: number): boolean {
+  return withdrawalYear - conversionYear >= ROTH_SEASONING_YEARS
+}
+
+/**
  * First pre-qualified-age (age attained < 60) year where a withdrawal exceeds
- * the basis known at that point: supplied starting basis + credits accumulated
- * in year order through that year, reduced by earlier covered pre-60 draws.
- * Credits cannot retroactively cover an earlier withdrawal.
+ * the free basis known at that point: supplied starting contribution basis +
+ * contribution credits accumulated in year order + seasoned conversion
+ * principal (published conversion credits whose 5-tax-year clock has elapsed),
+ * reduced by earlier covered pre-60 draws. Credits cannot retroactively cover
+ * an earlier withdrawal.
  */
 function firstInsufficientPreQualifiedYear(options: {
   years: readonly {
@@ -35,23 +47,56 @@ function firstInsufficientPreQualifiedYear(options: {
     people: readonly { personId: string; ageAttained: number }[]
     ownedRothIraPoolActivity?: readonly OwnedRothIraPoolActivity[]
     employerRothAccountActivity?: readonly EmployerRothAccountActivity[]
-  }) => { withdrawals: number; creditedContributions: number } | undefined
+  }) => {
+    withdrawals: number
+    creditedContributions: number
+    /** Conversion principal credited this year (owned Roth IRA pool only). */
+    creditedConversionPrincipal?: number
+    /** Calendar year that starts the conversion's 5-year seasoning clock. */
+    conversionYear?: number | null
+  } | undefined
 }): { year: number; withdrawal: number; knownBasis: number } | null {
-  let knownBasis = options.suppliedStartingBasis
+  let contributionBasis = options.suppliedStartingBasis
+  // Conversion layers, oldest first — same FIFO order as splitRothWithdrawal.
+  const conversionLayers: { year: number; remaining: number }[] = []
   for (const year of options.years) {
     const owner = year.people.find((person) => person.personId === options.ownerPersonId)
     const activity = options.activityForYear(year)
     if (activity === undefined) continue
-    knownBasis += activity.creditedContributions
+    contributionBasis += activity.creditedContributions
+    const conversionPrincipal = activity.creditedConversionPrincipal ?? 0
+    if (conversionPrincipal > 0) {
+      const conversionYear = activity.conversionYear ?? year.year
+      conversionLayers.push({ year: conversionYear, remaining: conversionPrincipal })
+    }
     if (owner !== undefined && owner.ageAttained < 60 && activity.withdrawals > 0) {
-      if (activity.withdrawals > knownBasis) {
+      // Free cover = contribution basis + seasoned conversion principal only
+      // (mirrors tax- and penalty-free layers before earnings / unseasoned taps).
+      let freeCover = contributionBasis
+      for (const layer of conversionLayers) {
+        if (isSeasonedConversion(year.year, layer.year)) freeCover += layer.remaining
+      }
+      if (activity.withdrawals > freeCover) {
         return {
           year: year.year,
           withdrawal: activity.withdrawals,
-          knownBasis,
+          knownBasis: freeCover,
         }
       }
-      knownBasis = Math.max(0, knownBasis - activity.withdrawals)
+      // Consume free cover in IRS order: contributions, then seasoned conversions
+      // oldest first (splitRothWithdrawal does not skip unseasoned, but those are
+      // not free cover for this walk — we only reach here when free cover suffices).
+      let remaining = activity.withdrawals
+      const fromContributions = Math.min(remaining, contributionBasis)
+      contributionBasis -= fromContributions
+      remaining -= fromContributions
+      for (const layer of conversionLayers) {
+        if (remaining <= 0) break
+        if (!isSeasonedConversion(year.year, layer.year)) continue
+        const take = Math.min(remaining, layer.remaining)
+        layer.remaining -= take
+        remaining -= take
+      }
     }
   }
   return null
@@ -170,10 +215,18 @@ export const missingDataBasis: Detector = {
             years: ctx.projection.result.years,
             ownerPersonId,
             suppliedStartingBasis: suppliedOwnedRothIraBasis(ownerPersonId),
-            activityForYear: (year) =>
-              year.ownedRothIraPoolActivity?.find(
-                (entry: OwnedRothIraPoolActivity) => entry.ownerPersonId === ownerPersonId,
-              ),
+            activityForYear: (year) => {
+              const entry = year.ownedRothIraPoolActivity?.find(
+                (row: OwnedRothIraPoolActivity) => row.ownerPersonId === ownerPersonId,
+              )
+              if (entry === undefined) return undefined
+              return {
+                withdrawals: entry.withdrawals,
+                creditedContributions: entry.creditedContributions,
+                creditedConversionPrincipal: entry.creditedConversionPrincipal ?? 0,
+                conversionYear: entry.conversionYear ?? year.year,
+              }
+            },
           })
           if (decisive !== null) {
             gaps.push({

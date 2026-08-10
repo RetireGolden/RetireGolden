@@ -5954,6 +5954,18 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
      * the aggregate conversion pass already uses for `conversionNontaxable`.
      */
     let namedRothConversionNontaxable = 0
+    /**
+     * Roth conversion principal credited to an owner's owned Roth-IRA pool this
+     * year (published observation; conversion year is the current sim year).
+     *
+     * Per-attempt collector: recreated inside the pass so a counterfactual
+     * pre-pass, settlement retry, or other rolled-back run cannot leave
+     * dollars in the map for the committed yearResult to double-count.
+     * Written at the conversion-layer commit sites (named destination credit
+     * and aggregate destination credit) that mirror splitRothWithdrawal's
+     * basis pool — one write per credited dollar per attempt, never both.
+     */
+    const ownedRothIraCreditedConversionPrincipalByOwner = new Map<string, number>()
     let retirementActionCash = 0
     let retirementActionEquityCompensation = 0
     let retirementActionOrdinaryIncome = 0
@@ -6535,6 +6547,19 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
               ),
             })
           }
+          // Observation-only: publish conversion principal for insight readers
+          // (seasoning clock starts at this year — mirror splitRothWithdrawal).
+          if (
+            credited > 0 &&
+            destination.account.kind === 'ira' &&
+            !isInheritedRothOutsideOwnedPool(destination.account)
+          ) {
+            const ownerPersonId = destination.account.ownerPersonId ?? primary.id
+            ownedRothIraCreditedConversionPrincipalByOwner.set(
+              ownerPersonId,
+              (ownedRothIraCreditedConversionPrincipalByOwner.get(ownerPersonId) ?? 0) + credited,
+            )
+          }
           namedRothConversionExecuted += credited
         }
       }
@@ -7087,6 +7112,19 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
                     credit.convertedPlanDollars - credit.nontaxablePlanDollars,
                   ),
                 })
+              }
+              // Observation-only: publish conversion principal for insight readers
+              // (seasoning clock starts at this year — mirror splitRothWithdrawal).
+              if (
+                destinationAccount.kind === 'ira' &&
+                !isInheritedRothOutsideOwnedPool(destinationAccount)
+              ) {
+                const ownerPersonId = destinationAccount.ownerPersonId ?? primary.id
+                ownedRothIraCreditedConversionPrincipalByOwner.set(
+                  ownerPersonId,
+                  (ownedRothIraCreditedConversionPrincipalByOwner.get(ownerPersonId) ?? 0) +
+                    credit.convertedPlanDollars,
+                )
               }
             }
           }
@@ -9368,15 +9406,22 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     const ownedRothOwnerIds = new Set<string>([
       ...ownedRothWithdrawalsByOwner.keys(),
       ...ownedRothIraCreditedContributionsByOwner.keys(),
+      ...ownedRothIraCreditedConversionPrincipalByOwner.keys(),
     ])
     const ownedRothIraPoolActivity: OwnedRothIraPoolActivity[] = [...ownedRothOwnerIds]
       .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
-      .map((ownerPersonId) => ({
-        ownerPersonId,
-        withdrawals: ownedRothWithdrawalsByOwner.get(ownerPersonId) ?? 0,
-        creditedContributions:
-          ownedRothIraCreditedContributionsByOwner.get(ownerPersonId) ?? 0,
-      }))
+      .map((ownerPersonId) => {
+        const creditedConversionPrincipal =
+          ownedRothIraCreditedConversionPrincipalByOwner.get(ownerPersonId) ?? 0
+        return {
+          ownerPersonId,
+          withdrawals: ownedRothWithdrawalsByOwner.get(ownerPersonId) ?? 0,
+          creditedContributions:
+            ownedRothIraCreditedContributionsByOwner.get(ownerPersonId) ?? 0,
+          creditedConversionPrincipal,
+          conversionYear: creditedConversionPrincipal > 0 ? year : null,
+        }
+      })
     const employerRothAccountIds = new Set<string>([
       ...employerRothWithdrawalsByAccount.keys(),
       ...employerRothCreditedContributionsByAccount.keys(),
