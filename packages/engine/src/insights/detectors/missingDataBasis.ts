@@ -1,6 +1,7 @@
 import type { Detector, InsightCard, InsightEvidence } from '../types.js'
 import type { Account } from '../../model/plan.js'
 import type {
+  CreditedRothConversionLayer,
   EmployerRothAccountActivity,
   OwnedRothIraPoolActivity,
   OwnedTraditionalIraAggregateActivity,
@@ -83,15 +84,12 @@ function firstInsufficientPreQualifiedYear(options: {
   }) => {
     withdrawals: number
     creditedContributions: number
-    /** Conversion principal credited this year (owned pool or employer account). */
-    creditedConversionPrincipal?: number
     /**
-     * Taxable share of that principal. Absent / undefined means fully taxable
-     * (legacy published rows without the split).
+     * Conversion layers credited this year in ledger commit order (owned pool
+     * or employer account). Same-year multi-conversion events stay separate so
+     * FIFO free-cover matches `splitRothWithdrawal`.
      */
-    creditedConversionTaxableAmount?: number
-    /** Calendar year that starts the conversion's 5-year seasoning clock. */
-    conversionYear?: number | null
+    creditedConversionLayers?: readonly CreditedRothConversionLayer[]
   } | undefined
 }): { year: number; withdrawal: number; knownBasis: number } | null {
   let contributionBasis = options.suppliedStartingBasis
@@ -102,17 +100,17 @@ function firstInsufficientPreQualifiedYear(options: {
     const activity = options.activityForYear(year)
     if (activity === undefined) continue
     contributionBasis += activity.creditedContributions
-    const conversionPrincipal = activity.creditedConversionPrincipal ?? 0
-    if (conversionPrincipal > 0) {
-      const conversionYear = activity.conversionYear ?? year.year
-      // Default fully taxable when the published split is absent (legacy rows).
+    // Append each published layer in commit order (not a merged principal/taxable
+    // pair — mixed taxable ratios would destroy FIFO free-cover boundaries).
+    for (const layer of activity.creditedConversionLayers ?? []) {
+      if (layer.principal <= 0) continue
       const taxable = Math.min(
-        conversionPrincipal,
-        Math.max(0, activity.creditedConversionTaxableAmount ?? conversionPrincipal),
+        layer.principal,
+        Math.max(0, layer.taxable),
       )
       conversionLayers.push({
-        year: conversionYear,
-        remaining: conversionPrincipal,
+        year: layer.year,
+        remaining: layer.principal,
         taxableRemaining: taxable,
       })
     }
@@ -158,11 +156,18 @@ function firstInsufficientPreQualifiedYear(options: {
 }
 
 /**
- * Published owned-traditional-IRA pool value for one owner in one projection
- * year, when the ledger published account balances. Prefers pre-growth owned
- * non-Roth IRA balances; falls back to year-end `balances`.
+ * Published owned-traditional-IRA residual pool value for one owner in one
+ * projection year, when the ledger published account balances. Prefers
+ * pre-growth owned non-Roth IRA balances (post-debit residual, before growth);
+ * falls back to year-end `balances`.
+ *
+ * Form 8606 / `openIraProRataYear` apply the nontaxable fraction to a
+ * denominator that still includes the year's distributions and conversions
+ * (residual + those debits). Callers that need the pro-rata pool must add
+ * published owned-IRA distributions+conversions back — see
+ * `form8606OwnedIraPoolDenominator`.
  */
-function publishedOwnedTraditionalIraPoolValue(
+function publishedOwnedTraditionalIraResidual(
   year: {
     ownedNonRothIraBalancesBeforeGrowth?: Readonly<Record<string, number>>
     balances?: Readonly<Record<string, number>>
@@ -197,6 +202,47 @@ function publishedOwnedTraditionalIraPoolValue(
     if (any) return total
   }
   return null
+}
+
+/**
+ * Year's published owned-IRA distributions + conversions for one owner (Form
+ * 8606 aggregate activity). Zero when the row is missing or amounts are absent.
+ */
+function publishedOwnedIraDistributionsAndConversions(
+  year:
+    | {
+        ownedTraditionalIraAggregateActivity?: readonly OwnedTraditionalIraAggregateActivity[]
+      }
+    | undefined,
+  ownerPersonId: string,
+): number {
+  if (year === undefined) return 0
+  const activity = year.ownedTraditionalIraAggregateActivity?.find(
+    (entry) => entry.ownerPersonId === ownerPersonId,
+  )
+  if (activity === undefined) return 0
+  return Math.max(0, activity.distributions) + Math.max(0, activity.conversions)
+}
+
+/**
+ * Form 8606-style pool denominator for saturation: residual published balances
+ * plus the year's owned-IRA distributions and conversions (the pool the
+ * pro-rata fraction applies to). Returns null when no residual is published.
+ */
+function form8606OwnedIraPoolDenominator(
+  year:
+    | {
+        ownedNonRothIraBalancesBeforeGrowth?: Readonly<Record<string, number>>
+        balances?: Readonly<Record<string, number>>
+        ownedTraditionalIraAggregateActivity?: readonly OwnedTraditionalIraAggregateActivity[]
+      }
+    | undefined,
+  ownedTraditionalIraIds: readonly string[],
+  ownerPersonId: string,
+): number | null {
+  const residual = publishedOwnedTraditionalIraResidual(year, ownedTraditionalIraIds)
+  if (residual === null) return null
+  return residual + publishedOwnedIraDistributionsAndConversions(year, ownerPersonId)
 }
 
 /** Surfaces optional tax facts for which the engine must use a legacy default. */
@@ -294,12 +340,7 @@ export const missingDataBasis: Detector = {
               return {
                 withdrawals: entry.withdrawals,
                 creditedContributions: entry.creditedContributions,
-                creditedConversionPrincipal: entry.creditedConversionPrincipal ?? 0,
-                creditedConversionTaxableAmount:
-                  entry.creditedConversionTaxableAmount ??
-                  entry.creditedConversionPrincipal ??
-                  0,
-                conversionYear: entry.conversionYear ?? year.year,
+                creditedConversionLayers: entry.creditedConversionLayers ?? [],
               }
             },
           })
@@ -332,12 +373,7 @@ export const missingDataBasis: Detector = {
               return {
                 withdrawals: entry.withdrawals,
                 creditedContributions: entry.creditedContributions,
-                creditedConversionPrincipal: entry.creditedConversionPrincipal ?? 0,
-                creditedConversionTaxableAmount:
-                  entry.creditedConversionTaxableAmount ??
-                  entry.creditedConversionPrincipal ??
-                  0,
-                conversionYear: entry.conversionYear ?? year.year,
+                creditedConversionLayers: entry.creditedConversionLayers ?? [],
               }
             },
           })
@@ -394,9 +430,13 @@ export const missingDataBasis: Detector = {
         const tx = firstOwnedIraTransactionWhileAlive(ownerPersonId)
         if (tx !== null) {
           const txYearRow = ctx.projection.result.years.find((year) => year.year === tx.year)
-          const publishedTxPool = publishedOwnedTraditionalIraPoolValue(
+          // Pro-rata denominator = residual balances + year's distributions +
+          // conversions (ownedNonRothIraBalancesBeforeGrowth is post-debit
+          // residual; Form 8606 applies the fraction to the full pre-debit pool).
+          const publishedTxPool = form8606OwnedIraPoolDenominator(
             txYearRow,
             ownedTraditionalIraIds,
+            ownerPersonId,
           )
           let poolValueForSaturation: number
           if (publishedTxPool !== null) {
@@ -434,7 +474,11 @@ export const missingDataBasis: Detector = {
                 }
               }
               if (!hasTransaction) continue
-              const published = publishedOwnedTraditionalIraPoolValue(year, ownedTraditionalIraIds)
+              const published = form8606OwnedIraPoolDenominator(
+                year,
+                ownedTraditionalIraIds,
+                ownerPersonId,
+              )
               if (published !== null) poolCandidates.push(published)
             }
             poolValueForSaturation = Math.max(...poolCandidates)

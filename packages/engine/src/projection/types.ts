@@ -1165,6 +1165,27 @@ export interface InheritedAccountYearEvidence {
  * credited contributions from plan schedules, household aggregates, or
  * `YearWithdrawals.roth` (which mixes inherited and employer Roth).
  */
+/**
+ * One Roth conversion destination credit, published as its own FIFO layer so
+ * same-year multi-conversion events keep the principal/taxable boundaries that
+ * `splitRothWithdrawal` walks (oldest first, commit order).
+ */
+export interface CreditedRothConversionLayer {
+  /** Conversion principal credited in this commit (destination credit). */
+  principal: number
+  /**
+   * Portion of `principal` included in income at conversion. The 10% recapture
+   * penalty on an unseasoned pre-59½ tap applies only to this taxable share;
+   * the nontaxable remainder (nondeductible IRA basis rolled in) is free cover
+   * like contributions. Equals principal for a fully-taxable conversion; 0 when
+   * the whole layer was basis return. Mirrors layer `taxableAmount` at the same
+   * conversion-layer commit sites (see `splitRothWithdrawal`).
+   */
+  taxable: number
+  /** Calendar year that starts this layer's 5-taxable-year seasoning clock. */
+  year: number
+}
+
 export interface OwnedRothIraPoolActivity {
   /** Resolved owner id (`null` owner already resolves to the household primary). */
   ownerPersonId: string
@@ -1176,23 +1197,14 @@ export interface OwnedRothIraPoolActivity {
    */
   creditedContributions: number
   /**
-   * Conversion principal credited to this owner's Roth-IRA basis pool this year
-   * (destination credits only). Starts the 5-taxable-year seasoning clock at
-   * `conversionYear` (this projection year) — see `splitRothWithdrawal`.
+   * Conversion principal layers credited to this owner's Roth-IRA basis pool
+   * this year (destination credits only), one entry per conversion commit in
+   * ledger order. Each layer starts its own 5-taxable-year seasoning clock at
+   * `year` — see `splitRothWithdrawal`. Empty when nothing converted.
+   * Observation-only; must not merge same-year layers (mixed taxable ratios
+   * would destroy FIFO free-cover boundaries).
    */
-  creditedConversionPrincipal: number
-  /**
-   * Portion of `creditedConversionPrincipal` that was included in income at
-   * conversion. The 10% recapture penalty on an unseasoned pre-59½ tap applies
-   * only to this taxable share; the nontaxable remainder (nondeductible IRA
-   * basis rolled in) is free cover like contributions. Equals principal for a
-   * fully-taxable conversion; 0 when the whole layer was basis return.
-   * Observation-only — mirrors the layer `taxableAmount` written at the same
-   * conversion-layer commit sites (see `splitRothWithdrawal`).
-   */
-  creditedConversionTaxableAmount: number
-  /** Calendar year the conversion principal was credited (starts its 5-year clock). */
-  conversionYear: number | null
+  creditedConversionLayers: readonly CreditedRothConversionLayer[]
 }
 
 /**
@@ -1211,21 +1223,13 @@ export interface EmployerRothAccountActivity {
   /** Post-limit `allowed` contribution credits, not scheduled amounts. */
   creditedContributions: number
   /**
-   * Conversion principal credited to this employer Roth account's basis this
-   * year (destination credits only). Starts the 5-taxable-year seasoning clock
-   * at `conversionYear` — see `splitRothWithdrawal`. Per-account, never joined
-   * to an owned Roth-IRA aggregate.
+   * Conversion principal layers credited to this employer Roth account's basis
+   * this year (destination credits only), one entry per conversion commit in
+   * ledger order. Per-account, never joined to an owned Roth-IRA aggregate.
+   * Same semantics as `OwnedRothIraPoolActivity.creditedConversionLayers`.
+   * Empty when nothing converted.
    */
-  creditedConversionPrincipal: number
-  /**
-   * Portion of `creditedConversionPrincipal` that was included in income at
-   * conversion. Same semantics as `OwnedRothIraPoolActivity.creditedConversionTaxableAmount`.
-   * Observation-only — mirrors the layer `taxableAmount` written at the same
-   * conversion-layer commit sites.
-   */
-  creditedConversionTaxableAmount: number
-  /** Calendar year the conversion principal was credited (starts its 5-year clock). */
-  conversionYear: number | null
+  creditedConversionLayers: readonly CreditedRothConversionLayer[]
 }
 
 /**

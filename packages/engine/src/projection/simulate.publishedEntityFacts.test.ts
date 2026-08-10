@@ -162,9 +162,7 @@ describe('simulatePlan published per-entity ledger facts', () => {
     expect(employerRow!.ownerPersonId).toBe('p1')
     expect(employerRow!.creditedContributions).toBeGreaterThan(0)
     // Conversion credit fields are always present (zero when nothing converted).
-    expect(employerRow!.creditedConversionPrincipal).toBe(0)
-    expect(employerRow!.creditedConversionTaxableAmount).toBe(0)
-    expect(employerRow!.conversionYear).toBeNull()
+    expect(employerRow!.creditedConversionLayers).toEqual([])
     if (owned.length > 0) {
       expect(owned.every((row) => row.ownerPersonId === 'p1')).toBe(true)
     }
@@ -222,10 +220,10 @@ describe('simulatePlan published per-entity ledger facts', () => {
     const owned = year.ownedRothIraPoolActivity ?? []
     const owner = owned.find((row) => row.ownerPersonId === 'p1')
     expect(owner).toBeDefined()
-    expect(owner!.creditedConversionPrincipal).toBe(15_000)
-    // Zero-basis traditional source → fully taxable conversion layer.
-    expect(owner!.creditedConversionTaxableAmount).toBe(15_000)
-    expect(owner!.conversionYear).toBe(TAX_YEAR)
+    // Zero-basis traditional source → one fully taxable conversion layer.
+    expect(owner!.creditedConversionLayers).toEqual([
+      { principal: 15_000, taxable: 15_000, year: TAX_YEAR },
+    ])
   })
 
   it('publishes owned traditional-IRA distributions excluding employer RMDs', () => {

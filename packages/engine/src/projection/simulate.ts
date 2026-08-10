@@ -5955,23 +5955,28 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
      */
     let namedRothConversionNontaxable = 0
     /**
-     * Roth conversion principal credited to an owner's owned Roth-IRA pool this
-     * year (published observation; conversion year is the current sim year).
+     * Roth conversion layers credited to an owner's owned Roth-IRA pool this
+     * year (published observation; each layer's year is the current sim year).
      *
      * Per-attempt collector: recreated inside the pass so a counterfactual
      * pre-pass, settlement retry, or other rolled-back run cannot leave
-     * dollars in the map for the committed yearResult to double-count.
+     * layers in the map for the committed yearResult to double-count.
      * Written at the conversion-layer commit sites (named destination credit
      * and aggregate destination credit) that mirror splitRothWithdrawal's
-     * basis pool — one write per credited dollar per attempt, never both.
-     * Taxable share is tracked in parallel (`…TaxableAmountByOwner`) from the
-     * same sites' already-computed layer taxableAmount.
+     * basis pool — one array entry per destination credit in commit order,
+     * never merged across events (mixed taxable ratios must keep FIFO
+     * free-cover boundaries). One write path per credited dollar per attempt,
+     * never both named and aggregate for the same dollar.
      */
-    const ownedRothIraCreditedConversionPrincipalByOwner = new Map<string, number>()
-    const ownedRothIraCreditedConversionTaxableAmountByOwner = new Map<string, number>()
-    /** Per-account employer Roth conversion principal credits (published fact). */
-    const employerRothCreditedConversionPrincipalByAccount = new Map<string, number>()
-    const employerRothCreditedConversionTaxableAmountByAccount = new Map<string, number>()
+    const ownedRothIraCreditedConversionLayersByOwner = new Map<
+      string,
+      { principal: number; taxable: number; year: number }[]
+    >()
+    /** Per-account employer Roth conversion layers (published fact). */
+    const employerRothCreditedConversionLayersByAccount = new Map<
+      string,
+      { principal: number; taxable: number; year: number }[]
+    >()
     let retirementActionCash = 0
     let retirementActionEquityCompensation = 0
     let retirementActionOrdinaryIncome = 0
@@ -6553,35 +6558,34 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
               ),
             })
           }
-          // Observation-only: publish conversion principal for insight readers
-          // (seasoning clock starts at this year — mirror splitRothWithdrawal).
+          // Observation-only: publish one conversion layer per destination credit
+          // for insight readers (seasoning clock starts at this year — mirror
+          // splitRothWithdrawal). Do not merge same-owner same-year events.
           // Owned Roth IRA → owner pool; employer designated Roth → per-account.
           if (credited > 0 && !isInheritedRothOutsideOwnedPool(destination.account)) {
             const taxableAmount = Math.max(
               0,
               credited - committedAction.nontaxableAmountPlanDollars,
             )
+            const layer = {
+              principal: credited,
+              taxable: taxableAmount,
+              year,
+            }
             if (destination.account.kind === 'ira') {
               const ownerPersonId = destination.account.ownerPersonId ?? primary.id
-              ownedRothIraCreditedConversionPrincipalByOwner.set(
-                ownerPersonId,
-                (ownedRothIraCreditedConversionPrincipalByOwner.get(ownerPersonId) ?? 0) + credited,
-              )
-              ownedRothIraCreditedConversionTaxableAmountByOwner.set(
-                ownerPersonId,
-                (ownedRothIraCreditedConversionTaxableAmountByOwner.get(ownerPersonId) ?? 0) +
-                  taxableAmount,
-              )
+              const layers =
+                ownedRothIraCreditedConversionLayersByOwner.get(ownerPersonId) ?? []
+              layers.push(layer)
+              ownedRothIraCreditedConversionLayersByOwner.set(ownerPersonId, layers)
             } else if (destination.account.kind === 'employer') {
-              employerRothCreditedConversionPrincipalByAccount.set(
+              const layers =
+                employerRothCreditedConversionLayersByAccount.get(destination.account.id) ??
+                []
+              layers.push(layer)
+              employerRothCreditedConversionLayersByAccount.set(
                 destination.account.id,
-                (employerRothCreditedConversionPrincipalByAccount.get(destination.account.id) ?? 0) +
-                  credited,
-              )
-              employerRothCreditedConversionTaxableAmountByAccount.set(
-                destination.account.id,
-                (employerRothCreditedConversionTaxableAmountByAccount.get(destination.account.id) ??
-                  0) + taxableAmount,
+                layers,
               )
             }
           }
@@ -7138,37 +7142,35 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
                   ),
                 })
               }
-              // Observation-only: publish conversion principal for insight readers
-              // (seasoning clock starts at this year — mirror splitRothWithdrawal).
-              // Owned Roth IRA → owner pool; employer designated Roth → per-account.
+              // Observation-only: publish one conversion layer per destination
+              // credit for insight readers (seasoning clock starts at this year —
+              // mirror splitRothWithdrawal). Do not merge same-owner same-year
+              // events into a single principal/taxable pair.
               if (!isInheritedRothOutsideOwnedPool(destinationAccount)) {
                 const taxableAmount = Math.max(
                   0,
                   credit.convertedPlanDollars - credit.nontaxablePlanDollars,
                 )
+                const layer = {
+                  principal: credit.convertedPlanDollars,
+                  taxable: taxableAmount,
+                  year,
+                }
                 if (destinationAccount.kind === 'ira') {
                   const ownerPersonId = destinationAccount.ownerPersonId ?? primary.id
-                  ownedRothIraCreditedConversionPrincipalByOwner.set(
-                    ownerPersonId,
-                    (ownedRothIraCreditedConversionPrincipalByOwner.get(ownerPersonId) ?? 0) +
-                      credit.convertedPlanDollars,
-                  )
-                  ownedRothIraCreditedConversionTaxableAmountByOwner.set(
-                    ownerPersonId,
-                    (ownedRothIraCreditedConversionTaxableAmountByOwner.get(ownerPersonId) ?? 0) +
-                      taxableAmount,
-                  )
+                  const layers =
+                    ownedRothIraCreditedConversionLayersByOwner.get(ownerPersonId) ?? []
+                  layers.push(layer)
+                  ownedRothIraCreditedConversionLayersByOwner.set(ownerPersonId, layers)
                 } else if (destinationAccount.kind === 'employer') {
-                  employerRothCreditedConversionPrincipalByAccount.set(
-                    destinationAccount.id,
-                    (employerRothCreditedConversionPrincipalByAccount.get(destinationAccount.id) ??
-                      0) + credit.convertedPlanDollars,
-                  )
-                  employerRothCreditedConversionTaxableAmountByAccount.set(
-                    destinationAccount.id,
-                    (employerRothCreditedConversionTaxableAmountByAccount.get(
+                  const layers =
+                    employerRothCreditedConversionLayersByAccount.get(
                       destinationAccount.id,
-                    ) ?? 0) + taxableAmount,
+                    ) ?? []
+                  layers.push(layer)
+                  employerRothCreditedConversionLayersByAccount.set(
+                    destinationAccount.id,
+                    layers,
                   )
                 }
               }
@@ -9452,34 +9454,36 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     const ownedRothOwnerIds = new Set<string>([
       ...ownedRothWithdrawalsByOwner.keys(),
       ...ownedRothIraCreditedContributionsByOwner.keys(),
-      ...ownedRothIraCreditedConversionPrincipalByOwner.keys(),
+      ...ownedRothIraCreditedConversionLayersByOwner.keys(),
     ])
     const ownedRothIraPoolActivity: OwnedRothIraPoolActivity[] = [...ownedRothOwnerIds]
       .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
       .map((ownerPersonId) => {
-        const creditedConversionPrincipal =
-          ownedRothIraCreditedConversionPrincipalByOwner.get(ownerPersonId) ?? 0
-        const creditedConversionTaxableAmount =
-          ownedRothIraCreditedConversionTaxableAmountByOwner.get(ownerPersonId) ?? 0
+        const rawLayers =
+          ownedRothIraCreditedConversionLayersByOwner.get(ownerPersonId) ?? []
+        // Cap taxable ≤ principal per layer so a collector glitch cannot publish
+        // an impossible split; freeze the published array for byte-stable facts.
+        const creditedConversionLayers = Object.freeze(
+          rawLayers.map((layer) =>
+            Object.freeze({
+              principal: layer.principal,
+              taxable: Math.min(Math.max(0, layer.taxable), Math.max(0, layer.principal)),
+              year: layer.year,
+            }),
+          ),
+        )
         return {
           ownerPersonId,
           withdrawals: ownedRothWithdrawalsByOwner.get(ownerPersonId) ?? 0,
           creditedContributions:
             ownedRothIraCreditedContributionsByOwner.get(ownerPersonId) ?? 0,
-          creditedConversionPrincipal,
-          // 0 when no conversion credit; otherwise the taxable share of principal
-          // (capped so a collector glitch cannot publish taxable > principal).
-          creditedConversionTaxableAmount:
-            creditedConversionPrincipal > 0
-              ? Math.min(creditedConversionTaxableAmount, creditedConversionPrincipal)
-              : 0,
-          conversionYear: creditedConversionPrincipal > 0 ? year : null,
+          creditedConversionLayers,
         }
       })
     const employerRothAccountIds = new Set<string>([
       ...employerRothWithdrawalsByAccount.keys(),
       ...employerRothCreditedContributionsByAccount.keys(),
-      ...employerRothCreditedConversionPrincipalByAccount.keys(),
+      ...employerRothCreditedConversionLayersByAccount.keys(),
     ])
     // Resolve owner for employer accounts that only have credited contributions.
     const employerRothOwnerByAccount = new Map<string, string>()
@@ -9495,24 +9499,24 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       [...employerRothAccountIds]
         .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
         .map((accountId) => {
-          const creditedConversionPrincipal =
-            employerRothCreditedConversionPrincipalByAccount.get(accountId) ?? 0
-          const creditedConversionTaxableAmount =
-            employerRothCreditedConversionTaxableAmountByAccount.get(accountId) ?? 0
+          const rawLayers =
+            employerRothCreditedConversionLayersByAccount.get(accountId) ?? []
+          const creditedConversionLayers = Object.freeze(
+            rawLayers.map((layer) =>
+              Object.freeze({
+                principal: layer.principal,
+                taxable: Math.min(Math.max(0, layer.taxable), Math.max(0, layer.principal)),
+                year: layer.year,
+              }),
+            ),
+          )
           return {
             accountId,
             ownerPersonId: employerRothOwnerByAccount.get(accountId) ?? primary.id,
             withdrawals: employerRothWithdrawalsByAccount.get(accountId) ?? 0,
             creditedContributions:
               employerRothCreditedContributionsByAccount.get(accountId) ?? 0,
-            creditedConversionPrincipal,
-            // 0 when no conversion credit; otherwise the taxable share of principal
-            // (capped so a collector glitch cannot publish taxable > principal).
-            creditedConversionTaxableAmount:
-              creditedConversionPrincipal > 0
-                ? Math.min(creditedConversionTaxableAmount, creditedConversionPrincipal)
-                : 0,
-            conversionYear: creditedConversionPrincipal > 0 ? year : null,
+            creditedConversionLayers,
           }
         })
 

@@ -96,8 +96,7 @@ describe('Social Security claim milestone detector', () => {
         { label: "Pat's attained age in first payable year", value: '67', year: 2027 },
         { label: 'Age at projection start (2026)', value: '67', year: 2026 },
         { label: 'Modeled first claim year (claim in force; partial when claim months > 0)', value: '2027', year: 2027 },
-        { label: "Pat's modeled benefit in first claim year", value: '$24,000', year: 2027 },
-        { label: 'Benefit source', value: 'own retirement', year: 2027 },
+        { label: "Pat's modeled benefit in first claim year (own retirement)", value: '$24,000', year: 2027 },
       ],
     })
   })
@@ -173,6 +172,86 @@ describe('Social Security claim milestone detector', () => {
     }
 
     expect(ssClaimMilestone.screen(ctx)).toBeNull()
+  })
+
+  it('fires when a zero-benefit SSDI stream at start later pays an auxiliary claim', () => {
+    // Zero-PIA SSDI can publish claim-in-force with $0/$0 at horizon start.
+    // That is not "already claimed" — a later positive auxiliary (spousal)
+    // claim on the same stream must still surface.
+    const ctx = context(66, 62, 0)
+    const income = ctx.plan.incomes[0] as {
+      disability?: { onsetAge: number }
+      piaMonthly: number
+    }
+    income.disability = { onsetAge: 50 }
+    income.piaMonthly = 0
+    ctx.plan.household.people.push({
+      id: 'p2',
+      name: 'Sam',
+      dob: '1960-01-01',
+      sex: 'average',
+      retirementAge: null,
+      longevity: { planningAge: 95, source: 'manual' },
+    })
+    ctx.plan.incomes.push({
+      id: 'ss-spouse',
+      type: 'socialSecurity',
+      personId: 'p2',
+      piaMonthly: 2_000,
+      earnings: null,
+      claimAge: { years: 70, months: 0 },
+    } as never)
+    ctx.projection.result.years = Array.from({ length: 3 }, (_, offset) => ({
+      year: 2026 + offset,
+      people: [
+        { personId: 'p1', ageAttained: 66 + offset, alive: true },
+        { personId: 'p2', ageAttained: 66 + offset, alive: true },
+      ],
+      socialSecurityStreams: [] as {
+        personId: string
+        streamId: string
+        source: StreamSource
+        annualAmount: number
+        claimInForce: boolean
+        preWithholdingAnnual: number
+        isSpousalSurvivorGateStream: boolean
+      }[],
+    })) as never
+    const years = ctx.projection.result.years as Array<{
+      year: number
+      people: { personId: string; ageAttained: number; alive: boolean }[]
+      socialSecurityStreams?: {
+        personId: string
+        streamId: string
+        source: StreamSource
+        annualAmount: number
+        claimInForce: boolean
+        preWithholdingAnnual: number
+        isSpousalSurvivorGateStream: boolean
+      }[]
+    }>
+    for (const year of years) {
+      const auxiliary = year.year >= 2028
+      year.socialSecurityStreams = [
+        {
+          personId: 'p1',
+          streamId: 'ss',
+          source: auxiliary ? 'spousal' : 'ssdi',
+          annualAmount: auxiliary ? 12_000 : 0,
+          claimInForce: true,
+          preWithholdingAnnual: auxiliary ? 12_000 : 0,
+          isSpousalSurvivorGateStream: true,
+        },
+      ]
+    }
+
+    expect(ssClaimMilestone.screen(ctx)).toMatchObject({
+      title: "Pat's Social Security claim is imminent",
+      severity: 'info',
+      evidence: expect.arrayContaining([
+        { label: "Pat's modeled benefit in first claim year (spousal)", value: '$12,000', year: 2028 },
+      ]),
+    })
   })
 
   it('fires for a claim at 68 years 1 month exactly two model years away', () => {
@@ -261,11 +340,10 @@ describe('Social Security claim milestone detector', () => {
       severity: 'attention',
       evidence: expect.arrayContaining([
         {
-          label: "Pat's modeled benefit in first claim year (earnings test / SGA withheld to $0)",
+          label: "Pat's modeled benefit in first claim year (earnings test / SGA withheld to $0; own retirement)",
           value: '$0',
           year: 2027,
         },
-        { label: 'Benefit source', value: 'own retirement', year: 2027 },
       ]),
     })
   })
@@ -371,7 +449,6 @@ describe('Social Security claim milestone detector', () => {
       severity: 'info',
       evidence: expect.arrayContaining([
         { label: 'Modeled first claim year (claim in force; partial when claim months > 0)', value: '2028', year: 2028 },
-        { label: 'Benefit source', value: 'spousal', year: 2028 },
       ]),
     })
   })
@@ -410,7 +487,7 @@ describe('Social Security claim milestone detector', () => {
       title: "Pat's Social Security claim is imminent",
       severity: 'info',
       evidence: expect.arrayContaining([
-        { label: 'Benefit source', value: 'survivor', year: 2028 },
+        { label: "Pat's modeled benefit in first claim year (survivor)", value: '$24,000', year: 2028 },
       ]),
     })
   })
@@ -636,8 +713,7 @@ describe('Social Security claim milestone detector', () => {
       evidence: expect.arrayContaining([
         { label: "Pat's modeled claim age (configured filing age)", value: '67 years 0 months' },
         { label: "Pat's attained age in first payable year", value: '67', year: 2027 },
-        { label: "Pat's modeled benefit in first claim year", value: '$24,000', year: 2027 },
-        { label: 'Benefit source', value: 'own retirement', year: 2027 },
+        { label: "Pat's modeled benefit in first claim year (own retirement)", value: '$24,000', year: 2027 },
       ]),
     })
   })
@@ -698,7 +774,7 @@ describe('Social Security claim milestone detector', () => {
         // dob 1960 → age 67 in 2027 (annual-ledger); fixture people.ageAttained is independent.
         { label: "Pat's attained age in first payable year", value: '67', year: 2027 },
         { label: 'Modeled first claim year (claim in force; partial when claim months > 0)', value: '2027', year: 2027 },
-        { label: "Pat's modeled benefit in first claim year", value: '$24,000', year: 2027 },
+        { label: "Pat's modeled benefit in first claim year (own retirement)", value: '$24,000', year: 2027 },
       ]),
     })
   })
@@ -765,8 +841,7 @@ describe('Social Security claim milestone detector', () => {
           value: '2028',
           year: 2028,
         },
-        { label: "Pat's modeled benefit in first claim year", value: '$24,000', year: 2028 },
-        { label: 'Benefit source', value: 'own retirement', year: 2028 },
+        { label: "Pat's modeled benefit in first claim year (own retirement)", value: '$24,000', year: 2028 },
       ]),
     })
   })
@@ -839,7 +914,7 @@ describe('Social Security claim milestone detector', () => {
           value: '2028',
           year: 2028,
         },
-        { label: 'Benefit source', value: 'spousal', year: 2028 },
+        { label: "Pat's modeled benefit in first claim year (spousal)", value: '$12,000', year: 2028 },
       ]),
     })
     expect(card?.rationale).toContain('attained age 68')

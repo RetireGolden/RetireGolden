@@ -54,15 +54,23 @@ export const ssClaimMilestone: Detector = {
 
       // Streams already claim-in-force at the horizon start are pre-horizon
       // filings — skip those streams, not the person, so a sibling stream that
-      // claims later still surfaces. Include SSDI-at-start rows: a later source
-      // transition (e.g. SSDI→survivor) is not a new filing decision.
+      // claims later still surfaces. Include paying SSDI-at-start rows: a later
+      // source transition (e.g. SSDI→survivor) is not a new filing decision.
+      // A zero-benefit stream (both published amounts $0) is not "already
+      // claimed" — keep it out of pre-horizon so a later auxiliary claim on the
+      // same stream can still fire (zero-PIA SSDI auxiliary path).
       const preHorizonStreamIds = new Set<string>()
       for (const entry of firstProjectionYear.socialSecurityStreams ?? []) {
         if (entry.personId !== person.id || !entry.claimInForce) continue
-        // SSDI (or any in-force source) at horizon start is already claimed;
-        // claim-age may still point at a future FRA switch and must not exclude it.
+        const hasPositivePublishedAmount =
+          entry.annualAmount > 0 || entry.preWithholdingAnnual > 0
+        // SSDI at horizon start is already claimed only when a positive amount
+        // is published (or was paid pre-withholding). Claim-age may still point
+        // at a future FRA switch and must not exclude a paying SSDI row.
         if (entry.source === 'ssdi') {
-          preHorizonStreamIds.add(entry.streamId)
+          if (hasPositivePublishedAmount) {
+            preHorizonStreamIds.add(entry.streamId)
+          }
           continue
         }
         const streamIncome = ctx.plan.incomes.find(
@@ -135,9 +143,12 @@ export const ssClaimMilestone: Detector = {
 
       const paidAmount = firstClaimStream.annualAmount
       const preWithholding = firstClaimStream.preWithholdingAnnual
+      const sourceLabel = formatSource(firstClaimStream.source)
+      // Fold benefit source into the paid-amount label so evidence stays within
+      // the GOVERNANCE two-to-five cap (was six separate entries).
       const paidEvidence = paidAmount > 0
         ? {
-            label: `${person.name}'s modeled benefit in first claim year`,
+            label: `${person.name}'s modeled benefit in first claim year (${sourceLabel})`,
             value: `$${Math.round(paidAmount).toLocaleString()}`,
             year: firstClaimYear,
           }
@@ -145,7 +156,9 @@ export const ssClaimMilestone: Detector = {
             // Only label earnings-test / SGA withholding when a positive
             // pre-withholding benefit was actually reduced to $0.
             // (Unmodeled zero/zero rows are filtered out of the search above.)
-            label: `${person.name}'s modeled benefit in first claim year (earnings test / SGA withheld to $0)`,
+            label:
+              `${person.name}'s modeled benefit in first claim year ` +
+              `(earnings test / SGA withheld to $0; ${sourceLabel})`,
             value: '$0',
             year: firstClaimYear,
           }
@@ -184,11 +197,6 @@ export const ssClaimMilestone: Detector = {
           { label: `Age at projection start (${firstProjectionYear.year})`, value: String(projectedPerson.ageAttained), year: firstProjectionYear.year },
           { label: 'Modeled first claim year (claim in force; partial when claim months > 0)', value: String(firstClaimYear), year: firstClaimYear },
           paidEvidence,
-          {
-            label: 'Benefit source',
-            value: formatSource(firstClaimStream.source),
-            year: firstClaimYear,
-          },
         ],
         plannerRoute: 'social-security-analysis',
         action: { kind: 'advisory' },
