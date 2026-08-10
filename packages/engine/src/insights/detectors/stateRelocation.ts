@@ -51,13 +51,14 @@ export const stateRelocation: Detector = {
     const stateMarginalRatePct = params
       ? Math.max(...params.brackets[ctx.plan.household.filingStatus].map((bracket) => bracket.ratePct))
       : null
+    const formatPct = (pct: number): string => (pct >= 0.1 ? pct.toFixed(1) : pct.toPrecision(1))
     const currentStateValue =
       overridePct > 0
-        ? `${currentState} (${overridePct.toFixed(1)}% modeled override)`
+        ? `${currentState} (${formatPct(overridePct)}% modeled override)`
         : `${currentState} (up to ${stateMarginalRatePct!.toFixed(1)}% top statutory income-tax rate)`
     const evidence = [{ label: 'Current state', value: currentStateValue, year: startYear }]
     if (overridePct > 0) {
-      evidence.push({ label: 'Modeled state income-tax override', value: `${overridePct.toFixed(1)}%`, year: startYear })
+      evidence.push({ label: 'Modeled state income-tax override', value: `${formatPct(overridePct)}%`, year: startYear })
     } else {
       evidence.push({ label: `${currentState} top statutory income-tax rate`, value: `up to ${stateMarginalRatePct!.toFixed(1)}%`, year: startYear })
     }

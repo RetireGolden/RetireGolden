@@ -44,8 +44,16 @@ export const spendingGuardrails: Detector = {
     const generated = guardrailPatchFromGenerator(ctx.plan)
     if (!generated) return null
     const { requiredAnnual, patch } = generated
+    const floorIsUserProvided =
+      typeof ctx.plan.expenses.requiredAnnual === 'number' && Number.isFinite(ctx.plan.expenses.requiredAnnual)
     const evidence = [
-      { label: 'Required spending floor', value: `$${Math.round(requiredAnnual).toLocaleString()}`, year: firstYear.year },
+      {
+        label: floorIsUserProvided
+          ? 'Required spending floor'
+          : 'Illustrative spending floor (80% of base spending, scenario-generated)',
+        value: `$${Math.round(requiredAnnual).toLocaleString()}`,
+        year: firstYear.year,
+      },
       { label: 'Investable assets', value: `$${Math.round(firstYear.investableTotal).toLocaleString()}`, year: firstYear.year },
     ]
     if (typeof ctx.projection.summary.depletionYear === 'number') {
