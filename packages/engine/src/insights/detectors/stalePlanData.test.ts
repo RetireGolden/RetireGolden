@@ -30,8 +30,8 @@ describe('stale plan data detector', () => {
     })
   })
 
-  it('escalates a two-year gap and stays silent at the current-year boundary', () => {
-    expect(stalePlanData.screen(context('2024-12-31T23:59:59.000Z'))?.severity).toBe('attention')
+  it('reports a two-year gap as info and stays silent at the current-year boundary', () => {
+    expect(stalePlanData.screen(context('2024-12-31T23:59:59.000Z'))?.severity).toBe('info')
     expect(stalePlanData.screen(context('2026-01-01T00:00:00.000Z'))).toBeNull()
   })
 
@@ -41,7 +41,7 @@ describe('stale plan data detector', () => {
     ctx.projection.startYear = 2027
 
     const card = stalePlanData.screen(ctx)
-    expect(card?.severity).toBe('attention')
+    expect(card?.severity).toBe('info')
     expect(card?.evidence).toContainEqual({ label: 'Current planning year', value: '2027', year: 2027 })
     expect(card?.evidence).toContainEqual({ label: 'Data gap', value: '2 years' })
   })

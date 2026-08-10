@@ -61,8 +61,8 @@ export const acaThresholdProximity: Detector = {
         evidence: [
           { label: `Household MAGI in ${year.year}`, value: usd(aca.householdMagi), year: year.year },
           { label: `Federal poverty line in ${year.year}`, value: usd(aca.federalPovertyLine), year: year.year },
-          { label: `FPL percentage in ${year.year}`, value: `${aca.fplPct.toFixed(1)}%`, year: year.year },
-          { label: 'ACA credit boundary', value: `${boundary.toFixed(1)}%` },
+          { label: `FPL percentage in ${year.year}`, value: `${aca.fplPct.toFixed(2)}%`, year: year.year },
+          { label: 'ACA credit boundary', value: `${boundary.toFixed(2)}%` },
           ...(atCliff
             ? [{ label: 'Modeled premium tax credit at stake', value: usd(aca.modeledAllowablePtc ?? 0), year: year.year }]
             : []),

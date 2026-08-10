@@ -17,12 +17,20 @@ export const missingDataBasis: Detector = {
     const gaps: DataGap[] = []
     const firstProjectionYear = ctx.projection.result.years[0]
     const lastProjectionYear = ctx.projection.result.years.at(-1)?.year
+    // YearWithdrawals exposes only aggregate Roth withdrawals: simulate includes
+    // inheritedRothForced in it without publishing that component separately.
+    const hasInheritedRothAccount = ctx.plan.accounts.some(
+      (account) => account.type === 'roth' && account.inherited !== undefined,
+    )
 
     const underQualifiedAgeRothOwnerIdsInYear = (year: {
       people: { personId: string; ageAttained: number }[]
       withdrawals?: { roth?: number }
     }): Set<string> => {
       const ids = new Set<string>()
+      // The aggregate cannot identify an owned under-age withdrawal when an
+      // inherited Roth account may have supplied it; silence per GOVERNANCE.
+      if (hasInheritedRothAccount) return ids
       if ((year.withdrawals?.roth ?? 0) <= 0) return ids
       for (const account of ctx.plan.accounts) {
         if (account.type !== 'roth' || account.inherited !== undefined || account.balance <= 0) continue

@@ -294,4 +294,44 @@ describe('missing data basis detector', () => {
 
     expect(missingDataBasis.screen(ctx)).toBeNull()
   })
+
+  it('stays silent when an inherited Roth account makes aggregate Roth withdrawals ambiguous', () => {
+    const ctx = context()
+    ctx.projection.result.years[0]!.people[0]!.ageAttained = 59
+    const firstProjectionYear = ctx.projection.result.years[0] as { withdrawals?: { roth: number } }
+    firstProjectionYear.withdrawals = { roth: 5_000 }
+    ctx.plan.accounts = [
+      {
+        id: 'roth',
+        name: 'Roth IRA',
+        type: 'roth',
+        kind: 'ira',
+        ownerPersonId: 'p1',
+        balance: 125_000,
+        contributionBasis: undefined,
+      },
+      {
+        id: 'inherited-roth',
+        name: 'Inherited Roth IRA',
+        type: 'roth',
+        kind: 'ira',
+        ownerPersonId: 'p1',
+        balance: 50_000,
+        inherited: {
+          ownerDeathYear: 2024,
+          decedentHadStartedRmds: false,
+          beneficiary: {
+            beneficiaryClass: 'designated-individual',
+            edbCategory: 'none',
+            beneficiaryBirthYear: 1980,
+            soleBeneficiary: true,
+            provenance: { source: 'custodian statement', asOf: '2026-01-01' },
+          },
+        },
+      },
+    ] as never
+    ctx.plan.incomes = []
+
+    expect(missingDataBasis.screen(ctx)).toBeNull()
+  })
 })

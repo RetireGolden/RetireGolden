@@ -36,7 +36,7 @@ export const stalePlanData: Detector = {
       },
       exact: false,
       confidence: 'high',
-      severity: gapYears >= 2 ? 'attention' : 'info',
+      severity: 'info',
       evidence: [
         { label: 'Plan last updated', value: `${stamped.year}-${stamped.month}`, year: stamped.year },
         { label: 'Current planning year', value: String(currentYear), year: currentYear },

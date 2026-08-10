@@ -46,8 +46,8 @@ describe('ACA threshold proximity detector', () => {
       evidence: [
         { label: 'Household MAGI in 2027', value: '$81,000', year: 2027 },
         { label: 'Federal poverty line in 2027', value: '$20,000', year: 2027 },
-        { label: 'FPL percentage in 2027', value: '405.0%', year: 2027 },
-        { label: 'ACA credit boundary', value: '400.0%' },
+        { label: 'FPL percentage in 2027', value: '405.00%', year: 2027 },
+        { label: 'ACA credit boundary', value: '400.00%' },
       ],
     })
   })
@@ -67,6 +67,13 @@ describe('ACA threshold proximity detector', () => {
     expect(acaThresholdProximity.screen(context(425.1))).toBeNull()
   })
 
+  it('shows a 400.01% result distinctly from the 400.00% credit boundary', () => {
+    const card = acaThresholdProximity.screen(context(400.01))
+
+    expect(card?.evidence).toContainEqual({ label: 'FPL percentage in 2027', value: '400.01%', year: 2027 })
+    expect(card?.evidence).toContainEqual({ label: 'ACA credit boundary', value: '400.00%' })
+  })
+
   it('flags an epsilon-published at-cliff result with its no-headroom impact and evidence', () => {
     const ctx = context(400.0000000001)
     ctx.projection.result.years[0]!.aca = {
@@ -84,8 +91,8 @@ describe('ACA threshold proximity detector', () => {
       evidence: [
         { label: 'Household MAGI in 2027', value: '$81,000', year: 2027 },
         { label: 'Federal poverty line in 2027', value: '$20,000', year: 2027 },
-        { label: 'FPL percentage in 2027', value: '400.0%', year: 2027 },
-        { label: 'ACA credit boundary', value: '400.0%' },
+        { label: 'FPL percentage in 2027', value: '400.00%', year: 2027 },
+        { label: 'ACA credit boundary', value: '400.00%' },
         { label: 'Modeled premium tax credit at stake', value: '$1,250', year: 2027 },
       ],
     })

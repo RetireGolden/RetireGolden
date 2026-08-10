@@ -1,6 +1,14 @@
 import type { Detector, InsightCard } from '../types.js'
 import type { Plan } from '../../model/plan.js'
 import { effectiveBirthYear, fraForBirthYear, fraTotalMonths } from '../../socialSecurity/nra.js'
+import {
+  computePiaFromEarnings,
+  isPiaFromEarningsError,
+  piaInputFromEarnings,
+  resolveEarningsProjection,
+} from '../../socialSecurity/piaFromEarnings.js'
+
+type SocialSecurityIncome = Extract<Plan['incomes'][number], { type: 'socialSecurity' }>
 
 function formatAge(totalMonths: number): string {
   const years = Math.floor(totalMonths / 12)
@@ -8,28 +16,40 @@ function formatAge(totalMonths: number): string {
   return `${years} years ${months} months`
 }
 
-function hasPositiveEarnings(earnings: { amount: number }[] | null): boolean {
-  return earnings !== null && earnings.some((entry) => entry.amount > 0)
+function resolvedOwnPia(income: SocialSecurityIncome, person: Plan['household']['people'][number]): number | null {
+  if (income.piaMonthly !== null) return income.piaMonthly
+  if (income.earnings === null || income.earnings.length === 0) return null
+
+  const [birthYear, birthMonth, birthDay] = person.dob.split('-').map(Number)
+  if (!Number.isInteger(birthYear) || !Number.isInteger(birthMonth) || !Number.isInteger(birthDay)) return null
+
+  const projection = resolveEarningsProjection(income.earningsProjection, person.retirementAge)
+  const result = computePiaFromEarnings(
+    piaInputFromEarnings(birthYear, birthMonth, birthDay, income.earnings, projection),
+  )
+  return isPiaFromEarningsError(result) ? null : result.piaMonthly
 }
 
-/** Own-record PIA is absent; null PIA with only zero earnings also resolves no own benefit. */
-function streamResolvesNoOwnBenefit(income: {
-  piaMonthly: number | null
-  earnings: { amount: number }[] | null
-}): boolean {
-  if (income.piaMonthly === 0) return true
-  if (income.piaMonthly !== null) return false
-  return income.earnings === null || income.earnings.length === 0 || !hasPositiveEarnings(income.earnings)
+/** Own-record PIA is absent, zero, or resolves to zero through the simulator's earnings path. */
+function streamResolvesNoOwnBenefit(
+  income: SocialSecurityIncome,
+  person: Plan['household']['people'][number],
+): boolean {
+  return (resolvedOwnPia(income, person) ?? 0) <= 0
 }
 
 /** Another SS stream with modeled own benefit — claim age on a zero-PIA stream can still time spousal/auxiliary benefits. */
-function planHasAnotherSsBenefitAnchor(incomes: Plan['incomes'], excludeId: string): boolean {
-  return incomes.some(
-    (other) =>
-      other.type === 'socialSecurity' &&
-      other.id !== excludeId &&
-      ((other.piaMonthly !== null && other.piaMonthly > 0) || hasPositiveEarnings(other.earnings)),
-  )
+function planHasAnotherSsBenefitAnchor(plan: Plan, excludeId: string): boolean {
+  return plan.incomes.some((other) => {
+    if (other.type !== 'socialSecurity' || other.id === excludeId) return false
+    const person = plan.household.people.find((candidate) => candidate.id === other.personId)
+    return person !== undefined && (resolvedOwnPia(other, person) ?? 0) > 0
+  })
+}
+
+/** A positive former-spouse PIA can make an otherwise zero-own-PIA claim decision meaningful. */
+function hasFormerSpouseBenefitAnchor(income: SocialSecurityIncome): boolean {
+  return income.formerSpouses?.some((formerSpouse) => formerSpouse.piaMonthly > 0) ?? false
 }
 
 /** Highlights Social Security claim decisions occurring in the next two model years. */
@@ -61,8 +81,9 @@ export const ssClaimMilestone: Detector = {
       }
 
       if (
-        streamResolvesNoOwnBenefit(income) &&
-        !planHasAnotherSsBenefitAnchor(ctx.plan.incomes, income.id)
+        streamResolvesNoOwnBenefit(income, person) &&
+        !hasFormerSpouseBenefitAnchor(income) &&
+        !planHasAnotherSsBenefitAnchor(ctx.plan, income.id)
       ) continue
 
       const claimMonths = income.claimAge.years * 12 + income.claimAge.months

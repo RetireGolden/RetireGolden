@@ -112,6 +112,15 @@ describe('Social Security claim milestone detector', () => {
     expect(ssClaimMilestone.screen(ctx)).toBeNull()
   })
 
+  it('stays silent when a tiny positive earnings history resolves to zero PIA', () => {
+    const ctx = context()
+    const income = ctx.plan.incomes[0] as { piaMonthly: number | null; earnings: { year: number; amount: number }[] | null }
+    income.piaMonthly = null
+    income.earnings = [{ year: 2020, amount: 1 }]
+
+    expect(ssClaimMilestone.screen(ctx)).toBeNull()
+  })
+
   it('fires for a zero-own-PIA claimant when another SS stream has positive PIA', () => {
     const ctx = context(66, 68, 0)
     const income = ctx.plan.incomes[0] as { piaMonthly: number }
@@ -137,6 +146,25 @@ describe('Social Security claim milestone detector', () => {
     for (const year of ctx.projection.result.years) {
       year.people.push({ personId: 'p2', ageAttained: year.year - 1960, alive: true } as never)
     }
+
+    expect(ssClaimMilestone.screen(ctx)).toMatchObject({
+      title: "Pat's Social Security claim is imminent",
+      severity: 'info',
+    })
+  })
+
+  it('fires for a zero-own-PIA claimant with a positive eligible former-spouse record', () => {
+    const ctx = context(66, 68, 0)
+    const income = ctx.plan.incomes[0] as { piaMonthly: number; formerSpouses?: unknown[] }
+    income.piaMonthly = 0
+    income.formerSpouses = [{
+      id: 'former-spouse',
+      relationship: 'divorced',
+      dob: '1950-01-01',
+      piaMonthly: 2_000,
+      marriageYears: 12,
+      remarriedAtAge: null,
+    }]
 
     expect(ssClaimMilestone.screen(ctx)).toMatchObject({
       title: "Pat's Social Security claim is imminent",
