@@ -28,17 +28,28 @@ describe('Social Security claim milestone detector', () => {
   it('flags a claim within one year as attention with exact claim evidence', () => {
     const card = ssClaimMilestone.screen(context())
 
-    // 1960-01-01 + (67 * 12 + 6 = 810) months lands in January 2027.
+    // Engine annual-ledger convention: first benefit year = dobYear +
+    // claimAge.years (1960 + 67 = 2027), partial because claim months = 6.
     expect(card).toMatchObject({
       severity: 'attention',
       plannerRoute: 'social-security-analysis',
       evidence: [
         { label: "Pat's modeled claim age", value: '67 years 6 months' },
         { label: 'Age at projection start (2026)', value: '67', year: 2026 },
-        { label: 'Modeled claim year', value: '2027', year: 2027 },
+        { label: 'Modeled first benefit year (partial when claim months > 0)', value: '2027', year: 2027 },
         { label: 'Full retirement age', value: '66 years 10 months' },
       ],
     })
+  })
+
+  it('uses the annual-ledger start year for non-January birthdays', () => {
+    const ctx = context()
+    ctx.plan.household.people[0]!.dob = '1960-11-15'
+    const card = ssClaimMilestone.screen(ctx)
+    // dobYear + claimAge.years = 1960 + 67 = 2027 even though calendar-month
+    // arithmetic (Nov 1960 + 67y6m = May 2028) would say otherwise — the
+    // ledger ages people by calendar year.
+    expect(card?.evidence.find((e) => e.label.startsWith('Modeled first benefit year'))?.value).toBe('2027')
   })
 
   it('uses info for a decision more than one year away and stays silent just beyond two years', () => {

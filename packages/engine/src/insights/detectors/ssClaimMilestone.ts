@@ -42,7 +42,10 @@ export const ssClaimMilestone: Detector = {
       const fra = fraForBirthYear(effectiveBirthYear(birthYear, birthMonth, birthDay))
       if (income.disability?.onsetAge !== undefined && income.disability.onsetAge < fra.years) continue
 
-      const benefitStartYear = birthYear + Math.floor((birthMonth - 1 + claimMonths) / 12)
+      // The annual ledger ages people by calendar year (ageAttained = year -
+      // dobYear) and first pays in the year ageAttained equals claimAge.years
+      // (partial when claim months > 0) — mirror that, not calendar-month math.
+      const benefitStartYear = birthYear + income.claimAge.years
       return {
         id: 'ss-claim-milestone',
         category: 'social-security',
@@ -59,7 +62,7 @@ export const ssClaimMilestone: Detector = {
         evidence: [
           { label: `${person.name}'s modeled claim age`, value: formatAge(claimMonths) },
           { label: `Age at projection start (${firstProjectionYear.year})`, value: String(projectedPerson.ageAttained), year: firstProjectionYear.year },
-          { label: 'Modeled claim year', value: String(benefitStartYear), year: benefitStartYear },
+          { label: 'Modeled first benefit year (partial when claim months > 0)', value: String(benefitStartYear), year: benefitStartYear },
           { label: 'Full retirement age', value: formatAge(fraTotalMonths(fra)) },
         ],
         plannerRoute: 'social-security-analysis',
