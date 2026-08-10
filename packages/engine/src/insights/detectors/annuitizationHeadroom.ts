@@ -14,6 +14,7 @@ import { spiaPayoutRate } from '../../decisions/spiaQuotes.js'
 export const annuitizationHeadroom: Detector = {
   id: 'annuitization-headroom',
   category: 'longevity-insurance-geography',
+  version: 1,
   screen(ctx): InsightCard | null {
     const plan = ctx.plan
     const startYear = ctx.projection.startYear
@@ -63,6 +64,13 @@ export const annuitizationHeadroom: Detector = {
       },
       exact: false,
       confidence: 'medium',
+      severity: 'info',
+      evidence: [
+        { label: 'Planning age', value: `${maxPlanningAge}` },
+        { label: 'Liquid savings', value: `$${Math.round(liquid.balance).toLocaleString()}`, year: startYear },
+        { label: 'Illustrative SPIA premium', value: `$${Math.round(premium).toLocaleString()}`, year: startYear },
+        { label: 'Illustrative monthly income', value: `$${Math.round(monthly).toLocaleString()}/mo`, year: startYear },
+      ],
       learnSlug: 'pensions-and-annuities',
       plannerRoute: 'monte-carlo',
       action: {

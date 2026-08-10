@@ -15,6 +15,7 @@ import { hecmPrincipalLimitFactorPct } from '../../params/index.js'
 export const hecmBufferCandidate: Detector = {
   id: 'hecm-buffer-candidate',
   category: 'longevity-insurance-geography',
+  version: 1,
   screen(ctx): InsightCard | null {
     const plan = ctx.plan
     const startYear = ctx.projection.startYear
@@ -69,6 +70,13 @@ export const hecmBufferCandidate: Detector = {
       },
       exact: false,
       confidence: 'medium',
+      severity: 'info',
+      evidence: [
+        { label: 'Home value', value: `$${Math.round(home.value).toLocaleString()}`, year: startYear },
+        { label: 'Investable portfolio', value: `$${Math.round(investable).toLocaleString()}`, year: startYear },
+        { label: 'Youngest borrower age', value: `${youngestAge}`, year: startYear },
+        { label: 'Illustrative credit line', value: `$${Math.round(lineSize).toLocaleString()}`, year: startYear },
+      ],
       plannerRoute: 'accounts',
       action: {
         kind: 'preview-scenario',

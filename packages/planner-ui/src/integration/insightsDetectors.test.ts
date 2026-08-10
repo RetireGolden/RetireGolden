@@ -44,6 +44,16 @@ function expectReadableLearnSlug(card: InsightCard): void {
   expect(article ? isReadable(article) : false, card.learnSlug).toBe(true)
 }
 
+function expectGovernedCard(card: InsightCard): void {
+  expect(['info', 'attention', 'urgent'], `${card.id} severity`).toContain(card.severity)
+  expect(card.evidence.length, `${card.id} evidence`).toBeGreaterThan(0)
+  for (const item of card.evidence) {
+    expect(item.label.length, `${card.id} evidence label`).toBeGreaterThan(0)
+    expect(item.value, `${card.id} evidence value must contain the exact figure`).toMatch(/\d/)
+    expect(['0', '$0', '0.0%'], `${card.id} evidence value must not be a placeholder`).not.toContain(item.value)
+  }
+}
+
 function comparePreviewScenario(plan: Plan, card: InsightCard) {
   expect(card.action.kind, card.id).toBe('preview-scenario')
   if (card.action.kind !== 'preview-scenario') {
@@ -83,6 +93,7 @@ describe('starter detectors', () => {
     const ctx2 = makeContext(plan)
     const card = rothBridgeHeadroom.screen(ctx2)
     expect(card).not.toBeNull()
+    expectGovernedCard(card!)
     expect(card!.id).toBe('roth-bridge-headroom')
     expect(card!.action.kind).toBe('preview-scenario')
     expect(card!.confidence).toBe('medium')
@@ -119,6 +130,8 @@ describe('starter detectors', () => {
 
     const card = irmaaTierEdge.screen(ctx)
     expect(card).not.toBeNull()
+    expectGovernedCard(card!)
+    expect(card!.evidence.some((item) => item.label.toLowerCase().includes('over threshold'))).toBe(true)
     expect(card!.id).toBe('irmaa-tier-edge')
     expect(card!.rationale).toContain('nominal MAGI')
     expect(card!.action.kind).toBe('preview-scenario')
@@ -169,12 +182,14 @@ describe('starter detectors', () => {
       stateAndLocalTaxes: 0,
       mortgageInterest: 0,
     }
+    plan.strategies.qcdAnnual = 1
     // Alex born 1962 (age 64 in 2026), let's make him born 1950 (age 76 in 2026)
     plan.household.people[0]!.dob = '1950-01-01'
 
     const ctx2 = makeContext(plan)
     const card = qcdEfficiency.screen(ctx2)
     expect(card).not.toBeNull()
+    expectGovernedCard(card!)
     expectReadableLearnSlug(card!)
     const action = card!.action
     if (action.kind === 'preview-scenario') {
@@ -200,6 +215,7 @@ describe('starter detectors', () => {
     const ctx2 = makeContext(plan)
     const card = widowsPenalty.screen(ctx2)
     expect(card).not.toBeNull()
+    expectGovernedCard(card!)
     expect(card!.id).toBe('widows-penalty-roth')
     expectReadableLearnSlug(card!)
     const { base, scenario } = comparePreviewScenario(plan, card!)
@@ -228,6 +244,7 @@ describe('starter detectors', () => {
     })
     const card = widowsPenalty.screen(makeContext(plan))
     expect(card).not.toBeNull()
+    expectGovernedCard(card!)
     // Quantified on the plan's own survivor year, not just described — with
     // the death projected in the last joint year, not the first single year.
     expect(card!.rationale).toContain("more (today's $)")
@@ -238,6 +255,7 @@ describe('starter detectors', () => {
     plan.expenses.healthcare.ssa44 = { survivorYears: true, retirementYears: false }
     const modeled = widowsPenalty.screen(makeContext(plan))
     expect(modeled).not.toBeNull()
+    expectGovernedCard(modeled!)
     expect(modeled!.rationale).not.toContain('SSA-44')
 
     // With the QSS opt-in, the interlude keeps joint tables: the story names
@@ -247,6 +265,7 @@ describe('starter detectors', () => {
     plan.household.hasQualifyingDependent = true
     const qss = widowsPenalty.screen(makeContext(plan))
     expect(qss).not.toBeNull()
+    expectGovernedCard(qss!)
     expect(qss!.rationale).toContain('qualifying surviving spouse')
     expect(qss!.rationale).toContain('as Single from 2033')
   })
@@ -288,7 +307,9 @@ describe('starter detectors', () => {
     const fromStalePack = widowsPenalty.screen(stale)
 
     expect(fromLatestPack).not.toBeNull()
+    expectGovernedCard(fromLatestPack!)
     expect(fromStalePack).not.toBeNull()
+    expectGovernedCard(fromStalePack!)
     expect(fromStalePack!.rationale).toBe(fromLatestPack!.rationale)
   })
 
@@ -298,6 +319,7 @@ describe('starter detectors', () => {
     const ctx1 = makeContext(plan)
     const card = stateRelocation.screen(ctx1)
     expect(card).not.toBeNull()
+    expectGovernedCard(card!)
     expect(card!.id).toBe('state-relocation')
     expectReadableLearnSlug(card!)
     const action = card!.action
@@ -354,6 +376,9 @@ describe('starter detectors', () => {
     const ctx = makeContext(plan)
     const card = spendingGuardrails.screen(ctx)
     expect(card).not.toBeNull()
+    expectGovernedCard(card!)
+    expect(card!.severity).toBe('info')
+    expect(card!.evidence.some((item) => item.label === 'Projected depletion year')).toBe(false)
     expect(card!.id).toBe('spending-guardrails')
     expect(card!.action.kind).toBe('preview-scenario')
     expectReadableLearnSlug(card!)
@@ -371,6 +396,7 @@ describe('starter detectors', () => {
     const ctx = makeContext(plan)
     const card = spendingGuardrails.screen(ctx)
     expect(card).not.toBeNull()
+    expectGovernedCard(card!)
     if (card?.action.kind !== 'preview-scenario') throw new Error('expected preview scenario')
 
     const generated = probabilityBandSpendingGuardrailGenerator().generate({ plan } as DecisionContext)
@@ -385,6 +411,7 @@ describe('assetLocation detector (asset-allocation v2, step 5)', () => {
     const ctx = makeContext(plan)
     const card = assetLocation.screen(ctx)
     expect(card).not.toBeNull()
+    expectGovernedCard(card!)
     expect(card!.id).toBe('asset-location')
     expect(card!.action.kind).toBe('preview-scenario')
     expectReadableLearnSlug(card!)
@@ -443,6 +470,7 @@ describe('SS bridge + income floor detectors (social-security-bridge-and-tips-la
     const plan = bridgePlan()
     const card = ssBridgeGap.screen(makeContext(plan))
     expect(card).not.toBeNull()
+    expectGovernedCard(card!)
     expect(card!.id).toBe('ss-bridge-gap')
     expectReadableLearnSlug(card!)
     const { scenario } = comparePreviewScenario(plan, card!)
@@ -496,6 +524,7 @@ describe('SS bridge + income floor detectors (social-security-bridge-and-tips-la
     plan.expenses.requiredAnnual = Math.min(plan.expenses.baseAnnual, 60_000)
     const card = incomeFloorFunded.screen(makeContext(plan))
     expect(card).not.toBeNull()
+    expectGovernedCard(card!)
     expect(card!.id).toBe('income-floor-funded')
     expect(card!.action.kind).toBe('advisory')
     expect(card!.title).toMatch(/\d+% funded/)
@@ -514,6 +543,7 @@ describe('spendingHeadroom detector (sustainable-spending plan, Step 6)', () => 
   function surplusPlan(): Plan {
     const plan = noTraditionalPlan()
     plan.expenses.baseAnnual = 20_000
+    plan.expenses.bequestTargetDollars = 10_000
     plan.accounts = plan.accounts.map((a) => (a.type === 'cash' ? { ...a, balance: 1_000_000 } : a))
     return plan
   }
@@ -522,6 +552,7 @@ describe('spendingHeadroom detector (sustainable-spending plan, Step 6)', () => 
     const ctx = makeContext(surplusPlan())
     const card = spendingHeadroom.screen(ctx)
     expect(card).not.toBeNull()
+    expectGovernedCard(card!)
     expect(card!.id).toBe('spending-headroom')
     expect(card!.exact).toBe(false)
     expect(card!.action.kind).toBe('preview-scenario')

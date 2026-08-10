@@ -13,6 +13,7 @@ import type { TipsLadder } from '../../model/plan.js'
 export const ssBridgeGap: Detector = {
   id: 'ss-bridge-gap',
   category: 'social-security',
+  version: 1,
   screen(ctx): InsightCard | null {
     const plan = ctx.plan
     const startYear = ctx.projection.startYear
@@ -75,6 +76,13 @@ export const ssBridgeGap: Detector = {
       },
       exact: false,
       confidence: 'medium',
+      severity: 'attention',
+      evidence: [
+        { label: 'First Social Security gap year', value: `${firstYear}`, year: firstYear },
+        { label: 'Last Social Security gap year', value: `${lastYear}`, year: lastYear },
+        { label: 'TIPS bridge cost', value: `$${Math.round(totalCost).toLocaleString()}`, year: startYear },
+        { label: 'Annual bridge income', value: `$${Math.round(annualTotal).toLocaleString()}/yr` },
+      ],
       learnSlug: 'social-security-bridge',
       plannerRoute: 'income-floor',
       action: {

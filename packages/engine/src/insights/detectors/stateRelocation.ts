@@ -22,13 +22,15 @@ const ZERO_TAX_SHORTLIST = ['FL', 'TX', 'WA'] as const
 export const stateRelocation: Detector = {
   id: 'state-relocation',
   category: 'longevity-insurance-geography',
+  version: 1,
   screen(ctx) {
     const startYear = ctx.projection.startYear
     const currentState = ctx.plan.household.state
+    const overridePct = ctx.plan.assumptions.stateEffectiveTaxPct
 
     // If already in a tax-free state and no flat override, it's not applicable
     const params = stateParamsFor(currentState, startYear)
-    const currentHasIncomeTax = ctx.plan.assumptions.stateEffectiveTaxPct > 0 || (params ? params.hasIncomeTax : true)
+    const currentHasIncomeTax = overridePct > 0 || (params ? params.hasIncomeTax : true)
 
     if (!currentHasIncomeTax) {
       return null
@@ -43,6 +45,28 @@ export const stateRelocation: Detector = {
       return null
     }
 
+    const stateMarginalRatePct = params
+      ? Math.max(...params.brackets[ctx.plan.household.filingStatus].map((bracket) => bracket.ratePct))
+      : null
+    const currentStateValue =
+      overridePct > 0
+        ? `${currentState} (${overridePct.toFixed(1)}% modeled override)`
+        : stateMarginalRatePct !== null
+          ? `${currentState} (${stateMarginalRatePct.toFixed(1)}% state income tax)`
+          : `${currentState} ($${Math.round(ctx.projection.result.years[0]!.tax).toLocaleString()} projected annual total tax)`
+    const evidence = [{ label: 'Current state', value: currentStateValue, year: startYear }]
+    if (overridePct > 0) {
+      evidence.push({ label: 'Modeled state income-tax override', value: `${overridePct.toFixed(1)}%`, year: startYear })
+    } else if (stateMarginalRatePct !== null) {
+      evidence.push({ label: `${currentState} state income tax`, value: `${stateMarginalRatePct.toFixed(1)}%`, year: startYear })
+    } else {
+      evidence.push({
+        label: 'Projected annual total tax (state tax data unavailable)',
+        value: `$${Math.round(ctx.projection.result.years[0]!.tax).toLocaleString()}`,
+        year: startYear,
+      })
+    }
+
     return {
       id: 'state-relocation',
       category: 'longevity-insurance-geography',
@@ -51,6 +75,8 @@ export const stateRelocation: Detector = {
       impact: { qualitative: 'Preview to quantify the lifetime state-tax drag vs modeled zero-income-tax states on your own plan.' },
       exact: false,
       confidence: 'medium',
+      severity: 'info',
+      evidence,
       learnSlug: 'state-income-taxes-in-retirement',
       plannerRoute: 'relocation',
       action: {

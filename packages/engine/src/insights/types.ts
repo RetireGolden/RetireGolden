@@ -12,6 +12,19 @@ export type InsightCategory =
   | 'social-security'
   | 'longevity-insurance-geography'
 
+/** Finding-level severity. See GOVERNANCE.md for the ladder definitions. */
+export type InsightSeverity = 'info' | 'attention' | 'urgent'
+
+/** One exact triggering value behind a card — the user's own number that tripped the detector. */
+export interface InsightEvidence {
+  /** Short human label, e.g. 'MAGI in 2031' */
+  label: string
+  /** Formatted exact value, e.g. '$212,400' — must contain the actual number */
+  value: string
+  /** Plan year the value belongs to, when year-specific */
+  year?: number
+}
+
 export type InsightActionKind =
   | 'advisory'            // explain + deep-link only (no engine model yet)
   | 'preview-scenario'    // produces a scenario patch → compareScenarios
@@ -36,6 +49,10 @@ export interface InsightCard {
   impact: InsightImpact            // rough at screen time; exact after evaluate()
   exact: boolean                   // false = "≈" rough; true = ledger-verified
   confidence: 'high' | 'medium' | 'low'
+  /** Finding-level severity. */
+  severity: InsightSeverity
+  /** Exact triggering values; every emitted card must include at least one. */
+  evidence: InsightEvidence[]
   learnSlug?: string               // registry slug for LearnLink (validated)
   plannerRoute?: string            // deep link, e.g. 'strategy' or 'social-security-analysis'
   action: InsightAction
@@ -77,6 +94,10 @@ export interface DetectorContext {
 export interface Detector {
   id: string
   category: InsightCategory
+  /** Integer >= 1; bump for material trigger, threshold, severity, or evidence changes. */
+  version: number
+  /** Shipped IDs remain reserved; deprecated detectors are excluded from the default registry. */
+  deprecated?: { since: string; reason: string; replacedBy?: string }
   /**
    * Cheap, synchronous, pure. Reads the baseline projection only — NO new
    * simulate() calls. Returns null when the lever doesn't apply to this plan,

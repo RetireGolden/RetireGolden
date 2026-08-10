@@ -28,6 +28,7 @@ function guardrailPatchFromGenerator(plan: Plan) {
 export const spendingGuardrails: Detector = {
   id: 'spending-guardrails',
   category: 'sequence-risk',
+  version: 1,
   screen(ctx) {
     const firstYear = ctx.projection.result.years[0]
     if (!firstYear) return null
@@ -43,6 +44,17 @@ export const spendingGuardrails: Detector = {
     const generated = guardrailPatchFromGenerator(ctx.plan)
     if (!generated) return null
     const { requiredAnnual, patch } = generated
+    const evidence = [
+      { label: 'Required spending floor', value: `$${Math.round(requiredAnnual).toLocaleString()}`, year: firstYear.year },
+      { label: 'Investable assets', value: `$${Math.round(firstYear.investableTotal).toLocaleString()}`, year: firstYear.year },
+    ]
+    if (typeof ctx.projection.summary.depletionYear === 'number') {
+      evidence.push({
+        label: 'Projected depletion year',
+        value: `${ctx.projection.summary.depletionYear}`,
+        year: ctx.projection.summary.depletionYear,
+      })
+    }
     return {
       id: 'spending-guardrails',
       category: 'sequence-risk',
@@ -54,6 +66,8 @@ export const spendingGuardrails: Detector = {
       },
       exact: false,
       confidence: 'medium',
+      severity: hasDepletion ? 'attention' : 'info',
+      evidence,
       learnSlug: 'dynamic-spending-guardrails',
       plannerRoute: 'spending',
       action: {

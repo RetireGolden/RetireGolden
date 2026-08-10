@@ -15,7 +15,7 @@ import { getArticle, isReadable } from '../learn/learningRegistry'
 import { annuitizationHeadroom } from '@retiregolden/engine/insights/detectors/annuitizationHeadroom'
 import { hecmBufferCandidate } from '@retiregolden/engine/insights/detectors/hecmBufferCandidate'
 import { pensionElectionPending } from '@retiregolden/engine/insights/detectors/pensionElectionPending'
-import type { DetectorContext } from '@retiregolden/engine/insights/types'
+import type { DetectorContext, InsightCard } from '@retiregolden/engine/insights/types'
 
 let counter = 0
 const testIds = () => `gid-${++counter}`
@@ -60,11 +60,22 @@ function expectValidPreview(plan: Plan, cardAction: { kind: string; patch?: Reco
   expect(applied.ok, applied.ok ? undefined : applied.issues.join('; ')).toBe(true)
 }
 
+function expectGovernedCard(card: InsightCard): void {
+  expect(['info', 'attention', 'urgent'], `${card.id} severity`).toContain(card.severity)
+  expect(card.evidence.length, `${card.id} evidence`).toBeGreaterThan(0)
+  for (const item of card.evidence) {
+    expect(item.label.length, `${card.id} evidence label`).toBeGreaterThan(0)
+    expect(item.value, `${card.id} evidence value must contain the exact figure`).toMatch(/\d/)
+    expect(['0', '$0', '0.0%'], `${card.id} evidence value must not be a placeholder`).not.toContain(item.value)
+  }
+}
+
 describe('annuitizationHeadroom', () => {
   it('fires for a longevity-anxious plan with liquid savings and no lifetime income', () => {
     const plan = validate({ ...basePlan(), accounts: [cash(300_000)] })
     const card = annuitizationHeadroom.screen(makeContext(plan))
     expect(card).not.toBeNull()
+    expectGovernedCard(card!)
     expect(card!.id).toBe('annuitization-headroom')
     const article = getArticle(card!.learnSlug!)
     expect(article && isReadable(article)).toBe(true)
@@ -123,6 +134,7 @@ describe('pensionElectionPending', () => {
     const plan = validate({ ...basePlan({ planningAge: 90 }), accounts: [trad, cash(50_000), pension(true, false)] })
     const card = pensionElectionPending.screen(makeContext(plan))
     expect(card).not.toBeNull()
+    expectGovernedCard(card!)
     expect(card!.title).toContain('lump sum')
     expect(card!.rationale).toContain('discount')
     const article = getArticle(card!.learnSlug!)
@@ -161,6 +173,7 @@ describe('hecmBufferCandidate', () => {
     const plan = validate({ ...basePlan({ dob: '1962-01-01', planningAge: 90 }), accounts: [cash(300_000), home(false)] })
     const card = hecmBufferCandidate.screen(makeContext(plan))
     expect(card).not.toBeNull()
+    expectGovernedCard(card!)
     expect(card!.id).toBe('hecm-buffer-candidate')
     expect(card!.rationale).toContain('non-recourse')
     expectValidPreview(plan, card!.action)

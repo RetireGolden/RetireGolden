@@ -15,6 +15,7 @@ import { LATEST_PACK_YEAR } from '../../params/index.js'
 export const widowsPenalty: Detector = {
   id: 'widows-penalty-roth',
   category: 'social-security',
+  version: 1,
   screen(ctx) {
     if (ctx.plan.household.filingStatus !== 'marriedFilingJointly') {
       return null
@@ -155,6 +156,15 @@ export const widowsPenalty: Detector = {
       },
       exact: false,
       confidence: 'high',
+      severity: 'attention',
+      evidence: [
+        { label: 'Traditional account balance', value: `$${Math.round(tradBalance).toLocaleString()}`, year: ctx.projection.startYear },
+        { label: 'Last joint-filing year', value: `${lastJointYear}`, year: lastJointYear },
+        { label: 'First survivor year', value: `${firstSingleYear}`, year: firstSingleYear },
+        ...(bracketJumpToday > 100
+          ? [{ label: 'Estimated survivor bracket jump', value: `$${bracketJumpToday.toLocaleString('en-US')}` }]
+          : []),
+      ],
       learnSlug: 'widows-penalty-and-survivor-brackets',
       plannerRoute: 'strategy',
       action: {

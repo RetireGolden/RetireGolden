@@ -11,6 +11,7 @@ import { computeFundedRatio } from '../../ladder/fundedRatio.js'
 export const incomeFloorFunded: Detector = {
   id: 'income-floor-funded',
   category: 'longevity-insurance-geography',
+  version: 1,
   screen(ctx): InsightCard | null {
     const plan = ctx.plan
     // Only meaningful once the user has said what "essential" means: without
@@ -48,6 +49,13 @@ export const incomeFloorFunded: Detector = {
       },
       exact: false,
       confidence: 'medium',
+      severity: 'attention',
+      evidence: [
+        { label: 'Funded ratio', value: `${pct}%` },
+        { label: 'Essential spending present value', value: `$${Math.round(fr.essentialSpendingPv).toLocaleString()}` },
+        { label: 'Guaranteed income present value', value: `$${Math.round(fr.guaranteedIncomePv).toLocaleString()}` },
+        { label: 'Unfunded present value', value: `$${Math.round(fr.unfundedPv).toLocaleString()}` },
+      ],
       learnSlug: 'funded-ratio',
       plannerRoute: 'income-floor',
       action: { kind: 'advisory' },
