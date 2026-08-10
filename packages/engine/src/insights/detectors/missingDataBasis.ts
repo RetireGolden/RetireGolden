@@ -1,5 +1,6 @@
 import type { Detector, InsightCard, InsightEvidence } from '../types.js'
 import type { Account } from '../../model/plan.js'
+import { annuityPayoutForm, annuityPayoutFraction } from '../../projection/annuityForms.js'
 
 interface DataGap {
   evidence: InsightEvidence
@@ -110,7 +111,21 @@ export const missingDataBasis: Detector = {
         0,
       )
 
-    const modeledOwnedRothIraContributionsInYear = (
+    const configuredContributionAccountIds = new Set(
+      ctx.plan.accounts
+        .filter((account) => {
+          const contributionAccount = account as Account & {
+            annualContribution?: number
+            contributionSchedule?: unknown[]
+          }
+          return (contributionAccount.annualContribution ?? 0) > 0 ||
+            (contributionAccount.contributionSchedule?.length ?? 0) > 0
+        })
+        .map((account) => account.id),
+    )
+
+    const creditedRothContributionsInYear = (
+      accounts: readonly Extract<Account, { type: 'roth' }>[],
       ownerPersonId: string,
       year: {
         year: number
@@ -121,7 +136,7 @@ export const missingDataBasis: Detector = {
       },
     ): number => {
       let scheduled = 0
-      for (const account of ownedRothIraAccounts) {
+      for (const account of accounts) {
         if (ownerPersonIdFor(account) !== ownerPersonId) continue
         const owner = ctx.plan.household.people.find((person) => person.id === ownerPersonId)
         if (owner === undefined) continue
@@ -150,21 +165,29 @@ export const missingDataBasis: Detector = {
         }
       }
 
-      // YearResult exposes only household-total contributions, not their Roth
-      // destination. The account schedule is therefore the closest available
-      // source without another simulation; cap it at an observed total when
-      // present, which is conservative when another account shares the total.
-      return year.contributions === undefined ? scheduled : Math.min(scheduled, year.contributions)
+      // The simulator credits only its post-limit `allowed` amount. YearResult
+      // has no per-account Roth credit, so a schedule alone cannot prove basis.
+      // The aggregate is usable only when these are the plan's sole configured
+      // contribution accounts, making it that account pool's actual credit.
+      const accountIds = new Set(accounts.map((account) => account.id))
+      const hasOtherConfiguredContributor = [...configuredContributionAccountIds]
+        .some((accountId) => !accountIds.has(accountId))
+      if (year.contributions === undefined || hasOtherConfiguredContributor) return 0
+      return Math.min(scheduled, year.contributions)
     }
 
-    const hasInsufficientRothBasisBeforeAge60 = (ownerPersonId: string): boolean => {
-      let availableBasis = suppliedOwnedRothIraBasis(ownerPersonId)
+    const hasInsufficientRothBasisBeforeAge60 = (
+      ownerPersonId: string,
+      accounts: readonly Extract<Account, { type: 'roth' }>[],
+      suppliedBasis: number,
+    ): boolean => {
+      let availableBasis = suppliedBasis
       let withdrawals = 0
       for (const year of ctx.projection.result.years) {
         // The simulator credits direct Roth contributions before applying this
         // year's withdrawals, so a same-year scheduled contribution is basis
         // available to that year's pre-60 draw.
-        availableBasis += modeledOwnedRothIraContributionsInYear(ownerPersonId, year)
+        availableBasis += creditedRothContributionsInYear(accounts, ownerPersonId, year)
         const underAgeOwners = underQualifiedAgeRothOwnerIdsInYear(year)
         if (!underAgeOwners.has(ownerPersonId)) continue
         withdrawals += year.withdrawals?.roth ?? 0
@@ -186,17 +209,40 @@ export const missingDataBasis: Detector = {
       })
       if (qualifiedContracts.length === 0) return false
 
+      const canPayInYear = (
+        contract: Extract<Account, { type: 'annuity' }>,
+        year: typeof ctx.projection.result.years[number],
+      ): boolean => {
+        const annuitantId = ownerPersonIdFor(contract)
+        const annuitant = ctx.plan.household.people.find((person) => person.id === annuitantId)
+        const annuitantState = year.people.find((person) => person.personId === annuitantId)
+        const otherState = year.people.find((person) => person.personId !== annuitantId)
+        const annuitantBirthYear = annuitant === undefined ? NaN : Number(annuitant.dob.slice(0, 4))
+        if (
+          contract.monthlyAmount <= 0 ||
+          !Number.isInteger(annuitantBirthYear) ||
+          annuitantState === undefined ||
+          year.year < annuitantBirthYear + contract.startAge ||
+          (contract.purchase !== undefined && year.year < contract.purchase.year)
+        ) return false
+        return annuityPayoutFraction(annuityPayoutForm(contract), {
+          ownerAlive: annuitantState.alive,
+          otherAlive: otherState?.alive ?? false,
+          anyAlive: year.people.some((person) => person.alive),
+          yearsSinceStart: year.year - (annuitantBirthYear + contract.startAge),
+        }) > 0
+      }
+
       return ctx.projection.result.years.some((year) => {
         const fundingOwner = year.people.find((person) => person.personId === resolvedOwnerPersonId)
         if (fundingOwner?.alive !== true || (year.incomes?.annuity ?? 0) <= 0) return false
         return qualifiedContracts.some((contract) => {
-          const annuitantId = ownerPersonIdFor(contract)
-          const annuitant = ctx.plan.household.people.find((person) => person.id === annuitantId)
-          const annuitantBirthYear = annuitant === undefined ? NaN : Number(annuitant.dob.slice(0, 4))
-          return contract.monthlyAmount > 0 &&
-            Number.isInteger(annuitantBirthYear) &&
-            year.year >= annuitantBirthYear + contract.startAge &&
-            year.year >= contract.purchase!.year
+          if (!canPayInYear(contract, year)) return false
+          // YearResult publishes annuity income only in aggregate. Count this
+          // qualified contract only when no other contract could have supplied
+          // that aggregate; otherwise the tax source is ambiguous and silent.
+          return !ctx.plan.accounts.some((account) =>
+            account.type === 'annuity' && account.id !== contract.id && canPayInYear(account, year))
         })
       })
     }
@@ -239,6 +285,19 @@ export const missingDataBasis: Detector = {
       const preQualifiedRothWithdrawals = ownerPersonId === undefined
         ? 0
         : preQualifiedRothWithdrawalTotal(ownerPersonId)
+      const rothBasisIsInsufficient = account.type === 'roth' && ownerPersonId !== undefined
+        ? account.kind === 'employer'
+          ? hasInsufficientRothBasisBeforeAge60(
+            ownerPersonId,
+            [account],
+            account.contributionBasis ?? 0,
+          )
+          : hasInsufficientRothBasisBeforeAge60(
+            ownerPersonId,
+            ownedRothIraAccounts.filter((candidate) => ownerPersonIdFor(candidate) === ownerPersonId),
+            suppliedOwnedRothIraBasis(ownerPersonId),
+          )
+        : false
       if (
         account.type === 'roth' &&
         account.inherited === undefined &&
@@ -247,11 +306,7 @@ export const missingDataBasis: Detector = {
         owner !== undefined &&
         owner.ageAttained < 60 &&
         preQualifiedRothWithdrawals > 0 &&
-        (
-          account.kind === 'employer' ||
-          ownerPersonId === undefined ||
-          hasInsufficientRothBasisBeforeAge60(ownerPersonId)
-        )
+        (ownerPersonId === undefined || rothBasisIsInsufficient)
       ) {
         gaps.push({
           evidence: {

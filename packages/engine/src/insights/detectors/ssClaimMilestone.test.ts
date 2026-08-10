@@ -291,7 +291,7 @@ describe('Social Security claim milestone detector', () => {
     }]
 
     expect(ssClaimMilestone.screen(ctx)).toMatchObject({
-      title: "Pat's Social Security claim is imminent",
+      title: 'Pat\'s Social Security claim is imminent',
       severity: 'info',
     })
   })
@@ -402,6 +402,54 @@ describe('Social Security claim milestone detector', () => {
       evidence: expect.arrayContaining([
         { label: "Pat's modeled claim age", value: '67 years 0 months' },
       ]),
+    })
+  })
+
+  it('uses only the simulator-effective stream for a zero-PIA claimant auxiliary milestone', () => {
+    const ctx = context(66, 67, 0)
+    const income = ctx.plan.incomes[0] as { piaMonthly: number }
+    income.piaMonthly = 0
+    ctx.plan.household.people.push({
+      id: 'p2', name: 'Sam', dob: '1960-01-01', sex: 'average', retirementAge: null,
+      longevity: { planningAge: 95, source: 'manual' },
+    })
+    ctx.plan.incomes.push(
+      {
+        id: 'ss-p1-effective', type: 'socialSecurity', personId: 'p1', piaMonthly: 0,
+        earnings: null, claimAge: { years: 70, months: 0 },
+      } as never,
+      {
+        id: 'ss-spouse', type: 'socialSecurity', personId: 'p2', piaMonthly: 2_000,
+        earnings: null, claimAge: { years: 67, months: 0 }, disability: { onsetAge: 60 },
+      } as never,
+    )
+    for (const year of ctx.projection.result.years) {
+      year.people.push({ personId: 'p2', ageAttained: year.year - 1960, alive: true } as never)
+    }
+
+    expect(ssClaimMilestone.screen(ctx)).toBeNull()
+  })
+
+  it('keeps an eligible zero-PIA SSDI claimant auxiliary milestone', () => {
+    const ctx = context(66, 68, 0)
+    const income = ctx.plan.incomes[0] as { piaMonthly: number; disability?: { onsetAge: number } }
+    income.piaMonthly = 0
+    income.disability = { onsetAge: 60 }
+    ctx.plan.household.people.push({
+      id: 'p2', name: 'Sam', dob: '1960-01-01', sex: 'average', retirementAge: null,
+      longevity: { planningAge: 95, source: 'manual' },
+    })
+    ctx.plan.incomes.push({
+      id: 'ss-spouse', type: 'socialSecurity', personId: 'p2', piaMonthly: 2_000,
+      earnings: null, claimAge: { years: 68, months: 0 },
+    } as never)
+    for (const year of ctx.projection.result.years) {
+      year.people.push({ personId: 'p2', ageAttained: year.year - 1960, alive: true } as never)
+    }
+
+    expect(ssClaimMilestone.screen(ctx)).toMatchObject({
+      title: 'Pat\'s Social Security claim is imminent',
+      severity: 'info',
     })
   })
 })

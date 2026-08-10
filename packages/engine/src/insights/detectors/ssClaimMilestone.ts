@@ -141,6 +141,7 @@ export const ssClaimMilestone: Detector = {
     if (firstProjectionYear === undefined || firstProjectionYear.year !== ctx.projection.startYear) return null
     let selectedCard: InsightCard | null = null
     let smallestYearsToClaim = Infinity
+    const effectiveStreams = simulatedSsStreamByPerson(ctx.plan)
     for (const income of ctx.plan.incomes) {
       if (income.type !== 'socialSecurity') continue
       const person = ctx.plan.household.people.find((candidate) => candidate.id === income.personId)
@@ -160,7 +161,12 @@ export const ssClaimMilestone: Detector = {
 
       const claimMonths = income.claimAge.years * 12 + income.claimAge.months
       const claimantBenefitStartYear = birthYear + income.claimAge.years
-      const anchoredStartYear = streamResolvesNoOwnBenefit(income, person)
+      const resolvesNoOwnBenefit = streamResolvesNoOwnBenefit(income, person)
+      // Own benefits are summed across every valid stream, but the simulator's
+      // spousal and survivor gates use the last stream written for a person.
+      // Auxiliary milestones must therefore follow that effective stream too.
+      if (resolvesNoOwnBenefit && effectiveStreams.get(person.id)?.income !== income) continue
+      const anchoredStartYear = resolvesNoOwnBenefit
         ? firstAnchoredBenefitStartYear(
           ctx.plan,
           person.id,
@@ -169,7 +175,7 @@ export const ssClaimMilestone: Detector = {
         )
         : null
       if (
-        streamResolvesNoOwnBenefit(income, person) &&
+        resolvesNoOwnBenefit &&
         !hasFormerSpouseBenefitAnchor(
           ctx.plan,
           income,
@@ -193,7 +199,14 @@ export const ssClaimMilestone: Detector = {
       if (benefitStartPerson === undefined) continue
 
       const fra = fraForBirthYear(effectiveBirthYear(birthYear, birthMonth, birthDay))
-      if (income.disability?.onsetAge !== undefined && income.disability.onsetAge < fra.years) continue
+      // A positive-PIA SSDI stream replaces its own retirement-claim path. A
+      // zero-PIA effective stream still supplies the simulator's auxiliary
+      // claim-age gate, so keep an otherwise eligible anchored milestone.
+      if (
+        income.disability?.onsetAge !== undefined &&
+        income.disability.onsetAge < fra.years &&
+        (resolvedOwnPia(income, person) ?? 0) > 0
+      ) continue
 
       if (yearsToClaim >= smallestYearsToClaim) continue
 

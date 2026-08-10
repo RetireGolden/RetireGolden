@@ -494,8 +494,12 @@ describe('missing data basis detector', () => {
   it('stays silent when modeled Roth contributions cover a pre-60 withdrawal', () => {
     const ctx = context()
     ctx.projection.result.years[0]!.people[0]!.ageAttained = 59
-    const firstProjectionYear = ctx.projection.result.years[0] as { withdrawals?: { roth: number } }
+    const firstProjectionYear = ctx.projection.result.years[0] as {
+      withdrawals?: { roth: number }
+      contributions?: number
+    }
     firstProjectionYear.withdrawals = { roth: 5_000 }
+    firstProjectionYear.contributions = 5_000
     ctx.plan.accounts = [{
       id: 'roth', name: 'Roth IRA', type: 'roth', kind: 'ira', ownerPersonId: 'p1', balance: 125_000,
       contributionSchedule: [{ annualAmount: 5_000, fromAge: 50, toAge: 59, escalationPct: 0 }],
@@ -503,6 +507,26 @@ describe('missing data basis detector', () => {
     ctx.plan.incomes = []
 
     expect(missingDataBasis.screen(ctx)).toBeNull()
+  })
+
+  it('does not count a limit-clipped Roth contribution as its scheduled amount', () => {
+    const ctx = context()
+    ctx.projection.result.years[0]!.people[0]!.ageAttained = 59
+    const firstProjectionYear = ctx.projection.result.years[0] as {
+      withdrawals?: { roth: number }
+      contributions?: number
+    }
+    firstProjectionYear.withdrawals = { roth: 5_000 }
+    firstProjectionYear.contributions = 4_999
+    ctx.plan.accounts = [{
+      id: 'roth', name: 'Roth IRA', type: 'roth', kind: 'ira', ownerPersonId: 'p1', balance: 125_000,
+      contributionSchedule: [{ annualAmount: 5_000, fromAge: 50, toAge: 59, escalationPct: 0 }],
+    }] as never
+    ctx.plan.incomes = []
+
+    expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
+      { label: 'Roth IRA balance (assumed seasoned contribution basis)', value: '$125,000' },
+    ])
   })
 
   it('flags a missing Roth IRA basis when modeled contributions do not cover a pre-60 withdrawal', () => {
@@ -523,8 +547,13 @@ describe('missing data basis detector', () => {
 
   it('flags a sole traditional IRA with payments from its qualified annuity', () => {
     const ctx = context()
-    const firstProjectionYear = ctx.projection.result.years[0] as { incomes?: { annuity: number } }
+    const firstProjectionYear = ctx.projection.result.years[0] as {
+      incomes?: { annuity: number }
+      withdrawals?: { traditional: number }
+      people: { personId: string; ageAttained: number; alive: boolean }[]
+    }
     firstProjectionYear.incomes = { annuity: 1_200 }
+    firstProjectionYear.withdrawals = { traditional: 0 }
     ctx.plan.accounts = [
       { id: 'trad', name: 'Traditional IRA', type: 'traditional', kind: 'ira', ownerPersonId: 'p1', balance: 300_000 },
       {
@@ -551,6 +580,38 @@ describe('missing data basis detector', () => {
         id: 'annuity', name: 'IRA annuity', type: 'annuity', ownerPersonId: 'p1', startAge: 60,
         monthlyAmount: 100, colaPct: 0, taxablePct: 100,
         purchase: { year: 2026, premium: 25_000, fundingAccountId: 'trad', taxQualification: 'qualified' },
+      },
+    ] as never
+    ctx.plan.incomes = []
+
+    expect(missingDataBasis.screen(ctx)).toBeNull()
+  })
+
+  it('stays silent when unrelated annuity income coincides with a dead life-only qualified contract owner', () => {
+    const ctx = context()
+    const firstProjectionYear = ctx.projection.result.years[0] as {
+      incomes?: { annuity: number }
+      withdrawals?: { traditional: number }
+      people: { personId: string; ageAttained: number; alive: boolean }[]
+    }
+    firstProjectionYear.incomes = { annuity: 1_200 }
+    firstProjectionYear.withdrawals = { traditional: 0 }
+    firstProjectionYear.people[0]!.alive = false
+    ctx.plan.household.people.push({
+      id: 'p2', name: 'Sam', dob: '1966-01-01', sex: 'average', retirementAge: null,
+      longevity: { planningAge: 95, source: 'manual' },
+    })
+    firstProjectionYear.people.push({ personId: 'p2', ageAttained: 60, alive: true })
+    ctx.plan.accounts = [
+      { id: 'trad', name: 'Traditional IRA', type: 'traditional', kind: 'ira', ownerPersonId: 'p2', balance: 300_000 },
+      {
+        id: 'qualified-annuity', name: 'Qualified life-only annuity', type: 'annuity', ownerPersonId: 'p1', startAge: 60,
+        monthlyAmount: 100, colaPct: 0, taxablePct: 100,
+        purchase: { year: 2026, premium: 25_000, fundingAccountId: 'trad', taxQualification: 'qualified' },
+      },
+      {
+        id: 'unrelated-annuity', name: 'Unrelated annuity', type: 'annuity', ownerPersonId: 'p2', startAge: 60,
+        monthlyAmount: 100, colaPct: 0, taxablePct: 100,
       },
     ] as never
     ctx.plan.incomes = []
@@ -586,5 +647,23 @@ describe('missing data basis detector', () => {
     expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
       { label: 'Roth 401(k) balance (assumed current balance is seasoned contribution basis)', value: '$125,000' },
     ])
+  })
+
+  it('stays silent for a sole employer Roth whose credited contributions cover its own withdrawal', () => {
+    const ctx = context()
+    ctx.projection.result.years[0]!.people[0]!.ageAttained = 59
+    const firstProjectionYear = ctx.projection.result.years[0] as {
+      withdrawals?: { roth: number }
+      contributions?: number
+    }
+    firstProjectionYear.withdrawals = { roth: 5_000 }
+    firstProjectionYear.contributions = 5_000
+    ctx.plan.accounts = [{
+      id: 'roth-401k', name: 'Roth 401(k)', type: 'roth', kind: 'employer', ownerPersonId: 'p1', balance: 125_000,
+      contributionSchedule: [{ annualAmount: 5_000, fromAge: 50, toAge: 59, escalationPct: 0 }],
+    }] as never
+    ctx.plan.incomes = []
+
+    expect(missingDataBasis.screen(ctx)).toBeNull()
   })
 })
