@@ -13,6 +13,8 @@ describe('detector framework scoring and ranking', () => {
       impact: { endingAfterTaxEstateDelta: 10000 },
       exact: false,
       confidence: 'high',
+      severity: 'info',
+      evidence: [{ label: 'Value', value: '$10,000' }],
       action: { kind: 'advisory' },
     }
     const cardB: InsightCard = {
@@ -23,6 +25,8 @@ describe('detector framework scoring and ranking', () => {
       impact: { endingAfterTaxEstateDelta: 20000 },
       exact: false,
       confidence: 'medium', // 20000 * 0.7 = 14000
+      severity: 'info',
+      evidence: [{ label: 'Value', value: '$20,000' }],
       action: { kind: 'advisory' },
     }
     const cardC: InsightCard = {
@@ -33,6 +37,8 @@ describe('detector framework scoring and ranking', () => {
       impact: { qualitative: 'Some qualitative info' },
       exact: false,
       confidence: 'low', // purely qualitative => -1
+      severity: 'info',
+      evidence: [{ label: 'Value', value: '$0' }],
       action: { kind: 'advisory' },
     }
 
@@ -55,6 +61,8 @@ describe('detector framework scoring and ranking', () => {
       impact: { successRateDeltaPct: -5 },
       exact: false,
       confidence: 'medium',
+      severity: 'attention',
+      evidence: [{ label: 'Success-rate change', value: '5%' }],
       action: { kind: 'advisory' },
     }
 
@@ -65,6 +73,7 @@ describe('detector framework scoring and ranking', () => {
     const applicable: Detector = {
       id: 'applicable',
       category: 'tax-brackets',
+      version: 1,
       screen: () => ({
         id: 'applicable',
         category: 'tax-brackets',
@@ -73,12 +82,15 @@ describe('detector framework scoring and ranking', () => {
         impact: { endingAfterTaxEstateDelta: 1 },
         exact: false,
         confidence: 'high',
+        severity: 'info',
+        evidence: [{ label: 'Value', value: '$1' }],
         action: { kind: 'advisory' },
       }),
     }
     const notApplicable: Detector = {
       id: 'not-applicable',
       category: 'tax-brackets',
+      version: 1,
       screen: () => null,
     }
 
@@ -89,5 +101,21 @@ describe('detector framework scoring and ranking', () => {
   it('keeps the shared registry alphabetized by detector id', () => {
     const ids = registry.map((detector) => detector.id)
     expect(ids).toEqual([...ids].sort((a, b) => a.localeCompare(b)))
+  })
+})
+
+describe('detector governance', () => {
+  it('registers unique kebab-case IDs', () => {
+    const ids = registry.map((detector) => detector.id)
+    expect(new Set(ids).size).toBe(ids.length)
+    expect(ids.every((id) => /^[a-z0-9]+(-[a-z0-9]+)*$/.test(id))).toBe(true)
+  })
+
+  it('uses valid versions for every registered detector', () => {
+    expect(registry.every((detector) => Number.isInteger(detector.version) && detector.version >= 1)).toBe(true)
+  })
+
+  it('excludes deprecated detectors from the default registry', () => {
+    expect(registry.every((detector) => detector.deprecated === undefined)).toBe(true)
   })
 })

@@ -113,6 +113,7 @@ export function qcdEfficiencyProjectionBindingId(
 export const qcdEfficiency: Detector = {
   id: 'qcd-efficiency',
   category: 'withdrawals-charitable',
+  version: 1,
   screen(ctx) {
     const charitable = ctx.plan.strategies.itemizedDeductions?.charitable ?? 0
     if (charitable <= 0) return null
@@ -134,6 +135,11 @@ export const qcdEfficiency: Detector = {
       },
       exact: false,
       confidence: 'medium',
+      severity: 'info',
+      evidence: [
+        { label: 'Annual charitable giving', value: `$${Math.round(charitable).toLocaleString()}` },
+        { label: 'Current annual QCD', value: `$${Math.round(ctx.plan.strategies.qcdAnnual).toLocaleString()}` },
+      ],
       learnSlug: 'qcds-qualified-charitable-distributions',
       plannerRoute: 'strategy',
       action: {

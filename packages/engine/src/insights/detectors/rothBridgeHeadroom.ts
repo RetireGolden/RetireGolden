@@ -3,6 +3,7 @@ import type { Detector } from '../types.js'
 export const rothBridgeHeadroom: Detector = {
   id: 'roth-bridge-headroom',
   category: 'tax-brackets',
+  version: 1,
   screen(ctx) {
     if (ctx.plan.strategies.rothConversion.mode !== 'none') {
       return null
@@ -53,6 +54,12 @@ export const rothBridgeHeadroom: Detector = {
       impact: { qualitative: 'Preview a lower-bracket conversion scenario; taxes, healthcare cliffs, and liquidity can still make it unattractive.' },
       exact: false,
       confidence: 'medium',
+      severity: 'attention',
+      evidence: [
+        { label: 'Owner-convertible traditional balance', value: `$${Math.round(tradBalance).toLocaleString()}`, year: ctx.projection.startYear },
+        { label: 'First low-income bridge year', value: `${firstYear}`, year: firstYear },
+        { label: 'Last low-income bridge year', value: `${lastYear}`, year: lastYear },
+      ],
       learnSlug: 'roth-conversion-basics',
       plannerRoute: 'strategy',
       action: {

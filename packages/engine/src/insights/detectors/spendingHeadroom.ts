@@ -25,6 +25,7 @@ const MIN_ROUGH_HEADROOM_PER_YEAR = 2_000
 export const spendingHeadroom: Detector = {
   id: 'spending-headroom',
   category: 'sequence-risk',
+  version: 1,
   screen(ctx) {
     const summary = ctx.projection.summary
     if (summary.depletionYear !== null) return null
@@ -57,6 +58,12 @@ export const spendingHeadroom: Detector = {
       },
       exact: false,
       confidence: 'medium',
+      severity: 'info',
+      evidence: [
+        { label: 'Ending after-tax estate (today\'s $)', value: `$${Math.round(endingEstateToday).toLocaleString()}`, year: endYear },
+        { label: 'Bequest target', value: `$${Math.round(bequestTarget).toLocaleString()}` },
+        { label: 'Rough annual spending headroom (today\'s $)', value: `$${Math.round(roughHeadroomPerYear).toLocaleString()}/yr` },
+      ],
       learnSlug: 'building-a-retirement-spending-budget',
       plannerRoute: 'spending-solver',
       action: {

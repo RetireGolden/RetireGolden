@@ -1,7 +1,7 @@
 import { probabilityBandSpendingGuardrailGenerator } from '../../decisions/generators.js'
 import type { DecisionContext } from '../../decisions/types.js'
 import type { Plan } from '../../model/plan.js'
-import type { Detector } from '../types.js'
+import type { Detector, InsightEvidence } from '../types.js'
 
 function guardrailPatchFromGenerator(plan: Plan) {
   const ctx = { plan } as DecisionContext
@@ -28,6 +28,7 @@ function guardrailPatchFromGenerator(plan: Plan) {
 export const spendingGuardrails: Detector = {
   id: 'spending-guardrails',
   category: 'sequence-risk',
+  version: 1,
   screen(ctx) {
     const firstYear = ctx.projection.result.years[0]
     if (!firstYear) return null
@@ -43,6 +44,25 @@ export const spendingGuardrails: Detector = {
     const generated = guardrailPatchFromGenerator(ctx.plan)
     if (!generated) return null
     const { requiredAnnual, patch } = generated
+    const floorIsUserProvided =
+      typeof ctx.plan.expenses.requiredAnnual === 'number' && Number.isFinite(ctx.plan.expenses.requiredAnnual)
+    const evidence: [InsightEvidence, ...InsightEvidence[]] = [
+      {
+        label: floorIsUserProvided
+          ? 'Required spending floor'
+          : 'Illustrative spending floor (80% of base spending, scenario-generated)',
+        value: `$${Math.round(requiredAnnual).toLocaleString()}`,
+        year: firstYear.year,
+      },
+      { label: 'Investable assets', value: `$${Math.round(firstYear.investableTotal).toLocaleString()}`, year: firstYear.year },
+    ]
+    if (typeof ctx.projection.summary.depletionYear === 'number') {
+      evidence.push({
+        label: 'Projected depletion year',
+        value: `${ctx.projection.summary.depletionYear}`,
+        year: ctx.projection.summary.depletionYear,
+      })
+    }
     return {
       id: 'spending-guardrails',
       category: 'sequence-risk',
@@ -54,6 +74,8 @@ export const spendingGuardrails: Detector = {
       },
       exact: false,
       confidence: 'medium',
+      severity: hasDepletion ? 'attention' : 'info',
+      evidence,
       learnSlug: 'dynamic-spending-guardrails',
       plannerRoute: 'spending',
       action: {

@@ -13,6 +13,7 @@ import { analyzePensionElections, pensionTakeLumpSumPatch } from '../../decision
 export const pensionElectionPending: Detector = {
   id: 'pension-election-pending',
   category: 'longevity-insurance-geography',
+  version: 1,
   screen(ctx): InsightCard | null {
     const plan = ctx.plan
     const startYear = ctx.projection.startYear
@@ -55,6 +56,13 @@ export const pensionElectionPending: Detector = {
       },
       exact: false,
       confidence: 'high',
+      severity: 'attention',
+      evidence: [
+        { label: 'Lump-sum offer', value: `$${Math.round(analysis.lumpSum).toLocaleString()}`, year: analysis.electionYear },
+        { label: 'Election year', value: `${analysis.electionYear}`, year: analysis.electionYear },
+        { label: 'Annuity present value (today\'s $)', value: `$${Math.round(pv).toLocaleString()}`, year: startYear },
+        { label: 'Curve-anchored discount rate', value: `${analysis.curveRatePct.toFixed(1)}%` },
+      ],
       learnSlug: 'pensions-and-annuities',
       plannerRoute: 'accounts',
       action: patch

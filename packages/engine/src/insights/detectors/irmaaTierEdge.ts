@@ -35,6 +35,7 @@ function trimmedConversionPatch(ctx: DetectorContext, year: number, trimAmount: 
 export const irmaaTierEdge: Detector = {
   id: 'irmaa-tier-edge',
   category: 'tax-brackets',
+  version: 1,
   screen(ctx) {
     const filingStatus = ctx.plan.household.filingStatus
 
@@ -102,6 +103,13 @@ export const irmaaTierEdge: Detector = {
             },
             exact: false,
             confidence: 'high',
+            severity: 'attention',
+            evidence: [
+              { label: `Nominal MAGI in ${y.year}`, value: magiStr, year: y.year },
+              { label: `IRMAA tier threshold (${premiumYearNumber} premiums)`, value: threshStr, year: premiumYearNumber },
+              { label: 'Amount over threshold', value: `$${Math.ceil(diff).toLocaleString()}`, year: y.year },
+              { label: `Medicare premium cliff in ${premiumYearNumber}`, value: `$${Math.round(annualPremiumCliff).toLocaleString()}`, year: premiumYearNumber },
+            ],
             learnSlug: 'irmaa-two-year-lookback',
             plannerRoute: 'optimize',
             action: conversionDriven

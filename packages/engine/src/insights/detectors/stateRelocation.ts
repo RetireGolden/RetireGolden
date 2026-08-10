@@ -9,7 +9,7 @@
  * is one relocation factor, so the card says "worth a look", never "move".
  */
 
-import type { Detector } from '../types.js'
+import type { Detector, InsightEvidence } from '../types.js'
 import { stateParamsFor } from '../../params/state/index.js'
 import {
   compareRelocationCandidates,
@@ -22,13 +22,18 @@ const ZERO_TAX_SHORTLIST = ['FL', 'TX', 'WA'] as const
 export const stateRelocation: Detector = {
   id: 'state-relocation',
   category: 'longevity-insurance-geography',
+  version: 1,
   screen(ctx) {
     const startYear = ctx.projection.startYear
     const currentState = ctx.plan.household.state
+    const overridePct = ctx.plan.assumptions.stateEffectiveTaxPct
 
     // If already in a tax-free state and no flat override, it's not applicable
     const params = stateParamsFor(currentState, startYear)
-    const currentHasIncomeTax = ctx.plan.assumptions.stateEffectiveTaxPct > 0 || (params ? params.hasIncomeTax : true)
+    // Unknown states price as $0 state tax in the ledger; stay silent rather
+    // than assert an income tax the engine does not charge (GOVERNANCE
+    // false-positive policy).
+    const currentHasIncomeTax = overridePct > 0 || (params?.hasIncomeTax ?? false)
 
     if (!currentHasIncomeTax) {
       return null
@@ -43,6 +48,23 @@ export const stateRelocation: Detector = {
       return null
     }
 
+    const stateMarginalRatePct = params
+      ? Math.max(...params.brackets[ctx.plan.household.filingStatus].map((bracket) => bracket.ratePct))
+      : null
+    const formatPct = (pct: number): string => (pct >= 0.1 ? pct.toFixed(1) : pct.toPrecision(1))
+    const currentStateValue =
+      overridePct > 0
+        ? `${currentState} (${formatPct(overridePct)}% modeled override)`
+        : `${currentState} (up to ${stateMarginalRatePct!.toFixed(1)}% top statutory income-tax rate)`
+    const evidence: [InsightEvidence, ...InsightEvidence[]] = [
+      { label: 'Current state', value: currentStateValue, year: startYear },
+    ]
+    if (overridePct > 0) {
+      evidence.push({ label: 'Modeled state income-tax override', value: `${formatPct(overridePct)}%`, year: startYear })
+    } else {
+      evidence.push({ label: `${currentState} top statutory income-tax rate`, value: `up to ${stateMarginalRatePct!.toFixed(1)}%`, year: startYear })
+    }
+
     return {
       id: 'state-relocation',
       category: 'longevity-insurance-geography',
@@ -51,6 +73,8 @@ export const stateRelocation: Detector = {
       impact: { qualitative: 'Preview to quantify the lifetime state-tax drag vs modeled zero-income-tax states on your own plan.' },
       exact: false,
       confidence: 'medium',
+      severity: 'info',
+      evidence,
       learnSlug: 'state-income-taxes-in-retirement',
       plannerRoute: 'relocation',
       action: {

@@ -46,6 +46,7 @@ function pickBestBeneficialCandidate(
 export const assetLocation: Detector = {
   id: 'asset-location',
   category: 'accounts-contributions',
+  version: 1,
   screen(ctx) {
     if (!planUsesAssetAllocation(ctx.plan)) return null
 
@@ -70,6 +71,10 @@ export const assetLocation: Detector = {
       },
       exact: false,
       confidence: 'medium',
+      severity: 'info',
+      evidence: [
+        { label: 'Swappable class exposure', value: `$${Math.round(swapped).toLocaleString()}`, year: ctx.projection.startYear },
+      ],
       learnSlug: 'assumption-investment-returns',
       plannerRoute: 'accounts',
       action: {
