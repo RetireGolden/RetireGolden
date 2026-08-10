@@ -1210,6 +1210,22 @@ export interface EmployerRothAccountActivity {
   withdrawals: number
   /** Post-limit `allowed` contribution credits, not scheduled amounts. */
   creditedContributions: number
+  /**
+   * Conversion principal credited to this employer Roth account's basis this
+   * year (destination credits only). Starts the 5-taxable-year seasoning clock
+   * at `conversionYear` — see `splitRothWithdrawal`. Per-account, never joined
+   * to an owned Roth-IRA aggregate.
+   */
+  creditedConversionPrincipal: number
+  /**
+   * Portion of `creditedConversionPrincipal` that was included in income at
+   * conversion. Same semantics as `OwnedRothIraPoolActivity.creditedConversionTaxableAmount`.
+   * Observation-only — mirrors the layer `taxableAmount` written at the same
+   * conversion-layer commit sites.
+   */
+  creditedConversionTaxableAmount: number
+  /** Calendar year the conversion principal was credited (starts its 5-year clock). */
+  conversionYear: number | null
 }
 
 /**

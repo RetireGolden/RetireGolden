@@ -6,6 +6,7 @@ import type {
   OwnedTraditionalIraAggregateActivity,
   QualifiedAnnuityPaymentActivity,
 } from '../../projection/types.js'
+import { openIraProRataYear } from '../../strategies/iraBasis.js'
 import { ROTH_SEASONING_YEARS } from '../../strategies/rothBasis.js'
 
 interface DataGap {
@@ -67,11 +68,11 @@ function firstInsufficientPreQualifiedYear(options: {
   }) => {
     withdrawals: number
     creditedContributions: number
-    /** Conversion principal credited this year (owned Roth IRA pool only). */
+    /** Conversion principal credited this year (owned pool or employer account). */
     creditedConversionPrincipal?: number
     /**
-     * Taxable share of that principal (owned Roth IRA pool only). Absent /
-     * undefined means fully taxable (legacy published rows without the split).
+     * Taxable share of that principal. Absent / undefined means fully taxable
+     * (legacy published rows without the split).
      */
     creditedConversionTaxableAmount?: number
     /** Calendar year that starts the conversion's 5-year seasoning clock. */
@@ -118,7 +119,10 @@ function firstInsufficientPreQualifiedYear(options: {
       // Consume free cover in IRS order: contributions, then conversion layers
       // oldest first (same layer order as splitRothWithdrawal). Only free
       // portions of each layer are drawn here — we only reach this branch when
-      // free cover already covers the full withdrawal.
+      // free cover already covers the full withdrawal. Within a layer, any take
+      // allocates proportionally between taxable and nontaxable principal
+      // (splitRothWithdrawal: taxableTake = take * taxable/amount) — never
+      // nontaxable-first.
       let remaining = activity.withdrawals
       const fromContributions = Math.min(remaining, contributionBasis)
       contributionBasis -= fromContributions
@@ -128,17 +132,10 @@ function firstInsufficientPreQualifiedYear(options: {
         const free = freeConversionCover(year.year, layer)
         const take = Math.min(remaining, free)
         if (take <= 0) continue
-        if (isSeasonedConversion(year.year, layer.year)) {
-          // Seasoned: whole principal is free; reduce taxable share pro-rata
-          // (splitRothWithdrawal taxableTake = take * taxable/amount).
-          const taxableTake =
-            layer.remaining > 0 ? take * (layer.taxableRemaining / layer.remaining) : 0
-          layer.remaining -= take
-          layer.taxableRemaining = Math.max(0, layer.taxableRemaining - taxableTake)
-        } else {
-          // Unseasoned free cover is nontaxable only — leave taxable remaining.
-          layer.remaining -= take
-        }
+        const taxableTake =
+          layer.remaining > 0 ? take * (layer.taxableRemaining / layer.remaining) : 0
+        layer.remaining -= take
+        layer.taxableRemaining = Math.max(0, layer.taxableRemaining - taxableTake)
         remaining -= take
       }
     }
@@ -233,10 +230,22 @@ export const missingDataBasis: Detector = {
             years: ctx.projection.result.years,
             ownerPersonId,
             suppliedStartingBasis: account.contributionBasis ?? 0,
-            activityForYear: (year) =>
-              year.employerRothAccountActivity?.find(
-                (entry: EmployerRothAccountActivity) => entry.accountId === account.id,
-              ),
+            activityForYear: (year) => {
+              const entry = year.employerRothAccountActivity?.find(
+                (row: EmployerRothAccountActivity) => row.accountId === account.id,
+              )
+              if (entry === undefined) return undefined
+              return {
+                withdrawals: entry.withdrawals,
+                creditedContributions: entry.creditedContributions,
+                creditedConversionPrincipal: entry.creditedConversionPrincipal ?? 0,
+                creditedConversionTaxableAmount:
+                  entry.creditedConversionTaxableAmount ??
+                  entry.creditedConversionPrincipal ??
+                  0,
+                conversionYear: entry.conversionYear ?? year.year,
+              }
+            },
           })
           if (decisive !== null) {
             gaps.push({
@@ -302,6 +311,31 @@ export const missingDataBasis: Detector = {
         account.nondeductibleBasis === undefined &&
         ownerPersonId !== undefined
       ) {
+        // Form 8606 aggregates all owned non-inherited IRAs for the owner. When
+        // other accounts already supply enough nondeductible basis that the
+        // aggregate nontaxable fraction is 100% (basis ≥ pool value — reachable
+        // after losses), extra basis on this missing-basis account cannot change
+        // any transaction's tax character. Use plan balances + supplied basis
+        // only (same openIraProRataYear fraction the sim uses; no re-sim).
+        const ownedTraditionalIras = ctx.plan.accounts.filter(
+          (candidate): candidate is Extract<Account, { type: 'traditional' }> =>
+            candidate.type === 'traditional' &&
+            candidate.kind === 'ira' &&
+            candidate.inherited === undefined &&
+            ownerPersonIdFor(candidate) === ownerPersonId,
+        )
+        const poolValue = ownedTraditionalIras.reduce(
+          (total, candidate) => total + candidate.balance,
+          0,
+        )
+        const knownAggregateBasis = ownedTraditionalIras.reduce(
+          (total, candidate) => total + (candidate.nondeductibleBasis ?? 0),
+          0,
+        )
+        const aggregateAlreadyFullyNontaxable =
+          openIraProRataYear(knownAggregateBasis, poolValue).nontaxableFraction >= 1
+        if (aggregateAlreadyFullyNontaxable) continue
+
         const tx = firstOwnedIraTransactionWhileAlive(ownerPersonId)
         if (tx !== null) {
           if (tx.distributions > 0) {

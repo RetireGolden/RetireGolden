@@ -835,6 +835,190 @@ describe('missing data basis detector', () => {
     ])
   })
 
+  it('allocates a mixed unseasoned layer proportionally on a partial free-cover draw ($100 / $40 taxable)', () => {
+    // splitRothWithdrawal: take * taxable/amount — not nontaxable-first.
+    // Layer $100 principal, $40 taxable (unseasoned). Free cover = $60 nontaxable.
+    // Year-1 $50 free draw → taxableTake = 50 * 40/100 = $20 → rem $50, tax $20.
+    // Free left = $30. Year-2 $30 draw is fully free-covered (silent).
+    // Nontaxable-first would leave tax $40 / free $10 and incorrectly flag year 2.
+    const ctx = context()
+    ctx.projection.result.years = [
+      {
+        year: 2024,
+        people: [{ personId: 'p1', ageAttained: 54, alive: true }],
+        ownedRothIraPoolActivity: [
+          {
+            ownerPersonId: 'p1',
+            withdrawals: 0,
+            creditedContributions: 0,
+            creditedConversionPrincipal: 100,
+            creditedConversionTaxableAmount: 40,
+            conversionYear: 2024,
+          },
+        ],
+        ownedTraditionalIraAggregateActivity: [],
+        employerRothAccountActivity: [],
+      },
+      {
+        year: 2026,
+        people: [{ personId: 'p1', ageAttained: 56, alive: true }],
+        ownedRothIraPoolActivity: [
+          {
+            ownerPersonId: 'p1',
+            withdrawals: 50,
+            creditedContributions: 0,
+            creditedConversionPrincipal: 0,
+            creditedConversionTaxableAmount: 0,
+            conversionYear: null,
+          },
+        ],
+        ownedTraditionalIraAggregateActivity: [],
+        employerRothAccountActivity: [],
+      },
+      {
+        year: 2027,
+        people: [{ personId: 'p1', ageAttained: 57, alive: true }],
+        ownedRothIraPoolActivity: [
+          {
+            ownerPersonId: 'p1',
+            withdrawals: 30,
+            creditedContributions: 0,
+            creditedConversionPrincipal: 0,
+            creditedConversionTaxableAmount: 0,
+            conversionYear: null,
+          },
+        ],
+        ownedTraditionalIraAggregateActivity: [],
+        employerRothAccountActivity: [],
+      },
+    ] as never
+    ctx.plan.accounts = [{
+      id: 'roth', name: 'Roth IRA', type: 'roth', kind: 'ira', ownerPersonId: 'p1', balance: 125_000,
+    }] as never
+    ctx.plan.incomes = []
+
+    expect(missingDataBasis.screen(ctx)).toBeNull()
+  })
+
+  it('stays silent for a missing-basis traditional IRA when other owned IRAs already make Form 8606 fully nontaxable', () => {
+    // Other IRA supplies $200k basis against a $150k aggregate pool (basis ≥ pool,
+    // e.g. after losses). openIraProRataYear → nontaxableFraction 1; extra basis
+    // on the missing account cannot change tax character.
+    const ctx = context()
+    const year = ctx.projection.result.years[0] as {
+      ownedTraditionalIraAggregateActivity?: { ownerPersonId: string; distributions: number; conversions: number }[]
+    }
+    year.ownedTraditionalIraAggregateActivity = [
+      { ownerPersonId: 'p1', distributions: 5_000, conversions: 0 },
+    ]
+    ctx.plan.accounts = [
+      {
+        id: 'trad-basis',
+        name: 'Basis IRA',
+        type: 'traditional',
+        kind: 'ira',
+        ownerPersonId: 'p1',
+        balance: 100_000,
+        nondeductibleBasis: 200_000,
+      },
+      {
+        id: 'trad-missing',
+        name: 'Missing-basis IRA',
+        type: 'traditional',
+        kind: 'ira',
+        ownerPersonId: 'p1',
+        balance: 50_000,
+        nondeductibleBasis: undefined,
+      },
+    ] as never
+    ctx.plan.incomes = []
+
+    expect(missingDataBasis.screen(ctx)).toBeNull()
+  })
+
+  it('still flags a missing-basis traditional IRA when other owned basis does not reach 100% nontaxable', () => {
+    const ctx = context()
+    const year = ctx.projection.result.years[0] as {
+      ownedTraditionalIraAggregateActivity?: { ownerPersonId: string; distributions: number; conversions: number }[]
+    }
+    year.ownedTraditionalIraAggregateActivity = [
+      { ownerPersonId: 'p1', distributions: 5_000, conversions: 0 },
+    ]
+    ctx.plan.accounts = [
+      {
+        id: 'trad-basis',
+        name: 'Basis IRA',
+        type: 'traditional',
+        kind: 'ira',
+        ownerPersonId: 'p1',
+        balance: 100_000,
+        nondeductibleBasis: 40_000,
+      },
+      {
+        id: 'trad-missing',
+        name: 'Missing-basis IRA',
+        type: 'traditional',
+        kind: 'ira',
+        ownerPersonId: 'p1',
+        balance: 50_000,
+        nondeductibleBasis: undefined,
+      },
+    ] as never
+    ctx.plan.incomes = []
+
+    expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
+      { label: 'Missing-basis IRA owned-IRA distributions (projection)', value: '$5,000', year: 2026 },
+      { label: 'Missing-basis IRA balance (assumed zero after-tax basis)', value: '$50,000' },
+    ])
+  })
+
+  it('stays silent for an employer Roth when published conversion principal free-covers a pre-60 withdrawal', () => {
+    // Seasoned conversion credit on the employer account (same walk as owned pool).
+    const ctx = context()
+    ctx.projection.result.years = [
+      {
+        year: 2021,
+        people: [{ personId: 'p1', ageAttained: 54, alive: true }],
+        employerRothAccountActivity: [
+          {
+            accountId: 'roth-401k',
+            ownerPersonId: 'p1',
+            withdrawals: 0,
+            creditedContributions: 0,
+            creditedConversionPrincipal: 5_000,
+            creditedConversionTaxableAmount: 5_000,
+            conversionYear: 2021,
+          },
+        ],
+        ownedRothIraPoolActivity: [],
+        ownedTraditionalIraAggregateActivity: [],
+      },
+      {
+        year: 2026,
+        people: [{ personId: 'p1', ageAttained: 59, alive: true }],
+        employerRothAccountActivity: [
+          {
+            accountId: 'roth-401k',
+            ownerPersonId: 'p1',
+            withdrawals: 5_000,
+            creditedContributions: 0,
+            creditedConversionPrincipal: 0,
+            creditedConversionTaxableAmount: 0,
+            conversionYear: null,
+          },
+        ],
+        ownedRothIraPoolActivity: [],
+        ownedTraditionalIraAggregateActivity: [],
+      },
+    ] as never
+    ctx.plan.accounts = [{
+      id: 'roth-401k', name: 'Roth 401(k)', type: 'roth', kind: 'employer', ownerPersonId: 'p1', balance: 125_000,
+    }] as never
+    ctx.plan.incomes = []
+
+    expect(missingDataBasis.screen(ctx)).toBeNull()
+  })
+
   it('does not count a limit-clipped published credit as its scheduled amount', () => {
     const ctx = context()
     ctx.projection.result.years[0]!.people[0]!.ageAttained = 59

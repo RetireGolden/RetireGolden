@@ -161,6 +161,10 @@ describe('simulatePlan published per-entity ledger facts', () => {
     expect(employerRow).toBeDefined()
     expect(employerRow!.ownerPersonId).toBe('p1')
     expect(employerRow!.creditedContributions).toBeGreaterThan(0)
+    // Conversion credit fields are always present (zero when nothing converted).
+    expect(employerRow!.creditedConversionPrincipal).toBe(0)
+    expect(employerRow!.creditedConversionTaxableAmount).toBe(0)
+    expect(employerRow!.conversionYear).toBeNull()
     if (owned.length > 0) {
       expect(owned.every((row) => row.ownerPersonId === 'p1')).toBe(true)
     }
@@ -169,6 +173,59 @@ describe('simulatePlan published per-entity ledger facts', () => {
       employer.reduce((sum, row) => sum + row.withdrawals, 0) +
       owned.reduce((sum, row) => sum + row.withdrawals, 0)
     expect(publishedRothWithdrawals).toBe(year.withdrawals.roth)
+  })
+
+  it('publishes owned Roth conversion credits with taxable split on the owner pool', () => {
+    // Named conversion into a Roth IRA: principal + taxable share land on the
+    // owned pool row (employer path is symmetric but employer destinations are
+    // refused at the executor; publication shape is covered by zero-fields above
+    // and the shared commit-site collectors).
+    const plan = singlePersonPlan({ dob: '1966-01-01', planningAge: 90 })
+    plan.id = 'published-facts-roth-conversion-credit'
+    plan.accounts = [
+      ownedIra('trad', 200_000),
+      rothIra('roth', 10_000, 'p1', 10_000),
+    ]
+    plan.retirementActionEligibilityFacts = {
+      iraClassifications: [{
+        evidenceId: 'trad-classification',
+        provenance: { source: 'manual' },
+        sourceAccountId: 'trad',
+        subtype: 'traditional',
+      }],
+      sepSimpleActivities: [],
+      deductibleIraContributions: [],
+    }
+    const parsed = parseRetirementActionRequest({
+      actionId: 'named-conversion-credit',
+      kind: 'rothConversion',
+      personId: 'p1',
+      year: TAX_YEAR,
+      executionDate: `${TAX_YEAR}-06-15`,
+      executionSequence: 1,
+      requestedAmount: 15_000_00,
+      allocations: [{
+        allocationId: 'named-conversion-credit-allocation',
+        sourceAccountId: 'trad',
+        requestedAmount: 15_000_00,
+      }],
+      destinationRothAccountId: 'roth',
+      taxFunding: { kind: 'noneExpected' },
+      provenance: { source: 'manual' },
+    })
+    if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+    plan.strategies.retirementActions = [parsed.request]
+
+    const year = run(plan)[0]!
+    expect(year.rothConversionActionExecution?.committed).toBe(true)
+    expect(year.rothConversion).toBe(15_000)
+    const owned = year.ownedRothIraPoolActivity ?? []
+    const owner = owned.find((row) => row.ownerPersonId === 'p1')
+    expect(owner).toBeDefined()
+    expect(owner!.creditedConversionPrincipal).toBe(15_000)
+    // Zero-basis traditional source → fully taxable conversion layer.
+    expect(owner!.creditedConversionTaxableAmount).toBe(15_000)
+    expect(owner!.conversionYear).toBe(TAX_YEAR)
   })
 
   it('publishes owned traditional-IRA distributions excluding employer RMDs', () => {

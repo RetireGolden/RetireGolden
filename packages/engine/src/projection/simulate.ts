@@ -5969,6 +5969,9 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
      */
     const ownedRothIraCreditedConversionPrincipalByOwner = new Map<string, number>()
     const ownedRothIraCreditedConversionTaxableAmountByOwner = new Map<string, number>()
+    /** Per-account employer Roth conversion principal credits (published fact). */
+    const employerRothCreditedConversionPrincipalByAccount = new Map<string, number>()
+    const employerRothCreditedConversionTaxableAmountByAccount = new Map<string, number>()
     let retirementActionCash = 0
     let retirementActionEquityCompensation = 0
     let retirementActionOrdinaryIncome = 0
@@ -6552,25 +6555,35 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           }
           // Observation-only: publish conversion principal for insight readers
           // (seasoning clock starts at this year — mirror splitRothWithdrawal).
-          if (
-            credited > 0 &&
-            destination.account.kind === 'ira' &&
-            !isInheritedRothOutsideOwnedPool(destination.account)
-          ) {
-            const ownerPersonId = destination.account.ownerPersonId ?? primary.id
+          // Owned Roth IRA → owner pool; employer designated Roth → per-account.
+          if (credited > 0 && !isInheritedRothOutsideOwnedPool(destination.account)) {
             const taxableAmount = Math.max(
               0,
               credited - committedAction.nontaxableAmountPlanDollars,
             )
-            ownedRothIraCreditedConversionPrincipalByOwner.set(
-              ownerPersonId,
-              (ownedRothIraCreditedConversionPrincipalByOwner.get(ownerPersonId) ?? 0) + credited,
-            )
-            ownedRothIraCreditedConversionTaxableAmountByOwner.set(
-              ownerPersonId,
-              (ownedRothIraCreditedConversionTaxableAmountByOwner.get(ownerPersonId) ?? 0) +
-                taxableAmount,
-            )
+            if (destination.account.kind === 'ira') {
+              const ownerPersonId = destination.account.ownerPersonId ?? primary.id
+              ownedRothIraCreditedConversionPrincipalByOwner.set(
+                ownerPersonId,
+                (ownedRothIraCreditedConversionPrincipalByOwner.get(ownerPersonId) ?? 0) + credited,
+              )
+              ownedRothIraCreditedConversionTaxableAmountByOwner.set(
+                ownerPersonId,
+                (ownedRothIraCreditedConversionTaxableAmountByOwner.get(ownerPersonId) ?? 0) +
+                  taxableAmount,
+              )
+            } else if (destination.account.kind === 'employer') {
+              employerRothCreditedConversionPrincipalByAccount.set(
+                destination.account.id,
+                (employerRothCreditedConversionPrincipalByAccount.get(destination.account.id) ?? 0) +
+                  credited,
+              )
+              employerRothCreditedConversionTaxableAmountByAccount.set(
+                destination.account.id,
+                (employerRothCreditedConversionTaxableAmountByAccount.get(destination.account.id) ??
+                  0) + taxableAmount,
+              )
+            }
           }
           namedRothConversionExecuted += credited
         }
@@ -7127,25 +7140,37 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
               }
               // Observation-only: publish conversion principal for insight readers
               // (seasoning clock starts at this year — mirror splitRothWithdrawal).
-              if (
-                destinationAccount.kind === 'ira' &&
-                !isInheritedRothOutsideOwnedPool(destinationAccount)
-              ) {
-                const ownerPersonId = destinationAccount.ownerPersonId ?? primary.id
+              // Owned Roth IRA → owner pool; employer designated Roth → per-account.
+              if (!isInheritedRothOutsideOwnedPool(destinationAccount)) {
                 const taxableAmount = Math.max(
                   0,
                   credit.convertedPlanDollars - credit.nontaxablePlanDollars,
                 )
-                ownedRothIraCreditedConversionPrincipalByOwner.set(
-                  ownerPersonId,
-                  (ownedRothIraCreditedConversionPrincipalByOwner.get(ownerPersonId) ?? 0) +
-                    credit.convertedPlanDollars,
-                )
-                ownedRothIraCreditedConversionTaxableAmountByOwner.set(
-                  ownerPersonId,
-                  (ownedRothIraCreditedConversionTaxableAmountByOwner.get(ownerPersonId) ?? 0) +
-                    taxableAmount,
-                )
+                if (destinationAccount.kind === 'ira') {
+                  const ownerPersonId = destinationAccount.ownerPersonId ?? primary.id
+                  ownedRothIraCreditedConversionPrincipalByOwner.set(
+                    ownerPersonId,
+                    (ownedRothIraCreditedConversionPrincipalByOwner.get(ownerPersonId) ?? 0) +
+                      credit.convertedPlanDollars,
+                  )
+                  ownedRothIraCreditedConversionTaxableAmountByOwner.set(
+                    ownerPersonId,
+                    (ownedRothIraCreditedConversionTaxableAmountByOwner.get(ownerPersonId) ?? 0) +
+                      taxableAmount,
+                  )
+                } else if (destinationAccount.kind === 'employer') {
+                  employerRothCreditedConversionPrincipalByAccount.set(
+                    destinationAccount.id,
+                    (employerRothCreditedConversionPrincipalByAccount.get(destinationAccount.id) ??
+                      0) + credit.convertedPlanDollars,
+                  )
+                  employerRothCreditedConversionTaxableAmountByAccount.set(
+                    destinationAccount.id,
+                    (employerRothCreditedConversionTaxableAmountByAccount.get(
+                      destinationAccount.id,
+                    ) ?? 0) + taxableAmount,
+                  )
+                }
               }
             }
           }
@@ -9454,6 +9479,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     const employerRothAccountIds = new Set<string>([
       ...employerRothWithdrawalsByAccount.keys(),
       ...employerRothCreditedContributionsByAccount.keys(),
+      ...employerRothCreditedConversionPrincipalByAccount.keys(),
     ])
     // Resolve owner for employer accounts that only have credited contributions.
     const employerRothOwnerByAccount = new Map<string, string>()
@@ -9468,13 +9494,27 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     const employerRothAccountActivity: EmployerRothAccountActivity[] =
       [...employerRothAccountIds]
         .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
-        .map((accountId) => ({
-          accountId,
-          ownerPersonId: employerRothOwnerByAccount.get(accountId) ?? primary.id,
-          withdrawals: employerRothWithdrawalsByAccount.get(accountId) ?? 0,
-          creditedContributions:
-            employerRothCreditedContributionsByAccount.get(accountId) ?? 0,
-        }))
+        .map((accountId) => {
+          const creditedConversionPrincipal =
+            employerRothCreditedConversionPrincipalByAccount.get(accountId) ?? 0
+          const creditedConversionTaxableAmount =
+            employerRothCreditedConversionTaxableAmountByAccount.get(accountId) ?? 0
+          return {
+            accountId,
+            ownerPersonId: employerRothOwnerByAccount.get(accountId) ?? primary.id,
+            withdrawals: employerRothWithdrawalsByAccount.get(accountId) ?? 0,
+            creditedContributions:
+              employerRothCreditedContributionsByAccount.get(accountId) ?? 0,
+            creditedConversionPrincipal,
+            // 0 when no conversion credit; otherwise the taxable share of principal
+            // (capped so a collector glitch cannot publish taxable > principal).
+            creditedConversionTaxableAmount:
+              creditedConversionPrincipal > 0
+                ? Math.min(creditedConversionTaxableAmount, creditedConversionPrincipal)
+                : 0,
+            conversionYear: creditedConversionPrincipal > 0 ? year : null,
+          }
+        })
 
     // Owned traditional-IRA Form 8606 aggregate: distributions (non-conversion)
     // and conversions, assembled from the same mutation-site totals the ledger
