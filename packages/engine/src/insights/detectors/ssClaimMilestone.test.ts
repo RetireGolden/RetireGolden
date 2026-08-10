@@ -94,6 +94,15 @@ describe('Social Security claim milestone detector', () => {
     expect(ssClaimMilestone.screen(ctx)).toBeNull()
   })
 
+  it('stays silent when the stream has zero PIA and no earnings history', () => {
+    const ctx = context()
+    const income = ctx.plan.incomes[0] as { piaMonthly: number; earnings: unknown[] | null }
+    income.piaMonthly = 0
+    income.earnings = null
+
+    expect(ssClaimMilestone.screen(ctx)).toBeNull()
+  })
+
   it('stays silent when the projection does not reach the claim year', () => {
     expect(ssClaimMilestone.screen(context(67, 67, 6, false))).toBeNull()
   })
@@ -121,5 +130,25 @@ describe('Social Security claim milestone detector', () => {
     }
 
     expect(ssClaimMilestone.screen(ctx)?.title).toBe("Sam's Social Security claim is imminent")
+  })
+
+  it('considers every Social Security stream for a person', () => {
+    const ctx = context(66, 68, 0)
+    ctx.plan.incomes.push({
+      id: 'ss-imminent',
+      type: 'socialSecurity',
+      personId: 'p1',
+      piaMonthly: 2_000,
+      earnings: null,
+      claimAge: { years: 67, months: 0 },
+    } as never)
+
+    expect(ssClaimMilestone.screen(ctx)).toMatchObject({
+      title: "Pat's Social Security claim is imminent",
+      severity: 'attention',
+      evidence: expect.arrayContaining([
+        { label: "Pat's modeled claim age", value: '67 years 0 months' },
+      ]),
+    })
   })
 })

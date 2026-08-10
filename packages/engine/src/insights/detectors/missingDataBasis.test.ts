@@ -156,4 +156,62 @@ describe('missing data basis detector', () => {
 
     expect(missingDataBasis.screen(ctx)).toBeNull()
   })
+
+  it('stays silent for a planned sale of a zero-value property', () => {
+    const ctx = context()
+    ctx.plan.accounts = [{
+      id: 'home',
+      name: 'Lake home',
+      type: 'property',
+      value: 0,
+      plannedSaleYear: 2029,
+      costBasis: undefined,
+    }] as never
+    ctx.plan.incomes = []
+
+    expect(missingDataBasis.screen(ctx)).toBeNull()
+  })
+
+  it('stays silent for a Roth account owned by someone age 60 or older', () => {
+    const ctx = context()
+    ctx.plan.accounts = [{
+      id: 'roth',
+      name: 'Roth IRA',
+      type: 'roth',
+      kind: 'ira',
+      ownerPersonId: 'p1',
+      balance: 125_000,
+      contributionBasis: undefined,
+    }] as never
+    ctx.plan.incomes = []
+
+    expect(missingDataBasis.screen(ctx)).toBeNull()
+  })
+
+  it('flags a Roth account owned by someone under age 60', () => {
+    const ctx = context()
+    ctx.projection.result.years[0]!.people[0]!.ageAttained = 59
+    ctx.plan.accounts = [{
+      id: 'roth',
+      name: 'Roth IRA',
+      type: 'roth',
+      kind: 'ira',
+      ownerPersonId: 'p1',
+      balance: 125_000,
+      contributionBasis: undefined,
+    }] as never
+    ctx.plan.incomes = []
+
+    expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
+      { label: 'Roth IRA balance (assumed seasoned contribution basis)', value: '$125,000' },
+    ])
+  })
+
+  it('stays silent for open-ended wages of a person dead at projection start', () => {
+    const ctx = context()
+    ctx.plan.accounts = []
+    ctx.projection.result.years[0]!.people[0]!.alive = false
+
+    expect(missingDataBasis.screen(ctx)).toBeNull()
+  })
 })

@@ -15,14 +15,17 @@ export const missingDataBasis: Detector = {
   version: 1,
   screen(ctx): InsightCard | null {
     const gaps: DataGap[] = []
+    const firstProjectionYear = ctx.projection.result.years[0]
     const lastProjectionYear = ctx.projection.result.years.at(-1)?.year
 
     for (const account of ctx.plan.accounts) {
+      const owner = firstProjectionYear?.people.find((person) => person.personId === account.ownerPersonId)
       if (
         account.type === 'roth' &&
         account.inherited === undefined &&
         account.balance > 0 &&
-        account.contributionBasis === undefined
+        account.contributionBasis === undefined &&
+        (owner === undefined || owner.ageAttained < 60)
       ) {
         gaps.push({
           evidence: {
@@ -47,6 +50,7 @@ export const missingDataBasis: Detector = {
       }
       if (
         account.type === 'property' &&
+        account.value > 0 &&
         account.costBasis === undefined &&
         typeof account.plannedSaleYear === 'number' &&
         account.plannedSaleYear >= ctx.projection.startYear &&
@@ -67,7 +71,6 @@ export const missingDataBasis: Detector = {
       }
     }
 
-    const firstProjectionYear = ctx.projection.result.years[0]
     if (firstProjectionYear !== undefined) {
       for (const person of ctx.plan.household.people) {
         if (person.retirementAge !== null) continue
@@ -79,7 +82,8 @@ export const missingDataBasis: Detector = {
           wageIncome === undefined ||
           wageIncome.type !== 'wages' ||
           wageIncome.annualGross <= 0 ||
-          projectedPerson === undefined
+          projectedPerson === undefined ||
+          !projectedPerson.alive
         ) continue
 
         gaps.push({

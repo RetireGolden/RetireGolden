@@ -37,6 +37,12 @@ describe('ACA threshold proximity detector', () => {
     expect(card).toMatchObject({
       severity: 'attention',
       confidence: 'medium',
+      rationale: expect.stringContaining(
+        'whether a credit is payable then depends on benchmark premiums versus the required contribution',
+      ),
+      impact: {
+        qualitative: 'A small MAGI reduction may restore premium-tax-credit eligibility; the payable credit depends on benchmark premiums vs required contribution.',
+      },
       evidence: [
         { label: 'Household MAGI in 2027', value: '$81,000', year: 2027 },
         { label: 'Federal poverty line in 2027', value: '$20,000', year: 2027 },

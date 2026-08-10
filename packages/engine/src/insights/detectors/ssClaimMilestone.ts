@@ -18,18 +18,16 @@ export const ssClaimMilestone: Detector = {
 
     let selectedCard: InsightCard | null = null
     let smallestYearsToClaim = Infinity
-    for (const person of ctx.plan.household.people) {
+    for (const income of ctx.plan.incomes) {
+      if (income.type !== 'socialSecurity') continue
+      const person = ctx.plan.household.people.find((candidate) => candidate.id === income.personId)
+      if (person === undefined) continue
       const projectedPerson = firstProjectionYear.people.find(
         (candidate) => candidate.personId === person.id && candidate.alive,
-      )
-      const income = ctx.plan.incomes.find(
-        (candidate) => candidate.type === 'socialSecurity' && candidate.personId === person.id,
       )
       const [birthYear, birthMonth, birthDay] = person.dob.split('-').map(Number)
       if (
         projectedPerson === undefined ||
-        income === undefined ||
-        income.type !== 'socialSecurity' ||
         !Number.isInteger(birthYear) ||
         !Number.isInteger(birthMonth) ||
         !Number.isInteger(birthDay)
@@ -37,7 +35,10 @@ export const ssClaimMilestone: Detector = {
         continue
       }
 
-      if (income.piaMonthly === null && (income.earnings === null || income.earnings.length === 0)) continue
+      if (
+        (income.piaMonthly === null || income.piaMonthly === 0) &&
+        (income.earnings === null || income.earnings.length === 0)
+      ) continue
 
       const claimMonths = income.claimAge.years * 12 + income.claimAge.months
       const benefitStartYear = birthYear + income.claimAge.years
