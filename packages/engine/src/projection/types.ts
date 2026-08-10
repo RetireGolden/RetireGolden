@@ -1181,6 +1181,16 @@ export interface OwnedRothIraPoolActivity {
    * `conversionYear` (this projection year) — see `splitRothWithdrawal`.
    */
   creditedConversionPrincipal: number
+  /**
+   * Portion of `creditedConversionPrincipal` that was included in income at
+   * conversion. The 10% recapture penalty on an unseasoned pre-59½ tap applies
+   * only to this taxable share; the nontaxable remainder (nondeductible IRA
+   * basis rolled in) is free cover like contributions. Equals principal for a
+   * fully-taxable conversion; 0 when the whole layer was basis return.
+   * Observation-only — mirrors the layer `taxableAmount` written at the same
+   * conversion-layer commit sites (see `splitRothWithdrawal`).
+   */
+  creditedConversionTaxableAmount: number
   /** Calendar year the conversion principal was credited (starts its 5-year clock). */
   conversionYear: number | null
 }

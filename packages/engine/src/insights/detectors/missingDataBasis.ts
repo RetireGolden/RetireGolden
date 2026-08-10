@@ -26,10 +26,27 @@ function isSeasonedConversion(withdrawalYear: number, conversionYear: number): b
 }
 
 /**
+ * Free (tax- and penalty-free) cover from a conversion layer at the withdrawal
+ * year, mirroring `splitRothWithdrawal`:
+ * - Seasoned: entire remaining principal.
+ * - Unseasoned: only the nontaxable share (principal − taxable). The pre-five-
+ *   year recapture applies solely to the taxable portion; all conversion
+ *   principal is excluded from ordinary income.
+ */
+function freeConversionCover(
+  withdrawalYear: number,
+  layer: { year: number; remaining: number; taxableRemaining: number },
+): number {
+  if (layer.remaining <= 0) return 0
+  if (isSeasonedConversion(withdrawalYear, layer.year)) return layer.remaining
+  return Math.max(0, layer.remaining - layer.taxableRemaining)
+}
+
+/**
  * First pre-qualified-age (age attained < 60) year where a withdrawal exceeds
  * the free basis known at that point: supplied starting contribution basis +
  * contribution credits accumulated in year order + seasoned conversion
- * principal (published conversion credits whose 5-tax-year clock has elapsed),
+ * principal (any) + unseasoned conversion principal's nontaxable portion,
  * reduced by earlier covered pre-60 draws. Credits cannot retroactively cover
  * an earlier withdrawal.
  */
@@ -52,13 +69,18 @@ function firstInsufficientPreQualifiedYear(options: {
     creditedContributions: number
     /** Conversion principal credited this year (owned Roth IRA pool only). */
     creditedConversionPrincipal?: number
+    /**
+     * Taxable share of that principal (owned Roth IRA pool only). Absent /
+     * undefined means fully taxable (legacy published rows without the split).
+     */
+    creditedConversionTaxableAmount?: number
     /** Calendar year that starts the conversion's 5-year seasoning clock. */
     conversionYear?: number | null
   } | undefined
 }): { year: number; withdrawal: number; knownBasis: number } | null {
   let contributionBasis = options.suppliedStartingBasis
   // Conversion layers, oldest first — same FIFO order as splitRothWithdrawal.
-  const conversionLayers: { year: number; remaining: number }[] = []
+  const conversionLayers: { year: number; remaining: number; taxableRemaining: number }[] = []
   for (const year of options.years) {
     const owner = year.people.find((person) => person.personId === options.ownerPersonId)
     const activity = options.activityForYear(year)
@@ -67,14 +89,24 @@ function firstInsufficientPreQualifiedYear(options: {
     const conversionPrincipal = activity.creditedConversionPrincipal ?? 0
     if (conversionPrincipal > 0) {
       const conversionYear = activity.conversionYear ?? year.year
-      conversionLayers.push({ year: conversionYear, remaining: conversionPrincipal })
+      // Default fully taxable when the published split is absent (legacy rows).
+      const taxable = Math.min(
+        conversionPrincipal,
+        Math.max(0, activity.creditedConversionTaxableAmount ?? conversionPrincipal),
+      )
+      conversionLayers.push({
+        year: conversionYear,
+        remaining: conversionPrincipal,
+        taxableRemaining: taxable,
+      })
     }
     if (owner !== undefined && owner.ageAttained < 60 && activity.withdrawals > 0) {
-      // Free cover = contribution basis + seasoned conversion principal only
-      // (mirrors tax- and penalty-free layers before earnings / unseasoned taps).
+      // Free cover = contributions + seasoned principal (any) + unseasoned
+      // nontaxable principal (mirrors tax- and penalty-free layers before
+      // earnings / unseasoned taxable taps).
       let freeCover = contributionBasis
       for (const layer of conversionLayers) {
-        if (isSeasonedConversion(year.year, layer.year)) freeCover += layer.remaining
+        freeCover += freeConversionCover(year.year, layer)
       }
       if (activity.withdrawals > freeCover) {
         return {
@@ -83,18 +115,30 @@ function firstInsufficientPreQualifiedYear(options: {
           knownBasis: freeCover,
         }
       }
-      // Consume free cover in IRS order: contributions, then seasoned conversions
-      // oldest first (splitRothWithdrawal does not skip unseasoned, but those are
-      // not free cover for this walk — we only reach here when free cover suffices).
+      // Consume free cover in IRS order: contributions, then conversion layers
+      // oldest first (same layer order as splitRothWithdrawal). Only free
+      // portions of each layer are drawn here — we only reach this branch when
+      // free cover already covers the full withdrawal.
       let remaining = activity.withdrawals
       const fromContributions = Math.min(remaining, contributionBasis)
       contributionBasis -= fromContributions
       remaining -= fromContributions
       for (const layer of conversionLayers) {
         if (remaining <= 0) break
-        if (!isSeasonedConversion(year.year, layer.year)) continue
-        const take = Math.min(remaining, layer.remaining)
-        layer.remaining -= take
+        const free = freeConversionCover(year.year, layer)
+        const take = Math.min(remaining, free)
+        if (take <= 0) continue
+        if (isSeasonedConversion(year.year, layer.year)) {
+          // Seasoned: whole principal is free; reduce taxable share pro-rata
+          // (splitRothWithdrawal taxableTake = take * taxable/amount).
+          const taxableTake =
+            layer.remaining > 0 ? take * (layer.taxableRemaining / layer.remaining) : 0
+          layer.remaining -= take
+          layer.taxableRemaining = Math.max(0, layer.taxableRemaining - taxableTake)
+        } else {
+          // Unseasoned free cover is nontaxable only — leave taxable remaining.
+          layer.remaining -= take
+        }
         remaining -= take
       }
     }
@@ -224,6 +268,10 @@ export const missingDataBasis: Detector = {
                 withdrawals: entry.withdrawals,
                 creditedContributions: entry.creditedContributions,
                 creditedConversionPrincipal: entry.creditedConversionPrincipal ?? 0,
+                creditedConversionTaxableAmount:
+                  entry.creditedConversionTaxableAmount ??
+                  entry.creditedConversionPrincipal ??
+                  0,
                 conversionYear: entry.conversionYear ?? year.year,
               }
             },

@@ -689,4 +689,71 @@ describe('Social Security claim milestone detector', () => {
       ]),
     })
   })
+
+  it('continues past a zero-PIA claim-in-force row to a later positive sibling stream', () => {
+    // Zero-PIA stream becomes claim-in-force in 2027 with both published amounts
+    // zero (unmodeled). A sibling stream starts a positive claim in 2028 — the
+    // empty row must not abort the person's search.
+    const ctx = context(66, 67, 0)
+    ctx.plan.incomes = [
+      {
+        id: 'ss-zero-pia',
+        type: 'socialSecurity',
+        personId: 'p1',
+        piaMonthly: 0,
+        earnings: null,
+        claimAge: { years: 67, months: 0 },
+      },
+      {
+        id: 'ss-sibling',
+        type: 'socialSecurity',
+        personId: 'p1',
+        piaMonthly: 2_000,
+        earnings: null,
+        claimAge: { years: 68, months: 0 },
+      },
+    ] as never
+    ctx.projection.result.years = Array.from({ length: 3 }, (_, offset) => {
+      const y = 2026 + offset
+      return {
+        year: y,
+        people: [{ personId: 'p1', ageAttained: 66 + offset, alive: true }],
+        socialSecurityStreams: [
+          {
+            personId: 'p1',
+            streamId: 'ss-zero-pia',
+            source: (y >= 2027 ? 'own-retirement' : 'none') as StreamSource,
+            annualAmount: 0,
+            claimInForce: y >= 2027,
+            preWithholdingAnnual: 0,
+            isSpousalSurvivorGateStream: true,
+          },
+          {
+            personId: 'p1',
+            streamId: 'ss-sibling',
+            source: (y >= 2028 ? 'own-retirement' : 'none') as StreamSource,
+            annualAmount: y >= 2028 ? 24_000 : 0,
+            claimInForce: y >= 2028,
+            preWithholdingAnnual: y >= 2028 ? 24_000 : 0,
+            isSpousalSurvivorGateStream: false,
+          },
+        ],
+      }
+    }) as never
+
+    expect(ssClaimMilestone.screen(ctx)).toMatchObject({
+      title: "Pat's Social Security claim is imminent",
+      severity: 'info',
+      evidence: expect.arrayContaining([
+        { label: "Pat's modeled claim age", value: '68 years 0 months' },
+        {
+          label: 'Modeled first claim year (claim in force; partial when claim months > 0)',
+          value: '2028',
+          year: 2028,
+        },
+        { label: "Pat's modeled benefit in first claim year", value: '$24,000', year: 2028 },
+        { label: 'Benefit source', value: 'own retirement', year: 2028 },
+      ]),
+    })
+  })
 })

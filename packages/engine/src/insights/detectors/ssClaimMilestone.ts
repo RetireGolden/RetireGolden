@@ -77,7 +77,11 @@ export const ssClaimMilestone: Detector = {
         }
       }
 
-      // Earliest claim-in-force year among this person's non-SSDI, non-pre-horizon streams.
+      // Earliest claim-in-force year among this person's non-SSDI, non-pre-horizon
+      // streams that actually model a benefit (positive paid or pre-withholding).
+      // An empty claim-in-force row (both amounts zero) is unmodeled — skip that
+      // stream and keep searching later years / sibling streams rather than
+      // stopping the person on the unmodeled row.
       let firstClaimYear: number | null = null
       let firstClaimStream: SocialSecurityStreamActivity | null = null
       for (const year of ctx.projection.result.years) {
@@ -86,7 +90,9 @@ export const ssClaimMilestone: Detector = {
             entry.personId === person.id &&
             entry.claimInForce &&
             entry.source !== 'ssdi' &&
-            !preHorizonStreamIds.has(entry.streamId),
+            !preHorizonStreamIds.has(entry.streamId) &&
+            // Unmodeled: claim-in-force with nothing published pre- or post-withholding.
+            (entry.annualAmount > 0 || entry.preWithholdingAnnual > 0),
         )
         if (streams.length === 0) continue
         // Same-year preference: positive published payment, then gate stream, then order.
@@ -123,9 +129,6 @@ export const ssClaimMilestone: Detector = {
 
       const paidAmount = firstClaimStream.annualAmount
       const preWithholding = firstClaimStream.preWithholdingAnnual
-      // Claim-in-force with nothing modeled pre-withholding is unmodeled activity
-      // (not a withholding story) — skip per the unmodeled-stream rule.
-      if (paidAmount <= 0 && preWithholding <= 0) continue
       const paidEvidence = paidAmount > 0
         ? {
             label: `${person.name}'s modeled benefit in first claim year`,
@@ -135,10 +138,14 @@ export const ssClaimMilestone: Detector = {
         : {
             // Only label earnings-test / SGA withholding when a positive
             // pre-withholding benefit was actually reduced to $0.
+            // (Unmodeled zero/zero rows are filtered out of the search above.)
             label: `${person.name}'s modeled benefit in first claim year (earnings test / SGA withheld to $0)`,
             value: '$0',
             year: firstClaimYear,
           }
+
+      // Defense in depth: search filter already requires a positive amount.
+      if (paidAmount <= 0 && preWithholding <= 0) continue
 
       selectedCard = {
         id: 'ss-claim-milestone',

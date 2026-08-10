@@ -695,6 +695,7 @@ describe('missing data basis detector', () => {
 
   it('flags when unseasoned conversion principal does not free-cover a pre-60 withdrawal', () => {
     // Conversion in 2022 is still unseasoned in 2026 (2026 - 2022 = 4 < 5).
+    // Fully taxable (default when taxable split is absent) — not free cover.
     const ctx = context()
     ctx.projection.result.years = [
       {
@@ -721,6 +722,101 @@ describe('missing data basis detector', () => {
             withdrawals: 5_000,
             creditedContributions: 0,
             creditedConversionPrincipal: 0,
+            conversionYear: null,
+          },
+        ],
+        ownedTraditionalIraAggregateActivity: [],
+        employerRothAccountActivity: [],
+      },
+    ] as never
+    ctx.plan.accounts = [{
+      id: 'roth', name: 'Roth IRA', type: 'roth', kind: 'ira', ownerPersonId: 'p1', balance: 125_000,
+    }] as never
+    ctx.plan.incomes = []
+
+    expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
+      { label: 'Roth IRA owner-pool pre-qualified-age withdrawals', value: '$5,000', year: 2026 },
+      { label: 'Roth IRA known contribution basis', value: '$0', year: 2026 },
+    ])
+  })
+
+  it('stays silent when unseasoned nontaxable conversion principal covers a pre-60 withdrawal', () => {
+    // Nondeductible IRA basis rolled into Roth: principal is conversion layer but
+    // taxableAmount is 0 — free cover even while unseasoned (no recapture).
+    const ctx = context()
+    ctx.projection.result.years = [
+      {
+        year: 2022,
+        people: [{ personId: 'p1', ageAttained: 55, alive: true }],
+        ownedRothIraPoolActivity: [
+          {
+            ownerPersonId: 'p1',
+            withdrawals: 0,
+            creditedContributions: 0,
+            creditedConversionPrincipal: 5_000,
+            creditedConversionTaxableAmount: 0,
+            conversionYear: 2022,
+          },
+        ],
+        ownedTraditionalIraAggregateActivity: [],
+        employerRothAccountActivity: [],
+      },
+      {
+        year: 2026,
+        people: [{ personId: 'p1', ageAttained: 59, alive: true }],
+        ownedRothIraPoolActivity: [
+          {
+            ownerPersonId: 'p1',
+            withdrawals: 5_000,
+            creditedContributions: 0,
+            creditedConversionPrincipal: 0,
+            creditedConversionTaxableAmount: 0,
+            conversionYear: null,
+          },
+        ],
+        ownedTraditionalIraAggregateActivity: [],
+        employerRothAccountActivity: [],
+      },
+    ] as never
+    ctx.plan.accounts = [{
+      id: 'roth', name: 'Roth IRA', type: 'roth', kind: 'ira', ownerPersonId: 'p1', balance: 125_000,
+    }] as never
+    ctx.plan.incomes = []
+
+    expect(missingDataBasis.screen(ctx)).toBeNull()
+  })
+
+  it('flags when unseasoned taxable conversion principal does not free-cover a pre-60 withdrawal', () => {
+    // Fully taxable unseasoned conversion: recapture applies to whole layer —
+    // not free cover for the basis-sufficiency walk.
+    const ctx = context()
+    ctx.projection.result.years = [
+      {
+        year: 2022,
+        people: [{ personId: 'p1', ageAttained: 55, alive: true }],
+        ownedRothIraPoolActivity: [
+          {
+            ownerPersonId: 'p1',
+            withdrawals: 0,
+            creditedContributions: 0,
+            creditedConversionPrincipal: 5_000,
+            creditedConversionTaxableAmount: 5_000,
+            conversionYear: 2022,
+          },
+        ],
+        ownedTraditionalIraAggregateActivity: [],
+        employerRothAccountActivity: [],
+      },
+      {
+        year: 2026,
+        people: [{ personId: 'p1', ageAttained: 59, alive: true }],
+        ownedRothIraPoolActivity: [
+          {
+            ownerPersonId: 'p1',
+            withdrawals: 5_000,
+            creditedContributions: 0,
+            creditedConversionPrincipal: 0,
+            creditedConversionTaxableAmount: 0,
             conversionYear: null,
           },
         ],

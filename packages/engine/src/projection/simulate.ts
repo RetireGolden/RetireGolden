@@ -5964,8 +5964,11 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
      * Written at the conversion-layer commit sites (named destination credit
      * and aggregate destination credit) that mirror splitRothWithdrawal's
      * basis pool — one write per credited dollar per attempt, never both.
+     * Taxable share is tracked in parallel (`…TaxableAmountByOwner`) from the
+     * same sites' already-computed layer taxableAmount.
      */
     const ownedRothIraCreditedConversionPrincipalByOwner = new Map<string, number>()
+    const ownedRothIraCreditedConversionTaxableAmountByOwner = new Map<string, number>()
     let retirementActionCash = 0
     let retirementActionEquityCompensation = 0
     let retirementActionOrdinaryIncome = 0
@@ -6555,9 +6558,18 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             !isInheritedRothOutsideOwnedPool(destination.account)
           ) {
             const ownerPersonId = destination.account.ownerPersonId ?? primary.id
+            const taxableAmount = Math.max(
+              0,
+              credited - committedAction.nontaxableAmountPlanDollars,
+            )
             ownedRothIraCreditedConversionPrincipalByOwner.set(
               ownerPersonId,
               (ownedRothIraCreditedConversionPrincipalByOwner.get(ownerPersonId) ?? 0) + credited,
+            )
+            ownedRothIraCreditedConversionTaxableAmountByOwner.set(
+              ownerPersonId,
+              (ownedRothIraCreditedConversionTaxableAmountByOwner.get(ownerPersonId) ?? 0) +
+                taxableAmount,
             )
           }
           namedRothConversionExecuted += credited
@@ -7120,10 +7132,19 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
                 !isInheritedRothOutsideOwnedPool(destinationAccount)
               ) {
                 const ownerPersonId = destinationAccount.ownerPersonId ?? primary.id
+                const taxableAmount = Math.max(
+                  0,
+                  credit.convertedPlanDollars - credit.nontaxablePlanDollars,
+                )
                 ownedRothIraCreditedConversionPrincipalByOwner.set(
                   ownerPersonId,
                   (ownedRothIraCreditedConversionPrincipalByOwner.get(ownerPersonId) ?? 0) +
                     credit.convertedPlanDollars,
+                )
+                ownedRothIraCreditedConversionTaxableAmountByOwner.set(
+                  ownerPersonId,
+                  (ownedRothIraCreditedConversionTaxableAmountByOwner.get(ownerPersonId) ?? 0) +
+                    taxableAmount,
                 )
               }
             }
@@ -9413,12 +9434,20 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       .map((ownerPersonId) => {
         const creditedConversionPrincipal =
           ownedRothIraCreditedConversionPrincipalByOwner.get(ownerPersonId) ?? 0
+        const creditedConversionTaxableAmount =
+          ownedRothIraCreditedConversionTaxableAmountByOwner.get(ownerPersonId) ?? 0
         return {
           ownerPersonId,
           withdrawals: ownedRothWithdrawalsByOwner.get(ownerPersonId) ?? 0,
           creditedContributions:
             ownedRothIraCreditedContributionsByOwner.get(ownerPersonId) ?? 0,
           creditedConversionPrincipal,
+          // 0 when no conversion credit; otherwise the taxable share of principal
+          // (capped so a collector glitch cannot publish taxable > principal).
+          creditedConversionTaxableAmount:
+            creditedConversionPrincipal > 0
+              ? Math.min(creditedConversionTaxableAmount, creditedConversionPrincipal)
+              : 0,
           conversionYear: creditedConversionPrincipal > 0 ? year : null,
         }
       })
