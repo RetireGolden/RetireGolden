@@ -191,6 +191,45 @@ describe('Social Security claim milestone detector', () => {
     })
   })
 
+  it('stays silent when a former spouse becomes eligible only after the claim year', () => {
+    const ctx = context(66, 68, 0)
+    const income = ctx.plan.incomes[0] as { piaMonthly: number; formerSpouses?: unknown[] }
+    income.piaMonthly = 0
+    income.formerSpouses = [{
+      id: 'former-spouse',
+      relationship: 'divorced',
+      dob: '1967-01-01',
+      piaMonthly: 2_000,
+      marriageYears: 12,
+      remarriedAtAge: null,
+    }]
+    ctx.projection.result.years.push({
+      year: 2029,
+      people: [{ personId: 'p1', ageAttained: 69, alive: true }],
+    } as never)
+
+    expect(ssClaimMilestone.screen(ctx)).toBeNull()
+  })
+
+  it('fires when a former spouse is benefit-eligible by the claim year', () => {
+    const ctx = context(66, 68, 0)
+    const income = ctx.plan.incomes[0] as { piaMonthly: number; formerSpouses?: unknown[] }
+    income.piaMonthly = 0
+    income.formerSpouses = [{
+      id: 'former-spouse',
+      relationship: 'divorced',
+      dob: '1966-01-01',
+      piaMonthly: 2_000,
+      marriageYears: 12,
+      remarriedAtAge: null,
+    }]
+
+    expect(ssClaimMilestone.screen(ctx)).toMatchObject({
+      title: "Pat's Social Security claim is imminent",
+      severity: 'info',
+    })
+  })
+
   it('stays silent for a zero-own-PIA claimant with a divorced record under 10 marriage years', () => {
     const ctx = context(66, 68, 0)
     const income = ctx.plan.incomes[0] as { piaMonthly: number; formerSpouses?: unknown[] }

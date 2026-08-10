@@ -92,6 +92,49 @@ describe('missing data basis detector', () => {
     ])
   })
 
+  it('stays silent when an inherited traditional distribution shares the aggregate with an untouched owned IRA', () => {
+    const ctx = context()
+    ctx.plan.accounts = [
+      ctx.plan.accounts[1]!,
+      {
+        id: 'inherited-traditional',
+        name: 'Inherited traditional IRA',
+        type: 'traditional',
+        kind: 'ira',
+        ownerPersonId: 'p1',
+        balance: 50_000,
+        inherited: { ownerDeathYear: 2024, decedentHadStartedRmds: false },
+      },
+    ] as never
+    ctx.plan.incomes = []
+
+    expect(missingDataBasis.screen(ctx)).toBeNull()
+  })
+
+  it('flags conversion-only activity when inherited traditional accounts are the only alternate pool', () => {
+    const ctx = context()
+    const firstProjectionYear = ctx.projection.result.years[0] as { withdrawals?: { traditional: number }; rothConversion?: number }
+    firstProjectionYear.withdrawals = { traditional: 0 }
+    firstProjectionYear.rothConversion = 1
+    ctx.plan.accounts = [
+      ctx.plan.accounts[1]!,
+      {
+        id: 'inherited-traditional',
+        name: 'Inherited traditional IRA',
+        type: 'traditional',
+        kind: 'ira',
+        ownerPersonId: 'p1',
+        balance: 50_000,
+        inherited: { ownerDeathYear: 2024, decedentHadStartedRmds: false },
+      },
+    ] as never
+    ctx.plan.incomes = []
+
+    expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
+      { label: 'Traditional IRA balance (assumed zero after-tax basis)', value: '$300,000' },
+    ])
+  })
+
   it.each([
     ['an employer traditional account', { id: 'employer', name: '401(k)', type: 'traditional', kind: 'employer', balance: 300_000 }],
     [
@@ -382,6 +425,35 @@ describe('missing data basis detector', () => {
             provenance: { source: 'custodian statement', asOf: '2026-01-01' },
           },
         },
+      },
+    ] as never
+    ctx.plan.incomes = []
+
+    expect(missingDataBasis.screen(ctx)).toBeNull()
+  })
+
+  it('stays silent when an employer Roth account makes aggregate Roth withdrawals ambiguous', () => {
+    const ctx = context()
+    ctx.projection.result.years[0]!.people[0]!.ageAttained = 59
+    const firstProjectionYear = ctx.projection.result.years[0] as { withdrawals?: { roth: number } }
+    firstProjectionYear.withdrawals = { roth: 5_000 }
+    ctx.plan.accounts = [
+      {
+        id: 'roth',
+        name: 'Roth IRA',
+        type: 'roth',
+        kind: 'ira',
+        ownerPersonId: 'p1',
+        balance: 125_000,
+        contributionBasis: undefined,
+      },
+      {
+        id: 'employer-roth',
+        name: 'Roth 401(k)',
+        type: 'roth',
+        kind: 'employer',
+        ownerPersonId: 'p1',
+        balance: 50_000,
       },
     ] as never
     ctx.plan.incomes = []

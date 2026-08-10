@@ -76,12 +76,17 @@ function hasFormerSpouseBenefitAnchor(
   plan: Plan,
   income: SocialSecurityIncome,
   person: Plan['household']['people'][number],
+  claimantBenefitStartYear: number,
   projectionYears: readonly { year: number; people: { personId: string; ageAttained: number; alive: boolean }[] }[],
 ): boolean {
   const [birthYear, birthMonth, birthDay] = person.dob.split('-').map(Number)
   if (!Number.isInteger(birthYear) || !Number.isInteger(birthMonth) || !Number.isInteger(birthDay)) return false
 
+  // The annual ledger first pays in claimantBenefitStartYear. A former-spouse
+  // record must pass the engine's marital-benefit gate in that same year, not
+  // merely become eligible somewhere later in the projection horizon.
   return projectionYears.some((year) => {
+    if (year.year !== claimantBenefitStartYear) return false
     const projectedPerson = year.people.find((candidate) => candidate.personId === person.id)
     if (projectedPerson === undefined || !projectedPerson.alive) return false
 
@@ -130,7 +135,13 @@ export const ssClaimMilestone: Detector = {
       const benefitStartYear = birthYear + income.claimAge.years
       if (
         streamResolvesNoOwnBenefit(income, person) &&
-        !hasFormerSpouseBenefitAnchor(ctx.plan, income, person, ctx.projection.result.years) &&
+        !hasFormerSpouseBenefitAnchor(
+          ctx.plan,
+          income,
+          person,
+          benefitStartYear,
+          ctx.projection.result.years,
+        ) &&
         !planHasAnotherSsBenefitAnchor(
           ctx.plan,
           person.id,

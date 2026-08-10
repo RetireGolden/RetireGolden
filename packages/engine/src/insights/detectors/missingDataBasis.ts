@@ -18,9 +18,14 @@ export const missingDataBasis: Detector = {
     const firstProjectionYear = ctx.projection.result.years[0]
     const lastProjectionYear = ctx.projection.result.years.at(-1)?.year
     // YearWithdrawals exposes only aggregate Roth withdrawals: simulate includes
-    // inheritedRothForced in it without publishing that component separately.
+    // inheritedRothForced and employer-Roth withdrawals in it without publishing
+    // either component separately. Employer Roth stays in its own basis pool, so
+    // an owned Roth IRA can be attributed only when it is the sole Roth source.
     const hasInheritedRothAccount = ctx.plan.accounts.some(
       (account) => account.type === 'roth' && account.inherited !== undefined,
+    )
+    const hasEmployerRothAccount = ctx.plan.accounts.some(
+      (account) => account.type === 'roth' && account.kind === 'employer',
     )
     const ownedRothOwnerIds = new Set(
       ctx.plan.accounts
@@ -33,12 +38,26 @@ export const missingDataBasis: Detector = {
     )
     const traditionalOwnerIds = new Set(
       ctx.plan.accounts
-        .filter((account) => account.type === 'traditional')
+        .filter((account) =>
+          account.type === 'traditional' &&
+          account.kind === 'ira' &&
+          account.inherited === undefined,
+        )
         .map((account) => account.ownerPersonId)
         .filter((ownerPersonId): ownerPersonId is string => ownerPersonId !== null),
     )
     const hasUnownedTraditionalAccount = ctx.plan.accounts.some(
-      (account) => account.type === 'traditional' && account.ownerPersonId === null,
+      (account) =>
+        account.type === 'traditional' &&
+        account.kind === 'ira' &&
+        account.inherited === undefined &&
+        account.ownerPersonId === null,
+    )
+    const hasInheritedTraditionalAccount = ctx.plan.accounts.some(
+      (account) => account.type === 'traditional' && account.inherited !== undefined,
+    )
+    const hasEmployerTraditionalAccount = ctx.plan.accounts.some(
+      (account) => account.type === 'traditional' && account.kind === 'employer',
     )
 
     const underQualifiedAgeRothOwnerIdsInYear = (year: {
@@ -47,8 +66,9 @@ export const missingDataBasis: Detector = {
     }): Set<string> => {
       const ids = new Set<string>()
       // The aggregate cannot identify an owned under-age withdrawal when an
-      // inherited Roth account may have supplied it; silence per GOVERNANCE.
-      if (hasInheritedRothAccount) return ids
+      // inherited or employer Roth accounts may have supplied it; silence per
+      // GOVERNANCE because their separate pools do not establish IRA basis use.
+      if (hasInheritedRothAccount || hasEmployerRothAccount) return ids
       if ((year.withdrawals?.roth ?? 0) <= 0) return ids
       for (const account of ctx.plan.accounts) {
         if (account.type !== 'roth' || account.inherited !== undefined || account.balance <= 0) continue
@@ -90,7 +110,20 @@ export const missingDataBasis: Detector = {
 
       return ctx.projection.result.years.some((year) => {
         const owner = year.people.find((person) => person.personId === ownerPersonId)
-        return owner?.alive === true && ((year.withdrawals?.traditional ?? 0) > 0 || (year.rothConversion ?? 0) > 0)
+        if (owner?.alive !== true) return false
+
+        // Traditional withdrawals are aggregate and can include inherited IRAs
+        // or employer plans, neither of which carries Form 8606 basis. The
+        // conversion path excludes inherited accounts, but the engine also
+        // permits employer traditional plans as conversion sources, so that
+        // signal is unambiguous only without an employer traditional account.
+        const ownedIraWithdrawal =
+          (year.withdrawals?.traditional ?? 0) > 0 &&
+          !hasInheritedTraditionalAccount &&
+          !hasEmployerTraditionalAccount
+        const ownedIraConversion =
+          (year.rothConversion ?? 0) > 0 && !hasEmployerTraditionalAccount
+        return ownedIraWithdrawal || ownedIraConversion
       })
     }
 

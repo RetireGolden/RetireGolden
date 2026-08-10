@@ -108,4 +108,30 @@ describe('ACA threshold proximity detector', () => {
 
     expect(acaThresholdProximity.screen(ctx)).toBeNull()
   })
+
+  it('stays silent at the cliff for a sub-dollar modeled premium tax credit', () => {
+    const ctx = context(400.0000000001)
+    ctx.projection.result.years[0]!.aca = {
+      ...ctx.projection.result.years[0]!.aca!,
+      cliffState: 'at-cliff',
+      modeledAllowablePtc: 0.4,
+    }
+
+    expect(acaThresholdProximity.screen(ctx)).toBeNull()
+  })
+
+  it('flags at least one dollar of modeled premium tax credit at the cliff', () => {
+    const ctx = context(400.0000000001)
+    ctx.projection.result.years[0]!.aca = {
+      ...ctx.projection.result.years[0]!.aca!,
+      cliffState: 'at-cliff',
+      modeledAllowablePtc: 1,
+    }
+
+    expect(acaThresholdProximity.screen(ctx)?.evidence).toContainEqual({
+      label: 'Modeled premium tax credit at stake',
+      value: '$1',
+      year: 2027,
+    })
+  })
 })

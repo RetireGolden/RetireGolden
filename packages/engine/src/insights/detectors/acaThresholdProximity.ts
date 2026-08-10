@@ -25,7 +25,9 @@ export const acaThresholdProximity: Detector = {
         aca.cliffState === 'at-cliff' &&
         typeof aca.modeledAllowablePtc === 'number' &&
         Number.isFinite(aca.modeledAllowablePtc) &&
-        aca.modeledAllowablePtc > 0
+        // Dollar-rounded card evidence would show less than $1 as $0, so it is
+        // not a meaningful modeled credit at stake for the at-cliff message.
+        aca.modeledAllowablePtc >= 1
       if (
         aca === undefined ||
         aca.householdMagi === null ||
