@@ -36,8 +36,8 @@ export const ssClaimMilestone: Detector = {
       }
 
       if (
-        (income.piaMonthly === null || income.piaMonthly === 0) &&
-        (income.earnings === null || income.earnings.length === 0)
+        income.piaMonthly === 0 ||
+        (income.piaMonthly === null && (income.earnings === null || income.earnings.length === 0))
       ) continue
 
       const claimMonths = income.claimAge.years * 12 + income.claimAge.months

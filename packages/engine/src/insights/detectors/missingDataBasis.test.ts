@@ -44,7 +44,6 @@ describe('missing data basis detector', () => {
       severity: 'info',
       confidence: 'high',
       evidence: [
-        { label: 'Roth IRA balance (assumed seasoned contribution basis)', value: '$125,000' },
         { label: 'Traditional IRA balance (assumed zero after-tax basis)', value: '$300,000' },
         { label: 'Lake home planned-sale value (legacy net-proceeds path)', value: '$500,000', year: 2029 },
         { label: 'Pat age at projection start (wages assumed to continue for life)', value: '60', year: 2026 },
@@ -111,8 +110,11 @@ describe('missing data basis detector', () => {
 
   it('uses the single real gap as the sole evidence entry', () => {
     const ctx = context()
+    ctx.projection.result.years[0]!.people[0]!.ageAttained = 59
+    const firstProjectionYear = ctx.projection.result.years[0] as { withdrawals?: { roth: number } }
+    firstProjectionYear.withdrawals = { roth: 1 }
     ctx.plan.accounts = [
-      { id: 'roth', name: 'Roth IRA', type: 'roth', kind: 'ira', balance: 125_000 },
+      { id: 'roth', name: 'Roth IRA', type: 'roth', kind: 'ira', ownerPersonId: 'p1', balance: 125_000 },
     ] as never
     ctx.plan.incomes = []
 
@@ -157,6 +159,19 @@ describe('missing data basis detector', () => {
     expect(missingDataBasis.screen(ctx)).toBeNull()
   })
 
+  it('flags positive open-ended wages after a zero-gross open-ended wage stream', () => {
+    const ctx = context()
+    ctx.plan.accounts = []
+    ctx.plan.incomes = [
+      { id: 'zero-wages', type: 'wages', personId: 'p1', annualGross: 0, endAge: null },
+      { id: 'positive-wages', type: 'wages', personId: 'p1', annualGross: 100_000, endAge: null },
+    ] as never
+
+    expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
+      { label: 'Pat age at projection start (wages assumed to continue for life)', value: '60', year: 2026 },
+    ])
+  })
+
   it('stays silent for a planned sale of a zero-value property', () => {
     const ctx = context()
     ctx.plan.accounts = [{
@@ -191,6 +206,8 @@ describe('missing data basis detector', () => {
   it('flags a Roth account owned by someone under age 60', () => {
     const ctx = context()
     ctx.projection.result.years[0]!.people[0]!.ageAttained = 59
+    const firstProjectionYear = ctx.projection.result.years[0] as { withdrawals?: { roth: number } }
+    firstProjectionYear.withdrawals = { roth: 1 }
     ctx.plan.accounts = [{
       id: 'roth',
       name: 'Roth IRA',
@@ -205,6 +222,23 @@ describe('missing data basis detector', () => {
     expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
       { label: 'Roth IRA balance (assumed seasoned contribution basis)', value: '$125,000' },
     ])
+  })
+
+  it('stays silent for an under-60 Roth owner without a modeled pre-60 Roth withdrawal', () => {
+    const ctx = context()
+    ctx.projection.result.years[0]!.people[0]!.ageAttained = 59
+    ctx.plan.accounts = [{
+      id: 'roth',
+      name: 'Roth IRA',
+      type: 'roth',
+      kind: 'ira',
+      ownerPersonId: 'p1',
+      balance: 125_000,
+      contributionBasis: undefined,
+    }] as never
+    ctx.plan.incomes = []
+
+    expect(missingDataBasis.screen(ctx)).toBeNull()
   })
 
   it('stays silent for open-ended wages of a person dead at projection start', () => {

@@ -103,6 +103,15 @@ describe('Social Security claim milestone detector', () => {
     expect(ssClaimMilestone.screen(ctx)).toBeNull()
   })
 
+  it('stays silent when the stream has zero PIA despite earnings history', () => {
+    const ctx = context()
+    const income = ctx.plan.incomes[0] as { piaMonthly: number; earnings: unknown[] | null }
+    income.piaMonthly = 0
+    income.earnings = [{ year: 2020, amount: 100_000 }]
+
+    expect(ssClaimMilestone.screen(ctx)).toBeNull()
+  })
+
   it('stays silent when the projection does not reach the claim year', () => {
     expect(ssClaimMilestone.screen(context(67, 67, 6, false))).toBeNull()
   })

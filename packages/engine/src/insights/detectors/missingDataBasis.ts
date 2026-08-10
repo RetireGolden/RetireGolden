@@ -17,6 +17,11 @@ export const missingDataBasis: Detector = {
     const gaps: DataGap[] = []
     const firstProjectionYear = ctx.projection.result.years[0]
     const lastProjectionYear = ctx.projection.result.years.at(-1)?.year
+    const hasPreQualifiedRothWithdrawal = (ownerPersonId: string | null): boolean =>
+      ctx.projection.result.years.some((year) => {
+        const owner = year.people.find((person) => person.personId === ownerPersonId)
+        return owner !== undefined && owner.ageAttained < 60 && (year.withdrawals?.roth ?? 0) > 0
+      })
 
     for (const account of ctx.plan.accounts) {
       const owner = firstProjectionYear?.people.find((person) => person.personId === account.ownerPersonId)
@@ -25,7 +30,9 @@ export const missingDataBasis: Detector = {
         account.inherited === undefined &&
         account.balance > 0 &&
         account.contributionBasis === undefined &&
-        (owner === undefined || owner.ageAttained < 60)
+        owner !== undefined &&
+        owner.ageAttained < 60 &&
+        hasPreQualifiedRothWithdrawal(account.ownerPersonId)
       ) {
         gaps.push({
           evidence: {
@@ -74,14 +81,16 @@ export const missingDataBasis: Detector = {
     if (firstProjectionYear !== undefined) {
       for (const person of ctx.plan.household.people) {
         if (person.retirementAge !== null) continue
-        const wageIncome = ctx.plan.incomes.find(
-          (income) => income.type === 'wages' && income.personId === person.id && income.endAge === null,
+        const hasOpenEndedWages = ctx.plan.incomes.some(
+          (income) =>
+            income.type === 'wages' &&
+            income.personId === person.id &&
+            income.endAge === null &&
+            income.annualGross > 0,
         )
         const projectedPerson = firstProjectionYear.people.find((candidate) => candidate.personId === person.id)
         if (
-          wageIncome === undefined ||
-          wageIncome.type !== 'wages' ||
-          wageIncome.annualGross <= 0 ||
+          !hasOpenEndedWages ||
           projectedPerson === undefined ||
           !projectedPerson.alive
         ) continue
