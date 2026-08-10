@@ -6,25 +6,11 @@ function usd(amount: number): string {
 }
 
 /**
- * Format two FPL percentages so an over-boundary gap is visible in evidence.
- * Starts at 2 decimals; when values differ but two-decimal renderings collide,
- * extends precision until they differ (cap 4).
+ * Format a positive FPL overage so it never rounds to zero. `toPrecision(2)`
+ * keeps two significant digits and never maps a positive number to "0".
  */
-function formatDistinctFplPcts(fplPct: number, boundary: number): {
-  fplPct: string
-  boundary: string
-} {
-  for (let decimals = 2; decimals <= 4; decimals++) {
-    const fpl = fplPct.toFixed(decimals)
-    const bound = boundary.toFixed(decimals)
-    if (fpl !== bound || fplPct === boundary) {
-      return { fplPct: `${fpl}%`, boundary: `${bound}%` }
-    }
-  }
-  return {
-    fplPct: `${fplPct.toFixed(4)}%`,
-    boundary: `${boundary.toFixed(4)}%`,
-  }
+function formatOverageDelta(delta: number): string {
+  return delta.toPrecision(2)
 }
 
 /** Flags Marketplace years just above the parameter-pack ACA credit cliff. */
@@ -69,11 +55,17 @@ export const acaThresholdProximity: Detector = {
         : `Household MAGI is exactly at the ${boundary}% FPL ACA credit boundary in ${year.year}. ` +
           'A small increase can eliminate the modeled premium tax credit, so review income and conversion timing before the year closes.'
 
-      // At-cliff evidence stays at two decimals (values are equal for the claim).
-      // Just-over must keep the overage visible when two-decimal renders collide.
-      const { fplPct: fplPctEvidence, boundary: boundaryEvidence } = justOverBoundary
-        ? formatDistinctFplPcts(aca.fplPct, boundary)
-        : { fplPct: `${aca.fplPct.toFixed(2)}%`, boundary: `${boundary.toFixed(2)}%` }
+      // Main FPL figures stay at two decimals. Just-over cards carry an explicit
+      // overage delta (toPrecision so any positive gap stays nonzero in evidence).
+      const fplPctEvidence = `${aca.fplPct.toFixed(2)}%`
+      const boundaryEvidence = `${boundary.toFixed(2)}%`
+      const overageEvidence = justOverBoundary
+        ? [{
+            label: `FPL overage above credit boundary in ${year.year}`,
+            value: `${formatOverageDelta(aca.fplPct - boundary)} percentage points`,
+            year: year.year,
+          }]
+        : []
 
       return {
         id: 'aca-threshold-proximity',
@@ -93,6 +85,7 @@ export const acaThresholdProximity: Detector = {
           { label: `Federal poverty line in ${year.year}`, value: usd(aca.federalPovertyLine), year: year.year },
           { label: `FPL percentage in ${year.year}`, value: fplPctEvidence, year: year.year },
           { label: 'ACA credit boundary', value: boundaryEvidence },
+          ...overageEvidence,
           ...(atCliff
             ? [{ label: 'Modeled premium tax credit at stake', value: usd(aca.modeledAllowablePtc ?? 0), year: year.year }]
             : []),

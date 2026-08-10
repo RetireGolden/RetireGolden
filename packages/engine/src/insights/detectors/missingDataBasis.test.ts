@@ -263,6 +263,49 @@ describe('missing data basis detector', () => {
     })
   })
 
+  it('cites property value alongside zero expected net proceeds when value is positive', () => {
+    const ctx = context()
+    const property = ctx.plan.accounts[2] as { expectedNetProceeds?: number; value: number }
+    property.expectedNetProceeds = 0
+
+    expect(missingDataBasis.screen(ctx)?.evidence).toEqual(
+      expect.arrayContaining([
+        {
+          label: 'Lake home expected net proceeds (legacy net-proceeds path)',
+          value: '$0',
+          year: 2029,
+        },
+        {
+          label: 'Lake home property value',
+          value: '$500,000',
+          year: 2029,
+        },
+      ]),
+    )
+  })
+
+  it('formats sub-dollar decisive Roth withdrawals with cents', () => {
+    const ctx = context()
+    ctx.projection.result.years[0]!.people[0]!.ageAttained = 59
+    const year = ctx.projection.result.years[0] as {
+      ownedRothIraPoolActivity?: { ownerPersonId: string; withdrawals: number; creditedContributions: number }[]
+      ownedTraditionalIraAggregateActivity?: unknown[]
+    }
+    year.ownedRothIraPoolActivity = [
+      { ownerPersonId: 'p1', withdrawals: 0.4, creditedContributions: 0 },
+    ]
+    year.ownedTraditionalIraAggregateActivity = []
+    ctx.plan.accounts = [{
+      id: 'roth', name: 'Roth IRA', type: 'roth', kind: 'ira', ownerPersonId: 'p1', balance: 125_000,
+    }] as never
+    ctx.plan.incomes = []
+
+    expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
+      { label: 'Roth IRA owner-pool pre-qualified-age withdrawals', value: '$0.40', year: 2026 },
+      { label: 'Roth IRA known contribution basis', value: '$0', year: 2026 },
+    ])
+  })
+
   it.each([2025, 2030])('stays silent for a sale outside the projection window (%i)', (plannedSaleYear) => {
     const ctx = context()
     ctx.plan.accounts = [{
@@ -835,12 +878,11 @@ describe('missing data basis detector', () => {
     ])
   })
 
-  it('allocates a mixed unseasoned layer proportionally on a partial free-cover draw ($100 / $40 taxable)', () => {
-    // splitRothWithdrawal: take * taxable/amount — not nontaxable-first.
-    // Layer $100 principal, $40 taxable (unseasoned). Free cover = $60 nontaxable.
-    // Year-1 $50 free draw → taxableTake = 50 * 40/100 = $20 → rem $50, tax $20.
-    // Free left = $30. Year-2 $30 draw is fully free-covered (silent).
-    // Nontaxable-first would leave tax $40 / free $10 and incorrectly flag year 2.
+  it('does not treat mixed unseasoned nontaxable share as free cover ($100 / $40 taxable)', () => {
+    // splitRothWithdrawal: taxableTake = take * taxable/amount — nontaxable is not
+    // independently withdrawable. Mixed unseasoned free cover is $0; a $50 draw
+    // has recapture exposure and must flag (suppression cannot use the $60 nontaxable
+    // share as if it could be taken alone).
     const ctx = context()
     ctx.projection.result.years = [
       {
@@ -875,14 +917,46 @@ describe('missing data basis detector', () => {
         ownedTraditionalIraAggregateActivity: [],
         employerRothAccountActivity: [],
       },
+    ] as never
+    ctx.plan.accounts = [{
+      id: 'roth', name: 'Roth IRA', type: 'roth', kind: 'ira', ownerPersonId: 'p1', balance: 125_000,
+    }] as never
+    ctx.plan.incomes = []
+
+    expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
+      { label: 'Roth IRA owner-pool pre-qualified-age withdrawals', value: '$50', year: 2026 },
+      { label: 'Roth IRA known contribution basis', value: '$0', year: 2026 },
+    ])
+  })
+
+  it('still free-covers a draw from contributions without tapping a mixed unseasoned layer', () => {
+    // Contributions $50 free-cover the draw; mixed unseasoned layer is unused.
+    const ctx = context()
+    ctx.projection.result.years = [
       {
-        year: 2027,
-        people: [{ personId: 'p1', ageAttained: 57, alive: true }],
+        year: 2024,
+        people: [{ personId: 'p1', ageAttained: 54, alive: true }],
         ownedRothIraPoolActivity: [
           {
             ownerPersonId: 'p1',
-            withdrawals: 30,
+            withdrawals: 0,
             creditedContributions: 0,
+            creditedConversionPrincipal: 100,
+            creditedConversionTaxableAmount: 40,
+            conversionYear: 2024,
+          },
+        ],
+        ownedTraditionalIraAggregateActivity: [],
+        employerRothAccountActivity: [],
+      },
+      {
+        year: 2026,
+        people: [{ personId: 'p1', ageAttained: 56, alive: true }],
+        ownedRothIraPoolActivity: [
+          {
+            ownerPersonId: 'p1',
+            withdrawals: 50,
+            creditedContributions: 50,
             creditedConversionPrincipal: 0,
             creditedConversionTaxableAmount: 0,
             conversionYear: null,
@@ -907,10 +981,13 @@ describe('missing data basis detector', () => {
     const ctx = context()
     const year = ctx.projection.result.years[0] as {
       ownedTraditionalIraAggregateActivity?: { ownerPersonId: string; distributions: number; conversions: number }[]
+      balances?: Record<string, number>
     }
     year.ownedTraditionalIraAggregateActivity = [
       { ownerPersonId: 'p1', distributions: 5_000, conversions: 0 },
     ]
+    // Published transaction-year pool still at or below known basis.
+    year.balances = { 'trad-basis': 100_000, 'trad-missing': 50_000 }
     ctx.plan.accounts = [
       {
         id: 'trad-basis',
@@ -934,6 +1011,46 @@ describe('missing data basis detector', () => {
     ctx.plan.incomes = []
 
     expect(missingDataBasis.screen(ctx)).toBeNull()
+  })
+
+  it('flags when opening-pool saturation would skip but published transaction-year pool exceeds known basis', () => {
+    // Opening: $200k basis vs $150k pool → would look fully nontaxable. Growth
+    // lifts the transaction-year pool to $250k, so missing basis can still matter.
+    const ctx = context()
+    const year = ctx.projection.result.years[0] as {
+      ownedTraditionalIraAggregateActivity?: { ownerPersonId: string; distributions: number; conversions: number }[]
+      balances?: Record<string, number>
+    }
+    year.ownedTraditionalIraAggregateActivity = [
+      { ownerPersonId: 'p1', distributions: 5_000, conversions: 0 },
+    ]
+    year.balances = { 'trad-basis': 180_000, 'trad-missing': 70_000 }
+    ctx.plan.accounts = [
+      {
+        id: 'trad-basis',
+        name: 'Basis IRA',
+        type: 'traditional',
+        kind: 'ira',
+        ownerPersonId: 'p1',
+        balance: 100_000,
+        nondeductibleBasis: 200_000,
+      },
+      {
+        id: 'trad-missing',
+        name: 'Missing-basis IRA',
+        type: 'traditional',
+        kind: 'ira',
+        ownerPersonId: 'p1',
+        balance: 50_000,
+        nondeductibleBasis: undefined,
+      },
+    ] as never
+    ctx.plan.incomes = []
+
+    expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
+      { label: 'Missing-basis IRA owned-IRA distributions (projection)', value: '$5,000', year: 2026 },
+      { label: 'Missing-basis IRA balance (assumed zero after-tax basis)', value: '$50,000' },
+    ])
   })
 
   it('still flags a missing-basis traditional IRA when other owned basis does not reach 100% nontaxable', () => {

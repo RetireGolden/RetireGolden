@@ -13,7 +13,14 @@ interface DataGap {
   evidence: InsightEvidence
 }
 
+/**
+ * Format a decisive dollar amount for evidence. Whole dollars stay rounded;
+ * positive sub-dollar amounts (which would otherwise Math.round to $0) keep cents.
+ */
 function usd(amount: number): string {
+  if (amount > 0 && amount < 0.5) {
+    return `$${amount.toFixed(2)}`
+  }
   return `$${Math.round(amount).toLocaleString()}`
 }
 
@@ -30,9 +37,13 @@ function isSeasonedConversion(withdrawalYear: number, conversionYear: number): b
  * Free (tax- and penalty-free) cover from a conversion layer at the withdrawal
  * year, mirroring `splitRothWithdrawal`:
  * - Seasoned: entire remaining principal.
- * - Unseasoned: only the nontaxable share (principal − taxable). The pre-five-
- *   year recapture applies solely to the taxable portion; all conversion
- *   principal is excluded from ordinary income.
+ * - Unseasoned with no taxable principal left: entire remaining principal
+ *   (nontaxable conversion basis never recaptures).
+ * - Unseasoned with any taxable principal: **zero**. Nontaxable share is not
+ *   independently withdrawable — `splitRothWithdrawal` allocates every take
+ *   proportionally (`taxableTake = take * taxable/amount`), so any draw from a
+ *   mixed/taxable unseasoned layer has recapture exposure and cannot suppress
+ *   a missing-basis flag.
  */
 function freeConversionCover(
   withdrawalYear: number,
@@ -40,16 +51,20 @@ function freeConversionCover(
 ): number {
   if (layer.remaining <= 0) return 0
   if (isSeasonedConversion(withdrawalYear, layer.year)) return layer.remaining
-  return Math.max(0, layer.remaining - layer.taxableRemaining)
+  // Unseasoned: free only when the layer is fully nontaxable. Mixed layers
+  // contribute no free cover — proportional allocation makes any take taxable.
+  if (layer.taxableRemaining > 0) return 0
+  return layer.remaining
 }
 
 /**
  * First pre-qualified-age (age attained < 60) year where a withdrawal exceeds
  * the free basis known at that point: supplied starting contribution basis +
  * contribution credits accumulated in year order + seasoned conversion
- * principal (any) + unseasoned conversion principal's nontaxable portion,
- * reduced by earlier covered pre-60 draws. Credits cannot retroactively cover
- * an earlier withdrawal.
+ * principal (any) + unseasoned conversion principal that is fully nontaxable,
+ * reduced by earlier covered pre-60 draws. Mixed unseasoned layers never
+ * contribute free cover (proportional recapture). Credits cannot retroactively
+ * cover an earlier withdrawal.
  */
 function firstInsufficientPreQualifiedYear(options: {
   years: readonly {
@@ -102,9 +117,9 @@ function firstInsufficientPreQualifiedYear(options: {
       })
     }
     if (owner !== undefined && owner.ageAttained < 60 && activity.withdrawals > 0) {
-      // Free cover = contributions + seasoned principal (any) + unseasoned
-      // nontaxable principal (mirrors tax- and penalty-free layers before
-      // earnings / unseasoned taxable taps).
+      // Free cover = contributions + seasoned principal + unseasoned fully
+      // nontaxable principal. Mixed unseasoned layers add nothing (proportional
+      // recapture makes their nontaxable share not independently withdrawable).
       let freeCover = contributionBasis
       for (const layer of conversionLayers) {
         freeCover += freeConversionCover(year.year, layer)
@@ -118,11 +133,10 @@ function firstInsufficientPreQualifiedYear(options: {
       }
       // Consume free cover in IRS order: contributions, then conversion layers
       // oldest first (same layer order as splitRothWithdrawal). Only free
-      // portions of each layer are drawn here — we only reach this branch when
-      // free cover already covers the full withdrawal. Within a layer, any take
-      // allocates proportionally between taxable and nontaxable principal
-      // (splitRothWithdrawal: taxableTake = take * taxable/amount) — never
-      // nontaxable-first.
+      // layers are drawn here — we only reach this branch when free cover
+      // already covers the full withdrawal. Within a free layer, any take still
+      // allocates proportionally (splitRothWithdrawal: taxableTake = take *
+      // taxable/amount) so seasoned residual taxable state stays consistent.
       let remaining = activity.withdrawals
       const fromContributions = Math.min(remaining, contributionBasis)
       contributionBasis -= fromContributions
@@ -139,6 +153,48 @@ function firstInsufficientPreQualifiedYear(options: {
         remaining -= take
       }
     }
+  }
+  return null
+}
+
+/**
+ * Published owned-traditional-IRA pool value for one owner in one projection
+ * year, when the ledger published account balances. Prefers pre-growth owned
+ * non-Roth IRA balances; falls back to year-end `balances`.
+ */
+function publishedOwnedTraditionalIraPoolValue(
+  year: {
+    ownedNonRothIraBalancesBeforeGrowth?: Readonly<Record<string, number>>
+    balances?: Readonly<Record<string, number>>
+  } | undefined,
+  ownedTraditionalIraIds: readonly string[],
+): number | null {
+  if (year === undefined || ownedTraditionalIraIds.length === 0) return null
+  const preGrowth = year.ownedNonRothIraBalancesBeforeGrowth
+  if (preGrowth !== undefined) {
+    let total = 0
+    let any = false
+    for (const id of ownedTraditionalIraIds) {
+      const value = preGrowth[id]
+      if (typeof value === 'number' && Number.isFinite(value)) {
+        total += value
+        any = true
+      }
+    }
+    if (any) return total
+  }
+  const yearEnd = year.balances
+  if (yearEnd !== undefined) {
+    let total = 0
+    let any = false
+    for (const id of ownedTraditionalIraIds) {
+      const value = yearEnd[id]
+      if (typeof value === 'number' && Number.isFinite(value)) {
+        total += value
+        any = true
+      }
+    }
+    if (any) return total
   }
   return null
 }
@@ -315,8 +371,9 @@ export const missingDataBasis: Detector = {
         // other accounts already supply enough nondeductible basis that the
         // aggregate nontaxable fraction is 100% (basis ≥ pool value — reachable
         // after losses), extra basis on this missing-basis account cannot change
-        // any transaction's tax character. Use plan balances + supplied basis
-        // only (same openIraProRataYear fraction the sim uses; no re-sim).
+        // any transaction's tax character. Saturation must be judged against the
+        // pool relevant to the transaction year (contributions/growth can enlarge
+        // the pool after plan open), not opening balances alone.
         const ownedTraditionalIras = ctx.plan.accounts.filter(
           (candidate): candidate is Extract<Account, { type: 'traditional' }> =>
             candidate.type === 'traditional' &&
@@ -324,7 +381,8 @@ export const missingDataBasis: Detector = {
             candidate.inherited === undefined &&
             ownerPersonIdFor(candidate) === ownerPersonId,
         )
-        const poolValue = ownedTraditionalIras.reduce(
+        const ownedTraditionalIraIds = ownedTraditionalIras.map((candidate) => candidate.id)
+        const openingPoolValue = ownedTraditionalIras.reduce(
           (total, candidate) => total + candidate.balance,
           0,
         )
@@ -332,12 +390,60 @@ export const missingDataBasis: Detector = {
           (total, candidate) => total + (candidate.nondeductibleBasis ?? 0),
           0,
         )
-        const aggregateAlreadyFullyNontaxable =
-          openIraProRataYear(knownAggregateBasis, poolValue).nontaxableFraction >= 1
-        if (aggregateAlreadyFullyNontaxable) continue
 
         const tx = firstOwnedIraTransactionWhileAlive(ownerPersonId)
         if (tx !== null) {
+          const txYearRow = ctx.projection.result.years.find((year) => year.year === tx.year)
+          const publishedTxPool = publishedOwnedTraditionalIraPoolValue(
+            txYearRow,
+            ownedTraditionalIraIds,
+          )
+          let poolValueForSaturation: number
+          if (publishedTxPool !== null) {
+            poolValueForSaturation = publishedTxPool
+          } else {
+            // Pool value for the transaction year is not published. Skip only when
+            // saturation holds conservatively: known basis ≥ the largest pool
+            // value across transaction years derivable from published year
+            // balances or plan opening balances (growth can only enlarge the pool
+            // relative to a smaller observed figure, so the max is the hard case).
+            const poolCandidates: number[] = [openingPoolValue]
+            for (const year of ctx.projection.result.years) {
+              const owner = year.people.find((person) => person.personId === ownerPersonId)
+              const ownerAlive = owner?.alive === true
+              let hasTransaction = false
+              if (ownerAlive) {
+                const activity = year.ownedTraditionalIraAggregateActivity?.find(
+                  (entry: OwnedTraditionalIraAggregateActivity) =>
+                    entry.ownerPersonId === ownerPersonId,
+                )
+                if (
+                  activity !== undefined &&
+                  (activity.distributions > 0 || activity.conversions > 0)
+                ) {
+                  hasTransaction = true
+                }
+              }
+              if (!hasTransaction) {
+                for (const payment of year.qualifiedAnnuityPayments ?? []) {
+                  const row = payment as QualifiedAnnuityPaymentActivity
+                  if (row.fundingOwnerPersonId === ownerPersonId && row.payment > 0) {
+                    hasTransaction = true
+                    break
+                  }
+                }
+              }
+              if (!hasTransaction) continue
+              const published = publishedOwnedTraditionalIraPoolValue(year, ownedTraditionalIraIds)
+              if (published !== null) poolCandidates.push(published)
+            }
+            poolValueForSaturation = Math.max(...poolCandidates)
+          }
+          const aggregateAlreadyFullyNontaxable =
+            openIraProRataYear(knownAggregateBasis, poolValueForSaturation)
+              .nontaxableFraction >= 1
+          if (aggregateAlreadyFullyNontaxable) continue
+
           if (tx.distributions > 0) {
             gaps.push({
               evidence: {
@@ -383,15 +489,34 @@ export const missingDataBasis: Detector = {
       ) {
         const expectedNetProceeds = account.expectedNetProceeds
         const hasExpectedNetProceeds = expectedNetProceeds !== null && expectedNetProceeds !== undefined
-        gaps.push({
-          evidence: {
-            label: hasExpectedNetProceeds
-              ? `${account.name} expected net proceeds (legacy net-proceeds path)`
-              : `${account.name} planned-sale value (legacy net-proceeds path)`,
-            value: usd(expectedNetProceeds ?? account.value),
-            year: account.plannedSaleYear,
-          },
-        })
+        if (hasExpectedNetProceeds) {
+          gaps.push({
+            evidence: {
+              label: `${account.name} expected net proceeds (legacy net-proceeds path)`,
+              value: usd(expectedNetProceeds),
+              year: account.plannedSaleYear,
+            },
+          })
+          // Zero proceeds alone are uninformative when the property still has
+          // positive value — cite the property value (labeled as such) too.
+          if (expectedNetProceeds === 0 && account.value > 0) {
+            gaps.push({
+              evidence: {
+                label: `${account.name} property value`,
+                value: usd(account.value),
+                year: account.plannedSaleYear,
+              },
+            })
+          }
+        } else {
+          gaps.push({
+            evidence: {
+              label: `${account.name} planned-sale value (legacy net-proceeds path)`,
+              value: usd(account.value),
+              year: account.plannedSaleYear,
+            },
+          })
+        }
       }
     }
 

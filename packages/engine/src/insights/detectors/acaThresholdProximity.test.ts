@@ -48,6 +48,7 @@ describe('ACA threshold proximity detector', () => {
         { label: 'Federal poverty line in 2027', value: '$20,000', year: 2027 },
         { label: 'FPL percentage in 2027', value: '405.00%', year: 2027 },
         { label: 'ACA credit boundary', value: '400.00%' },
+        { label: 'FPL overage above credit boundary in 2027', value: '5.0 percentage points', year: 2027 },
       ],
     })
   })
@@ -67,20 +68,43 @@ describe('ACA threshold proximity detector', () => {
     expect(acaThresholdProximity.screen(context(425.1))).toBeNull()
   })
 
-  it('shows a 400.01% result distinctly from the 400.00% credit boundary', () => {
+  it('shows a 400.01% result with two-decimal main figures and an overage delta', () => {
     const card = acaThresholdProximity.screen(context(400.01))
 
     expect(card?.evidence).toContainEqual({ label: 'FPL percentage in 2027', value: '400.01%', year: 2027 })
     expect(card?.evidence).toContainEqual({ label: 'ACA credit boundary', value: '400.00%' })
+    expect(card?.evidence).toContainEqual({
+      label: 'FPL overage above credit boundary in 2027',
+      value: '0.010 percentage points',
+      year: 2027,
+    })
   })
 
-  it('extends FPL percentage precision when 400.001% would otherwise round to 400.00%', () => {
-    // Two-decimal renderings of 400.001 and 400 both read "400.00%", which
-    // would contradict the over-boundary claim — adaptive precision must show the gap.
+  it('keeps two-decimal FPL figures when 400.001% rounds to 400.00% and carries the overage in a delta entry', () => {
+    // Two-decimal renderings of 400.001 and 400 both read "400.00%"; the overage
+    // delta (toPrecision) keeps the positive gap visible without extending main figures.
     const card = acaThresholdProximity.screen(context(400.001))
 
-    expect(card?.evidence).toContainEqual({ label: 'FPL percentage in 2027', value: '400.001%', year: 2027 })
-    expect(card?.evidence).toContainEqual({ label: 'ACA credit boundary', value: '400.000%' })
+    expect(card?.evidence).toContainEqual({ label: 'FPL percentage in 2027', value: '400.00%', year: 2027 })
+    expect(card?.evidence).toContainEqual({ label: 'ACA credit boundary', value: '400.00%' })
+    expect(card?.evidence).toContainEqual({
+      label: 'FPL overage above credit boundary in 2027',
+      value: '0.0010 percentage points',
+      year: 2027,
+    })
+  })
+
+  it('surfaces a sub-0.00005 FPL overage as a nonzero delta entry', () => {
+    // 0.00004 rounds to 0.00 at two decimals; toPrecision(2) still shows a positive gap.
+    const card = acaThresholdProximity.screen(context(400.00004))
+
+    expect(card?.evidence).toContainEqual({ label: 'FPL percentage in 2027', value: '400.00%', year: 2027 })
+    expect(card?.evidence).toContainEqual({ label: 'ACA credit boundary', value: '400.00%' })
+    expect(card?.evidence).toContainEqual({
+      label: 'FPL overage above credit boundary in 2027',
+      value: '0.000040 percentage points',
+      year: 2027,
+    })
   })
 
   it('flags an epsilon-published at-cliff result with its no-headroom impact and evidence', () => {

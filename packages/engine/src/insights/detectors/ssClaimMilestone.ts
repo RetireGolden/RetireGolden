@@ -124,6 +124,12 @@ export const ssClaimMilestone: Detector = {
       if (income === undefined) continue
 
       const claimMonths = income.claimAge.years * 12 + income.claimAge.months
+      // Annual-ledger attained age in the first payable year (year − birth year),
+      // matching simulatePlan's ageAttained. Auxiliary benefits (spousal/survivor)
+      // often first pay later than the configured filing age — report both ages
+      // so claim-age evidence is not read as the age in the payable year.
+      const birthYear = Number(person.dob.slice(0, 4))
+      const ageAtFirstPayableYear = firstClaimYear - birthYear
 
       if (yearsToClaim >= smallestYearsToClaim) continue
 
@@ -147,13 +153,21 @@ export const ssClaimMilestone: Detector = {
       // Defense in depth: search filter already requires a positive amount.
       if (paidAmount <= 0 && preWithholding <= 0) continue
 
+      const claimAgeLabel = formatAge(claimMonths)
+      // Annual ledger ages are whole years; configured months are evidence-only.
+      // Use the dual-age rationale when the first payable year is not the claim-age year.
+      const agesAlign = ageAtFirstPayableYear === income.claimAge.years
+      const rationale = agesAlign
+        ? `The model starts ${person.name}'s Social Security at age ${claimAgeLabel} in ${firstClaimYear}. ` +
+          'Confirm the claim age against the Social Security analysis before filing, since filing locks in permanent reductions or credits.'
+        : `The model uses a configured claim age of ${claimAgeLabel} for ${person.name}, with the first modeled payable year ${firstClaimYear} ` +
+          `(attained age ${ageAtFirstPayableYear}). Confirm the claim age against the Social Security analysis before filing, since filing locks in permanent reductions or credits.`
+
       selectedCard = {
         id: 'ss-claim-milestone',
         category: 'social-security',
         title: `${person.name}'s Social Security claim is imminent`,
-        rationale:
-          `The model starts ${person.name}'s Social Security at age ${formatAge(claimMonths)} in ${firstClaimYear}. ` +
-          'Confirm the claim age against the Social Security analysis before filing, since filing locks in permanent reductions or credits.',
+        rationale,
         impact: {
           qualitative: 'Claiming age permanently affects the benefit calculation.',
         },
@@ -161,7 +175,12 @@ export const ssClaimMilestone: Detector = {
         confidence: 'high',
         severity: yearsToClaim <= 1 ? 'attention' : 'info',
         evidence: [
-          { label: `${person.name}'s modeled claim age`, value: formatAge(claimMonths) },
+          { label: `${person.name}'s modeled claim age (configured filing age)`, value: claimAgeLabel },
+          {
+            label: `${person.name}'s attained age in first payable year`,
+            value: String(ageAtFirstPayableYear),
+            year: firstClaimYear,
+          },
           { label: `Age at projection start (${firstProjectionYear.year})`, value: String(projectedPerson.ageAttained), year: firstProjectionYear.year },
           { label: 'Modeled first claim year (claim in force; partial when claim months > 0)', value: String(firstClaimYear), year: firstClaimYear },
           paidEvidence,
