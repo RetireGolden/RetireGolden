@@ -460,4 +460,64 @@ describe('missing data basis detector', () => {
 
     expect(missingDataBasis.screen(ctx)).toBeNull()
   })
+
+  it('stays silent when another Roth IRA in the owner pool supplies enough basis', () => {
+    const ctx = context()
+    ctx.projection.result.years[0]!.people[0]!.ageAttained = 59
+    const firstProjectionYear = ctx.projection.result.years[0] as { withdrawals?: { roth: number } }
+    firstProjectionYear.withdrawals = { roth: 5_000 }
+    ctx.plan.accounts = [
+      { id: 'missing-basis', name: 'Missing-basis Roth IRA', type: 'roth', kind: 'ira', ownerPersonId: 'p1', balance: 125_000 },
+      { id: 'supplied-basis', name: 'Supplied-basis Roth IRA', type: 'roth', kind: 'ira', ownerPersonId: 'p1', balance: 10_000, contributionBasis: 5_000 },
+    ] as never
+    ctx.plan.incomes = []
+
+    expect(missingDataBasis.screen(ctx)).toBeNull()
+  })
+
+  it('flags a missing Roth IRA basis when the owner pool supplied basis is insufficient', () => {
+    const ctx = context()
+    ctx.projection.result.years[0]!.people[0]!.ageAttained = 59
+    const firstProjectionYear = ctx.projection.result.years[0] as { withdrawals?: { roth: number } }
+    firstProjectionYear.withdrawals = { roth: 5_000 }
+    ctx.plan.accounts = [
+      { id: 'missing-basis', name: 'Missing-basis Roth IRA', type: 'roth', kind: 'ira', ownerPersonId: 'p1', balance: 125_000 },
+      { id: 'supplied-basis', name: 'Supplied-basis Roth IRA', type: 'roth', kind: 'ira', ownerPersonId: 'p1', balance: 10_000, contributionBasis: 4_999 },
+    ] as never
+    ctx.plan.incomes = []
+
+    expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
+      { label: 'Missing-basis Roth IRA balance (assumed seasoned contribution basis)', value: '$125,000' },
+    ])
+  })
+
+  it('resolves a null Roth owner to the primary person', () => {
+    const ctx = context()
+    ctx.projection.result.years[0]!.people[0]!.ageAttained = 59
+    const firstProjectionYear = ctx.projection.result.years[0] as { withdrawals?: { roth: number } }
+    firstProjectionYear.withdrawals = { roth: 5_000 }
+    ctx.plan.accounts = [
+      { id: 'primary-roth', name: 'Primary Roth IRA', type: 'roth', kind: 'ira', ownerPersonId: null, balance: 125_000 },
+    ] as never
+    ctx.plan.incomes = []
+
+    expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
+      { label: 'Primary Roth IRA balance (assumed seasoned contribution basis)', value: '$125,000' },
+    ])
+  })
+
+  it('flags a sole employer Roth with omitted basis before age 60', () => {
+    const ctx = context()
+    ctx.projection.result.years[0]!.people[0]!.ageAttained = 59
+    const firstProjectionYear = ctx.projection.result.years[0] as { withdrawals?: { roth: number } }
+    firstProjectionYear.withdrawals = { roth: 5_000 }
+    ctx.plan.accounts = [
+      { id: 'roth-401k', name: 'Roth 401(k)', type: 'roth', kind: 'employer', ownerPersonId: 'p1', balance: 125_000 },
+    ] as never
+    ctx.plan.incomes = []
+
+    expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
+      { label: 'Roth 401(k) balance (assumed current balance is seasoned contribution basis)', value: '$125,000' },
+    ])
+  })
 })

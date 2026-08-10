@@ -40,34 +40,52 @@ function streamResolvesNoOwnBenefit(
 }
 
 /** Another SS stream with modeled own benefit — claim age on a zero-PIA stream can still time spousal/auxiliary benefits. */
+function simulatedSsStreamByPerson(
+  plan: Plan,
+): Map<string, { income: SocialSecurityIncome; pia: number }> {
+  const streams = new Map<string, { income: SocialSecurityIncome; pia: number }>()
+  for (const income of plan.incomes) {
+    if (income.type !== 'socialSecurity') continue
+    const person = plan.household.people.find((candidate) => candidate.id === income.personId)
+    if (person === undefined) continue
+    const pia = resolvedOwnPia(income, person)
+    if (pia === null) continue
+    streams.set(income.personId, { income, pia })
+  }
+  return streams
+}
+
 function planHasAnotherSsBenefitAnchor(
   plan: Plan,
   claimantPersonId: string,
-  excludeId: string,
   claimantBenefitStartYear: number,
   lastProjectionYear: number | undefined,
   projectionYears: readonly { year: number; people: { personId: string; alive: boolean }[] }[],
 ): boolean {
   if (plan.household.people.length !== 2 || lastProjectionYear === undefined) return false
-  return plan.incomes.some((other) => {
-    if (
-      other.type !== 'socialSecurity' ||
-      other.id === excludeId ||
-      other.personId === claimantPersonId
-    ) return false
-    const person = plan.household.people.find((candidate) => candidate.id === other.personId)
-    if (person === undefined || (resolvedOwnPia(other, person) ?? 0) <= 0) return false
+  const streams = simulatedSsStreamByPerson(plan)
+  if (!streams.has(claimantPersonId)) return false
+  const anchorPerson = plan.household.people.find((person) => person.id !== claimantPersonId)
+  if (anchorPerson === undefined) return false
+  const anchorStream = streams.get(anchorPerson.id)
+  if (anchorStream === undefined || anchorStream.pia <= 0) return false
 
-    const otherDobYear = Number(person.dob.slice(0, 4))
-    if (!Number.isInteger(otherDobYear)) return false
-    const otherBenefitStartYear = otherDobYear + other.claimAge.years
-    const firstSharedPayableYear = Math.max(claimantBenefitStartYear, otherBenefitStartYear)
-    if (firstSharedPayableYear > lastProjectionYear) return false
-    return projectionYears.some((year) =>
-      year.year >= firstSharedPayableYear &&
-      year.people.some((candidate) => candidate.personId === claimantPersonId && candidate.alive) &&
-      year.people.some((candidate) => candidate.personId === other.personId && candidate.alive),
-    )
+  const anchorDobYear = Number(anchorPerson.dob.slice(0, 4))
+  if (!Number.isInteger(anchorDobYear)) return false
+  const anchorBenefitStartYear = anchorDobYear + anchorStream.income.claimAge.years
+  const firstSharedPayableYear = Math.max(claimantBenefitStartYear, anchorBenefitStartYear)
+  if (firstSharedPayableYear > lastProjectionYear) return false
+
+  return projectionYears.some((year) => {
+    if (year.year < firstSharedPayableYear) return false
+    const claimant = year.people.find((candidate) => candidate.personId === claimantPersonId)
+    const anchor = year.people.find((candidate) => candidate.personId === anchorPerson.id)
+    if (claimant?.alive !== true || anchor === undefined) return false
+
+    // The spousal pass needs both people alive. The survivor pass instead
+    // needs the spouse dead, a positive resolved PIA, and a stream that has
+    // reached its claim age, all of which the checks above mirror.
+    return true
   })
 }
 
@@ -145,7 +163,6 @@ export const ssClaimMilestone: Detector = {
         !planHasAnotherSsBenefitAnchor(
           ctx.plan,
           person.id,
-          income.id,
           benefitStartYear,
           lastProjectionYear,
           ctx.projection.result.years,

@@ -148,7 +148,54 @@ describe('Social Security claim milestone detector', () => {
     }
 
     expect(ssClaimMilestone.screen(ctx)).toMatchObject({
-      title: "Pat's Social Security claim is imminent",
+      title: 'Pat\'s Social Security claim is imminent',
+      severity: 'info',
+    })
+  })
+
+  it('uses the simulator-precedence spouse stream instead of any positive spouse stream', () => {
+    const ctx = context(66, 68, 0)
+    const income = ctx.plan.incomes[0] as { piaMonthly: number }
+    income.piaMonthly = 0
+    ctx.plan.household.people.push({
+      id: 'p2', name: 'Sam', dob: '1960-01-01', sex: 'average', retirementAge: null,
+      longevity: { planningAge: 95, source: 'manual' },
+    })
+    ctx.plan.incomes.push(
+      {
+        id: 'ss-spouse-positive', type: 'socialSecurity', personId: 'p2', piaMonthly: 2_000,
+        earnings: null, claimAge: { years: 70, months: 0 },
+      } as never,
+      {
+        id: 'ss-spouse-sim-precedence', type: 'socialSecurity', personId: 'p2', piaMonthly: 0,
+        earnings: null, claimAge: { years: 68, months: 0 },
+      } as never,
+    )
+    for (const year of ctx.projection.result.years) {
+      year.people.push({ personId: 'p2', ageAttained: year.year - 1960, alive: true } as never)
+    }
+
+    expect(ssClaimMilestone.screen(ctx)).toBeNull()
+  })
+
+  it('anchors a zero-own-PIA claimant to a deceased spouse with positive resolved PIA', () => {
+    const ctx = context(66, 68, 0)
+    const income = ctx.plan.incomes[0] as { piaMonthly: number }
+    income.piaMonthly = 0
+    ctx.plan.household.people.push({
+      id: 'p2', name: 'Sam', dob: '1960-01-01', sex: 'average', retirementAge: null,
+      longevity: { planningAge: 95, source: 'manual' },
+    })
+    ctx.plan.incomes.push({
+      id: 'ss-spouse', type: 'socialSecurity', personId: 'p2', piaMonthly: 2_000,
+      earnings: null, claimAge: { years: 68, months: 0 },
+    } as never)
+    for (const year of ctx.projection.result.years) {
+      year.people.push({ personId: 'p2', ageAttained: year.year - 1960, alive: year.year < 2028 } as never)
+    }
+
+    expect(ssClaimMilestone.screen(ctx)).toMatchObject({
+      title: 'Pat\'s Social Security claim is imminent',
       severity: 'info',
     })
   })

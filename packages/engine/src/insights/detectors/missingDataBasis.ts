@@ -1,4 +1,5 @@
 import type { Detector, InsightCard, InsightEvidence } from '../types.js'
+import type { Account } from '../../model/plan.js'
 
 interface DataGap {
   evidence: InsightEvidence
@@ -17,24 +18,28 @@ export const missingDataBasis: Detector = {
     const gaps: DataGap[] = []
     const firstProjectionYear = ctx.projection.result.years[0]
     const lastProjectionYear = ctx.projection.result.years.at(-1)?.year
+    const primaryPersonId = ctx.plan.household.people[0]?.id
+    const ownerPersonIdFor = (account: { ownerPersonId: string | null }): string | undefined =>
+      account.ownerPersonId ?? primaryPersonId
     // YearWithdrawals exposes only aggregate Roth withdrawals: simulate includes
     // inheritedRothForced and employer-Roth withdrawals in it without publishing
-    // either component separately. Employer Roth stays in its own basis pool, so
-    // an owned Roth IRA can be attributed only when it is the sole Roth source.
+    // either component separately. Owned Roth IRAs pool basis by owner, while
+    // employer Roth accounts retain a separate pool per account.
     const hasInheritedRothAccount = ctx.plan.accounts.some(
       (account) => account.type === 'roth' && account.inherited !== undefined,
     )
-    const hasEmployerRothAccount = ctx.plan.accounts.some(
-      (account) => account.type === 'roth' && account.kind === 'employer',
+    const ownedRothIraAccounts = ctx.plan.accounts.filter(
+      (account): account is Extract<Account, { type: 'roth' }> =>
+        account.type === 'roth' && account.kind === 'ira' && account.inherited === undefined,
+    )
+    const employerRothAccounts = ctx.plan.accounts.filter(
+      (account): account is Extract<Account, { type: 'roth' }> =>
+        account.type === 'roth' && account.kind === 'employer' && account.inherited === undefined,
     )
     const ownedRothOwnerIds = new Set(
-      ctx.plan.accounts
-        .filter((account) => account.type === 'roth' && account.inherited === undefined)
-        .map((account) => account.ownerPersonId)
-        .filter((ownerPersonId): ownerPersonId is string => ownerPersonId !== null),
-    )
-    const hasUnownedRothAccount = ctx.plan.accounts.some(
-      (account) => account.type === 'roth' && account.inherited === undefined && account.ownerPersonId === null,
+      [...ownedRothIraAccounts, ...employerRothAccounts]
+        .map(ownerPersonIdFor)
+        .filter((ownerPersonId): ownerPersonId is string => ownerPersonId !== undefined),
     )
     const traditionalOwnerIds = new Set(
       ctx.plan.accounts
@@ -43,15 +48,8 @@ export const missingDataBasis: Detector = {
           account.kind === 'ira' &&
           account.inherited === undefined,
         )
-        .map((account) => account.ownerPersonId)
-        .filter((ownerPersonId): ownerPersonId is string => ownerPersonId !== null),
-    )
-    const hasUnownedTraditionalAccount = ctx.plan.accounts.some(
-      (account) =>
-        account.type === 'traditional' &&
-        account.kind === 'ira' &&
-        account.inherited === undefined &&
-        account.ownerPersonId === null,
+        .map(ownerPersonIdFor)
+        .filter((ownerPersonId): ownerPersonId is string => ownerPersonId !== undefined),
     )
     const hasInheritedTraditionalAccount = ctx.plan.accounts.some(
       (account) => account.type === 'traditional' && account.inherited !== undefined,
@@ -65,15 +63,19 @@ export const missingDataBasis: Detector = {
       withdrawals?: { roth?: number }
     }): Set<string> => {
       const ids = new Set<string>()
-      // The aggregate cannot identify an owned under-age withdrawal when an
-      // inherited or employer Roth accounts may have supplied it; silence per
-      // GOVERNANCE because their separate pools do not establish IRA basis use.
-      if (hasInheritedRothAccount || hasEmployerRothAccount) return ids
+      // Inherited Roth distributions are indistinguishable in the aggregate.
+      // Employer and IRA Roth pools are also distinct, so they are ambiguous
+      // only when they coexist. A sole employer Roth is attributable.
+      if (
+        hasInheritedRothAccount ||
+        (ownedRothIraAccounts.length > 0 && employerRothAccounts.length > 0) ||
+        employerRothAccounts.length > 1
+      ) return ids
       if ((year.withdrawals?.roth ?? 0) <= 0) return ids
-      for (const account of ctx.plan.accounts) {
-        if (account.type !== 'roth' || account.inherited !== undefined || account.balance <= 0) continue
-        const ownerPersonId = account.ownerPersonId
-        if (ownerPersonId === null) continue
+      for (const account of [...ownedRothIraAccounts, ...employerRothAccounts]) {
+        if (account.balance <= 0) continue
+        const ownerPersonId = ownerPersonIdFor(account)
+        if (ownerPersonId === undefined) continue
         const owner = year.people.find((person) => person.personId === ownerPersonId)
         if (owner !== undefined && owner.ageAttained < 60) ids.add(ownerPersonId)
       }
@@ -86,30 +88,38 @@ export const missingDataBasis: Detector = {
       (year) => underQualifiedAgeRothOwnerIdsInYear(year).size >= 2,
     )
 
-    const hasPreQualifiedRothWithdrawal = (ownerPersonId: string | null): boolean => {
-      if (ambiguousUnderAgeRothWithdrawals) return false
+    const preQualifiedRothWithdrawalTotal = (ownerPersonId: string): number => {
+      if (ambiguousUnderAgeRothWithdrawals) return 0
       if (
-        ownerPersonId === null ||
-        hasUnownedRothAccount ||
         ownedRothOwnerIds.size !== 1 ||
         !ownedRothOwnerIds.has(ownerPersonId)
-      ) return false
-      return ctx.projection.result.years.some((year) => {
+      ) return 0
+      return ctx.projection.result.years.reduce((total, year) => {
         const underAgeOwners = underQualifiedAgeRothOwnerIdsInYear(year)
-        return underAgeOwners.size === 1 && underAgeOwners.has(ownerPersonId ?? '')
-      })
+        return total + (underAgeOwners.size === 1 && underAgeOwners.has(ownerPersonId)
+          ? year.withdrawals?.roth ?? 0
+          : 0)
+      }, 0)
     }
 
+    const suppliedOwnedRothIraBasis = (ownerPersonId: string): number =>
+      ownedRothIraAccounts.reduce(
+        (total, account) => ownerPersonIdFor(account) === ownerPersonId
+          ? total + (account.contributionBasis ?? 0)
+          : total,
+        0,
+      )
+
     const hasTraditionalTransactionWhileOwnerAlive = (ownerPersonId: string | null): boolean => {
+      const resolvedOwnerPersonId = ownerPersonId ?? primaryPersonId
       if (
-        ownerPersonId === null ||
-        hasUnownedTraditionalAccount ||
+        resolvedOwnerPersonId === undefined ||
         traditionalOwnerIds.size !== 1 ||
-        !traditionalOwnerIds.has(ownerPersonId)
+        !traditionalOwnerIds.has(resolvedOwnerPersonId)
       ) return false
 
       return ctx.projection.result.years.some((year) => {
-        const owner = year.people.find((person) => person.personId === ownerPersonId)
+        const owner = year.people.find((person) => person.personId === resolvedOwnerPersonId)
         if (owner?.alive !== true) return false
 
         // Traditional withdrawals are aggregate and can include inherited IRAs
@@ -128,7 +138,11 @@ export const missingDataBasis: Detector = {
     }
 
     for (const account of ctx.plan.accounts) {
-      const owner = firstProjectionYear?.people.find((person) => person.personId === account.ownerPersonId)
+      const ownerPersonId = ownerPersonIdFor(account)
+      const owner = firstProjectionYear?.people.find((person) => person.personId === ownerPersonId)
+      const preQualifiedRothWithdrawals = ownerPersonId === undefined
+        ? 0
+        : preQualifiedRothWithdrawalTotal(ownerPersonId)
       if (
         account.type === 'roth' &&
         account.inherited === undefined &&
@@ -136,11 +150,18 @@ export const missingDataBasis: Detector = {
         account.contributionBasis === undefined &&
         owner !== undefined &&
         owner.ageAttained < 60 &&
-        hasPreQualifiedRothWithdrawal(account.ownerPersonId)
+        preQualifiedRothWithdrawals > 0 &&
+        (
+          account.kind === 'employer' ||
+          ownerPersonId === undefined ||
+          preQualifiedRothWithdrawals > suppliedOwnedRothIraBasis(ownerPersonId)
+        )
       ) {
         gaps.push({
           evidence: {
-            label: `${account.name} balance (assumed seasoned contribution basis)`,
+            label: account.kind === 'employer'
+              ? `${account.name} balance (assumed current balance is seasoned contribution basis)`
+              : `${account.name} balance (assumed seasoned contribution basis)`,
             value: usd(account.balance),
           },
         })
