@@ -219,6 +219,12 @@ import {
   type YearResult,
   type YearWithdrawals,
   type InheritedAccountYearEvidence,
+  type SocialSecurityBenefitSource,
+  type SocialSecurityStreamActivity,
+  type OwnedRothIraPoolActivity,
+  type EmployerRothAccountActivity,
+  type OwnedTraditionalIraAggregateActivity,
+  type QualifiedAnnuityPaymentActivity,
 } from './types.js'
 
 export interface SimulateOptions {
@@ -2160,15 +2166,56 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         : 1
     const ssOwnByPerson = new Map<string, number>()
     const ssActualMonthlyByPerson = new Map<string, number>()
-    /** PIA + claim age per SS-claiming person, for the spousal top-up below. */
-    const ssStreamByPerson = new Map<string, { pia: number; claimAge: { years: number; months: number } }>()
+    /**
+     * Benefit source currently backing `ssOwnByPerson` for each person. Updated
+     * whenever the paid amount is set or replaced (own / SSDI / spousal /
+     * survivor). Published on the year so detectors never re-derive it.
+     */
+    const ssBenefitSourceByPerson = new Map<string, SocialSecurityBenefitSource>()
+    /** PIA + claim age + stream id per SS-claiming person, for the spousal top-up below. */
+    const ssStreamByPerson = new Map<string, {
+      pia: number
+      claimAge: { years: number; months: number }
+      streamId: string
+    }>()
+    /**
+     * Parallel per-stream publication state (does not affect computation).
+     * Amounts here are pre-withholding until the earnings-test pass scales them.
+     */
+    const ssStreamPub = new Map<string, {
+      personId: string
+      streamId: string
+      source: SocialSecurityBenefitSource
+      preWithholdingAnnual: number
+      claimInForce: boolean
+    }>()
+    const ensureSsStreamPub = (streamId: string, personId: string) => {
+      let entry = ssStreamPub.get(streamId)
+      if (entry === undefined) {
+        entry = {
+          personId,
+          streamId,
+          source: 'none',
+          preWithholdingAnnual: 0,
+          claimInForce: false,
+        }
+        ssStreamPub.set(streamId, entry)
+      }
+      return entry
+    }
     /** Per-person SSDI info this year (onset age + the pre-SGA annual benefit), for SGA gating + reporting. */
     const ssdiByPerson = new Map<string, { onsetAge: number; benefit: number; fraYears: number }>()
     for (const stream of plan.incomes) {
       if (stream.type !== 'socialSecurity') continue
       const pia = resolvedPiaByStreamId.get(stream.id)
       if (pia === undefined) continue // warned during resolution
-      ssStreamByPerson.set(stream.personId, { pia, claimAge: stream.claimAge })
+      // Last stream written wins — the sim's precedence for spousal/survivor gates.
+      ssStreamByPerson.set(stream.personId, {
+        pia,
+        claimAge: stream.claimAge,
+        streamId: stream.id,
+      })
+      const streamPub = ensureSsStreamPub(stream.id, stream.personId)
       const person = personById.get(stream.personId)!
       const s = stateOf(stream.personId)
       const { y, m, d } = dobParts(person)
@@ -2187,6 +2234,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           ssOwnByPerson.set(stream.personId, (ssOwnByPerson.get(stream.personId) ?? 0) + annual)
           ssActualMonthlyByPerson.set(stream.personId, (ssActualMonthlyByPerson.get(stream.personId) ?? 0) + monthly)
           ssdiByPerson.set(stream.personId, { onsetAge, benefit: annual, fraYears: fra.years })
+          ssBenefitSourceByPerson.set(stream.personId, 'ssdi')
+          streamPub.claimInForce = true
+          streamPub.preWithholdingAnnual += annual
+          streamPub.source = 'ssdi'
         }
         continue // SSDI replaces the retirement-claim path for this stream
       }
@@ -2203,6 +2254,15 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       annual *= ssHaircutFactor
       ssOwnByPerson.set(stream.personId, (ssOwnByPerson.get(stream.personId) ?? 0) + annual)
       ssActualMonthlyByPerson.set(stream.personId, (ssActualMonthlyByPerson.get(stream.personId) ?? 0) + monthly)
+      streamPub.claimInForce = true
+      streamPub.preWithholdingAnnual += annual
+      // Per-stream source is recorded at this stream's own pay site and must not
+      // depend on whether a sibling SSDI stream already claimed the person-level
+      // bookkeeping slot (plan order must not change published stream sources).
+      streamPub.source = 'own-retirement'
+      if ((ssBenefitSourceByPerson.get(stream.personId) ?? 'none') !== 'ssdi') {
+        ssBenefitSourceByPerson.set(stream.personId, 'own-retirement')
+      }
     }
 
     // Marital-history menu: a divorced-spousal or survivor benefit on a *former*
@@ -2232,7 +2292,25 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       })
       if (best) {
         const annual = best.monthly * payableMonths * ssColaFactor * ssHaircutFactor
-        if (annual > (ssOwnByPerson.get(stream.personId) ?? 0)) ssOwnByPerson.set(stream.personId, annual)
+        if (annual > (ssOwnByPerson.get(stream.personId) ?? 0)) {
+          ssOwnByPerson.set(stream.personId, annual)
+          const maritalSource: SocialSecurityBenefitSource =
+            best.kind === 'survivor' ? 'survivor' : 'spousal'
+          ssBenefitSourceByPerson.set(stream.personId, maritalSource)
+          // Publication only: former-spouse aux replaces this stream's amount
+          // and zeros sibling streams so published amounts stay person-faithful.
+          for (const entry of ssStreamPub.values()) {
+            if (entry.personId !== stream.personId) continue
+            if (entry.streamId === stream.id) {
+              entry.preWithholdingAnnual = annual
+              entry.source = maritalSource
+              entry.claimInForce = true
+            } else {
+              entry.preWithholdingAnnual = 0
+              entry.source = 'none'
+            }
+          }
+        }
       }
     }
 
@@ -2289,7 +2367,23 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           const spousalTotalMonthly = lowerOwnMonthly + cappedExcessMonthly
           const spousalAnnual = spousalTotalMonthly * spousalPayableMonths * ssColaFactor * ssHaircutFactor
           const own = ssOwnByPerson.get(lower.p.id) ?? 0
-          if (spousalAnnual > own) ssOwnByPerson.set(lower.p.id, spousalAnnual)
+          if (spousalAnnual > own) {
+            ssOwnByPerson.set(lower.p.id, spousalAnnual)
+            ssBenefitSourceByPerson.set(lower.p.id, 'spousal')
+            // Publication only: current-spouse aux keys off the gate stream.
+            const gateStreamId = lower.ss.streamId
+            for (const entry of ssStreamPub.values()) {
+              if (entry.personId !== lower.p.id) continue
+              if (entry.streamId === gateStreamId) {
+                entry.preWithholdingAnnual = spousalAnnual
+                entry.source = 'spousal'
+                entry.claimInForce = true
+              } else {
+                entry.preWithholdingAnnual = 0
+                entry.source = 'none'
+              }
+            }
+          }
         }
       }
     }
@@ -2329,7 +2423,23 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           payableMonths *
           ssColaFactor *
           ssHaircutFactor
-        if (survivorAnnual > ownBenefit) ssOwnByPerson.set(survivor.id, survivorAnnual)
+        if (survivorAnnual > ownBenefit) {
+          ssOwnByPerson.set(survivor.id, survivorAnnual)
+          ssBenefitSourceByPerson.set(survivor.id, 'survivor')
+          // Publication only: survivor step-up keys off the gate stream.
+          const gateStreamId = survivorStream.streamId
+          for (const entry of ssStreamPub.values()) {
+            if (entry.personId !== survivor.id) continue
+            if (entry.streamId === gateStreamId) {
+              entry.preWithholdingAnnual = survivorAnnual
+              entry.source = 'survivor'
+              entry.claimInForce = true
+            } else {
+              entry.preWithholdingAnnual = 0
+              entry.source = 'none'
+            }
+          }
+        }
       }
     }
 
@@ -2397,6 +2507,49 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       if (stateOf(personId).alive) incomes.socialSecurity += benefit
     }
 
+    // Published per-stream SS activity (one-source-of-truth for detectors).
+    // claimInForce / preWithholdingAnnual are already frozen from the pay sites
+    // above; annualAmount is scaled to the post-withholding person total so the
+    // published stream amounts remain faithful to incomes.socialSecurity.
+    const postWithholdingByPerson = new Map<string, number>()
+    for (const person of people) {
+      postWithholdingByPerson.set(
+        person.id,
+        stateOf(person.id).alive ? (ssOwnByPerson.get(person.id) ?? 0) : 0,
+      )
+    }
+    const preWithholdingSumByPerson = new Map<string, number>()
+    for (const entry of ssStreamPub.values()) {
+      preWithholdingSumByPerson.set(
+        entry.personId,
+        (preWithholdingSumByPerson.get(entry.personId) ?? 0) + entry.preWithholdingAnnual,
+      )
+    }
+    const socialSecurityStreams: SocialSecurityStreamActivity[] = []
+    for (const stream of plan.incomes) {
+      if (stream.type !== 'socialSecurity') continue
+      if (resolvedPiaByStreamId.get(stream.id) === undefined) continue
+      const entry = ensureSsStreamPub(stream.id, stream.personId)
+      const gateStreamId = ssStreamByPerson.get(stream.personId)?.streamId
+      const preSum = preWithholdingSumByPerson.get(stream.personId) ?? 0
+      const post = postWithholdingByPerson.get(stream.personId) ?? 0
+      const annualAmount = preSum > 0
+        ? entry.preWithholdingAnnual * (post / preSum)
+        : 0
+      socialSecurityStreams.push({
+        personId: stream.personId,
+        streamId: stream.id,
+        source: entry.source,
+        annualAmount,
+        claimInForce: entry.claimInForce,
+        preWithholdingAnnual: entry.preWithholdingAnnual,
+        isSpousalSurvivorGateStream: gateStreamId === stream.id,
+      })
+    }
+
+    /** Qualified annuity payments actually paid this year (published fact). */
+    const qualifiedAnnuityPayments: QualifiedAnnuityPaymentActivity[] = []
+
     for (const account of plan.accounts) {
       if (account.type === 'pension' || account.type === 'annuity') {
         // A commuted pension (lump-sum election) stops paying once the
@@ -2447,6 +2600,16 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           //  - no purchase (already-owned stream) → the entered taxablePct.
           let annuityTaxable: number
           if (account.purchase?.taxQualification === 'qualified') {
+            // Publish the paid amount for IRA-funded contracts so detectors
+            // never re-derive the payout-form gate or funding owner.
+            const fundingOwnerPersonId = annuityContractPoolOwner.get(account.id)
+            if (fundingOwnerPersonId !== undefined && paid > 0) {
+              qualifiedAnnuityPayments.push({
+                annuityAccountId: account.id,
+                payment: paid,
+                fundingOwnerPersonId,
+              })
+            }
             // FULLY ORDINARY IS THE GROSS, NOT THE ANSWER. Section 408(d)(2)(B)
             // treats all distributions during a taxable year as one
             // distribution, and Publication 590-B says in terms that where the
@@ -3263,6 +3426,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     let traditionalInflow = 0
     let otherInflow = 0
     let taxableInflow = 0
+    /** Post-limit Roth IRA contribution credits, by resolved owner (published fact). */
+    const ownedRothIraCreditedContributionsByOwner = new Map<string, number>()
+    /** Post-limit employer Roth contribution credits, by account id (published fact). */
+    const employerRothCreditedContributionsByAccount = new Map<string, number>()
     const groupUsed = new Map<string, number>()
     const addition415cUsed = new Map<string, number>()
     // IRC 219(b)(1) caps an IRA contribution at the lesser of the deductible
@@ -3484,6 +3651,22 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       if (account.type === 'roth') {
         const rb = rothBasis.get(rothPoolKey(account))
         if (rb) rb.contributionBasis += allowed
+        // Capture post-limit credited amounts for published per-entity facts
+        // (detectors must not re-derive credits from schedules).
+        if (!isInheritedRothOutsideOwnedPool(account) && allowed > 0) {
+          if (account.kind === 'ira') {
+            const ownerPersonId = account.ownerPersonId ?? primary.id
+            ownedRothIraCreditedContributionsByOwner.set(
+              ownerPersonId,
+              (ownedRothIraCreditedContributionsByOwner.get(ownerPersonId) ?? 0) + allowed,
+            )
+          } else if (account.kind === 'employer') {
+            employerRothCreditedContributionsByAccount.set(
+              account.id,
+              (employerRothCreditedContributionsByAccount.get(account.id) ?? 0) + allowed,
+            )
+          }
+        }
       }
       contributions += allowed
       if (isAggregatedIra(account)) ownedNonRothIraContributions += allowed
@@ -9160,6 +9343,142 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
               }),
           })
         : undefined
+
+    // --- per-entity published facts (insight one-source-of-truth channel) ---
+    // Capture already-computed ledger values only — no re-derivation from Plan
+    // schedules. Detectors must read these and never re-attribute from aggregates.
+    const ownedRothWithdrawalsByOwner = new Map<string, number>()
+    const employerRothWithdrawalsByAccount = new Map<string, number>()
+    for (const [key, { taken }] of rothPoolWithdrawals(withdrawalPlan.byAccountId)) {
+      if (taken <= 0) continue
+      if (key.startsWith('rothira:')) {
+        const ownerPersonId = key.slice('rothira:'.length)
+        ownedRothWithdrawalsByOwner.set(
+          ownerPersonId,
+          (ownedRothWithdrawalsByOwner.get(ownerPersonId) ?? 0) + taken,
+        )
+      } else if (key.startsWith('roth:')) {
+        const accountId = key.slice('roth:'.length)
+        employerRothWithdrawalsByAccount.set(
+          accountId,
+          (employerRothWithdrawalsByAccount.get(accountId) ?? 0) + taken,
+        )
+      }
+    }
+    const ownedRothOwnerIds = new Set<string>([
+      ...ownedRothWithdrawalsByOwner.keys(),
+      ...ownedRothIraCreditedContributionsByOwner.keys(),
+    ])
+    const ownedRothIraPoolActivity: OwnedRothIraPoolActivity[] = [...ownedRothOwnerIds]
+      .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
+      .map((ownerPersonId) => ({
+        ownerPersonId,
+        withdrawals: ownedRothWithdrawalsByOwner.get(ownerPersonId) ?? 0,
+        creditedContributions:
+          ownedRothIraCreditedContributionsByOwner.get(ownerPersonId) ?? 0,
+      }))
+    const employerRothAccountIds = new Set<string>([
+      ...employerRothWithdrawalsByAccount.keys(),
+      ...employerRothCreditedContributionsByAccount.keys(),
+    ])
+    // Resolve owner for employer accounts that only have credited contributions.
+    const employerRothOwnerByAccount = new Map<string, string>()
+    for (const account of plan.accounts) {
+      if (account.type === 'roth' && account.kind === 'employer') {
+        employerRothOwnerByAccount.set(
+          account.id,
+          account.ownerPersonId ?? primary.id,
+        )
+      }
+    }
+    const employerRothAccountActivity: EmployerRothAccountActivity[] =
+      [...employerRothAccountIds]
+        .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
+        .map((accountId) => ({
+          accountId,
+          ownerPersonId: employerRothOwnerByAccount.get(accountId) ?? primary.id,
+          withdrawals: employerRothWithdrawalsByAccount.get(accountId) ?? 0,
+          creditedContributions:
+            employerRothCreditedContributionsByAccount.get(accountId) ?? 0,
+        }))
+
+    // Owned traditional-IRA Form 8606 aggregate: distributions (non-conversion)
+    // and conversions, assembled from the same mutation-site totals the ledger
+    // already committed this pass.
+    const ownedIraDistributionsByOwner = new Map<string, number>()
+    const ownedIraConversionsByOwner = new Map<string, number>()
+    const addOwnedIraDist = (ownerPersonId: string, amount: number): void => {
+      if (amount <= 0) return
+      ownedIraDistributionsByOwner.set(
+        ownerPersonId,
+        (ownedIraDistributionsByOwner.get(ownerPersonId) ?? 0) + amount,
+      )
+    }
+    const addOwnedIraConv = (ownerPersonId: string, amount: number): void => {
+      if (amount <= 0) return
+      ownedIraConversionsByOwner.set(
+        ownerPersonId,
+        (ownedIraConversionsByOwner.get(ownerPersonId) ?? 0) + amount,
+      )
+    }
+    for (const [ownerId, amount] of ownedIraRmdGrossByOwner) {
+      addOwnedIraDist(ownerId, amount)
+    }
+    for (const entry of deferredSeppDistributions) {
+      addOwnedIraDist(entry.ownerId, entry.amount)
+    }
+    for (const entry of deferredLegacyQcdDistributions) {
+      addOwnedIraDist(entry.ownerId, entry.amount)
+    }
+    // Named QCD gifts leave owned IRAs after the aggregate arm; credit their
+    // executed gross by owner from the runtime applications already recorded.
+    for (const application of annualRetirementRuntimeApplications) {
+      if (
+        application.applicationKind !== 'debit' ||
+        application.simulatorPhase !== 'namedQcdDistribution'
+      ) continue
+      addOwnedIraDist(
+        application.ownerPersonId ?? primary.id,
+        application.appliedAmountPlanDollars,
+      )
+    }
+    for (const state of balances) {
+      if (!isAggregatedIraThisYear(state.account)) continue
+      addOwnedIraDist(
+        state.account.ownerPersonId ?? primary.id,
+        withdrawalPlan.byAccountId.get(state.account.id) ?? 0,
+      )
+    }
+    for (const application of annualRetirementRuntimeApplications) {
+      if (application.applicationKind !== 'debit') continue
+      if (
+        application.simulatorPhase !== 'legacyRothConversion' &&
+        application.simulatorPhase !== 'namedRothConversionDebit'
+      ) continue
+      // Only owned-IRA conversion sources (employer conversion sources exist
+      // but are outside the Form 8606 aggregate this field publishes).
+      const sourceAccount = plan.accounts.find(
+        (account) => account.id === application.sourceAccountId,
+      )
+      if (sourceAccount === undefined || !isAggregatedIra(sourceAccount)) continue
+      addOwnedIraConv(
+        application.ownerPersonId ?? primary.id,
+        application.appliedAmountPlanDollars,
+      )
+    }
+    const ownedTraditionalOwnerIds = new Set<string>([
+      ...ownedIraDistributionsByOwner.keys(),
+      ...ownedIraConversionsByOwner.keys(),
+    ])
+    const ownedTraditionalIraAggregateActivity:
+      OwnedTraditionalIraAggregateActivity[] = [...ownedTraditionalOwnerIds]
+      .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
+      .map((ownerPersonId) => ({
+        ownerPersonId,
+        distributions: ownedIraDistributionsByOwner.get(ownerPersonId) ?? 0,
+        conversions: ownedIraConversionsByOwner.get(ownerPersonId) ?? 0,
+      }))
+
     const yearResult: YearResult = {
       year,
       inflationScale: inflFactor,
@@ -9170,6 +9489,11 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       contributions,
       ownedNonRothIraContributions,
       ownedNonRothIraBalancesBeforeGrowth,
+      ownedRothIraPoolActivity,
+      employerRothAccountActivity,
+      ownedTraditionalIraAggregateActivity,
+      qualifiedAnnuityPayments,
+      socialSecurityStreams,
       employerMatch,
       rmd: rmdTotal,
       sepp: seppTotal,

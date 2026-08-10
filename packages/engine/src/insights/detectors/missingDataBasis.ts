@@ -1,6 +1,11 @@
 import type { Detector, InsightCard, InsightEvidence } from '../types.js'
 import type { Account } from '../../model/plan.js'
-import { annuityPayoutForm, annuityPayoutFraction } from '../../projection/annuityForms.js'
+import type {
+  EmployerRothAccountActivity,
+  OwnedRothIraPoolActivity,
+  OwnedTraditionalIraAggregateActivity,
+  QualifiedAnnuityPaymentActivity,
+} from '../../projection/types.js'
 
 interface DataGap {
   evidence: InsightEvidence
@@ -10,11 +15,53 @@ function usd(amount: number): string {
   return `$${Math.round(amount).toLocaleString()}`
 }
 
+/**
+ * First pre-qualified-age (age attained < 60) year where a withdrawal exceeds
+ * the basis known at that point: supplied starting basis + credits accumulated
+ * in year order through that year, reduced by earlier covered pre-60 draws.
+ * Credits cannot retroactively cover an earlier withdrawal.
+ */
+function firstInsufficientPreQualifiedYear(options: {
+  years: readonly {
+    year: number
+    people: readonly { personId: string; ageAttained: number }[]
+    ownedRothIraPoolActivity?: readonly OwnedRothIraPoolActivity[]
+    employerRothAccountActivity?: readonly EmployerRothAccountActivity[]
+  }[]
+  ownerPersonId: string
+  suppliedStartingBasis: number
+  activityForYear: (year: {
+    year: number
+    people: readonly { personId: string; ageAttained: number }[]
+    ownedRothIraPoolActivity?: readonly OwnedRothIraPoolActivity[]
+    employerRothAccountActivity?: readonly EmployerRothAccountActivity[]
+  }) => { withdrawals: number; creditedContributions: number } | undefined
+}): { year: number; withdrawal: number; knownBasis: number } | null {
+  let knownBasis = options.suppliedStartingBasis
+  for (const year of options.years) {
+    const owner = year.people.find((person) => person.personId === options.ownerPersonId)
+    const activity = options.activityForYear(year)
+    if (activity === undefined) continue
+    knownBasis += activity.creditedContributions
+    if (owner !== undefined && owner.ageAttained < 60 && activity.withdrawals > 0) {
+      if (activity.withdrawals > knownBasis) {
+        return {
+          year: year.year,
+          withdrawal: activity.withdrawals,
+          knownBasis,
+        }
+      }
+      knownBasis = Math.max(0, knownBasis - activity.withdrawals)
+    }
+  }
+  return null
+}
+
 /** Surfaces optional tax facts for which the engine must use a legacy default. */
 export const missingDataBasis: Detector = {
   id: 'missing-data-basis',
   category: 'accounts-contributions',
-  version: 1,
+  version: 2,
   screen(ctx): InsightCard | null {
     const gaps: DataGap[] = []
     const firstProjectionYear = ctx.projection.result.years[0]
@@ -22,86 +69,11 @@ export const missingDataBasis: Detector = {
     const primaryPersonId = ctx.plan.household.people[0]?.id
     const ownerPersonIdFor = (account: { ownerPersonId: string | null }): string | undefined =>
       account.ownerPersonId ?? primaryPersonId
-    // YearWithdrawals exposes only aggregate Roth withdrawals: simulate includes
-    // inheritedRothForced and employer-Roth withdrawals in it without publishing
-    // either component separately. Owned Roth IRAs pool basis by owner, while
-    // employer Roth accounts retain a separate pool per account.
-    const hasInheritedRothAccount = ctx.plan.accounts.some(
-      (account) => account.type === 'roth' && account.inherited !== undefined,
-    )
+
     const ownedRothIraAccounts = ctx.plan.accounts.filter(
       (account): account is Extract<Account, { type: 'roth' }> =>
         account.type === 'roth' && account.kind === 'ira' && account.inherited === undefined,
     )
-    const employerRothAccounts = ctx.plan.accounts.filter(
-      (account): account is Extract<Account, { type: 'roth' }> =>
-        account.type === 'roth' && account.kind === 'employer' && account.inherited === undefined,
-    )
-    const ownedRothOwnerIds = new Set(
-      [...ownedRothIraAccounts, ...employerRothAccounts]
-        .map(ownerPersonIdFor)
-        .filter((ownerPersonId): ownerPersonId is string => ownerPersonId !== undefined),
-    )
-    const traditionalOwnerIds = new Set(
-      ctx.plan.accounts
-        .filter((account) =>
-          account.type === 'traditional' &&
-          account.kind === 'ira' &&
-          account.inherited === undefined,
-        )
-        .map(ownerPersonIdFor)
-        .filter((ownerPersonId): ownerPersonId is string => ownerPersonId !== undefined),
-    )
-    const hasInheritedTraditionalAccount = ctx.plan.accounts.some(
-      (account) => account.type === 'traditional' && account.inherited !== undefined,
-    )
-    const hasEmployerTraditionalAccount = ctx.plan.accounts.some(
-      (account) => account.type === 'traditional' && account.kind === 'employer',
-    )
-
-    const underQualifiedAgeRothOwnerIdsInYear = (year: {
-      people: { personId: string; ageAttained: number }[]
-      withdrawals?: { roth?: number }
-    }): Set<string> => {
-      const ids = new Set<string>()
-      // Inherited Roth distributions are indistinguishable in the aggregate.
-      // Employer and IRA Roth pools are also distinct, so they are ambiguous
-      // only when they coexist. A sole employer Roth is attributable.
-      if (
-        hasInheritedRothAccount ||
-        (ownedRothIraAccounts.length > 0 && employerRothAccounts.length > 0) ||
-        employerRothAccounts.length > 1
-      ) return ids
-      if ((year.withdrawals?.roth ?? 0) <= 0) return ids
-      for (const account of [...ownedRothIraAccounts, ...employerRothAccounts]) {
-        if (account.balance <= 0) continue
-        const ownerPersonId = ownerPersonIdFor(account)
-        if (ownerPersonId === undefined) continue
-        const owner = year.people.find((person) => person.personId === ownerPersonId)
-        if (owner !== undefined && owner.ageAttained < 60) ids.add(ownerPersonId)
-      }
-      return ids
-    }
-
-    // Household Roth withdrawals are aggregate — skip basis gaps when multiple under-60 Roth
-    // owners coexist in a withdrawal year (withdrawal source is ambiguous; silence per GOVERNANCE).
-    const ambiguousUnderAgeRothWithdrawals = ctx.projection.result.years.some(
-      (year) => underQualifiedAgeRothOwnerIdsInYear(year).size >= 2,
-    )
-
-    const preQualifiedRothWithdrawalTotal = (ownerPersonId: string): number => {
-      if (ambiguousUnderAgeRothWithdrawals) return 0
-      if (
-        ownedRothOwnerIds.size !== 1 ||
-        !ownedRothOwnerIds.has(ownerPersonId)
-      ) return 0
-      return ctx.projection.result.years.reduce((total, year) => {
-        const underAgeOwners = underQualifiedAgeRothOwnerIdsInYear(year)
-        return total + (underAgeOwners.size === 1 && underAgeOwners.has(ownerPersonId)
-          ? year.withdrawals?.roth ?? 0
-          : 0)
-      }, 0)
-    }
 
     const suppliedOwnedRothIraBasis = (ownerPersonId: string): number =>
       ownedRothIraAccounts.reduce(
@@ -111,193 +83,47 @@ export const missingDataBasis: Detector = {
         0,
       )
 
-    const configuredContributionAccountIds = new Set(
-      ctx.plan.accounts
-        .filter((account) => {
-          const contributionAccount = account as Account & {
-            annualContribution?: number
-            contributionSchedule?: unknown[]
+    /**
+     * First projection year with a qualifying owned-IRA distribution, conversion,
+     * or IRA-funded annuity payment while the owner is alive. Evidence cites that
+     * year's amount (not a horizon sum) so the decisive year is stamped.
+     */
+    const firstOwnedIraTransactionWhileAlive = (ownerPersonId: string): {
+      distributions: number
+      conversions: number
+      annuityPayments: number
+      year: number
+    } | null => {
+      for (const year of ctx.projection.result.years) {
+        const owner = year.people.find((person) => person.personId === ownerPersonId)
+        if (owner?.alive !== true) continue
+        let distributions = 0
+        let conversions = 0
+        let annuityPayments = 0
+        const activity = year.ownedTraditionalIraAggregateActivity?.find(
+          (entry: OwnedTraditionalIraAggregateActivity) => entry.ownerPersonId === ownerPersonId,
+        )
+        if (activity !== undefined) {
+          distributions = activity.distributions
+          conversions = activity.conversions
+        }
+        for (const payment of year.qualifiedAnnuityPayments ?? []) {
+          const row = payment as QualifiedAnnuityPaymentActivity
+          if (row.fundingOwnerPersonId === ownerPersonId && row.payment > 0) {
+            annuityPayments += row.payment
           }
-          return (contributionAccount.annualContribution ?? 0) > 0 ||
-            (contributionAccount.contributionSchedule?.length ?? 0) > 0
-        })
-        .map((account) => account.id),
-    )
-
-    const creditedRothContributionsInYear = (
-      accounts: readonly Extract<Account, { type: 'roth' }>[],
-      ownerPersonId: string,
-      year: {
-        year: number
-        inflationScale?: number
-        contributions?: number
-        incomes?: { wages?: number }
-        people: { personId: string; ageAttained: number }[]
-      },
-    ): number => {
-      let scheduled = 0
-      for (const account of accounts) {
-        if (ownerPersonIdFor(account) !== ownerPersonId) continue
-        const owner = ctx.plan.household.people.find((person) => person.id === ownerPersonId)
-        if (owner === undefined) continue
-        const birthYear = Number(owner.dob.slice(0, 4))
-        if (!Number.isInteger(birthYear)) continue
-        const projectedOwner = year.people.find((person) => person.personId === ownerPersonId)
-        const age = projectedOwner?.ageAttained ?? year.year - birthYear
-        const inflationScale = year.inflationScale ?? 1
-        if (account.contributionSchedule && account.contributionSchedule.length > 0) {
-          const ageAtProjectionStart = firstProjectionYear?.people.find(
-            (person) => person.personId === ownerPersonId,
-          )?.ageAttained ?? ctx.projection.startYear - birthYear
-          for (const phase of account.contributionSchedule) {
-            const fromAge = phase.fromAge ?? 0
-            const toAge = phase.toAge ?? 120
-            if (age < fromAge || age > toAge) continue
-            const phaseStartYear = phase.fromAge === null
-              ? ctx.projection.startYear
-              : ctx.projection.startYear + (phase.fromAge - ageAtProjectionStart)
-            scheduled += phase.annualAmount *
-              Math.pow(1 + phase.escalationPct / 100, Math.max(0, year.year - phaseStartYear)) *
-              inflationScale
-          }
-        } else if (account.annualContribution > 0 && (year.incomes?.wages ?? 0) > 0) {
-          scheduled += account.annualContribution * inflationScale
+        }
+        if (distributions > 0 || conversions > 0 || annuityPayments > 0) {
+          return { distributions, conversions, annuityPayments, year: year.year }
         }
       }
-
-      // The simulator credits only its post-limit `allowed` amount. YearResult
-      // has no per-account Roth credit, so a schedule alone cannot prove basis.
-      // The aggregate is usable only when these are the plan's sole configured
-      // contribution accounts, making it that account pool's actual credit.
-      const accountIds = new Set(accounts.map((account) => account.id))
-      const hasOtherConfiguredContributor = [...configuredContributionAccountIds]
-        .some((accountId) => !accountIds.has(accountId))
-      if (year.contributions === undefined || hasOtherConfiguredContributor) return 0
-      return Math.min(scheduled, year.contributions)
-    }
-
-    const hasInsufficientRothBasisBeforeAge60 = (
-      ownerPersonId: string,
-      accounts: readonly Extract<Account, { type: 'roth' }>[],
-      suppliedBasis: number,
-    ): boolean => {
-      let availableBasis = suppliedBasis
-      let withdrawals = 0
-      for (const year of ctx.projection.result.years) {
-        // The simulator credits direct Roth contributions before applying this
-        // year's withdrawals, so a same-year scheduled contribution is basis
-        // available to that year's pre-60 draw.
-        availableBasis += creditedRothContributionsInYear(accounts, ownerPersonId, year)
-        const underAgeOwners = underQualifiedAgeRothOwnerIdsInYear(year)
-        if (!underAgeOwners.has(ownerPersonId)) continue
-        withdrawals += year.withdrawals?.roth ?? 0
-        if (withdrawals > availableBasis) return true
-      }
-      return false
-    }
-
-    const hasQualifiedIraAnnuityPaymentWhileOwnerAlive = (ownerPersonId: string | null): boolean => {
-      const resolvedOwnerPersonId = ownerPersonId ?? primaryPersonId
-      if (resolvedOwnerPersonId === undefined) return false
-      const qualifiedContracts = ctx.plan.accounts.filter((account): account is Extract<Account, { type: 'annuity' }> => {
-        if (account.type !== 'annuity' || account.purchase?.taxQualification !== 'qualified') return false
-        const funding = ctx.plan.accounts.find((candidate) => candidate.id === account.purchase?.fundingAccountId)
-        return funding?.type === 'traditional' &&
-          funding.kind === 'ira' &&
-          funding.inherited === undefined &&
-          ownerPersonIdFor(funding) === resolvedOwnerPersonId
-      })
-      if (qualifiedContracts.length === 0) return false
-
-      const canPayInYear = (
-        contract: Extract<Account, { type: 'annuity' }>,
-        year: typeof ctx.projection.result.years[number],
-      ): boolean => {
-        const annuitantId = ownerPersonIdFor(contract)
-        const annuitant = ctx.plan.household.people.find((person) => person.id === annuitantId)
-        const annuitantState = year.people.find((person) => person.personId === annuitantId)
-        const otherState = year.people.find((person) => person.personId !== annuitantId)
-        const annuitantBirthYear = annuitant === undefined ? NaN : Number(annuitant.dob.slice(0, 4))
-        if (
-          contract.monthlyAmount <= 0 ||
-          !Number.isInteger(annuitantBirthYear) ||
-          annuitantState === undefined ||
-          year.year < annuitantBirthYear + contract.startAge ||
-          (contract.purchase !== undefined && year.year < contract.purchase.year)
-        ) return false
-        return annuityPayoutFraction(annuityPayoutForm(contract), {
-          ownerAlive: annuitantState.alive,
-          otherAlive: otherState?.alive ?? false,
-          anyAlive: year.people.some((person) => person.alive),
-          yearsSinceStart: year.year - (annuitantBirthYear + contract.startAge),
-        }) > 0
-      }
-
-      return ctx.projection.result.years.some((year) => {
-        const fundingOwner = year.people.find((person) => person.personId === resolvedOwnerPersonId)
-        if (fundingOwner?.alive !== true || (year.incomes?.annuity ?? 0) <= 0) return false
-        return qualifiedContracts.some((contract) => {
-          if (!canPayInYear(contract, year)) return false
-          // YearResult publishes annuity income only in aggregate. Count this
-          // qualified contract only when no other contract could have supplied
-          // that aggregate; otherwise the tax source is ambiguous and silent.
-          return !ctx.plan.accounts.some((account) =>
-            account.type === 'annuity' && account.id !== contract.id && canPayInYear(account, year))
-        })
-      })
-    }
-
-    const hasTraditionalTransactionWhileOwnerAlive = (ownerPersonId: string | null): boolean => {
-      const resolvedOwnerPersonId = ownerPersonId ?? primaryPersonId
-      if (
-        resolvedOwnerPersonId === undefined ||
-        traditionalOwnerIds.size !== 1 ||
-        !traditionalOwnerIds.has(resolvedOwnerPersonId)
-      ) return false
-
-      return ctx.projection.result.years.some((year) => {
-        const owner = year.people.find((person) => person.personId === resolvedOwnerPersonId)
-        if (owner?.alive !== true) return false
-
-        // Traditional withdrawals are aggregate and can include inherited IRAs
-        // or employer plans, neither of which carries Form 8606 basis. The
-        // conversion path excludes inherited accounts, but the engine also
-        // permits employer traditional plans as conversion sources, so that
-        // signal is unambiguous only without an employer traditional account.
-        const ownedIraWithdrawal =
-          (year.withdrawals?.traditional ?? 0) > 0 &&
-          !hasInheritedTraditionalAccount &&
-          !hasEmployerTraditionalAccount
-        const ownedIraConversion =
-          (year.rothConversion ?? 0) > 0 && !hasEmployerTraditionalAccount
-        const qualifiedIraAnnuityPayment =
-          hasQualifiedIraAnnuityPaymentWhileOwnerAlive(ownerPersonId) &&
-          !hasInheritedTraditionalAccount &&
-          !hasEmployerTraditionalAccount
-        return ownedIraWithdrawal || ownedIraConversion ||
-          qualifiedIraAnnuityPayment
-      })
+      return null
     }
 
     for (const account of ctx.plan.accounts) {
       const ownerPersonId = ownerPersonIdFor(account)
       const owner = firstProjectionYear?.people.find((person) => person.personId === ownerPersonId)
-      const preQualifiedRothWithdrawals = ownerPersonId === undefined
-        ? 0
-        : preQualifiedRothWithdrawalTotal(ownerPersonId)
-      const rothBasisIsInsufficient = account.type === 'roth' && ownerPersonId !== undefined
-        ? account.kind === 'employer'
-          ? hasInsufficientRothBasisBeforeAge60(
-            ownerPersonId,
-            [account],
-            account.contributionBasis ?? 0,
-          )
-          : hasInsufficientRothBasisBeforeAge60(
-            ownerPersonId,
-            ownedRothIraAccounts.filter((candidate) => ownerPersonIdFor(candidate) === ownerPersonId),
-            suppliedOwnedRothIraBasis(ownerPersonId),
-          )
-        : false
+
       if (
         account.type === 'roth' &&
         account.inherited === undefined &&
@@ -305,36 +131,107 @@ export const missingDataBasis: Detector = {
         account.contributionBasis === undefined &&
         owner !== undefined &&
         owner.ageAttained < 60 &&
-        preQualifiedRothWithdrawals > 0 &&
-        (ownerPersonId === undefined || rothBasisIsInsufficient)
+        ownerPersonId !== undefined
       ) {
-        gaps.push({
-          evidence: {
-            label: account.kind === 'employer'
-              ? `${account.name} balance (assumed current balance is seasoned contribution basis)`
-              : `${account.name} balance (assumed seasoned contribution basis)`,
-            value: usd(account.balance),
-          },
-        })
+        if (account.kind === 'employer') {
+          const decisive = firstInsufficientPreQualifiedYear({
+            years: ctx.projection.result.years,
+            ownerPersonId,
+            suppliedStartingBasis: account.contributionBasis ?? 0,
+            activityForYear: (year) =>
+              year.employerRothAccountActivity?.find(
+                (entry: EmployerRothAccountActivity) => entry.accountId === account.id,
+              ),
+          })
+          if (decisive !== null) {
+            gaps.push({
+              evidence: {
+                label: `${account.name} pre-qualified-age withdrawals`,
+                value: usd(decisive.withdrawal),
+                year: decisive.year,
+              },
+            })
+            gaps.push({
+              evidence: {
+                label: `${account.name} known contribution basis`,
+                value: usd(decisive.knownBasis),
+                year: decisive.year,
+              },
+            })
+          }
+        } else if (account.kind === 'ira') {
+          const decisive = firstInsufficientPreQualifiedYear({
+            years: ctx.projection.result.years,
+            ownerPersonId,
+            suppliedStartingBasis: suppliedOwnedRothIraBasis(ownerPersonId),
+            activityForYear: (year) =>
+              year.ownedRothIraPoolActivity?.find(
+                (entry: OwnedRothIraPoolActivity) => entry.ownerPersonId === ownerPersonId,
+              ),
+          })
+          if (decisive !== null) {
+            gaps.push({
+              evidence: {
+                label: `${account.name} owner-pool pre-qualified-age withdrawals`,
+                value: usd(decisive.withdrawal),
+                year: decisive.year,
+              },
+            })
+            gaps.push({
+              evidence: {
+                label: `${account.name} known contribution basis`,
+                value: usd(decisive.knownBasis),
+                year: decisive.year,
+              },
+            })
+          }
+        }
       }
+
       if (
         account.type === 'traditional' &&
         account.kind === 'ira' &&
         account.inherited === undefined &&
         account.balance > 0 &&
         account.nondeductibleBasis === undefined &&
-        // Traditional withdrawals are aggregate. Attribute a gap only when this
-        // owner is the household's sole traditional-account owner; otherwise the
-        // distributed or converted source is ambiguous.
-        hasTraditionalTransactionWhileOwnerAlive(account.ownerPersonId)
+        ownerPersonId !== undefined
       ) {
-        gaps.push({
-          evidence: {
-            label: `${account.name} balance (assumed zero after-tax basis)`,
-            value: usd(account.balance),
-          },
-        })
+        const tx = firstOwnedIraTransactionWhileAlive(ownerPersonId)
+        if (tx !== null) {
+          if (tx.distributions > 0) {
+            gaps.push({
+              evidence: {
+                label: `${account.name} owned-IRA distributions (projection)`,
+                value: usd(tx.distributions),
+                year: tx.year,
+              },
+            })
+          } else if (tx.conversions > 0) {
+            gaps.push({
+              evidence: {
+                label: `${account.name} owned-IRA conversions (projection)`,
+                value: usd(tx.conversions),
+                year: tx.year,
+              },
+            })
+          } else if (tx.annuityPayments > 0) {
+            gaps.push({
+              evidence: {
+                label: `${account.name} IRA-funded annuity payments (projection)`,
+                value: usd(tx.annuityPayments),
+                year: tx.year,
+              },
+            })
+          }
+          gaps.push({
+            evidence: {
+              label: `${account.name} balance (assumed zero after-tax basis)`,
+              value: usd(account.balance),
+            },
+          })
+        }
       }
+
       if (
         account.type === 'property' &&
         account.value > 0 &&

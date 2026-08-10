@@ -28,7 +28,16 @@ function context(): DetectorContext {
       startYear: 2026,
       result: {
         years: [
-          { year: 2026, people: [{ personId: 'p1', ageAttained: 60, alive: true }], withdrawals: { traditional: 1 } },
+          {
+            year: 2026,
+            people: [{ personId: 'p1', ageAttained: 60, alive: true }],
+            ownedTraditionalIraAggregateActivity: [
+              { ownerPersonId: 'p1', distributions: 1, conversions: 0 },
+            ],
+            ownedRothIraPoolActivity: [],
+            employerRothAccountActivity: [],
+            qualifiedAnnuityPayments: [],
+          },
           { year: 2029, people: [{ personId: 'p1', ageAttained: 63, alive: true }] },
         ],
       },
@@ -44,6 +53,7 @@ describe('missing data basis detector', () => {
       severity: 'info',
       confidence: 'high',
       evidence: [
+        { label: 'Traditional IRA owned-IRA distributions (projection)', value: '$1', year: 2026 },
         { label: 'Traditional IRA balance (assumed zero after-tax basis)', value: '$300,000' },
         { label: 'Lake home planned-sale value (legacy net-proceeds path)', value: '$500,000', year: 2029 },
         { label: 'Pat age at projection start (wages assumed to continue for life)', value: '60', year: 2026 },
@@ -68,9 +78,14 @@ describe('missing data basis detector', () => {
 
   it('stays silent for an untouched traditional IRA', () => {
     const ctx = context()
-    const firstProjectionYear = ctx.projection.result.years[0] as { withdrawals?: { traditional: number }; rothConversion?: number }
-    firstProjectionYear.withdrawals = { traditional: 0 }
-    firstProjectionYear.rothConversion = 0
+    const year = ctx.projection.result.years[0] as {
+      ownedTraditionalIraAggregateActivity?: { ownerPersonId: string; distributions: number; conversions: number }[]
+      qualifiedAnnuityPayments?: unknown[]
+    }
+    year.ownedTraditionalIraAggregateActivity = [
+      { ownerPersonId: 'p1', distributions: 0, conversions: 0 },
+    ]
+    year.qualifiedAnnuityPayments = []
     ctx.plan.accounts = [ctx.plan.accounts[1]!]
     ctx.plan.incomes = []
 
@@ -78,44 +93,80 @@ describe('missing data basis detector', () => {
   })
 
   it.each([
-    ['a traditional withdrawal', { withdrawals: { traditional: 1 } }],
-    ['a Roth conversion', { rothConversion: 1 }],
-  ])('flags a traditional IRA with %s while its owner is alive', (_label, yearValues) => {
+    ['a traditional withdrawal', { distributions: 1, conversions: 0 }],
+    ['a Roth conversion', { distributions: 0, conversions: 1 }],
+  ])('flags a traditional IRA with %s while its owner is alive', (_label, activity) => {
     const ctx = context()
-    const firstProjectionYear = ctx.projection.result.years[0] as { withdrawals?: { traditional: number }; rothConversion?: number }
-    Object.assign(firstProjectionYear, yearValues)
+    const year = ctx.projection.result.years[0] as {
+      ownedTraditionalIraAggregateActivity?: { ownerPersonId: string; distributions: number; conversions: number }[]
+    }
+    year.ownedTraditionalIraAggregateActivity = [{ ownerPersonId: 'p1', ...activity }]
     ctx.plan.accounts = [ctx.plan.accounts[1]!]
     ctx.plan.incomes = []
 
+    const activityLabel = activity.distributions > 0
+      ? 'Traditional IRA owned-IRA distributions (projection)'
+      : 'Traditional IRA owned-IRA conversions (projection)'
+    const activityValue = activity.distributions > 0
+      ? usd(activity.distributions)
+      : usd(activity.conversions)
     expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
+      { label: activityLabel, value: activityValue, year: 2026 },
       { label: 'Traditional IRA balance (assumed zero after-tax basis)', value: '$300,000' },
     ])
   })
 
-  it('stays silent when an inherited traditional distribution shares the aggregate with an untouched owned IRA', () => {
+  it('cites the first decisive year amount for traditional-IRA distributions, not a horizon sum', () => {
     const ctx = context()
-    ctx.plan.accounts = [
-      ctx.plan.accounts[1]!,
+    ctx.projection.result.years = [
       {
-        id: 'inherited-traditional',
-        name: 'Inherited traditional IRA',
-        type: 'traditional',
-        kind: 'ira',
-        ownerPersonId: 'p1',
-        balance: 50_000,
-        inherited: { ownerDeathYear: 2024, decedentHadStartedRmds: false },
+        year: 2026,
+        people: [{ personId: 'p1', ageAttained: 60, alive: true }],
+        ownedTraditionalIraAggregateActivity: [
+          { ownerPersonId: 'p1', distributions: 0, conversions: 0 },
+        ],
+        ownedRothIraPoolActivity: [],
+        employerRothAccountActivity: [],
+        qualifiedAnnuityPayments: [],
+      },
+      {
+        year: 2027,
+        people: [{ personId: 'p1', ageAttained: 61, alive: true }],
+        ownedTraditionalIraAggregateActivity: [
+          { ownerPersonId: 'p1', distributions: 4_000, conversions: 0 },
+        ],
+        ownedRothIraPoolActivity: [],
+        employerRothAccountActivity: [],
+        qualifiedAnnuityPayments: [],
+      },
+      {
+        year: 2028,
+        people: [{ personId: 'p1', ageAttained: 62, alive: true }],
+        ownedTraditionalIraAggregateActivity: [
+          { ownerPersonId: 'p1', distributions: 6_000, conversions: 0 },
+        ],
+        ownedRothIraPoolActivity: [],
+        employerRothAccountActivity: [],
+        qualifiedAnnuityPayments: [],
       },
     ] as never
+    ctx.plan.accounts = [ctx.plan.accounts[1]!]
     ctx.plan.incomes = []
 
-    expect(missingDataBasis.screen(ctx)).toBeNull()
+    expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
+      { label: 'Traditional IRA owned-IRA distributions (projection)', value: '$4,000', year: 2027 },
+      { label: 'Traditional IRA balance (assumed zero after-tax basis)', value: '$300,000' },
+    ])
   })
 
-  it('flags conversion-only activity when inherited traditional accounts are the only alternate pool', () => {
+  it('flags an owned IRA when only published owned-IRA activity is present (inherited pools no longer silence)', () => {
     const ctx = context()
-    const firstProjectionYear = ctx.projection.result.years[0] as { withdrawals?: { traditional: number }; rothConversion?: number }
-    firstProjectionYear.withdrawals = { traditional: 0 }
-    firstProjectionYear.rothConversion = 1
+    const year = ctx.projection.result.years[0] as {
+      ownedTraditionalIraAggregateActivity?: { ownerPersonId: string; distributions: number; conversions: number }[]
+    }
+    year.ownedTraditionalIraAggregateActivity = [
+      { ownerPersonId: 'p1', distributions: 1, conversions: 0 },
+    ]
     ctx.plan.accounts = [
       ctx.plan.accounts[1]!,
       {
@@ -131,6 +182,7 @@ describe('missing data basis detector', () => {
     ctx.plan.incomes = []
 
     expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
+      { label: 'Traditional IRA owned-IRA distributions (projection)', value: '$1', year: 2026 },
       { label: 'Traditional IRA balance (assumed zero after-tax basis)', value: '$300,000' },
     ])
   })
@@ -177,18 +229,25 @@ describe('missing data basis detector', () => {
     expect(missingDataBasis.screen(ctx)).toBeNull()
   })
 
-  it('uses the single real gap as the sole evidence entry', () => {
+  it('uses the single real gap as the sole account evidence', () => {
     const ctx = context()
     ctx.projection.result.years[0]!.people[0]!.ageAttained = 59
-    const firstProjectionYear = ctx.projection.result.years[0] as { withdrawals?: { roth: number } }
-    firstProjectionYear.withdrawals = { roth: 1 }
+    const year = ctx.projection.result.years[0] as {
+      ownedRothIraPoolActivity?: { ownerPersonId: string; withdrawals: number; creditedContributions: number }[]
+      ownedTraditionalIraAggregateActivity?: unknown[]
+    }
+    year.ownedRothIraPoolActivity = [
+      { ownerPersonId: 'p1', withdrawals: 1, creditedContributions: 0 },
+    ]
+    year.ownedTraditionalIraAggregateActivity = []
     ctx.plan.accounts = [
       { id: 'roth', name: 'Roth IRA', type: 'roth', kind: 'ira', ownerPersonId: 'p1', balance: 125_000 },
     ] as never
     ctx.plan.incomes = []
 
     expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
-      { label: 'Roth IRA balance (assumed seasoned contribution basis)', value: '$125,000' },
+      { label: 'Roth IRA owner-pool pre-qualified-age withdrawals', value: '$1', year: 2026 },
+      { label: 'Roth IRA known contribution basis', value: '$0', year: 2026 },
     ])
   })
 
@@ -258,6 +317,12 @@ describe('missing data basis detector', () => {
 
   it('stays silent for a Roth account owned by someone age 60 or older', () => {
     const ctx = context()
+    const year = ctx.projection.result.years[0] as {
+      ownedRothIraPoolActivity?: { ownerPersonId: string; withdrawals: number; creditedContributions: number }[]
+    }
+    year.ownedRothIraPoolActivity = [
+      { ownerPersonId: 'p1', withdrawals: 5_000, creditedContributions: 0 },
+    ]
     ctx.plan.accounts = [{
       id: 'roth',
       name: 'Roth IRA',
@@ -275,8 +340,14 @@ describe('missing data basis detector', () => {
   it('flags a Roth account owned by someone under age 60', () => {
     const ctx = context()
     ctx.projection.result.years[0]!.people[0]!.ageAttained = 59
-    const firstProjectionYear = ctx.projection.result.years[0] as { withdrawals?: { roth: number } }
-    firstProjectionYear.withdrawals = { roth: 1 }
+    const year = ctx.projection.result.years[0] as {
+      ownedRothIraPoolActivity?: { ownerPersonId: string; withdrawals: number; creditedContributions: number }[]
+      ownedTraditionalIraAggregateActivity?: unknown[]
+    }
+    year.ownedRothIraPoolActivity = [
+      { ownerPersonId: 'p1', withdrawals: 1, creditedContributions: 0 },
+    ]
+    year.ownedTraditionalIraAggregateActivity = []
     ctx.plan.accounts = [{
       id: 'roth',
       name: 'Roth IRA',
@@ -289,13 +360,22 @@ describe('missing data basis detector', () => {
     ctx.plan.incomes = []
 
     expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
-      { label: 'Roth IRA balance (assumed seasoned contribution basis)', value: '$125,000' },
+      { label: 'Roth IRA owner-pool pre-qualified-age withdrawals', value: '$1', year: 2026 },
+      { label: 'Roth IRA known contribution basis', value: '$0', year: 2026 },
     ])
   })
 
   it('stays silent for an under-60 Roth owner without a modeled pre-60 Roth withdrawal', () => {
     const ctx = context()
     ctx.projection.result.years[0]!.people[0]!.ageAttained = 59
+    const year = ctx.projection.result.years[0] as {
+      ownedRothIraPoolActivity?: { ownerPersonId: string; withdrawals: number; creditedContributions: number }[]
+      ownedTraditionalIraAggregateActivity?: unknown[]
+    }
+    year.ownedRothIraPoolActivity = [
+      { ownerPersonId: 'p1', withdrawals: 0, creditedContributions: 0 },
+    ]
+    year.ownedTraditionalIraAggregateActivity = []
     ctx.plan.accounts = [{
       id: 'roth',
       name: 'Roth IRA',
@@ -318,7 +398,7 @@ describe('missing data basis detector', () => {
     expect(missingDataBasis.screen(ctx)).toBeNull()
   })
 
-  it('stays silent when two under-60 Roth owners share an aggregate household withdrawal', () => {
+  it('flags each under-60 Roth owner from their published pool activity (no multi-owner silence)', () => {
     const plan = couplePlan({ p1Dob: '1970-01-01', p2Dob: '1970-01-01' })
     plan.accounts = [
       {
@@ -354,17 +434,26 @@ describe('missing data basis detector', () => {
                 { personId: 'p1', ageAttained: 56, alive: true },
                 { personId: 'p2', ageAttained: 56, alive: true },
               ],
-              withdrawals: { roth: 5_000 },
+              ownedRothIraPoolActivity: [
+                { ownerPersonId: 'p1', withdrawals: 5_000, creditedContributions: 0 },
+                { ownerPersonId: 'p2', withdrawals: 0, creditedContributions: 0 },
+              ],
+              employerRothAccountActivity: [],
+              ownedTraditionalIraAggregateActivity: [],
+              qualifiedAnnuityPayments: [],
             },
           ],
         },
       },
     } as unknown as DetectorContext
 
-    expect(missingDataBasis.screen(ctx)).toBeNull()
+    expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
+      { label: 'Pat Roth IRA owner-pool pre-qualified-age withdrawals', value: '$5,000', year: 2026 },
+      { label: 'Pat Roth IRA known contribution basis', value: '$0', year: 2026 },
+    ])
   })
 
-  it('stays silent when a 60-or-older spouse also owns a Roth account', () => {
+  it('stays silent when a 60-or-older spouse also owns a Roth account with no under-60 pool draw', () => {
     const plan = couplePlan({ p1Dob: '1970-01-01', p2Dob: '1950-01-01' })
     plan.accounts = [
       { id: 'roth-p1', name: 'Pat Roth IRA', type: 'roth', kind: 'ira', ownerPersonId: 'p1', balance: 125_000, contributionBasis: undefined },
@@ -383,7 +472,15 @@ describe('missing data basis detector', () => {
               { personId: 'p1', ageAttained: 56, alive: true },
               { personId: 'p2', ageAttained: 76, alive: true },
             ],
-            withdrawals: { roth: 5_000 },
+            // Withdrawals on the older spouse's pool do not count as pre-qualified
+            // for the under-60 owner; Pat's pool has no draw.
+            ownedRothIraPoolActivity: [
+              { ownerPersonId: 'p1', withdrawals: 0, creditedContributions: 0 },
+              { ownerPersonId: 'p2', withdrawals: 5_000, creditedContributions: 0 },
+            ],
+            employerRothAccountActivity: [],
+            ownedTraditionalIraAggregateActivity: [],
+            qualifiedAnnuityPayments: [],
           }],
         },
       },
@@ -392,11 +489,17 @@ describe('missing data basis detector', () => {
     expect(missingDataBasis.screen(ctx)).toBeNull()
   })
 
-  it('stays silent when an inherited Roth account makes aggregate Roth withdrawals ambiguous', () => {
+  it('flags owned Roth from published pool activity even when an inherited Roth also exists', () => {
     const ctx = context()
     ctx.projection.result.years[0]!.people[0]!.ageAttained = 59
-    const firstProjectionYear = ctx.projection.result.years[0] as { withdrawals?: { roth: number } }
-    firstProjectionYear.withdrawals = { roth: 5_000 }
+    const year = ctx.projection.result.years[0] as {
+      ownedRothIraPoolActivity?: { ownerPersonId: string; withdrawals: number; creditedContributions: number }[]
+      ownedTraditionalIraAggregateActivity?: unknown[]
+    }
+    year.ownedRothIraPoolActivity = [
+      { ownerPersonId: 'p1', withdrawals: 5_000, creditedContributions: 0 },
+    ]
+    year.ownedTraditionalIraAggregateActivity = []
     ctx.plan.accounts = [
       {
         id: 'roth',
@@ -429,14 +532,32 @@ describe('missing data basis detector', () => {
     ] as never
     ctx.plan.incomes = []
 
-    expect(missingDataBasis.screen(ctx)).toBeNull()
+    expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
+      { label: 'Roth IRA owner-pool pre-qualified-age withdrawals', value: '$5,000', year: 2026 },
+      { label: 'Roth IRA known contribution basis', value: '$0', year: 2026 },
+    ])
   })
 
-  it('stays silent when an employer Roth account makes aggregate Roth withdrawals ambiguous', () => {
+  it('attributes employer and owned Roth from their separate published activity channels', () => {
     const ctx = context()
     ctx.projection.result.years[0]!.people[0]!.ageAttained = 59
-    const firstProjectionYear = ctx.projection.result.years[0] as { withdrawals?: { roth: number } }
-    firstProjectionYear.withdrawals = { roth: 5_000 }
+    const year = ctx.projection.result.years[0] as {
+      ownedRothIraPoolActivity?: { ownerPersonId: string; withdrawals: number; creditedContributions: number }[]
+      employerRothAccountActivity?: {
+        accountId: string
+        ownerPersonId: string
+        withdrawals: number
+        creditedContributions: number
+      }[]
+      ownedTraditionalIraAggregateActivity?: unknown[]
+    }
+    year.ownedRothIraPoolActivity = [
+      { ownerPersonId: 'p1', withdrawals: 5_000, creditedContributions: 0 },
+    ]
+    year.employerRothAccountActivity = [
+      { accountId: 'employer-roth', ownerPersonId: 'p1', withdrawals: 0, creditedContributions: 0 },
+    ]
+    year.ownedTraditionalIraAggregateActivity = []
     ctx.plan.accounts = [
       {
         id: 'roth',
@@ -454,18 +575,28 @@ describe('missing data basis detector', () => {
         kind: 'employer',
         ownerPersonId: 'p1',
         balance: 50_000,
+        contributionBasis: undefined,
       },
     ] as never
     ctx.plan.incomes = []
 
-    expect(missingDataBasis.screen(ctx)).toBeNull()
+    expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
+      { label: 'Roth IRA owner-pool pre-qualified-age withdrawals', value: '$5,000', year: 2026 },
+      { label: 'Roth IRA known contribution basis', value: '$0', year: 2026 },
+    ])
   })
 
   it('stays silent when another Roth IRA in the owner pool supplies enough basis', () => {
     const ctx = context()
     ctx.projection.result.years[0]!.people[0]!.ageAttained = 59
-    const firstProjectionYear = ctx.projection.result.years[0] as { withdrawals?: { roth: number } }
-    firstProjectionYear.withdrawals = { roth: 5_000 }
+    const year = ctx.projection.result.years[0] as {
+      ownedRothIraPoolActivity?: { ownerPersonId: string; withdrawals: number; creditedContributions: number }[]
+      ownedTraditionalIraAggregateActivity?: unknown[]
+    }
+    year.ownedRothIraPoolActivity = [
+      { ownerPersonId: 'p1', withdrawals: 5_000, creditedContributions: 0 },
+    ]
+    year.ownedTraditionalIraAggregateActivity = []
     ctx.plan.accounts = [
       { id: 'missing-basis', name: 'Missing-basis Roth IRA', type: 'roth', kind: 'ira', ownerPersonId: 'p1', balance: 125_000 },
       { id: 'supplied-basis', name: 'Supplied-basis Roth IRA', type: 'roth', kind: 'ira', ownerPersonId: 'p1', balance: 10_000, contributionBasis: 5_000 },
@@ -478,8 +609,14 @@ describe('missing data basis detector', () => {
   it('flags a missing Roth IRA basis when the owner pool supplied basis is insufficient', () => {
     const ctx = context()
     ctx.projection.result.years[0]!.people[0]!.ageAttained = 59
-    const firstProjectionYear = ctx.projection.result.years[0] as { withdrawals?: { roth: number } }
-    firstProjectionYear.withdrawals = { roth: 5_000 }
+    const year = ctx.projection.result.years[0] as {
+      ownedRothIraPoolActivity?: { ownerPersonId: string; withdrawals: number; creditedContributions: number }[]
+      ownedTraditionalIraAggregateActivity?: unknown[]
+    }
+    year.ownedRothIraPoolActivity = [
+      { ownerPersonId: 'p1', withdrawals: 5_000, creditedContributions: 0 },
+    ]
+    year.ownedTraditionalIraAggregateActivity = []
     ctx.plan.accounts = [
       { id: 'missing-basis', name: 'Missing-basis Roth IRA', type: 'roth', kind: 'ira', ownerPersonId: 'p1', balance: 125_000 },
       { id: 'supplied-basis', name: 'Supplied-basis Roth IRA', type: 'roth', kind: 'ira', ownerPersonId: 'p1', balance: 10_000, contributionBasis: 4_999 },
@@ -487,73 +624,86 @@ describe('missing data basis detector', () => {
     ctx.plan.incomes = []
 
     expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
-      { label: 'Missing-basis Roth IRA balance (assumed seasoned contribution basis)', value: '$125,000' },
+      { label: 'Missing-basis Roth IRA owner-pool pre-qualified-age withdrawals', value: '$5,000', year: 2026 },
+      { label: 'Missing-basis Roth IRA known contribution basis', value: '$4,999', year: 2026 },
     ])
   })
 
-  it('stays silent when modeled Roth contributions cover a pre-60 withdrawal', () => {
+  it('stays silent when published credited contributions cover a pre-60 withdrawal', () => {
     const ctx = context()
     ctx.projection.result.years[0]!.people[0]!.ageAttained = 59
-    const firstProjectionYear = ctx.projection.result.years[0] as {
-      withdrawals?: { roth: number }
-      contributions?: number
+    const year = ctx.projection.result.years[0] as {
+      ownedRothIraPoolActivity?: { ownerPersonId: string; withdrawals: number; creditedContributions: number }[]
+      ownedTraditionalIraAggregateActivity?: unknown[]
     }
-    firstProjectionYear.withdrawals = { roth: 5_000 }
-    firstProjectionYear.contributions = 5_000
+    year.ownedRothIraPoolActivity = [
+      { ownerPersonId: 'p1', withdrawals: 5_000, creditedContributions: 5_000 },
+    ]
+    year.ownedTraditionalIraAggregateActivity = []
     ctx.plan.accounts = [{
       id: 'roth', name: 'Roth IRA', type: 'roth', kind: 'ira', ownerPersonId: 'p1', balance: 125_000,
-      contributionSchedule: [{ annualAmount: 5_000, fromAge: 50, toAge: 59, escalationPct: 0 }],
     }] as never
     ctx.plan.incomes = []
 
     expect(missingDataBasis.screen(ctx)).toBeNull()
   })
 
-  it('does not count a limit-clipped Roth contribution as its scheduled amount', () => {
+  it('does not count a limit-clipped published credit as its scheduled amount', () => {
     const ctx = context()
     ctx.projection.result.years[0]!.people[0]!.ageAttained = 59
-    const firstProjectionYear = ctx.projection.result.years[0] as {
-      withdrawals?: { roth: number }
-      contributions?: number
+    const year = ctx.projection.result.years[0] as {
+      ownedRothIraPoolActivity?: { ownerPersonId: string; withdrawals: number; creditedContributions: number }[]
+      ownedTraditionalIraAggregateActivity?: unknown[]
     }
-    firstProjectionYear.withdrawals = { roth: 5_000 }
-    firstProjectionYear.contributions = 4_999
+    year.ownedRothIraPoolActivity = [
+      { ownerPersonId: 'p1', withdrawals: 5_000, creditedContributions: 4_999 },
+    ]
+    year.ownedTraditionalIraAggregateActivity = []
     ctx.plan.accounts = [{
       id: 'roth', name: 'Roth IRA', type: 'roth', kind: 'ira', ownerPersonId: 'p1', balance: 125_000,
-      contributionSchedule: [{ annualAmount: 5_000, fromAge: 50, toAge: 59, escalationPct: 0 }],
     }] as never
     ctx.plan.incomes = []
 
     expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
-      { label: 'Roth IRA balance (assumed seasoned contribution basis)', value: '$125,000' },
+      { label: 'Roth IRA owner-pool pre-qualified-age withdrawals', value: '$5,000', year: 2026 },
+      { label: 'Roth IRA known contribution basis', value: '$4,999', year: 2026 },
     ])
   })
 
-  it('flags a missing Roth IRA basis when modeled contributions do not cover a pre-60 withdrawal', () => {
+  it('flags a missing Roth IRA basis when published credits do not cover a pre-60 withdrawal', () => {
     const ctx = context()
     ctx.projection.result.years[0]!.people[0]!.ageAttained = 59
-    const firstProjectionYear = ctx.projection.result.years[0] as { withdrawals?: { roth: number } }
-    firstProjectionYear.withdrawals = { roth: 5_000 }
+    const year = ctx.projection.result.years[0] as {
+      ownedRothIraPoolActivity?: { ownerPersonId: string; withdrawals: number; creditedContributions: number }[]
+      ownedTraditionalIraAggregateActivity?: unknown[]
+    }
+    year.ownedRothIraPoolActivity = [
+      { ownerPersonId: 'p1', withdrawals: 5_000, creditedContributions: 4_999 },
+    ]
+    year.ownedTraditionalIraAggregateActivity = []
     ctx.plan.accounts = [{
       id: 'roth', name: 'Roth IRA', type: 'roth', kind: 'ira', ownerPersonId: 'p1', balance: 125_000,
-      contributionSchedule: [{ annualAmount: 4_999, fromAge: 50, toAge: 59, escalationPct: 0 }],
     }] as never
     ctx.plan.incomes = []
 
     expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
-      { label: 'Roth IRA balance (assumed seasoned contribution basis)', value: '$125,000' },
+      { label: 'Roth IRA owner-pool pre-qualified-age withdrawals', value: '$5,000', year: 2026 },
+      { label: 'Roth IRA known contribution basis', value: '$4,999', year: 2026 },
     ])
   })
 
-  it('flags a sole traditional IRA with payments from its qualified annuity', () => {
+  it('flags a traditional IRA with payments from its qualified annuity via published payments', () => {
     const ctx = context()
-    const firstProjectionYear = ctx.projection.result.years[0] as {
-      incomes?: { annuity: number }
-      withdrawals?: { traditional: number }
-      people: { personId: string; ageAttained: number; alive: boolean }[]
+    const year = ctx.projection.result.years[0] as {
+      ownedTraditionalIraAggregateActivity?: { ownerPersonId: string; distributions: number; conversions: number }[]
+      qualifiedAnnuityPayments?: { annuityAccountId: string; payment: number; fundingOwnerPersonId: string }[]
     }
-    firstProjectionYear.incomes = { annuity: 1_200 }
-    firstProjectionYear.withdrawals = { traditional: 0 }
+    year.ownedTraditionalIraAggregateActivity = [
+      { ownerPersonId: 'p1', distributions: 0, conversions: 0 },
+    ]
+    year.qualifiedAnnuityPayments = [
+      { annuityAccountId: 'annuity', payment: 1_200, fundingOwnerPersonId: 'p1' },
+    ]
     ctx.plan.accounts = [
       { id: 'trad', name: 'Traditional IRA', type: 'traditional', kind: 'ira', ownerPersonId: 'p1', balance: 300_000 },
       {
@@ -565,15 +715,21 @@ describe('missing data basis detector', () => {
     ctx.plan.incomes = []
 
     expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
+      { label: 'Traditional IRA IRA-funded annuity payments (projection)', value: '$1,200', year: 2026 },
       { label: 'Traditional IRA balance (assumed zero after-tax basis)', value: '$300,000' },
     ])
   })
 
   it('stays silent for a qualified IRA annuity without modeled payments', () => {
     const ctx = context()
-    const firstProjectionYear = ctx.projection.result.years[0] as { withdrawals?: { traditional: number }; incomes?: { annuity: number } }
-    firstProjectionYear.withdrawals = { traditional: 0 }
-    firstProjectionYear.incomes = { annuity: 0 }
+    const year = ctx.projection.result.years[0] as {
+      ownedTraditionalIraAggregateActivity?: { ownerPersonId: string; distributions: number; conversions: number }[]
+      qualifiedAnnuityPayments?: unknown[]
+    }
+    year.ownedTraditionalIraAggregateActivity = [
+      { ownerPersonId: 'p1', distributions: 0, conversions: 0 },
+    ]
+    year.qualifiedAnnuityPayments = []
     ctx.plan.accounts = [
       { id: 'trad', name: 'Traditional IRA', type: 'traditional', kind: 'ira', ownerPersonId: 'p1', balance: 300_000 },
       {
@@ -587,83 +743,150 @@ describe('missing data basis detector', () => {
     expect(missingDataBasis.screen(ctx)).toBeNull()
   })
 
-  it('stays silent when unrelated annuity income coincides with a dead life-only qualified contract owner', () => {
-    const ctx = context()
-    const firstProjectionYear = ctx.projection.result.years[0] as {
-      incomes?: { annuity: number }
-      withdrawals?: { traditional: number }
-      people: { personId: string; ageAttained: number; alive: boolean }[]
-    }
-    firstProjectionYear.incomes = { annuity: 1_200 }
-    firstProjectionYear.withdrawals = { traditional: 0 }
-    firstProjectionYear.people[0]!.alive = false
-    ctx.plan.household.people.push({
-      id: 'p2', name: 'Sam', dob: '1966-01-01', sex: 'average', retirementAge: null,
-      longevity: { planningAge: 95, source: 'manual' },
-    })
-    firstProjectionYear.people.push({ personId: 'p2', ageAttained: 60, alive: true })
-    ctx.plan.accounts = [
-      { id: 'trad', name: 'Traditional IRA', type: 'traditional', kind: 'ira', ownerPersonId: 'p2', balance: 300_000 },
-      {
-        id: 'qualified-annuity', name: 'Qualified life-only annuity', type: 'annuity', ownerPersonId: 'p1', startAge: 60,
-        monthlyAmount: 100, colaPct: 0, taxablePct: 100,
-        purchase: { year: 2026, premium: 25_000, fundingAccountId: 'trad', taxQualification: 'qualified' },
-      },
-      {
-        id: 'unrelated-annuity', name: 'Unrelated annuity', type: 'annuity', ownerPersonId: 'p2', startAge: 60,
-        monthlyAmount: 100, colaPct: 0, taxablePct: 100,
-      },
-    ] as never
-    ctx.plan.incomes = []
-
-    expect(missingDataBasis.screen(ctx)).toBeNull()
-  })
-
-  it('resolves a null Roth owner to the primary person', () => {
+  it('resolves a null Roth owner to the primary person via published activity', () => {
     const ctx = context()
     ctx.projection.result.years[0]!.people[0]!.ageAttained = 59
-    const firstProjectionYear = ctx.projection.result.years[0] as { withdrawals?: { roth: number } }
-    firstProjectionYear.withdrawals = { roth: 5_000 }
+    const year = ctx.projection.result.years[0] as {
+      ownedRothIraPoolActivity?: { ownerPersonId: string; withdrawals: number; creditedContributions: number }[]
+      ownedTraditionalIraAggregateActivity?: unknown[]
+    }
+    year.ownedRothIraPoolActivity = [
+      { ownerPersonId: 'p1', withdrawals: 5_000, creditedContributions: 0 },
+    ]
+    year.ownedTraditionalIraAggregateActivity = []
     ctx.plan.accounts = [
       { id: 'primary-roth', name: 'Primary Roth IRA', type: 'roth', kind: 'ira', ownerPersonId: null, balance: 125_000 },
     ] as never
     ctx.plan.incomes = []
 
     expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
-      { label: 'Primary Roth IRA balance (assumed seasoned contribution basis)', value: '$125,000' },
+      { label: 'Primary Roth IRA owner-pool pre-qualified-age withdrawals', value: '$5,000', year: 2026 },
+      { label: 'Primary Roth IRA known contribution basis', value: '$0', year: 2026 },
     ])
   })
 
   it('flags a sole employer Roth with omitted basis before age 60', () => {
     const ctx = context()
     ctx.projection.result.years[0]!.people[0]!.ageAttained = 59
-    const firstProjectionYear = ctx.projection.result.years[0] as { withdrawals?: { roth: number } }
-    firstProjectionYear.withdrawals = { roth: 5_000 }
+    const year = ctx.projection.result.years[0] as {
+      employerRothAccountActivity?: {
+        accountId: string
+        ownerPersonId: string
+        withdrawals: number
+        creditedContributions: number
+      }[]
+      ownedTraditionalIraAggregateActivity?: unknown[]
+      ownedRothIraPoolActivity?: unknown[]
+    }
+    year.employerRothAccountActivity = [
+      { accountId: 'roth-401k', ownerPersonId: 'p1', withdrawals: 5_000, creditedContributions: 0 },
+    ]
+    year.ownedRothIraPoolActivity = []
+    year.ownedTraditionalIraAggregateActivity = []
     ctx.plan.accounts = [
       { id: 'roth-401k', name: 'Roth 401(k)', type: 'roth', kind: 'employer', ownerPersonId: 'p1', balance: 125_000 },
     ] as never
     ctx.plan.incomes = []
 
     expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
-      { label: 'Roth 401(k) balance (assumed current balance is seasoned contribution basis)', value: '$125,000' },
+      { label: 'Roth 401(k) pre-qualified-age withdrawals', value: '$5,000', year: 2026 },
+      { label: 'Roth 401(k) known contribution basis', value: '$0', year: 2026 },
     ])
   })
 
-  it('stays silent for a sole employer Roth whose credited contributions cover its own withdrawal', () => {
+  it('stays silent for a sole employer Roth whose published credited contributions cover its own withdrawal', () => {
     const ctx = context()
     ctx.projection.result.years[0]!.people[0]!.ageAttained = 59
-    const firstProjectionYear = ctx.projection.result.years[0] as {
-      withdrawals?: { roth: number }
-      contributions?: number
+    const year = ctx.projection.result.years[0] as {
+      employerRothAccountActivity?: {
+        accountId: string
+        ownerPersonId: string
+        withdrawals: number
+        creditedContributions: number
+      }[]
+      ownedTraditionalIraAggregateActivity?: unknown[]
+      ownedRothIraPoolActivity?: unknown[]
     }
-    firstProjectionYear.withdrawals = { roth: 5_000 }
-    firstProjectionYear.contributions = 5_000
+    year.employerRothAccountActivity = [
+      { accountId: 'roth-401k', ownerPersonId: 'p1', withdrawals: 5_000, creditedContributions: 5_000 },
+    ]
+    year.ownedRothIraPoolActivity = []
+    year.ownedTraditionalIraAggregateActivity = []
     ctx.plan.accounts = [{
       id: 'roth-401k', name: 'Roth 401(k)', type: 'roth', kind: 'employer', ownerPersonId: 'p1', balance: 125_000,
-      contributionSchedule: [{ annualAmount: 5_000, fromAge: 50, toAge: 59, escalationPct: 0 }],
     }] as never
     ctx.plan.incomes = []
 
     expect(missingDataBasis.screen(ctx)).toBeNull()
   })
+
+  it('does not let a later-year credit retroactively cover an earlier pre-60 withdrawal', () => {
+    const ctx = context()
+    ctx.projection.result.years = [
+      {
+        year: 2026,
+        people: [{ personId: 'p1', ageAttained: 58, alive: true }],
+        ownedRothIraPoolActivity: [
+          { ownerPersonId: 'p1', withdrawals: 5_000, creditedContributions: 0 },
+        ],
+        ownedTraditionalIraAggregateActivity: [],
+        employerRothAccountActivity: [],
+      },
+      {
+        year: 2027,
+        people: [{ personId: 'p1', ageAttained: 59, alive: true }],
+        ownedRothIraPoolActivity: [
+          { ownerPersonId: 'p1', withdrawals: 0, creditedContributions: 5_000 },
+        ],
+        ownedTraditionalIraAggregateActivity: [],
+        employerRothAccountActivity: [],
+      },
+    ] as never
+    ctx.plan.accounts = [{
+      id: 'roth', name: 'Roth IRA', type: 'roth', kind: 'ira', ownerPersonId: 'p1', balance: 125_000,
+    }] as never
+    ctx.plan.incomes = []
+
+    expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
+      { label: 'Roth IRA owner-pool pre-qualified-age withdrawals', value: '$5,000', year: 2026 },
+      { label: 'Roth IRA known contribution basis', value: '$0', year: 2026 },
+    ])
+  })
+
+  it('does not let a later employer Roth credit retroactively cover an earlier pre-60 withdrawal', () => {
+    const ctx = context()
+    ctx.projection.result.years = [
+      {
+        year: 2026,
+        people: [{ personId: 'p1', ageAttained: 58, alive: true }],
+        employerRothAccountActivity: [
+          { accountId: 'roth-401k', ownerPersonId: 'p1', withdrawals: 5_000, creditedContributions: 0 },
+        ],
+        ownedRothIraPoolActivity: [],
+        ownedTraditionalIraAggregateActivity: [],
+      },
+      {
+        year: 2027,
+        people: [{ personId: 'p1', ageAttained: 59, alive: true }],
+        employerRothAccountActivity: [
+          { accountId: 'roth-401k', ownerPersonId: 'p1', withdrawals: 0, creditedContributions: 5_000 },
+        ],
+        ownedRothIraPoolActivity: [],
+        ownedTraditionalIraAggregateActivity: [],
+      },
+    ] as never
+    ctx.plan.accounts = [{
+      id: 'roth-401k', name: 'Roth 401(k)', type: 'roth', kind: 'employer', ownerPersonId: 'p1', balance: 125_000,
+    }] as never
+    ctx.plan.incomes = []
+
+    expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
+      { label: 'Roth 401(k) pre-qualified-age withdrawals', value: '$5,000', year: 2026 },
+      { label: 'Roth 401(k) known contribution basis', value: '$0', year: 2026 },
+    ])
+  })
 })
+
+function usd(amount: number): string {
+  return `$${Math.round(amount).toLocaleString()}`
+}

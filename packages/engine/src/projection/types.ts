@@ -1157,6 +1157,140 @@ export interface InheritedAccountYearEvidence {
   citations: string[]
 }
 
+/**
+ * One owner's aggregated Roth-IRA pool activity for a projection year.
+ *
+ * Published fact from the ledger's own execution — the one-source-of-truth
+ * channel for insight detectors. Consumers must not re-derive withdrawals or
+ * credited contributions from plan schedules, household aggregates, or
+ * `YearWithdrawals.roth` (which mixes inherited and employer Roth).
+ */
+export interface OwnedRothIraPoolActivity {
+  /** Resolved owner id (`null` owner already resolves to the household primary). */
+  ownerPersonId: string
+  /** Withdrawals taken from this owner's aggregated Roth-IRA pool this year. */
+  withdrawals: number
+  /**
+   * Contribution basis actually credited this year (post-limit `allowed`
+   * amounts, not scheduled/configured figures).
+   */
+  creditedContributions: number
+}
+
+/**
+ * One employer-designated Roth account's separate basis-pool activity for a
+ * projection year.
+ *
+ * Published fact from the ledger's own execution — the one-source-of-truth
+ * channel for insight detectors. Consumers must not re-derive it; employer
+ * Roth pools stay per-account and never join an owner's Roth-IRA aggregate.
+ */
+export interface EmployerRothAccountActivity {
+  accountId: string
+  /** Resolved owner id (`null` owner already resolves to the household primary). */
+  ownerPersonId: string
+  withdrawals: number
+  /** Post-limit `allowed` contribution credits, not scheduled amounts. */
+  creditedContributions: number
+}
+
+/**
+ * One owner's Form 8606 owned-traditional-IRA aggregate activity for a
+ * projection year (owned non-inherited IRAs only — never employer plans or
+ * inherited IRAs).
+ *
+ * Published fact from the ledger's own execution — the one-source-of-truth
+ * channel for insight detectors. Consumers must not re-derive attribution from
+ * aggregate `withdrawals.traditional` / `rothConversion` household totals.
+ */
+export interface OwnedTraditionalIraAggregateActivity {
+  ownerPersonId: string
+  /**
+   * Distributions drawn from the owner's owned-IRA aggregate this year
+   * (RMD, SEPP, need-based, QCD — excludes conversions, employer plans, and
+   * inherited sources).
+   */
+  distributions: number
+  /** Conversion amounts drawn from the same owned-IRA aggregate this year. */
+  conversions: number
+}
+
+/**
+ * One qualified annuity contract's payment actually paid this year.
+ *
+ * Published fact from the ledger's own execution — the one-source-of-truth
+ * channel for insight detectors. Consumers must not re-derive payout-form
+ * gates or funding linkage from plan inputs. Absent (or no entry) when the
+ * payout-form gate pays nothing this year.
+ */
+export interface QualifiedAnnuityPaymentActivity {
+  annuityAccountId: string
+  /** Payment amount actually paid this year. */
+  payment: number
+  /**
+   * Form 8606 pool owner of the traditional IRA that funded the contract
+   * (funding-account owner, not necessarily the annuity account's owner).
+   */
+  fundingOwnerPersonId: string
+}
+
+/**
+ * Benefit source the Social Security pass actually paid for a stream this year.
+ * Published fact — detectors must not re-derive eligibility or precedence.
+ */
+export type SocialSecurityBenefitSource =
+  | 'own-retirement'
+  | 'ssdi'
+  | 'spousal'
+  | 'survivor'
+  | 'none'
+
+/**
+ * Per-stream Social Security activity for a projection year.
+ *
+ * Published fact from the ledger's own execution — the one-source-of-truth
+ * channel for insight detectors. Consumers must not re-derive PIA, claim
+ * gates, spousal/survivor anchors, or SSDI path selection from plan inputs.
+ *
+ * One entry per `socialSecurity` income stream each year (including streams
+ * not yet in force). When a person has multiple streams with unequal claim
+ * ages, each stream's payments and claim-in-force state are attributed
+ * exactly — not collapsed into a single per-person row.
+ *
+ * `isSpousalSurvivorGateStream` marks the sim's last-resolved stream for the
+ * person (the stream that keys spousal/survivor auxiliary benefits).
+ *
+ * `claimInForce` / `preWithholdingAnnual` are captured **before** the
+ * earnings-test / SGA withholding step so a filing decision is visible even
+ * when withholding reduces the paid amount to zero.
+ */
+export interface SocialSecurityStreamActivity {
+  personId: string
+  streamId: string
+  source: SocialSecurityBenefitSource
+  /**
+   * Annual amount actually paid this year after COLA, haircut, and
+   * earnings-test / SGA withholding. May be $0 when a claim is in force but
+   * fully withheld.
+   */
+  annualAmount: number
+  /**
+   * True when this stream has payable months > 0 this year (the claim is in
+   * force), independent of earnings-test / SGA withholding.
+   */
+  claimInForce: boolean
+  /**
+   * Annual amount after COLA and haircut, before earnings-test / SGA
+   * withholding.
+   */
+  preWithholdingAnnual: number
+  /**
+   * True when this stream is the last stream written into the sim's
+   * `ssStreamByPerson` map for its person — the spousal/survivor gate winner.
+   */
+  isSpousalSurvivorGateStream: boolean
+}
+
 export interface YearResult {
   year: number
   /**
@@ -1186,6 +1320,45 @@ export interface YearResult {
    */
   ownedNonRothIraBalancesBeforeGrowth?:
     Readonly<Record<string, number>>
+  /**
+   * Per-owner owned Roth-IRA pool activity this year (withdrawals + post-limit
+   * credited contributions). Published fact from the ledger's own execution —
+   * the one-source-of-truth channel for insight detectors. Consumers must not
+   * re-derive it from schedules or household aggregates. `simulatePlan` always
+   * publishes it (possibly empty); optionality preserves fixture compatibility.
+   */
+  ownedRothIraPoolActivity?: readonly Readonly<OwnedRothIraPoolActivity>[]
+  /**
+   * Per-account employer Roth activity this year. Published fact from the
+   * ledger's own execution — detectors must not re-derive it. `simulatePlan`
+   * always publishes it (possibly empty); optionality preserves fixtures.
+   */
+  employerRothAccountActivity?: readonly Readonly<EmployerRothAccountActivity>[]
+  /**
+   * Per-owner Form 8606 owned-traditional-IRA aggregate activity this year
+   * (excludes inherited and employer sources by construction). Published fact
+   * from the ledger's own execution — detectors must not re-derive attribution
+   * from household withdrawal/conversion totals. `simulatePlan` always
+   * publishes it (possibly empty); optionality preserves fixtures.
+   */
+  ownedTraditionalIraAggregateActivity?:
+    readonly Readonly<OwnedTraditionalIraAggregateActivity>[]
+  /**
+   * Qualified annuity payments actually paid this year, keyed by contract.
+   * Published fact from the ledger's own execution — detectors must not
+   * re-derive payout-form gates. Zero-payment contracts are omitted.
+   * `simulatePlan` always publishes the array (possibly empty).
+   */
+  qualifiedAnnuityPayments?: readonly Readonly<QualifiedAnnuityPaymentActivity>[]
+  /**
+   * Per-stream Social Security activity this year. Published fact from the
+   * ledger's own execution — detectors must not re-derive stream precedence,
+   * benefit source, claim-in-force, or paid amounts. One entry per
+   * `socialSecurity` income stream (including not-yet-claimed streams).
+   * `simulatePlan` always publishes the array (possibly empty); optionality
+   * preserves fixtures.
+   */
+  socialSecurityStreams?: readonly Readonly<SocialSecurityStreamActivity>[]
   /** Employer match contributions made this year. */
   employerMatch: number
   /** Forced traditional-account distributions (included in withdrawals.traditional). */

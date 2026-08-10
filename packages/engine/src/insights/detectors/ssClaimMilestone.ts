@@ -1,13 +1,6 @@
 import type { Detector, InsightCard } from '../types.js'
 import type { Plan } from '../../model/plan.js'
-import { effectiveBirthYear, fraForBirthYear, fraTotalMonths } from '../../socialSecurity/nra.js'
-import {
-  computePiaFromEarnings,
-  isPiaFromEarningsError,
-  piaInputFromEarnings,
-  resolveEarningsProjection,
-} from '../../socialSecurity/piaFromEarnings.js'
-import { maritalBenefitFor } from '../../socialSecurity/maritalBenefits.js'
+import type { SocialSecurityStreamActivity } from '../../projection/types.js'
 
 type SocialSecurityIncome = Extract<Plan['incomes'][number], { type: 'socialSecurity' }>
 
@@ -17,208 +10,125 @@ function formatAge(totalMonths: number): string {
   return `${years} years ${months} months`
 }
 
-function resolvedOwnPia(income: SocialSecurityIncome, person: Plan['household']['people'][number]): number | null {
-  if (income.piaMonthly !== null) return income.piaMonthly
-  if (income.earnings === null || income.earnings.length === 0) return null
-
-  const [birthYear, birthMonth, birthDay] = person.dob.split('-').map(Number)
-  if (!Number.isInteger(birthYear) || !Number.isInteger(birthMonth) || !Number.isInteger(birthDay)) return null
-
-  const projection = resolveEarningsProjection(income.earningsProjection, person.retirementAge)
-  const result = computePiaFromEarnings(
-    piaInputFromEarnings(birthYear, birthMonth, birthDay, income.earnings, projection),
-  )
-  return isPiaFromEarningsError(result) ? null : result.piaMonthly
-}
-
-/** Own-record PIA is absent, zero, or resolves to zero through the simulator's earnings path. */
-function streamResolvesNoOwnBenefit(
-  income: SocialSecurityIncome,
-  person: Plan['household']['people'][number],
-): boolean {
-  return (resolvedOwnPia(income, person) ?? 0) <= 0
-}
-
-/** Another SS stream with modeled own benefit — claim age on a zero-PIA stream can still time spousal/auxiliary benefits. */
-function simulatedSsStreamByPerson(
-  plan: Plan,
-): Map<string, { income: SocialSecurityIncome; pia: number }> {
-  const streams = new Map<string, { income: SocialSecurityIncome; pia: number }>()
-  for (const income of plan.incomes) {
-    if (income.type !== 'socialSecurity') continue
-    const person = plan.household.people.find((candidate) => candidate.id === income.personId)
-    if (person === undefined) continue
-    const pia = resolvedOwnPia(income, person)
-    if (pia === null) continue
-    streams.set(income.personId, { income, pia })
+function formatSource(source: SocialSecurityStreamActivity['source']): string {
+  switch (source) {
+    case 'own-retirement':
+      return 'own retirement'
+    case 'ssdi':
+      return 'SSDI'
+    case 'spousal':
+      return 'spousal'
+    case 'survivor':
+      return 'survivor'
+    case 'none':
+      return 'none'
   }
-  return streams
 }
 
 /**
- * The first annual-ledger year in which a zero-own-PIA claimant can actually
- * receive a current-spouse or survivor benefit on the other household stream.
+ * Highlights Social Security claim decisions occurring in the next two model years.
+ *
+ * Reads the ledger's published per-stream SS activity (`socialSecurityStreams`)
+ * — claim-in-force, benefit source, and paid amounts — and never re-derives
+ * PIA, spousal/survivor anchors, or SSDI path selection from plan inputs.
+ *
+ * Keys on the first year a non-SSDI stream is claim-in-force (the filing
+ * decision), not the first positive paid amount, so earnings-test withholding
+ * to $0 does not hide or delay a real claim.
  */
-function firstAnchoredBenefitStartYear(
-  plan: Plan,
-  claimantPersonId: string,
-  claimantBenefitStartYear: number,
-  projectionYears: readonly { year: number; people: { personId: string; alive: boolean }[] }[],
-): number | null {
-  if (plan.household.people.length !== 2) return null
-  const streams = simulatedSsStreamByPerson(plan)
-  if (!streams.has(claimantPersonId)) return null
-  const anchorPerson = plan.household.people.find((person) => person.id !== claimantPersonId)
-  if (anchorPerson === undefined) return null
-  const anchorStream = streams.get(anchorPerson.id)
-  if (anchorStream === undefined || anchorStream.pia <= 0) return null
-
-  const [anchorDobYear, anchorDobMonth, anchorDobDay] = anchorPerson.dob.split('-').map(Number)
-  if (!Number.isInteger(anchorDobYear) || !Number.isInteger(anchorDobMonth) || !Number.isInteger(anchorDobDay)) return null
-  const anchorRetirementStartYear = anchorDobYear + anchorStream.income.claimAge.years
-  const anchorFra = fraForBirthYear(effectiveBirthYear(anchorDobYear, anchorDobMonth, anchorDobDay))
-  const anchorSsdiStartYear = anchorStream.income.disability?.onsetAge !== undefined &&
-    anchorStream.income.disability.onsetAge < anchorFra.years
-    ? anchorDobYear + anchorStream.income.disability.onsetAge
-    : null
-
-  for (const year of projectionYears) {
-    const claimant = year.people.find((candidate) => candidate.personId === claimantPersonId)
-    const anchor = year.people.find((candidate) => candidate.personId === anchorPerson.id)
-    if (claimant?.alive !== true || anchor === undefined) continue
-
-    // The spousal pass gates on both configured retirement claim ages, even
-    // when the worker's own stream is SSDI. The survivor pass instead reads
-    // the deceased stream's actual monthly amount, which starts at SSDI onset
-    // when onset is pre-FRA.
-    const anchorFirstPayableYear = anchor.alive
-      ? anchorRetirementStartYear
-      : anchorSsdiStartYear ?? anchorRetirementStartYear
-    const firstSharedPayableYear = Math.max(claimantBenefitStartYear, anchorFirstPayableYear)
-    if (year.year >= firstSharedPayableYear) return year.year
-  }
-  return null
-}
-
-/** A positive former-spouse PIA can make an otherwise zero-own-PIA claim decision meaningful. */
-function hasFormerSpouseBenefitAnchor(
-  plan: Plan,
-  income: SocialSecurityIncome,
-  person: Plan['household']['people'][number],
-  claimantBenefitStartYear: number,
-  projectionYears: readonly { year: number; people: { personId: string; ageAttained: number; alive: boolean }[] }[],
-): boolean {
-  const [birthYear, birthMonth, birthDay] = person.dob.split('-').map(Number)
-  if (!Number.isInteger(birthYear) || !Number.isInteger(birthMonth) || !Number.isInteger(birthDay)) return false
-
-  // The annual ledger first pays in claimantBenefitStartYear. A former-spouse
-  // record must pass the engine's marital-benefit gate in that same year, not
-  // merely become eligible somewhere later in the projection horizon.
-  return projectionYears.some((year) => {
-    if (year.year !== claimantBenefitStartYear) return false
-    const projectedPerson = year.people.find((candidate) => candidate.personId === person.id)
-    if (projectedPerson === undefined || !projectedPerson.alive) return false
-
-    return income.formerSpouses?.some((formerSpouse) =>
-      formerSpouse.piaMonthly > 0 && maritalBenefitFor(formerSpouse, {
-        claimantDob: { year: birthYear, month: birthMonth, day: birthDay },
-        claimantClaimAge: income.claimAge,
-        claimantAge: projectedPerson.ageAttained,
-        year: year.year,
-        claimantIsSingle: plan.household.people.length === 1,
-      }) !== null,
-    ) ?? false
-  })
-}
-
-/** Highlights Social Security claim decisions occurring in the next two model years. */
 export const ssClaimMilestone: Detector = {
   id: 'ss-claim-milestone',
   category: 'social-security',
-  version: 1,
+  version: 2,
   screen(ctx): InsightCard | null {
     const firstProjectionYear = ctx.projection.result.years[0]
     if (firstProjectionYear === undefined || firstProjectionYear.year !== ctx.projection.startYear) return null
     let selectedCard: InsightCard | null = null
     let smallestYearsToClaim = Infinity
-    const effectiveStreams = simulatedSsStreamByPerson(ctx.plan)
-    for (const income of ctx.plan.incomes) {
-      if (income.type !== 'socialSecurity') continue
-      const person = ctx.plan.household.people.find((candidate) => candidate.id === income.personId)
-      if (person === undefined) continue
+
+    for (const person of ctx.plan.household.people) {
       const projectedPerson = firstProjectionYear.people.find(
         (candidate) => candidate.personId === person.id && candidate.alive,
       )
-      const [birthYear, birthMonth, birthDay] = person.dob.split('-').map(Number)
-      if (
-        projectedPerson === undefined ||
-        !Number.isInteger(birthYear) ||
-        !Number.isInteger(birthMonth) ||
-        !Number.isInteger(birthDay)
-      ) {
-        continue
-      }
+      if (projectedPerson === undefined) continue
 
-      const claimMonths = income.claimAge.years * 12 + income.claimAge.months
-      const claimantBenefitStartYear = birthYear + income.claimAge.years
-      const resolvesNoOwnBenefit = streamResolvesNoOwnBenefit(income, person)
-      // Own benefits are summed across every valid stream, but the simulator's
-      // spousal and survivor gates use the last stream written for a person.
-      // Auxiliary milestones must therefore follow that effective stream too.
-      if (resolvesNoOwnBenefit && effectiveStreams.get(person.id)?.income !== income) continue
-      const anchoredStartYear = resolvesNoOwnBenefit
-        ? firstAnchoredBenefitStartYear(
-          ctx.plan,
-          person.id,
-          claimantBenefitStartYear,
-          ctx.projection.result.years,
+      // Earliest claim-in-force year among this person's non-SSDI streams.
+      let firstClaimYear: number | null = null
+      let firstClaimStream: SocialSecurityStreamActivity | null = null
+      for (const year of ctx.projection.result.years) {
+        const streams = (year.socialSecurityStreams ?? []).filter(
+          (entry: SocialSecurityStreamActivity) =>
+            entry.personId === person.id &&
+            entry.claimInForce &&
+            entry.source !== 'ssdi',
         )
-        : null
-      if (
-        resolvesNoOwnBenefit &&
-        !hasFormerSpouseBenefitAnchor(
-          ctx.plan,
-          income,
-          person,
-          claimantBenefitStartYear,
-          ctx.projection.result.years,
-        ) &&
-        anchoredStartYear === null
-      ) continue
+        if (streams.length === 0) continue
+        // Prefer the gate stream when several become in force the same year;
+        // otherwise first published stream for that person.
+        const preferred =
+          streams.find((entry) => entry.isSpousalSurvivorGateStream) ?? streams[0]!
+        firstClaimYear = year.year
+        firstClaimStream = preferred
+        break
+      }
+      if (firstClaimYear === null || firstClaimStream === null) continue
 
-      const benefitStartYear = anchoredStartYear ?? claimantBenefitStartYear
-      const yearsToClaim = benefitStartYear - ctx.projection.startYear
+      const yearsToClaim = firstClaimYear - ctx.projection.startYear
       if (yearsToClaim < 0 || yearsToClaim > 2) continue
 
       const benefitStartProjectionYear = ctx.projection.result.years.find(
-        (year) => year.year === benefitStartYear,
+        (year) => year.year === firstClaimYear,
       )
       const benefitStartPerson = benefitStartProjectionYear?.people.find(
         (candidate) => candidate.personId === person.id && candidate.alive,
       )
       if (benefitStartPerson === undefined) continue
 
-      const fra = fraForBirthYear(effectiveBirthYear(birthYear, birthMonth, birthDay))
-      // A positive-PIA SSDI stream replaces its own retirement-claim path. A
-      // zero-PIA effective stream still supplies the simulator's auxiliary
-      // claim-age gate, so keep an otherwise eligible anchored milestone.
+      const income = ctx.plan.incomes.find(
+        (entry): entry is SocialSecurityIncome =>
+          entry.type === 'socialSecurity' && entry.id === firstClaimStream!.streamId,
+      )
+      if (income === undefined) continue
+
+      // Pre-horizon claims are not imminent: if the first published in-force row
+      // is the start year and the person is already older than the stream's claim
+      // age, the filing decision happened before the horizon — skip.
       if (
-        income.disability?.onsetAge !== undefined &&
-        income.disability.onsetAge < fra.years &&
-        (resolvedOwnPia(income, person) ?? 0) > 0
-      ) continue
+        firstClaimYear === ctx.projection.startYear &&
+        projectedPerson.ageAttained > income.claimAge.years
+      ) {
+        continue
+      }
+
+      const claimMonths = income.claimAge.years * 12 + income.claimAge.months
 
       if (yearsToClaim >= smallestYearsToClaim) continue
 
-      // The annual ledger ages people by calendar year (ageAttained = year -
-      // dobYear) and first pays in the year ageAttained equals claimAge.years
-      // (partial when claim months > 0) — mirror that, not calendar-month math.
+      const paidAmount = firstClaimStream.annualAmount
+      const preWithholding = firstClaimStream.preWithholdingAnnual
+      // Claim-in-force with nothing modeled pre-withholding is unmodeled activity
+      // (not a withholding story) — skip per the unmodeled-stream rule.
+      if (paidAmount <= 0 && preWithholding <= 0) continue
+      const paidEvidence = paidAmount > 0
+        ? {
+            label: `${person.name}'s modeled benefit in first claim year`,
+            value: `$${Math.round(paidAmount).toLocaleString()}`,
+            year: firstClaimYear,
+          }
+        : {
+            // Only label earnings-test / SGA withholding when a positive
+            // pre-withholding benefit was actually reduced to $0.
+            label: `${person.name}'s modeled benefit in first claim year (earnings test / SGA withheld to $0)`,
+            value: '$0',
+            year: firstClaimYear,
+          }
+
       selectedCard = {
         id: 'ss-claim-milestone',
         category: 'social-security',
         title: `${person.name}'s Social Security claim is imminent`,
         rationale:
-          `The model starts ${person.name}'s Social Security at age ${formatAge(claimMonths)} in ${benefitStartYear}. ` +
+          `The model starts ${person.name}'s Social Security at age ${formatAge(claimMonths)} in ${firstClaimYear}. ` +
           'Confirm the claim age against the Social Security analysis before filing, since filing locks in permanent reductions or credits.',
         impact: {
           qualitative: 'Claiming age permanently affects the benefit calculation.',
@@ -229,8 +139,13 @@ export const ssClaimMilestone: Detector = {
         evidence: [
           { label: `${person.name}'s modeled claim age`, value: formatAge(claimMonths) },
           { label: `Age at projection start (${firstProjectionYear.year})`, value: String(projectedPerson.ageAttained), year: firstProjectionYear.year },
-          { label: 'Modeled first benefit year (partial when claim months > 0)', value: String(benefitStartYear), year: benefitStartYear },
-          { label: 'Full retirement age', value: formatAge(fraTotalMonths(fra)) },
+          { label: 'Modeled first claim year (claim in force; partial when claim months > 0)', value: String(firstClaimYear), year: firstClaimYear },
+          paidEvidence,
+          {
+            label: 'Benefit source',
+            value: formatSource(firstClaimStream.source),
+            year: firstClaimYear,
+          },
         ],
         plannerRoute: 'social-security-analysis',
         action: { kind: 'advisory' },

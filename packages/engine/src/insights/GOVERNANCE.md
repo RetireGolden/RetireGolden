@@ -54,6 +54,18 @@ other in the same change.
 Exact triggering values are the WS1 acceptance criterion: every detector must
 explain the numbers that caused it to fire.
 
+### Published facts, not re-derivation
+
+Detectors consume facts the ledger publishes on `YearResult` (per-entity
+activity, Social Security resolution, and similar one-source-of-truth channels).
+A detector must not re-derive attribution, eligibility, or precedence from plan
+inputs when a published fact exists — parallel recomputation silently drifts
+(limits clip, payments skip, streams get overridden, pools separate).
+
+When new detector work needs a fact the ledger does not yet publish, add the
+published field on `YearResult` first (populated in the same simulation pass at
+the mutation site), then write the detector as a reader of that field.
+
 ## False-positive policy
 
 Keep thresholds conservative by default.
