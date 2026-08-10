@@ -26,7 +26,12 @@ function context(): DetectorContext {
     params: { year: 2026 },
     projection: {
       startYear: 2026,
-      result: { years: [{ year: 2026, people: [{ personId: 'p1', ageAttained: 60, alive: true }] }] },
+      result: {
+        years: [
+          { year: 2026, people: [{ personId: 'p1', ageAttained: 60, alive: true }] },
+          { year: 2029, people: [{ personId: 'p1', ageAttained: 63, alive: true }] },
+        ],
+      },
     },
   } as unknown as DetectorContext
 }
@@ -114,5 +119,41 @@ describe('missing data basis detector', () => {
     expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
       { label: 'Roth IRA balance (assumed seasoned contribution basis)', value: '$125,000' },
     ])
+  })
+
+  it('cites expected net proceeds when the legacy sale path models them', () => {
+    const ctx = context()
+    const property = ctx.plan.accounts[2] as { expectedNetProceeds?: number }
+    property.expectedNetProceeds = 450_000
+
+    expect(missingDataBasis.screen(ctx)?.evidence).toContainEqual({
+      label: 'Lake home expected net proceeds (legacy net-proceeds path)',
+      value: '$450,000',
+      year: 2029,
+    })
+  })
+
+  it.each([2025, 2030])('stays silent for a sale outside the projection window (%i)', (plannedSaleYear) => {
+    const ctx = context()
+    ctx.plan.accounts = [{
+      id: 'home',
+      name: 'Lake home',
+      type: 'property',
+      value: 500_000,
+      plannedSaleYear,
+      costBasis: undefined,
+    }] as never
+    ctx.plan.incomes = []
+
+    expect(missingDataBasis.screen(ctx)).toBeNull()
+  })
+
+  it('stays silent for open-ended wages with no annual pay', () => {
+    const ctx = context()
+    ctx.plan.accounts = []
+    const wages = ctx.plan.incomes[0] as { annualGross: number }
+    wages.annualGross = 0
+
+    expect(missingDataBasis.screen(ctx)).toBeNull()
   })
 })

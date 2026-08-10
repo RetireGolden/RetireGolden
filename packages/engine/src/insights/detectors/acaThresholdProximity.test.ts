@@ -30,7 +30,9 @@ function context(fplPct = 405): DetectorContext {
 
 describe('ACA threshold proximity detector', () => {
   it('flags the first Marketplace year just over the published FPL cliff', () => {
-    const card = acaThresholdProximity.screen(context())
+    const ctx = context()
+    ctx.params.aca.maxFplPctForCredit = 350
+    const card = acaThresholdProximity.screen(ctx)
 
     expect(card).toMatchObject({
       severity: 'attention',
@@ -64,6 +66,7 @@ describe('ACA threshold proximity detector', () => {
     ctx.projection.result.years[0]!.aca = {
       ...ctx.projection.result.years[0]!.aca!,
       cliffState: 'at-cliff',
+      modeledAllowablePtc: 1_250,
     }
 
     expect(acaThresholdProximity.screen(ctx)).toMatchObject({
@@ -76,7 +79,19 @@ describe('ACA threshold proximity detector', () => {
         { label: 'Federal poverty line in 2027', value: '$20,000', year: 2027 },
         { label: 'FPL percentage in 2027', value: '400.0%', year: 2027 },
         { label: 'ACA credit boundary', value: '400.0%' },
+        { label: 'Modeled premium tax credit at stake', value: '$1,250', year: 2027 },
       ],
     })
+  })
+
+  it('stays silent at the cliff when the model has no premium tax credit to lose', () => {
+    const ctx = context(400.0000000001)
+    ctx.projection.result.years[0]!.aca = {
+      ...ctx.projection.result.years[0]!.aca!,
+      cliffState: 'at-cliff',
+      modeledAllowablePtc: 0,
+    }
+
+    expect(acaThresholdProximity.screen(ctx)).toBeNull()
   })
 })

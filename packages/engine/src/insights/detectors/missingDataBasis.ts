@@ -15,6 +15,7 @@ export const missingDataBasis: Detector = {
   version: 1,
   screen(ctx): InsightCard | null {
     const gaps: DataGap[] = []
+    const lastProjectionYear = ctx.projection.result.years.at(-1)?.year
 
     for (const account of ctx.plan.accounts) {
       if (
@@ -47,12 +48,19 @@ export const missingDataBasis: Detector = {
       if (
         account.type === 'property' &&
         account.costBasis === undefined &&
-        typeof account.plannedSaleYear === 'number'
+        typeof account.plannedSaleYear === 'number' &&
+        account.plannedSaleYear >= ctx.projection.startYear &&
+        lastProjectionYear !== undefined &&
+        account.plannedSaleYear <= lastProjectionYear
       ) {
+        const expectedNetProceeds = account.expectedNetProceeds
+        const hasExpectedNetProceeds = expectedNetProceeds !== null && expectedNetProceeds !== undefined
         gaps.push({
           evidence: {
-            label: `${account.name} planned-sale value (legacy net-proceeds path)`,
-            value: usd(account.value),
+            label: hasExpectedNetProceeds
+              ? `${account.name} expected net proceeds (legacy net-proceeds path)`
+              : `${account.name} planned-sale value (legacy net-proceeds path)`,
+            value: usd(expectedNetProceeds ?? account.value),
             year: account.plannedSaleYear,
           },
         })
@@ -67,7 +75,12 @@ export const missingDataBasis: Detector = {
           (income) => income.type === 'wages' && income.personId === person.id && income.endAge === null,
         )
         const projectedPerson = firstProjectionYear.people.find((candidate) => candidate.personId === person.id)
-        if (wageIncome === undefined || projectedPerson === undefined) continue
+        if (
+          wageIncome === undefined ||
+          wageIncome.type !== 'wages' ||
+          wageIncome.annualGross <= 0 ||
+          projectedPerson === undefined
+        ) continue
 
         gaps.push({
           evidence: {

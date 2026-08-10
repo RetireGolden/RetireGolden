@@ -4,22 +4,30 @@ import { singlePersonPlan } from '../../testing/planFixtures.js'
 import type { DetectorContext } from '../types.js'
 import { ssClaimMilestone } from './ssClaimMilestone.js'
 
-function context(ageAtStart = 67, claimYears = 67, claimMonths = 6): DetectorContext {
+function context(ageAtStart = 67, claimYears = 67, claimMonths = 6, includesClaimYear = true): DetectorContext {
   const plan = singlePersonPlan({ dob: '1960-01-01' })
   plan.incomes = [
     {
       id: 'ss',
       type: 'socialSecurity',
       personId: 'p1',
+      piaMonthly: 2_000,
+      earnings: null,
       claimAge: { years: claimYears, months: claimMonths },
     },
   ] as never
+  const finalYear = includesClaimYear ? Math.max(2026, 1960 + claimYears) : 2026
   return {
     plan,
     params: { year: 2026 },
     projection: {
       startYear: 2026,
-      result: { years: [{ year: 2026, people: [{ personId: 'p1', ageAttained: ageAtStart, alive: true }] }] },
+      result: {
+        years: Array.from({ length: finalYear - 2026 + 1 }, (_, offset) => ({
+          year: 2026 + offset,
+          people: [{ personId: 'p1', ageAttained: ageAtStart + offset, alive: true }],
+        })),
+      },
     },
   } as unknown as DetectorContext
 }
@@ -52,8 +60,8 @@ describe('Social Security claim milestone detector', () => {
     expect(card?.evidence.find((e) => e.label.startsWith('Modeled first benefit year'))?.value).toBe('2027')
   })
 
-  it('uses info for a decision more than one year away and stays silent just beyond two years', () => {
-    expect(ssClaimMilestone.screen(context(66))?.severity).toBe('info')
+  it('uses info for a decision two model years away and stays silent just beyond two years', () => {
+    expect(ssClaimMilestone.screen(context(66, 68, 0))?.severity).toBe('info')
     expect(ssClaimMilestone.screen(context(67, 69, 1))).toBeNull()
   })
 
@@ -63,5 +71,55 @@ describe('Social Security claim milestone detector', () => {
     income.disability = { onsetAge: 60 }
 
     expect(ssClaimMilestone.screen(ctx)).toBeNull()
+  })
+
+  it('fires for a claim at 68 years 1 month exactly two model years away', () => {
+    const card = ssClaimMilestone.screen(context(66, 68, 1))
+
+    expect(card?.severity).toBe('info')
+    expect(card?.evidence).toContainEqual({ label: "Pat's modeled claim age", value: '68 years 1 months' })
+    expect(card?.evidence).toContainEqual({
+      label: 'Modeled first benefit year (partial when claim months > 0)',
+      value: '2028',
+      year: 2028,
+    })
+  })
+
+  it('stays silent when the model skips a stream without PIA or earnings', () => {
+    const ctx = context()
+    const income = ctx.plan.incomes[0] as { piaMonthly: number | null; earnings: unknown[] | null }
+    income.piaMonthly = null
+    income.earnings = null
+
+    expect(ssClaimMilestone.screen(ctx)).toBeNull()
+  })
+
+  it('stays silent when the projection does not reach the claim year', () => {
+    expect(ssClaimMilestone.screen(context(67, 67, 6, false))).toBeNull()
+  })
+
+  it('selects the most imminent qualifying claim in household order', () => {
+    const ctx = context(66, 68, 0)
+    ctx.plan.household.people.push({
+      id: 'p2',
+      name: 'Sam',
+      dob: '1960-01-01',
+      sex: 'average',
+      retirementAge: null,
+      longevity: { planningAge: 95, source: 'manual' },
+    })
+    ctx.plan.incomes.push({
+      id: 'ss-p2',
+      type: 'socialSecurity',
+      personId: 'p2',
+      piaMonthly: 2_000,
+      earnings: null,
+      claimAge: { years: 67, months: 0 },
+    } as never)
+    for (const year of ctx.projection.result.years) {
+      year.people.push({ personId: 'p2', ageAttained: year.year - 1960, alive: true } as never)
+    }
+
+    expect(ssClaimMilestone.screen(ctx)?.title).toBe("Sam's Social Security claim is imminent")
   })
 })

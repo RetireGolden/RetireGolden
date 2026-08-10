@@ -16,6 +16,8 @@ export const ssClaimMilestone: Detector = {
     const firstProjectionYear = ctx.projection.result.years[0]
     if (firstProjectionYear === undefined || firstProjectionYear.year !== ctx.projection.startYear) return null
 
+    let selectedCard: InsightCard | null = null
+    let smallestYearsToClaim = Infinity
     for (const person of ctx.plan.household.people) {
       const projectedPerson = firstProjectionYear.people.find(
         (candidate) => candidate.personId === person.id && candidate.alive,
@@ -35,18 +37,30 @@ export const ssClaimMilestone: Detector = {
         continue
       }
 
+      if (income.piaMonthly === null && (income.earnings === null || income.earnings.length === 0)) continue
+
       const claimMonths = income.claimAge.years * 12 + income.claimAge.months
-      const yearsToClaim = claimMonths / 12 - projectedPerson.ageAttained
+      const benefitStartYear = birthYear + income.claimAge.years
+      const yearsToClaim = benefitStartYear - ctx.projection.startYear
       if (yearsToClaim < 0 || yearsToClaim > 2) continue
+
+      const benefitStartProjectionYear = ctx.projection.result.years.find(
+        (year) => year.year === benefitStartYear,
+      )
+      const benefitStartPerson = benefitStartProjectionYear?.people.find(
+        (candidate) => candidate.personId === person.id && candidate.alive,
+      )
+      if (benefitStartPerson === undefined) continue
 
       const fra = fraForBirthYear(effectiveBirthYear(birthYear, birthMonth, birthDay))
       if (income.disability?.onsetAge !== undefined && income.disability.onsetAge < fra.years) continue
 
+      if (yearsToClaim >= smallestYearsToClaim) continue
+
       // The annual ledger ages people by calendar year (ageAttained = year -
       // dobYear) and first pays in the year ageAttained equals claimAge.years
       // (partial when claim months > 0) — mirror that, not calendar-month math.
-      const benefitStartYear = birthYear + income.claimAge.years
-      return {
+      selectedCard = {
         id: 'ss-claim-milestone',
         category: 'social-security',
         title: `${person.name}'s Social Security claim is imminent`,
@@ -68,8 +82,9 @@ export const ssClaimMilestone: Detector = {
         plannerRoute: 'social-security-analysis',
         action: { kind: 'advisory' },
       }
+      smallestYearsToClaim = yearsToClaim
     }
 
-    return null
+    return selectedCard
   },
 }

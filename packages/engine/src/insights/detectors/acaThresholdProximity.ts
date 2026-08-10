@@ -1,4 +1,5 @@
 import type { Detector, InsightCard } from '../types.js'
+import { packForYear } from '../../params/index.js'
 
 function usd(amount: number): string {
   return `$${Math.round(amount).toLocaleString()}`
@@ -10,10 +11,9 @@ export const acaThresholdProximity: Detector = {
   category: 'tax-brackets',
   version: 1,
   screen(ctx): InsightCard | null {
-    const boundary = ctx.params.aca.maxFplPctForCredit
-
     for (const year of ctx.projection.result.years) {
       const aca = year.aca
+      const boundary = packForYear(year.year).pack.aca.maxFplPctForCredit
       const justOverBoundary =
         aca !== undefined &&
         aca.fplPct !== null &&
@@ -22,7 +22,10 @@ export const acaThresholdProximity: Detector = {
         aca.cliffState === 'above-cliff'
       const atCliff =
         aca !== undefined &&
-        aca.cliffState === 'at-cliff'
+        aca.cliffState === 'at-cliff' &&
+        typeof aca.modeledAllowablePtc === 'number' &&
+        Number.isFinite(aca.modeledAllowablePtc) &&
+        aca.modeledAllowablePtc > 0
       if (
         aca === undefined ||
         aca.householdMagi === null ||
@@ -60,6 +63,9 @@ export const acaThresholdProximity: Detector = {
           { label: `Federal poverty line in ${year.year}`, value: usd(aca.federalPovertyLine), year: year.year },
           { label: `FPL percentage in ${year.year}`, value: `${aca.fplPct.toFixed(1)}%`, year: year.year },
           { label: 'ACA credit boundary', value: `${boundary.toFixed(1)}%` },
+          ...(atCliff
+            ? [{ label: 'Modeled premium tax credit at stake', value: usd(aca.modeledAllowablePtc ?? 0), year: year.year }]
+            : []),
         ],
         plannerRoute: 'optimize',
         action: { kind: 'advisory' },
