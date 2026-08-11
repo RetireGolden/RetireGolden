@@ -4,7 +4,6 @@ import type {
   OwnedRothIraPoolActivity,
   OwnedTraditionalIraAggregateActivity,
 } from '../../projection/types.js'
-import { taxParameterFilingStatus } from '../../projection/types.js'
 import { isAggregatedIra } from '../../strategies/accountEligibility.js'
 import { ROTH_QUALIFIED_AGE } from '../../strategies/rothBasis.js'
 
@@ -18,55 +17,6 @@ interface DataGap {
  * same sub-cent residue floor used elsewhere in the engine (e.g. flexibleGoals).
  */
 const MIN_VISIBLE_CENT = 0.005
-
-/**
- * Sale-year property value mirroring simulatePlan's property growth path.
- *
- * The sim multiplies each property by `1 + inflRateAt(year)` once per calendar
- * year from the projection start through the sale year (sale-year growth
- * accrues before the sale is priced). That cumulative product equals
- * `inflFactorFrom(startYear, saleYear + 1)`, which is the published
- * `YearResult.inflationScale` of the year after the sale when that year is in
- * the ledger — use that scale directly when published so a `market.inflationPct`
- * override (including a distinct final-year rate) matches the ledger.
- *
- * Year Y's published inflationScale is the product of rates for start..Y-1
- * only; it never encodes year Y's own rate. When the sale year is the last
- * published year, the sale-year rate is therefore not derivable from published
- * scales. Do not invent hold-last (the prior yoy can differ from
- * `market.inflationPct`'s final entry). Return null so §121 suppression only
- * proceeds on a known sale price — never on a guessed rate. Partial fixtures
- * with no usable scales leave growth at 1 (opening value).
- *
- * Returns null when the sale-year product cannot be read from published scales.
- */
-function projectedSaleYearPropertyValue(
-  openingValue: number,
-  _startYear: number,
-  saleYear: number,
-  years: readonly { year: number; inflationScale?: number }[],
-): number | null {
-  const scaleByYear = new Map<number, number>()
-  for (const entry of years) {
-    const scale = entry.inflationScale
-    if (scale !== undefined && Number.isFinite(scale) && scale > 0) {
-      scaleByYear.set(entry.year, scale)
-    }
-  }
-  // Product of rates startYear..saleYear inclusive = inflationScale of saleYear+1.
-  const afterSaleScale = scaleByYear.get(saleYear + 1)
-  if (afterSaleScale !== undefined) {
-    return openingValue * afterSaleScale
-  }
-
-  // No next-year scale: sale-year rate is not in any published inflationScale.
-  // Fixtures with no usable scales at all → growth factor 1 (no invented path).
-  if (scaleByYear.size === 0) {
-    return openingValue
-  }
-  // Some scales published but sale-year rate still unknown — undetermined.
-  return null
-}
 
 /**
  * Format a decisive dollar amount for evidence. Integral amounts stay whole
@@ -308,72 +258,17 @@ export const missingDataBasis: Detector = {
         lastProjectionYear !== undefined &&
         account.plannedSaleYear <= lastProjectionYear
       ) {
-        // Primary residence + no recapture/selling-cost fields: tax only
-        // changes from a supplied basis when the zero-basis gain can exceed
-        // the §121 exclusion (propertySaleTax: ordinary = min(gain, recapture),
-        // capital = gain − ordinary − exclusion). Conservative suppress: only
-        // when even zero basis yields fully-excluded gain. Max gain bound =
-        // sale-year value (zero basis, no selling costs). Sale price compounds
-        // opening value once per year from start through the sale year (sim
-        // multiplies infl before pricing the sale).
-        //
-        // Legacy deposits `expectedNetProceeds ?? salePrice` tax-free. When
-        // proceeds are unset, or explicitly equal the projected sale price,
-        // and §121 fully covers zero-basis gain with no positive selling
-        // costs and no recapture, exact-basis propertySaleTax yields the same
-        // tax-free netProceeds (= salePrice) and zero ordinary/capital gain —
-        // entering a basis changes nothing. Differing proceeds keep the gap:
-        // switching paths would change cash deposited even when tax is zero.
+        // Entering a cost basis switches the sim from the legacy tax-free
+        // deposit path to the exact propertySaleTax path. Even when tax is
+        // identical (e.g. primary residence fully under §121 with no selling
+        // costs/recapture, proceeds equal to sale price), cash timing differs:
+        // exact-path net proceeds join `baseCashInflows` before withdrawal
+        // sizing, while legacy deposits `expectedNetProceeds ?? salePrice` in
+        // the later property-events block. Equal proceeds therefore do not
+        // guarantee an identical projection — always surface the gap.
         const expectedNetProceeds = account.expectedNetProceeds
         const hasExpectedNetProceeds =
           expectedNetProceeds !== null && expectedNetProceeds !== undefined
-        // propertySaleTax treats sellingCostPct 0 and omitted identically
-        // (`?? 0`); only a positive selling cost changes the zero-basis gain
-        // bound, so 0 must not block §121 suppression.
-        const hasPositiveSellingCost =
-          account.sellingCostPct !== undefined && account.sellingCostPct > 0
-        if (
-          account.primaryResidence === true &&
-          !hasPositiveSellingCost &&
-          account.depreciationRecapture === undefined
-        ) {
-          // Sale-year filing status governs the §121 bound ($250k single /
-          // $500k joint). Survivorship can flip MFJ → single (or QSS→joint
-          // tables via taxParameterFilingStatus) between plan open and the
-          // sale; the sim prices propertySaleTax with that year's status.
-          const saleYearResult = ctx.projection.result.years.find(
-            (y) => y.year === account.plannedSaleYear,
-          )
-          const filingStatus =
-            saleYearResult?.filingStatus !== undefined
-              ? taxParameterFilingStatus(saleYearResult.filingStatus)
-              : ctx.plan.household.filingStatus
-          const exclusionCap =
-            ctx.params.federalTax.section121Exclusion[filingStatus] ?? 0
-          // Sale price compounds opening value once per calendar year from
-          // start through the sale year (sim multiplies inflRateAt(year)
-          // before pricing the sale). That product is the projection's
-          // published inflation path — not plan.assumptions.inflationPct —
-          // so market.inflationPct overrides match the ledger. Cumulative
-          // growth through end of year Y equals YearResult.inflationScale of
-          // Y+1 (inflFactorFrom(start, Y+1)). When that post-sale scale is
-          // absent the sale-year rate is not derivable — do not suppress on a
-          // guessed hold-last rate.
-          const salePrice = projectedSaleYearPropertyValue(
-            account.value,
-            ctx.projection.startYear,
-            account.plannedSaleYear,
-            ctx.projection.result.years,
-          )
-          // Zero basis, no selling costs, no recapture → gain = salePrice.
-          // null = sale-year product unknown from published scales: keep the
-          // gap (conservative — do not suppress under an incomplete path).
-          if (salePrice !== null && salePrice <= exclusionCap) {
-            if (!hasExpectedNetProceeds || expectedNetProceeds === salePrice) {
-              continue
-            }
-          }
-        }
         if (hasExpectedNetProceeds) {
           gaps.push({
             evidence: {
