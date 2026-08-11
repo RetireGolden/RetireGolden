@@ -1221,6 +1221,44 @@ describe('Social Security claim milestone detector', () => {
     })
   })
 
+  it('stays silent for a plain zero-PIA claimInForce row at filing age with no auxiliary', () => {
+    // Valid zero-PIA stream: claimInForce true, both amounts $0, configured
+    // filing year in horizon — same published shape as override-hidden filing,
+    // but no gate stream paying an auxiliary source. Must stay unmodeled.
+    const ctx = context(66, 67, 0)
+    ctx.plan.incomes = [
+      {
+        id: 'ss-zero-pia',
+        type: 'socialSecurity',
+        personId: 'p1',
+        piaMonthly: 0,
+        earnings: null,
+        claimAge: { years: 67, months: 0 },
+      },
+    ] as never
+    ctx.projection.result.years = Array.from({ length: 3 }, (_, offset) => {
+      const y = 2026 + offset
+      const atFiling = y >= 2027
+      return {
+        year: y,
+        people: [{ personId: 'p1', ageAttained: 66 + offset, alive: true }],
+        socialSecurityStreams: [
+          {
+            personId: 'p1',
+            streamId: 'ss-zero-pia',
+            source: (atFiling ? 'own-retirement' : 'none') as StreamSource,
+            annualAmount: 0,
+            claimInForce: atFiling,
+            preWithholdingAnnual: 0,
+            isSpousalSurvivorGateStream: true,
+          },
+        ],
+      }
+    }) as never
+
+    expect(ssClaimMilestone.screen(ctx)).toBeNull()
+  })
+
   it('stays silent when an SSDI sibling is zeroed by auxiliary override at its claim-age year', () => {
     // SSDI sets claimInForce at its pay site; auxiliary override then zeroes
     // source/amounts on the sibling. That is not a retirement filing — the

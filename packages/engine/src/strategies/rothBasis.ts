@@ -156,3 +156,70 @@ export function freeRothCoverCapacity(
   }
   return free
 }
+
+/**
+ * How much of an assumed-seed dollar amount would land on taxable/penalized
+ * remainders if those dollars walked conversion layers FIFO (mirroring
+ * `splitRothWithdrawal` per-layer consumption) after a live draw's conversion
+ * take has already been applied to residual balances.
+ *
+ * Free layers (seasoned, wholly nontaxable unseasoned, or age-qualified) absorb
+ * without consequence once `priorFreeCoverConsumed` has been charged against
+ * free-cover *prefix* capacity (the same prefix `freeRothCoverCapacity` sums).
+ * Unseasoned taxable takes are consequential; the walk continues past a
+ * partial taxable blocker so free layers behind it still absorb residual seed
+ * (those deeper free dollars are not free-cover capacity and are not tracked
+ * as consumed prefix cover). Residual past every conversion layer is earnings
+ * and is consequential.
+ */
+export function assumedSeedConsequentialSpill(
+  state: RothBasisState,
+  assumedSeedAmount: number,
+  year: number,
+  age: number,
+  priorFreeCoverConsumed = 0,
+): { consequentialSpill: number; freeCoverConsumed: number } {
+  let remaining = Math.max(0, assumedSeedAmount)
+  if (remaining <= 0) {
+    return { consequentialSpill: 0, freeCoverConsumed: 0 }
+  }
+  const qualified = age >= ROTH_QUALIFIED_AGE
+  let priorFreeDebt = Math.max(0, priorFreeCoverConsumed)
+  let consequentialSpill = 0
+  let freeCoverConsumed = 0
+  // Free layers after an unseasoned taxable remainder are reachable once that
+  // remainder is finished, but they are not free-cover *prefix* capacity.
+  let pastTaxableBlocker = false
+  for (const layer of state.conversionLayers) {
+    if (remaining <= 0) break
+    const isFree =
+      qualified ||
+      year - layer.year >= ROTH_SEASONING_YEARS ||
+      layer.taxableAmount <= 0
+    if (isFree) {
+      let freeInLayer = layer.amount
+      if (!pastTaxableBlocker) {
+        if (priorFreeDebt > 0 && freeInLayer > 0) {
+          const debtTake = Math.min(priorFreeDebt, freeInLayer)
+          priorFreeDebt -= debtTake
+          freeInLayer -= debtTake
+        }
+        const absorb = Math.min(remaining, freeInLayer)
+        remaining -= absorb
+        freeCoverConsumed += absorb
+      } else {
+        // Behind a blocker: absorbs spill after the taxable remainder is paid;
+        // not free-cover capacity for the cumulative tracker.
+        remaining -= Math.min(remaining, freeInLayer)
+      }
+    } else {
+      pastTaxableBlocker = true
+      const take = Math.min(remaining, layer.amount)
+      consequentialSpill += take
+      remaining -= take
+    }
+  }
+  // Past conversion principal → earnings (taxable + penalty pre-qualified age).
+  consequentialSpill += remaining
+  return { consequentialSpill, freeCoverConsumed }
+}

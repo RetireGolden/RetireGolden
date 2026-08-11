@@ -8,7 +8,7 @@ function context(fplPct = 405): DetectorContext {
   const plan = singlePersonPlan()
   return {
     plan,
-    params: { year: 2026, aca: { maxFplPctForCredit: 400 } },
+    params: { year: 2026 },
     projection: {
       startYear: 2026,
       result: {

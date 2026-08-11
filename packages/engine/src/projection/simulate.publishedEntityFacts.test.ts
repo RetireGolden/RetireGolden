@@ -863,6 +863,55 @@ describe('simulatePlan published per-entity ledger facts', () => {
       expect(owner?.assumedBasisConsequential).toBeUndefined()
     })
 
+    it('flags only the partial taxable remainder when the live draw leaves a FIFO blocker', () => {
+      // $100 assumed seed; unseasoned taxable blocker $50; nontaxable free
+      // cover $200 behind it. Live draw $120 takes the seed then $20 of the
+      // blocker (partial). Prefix free cover stays 0 (residual taxable still
+      // heads the queue). Counterfactual finishes the $30 taxable remainder
+      // then reaches free cover — consequential spill is $30, not the whole
+      // $100 seed.
+      const plan = singlePersonPlan({ dob: '1971-01-01', planningAge: 90 })
+      plan.id = 'published-facts-roth-partial-blocker-seed'
+      plan.assumptions.inflationPct = 0
+      plan.assumptions.defaultReturnPct = 0
+      plan.expenses.baseAnnual = 0
+      plan.expenses.oneTimeGoals = [
+        { id: 'draw', label: 'roth-draw', year: TAX_YEAR + 1, amount: 120 },
+      ]
+      plan.accounts = [
+        traditionalAccount('401k', 50, 'p1', 'employer'), // year-1 pure taxable layer
+        {
+          ...ownedIra('trad-basis', 200),
+          nondeductibleBasis: 200, // year-2 wholly nontaxable free cover
+        },
+        rothIra('roth', 100, 'p1'), // assumed seed $100
+        cash(0),
+      ]
+      plan.strategies.rothConversion = {
+        mode: 'manual',
+        conversions: [
+          { year: TAX_YEAR, amount: 50 },
+          { year: TAX_YEAR + 1, amount: 200 },
+        ],
+      }
+      plan.incomes = [] as never
+
+      const years = run(plan, TAX_YEAR + 1)
+      const year = years.find((y) => y.year === TAX_YEAR + 1)!
+      expect(year.people[0]!.ageAttained).toBeLessThan(60)
+      expect(year.withdrawals.roth).toBeGreaterThanOrEqual(120)
+      const owner = (year.ownedRothIraPoolActivity ?? []).find((row) => row.ownerPersonId === 'p1')
+      // Prefix freeCover would flag the full $100 seed. FIFO residual walk
+      // bounds spill to the unseasoned taxable remainder after the live partial
+      // take (§72(t) gross-up can deepen the conversion take slightly below the
+      // naive $30 remainder) — never the whole seed, never past the $50 blocker.
+      const spill = owner?.assumedBasisConsequential?.withdrawal
+      expect(spill).toBeDefined()
+      expect(spill!).toBeGreaterThan(0)
+      expect(spill!).toBeLessThan(50)
+      expect(spill!).toBeLessThan(100)
+    })
+
     it('consumes credited contributions before assumed seed (timing)', () => {
       // Omitted contributionBasis (assumed seed) + same-year credits: known
       // credits grow contributionBasis without growing the assumed-seed map, so

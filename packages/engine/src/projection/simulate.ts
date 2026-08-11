@@ -65,6 +65,7 @@ import { capAuxiliaryForFamilyMaximum, claimAgeTotalMonths } from '../socialSecu
 import { sizeRothConversion } from '../strategies/rothConversion.js'
 import {
   ROTH_QUALIFIED_AGE,
+  assumedSeedConsequentialSpill,
   freeRothCoverCapacity,
   splitRothWithdrawal,
   type RothBasisState,
@@ -8864,30 +8865,24 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           // freeCover alone is wrong when the live draw exhausts an unseasoned
           // taxable blocker: that layer is gone in both worlds, so a later
           // nontaxable layer becomes reachable cover for assumed-seed spill.
+          // When the live draw only *partially* consumes that blocker, prefix
+          // free cover is still zero, but the counterfactual finishes the
+          // taxable remainder then reaches free layers behind it — so walk
+          // residual layers FIFO and count only seed that lands on
+          // taxable/penalized remainders (not the whole seed).
           const freeCover = freeRothCoverCapacity(rb, year, age)
-          const freeCoverAfterLiveConversionTake = freeRothCoverCapacity(
-            split.next,
-            year,
-            age,
-          )
           let consequentialSpill: number
           let coverConsumedByThisDraw: number
           if (fromAssumed > 0) {
-            // Assumed seed still flowing: compare spill against post-draw free
-            // cover (prefix advanced past layers this draw already consumed),
-            // less prior counterfactual re-homing.
-            const counterfactualCoverRemaining = Math.max(
-              0,
-              freeCoverAfterLiveConversionTake - priorCfCoverConsumed,
-            )
-            consequentialSpill = Math.max(
-              0,
-              fromAssumed - counterfactualCoverRemaining,
-            )
-            coverConsumedByThisDraw = Math.min(
+            const walked = assumedSeedConsequentialSpill(
+              split.next,
               fromAssumed,
-              counterfactualCoverRemaining,
+              year,
+              age,
+              priorCfCoverConsumed,
             )
+            consequentialSpill = walked.consequentialSpill
+            coverConsumedByThisDraw = walked.freeCoverConsumed
           } else {
             // Seed already exhausted: live free-conversion take only stays
             // free in the counterfactual up to remaining cover after prior

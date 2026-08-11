@@ -1170,14 +1170,15 @@ export interface OwnedRothIraPoolActivity {
   ownerPersonId: string
   /**
    * Present when a pre-qualified-age withdrawal's assumed-zero counterfactual
-   * would change tax/penalty: either spill into assumed-seeded contribution
-   * basis exceeds remaining free-cover capacity (FIFO prefix of seasoned
-   * conversion principal and wholly nontaxable unseasoned principal; stops at
-   * the first unseasoned taxable layer — measured post-draw so a blocker the
-   * live draw already exhausted no longer blocks deeper free layers), or —
-   * after the assumed seed is spent — a later free-conversion take exceeds
-   * cover already re-homed by earlier suppressed spills. Free-cover capacity
-   * is tracked cumulatively per pool (per-attempt scoped) in the assumed-zero
+   * would change tax/penalty: either the portion of assumed-seeded contribution
+   * spill that lands on taxable/penalized remainders when walked FIFO through
+   * post-draw conversion layers (seasoned and wholly nontaxable unseasoned
+   * principal absorb without consequence; an unseasoned taxable remainder is
+   * finished first so free layers behind a partial blocker still absorb; a
+   * fully exhausted live blocker no longer blocks), or — after the assumed
+   * seed is spent — a later free-conversion take exceeds cover already
+   * re-homed by earlier suppressed spills. Free-cover capacity is tracked
+   * cumulatively per pool (per-attempt scoped) in the assumed-zero
    * counterfactual. `withdrawal` is the excess that would change tax/penalty
    * if the omitted `contributionBasis` were supplied. Observation-only — set
    * from live pool balances at `splitRothWithdrawal` commit; never re-derived

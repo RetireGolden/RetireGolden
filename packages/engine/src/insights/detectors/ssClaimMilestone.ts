@@ -21,6 +21,24 @@ function isFilingAgeTransition(
 }
 
 /**
+ * True when this person's spousal/survivor gate stream is paying an auxiliary
+ * source in `yearStreams`. Required before treating a claimInForce row with
+ * zero published amounts as an override-hidden filing — a plain zero-PIA
+ * stream publishes the same shape with no auxiliary and must stay unmodeled.
+ */
+function gateStreamPayingAuxiliary(
+  yearStreams: readonly SocialSecurityStreamActivity[],
+  personId: string,
+): boolean {
+  for (const entry of yearStreams) {
+    if (entry.personId !== personId || !entry.isSpousalSurvivorGateStream) continue
+    if (entry.source !== 'spousal' && entry.source !== 'survivor') continue
+    if (entry.annualAmount > 0 || entry.preWithholdingAnnual > 0) return true
+  }
+  return false
+}
+
+/**
  * Annual-ledger payable months in a year at `ageAttained` given `claimAge`
  * (same rule as simulatePlan): claim year truncates to months after the claim
  * month; later years pay all 12.
@@ -343,14 +361,15 @@ export const ssClaimMilestone: Detector = {
       // Earliest claim-in-force year among this person's non-SSDI, non-pre-horizon
       // streams that model a filing: positive paid or pre-withholding, or a
       // claimInForce row zeroed by auxiliary override whose claim age falls in
-      // this year (filing-age transition). Unmodeled zeros (both amounts ≤ 0 and
-      // no filing-age transition) are skipped so later sibling streams still
-      // surface. Also skip own-retirement that follows a published SSDI year on
-      // the same stream (FRA conversion).
+      // this year (filing-age transition). Unmodeled zeros (both amounts ≤ 0,
+      // no auxiliary override in force, or no filing-age transition) are skipped
+      // so later sibling streams still surface. Also skip own-retirement that
+      // follows a published SSDI year on the same stream (FRA conversion).
       let firstClaimYear: number | null = null
       let firstClaimStream: SocialSecurityStreamActivity | null = null
       for (const year of projectionYears) {
-        const streams = (year.socialSecurityStreams ?? []).filter(
+        const yearStreams = year.socialSecurityStreams ?? []
+        const streams = yearStreams.filter(
           (entry: SocialSecurityStreamActivity) => {
             if (
               entry.personId !== person.id ||
@@ -367,12 +386,14 @@ export const ssClaimMilestone: Detector = {
             // Positive paid or pre-withholding → modeled benefit (incl. withheld).
             if (entry.annualAmount > 0 || entry.preWithholdingAnnual > 0) return true
             // Zeroed-by-override filing: claimInForce stays true while auxiliary
-            // override zeroes source/amounts. Treat as a filing event when the
-            // stream's claim age falls in this year. Unmodeled-zero skip requires
-            // both amounts ≤ 0 AND no filing-age transition.
+            // override zeroes source/amounts. Require the person's gate stream
+            // to be paying an auxiliary source this year — otherwise a plain
+            // zero-PIA stream (claimInForce + $0, no aux) matches this shape
+            // at its configured filing year and must stay unmodeled (silent).
             // SSDI is not a filing: a valid SSDI sibling (or any stream that
             // published source ssdi) zeroed by auxiliary override must not
             // enter this path even when claimAge.years coincides with the year.
+            if (!gateStreamPayingAuxiliary(yearStreams, person.id)) return false
             const streamIncome = ctx.plan.incomes.find(
               (candidate): candidate is SocialSecurityIncome =>
                 candidate.type === 'socialSecurity' && candidate.id === entry.streamId,

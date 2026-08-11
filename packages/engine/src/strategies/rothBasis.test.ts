@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { describeRule } from '../rules/describeRule.js'
 import {
+  assumedSeedConsequentialSpill,
   emptyRothBasis,
   freeRothCoverCapacity,
   splitRothWithdrawal,
@@ -181,5 +182,36 @@ describe('freeRothCoverCapacity — FIFO prefix', () => {
       ],
     }
     expect(freeRothCoverCapacity(state, 2028, 60)).toBe(20_000)
+  })
+})
+
+describe('assumedSeedConsequentialSpill — FIFO residual walk', () => {
+  it('bounds spill by the partial taxable remainder, then absorbs free layers behind it', () => {
+    // Live draw partially consumed a $50 unseasoned taxable blocker (residual
+    // $30) with $200 nontaxable free cover behind it. Prefix free cover is 0,
+    // but only the $30 remainder is consequential for a $100 assumed seed.
+    const residual: RothBasisState = {
+      contributionBasis: 0,
+      conversionLayers: [
+        { year: 2026, amount: 30, taxableAmount: 30 },
+        { year: 2027, amount: 200, taxableAmount: 0 },
+      ],
+    }
+    expect(freeRothCoverCapacity(residual, 2028, 55)).toBe(0)
+    const walked = assumedSeedConsequentialSpill(residual, 100, 2028, 55)
+    expect(walked.consequentialSpill).toBeCloseTo(30, 6)
+    expect(walked.freeCoverConsumed).toBeCloseTo(0, 6)
+  })
+
+  it('reports zero spill when the live draw already exhausted the taxable blocker', () => {
+    const residual: RothBasisState = {
+      contributionBasis: 0,
+      conversionLayers: [
+        { year: 2027, amount: 200, taxableAmount: 0 },
+      ],
+    }
+    const walked = assumedSeedConsequentialSpill(residual, 100, 2028, 55)
+    expect(walked.consequentialSpill).toBeCloseTo(0, 6)
+    expect(walked.freeCoverConsumed).toBeCloseTo(100, 6)
   })
 })
