@@ -63,15 +63,30 @@ function streamPublishedSsdiThrough(
 }
 
 /**
+ * Last socialSecurity income for a person — matches sim `ssStreamByPerson`
+ * last-wins precedence and the published `isSpousalSurvivorGateStream` marker.
+ */
+function lastSsIncomeForPerson(plan: Plan, personId: string): SocialSecurityIncome | undefined {
+  let last: SocialSecurityIncome | undefined
+  for (const candidate of plan.incomes) {
+    if (candidate.type === 'socialSecurity' && candidate.personId === personId) {
+      last = candidate
+    }
+  }
+  return last
+}
+
+/**
  * True when a positive auxiliary row at the horizon start is already-paying
  * pre-horizon (not a new in-horizon entitlement transition).
  *
  * Distinguishes via published start-year rows only: positive aux with the same
  * source at start, no earlier in-horizon zero, and the enabling event already
- * present at start (co-spouse claim-in-force pre-horizon, or co-spouse already
- * deceased for survivor). A first-year NEW entitlement — spouse claims or dies
- * in year one, so the enabling event is not yet pre-horizon-established —
- * returns false so the start-year row can still fire.
+ * present at start (co-spouse claim-in-force pre-horizon, co-spouse already
+ * deceased for household survivor, or a deceased former spouse on the
+ * claimant's stream for former-spouse survivor). A first-year NEW entitlement
+ * — spouse claims or dies in year one, so the enabling event is not yet
+ * pre-horizon-established — returns false so the start-year row can still fire.
  */
 function auxiliaryAlreadyPayingAtHorizonStart(args: {
   entry: SocialSecurityStreamActivity
@@ -88,15 +103,25 @@ function auxiliaryAlreadyPayingAtHorizonStart(args: {
   // First possible own-claim year is not "already paying" — keep NEW entitlements.
   if (claimAgeYears !== undefined && projectedAge <= claimAgeYears) return false
 
+  const streamIncome = plan.incomes.find(
+    (candidate): candidate is SocialSecurityIncome =>
+      candidate.type === 'socialSecurity' && candidate.id === entry.streamId,
+  )
+  const hasDeceasedFormerSpouse =
+    streamIncome?.formerSpouses?.some((former) => former.relationship === 'deceased') === true
+
   const coPerson = plan.household.people.find((candidate) => candidate.id !== personId)
   if (entry.source === 'survivor') {
     if (coPerson === undefined) {
-      // Former-spouse survivor: positive past claim age at start → pre-horizon.
+      // Former-spouse survivor (no household co-person): positive past claim age at start.
       return true
     }
     const coState = firstProjectionYear.people.find((row) => row.personId === coPerson.id)
-    // Enabling death already present at start (co-spouse not alive).
-    return coState !== undefined && !coState.alive
+    // Enabling death already present at start (household co-spouse not alive).
+    if (coState !== undefined && !coState.alive) return true
+    // Survivor from a deceased former spouse on this stream while household
+    // co-person is still alive — death is a plan fact, not an in-horizon event.
+    return hasDeceasedFormerSpouse
   }
 
   // Spousal: enabling event = co-spouse already claim-in-force pre-horizon.
@@ -115,10 +140,17 @@ function auxiliaryAlreadyPayingAtHorizonStart(args: {
       (row.annualAmount > 0 || row.preWithholdingAnnual > 0),
   )
   if (!coClaiming) return false
-  const coIncome = plan.incomes.find(
-    (candidate): candidate is SocialSecurityIncome =>
-      candidate.type === 'socialSecurity' && candidate.personId === coPerson.id,
-  )
+  // Prefer the published gate stream (sim last-wins); fall back to last plan income.
+  const gateStreamId = (firstProjectionYear.socialSecurityStreams ?? []).find(
+    (row) => row.personId === coPerson.id && row.isSpousalSurvivorGateStream,
+  )?.streamId
+  const coIncome =
+    gateStreamId !== undefined
+      ? plan.incomes.find(
+          (candidate): candidate is SocialSecurityIncome =>
+            candidate.type === 'socialSecurity' && candidate.id === gateStreamId,
+        )
+      : lastSsIncomeForPerson(plan, coPerson.id)
   // Co-spouse claim-in-force at start with age past their claim age = pre-horizon
   // enabling event. If co-spouse is in their first claim year (age == claimAge),
   // the enabling claim occurs in year one — not already-paying.
@@ -217,9 +249,10 @@ export const ssClaimMilestone: Detector = {
         // Key on a transition to positive within the horizon — not claim age.
         // Already-paying pre-horizon: positive at the start year with the same
         // auxiliary source, no earlier in-horizon zero row, and the enabling
-        // event already present at start (co-spouse pre-horizon claim-in-force,
-        // or co-spouse already deceased for survivor). First-year NEW
-        // entitlements (spouse claims or dies in year one; co-spouse not yet
+        // event already present at start (co-spouse pre-horizon claim-in-force
+        // via last-wins gate stream, household co-spouse already deceased, or a
+        // deceased former spouse on this stream). First-year NEW entitlements
+        // (spouse claims or dies in year one; co-spouse not yet
         // pre-horizon-established) stay out of this set so the search below
         // can still fire at yearsToClaim = 0.
         if (entry.source === 'spousal' || entry.source === 'survivor') {
