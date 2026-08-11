@@ -3042,4 +3042,109 @@ describe('Social Security claim milestone detector', () => {
 
     expect(ssClaimMilestone.screen(ctx)).toBeNull()
   })
+
+  it('fires death-at-start survivor when former survivor lost to current-spouse spousal pre-horizon (three-way)', () => {
+    // Prior-year sources (monthly, unreduced claim ages): own $500, deceased-former
+    // survivor $600, current-spouse spousal $1,000. Former beats own but loses to
+    // current-spouse — former never paid. Household death-at-start is a NEW
+    // survivor entitlement and must fire (not former-survivor pre-horizon silence).
+    const ctx = context(70, 67, 0)
+    ctx.plan.incomes = [
+      {
+        id: 'ss-claimant',
+        type: 'socialSecurity',
+        personId: 'p1',
+        piaMonthly: 500,
+        earnings: null,
+        claimAge: { years: 67, months: 0 },
+        formerSpouses: [
+          {
+            id: 'ex-deceased',
+            relationship: 'deceased',
+            dob: '1950-01-01',
+            piaMonthly: 600, // survivor monthly ~600; annual 7_200 > own 6_000
+            marriageYears: 15,
+            remarriedAtAge: null,
+          },
+        ],
+      },
+    ] as never
+    // DOB 1956, start age 70, lifeAge 69 → first deceased year age 70 = start.
+    // Prior year age 69 ≥ claim 67 so current-spouse spousal was claim-eligible.
+    ctx.plan.household.people.push({
+      id: 'p2',
+      name: 'Sam',
+      dob: '1956-01-01',
+      sex: 'average',
+      retirementAge: null,
+      longevity: { planningAge: 69, source: 'manual' },
+    })
+    ctx.plan.incomes.push({
+      id: 'ss-decedent',
+      type: 'socialSecurity',
+      personId: 'p2',
+      piaMonthly: 2_000, // 50% spousal raw = $1,000/mo; annual 12_000 > former 7_200
+      earnings: null,
+      claimAge: { years: 67, months: 0 },
+    } as never)
+    const years = ctx.projection.result.years as Array<{
+      year: number
+      people: { personId: string; ageAttained: number; alive: boolean; lifeAge?: number }[]
+      socialSecurityStreams?: {
+        personId: string
+        streamId: string
+        source: StreamSource
+        annualAmount: number
+        claimInForce: boolean
+        preWithholdingAnnual: number
+        isSpousalSurvivorGateStream: boolean
+      }[]
+    }>
+    for (const year of years) {
+      year.people = [
+        { personId: 'p1', ageAttained: 70 + (year.year - 2026), alive: true, lifeAge: 95 },
+        { personId: 'p2', ageAttained: 70 + (year.year - 2026), alive: false, lifeAge: 69 },
+      ]
+      year.socialSecurityStreams = [
+        {
+          personId: 'p1',
+          streamId: 'ss-claimant',
+          // Household survivor step-up at death-at-start (new entitlement).
+          source: 'survivor',
+          annualAmount: 24_000,
+          claimInForce: true,
+          preWithholdingAnnual: 24_000,
+          isSpousalSurvivorGateStream: true,
+        },
+        {
+          personId: 'p2',
+          streamId: 'ss-decedent',
+          source: 'none',
+          annualAmount: 0,
+          claimInForce: false,
+          preWithholdingAnnual: 0,
+          isSpousalSurvivorGateStream: true,
+        },
+      ]
+    }
+
+    expect(ssClaimMilestone.screen(ctx)).toMatchObject({
+      title: "Pat's Social Security claim is imminent",
+      severity: 'attention',
+      evidence: expect.arrayContaining([
+        {
+          // ageAtFirstPayableYear = startYear − dobYear (1960) = 66 < claimAge 67
+          // → partial-year label even though published survivor pays at start.
+          label: 'Modeled first claim year (claim in force; partial when claim months > 0)',
+          value: '2026',
+          year: 2026,
+        },
+        {
+          label: "Pat's modeled benefit in first claim year (survivor)",
+          value: '$24,000',
+          year: 2026,
+        },
+      ]),
+    })
+  })
 })

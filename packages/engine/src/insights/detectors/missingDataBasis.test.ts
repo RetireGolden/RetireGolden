@@ -788,6 +788,34 @@ describe('missing data basis detector', () => {
     ])
   })
 
+  it('pins dates-only title when the only gaps are retirement-date / wage facts', () => {
+    // No basis gaps — open-ended wages with null retirement age only. Title must
+    // not claim tax-basis facts are missing.
+    const ctx = context()
+    ctx.plan.accounts = []
+    ctx.plan.incomes = [
+      { id: 'wages', type: 'wages', personId: 'p1', annualGross: 100_000, endAge: null },
+    ] as never
+    const year = ctx.projection.result.years[0] as {
+      ownedTraditionalIraAggregateActivity?: unknown[]
+      ownedRothIraPoolActivity?: unknown[]
+      employerRothAccountActivity?: unknown[]
+    }
+    year.ownedTraditionalIraAggregateActivity = []
+    year.ownedRothIraPoolActivity = []
+    year.employerRothAccountActivity = []
+
+    expect(missingDataBasis.screen(ctx)).toMatchObject({
+      title: 'Some retirement-date facts use planning defaults',
+      rationale: expect.stringContaining('retirement-date'),
+      evidence: [
+        { label: 'Pat age at projection start (wages assumed to continue for life)', value: '60', year: 2026 },
+        { label: 'Pat continuing open-ended wages (no retirement age; assumed for life)', value: '$100,000', year: 2026 },
+      ],
+    })
+    expect(missingDataBasis.screen(ctx)?.title).not.toMatch(/tax-basis/)
+  })
+
   it('stays silent for a planned sale of a zero-value property', () => {
     const ctx = context()
     ctx.plan.accounts = [{

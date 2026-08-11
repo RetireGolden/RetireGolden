@@ -7,8 +7,12 @@ import type {
 import { isAggregatedIra } from '../../strategies/accountEligibility.js'
 import { ROTH_QUALIFIED_AGE } from '../../strategies/rothBasis.js'
 
+/** Basis gaps (IRA/Roth/property) vs retirement-date / open-ended wage gaps. */
+type DataGapKind = 'basis' | 'dates'
+
 interface DataGap {
   evidence: InsightEvidence
+  kind: DataGapKind
 }
 
 /**
@@ -107,6 +111,7 @@ export const missingDataBasis: Detector = {
         // owner's §408(d)(2) owned-IRA aggregate, not a single account's gross.
         if (verdict.distributions >= MIN_VISIBLE_CENT) {
           gaps.push({
+            kind: 'basis',
             evidence: {
               label: `${nameList} taxable character from assumed-zero basis (distributions)`,
               value: usd(verdict.distributions),
@@ -115,6 +120,7 @@ export const missingDataBasis: Detector = {
           })
         } else if (verdict.conversions >= MIN_VISIBLE_CENT) {
           gaps.push({
+            kind: 'basis',
             evidence: {
               label: `${nameList} taxable character from assumed-zero basis (conversions)`,
               value: usd(verdict.conversions),
@@ -123,6 +129,7 @@ export const missingDataBasis: Detector = {
           })
         } else if (verdict.annuityPayments >= MIN_VISIBLE_CENT) {
           gaps.push({
+            kind: 'basis',
             evidence: {
               label:
                 `${nameList} taxable character from assumed-zero basis (IRA-funded annuity payments)`,
@@ -137,6 +144,7 @@ export const missingDataBasis: Detector = {
         }
         const aggregateBalance = accounts.reduce((sum, a) => sum + a.balance, 0)
         gaps.push({
+          kind: 'basis',
           evidence: {
             // Plan opening balances, not the trigger year's live figure.
             label: `${nameList} opening balance (assumed zero after-tax basis)`,
@@ -183,6 +191,7 @@ export const missingDataBasis: Detector = {
         if (verdict === undefined || verdict.withdrawal < MIN_VISIBLE_CENT) continue
         const nameList = accounts.map((a) => a.name).join(', ')
         gaps.push({
+          kind: 'basis',
           evidence: {
             // Verdict is the basis-sensitive spill past known contributions
             // and free conversion cover — not the pool's total withdrawal.
@@ -194,6 +203,7 @@ export const missingDataBasis: Detector = {
         })
         const aggregateBalance = accounts.reduce((sum, a) => sum + a.balance, 0)
         gaps.push({
+          kind: 'basis',
           evidence: {
             // Plan opening balances, not the trigger year's live figure.
             label: `${nameList} opening balance (assumed contribution basis)`,
@@ -225,6 +235,7 @@ export const missingDataBasis: Detector = {
           // Sub-cent spill rounds to $0 evidence — require a visible cent.
           if (verdict === undefined || verdict.withdrawal < MIN_VISIBLE_CENT) continue
           gaps.push({
+            kind: 'basis',
             evidence: {
               // Verdict is the basis-sensitive spill past known contributions
               // and free conversion cover — not the account's total withdrawal.
@@ -235,6 +246,7 @@ export const missingDataBasis: Detector = {
             },
           })
           gaps.push({
+            kind: 'basis',
             evidence: {
               // Engine models employer designated-Roth under IRA ordering
               // (splitRothWithdrawal), not Treas. Reg. §1.402A-1 Q&A-3 pro-rata.
@@ -271,6 +283,7 @@ export const missingDataBasis: Detector = {
           expectedNetProceeds !== null && expectedNetProceeds !== undefined
         if (hasExpectedNetProceeds) {
           gaps.push({
+            kind: 'basis',
             evidence: {
               label: `${account.name} expected net proceeds (legacy net-proceeds path)`,
               value: usd(expectedNetProceeds),
@@ -284,6 +297,7 @@ export const missingDataBasis: Detector = {
           // compounded value is not published).
           if (account.value > 0) {
             gaps.push({
+              kind: 'basis',
               evidence: {
                 label: `${account.name} opening property value (legacy net-proceeds path)`,
                 value: usd(account.value),
@@ -299,6 +313,7 @@ export const missingDataBasis: Detector = {
           // this property in the gap gate) so the card is never a one-row value
           // without the sale trigger that made omitted basis consequential.
           gaps.push({
+            kind: 'basis',
             evidence: {
               label: `${account.name} opening property value (legacy net-proceeds path)`,
               value: usd(account.value),
@@ -306,6 +321,7 @@ export const missingDataBasis: Detector = {
             },
           })
           gaps.push({
+            kind: 'basis',
             evidence: {
               label: `${account.name} planned sale year (legacy net-proceeds path)`,
               value: String(account.plannedSaleYear),
@@ -338,6 +354,7 @@ export const missingDataBasis: Detector = {
         ) continue
 
         gaps.push({
+          kind: 'dates',
           evidence: {
             label: `${person.name} age at projection start (wages assumed to continue for life)`,
             value: String(projectedPerson.ageAttained),
@@ -347,6 +364,7 @@ export const missingDataBasis: Detector = {
         // The open-ended-wages gap is triggered by continuing positive wage
         // streams, not age alone — cite the summed annual gross of those streams.
         gaps.push({
+          kind: 'dates',
           evidence: {
             label: `${person.name} continuing open-ended wages (no retirement age; assumed for life)`,
             value: usd(continuingWages),
@@ -366,15 +384,44 @@ export const missingDataBasis: Detector = {
       const overflow = gaps.length - 5
       last.label = `${last.label}...(${overflow} more not shown)`
     }
+
+    // Title/rationale name the gap composition so a dates-only card does not
+    // claim tax-basis facts are missing (catalog: missing dates/basis).
+    const hasBasis = gaps.some((gap) => gap.kind === 'basis')
+    const hasDates = gaps.some((gap) => gap.kind === 'dates')
+    let title: string
+    let rationale: string
+    let impactQualitative: string
+    if (hasBasis && hasDates) {
+      title = 'Some tax-basis and retirement-date facts use planning defaults'
+      rationale =
+        'Optional basis and retirement-date fields currently default to assumptions that can change taxes. ' +
+        'Entering the real values makes the projection more exact.'
+      impactQualitative =
+        'The listed defaults may affect withdrawal taxation, Roth access, property-sale tax, or projected wages.'
+    } else if (hasDates) {
+      title = 'Some retirement-date facts use planning defaults'
+      rationale =
+        'Optional retirement-date fields currently default to assumptions that can change projected wages. ' +
+        'Entering the real values makes the projection more exact.'
+      impactQualitative =
+        'The listed defaults may affect how long open-ended wages continue in the projection.'
+    } else {
+      title = 'Some tax-basis facts use planning defaults'
+      rationale =
+        'Optional basis fields currently default to assumptions that can change taxes. ' +
+        'Entering the real values makes the projection more exact.'
+      impactQualitative =
+        'The listed defaults may affect withdrawal taxation, Roth access, or property-sale tax.'
+    }
+
     return {
       id: 'missing-data-basis',
       category: 'accounts-contributions',
-      title: 'Some tax-basis facts use planning defaults',
-      rationale:
-        'Optional basis and retirement-date fields currently default to assumptions that can change taxes. ' +
-        'Entering the real values makes the projection more exact.',
+      title,
+      rationale,
       impact: {
-        qualitative: 'The listed defaults may affect withdrawal taxation, Roth access, property-sale tax, or projected wages.',
+        qualitative: impactQualitative,
       },
       exact: false,
       confidence: 'high',

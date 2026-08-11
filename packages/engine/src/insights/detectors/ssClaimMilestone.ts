@@ -1,7 +1,8 @@
 import type { Detector, InsightCard } from '../types.js'
 import type { FormerSpouse, Plan } from '../../model/plan.js'
 import type { SocialSecurityStreamActivity } from '../../projection/types.js'
-import { claimFactor } from '../../socialSecurity/claimFactor.js'
+import { claimFactor, spousalBenefitFactor } from '../../socialSecurity/claimFactor.js'
+import { capAuxiliaryForFamilyMaximum } from '../../socialSecurity/familyMaximum.js'
 import { bestMaritalBenefit } from '../../socialSecurity/maritalBenefits.js'
 import { effectiveBirthYear, fraForBirthYear } from '../../socialSecurity/nra.js'
 import {
@@ -119,23 +120,148 @@ function resolveOwnAnnualSum(
 }
 
 /**
- * True when a former-spouse marital benefit already beat the claimant's summed
- * own benefit in the year before the horizon start — the same "larger of own
- * vs marital" gate the sim uses when publishing the auxiliary.
+ * Sum of the person's own monthly SS rates at `ageAttained` — same accumulation
+ * as simulatePlan's `ssActualMonthlyByPerson` (pre-former / pre-spousal). Used
+ * for current-spouse top-up excess and family-maximum worker actual.
+ */
+function resolveOwnMonthlyRate(
+  plan: Plan,
+  personId: string,
+  person: HouseholdPerson,
+  ageAttained: number,
+): number | null {
+  const birthYear = Number(person.dob.slice(0, 4))
+  const birthMonth = Number(person.dob.slice(5, 7))
+  const birthDay = Number(person.dob.slice(8, 10))
+  const personFraYears = fraForBirthYear(
+    effectiveBirthYear(birthYear, birthMonth, birthDay),
+  ).years
+
+  let sum = 0
+  let anyResolved = false
+  for (const stream of plan.incomes) {
+    if (stream.type !== 'socialSecurity' || stream.personId !== personId) continue
+    const pia = resolveOwnPiaMonthly(stream, person)
+    if (pia === null) continue
+    anyResolved = true
+
+    if (
+      stream.disability?.onsetAge !== undefined &&
+      stream.disability.onsetAge < personFraYears
+    ) {
+      if (ageAttained >= stream.disability.onsetAge) {
+        sum += pia
+      }
+      continue
+    }
+
+    if (payableMonthsAtAge(ageAttained, stream.claimAge) <= 0) continue
+    sum += pia * claimFactor(birthYear, birthMonth, birthDay, stream.claimAge)
+  }
+  return anyResolved ? sum : null
+}
+
+/**
+ * Current-spouse spousal total annual the sim would assign the claimant in the
+ * prior year (lower-earner top-up, family-max capped) — 0 when not eligible.
+ * Mirrors simulatePlan's current-spouse pass after the former-spouse menu.
+ */
+function resolveCurrentSpouseSpousalAnnualPriorYear(args: {
+  plan: Plan
+  claimantPersonId: string
+  claimantAgePrior: number
+  coPersonId: string
+  coPersonAgePrior: number
+}): number {
+  const { plan, claimantPersonId, claimantAgePrior, coPersonId, coPersonAgePrior } = args
+  const claimant = plan.household.people.find((row) => row.id === claimantPersonId)
+  const coPerson = plan.household.people.find((row) => row.id === coPersonId)
+  if (claimant === undefined || coPerson === undefined) return 0
+
+  // Gate stream = last SS income (sim last-wins / isSpousalSurvivorGateStream).
+  const claimantStream = lastSsIncomeForPerson(plan, claimantPersonId)
+  const coStream = lastSsIncomeForPerson(plan, coPersonId)
+  if (claimantStream === undefined || coStream === undefined) return 0
+
+  const claimantPia = resolveOwnPiaMonthly(claimantStream, claimant)
+  const coPia = resolveOwnPiaMonthly(coStream, coPerson)
+  if (claimantPia === null || coPia === null) return 0
+
+  const claimantMonths = payableMonthsAtAge(claimantAgePrior, claimantStream.claimAge)
+  const coMonths = payableMonthsAtAge(coPersonAgePrior, coStream.claimAge)
+  const spousalMonths = Math.min(claimantMonths, coMonths)
+  if (spousalMonths <= 0) return 0
+
+  const higherIsClaimant = claimantPia >= coPia
+  // Current-spouse top-up pays only the lower earner.
+  if (higherIsClaimant) return 0
+
+  const higher = {
+    person: coPerson,
+    stream: coStream,
+    pia: coPia,
+    age: coPersonAgePrior,
+  }
+  const lower = {
+    person: claimant,
+    stream: claimantStream,
+    pia: claimantPia,
+    age: claimantAgePrior,
+  }
+
+  const lowerDob = {
+    year: Number(lower.person.dob.slice(0, 4)),
+    month: Number(lower.person.dob.slice(5, 7)),
+    day: Number(lower.person.dob.slice(8, 10)),
+  }
+  const higherDob = {
+    year: Number(higher.person.dob.slice(0, 4)),
+    month: Number(higher.person.dob.slice(5, 7)),
+    day: Number(higher.person.dob.slice(8, 10)),
+  }
+  const rawSpousalMonthly =
+    0.5 *
+    higher.pia *
+    spousalBenefitFactor(lowerDob.year, lowerDob.month, lowerDob.day, lower.stream.claimAge)
+  const lowerOwnMonthly = resolveOwnMonthlyRate(plan, lower.person.id, lower.person, lower.age) ?? 0
+  const higherOwnMonthly =
+    resolveOwnMonthlyRate(plan, higher.person.id, higher.person, higher.age) ??
+    higher.pia *
+      claimFactor(higherDob.year, higherDob.month, higherDob.day, higher.stream.claimAge)
+  const excessSpousalMonthly = Math.max(0, rawSpousalMonthly - lowerOwnMonthly)
+  const cappedExcessMonthly = capAuxiliaryForFamilyMaximum({
+    workerPiaMonthly: higher.pia,
+    workerActualMonthly: higherOwnMonthly,
+    workerDob: higherDob,
+    auxiliaryMonthly: excessSpousalMonthly,
+  })
+  const spousalTotalMonthly = lowerOwnMonthly + cappedExcessMonthly
+  return spousalTotalMonthly * spousalMonths
+}
+
+/**
+ * True when a former-spouse marital benefit was the *actual* paying source in
+ * the year before the horizon start — the same sequential highest-wins gate
+ * the sim uses (own → former menu → current-spouse top-up).
  *
  * Former-spouse records may be split across multiple SS streams for the same
  * claimant. The sim walks every stream's formers against the rolling
  * `ssOwnByPerson` sum; this gate mirrors that by taking the best prior-year
  * former annual across ALL of the claimant's streams (each priced on that
- * stream's claim age / payable months) and comparing it to the summed own
- * benefit.
+ * stream's claim age / payable months) and comparing it to competing sources.
+ *
+ * When a current spouse was still alive and claim-eligible in the prior year,
+ * their spousal top-up competes: a former survivor that beats own but loses to
+ * current-spouse spousal never paid, so a household-death survivor at start is
+ * a NEW entitlement (not already-paying former-survivor suppression).
  *
  * Returns:
  *  - true  → prior-year win (already-paying enabler)
- *  - false → no eligible former benefit, or own still larger
+ *  - false → no eligible former benefit, or another source still larger
  *  - null  → eligible former benefit but no usable own PIA on any stream
  *            (cannot prove a win; callers treat as already-paying when the
- *            enabler itself predates the horizon)
+ *            enabler itself predates the horizon), unless current-spouse
+ *            spousal already beats the former amount
  */
 function formerSpouseWonOverOwnPriorYear(args: {
   plan: Plan
@@ -145,9 +271,24 @@ function formerSpouseWonOverOwnPriorYear(args: {
   /** Relationship filter matching the caller's enabling-event arm. */
   formerRelationship: FormerSpouse['relationship']
   claimantIsSingle: boolean
+  /**
+   * When set, include the current-spouse spousal total as a competing prior-year
+   * source (sim highest-wins). Omit for single-household / co already dead.
+   */
+  currentSpouseCompetitor?: {
+    coPersonId: string
+    coPersonAgePrior: number
+  }
 }): boolean | null {
-  const { plan, personId, projectedAge, startYear, formerRelationship, claimantIsSingle } =
-    args
+  const {
+    plan,
+    personId,
+    projectedAge,
+    startYear,
+    formerRelationship,
+    claimantIsSingle,
+    currentSpouseCompetitor,
+  } = args
   const claimant = plan.household.people.find((row) => row.id === personId)
   if (claimant === undefined) return false
 
@@ -191,10 +332,31 @@ function formerSpouseWonOverOwnPriorYear(args: {
   }
   if (!anyEligibleFormer) return false
 
-  const ownAnnual = resolveOwnAnnualSum(plan, personId, claimant, claimantAgePrior)
-  if (ownAnnual === null) return null
+  // Current-spouse top-up competes after the former menu (sim sequential max).
+  const currentSpousalAnnual =
+    currentSpouseCompetitor === undefined
+      ? 0
+      : resolveCurrentSpouseSpousalAnnualPriorYear({
+          plan,
+          claimantPersonId: personId,
+          claimantAgePrior,
+          coPersonId: currentSpouseCompetitor.coPersonId,
+          coPersonAgePrior: currentSpouseCompetitor.coPersonAgePrior,
+        })
 
-  return bestFormerAnnual > ownAnnual
+  const ownAnnual = resolveOwnAnnualSum(plan, personId, claimant, claimantAgePrior)
+  if (ownAnnual === null) {
+    // Cannot prove former > own; if current-spouse already beats former, former
+    // was never the paying source.
+    if (currentSpousalAnnual > bestFormerAnnual) return false
+    return null
+  }
+
+  // Highest wins across own / former / current — former is the actual prior-year
+  // source only when it strictly beats own and is not displaced by current-spouse.
+  if (!(bestFormerAnnual > ownAnnual)) return false
+  if (currentSpousalAnnual > bestFormerAnnual) return false
+  return true
 }
 
 /**
@@ -389,9 +551,11 @@ function effectiveLifeAgeFromPublishedPeople(
  * Life age is read from published person-year `lifeAge` or recovered as the
  * max ageAttained among years the co-person is still alive.
  *
- * Exception: a deceased-former-spouse survivor that already won over own
- * pre-horizon stays already-paying even when household death-at-start is
- * another enabling event.
+ * Exception: a deceased-former-spouse survivor that was the *actual* prior-year
+ * paying source (highest wins across own / former / current-spouse) stays
+ * already-paying even when household death-at-start is another enabling event.
+ * A former amount that lost to current-spouse spousal never paid — death-at-start
+ * household survivor is then a NEW entitlement.
  */
 function auxiliaryAlreadyPayingAtHorizonStart(args: {
   entry: SocialSecurityStreamActivity
@@ -452,13 +616,18 @@ function auxiliaryAlreadyPayingAtHorizonStart(args: {
     // death occurs AT start (new entitlement) — do not suppress. Ages past
     // that first deceased year mean death-before-start (already paying).
     //
-    // Precedence: an already-paying former-spouse survivor stays pre-horizon
-    // even when household death-at-start is another enabling event. Prove the
-    // prior-year win of deceased-former survivor over summed own (same gate
-    // the sim uses); do not reclassify that source as a new household
-    // entitlement. When the deceased former never won pre-horizon, fall
-    // through to the death-timing rule.
+    // Precedence: a deceased-former survivor that *actually paid* pre-horizon
+    // (highest of own / former / current-spouse) stays pre-horizon even when
+    // household death-at-start is another enabling event. Former > own alone
+    // is not enough when current-spouse spousal was the larger prior-year
+    // source — that former never paid, so death-at-start is NEW. When the
+    // deceased former never won pre-horizon, fall through to death-timing.
+    const lifeAge = effectiveLifeAgeFromPublishedPeople(projectionYears, coPerson.id)
     if (hasDeceasedFormerSpouse) {
+      // Current-spouse top-up only competed while the co-person was still alive
+      // in the prior year (death-at-start → prior alive; death-before-start → not).
+      const coAliveInPriorYear =
+        lifeAge !== null && coState.ageAttained === lifeAge + 1
       const win = formerSpouseWonOverOwnPriorYear({
         plan,
         personId,
@@ -468,11 +637,16 @@ function auxiliaryAlreadyPayingAtHorizonStart(args: {
         // Survivor eligibility does not require single household; pass false
         // when a co-person exists (divorced-spousal arm is N/A for deceased).
         claimantIsSingle: false,
+        currentSpouseCompetitor: coAliveInPriorYear
+          ? {
+              coPersonId: coPerson.id,
+              coPersonAgePrior: coState.ageAttained - 1,
+            }
+          : undefined,
       })
       // true / null (eligible former, no usable own) → already-paying.
       if (win !== false) return true
     }
-    const lifeAge = effectiveLifeAgeFromPublishedPeople(projectionYears, coPerson.id)
     if (lifeAge === null) {
       // No published life age and never alive in the series — cannot place the
       // first deceased year; treat opening death as pre-horizon (already paying).
