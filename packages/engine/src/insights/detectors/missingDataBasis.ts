@@ -303,9 +303,12 @@ export const missingDataBasis: Detector = {
     if (gaps.length === 0) return null
 
     const evidence = gaps.slice(0, 5).map((gap) => ({ ...gap.evidence }))
+    // Cap at five evidence rows. Overflow stays out of `value` (values must
+    // remain exact triggering figures); surface the count on the last label.
     if (gaps.length > 5) {
       const last = evidence[4]!
-      last.value = `${last.value} (+${gaps.length - 5} more)`
+      const overflow = gaps.length - 5
+      last.label = `${last.label}...(${overflow} more not shown)`
     }
     return {
       id: 'missing-data-basis',

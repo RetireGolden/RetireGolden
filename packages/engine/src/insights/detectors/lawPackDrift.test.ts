@@ -34,4 +34,11 @@ describe('law pack drift detector', () => {
   it('stays silent when the plan was updated in the active parameter year', () => {
     expect(lawPackDrift.screen(context('2026-01-01T00:00:00.000Z'))).toBeNull()
   })
+
+  it('stays silent for a malformed timestamp that only matches a year-month prefix', () => {
+    // Prefix-only parse would accept "2025-02" and emit drift evidence from
+    // garbage. Full ISO shape is required (GOVERNANCE silence).
+    expect(lawPackDrift.screen(context('2025-02-not-a-date'))).toBeNull()
+    expect(lawPackDrift.screen(context('2025-02-30T12:00:00.000Z'))).toBeNull()
+  })
 })

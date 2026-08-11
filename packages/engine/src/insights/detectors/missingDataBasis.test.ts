@@ -419,6 +419,55 @@ describe('missing data basis detector', () => {
     expect(missingDataBasis.screen(ctx)).toBeNull()
   })
 
+  it('keeps the fifth evidence value exact and moves overflow into the label', () => {
+    // Three owners × (taxable character + opening balance) = 6 gaps → cap 5.
+    // Overflow must not corrupt the fifth value (GOVERNANCE exactness).
+    const ctx = context()
+    ctx.plan.accounts = [
+      { id: 't1', name: 'IRA A', type: 'traditional', kind: 'ira', ownerPersonId: 'p1', balance: 100_000 },
+      { id: 't2', name: 'IRA B', type: 'traditional', kind: 'ira', ownerPersonId: 'p2', balance: 125_000 },
+      { id: 't3', name: 'IRA C', type: 'traditional', kind: 'ira', ownerPersonId: 'p3', balance: 150_000 },
+    ] as never
+    ctx.plan.incomes = []
+    const year = ctx.projection.result.years[0] as {
+      people: { personId: string; ageAttained: number; alive: boolean }[]
+      ownedTraditionalIraAggregateActivity?: {
+        ownerPersonId: string
+        distributions: number
+        conversions: number
+        assumedBasisConsequential?: {
+          distributions: number
+          conversions: number
+          annuityPayments: number
+        }
+      }[]
+    }
+    year.people = [
+      { personId: 'p1', ageAttained: 60, alive: true },
+      { personId: 'p2', ageAttained: 60, alive: true },
+      { personId: 'p3', ageAttained: 60, alive: true },
+    ]
+    year.ownedTraditionalIraAggregateActivity = ['p1', 'p2', 'p3'].map((ownerPersonId) => ({
+      ownerPersonId,
+      distributions: 1,
+      conversions: 0,
+      assumedBasisConsequential: {
+        distributions: 1,
+        conversions: 0,
+        annuityPayments: 0,
+      },
+    }))
+
+    const card = missingDataBasis.screen(ctx)
+    expect(card).not.toBeNull()
+    expect(card!.evidence).toHaveLength(5)
+    const last = card!.evidence[4]!
+    // Fifth row is owner p3's taxable-character gap; value stays the exact figure.
+    expect(last.value).toBe('$1')
+    expect(last.value).not.toMatch(/\+.*more/)
+    expect(last.label).toMatch(/\.\.\.\(1 more not shown\)$/)
+  })
+
   it('flags positive open-ended wages after a zero-gross open-ended wage stream', () => {
     const ctx = context()
     ctx.plan.accounts = []

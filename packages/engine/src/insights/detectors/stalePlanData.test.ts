@@ -49,4 +49,11 @@ describe('stale plan data detector', () => {
   it('stays silent for an unparsable update stamp', () => {
     expect(stalePlanData.screen(context('not-a-date'))).toBeNull()
   })
+
+  it('stays silent for a malformed timestamp that only matches a year-month prefix', () => {
+    // Prefix-only parse would accept "2025-02" and emit precise staleness
+    // evidence from garbage. Full ISO shape is required (GOVERNANCE silence).
+    expect(stalePlanData.screen(context('2025-02-not-a-date'))).toBeNull()
+    expect(stalePlanData.screen(context('2025-02-30T12:00:00.000Z'))).toBeNull()
+  })
 })

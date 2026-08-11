@@ -1,13 +1,56 @@
 import type { Detector, InsightCard } from '../types.js'
 import { PARAMETER_DATA_AS_OF, PARAMETER_DATA_BASIS } from '../../params/index.js'
 
+/**
+ * Full ISO-8601 timestamp shape used by plan stamps
+ * (`YYYY-MM-DDTHH:mm:ss[.sss]Z` or `±HH:mm` offset). A year-month prefix alone
+ * is not enough — `"2025-02-not-a-date"` must not emit drift evidence
+ * (GOVERNANCE silence on malformed input).
+ */
+const FULL_ISO_TIMESTAMP =
+  /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/
+
 function planAsOf(ctx: Parameters<Detector['screen']>[0]): number | null {
-  const match = /^(\d{4})-(\d{2})/.exec(ctx.plan.updatedAtIso)
+  const iso = ctx.plan.updatedAtIso
+  const match = FULL_ISO_TIMESTAMP.exec(iso)
   if (match === null) return null
 
   const year = Number(match[1])
   const month = Number(match[2])
-  return Number.isInteger(year) && month >= 1 && month <= 12 ? year : null
+  const day = Number(match[3])
+  const hour = Number(match[4])
+  const minute = Number(match[5])
+  const second = Number(match[6])
+  if (
+    !Number.isInteger(year) ||
+    month < 1 ||
+    month > 12 ||
+    day < 1 ||
+    day > 31 ||
+    hour > 23 ||
+    minute > 59 ||
+    second > 59
+  ) {
+    return null
+  }
+
+  const ms = Date.parse(iso)
+  if (!Number.isFinite(ms)) return null
+  if (iso.endsWith('Z')) {
+    const d = new Date(ms)
+    if (
+      d.getUTCFullYear() !== year ||
+      d.getUTCMonth() + 1 !== month ||
+      d.getUTCDate() !== day ||
+      d.getUTCHours() !== hour ||
+      d.getUTCMinutes() !== minute ||
+      d.getUTCSeconds() !== second
+    ) {
+      return null
+    }
+  }
+
+  return year
 }
 
 /** Advises after an annual parameter-pack refresh changes the governing rules. */

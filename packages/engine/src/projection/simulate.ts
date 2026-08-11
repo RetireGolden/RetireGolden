@@ -8858,26 +8858,28 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         const priorCfCoverConsumed =
           rothCounterfactualFreeCoverConsumed.get(key) ?? 0
         if (fromAssumed > 0 || priorCfCoverConsumed > 0) {
-          // Free-cover capacity at this moment (pre-commit pool balances).
-          // The current draw may already have consumed free conversion cover
-          // (split.conversions — same FIFO layers freeRothCoverCapacity
-          // measures) after contributions; that consumption is not available
-          // to absorb a counterfactual removal of the assumed seed. Observe
-          // the split's own conversion take — do not re-scan layers.
+          // Free-cover capacity is a FIFO prefix of conversion layers (seasoned
+          // + wholly nontaxable unseasoned; stops at first unseasoned taxable).
+          // Observe residual balances after this draw's conversion take
+          // (split.next) — do not re-derive per-layer consumption. Pre-draw
+          // freeCover alone is wrong when the live draw exhausts an unseasoned
+          // taxable blocker: that layer is gone in both worlds, so a later
+          // nontaxable layer becomes reachable cover for assumed-seed spill.
           const freeCover = freeRothCoverCapacity(rb, year, age)
+          const freeCoverAfterLiveConversionTake = freeRothCoverCapacity(
+            split.next,
+            year,
+            age,
+          )
           let consequentialSpill: number
           let coverConsumedByThisDraw: number
           if (fromAssumed > 0) {
-            // Assumed seed still flowing: live conversion take reduces free
-            // cover first, then assumed spill re-homes onto whatever remains
-            // after prior counterfactual consumption.
-            const freeCoverAfterThisDrawConversions = Math.max(
-              0,
-              freeCover - split.conversions,
-            )
+            // Assumed seed still flowing: compare spill against post-draw free
+            // cover (prefix advanced past layers this draw already consumed),
+            // less prior counterfactual re-homing.
             const counterfactualCoverRemaining = Math.max(
               0,
-              freeCoverAfterThisDrawConversions - priorCfCoverConsumed,
+              freeCoverAfterLiveConversionTake - priorCfCoverConsumed,
             )
             consequentialSpill = Math.max(
               0,

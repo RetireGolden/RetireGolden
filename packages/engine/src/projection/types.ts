@@ -1173,13 +1173,15 @@ export interface OwnedRothIraPoolActivity {
    * would change tax/penalty: either spill into assumed-seeded contribution
    * basis exceeds remaining free-cover capacity (FIFO prefix of seasoned
    * conversion principal and wholly nontaxable unseasoned principal; stops at
-   * the first unseasoned taxable layer), or — after the assumed seed is spent —
-   * a later free-conversion take exceeds cover already re-homed by earlier
-   * suppressed spills. Free-cover capacity is tracked cumulatively per pool
-   * (per-attempt scoped) in the assumed-zero counterfactual. `withdrawal` is
-   * the excess that would change tax/penalty if the omitted `contributionBasis`
-   * were supplied. Observation-only — set from live pool balances at
-   * `splitRothWithdrawal` commit; never re-derived by detectors.
+   * the first unseasoned taxable layer — measured post-draw so a blocker the
+   * live draw already exhausted no longer blocks deeper free layers), or —
+   * after the assumed seed is spent — a later free-conversion take exceeds
+   * cover already re-homed by earlier suppressed spills. Free-cover capacity
+   * is tracked cumulatively per pool (per-attempt scoped) in the assumed-zero
+   * counterfactual. `withdrawal` is the excess that would change tax/penalty
+   * if the omitted `contributionBasis` were supplied. Observation-only — set
+   * from live pool balances at `splitRothWithdrawal` commit; never re-derived
+   * by detectors.
    */
   assumedBasisConsequential?: { readonly withdrawal: number }
 }

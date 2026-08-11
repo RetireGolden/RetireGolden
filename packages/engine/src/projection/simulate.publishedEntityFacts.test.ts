@@ -814,6 +814,55 @@ describe('simulatePlan published per-entity ledger facts', () => {
       }
     })
 
+    it('does not flag $100 assumed seed when the live draw exhausts the taxable FIFO blocker', () => {
+      // $100 assumed seed; unseasoned taxable blocker $50; nontaxable free
+      // cover $200 behind it. Live draw $150 takes the seed then exhausts the
+      // blocker. Pre-draw free cover is 0 (FIFO stops at the blocker). Post-draw
+      // free cover advances past the exhausted blocker, so the $200 nontaxable
+      // layer is reachable cover for the $100 seed spill — same $5 §72(t) on the
+      // blocker in both worlds → silence.
+      //
+      // Layers must be pure (taxable then wholly nontaxable). Same-year
+      // multi-source conversions collapse into one mixed layer under Form 8606
+      // pro-rata, so stage them: year-1 employer (fully taxable, outside the
+      // IRA basis pool), year-2 full-basis IRA (wholly nontaxable).
+      const plan = singlePersonPlan({ dob: '1971-01-01', planningAge: 90 })
+      plan.id = 'published-facts-roth-post-draw-prefix-100-seed'
+      plan.assumptions.inflationPct = 0
+      plan.assumptions.defaultReturnPct = 0
+      plan.expenses.baseAnnual = 0
+      plan.expenses.oneTimeGoals = [
+        { id: 'draw', label: 'roth-draw', year: TAX_YEAR + 1, amount: 150 },
+      ]
+      plan.accounts = [
+        traditionalAccount('401k', 50, 'p1', 'employer'), // year-1 pure taxable layer
+        {
+          ...ownedIra('trad-basis', 200),
+          nondeductibleBasis: 200, // year-2 wholly nontaxable free cover
+        },
+        rothIra('roth', 100, 'p1'), // assumed seed $100
+        cash(0),
+      ]
+      plan.strategies.rothConversion = {
+        mode: 'manual',
+        conversions: [
+          { year: TAX_YEAR, amount: 50 },
+          { year: TAX_YEAR + 1, amount: 200 },
+        ],
+      }
+      plan.incomes = [] as never
+
+      const years = run(plan, TAX_YEAR + 1)
+      const year = years.find((y) => y.year === TAX_YEAR + 1)!
+      expect(year.people[0]!.ageAttained).toBeLessThan(60)
+      // Goal $150 plus §72(t) on the unseasoned taxable layer the draw exhausts.
+      expect(year.withdrawals.roth).toBeGreaterThanOrEqual(150)
+      const owner = (year.ownedRothIraPoolActivity ?? []).find((row) => row.ownerPersonId === 'p1')
+      // Pre-draw freeCover alone would flag the full $100; post-draw prefix
+      // absorbs it into the nontaxable layer the live draw made reachable.
+      expect(owner?.assumedBasisConsequential).toBeUndefined()
+    })
+
     it('consumes credited contributions before assumed seed (timing)', () => {
       // Omitted contributionBasis (assumed seed) + same-year credits: known
       // credits grow contributionBasis without growing the assumed-seed map, so
