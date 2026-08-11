@@ -95,4 +95,18 @@ describe('stale plan data detector', () => {
       ]),
     })
   })
+
+  it('attributes a numeric-offset stamp crossing a UTC year boundary to the instant UTC year', () => {
+    // 2025-12-31T23:30:00-02:00 === 2026-01-01T01:30:00Z — Jan-1 2026 save, not stale.
+    // Civil wall-clock year 2025 must not win over the parsed instant.
+    expect(stalePlanData.screen(context('2025-12-31T23:30:00-02:00'))).toBeNull()
+    // Non-boundary offset still in UTC 2025 → one-year gap.
+    expect(stalePlanData.screen(context('2025-12-31T20:30:00-02:00'))).toMatchObject({
+      title: 'Plan last saved in 2025',
+      severity: 'info',
+      evidence: expect.arrayContaining([
+        { label: 'Plan last updated', value: '2025-12', year: 2025 },
+      ]),
+    })
+  })
 })

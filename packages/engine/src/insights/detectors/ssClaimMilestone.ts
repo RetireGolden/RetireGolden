@@ -181,8 +181,13 @@ function formerSpouseWonOverOwnPriorYear(args: {
       claimantIsSingle,
     })
     if (bestPrior === null) continue
+    // Age-eligible formers with zero PIA (or sub-cent residue) could not have
+    // paid — do not treat them as a prior-year enabler. A zero-PIA ex plus a
+    // positive ex first eligible at start must still fire as NEW entitlement.
+    const formerAnnual = bestPrior.monthly * formerPayableMonths
+    if (!isVisiblePositiveAmount(formerAnnual)) continue
     anyEligibleFormer = true
-    bestFormerAnnual = Math.max(bestFormerAnnual, bestPrior.monthly * formerPayableMonths)
+    bestFormerAnnual = Math.max(bestFormerAnnual, formerAnnual)
   }
   if (!anyEligibleFormer) return false
 
@@ -708,6 +713,9 @@ export const ssClaimMilestone: Detector = {
             // unresolved stream and zeros resolved siblings. A plain zero-PIA
             // stream (claimInForce + $0, no aux) matches the zeroed shape at
             // its configured filing year and must stay unmodeled (silent).
+            // Zero-PIA siblings also stay silent under override: nothing would
+            // pay from their own record — only a positive own resolved benefit
+            // can be a real override-hidden filing transition.
             // SSDI is not a filing: a valid SSDI sibling (or any stream that
             // published source ssdi) zeroed by auxiliary override must not
             // enter this path even when claimAge.years coincides with the year.
@@ -720,6 +728,11 @@ export const ssClaimMilestone: Detector = {
               isSsdiPathStream(streamIncome, personFraYears) ||
               streamPublishedSsdiThrough(projectionYears, entry.streamId, year.year)
             ) {
+              return false
+            }
+            if (streamIncome === undefined) return false
+            const ownResolvedPia = resolveOwnPiaMonthly(streamIncome, person)
+            if (ownResolvedPia === null || !isVisiblePositiveAmount(ownResolvedPia)) {
               return false
             }
             return isFilingAgeTransition(streamIncome, year.year, birthYear)

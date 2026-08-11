@@ -1506,6 +1506,63 @@ describe('Social Security claim milestone detector', () => {
     expect(ssClaimMilestone.screen(ctx)).toBeNull()
   })
 
+  it('stays silent for a zero-PIA sibling zeroed by auxiliary override at its claim-age year', () => {
+    // Pin: aux override pays on the gate stream; a zero-PIA sibling reaches its
+    // configured claim year with claimInForce + $0. Override-filing must require
+    // a positive own resolved benefit — nothing would pay from this sibling's
+    // own record, so the transition stays silent (distinct from positive-PIA
+    // override-hidden filing).
+    const ctx = context(66, 67, 0)
+    ctx.plan.incomes = [
+      {
+        id: 'ss-gate',
+        type: 'socialSecurity',
+        personId: 'p1',
+        piaMonthly: 0,
+        earnings: null,
+        claimAge: { years: 62, months: 0 },
+      },
+      {
+        id: 'ss-zero-sibling',
+        type: 'socialSecurity',
+        personId: 'p1',
+        piaMonthly: 0,
+        earnings: null,
+        claimAge: { years: 67, months: 0 },
+      },
+    ] as never
+    ctx.projection.result.years = Array.from({ length: 3 }, (_, offset) => {
+      const y = 2026 + offset
+      const siblingFiling = y >= 2027
+      return {
+        year: y,
+        people: [{ personId: 'p1', ageAttained: 66 + offset, alive: true }],
+        socialSecurityStreams: [
+          {
+            personId: 'p1',
+            streamId: 'ss-gate',
+            source: 'spousal' as StreamSource,
+            annualAmount: 12_000,
+            claimInForce: true,
+            preWithholdingAnnual: 12_000,
+            isSpousalSurvivorGateStream: true,
+          },
+          {
+            personId: 'p1',
+            streamId: 'ss-zero-sibling',
+            source: 'none' as StreamSource,
+            annualAmount: 0,
+            claimInForce: siblingFiling,
+            preWithholdingAnnual: 0,
+            isSpousalSurvivorGateStream: false,
+          },
+        ],
+      }
+    }) as never
+
+    expect(ssClaimMilestone.screen(ctx)).toBeNull()
+  })
+
   it('stays silent for a plain zero-PIA claimInForce row at filing age with no auxiliary', () => {
     // Valid zero-PIA stream: claimInForce true, both amounts $0, configured
     // filing year in horizon — same published shape as override-hidden filing,
@@ -2623,6 +2680,80 @@ describe('Social Security claim milestone detector', () => {
     // Already-paying former-spouse source (sibling stream's pre-horizon win) —
     // do not re-fire when a second ex becomes eligible at start.
     expect(ssClaimMilestone.screen(ctx)).toBeNull()
+  })
+
+  it('does not treat a zero-PIA prior-year eligible former as an enabler (positive ex first pays at start)', () => {
+    // Pin: age-eligible zero-PIA ex could not have paid pre-horizon — must not
+    // set anyEligibleFormer / null-own already-paying. A positive-PIA second ex
+    // first reaches 62 at start → NEW entitlement fires (same shape as the
+    // low-vs-high former menu, with the low ex at piaMonthly 0).
+    const ctx = context(70, 62, 0)
+    ctx.plan.incomes = [
+      {
+        id: 'ss-former-menu',
+        type: 'socialSecurity',
+        personId: 'p1',
+        piaMonthly: null,
+        earnings: null,
+        claimAge: { years: 62, months: 0 },
+        formerSpouses: [
+          {
+            id: 'zero-pia-ex',
+            relationship: 'divorced',
+            dob: '1950-01-01', // eligible well before start
+            piaMonthly: 0, // age-eligible but could not have paid
+            marriageYears: 12,
+            remarriedAtAge: null,
+          },
+          {
+            id: 'high-pia-ex',
+            relationship: 'divorced',
+            dob: '1964-01-01', // turns 62 in 2026 — first win at start
+            piaMonthly: 4_000,
+            marriageYears: 12,
+            remarriedAtAge: null,
+          },
+        ],
+      },
+    ] as never
+    const years = ctx.projection.result.years as Array<{
+      year: number
+      people: { personId: string; ageAttained: number; alive: boolean }[]
+      socialSecurityStreams?: {
+        personId: string
+        streamId: string
+        source: StreamSource
+        annualAmount: number
+        claimInForce: boolean
+        preWithholdingAnnual: number
+        isSpousalSurvivorGateStream: boolean
+      }[]
+    }>
+    for (const year of years) {
+      year.socialSecurityStreams = [
+        {
+          personId: 'p1',
+          streamId: 'ss-former-menu',
+          source: 'spousal',
+          annualAmount: 24_000,
+          claimInForce: true,
+          preWithholdingAnnual: 24_000,
+          isSpousalSurvivorGateStream: true,
+        },
+      ]
+    }
+
+    expect(ssClaimMilestone.screen(ctx)).toMatchObject({
+      title: "Pat's Social Security claim is imminent",
+      severity: 'attention',
+      evidence: expect.arrayContaining([
+        {
+          label: 'Modeled first claim year (claim in force)',
+          value: '2026',
+          year: 2026,
+        },
+      ]),
+    })
   })
 
   it('does not treat a former on a not-yet-paying stream as a prior-year enabler', () => {

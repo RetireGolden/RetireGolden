@@ -6,8 +6,10 @@
  * evidence (GOVERNANCE silence on malformed input).
  *
  * Hour `24` is accepted only as end-of-day `24:00:00` (ISO-8601). Date resolves
- * that to the following midnight; year/month are taken from the resolved Date
- * (so `2025-12-31T24:00:00Z` is a Jan-1 save of the next year).
+ * that to the following midnight. For every accepted form — Z, numeric offset,
+ * and 24:00 — year/month are taken from the parsed **instant's** UTC components
+ * (so `2025-12-31T24:00:00Z` and `2025-12-31T23:30:00-02:00` are both Jan-1
+ * 2026 saves).
  */
 const FULL_ISO_TIMESTAMP =
   /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/
@@ -61,7 +63,7 @@ export function parsePlanUpdatedAtIso(iso: string): ParsedPlanUpdatedAtIso | nul
     const ms = Date.parse(iso)
     if (!Number.isFinite(ms)) return null
     const d = new Date(ms)
-    // Attribute to the resolved following midnight (Date's calendar components).
+    // Attribute to the resolved following midnight (Date's UTC components).
     return {
       year: d.getUTCFullYear(),
       month: String(d.getUTCMonth() + 1).padStart(2, '0'),
@@ -75,19 +77,28 @@ export function parsePlanUpdatedAtIso(iso: string): ParsedPlanUpdatedAtIso | nul
   if (!Number.isFinite(Date.parse(iso))) return null
   const civilIso =
     `${match[1]}-${match[2]}-${match[3]}T${match[4]}:${match[5]}:${match[6]}Z`
-  const ms = Date.parse(civilIso)
-  if (!Number.isFinite(ms)) return null
-  const d = new Date(ms)
+  const civilMs = Date.parse(civilIso)
+  if (!Number.isFinite(civilMs)) return null
+  const civil = new Date(civilMs)
   if (
-    d.getUTCFullYear() !== year ||
-    d.getUTCMonth() + 1 !== month ||
-    d.getUTCDate() !== day ||
-    d.getUTCHours() !== hour ||
-    d.getUTCMinutes() !== minute ||
-    d.getUTCSeconds() !== second
+    civil.getUTCFullYear() !== year ||
+    civil.getUTCMonth() + 1 !== month ||
+    civil.getUTCDate() !== day ||
+    civil.getUTCHours() !== hour ||
+    civil.getUTCMinutes() !== minute ||
+    civil.getUTCSeconds() !== second
   ) {
     return null
   }
 
-  return { year, month: match[2]! }
+  // Attribute year/month to the parsed instant's UTC components — not the
+  // civil wall-clock prefix — so numeric-offset stamps that cross a UTC year
+  // boundary match the 24:00 handling (e.g. 2025-12-31T23:30:00-02:00 → 2026-01).
+  const instantMs = Date.parse(iso)
+  if (!Number.isFinite(instantMs)) return null
+  const instant = new Date(instantMs)
+  return {
+    year: instant.getUTCFullYear(),
+    month: String(instant.getUTCMonth() + 1).padStart(2, '0'),
+  }
 }

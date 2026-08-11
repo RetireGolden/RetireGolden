@@ -59,4 +59,16 @@ describe('law pack drift detector', () => {
       ]),
     })
   })
+
+  it('attributes a numeric-offset stamp crossing a UTC year boundary to the instant UTC year', () => {
+    // 2025-12-31T23:30:00-02:00 → 2026-01-01Z; same year as active pack → silent.
+    expect(lawPackDrift.screen(context('2025-12-31T23:30:00-02:00'))).toBeNull()
+    // Still in UTC 2025 → drift vs 2026 pack.
+    expect(lawPackDrift.screen(context('2025-12-31T20:30:00-02:00'))).toMatchObject({
+      severity: 'info',
+      evidence: expect.arrayContaining([
+        { label: 'Plan last-updated year', value: '2025', year: 2025 },
+      ]),
+    })
+  })
 })

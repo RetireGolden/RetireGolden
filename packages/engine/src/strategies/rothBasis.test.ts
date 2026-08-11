@@ -145,6 +145,23 @@ describeRule('irc-408A-d-3-F-roth-conversion-recapture', {
   })
 })
 
+describe('applyConversionPrincipalDebt — layer identity', () => {
+  it('keeps original object identity for untouched tails after debt is exhausted', () => {
+    // Mirror splitRothWithdrawal: only the partially-debited layer is a new
+    // object; fully exhausted heads drop out; untouched tails stay the same refs.
+    const head = { year: 2020, amount: 25, taxableAmount: 25 }
+    const mid = { year: 2024, amount: 100, taxableAmount: 50 }
+    const tail = { year: 2025, amount: 75, taxableAmount: 0 }
+    const layers = [head, mid, tail]
+    const out = applyConversionPrincipalDebt(layers, 50)
+    // Head fully consumed; mid partially debited (new object); tail untouched ref.
+    expect(out).toHaveLength(2)
+    expect(out[0]).toEqual({ year: 2024, amount: 75, taxableAmount: 37.5 })
+    expect(out[0]).not.toBe(mid)
+    expect(out[1]).toBe(tail)
+  })
+})
+
 describe('freeRothCoverCapacity — FIFO prefix', () => {
   it('sums seasoned and wholly nontaxable unseasoned layers when they lead the queue', () => {
     const state: RothBasisState = {

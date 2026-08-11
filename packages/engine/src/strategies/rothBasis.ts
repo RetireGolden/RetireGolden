@@ -177,7 +177,9 @@ export function applyConversionPrincipalDebt(
   const out: RothConversionLayer[] = []
   for (const layer of layers) {
     if (remaining <= 0) {
-      out.push({ ...layer })
+      // Untouched tails keep the original object (same identity as
+      // splitRothWithdrawal) — only a partially-debited layer is rebuilt.
+      out.push(layer)
       continue
     }
     const take = Math.min(remaining, layer.amount)
