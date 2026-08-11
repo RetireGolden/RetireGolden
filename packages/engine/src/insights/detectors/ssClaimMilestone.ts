@@ -160,7 +160,9 @@ function formerSpouseWonOverOwnPriorYear(args: {
   const claimantAgePrior = projectedAge - 1
 
   // Mirror simulatePlan's former-spouse pass: each stream's formers are priced
-  // on that stream's claim age, then the best annual is compared to summed own.
+  // only when that stream has positive payable months in the year (claim age
+  // reached — same payableMonthsAtAge gate as the sim before bestMaritalBenefit).
+  // An age-eligible former on a stream that had not begun paying enables nothing.
   let anyEligibleFormer = false
   let bestFormerAnnual = 0
   for (const stream of plan.incomes) {
@@ -169,6 +171,8 @@ function formerSpouseWonOverOwnPriorYear(args: {
       (former) => former.relationship === formerRelationship,
     )
     if (formers.length === 0) continue
+    const formerPayableMonths = payableMonthsAtAge(claimantAgePrior, stream.claimAge)
+    if (formerPayableMonths <= 0) continue
     const bestPrior = bestMaritalBenefit(formers, {
       claimantDob,
       claimantClaimAge: stream.claimAge,
@@ -178,7 +182,6 @@ function formerSpouseWonOverOwnPriorYear(args: {
     })
     if (bestPrior === null) continue
     anyEligibleFormer = true
-    const formerPayableMonths = payableMonthsAtAge(claimantAgePrior, stream.claimAge)
     bestFormerAnnual = Math.max(bestFormerAnnual, bestPrior.monthly * formerPayableMonths)
   }
   if (!anyEligibleFormer) return false

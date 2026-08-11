@@ -1767,4 +1767,90 @@ describe('missing data basis detector', () => {
 
     expect(missingDataBasis.screen(ctx)).toBeNull()
   })
+
+  it('does not suppress §121 on a hold-last guess when sale is the final year (override-final-year rate not in scales)', () => {
+    // Pin: sale year is last published year. Preceding yoy from scale ratios is
+    // 0%, so hold-last would price $200k under the $250k single exclusion and
+    // suppress. Year Y's inflationScale never encodes year Y's own rate —
+    // market.inflationPct can set a different final-year rate that is absent
+    // from the ledger — so the sale-year product is not derivable. Must not
+    // suppress on that guess; omitted basis stays potentially consequential.
+    const ctx = context()
+    ctx.plan.assumptions.inflationPct = 0
+    ctx.plan.accounts = [{
+      id: 'home',
+      name: 'Primary home',
+      type: 'property',
+      value: 200_000,
+      plannedSaleYear: 2029,
+      costBasis: undefined,
+      primaryResidence: true,
+    }] as never
+    ctx.plan.incomes = []
+    ctx.params = {
+      year: 2026,
+      federalTax: {
+        section121Exclusion: { single: 250_000, marriedFilingJointly: 500_000 },
+      },
+    } as never
+    // Scales through sale year only — no 2030 row to publish the sale-year rate.
+    // Path 2026→2028 is flat (yoy 0); hold-last would re-apply 0% for 2029.
+    ctx.projection.result.years = [
+      {
+        year: 2026,
+        inflationScale: 1,
+        people: [{ personId: 'p1', ageAttained: 60, alive: true }],
+        filingStatus: 'single',
+        ownedTraditionalIraAggregateActivity: [],
+        ownedRothIraPoolActivity: [],
+        employerRothAccountActivity: [],
+      },
+      { year: 2027, inflationScale: 1, people: [{ personId: 'p1', ageAttained: 61, alive: true }], filingStatus: 'single' },
+      { year: 2028, inflationScale: 1, people: [{ personId: 'p1', ageAttained: 62, alive: true }], filingStatus: 'single' },
+      { year: 2029, inflationScale: 1, people: [{ personId: 'p1', ageAttained: 63, alive: true }], filingStatus: 'single' },
+    ] as never
+
+    expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
+      {
+        label: 'Primary home opening property value (legacy net-proceeds path)',
+        value: '$200,000',
+        year: 2026,
+      },
+    ])
+  })
+
+  it('suppresses §121 when sellingCostPct is 0 (treated as absent, same as propertySaleTax)', () => {
+    // propertySaleTax uses `sellingCostPct ?? 0`, so 0 and omitted are identical
+    // for the zero-basis gain bound. Only a POSITIVE selling cost blocks
+    // suppression — a literal 0 must still allow the fully-excluded suppress.
+    const ctx = context()
+    ctx.plan.assumptions.inflationPct = 0
+    ctx.plan.accounts = [{
+      id: 'home',
+      name: 'Primary home',
+      type: 'property',
+      value: 200_000,
+      plannedSaleYear: 2029,
+      costBasis: undefined,
+      primaryResidence: true,
+      sellingCostPct: 0,
+    }] as never
+    ctx.plan.incomes = []
+    const year = ctx.projection.result.years[0] as {
+      ownedTraditionalIraAggregateActivity?: unknown[]
+      ownedRothIraPoolActivity?: unknown[]
+      employerRothAccountActivity?: unknown[]
+    }
+    year.ownedTraditionalIraAggregateActivity = []
+    year.ownedRothIraPoolActivity = []
+    year.employerRothAccountActivity = []
+    ctx.params = {
+      year: 2026,
+      federalTax: {
+        section121Exclusion: { single: 250_000, marriedFilingJointly: 500_000 },
+      },
+    } as never
+
+    expect(missingDataBasis.screen(ctx)).toBeNull()
+  })
 })

@@ -27,21 +27,25 @@ const MIN_VISIBLE_CENT = 0.005
  * accrues before the sale is priced). That cumulative product equals
  * `inflFactorFrom(startYear, saleYear + 1)`, which is the published
  * `YearResult.inflationScale` of the year after the sale when that year is in
- * the ledger. Rates are recovered from consecutive published scales so a
- * `market.inflationPct` override matches the ledger — never re-derived from
- * `plan.assumptions.inflationPct` alone.
+ * the ledger — use that scale directly when published so a `market.inflationPct`
+ * override (including a distinct final-year rate) matches the ledger.
  *
- * When the sale year is the last published year (no next-year scale), year
- * rates for start..sale-1 come from scale ratios; the sale-year rate holds the
- * last observed yoy rate (same hold-last behavior as a finite market series).
- * Partial fixtures without usable scales leave growth at 1 (no invented path).
+ * Year Y's published inflationScale is the product of rates for start..Y-1
+ * only; it never encodes year Y's own rate. When the sale year is the last
+ * published year, the sale-year rate is therefore not derivable from published
+ * scales. Do not invent hold-last (the prior yoy can differ from
+ * `market.inflationPct`'s final entry). Return null so §121 suppression only
+ * proceeds on a known sale price — never on a guessed rate. Partial fixtures
+ * with no usable scales leave growth at 1 (opening value).
+ *
+ * Returns null when the sale-year product cannot be read from published scales.
  */
 function projectedSaleYearPropertyValue(
   openingValue: number,
-  startYear: number,
+  _startYear: number,
   saleYear: number,
   years: readonly { year: number; inflationScale?: number }[],
-): number {
+): number | null {
   const scaleByYear = new Map<number, number>()
   for (const entry of years) {
     const scale = entry.inflationScale
@@ -49,37 +53,19 @@ function projectedSaleYearPropertyValue(
       scaleByYear.set(entry.year, scale)
     }
   }
-  // Prefer next-year scale: product of rates startYear..saleYear inclusive.
+  // Product of rates startYear..saleYear inclusive = inflationScale of saleYear+1.
   const afterSaleScale = scaleByYear.get(saleYear + 1)
   if (afterSaleScale !== undefined) {
     return openingValue * afterSaleScale
   }
 
-  // Reconstruct from consecutive published scales through the sale year.
-  let price = openingValue
-  let prevScale = scaleByYear.get(startYear)
-  if (prevScale === undefined) {
-    // No published path — do not invent growth from plan assumptions.
+  // No next-year scale: sale-year rate is not in any published inflationScale.
+  // Fixtures with no usable scales at all → growth factor 1 (no invented path).
+  if (scaleByYear.size === 0) {
     return openingValue
   }
-  let lastRate = 0
-  let sawRate = false
-  for (let year = startYear; year < saleYear; year += 1) {
-    const nextScale = scaleByYear.get(year + 1)
-    if (nextScale === undefined) {
-      // Incomplete path mid-horizon — stop at last known compound.
-      return price
-    }
-    lastRate = nextScale / prevScale - 1
-    sawRate = true
-    price *= 1 + lastRate
-    prevScale = nextScale
-  }
-  // Sale year is last published year: apply hold-last rate when any yoy was
-  // observed; when the only published scale is the start year (scale 1) there
-  // is no growth signal for the sale year either.
-  if (sawRate) price *= 1 + lastRate
-  return price
+  // Some scales published but sale-year rate still unknown — undetermined.
+  return null
 }
 
 /**
@@ -333,10 +319,15 @@ export const missingDataBasis: Detector = {
         const expectedNetProceeds = account.expectedNetProceeds
         const hasExpectedNetProceeds =
           expectedNetProceeds !== null && expectedNetProceeds !== undefined
+        // propertySaleTax treats sellingCostPct 0 and omitted identically
+        // (`?? 0`); only a positive selling cost changes the zero-basis gain
+        // bound, so 0 must not block §121 suppression.
+        const hasPositiveSellingCost =
+          account.sellingCostPct !== undefined && account.sellingCostPct > 0
         if (
           account.primaryResidence === true &&
           !hasExpectedNetProceeds &&
-          account.sellingCostPct === undefined &&
+          !hasPositiveSellingCost &&
           account.depreciationRecapture === undefined
         ) {
           // Sale-year filing status governs the §121 bound ($250k single /
@@ -358,8 +349,9 @@ export const missingDataBasis: Detector = {
           // published inflation path — not plan.assumptions.inflationPct —
           // so market.inflationPct overrides match the ledger. Cumulative
           // growth through end of year Y equals YearResult.inflationScale of
-          // Y+1 (inflFactorFrom(start, Y+1)); reconstruct from published
-          // scales when the post-sale year is absent.
+          // Y+1 (inflFactorFrom(start, Y+1)). When that post-sale scale is
+          // absent the sale-year rate is not derivable — do not suppress on a
+          // guessed hold-last rate.
           const salePrice = projectedSaleYearPropertyValue(
             account.value,
             ctx.projection.startYear,
@@ -367,7 +359,9 @@ export const missingDataBasis: Detector = {
             ctx.projection.result.years,
           )
           // Zero basis, no selling costs, no recapture → gain = salePrice.
-          if (salePrice <= exclusionCap) {
+          // null = sale-year product unknown from published scales: keep the
+          // gap (conservative — do not suppress under an incomplete path).
+          if (salePrice !== null && salePrice <= exclusionCap) {
             continue
           }
         }

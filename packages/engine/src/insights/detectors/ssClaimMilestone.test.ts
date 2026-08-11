@@ -2625,6 +2625,73 @@ describe('Social Security claim milestone detector', () => {
     expect(ssClaimMilestone.screen(ctx)).toBeNull()
   })
 
+  it('does not treat a former on a not-yet-paying stream as a prior-year enabler', () => {
+    // Pin: formers live on a stream whose claim age is first reached at the
+    // horizon start (prior year payableMonthsAtAge === 0). The ex is
+    // age-eligible and high-PIA, but the sim's former-spouse pass skips
+    // streams with no payable months — that record enables nothing pre-horizon.
+    // Start-year spousal is a NEW entitlement when the stream begins paying.
+    const ctx = context(70, 70, 0)
+    ctx.plan.incomes = [
+      {
+        id: 'ss-late-claim-formers',
+        type: 'socialSecurity',
+        personId: 'p1',
+        piaMonthly: null,
+        earnings: null,
+        claimAge: { years: 70, months: 0 },
+        formerSpouses: [
+          {
+            id: 'high-pia-ex',
+            relationship: 'divorced',
+            dob: '1950-01-01', // eligible well before start
+            piaMonthly: 4_000,
+            marriageYears: 12,
+            remarriedAtAge: null,
+          },
+        ],
+      },
+    ] as never
+    const years = ctx.projection.result.years as Array<{
+      year: number
+      people: { personId: string; ageAttained: number; alive: boolean }[]
+      socialSecurityStreams?: {
+        personId: string
+        streamId: string
+        source: StreamSource
+        annualAmount: number
+        claimInForce: boolean
+        preWithholdingAnnual: number
+        isSpousalSurvivorGateStream: boolean
+      }[]
+    }>
+    for (const year of years) {
+      year.socialSecurityStreams = [
+        {
+          personId: 'p1',
+          streamId: 'ss-late-claim-formers',
+          source: 'spousal',
+          annualAmount: 24_000,
+          claimInForce: true,
+          preWithholdingAnnual: 24_000,
+          isSpousalSurvivorGateStream: true,
+        },
+      ]
+    }
+
+    expect(ssClaimMilestone.screen(ctx)).toMatchObject({
+      title: "Pat's Social Security claim is imminent",
+      severity: 'attention',
+      evidence: expect.arrayContaining([
+        {
+          label: 'Modeled first claim year (claim in force; partial when claim months > 0)',
+          value: '2026',
+          year: 2026,
+        },
+      ]),
+    })
+  })
+
   it('recognizes auxiliary override paying through a non-gate unresolved stream', () => {
     // Former-spouse pass pays on an unresolved (non-gate) stream and zeros the
     // resolved sibling. Override-recognition must not require the gate marker —
