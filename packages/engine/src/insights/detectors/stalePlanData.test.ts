@@ -82,4 +82,17 @@ describe('stale plan data detector', () => {
       ]),
     })
   })
+
+  it('attributes ISO end-of-day 24:00:00 to the resolved next midnight (year boundary)', () => {
+    // 2025-12-31T24:00:00Z === 2026-01-01T00:00:00Z — a Jan-1 2026 save, not stale.
+    expect(stalePlanData.screen(context('2025-12-31T24:00:00Z'))).toBeNull()
+    // Non-boundary: 2024-12-31T24:00:00Z resolves to 2025-01-01 → still a gap vs 2026.
+    expect(stalePlanData.screen(context('2024-12-31T24:00:00Z'))).toMatchObject({
+      title: 'Plan last saved in 2025',
+      severity: 'info',
+      evidence: expect.arrayContaining([
+        { label: 'Plan last updated', value: '2025-01', year: 2025 },
+      ]),
+    })
+  })
 })

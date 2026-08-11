@@ -47,4 +47,16 @@ describe('law pack drift detector', () => {
     expect(lawPackDrift.screen(context('2025-02-30T12:00:00+05:00'))).toBeNull()
     expect(lawPackDrift.screen(context('2025-02-30T12:00:00.000+05:00'))).toBeNull()
   })
+
+  it('attributes ISO end-of-day 24:00:00 to the resolved next midnight (year boundary)', () => {
+    // 2025-12-31T24:00:00Z → 2026-01-01; same year as active pack → silent.
+    expect(lawPackDrift.screen(context('2025-12-31T24:00:00Z'))).toBeNull()
+    // 2024-12-31T24:00:00Z → 2025-01-01; drift vs 2026 pack.
+    expect(lawPackDrift.screen(context('2024-12-31T24:00:00Z'))).toMatchObject({
+      severity: 'info',
+      evidence: expect.arrayContaining([
+        { label: 'Plan last-updated year', value: '2025', year: 2025 },
+      ]),
+    })
+  })
 })
