@@ -4,11 +4,16 @@ import type {
   OwnedRothIraPoolActivity,
   OwnedTraditionalIraAggregateActivity,
 } from '../../projection/types.js'
+import { taxParameterFilingStatus } from '../../projection/types.js'
 import { isAggregatedIra } from '../../strategies/accountEligibility.js'
 import { ROTH_QUALIFIED_AGE } from '../../strategies/rothBasis.js'
 
-/** Basis gaps (IRA/Roth/property) vs retirement-date / open-ended wage gaps. */
-type DataGapKind = 'basis' | 'dates'
+/**
+ * Tax-consequential basis gaps (IRA/Roth/taxable property) vs §121-timing-only
+ * property gaps (still surface, honest copy) vs retirement-date / open-ended
+ * wage gaps.
+ */
+type DataGapKind = 'basis' | 'dates' | 'property-timing'
 
 interface DataGap {
   evidence: InsightEvidence
@@ -21,6 +26,53 @@ interface DataGap {
  * same sub-cent residue floor used elsewhere in the engine (e.g. flexibleGoals).
  */
 const MIN_VISIBLE_CENT = 0.005
+
+/**
+ * Sale-year property value mirroring simulatePlan's property growth path.
+ *
+ * Used only to classify property-gap copy (timing vs tax wording) — never to
+ * suppress a gap. The sim multiplies each property by `1 + inflRateAt(year)`
+ * once per calendar year from the projection start through the sale year
+ * (sale-year growth accrues before the sale is priced). That cumulative product
+ * equals `inflFactorFrom(startYear, saleYear + 1)`, which is the published
+ * `YearResult.inflationScale` of the year after the sale when that year is in
+ * the ledger — use that scale directly when published so a `market.inflationPct`
+ * override matches the ledger.
+ *
+ * Year Y's published inflationScale is the product of rates for start..Y-1
+ * only; it never encodes year Y's own rate. When the sale year is the last
+ * published year, the sale-year rate is therefore not derivable from published
+ * scales. Return null so timing-only copy requires a known sale price — never a
+ * guessed rate. Partial fixtures with no usable scales leave growth at 1
+ * (opening value).
+ */
+function projectedSaleYearPropertyValue(
+  openingValue: number,
+  _startYear: number,
+  saleYear: number,
+  years: readonly { year: number; inflationScale?: number }[],
+): number | null {
+  const scaleByYear = new Map<number, number>()
+  for (const entry of years) {
+    const scale = entry.inflationScale
+    if (scale !== undefined && Number.isFinite(scale) && scale > 0) {
+      scaleByYear.set(entry.year, scale)
+    }
+  }
+  // Product of rates startYear..saleYear inclusive = inflationScale of saleYear+1.
+  const afterSaleScale = scaleByYear.get(saleYear + 1)
+  if (afterSaleScale !== undefined) {
+    return openingValue * afterSaleScale
+  }
+
+  // No next-year scale: sale-year rate is not in any published inflationScale.
+  // Fixtures with no usable scales at all → growth factor 1 (no invented path).
+  if (scaleByYear.size === 0) {
+    return openingValue
+  }
+  // Some scales published but sale-year rate still unknown — undetermined.
+  return null
+}
 
 /**
  * Format a decisive dollar amount for evidence. Integral amounts stay whole
@@ -36,6 +88,35 @@ function usd(amount: number): string {
     maximumFractionDigits: 2,
   })}`
 }
+
+/** Evidence parenthetical: tax-consequential property path. */
+const PROPERTY_TAX_PATH_LABEL = 'legacy net-proceeds path'
+/**
+ * Evidence parenthetical: §121 fully covers zero-basis gain — basis only moves
+ * the sale onto the exact path whose proceeds enter cash-flow sizing earlier.
+ */
+const PROPERTY_TIMING_PATH_LABEL =
+  'cash-flow timing path — basis moves sale proceeds into earlier sizing'
+
+/** Card rationale when at least one tax-consequential basis gap is present. */
+const TAX_BASIS_RATIONALE =
+  'Optional basis fields currently default to assumptions that can change taxes. ' +
+  'Entering the real values makes the projection more exact.'
+/** Card impact when at least one tax-consequential basis gap is present. */
+const TAX_BASIS_IMPACT =
+  'The listed defaults may affect withdrawal taxation, Roth access, or property-sale tax.'
+/**
+ * Card rationale when every basis gap is a §121 fully-excluded property sale
+ * retained only for cash-flow timing (no modeled tax change from basis).
+ */
+const PROPERTY_TIMING_RATIONALE =
+  'Optional property basis currently defaults to the legacy sale path. ' +
+  'Supplying the basis moves the sale onto the exact path whose proceeds enter ' +
+  'cash-flow sizing earlier — a timing effect, not a modeled tax change. ' +
+  'Entering the real value makes the projection more exact.'
+/** Card impact for §121 timing-only property basis gaps. */
+const PROPERTY_TIMING_IMPACT =
+  'The listed defaults may change when sale proceeds enter cash-flow sizing, not property-sale tax under the modeled §121 exclusion.'
 
 /**
  * Surfaces optional tax facts for which the engine must use a legacy default.
@@ -273,19 +354,58 @@ export const missingDataBasis: Detector = {
         // Entering a cost basis switches the sim from the legacy tax-free
         // deposit path to the exact propertySaleTax path. Even when tax is
         // identical (e.g. primary residence fully under §121 with no selling
-        // costs/recapture, proceeds equal to sale price), cash timing differs:
-        // exact-path net proceeds join `baseCashInflows` before withdrawal
-        // sizing, while legacy deposits `expectedNetProceeds ?? salePrice` in
-        // the later property-events block. Equal proceeds therefore do not
-        // guarantee an identical projection — always surface the gap.
+        // costs/recapture), cash timing differs: exact-path net proceeds join
+        // `baseCashInflows` before withdrawal sizing, while legacy deposits
+        // `expectedNetProceeds ?? salePrice` in the later property-events
+        // block. Always surface the gap; classify copy only.
+        //
+        // Timing-only copy when primary residence + no recapture + no positive
+        // selling costs + zero-basis gain (sale price) within the sale-year
+        // §121 exclusion — the case retained purely on cash-flow-timing
+        // grounds. propertySaleTax treats sellingCostPct 0 and omitted
+        // identically (`?? 0`). Unknown sale-year product → tax wording
+        // (cannot prove full exclusion). Never suppress.
         const expectedNetProceeds = account.expectedNetProceeds
         const hasExpectedNetProceeds =
           expectedNetProceeds !== null && expectedNetProceeds !== undefined
+        const hasPositiveSellingCost =
+          account.sellingCostPct !== undefined && account.sellingCostPct > 0
+        let propertyGapKind: DataGapKind = 'basis'
+        let pathLabel = PROPERTY_TAX_PATH_LABEL
+        if (
+          account.primaryResidence === true &&
+          !hasPositiveSellingCost &&
+          account.depreciationRecapture === undefined
+        ) {
+          // Sale-year filing status governs the §121 bound ($250k single /
+          // $500k joint). Survivorship can flip MFJ → single between plan open
+          // and the sale; the sim prices propertySaleTax with that year's status.
+          const saleYearResult = ctx.projection.result.years.find(
+            (y) => y.year === account.plannedSaleYear,
+          )
+          const filingStatus =
+            saleYearResult?.filingStatus !== undefined
+              ? taxParameterFilingStatus(saleYearResult.filingStatus)
+              : ctx.plan.household.filingStatus
+          const exclusionCap =
+            ctx.params.federalTax?.section121Exclusion?.[filingStatus] ?? 0
+          const salePrice = projectedSaleYearPropertyValue(
+            account.value,
+            ctx.projection.startYear,
+            account.plannedSaleYear,
+            ctx.projection.result.years,
+          )
+          // Zero basis, no selling costs, no recapture → gain = salePrice.
+          if (salePrice !== null && salePrice <= exclusionCap) {
+            propertyGapKind = 'property-timing'
+            pathLabel = PROPERTY_TIMING_PATH_LABEL
+          }
+        }
         if (hasExpectedNetProceeds) {
           gaps.push({
-            kind: 'basis',
+            kind: propertyGapKind,
             evidence: {
-              label: `${account.name} expected net proceeds (legacy net-proceeds path)`,
+              label: `${account.name} expected net proceeds (${pathLabel})`,
               value: usd(expectedNetProceeds),
               year: account.plannedSaleYear,
             },
@@ -297,9 +417,9 @@ export const missingDataBasis: Detector = {
           // compounded value is not published).
           if (account.value > 0) {
             gaps.push({
-              kind: 'basis',
+              kind: propertyGapKind,
               evidence: {
-                label: `${account.name} opening property value (legacy net-proceeds path)`,
+                label: `${account.name} opening property value (${pathLabel})`,
                 value: usd(account.value),
                 year: ctx.projection.startYear,
               },
@@ -313,17 +433,17 @@ export const missingDataBasis: Detector = {
           // this property in the gap gate) so the card is never a one-row value
           // without the sale trigger that made omitted basis consequential.
           gaps.push({
-            kind: 'basis',
+            kind: propertyGapKind,
             evidence: {
-              label: `${account.name} opening property value (legacy net-proceeds path)`,
+              label: `${account.name} opening property value (${pathLabel})`,
               value: usd(account.value),
               year: ctx.projection.startYear,
             },
           })
           gaps.push({
-            kind: 'basis',
+            kind: propertyGapKind,
             evidence: {
-              label: `${account.name} planned sale year (legacy net-proceeds path)`,
+              label: `${account.name} planned sale year (${pathLabel})`,
               value: String(account.plannedSaleYear),
               year: account.plannedSaleYear,
             },
@@ -387,18 +507,32 @@ export const missingDataBasis: Detector = {
 
     // Title/rationale name the gap composition so a dates-only card does not
     // claim tax-basis facts are missing (catalog: missing dates/basis).
-    const hasBasis = gaps.some((gap) => gap.kind === 'basis')
+    // §121 fully-excluded property gaps use timing copy when they are the only
+    // basis-like rows; any tax-consequential basis gap keeps tax wording.
+    const hasTaxBasis = gaps.some((gap) => gap.kind === 'basis')
+    const hasPropertyTiming = gaps.some((gap) => gap.kind === 'property-timing')
+    const hasBasis = hasTaxBasis || hasPropertyTiming
     const hasDates = gaps.some((gap) => gap.kind === 'dates')
     let title: string
     let rationale: string
     let impactQualitative: string
     if (hasBasis && hasDates) {
       title = 'Some tax-basis and retirement-date facts use planning defaults'
-      rationale =
-        'Optional basis and retirement-date fields currently default to assumptions that can change taxes. ' +
-        'Entering the real values makes the projection more exact.'
-      impactQualitative =
-        'The listed defaults may affect withdrawal taxation, Roth access, property-sale tax, or projected wages.'
+      if (hasTaxBasis) {
+        rationale =
+          'Optional basis and retirement-date fields currently default to assumptions that can change taxes. ' +
+          'Entering the real values makes the projection more exact.'
+        impactQualitative =
+          'The listed defaults may affect withdrawal taxation, Roth access, property-sale tax, or projected wages.'
+      } else {
+        // Property-timing + dates only: do not claim tax change from basis.
+        rationale =
+          'Optional property basis currently defaults to the legacy sale path (a cash-flow timing effect, not a modeled tax change), ' +
+          'and optional retirement-date fields default to assumptions that can change projected wages. ' +
+          'Entering the real values makes the projection more exact.'
+        impactQualitative =
+          'The listed defaults may affect when sale proceeds enter cash-flow sizing, or how long open-ended wages continue.'
+      }
     } else if (hasDates) {
       title = 'Some retirement-date facts use planning defaults'
       rationale =
@@ -406,13 +540,15 @@ export const missingDataBasis: Detector = {
         'Entering the real values makes the projection more exact.'
       impactQualitative =
         'The listed defaults may affect how long open-ended wages continue in the projection.'
-    } else {
+    } else if (hasTaxBasis) {
       title = 'Some tax-basis facts use planning defaults'
-      rationale =
-        'Optional basis fields currently default to assumptions that can change taxes. ' +
-        'Entering the real values makes the projection more exact.'
-      impactQualitative =
-        'The listed defaults may affect withdrawal taxation, Roth access, or property-sale tax.'
+      rationale = TAX_BASIS_RATIONALE
+      impactQualitative = TAX_BASIS_IMPACT
+    } else {
+      // Property-timing only (§121 fully covers zero-basis gain).
+      title = 'Some tax-basis facts use planning defaults'
+      rationale = PROPERTY_TIMING_RATIONALE
+      impactQualitative = PROPERTY_TIMING_IMPACT
     }
 
     return {

@@ -1563,6 +1563,7 @@ describe('missing data basis detector', () => {
     // Exact-path proceeds join baseCashInflows before withdrawal sizing; legacy
     // deposits later in the property-events block. Full §121 tax exclusion does
     // not make those paths identical — gap must fire (correctness over suppress).
+    // Copy is timing-only: do not imply a tax change from supplying basis.
     const ctx = context()
     ctx.plan.assumptions.inflationPct = 0
     ctx.plan.accounts = [{
@@ -1590,23 +1591,39 @@ describe('missing data basis detector', () => {
       },
     } as never
 
-    expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
-      {
-        label: 'Primary home opening property value (legacy net-proceeds path)',
-        value: '$200,000',
-        year: 2026,
+    const card = missingDataBasis.screen(ctx)
+    expect(card).toMatchObject({
+      title: 'Some tax-basis facts use planning defaults',
+      rationale:
+        'Optional property basis currently defaults to the legacy sale path. ' +
+        'Supplying the basis moves the sale onto the exact path whose proceeds enter ' +
+        'cash-flow sizing earlier — a timing effect, not a modeled tax change. ' +
+        'Entering the real value makes the projection more exact.',
+      impact: {
+        qualitative:
+          'The listed defaults may change when sale proceeds enter cash-flow sizing, not property-sale tax under the modeled §121 exclusion.',
       },
-      {
-        label: 'Primary home planned sale year (legacy net-proceeds path)',
-        value: '2029',
-        year: 2029,
-      },
-    ])
+      evidence: [
+        {
+          label:
+            'Primary home opening property value (cash-flow timing path — basis moves sale proceeds into earlier sizing)',
+          value: '$200,000',
+          year: 2026,
+        },
+        {
+          label:
+            'Primary home planned sale year (cash-flow timing path — basis moves sale proceeds into earlier sizing)',
+          value: '2029',
+          year: 2029,
+        },
+      ],
+    })
+    expect(card?.rationale).not.toMatch(/can change taxes/)
   })
 
   it('still flags a primary-residence gap when zero-basis gain can exceed §121', () => {
     // Sale-year value above the filing-status exclusion — tax and timing both
-    // change if basis is supplied.
+    // change if basis is supplied. Pin the general tax wording (not timing-only).
     const ctx = context()
     ctx.plan.assumptions.inflationPct = 0
     ctx.plan.accounts = [{
@@ -1634,23 +1651,33 @@ describe('missing data basis detector', () => {
       },
     } as never
 
-    expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
-      {
-        label: 'Primary home opening property value (legacy net-proceeds path)',
-        value: '$400,000',
-        year: 2026,
+    expect(missingDataBasis.screen(ctx)).toMatchObject({
+      title: 'Some tax-basis facts use planning defaults',
+      rationale:
+        'Optional basis fields currently default to assumptions that can change taxes. ' +
+        'Entering the real values makes the projection more exact.',
+      impact: {
+        qualitative:
+          'The listed defaults may affect withdrawal taxation, Roth access, or property-sale tax.',
       },
-      {
-        label: 'Primary home planned sale year (legacy net-proceeds path)',
-        value: '2029',
-        year: 2029,
-      },
-    ])
+      evidence: [
+        {
+          label: 'Primary home opening property value (legacy net-proceeds path)',
+          value: '$400,000',
+          year: 2026,
+        },
+        {
+          label: 'Primary home planned sale year (legacy net-proceeds path)',
+          value: '2029',
+          year: 2029,
+        },
+      ],
+    })
   })
 
   it('flags when expectedNetProceeds equals projected sale price under full §121', () => {
     // Equal proceeds do not erase the cash-timing difference (baseCashInflows
-    // vs late property-events deposit) — gap fires.
+    // vs late property-events deposit) — gap fires with timing copy.
     const ctx = context()
     ctx.plan.assumptions.inflationPct = 0
     ctx.plan.accounts = [{
@@ -1681,12 +1708,14 @@ describe('missing data basis detector', () => {
 
     expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
       {
-        label: 'Primary home expected net proceeds (legacy net-proceeds path)',
+        label:
+          'Primary home expected net proceeds (cash-flow timing path — basis moves sale proceeds into earlier sizing)',
         value: '$200,000',
         year: 2029,
       },
       {
-        label: 'Primary home opening property value (legacy net-proceeds path)',
+        label:
+          'Primary home opening property value (cash-flow timing path — basis moves sale proceeds into earlier sizing)',
         value: '$200,000',
         year: 2026,
       },
@@ -1695,7 +1724,8 @@ describe('missing data basis detector', () => {
 
   it('still flags when expectedNetProceeds differs from projected sale price under full §121', () => {
     // Legacy proceeds ≠ sale price: switching to the exact-basis path would
-    // also change the cash amount — gap must fire.
+    // also change the cash amount — gap must fire; tax still fully under §121
+    // so copy stays timing-worded.
     const ctx = context()
     ctx.plan.assumptions.inflationPct = 0
     ctx.plan.accounts = [{
@@ -1726,12 +1756,14 @@ describe('missing data basis detector', () => {
 
     expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
       {
-        label: 'Primary home expected net proceeds (legacy net-proceeds path)',
+        label:
+          'Primary home expected net proceeds (cash-flow timing path — basis moves sale proceeds into earlier sizing)',
         value: '$180,000',
         year: 2029,
       },
       {
-        label: 'Primary home opening property value (legacy net-proceeds path)',
+        label:
+          'Primary home opening property value (cash-flow timing path — basis moves sale proceeds into earlier sizing)',
         value: '$200,000',
         year: 2026,
       },
