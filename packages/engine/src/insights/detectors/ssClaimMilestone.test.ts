@@ -136,6 +136,81 @@ describe('Social Security claim milestone detector', () => {
     expect(ssClaimMilestone.screen(ctx)).toBeNull()
   })
 
+  it('stays silent when SSDI converts to own-retirement at FRA (no application)', () => {
+    // Pre-FRA years publish source ssdi; FRA year publishes own-retirement for
+    // the same dollars. That conversion is not a filing decision.
+    const ctx = context(66, 67, 0)
+    const income = ctx.plan.incomes[0] as { disability?: { onsetAge: number }; piaMonthly: number }
+    income.disability = { onsetAge: 55 }
+    income.piaMonthly = 2_000
+    const years = ctx.projection.result.years as Array<{
+      year: number
+      people: { personId: string; ageAttained: number; alive: boolean }[]
+      socialSecurityStreams?: {
+        personId: string
+        streamId: string
+        source: StreamSource
+        annualAmount: number
+        claimInForce: boolean
+        preWithholdingAnnual: number
+        isSpousalSurvivorGateStream: boolean
+      }[]
+    }>
+    for (const year of years) {
+      const atFra = year.year >= 2027
+      year.socialSecurityStreams = [
+        {
+          personId: 'p1',
+          streamId: 'ss',
+          source: atFra ? 'own-retirement' : 'ssdi',
+          annualAmount: 24_000,
+          claimInForce: true,
+          preWithholdingAnnual: 24_000,
+          isSpousalSurvivorGateStream: true,
+        },
+      ]
+    }
+
+    expect(ssClaimMilestone.screen(ctx)).toBeNull()
+  })
+
+  it('stays silent when post-FRA converted own-retirement is already in force at horizon start', () => {
+    // Horizon starts at FRA with source own-retirement on a disability stream —
+    // automatic conversion already happened; not a claim milestone.
+    const ctx = context(67, 67, 0)
+    const income = ctx.plan.incomes[0] as { disability?: { onsetAge: number }; piaMonthly: number }
+    income.disability = { onsetAge: 55 }
+    income.piaMonthly = 2_000
+    const years = ctx.projection.result.years as Array<{
+      year: number
+      people: { personId: string; ageAttained: number; alive: boolean }[]
+      socialSecurityStreams?: {
+        personId: string
+        streamId: string
+        source: StreamSource
+        annualAmount: number
+        claimInForce: boolean
+        preWithholdingAnnual: number
+        isSpousalSurvivorGateStream: boolean
+      }[]
+    }>
+    for (const year of years) {
+      year.socialSecurityStreams = [
+        {
+          personId: 'p1',
+          streamId: 'ss',
+          source: 'own-retirement',
+          annualAmount: 24_000,
+          claimInForce: true,
+          preWithholdingAnnual: 24_000,
+          isSpousalSurvivorGateStream: true,
+        },
+      ]
+    }
+
+    expect(ssClaimMilestone.screen(ctx)).toBeNull()
+  })
+
   it('stays silent when an SSDI-at-start stream later transitions to survivor', () => {
     // Stream already paying SSDI at horizon start; source becomes 'survivor' later.
     // That is not a new filing decision — pre-horizon must include SSDI-at-start rows.
@@ -260,7 +335,7 @@ describe('Social Security claim milestone detector', () => {
     expect(card?.severity).toBe('info')
     expect(card?.evidence).toContainEqual({
       label: "Pat's modeled claim age (configured filing age)",
-      value: '68 years 1 months',
+      value: '68 years 1 month',
     })
     expect(card?.evidence).toContainEqual({
       label: "Pat's attained age in first payable year",
@@ -918,5 +993,123 @@ describe('Social Security claim milestone detector', () => {
       ]),
     })
     expect(card?.rationale).toContain('attained age 68')
+  })
+
+  it('keeps a zero-PIA retirement stream out of pre-horizon so a later auxiliary claim can fire', () => {
+    // Stream is claim-in-force at horizon start with both amounts $0 (zero PIA).
+    // Pre-horizon must require a positive published amount — same rule as SSDI —
+    // so a later auxiliary amount on the same stream still surfaces.
+    const ctx = context(66, 67, 0)
+    ctx.plan.incomes = [
+      {
+        id: 'ss-zero-pia',
+        type: 'socialSecurity',
+        personId: 'p1',
+        piaMonthly: 0,
+        earnings: null,
+        claimAge: { years: 62, months: 0 },
+      },
+    ] as never
+    const years = ctx.projection.result.years as Array<{
+      year: number
+      people: { personId: string; ageAttained: number; alive: boolean }[]
+      socialSecurityStreams?: {
+        personId: string
+        streamId: string
+        source: StreamSource
+        annualAmount: number
+        claimInForce: boolean
+        preWithholdingAnnual: number
+        isSpousalSurvivorGateStream: boolean
+      }[]
+    }>
+    for (const year of years) {
+      const auxiliary = year.year >= 2027
+      year.socialSecurityStreams = [
+        {
+          personId: 'p1',
+          streamId: 'ss-zero-pia',
+          source: auxiliary ? 'spousal' : 'own-retirement',
+          annualAmount: auxiliary ? 12_000 : 0,
+          claimInForce: true,
+          preWithholdingAnnual: auxiliary ? 12_000 : 0,
+          isSpousalSurvivorGateStream: true,
+        },
+      ]
+    }
+
+    expect(ssClaimMilestone.screen(ctx)).toMatchObject({
+      title: "Pat's Social Security claim is imminent",
+      severity: 'attention',
+      evidence: expect.arrayContaining([
+        { label: "Pat's modeled claim age (configured filing age)", value: '62 years 0 months' },
+        { label: "Pat's modeled benefit in first claim year (spousal)", value: '$12,000', year: 2027 },
+      ]),
+    })
+  })
+
+  it('formats sub-dollar positive benefits with cents', () => {
+    const ctx = context(66, 67, 0)
+    const years = ctx.projection.result.years as Array<{
+      year: number
+      people: { personId: string; ageAttained: number; alive: boolean }[]
+      socialSecurityStreams?: {
+        personId: string
+        streamId: string
+        source: StreamSource
+        annualAmount: number
+        claimInForce: boolean
+        preWithholdingAnnual: number
+        isSpousalSurvivorGateStream: boolean
+      }[]
+    }>
+    withSsStreams(years, 'p1', 'ss', 2027, 0.4)
+
+    expect(ssClaimMilestone.screen(ctx)).toMatchObject({
+      evidence: expect.arrayContaining([
+        {
+          label: "Pat's modeled benefit in first claim year (own retirement)",
+          value: '$0.40',
+          year: 2027,
+        },
+      ]),
+    })
+  })
+
+  it('formats claim age with singular year and month forms for 1', () => {
+    // Use an imminent claim (2027) with configured filing age 1y 1m solely to
+    // exercise formatAge grammar in evidence/rationale.
+    const ctx = context(66, 67, 0)
+    ctx.plan.incomes = [
+      {
+        id: 'ss',
+        type: 'socialSecurity',
+        personId: 'p1',
+        piaMonthly: 2_000,
+        earnings: null,
+        claimAge: { years: 1, months: 1 },
+      },
+    ] as never
+    const years = ctx.projection.result.years as Array<{
+      year: number
+      people: { personId: string; ageAttained: number; alive: boolean }[]
+      socialSecurityStreams?: {
+        personId: string
+        streamId: string
+        source: StreamSource
+        annualAmount: number
+        claimInForce: boolean
+        preWithholdingAnnual: number
+        isSpousalSurvivorGateStream: boolean
+      }[]
+    }>
+    withSsStreams(years, 'p1', 'ss', 2027)
+
+    const card = ssClaimMilestone.screen(ctx)
+    expect(card?.evidence[0]).toEqual({
+      label: "Pat's modeled claim age (configured filing age)",
+      value: '1 year 1 month',
+    })
+    expect(card?.rationale).toContain('1 year 1 month')
   })
 })

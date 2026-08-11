@@ -125,3 +125,34 @@ export function splitRothWithdrawal(
     next: { contributionBasis, conversionLayers },
   }
 }
+
+/**
+ * Principal that would cover a draw with zero tax and zero penalty if
+ * contribution basis were not present, scanned as a FIFO prefix of conversion
+ * layers (oldest first, matching §408A(d)(4)(B)(ii)(I) / splitRothWithdrawal).
+ *
+ * Accumulate seasoned layers and wholly nontaxable unseasoned layers; stop at
+ * the first layer that would cost tax or penalty (unseasoned taxable). Deeper
+ * free layers behind that barrier are not free cover — reaching them requires
+ * tapping the blocking layer. Observed from the pool's live bucket balances —
+ * never a re-run of withdrawal economics.
+ */
+export function freeRothCoverCapacity(
+  state: RothBasisState,
+  year: number,
+  age: number,
+): number {
+  const qualified = age >= ROTH_QUALIFIED_AGE
+  let free = 0
+  for (const layer of state.conversionLayers) {
+    if (qualified || year - layer.year >= ROTH_SEASONING_YEARS) {
+      free += layer.amount
+    } else if (layer.taxableAmount <= 0) {
+      free += layer.amount
+    } else {
+      // Unseasoned taxable principal — FIFO stops here.
+      break
+    }
+  }
+  return free
+}

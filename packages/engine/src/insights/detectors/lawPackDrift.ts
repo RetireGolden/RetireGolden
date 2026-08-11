@@ -24,7 +24,7 @@ export const lawPackDrift: Detector = {
       category: 'tax-brackets',
       title: `${ctx.params.year} rules need a plan review`,
       rationale:
-        `The plan was last saved in ${planAsOfYear}, but brackets, limits, and tables now reflect ${ctx.params.year} rules ` +
+        `The plan was last saved in ${planAsOfYear}, but brackets, limits, and tables now reflect the ${ctx.params.year} parameter set ` +
         `(data as of ${PARAMETER_DATA_AS_OF}). Re-review key thresholds after the annual update.`,
       impact: {
         qualitative: 'Annual rule changes can alter tax brackets, contribution limits, and program thresholds.',

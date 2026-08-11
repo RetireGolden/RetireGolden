@@ -327,6 +327,7 @@ function snapshotInvariantState(
   iraProRata: readonly [string, unknown][]
   iraBasisByOwner: readonly [string, unknown][]
   rothBasis: readonly [string, unknown][]
+  rothAssumedContributionRemaining: readonly [string, unknown][]
   propertyValues: readonly [string, unknown][]
   hecmStates: readonly [string, unknown][]
   insuranceCashValues: readonly [string, unknown][]
@@ -350,6 +351,8 @@ function snapshotInvariantState(
     iraProRata: snapshotStringMap(state.iraProRata),
     iraBasisByOwner: snapshotStringMap(state.iraBasisByOwner),
     rothBasis: snapshotStringMap(state.rothBasis),
+    rothAssumedContributionRemaining:
+      snapshotStringMap(state.rothAssumedContributionRemaining),
     propertyValues: snapshotStringMap(state.propertyValues),
     hecmStates: snapshotStringMap(state.hecmStates),
     insuranceCashValues: snapshotStringMap(state.insuranceCashValues),

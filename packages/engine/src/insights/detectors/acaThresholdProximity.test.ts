@@ -37,8 +37,8 @@ describe('ACA threshold proximity detector', () => {
     expect(card).toMatchObject({
       severity: 'info',
       confidence: 'medium',
-      rationale: expect.stringContaining(
-        'whether a credit is payable then depends on benchmark premiums versus the required contribution',
+      rationale: expect.stringMatching(
+        /can restore credit eligibility \(subject to the credit's other conditions\); whether a credit is payable then depends on benchmark premiums versus the required contribution/,
       ),
       impact: {
         qualitative: 'A small MAGI reduction may restore premium-tax-credit eligibility; the payable credit depends on benchmark premiums vs required contribution.',

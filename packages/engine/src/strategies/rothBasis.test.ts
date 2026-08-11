@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
 import { describeRule } from '../rules/describeRule.js'
-import { emptyRothBasis, splitRothWithdrawal, type RothBasisState } from './rothBasis.js'
+import {
+  emptyRothBasis,
+  freeRothCoverCapacity,
+  splitRothWithdrawal,
+  type RothBasisState,
+} from './rothBasis.js'
 
 describe('splitRothWithdrawal — ordering', () => {
   const state: RothBasisState = {
@@ -134,5 +139,47 @@ describeRule('irc-408A-d-3-F-roth-conversion-recapture', {
     expect(splitRothWithdrawal(partlyBasisConversion(), 10_000, 2028, 50).penalty)
       .toBeCloseTo(accepted, 6)
     expect(splitRothWithdrawal(partlyBasisConversion(), 10_000, 2029, 50).penalty).toBe(0)
+  })
+})
+
+describe('freeRothCoverCapacity — FIFO prefix', () => {
+  it('sums seasoned and wholly nontaxable unseasoned layers when they lead the queue', () => {
+    const state: RothBasisState = {
+      contributionBasis: 0,
+      conversionLayers: [
+        { year: 2020, amount: 30_000, taxableAmount: 30_000 }, // seasoned by 2026
+        { year: 2025, amount: 10_000, taxableAmount: 0 }, // nontaxable unseasoned
+      ],
+    }
+    expect(freeRothCoverCapacity(state, 2026, 55)).toBe(40_000)
+  })
+
+  it('stops at the first unseasoned taxable layer (deeper free layers are not free cover)', () => {
+    // §408A(d)(4)(B)(ii)(I): conversions out FIFO. A later nontaxable unseasoned
+    // layer cannot cover a draw without first tapping the blocking taxable layer
+    // (which recaptures under §72(t) when pre-59½).
+    const state: RothBasisState = {
+      contributionBasis: 0,
+      conversionLayers: [
+        { year: 2026, amount: 10_000, taxableAmount: 10_000 }, // unseasoned taxable — blocks
+        { year: 2027, amount: 10_000, taxableAmount: 0 }, // nontaxable, but behind the block
+      ],
+    }
+    // Age 55, year 2028: both layers unseasoned; free cover is 0, not 10k.
+    expect(freeRothCoverCapacity(state, 2028, 55)).toBe(0)
+    // Removing assumed seed and drawing $10k reaches the 2026 layer → $1,000 §72(t).
+    const split = splitRothWithdrawal(state, 10_000, 2028, 55)
+    expect(split.penalty).toBeCloseTo(1_000, 6)
+  })
+
+  it('includes unseasoned taxable layers once the owner is qualified (age 60+)', () => {
+    const state: RothBasisState = {
+      contributionBasis: 0,
+      conversionLayers: [
+        { year: 2026, amount: 10_000, taxableAmount: 10_000 },
+        { year: 2027, amount: 10_000, taxableAmount: 0 },
+      ],
+    }
+    expect(freeRothCoverCapacity(state, 2028, 60)).toBe(20_000)
   })
 })

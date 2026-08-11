@@ -130,6 +130,7 @@ function bindings(): SimulatorAnnualPassStateBindings {
       contributionBasis: 600,
       conversionLayers: [{ year: 2025, amount: 400, taxableAmount: 350 }],
     }]]),
+    rothAssumedContributionRemaining: new Map([['p1', 200]]),
     propertyValues: new Map([['home', 500_000]]),
     hecmStates: new Map([['home', { principalLimit: 200_000, loanBalance: 25_000 }]]),
     insuranceCashValues: new Map([['policy', 20_000]]),
@@ -174,6 +175,7 @@ function annualPassStateBytes(
     iraProRata: [...state.iraProRata],
     iraBasisByOwner: [...state.iraBasisByOwner],
     rothBasis: [...state.rothBasis],
+    rothAssumedContributionRemaining: [...state.rothAssumedContributionRemaining],
     propertyValues: [...state.propertyValues],
     hecmStates: [...state.hecmStates],
     insuranceCashValues: [...state.insuranceCashValues],
@@ -232,6 +234,7 @@ function mutateEverything(state: SimulatorAnnualPassStateBindings): void {
   state.rothBasis.get('p1')!.conversionLayers.push(
     { year: 2026, amount: 5, taxableAmount: 5 },
   )
+  state.rothAssumedContributionRemaining.set('p1', 1)
   state.propertyValues.set('home', 1)
   state.hecmStates.delete('home')
   state.insuranceCashValues.set('policy', 1)

@@ -51,7 +51,7 @@ export const acaThresholdProximity: Detector = {
 
       const rationale = justOverBoundary
         ? `Household MAGI is slightly over the ${boundary}% FPL ACA credit boundary in ${year.year}. ` +
-          'Reducing MAGI below the boundary restores credit eligibility; whether a credit is payable then depends on benchmark premiums versus the required contribution — preview it before acting.'
+          "Reducing MAGI below the boundary can restore credit eligibility (subject to the credit's other conditions); whether a credit is payable then depends on benchmark premiums versus the required contribution — preview it before acting."
         : `Household MAGI is exactly at the ${boundary}% FPL ACA credit boundary in ${year.year}. ` +
           'A small increase can eliminate the modeled premium tax credit, so review income and conversion timing before the year closes.'
 

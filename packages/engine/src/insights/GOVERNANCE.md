@@ -66,6 +66,16 @@ When new detector work needs a fact the ledger does not yet publish, add the
 published field on `YearResult` first (populated in the same simulation pass at
 the mutation site), then write the detector as a reader of that field.
 
+**Registered simplification — employer designated-Roth ordering.** The ledger
+models employer designated-Roth pools through the same `splitRothWithdrawal`
+IRA ordering (contributions → conversion layers FIFO → earnings) used for Roth
+IRAs. Treas. Reg. §1.402A-1 Q&A-3 instead prescribes §72(e)(8) pro-rata recovery
+for designated Roth accounts. That engine simplification is pre-existing and
+unchanged; published assumed-basis verdicts and detector cards that surface
+employer-Roth seeded balances inherit it. Card evidence must not assert IRA
+ordering as statutory for employer Roth — label seeded figures as modeled under
+the engine's simplified ordering.
+
 ## False-positive policy
 
 Keep thresholds conservative by default.

@@ -63,7 +63,12 @@ import { claimFactor, spousalBenefitFactor, type ClaimAge } from '../socialSecur
 import { bestMaritalBenefit } from '../socialSecurity/maritalBenefits.js'
 import { capAuxiliaryForFamilyMaximum, claimAgeTotalMonths } from '../socialSecurity/familyMaximum.js'
 import { sizeRothConversion } from '../strategies/rothConversion.js'
-import { splitRothWithdrawal, type RothBasisState } from '../strategies/rothBasis.js'
+import {
+  ROTH_QUALIFIED_AGE,
+  freeRothCoverCapacity,
+  splitRothWithdrawal,
+  type RothBasisState,
+} from '../strategies/rothBasis.js'
 import { seppActive, seppAnnualAmount } from '../strategies/sepp.js'
 import {
   classifyInheritedRegime,
@@ -1045,15 +1050,29 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     account: Extract<Account, { type: 'roth' }>,
   ): boolean => account.inherited !== undefined
   const rothBasis = new Map<string, RothBasisState>()
+  /**
+   * Observation-only: remaining contribution basis that exists only because
+   * `contributionBasis` was omitted (seeded as the account balance). Depletes
+   * after known (supplied + credited) contribution basis when a withdrawal
+   * draws from contributions — never changes splitRothWithdrawal economics.
+   */
+  const rothAssumedContributionRemaining = new Map<string, number>()
   for (const account of plan.accounts) {
     if (account.type !== 'roth') continue
     // Seed only pure owned Roth; an inherited Roth (pre- or post-S2) stays out.
     if (isInheritedRothOutsideOwnedPool(account)) continue
     const key = rothPoolKey(account)
     const startBasis = account.contributionBasis ?? account.balance
+    const assumedSeed = account.contributionBasis === undefined ? account.balance : 0
     const existing = rothBasis.get(key)
     if (existing) existing.contributionBasis += startBasis
     else rothBasis.set(key, { contributionBasis: startBasis, conversionLayers: [] })
+    if (assumedSeed > 0) {
+      rothAssumedContributionRemaining.set(
+        key,
+        (rothAssumedContributionRemaining.get(key) ?? 0) + assumedSeed,
+      )
+    }
   }
   // HSA medical-expense subledger (account/HSA/fixed-asset depth plan, steps
   // 2–3). Qualified withdrawals from cap-mode HSAs are limited to the
@@ -1069,11 +1088,19 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
   // aggregated per owner across their own (non-inherited) IRAs. Depletes as
   // distributions/conversions return basis.
   const iraBasisByOwner = new Map<string, number>()
+  /**
+   * Owners with at least one owned IRA whose `nondeductibleBasis` was omitted
+   * (assumed zero). Observation-only for assumed-basis consequential publication.
+   */
+  const ownersWithOmittedNondeductibleBasis = new Set<string>()
   for (const account of plan.accounts) {
     if (!isAggregatedIra(account)) continue
+    const ownerId = account.ownerPersonId ?? primary.id
+    if (account.nondeductibleBasis === undefined) {
+      ownersWithOmittedNondeductibleBasis.add(ownerId)
+    }
     const basis = account.nondeductibleBasis ?? 0
     if (basis <= 0) continue
-    const ownerId = account.ownerPersonId ?? primary.id
     iraBasisByOwner.set(ownerId, (iraBasisByOwner.get(ownerId) ?? 0) + basis)
   }
   // Taxable safety-net floor (step 7): a minimum liquid (cash/taxable/vested
@@ -2166,12 +2193,6 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         : 1
     const ssOwnByPerson = new Map<string, number>()
     const ssActualMonthlyByPerson = new Map<string, number>()
-    /**
-     * Benefit source currently backing `ssOwnByPerson` for each person. Updated
-     * whenever the paid amount is set or replaced (own / SSDI / spousal /
-     * survivor). Published on the year so detectors never re-derive it.
-     */
-    const ssBenefitSourceByPerson = new Map<string, SocialSecurityBenefitSource>()
     /** PIA + claim age + stream id per SS-claiming person, for the spousal top-up below. */
     const ssStreamByPerson = new Map<string, {
       pia: number
@@ -2226,6 +2247,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       // retirement benefit at FRA at the same dollar amount (no delayed credits).
       // SSDI cannot start at/after FRA (it would have already converted), so an
       // onsetAge >= FRA is treated as invalid — fall through to normal retirement.
+      // Observation: publish source 'ssdi' only while age < FRA; from the FRA year
+      // onward the same dollars are own-retirement (§202(a) conversion — no
+      // application). Milestone detectors that key on source must not treat that
+      // conversion as a filing decision.
       const onsetAge = stream.disability?.onsetAge
       if (onsetAge !== undefined && onsetAge < fra.years) {
         if (s.ageAttained >= onsetAge) {
@@ -2234,10 +2259,9 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           ssOwnByPerson.set(stream.personId, (ssOwnByPerson.get(stream.personId) ?? 0) + annual)
           ssActualMonthlyByPerson.set(stream.personId, (ssActualMonthlyByPerson.get(stream.personId) ?? 0) + monthly)
           ssdiByPerson.set(stream.personId, { onsetAge, benefit: annual, fraYears: fra.years })
-          ssBenefitSourceByPerson.set(stream.personId, 'ssdi')
           streamPub.claimInForce = true
           streamPub.preWithholdingAnnual += annual
-          streamPub.source = 'ssdi'
+          streamPub.source = s.ageAttained >= fra.years ? 'own-retirement' : 'ssdi'
         }
         continue // SSDI replaces the retirement-claim path for this stream
       }
@@ -2256,13 +2280,9 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       ssActualMonthlyByPerson.set(stream.personId, (ssActualMonthlyByPerson.get(stream.personId) ?? 0) + monthly)
       streamPub.claimInForce = true
       streamPub.preWithholdingAnnual += annual
-      // Per-stream source is recorded at this stream's own pay site and must not
-      // depend on whether a sibling SSDI stream already claimed the person-level
-      // bookkeeping slot (plan order must not change published stream sources).
+      // Per-stream source is recorded at this stream's own pay site (plan order
+      // must not change published stream sources).
       streamPub.source = 'own-retirement'
-      if ((ssBenefitSourceByPerson.get(stream.personId) ?? 'none') !== 'ssdi') {
-        ssBenefitSourceByPerson.set(stream.personId, 'own-retirement')
-      }
     }
 
     // Marital-history menu: a divorced-spousal or survivor benefit on a *former*
@@ -2296,7 +2316,6 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           ssOwnByPerson.set(stream.personId, annual)
           const maritalSource: SocialSecurityBenefitSource =
             best.kind === 'survivor' ? 'survivor' : 'spousal'
-          ssBenefitSourceByPerson.set(stream.personId, maritalSource)
           // Publication only: former-spouse aux replaces this stream's amount
           // and zeros sibling streams so published amounts stay person-faithful.
           for (const entry of ssStreamPub.values()) {
@@ -2369,7 +2388,6 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           const own = ssOwnByPerson.get(lower.p.id) ?? 0
           if (spousalAnnual > own) {
             ssOwnByPerson.set(lower.p.id, spousalAnnual)
-            ssBenefitSourceByPerson.set(lower.p.id, 'spousal')
             // Publication only: current-spouse aux keys off the gate stream.
             const gateStreamId = lower.ss.streamId
             for (const entry of ssStreamPub.values()) {
@@ -2425,7 +2443,6 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           ssHaircutFactor
         if (survivorAnnual > ownBenefit) {
           ssOwnByPerson.set(survivor.id, survivorAnnual)
-          ssBenefitSourceByPerson.set(survivor.id, 'survivor')
           // Publication only: survivor step-up keys off the gate stream.
           const gateStreamId = survivorStream.streamId
           for (const entry of ssStreamPub.values()) {
@@ -3426,10 +3443,6 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     let traditionalInflow = 0
     let otherInflow = 0
     let taxableInflow = 0
-    /** Post-limit Roth IRA contribution credits, by resolved owner (published fact). */
-    const ownedRothIraCreditedContributionsByOwner = new Map<string, number>()
-    /** Post-limit employer Roth contribution credits, by account id (published fact). */
-    const employerRothCreditedContributionsByAccount = new Map<string, number>()
     const groupUsed = new Map<string, number>()
     const addition415cUsed = new Map<string, number>()
     // IRC 219(b)(1) caps an IRA contribution at the lesser of the deductible
@@ -3651,22 +3664,6 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       if (account.type === 'roth') {
         const rb = rothBasis.get(rothPoolKey(account))
         if (rb) rb.contributionBasis += allowed
-        // Capture post-limit credited amounts for published per-entity facts
-        // (detectors must not re-derive credits from schedules).
-        if (!isInheritedRothOutsideOwnedPool(account) && allowed > 0) {
-          if (account.kind === 'ira') {
-            const ownerPersonId = account.ownerPersonId ?? primary.id
-            ownedRothIraCreditedContributionsByOwner.set(
-              ownerPersonId,
-              (ownedRothIraCreditedContributionsByOwner.get(ownerPersonId) ?? 0) + allowed,
-            )
-          } else if (account.kind === 'employer') {
-            employerRothCreditedContributionsByAccount.set(
-              account.id,
-              (employerRothCreditedContributionsByAccount.get(account.id) ?? 0) + allowed,
-            )
-          }
-        }
       }
       contributions += allowed
       if (isAggregatedIra(account)) ownedNonRothIraContributions += allowed
@@ -3898,6 +3895,36 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         ordinaryIncome: ledgerCentsToPlanDollars(effect.ordinaryIncomeAmount),
       }
     }
+    /**
+     * Observation-only: per-channel Form 8606 taxable ordinary income produced
+     * this year for owners with omitted `nondeductibleBasis`. Per-attempt;
+     * drives the assumed-basis consequential verdict. Each channel accumulates
+     * only the taxable character that channel's binding transaction produced
+     * under the assumption — never the year's full gross for that channel.
+     */
+    type Form8606ConsequentialChannel =
+      | 'distributions'
+      | 'conversions'
+      | 'annuityPayments'
+    const form8606ConsequentialByOwner = new Map<string, {
+      distributions: number
+      conversions: number
+      annuityPayments: number
+    }>()
+    const noteForm8606Taxable = (
+      ownerPersonId: string,
+      taxable: number,
+      channel: Form8606ConsequentialChannel,
+    ): void => {
+      if (taxable <= 0 || !ownersWithOmittedNondeductibleBasis.has(ownerPersonId)) return
+      const entry = form8606ConsequentialByOwner.get(ownerPersonId) ?? {
+        distributions: 0,
+        conversions: 0,
+        annuityPayments: 0,
+      }
+      entry[channel] += taxable
+      form8606ConsequentialByOwner.set(ownerPersonId, entry)
+    }
     const splitWithAssumedCharacter = (
       state: IraProRataYear,
       amount: number,
@@ -3909,15 +3936,22 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         grossAmountPlanDollars: amount,
         remainingBasisPlanDollars: state.basis,
       })
-      if (assumed === null) return splitIraDistribution(state, amount)
-      return {
-        nontaxable: assumed.basisReturn,
-        taxable: assumed.ordinaryIncome,
-        next: {
-          basis: Math.max(0, state.basis - assumed.basisReturn),
-          nontaxableFraction: state.nontaxableFraction,
-        },
-      }
+      const split = assumed === null
+        ? splitIraDistribution(state, amount)
+        : {
+          nontaxable: assumed.basisReturn,
+          taxable: assumed.ordinaryIncome,
+          next: {
+            basis: Math.max(0, state.basis - assumed.basisReturn),
+            nontaxableFraction: state.nontaxableFraction,
+          },
+        }
+      const channel: Form8606ConsequentialChannel =
+        input.calculationScope === 'form8606Line8NetConversions'
+          ? 'conversions'
+          : 'distributions'
+      noteForm8606Taxable(input.ownerPersonId, split.taxable, channel)
+      return split
     }
 
     // This year's FALLBACK Form-8606 pro-rata denominator per owner (step 5):
@@ -5180,7 +5214,21 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         mutationOrdinal: payment.mutationOrdinal,
         grossAmountPlanDollars: payment.grossAmountPlanDollars,
       })
-      if (assumed === null || assumed.basisReturn <= 0) continue
+      if (assumed === null) {
+        // No settlement character: payment stays fully ordinary (registered legacy).
+        noteForm8606Taxable(
+          payment.poolOwnerPersonId,
+          payment.grossAmountPlanDollars,
+          'annuityPayments',
+        )
+        continue
+      }
+      noteForm8606Taxable(
+        payment.poolOwnerPersonId,
+        Math.max(0, payment.grossAmountPlanDollars - assumed.basisReturn),
+        'annuityPayments',
+      )
+      if (assumed.basisReturn <= 0) continue
       annuityPaymentNontaxable += assumed.basisReturn
       const proRata = iraProRata.get(payment.poolOwnerPersonId)
       if (proRata !== undefined) {
@@ -5202,7 +5250,12 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         }
         const line7Gross = entry.amount - carve
         const proRata = iraProRata.get(entry.ownerId)
-        if (proRata === undefined || line7Gross <= 0) continue
+        if (line7Gross <= 0) continue
+        if (proRata === undefined) {
+          // Zero aggregate basis: entire line-7 gross is ordinary income.
+          noteForm8606Taxable(entry.ownerId, line7Gross, 'distributions')
+          continue
+        }
         const split = splitWithAssumedCharacter(proRata, line7Gross, {
           ownerPersonId: entry.ownerId,
           calculationScope: 'form8606Line7Distributions',
@@ -5274,7 +5327,11 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       if (nonQualified <= 0) continue
       legacyQcdExcessByOwner.set(entry.ownerId, remainingExcess - nonQualified)
       const proRata = iraProRata.get(entry.ownerId)
-      if (proRata === undefined) continue
+      if (proRata === undefined) {
+        noteForm8606Taxable(entry.ownerId, nonQualified, 'distributions')
+        qcdNonQualifiedOrdinaryIncome += nonQualified
+        continue
+      }
       const split = splitWithAssumedCharacter(proRata, nonQualified, {
         ownerPersonId: entry.ownerId,
         calculationScope: 'form8606Line7Distributions',
@@ -5955,28 +6012,12 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
      */
     let namedRothConversionNontaxable = 0
     /**
-     * Roth conversion layers credited to an owner's owned Roth-IRA pool this
-     * year (published observation; each layer's year is the current sim year).
-     *
-     * Per-attempt collector: recreated inside the pass so a counterfactual
-     * pre-pass, settlement retry, or other rolled-back run cannot leave
-     * layers in the map for the committed yearResult to double-count.
-     * Written at the conversion-layer commit sites (named destination credit
-     * and aggregate destination credit) that mirror splitRothWithdrawal's
-     * basis pool — one array entry per destination credit in commit order,
-     * never merged across events (mixed taxable ratios must keep FIFO
-     * free-cover boundaries). One write path per credited dollar per attempt,
-     * never both named and aggregate for the same dollar.
+     * Observation-only: pre-60 Roth withdrawals that drew into assumed-seeded
+     * contribution basis this attempt (owner pool key → withdrawal amount;
+     * employer key → account withdrawal amount).
      */
-    const ownedRothIraCreditedConversionLayersByOwner = new Map<
-      string,
-      { principal: number; taxable: number; year: number }[]
-    >()
-    /** Per-account employer Roth conversion layers (published fact). */
-    const employerRothCreditedConversionLayersByAccount = new Map<
-      string,
-      { principal: number; taxable: number; year: number }[]
-    >()
+    const ownedRothAssumedBasisConsequentialByOwner = new Map<string, number>()
+    const employerRothAssumedBasisConsequentialByAccount = new Map<string, number>()
     let retirementActionCash = 0
     let retirementActionEquityCompensation = 0
     let retirementActionOrdinaryIncome = 0
@@ -6498,19 +6539,22 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             // merely that the conversion happened.
             const ownerId = state.account.ownerPersonId ?? primary.id
             const proRata = iraProRata.get(ownerId)
-            if (proRata !== undefined &&
-                ownedIraApplication.applicationKind === 'debit') {
-              const split = splitWithAssumedCharacter(proRata, move.amount, {
-                ownerPersonId: ownerId,
-                calculationScope: 'form8606Line8NetConversions',
-                occurrenceKind: kind,
-                producerOccurrenceKey,
-                sourceAccountId: state.account.id,
-                mutationOrdinal: ownedIraApplication.mutationOrdinal,
-              })
-              iraProRata.set(ownerId, split.next)
-              committedAction.nontaxableAmountPlanDollars += split.nontaxable
-              namedRothConversionNontaxable += split.nontaxable
+            if (ownedIraApplication.applicationKind === 'debit') {
+              if (proRata !== undefined) {
+                const split = splitWithAssumedCharacter(proRata, move.amount, {
+                  ownerPersonId: ownerId,
+                  calculationScope: 'form8606Line8NetConversions',
+                  occurrenceKind: kind,
+                  producerOccurrenceKey,
+                  sourceAccountId: state.account.id,
+                  mutationOrdinal: ownedIraApplication.mutationOrdinal,
+                })
+                iraProRata.set(ownerId, split.next)
+                committedAction.nontaxableAmountPlanDollars += split.nontaxable
+                namedRothConversionNontaxable += split.nontaxable
+              } else {
+                noteForm8606Taxable(ownerId, move.amount, 'conversions')
+              }
             }
           }
         }
@@ -6557,37 +6601,6 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
                 credited - committedAction.nontaxableAmountPlanDollars,
               ),
             })
-          }
-          // Observation-only: publish one conversion layer per destination credit
-          // for insight readers (seasoning clock starts at this year — mirror
-          // splitRothWithdrawal). Do not merge same-owner same-year events.
-          // Owned Roth IRA → owner pool; employer designated Roth → per-account.
-          if (credited > 0 && !isInheritedRothOutsideOwnedPool(destination.account)) {
-            const taxableAmount = Math.max(
-              0,
-              credited - committedAction.nontaxableAmountPlanDollars,
-            )
-            const layer = {
-              principal: credited,
-              taxable: taxableAmount,
-              year,
-            }
-            if (destination.account.kind === 'ira') {
-              const ownerPersonId = destination.account.ownerPersonId ?? primary.id
-              const layers =
-                ownedRothIraCreditedConversionLayersByOwner.get(ownerPersonId) ?? []
-              layers.push(layer)
-              ownedRothIraCreditedConversionLayersByOwner.set(ownerPersonId, layers)
-            } else if (destination.account.kind === 'employer') {
-              const layers =
-                employerRothCreditedConversionLayersByAccount.get(destination.account.id) ??
-                []
-              layers.push(layer)
-              employerRothCreditedConversionLayersByAccount.set(
-                destination.account.id,
-                layers,
-              )
-            }
           }
           namedRothConversionExecuted += credited
         }
@@ -7068,10 +7081,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             }
             // Pro-rata return of basis on converted IRA dollars (step 5): the
             // basis portion moves to Roth without creating ordinary income.
-            if (sourceAccount.kind === 'ira') {
+            if (sourceAccount.kind === 'ira' &&
+                ownedIraApplication?.applicationKind === 'debit') {
               const proRata = iraProRata.get(ownerId)
-              if (proRata &&
-                  ownedIraApplication?.applicationKind === 'debit') {
+              if (proRata) {
                 const split = splitWithAssumedCharacter(proRata, take, {
                   ownerPersonId: ownerId,
                   calculationScope: 'form8606Line8NetConversions',
@@ -7087,6 +7100,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
                 // destinations are per owner.
                 conversionNontaxable += split.nontaxable
                 credit.nontaxablePlanDollars += split.nontaxable
+              } else {
+                noteForm8606Taxable(ownerId, take, 'conversions')
               }
             }
           }
@@ -7141,38 +7156,6 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
                     credit.convertedPlanDollars - credit.nontaxablePlanDollars,
                   ),
                 })
-              }
-              // Observation-only: publish one conversion layer per destination
-              // credit for insight readers (seasoning clock starts at this year —
-              // mirror splitRothWithdrawal). Do not merge same-owner same-year
-              // events into a single principal/taxable pair.
-              if (!isInheritedRothOutsideOwnedPool(destinationAccount)) {
-                const taxableAmount = Math.max(
-                  0,
-                  credit.convertedPlanDollars - credit.nontaxablePlanDollars,
-                )
-                const layer = {
-                  principal: credit.convertedPlanDollars,
-                  taxable: taxableAmount,
-                  year,
-                }
-                if (destinationAccount.kind === 'ira') {
-                  const ownerPersonId = destinationAccount.ownerPersonId ?? primary.id
-                  const layers =
-                    ownedRothIraCreditedConversionLayersByOwner.get(ownerPersonId) ?? []
-                  layers.push(layer)
-                  ownedRothIraCreditedConversionLayersByOwner.set(ownerPersonId, layers)
-                } else if (destinationAccount.kind === 'employer') {
-                  const layers =
-                    employerRothCreditedConversionLayersByAccount.get(
-                      destinationAccount.id,
-                    ) ?? []
-                  layers.push(layer)
-                  employerRothCreditedConversionLayersByAccount.set(
-                    destinationAccount.id,
-                    layers,
-                  )
-                }
               }
             }
           }
@@ -8821,23 +8804,97 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     }
     // Commit the Roth basis ordering (contributions → conversions → earnings) once
     // per pool, so next year's seasoning + earnings are correct across the owner's
-    // aggregated Roth IRAs.
+    // aggregated Roth IRAs. Also annotate assumed-seed consumption (observation
+    // only — does not change the split economics). Flag only when the spill into
+    // assumed seed exceeds free-cover capacity at this moment (FIFO prefix of
+    // seasoned conversion principal + wholly nontaxable unseasoned principal;
+    // stops at the first unseasoned taxable layer).
     for (const [key, { taken, age }] of rothPoolWithdrawals(withdrawalPlan.byAccountId)) {
       const rb = rothBasis.get(key)
-      if (rb) rothBasis.set(key, splitRothWithdrawal(rb, taken, year, age).next)
+      if (!rb) continue
+      const split = splitRothWithdrawal(rb, taken, year, age)
+      const assumedRemaining = rothAssumedContributionRemaining.get(key) ?? 0
+      if (split.contributions > 0 && assumedRemaining > 0) {
+        // Known contribution basis (supplied seed + credits) is consumed first;
+        // only the residual draw into the assumed seed is a candidate spill.
+        const knownContribution = Math.max(0, rb.contributionBasis - assumedRemaining)
+        const fromAssumed = Math.max(0, split.contributions - knownContribution)
+        if (fromAssumed > 0) {
+          rothAssumedContributionRemaining.set(
+            key,
+            Math.max(0, assumedRemaining - fromAssumed),
+          )
+          if (age < ROTH_QUALIFIED_AGE && taken > 0) {
+            // Free-cover capacity at this moment (pre-commit pool balances).
+            // If the spill fits entirely in free cover, removing the seed would
+            // shift the same dollars into those buckets with identical zero
+            // tax/penalty — not consequential.
+            const freeCover = freeRothCoverCapacity(rb, year, age)
+            const consequentialSpill = Math.max(0, fromAssumed - freeCover)
+            if (consequentialSpill > 0) {
+              if (key.startsWith('rothira:')) {
+                const ownerPersonId = key.slice('rothira:'.length)
+                ownedRothAssumedBasisConsequentialByOwner.set(
+                  ownerPersonId,
+                  (ownedRothAssumedBasisConsequentialByOwner.get(ownerPersonId) ?? 0) +
+                    consequentialSpill,
+                )
+              } else if (key.startsWith('roth:')) {
+                const accountId = key.slice('roth:'.length)
+                employerRothAssumedBasisConsequentialByAccount.set(
+                  accountId,
+                  (employerRothAssumedBasisConsequentialByAccount.get(accountId) ?? 0) +
+                    consequentialSpill,
+                )
+              }
+            }
+          }
+        }
+      }
+      rothBasis.set(key, split.next)
     }
     // Commit the year's Form-8606 IRA basis depletion from need-based draws
     // (RMD/SEPP/conversion basis already committed above as they happened).
-    if (iraProRata.size > 0) {
-      for (const [ownerId, proRata] of iraProRata) {
-        let taken = 0
+    // The assumed-basis verdict reads the executed character that priced
+    // tax/penalty (`iraCharacterFinal`); basis carryforward still depletes via
+    // the same pro-rata state the year's forced draws already opened.
+    {
+      const needBasedTakenByOwner = new Map<string, number>()
+      for (const state of balances) {
+        if (!isAggregatedIraThisYear(state.account)) continue
+        const taken = withdrawalPlan.byAccountId.get(state.account.id) ?? 0
+        if (taken <= 0) continue
+        const ownerId = state.account.ownerPersonId ?? primary.id
+        needBasedTakenByOwner.set(
+          ownerId,
+          (needBasedTakenByOwner.get(ownerId) ?? 0) + taken,
+        )
+      }
+      for (const [ownerId, taken] of needBasedTakenByOwner) {
+        let executedTaxable = 0
         for (const state of balances) {
           if (!isAggregatedIraThisYear(state.account)) continue
           if ((state.account.ownerPersonId ?? primary.id) !== ownerId) continue
-          taken += withdrawalPlan.byAccountId.get(state.account.id) ?? 0
+          const accountTaken = withdrawalPlan.byAccountId.get(state.account.id) ?? 0
+          if (accountTaken <= 0) continue
+          executedTaxable +=
+            iraCharacterFinal.taxableBySourceAccountId.get(state.account.id) ??
+            accountTaken
         }
-        const next = splitIraDistribution(proRata, taken).next
-        iraBasisByOwner.set(ownerId, next.basis)
+        // Verdict: observe the character actually used for tax/penalty.
+        noteForm8606Taxable(ownerId, executedTaxable, 'distributions')
+        const proRata = iraProRata.get(ownerId)
+        if (proRata === undefined) continue
+        const split = splitIraDistribution(proRata, taken)
+        iraBasisByOwner.set(ownerId, split.next.basis)
+      }
+      // Owners with open pro-rata but no need-based draw still need basis
+      // carried forward (already in iraProRata / iraBasisByOwner from prior
+      // commits). Sync remaining basis for pro-rata owners that had no need-
+      // based take above.
+      for (const [ownerId, proRata] of iraProRata) {
+        if (needBasedTakenByOwner.has(ownerId)) continue
+        iraBasisByOwner.set(ownerId, proRata.basis)
       }
     }
     // Reimburse-later accumulation (step 3): out-of-pocket qualified medical
@@ -9431,61 +9488,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         : undefined
 
     // --- per-entity published facts (insight one-source-of-truth channel) ---
-    // Capture already-computed ledger values only — no re-derivation from Plan
-    // schedules. Detectors must read these and never re-attribute from aggregates.
-    const ownedRothWithdrawalsByOwner = new Map<string, number>()
-    const employerRothWithdrawalsByAccount = new Map<string, number>()
-    for (const [key, { taken }] of rothPoolWithdrawals(withdrawalPlan.byAccountId)) {
-      if (taken <= 0) continue
-      if (key.startsWith('rothira:')) {
-        const ownerPersonId = key.slice('rothira:'.length)
-        ownedRothWithdrawalsByOwner.set(
-          ownerPersonId,
-          (ownedRothWithdrawalsByOwner.get(ownerPersonId) ?? 0) + taken,
-        )
-      } else if (key.startsWith('roth:')) {
-        const accountId = key.slice('roth:'.length)
-        employerRothWithdrawalsByAccount.set(
-          accountId,
-          (employerRothWithdrawalsByAccount.get(accountId) ?? 0) + taken,
-        )
-      }
-    }
-    const ownedRothOwnerIds = new Set<string>([
-      ...ownedRothWithdrawalsByOwner.keys(),
-      ...ownedRothIraCreditedContributionsByOwner.keys(),
-      ...ownedRothIraCreditedConversionLayersByOwner.keys(),
-    ])
-    const ownedRothIraPoolActivity: OwnedRothIraPoolActivity[] = [...ownedRothOwnerIds]
-      .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
-      .map((ownerPersonId) => {
-        const rawLayers =
-          ownedRothIraCreditedConversionLayersByOwner.get(ownerPersonId) ?? []
-        // Cap taxable ≤ principal per layer so a collector glitch cannot publish
-        // an impossible split; freeze the published array for byte-stable facts.
-        const creditedConversionLayers = Object.freeze(
-          rawLayers.map((layer) =>
-            Object.freeze({
-              principal: layer.principal,
-              taxable: Math.min(Math.max(0, layer.taxable), Math.max(0, layer.principal)),
-              year: layer.year,
-            }),
-          ),
-        )
-        return {
-          ownerPersonId,
-          withdrawals: ownedRothWithdrawalsByOwner.get(ownerPersonId) ?? 0,
-          creditedContributions:
-            ownedRothIraCreditedContributionsByOwner.get(ownerPersonId) ?? 0,
-          creditedConversionLayers,
-        }
-      })
-    const employerRothAccountIds = new Set<string>([
-      ...employerRothWithdrawalsByAccount.keys(),
-      ...employerRothCreditedContributionsByAccount.keys(),
-      ...employerRothCreditedConversionLayersByAccount.keys(),
-    ])
-    // Resolve owner for employer accounts that only have credited contributions.
+    // Only assumed-basis consequential verdicts are published on these rows —
+    // every remaining member has a production consumer (missingDataBasis).
     const employerRothOwnerByAccount = new Map<string, string>()
     for (const account of plan.accounts) {
       if (account.type === 'roth' && account.kind === 'employer') {
@@ -9495,106 +9499,41 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         )
       }
     }
-    const employerRothAccountActivity: EmployerRothAccountActivity[] =
-      [...employerRothAccountIds]
-        .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
-        .map((accountId) => {
-          const rawLayers =
-            employerRothCreditedConversionLayersByAccount.get(accountId) ?? []
-          const creditedConversionLayers = Object.freeze(
-            rawLayers.map((layer) =>
-              Object.freeze({
-                principal: layer.principal,
-                taxable: Math.min(Math.max(0, layer.taxable), Math.max(0, layer.principal)),
-                year: layer.year,
-              }),
-            ),
-          )
-          return {
-            accountId,
-            ownerPersonId: employerRothOwnerByAccount.get(accountId) ?? primary.id,
-            withdrawals: employerRothWithdrawalsByAccount.get(accountId) ?? 0,
-            creditedContributions:
-              employerRothCreditedContributionsByAccount.get(accountId) ?? 0,
-            creditedConversionLayers,
-          }
-        })
+    const ownedRothIraPoolActivity: OwnedRothIraPoolActivity[] = [
+      ...ownedRothAssumedBasisConsequentialByOwner,
+    ]
+      .filter(([, withdrawal]) => withdrawal > 0)
+      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+      .map(([ownerPersonId, withdrawal]) => ({
+        ownerPersonId,
+        assumedBasisConsequential: { withdrawal },
+      }))
+    const employerRothAccountActivity: EmployerRothAccountActivity[] = [
+      ...employerRothAssumedBasisConsequentialByAccount,
+    ]
+      .filter(([, withdrawal]) => withdrawal > 0)
+      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+      .map(([accountId, withdrawal]) => ({
+        accountId,
+        ownerPersonId: employerRothOwnerByAccount.get(accountId) ?? primary.id,
+        assumedBasisConsequential: { withdrawal },
+      }))
 
-    // Owned traditional-IRA Form 8606 aggregate: distributions (non-conversion)
-    // and conversions, assembled from the same mutation-site totals the ledger
-    // already committed this pass.
-    const ownedIraDistributionsByOwner = new Map<string, number>()
-    const ownedIraConversionsByOwner = new Map<string, number>()
-    const addOwnedIraDist = (ownerPersonId: string, amount: number): void => {
-      if (amount <= 0) return
-      ownedIraDistributionsByOwner.set(
-        ownerPersonId,
-        (ownedIraDistributionsByOwner.get(ownerPersonId) ?? 0) + amount,
-      )
-    }
-    const addOwnedIraConv = (ownerPersonId: string, amount: number): void => {
-      if (amount <= 0) return
-      ownedIraConversionsByOwner.set(
-        ownerPersonId,
-        (ownedIraConversionsByOwner.get(ownerPersonId) ?? 0) + amount,
-      )
-    }
-    for (const [ownerId, amount] of ownedIraRmdGrossByOwner) {
-      addOwnedIraDist(ownerId, amount)
-    }
-    for (const entry of deferredSeppDistributions) {
-      addOwnedIraDist(entry.ownerId, entry.amount)
-    }
-    for (const entry of deferredLegacyQcdDistributions) {
-      addOwnedIraDist(entry.ownerId, entry.amount)
-    }
-    // Named QCD gifts leave owned IRAs after the aggregate arm; credit their
-    // executed gross by owner from the runtime applications already recorded.
-    for (const application of annualRetirementRuntimeApplications) {
-      if (
-        application.applicationKind !== 'debit' ||
-        application.simulatorPhase !== 'namedQcdDistribution'
-      ) continue
-      addOwnedIraDist(
-        application.ownerPersonId ?? primary.id,
-        application.appliedAmountPlanDollars,
-      )
-    }
-    for (const state of balances) {
-      if (!isAggregatedIraThisYear(state.account)) continue
-      addOwnedIraDist(
-        state.account.ownerPersonId ?? primary.id,
-        withdrawalPlan.byAccountId.get(state.account.id) ?? 0,
-      )
-    }
-    for (const application of annualRetirementRuntimeApplications) {
-      if (application.applicationKind !== 'debit') continue
-      if (
-        application.simulatorPhase !== 'legacyRothConversion' &&
-        application.simulatorPhase !== 'namedRothConversionDebit'
-      ) continue
-      // Only owned-IRA conversion sources (employer conversion sources exist
-      // but are outside the Form 8606 aggregate this field publishes).
-      const sourceAccount = plan.accounts.find(
-        (account) => account.id === application.sourceAccountId,
-      )
-      if (sourceAccount === undefined || !isAggregatedIra(sourceAccount)) continue
-      addOwnedIraConv(
-        application.ownerPersonId ?? primary.id,
-        application.appliedAmountPlanDollars,
-      )
-    }
-    const ownedTraditionalOwnerIds = new Set<string>([
-      ...ownedIraDistributionsByOwner.keys(),
-      ...ownedIraConversionsByOwner.keys(),
-    ])
     const ownedTraditionalIraAggregateActivity:
-      OwnedTraditionalIraAggregateActivity[] = [...ownedTraditionalOwnerIds]
-      .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
-      .map((ownerPersonId) => ({
+      OwnedTraditionalIraAggregateActivity[] = [...form8606ConsequentialByOwner]
+      .filter(([, channels]) =>
+        channels.distributions > 0 ||
+        channels.conversions > 0 ||
+        channels.annuityPayments > 0,
+      )
+      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+      .map(([ownerPersonId, channels]) => ({
         ownerPersonId,
-        distributions: ownedIraDistributionsByOwner.get(ownerPersonId) ?? 0,
-        conversions: ownedIraConversionsByOwner.get(ownerPersonId) ?? 0,
+        assumedBasisConsequential: {
+          distributions: channels.distributions,
+          conversions: channels.conversions,
+          annuityPayments: channels.annuityPayments,
+        },
       }))
 
     const yearResult: YearResult = {
@@ -9705,6 +9644,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       iraProRata,
       iraBasisByOwner,
       rothBasis,
+      rothAssumedContributionRemaining,
       propertyValues,
       hecmStates,
       insuranceCashValues,

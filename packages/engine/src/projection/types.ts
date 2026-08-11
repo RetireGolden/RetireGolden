@@ -1165,46 +1165,20 @@ export interface InheritedAccountYearEvidence {
  * credited contributions from plan schedules, household aggregates, or
  * `YearWithdrawals.roth` (which mixes inherited and employer Roth).
  */
-/**
- * One Roth conversion destination credit, published as its own FIFO layer so
- * same-year multi-conversion events keep the principal/taxable boundaries that
- * `splitRothWithdrawal` walks (oldest first, commit order).
- */
-export interface CreditedRothConversionLayer {
-  /** Conversion principal credited in this commit (destination credit). */
-  principal: number
-  /**
-   * Portion of `principal` included in income at conversion. The 10% recapture
-   * penalty on an unseasoned pre-59½ tap applies only to this taxable share;
-   * the nontaxable remainder (nondeductible IRA basis rolled in) is free cover
-   * like contributions. Equals principal for a fully-taxable conversion; 0 when
-   * the whole layer was basis return. Mirrors layer `taxableAmount` at the same
-   * conversion-layer commit sites (see `splitRothWithdrawal`).
-   */
-  taxable: number
-  /** Calendar year that starts this layer's 5-taxable-year seasoning clock. */
-  year: number
-}
-
 export interface OwnedRothIraPoolActivity {
   /** Resolved owner id (`null` owner already resolves to the household primary). */
   ownerPersonId: string
-  /** Withdrawals taken from this owner's aggregated Roth-IRA pool this year. */
-  withdrawals: number
   /**
-   * Contribution basis actually credited this year (post-limit `allowed`
-   * amounts, not scheduled/configured figures).
+   * Present when a pre-qualified-age withdrawal's spill into assumed-seeded
+   * contribution basis exceeded remaining free-cover capacity (FIFO prefix of
+   * seasoned conversion principal and wholly nontaxable unseasoned principal;
+   * stops at the first unseasoned taxable layer) at the consumption site.
+   * `withdrawal` is the excess spill that would change tax/penalty if the
+   * omitted `contributionBasis` were supplied. Observation-only — set from
+   * live pool balances at `splitRothWithdrawal` commit; never re-derived by
+   * detectors.
    */
-  creditedContributions: number
-  /**
-   * Conversion principal layers credited to this owner's Roth-IRA basis pool
-   * this year (destination credits only), one entry per conversion commit in
-   * ledger order. Each layer starts its own 5-taxable-year seasoning clock at
-   * `year` — see `splitRothWithdrawal`. Empty when nothing converted.
-   * Observation-only; must not merge same-year layers (mixed taxable ratios
-   * would destroy FIFO free-cover boundaries).
-   */
-  creditedConversionLayers: readonly CreditedRothConversionLayer[]
+  assumedBasisConsequential?: { readonly withdrawal: number }
 }
 
 /**
@@ -1219,17 +1193,13 @@ export interface EmployerRothAccountActivity {
   accountId: string
   /** Resolved owner id (`null` owner already resolves to the household primary). */
   ownerPersonId: string
-  withdrawals: number
-  /** Post-limit `allowed` contribution credits, not scheduled amounts. */
-  creditedContributions: number
   /**
-   * Conversion principal layers credited to this employer Roth account's basis
-   * this year (destination credits only), one entry per conversion commit in
-   * ledger order. Per-account, never joined to an owned Roth-IRA aggregate.
-   * Same semantics as `OwnedRothIraPoolActivity.creditedConversionLayers`.
-   * Empty when nothing converted.
+   * Present when a pre-qualified-age withdrawal's spill into assumed-seeded
+   * contribution basis exceeded remaining free-cover capacity at the
+   * consumption site. Same observation-only semantics as
+   * `OwnedRothIraPoolActivity.assumedBasisConsequential`.
    */
-  creditedConversionLayers: readonly CreditedRothConversionLayer[]
+  assumedBasisConsequential?: { readonly withdrawal: number }
 }
 
 /**
@@ -1244,13 +1214,20 @@ export interface EmployerRothAccountActivity {
 export interface OwnedTraditionalIraAggregateActivity {
   ownerPersonId: string
   /**
-   * Distributions drawn from the owner's owned-IRA aggregate this year
-   * (RMD, SEPP, need-based, QCD — excludes conversions, employer plans, and
-   * inherited sources).
+   * Present when Form 8606 pricing produced taxable income from this owner's
+   * aggregate while at least one owned IRA had omitted `nondeductibleBasis`
+   * (assumed zero). Each channel amount is the taxable ordinary income that
+   * channel actually produced under the assumption — not the year's full
+   * distribution/conversion/annuity gross. A qualified-QCD-plus-taxable-
+   * conversion year therefore has distributions 0 and conversions > 0.
+   * Observation-only — set from the executed character at each binding site;
+   * never re-derived by detectors.
    */
-  distributions: number
-  /** Conversion amounts drawn from the same owned-IRA aggregate this year. */
-  conversions: number
+  assumedBasisConsequential?: {
+    readonly distributions: number
+    readonly conversions: number
+    readonly annuityPayments: number
+  }
 }
 
 /**
@@ -1359,11 +1336,11 @@ export interface YearResult {
   ownedNonRothIraBalancesBeforeGrowth?:
     Readonly<Record<string, number>>
   /**
-   * Per-owner owned Roth-IRA pool activity this year (withdrawals + post-limit
-   * credited contributions). Published fact from the ledger's own execution —
-   * the one-source-of-truth channel for insight detectors. Consumers must not
-   * re-derive it from schedules or household aggregates. `simulatePlan` always
-   * publishes it (possibly empty); optionality preserves fixture compatibility.
+   * Per-owner owned Roth-IRA pool assumed-basis consequential verdicts this
+   * year. Published fact from the ledger's own execution — the
+   * one-source-of-truth channel for insight detectors. Consumers must not
+   * re-derive free-cover arithmetic. `simulatePlan` always publishes it
+   * (possibly empty); optionality preserves fixture compatibility.
    */
   ownedRothIraPoolActivity?: readonly Readonly<OwnedRothIraPoolActivity>[]
   /**
