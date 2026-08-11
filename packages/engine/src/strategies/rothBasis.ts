@@ -158,64 +158,90 @@ export function freeRothCoverCapacity(
 }
 
 /**
+ * Apply a FIFO principal debt against conversion layers (oldest first),
+ * prorating each layer's taxable share with the residual balance. Used to
+ * reconstruct the assumed-zero counterfactual's layer state after prior seed
+ * re-homing consumed free cover, unseasoned taxable principal, and free layers
+ * behind a taxable blocker — dollars the live residual still shows.
+ */
+export function applyConversionPrincipalDebt(
+  layers: readonly RothConversionLayer[],
+  debt: number,
+): RothConversionLayer[] {
+  let remaining = Math.max(0, debt)
+  if (remaining <= 0) {
+    return layers.map((layer) => ({ ...layer }))
+  }
+  const out: RothConversionLayer[] = []
+  for (const layer of layers) {
+    if (remaining <= 0) {
+      out.push({ ...layer })
+      continue
+    }
+    const take = Math.min(remaining, layer.amount)
+    remaining -= take
+    const left = layer.amount - take
+    if (left > 0) {
+      const taxableLeft =
+        layer.amount > 0 ? layer.taxableAmount * (left / layer.amount) : 0
+      out.push({ year: layer.year, amount: left, taxableAmount: taxableLeft })
+    }
+  }
+  return out
+}
+
+/**
  * How much of an assumed-seed dollar amount would land on taxable/penalized
  * remainders if those dollars walked conversion layers FIFO (mirroring
  * `splitRothWithdrawal` per-layer consumption) after a live draw's conversion
  * take has already been applied to residual balances.
  *
+ * `priorConversionExtraConsumed` is the cumulative conversion principal the
+ * assumed-zero counterfactual has already spent extra via prior seed re-homing
+ * (free prefix, unseasoned taxable, and free-behind). It is applied as a FIFO
+ * debt against residual layers before this seed walks, so the counterfactual's
+ * layer state matches post-re-homing reality.
+ *
  * Free layers (seasoned, wholly nontaxable unseasoned, or age-qualified) absorb
- * without consequence once `priorFreeCoverConsumed` has been charged against
- * free-cover *prefix* capacity (the same prefix `freeRothCoverCapacity` sums).
- * Unseasoned taxable takes are consequential only for the taxable share —
- * matching `splitRothWithdrawal`'s pro-rata recapture
+ * without consequence. Unseasoned taxable takes are consequential only for the
+ * taxable share — matching `splitRothWithdrawal`'s pro-rata recapture
  * `take * (taxableAmount / amount)` on residual layer balances after partial
  * consumption. The walk continues past a partial taxable blocker so free
- * layers behind it still absorb residual seed (those deeper free dollars are
- * not free-cover capacity and are not tracked as consumed prefix cover).
+ * layers behind it still absorb residual seed.
  * Residual past every conversion layer is earnings and is consequential.
+ *
+ * `conversionPrincipalConsumed` is how much of this seed landed on conversion
+ * principal (not earnings) — the debt to accumulate for later draws.
  */
 export function assumedSeedConsequentialSpill(
   state: RothBasisState,
   assumedSeedAmount: number,
   year: number,
   age: number,
-  priorFreeCoverConsumed = 0,
-): { consequentialSpill: number; freeCoverConsumed: number } {
+  priorConversionExtraConsumed = 0,
+): { consequentialSpill: number; conversionPrincipalConsumed: number } {
   let remaining = Math.max(0, assumedSeedAmount)
   if (remaining <= 0) {
-    return { consequentialSpill: 0, freeCoverConsumed: 0 }
+    return { consequentialSpill: 0, conversionPrincipalConsumed: 0 }
   }
   const qualified = age >= ROTH_QUALIFIED_AGE
-  let priorFreeDebt = Math.max(0, priorFreeCoverConsumed)
+  const layers = applyConversionPrincipalDebt(
+    state.conversionLayers,
+    priorConversionExtraConsumed,
+  )
   let consequentialSpill = 0
-  let freeCoverConsumed = 0
-  // Free layers after an unseasoned taxable remainder are reachable once that
-  // remainder is finished, but they are not free-cover *prefix* capacity.
-  let pastTaxableBlocker = false
-  for (const layer of state.conversionLayers) {
+  let conversionPrincipalConsumed = 0
+  for (const layer of layers) {
     if (remaining <= 0) break
     const isFree =
       qualified ||
       year - layer.year >= ROTH_SEASONING_YEARS ||
       layer.taxableAmount <= 0
     if (isFree) {
-      let freeInLayer = layer.amount
-      if (!pastTaxableBlocker) {
-        if (priorFreeDebt > 0 && freeInLayer > 0) {
-          const debtTake = Math.min(priorFreeDebt, freeInLayer)
-          priorFreeDebt -= debtTake
-          freeInLayer -= debtTake
-        }
-        const absorb = Math.min(remaining, freeInLayer)
-        remaining -= absorb
-        freeCoverConsumed += absorb
-      } else {
-        // Behind a blocker: absorbs spill after the taxable remainder is paid;
-        // not free-cover capacity for the cumulative tracker.
-        remaining -= Math.min(remaining, freeInLayer)
-      }
+      const absorb = Math.min(remaining, layer.amount)
+      remaining -= absorb
+      conversionPrincipalConsumed += absorb
     } else {
-      pastTaxableBlocker = true
       const take = Math.min(remaining, layer.amount)
       // Mirror splitRothWithdrawal: only the taxable share of an unseasoned
       // mixed layer is consequential (nondeductible basis recaptures nothing).
@@ -223,9 +249,10 @@ export function assumedSeedConsequentialSpill(
         layer.amount > 0 ? take * (layer.taxableAmount / layer.amount) : 0
       consequentialSpill += taxableTake
       remaining -= take
+      conversionPrincipalConsumed += take
     }
   }
   // Past conversion principal → earnings (taxable + penalty pre-qualified age).
   consequentialSpill += remaining
-  return { consequentialSpill, freeCoverConsumed }
+  return { consequentialSpill, conversionPrincipalConsumed }
 }

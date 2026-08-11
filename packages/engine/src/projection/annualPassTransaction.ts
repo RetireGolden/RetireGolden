@@ -62,9 +62,10 @@ export interface SimulatorAnnualPassStateBindings {
    */
   rothAssumedContributionRemaining: Map<string, number>
   /**
-   * Observation-only free-cover dollars re-homed onto conversion layers in the
-   * assumed-zero counterfactual (per pool). Mutated with the assumed-seed
-   * flag site; must roll back with the other Roth observation maps.
+   * Observation-only conversion principal the assumed-zero counterfactual has
+   * spent extra via assumed-seed re-homing (free cover, unseasoned taxable,
+   * free-behind — per pool). Mutated with the assumed-seed flag site; must
+   * roll back with the other Roth observation maps.
    */
   rothCounterfactualFreeCoverConsumed: Map<string, number>
   propertyValues: Map<string, number>

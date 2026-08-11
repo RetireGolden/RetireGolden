@@ -66,6 +66,7 @@ describe('missing data basis detector', () => {
         { label: 'Traditional IRA opening balance (assumed zero after-tax basis)', value: '$300,000', year: 2026 },
         { label: 'Lake home opening property value (legacy net-proceeds path)', value: '$500,000', year: 2026 },
         { label: 'Pat age at projection start (wages assumed to continue for life)', value: '60', year: 2026 },
+        { label: 'Pat continuing open-ended wages (no retirement age; assumed for life)', value: '$100,000', year: 2026 },
       ],
     })
   })
@@ -478,6 +479,7 @@ describe('missing data basis detector', () => {
 
     expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
       { label: 'Pat age at projection start (wages assumed to continue for life)', value: '60', year: 2026 },
+      { label: 'Pat continuing open-ended wages (no retirement age; assumed for life)', value: '$100,000', year: 2026 },
     ])
   })
 

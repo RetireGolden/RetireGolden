@@ -81,7 +81,7 @@ describe('ACA threshold proximity detector', () => {
 
   it('keeps two-decimal FPL figures when 400.001% rounds to 400.00% and carries the overage in a delta entry', () => {
     // Two-decimal renderings of 400.001 and 400 both read "400.00%"; the overage
-    // delta (toPrecision) keeps the positive gap visible without extending main figures.
+    // delta keeps the positive gap visible without extending main figures.
     const card = acaThresholdProximity.screen(context(400.001))
 
     expect(card?.evidence).toContainEqual({ label: 'FPL percentage in 2027', value: '400.00%', year: 2027 })
@@ -93,8 +93,9 @@ describe('ACA threshold proximity detector', () => {
     })
   })
 
-  it('surfaces a sub-0.00005 FPL overage as a nonzero delta entry', () => {
-    // 0.00004 rounds to 0.00 at two decimals; toPrecision(2) still shows a positive gap.
+  it('surfaces a sub-0.00005 FPL overage as a nonzero plain-decimal delta entry', () => {
+    // 0.00004 rounds to 0.00 at two decimals; significant-digit formatting still
+    // shows a positive gap without scientific notation.
     const card = acaThresholdProximity.screen(context(400.00004))
 
     expect(card?.evidence).toContainEqual({ label: 'FPL percentage in 2027', value: '400.00%', year: 2027 })
@@ -104,6 +105,21 @@ describe('ACA threshold proximity detector', () => {
       value: '0.000040 percentage points',
       year: 2027,
     })
+    // Reject scientific notation (e.g. 4.0e-5), not the letter "e" in "percentage".
+    expect(card?.evidence.find((e) => e.label.startsWith('FPL overage'))?.value).not.toMatch(/\d[eE][+-]?\d/)
+  })
+
+  it('surfaces a 1e-7-scale FPL overage without scientific notation', () => {
+    // toPrecision(2) would emit "1.0e-7"; plain-decimal expansion must stay
+    // human-readable and never round a positive delta to zero.
+    const card = acaThresholdProximity.screen(context(400.0000001))
+
+    expect(card?.evidence).toContainEqual({
+      label: 'FPL overage above credit boundary in 2027',
+      value: '0.00000010 percentage points',
+      year: 2027,
+    })
+    expect(card?.evidence.find((e) => e.label.startsWith('FPL overage'))?.value).not.toMatch(/\d[eE][+-]?\d/)
   })
 
   it('flags an epsilon-published at-cliff result with its no-headroom impact and evidence', () => {

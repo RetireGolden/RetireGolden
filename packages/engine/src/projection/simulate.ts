@@ -65,6 +65,7 @@ import { capAuxiliaryForFamilyMaximum, claimAgeTotalMonths } from '../socialSecu
 import { sizeRothConversion } from '../strategies/rothConversion.js'
 import {
   ROTH_QUALIFIED_AGE,
+  applyConversionPrincipalDebt,
   assumedSeedConsequentialSpill,
   freeRothCoverCapacity,
   splitRothWithdrawal,
@@ -1059,13 +1060,14 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
    */
   const rothAssumedContributionRemaining = new Map<string, number>()
   /**
-   * Observation-only: free-cover dollars already re-homed onto conversion
-   * layers in the assumed-zero counterfactual (per pool). Live free cover is
-   * measured from actual conversion layers, which prior assumed-seed draws do
-   * not touch — so without this running total a later draw would re-use cover
-   * a prior suppressed spill already consumed in the counterfactual world.
-   * Stays live for the pool's remaining pre-60 draws after the assumed seed is
-   * spent: a later free-conversion take can still exceed remaining cover.
+   * Observation-only: conversion principal the assumed-zero counterfactual has
+   * already spent extra via assumed-seed re-homing (per pool) — free-cover
+   * prefix, unseasoned taxable layers, and free layers behind a taxable
+   * blocker. Live residual layers still show those dollars (seed was
+   * contributions live), so later draws apply this FIFO debt against live
+   * layers to recover the counterfactual's remaining free cover. Stays live
+   * after the assumed seed is spent so post-exhaustion free-conversion takes
+   * still evaluate against the correct CF layer state.
    * Per-attempt scoped with the other Roth observation maps.
    */
   const rothCounterfactualFreeCoverConsumed = new Map<string, number>()
@@ -8849,15 +8851,16 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           )
         }
       }
-      // Counterfactual free-cover tracker stays live for the pool's remaining
-      // pre-60 draws even after the assumed seed is fully spent. An early draw
-      // that re-homes assumed seed into free cover consumes that cover in the
-      // assumed-zero world; a later free-conversion take can still exceed the
-      // remaining cover and be consequential (tax/penalty would differ).
+      // Counterfactual conversion-principal tracker stays live for the pool's
+      // remaining pre-60 draws even after the assumed seed is fully spent. An
+      // early draw that re-homes assumed seed into free cover *or* unseasoned
+      // taxable principal (and free layers behind it) consumes those layers in
+      // the assumed-zero world; a later free-conversion take must evaluate
+      // against that CF residual, not live free cover alone.
       if (age < ROTH_QUALIFIED_AGE && taken > 0) {
-        const priorCfCoverConsumed =
+        const priorCfConversionExtra =
           rothCounterfactualFreeCoverConsumed.get(key) ?? 0
-        if (fromAssumed > 0 || priorCfCoverConsumed > 0) {
+        if (fromAssumed > 0 || priorCfConversionExtra > 0) {
           // Free-cover capacity is a FIFO prefix of conversion layers (seasoned
           // + wholly nontaxable unseasoned; stops at first unseasoned taxable).
           // Observe residual balances after this draw's conversion take
@@ -8872,43 +8875,51 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           // taxable/penalized remainders (not the whole seed).
           const freeCover = freeRothCoverCapacity(rb, year, age)
           let consequentialSpill: number
-          let coverConsumedByThisDraw: number
+          let conversionExtraByThisDraw: number
           if (fromAssumed > 0) {
             const walked = assumedSeedConsequentialSpill(
               split.next,
               fromAssumed,
               year,
               age,
-              priorCfCoverConsumed,
+              priorCfConversionExtra,
             )
             consequentialSpill = walked.consequentialSpill
-            coverConsumedByThisDraw = walked.freeCoverConsumed
+            conversionExtraByThisDraw = walked.conversionPrincipalConsumed
           } else {
             // Seed already exhausted: live free-conversion take only stays
             // free in the counterfactual up to remaining cover after prior
-            // re-homing. Excess would hit taxable/penalized layers without
-            // the assumed seed.
+            // re-homing (FIFO debt for free + taxable + free-behind). Excess
+            // would hit taxable/penalized layers without the assumed seed.
             //
             // Shared conversion principal consumed in BOTH live and
-            // assumed-zero worlds is already reflected in next draw's live
-            // freeCover (layer depletion). Only counterfactual-EXTRA cover
-            // consumption accumulates on the tracker — after the seed is
-            // gone that extra is zero (CF has ≤ live free cover this draw).
+            // assumed-zero worlds is already reflected in live freeCover /
+            // residual layers. Only counterfactual-EXTRA principal stays on
+            // the tracker — apply it as FIFO debt against pre-draw layers to
+            // recover CF free capacity (including free-behind once CF cleared
+            // a taxable blocker the live residual still shows).
             const freeConversionTake = Math.min(split.conversions, freeCover)
-            const counterfactualCoverRemaining = Math.max(
-              0,
-              freeCover - priorCfCoverConsumed,
+            const counterfactualCoverRemaining = freeRothCoverCapacity(
+              {
+                contributionBasis: 0,
+                conversionLayers: applyConversionPrincipalDebt(
+                  rb.conversionLayers,
+                  priorCfConversionExtra,
+                ),
+              },
+              year,
+              age,
             )
             consequentialSpill = Math.max(
               0,
               freeConversionTake - counterfactualCoverRemaining,
             )
-            coverConsumedByThisDraw = 0
+            conversionExtraByThisDraw = 0
           }
-          if (coverConsumedByThisDraw > 0) {
+          if (conversionExtraByThisDraw > 0) {
             rothCounterfactualFreeCoverConsumed.set(
               key,
-              priorCfCoverConsumed + coverConsumedByThisDraw,
+              priorCfConversionExtra + conversionExtraByThisDraw,
             )
           }
           if (consequentialSpill > 0) {

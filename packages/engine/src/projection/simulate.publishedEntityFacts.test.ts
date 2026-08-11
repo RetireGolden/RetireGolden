@@ -912,6 +912,67 @@ describe('simulatePlan published per-entity ledger facts', () => {
       expect(spill!).toBeLessThan(100)
     })
 
+    it('keeps the counterfactual live after $100 seed re-homes into a $100 taxable layer', () => {
+      // $100 assumed seed + $100 unseasoned taxable + $200 free behind.
+      // Draw 1 ($100) re-homes the entire seed onto the taxable layer
+      // (consequential; free-cover tracker alone stays 0 because no free prefix
+      // was consumed). Draw 2 ($100) clears the taxable blocker live while the
+      // CF — already past that layer — spends free cover (§72(t) gross-up may
+      // deepen the live take slightly into free). Draw 3 takes the remaining
+      // free conversion live, but CF free is gone → must flag. Without taxable-
+      // principal debt the guard would stop after seed exhaustion and silence.
+      const plan = singlePersonPlan({ dob: '1971-01-01', planningAge: 90 })
+      plan.id = 'published-facts-roth-100-seed-100-taxable-subsequent'
+      plan.assumptions.inflationPct = 0
+      plan.assumptions.defaultReturnPct = 0
+      plan.expenses.baseAnnual = 0
+      plan.expenses.oneTimeGoals = [
+        { id: 'd1', label: 'draw1', year: TAX_YEAR + 1, amount: 100 },
+        { id: 'd2', label: 'draw2', year: TAX_YEAR + 2, amount: 100 },
+        { id: 'd3', label: 'draw3', year: TAX_YEAR + 3, amount: 100 },
+      ]
+      plan.accounts = [
+        traditionalAccount('401k', 100, 'p1', 'employer'), // year-1 pure taxable layer
+        {
+          ...ownedIra('trad-basis', 200),
+          nondeductibleBasis: 200, // year-2 wholly nontaxable free cover
+        },
+        rothIra('roth', 100, 'p1'), // assumed seed $100 — exhausted by draw 1
+        cash(0),
+      ]
+      plan.strategies.rothConversion = {
+        mode: 'manual',
+        conversions: [
+          { year: TAX_YEAR, amount: 100 },
+          { year: TAX_YEAR + 1, amount: 200 },
+        ],
+      }
+      plan.incomes = [] as never
+
+      const years = run(plan, TAX_YEAR + 3)
+      const y1 = years.find((y) => y.year === TAX_YEAR + 1)!
+      const y2 = years.find((y) => y.year === TAX_YEAR + 2)!
+      const y3 = years.find((y) => y.year === TAX_YEAR + 3)!
+      expect(y1.people[0]!.ageAttained).toBeLessThan(60)
+      expect(y2.people[0]!.ageAttained).toBeLessThan(60)
+      expect(y3.people[0]!.ageAttained).toBeLessThan(60)
+      expect(y1.withdrawals.roth).toBeGreaterThanOrEqual(100)
+      expect(y2.withdrawals.roth).toBeGreaterThanOrEqual(100)
+      expect(y3.withdrawals.roth).toBeGreaterThanOrEqual(100)
+      const owner1 = (y1.ownedRothIraPoolActivity ?? []).find((row) => row.ownerPersonId === 'p1')
+      const owner3 = (y3.ownedRothIraPoolActivity ?? []).find((row) => row.ownerPersonId === 'p1')
+      // Draw 1: $100 seed lands on pure taxable → full consequential spill.
+      expect(owner1?.assumedBasisConsequential?.withdrawal).toBeCloseTo(100, 6)
+      // Draw 2 clears taxable live (CF already past it via seed debt). Draw 3
+      // takes free conversion live; CF free was spent when CF took free on draw
+      // 2 → must flag. Free-cover-only tracking would leave prior debt at 0 and
+      // silence every post-seed draw.
+      expect(owner3?.assumedBasisConsequential?.withdrawal).toBeGreaterThan(0)
+      expect(owner3!.assumedBasisConsequential!.withdrawal).toBeLessThanOrEqual(
+        y3.withdrawals.roth,
+      )
+    })
+
     it('consumes credited contributions before assumed seed (timing)', () => {
       // Omitted contributionBasis (assumed seed) + same-year credits: known
       // credits grow contributionBasis without growing the assumed-seed map, so

@@ -200,7 +200,8 @@ describe('assumedSeedConsequentialSpill — FIFO residual walk', () => {
     expect(freeRothCoverCapacity(residual, 2028, 55)).toBe(0)
     const walked = assumedSeedConsequentialSpill(residual, 100, 2028, 55)
     expect(walked.consequentialSpill).toBeCloseTo(30, 6)
-    expect(walked.freeCoverConsumed).toBeCloseTo(0, 6)
+    // Taxable $30 + free-behind $70 = $100 conversion principal consumed.
+    expect(walked.conversionPrincipalConsumed).toBeCloseTo(100, 6)
   })
 
   it('reports zero spill when the live draw already exhausted the taxable blocker', () => {
@@ -212,7 +213,7 @@ describe('assumedSeedConsequentialSpill — FIFO residual walk', () => {
     }
     const walked = assumedSeedConsequentialSpill(residual, 100, 2028, 55)
     expect(walked.consequentialSpill).toBeCloseTo(0, 6)
-    expect(walked.freeCoverConsumed).toBeCloseTo(100, 6)
+    expect(walked.conversionPrincipalConsumed).toBeCloseTo(100, 6)
   })
 
   it('prorates consequential spill on a mixed unseasoned layer ($100 seed / $10 taxable)', () => {
@@ -225,7 +226,7 @@ describe('assumedSeedConsequentialSpill — FIFO residual walk', () => {
     expect(freeRothCoverCapacity(residual, 2028, 55)).toBe(0)
     const walked = assumedSeedConsequentialSpill(residual, 100, 2028, 55)
     expect(walked.consequentialSpill).toBeCloseTo(10, 6)
-    expect(walked.freeCoverConsumed).toBeCloseTo(0, 6)
+    expect(walked.conversionPrincipalConsumed).toBeCloseTo(100, 6)
     // Live penalty on the same residual would be 10% of that taxable share.
     expect(splitRothWithdrawal(residual, 100, 2028, 55).penalty).toBeCloseTo(1, 6)
   })
@@ -240,11 +241,22 @@ describe('assumedSeedConsequentialSpill — FIFO residual walk', () => {
     }
     const half = assumedSeedConsequentialSpill(residual, 50, 2028, 55)
     expect(half.consequentialSpill).toBeCloseTo(5, 6)
-    expect(half.freeCoverConsumed).toBeCloseTo(0, 6)
+    expect(half.conversionPrincipalConsumed).toBeCloseTo(50, 6)
     expect(splitRothWithdrawal(residual, 50, 2028, 55).penalty).toBeCloseTo(0.5, 6)
 
     const over = assumedSeedConsequentialSpill(residual, 100, 2028, 55)
     expect(over.consequentialSpill).toBeCloseTo(5 + 50, 6) // residual taxable + earnings
-    expect(over.freeCoverConsumed).toBeCloseTo(0, 6)
+    // Only $50 of conversion principal available; the rest is earnings.
+    expect(over.conversionPrincipalConsumed).toBeCloseTo(50, 6)
+  })
+
+  it('tracks $100 seed into a pure $100 taxable layer as conversion principal debt', () => {
+    const residual: RothBasisState = {
+      contributionBasis: 0,
+      conversionLayers: [{ year: 2026, amount: 100, taxableAmount: 100 }],
+    }
+    const walked = assumedSeedConsequentialSpill(residual, 100, 2028, 55)
+    expect(walked.consequentialSpill).toBeCloseTo(100, 6)
+    expect(walked.conversionPrincipalConsumed).toBeCloseTo(100, 6)
   })
 })

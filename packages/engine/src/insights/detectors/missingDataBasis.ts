@@ -276,16 +276,20 @@ export const missingDataBasis: Detector = {
     if (firstProjectionYear !== undefined) {
       for (const person of ctx.plan.household.people) {
         if (person.retirementAge !== null) continue
-        const hasOpenEndedWages = ctx.plan.incomes.some(
-          (income) =>
+        const openEndedWageStreams = ctx.plan.incomes.filter(
+          (income): income is Extract<typeof income, { type: 'wages' }> =>
             income.type === 'wages' &&
             income.personId === person.id &&
             income.endAge === null &&
             income.annualGross > 0,
         )
+        const continuingWages = openEndedWageStreams.reduce(
+          (sum, income) => sum + income.annualGross,
+          0,
+        )
         const projectedPerson = firstProjectionYear.people.find((candidate) => candidate.personId === person.id)
         if (
-          !hasOpenEndedWages ||
+          openEndedWageStreams.length === 0 ||
           projectedPerson === undefined ||
           !projectedPerson.alive
         ) continue
@@ -294,6 +298,15 @@ export const missingDataBasis: Detector = {
           evidence: {
             label: `${person.name} age at projection start (wages assumed to continue for life)`,
             value: String(projectedPerson.ageAttained),
+            year: firstProjectionYear.year,
+          },
+        })
+        // The open-ended-wages gap is triggered by continuing positive wage
+        // streams, not age alone — cite the summed annual gross of those streams.
+        gaps.push({
+          evidence: {
+            label: `${person.name} continuing open-ended wages (no retirement age; assumed for life)`,
+            value: usd(continuingWages),
             year: firstProjectionYear.year,
           },
         })

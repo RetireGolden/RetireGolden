@@ -6,11 +6,26 @@ function usd(amount: number): string {
 }
 
 /**
- * Format a positive FPL overage so it never rounds to zero. `toPrecision(2)`
- * keeps two significant digits and never maps a positive number to "0".
+ * Format a positive FPL overage so it never rounds to zero and never uses
+ * scientific notation. Two significant digits in plain decimal form keep tiny
+ * gaps human-readable (e.g. 0.000040, not 4.0e-5 or 1.0e-7).
  */
 function formatOverageDelta(delta: number): string {
-  return delta.toPrecision(2)
+  if (!(delta > 0) || !Number.isFinite(delta)) return '0'
+  const precise = delta.toPrecision(2)
+  if (!/[eE]/.test(precise)) return precise
+  // toPrecision emits exponential form for tiny magnitudes; expand to a fixed
+  // plain decimal with enough places to keep both significant digits.
+  const expMatch = /[eE]([+-]?\d+)$/.exec(precise)
+  const exp = expMatch ? Number(expMatch[1]) : 0
+  if (exp >= 0) {
+    return Number(precise).toLocaleString('en-US', {
+      maximumSignificantDigits: 2,
+      useGrouping: false,
+    })
+  }
+  // "1.0e-7" → 8 decimal places → "0.00000010" (never "0", never scientific).
+  return Number(precise).toFixed(-exp + 1)
 }
 
 /** Flags Marketplace years just above the parameter-pack ACA credit cliff. */
@@ -56,7 +71,8 @@ export const acaThresholdProximity: Detector = {
           'A small increase can eliminate the modeled premium tax credit, so review income and conversion timing before the year closes.'
 
       // Main FPL figures stay at two decimals. Just-over cards carry an explicit
-      // overage delta (toPrecision so any positive gap stays nonzero in evidence).
+      // overage delta (significant digits, plain decimal — any positive gap stays
+      // nonzero and human-readable in evidence).
       const fplPctEvidence = `${aca.fplPct.toFixed(2)}%`
       const boundaryEvidence = `${boundary.toFixed(2)}%`
       const overageEvidence = justOverBoundary
