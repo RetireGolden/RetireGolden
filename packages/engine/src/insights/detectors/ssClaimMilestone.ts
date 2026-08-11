@@ -1,5 +1,5 @@
 import type { Detector, InsightCard } from '../types.js'
-import type { Plan } from '../../model/plan.js'
+import type { FormerSpouse, Plan } from '../../model/plan.js'
 import type { SocialSecurityStreamActivity } from '../../projection/types.js'
 import { claimFactor } from '../../socialSecurity/claimFactor.js'
 import { bestMaritalBenefit } from '../../socialSecurity/maritalBenefits.js'
@@ -13,6 +13,19 @@ import {
 
 type SocialSecurityIncome = Extract<Plan['incomes'][number], { type: 'socialSecurity' }>
 type HouseholdPerson = Plan['household']['people'][number]
+
+/**
+ * Half a cent in plan dollars. `formatBenefitUsd` rounds with
+ * `Math.round(amount * 100)`, so amounts in (0, 0.005) render as `$0` and must
+ * not be treated as a modeled positive benefit — same visible-cent floor as
+ * missingDataBasis / flexibleGoals.
+ */
+const MIN_VISIBLE_CENT = 0.005
+
+/** True when a published amount is a visible (non-$0-evidence) positive benefit. */
+function isVisiblePositiveAmount(amount: number): boolean {
+  return amount >= MIN_VISIBLE_CENT
+}
 
 /**
  * Own PIA for the winning-anchor comparison — same resolver the sim uses:
@@ -41,6 +54,124 @@ function resolveOwnPiaMonthly(
 }
 
 /**
+ * Annual-ledger payable months in a year at `ageAttained` given `claimAge`
+ * (same rule as simulatePlan): claim year truncates to months after the claim
+ * month; later years pay all 12.
+ */
+function payableMonthsAtAge(
+  ageAttained: number,
+  claimAge: { years: number; months: number },
+): number {
+  if (ageAttained < claimAge.years) return 0
+  if (ageAttained > claimAge.years) return 12
+  return Math.max(0, 12 - claimAge.months)
+}
+
+/**
+ * Sum of the claimant's own annual SS benefits at `ageAttained` — same
+ * accumulation as simulatePlan's `ssOwnByPerson` before a former-spouse benefit
+ * can replace them. Each resolved stream contributes (SSDI full-PIA × 12, or
+ * retirement pia × claimFactor × payableMonths). Unresolved streams (null PIA
+ * and no usable earnings) are skipped, matching the sim's resolved-PIA gate.
+ *
+ * Returns null when no stream yields a usable own PIA — caller cannot prove a
+ * prior-year marital win over own (same enabling-event fallback as a single
+ * null-own stream).
+ */
+function resolveOwnAnnualSum(
+  plan: Plan,
+  personId: string,
+  claimant: HouseholdPerson,
+  ageAttained: number,
+): number | null {
+  const birthYear = Number(claimant.dob.slice(0, 4))
+  const birthMonth = Number(claimant.dob.slice(5, 7))
+  const birthDay = Number(claimant.dob.slice(8, 10))
+  const personFraYears = fraForBirthYear(
+    effectiveBirthYear(birthYear, birthMonth, birthDay),
+  ).years
+
+  let sum = 0
+  let anyResolved = false
+  for (const stream of plan.incomes) {
+    if (stream.type !== 'socialSecurity' || stream.personId !== personId) continue
+    const pia = resolveOwnPiaMonthly(stream, claimant)
+    if (pia === null) continue
+    anyResolved = true
+
+    // SSDI path (onset before FRA): full PIA, 12 months — same as sim.
+    if (
+      stream.disability?.onsetAge !== undefined &&
+      stream.disability.onsetAge < personFraYears
+    ) {
+      if (ageAttained >= stream.disability.onsetAge) {
+        sum += pia * 12
+      }
+      continue
+    }
+
+    const months = payableMonthsAtAge(ageAttained, stream.claimAge)
+    if (months <= 0) continue
+    const factor = claimFactor(birthYear, birthMonth, birthDay, stream.claimAge)
+    sum += pia * factor * months
+  }
+  return anyResolved ? sum : null
+}
+
+/**
+ * True when a former-spouse marital benefit already beat the claimant's summed
+ * own benefit in the year before the horizon start — the same "larger of own
+ * vs marital" gate the sim uses when publishing the auxiliary (compare annual
+ * former benefit on the paying stream's payable months against
+ * `ssOwnByPerson` sum).
+ *
+ * Returns:
+ *  - true  → prior-year win (already-paying enabler)
+ *  - false → no eligible former benefit, or own still larger
+ *  - null  → eligible former benefit but no usable own PIA on any stream
+ *            (cannot prove a win; callers treat as already-paying when the
+ *            enabler itself predates the horizon)
+ */
+function formerSpouseWonOverOwnPriorYear(args: {
+  plan: Plan
+  personId: string
+  streamIncome: SocialSecurityIncome
+  projectedAge: number
+  startYear: number
+  formers: readonly FormerSpouse[]
+  claimantIsSingle: boolean
+}): boolean | null {
+  const { plan, personId, streamIncome, projectedAge, startYear, formers, claimantIsSingle } =
+    args
+  if (formers.length === 0) return false
+  const claimant = plan.household.people.find((row) => row.id === personId)
+  if (claimant === undefined) return false
+
+  const claimantDob = {
+    year: Number(claimant.dob.slice(0, 4)),
+    month: Number(claimant.dob.slice(5, 7)),
+    day: Number(claimant.dob.slice(8, 10)),
+  }
+  const priorYear = startYear - 1
+  const claimantAgePrior = projectedAge - 1
+  const bestPrior = bestMaritalBenefit([...formers], {
+    claimantDob,
+    claimantClaimAge: streamIncome.claimAge,
+    claimantAge: claimantAgePrior,
+    year: priorYear,
+    claimantIsSingle,
+  })
+  if (bestPrior === null) return false
+
+  const ownAnnual = resolveOwnAnnualSum(plan, personId, claimant, claimantAgePrior)
+  if (ownAnnual === null) return null
+
+  const formerPayableMonths = payableMonthsAtAge(claimantAgePrior, streamIncome.claimAge)
+  const formerAnnual = bestPrior.monthly * formerPayableMonths
+  return formerAnnual > ownAnnual
+}
+
+/**
  * True when this stream's configured claim-age year is `year`
  * (`dobYear + claimAge.years` on the annual ledger). Used to treat claimInForce
  * rows zeroed by an auxiliary override as real filing events — distinct from
@@ -55,35 +186,29 @@ function isFilingAgeTransition(
 }
 
 /**
- * True when this person's spousal/survivor gate stream is paying an auxiliary
- * source in `yearStreams`. Required before treating a claimInForce row with
- * zero published amounts as an override-hidden filing — a plain zero-PIA
- * stream publishes the same shape with no auxiliary and must stay unmodeled.
+ * True when this person has a published auxiliary (spousal/survivor) row with a
+ * visible positive amount in `yearStreams`. The former-spouse pass can pay
+ * through a non-gate / unresolved stream and zero resolved siblings — do not
+ * require `isSpousalSurvivorGateStream`. Published source + amounts identify
+ * the override. Required before treating a claimInForce row with zero published
+ * amounts as an override-hidden filing — a plain zero-PIA stream publishes the
+ * same shape with no auxiliary and must stay unmodeled.
  */
-function gateStreamPayingAuxiliary(
+function personPayingAuxiliaryOverride(
   yearStreams: readonly SocialSecurityStreamActivity[],
   personId: string,
 ): boolean {
   for (const entry of yearStreams) {
-    if (entry.personId !== personId || !entry.isSpousalSurvivorGateStream) continue
+    if (entry.personId !== personId) continue
     if (entry.source !== 'spousal' && entry.source !== 'survivor') continue
-    if (entry.annualAmount > 0 || entry.preWithholdingAnnual > 0) return true
+    if (
+      isVisiblePositiveAmount(entry.annualAmount) ||
+      isVisiblePositiveAmount(entry.preWithholdingAnnual)
+    ) {
+      return true
+    }
   }
   return false
-}
-
-/**
- * Annual-ledger payable months in a year at `ageAttained` given `claimAge`
- * (same rule as simulatePlan): claim year truncates to months after the claim
- * month; later years pay all 12.
- */
-function payableMonthsAtAge(
-  ageAttained: number,
-  claimAge: { years: number; months: number },
-): number {
-  if (ageAttained < claimAge.years) return 0
-  if (ageAttained > claimAge.years) return 12
-  return Math.max(0, 12 - claimAge.months)
 }
 
 /**
@@ -193,7 +318,9 @@ function lastSsIncomeForPerson(plan: Plan, personId: string): SocialSecurityInco
  * year has `ageAttained === planningAge + 1`. Death-before-start is only when
  * the co-spouse is already past that first deceased year at the horizon start;
  * death-at-start (`ageAttained === planningAge + 1`, not alive) is a new
- * entitlement and must not suppress.
+ * entitlement and must not suppress — **except** when a deceased-former-spouse
+ * survivor already won over own pre-horizon (already-paying source stays
+ * pre-horizon even when household death-at-start is another enabling event).
  */
 function auxiliaryAlreadyPayingAtHorizonStart(args: {
   entry: SocialSecurityStreamActivity
@@ -236,6 +363,35 @@ function auxiliaryAlreadyPayingAtHorizonStart(args: {
     // ageAttained === planningAge + 1. When that year is the projection start,
     // death occurs AT start (new entitlement) — do not suppress. Ages past
     // that first deceased year mean death-before-start (already paying).
+    //
+    // Precedence: an already-paying former-spouse survivor stays pre-horizon
+    // even when household death-at-start is another enabling event. Prove the
+    // prior-year win of deceased-former survivor over summed own (same gate
+    // the sim uses); do not reclassify that source as a new household
+    // entitlement. When the deceased former never won pre-horizon, fall
+    // through to the death-timing rule.
+    if (
+      hasDeceasedFormerSpouse &&
+      streamIncome !== undefined &&
+      streamIncome.formerSpouses !== undefined
+    ) {
+      const deceasedFormers = streamIncome.formerSpouses.filter(
+        (former) => former.relationship === 'deceased',
+      )
+      const win = formerSpouseWonOverOwnPriorYear({
+        plan,
+        personId,
+        streamIncome,
+        projectedAge,
+        startYear: firstProjectionYear.year,
+        formers: deceasedFormers,
+        // Survivor eligibility does not require single household; pass false
+        // when a co-person exists (divorced-spousal arm is N/A for deceased).
+        claimantIsSingle: false,
+      })
+      // true / null (eligible former, no usable own) → already-paying.
+      if (win !== false) return true
+    }
     if (coState.ageAttained > coPerson.longevity.planningAge + 1) return true
     return false
   }
@@ -245,61 +401,33 @@ function auxiliaryAlreadyPayingAtHorizonStart(args: {
   if (coPerson === undefined) {
     // Former-spouse spousal (single household): pre-horizon only when a living
     // former spouse was eligible under bestMaritalBenefit *and* that benefit
-    // actually displaced the claimant's own benefit before start — the same
-    // "larger of own vs marital" rule the sim uses when publishing the
-    // auxiliary. Mere eligibility of a low-PIA ex is not already-paying when
-    // the published start-year spousal row first appears because a second ex
-    // turns 62 at start. Tie to the published start-year row: entry is already
-    // source spousal with positive amounts (caller); require a prior-year win
-    // that could explain that already-paying source.
-    // First eligibility year at start (e.g. ex turns 62 in the start year) is a
-    // NEW entitlement, not already-paying — evaluate the year before start.
+    // actually displaced the claimant's summed own benefit before start — the
+    // same "larger of own vs marital" rule the sim uses when publishing the
+    // auxiliary (ssOwnByPerson sums ALL resolved streams for the person). Mere
+    // eligibility of a low-PIA ex is not already-paying when the published
+    // start-year spousal row first appears because a second ex turns 62 at
+    // start. First eligibility year at start (e.g. ex turns 62 in the start
+    // year) is a NEW entitlement — evaluate the year before start.
     const livingFormers =
       streamIncome?.formerSpouses?.filter((former) => former.relationship === 'divorced') ?? []
     if (livingFormers.length === 0) {
       // No living former on the stream: treat positive past claim age as pre-horizon.
       return true
     }
-    const claimant = plan.household.people.find((row) => row.id === personId)
-    if (claimant === undefined || streamIncome === undefined) return false
-    const startYear = firstProjectionYear.year
-    const claimantDob = {
-      year: Number(claimant.dob.slice(0, 4)),
-      month: Number(claimant.dob.slice(5, 7)),
-      day: Number(claimant.dob.slice(8, 10)),
-    }
-    // Year before horizon start: already-enabling pre-horizon, not first eligibility.
-    const priorYear = startYear - 1
-    const claimantAgePrior = projectedAge - 1
-    const maritalCtx = {
-      claimantDob,
-      claimantClaimAge: streamIncome.claimAge,
-      claimantAge: claimantAgePrior,
-      year: priorYear,
-      claimantIsSingle: true as const,
-    }
-    const bestPrior = bestMaritalBenefit(livingFormers, maritalCtx)
-    if (bestPrior === null) return false
-    // Own PIA: same path as simulatePlan (entered amount, else earnings AIME).
-    // Without a usable own PIA we cannot prove a prior-year win over own — but
-    // an already-eligible living former (bestPrior) with claim age pre-horizon
-    // and a positive published aux at start means the enabler predates the
-    // horizon. Suppress as already-paying (enabling-event rule); do not treat
-    // null/unusable own PIA as a new in-horizon entitlement.
-    const ownPiaMonthly = resolveOwnPiaMonthly(streamIncome, claimant)
-    if (ownPiaMonthly === null) return true
-    // Sim publishes auxiliary only when marital annual > own. Prior-year win
-    // means the published start-year spousal source was already the paying
-    // benefit, not a new entitlement from a first-time enabler at start.
-    const ownMonthly =
-      ownPiaMonthly *
-      claimFactor(
-        claimantDob.year,
-        claimantDob.month,
-        claimantDob.day,
-        streamIncome.claimAge,
-      )
-    return bestPrior.monthly > ownMonthly
+    if (streamIncome === undefined) return false
+    const win = formerSpouseWonOverOwnPriorYear({
+      plan,
+      personId,
+      streamIncome,
+      projectedAge,
+      startYear: firstProjectionYear.year,
+      formers: livingFormers,
+      claimantIsSingle: true,
+    })
+    // null = eligible former, no usable own on any stream → already-paying
+    // (enabling-event rule; do not treat null own as a new in-horizon entitlement).
+    if (win === null) return true
+    return win
   }
   const coState = firstProjectionYear.people.find(
     (row) => row.personId === coPerson.id && row.alive,
@@ -309,7 +437,8 @@ function auxiliaryAlreadyPayingAtHorizonStart(args: {
     (row) =>
       row.personId === coPerson.id &&
       row.claimInForce &&
-      (row.annualAmount > 0 || row.preWithholdingAnnual > 0),
+      (isVisiblePositiveAmount(row.annualAmount) ||
+        isVisiblePositiveAmount(row.preWithholdingAnnual)),
   )
   if (!coClaiming) return false
   // Prefer the published gate stream (sim last-wins); fall back to last plan income.
@@ -388,9 +517,11 @@ export const ssClaimMilestone: Detector = {
       for (const entry of firstProjectionYear.socialSecurityStreams ?? []) {
         if (entry.personId !== person.id || !entry.claimInForce) continue
         const hasPositivePublishedAmount =
-          entry.annualAmount > 0 || entry.preWithholdingAnnual > 0
-        // Already-claimed only when a positive amount is published (or was paid
-        // pre-withholding). Zero-PIA retirement streams stay eligible for a
+          isVisiblePositiveAmount(entry.annualAmount) ||
+          isVisiblePositiveAmount(entry.preWithholdingAnnual)
+        // Already-claimed only when a visible positive amount is published (or
+        // was paid pre-withholding). Sub-half-cent residues render as $0 and
+        // stay unmodeled. Zero-PIA retirement streams stay eligible for a
         // later auxiliary claim on the same stream id.
         if (!hasPositivePublishedAmount) continue
         if (entry.source === 'ssdi') {
@@ -476,17 +607,25 @@ export const ssClaimMilestone: Detector = {
             ) {
               return false
             }
-            // Positive paid or pre-withholding → modeled benefit (incl. withheld).
-            if (entry.annualAmount > 0 || entry.preWithholdingAnnual > 0) return true
+            // Visible positive paid or pre-withholding → modeled benefit (incl. withheld).
+            // Sub-half-cent residues render as $0 evidence and stay unmodeled.
+            if (
+              isVisiblePositiveAmount(entry.annualAmount) ||
+              isVisiblePositiveAmount(entry.preWithholdingAnnual)
+            ) {
+              return true
+            }
             // Zeroed-by-override filing: claimInForce stays true while auxiliary
-            // override zeroes source/amounts. Require the person's gate stream
-            // to be paying an auxiliary source this year — otherwise a plain
-            // zero-PIA stream (claimInForce + $0, no aux) matches this shape
-            // at its configured filing year and must stay unmodeled (silent).
+            // override zeroes source/amounts. Require a published auxiliary
+            // (spousal/survivor with visible amounts) on this person this year —
+            // including when the former-spouse pass pays through a non-gate /
+            // unresolved stream and zeros resolved siblings. A plain zero-PIA
+            // stream (claimInForce + $0, no aux) matches the zeroed shape at
+            // its configured filing year and must stay unmodeled (silent).
             // SSDI is not a filing: a valid SSDI sibling (or any stream that
             // published source ssdi) zeroed by auxiliary override must not
             // enter this path even when claimAge.years coincides with the year.
-            if (!gateStreamPayingAuxiliary(yearStreams, person.id)) return false
+            if (!personPayingAuxiliaryOverride(yearStreams, person.id)) return false
             const streamIncome = ctx.plan.incomes.find(
               (candidate): candidate is SocialSecurityIncome =>
                 candidate.type === 'socialSecurity' && candidate.id === entry.streamId,
@@ -501,10 +640,10 @@ export const ssClaimMilestone: Detector = {
           },
         )
         if (streams.length === 0) continue
-        // Same-year preference: positive published payment, then gate stream, then order.
+        // Same-year preference: visible positive payment, then gate stream, then order.
         const preferred =
-          streams.find((entry) => entry.annualAmount > 0) ??
-          streams.find((entry) => entry.preWithholdingAnnual > 0) ??
+          streams.find((entry) => isVisiblePositiveAmount(entry.annualAmount)) ??
+          streams.find((entry) => isVisiblePositiveAmount(entry.preWithholdingAnnual)) ??
           streams.find((entry) => entry.isSpousalSurvivorGateStream) ??
           streams[0]!
         firstClaimYear = year.year
@@ -542,17 +681,21 @@ export const ssClaimMilestone: Detector = {
       const paidAmount = firstClaimStream.annualAmount
       const preWithholding = firstClaimStream.preWithholdingAnnual
       const sourceLabel = formatSource(firstClaimStream.source)
-      const fullyWithheld = paidAmount <= 0 && preWithholding > 0
+      // Visible-cent floor: sub-half-cent amounts render as $0 and are not
+      // treated as modeled positives (same convention as missingDataBasis).
+      const paidVisible = isVisiblePositiveAmount(paidAmount)
+      const preWithholdingVisible = isVisiblePositiveAmount(preWithholding)
+      const fullyWithheld = !paidVisible && preWithholdingVisible
       const ssdiSuppressed =
         isSsdiPathStream(income, personFraYears) ||
         streamPublishedSsdiThrough(projectionYears, firstClaimStream.streamId, firstClaimYear)
       const zeroedFiling =
-        paidAmount <= 0 &&
-        preWithholding <= 0 &&
+        !paidVisible &&
+        !preWithholdingVisible &&
         !ssdiSuppressed &&
         isFilingAgeTransition(income, firstClaimYear, birthYear)
-      // Unmodeled zero/zero without a filing-age transition should not reach here.
-      if (paidAmount <= 0 && preWithholding <= 0 && !zeroedFiling) continue
+      // Unmodeled zero/sub-cent without a filing-age transition should not reach here.
+      if (!paidVisible && !preWithholdingVisible && !zeroedFiling) continue
 
       // Benefit evidence stays within the GOVERNANCE two-to-five cap. Fully
       // withheld claims need both the claim-age-sensitive pre-withholding amount
@@ -574,7 +717,7 @@ export const ssClaimMilestone: Detector = {
               year: firstClaimYear,
             },
           ]
-        : paidAmount > 0
+        : paidVisible
           ? [
               {
                 label: `${person.name}'s modeled benefit in first claim year (${sourceLabel})`,
