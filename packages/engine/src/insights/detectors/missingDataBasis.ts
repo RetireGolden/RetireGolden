@@ -5,6 +5,7 @@ import type {
   OwnedTraditionalIraAggregateActivity,
 } from '../../projection/types.js'
 import { isAggregatedIra } from '../../strategies/accountEligibility.js'
+import { ROTH_QUALIFIED_AGE } from '../../strategies/rothBasis.js'
 
 interface DataGap {
   evidence: InsightEvidence
@@ -167,7 +168,7 @@ export const missingDataBasis: Detector = {
       const owner = firstProjectionYear?.people.find(
         (person) => person.personId === ownerPersonId,
       )
-      if (owner === undefined || owner.ageAttained >= 60) continue
+      if (owner === undefined || owner.ageAttained >= ROTH_QUALIFIED_AGE) continue
       const list = rothIraMissingByOwner.get(ownerPersonId) ?? []
       list.push({ name: account.name, balance: account.balance })
       rothIraMissingByOwner.set(ownerPersonId, list)
@@ -214,7 +215,7 @@ export const missingDataBasis: Detector = {
         account.inherited === undefined &&
         account.contributionBasis === undefined &&
         owner !== undefined &&
-        owner.ageAttained < 60
+        owner.ageAttained < ROTH_QUALIFIED_AGE
       ) {
         for (const year of ctx.projection.result.years) {
           const entry = year.employerRothAccountActivity?.find(
