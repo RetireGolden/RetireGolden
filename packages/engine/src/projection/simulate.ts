@@ -1063,6 +1063,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
    * measured from actual conversion layers, which prior assumed-seed draws do
    * not touch — so without this running total a later draw would re-use cover
    * a prior suppressed spill already consumed in the counterfactual world.
+   * Stays live for the pool's remaining pre-60 draws after the assumed seed is
+   * spent: a later free-conversion take can still exceed remaining cover.
    * Per-attempt scoped with the other Roth observation maps.
    */
   const rothCounterfactualFreeCoverConsumed = new Map<string, number>()
@@ -8823,72 +8825,97 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       if (!rb) continue
       const split = splitRothWithdrawal(rb, taken, year, age)
       const assumedRemaining = rothAssumedContributionRemaining.get(key) ?? 0
+      // Known contribution basis (supplied seed + credits) is consumed first;
+      // only the residual draw into the assumed seed is a candidate spill.
+      let fromAssumed = 0
       if (split.contributions > 0 && assumedRemaining > 0) {
-        // Known contribution basis (supplied seed + credits) is consumed first;
-        // only the residual draw into the assumed seed is a candidate spill.
         const knownContribution = Math.max(0, rb.contributionBasis - assumedRemaining)
-        const fromAssumed = Math.max(0, split.contributions - knownContribution)
+        fromAssumed = Math.max(0, split.contributions - knownContribution)
         if (fromAssumed > 0) {
           rothAssumedContributionRemaining.set(
             key,
             Math.max(0, assumedRemaining - fromAssumed),
           )
-          if (age < ROTH_QUALIFIED_AGE && taken > 0) {
-            // Free-cover capacity at this moment (pre-commit pool balances).
-            // The current draw may already have consumed free conversion cover
-            // (split.conversions — same FIFO layers freeRothCoverCapacity
-            // measures) after contributions; that consumption is not available
-            // to absorb a counterfactual removal of the assumed seed. Observe
-            // the split's own conversion take — do not re-scan layers.
-            // Prior draws whose assumed spill was suppressed by free cover
-            // also consumed that cover in the counterfactual world — track
-            // cumulative re-homing so later draws see less remaining cover.
-            // If the spill fits entirely in remaining free cover, removing the
-            // seed would shift the same dollars into those buckets with
-            // identical zero tax/penalty — not consequential.
-            const freeCover = freeRothCoverCapacity(rb, year, age)
+        }
+      }
+      // Counterfactual free-cover tracker stays live for the pool's remaining
+      // pre-60 draws even after the assumed seed is fully spent. An early draw
+      // that re-homes assumed seed into free cover consumes that cover in the
+      // assumed-zero world; a later free-conversion take can still exceed the
+      // remaining cover and be consequential (tax/penalty would differ).
+      if (age < ROTH_QUALIFIED_AGE && taken > 0) {
+        const priorCfCoverConsumed =
+          rothCounterfactualFreeCoverConsumed.get(key) ?? 0
+        if (fromAssumed > 0 || priorCfCoverConsumed > 0) {
+          // Free-cover capacity at this moment (pre-commit pool balances).
+          // The current draw may already have consumed free conversion cover
+          // (split.conversions — same FIFO layers freeRothCoverCapacity
+          // measures) after contributions; that consumption is not available
+          // to absorb a counterfactual removal of the assumed seed. Observe
+          // the split's own conversion take — do not re-scan layers.
+          const freeCover = freeRothCoverCapacity(rb, year, age)
+          let consequentialSpill: number
+          let coverConsumedByThisDraw: number
+          if (fromAssumed > 0) {
+            // Assumed seed still flowing: live conversion take reduces free
+            // cover first, then assumed spill re-homes onto whatever remains
+            // after prior counterfactual consumption.
             const freeCoverAfterThisDrawConversions = Math.max(
               0,
               freeCover - split.conversions,
             )
-            const priorCfCoverConsumed =
-              rothCounterfactualFreeCoverConsumed.get(key) ?? 0
             const counterfactualCoverRemaining = Math.max(
               0,
               freeCoverAfterThisDrawConversions - priorCfCoverConsumed,
             )
-            const consequentialSpill = Math.max(
+            consequentialSpill = Math.max(
               0,
               fromAssumed - counterfactualCoverRemaining,
             )
-            // Counterfactual re-homes min(spill, remaining cover) onto free
-            // conversion layers whether or not the residual spills past cover.
-            const coverConsumedByThisDraw = Math.min(
+            coverConsumedByThisDraw = Math.min(
               fromAssumed,
               counterfactualCoverRemaining,
             )
-            if (coverConsumedByThisDraw > 0) {
-              rothCounterfactualFreeCoverConsumed.set(
-                key,
-                priorCfCoverConsumed + coverConsumedByThisDraw,
+          } else {
+            // Seed already exhausted: live free-conversion take only stays
+            // free in the counterfactual up to remaining cover after prior
+            // re-homing. Excess would hit taxable/penalized layers without
+            // the assumed seed.
+            const freeConversionTake = Math.min(split.conversions, freeCover)
+            const counterfactualCoverRemaining = Math.max(
+              0,
+              freeCover - priorCfCoverConsumed,
+            )
+            consequentialSpill = Math.max(
+              0,
+              freeConversionTake - counterfactualCoverRemaining,
+            )
+            coverConsumedByThisDraw = Math.min(
+              freeConversionTake,
+              counterfactualCoverRemaining,
+            )
+          }
+          if (coverConsumedByThisDraw > 0) {
+            rothCounterfactualFreeCoverConsumed.set(
+              key,
+              priorCfCoverConsumed + coverConsumedByThisDraw,
+            )
+          }
+          if (consequentialSpill > 0) {
+            if (key.startsWith('rothira:')) {
+              const ownerPersonId = key.slice('rothira:'.length)
+              ownedRothAssumedBasisConsequentialByOwner.set(
+                ownerPersonId,
+                (ownedRothAssumedBasisConsequentialByOwner.get(ownerPersonId) ?? 0) +
+                  consequentialSpill,
               )
-            }
-            if (consequentialSpill > 0) {
-              if (key.startsWith('rothira:')) {
-                const ownerPersonId = key.slice('rothira:'.length)
-                ownedRothAssumedBasisConsequentialByOwner.set(
-                  ownerPersonId,
-                  (ownedRothAssumedBasisConsequentialByOwner.get(ownerPersonId) ?? 0) +
-                    consequentialSpill,
-                )
-              } else if (key.startsWith('roth:')) {
-                const accountId = key.slice('roth:'.length)
-                employerRothAssumedBasisConsequentialByAccount.set(
-                  accountId,
-                  (employerRothAssumedBasisConsequentialByAccount.get(accountId) ?? 0) +
-                    consequentialSpill,
-                )
-              }
+            } else if (key.startsWith('roth:')) {
+              const accountId = key.slice('roth:'.length)
+              employerRothAssumedBasisConsequentialByAccount.set(
+                accountId,
+                (employerRothAssumedBasisConsequentialByAccount.get(accountId) ?? 0) +
+                  consequentialSpill,
+              )
             }
           }
         }

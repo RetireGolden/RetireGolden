@@ -69,12 +69,15 @@ function streamPublishedSsdiThrough(
  * decision), not the first positive paid amount, so earnings-test withholding
  * to $0 does not hide or delay a real claim. Automatic FRA conversion of SSDI
  * to own-retirement (no application) is excluded even when the published
- * source is no longer `ssdi`.
+ * source is no longer `ssdi`. Auxiliary (spousal/survivor) entitlements key on
+ * the first year the published auxiliary amount becomes positive — not the
+ * configured own-benefit claim age — so a zero-PIA pre-horizon filer who first
+ * becomes entitled in the horizon still surfaces.
  */
 export const ssClaimMilestone: Detector = {
   id: 'ss-claim-milestone',
   category: 'social-security',
-  version: 2,
+  version: 1,
   screen(ctx): InsightCard | null {
     const firstProjectionYear = ctx.projection.result.years[0]
     if (firstProjectionYear === undefined || firstProjectionYear.year !== ctx.projection.startYear) return null
@@ -135,6 +138,15 @@ export const ssClaimMilestone: Detector = {
           projectedPerson.ageAttained > streamIncome.disability.onsetAge
         ) {
           preHorizonStreamIds.add(entry.streamId)
+          continue
+        }
+        // Auxiliary sources (spousal/survivor): claimAge is the own-benefit
+        // filing age, not when the auxiliary entitlement becomes payable.
+        // Key on the first year the published auxiliary amount is positive
+        // (a new entitlement event) — do not pre-horizon-suppress via claim age.
+        // A zero-PIA filer who claimed years ago and first receives spousal in
+        // the horizon's first year must still fire.
+        if (entry.source === 'spousal' || entry.source === 'survivor') {
           continue
         }
         if (

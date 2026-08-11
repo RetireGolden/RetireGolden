@@ -1169,16 +1169,17 @@ export interface OwnedRothIraPoolActivity {
   /** Resolved owner id (`null` owner already resolves to the household primary). */
   ownerPersonId: string
   /**
-   * Present when a pre-qualified-age withdrawal's spill into assumed-seeded
-   * contribution basis exceeded remaining free-cover capacity (FIFO prefix of
-   * seasoned conversion principal and wholly nontaxable unseasoned principal;
-   * stops at the first unseasoned taxable layer) at the consumption site.
-   * Free-cover capacity is tracked cumulatively in the assumed-zero
-   * counterfactual: a prior draw whose spill was absorbed by free cover
-   * consumes that cover for later draws. `withdrawal` is the excess spill that
-   * would change tax/penalty if the omitted `contributionBasis` were supplied.
-   * Observation-only — set from live pool balances at `splitRothWithdrawal`
-   * commit; never re-derived by detectors.
+   * Present when a pre-qualified-age withdrawal's assumed-zero counterfactual
+   * would change tax/penalty: either spill into assumed-seeded contribution
+   * basis exceeds remaining free-cover capacity (FIFO prefix of seasoned
+   * conversion principal and wholly nontaxable unseasoned principal; stops at
+   * the first unseasoned taxable layer), or — after the assumed seed is spent —
+   * a later free-conversion take exceeds cover already re-homed by earlier
+   * suppressed spills. Free-cover capacity is tracked cumulatively per pool
+   * (per-attempt scoped) in the assumed-zero counterfactual. `withdrawal` is
+   * the excess that would change tax/penalty if the omitted `contributionBasis`
+   * were supplied. Observation-only — set from live pool balances at
+   * `splitRothWithdrawal` commit; never re-derived by detectors.
    */
   assumedBasisConsequential?: { readonly withdrawal: number }
 }

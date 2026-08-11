@@ -41,7 +41,7 @@ function usd(amount: number): string {
 export const missingDataBasis: Detector = {
   id: 'missing-data-basis',
   category: 'accounts-contributions',
-  version: 2,
+  version: 1,
   screen(ctx): InsightCard | null {
     const gaps: DataGap[] = []
     const firstProjectionYear = ctx.projection.result.years[0]

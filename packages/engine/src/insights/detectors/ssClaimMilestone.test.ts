@@ -1132,6 +1132,80 @@ describe('Social Security claim milestone detector', () => {
     })
   })
 
+  it('fires for a first-year auxiliary entitlement when own claim age is pre-horizon', () => {
+    // Zero-PIA claimant filed at 62; age 66 at the 2026 horizon. First becomes
+    // entitled to a positive spousal amount in the projection's first year.
+    // claimAge pre-horizon must not suppress this new auxiliary entitlement.
+    const ctx = context(66, 62, 0)
+    ctx.plan.incomes = [
+      {
+        id: 'ss-zero-pia',
+        type: 'socialSecurity',
+        personId: 'p1',
+        piaMonthly: 0,
+        earnings: null,
+        claimAge: { years: 62, months: 0 },
+      },
+    ] as never
+    ctx.plan.household.people.push({
+      id: 'p2',
+      name: 'Sam',
+      dob: '1960-01-01',
+      sex: 'average',
+      retirementAge: null,
+      longevity: { planningAge: 95, source: 'manual' },
+    })
+    ctx.plan.incomes.push({
+      id: 'ss-spouse',
+      type: 'socialSecurity',
+      personId: 'p2',
+      piaMonthly: 2_000,
+      earnings: null,
+      claimAge: { years: 70, months: 0 },
+    } as never)
+    const years = ctx.projection.result.years as Array<{
+      year: number
+      people: { personId: string; ageAttained: number; alive: boolean }[]
+      socialSecurityStreams?: {
+        personId: string
+        streamId: string
+        source: StreamSource
+        annualAmount: number
+        claimInForce: boolean
+        preWithholdingAnnual: number
+        isSpousalSurvivorGateStream: boolean
+      }[]
+    }>
+    for (const year of years) {
+      year.people.push({ personId: 'p2', ageAttained: year.year - 1960, alive: true })
+      year.socialSecurityStreams = [
+        {
+          personId: 'p1',
+          streamId: 'ss-zero-pia',
+          source: 'spousal',
+          annualAmount: 12_000,
+          claimInForce: true,
+          preWithholdingAnnual: 12_000,
+          isSpousalSurvivorGateStream: true,
+        },
+      ]
+    }
+
+    expect(ssClaimMilestone.screen(ctx)).toMatchObject({
+      title: "Pat's Social Security claim is imminent",
+      severity: 'attention',
+      evidence: expect.arrayContaining([
+        { label: "Pat's modeled claim age (configured filing age)", value: '62 years 0 months' },
+        {
+          label: 'Modeled first claim year (claim in force; partial when claim months > 0)',
+          value: '2026',
+          year: 2026,
+        },
+        { label: "Pat's modeled benefit in first claim year (spousal)", value: '$12,000', year: 2026 },
+      ]),
+    })
+  })
+
   it('formats sub-dollar positive benefits with cents', () => {
     const ctx = context(66, 67, 0)
     const years = ctx.projection.result.years as Array<{
