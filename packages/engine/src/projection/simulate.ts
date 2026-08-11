@@ -63,7 +63,13 @@ import { claimFactor, spousalBenefitFactor, type ClaimAge } from '../socialSecur
 import { bestMaritalBenefit } from '../socialSecurity/maritalBenefits.js'
 import { capAuxiliaryForFamilyMaximum, claimAgeTotalMonths } from '../socialSecurity/familyMaximum.js'
 import { sizeRothConversion } from '../strategies/rothConversion.js'
-import { splitRothWithdrawal, type RothBasisState } from '../strategies/rothBasis.js'
+import {
+  ROTH_QUALIFIED_AGE,
+  applyConversionPrincipalDebt,
+  assumedSeedConsequentialSpill,
+  splitRothWithdrawal,
+  type RothBasisState,
+} from '../strategies/rothBasis.js'
 import { seppActive, seppAnnualAmount } from '../strategies/sepp.js'
 import {
   classifyInheritedRegime,
@@ -219,6 +225,12 @@ import {
   type YearResult,
   type YearWithdrawals,
   type InheritedAccountYearEvidence,
+  type SocialSecurityBenefitSource,
+  type SocialSecurityStreamActivity,
+  type OwnedRothIraPoolActivity,
+  type EmployerRothAccountActivity,
+  type OwnedTraditionalIraAggregateActivity,
+  type QualifiedAnnuityPaymentActivity,
 } from './types.js'
 
 export interface SimulateOptions {
@@ -1039,15 +1051,43 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     account: Extract<Account, { type: 'roth' }>,
   ): boolean => account.inherited !== undefined
   const rothBasis = new Map<string, RothBasisState>()
+  /**
+   * Observation-only: remaining contribution basis that exists only because
+   * `contributionBasis` was omitted (seeded as the account balance). Depletes
+   * after known (supplied + credited) contribution basis when a withdrawal
+   * draws from contributions — never changes splitRothWithdrawal economics.
+   */
+  const rothAssumedContributionRemaining = new Map<string, number>()
+  /**
+   * Observation-only: conversion principal the assumed-zero counterfactual has
+   * spent extra vs live (per pool) — seed re-homing into free-cover, unseasoned
+   * taxable layers, and free layers behind a taxable blocker, net of later
+   * live conversion that catches up on the same FIFO principal. Live residual
+   * layers still show CF-extra dollars until live withdraws them, so later
+   * draws apply this debt against live layers to recover the counterfactual's
+   * remaining free cover. Reduced when live consumption overlaps that debt
+   * (both worlds have then spent it); raised only by new CF-extra principal.
+   * Stays live after the assumed seed is spent so post-exhaustion free-
+   * conversion takes still evaluate against the correct CF layer state.
+   * Per-attempt scoped with the other Roth observation maps.
+   */
+  const rothCounterfactualFreeCoverConsumed = new Map<string, number>()
   for (const account of plan.accounts) {
     if (account.type !== 'roth') continue
     // Seed only pure owned Roth; an inherited Roth (pre- or post-S2) stays out.
     if (isInheritedRothOutsideOwnedPool(account)) continue
     const key = rothPoolKey(account)
     const startBasis = account.contributionBasis ?? account.balance
+    const assumedSeed = account.contributionBasis === undefined ? account.balance : 0
     const existing = rothBasis.get(key)
     if (existing) existing.contributionBasis += startBasis
     else rothBasis.set(key, { contributionBasis: startBasis, conversionLayers: [] })
+    if (assumedSeed > 0) {
+      rothAssumedContributionRemaining.set(
+        key,
+        (rothAssumedContributionRemaining.get(key) ?? 0) + assumedSeed,
+      )
+    }
   }
   // HSA medical-expense subledger (account/HSA/fixed-asset depth plan, steps
   // 2–3). Qualified withdrawals from cap-mode HSAs are limited to the
@@ -1063,11 +1103,19 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
   // aggregated per owner across their own (non-inherited) IRAs. Depletes as
   // distributions/conversions return basis.
   const iraBasisByOwner = new Map<string, number>()
+  /**
+   * Owners whose Form 8606 aggregate includes an IRA with omitted
+   * `nondeductibleBasis` (assumed zero). Observation-only for assumed-basis
+   * consequential publication. Rebuilt each projection year with the same
+   * per-year aggregation gate as settlement (`isAggregatedIraThisYear`) so
+   * spouse treat-as-own IRAs that join the owned pool mid-horizon are covered.
+   */
+  const ownersWithOmittedNondeductibleBasis = new Set<string>()
   for (const account of plan.accounts) {
     if (!isAggregatedIra(account)) continue
+    const ownerId = account.ownerPersonId ?? primary.id
     const basis = account.nondeductibleBasis ?? 0
     if (basis <= 0) continue
-    const ownerId = account.ownerPersonId ?? primary.id
     iraBasisByOwner.set(ownerId, (iraBasisByOwner.get(ownerId) ?? 0) + basis)
   }
   // Taxable safety-net floor (step 7): a minimum liquid (cash/taxable/vested
@@ -1874,7 +1922,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
 
     const peopleStates: PersonYearState[] = people.map((p) => {
       const ageAttained = year - dobYear(p)
-      return { personId: p.id, ageAttained, alive: ageAttained <= lifeAgeOf(p) }
+      const lifeAge = lifeAgeOf(p)
+      return { personId: p.id, ageAttained, alive: ageAttained <= lifeAge, lifeAge }
     })
     const stateOf = (personId: string) => peopleStates.find((s) => s.personId === personId)!
     const anyAlive = peopleStates.some((s) => s.alive)
@@ -2160,15 +2209,50 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         : 1
     const ssOwnByPerson = new Map<string, number>()
     const ssActualMonthlyByPerson = new Map<string, number>()
-    /** PIA + claim age per SS-claiming person, for the spousal top-up below. */
-    const ssStreamByPerson = new Map<string, { pia: number; claimAge: { years: number; months: number } }>()
+    /** PIA + claim age + stream id per SS-claiming person, for the spousal top-up below. */
+    const ssStreamByPerson = new Map<string, {
+      pia: number
+      claimAge: { years: number; months: number }
+      streamId: string
+    }>()
+    /**
+     * Parallel per-stream publication state (does not affect computation).
+     * Amounts here are pre-withholding until the earnings-test pass scales them.
+     */
+    const ssStreamPub = new Map<string, {
+      personId: string
+      streamId: string
+      source: SocialSecurityBenefitSource
+      preWithholdingAnnual: number
+      claimInForce: boolean
+    }>()
+    const ensureSsStreamPub = (streamId: string, personId: string) => {
+      let entry = ssStreamPub.get(streamId)
+      if (entry === undefined) {
+        entry = {
+          personId,
+          streamId,
+          source: 'none',
+          preWithholdingAnnual: 0,
+          claimInForce: false,
+        }
+        ssStreamPub.set(streamId, entry)
+      }
+      return entry
+    }
     /** Per-person SSDI info this year (onset age + the pre-SGA annual benefit), for SGA gating + reporting. */
     const ssdiByPerson = new Map<string, { onsetAge: number; benefit: number; fraYears: number }>()
     for (const stream of plan.incomes) {
       if (stream.type !== 'socialSecurity') continue
       const pia = resolvedPiaByStreamId.get(stream.id)
       if (pia === undefined) continue // warned during resolution
-      ssStreamByPerson.set(stream.personId, { pia, claimAge: stream.claimAge })
+      // Last stream written wins — the sim's precedence for spousal/survivor gates.
+      ssStreamByPerson.set(stream.personId, {
+        pia,
+        claimAge: stream.claimAge,
+        streamId: stream.id,
+      })
+      const streamPub = ensureSsStreamPub(stream.id, stream.personId)
       const person = personById.get(stream.personId)!
       const s = stateOf(stream.personId)
       const { y, m, d } = dobParts(person)
@@ -2179,14 +2263,28 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       // retirement benefit at FRA at the same dollar amount (no delayed credits).
       // SSDI cannot start at/after FRA (it would have already converted), so an
       // onsetAge >= FRA is treated as invalid — fall through to normal retirement.
+      // Observation: publish source 'ssdi' only while age < FRA; from the FRA year
+      // onward the same dollars are own-retirement (§202(a) conversion — no
+      // application). Milestone detectors that key on source must not treat that
+      // conversion as a filing decision.
       const onsetAge = stream.disability?.onsetAge
       if (onsetAge !== undefined && onsetAge < fra.years) {
         if (s.ageAttained >= onsetAge) {
           const monthly = ssdiMonthlyBenefit(pia)
           const annual = monthly * 12 * ssColaFactor * ssHaircutFactor
+          // Computation maps stay populated for deceased workers so the
+          // survivor pass can read the deceased's actual monthly benefit.
+          // Per-stream publication is alive-only: a deceased-year row is
+          // not-payable (source none / claimInForce false / zero amounts),
+          // not "withheld to $0".
           ssOwnByPerson.set(stream.personId, (ssOwnByPerson.get(stream.personId) ?? 0) + annual)
           ssActualMonthlyByPerson.set(stream.personId, (ssActualMonthlyByPerson.get(stream.personId) ?? 0) + monthly)
           ssdiByPerson.set(stream.personId, { onsetAge, benefit: annual, fraYears: fra.years })
+          if (s.alive) {
+            streamPub.claimInForce = true
+            streamPub.preWithholdingAnnual += annual
+            streamPub.source = s.ageAttained >= fra.years ? 'own-retirement' : 'ssdi'
+          }
         }
         continue // SSDI replaces the retirement-claim path for this stream
       }
@@ -2201,8 +2299,17 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       const monthly = pia * factor
       let annual = monthly * payableMonths * ssColaFactor
       annual *= ssHaircutFactor
+      // Computation maps stay populated for deceased workers (survivor anchors).
+      // Gate pay-site publication on alive — deceased-year rows stay not-payable.
       ssOwnByPerson.set(stream.personId, (ssOwnByPerson.get(stream.personId) ?? 0) + annual)
       ssActualMonthlyByPerson.set(stream.personId, (ssActualMonthlyByPerson.get(stream.personId) ?? 0) + monthly)
+      if (s.alive) {
+        streamPub.claimInForce = true
+        streamPub.preWithholdingAnnual += annual
+        // Per-stream source is recorded at this stream's own pay site (plan order
+        // must not change published stream sources).
+        streamPub.source = 'own-retirement'
+      }
     }
 
     // Marital-history menu: a divorced-spousal or survivor benefit on a *former*
@@ -2232,7 +2339,24 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       })
       if (best) {
         const annual = best.monthly * payableMonths * ssColaFactor * ssHaircutFactor
-        if (annual > (ssOwnByPerson.get(stream.personId) ?? 0)) ssOwnByPerson.set(stream.personId, annual)
+        if (annual > (ssOwnByPerson.get(stream.personId) ?? 0)) {
+          ssOwnByPerson.set(stream.personId, annual)
+          const maritalSource: SocialSecurityBenefitSource =
+            best.kind === 'survivor' ? 'survivor' : 'spousal'
+          // Publication only: former-spouse aux replaces this stream's amount
+          // and zeros sibling streams so published amounts stay person-faithful.
+          // Ensure a pub entry even when own PIA was unresolved (null PIA and no
+          // usable earnings) — aux still pays on the former-spouse record.
+          const paying = ensureSsStreamPub(stream.id, stream.personId)
+          paying.preWithholdingAnnual = annual
+          paying.source = maritalSource
+          paying.claimInForce = true
+          for (const entry of ssStreamPub.values()) {
+            if (entry.personId !== stream.personId || entry.streamId === stream.id) continue
+            entry.preWithholdingAnnual = 0
+            entry.source = 'none'
+          }
+        }
       }
     }
 
@@ -2289,7 +2413,22 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           const spousalTotalMonthly = lowerOwnMonthly + cappedExcessMonthly
           const spousalAnnual = spousalTotalMonthly * spousalPayableMonths * ssColaFactor * ssHaircutFactor
           const own = ssOwnByPerson.get(lower.p.id) ?? 0
-          if (spousalAnnual > own) ssOwnByPerson.set(lower.p.id, spousalAnnual)
+          if (spousalAnnual > own) {
+            ssOwnByPerson.set(lower.p.id, spousalAnnual)
+            // Publication only: current-spouse aux keys off the gate stream.
+            const gateStreamId = lower.ss.streamId
+            for (const entry of ssStreamPub.values()) {
+              if (entry.personId !== lower.p.id) continue
+              if (entry.streamId === gateStreamId) {
+                entry.preWithholdingAnnual = spousalAnnual
+                entry.source = 'spousal'
+                entry.claimInForce = true
+              } else {
+                entry.preWithholdingAnnual = 0
+                entry.source = 'none'
+              }
+            }
+          }
         }
       }
     }
@@ -2329,7 +2468,22 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           payableMonths *
           ssColaFactor *
           ssHaircutFactor
-        if (survivorAnnual > ownBenefit) ssOwnByPerson.set(survivor.id, survivorAnnual)
+        if (survivorAnnual > ownBenefit) {
+          ssOwnByPerson.set(survivor.id, survivorAnnual)
+          // Publication only: survivor step-up keys off the gate stream.
+          const gateStreamId = survivorStream.streamId
+          for (const entry of ssStreamPub.values()) {
+            if (entry.personId !== survivor.id) continue
+            if (entry.streamId === gateStreamId) {
+              entry.preWithholdingAnnual = survivorAnnual
+              entry.source = 'survivor'
+              entry.claimInForce = true
+            } else {
+              entry.preWithholdingAnnual = 0
+              entry.source = 'none'
+            }
+          }
+        }
       }
     }
 
@@ -2397,6 +2551,73 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       if (stateOf(personId).alive) incomes.socialSecurity += benefit
     }
 
+    // Published per-stream SS activity (one-source-of-truth for detectors).
+    // claimInForce / preWithholdingAnnual are already frozen from the pay sites
+    // above; annualAmount is scaled to the post-withholding person total so the
+    // published stream amounts remain faithful to incomes.socialSecurity.
+    const postWithholdingByPerson = new Map<string, number>()
+    for (const person of people) {
+      postWithholdingByPerson.set(
+        person.id,
+        stateOf(person.id).alive ? (ssOwnByPerson.get(person.id) ?? 0) : 0,
+      )
+    }
+    const preWithholdingSumByPerson = new Map<string, number>()
+    for (const entry of ssStreamPub.values()) {
+      preWithholdingSumByPerson.set(
+        entry.personId,
+        (preWithholdingSumByPerson.get(entry.personId) ?? 0) + entry.preWithholdingAnnual,
+      )
+    }
+    // One row per configured socialSecurity stream (including unresolved
+    // streams with no usable PIA/earnings). Truly unmodeled streams publish
+    // empty not-payable rows; when the former-spouse pass still pays a
+    // positive spousal/survivor benefit through an unresolved stream, publish
+    // those paid amounts/source (empty only when nothing pays).
+    const socialSecurityStreams: SocialSecurityStreamActivity[] = []
+    for (const stream of plan.incomes) {
+      if (stream.type !== 'socialSecurity') continue
+      const resolved = resolvedPiaByStreamId.get(stream.id) !== undefined
+      const entry = ssStreamPub.get(stream.id)
+      if (!resolved) {
+        const auxPaid =
+          entry !== undefined &&
+          (entry.source === 'spousal' || entry.source === 'survivor') &&
+          (entry.preWithholdingAnnual > 0 || entry.claimInForce)
+        if (!auxPaid) {
+          socialSecurityStreams.push({
+            personId: stream.personId,
+            streamId: stream.id,
+            source: 'none',
+            annualAmount: 0,
+            claimInForce: false,
+            preWithholdingAnnual: 0,
+            isSpousalSurvivorGateStream: false,
+          })
+          continue
+        }
+      }
+      const pub = entry ?? ensureSsStreamPub(stream.id, stream.personId)
+      const gateStreamId = ssStreamByPerson.get(stream.personId)?.streamId
+      const preSum = preWithholdingSumByPerson.get(stream.personId) ?? 0
+      const post = postWithholdingByPerson.get(stream.personId) ?? 0
+      const annualAmount = preSum > 0
+        ? pub.preWithholdingAnnual * (post / preSum)
+        : 0
+      socialSecurityStreams.push({
+        personId: stream.personId,
+        streamId: stream.id,
+        source: pub.source,
+        annualAmount,
+        claimInForce: pub.claimInForce,
+        preWithholdingAnnual: pub.preWithholdingAnnual,
+        isSpousalSurvivorGateStream: gateStreamId === stream.id,
+      })
+    }
+
+    /** Qualified annuity payments actually paid this year (published fact). */
+    const qualifiedAnnuityPayments: QualifiedAnnuityPaymentActivity[] = []
+
     for (const account of plan.accounts) {
       if (account.type === 'pension' || account.type === 'annuity') {
         // A commuted pension (lump-sum election) stops paying once the
@@ -2447,6 +2668,16 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           //  - no purchase (already-owned stream) → the entered taxablePct.
           let annuityTaxable: number
           if (account.purchase?.taxQualification === 'qualified') {
+            // Publish the paid amount for IRA-funded contracts so detectors
+            // never re-derive the payout-form gate or funding owner.
+            const fundingOwnerPersonId = annuityContractPoolOwner.get(account.id)
+            if (fundingOwnerPersonId !== undefined && paid > 0) {
+              qualifiedAnnuityPayments.push({
+                annuityAccountId: account.id,
+                payment: paid,
+                fundingOwnerPersonId,
+              })
+            }
             // FULLY ORDINARY IS THE GROSS, NOT THE ANSWER. Section 408(d)(2)(B)
             // treats all distributions during a taxable year as one
             // distribution, and Publication 590-B says in terms that where the
@@ -3715,6 +3946,36 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         ordinaryIncome: ledgerCentsToPlanDollars(effect.ordinaryIncomeAmount),
       }
     }
+    /**
+     * Observation-only: per-channel Form 8606 taxable ordinary income produced
+     * this year for owners with omitted `nondeductibleBasis`. Per-attempt;
+     * drives the assumed-basis consequential verdict. Each channel accumulates
+     * only the taxable character that channel's binding transaction produced
+     * under the assumption — never the year's full gross for that channel.
+     */
+    type Form8606ConsequentialChannel =
+      | 'distributions'
+      | 'conversions'
+      | 'annuityPayments'
+    const form8606ConsequentialByOwner = new Map<string, {
+      distributions: number
+      conversions: number
+      annuityPayments: number
+    }>()
+    const noteForm8606Taxable = (
+      ownerPersonId: string,
+      taxable: number,
+      channel: Form8606ConsequentialChannel,
+    ): void => {
+      if (taxable <= 0 || !ownersWithOmittedNondeductibleBasis.has(ownerPersonId)) return
+      const entry = form8606ConsequentialByOwner.get(ownerPersonId) ?? {
+        distributions: 0,
+        conversions: 0,
+        annuityPayments: 0,
+      }
+      entry[channel] += taxable
+      form8606ConsequentialByOwner.set(ownerPersonId, entry)
+    }
     const splitWithAssumedCharacter = (
       state: IraProRataYear,
       amount: number,
@@ -3726,8 +3987,16 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         grossAmountPlanDollars: amount,
         remainingBasisPlanDollars: state.basis,
       })
-      if (assumed === null) return splitIraDistribution(state, amount)
-      return {
+      // Fallback path: settlement published no matching assumed effect, so this
+      // draw is priced with the pre-distribution pro-rata state (or full ordinary
+      // when that state cannot answer). That is the registered legacy tax path —
+      // not an executed character under assumed-zero basis. Do not publish an
+      // assumed-basis verdict here (same silence as the annuity refused-settlement
+      // site): the settlement never priced this transaction over the assumption.
+      if (assumed === null) {
+        return splitIraDistribution(state, amount)
+      }
+      const split = {
         nontaxable: assumed.basisReturn,
         taxable: assumed.ordinaryIncome,
         next: {
@@ -3735,6 +4004,12 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           nontaxableFraction: state.nontaxableFraction,
         },
       }
+      const channel: Form8606ConsequentialChannel =
+        input.calculationScope === 'form8606Line8NetConversions'
+          ? 'conversions'
+          : 'distributions'
+      noteForm8606Taxable(input.ownerPersonId, split.taxable, channel)
+      return split
     }
 
     // This year's FALLBACK Form-8606 pro-rata denominator per owner (step 5):
@@ -3773,6 +4048,17 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       if (!isTreatAsOwnEffective(account, year)) return false
       if (year === account.inherited.ownerDeathYear) return false
       return true
+    }
+    // Year-scoped omitted-basis owners: same aggregation membership the
+    // Form 8606 settlement uses this year (includes post-election treat-as-own).
+    ownersWithOmittedNondeductibleBasis.clear()
+    for (const account of plan.accounts) {
+      if (!isAggregatedIraThisYear(account)) continue
+      // isAggregatedIraThisYear is not a type predicate (S2 post-flip accounts
+      // stay TraditionalAccount with inherited set); re-narrow for basis field.
+      if (account.type !== 'traditional' || account.kind !== 'ira') continue
+      if (account.nondeductibleBasis !== undefined) continue
+      ownersWithOmittedNondeductibleBasis.add(account.ownerPersonId ?? primary.id)
     }
     const followsOwnerRmdsThisYear = (account: Account): boolean => {
       if (account.type !== 'traditional') return false
@@ -4997,7 +5283,20 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         mutationOrdinal: payment.mutationOrdinal,
         grossAmountPlanDollars: payment.grossAmountPlanDollars,
       })
-      if (assumed === null || assumed.basisReturn <= 0) continue
+      if (assumed === null) {
+        // No settlement character: payment stays fully ordinary (registered
+        // ASSUMPTION-FREE legacy). Do not publish an assumed-basis verdict —
+        // the settlement never priced this payment over assumed-zero basis.
+        continue
+      }
+      // Settlement priced the payment: ordinary share under the year's fraction
+      // (assumed-zero basis → full ordinary) is the consequential channel.
+      noteForm8606Taxable(
+        payment.poolOwnerPersonId,
+        Math.max(0, payment.grossAmountPlanDollars - assumed.basisReturn),
+        'annuityPayments',
+      )
+      if (assumed.basisReturn <= 0) continue
       annuityPaymentNontaxable += assumed.basisReturn
       const proRata = iraProRata.get(payment.poolOwnerPersonId)
       if (proRata !== undefined) {
@@ -5019,7 +5318,12 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         }
         const line7Gross = entry.amount - carve
         const proRata = iraProRata.get(entry.ownerId)
-        if (proRata === undefined || line7Gross <= 0) continue
+        if (line7Gross <= 0) continue
+        if (proRata === undefined) {
+          // Zero aggregate basis: entire line-7 gross is ordinary income.
+          noteForm8606Taxable(entry.ownerId, line7Gross, 'distributions')
+          continue
+        }
         const split = splitWithAssumedCharacter(proRata, line7Gross, {
           ownerPersonId: entry.ownerId,
           calculationScope: 'form8606Line7Distributions',
@@ -5091,7 +5395,11 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       if (nonQualified <= 0) continue
       legacyQcdExcessByOwner.set(entry.ownerId, remainingExcess - nonQualified)
       const proRata = iraProRata.get(entry.ownerId)
-      if (proRata === undefined) continue
+      if (proRata === undefined) {
+        noteForm8606Taxable(entry.ownerId, nonQualified, 'distributions')
+        qcdNonQualifiedOrdinaryIncome += nonQualified
+        continue
+      }
       const split = splitWithAssumedCharacter(proRata, nonQualified, {
         ownerPersonId: entry.ownerId,
         calculationScope: 'form8606Line7Distributions',
@@ -5771,6 +6079,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
      * the aggregate conversion pass already uses for `conversionNontaxable`.
      */
     let namedRothConversionNontaxable = 0
+    /**
+     * Observation-only: pre-60 Roth withdrawals that drew into assumed-seeded
+     * contribution basis this attempt (owner pool key → withdrawal amount;
+     * employer key → account withdrawal amount).
+     */
+    const ownedRothAssumedBasisConsequentialByOwner = new Map<string, number>()
+    const employerRothAssumedBasisConsequentialByAccount = new Map<string, number>()
     let retirementActionCash = 0
     let retirementActionEquityCompensation = 0
     let retirementActionOrdinaryIncome = 0
@@ -6292,19 +6607,22 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             // merely that the conversion happened.
             const ownerId = state.account.ownerPersonId ?? primary.id
             const proRata = iraProRata.get(ownerId)
-            if (proRata !== undefined &&
-                ownedIraApplication.applicationKind === 'debit') {
-              const split = splitWithAssumedCharacter(proRata, move.amount, {
-                ownerPersonId: ownerId,
-                calculationScope: 'form8606Line8NetConversions',
-                occurrenceKind: kind,
-                producerOccurrenceKey,
-                sourceAccountId: state.account.id,
-                mutationOrdinal: ownedIraApplication.mutationOrdinal,
-              })
-              iraProRata.set(ownerId, split.next)
-              committedAction.nontaxableAmountPlanDollars += split.nontaxable
-              namedRothConversionNontaxable += split.nontaxable
+            if (ownedIraApplication.applicationKind === 'debit') {
+              if (proRata !== undefined) {
+                const split = splitWithAssumedCharacter(proRata, move.amount, {
+                  ownerPersonId: ownerId,
+                  calculationScope: 'form8606Line8NetConversions',
+                  occurrenceKind: kind,
+                  producerOccurrenceKey,
+                  sourceAccountId: state.account.id,
+                  mutationOrdinal: ownedIraApplication.mutationOrdinal,
+                })
+                iraProRata.set(ownerId, split.next)
+                committedAction.nontaxableAmountPlanDollars += split.nontaxable
+                namedRothConversionNontaxable += split.nontaxable
+              } else {
+                noteForm8606Taxable(ownerId, move.amount, 'conversions')
+              }
             }
           }
         }
@@ -6831,10 +7149,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             }
             // Pro-rata return of basis on converted IRA dollars (step 5): the
             // basis portion moves to Roth without creating ordinary income.
-            if (sourceAccount.kind === 'ira') {
+            if (sourceAccount.kind === 'ira' &&
+                ownedIraApplication?.applicationKind === 'debit') {
               const proRata = iraProRata.get(ownerId)
-              if (proRata &&
-                  ownedIraApplication?.applicationKind === 'debit') {
+              if (proRata) {
                 const split = splitWithAssumedCharacter(proRata, take, {
                   ownerPersonId: ownerId,
                   calculationScope: 'form8606Line8NetConversions',
@@ -6850,6 +7168,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
                 // destinations are per owner.
                 conversionNontaxable += split.nontaxable
                 credit.nontaxablePlanDollars += split.nontaxable
+              } else {
+                noteForm8606Taxable(ownerId, take, 'conversions')
               }
             }
           }
@@ -8552,23 +8872,179 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     }
     // Commit the Roth basis ordering (contributions → conversions → earnings) once
     // per pool, so next year's seasoning + earnings are correct across the owner's
-    // aggregated Roth IRAs.
+    // aggregated Roth IRAs. Also annotate assumed-seed consumption (observation
+    // only — does not change the split economics). Flag only when the spill into
+    // assumed seed exceeds free-cover capacity at this moment (FIFO prefix of
+    // seasoned conversion principal + wholly nontaxable unseasoned principal;
+    // stops at the first unseasoned taxable layer).
     for (const [key, { taken, age }] of rothPoolWithdrawals(withdrawalPlan.byAccountId)) {
       const rb = rothBasis.get(key)
-      if (rb) rothBasis.set(key, splitRothWithdrawal(rb, taken, year, age).next)
+      if (!rb) continue
+      const split = splitRothWithdrawal(rb, taken, year, age)
+      const assumedRemaining = rothAssumedContributionRemaining.get(key) ?? 0
+      // Known contribution basis (supplied seed + credits) is consumed first;
+      // only the residual draw into the assumed seed is a candidate spill.
+      let fromAssumed = 0
+      if (split.contributions > 0 && assumedRemaining > 0) {
+        const knownContribution = Math.max(0, rb.contributionBasis - assumedRemaining)
+        fromAssumed = Math.max(0, split.contributions - knownContribution)
+        if (fromAssumed > 0) {
+          rothAssumedContributionRemaining.set(
+            key,
+            Math.max(0, assumedRemaining - fromAssumed),
+          )
+        }
+      }
+      // Counterfactual conversion-principal tracker stays live for the pool's
+      // remaining pre-60 draws even after the assumed seed is fully spent. An
+      // early draw that re-homes assumed seed into free cover *or* unseasoned
+      // taxable principal (and free layers behind it) consumes those layers in
+      // the assumed-zero world; a later free-conversion take must evaluate
+      // against that CF residual, not live free cover alone.
+      if (age < ROTH_QUALIFIED_AGE && taken > 0) {
+        const priorCfConversionExtra =
+          rothCounterfactualFreeCoverConsumed.get(key) ?? 0
+        if (fromAssumed > 0 || priorCfConversionExtra > 0) {
+          // 1) Materialize CF layer state from PRE-DRAW layers with prior debt
+          // applied first — never charge prior debt against split.next after the
+          // live conversion take. Applying debt after can erase real CF
+          // difference (e.g. $50 prior seed debt then $100 seasoned conversion
+          // take: live residual is empty so post-draw debt is a no-op, hiding
+          // that CF only had $50 principal for the shared conversion).
+          // 2) Price fully ordered draws on BOTH sides with the same FIFO walk
+          //    as splitRothWithdrawal — live conversion amount against live
+          //    layers, CF amount (conversion + assumed seed, which is free
+          //    contribution live) against debt-adjusted CF layers. Do NOT walk
+          //    the live free-prefix length from the CF head (that misattributes
+          //    free dollars onto CF mixed layers). Character-wise CF-vs-live
+          //    gaps (earnings / unseasoned taxable) are tracked both ways: a
+          //    consequence in either direction (supplying the omitted seed
+          //    would CHANGE character up or down) is a verdict. One-way
+          //    Math.max discarded the live-more path; L1 abs of both
+          //    characters double-counts pure recharacterization.
+          // 3) Reconcile the tracker: CF principal this walk consumed minus the
+          //    live conversion take from the split (per-layer FIFO figures).
+          //    Seed re-homing raises debt; live catch-up on principal CF already
+          //    spent lowers it. Increment-only left stale debt after live
+          //    consumed the same layers (e.g. $50 seed / $25 principal → $25
+          //    debt, then live takes that $25 conversion: both worlds spent it).
+          const cfLayers = applyConversionPrincipalDebt(
+            rb.conversionLayers,
+            priorCfConversionExtra,
+          )
+          // Shallow copy: the walk only reads layers; zero-debt returns the
+          // live array itself, so the spread keeps the state type mutable
+          // without per-object cloning on this hot path.
+          const cfState = { contributionBasis: 0, conversionLayers: [...cfLayers] }
+          const liveState = {
+            contributionBasis: 0,
+            conversionLayers: rb.conversionLayers,
+          }
+          // Mirror splitRothWithdrawal per-layer consumption on both sides.
+          const liveWalk = assumedSeedConsequentialSpill(
+            liveState,
+            split.conversions,
+            year,
+            age,
+            0,
+          )
+          const cfWalk = assumedSeedConsequentialSpill(
+            cfState,
+            split.conversions + fromAssumed,
+            year,
+            age,
+            0,
+          )
+          // Both directions: CF-over-live and live-over-CF character gaps.
+          // Verdict magnitude is the larger one-way gap (not L1 sum).
+          const cfOverLive =
+            Math.max(0, cfWalk.earningsSpill - liveWalk.earningsSpill) +
+            Math.max(0, cfWalk.unseasonedTaxableSpill - liveWalk.unseasonedTaxableSpill)
+          const liveOverCf =
+            Math.max(0, liveWalk.earningsSpill - cfWalk.earningsSpill) +
+            Math.max(
+              0,
+              liveWalk.unseasonedTaxableSpill - cfWalk.unseasonedTaxableSpill,
+            )
+          const consequentialSpill = Math.max(cfOverLive, liveOverCf)
+          // CF-extra principal outstanding = prior extra + CF principal this
+          // draw consumed − live conversion principal this draw (split figure).
+          // Equivalent to seed-only debt when CF still has residual for the
+          // shared conversion; reduces when live catch-up exceeds new CF spend.
+          const nextCfConversionExtra = Math.max(
+            0,
+            priorCfConversionExtra +
+              cfWalk.conversionPrincipalConsumed -
+              split.conversions,
+          )
+          if (nextCfConversionExtra > 0) {
+            rothCounterfactualFreeCoverConsumed.set(key, nextCfConversionExtra)
+          } else {
+            rothCounterfactualFreeCoverConsumed.delete(key)
+          }
+          if (consequentialSpill > 0) {
+            if (key.startsWith('rothira:')) {
+              const ownerPersonId = key.slice('rothira:'.length)
+              ownedRothAssumedBasisConsequentialByOwner.set(
+                ownerPersonId,
+                (ownedRothAssumedBasisConsequentialByOwner.get(ownerPersonId) ?? 0) +
+                  consequentialSpill,
+              )
+            } else if (key.startsWith('roth:')) {
+              const accountId = key.slice('roth:'.length)
+              employerRothAssumedBasisConsequentialByAccount.set(
+                accountId,
+                (employerRothAssumedBasisConsequentialByAccount.get(accountId) ?? 0) +
+                  consequentialSpill,
+              )
+            }
+          }
+        }
+      }
+      rothBasis.set(key, split.next)
     }
     // Commit the year's Form-8606 IRA basis depletion from need-based draws
     // (RMD/SEPP/conversion basis already committed above as they happened).
-    if (iraProRata.size > 0) {
-      for (const [ownerId, proRata] of iraProRata) {
-        let taken = 0
+    // The assumed-basis verdict reads the executed character that priced
+    // tax/penalty (`iraCharacterFinal`); basis carryforward still depletes via
+    // the same pro-rata state the year's forced draws already opened.
+    {
+      const needBasedTakenByOwner = new Map<string, number>()
+      for (const state of balances) {
+        if (!isAggregatedIraThisYear(state.account)) continue
+        const taken = withdrawalPlan.byAccountId.get(state.account.id) ?? 0
+        if (taken <= 0) continue
+        const ownerId = state.account.ownerPersonId ?? primary.id
+        needBasedTakenByOwner.set(
+          ownerId,
+          (needBasedTakenByOwner.get(ownerId) ?? 0) + taken,
+        )
+      }
+      for (const [ownerId, taken] of needBasedTakenByOwner) {
+        let executedTaxable = 0
         for (const state of balances) {
           if (!isAggregatedIraThisYear(state.account)) continue
           if ((state.account.ownerPersonId ?? primary.id) !== ownerId) continue
-          taken += withdrawalPlan.byAccountId.get(state.account.id) ?? 0
+          const accountTaken = withdrawalPlan.byAccountId.get(state.account.id) ?? 0
+          if (accountTaken <= 0) continue
+          executedTaxable +=
+            iraCharacterFinal.taxableBySourceAccountId.get(state.account.id) ??
+            accountTaken
         }
-        const next = splitIraDistribution(proRata, taken).next
-        iraBasisByOwner.set(ownerId, next.basis)
+        // Verdict: observe the character actually used for tax/penalty.
+        noteForm8606Taxable(ownerId, executedTaxable, 'distributions')
+        const proRata = iraProRata.get(ownerId)
+        if (proRata === undefined) continue
+        const split = splitIraDistribution(proRata, taken)
+        iraBasisByOwner.set(ownerId, split.next.basis)
+      }
+      // Owners with open pro-rata but no need-based draw still need basis
+      // carried forward (already in iraProRata / iraBasisByOwner from prior
+      // commits). Sync remaining basis for pro-rata owners that had no need-
+      // based take above.
+      for (const [ownerId, proRata] of iraProRata) {
+        if (needBasedTakenByOwner.has(ownerId)) continue
+        iraBasisByOwner.set(ownerId, proRata.basis)
       }
     }
     // Reimburse-later accumulation (step 3): out-of-pocket qualified medical
@@ -9160,6 +9636,56 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
               }),
           })
         : undefined
+
+    // --- per-entity published facts (insight one-source-of-truth channel) ---
+    // Only assumed-basis consequential verdicts are published on these rows —
+    // every remaining member has a production consumer (missingDataBasis).
+    const employerRothOwnerByAccount = new Map<string, string>()
+    for (const account of plan.accounts) {
+      if (account.type === 'roth' && account.kind === 'employer') {
+        employerRothOwnerByAccount.set(
+          account.id,
+          account.ownerPersonId ?? primary.id,
+        )
+      }
+    }
+    const ownedRothIraPoolActivity: OwnedRothIraPoolActivity[] = [
+      ...ownedRothAssumedBasisConsequentialByOwner,
+    ]
+      .filter(([, withdrawal]) => withdrawal > 0)
+      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+      .map(([ownerPersonId, withdrawal]) => ({
+        ownerPersonId,
+        assumedBasisConsequential: { withdrawal },
+      }))
+    const employerRothAccountActivity: EmployerRothAccountActivity[] = [
+      ...employerRothAssumedBasisConsequentialByAccount,
+    ]
+      .filter(([, withdrawal]) => withdrawal > 0)
+      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+      .map(([accountId, withdrawal]) => ({
+        accountId,
+        ownerPersonId: employerRothOwnerByAccount.get(accountId) ?? primary.id,
+        assumedBasisConsequential: { withdrawal },
+      }))
+
+    const ownedTraditionalIraAggregateActivity:
+      OwnedTraditionalIraAggregateActivity[] = [...form8606ConsequentialByOwner]
+      .filter(([, channels]) =>
+        channels.distributions > 0 ||
+        channels.conversions > 0 ||
+        channels.annuityPayments > 0,
+      )
+      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+      .map(([ownerPersonId, channels]) => ({
+        ownerPersonId,
+        assumedBasisConsequential: {
+          distributions: channels.distributions,
+          conversions: channels.conversions,
+          annuityPayments: channels.annuityPayments,
+        },
+      }))
+
     const yearResult: YearResult = {
       year,
       inflationScale: inflFactor,
@@ -9170,6 +9696,11 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       contributions,
       ownedNonRothIraContributions,
       ownedNonRothIraBalancesBeforeGrowth,
+      ownedRothIraPoolActivity,
+      employerRothAccountActivity,
+      ownedTraditionalIraAggregateActivity,
+      qualifiedAnnuityPayments,
+      socialSecurityStreams,
       employerMatch,
       rmd: rmdTotal,
       sepp: seppTotal,
@@ -9263,6 +9794,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       iraProRata,
       iraBasisByOwner,
       rothBasis,
+      rothAssumedContributionRemaining,
+      rothCounterfactualFreeCoverConsumed,
       propertyValues,
       hecmStates,
       insuranceCashValues,

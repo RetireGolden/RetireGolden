@@ -55,6 +55,19 @@ export interface SimulatorAnnualPassStateBindings {
   iraProRata: Map<string, IraProRataYear>
   iraBasisByOwner: Map<string, number>
   rothBasis: Map<string, RothBasisState>
+  /**
+   * Observation-only remaining assumed Roth contribution seed by pool key.
+   * Mutated at the same withdrawal commit as `rothBasis`; must roll back with
+   * it so rejected/counterfactual attempts cannot drain a committed year.
+   */
+  rothAssumedContributionRemaining: Map<string, number>
+  /**
+   * Observation-only conversion principal the assumed-zero counterfactual has
+   * spent extra via assumed-seed re-homing (free cover, unseasoned taxable,
+   * free-behind — per pool). Mutated with the assumed-seed flag site; must
+   * roll back with the other Roth observation maps.
+   */
+  rothCounterfactualFreeCoverConsumed: Map<string, number>
   propertyValues: Map<string, number>
   hecmStates: Map<string, SimulatorAnnualPassHecmState>
   insuranceCashValues: Map<string, number>
@@ -149,6 +162,8 @@ interface AnnualPassSnapshot {
   iraProRata: Array<[string, IraProRataYear]>
   iraBasisByOwner: Array<[string, number]>
   rothBasis: Array<[string, RothBasisState]>
+  rothAssumedContributionRemaining: Array<[string, number]>
+  rothCounterfactualFreeCoverConsumed: Array<[string, number]>
   propertyValues: Array<[string, number]>
   hecmStates: Array<[string, SimulatorAnnualPassHecmState]>
   insuranceCashValues: Array<[string, number]>
@@ -276,6 +291,14 @@ function captureSnapshot(bindings: SimulatorAnnualPassStateBindings): AnnualPass
     iraProRata: snapshotMap(bindings.iraProRata, cloneIraProRata),
     iraBasisByOwner: snapshotMap(bindings.iraBasisByOwner, (value) => value),
     rothBasis: snapshotMap(bindings.rothBasis, cloneRothBasis),
+    rothAssumedContributionRemaining: snapshotMap(
+      bindings.rothAssumedContributionRemaining,
+      (value) => value,
+    ),
+    rothCounterfactualFreeCoverConsumed: snapshotMap(
+      bindings.rothCounterfactualFreeCoverConsumed,
+      (value) => value,
+    ),
     propertyValues: snapshotMap(bindings.propertyValues, (value) => value),
     hecmStates: snapshotMap(bindings.hecmStates, cloneHecmState),
     insuranceCashValues: snapshotMap(bindings.insuranceCashValues, (value) => value),
@@ -351,6 +374,16 @@ function restoreSnapshot(bindings: SimulatorAnnualPassStateBindings, snapshot: A
   restoreMap(bindings.iraProRata, snapshot.iraProRata, cloneIraProRata)
   restoreMap(bindings.iraBasisByOwner, snapshot.iraBasisByOwner, (value) => value)
   restoreMap(bindings.rothBasis, snapshot.rothBasis, cloneRothBasis)
+  restoreMap(
+    bindings.rothAssumedContributionRemaining,
+    snapshot.rothAssumedContributionRemaining,
+    (value) => value,
+  )
+  restoreMap(
+    bindings.rothCounterfactualFreeCoverConsumed,
+    snapshot.rothCounterfactualFreeCoverConsumed,
+    (value) => value,
+  )
   restoreMap(bindings.propertyValues, snapshot.propertyValues, (value) => value)
   restoreMap(bindings.hecmStates, snapshot.hecmStates, cloneHecmState)
   restoreMap(bindings.insuranceCashValues, snapshot.insuranceCashValues, (value) => value)

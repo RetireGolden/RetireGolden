@@ -54,6 +54,28 @@ other in the same change.
 Exact triggering values are the WS1 acceptance criterion: every detector must
 explain the numbers that caused it to fire.
 
+### Published facts, not re-derivation
+
+Detectors consume facts the ledger publishes on `YearResult` (per-entity
+activity, Social Security resolution, and similar one-source-of-truth channels).
+A detector must not re-derive attribution, eligibility, or precedence from plan
+inputs when a published fact exists — parallel recomputation silently drifts
+(limits clip, payments skip, streams get overridden, pools separate).
+
+When new detector work needs a fact the ledger does not yet publish, add the
+published field on `YearResult` first (populated in the same simulation pass at
+the mutation site), then write the detector as a reader of that field.
+
+**Registered simplification — employer designated-Roth ordering.** The ledger
+models employer designated-Roth pools through the same `splitRothWithdrawal`
+IRA ordering (contributions → conversion layers FIFO → earnings) used for Roth
+IRAs. Treas. Reg. §1.402A-1 Q&A-3 instead prescribes §72(e)(8) pro-rata recovery
+for designated Roth accounts. That engine simplification is pre-existing and
+unchanged; published assumed-basis verdicts and detector cards that surface
+employer-Roth seeded balances inherit it. Card evidence must not assert IRA
+ordering as statutory for employer Roth — label seeded figures as modeled under
+the engine's simplified ordering.
+
 ## False-positive policy
 
 Keep thresholds conservative by default.
@@ -123,3 +145,20 @@ detector-level assertions for the domain facts and thresholds.
 
 When adding a detector, add it to the default registry only after its stable
 ID, version, fixtures, severity, and evidence are complete.
+
+## Catalog
+
+| WS2 catalog item | Detector ID | Delivery |
+| --- | --- | --- |
+| Stale balances/income | `stale-plan-data` | Advisory |
+| Missing dates/basis | `missing-data-basis` | Advisory |
+| RMD/QCD | `qcd-efficiency` | Preview scenario |
+| Roth window | `roth-bridge-headroom` | Preview scenario |
+| IRMAA | `irmaa-tier-edge` | Advisory or preview scenario |
+| ACA threshold | `aca-threshold-proximity` | Advisory |
+| SS claim milestone | `ss-claim-milestone` | Advisory |
+| Pension/annuity decision | `pension-election-pending` / `annuitization-headroom` | Advisory or preview scenario (pension); preview scenario (annuitization) |
+| Guardrail adjustment | `spending-guardrails` | Preview scenario |
+| Survivor/beneficiary review | `widows-penalty-roth` | Preview scenario / advisory |
+| Relocation | `state-relocation` | Preview scenario |
+| Assumption/law-pack drift | `law-pack-drift` | Advisory |

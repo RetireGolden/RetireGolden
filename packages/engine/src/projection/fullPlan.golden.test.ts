@@ -197,8 +197,8 @@ describe('full-plan golden fixtures', () => {
     // AGI = 80,350. Deduction = 32,200 + 2 * 1,650 = 35,500.
     // Taxable income = 44,850; tax = 2,480 + 12% * 20,050 = 4,886.
     expect(bothAlive.people).toEqual([
-      { personId: 'p1', ageAttained: 73, alive: true },
-      { personId: 'p2', ageAttained: 75, alive: true },
+      { personId: 'p1', ageAttained: 73, alive: true, lifeAge: 95 },
+      { personId: 'p2', ageAttained: 75, alive: true, lifeAge: 75 },
     ])
     expectMoney(bothAlive.incomes.socialSecurity, 54_000)
     expectMoney(bothAlive.incomes.pension, 48_000)
@@ -214,8 +214,8 @@ describe('full-plan golden fixtures', () => {
     // AGI = 35,300. Deduction = 16,100 + 2,050 = 18,150.
     // Taxable income = 17,150; tax = 1,240 + 12% * 4,750 = 1,810.
     expect(survivorYear.people).toEqual([
-      { personId: 'p1', ageAttained: 74, alive: true },
-      { personId: 'p2', ageAttained: 76, alive: false },
+      { personId: 'p1', ageAttained: 74, alive: true, lifeAge: 95 },
+      { personId: 'p2', ageAttained: 76, alive: false, lifeAge: 75 },
     ])
     expectMoney(survivorYear.incomes.socialSecurity, 36_000)
     expectMoney(survivorYear.incomes.pension, 24_000)

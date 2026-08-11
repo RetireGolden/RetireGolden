@@ -136,6 +136,8 @@ function annualPassStateBytes(
     iraProRata: [...state.iraProRata],
     iraBasisByOwner: [...state.iraBasisByOwner],
     rothBasis: [...state.rothBasis],
+    rothAssumedContributionRemaining: [...state.rothAssumedContributionRemaining],
+    rothCounterfactualFreeCoverConsumed: [...state.rothCounterfactualFreeCoverConsumed],
     propertyValues: [...state.propertyValues],
     hecmStates: [...state.hecmStates],
     insuranceCashValues: [...state.insuranceCashValues],

@@ -279,6 +279,8 @@ function state(): { bindings: SimulatorAnnualPassStateBindings; scalars: Scalars
       retirementRuntimeOccurrences: [], retirementRuntimeApplications: [],
       nextRetirementRuntimeMutationOrdinal: binding(scalars, 'next'),
       iraProRata: new Map(), iraBasisByOwner: new Map(), rothBasis: new Map(),
+      rothAssumedContributionRemaining: new Map(),
+      rothCounterfactualFreeCoverConsumed: new Map(),
       propertyValues: new Map(), hecmStates: new Map(),
       insuranceCashValues: new Map(), allocationTrack: new Map(),
       seppAmortAmount: new Map(), magiHistory: new Map(),
@@ -337,7 +339,10 @@ function stateBytes(value: SimulatorAnnualPassStateBindings): string {
     applications: value.retirementRuntimeApplications,
     next: value.nextRetirementRuntimeMutationOrdinal.read(),
     iraProRata: [...value.iraProRata], iraBasis: [...value.iraBasisByOwner],
-    rothBasis: [...value.rothBasis], properties: [...value.propertyValues],
+    rothBasis: [...value.rothBasis],
+    rothAssumedContributionRemaining: [...value.rothAssumedContributionRemaining],
+    rothCounterfactualFreeCoverConsumed: [...value.rothCounterfactualFreeCoverConsumed],
+    properties: [...value.propertyValues],
     hecm: [...value.hecmStates], insurance: [...value.insuranceCashValues],
     allocation: [...value.allocationTrack], sepp: [...value.seppAmortAmount],
     magi: [...value.magiHistory],
@@ -374,6 +379,8 @@ function mutateAll(value: SimulatorAnnualPassStateBindings): void {
   value.iraProRata.set('x', { basis: 1, nontaxableFraction: 1 })
   value.iraBasisByOwner.set('x', 1)
   value.rothBasis.set('x', { contributionBasis: 1, conversionLayers: [] })
+  value.rothAssumedContributionRemaining.set('x', 1)
+  value.rothCounterfactualFreeCoverConsumed.set('x', 1)
   value.propertyValues.set('x', 1)
   value.hecmStates.set('x', { principalLimit: 1, loanBalance: 1 })
   value.insuranceCashValues.set('x', 1)

@@ -1,7 +1,15 @@
 import { describe, expect, it } from 'vitest'
 
 import { describeRule } from '../rules/describeRule.js'
-import { emptyRothBasis, splitRothWithdrawal, type RothBasisState } from './rothBasis.js'
+import {
+  applyConversionPrincipalDebt,
+  assumedSeedConsequentialSpill,
+  emptyRothBasis,
+  freeRothCoverCapacity,
+  ROTH_QUALIFIED_AGE,
+  splitRothWithdrawal,
+  type RothBasisState,
+} from './rothBasis.js'
 
 describe('splitRothWithdrawal — ordering', () => {
   const state: RothBasisState = {
@@ -134,5 +142,279 @@ describeRule('irc-408A-d-3-F-roth-conversion-recapture', {
     expect(splitRothWithdrawal(partlyBasisConversion(), 10_000, 2028, 50).penalty)
       .toBeCloseTo(accepted, 6)
     expect(splitRothWithdrawal(partlyBasisConversion(), 10_000, 2029, 50).penalty).toBe(0)
+  })
+})
+
+describe('applyConversionPrincipalDebt — layer identity', () => {
+  it('keeps original object identity for untouched tails after debt is exhausted', () => {
+    // Mirror splitRothWithdrawal: only the partially-debited layer is a new
+    // object; fully exhausted heads drop out; untouched tails stay the same refs.
+    const head = { year: 2020, amount: 25, taxableAmount: 25 }
+    const mid = { year: 2024, amount: 100, taxableAmount: 50 }
+    const tail = { year: 2025, amount: 75, taxableAmount: 0 }
+    const layers = [head, mid, tail]
+    const out = applyConversionPrincipalDebt(layers, 50)
+    // Head fully consumed; mid partially debited (new object); tail untouched ref.
+    expect(out).toHaveLength(2)
+    expect(out[0]).toEqual({ year: 2024, amount: 75, taxableAmount: 37.5 })
+    expect(out[0]).not.toBe(mid)
+    expect(out[1]).toBe(tail)
+  })
+})
+
+describe('freeRothCoverCapacity — FIFO prefix', () => {
+  it('sums seasoned and wholly nontaxable unseasoned layers when they lead the queue', () => {
+    const state: RothBasisState = {
+      contributionBasis: 0,
+      conversionLayers: [
+        { year: 2020, amount: 30_000, taxableAmount: 30_000 }, // seasoned by 2026
+        { year: 2025, amount: 10_000, taxableAmount: 0 }, // nontaxable unseasoned
+      ],
+    }
+    expect(freeRothCoverCapacity(state, 2026, 55)).toBe(40_000)
+  })
+
+  it('stops at the first unseasoned taxable layer (deeper free layers are not free cover)', () => {
+    // §408A(d)(4)(B)(ii)(I): conversions out FIFO. A later nontaxable unseasoned
+    // layer cannot cover a draw without first tapping the blocking taxable layer
+    // (which recaptures under §72(t) when pre-59½).
+    const state: RothBasisState = {
+      contributionBasis: 0,
+      conversionLayers: [
+        { year: 2026, amount: 10_000, taxableAmount: 10_000 }, // unseasoned taxable — blocks
+        { year: 2027, amount: 10_000, taxableAmount: 0 }, // nontaxable, but behind the block
+      ],
+    }
+    // Age 55, year 2028: both layers unseasoned; free cover is 0, not 10k.
+    expect(freeRothCoverCapacity(state, 2028, 55)).toBe(0)
+    // Removing assumed seed and drawing $10k reaches the 2026 layer → $1,000 §72(t).
+    const split = splitRothWithdrawal(state, 10_000, 2028, 55)
+    expect(split.penalty).toBeCloseTo(1_000, 6)
+  })
+
+  it('includes unseasoned taxable layers once the owner is qualified (age 60+)', () => {
+    const state: RothBasisState = {
+      contributionBasis: 0,
+      conversionLayers: [
+        { year: 2026, amount: 10_000, taxableAmount: 10_000 },
+        { year: 2027, amount: 10_000, taxableAmount: 0 },
+      ],
+    }
+    expect(freeRothCoverCapacity(state, 2028, 60)).toBe(20_000)
+  })
+})
+
+describe('assumedSeedConsequentialSpill — FIFO residual walk', () => {
+  it('bounds spill by the partial taxable remainder, then absorbs free layers behind it', () => {
+    // Live draw partially consumed a $50 unseasoned taxable blocker (residual
+    // $30) with $200 nontaxable free cover behind it. Prefix free cover is 0,
+    // but only the $30 remainder is consequential for a $100 assumed seed.
+    const residual: RothBasisState = {
+      contributionBasis: 0,
+      conversionLayers: [
+        { year: 2026, amount: 30, taxableAmount: 30 },
+        { year: 2027, amount: 200, taxableAmount: 0 },
+      ],
+    }
+    expect(freeRothCoverCapacity(residual, 2028, 55)).toBe(0)
+    const walked = assumedSeedConsequentialSpill(residual, 100, 2028, 55)
+    expect(walked.consequentialSpill).toBeCloseTo(30, 6)
+    // Taxable $30 + free-behind $70 = $100 conversion principal consumed.
+    expect(walked.conversionPrincipalConsumed).toBeCloseTo(100, 6)
+  })
+
+  it('reports zero spill when the live draw already exhausted the taxable blocker', () => {
+    const residual: RothBasisState = {
+      contributionBasis: 0,
+      conversionLayers: [
+        { year: 2027, amount: 200, taxableAmount: 0 },
+      ],
+    }
+    const walked = assumedSeedConsequentialSpill(residual, 100, 2028, 55)
+    expect(walked.consequentialSpill).toBeCloseTo(0, 6)
+    expect(walked.conversionPrincipalConsumed).toBeCloseTo(100, 6)
+  })
+
+  it('prorates consequential spill on a mixed unseasoned layer ($100 seed / $10 taxable)', () => {
+    // Full $100 seed lands on a $100 residual layer with only $10 taxable —
+    // splitRothWithdrawal recaptures take * (taxable / amount) = $10, not $100.
+    const residual: RothBasisState = {
+      contributionBasis: 0,
+      conversionLayers: [{ year: 2026, amount: 100, taxableAmount: 10 }],
+    }
+    expect(freeRothCoverCapacity(residual, 2028, 55)).toBe(0)
+    const walked = assumedSeedConsequentialSpill(residual, 100, 2028, 55)
+    expect(walked.consequentialSpill).toBeCloseTo(10, 6)
+    expect(walked.conversionPrincipalConsumed).toBeCloseTo(100, 6)
+    // Live penalty on the same residual would be 10% of that taxable share.
+    expect(splitRothWithdrawal(residual, 100, 2028, 55).penalty).toBeCloseTo(1, 6)
+  })
+
+  it('prorates on a partially-consumed mixed residual (remaining balances)', () => {
+    // Live draw already took half of a $100 / $10 mixed layer → residual
+    // amount=50, taxableAmount=5. A $50 seed take * (5/50) = $5 consequential;
+    // a $100 seed finishes the residual ($5) then spills $50 into earnings.
+    const residual: RothBasisState = {
+      contributionBasis: 0,
+      conversionLayers: [{ year: 2026, amount: 50, taxableAmount: 5 }],
+    }
+    const half = assumedSeedConsequentialSpill(residual, 50, 2028, 55)
+    expect(half.consequentialSpill).toBeCloseTo(5, 6)
+    expect(half.conversionPrincipalConsumed).toBeCloseTo(50, 6)
+    expect(splitRothWithdrawal(residual, 50, 2028, 55).penalty).toBeCloseTo(0.5, 6)
+
+    const over = assumedSeedConsequentialSpill(residual, 100, 2028, 55)
+    expect(over.consequentialSpill).toBeCloseTo(5 + 50, 6) // residual taxable + earnings
+    // Only $50 of conversion principal available; the rest is earnings.
+    expect(over.conversionPrincipalConsumed).toBeCloseTo(50, 6)
+  })
+
+  it('tracks $100 seed into a pure $100 taxable layer as conversion principal debt', () => {
+    const residual: RothBasisState = {
+      contributionBasis: 0,
+      conversionLayers: [{ year: 2026, amount: 100, taxableAmount: 100 }],
+    }
+    const walked = assumedSeedConsequentialSpill(residual, 100, 2028, 55)
+    expect(walked.consequentialSpill).toBeCloseTo(100, 6)
+    expect(walked.conversionPrincipalConsumed).toBeCloseTo(100, 6)
+  })
+
+  it('reports zero earningsSpill when the owner is age-qualified (mirror splitRothWithdrawal)', () => {
+    // Residual past conversion layers is earnings. At ROTH_QUALIFIED_AGE those
+    // earnings are tax/penalty-free in splitRothWithdrawal, so assumed-seed
+    // spill past free conversion cover must not mark earnings as consequential
+    // (published assumed-basis verdict is silent for qualified owners).
+    const residual: RothBasisState = {
+      contributionBasis: 0,
+      conversionLayers: [{ year: 2020, amount: 40, taxableAmount: 40 }], // seasoned free
+    }
+    const walked = assumedSeedConsequentialSpill(residual, 100, 2028, ROTH_QUALIFIED_AGE)
+    expect(walked.unseasonedTaxableSpill).toBe(0)
+    expect(walked.earningsSpill).toBe(0)
+    expect(walked.consequentialSpill).toBe(0)
+    // Conversion principal still absorbs the free layer; remainder is free earnings.
+    expect(walked.conversionPrincipalConsumed).toBeCloseTo(40, 6)
+    expect(splitRothWithdrawal(residual, 100, 2028, ROTH_QUALIFIED_AGE).taxableOrdinary).toBe(0)
+  })
+
+  it('dual ordered walks silence the $50-seed/$25-seasoned free-prefix-on-CF-head false positive', () => {
+    // Live layers: $25 seasoned free, $100 unseasoned 50% taxable, $100 nontaxable.
+    // Prior $25 seed debt removes the free head in CF. A subsequent draw takes
+    // $25 remaining seed + $175 conversion live. Both worlds incur $50
+    // penalty-sensitive principal — character-wise CF-extra is 0.
+    // Walking live free-prefix length ($25) from the CF head would hit the mixed
+    // layer and report a false $12.50 unseasoned spill.
+    const liveLayers = [
+      { year: 2020, amount: 25, taxableAmount: 25 }, // seasoned free
+      { year: 2026, amount: 100, taxableAmount: 50 }, // unseasoned 50% taxable
+      { year: 2027, amount: 100, taxableAmount: 0 }, // nontaxable free-behind
+    ]
+    const liveState: RothBasisState = { contributionBasis: 0, conversionLayers: liveLayers }
+    const cfState: RothBasisState = {
+      contributionBasis: 0,
+      conversionLayers: [...applyConversionPrincipalDebt(liveLayers, 25)],
+    }
+    const fromAssumed = 25
+    const conversions = 175
+    const liveWalk = assumedSeedConsequentialSpill(liveState, conversions, 2028, 55)
+    const cfWalk = assumedSeedConsequentialSpill(
+      cfState,
+      conversions + fromAssumed,
+      2028,
+      55,
+    )
+    // Same unseasoned taxable ($50) both sides; no CF-extra earnings.
+    expect(liveWalk.unseasonedTaxableSpill).toBeCloseTo(50, 6)
+    expect(cfWalk.unseasonedTaxableSpill).toBeCloseTo(50, 6)
+    expect(liveWalk.earningsSpill).toBeCloseTo(0, 6)
+    expect(cfWalk.earningsSpill).toBeCloseTo(0, 6)
+    // Both-direction character gaps are zero when walks agree.
+    const cfOverLive =
+      Math.max(0, cfWalk.earningsSpill - liveWalk.earningsSpill) +
+      Math.max(0, cfWalk.unseasonedTaxableSpill - liveWalk.unseasonedTaxableSpill)
+    const liveOverCf =
+      Math.max(0, liveWalk.earningsSpill - cfWalk.earningsSpill) +
+      Math.max(0, liveWalk.unseasonedTaxableSpill - cfWalk.unseasonedTaxableSpill)
+    expect(Math.max(cfOverLive, liveOverCf)).toBeCloseTo(0, 6)
+    // Buggy free-prefix-on-CF-head walk would report $12.50.
+    const freePrefixOnCfHead = assumedSeedConsequentialSpill(cfState, 25, 2028, 55)
+    expect(freePrefixOnCfHead.unseasonedTaxableSpill).toBeCloseTo(12.5, 6)
+  })
+
+  it('pins character-wise gaps both ways (CF-more and live-more unseasoned)', () => {
+    // Verdict magnitude = max(CF-over-live, live-over-CF) character gaps.
+    const characterVerdict = (
+      cf: { earningsSpill: number; unseasonedTaxableSpill: number },
+      live: { earningsSpill: number; unseasonedTaxableSpill: number },
+    ) => {
+      const cfOverLive =
+        Math.max(0, cf.earningsSpill - live.earningsSpill) +
+        Math.max(0, cf.unseasonedTaxableSpill - live.unseasonedTaxableSpill)
+      const liveOverCf =
+        Math.max(0, live.earningsSpill - cf.earningsSpill) +
+        Math.max(0, live.unseasonedTaxableSpill - cf.unseasonedTaxableSpill)
+      return Math.max(cfOverLive, liveOverCf)
+    }
+
+    // Direction CF > live: prior debt removed free head; CF conversion walk
+    // hits more unseasoned taxable than the live free-first walk.
+    const cfMoreLayers = [
+      { year: 2020, amount: 50, taxableAmount: 50 }, // seasoned free
+      { year: 2026, amount: 100, taxableAmount: 100 }, // unseasoned full taxable
+    ]
+    const liveCfMore = assumedSeedConsequentialSpill(
+      { contributionBasis: 0, conversionLayers: cfMoreLayers },
+      100, // live conversion
+      2028,
+      55,
+    )
+    const cfCfMore = assumedSeedConsequentialSpill(
+      {
+        contributionBasis: 0,
+        conversionLayers: [...applyConversionPrincipalDebt(cfMoreLayers, 50)],
+      },
+      100, // same conversion (no new seed this draw)
+      2028,
+      55,
+    )
+    // Live: $50 free + $50 unseasoned. CF (free gone): $100 unseasoned.
+    expect(liveCfMore.unseasonedTaxableSpill).toBeCloseTo(50, 6)
+    expect(cfCfMore.unseasonedTaxableSpill).toBeCloseTo(100, 6)
+    expect(characterVerdict(cfCfMore, liveCfMore)).toBeCloseTo(50, 6)
+
+    // Direction live > CF: prior debt already consumed the unseasoned layer in
+    // CF; live still walks it. One-way Math.max(0, CF − live) clamps to 0.
+    const liveMoreLayers = [
+      { year: 2026, amount: 50, taxableAmount: 50 }, // unseasoned taxable
+      { year: 2027, amount: 50, taxableAmount: 0 }, // nontaxable free-behind
+    ]
+    const liveLiveMore = assumedSeedConsequentialSpill(
+      { contributionBasis: 0, conversionLayers: liveMoreLayers },
+      50,
+      2028,
+      55,
+    )
+    const cfLiveMore = assumedSeedConsequentialSpill(
+      {
+        contributionBasis: 0,
+        conversionLayers: [...applyConversionPrincipalDebt(liveMoreLayers, 50)],
+      },
+      50,
+      2028,
+      55,
+    )
+    // Live: $50 unseasoned. CF (unseasoned already debt-consumed): $50 free.
+    expect(liveLiveMore.unseasonedTaxableSpill).toBeCloseTo(50, 6)
+    expect(cfLiveMore.unseasonedTaxableSpill).toBeCloseTo(0, 6)
+    expect(liveLiveMore.earningsSpill).toBeCloseTo(0, 6)
+    expect(cfLiveMore.earningsSpill).toBeCloseTo(0, 6)
+    const clampedOneWay =
+      Math.max(0, cfLiveMore.earningsSpill - liveLiveMore.earningsSpill) +
+      Math.max(
+        0,
+        cfLiveMore.unseasonedTaxableSpill - liveLiveMore.unseasonedTaxableSpill,
+      )
+    expect(clampedOneWay).toBe(0)
+    expect(characterVerdict(cfLiveMore, liveLiveMore)).toBeCloseTo(50, 6)
   })
 })

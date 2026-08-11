@@ -125,3 +125,165 @@ export function splitRothWithdrawal(
     next: { contributionBasis, conversionLayers },
   }
 }
+
+/**
+ * Principal that would cover a draw with zero tax and zero penalty if
+ * contribution basis were not present, scanned as a FIFO prefix of conversion
+ * layers (oldest first, matching §408A(d)(4)(B)(ii)(I) / splitRothWithdrawal).
+ *
+ * Accumulate seasoned layers and wholly nontaxable unseasoned layers; stop at
+ * the first layer that would cost tax or penalty (unseasoned taxable). Deeper
+ * free layers behind that barrier are not free cover — reaching them requires
+ * tapping the blocking layer. Observed from the pool's live bucket balances —
+ * never a re-run of withdrawal economics.
+ */
+export function freeRothCoverCapacity(
+  state: RothBasisState,
+  year: number,
+  age: number,
+): number {
+  const qualified = age >= ROTH_QUALIFIED_AGE
+  let free = 0
+  for (const layer of state.conversionLayers) {
+    if (qualified || year - layer.year >= ROTH_SEASONING_YEARS) {
+      free += layer.amount
+    } else if (layer.taxableAmount <= 0) {
+      free += layer.amount
+    } else {
+      // Unseasoned taxable principal — FIFO stops here.
+      break
+    }
+  }
+  return free
+}
+
+/**
+ * Apply a FIFO principal debt against conversion layers (oldest first),
+ * prorating each layer's taxable share with the residual balance. Used to
+ * reconstruct the assumed-zero counterfactual's layer state after prior seed
+ * re-homing consumed free cover, unseasoned taxable principal, and free layers
+ * behind a taxable blocker — dollars the live residual still shows.
+ */
+export function applyConversionPrincipalDebt(
+  layers: readonly RothConversionLayer[],
+  debt: number,
+): readonly RothConversionLayer[] {
+  let remaining = Math.max(0, debt)
+  if (remaining <= 0) {
+    // Zero debt: hand back the input untouched — this runs per withdrawal in
+    // the hot simulate path and callers only walk the result.
+    return layers
+  }
+  const out: RothConversionLayer[] = []
+  for (const layer of layers) {
+    if (remaining <= 0) {
+      // Untouched tails keep the original object (same identity as
+      // splitRothWithdrawal) — only a partially-debited layer is rebuilt.
+      out.push(layer)
+      continue
+    }
+    const take = Math.min(remaining, layer.amount)
+    remaining -= take
+    const left = layer.amount - take
+    if (left > 0) {
+      // Complementary subtraction, exactly as splitRothWithdrawal computes the
+      // residual — proration by (left / amount) would drift by rounding.
+      const taxableTake =
+        layer.amount > 0 ? take * (layer.taxableAmount / layer.amount) : 0
+      out.push({ year: layer.year, amount: left, taxableAmount: layer.taxableAmount - taxableTake })
+    }
+  }
+  return out
+}
+
+/**
+ * How much of an assumed-seed dollar amount would land on taxable/penalized
+ * remainders if those dollars walked conversion layers FIFO (mirroring
+ * `splitRothWithdrawal` per-layer consumption).
+ *
+ * Callers that track multi-draw counterfactual debt should materialize the
+ * counterfactual layer state first (`applyConversionPrincipalDebt` on pre-draw
+ * layers), apply any shared live conversion take against that CF state, then
+ * pass the resulting residual here with `priorConversionExtraConsumed` left at
+ * 0 — applying prior debt to post-draw residual can erase the current draw's
+ * real CF difference. The optional prior-debt argument remains for unit tests
+ * that walk a single residual snapshot.
+ *
+ * Free layers (seasoned, wholly nontaxable unseasoned, or age-qualified) absorb
+ * without consequence. Unseasoned taxable takes are consequential only for the
+ * taxable share — matching `splitRothWithdrawal`'s pro-rata recapture
+ * `take * (taxableAmount / amount)` on residual layer balances after partial
+ * consumption. The walk continues past a partial taxable blocker so free
+ * layers behind it still absorb residual seed.
+ * Residual past every conversion layer is earnings and is consequential.
+ *
+ * `unseasonedTaxableSpill` / `earningsSpill` break `consequentialSpill` into the
+ * two characters so callers can mirror `splitRothWithdrawal` on live vs
+ * counterfactual sides and compare apples-to-apples (conversion→earnings is
+ * CF-extra ordinary income even when both report the same total spill).
+ *
+ * `conversionPrincipalConsumed` is how much of this seed landed on conversion
+ * principal (not earnings) — the debt to accumulate for later draws.
+ */
+export function assumedSeedConsequentialSpill(
+  state: RothBasisState,
+  assumedSeedAmount: number,
+  year: number,
+  age: number,
+  priorConversionExtraConsumed = 0,
+): {
+  consequentialSpill: number
+  conversionPrincipalConsumed: number
+  unseasonedTaxableSpill: number
+  earningsSpill: number
+} {
+  let remaining = Math.max(0, assumedSeedAmount)
+  if (remaining <= 0) {
+    return {
+      consequentialSpill: 0,
+      conversionPrincipalConsumed: 0,
+      unseasonedTaxableSpill: 0,
+      earningsSpill: 0,
+    }
+  }
+  const qualified = age >= ROTH_QUALIFIED_AGE
+  const layers = applyConversionPrincipalDebt(
+    state.conversionLayers,
+    priorConversionExtraConsumed,
+  )
+  let unseasonedTaxableSpill = 0
+  let conversionPrincipalConsumed = 0
+  for (const layer of layers) {
+    if (remaining <= 0) break
+    const isFree =
+      qualified ||
+      year - layer.year >= ROTH_SEASONING_YEARS ||
+      layer.taxableAmount <= 0
+    if (isFree) {
+      const absorb = Math.min(remaining, layer.amount)
+      remaining -= absorb
+      conversionPrincipalConsumed += absorb
+    } else {
+      const take = Math.min(remaining, layer.amount)
+      // Mirror splitRothWithdrawal: only the taxable share of an unseasoned
+      // mixed layer is consequential (nondeductible basis recaptures nothing).
+      const taxableTake =
+        layer.amount > 0 ? take * (layer.taxableAmount / layer.amount) : 0
+      unseasonedTaxableSpill += taxableTake
+      remaining -= take
+      conversionPrincipalConsumed += take
+    }
+  }
+  // Past conversion principal → earnings. Pre-qualified: taxable + 10% penalty
+  // in splitRothWithdrawal. Qualified (age >= ROTH_QUALIFIED_AGE): earnings are
+  // tax- and penalty-free there, so residual seed past conversion layers is not
+  // consequential — earningsSpill must be 0 (same silence as a published
+  // assumed-basis verdict for a qualified owner).
+  const earningsSpill = qualified ? 0 : remaining
+  return {
+    consequentialSpill: unseasonedTaxableSpill + earningsSpill,
+    conversionPrincipalConsumed,
+    unseasonedTaxableSpill,
+    earningsSpill,
+  }
+}

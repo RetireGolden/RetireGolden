@@ -143,6 +143,14 @@ function fixture(): {
       ],
       ['deleted-owner', { contributionBasis: 10, conversionLayers: [] }],
     ]),
+    rothAssumedContributionRemaining: new Map([
+      ['owner', 150],
+      ['deleted-owner', 10],
+    ]),
+    rothCounterfactualFreeCoverConsumed: new Map([
+      ['owner', 25],
+      ['deleted-owner', 5],
+    ]),
     propertyValues: new Map([
       ['home', 500_000],
       ['deleted-property', 50_000],
@@ -222,6 +230,8 @@ function stateBytes(bindings: SimulatorAnnualPassStateBindings): string {
     iraProRata: [...bindings.iraProRata],
     iraBasisByOwner: [...bindings.iraBasisByOwner],
     rothBasis: [...bindings.rothBasis],
+    rothAssumedContributionRemaining: [...bindings.rothAssumedContributionRemaining],
+    rothCounterfactualFreeCoverConsumed: [...bindings.rothCounterfactualFreeCoverConsumed],
     propertyValues: [...bindings.propertyValues],
     hecmStates: [...bindings.hecmStates],
     insuranceCashValues: [...bindings.insuranceCashValues],
@@ -324,6 +334,12 @@ function mutateEntireAnnualPass(bindings: SimulatorAnnualPassStateBindings): voi
   roth.conversionLayers.push({ year: 2032, amount: 704, taxableAmount: 705 })
   bindings.rothBasis.delete('deleted-owner')
   bindings.rothBasis.set('added-owner', { contributionBasis: 706, conversionLayers: [] })
+  bindings.rothAssumedContributionRemaining.set('owner', 707)
+  bindings.rothAssumedContributionRemaining.delete('deleted-owner')
+  bindings.rothAssumedContributionRemaining.set('added-owner', 708)
+  bindings.rothCounterfactualFreeCoverConsumed.set('owner', 709)
+  bindings.rothCounterfactualFreeCoverConsumed.delete('deleted-owner')
+  bindings.rothCounterfactualFreeCoverConsumed.set('added-owner', 710)
 
   bindings.propertyValues.set('home', 601)
   bindings.propertyValues.delete('deleted-property')

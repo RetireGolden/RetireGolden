@@ -1,30 +1,40 @@
 import type { Detector, InsightCard } from './types.js'
+import { acaThresholdProximity } from './detectors/acaThresholdProximity.js'
 import { annuitizationHeadroom } from './detectors/annuitizationHeadroom.js'
 import { assetLocation } from './detectors/assetLocation.js'
 import { hecmBufferCandidate } from './detectors/hecmBufferCandidate.js'
 import { incomeFloorFunded } from './detectors/incomeFloorFunded.js'
 import { irmaaTierEdge } from './detectors/irmaaTierEdge.js'
+import { lawPackDrift } from './detectors/lawPackDrift.js'
+import { missingDataBasis } from './detectors/missingDataBasis.js'
 import { pensionElectionPending } from './detectors/pensionElectionPending.js'
 import { qcdEfficiency } from './detectors/qcdEfficiency.js'
 import { rothBridgeHeadroom } from './detectors/rothBridgeHeadroom.js'
 import { spendingGuardrails } from './detectors/spendingGuardrails.js'
 import { spendingHeadroom } from './detectors/spendingHeadroom.js'
 import { ssBridgeGap } from './detectors/ssBridgeGap.js'
+import { ssClaimMilestone } from './detectors/ssClaimMilestone.js'
+import { stalePlanData } from './detectors/stalePlanData.js'
 import { stateRelocation } from './detectors/stateRelocation.js'
 import { widowsPenalty } from './detectors/widowsPenalty.js'
 
 export const registry: Detector[] = [
+  acaThresholdProximity,
   annuitizationHeadroom,
   assetLocation,
   hecmBufferCandidate,
   incomeFloorFunded,
   irmaaTierEdge,
+  lawPackDrift,
+  missingDataBasis,
   pensionElectionPending,
   qcdEfficiency,
   rothBridgeHeadroom,
   spendingGuardrails,
   spendingHeadroom,
   ssBridgeGap,
+  ssClaimMilestone,
+  stalePlanData,
   stateRelocation,
   widowsPenalty,
 ]
