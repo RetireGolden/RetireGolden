@@ -295,7 +295,7 @@ describe('assumedSeedConsequentialSpill — FIFO residual walk', () => {
     const liveState: RothBasisState = { contributionBasis: 0, conversionLayers: liveLayers }
     const cfState: RothBasisState = {
       contributionBasis: 0,
-      conversionLayers: applyConversionPrincipalDebt(liveLayers, 25),
+      conversionLayers: [...applyConversionPrincipalDebt(liveLayers, 25)],
     }
     const fromAssumed = 25
     const conversions = 175
@@ -354,7 +354,7 @@ describe('assumedSeedConsequentialSpill — FIFO residual walk', () => {
     const cfCfMore = assumedSeedConsequentialSpill(
       {
         contributionBasis: 0,
-        conversionLayers: applyConversionPrincipalDebt(cfMoreLayers, 50),
+        conversionLayers: [...applyConversionPrincipalDebt(cfMoreLayers, 50)],
       },
       100, // same conversion (no new seed this draw)
       2028,
@@ -380,7 +380,7 @@ describe('assumedSeedConsequentialSpill — FIFO residual walk', () => {
     const cfLiveMore = assumedSeedConsequentialSpill(
       {
         contributionBasis: 0,
-        conversionLayers: applyConversionPrincipalDebt(liveMoreLayers, 50),
+        conversionLayers: [...applyConversionPrincipalDebt(liveMoreLayers, 50)],
       },
       50,
       2028,

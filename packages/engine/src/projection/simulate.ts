@@ -8924,7 +8924,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             rb.conversionLayers,
             priorCfConversionExtra,
           )
-          const cfState = { contributionBasis: 0, conversionLayers: cfLayers }
+          // Shallow copy: the walk only reads layers; zero-debt returns the
+          // live array itself, so the spread keeps the state type mutable
+          // without per-object cloning on this hot path.
+          const cfState = { contributionBasis: 0, conversionLayers: [...cfLayers] }
           const liveState = {
             contributionBasis: 0,
             conversionLayers: rb.conversionLayers,

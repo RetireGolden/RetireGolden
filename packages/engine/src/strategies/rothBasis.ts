@@ -167,10 +167,12 @@ export function freeRothCoverCapacity(
 export function applyConversionPrincipalDebt(
   layers: readonly RothConversionLayer[],
   debt: number,
-): RothConversionLayer[] {
+): readonly RothConversionLayer[] {
   let remaining = Math.max(0, debt)
   if (remaining <= 0) {
-    return layers.map((layer) => ({ ...layer }))
+    // Zero debt: hand back the input untouched — this runs per withdrawal in
+    // the hot simulate path and callers only walk the result.
+    return layers
   }
   const out: RothConversionLayer[] = []
   for (const layer of layers) {
