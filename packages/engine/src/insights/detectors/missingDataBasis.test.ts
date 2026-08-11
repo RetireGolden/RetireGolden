@@ -58,6 +58,8 @@ describe('missing data basis detector', () => {
   it('lists each modeled default with the exact account balance or person age', () => {
     const card = missingDataBasis.screen(context())
 
+    // Property gap is two rows (opening value + planned sale year); with wages
+    // that is six facts → cap 5, overflow lands on the last kept label.
     expect(card).toMatchObject({
       severity: 'info',
       confidence: 'high',
@@ -65,8 +67,12 @@ describe('missing data basis detector', () => {
         { label: 'Traditional IRA taxable character from assumed-zero basis (distributions)', value: '$1', year: 2026 },
         { label: 'Traditional IRA opening balance (assumed zero after-tax basis)', value: '$300,000', year: 2026 },
         { label: 'Lake home opening property value (legacy net-proceeds path)', value: '$500,000', year: 2026 },
-        { label: 'Pat age at projection start (wages assumed to continue for life)', value: '60', year: 2026 },
-        { label: 'Pat continuing open-ended wages (no retirement age; assumed for life)', value: '$100,000', year: 2026 },
+        { label: 'Lake home planned sale year (legacy net-proceeds path)', value: '2029', year: 2029 },
+        {
+          label: 'Pat age at projection start (wages assumed to continue for life)...(1 more not shown)',
+          value: '60',
+          year: 2026,
+        },
       ],
     })
   })
@@ -517,6 +523,43 @@ describe('missing data basis detector', () => {
         label: 'Lake home opening property value (legacy net-proceeds path)',
         value: '$500,000',
         year: 2026,
+      },
+    ])
+  })
+
+  it('pins two-row property evidence for omitted proceeds with opening value and planned sale year', () => {
+    // Omitted-proceeds branch: opening value alone is not a complete card —
+    // the validated plannedSaleYear is the exact triggering fact that put the
+    // property in the gap gate. Always two rows when this branch fires.
+    const ctx = context()
+    ctx.plan.accounts = [{
+      id: 'home',
+      name: 'Lake home',
+      type: 'property',
+      value: 500_000,
+      plannedSaleYear: 2029,
+      costBasis: undefined,
+    }] as never
+    ctx.plan.incomes = []
+    const year = ctx.projection.result.years[0] as {
+      ownedTraditionalIraAggregateActivity?: unknown[]
+      ownedRothIraPoolActivity?: unknown[]
+      employerRothAccountActivity?: unknown[]
+    }
+    year.ownedTraditionalIraAggregateActivity = []
+    year.ownedRothIraPoolActivity = []
+    year.employerRothAccountActivity = []
+
+    expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
+      {
+        label: 'Lake home opening property value (legacy net-proceeds path)',
+        value: '$500,000',
+        year: 2026,
+      },
+      {
+        label: 'Lake home planned sale year (legacy net-proceeds path)',
+        value: '2029',
+        year: 2029,
       },
     ])
   })
@@ -1558,6 +1601,11 @@ describe('missing data basis detector', () => {
         value: '$400,000',
         year: 2026,
       },
+      {
+        label: 'Primary home planned sale year (legacy net-proceeds path)',
+        value: '2029',
+        year: 2029,
+      },
     ])
   })
 
@@ -1673,6 +1721,11 @@ describe('missing data basis detector', () => {
         value: '$400,000',
         year: 2026,
       },
+      {
+        label: 'Primary home planned sale year (legacy net-proceeds path)',
+        value: '2029',
+        year: 2029,
+      },
     ])
   })
 
@@ -1723,6 +1776,11 @@ describe('missing data basis detector', () => {
         label: 'Primary home opening property value (legacy net-proceeds path)',
         value: '$200,000',
         year: 2026,
+      },
+      {
+        label: 'Primary home planned sale year (legacy net-proceeds path)',
+        value: '2029',
+        year: 2029,
       },
     ])
   })
@@ -1815,6 +1873,11 @@ describe('missing data basis detector', () => {
         label: 'Primary home opening property value (legacy net-proceeds path)',
         value: '$200,000',
         year: 2026,
+      },
+      {
+        label: 'Primary home planned sale year (legacy net-proceeds path)',
+        value: '2029',
+        year: 2029,
       },
     ])
   })

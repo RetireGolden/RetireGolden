@@ -3987,16 +3987,23 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         grossAmountPlanDollars: amount,
         remainingBasisPlanDollars: state.basis,
       })
-      const split = assumed === null
-        ? splitIraDistribution(state, amount)
-        : {
-          nontaxable: assumed.basisReturn,
-          taxable: assumed.ordinaryIncome,
-          next: {
-            basis: Math.max(0, state.basis - assumed.basisReturn),
-            nontaxableFraction: state.nontaxableFraction,
-          },
-        }
+      // Fallback path: settlement published no matching assumed effect, so this
+      // draw is priced with the pre-distribution pro-rata state (or full ordinary
+      // when that state cannot answer). That is the registered legacy tax path —
+      // not an executed character under assumed-zero basis. Do not publish an
+      // assumed-basis verdict here (same silence as the annuity refused-settlement
+      // site): the settlement never priced this transaction over the assumption.
+      if (assumed === null) {
+        return splitIraDistribution(state, amount)
+      }
+      const split = {
+        nontaxable: assumed.basisReturn,
+        taxable: assumed.ordinaryIncome,
+        next: {
+          basis: Math.max(0, state.basis - assumed.basisReturn),
+          nontaxableFraction: state.nontaxableFraction,
+        },
+      }
       const channel: Form8606ConsequentialChannel =
         input.calculationScope === 'form8606Line8NetConversions'
           ? 'conversions'

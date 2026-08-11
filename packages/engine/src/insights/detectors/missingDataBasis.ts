@@ -391,11 +391,21 @@ export const missingDataBasis: Detector = {
           // Plan opening value; the sim compounds property to the sale year.
           // Sale-year pre-sale value is zeroed before year-end balances publish,
           // so it is not available without recomputation — label honestly.
+          // Pair with the validated planned sale year (the exact fact that put
+          // this property in the gap gate) so the card is never a one-row value
+          // without the sale trigger that made omitted basis consequential.
           gaps.push({
             evidence: {
               label: `${account.name} opening property value (legacy net-proceeds path)`,
               value: usd(account.value),
               year: ctx.projection.startYear,
+            },
+          })
+          gaps.push({
+            evidence: {
+              label: `${account.name} planned sale year (legacy net-proceeds path)`,
+              value: String(account.plannedSaleYear),
+              year: account.plannedSaleYear,
             },
           })
         }
