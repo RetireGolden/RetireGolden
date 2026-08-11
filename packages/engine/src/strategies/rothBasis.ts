@@ -182,9 +182,11 @@ export function applyConversionPrincipalDebt(
     remaining -= take
     const left = layer.amount - take
     if (left > 0) {
-      const taxableLeft =
-        layer.amount > 0 ? layer.taxableAmount * (left / layer.amount) : 0
-      out.push({ year: layer.year, amount: left, taxableAmount: taxableLeft })
+      // Complementary subtraction, exactly as splitRothWithdrawal computes the
+      // residual — proration by (left / amount) would drift by rounding.
+      const taxableTake =
+        layer.amount > 0 ? take * (layer.taxableAmount / layer.amount) : 0
+      out.push({ year: layer.year, amount: left, taxableAmount: layer.taxableAmount - taxableTake })
     }
   }
   return out
