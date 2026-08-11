@@ -31,7 +31,6 @@ function context(fplPct = 405): DetectorContext {
 describe('ACA threshold proximity detector', () => {
   it('flags the first Marketplace year just over the published FPL cliff', () => {
     const ctx = context()
-    ctx.params.aca.maxFplPctForCredit = 350
     const card = acaThresholdProximity.screen(ctx)
 
     expect(card).toMatchObject({
