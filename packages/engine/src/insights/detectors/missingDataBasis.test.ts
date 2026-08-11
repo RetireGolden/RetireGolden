@@ -232,9 +232,14 @@ describe('missing data basis detector', () => {
     ])
   })
 
-  it('flags a treat-as-own traditional IRA with omitted basis when the published verdict binds', () => {
-    // Treat-as-own joins the owner's Form 8606 pool (isAggregatedIraThisYear);
-    // the detector must surface the gap, not skip all inherited accounts.
+  it('stays silent for a treat-as-own traditional IRA with omitted basis (seed path ignores it)', () => {
+    // Per-year aggregation (isAggregatedIraThisYear) joins treat-as-own into the
+    // Form 8606 denominator and can publish an assumed-zero verdict, but the
+    // basis SEED sites that consume nondeductibleBasis into iraBasisByOwner
+    // (simulate.ts static isAggregatedIra opener; contiguousReplay pools(plan)
+    // without tax year) never include treat-as-own. Requesting the field would
+    // ask for data that cannot affect the projection — suppress until seeding
+    // covers treat-as-own.
     const ctx = context()
     ctx.plan.accounts = [
       {
@@ -264,19 +269,29 @@ describe('missing data basis detector', () => {
       },
     ] as never
     ctx.plan.incomes = []
+    // Verdict present (post-election aggregate) must not surface the card.
+    const year = ctx.projection.result.years[0] as {
+      ownedTraditionalIraAggregateActivity?: {
+        ownerPersonId: string
+        assumedBasisConsequential?: {
+          distributions: number
+          conversions: number
+          annuityPayments: number
+        }
+      }[]
+    }
+    year.ownedTraditionalIraAggregateActivity = [
+      {
+        ownerPersonId: 'p1',
+        assumedBasisConsequential: {
+          distributions: 1,
+          conversions: 0,
+          annuityPayments: 0,
+        },
+      },
+    ]
 
-    expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
-      {
-        label: 'Treat-as-own IRA taxable character from assumed-zero basis (distributions)',
-        value: '$1',
-        year: 2026,
-      },
-      {
-        label: 'Treat-as-own IRA opening balance (assumed zero after-tax basis)',
-        value: '$300,000',
-        year: 2026,
-      },
-    ])
+    expect(missingDataBasis.screen(ctx)).toBeNull()
   })
 
   it('stays silent for a genuinely inherited traditional IRA even when a verdict is present for the owner', () => {

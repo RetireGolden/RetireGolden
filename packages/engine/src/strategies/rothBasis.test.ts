@@ -6,6 +6,7 @@ import {
   assumedSeedConsequentialSpill,
   emptyRothBasis,
   freeRothCoverCapacity,
+  ROTH_QUALIFIED_AGE,
   splitRothWithdrawal,
   type RothBasisState,
 } from './rothBasis.js'
@@ -259,6 +260,24 @@ describe('assumedSeedConsequentialSpill — FIFO residual walk', () => {
     const walked = assumedSeedConsequentialSpill(residual, 100, 2028, 55)
     expect(walked.consequentialSpill).toBeCloseTo(100, 6)
     expect(walked.conversionPrincipalConsumed).toBeCloseTo(100, 6)
+  })
+
+  it('reports zero earningsSpill when the owner is age-qualified (mirror splitRothWithdrawal)', () => {
+    // Residual past conversion layers is earnings. At ROTH_QUALIFIED_AGE those
+    // earnings are tax/penalty-free in splitRothWithdrawal, so assumed-seed
+    // spill past free conversion cover must not mark earnings as consequential
+    // (published assumed-basis verdict is silent for qualified owners).
+    const residual: RothBasisState = {
+      contributionBasis: 0,
+      conversionLayers: [{ year: 2020, amount: 40, taxableAmount: 40 }], // seasoned free
+    }
+    const walked = assumedSeedConsequentialSpill(residual, 100, 2028, ROTH_QUALIFIED_AGE)
+    expect(walked.unseasonedTaxableSpill).toBe(0)
+    expect(walked.earningsSpill).toBe(0)
+    expect(walked.consequentialSpill).toBe(0)
+    // Conversion principal still absorbs the free layer; remainder is free earnings.
+    expect(walked.conversionPrincipalConsumed).toBeCloseTo(40, 6)
+    expect(splitRothWithdrawal(residual, 100, 2028, ROTH_QUALIFIED_AGE).taxableOrdinary).toBe(0)
   })
 
   it('dual ordered walks silence the $50-seed/$25-seasoned free-prefix-on-CF-head false positive', () => {

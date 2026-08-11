@@ -246,10 +246,6 @@ function auxiliaryAlreadyPayingAtHorizonStart(args: {
     }
     const claimant = plan.household.people.find((row) => row.id === personId)
     if (claimant === undefined || streamIncome === undefined) return false
-    // Own PIA: same path as simulatePlan (entered amount, else earnings AIME).
-    // Without a usable own PIA we cannot prove a pre-horizon marital win.
-    const ownPiaMonthly = resolveOwnPiaMonthly(streamIncome, claimant)
-    if (ownPiaMonthly === null) return false
     const startYear = firstProjectionYear.year
     const claimantDob = {
       year: Number(claimant.dob.slice(0, 4)),
@@ -268,6 +264,14 @@ function auxiliaryAlreadyPayingAtHorizonStart(args: {
     }
     const bestPrior = bestMaritalBenefit(livingFormers, maritalCtx)
     if (bestPrior === null) return false
+    // Own PIA: same path as simulatePlan (entered amount, else earnings AIME).
+    // Without a usable own PIA we cannot prove a prior-year win over own — but
+    // an already-eligible living former (bestPrior) with claim age pre-horizon
+    // and a positive published aux at start means the enabler predates the
+    // horizon. Suppress as already-paying (enabling-event rule); do not treat
+    // null/unusable own PIA as a new in-horizon entitlement.
+    const ownPiaMonthly = resolveOwnPiaMonthly(streamIncome, claimant)
+    if (ownPiaMonthly === null) return true
     // Sim publishes auxiliary only when marital annual > own. Prior-year win
     // means the published start-year spousal source was already the paying
     // benefit, not a new entitlement from a first-time enabler at start.

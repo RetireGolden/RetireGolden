@@ -4,7 +4,7 @@ import type {
   OwnedRothIraPoolActivity,
   OwnedTraditionalIraAggregateActivity,
 } from '../../projection/types.js'
-import { isTreatAsOwnEffective } from '../../strategies/accountEligibility.js'
+import { isAggregatedIra } from '../../strategies/accountEligibility.js'
 
 interface DataGap {
   evidence: InsightEvidence
@@ -53,45 +53,34 @@ export const missingDataBasis: Detector = {
 
     // Traditional Form 8606 gaps: one emission per owner for the owned-IRA
     // aggregate, naming every missing-basis account that participates.
-    // Mirrors sim `isAggregatedIraThisYear`: plain owned IRAs, plus spouse
-    // treat-as-own accounts that have joined the owner's pool (never genuinely
-    // inherited-regime accounts).
+    //
+    // Seed path that actually CONSUMES `nondeductibleBasis` into
+    // `iraBasisByOwner` is the static Form 8606 opener in simulate.ts
+    // (`isAggregatedIra` only — plain owned traditional IRAs; inherited and
+    // treat-as-own accounts are skipped). Contiguous replay mirrors that seed:
+    // `pools(plan)` without a tax year admits only `isAggregatedIra`, so a
+    // treat-as-own account's entered basis never enters the opening numerator.
+    // Per-year aggregation (`isAggregatedIraThisYear`) does put post-election
+    // treat-as-own balances in the denominator / verdict set, but entering
+    // basis on those accounts still cannot affect the projection until the
+    // seed sites also consume them — suppress the card for that membership
+    // until seeding covers treat-as-own (do not request inert data).
     const traditionalMissingByOwner = new Map<
       string,
       {
         name: string
         balance: number
-        joinsAggregateInYear: (year: number) => boolean
       }[]
     >()
     for (const account of ctx.plan.accounts) {
-      if (
-        account.type !== 'traditional' ||
-        account.kind !== 'ira' ||
-        account.nondeductibleBasis !== undefined
-      ) {
+      // Mirror simulate.ts iraBasisByOwner seed: static isAggregatedIra only.
+      if (!isAggregatedIra(account) || account.nondeductibleBasis !== undefined) {
         continue
       }
-      // Genuinely inherited regime stays out of the owned Form 8606 pool.
-      // Treat-as-own joins after isTreatAsOwnEffective (and not death year).
-      let joinsAggregateInYear: (year: number) => boolean
-      if (account.inherited === undefined) {
-        joinsAggregateInYear = () => true
-      } else {
-        const inherited = account.inherited
-        joinsAggregateInYear = (year: number) =>
-          isTreatAsOwnEffective(account, year) && year !== inherited.ownerDeathYear
-      }
-      // Skip accounts that never join the aggregate in the projection horizon
-      // (permanent inherited regime, or treat-as-own not yet effective).
-      const everJoins = ctx.projection.result.years.some((y) =>
-        joinsAggregateInYear(y.year),
-      )
-      if (!everJoins) continue
       const ownerPersonId = ownerPersonIdFor(account)
       if (ownerPersonId === undefined) continue
       const list = traditionalMissingByOwner.get(ownerPersonId) ?? []
-      list.push({ name: account.name, balance: account.balance, joinsAggregateInYear })
+      list.push({ name: account.name, balance: account.balance })
       traditionalMissingByOwner.set(ownerPersonId, list)
     }
     for (const [ownerPersonId, accounts] of traditionalMissingByOwner) {
@@ -103,11 +92,7 @@ export const missingDataBasis: Detector = {
         const verdict = activity?.assumedBasisConsequential
         if (verdict === undefined) continue
 
-        // Only name accounts that join the Form 8606 pool in the verdict year.
-        const participating = accounts.filter((a) => a.joinsAggregateInYear(year.year))
-        if (participating.length === 0) continue
-
-        const nameList = participating.map((a) => a.name).join(', ')
+        const nameList = accounts.map((a) => a.name).join(', ')
         // Cite the binding channel's taxable ordinary-income character under
         // assumed-zero basis — not the year's full distribution gross (a
         // QCD-plus-conversion year cites the conversion). Figures are the
@@ -141,7 +126,7 @@ export const missingDataBasis: Detector = {
           // Verdict present but all channels zero — still nothing to cite.
           break
         }
-        const aggregateBalance = participating.reduce((sum, a) => sum + a.balance, 0)
+        const aggregateBalance = accounts.reduce((sum, a) => sum + a.balance, 0)
         gaps.push({
           evidence: {
             // Plan opening balances, not the trigger year's live figure.

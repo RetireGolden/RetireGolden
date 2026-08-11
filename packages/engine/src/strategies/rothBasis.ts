@@ -268,8 +268,12 @@ export function assumedSeedConsequentialSpill(
       conversionPrincipalConsumed += take
     }
   }
-  // Past conversion principal → earnings (taxable + penalty pre-qualified age).
-  const earningsSpill = remaining
+  // Past conversion principal → earnings. Pre-qualified: taxable + 10% penalty
+  // in splitRothWithdrawal. Qualified (age >= ROTH_QUALIFIED_AGE): earnings are
+  // tax- and penalty-free there, so residual seed past conversion layers is not
+  // consequential — earningsSpill must be 0 (same silence as a published
+  // assumed-basis verdict for a qualified owner).
+  const earningsSpill = qualified ? 0 : remaining
   return {
     consequentialSpill: unseasonedTaxableSpill + earningsSpill,
     conversionPrincipalConsumed,
