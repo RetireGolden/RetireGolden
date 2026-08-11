@@ -130,8 +130,9 @@ export const missingDataBasis: Detector = {
             },
           })
         } else {
-          // Verdict present but all channels below a visible cent — nothing to cite.
-          break
+          // Verdict present but all channels below a visible cent — skip this year
+          // and keep scanning; a later year may publish a material amount.
+          continue
         }
         const aggregateBalance = accounts.reduce((sum, a) => sum + a.balance, 0)
         gaps.push({

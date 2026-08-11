@@ -210,6 +210,58 @@ describe('missing data basis detector', () => {
     ])
   })
 
+  it('skips a sub-cent traditional verdict year and fires on a later material year', () => {
+    // Positive sub-cent residue must not emit and must not stop the owner scan.
+    const ctx = context()
+    ctx.projection.result.years = [
+      {
+        year: 2026,
+        people: [{ personId: 'p1', ageAttained: 60, alive: true }],
+        ownedTraditionalIraAggregateActivity: [
+          {
+            ownerPersonId: 'p1',
+            distributions: 0.004,
+            conversions: 0,
+            assumedBasisConsequential: {
+              distributions: 0.004,
+              conversions: 0,
+              annuityPayments: 0,
+            },
+          },
+        ],
+        ownedRothIraPoolActivity: [],
+        employerRothAccountActivity: [],
+        qualifiedAnnuityPayments: [],
+      },
+      {
+        year: 2027,
+        people: [{ personId: 'p1', ageAttained: 61, alive: true }],
+        ownedTraditionalIraAggregateActivity: [
+          {
+            ownerPersonId: 'p1',
+            distributions: 4_000,
+            conversions: 0,
+            assumedBasisConsequential: {
+              distributions: 4_000,
+              conversions: 0,
+              annuityPayments: 0,
+            },
+          },
+        ],
+        ownedRothIraPoolActivity: [],
+        employerRothAccountActivity: [],
+        qualifiedAnnuityPayments: [],
+      },
+    ] as never
+    ctx.plan.accounts = [ctx.plan.accounts[1]!]
+    ctx.plan.incomes = []
+
+    expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
+      { label: 'Traditional IRA taxable character from assumed-zero basis (distributions)', value: '$4,000', year: 2027 },
+      { label: 'Traditional IRA opening balance (assumed zero after-tax basis)', value: '$300,000', year: 2026 },
+    ])
+  })
+
   it('flags an owned IRA from published verdict even when an inherited IRA also exists', () => {
     const ctx = context()
     ctx.plan.accounts = [
