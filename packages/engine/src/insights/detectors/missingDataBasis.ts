@@ -4,6 +4,7 @@ import type {
   OwnedRothIraPoolActivity,
   OwnedTraditionalIraAggregateActivity,
 } from '../../projection/types.js'
+import { taxParameterFilingStatus } from '../../projection/types.js'
 import { isAggregatedIra } from '../../strategies/accountEligibility.js'
 import { ROTH_QUALIFIED_AGE } from '../../strategies/rothBasis.js'
 
@@ -275,7 +276,17 @@ export const missingDataBasis: Detector = {
           account.sellingCostPct === undefined &&
           account.depreciationRecapture === undefined
         ) {
-          const filingStatus = ctx.plan.household.filingStatus
+          // Sale-year filing status governs the §121 bound ($250k single /
+          // $500k joint). Survivorship can flip MFJ → single (or QSS→joint
+          // tables via taxParameterFilingStatus) between plan open and the
+          // sale; the sim prices propertySaleTax with that year's status.
+          const saleYearResult = ctx.projection.result.years.find(
+            (y) => y.year === account.plannedSaleYear,
+          )
+          const filingStatus =
+            saleYearResult?.filingStatus !== undefined
+              ? taxParameterFilingStatus(saleYearResult.filingStatus)
+              : ctx.plan.household.filingStatus
           const exclusionCap =
             ctx.params.federalTax.section121Exclusion[filingStatus] ?? 0
           const inflPct = ctx.plan.assumptions.inflationPct / 100

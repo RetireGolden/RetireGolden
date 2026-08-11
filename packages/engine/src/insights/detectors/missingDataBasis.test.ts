@@ -1560,4 +1560,119 @@ describe('missing data basis detector', () => {
       },
     ])
   })
+
+  it('suppresses a between-bounds primary-residence gap under sale-year joint §121', () => {
+    // $400k is above single ($250k) but at-or-under joint ($500k). When the
+    // sale year still files jointly, zero-basis gain is fully excluded.
+    const plan = couplePlan()
+    plan.assumptions.inflationPct = 0
+    plan.accounts = [{
+      id: 'home',
+      name: 'Primary home',
+      type: 'property',
+      value: 400_000,
+      plannedSaleYear: 2029,
+      costBasis: undefined,
+      primaryResidence: true,
+    }] as never
+    plan.incomes = []
+    const ctx = {
+      plan,
+      params: {
+        year: 2026,
+        federalTax: {
+          section121Exclusion: { single: 250_000, marriedFilingJointly: 500_000 },
+        },
+      },
+      projection: {
+        startYear: 2026,
+        result: {
+          years: [
+            {
+              year: 2026,
+              people: [
+                { personId: 'p1', ageAttained: 60, alive: true },
+                { personId: 'p2', ageAttained: 60, alive: true },
+              ],
+              filingStatus: 'marriedFilingJointly',
+              ownedTraditionalIraAggregateActivity: [],
+              ownedRothIraPoolActivity: [],
+              employerRothAccountActivity: [],
+            },
+            {
+              year: 2029,
+              people: [
+                { personId: 'p1', ageAttained: 63, alive: true },
+                { personId: 'p2', ageAttained: 63, alive: true },
+              ],
+              filingStatus: 'marriedFilingJointly',
+            },
+          ],
+        },
+      },
+    } as unknown as DetectorContext
+
+    expect(missingDataBasis.screen(ctx)).toBeNull()
+  })
+
+  it('flags a between-bounds primary-residence gap when the sale year is single after a death', () => {
+    // Same $400k home: plan opened joint ($500k exclusion would suppress), but
+    // a pre-sale death makes the sale year single ($250k). Zero-basis gain then
+    // exceeds §121, so omitted basis is consequential — must fire.
+    const plan = couplePlan()
+    plan.assumptions.inflationPct = 0
+    plan.accounts = [{
+      id: 'home',
+      name: 'Primary home',
+      type: 'property',
+      value: 400_000,
+      plannedSaleYear: 2029,
+      costBasis: undefined,
+      primaryResidence: true,
+    }] as never
+    plan.incomes = []
+    const ctx = {
+      plan,
+      params: {
+        year: 2026,
+        federalTax: {
+          section121Exclusion: { single: 250_000, marriedFilingJointly: 500_000 },
+        },
+      },
+      projection: {
+        startYear: 2026,
+        result: {
+          years: [
+            {
+              year: 2026,
+              people: [
+                { personId: 'p1', ageAttained: 60, alive: true },
+                { personId: 'p2', ageAttained: 60, alive: true },
+              ],
+              filingStatus: 'marriedFilingJointly',
+              ownedTraditionalIraAggregateActivity: [],
+              ownedRothIraPoolActivity: [],
+              employerRothAccountActivity: [],
+            },
+            {
+              year: 2029,
+              people: [
+                { personId: 'p1', ageAttained: 63, alive: true },
+                { personId: 'p2', ageAttained: 63, alive: false },
+              ],
+              filingStatus: 'single',
+            },
+          ],
+        },
+      },
+    } as unknown as DetectorContext
+
+    expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
+      {
+        label: 'Primary home opening property value (legacy net-proceeds path)',
+        value: '$400,000',
+        year: 2026,
+      },
+    ])
+  })
 })
