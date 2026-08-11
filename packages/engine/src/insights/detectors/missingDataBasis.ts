@@ -308,14 +308,22 @@ export const missingDataBasis: Detector = {
         lastProjectionYear !== undefined &&
         account.plannedSaleYear <= lastProjectionYear
       ) {
-        // Primary residence + no recapture/selling-cost fields + no legacy
-        // expectedNetProceeds: tax only changes from a supplied basis when the
-        // zero-basis gain can exceed the §121 exclusion (propertySaleTax:
-        // ordinary = min(gain, recapture), capital = gain − ordinary − exclusion).
-        // Conservative suppress: only when even zero basis yields fully-excluded
-        // gain. Max gain bound = sale-year value (zero basis, no selling costs).
-        // Sale price compounds opening value once per year from start through
-        // the sale year (sim multiplies infl before pricing the sale).
+        // Primary residence + no recapture/selling-cost fields: tax only
+        // changes from a supplied basis when the zero-basis gain can exceed
+        // the §121 exclusion (propertySaleTax: ordinary = min(gain, recapture),
+        // capital = gain − ordinary − exclusion). Conservative suppress: only
+        // when even zero basis yields fully-excluded gain. Max gain bound =
+        // sale-year value (zero basis, no selling costs). Sale price compounds
+        // opening value once per year from start through the sale year (sim
+        // multiplies infl before pricing the sale).
+        //
+        // Legacy deposits `expectedNetProceeds ?? salePrice` tax-free. When
+        // proceeds are unset, or explicitly equal the projected sale price,
+        // and §121 fully covers zero-basis gain with no positive selling
+        // costs and no recapture, exact-basis propertySaleTax yields the same
+        // tax-free netProceeds (= salePrice) and zero ordinary/capital gain —
+        // entering a basis changes nothing. Differing proceeds keep the gap:
+        // switching paths would change cash deposited even when tax is zero.
         const expectedNetProceeds = account.expectedNetProceeds
         const hasExpectedNetProceeds =
           expectedNetProceeds !== null && expectedNetProceeds !== undefined
@@ -326,7 +334,6 @@ export const missingDataBasis: Detector = {
           account.sellingCostPct !== undefined && account.sellingCostPct > 0
         if (
           account.primaryResidence === true &&
-          !hasExpectedNetProceeds &&
           !hasPositiveSellingCost &&
           account.depreciationRecapture === undefined
         ) {
@@ -362,7 +369,9 @@ export const missingDataBasis: Detector = {
           // null = sale-year product unknown from published scales: keep the
           // gap (conservative — do not suppress under an incomplete path).
           if (salePrice !== null && salePrice <= exclusionCap) {
-            continue
+            if (!hasExpectedNetProceeds || expectedNetProceeds === salePrice) {
+              continue
+            }
           }
         }
         if (hasExpectedNetProceeds) {

@@ -1916,4 +1916,86 @@ describe('missing data basis detector', () => {
 
     expect(missingDataBasis.screen(ctx)).toBeNull()
   })
+
+  it('suppresses when expectedNetProceeds equals projected sale price under full §121', () => {
+    // propertySaleTax: zero basis, no selling costs, no recapture, primary
+    // residence, salePrice ≤ exclusion → ordinary=0, capital=0, netProceeds=
+    // salePrice. Legacy deposits expectedNetProceeds tax-free. When those
+    // amounts are equal, entering a basis changes nothing — suppress.
+    const ctx = context()
+    ctx.plan.assumptions.inflationPct = 0
+    ctx.plan.accounts = [{
+      id: 'home',
+      name: 'Primary home',
+      type: 'property',
+      value: 200_000, // projected sale price with zero inflation
+      plannedSaleYear: 2029,
+      costBasis: undefined,
+      primaryResidence: true,
+      expectedNetProceeds: 200_000, // explicitly equals sale price
+    }] as never
+    ctx.plan.incomes = []
+    const year = ctx.projection.result.years[0] as {
+      ownedTraditionalIraAggregateActivity?: unknown[]
+      ownedRothIraPoolActivity?: unknown[]
+      employerRothAccountActivity?: unknown[]
+    }
+    year.ownedTraditionalIraAggregateActivity = []
+    year.ownedRothIraPoolActivity = []
+    year.employerRothAccountActivity = []
+    ctx.params = {
+      year: 2026,
+      federalTax: {
+        section121Exclusion: { single: 250_000, marriedFilingJointly: 500_000 },
+      },
+    } as never
+
+    expect(missingDataBasis.screen(ctx)).toBeNull()
+  })
+
+  it('still flags when expectedNetProceeds differs from projected sale price under full §121', () => {
+    // Same fully-excluded §121 facts, but legacy proceeds ≠ sale price: switching
+    // to the exact-basis path would deposit salePrice (tax-free) instead of the
+    // stated proceeds — entering a basis changes cash, so the gap must fire.
+    const ctx = context()
+    ctx.plan.assumptions.inflationPct = 0
+    ctx.plan.accounts = [{
+      id: 'home',
+      name: 'Primary home',
+      type: 'property',
+      value: 200_000,
+      plannedSaleYear: 2029,
+      costBasis: undefined,
+      primaryResidence: true,
+      expectedNetProceeds: 180_000, // differs from projected sale price
+    }] as never
+    ctx.plan.incomes = []
+    const year = ctx.projection.result.years[0] as {
+      ownedTraditionalIraAggregateActivity?: unknown[]
+      ownedRothIraPoolActivity?: unknown[]
+      employerRothAccountActivity?: unknown[]
+    }
+    year.ownedTraditionalIraAggregateActivity = []
+    year.ownedRothIraPoolActivity = []
+    year.employerRothAccountActivity = []
+    ctx.params = {
+      year: 2026,
+      federalTax: {
+        section121Exclusion: { single: 250_000, marriedFilingJointly: 500_000 },
+      },
+    } as never
+
+    expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
+      {
+        label: 'Primary home expected net proceeds (legacy net-proceeds path)',
+        value: '$180,000',
+        year: 2029,
+      },
+      {
+        label: 'Primary home opening property value (legacy net-proceeds path)',
+        value: '$200,000',
+        year: 2026,
+      },
+    ])
+  })
 })

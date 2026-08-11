@@ -6,10 +6,13 @@
  * evidence (GOVERNANCE silence on malformed input).
  *
  * Hour `24` is accepted only as end-of-day `24:00:00` (ISO-8601). Date resolves
- * that to the following midnight. For every accepted form — Z, numeric offset,
- * and 24:00 — year/month are taken from the parsed **instant's** UTC components
- * (so `2025-12-31T24:00:00Z` and `2025-12-31T23:30:00-02:00` are both Jan-1
- * 2026 saves).
+ * that to the following midnight. UTC leap seconds (`ss = 60`, e.g.
+ * `2016-12-31T23:59:60Z`) are accepted and normalized to the following minute
+ * (Date.parse rejects `:60` in many engines). For every accepted form — Z,
+ * numeric offset, 24:00, and leap-second — year/month are taken from the
+ * parsed **instant's** UTC components (so `2025-12-31T24:00:00Z`,
+ * `2025-12-31T23:30:00-02:00`, and `2016-12-31T23:59:60Z` are Jan-1 saves of
+ * the following year).
  */
 const FULL_ISO_TIMESTAMP =
   /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/
@@ -37,7 +40,7 @@ export function parsePlanUpdatedAtIso(iso: string): ParsedPlanUpdatedAtIso | nul
     day > 31 ||
     hour > 24 ||
     minute > 59 ||
-    second > 59
+    second > 60
   ) {
     return null
   }
@@ -67,6 +70,38 @@ export function parsePlanUpdatedAtIso(iso: string): ParsedPlanUpdatedAtIso | nul
     return {
       year: d.getUTCFullYear(),
       month: String(d.getUTCMonth() + 1).padStart(2, '0'),
+    }
+  }
+
+  // UTC leap second (ss = 60): Date.parse rejects `:60` in common engines.
+  // ISO normalizes the leap second to the following minute (23:59:60 → 00:00:00
+  // next day). Validate the civil minute at second 59, then advance one second.
+  if (second === 60) {
+    const civilIso59 =
+      `${match[1]}-${match[2]}-${match[3]}T${match[4]}:${match[5]}:59Z`
+    const civilMs59 = Date.parse(civilIso59)
+    if (!Number.isFinite(civilMs59)) return null
+    const civil59 = new Date(civilMs59)
+    if (
+      civil59.getUTCFullYear() !== year ||
+      civil59.getUTCMonth() + 1 !== month ||
+      civil59.getUTCDate() !== day ||
+      civil59.getUTCHours() !== hour ||
+      civil59.getUTCMinutes() !== minute ||
+      civil59.getUTCSeconds() !== 59
+    ) {
+      return null
+    }
+
+    // Rewrite :60[.frac] → :59 so Date.parse accepts the offset/Z form, then
+    // +1s reaches the following minute (drop leap fraction — next minute :00).
+    const as59 = iso.replace(/:60(?:\.\d+)?(Z|[+-]\d{2}:\d{2})$/, ':59$1')
+    const ms59 = Date.parse(as59)
+    if (!Number.isFinite(ms59)) return null
+    const instant = new Date(ms59 + 1000)
+    return {
+      year: instant.getUTCFullYear(),
+      month: String(instant.getUTCMonth() + 1).padStart(2, '0'),
     }
   }
 

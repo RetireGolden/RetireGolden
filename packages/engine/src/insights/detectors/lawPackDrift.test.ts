@@ -71,4 +71,14 @@ describe('law pack drift detector', () => {
       ]),
     })
   })
+
+  it('accepts a UTC leap-second stamp and attributes year from the normalized instant', () => {
+    // 2016-12-31T23:59:60Z → 2017-01-01T00:00:00Z; drift vs 2026 pack.
+    expect(lawPackDrift.screen(context('2016-12-31T23:59:60Z'))).toMatchObject({
+      severity: 'info',
+      evidence: expect.arrayContaining([
+        { label: 'Plan last-updated year', value: '2017', year: 2017 },
+      ]),
+    })
+  })
 })

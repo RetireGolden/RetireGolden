@@ -109,4 +109,16 @@ describe('stale plan data detector', () => {
       ]),
     })
   })
+
+  it('accepts a UTC leap-second stamp and attributes year/month from the normalized instant', () => {
+    // 2016-12-31T23:59:60Z normalizes to 2017-01-01T00:00:00Z (Date.parse may
+    // reject :60; parser advances second 60 to the following minute).
+    expect(stalePlanData.screen(context('2016-12-31T23:59:60Z'))).toMatchObject({
+      title: 'Plan last saved in 2017',
+      severity: 'info',
+      evidence: expect.arrayContaining([
+        { label: 'Plan last updated', value: '2017-01', year: 2017 },
+      ]),
+    })
+  })
 })
