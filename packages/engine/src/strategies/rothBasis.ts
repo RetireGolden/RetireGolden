@@ -211,6 +211,11 @@ export function applyConversionPrincipalDebt(
  * layers behind it still absorb residual seed.
  * Residual past every conversion layer is earnings and is consequential.
  *
+ * `unseasonedTaxableSpill` / `earningsSpill` break `consequentialSpill` into the
+ * two characters so callers can mirror `splitRothWithdrawal` on live vs
+ * counterfactual sides and compare apples-to-apples (conversion→earnings is
+ * CF-extra ordinary income even when both report the same total spill).
+ *
  * `conversionPrincipalConsumed` is how much of this seed landed on conversion
  * principal (not earnings) — the debt to accumulate for later draws.
  */
@@ -220,17 +225,27 @@ export function assumedSeedConsequentialSpill(
   year: number,
   age: number,
   priorConversionExtraConsumed = 0,
-): { consequentialSpill: number; conversionPrincipalConsumed: number } {
+): {
+  consequentialSpill: number
+  conversionPrincipalConsumed: number
+  unseasonedTaxableSpill: number
+  earningsSpill: number
+} {
   let remaining = Math.max(0, assumedSeedAmount)
   if (remaining <= 0) {
-    return { consequentialSpill: 0, conversionPrincipalConsumed: 0 }
+    return {
+      consequentialSpill: 0,
+      conversionPrincipalConsumed: 0,
+      unseasonedTaxableSpill: 0,
+      earningsSpill: 0,
+    }
   }
   const qualified = age >= ROTH_QUALIFIED_AGE
   const layers = applyConversionPrincipalDebt(
     state.conversionLayers,
     priorConversionExtraConsumed,
   )
-  let consequentialSpill = 0
+  let unseasonedTaxableSpill = 0
   let conversionPrincipalConsumed = 0
   for (const layer of layers) {
     if (remaining <= 0) break
@@ -248,12 +263,17 @@ export function assumedSeedConsequentialSpill(
       // mixed layer is consequential (nondeductible basis recaptures nothing).
       const taxableTake =
         layer.amount > 0 ? take * (layer.taxableAmount / layer.amount) : 0
-      consequentialSpill += taxableTake
+      unseasonedTaxableSpill += taxableTake
       remaining -= take
       conversionPrincipalConsumed += take
     }
   }
   // Past conversion principal → earnings (taxable + penalty pre-qualified age).
-  consequentialSpill += remaining
-  return { consequentialSpill, conversionPrincipalConsumed }
+  const earningsSpill = remaining
+  return {
+    consequentialSpill: unseasonedTaxableSpill + earningsSpill,
+    conversionPrincipalConsumed,
+    unseasonedTaxableSpill,
+    earningsSpill,
+  }
 }

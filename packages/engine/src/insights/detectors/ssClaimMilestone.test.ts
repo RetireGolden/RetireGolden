@@ -907,6 +907,79 @@ describe('Social Security claim milestone detector', () => {
     })
   })
 
+  it('does not treat an eligible low-PIA former spouse as already-paying when they never won over own', () => {
+    // Older eligible ex produces less than own benefit pre-horizon; a second
+    // high-PIA ex turns 62 at start and causes the first actual spousal payment.
+    // Eligibility alone would suppress the NEW start-year entitlement.
+    const ctx = context(70, 62, 0)
+    ctx.plan.incomes = [
+      {
+        id: 'ss',
+        type: 'socialSecurity',
+        personId: 'p1',
+        piaMonthly: 2_000, // own > 50% of low-PIA ex
+        earnings: null,
+        claimAge: { years: 62, months: 0 },
+        formerSpouses: [
+          {
+            id: 'low-pia-ex',
+            relationship: 'divorced',
+            dob: '1950-01-01', // eligible well before start
+            piaMonthly: 500, // 50% * factor << own
+            marriageYears: 12,
+            remarriedAtAge: null,
+          },
+          {
+            id: 'high-pia-ex',
+            relationship: 'divorced',
+            dob: '1964-01-01', // turns 62 in 2026 — first eligibility at start
+            piaMonthly: 4_000,
+            marriageYears: 12,
+            remarriedAtAge: null,
+          },
+        ],
+      },
+    ] as never
+    const years = ctx.projection.result.years as Array<{
+      year: number
+      people: { personId: string; ageAttained: number; alive: boolean }[]
+      socialSecurityStreams?: {
+        personId: string
+        streamId: string
+        source: StreamSource
+        annualAmount: number
+        claimInForce: boolean
+        preWithholdingAnnual: number
+        isSpousalSurvivorGateStream: boolean
+      }[]
+    }>
+    for (const year of years) {
+      year.socialSecurityStreams = [
+        {
+          personId: 'p1',
+          streamId: 'ss',
+          source: 'spousal',
+          annualAmount: 18_000,
+          claimInForce: true,
+          preWithholdingAnnual: 18_000,
+          isSpousalSurvivorGateStream: true,
+        },
+      ]
+    }
+
+    expect(ssClaimMilestone.screen(ctx)).toMatchObject({
+      title: "Pat's Social Security claim is imminent",
+      severity: 'attention',
+      evidence: expect.arrayContaining([
+        {
+          label: 'Modeled first claim year (claim in force)',
+          value: '2026',
+          year: 2026,
+        },
+      ]),
+    })
+  })
+
   it('stays silent when the projection does not reach a claim-in-force year', () => {
     expect(ssClaimMilestone.screen(context(67, 67, 6, false))).toBeNull()
   })
@@ -1284,6 +1357,39 @@ describe('Social Security claim milestone detector', () => {
         },
       ]),
     })
+  })
+
+  it('stays silent for unresolved empty stream rows (source none, not in force)', () => {
+    // Unresolved streams publish { source: 'none', claimInForce: false, $0 }.
+    // Milestone must treat them as unmodeled, not as filing decisions.
+    const ctx = context(66, 68, 0)
+    const years = ctx.projection.result.years as Array<{
+      year: number
+      people: { personId: string; ageAttained: number; alive: boolean }[]
+      socialSecurityStreams?: {
+        personId: string
+        streamId: string
+        source: StreamSource
+        annualAmount: number
+        claimInForce: boolean
+        preWithholdingAnnual: number
+        isSpousalSurvivorGateStream: boolean
+      }[]
+    }>
+    for (const year of years) {
+      year.socialSecurityStreams = [
+        {
+          personId: 'p1',
+          streamId: 'ss',
+          source: 'none',
+          annualAmount: 0,
+          claimInForce: false,
+          preWithholdingAnnual: 0,
+          isSpousalSurvivorGateStream: false,
+        },
+      ]
+    }
+    expect(ssClaimMilestone.screen(ctx)).toBeNull()
   })
 
   it('stays silent for a plain zero-PIA claimInForce row at filing age with no auxiliary', () => {

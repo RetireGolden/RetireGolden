@@ -1274,9 +1274,13 @@ export type SocialSecurityBenefitSource =
  * gates, spousal/survivor anchors, or SSDI path selection from plan inputs.
  *
  * One entry per `socialSecurity` income stream each year (including streams
- * not yet in force). When a person has multiple streams with unequal claim
- * ages, each stream's payments and claim-in-force state are attributed
- * exactly — not collapsed into a single per-person row.
+ * not yet in force, and **unresolved** streams with `piaMonthly: null` and no
+ * usable earnings history). Unresolved streams publish an empty not-payable
+ * row (`source: 'none'`, `claimInForce: false`, zero amounts) so consumers can
+ * correlate every configured stream id; milestone detectors treat those rows
+ * as unmodeled. When a person has multiple streams with unequal claim ages,
+ * each stream's payments and claim-in-force state are attributed exactly —
+ * not collapsed into a single per-person row.
  *
  * `isSpousalSurvivorGateStream` marks the sim's last-resolved stream for the
  * person (the stream that keys spousal/survivor auxiliary benefits).

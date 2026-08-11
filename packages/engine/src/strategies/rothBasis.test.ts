@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { describeRule } from '../rules/describeRule.js'
 import {
+  applyConversionPrincipalDebt,
   assumedSeedConsequentialSpill,
   emptyRothBasis,
   freeRothCoverCapacity,
@@ -258,5 +259,45 @@ describe('assumedSeedConsequentialSpill — FIFO residual walk', () => {
     const walked = assumedSeedConsequentialSpill(residual, 100, 2028, 55)
     expect(walked.consequentialSpill).toBeCloseTo(100, 6)
     expect(walked.conversionPrincipalConsumed).toBeCloseTo(100, 6)
+  })
+
+  it('dual ordered walks silence the $50-seed/$25-seasoned free-prefix-on-CF-head false positive', () => {
+    // Live layers: $25 seasoned free, $100 unseasoned 50% taxable, $100 nontaxable.
+    // Prior $25 seed debt removes the free head in CF. A subsequent draw takes
+    // $25 remaining seed + $175 conversion live. Both worlds incur $50
+    // penalty-sensitive principal — character-wise CF-extra is 0.
+    // Walking live free-prefix length ($25) from the CF head would hit the mixed
+    // layer and report a false $12.50 unseasoned spill.
+    const liveLayers = [
+      { year: 2020, amount: 25, taxableAmount: 25 }, // seasoned free
+      { year: 2026, amount: 100, taxableAmount: 50 }, // unseasoned 50% taxable
+      { year: 2027, amount: 100, taxableAmount: 0 }, // nontaxable free-behind
+    ]
+    const liveState: RothBasisState = { contributionBasis: 0, conversionLayers: liveLayers }
+    const cfState: RothBasisState = {
+      contributionBasis: 0,
+      conversionLayers: applyConversionPrincipalDebt(liveLayers, 25),
+    }
+    const fromAssumed = 25
+    const conversions = 175
+    const liveWalk = assumedSeedConsequentialSpill(liveState, conversions, 2028, 55)
+    const cfWalk = assumedSeedConsequentialSpill(
+      cfState,
+      conversions + fromAssumed,
+      2028,
+      55,
+    )
+    // Same unseasoned taxable ($50) both sides; no CF-extra earnings.
+    expect(liveWalk.unseasonedTaxableSpill).toBeCloseTo(50, 6)
+    expect(cfWalk.unseasonedTaxableSpill).toBeCloseTo(50, 6)
+    expect(liveWalk.earningsSpill).toBeCloseTo(0, 6)
+    expect(cfWalk.earningsSpill).toBeCloseTo(0, 6)
+    const cfExtra =
+      Math.max(0, cfWalk.earningsSpill - liveWalk.earningsSpill) +
+      Math.max(0, cfWalk.unseasonedTaxableSpill - liveWalk.unseasonedTaxableSpill)
+    expect(cfExtra).toBeCloseTo(0, 6)
+    // Buggy free-prefix-on-CF-head walk would report $12.50.
+    const freePrefixOnCfHead = assumedSeedConsequentialSpill(cfState, 25, 2028, 55)
+    expect(freePrefixOnCfHead.unseasonedTaxableSpill).toBeCloseTo(12.5, 6)
   })
 })

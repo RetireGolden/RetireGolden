@@ -1,7 +1,8 @@
 import type { Detector, InsightCard } from '../types.js'
 import type { Plan } from '../../model/plan.js'
 import type { SocialSecurityStreamActivity } from '../../projection/types.js'
-import { maritalBenefitFor } from '../../socialSecurity/maritalBenefits.js'
+import { claimFactor } from '../../socialSecurity/claimFactor.js'
+import { bestMaritalBenefit } from '../../socialSecurity/maritalBenefits.js'
 import { effectiveBirthYear, fraForBirthYear } from '../../socialSecurity/nra.js'
 
 type SocialSecurityIncome = Extract<Plan['incomes'][number], { type: 'socialSecurity' }>
@@ -146,10 +147,12 @@ function lastSsIncomeForPerson(plan: Plan, personId: string): SocialSecurityInco
  * source at start, no earlier in-horizon zero, and the enabling event already
  * present at start (co-spouse claim-in-force pre-horizon, co-spouse already
  * deceased for household survivor, a deceased former spouse on the claimant's
- * stream for former-spouse survivor, or a living former spouse already eligible
- * before the horizon). A first-year NEW entitlement — spouse claims or dies in
- * year one, or a living former spouse first reaches eligibility age (62) at
- * start — returns false so the start-year row can still fire.
+ * stream for former-spouse survivor, or a living former spouse whose marital
+ * benefit already *won* over own benefit pre-horizon — eligibility alone is
+ * not enough when the published auxiliary first appears because a different
+ * enabler arrives at start). A first-year NEW entitlement — spouse claims or
+ * dies in year one, or a living former spouse first reaches eligibility age
+ * (62) at start — returns false so the start-year row can still fire.
  */
 function auxiliaryAlreadyPayingAtHorizonStart(args: {
   entry: SocialSecurityStreamActivity
@@ -189,12 +192,17 @@ function auxiliaryAlreadyPayingAtHorizonStart(args: {
   }
 
   // Spousal: enabling event = co-spouse already claim-in-force pre-horizon, or a
-  // living former spouse already eligible before the horizon start.
+  // living former spouse whose marital benefit already won pre-horizon.
   if (coPerson === undefined) {
     // Former-spouse spousal (single household): pre-horizon only when a living
-    // former spouse was already eligible under maritalBenefitFor before start.
-    // Age-only checks treat short marriages and other ineligible records as
-    // enabling events — use the same eligibility gate the sim anchor path uses.
+    // former spouse was eligible under bestMaritalBenefit *and* that benefit
+    // actually displaced the claimant's own benefit before start — the same
+    // "larger of own vs marital" rule the sim uses when publishing the
+    // auxiliary. Mere eligibility of a low-PIA ex is not already-paying when
+    // the published start-year spousal row first appears because a second ex
+    // turns 62 at start. Tie to the published start-year row: entry is already
+    // source spousal with positive amounts (caller); require a prior-year win
+    // that could explain that already-paying source.
     // First eligibility year at start (e.g. ex turns 62 in the start year) is a
     // NEW entitlement, not already-paying — evaluate the year before start.
     const livingFormers =
@@ -205,6 +213,9 @@ function auxiliaryAlreadyPayingAtHorizonStart(args: {
     }
     const claimant = plan.household.people.find((row) => row.id === personId)
     if (claimant === undefined || streamIncome === undefined) return false
+    // Own PIA from plan inputs; earnings-only resolution is not re-derived here.
+    // Without a known own PIA we cannot prove a pre-horizon marital win.
+    if (streamIncome.piaMonthly === null) return false
     const startYear = firstProjectionYear.year
     const claimantDob = {
       year: Number(claimant.dob.slice(0, 4)),
@@ -214,16 +225,27 @@ function auxiliaryAlreadyPayingAtHorizonStart(args: {
     // Year before horizon start: already-enabling pre-horizon, not first eligibility.
     const priorYear = startYear - 1
     const claimantAgePrior = projectedAge - 1
-    return livingFormers.some(
-      (former) =>
-        maritalBenefitFor(former, {
-          claimantDob,
-          claimantClaimAge: streamIncome.claimAge,
-          claimantAge: claimantAgePrior,
-          year: priorYear,
-          claimantIsSingle: true,
-        }) !== null,
-    )
+    const maritalCtx = {
+      claimantDob,
+      claimantClaimAge: streamIncome.claimAge,
+      claimantAge: claimantAgePrior,
+      year: priorYear,
+      claimantIsSingle: true as const,
+    }
+    const bestPrior = bestMaritalBenefit(livingFormers, maritalCtx)
+    if (bestPrior === null) return false
+    // Sim publishes auxiliary only when marital annual > own. Prior-year win
+    // means the published start-year spousal source was already the paying
+    // benefit, not a new entitlement from a first-time enabler at start.
+    const ownMonthly =
+      streamIncome.piaMonthly *
+      claimFactor(
+        claimantDob.year,
+        claimantDob.month,
+        claimantDob.day,
+        streamIncome.claimAge,
+      )
+    return bestPrior.monthly > ownMonthly
   }
   const coState = firstProjectionYear.people.find(
     (row) => row.personId === coPerson.id && row.alive,

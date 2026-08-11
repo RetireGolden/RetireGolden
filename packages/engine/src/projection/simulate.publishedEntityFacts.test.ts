@@ -148,6 +148,51 @@ describe('simulatePlan published per-entity ledger facts', () => {
     expect(payments.reduce((sum, row) => sum + row.payment, 0)).toBe(year.incomes.annuity)
   })
 
+  it('publishes empty not-payable rows for unresolved Social Security streams', () => {
+    // piaMonthly null + no earnings: resolution warns and skips pay sites, but
+    // the per-stream contract still requires a row (source none / not in force).
+    // Claim age 62 so the resolved sibling is already in force at start (age 66).
+    const plan = singlePersonPlan({ dob: '1960-01-01', planningAge: 90 })
+    plan.id = 'published-facts-ss-unresolved'
+    plan.incomes = [
+      {
+        id: 'ss-unresolved',
+        type: 'socialSecurity',
+        personId: 'p1',
+        piaMonthly: null,
+        earnings: null,
+        claimAge: { years: 62, months: 0 },
+      },
+      {
+        id: 'ss-resolved',
+        type: 'socialSecurity',
+        personId: 'p1',
+        piaMonthly: 2_000,
+        earnings: null,
+        claimAge: { years: 62, months: 0 },
+      },
+    ] as never
+
+    const year = run(plan)[0]!
+    const streams = year.socialSecurityStreams ?? []
+    expect(streams).toHaveLength(2)
+    const unresolved = streams.find((row) => row.streamId === 'ss-unresolved')
+    const resolved = streams.find((row) => row.streamId === 'ss-resolved')
+    expect(unresolved).toEqual({
+      personId: 'p1',
+      streamId: 'ss-unresolved',
+      source: 'none',
+      annualAmount: 0,
+      claimInForce: false,
+      preWithholdingAnnual: 0,
+      isSpousalSurvivorGateStream: false,
+    })
+    expect(resolved).toBeDefined()
+    expect(resolved!.claimInForce).toBe(true)
+    expect(resolved!.source).toBe('own-retirement')
+    expect(resolved!.annualAmount).toBeGreaterThan(0)
+  })
+
   it('publishes per-stream Social Security with gate marker, source, and paid amount', () => {
     const plan = singlePersonPlan({ dob: '1960-01-01', planningAge: 90 })
     plan.id = 'published-facts-ss'
@@ -958,6 +1003,7 @@ describe('simulatePlan published per-entity ledger facts', () => {
       expect(owner1?.assumedBasisConsequential?.withdrawal).toBeCloseTo(100, 6)
     })
 
+
     it('flags seed-exhausted conversion take that becomes earnings after prior taxable debt', () => {
       // $100 seed re-homes into $100 unseasoned taxable (consequential; CF
       // principal gone). Next draw takes free/taxable conversion principal live
@@ -1433,6 +1479,52 @@ describe('simulatePlan published per-entity ledger facts', () => {
       const year = run(plan)[0]!
       // Inherited accounts are outside the owned Form 8606 aggregate.
       expect(year.ownedTraditionalIraAggregateActivity ?? []).toEqual([])
+    })
+
+    it('publishes Form 8606 verdict when treat-as-own IRA with omitted basis joins the aggregate', () => {
+      // Static isAggregatedIra excludes inherited IRAs, so a pre-horizon set of
+      // omitted-basis owners misses spouse treat-as-own accounts that join via
+      // isAggregatedIraThisYear after the election — false-negative verdict.
+      // Rebuild the omitted set with per-year aggregation membership.
+      const plan = singlePersonPlan({ dob: '1950-01-01', planningAge: 90 })
+      plan.id = 'published-facts-ira-treat-as-own-omitted-basis'
+      plan.assumptions.inflationPct = 0
+      plan.assumptions.defaultReturnPct = 0
+      plan.accounts = [
+        {
+          ...ownedIra('tao-ira', 300_000),
+          // nondeductibleBasis omitted → assumed zero once aggregated.
+          inherited: {
+            ownerDeathYear: 2024,
+            decedentHadStartedRmds: true,
+            beneficiary: {
+              beneficiaryClass: 'designated-individual',
+              edbCategory: 'surviving-spouse',
+              beneficiaryBirthYear: 1950,
+              soleBeneficiary: true,
+              ownerBirthYear: 1945,
+              election: 'treat-as-own',
+              spouseUnlimitedWithdrawalRight: true,
+              treatAsOwnElectionYear: 2026,
+              ownerYearOfDeathRmdSatisfied: true,
+              provenance: { source: 'test', asOf: '2026-01-01' },
+            },
+          },
+        } as Account,
+        cash(50_000),
+      ]
+
+      const year = run(plan)[0]!
+      // Post-election year: account is in the owned Form 8606 aggregate; owner RMD.
+      expect(year.rmd).toBeGreaterThan(0)
+      const owner = (year.ownedTraditionalIraAggregateActivity ?? [])
+        .find((row) => row.ownerPersonId === 'p1')
+      expect(owner).toBeDefined()
+      expect(owner!.assumedBasisConsequential).toEqual({
+        distributions: year.rmd,
+        conversions: 0,
+        annuityPayments: 0,
+      })
     })
 
     it('handles a death-year owned-IRA distribution without false silence when taxable', () => {

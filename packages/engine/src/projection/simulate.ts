@@ -67,7 +67,6 @@ import {
   ROTH_QUALIFIED_AGE,
   applyConversionPrincipalDebt,
   assumedSeedConsequentialSpill,
-  freeRothCoverCapacity,
   splitRothWithdrawal,
   type RothBasisState,
 } from '../strategies/rothBasis.js'
@@ -1103,16 +1102,16 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
   // distributions/conversions return basis.
   const iraBasisByOwner = new Map<string, number>()
   /**
-   * Owners with at least one owned IRA whose `nondeductibleBasis` was omitted
-   * (assumed zero). Observation-only for assumed-basis consequential publication.
+   * Owners whose Form 8606 aggregate includes an IRA with omitted
+   * `nondeductibleBasis` (assumed zero). Observation-only for assumed-basis
+   * consequential publication. Rebuilt each projection year with the same
+   * per-year aggregation gate as settlement (`isAggregatedIraThisYear`) so
+   * spouse treat-as-own IRAs that join the owned pool mid-horizon are covered.
    */
   const ownersWithOmittedNondeductibleBasis = new Set<string>()
   for (const account of plan.accounts) {
     if (!isAggregatedIra(account)) continue
     const ownerId = account.ownerPersonId ?? primary.id
-    if (account.nondeductibleBasis === undefined) {
-      ownersWithOmittedNondeductibleBasis.add(ownerId)
-    }
     const basis = account.nondeductibleBasis ?? 0
     if (basis <= 0) continue
     iraBasisByOwner.set(ownerId, (iraBasisByOwner.get(ownerId) ?? 0) + basis)
@@ -2567,10 +2566,25 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         (preWithholdingSumByPerson.get(entry.personId) ?? 0) + entry.preWithholdingAnnual,
       )
     }
+    // One row per configured socialSecurity stream (including unresolved
+    // streams with no usable PIA/earnings — empty not-payable rows so the
+    // per-stream contract is complete; detectors treat those as unmodeled).
     const socialSecurityStreams: SocialSecurityStreamActivity[] = []
     for (const stream of plan.incomes) {
       if (stream.type !== 'socialSecurity') continue
-      if (resolvedPiaByStreamId.get(stream.id) === undefined) continue
+      const resolved = resolvedPiaByStreamId.get(stream.id) !== undefined
+      if (!resolved) {
+        socialSecurityStreams.push({
+          personId: stream.personId,
+          streamId: stream.id,
+          source: 'none',
+          annualAmount: 0,
+          claimInForce: false,
+          preWithholdingAnnual: 0,
+          isSpousalSurvivorGateStream: false,
+        })
+        continue
+      }
       const entry = ensureSsStreamPub(stream.id, stream.personId)
       const gateStreamId = ssStreamByPerson.get(stream.personId)?.streamId
       const preSum = preWithholdingSumByPerson.get(stream.personId) ?? 0
@@ -4015,6 +4029,17 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       if (!isTreatAsOwnEffective(account, year)) return false
       if (year === account.inherited.ownerDeathYear) return false
       return true
+    }
+    // Year-scoped omitted-basis owners: same aggregation membership the
+    // Form 8606 settlement uses this year (includes post-election treat-as-own).
+    ownersWithOmittedNondeductibleBasis.clear()
+    for (const account of plan.accounts) {
+      if (!isAggregatedIraThisYear(account)) continue
+      // isAggregatedIraThisYear is not a type predicate (S2 post-flip accounts
+      // stay TraditionalAccount with inherited set); re-narrow for basis field.
+      if (account.type !== 'traditional' || account.kind !== 'ira') continue
+      if (account.nondeductibleBasis !== undefined) continue
+      ownersWithOmittedNondeductibleBasis.add(account.ownerPersonId ?? primary.id)
     }
     const followsOwnerRmdsThisYear = (account: Account): boolean => {
       if (account.type !== 'traditional') return false
@@ -8867,10 +8892,14 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           // difference (e.g. $50 prior seed debt then $100 seasoned conversion
           // take: live residual is empty so post-draw debt is a no-op, hiding
           // that CF only had $50 principal for the shared conversion).
-          // 2) Evaluate this draw against that CF state (shared conversion,
-          //    then seed spill).
+          // 2) Price fully ordered draws on BOTH sides with the same FIFO walk
+          //    as splitRothWithdrawal — live conversion amount against live
+          //    layers, CF amount (conversion + assumed seed, which is free
+          //    contribution live) against debt-adjusted CF layers. Do NOT walk
+          //    the live free-prefix length from the CF head (that misattributes
+          //    free dollars onto CF mixed layers). CF-extra spill is the
+          //    character-wise excess (earnings / unseasoned taxable).
           // 3) Extend the tracker only with this draw's seed re-homing debt.
-          const freeCover = freeRothCoverCapacity(rb, year, age)
           const cfLayers = applyConversionPrincipalDebt(
             rb.conversionLayers,
             priorCfConversionExtra,
@@ -8880,31 +8909,36 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             (sum, layer) => sum + layer.amount,
             0,
           )
-          let consequentialSpill: number
+          const liveState = {
+            contributionBasis: 0,
+            conversionLayers: rb.conversionLayers,
+          }
+          // Mirror splitRothWithdrawal per-layer consumption on both sides.
+          const liveWalk = assumedSeedConsequentialSpill(
+            liveState,
+            split.conversions,
+            year,
+            age,
+            0,
+          )
+          const cfWalk = assumedSeedConsequentialSpill(
+            cfState,
+            split.conversions + fromAssumed,
+            year,
+            age,
+            0,
+          )
+          const consequentialSpill =
+            Math.max(0, cfWalk.earningsSpill - liveWalk.earningsSpill) +
+            Math.max(0, cfWalk.unseasonedTaxableSpill - liveWalk.unseasonedTaxableSpill)
           let conversionExtraByThisDraw: number
           if (fromAssumed > 0) {
-            // Shared live conversion take reduces CF principal first (FIFO);
-            // free live conversion that is not free in CF is consequential, and
-            // conversion past CF principal becomes earnings (ordinary income).
-            // Seed then walks the CF residual — same post-draw free-behind
-            // behavior as exhausting a taxable blocker, but from CF layers.
+            // Seed re-homing debt only: shared conversion principal present in
+            // both worlds is not CF-extra. Walk seed against CF residual after
+            // the shared live conversion take.
             const sharedConversion = Math.min(
               split.conversions,
               cfPrincipalRemaining,
-            )
-            const freeConversionTake = Math.min(split.conversions, freeCover)
-            const freeWalk = assumedSeedConsequentialSpill(
-              cfState,
-              freeConversionTake,
-              year,
-              age,
-              0,
-            )
-            // freeWalk already counts free-take earnings past CF principal;
-            // add only shortfall from conversion beyond that free take.
-            const nonFreeConversionShortfall = Math.max(
-              0,
-              split.conversions - Math.max(cfPrincipalRemaining, freeConversionTake),
             )
             const cfAfterShared = {
               contributionBasis: 0,
@@ -8920,37 +8954,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
               age,
               0,
             )
-            consequentialSpill =
-              freeWalk.consequentialSpill +
-              nonFreeConversionShortfall +
-              seedWalk.consequentialSpill
             conversionExtraByThisDraw = seedWalk.conversionPrincipalConsumed
           } else {
-            // Seed already exhausted: live free-conversion take only stays free
-            // in the counterfactual up to remaining free cover after prior
-            // re-homing. Also compare the full live conversion take against CF
-            // remaining conversion principal (all layers, not just free cover)
-            // — when prior debt removed unseasoned taxable layers, a live
-            // conversion take can become earnings in CF (ordinary income
-            // change, not just penalty). Shortfall is consequential.
-            //
-            // Shared conversion principal still present in both worlds is
-            // already reflected in live freeCover / residual layers. Only
-            // counterfactual-EXTRA principal stays on the tracker.
-            const freeConversionTake = Math.min(split.conversions, freeCover)
-            const freeWalk = assumedSeedConsequentialSpill(
-              cfState,
-              freeConversionTake,
-              year,
-              age,
-              0,
-            )
-            const nonFreeConversionShortfall = Math.max(
-              0,
-              split.conversions - Math.max(cfPrincipalRemaining, freeConversionTake),
-            )
-            consequentialSpill =
-              freeWalk.consequentialSpill + nonFreeConversionShortfall
             conversionExtraByThisDraw = 0
           }
           if (conversionExtraByThisDraw > 0) {
