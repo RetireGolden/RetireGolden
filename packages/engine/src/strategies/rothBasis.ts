@@ -193,14 +193,15 @@ export function applyConversionPrincipalDebt(
 /**
  * How much of an assumed-seed dollar amount would land on taxable/penalized
  * remainders if those dollars walked conversion layers FIFO (mirroring
- * `splitRothWithdrawal` per-layer consumption) after a live draw's conversion
- * take has already been applied to residual balances.
+ * `splitRothWithdrawal` per-layer consumption).
  *
- * `priorConversionExtraConsumed` is the cumulative conversion principal the
- * assumed-zero counterfactual has already spent extra via prior seed re-homing
- * (free prefix, unseasoned taxable, and free-behind). It is applied as a FIFO
- * debt against residual layers before this seed walks, so the counterfactual's
- * layer state matches post-re-homing reality.
+ * Callers that track multi-draw counterfactual debt should materialize the
+ * counterfactual layer state first (`applyConversionPrincipalDebt` on pre-draw
+ * layers), apply any shared live conversion take against that CF state, then
+ * pass the resulting residual here with `priorConversionExtraConsumed` left at
+ * 0 — applying prior debt to post-draw residual can erase the current draw's
+ * real CF difference. The optional prior-debt argument remains for unit tests
+ * that walk a single residual snapshot.
  *
  * Free layers (seasoned, wholly nontaxable unseasoned, or age-qualified) absorb
  * without consequence. Unseasoned taxable takes are consequential only for the

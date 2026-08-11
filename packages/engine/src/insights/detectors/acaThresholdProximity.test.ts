@@ -146,6 +146,26 @@ describe('ACA threshold proximity detector', () => {
     })
   })
 
+  it('formats non-integral published dollar amounts with cents', () => {
+    // Math.round drops $1.49 → $1; keep cents for any non-integral amount.
+    const ctx = context(405)
+    ctx.projection.result.years[0]!.aca = {
+      ...ctx.projection.result.years[0]!.aca!,
+      householdMagi: 81_000.49,
+      federalPovertyLine: 20_000.5,
+      cliffState: 'at-cliff',
+      modeledAllowablePtc: 1.49,
+    }
+
+    expect(acaThresholdProximity.screen(ctx)?.evidence).toEqual(
+      expect.arrayContaining([
+        { label: 'Household MAGI in 2027', value: '$81,000.49', year: 2027 },
+        { label: 'Federal poverty line in 2027', value: '$20,000.50', year: 2027 },
+        { label: 'Modeled premium tax credit at stake', value: '$1.49', year: 2027 },
+      ]),
+    )
+  })
+
   it('stays silent at the cliff when the model has no premium tax credit to lose', () => {
     const ctx = context(400.0000000001)
     ctx.projection.result.years[0]!.aca = {

@@ -842,6 +842,71 @@ describe('Social Security claim milestone detector', () => {
     expect(ssClaimMilestone.screen(ctx)).toBeNull()
   })
 
+  it('does not treat an ineligible living former spouse as a pre-horizon enabling event', () => {
+    // Age-only gate would treat a long-ago-born ex as already-eligible pre-horizon
+    // even when marriageYears < 10 cannot enable divorced-spousal under
+    // maritalBenefitFor. Positive spousal at start must still surface.
+    const ctx = context(70, 62, 0)
+    ctx.plan.incomes = [
+      {
+        id: 'ss',
+        type: 'socialSecurity',
+        personId: 'p1',
+        piaMonthly: 0,
+        earnings: null,
+        claimAge: { years: 62, months: 0 },
+        formerSpouses: [
+          {
+            id: 'former-spouse',
+            relationship: 'divorced',
+            dob: '1950-01-01', // age 76 at 2026 — age-only would pass
+            piaMonthly: 2_000,
+            marriageYears: 9, // short of DIVORCED_MIN_MARRIAGE_YEARS
+            remarriedAtAge: null,
+          },
+        ],
+      },
+    ] as never
+    const years = ctx.projection.result.years as Array<{
+      year: number
+      people: { personId: string; ageAttained: number; alive: boolean }[]
+      socialSecurityStreams?: {
+        personId: string
+        streamId: string
+        source: StreamSource
+        annualAmount: number
+        claimInForce: boolean
+        preWithholdingAnnual: number
+        isSpousalSurvivorGateStream: boolean
+      }[]
+    }>
+    for (const year of years) {
+      year.socialSecurityStreams = [
+        {
+          personId: 'p1',
+          streamId: 'ss',
+          source: 'spousal',
+          annualAmount: 12_000,
+          claimInForce: true,
+          preWithholdingAnnual: 12_000,
+          isSpousalSurvivorGateStream: true,
+        },
+      ]
+    }
+
+    expect(ssClaimMilestone.screen(ctx)).toMatchObject({
+      title: "Pat's Social Security claim is imminent",
+      severity: 'attention',
+      evidence: expect.arrayContaining([
+        {
+          label: 'Modeled first claim year (claim in force)',
+          value: '2026',
+          year: 2026,
+        },
+      ]),
+    })
+  })
+
   it('stays silent when the projection does not reach a claim-in-force year', () => {
     expect(ssClaimMilestone.screen(context(67, 67, 6, false))).toBeNull()
   })

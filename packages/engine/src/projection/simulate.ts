@@ -8861,59 +8861,96 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         const priorCfConversionExtra =
           rothCounterfactualFreeCoverConsumed.get(key) ?? 0
         if (fromAssumed > 0 || priorCfConversionExtra > 0) {
-          // Free-cover capacity is a FIFO prefix of conversion layers (seasoned
-          // + wholly nontaxable unseasoned; stops at first unseasoned taxable).
-          // Observe residual balances after this draw's conversion take
-          // (split.next) — do not re-derive per-layer consumption. Pre-draw
-          // freeCover alone is wrong when the live draw exhausts an unseasoned
-          // taxable blocker: that layer is gone in both worlds, so a later
-          // nontaxable layer becomes reachable cover for assumed-seed spill.
-          // When the live draw only *partially* consumes that blocker, prefix
-          // free cover is still zero, but the counterfactual finishes the
-          // taxable remainder then reaches free layers behind it — so walk
-          // residual layers FIFO and count only seed that lands on
-          // taxable/penalized remainders (not the whole seed).
+          // 1) Materialize CF layer state from PRE-DRAW layers with prior debt
+          // applied first — never charge prior debt against split.next after the
+          // live conversion take. Applying debt after can erase real CF
+          // difference (e.g. $50 prior seed debt then $100 seasoned conversion
+          // take: live residual is empty so post-draw debt is a no-op, hiding
+          // that CF only had $50 principal for the shared conversion).
+          // 2) Evaluate this draw against that CF state (shared conversion,
+          //    then seed spill).
+          // 3) Extend the tracker only with this draw's seed re-homing debt.
           const freeCover = freeRothCoverCapacity(rb, year, age)
+          const cfLayers = applyConversionPrincipalDebt(
+            rb.conversionLayers,
+            priorCfConversionExtra,
+          )
+          const cfState = { contributionBasis: 0, conversionLayers: cfLayers }
+          const cfPrincipalRemaining = cfLayers.reduce(
+            (sum, layer) => sum + layer.amount,
+            0,
+          )
           let consequentialSpill: number
           let conversionExtraByThisDraw: number
           if (fromAssumed > 0) {
-            const walked = assumedSeedConsequentialSpill(
-              split.next,
+            // Shared live conversion take reduces CF principal first (FIFO);
+            // free live conversion that is not free in CF is consequential, and
+            // conversion past CF principal becomes earnings (ordinary income).
+            // Seed then walks the CF residual — same post-draw free-behind
+            // behavior as exhausting a taxable blocker, but from CF layers.
+            const sharedConversion = Math.min(
+              split.conversions,
+              cfPrincipalRemaining,
+            )
+            const freeConversionTake = Math.min(split.conversions, freeCover)
+            const freeWalk = assumedSeedConsequentialSpill(
+              cfState,
+              freeConversionTake,
+              year,
+              age,
+              0,
+            )
+            // freeWalk already counts free-take earnings past CF principal;
+            // add only shortfall from conversion beyond that free take.
+            const nonFreeConversionShortfall = Math.max(
+              0,
+              split.conversions - Math.max(cfPrincipalRemaining, freeConversionTake),
+            )
+            const cfAfterShared = {
+              contributionBasis: 0,
+              conversionLayers: applyConversionPrincipalDebt(
+                cfLayers,
+                sharedConversion,
+              ),
+            }
+            const seedWalk = assumedSeedConsequentialSpill(
+              cfAfterShared,
               fromAssumed,
               year,
               age,
-              priorCfConversionExtra,
+              0,
             )
-            consequentialSpill = walked.consequentialSpill
-            conversionExtraByThisDraw = walked.conversionPrincipalConsumed
+            consequentialSpill =
+              freeWalk.consequentialSpill +
+              nonFreeConversionShortfall +
+              seedWalk.consequentialSpill
+            conversionExtraByThisDraw = seedWalk.conversionPrincipalConsumed
           } else {
-            // Seed already exhausted: live free-conversion take only stays
-            // free in the counterfactual up to remaining cover after prior
-            // re-homing (FIFO debt for free + taxable + free-behind). Excess
-            // would hit taxable/penalized layers without the assumed seed.
+            // Seed already exhausted: live free-conversion take only stays free
+            // in the counterfactual up to remaining free cover after prior
+            // re-homing. Also compare the full live conversion take against CF
+            // remaining conversion principal (all layers, not just free cover)
+            // — when prior debt removed unseasoned taxable layers, a live
+            // conversion take can become earnings in CF (ordinary income
+            // change, not just penalty). Shortfall is consequential.
             //
-            // Shared conversion principal consumed in BOTH live and
-            // assumed-zero worlds is already reflected in live freeCover /
-            // residual layers. Only counterfactual-EXTRA principal stays on
-            // the tracker — apply it as FIFO debt against pre-draw layers to
-            // recover CF free capacity (including free-behind once CF cleared
-            // a taxable blocker the live residual still shows).
+            // Shared conversion principal still present in both worlds is
+            // already reflected in live freeCover / residual layers. Only
+            // counterfactual-EXTRA principal stays on the tracker.
             const freeConversionTake = Math.min(split.conversions, freeCover)
-            const counterfactualCoverRemaining = freeRothCoverCapacity(
-              {
-                contributionBasis: 0,
-                conversionLayers: applyConversionPrincipalDebt(
-                  rb.conversionLayers,
-                  priorCfConversionExtra,
-                ),
-              },
+            const freeWalk = assumedSeedConsequentialSpill(
+              cfState,
+              freeConversionTake,
               year,
               age,
-            )
-            consequentialSpill = Math.max(
               0,
-              freeConversionTake - counterfactualCoverRemaining,
             )
+            const nonFreeConversionShortfall = Math.max(
+              0,
+              split.conversions - Math.max(cfPrincipalRemaining, freeConversionTake),
+            )
+            consequentialSpill =
+              freeWalk.consequentialSpill + nonFreeConversionShortfall
             conversionExtraByThisDraw = 0
           }
           if (conversionExtraByThisDraw > 0) {

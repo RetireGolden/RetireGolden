@@ -912,6 +912,104 @@ describe('simulatePlan published per-entity ledger facts', () => {
       expect(spill!).toBeLessThan(100)
     })
 
+    it('applies prior conversion debt before the current draw ($50 seed then $100 seasoned)', () => {
+      // Prior draw re-homes $50 seed into $100 free seasoned cover (tracker=50).
+      // Next draw takes the remaining $50 seed plus $100 free conversion.
+      // Applying prior debt to post-draw residual erases the difference: live
+      // residual is empty after the $100 conversion, so post-draw debt is a
+      // no-op and only the $50 seed flags — missing that CF had only $50
+      // principal left for the shared $100 conversion. Materialize CF first.
+      const plan = singlePersonPlan({ dob: '1971-01-01', planningAge: 90 })
+      plan.id = 'published-facts-roth-prior-debt-before-draw-50-100'
+      plan.assumptions.inflationPct = 0
+      plan.assumptions.defaultReturnPct = 0
+      plan.expenses.baseAnnual = 0
+      plan.expenses.oneTimeGoals = [
+        { id: 'd1', label: 'draw1', year: TAX_YEAR, amount: 50 },
+        { id: 'd2', label: 'draw2', year: TAX_YEAR + 1, amount: 150 },
+      ]
+      plan.accounts = [
+        {
+          ...ownedIra('trad-basis', 100),
+          nondeductibleBasis: 100, // wholly nontaxable free cover
+        },
+        rothIra('roth', 100, 'p1'), // assumed seed $100 ($50 then $50)
+        cash(0),
+      ]
+      plan.strategies.rothConversion = {
+        mode: 'manual',
+        conversions: [{ year: TAX_YEAR, amount: 100 }],
+      }
+      plan.incomes = [] as never
+
+      const years = run(plan, TAX_YEAR + 1)
+      const y0 = years.find((y) => y.year === TAX_YEAR)!
+      const y1 = years.find((y) => y.year === TAX_YEAR + 1)!
+      expect(y0.people[0]!.ageAttained).toBeLessThan(60)
+      expect(y1.people[0]!.ageAttained).toBeLessThan(60)
+      expect(y0.withdrawals.roth).toBeCloseTo(50, 6)
+      expect(y1.withdrawals.roth).toBeCloseTo(150, 6)
+      const owner0 = (y0.ownedRothIraPoolActivity ?? []).find((row) => row.ownerPersonId === 'p1')
+      const owner1 = (y1.ownedRothIraPoolActivity ?? []).find((row) => row.ownerPersonId === 'p1')
+      // Draw 1: $50 seed absorbed by $100 free cover → silence; CF cover left $50.
+      expect(owner0?.assumedBasisConsequential).toBeUndefined()
+      // Draw 2: $50 seed + $100 free conversion. CF only has $50 principal left
+      // → $100 shortfall (seed $50 + unshared conversion $50), not merely $50.
+      expect(owner1?.assumedBasisConsequential?.withdrawal).toBeCloseTo(100, 6)
+    })
+
+    it('flags seed-exhausted conversion take that becomes earnings after prior taxable debt', () => {
+      // $100 seed re-homes into $100 unseasoned taxable (consequential; CF
+      // principal gone). Next draw takes free/taxable conversion principal live
+      // from residual layers the live residual still shows — but CF has no
+      // conversion principal left, so the take is earnings (ordinary income),
+      // not merely a free-cover/penalty difference. Free-cover-only comparison
+      // silences (freeConversionTake=0 when taxable heads the queue).
+      const plan = singlePersonPlan({ dob: '1971-01-01', planningAge: 90 })
+      plan.id = 'published-facts-roth-seed-exhaust-taxable-debt-earnings'
+      plan.assumptions.inflationPct = 0
+      plan.assumptions.defaultReturnPct = 0
+      plan.expenses.baseAnnual = 0
+      plan.expenses.oneTimeGoals = [
+        { id: 'd1', label: 'draw1', year: TAX_YEAR + 1, amount: 100 },
+        { id: 'd2', label: 'draw2', year: TAX_YEAR + 2, amount: 50 },
+      ]
+      plan.accounts = [
+        traditionalAccount('401k', 100, 'p1', 'employer'), // pure taxable conversion layer
+        {
+          ...ownedIra('trad-basis', 50),
+          nondeductibleBasis: 50, // later free cover so the second draw has principal live
+        },
+        rothIra('roth', 100, 'p1'), // assumed seed $100 — exhausted by draw 1
+        cash(0),
+      ]
+      plan.strategies.rothConversion = {
+        mode: 'manual',
+        conversions: [
+          { year: TAX_YEAR, amount: 100 },
+          { year: TAX_YEAR + 1, amount: 50 },
+        ],
+      }
+      plan.incomes = [] as never
+
+      const years = run(plan, TAX_YEAR + 2)
+      const y1 = years.find((y) => y.year === TAX_YEAR + 1)!
+      const y2 = years.find((y) => y.year === TAX_YEAR + 2)!
+      expect(y1.people[0]!.ageAttained).toBeLessThan(60)
+      expect(y2.people[0]!.ageAttained).toBeLessThan(60)
+      expect(y1.withdrawals.roth).toBeGreaterThanOrEqual(100)
+      expect(y2.withdrawals.roth).toBeGreaterThanOrEqual(50)
+      const owner1 = (y1.ownedRothIraPoolActivity ?? []).find((row) => row.ownerPersonId === 'p1')
+      const owner2 = (y2.ownedRothIraPoolActivity ?? []).find((row) => row.ownerPersonId === 'p1')
+      // Draw 1: $100 seed onto pure taxable → full consequential spill; CF principal spent.
+      expect(owner1?.assumedBasisConsequential?.withdrawal).toBeCloseTo(100, 6)
+      // Draw 2: seed gone; live conversion principal would be earnings in CF.
+      expect(owner2?.assumedBasisConsequential?.withdrawal).toBeGreaterThan(0)
+      expect(owner2!.assumedBasisConsequential!.withdrawal).toBeLessThanOrEqual(
+        y2.withdrawals.roth,
+      )
+    })
+
     it('keeps the counterfactual live after $100 seed re-homes into a $100 taxable layer', () => {
       // $100 assumed seed + $100 unseasoned taxable + $200 free behind.
       // Draw 1 ($100) re-homes the entire seed onto the taxable layer

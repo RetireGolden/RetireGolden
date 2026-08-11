@@ -1,7 +1,7 @@
 import type { Detector, InsightCard } from '../types.js'
 import type { Plan } from '../../model/plan.js'
 import type { SocialSecurityStreamActivity } from '../../projection/types.js'
-import { DIVORCED_EX_MIN_AGE } from '../../socialSecurity/maritalBenefits.js'
+import { maritalBenefitFor } from '../../socialSecurity/maritalBenefits.js'
 import { effectiveBirthYear, fraForBirthYear } from '../../socialSecurity/nra.js'
 
 type SocialSecurityIncome = Extract<Plan['incomes'][number], { type: 'socialSecurity' }>
@@ -189,25 +189,41 @@ function auxiliaryAlreadyPayingAtHorizonStart(args: {
   }
 
   // Spousal: enabling event = co-spouse already claim-in-force pre-horizon, or a
-  // living former spouse already eligible (≥62) before the horizon start.
+  // living former spouse already eligible before the horizon start.
   if (coPerson === undefined) {
     // Former-spouse spousal (single household): pre-horizon only when a living
-    // former spouse was already eligible before start. Age-at-start == 62 means
-    // the ex first reaches eligibility in the start year — NEW entitlement.
+    // former spouse was already eligible under maritalBenefitFor before start.
+    // Age-only checks treat short marriages and other ineligible records as
+    // enabling events — use the same eligibility gate the sim anchor path uses.
+    // First eligibility year at start (e.g. ex turns 62 in the start year) is a
+    // NEW entitlement, not already-paying — evaluate the year before start.
     const livingFormers =
       streamIncome?.formerSpouses?.filter((former) => former.relationship === 'divorced') ?? []
     if (livingFormers.length === 0) {
       // No living former on the stream: treat positive past claim age as pre-horizon.
       return true
     }
+    const claimant = plan.household.people.find((row) => row.id === personId)
+    if (claimant === undefined || streamIncome === undefined) return false
     const startYear = firstProjectionYear.year
-    // Enabling eligibility predates the horizon when any living former already
-    // had age > 62 at start (turned 62 in a prior year). Exactly 62 at start is
-    // first eligibility year — not already-paying.
-    return livingFormers.some((former) => {
-      const ageAtStart = startYear - Number(former.dob.slice(0, 4))
-      return ageAtStart > DIVORCED_EX_MIN_AGE
-    })
+    const claimantDob = {
+      year: Number(claimant.dob.slice(0, 4)),
+      month: Number(claimant.dob.slice(5, 7)),
+      day: Number(claimant.dob.slice(8, 10)),
+    }
+    // Year before horizon start: already-enabling pre-horizon, not first eligibility.
+    const priorYear = startYear - 1
+    const claimantAgePrior = projectedAge - 1
+    return livingFormers.some(
+      (former) =>
+        maritalBenefitFor(former, {
+          claimantDob,
+          claimantClaimAge: streamIncome.claimAge,
+          claimantAge: claimantAgePrior,
+          year: priorYear,
+          claimantIsSingle: true,
+        }) !== null,
+    )
   }
   const coState = firstProjectionYear.people.find(
     (row) => row.personId === coPerson.id && row.alive,

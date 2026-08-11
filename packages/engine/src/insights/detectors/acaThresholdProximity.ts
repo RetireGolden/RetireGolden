@@ -1,8 +1,19 @@
 import type { Detector, InsightCard } from '../types.js'
 import { packForYear } from '../../params/index.js'
 
+/**
+ * Format a published dollar amount for evidence. Integral amounts stay whole
+ * dollars; any non-integral amount keeps exact cents (e.g. $1.49, not $1).
+ */
 function usd(amount: number): string {
-  return `$${Math.round(amount).toLocaleString()}`
+  const cents = Math.round(amount * 100)
+  if (cents % 100 === 0) {
+    return `$${(cents / 100).toLocaleString('en-US')}`
+  }
+  return `$${(cents / 100).toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`
 }
 
 /**
