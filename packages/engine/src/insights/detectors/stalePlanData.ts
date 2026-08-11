@@ -34,21 +34,24 @@ function planAsOf(ctx: Parameters<Detector['screen']>[0]): { year: number; month
   }
 
   // Deterministic Date consistency: reject impossible calendar dates that the
-  // regex accepts (e.g. 2025-02-30) via UTC component round-trip on Z stamps.
-  const ms = Date.parse(iso)
+  // regex accepts (e.g. 2025-02-30). Civil components are re-parsed as a Z stamp
+  // so both Z-suffixed and numeric-offset forms get the same UTC round-trip
+  // (offset stamps must not skip calendar validity).
+  if (!Number.isFinite(Date.parse(iso))) return null
+  const civilIso =
+    `${match[1]}-${match[2]}-${match[3]}T${match[4]}:${match[5]}:${match[6]}Z`
+  const ms = Date.parse(civilIso)
   if (!Number.isFinite(ms)) return null
-  if (iso.endsWith('Z')) {
-    const d = new Date(ms)
-    if (
-      d.getUTCFullYear() !== year ||
-      d.getUTCMonth() + 1 !== month ||
-      d.getUTCDate() !== day ||
-      d.getUTCHours() !== hour ||
-      d.getUTCMinutes() !== minute ||
-      d.getUTCSeconds() !== second
-    ) {
-      return null
-    }
+  const d = new Date(ms)
+  if (
+    d.getUTCFullYear() !== year ||
+    d.getUTCMonth() + 1 !== month ||
+    d.getUTCDate() !== day ||
+    d.getUTCHours() !== hour ||
+    d.getUTCMinutes() !== minute ||
+    d.getUTCSeconds() !== second
+  ) {
+    return null
   }
 
   return { year, month: match[2]! }

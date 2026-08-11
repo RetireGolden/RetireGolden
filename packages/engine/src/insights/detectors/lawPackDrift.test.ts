@@ -41,4 +41,10 @@ describe('law pack drift detector', () => {
     expect(lawPackDrift.screen(context('2025-02-not-a-date'))).toBeNull()
     expect(lawPackDrift.screen(context('2025-02-30T12:00:00.000Z'))).toBeNull()
   })
+
+  it('stays silent for an impossible calendar day on a numeric-offset stamp', () => {
+    // Calendar consistency must cover ±offset forms, not only Z-suffixed stamps.
+    expect(lawPackDrift.screen(context('2025-02-30T12:00:00+05:00'))).toBeNull()
+    expect(lawPackDrift.screen(context('2025-02-30T12:00:00.000+05:00'))).toBeNull()
+  })
 })

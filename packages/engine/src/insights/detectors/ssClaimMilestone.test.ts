@@ -622,7 +622,7 @@ describe('Social Security claim milestone detector', () => {
       title: "Pat's Social Security claim is imminent",
       severity: 'info',
       evidence: expect.arrayContaining([
-        { label: 'Modeled first claim year (claim in force; partial when claim months > 0)', value: '2028', year: 2028 },
+        { label: 'Modeled first claim year (claim in force)', value: '2028', year: 2028 },
       ]),
     })
   })
@@ -779,7 +779,7 @@ describe('Social Security claim milestone detector', () => {
       severity: 'attention',
       evidence: expect.arrayContaining([
         {
-          label: 'Modeled first claim year (claim in force; partial when claim months > 0)',
+          label: 'Modeled first claim year (claim in force)',
           value: '2026',
           year: 2026,
         },
@@ -1068,6 +1068,7 @@ describe('Social Security claim milestone detector', () => {
         { label: "Pat's modeled claim age (configured filing age)", value: '71 years 0 months' },
         // dob 1960 → age 67 in 2027 (annual-ledger); fixture people.ageAttained is independent.
         { label: "Pat's attained age in first payable year", value: '67', year: 2027 },
+        // age 67 < claimAge 71 → payableMonths 0 (< 12) keeps the partial footnote.
         { label: 'Modeled first claim year (claim in force; partial when claim months > 0)', value: '2027', year: 2027 },
         { label: "Pat's modeled benefit in first claim year (own retirement)", value: '$24,000', year: 2027 },
       ]),
@@ -1133,7 +1134,7 @@ describe('Social Security claim milestone detector', () => {
         { label: "Pat's modeled claim age (configured filing age)", value: '68 years 0 months' },
         { label: "Pat's attained age in first payable year", value: '68', year: 2028 },
         {
-          label: 'Modeled first claim year (claim in force; partial when claim months > 0)',
+          label: 'Modeled first claim year (claim in force)',
           value: '2028',
           year: 2028,
         },
@@ -1207,7 +1208,7 @@ describe('Social Security claim milestone detector', () => {
       evidence: expect.arrayContaining([
         { label: "Pat's modeled claim age (configured filing age)", value: '67 years 0 months' },
         {
-          label: 'Modeled first claim year (claim in force; partial when claim months > 0)',
+          label: 'Modeled first claim year (claim in force)',
           value: '2027',
           year: 2027,
         },
@@ -1218,6 +1219,73 @@ describe('Social Security claim milestone detector', () => {
         },
       ]),
     })
+  })
+
+  it('stays silent when an SSDI sibling is zeroed by auxiliary override at its claim-age year', () => {
+    // SSDI sets claimInForce at its pay site; auxiliary override then zeroes
+    // source/amounts on the sibling. That is not a retirement filing — the
+    // override-filing-transition path must exclude SSDI-source-suppressed streams.
+    const ctx = context(66, 67, 0)
+    ctx.plan.incomes = [
+      {
+        id: 'ss-aux',
+        type: 'socialSecurity',
+        personId: 'p1',
+        piaMonthly: 0,
+        earnings: null,
+        claimAge: { years: 62, months: 0 },
+        formerSpouses: [
+          {
+            id: 'former-spouse',
+            relationship: 'divorced',
+            dob: '1950-01-01',
+            piaMonthly: 3_000,
+            marriageYears: 12,
+            remarriedAtAge: null,
+          },
+        ],
+      },
+      {
+        id: 'ss-ssdi',
+        type: 'socialSecurity',
+        personId: 'p1',
+        piaMonthly: 2_000,
+        earnings: null,
+        claimAge: { years: 67, months: 0 },
+        disability: { onsetAge: 55 },
+      },
+    ] as never
+    ctx.projection.result.years = Array.from({ length: 3 }, (_, offset) => {
+      const y = 2026 + offset
+      const atClaimAgeYear = y >= 2027
+      return {
+        year: y,
+        people: [{ personId: 'p1', ageAttained: 66 + offset, alive: true }],
+        socialSecurityStreams: [
+          {
+            personId: 'p1',
+            streamId: 'ss-aux',
+            source: 'spousal' as StreamSource,
+            annualAmount: 18_000,
+            claimInForce: true,
+            preWithholdingAnnual: 18_000,
+            isSpousalSurvivorGateStream: true,
+          },
+          {
+            personId: 'p1',
+            streamId: 'ss-ssdi',
+            // Override zeroed: claimInForce remains from SSDI pay site; not a filing.
+            source: 'none' as StreamSource,
+            annualAmount: 0,
+            claimInForce: atClaimAgeYear,
+            preWithholdingAnnual: 0,
+            isSpousalSurvivorGateStream: false,
+          },
+        ],
+      }
+    }) as never
+
+    expect(ssClaimMilestone.screen(ctx)).toBeNull()
   })
 
   it('reports attained age at the first payable year when an auxiliary benefit pays after configured claim age', () => {
@@ -1284,7 +1352,8 @@ describe('Social Security claim milestone detector', () => {
         { label: "Pat's modeled claim age (configured filing age)", value: '62 years 0 months' },
         { label: "Pat's attained age in first payable year", value: '68', year: 2028 },
         {
-          label: 'Modeled first claim year (claim in force; partial when claim months > 0)',
+          // Pre-horizon filing age; first payable year receives all 12 months.
+          label: 'Modeled first claim year (claim in force)',
           value: '2028',
           year: 2028,
         },
@@ -1424,7 +1493,8 @@ describe('Social Security claim milestone detector', () => {
       evidence: expect.arrayContaining([
         { label: "Pat's modeled claim age (configured filing age)", value: '62 years 0 months' },
         {
-          label: 'Modeled first claim year (claim in force; partial when claim months > 0)',
+          // Filed pre-horizon (claim age 62); first aux year pays all 12 months.
+          label: 'Modeled first claim year (claim in force)',
           value: '2026',
           year: 2026,
         },

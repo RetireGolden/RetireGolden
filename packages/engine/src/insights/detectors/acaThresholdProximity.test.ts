@@ -46,7 +46,7 @@ describe('ACA threshold proximity detector', () => {
         { label: 'Household MAGI in 2027', value: '$81,000', year: 2027 },
         { label: 'Federal poverty line in 2027', value: '$20,000', year: 2027 },
         { label: 'FPL percentage in 2027', value: '405.00%', year: 2027 },
-        { label: 'ACA credit boundary', value: '400.00%' },
+        { label: 'ACA credit boundary', value: '400.00%', year: 2027 },
         { label: 'FPL overage above credit boundary in 2027', value: '5.0 percentage points', year: 2027 },
       ],
     })
@@ -71,7 +71,7 @@ describe('ACA threshold proximity detector', () => {
     const card = acaThresholdProximity.screen(context(400.01))
 
     expect(card?.evidence).toContainEqual({ label: 'FPL percentage in 2027', value: '400.01%', year: 2027 })
-    expect(card?.evidence).toContainEqual({ label: 'ACA credit boundary', value: '400.00%' })
+    expect(card?.evidence).toContainEqual({ label: 'ACA credit boundary', value: '400.00%', year: 2027 })
     expect(card?.evidence).toContainEqual({
       label: 'FPL overage above credit boundary in 2027',
       value: '0.010 percentage points',
@@ -85,7 +85,7 @@ describe('ACA threshold proximity detector', () => {
     const card = acaThresholdProximity.screen(context(400.001))
 
     expect(card?.evidence).toContainEqual({ label: 'FPL percentage in 2027', value: '400.00%', year: 2027 })
-    expect(card?.evidence).toContainEqual({ label: 'ACA credit boundary', value: '400.00%' })
+    expect(card?.evidence).toContainEqual({ label: 'ACA credit boundary', value: '400.00%', year: 2027 })
     expect(card?.evidence).toContainEqual({
       label: 'FPL overage above credit boundary in 2027',
       value: '0.0010 percentage points',
@@ -98,7 +98,7 @@ describe('ACA threshold proximity detector', () => {
     const card = acaThresholdProximity.screen(context(400.00004))
 
     expect(card?.evidence).toContainEqual({ label: 'FPL percentage in 2027', value: '400.00%', year: 2027 })
-    expect(card?.evidence).toContainEqual({ label: 'ACA credit boundary', value: '400.00%' })
+    expect(card?.evidence).toContainEqual({ label: 'ACA credit boundary', value: '400.00%', year: 2027 })
     expect(card?.evidence).toContainEqual({
       label: 'FPL overage above credit boundary in 2027',
       value: '0.000040 percentage points',
@@ -124,7 +124,7 @@ describe('ACA threshold proximity detector', () => {
         { label: 'Household MAGI in 2027', value: '$81,000', year: 2027 },
         { label: 'Federal poverty line in 2027', value: '$20,000', year: 2027 },
         { label: 'FPL percentage in 2027', value: '400.00%', year: 2027 },
-        { label: 'ACA credit boundary', value: '400.00%' },
+        { label: 'ACA credit boundary', value: '400.00%', year: 2027 },
         { label: 'Modeled premium tax credit at stake', value: '$1,250', year: 2027 },
       ],
     })

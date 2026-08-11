@@ -20,6 +20,35 @@ function isFilingAgeTransition(
   return streamIncome !== undefined && year === dobYear + streamIncome.claimAge.years
 }
 
+/**
+ * Annual-ledger payable months in a year at `ageAttained` given `claimAge`
+ * (same rule as simulatePlan): claim year truncates to months after the claim
+ * month; later years pay all 12.
+ */
+function payableMonthsAtAge(
+  ageAttained: number,
+  claimAge: { years: number; months: number },
+): number {
+  if (ageAttained < claimAge.years) return 0
+  if (ageAttained > claimAge.years) return 12
+  return Math.max(0, 12 - claimAge.months)
+}
+
+/**
+ * True when this stream is on a valid SSDI path (disability onset before FRA).
+ * SSDI is not a retirement filing; claimInForce rows zeroed by an auxiliary
+ * override on an SSDI sibling must not enter the filing-age transition path.
+ */
+function isSsdiPathStream(
+  streamIncome: SocialSecurityIncome | undefined,
+  personFraYears: number,
+): boolean {
+  return (
+    streamIncome?.disability?.onsetAge !== undefined &&
+    streamIncome.disability.onsetAge < personFraYears
+  )
+}
+
 function formatAge(totalMonths: number): string {
   const years = Math.floor(totalMonths / 12)
   const months = totalMonths % 12
@@ -341,10 +370,19 @@ export const ssClaimMilestone: Detector = {
             // override zeroes source/amounts. Treat as a filing event when the
             // stream's claim age falls in this year. Unmodeled-zero skip requires
             // both amounts ≤ 0 AND no filing-age transition.
+            // SSDI is not a filing: a valid SSDI sibling (or any stream that
+            // published source ssdi) zeroed by auxiliary override must not
+            // enter this path even when claimAge.years coincides with the year.
             const streamIncome = ctx.plan.incomes.find(
               (candidate): candidate is SocialSecurityIncome =>
                 candidate.type === 'socialSecurity' && candidate.id === entry.streamId,
             )
+            if (
+              isSsdiPathStream(streamIncome, personFraYears) ||
+              streamPublishedSsdiThrough(projectionYears, entry.streamId, year.year)
+            ) {
+              return false
+            }
             return isFilingAgeTransition(streamIncome, year.year, birthYear)
           },
         )
@@ -391,9 +429,13 @@ export const ssClaimMilestone: Detector = {
       const preWithholding = firstClaimStream.preWithholdingAnnual
       const sourceLabel = formatSource(firstClaimStream.source)
       const fullyWithheld = paidAmount <= 0 && preWithholding > 0
+      const ssdiSuppressed =
+        isSsdiPathStream(income, personFraYears) ||
+        streamPublishedSsdiThrough(projectionYears, firstClaimStream.streamId, firstClaimYear)
       const zeroedFiling =
         paidAmount <= 0 &&
         preWithholding <= 0 &&
+        !ssdiSuppressed &&
         isFilingAgeTransition(income, firstClaimYear, birthYear)
       // Unmodeled zero/zero without a filing-age transition should not reach here.
       if (paidAmount <= 0 && preWithholding <= 0 && !zeroedFiling) continue
@@ -447,6 +489,19 @@ export const ssClaimMilestone: Detector = {
         : `The model uses a configured claim age of ${claimAgeLabel} for ${person.name}, with the first modeled payable year ${firstClaimYear} ` +
           `(attained age ${ageAtFirstPayableYear}). The modeled benefit amount depends on the claim age — confirm it against the Social Security analysis before filing.`
 
+      // Partial-year wording only when the filing actually truncates months in
+      // the first payable year (payableMonthsAtAge < 12). Pre-horizon filers
+      // receiving all 12 months in an auxiliary first-benefit year must not
+      // carry the "partial when claim months > 0" qualifier.
+      const firstYearPayableMonths = payableMonthsAtAge(
+        ageAtFirstPayableYear,
+        income.claimAge,
+      )
+      const firstClaimYearLabel =
+        firstYearPayableMonths < 12
+          ? 'Modeled first claim year (claim in force; partial when claim months > 0)'
+          : 'Modeled first claim year (claim in force)'
+
       selectedCard = {
         id: 'ss-claim-milestone',
         category: 'social-security',
@@ -475,7 +530,7 @@ export const ssClaimMilestone: Detector = {
                 },
               ]),
           {
-            label: 'Modeled first claim year (claim in force; partial when claim months > 0)',
+            label: firstClaimYearLabel,
             value: String(firstClaimYear),
             year: firstClaimYear,
           },

@@ -1115,9 +1115,13 @@ describe('simulatePlan published per-entity ledger facts', () => {
       expect(owner!.assumedBasisConsequential!.annuityPayments).toBe(0)
     })
 
-    it('publishes Form 8606 annuity-payment channel for IRA-funded qualified annuity', () => {
+    it('publishes no Form 8606 annuity verdict when settlement refuses/no-effect for the payment', () => {
+      // ASSUMPTION-FREE path: payment stays fully ordinary when the annual
+      // Form 8606 settlement publishes nothing for the qualified-annuity
+      // payment. Publishing an assumed-basis verdict would claim a consequence
+      // the settlement never priced over assumed-zero basis.
       const plan = singlePersonPlan({ dob: '1960-01-01', planningAge: 90 })
-      plan.id = 'published-facts-annuity-verdict'
+      plan.id = 'published-facts-annuity-refused-settlement-silence'
       plan.assumptions.inflationPct = 0
       plan.assumptions.defaultReturnPct = 0
       plan.expenses.baseAnnual = 5_000
@@ -1145,11 +1149,10 @@ describe('simulatePlan published per-entity ledger facts', () => {
 
       const year = run(plan)[0]!
       expect(year.qualifiedAnnuityPayments?.[0]?.payment).toBe(1_200)
+      // Payment still flows (fully ordinary legacy); no assumed-basis channel.
       const owner = (year.ownedTraditionalIraAggregateActivity ?? [])
         .find((row) => row.ownerPersonId === 'p1')
-      expect(owner).toBeDefined()
-      // Annuity payment is ordinary when settlement has no character; channel is annuity.
-      expect(owner!.assumedBasisConsequential!.annuityPayments).toBeGreaterThan(0)
+      expect(owner?.assumedBasisConsequential?.annuityPayments ?? 0).toBe(0)
     })
 
     it('publishes Form 8606 annuity-payment channel post-death when the contract still pays', () => {

@@ -56,4 +56,17 @@ describe('stale plan data detector', () => {
     expect(stalePlanData.screen(context('2025-02-not-a-date'))).toBeNull()
     expect(stalePlanData.screen(context('2025-02-30T12:00:00.000Z'))).toBeNull()
   })
+
+  it('stays silent for an impossible calendar day on a numeric-offset stamp', () => {
+    // Calendar consistency must cover ±offset forms, not only Z-suffixed stamps.
+    expect(stalePlanData.screen(context('2025-02-30T12:00:00+05:00'))).toBeNull()
+    expect(stalePlanData.screen(context('2025-02-30T12:00:00.000+05:00'))).toBeNull()
+  })
+
+  it('accepts a valid numeric-offset stamp for the data-gap check', () => {
+    expect(stalePlanData.screen(context('2025-06-15T12:00:00+05:00'))).toMatchObject({
+      title: 'Plan last saved in 2025',
+      severity: 'info',
+    })
+  })
 })

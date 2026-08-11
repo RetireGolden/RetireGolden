@@ -5237,14 +5237,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         grossAmountPlanDollars: payment.grossAmountPlanDollars,
       })
       if (assumed === null) {
-        // No settlement character: payment stays fully ordinary (registered legacy).
-        noteForm8606Taxable(
-          payment.poolOwnerPersonId,
-          payment.grossAmountPlanDollars,
-          'annuityPayments',
-        )
+        // No settlement character: payment stays fully ordinary (registered
+        // ASSUMPTION-FREE legacy). Do not publish an assumed-basis verdict —
+        // the settlement never priced this payment over assumed-zero basis.
         continue
       }
+      // Settlement priced the payment: ordinary share under the year's fraction
+      // (assumed-zero basis → full ordinary) is the consequential channel.
       noteForm8606Taxable(
         payment.poolOwnerPersonId,
         Math.max(0, payment.grossAmountPlanDollars - assumed.basisReturn),
