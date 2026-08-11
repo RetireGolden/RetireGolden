@@ -1060,13 +1060,15 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
   const rothAssumedContributionRemaining = new Map<string, number>()
   /**
    * Observation-only: conversion principal the assumed-zero counterfactual has
-   * already spent extra via assumed-seed re-homing (per pool) — free-cover
-   * prefix, unseasoned taxable layers, and free layers behind a taxable
-   * blocker. Live residual layers still show those dollars (seed was
-   * contributions live), so later draws apply this FIFO debt against live
-   * layers to recover the counterfactual's remaining free cover. Stays live
-   * after the assumed seed is spent so post-exhaustion free-conversion takes
-   * still evaluate against the correct CF layer state.
+   * spent extra vs live (per pool) — seed re-homing into free-cover, unseasoned
+   * taxable layers, and free layers behind a taxable blocker, net of later
+   * live conversion that catches up on the same FIFO principal. Live residual
+   * layers still show CF-extra dollars until live withdraws them, so later
+   * draws apply this debt against live layers to recover the counterfactual's
+   * remaining free cover. Reduced when live consumption overlaps that debt
+   * (both worlds have then spent it); raised only by new CF-extra principal.
+   * Stays live after the assumed seed is spent so post-exhaustion free-
+   * conversion takes still evaluate against the correct CF layer state.
    * Per-attempt scoped with the other Roth observation maps.
    */
   const rothCounterfactualFreeCoverConsumed = new Map<string, number>()
@@ -8908,16 +8910,17 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           //    the live free-prefix length from the CF head (that misattributes
           //    free dollars onto CF mixed layers). CF-extra spill is the
           //    character-wise excess (earnings / unseasoned taxable).
-          // 3) Extend the tracker only with this draw's seed re-homing debt.
+          // 3) Reconcile the tracker: CF principal this walk consumed minus the
+          //    live conversion take from the split (per-layer FIFO figures).
+          //    Seed re-homing raises debt; live catch-up on principal CF already
+          //    spent lowers it. Increment-only left stale debt after live
+          //    consumed the same layers (e.g. $50 seed / $25 principal → $25
+          //    debt, then live takes that $25 conversion: both worlds spent it).
           const cfLayers = applyConversionPrincipalDebt(
             rb.conversionLayers,
             priorCfConversionExtra,
           )
           const cfState = { contributionBasis: 0, conversionLayers: cfLayers }
-          const cfPrincipalRemaining = cfLayers.reduce(
-            (sum, layer) => sum + layer.amount,
-            0,
-          )
           const liveState = {
             contributionBasis: 0,
             conversionLayers: rb.conversionLayers,
@@ -8940,38 +8943,20 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           const consequentialSpill =
             Math.max(0, cfWalk.earningsSpill - liveWalk.earningsSpill) +
             Math.max(0, cfWalk.unseasonedTaxableSpill - liveWalk.unseasonedTaxableSpill)
-          let conversionExtraByThisDraw: number
-          if (fromAssumed > 0) {
-            // Seed re-homing debt only: shared conversion principal present in
-            // both worlds is not CF-extra. Walk seed against CF residual after
-            // the shared live conversion take.
-            const sharedConversion = Math.min(
+          // CF-extra principal outstanding = prior extra + CF principal this
+          // draw consumed − live conversion principal this draw (split figure).
+          // Equivalent to seed-only debt when CF still has residual for the
+          // shared conversion; reduces when live catch-up exceeds new CF spend.
+          const nextCfConversionExtra = Math.max(
+            0,
+            priorCfConversionExtra +
+              cfWalk.conversionPrincipalConsumed -
               split.conversions,
-              cfPrincipalRemaining,
-            )
-            const cfAfterShared = {
-              contributionBasis: 0,
-              conversionLayers: applyConversionPrincipalDebt(
-                cfLayers,
-                sharedConversion,
-              ),
-            }
-            const seedWalk = assumedSeedConsequentialSpill(
-              cfAfterShared,
-              fromAssumed,
-              year,
-              age,
-              0,
-            )
-            conversionExtraByThisDraw = seedWalk.conversionPrincipalConsumed
+          )
+          if (nextCfConversionExtra > 0) {
+            rothCounterfactualFreeCoverConsumed.set(key, nextCfConversionExtra)
           } else {
-            conversionExtraByThisDraw = 0
-          }
-          if (conversionExtraByThisDraw > 0) {
-            rothCounterfactualFreeCoverConsumed.set(
-              key,
-              priorCfConversionExtra + conversionExtraByThisDraw,
-            )
+            rothCounterfactualFreeCoverConsumed.delete(key)
           }
           if (consequentialSpill > 0) {
             if (key.startsWith('rothira:')) {

@@ -1042,6 +1042,81 @@ describe('simulatePlan published per-entity ledger facts', () => {
       expect(owner1?.assumedBasisConsequential?.withdrawal).toBeCloseTo(100, 6)
     })
 
+    it('clears conversion debt when live catches up on CF-spent principal ($50 seed / $25 principal)', () => {
+      // Draw 1: $50 assumed seed against only $25 free conversion principal →
+      // CF spends the $25 principal (debt=25) plus $25 earnings (flagged).
+      // Draw 2: live takes that same $25 conversion (catch-up). Both worlds have
+      // now spent it; debt must drop to 0 (increment-only left $25 stale).
+      // Draw 3: subsequent $100 free conversion with debt cleared must not
+      // phantom-flag — the pin for catch-up reconciliation.
+      //
+      // Bracket-targeted order with ordinary income already past the 10% band
+      // prefers Roth before residual traditional, so the year-3 conversion
+      // source is not drained by the year-1/2 Roth draws.
+      const plan = singlePersonPlan({ dob: '1971-01-01', planningAge: 90 })
+      plan.id = 'published-facts-roth-debt-catchup-50-seed-25-principal'
+      plan.assumptions.inflationPct = 0
+      plan.assumptions.defaultReturnPct = 0
+      plan.expenses.baseAnnual = 80_000
+      plan.expenses.oneTimeGoals = [
+        { id: 'd1', label: 'draw1', year: TAX_YEAR + 1, amount: 50 },
+        { id: 'd2', label: 'draw2', year: TAX_YEAR + 2, amount: 25 },
+        { id: 'd3', label: 'draw3', year: TAX_YEAR + 3, amount: 100 },
+      ]
+      plan.accounts = [
+        {
+          ...ownedIra('trad-basis', 25),
+          nondeductibleBasis: 25, // year-0 wholly nontaxable free cover ($25)
+        },
+        {
+          ...ownedIra('trad-later', 100),
+          nondeductibleBasis: 100, // year-3 free cover after live catch-up
+        },
+        rothIra('roth', 50, 'p1'), // assumed seed $50
+        cash(0),
+      ]
+      plan.strategies.withdrawalOrder = { mode: 'bracketTargeted', bracketPct: 10 }
+      plan.strategies.rothConversion = {
+        mode: 'manual',
+        conversions: [
+          { year: TAX_YEAR, amount: 25 },
+          { year: TAX_YEAR + 3, amount: 100 },
+        ],
+      }
+      plan.incomes = [
+        {
+          type: 'recurring',
+          id: 'pension',
+          label: 'Pension',
+          annualAmount: 80_000,
+          startYear: null,
+          endYear: null,
+          inflationAdjusted: false,
+          taxTreatment: 'ordinary',
+        },
+      ] as never
+
+      const years = run(plan, TAX_YEAR + 3)
+      const y1 = years.find((y) => y.year === TAX_YEAR + 1)!
+      const y2 = years.find((y) => y.year === TAX_YEAR + 2)!
+      const y3 = years.find((y) => y.year === TAX_YEAR + 3)!
+      expect(y1.people[0]!.ageAttained).toBeLessThan(60)
+      expect(y2.people[0]!.ageAttained).toBeLessThan(60)
+      expect(y3.people[0]!.ageAttained).toBeLessThan(60)
+      expect(y1.withdrawals.roth).toBeCloseTo(50, 6)
+      expect(y2.withdrawals.roth).toBeCloseTo(25, 6)
+      expect(y3.withdrawals.roth).toBeCloseTo(100, 6)
+      // Residual traditional must survive until the year-3 conversion.
+      expect(y1.withdrawals.traditional).toBe(0)
+      expect(y2.withdrawals.traditional).toBe(0)
+      const owner1 = (y1.ownedRothIraPoolActivity ?? []).find((row) => row.ownerPersonId === 'p1')
+      const owner3 = (y3.ownedRothIraPoolActivity ?? []).find((row) => row.ownerPersonId === 'p1')
+      // Draw 1: $50 seed / $25 free principal → $25 earnings CF-extra.
+      expect(owner1?.assumedBasisConsequential?.withdrawal).toBeCloseTo(25, 6)
+      // Draw 3 (subsequent after catch-up): debt cleared → silence.
+      // Stale $25 debt would truncate the fresh $100 CF principal and flag.
+      expect(owner3?.assumedBasisConsequential).toBeUndefined()
+    })
 
     it('flags seed-exhausted conversion take that becomes earnings after prior taxable debt', () => {
       // $100 seed re-homes into $100 unseasoned taxable (consequential; CF
