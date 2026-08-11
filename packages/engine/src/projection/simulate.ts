@@ -8908,8 +8908,12 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           //    layers, CF amount (conversion + assumed seed, which is free
           //    contribution live) against debt-adjusted CF layers. Do NOT walk
           //    the live free-prefix length from the CF head (that misattributes
-          //    free dollars onto CF mixed layers). CF-extra spill is the
-          //    character-wise excess (earnings / unseasoned taxable).
+          //    free dollars onto CF mixed layers). Character-wise CF-vs-live
+          //    gaps (earnings / unseasoned taxable) are tracked both ways: a
+          //    consequence in either direction (supplying the omitted seed
+          //    would CHANGE character up or down) is a verdict. One-way
+          //    Math.max discarded the live-more path; L1 abs of both
+          //    characters double-counts pure recharacterization.
           // 3) Reconcile the tracker: CF principal this walk consumed minus the
           //    live conversion take from the split (per-layer FIFO figures).
           //    Seed re-homing raises debt; live catch-up on principal CF already
@@ -8940,9 +8944,18 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             age,
             0,
           )
-          const consequentialSpill =
+          // Both directions: CF-over-live and live-over-CF character gaps.
+          // Verdict magnitude is the larger one-way gap (not L1 sum).
+          const cfOverLive =
             Math.max(0, cfWalk.earningsSpill - liveWalk.earningsSpill) +
             Math.max(0, cfWalk.unseasonedTaxableSpill - liveWalk.unseasonedTaxableSpill)
+          const liveOverCf =
+            Math.max(0, liveWalk.earningsSpill - cfWalk.earningsSpill) +
+            Math.max(
+              0,
+              liveWalk.unseasonedTaxableSpill - cfWalk.unseasonedTaxableSpill,
+            )
+          const consequentialSpill = Math.max(cfOverLive, liveOverCf)
           // CF-extra principal outstanding = prior extra + CF principal this
           // draw consumed − live conversion principal this draw (split figure).
           // Equivalent to seed-only debt when CF still has residual for the

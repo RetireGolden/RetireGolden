@@ -258,8 +258,40 @@ export const missingDataBasis: Detector = {
         lastProjectionYear !== undefined &&
         account.plannedSaleYear <= lastProjectionYear
       ) {
+        // Primary residence + no recapture/selling-cost fields + no legacy
+        // expectedNetProceeds: tax only changes from a supplied basis when the
+        // zero-basis gain can exceed the §121 exclusion (propertySaleTax:
+        // ordinary = min(gain, recapture), capital = gain − ordinary − exclusion).
+        // Conservative suppress: only when even zero basis yields fully-excluded
+        // gain. Max gain bound = sale-year value (zero basis, no selling costs).
+        // Sale price compounds opening value once per year from start through
+        // the sale year (sim multiplies infl before pricing the sale).
         const expectedNetProceeds = account.expectedNetProceeds
-        const hasExpectedNetProceeds = expectedNetProceeds !== null && expectedNetProceeds !== undefined
+        const hasExpectedNetProceeds =
+          expectedNetProceeds !== null && expectedNetProceeds !== undefined
+        if (
+          account.primaryResidence === true &&
+          !hasExpectedNetProceeds &&
+          account.sellingCostPct === undefined &&
+          account.depreciationRecapture === undefined
+        ) {
+          const filingStatus = ctx.plan.household.filingStatus
+          const exclusionCap =
+            ctx.params.federalTax.section121Exclusion[filingStatus] ?? 0
+          const inflPct = ctx.plan.assumptions.inflationPct / 100
+          let salePrice = account.value
+          for (
+            let year = ctx.projection.startYear;
+            year <= account.plannedSaleYear;
+            year += 1
+          ) {
+            salePrice *= 1 + inflPct
+          }
+          // Zero basis, no selling costs, no recapture → gain = salePrice.
+          if (salePrice <= exclusionCap) {
+            continue
+          }
+        }
         if (hasExpectedNetProceeds) {
           gaps.push({
             evidence: {

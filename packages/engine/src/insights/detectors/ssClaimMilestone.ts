@@ -121,9 +121,14 @@ function resolveOwnAnnualSum(
 /**
  * True when a former-spouse marital benefit already beat the claimant's summed
  * own benefit in the year before the horizon start — the same "larger of own
- * vs marital" gate the sim uses when publishing the auxiliary (compare annual
- * former benefit on the paying stream's payable months against
- * `ssOwnByPerson` sum).
+ * vs marital" gate the sim uses when publishing the auxiliary.
+ *
+ * Former-spouse records may be split across multiple SS streams for the same
+ * claimant. The sim walks every stream's formers against the rolling
+ * `ssOwnByPerson` sum; this gate mirrors that by taking the best prior-year
+ * former annual across ALL of the claimant's streams (each priced on that
+ * stream's claim age / payable months) and comparing it to the summed own
+ * benefit.
  *
  * Returns:
  *  - true  → prior-year win (already-paying enabler)
@@ -135,15 +140,14 @@ function resolveOwnAnnualSum(
 function formerSpouseWonOverOwnPriorYear(args: {
   plan: Plan
   personId: string
-  streamIncome: SocialSecurityIncome
   projectedAge: number
   startYear: number
-  formers: readonly FormerSpouse[]
+  /** Relationship filter matching the caller's enabling-event arm. */
+  formerRelationship: FormerSpouse['relationship']
   claimantIsSingle: boolean
 }): boolean | null {
-  const { plan, personId, streamIncome, projectedAge, startYear, formers, claimantIsSingle } =
+  const { plan, personId, projectedAge, startYear, formerRelationship, claimantIsSingle } =
     args
-  if (formers.length === 0) return false
   const claimant = plan.household.people.find((row) => row.id === personId)
   if (claimant === undefined) return false
 
@@ -154,21 +158,35 @@ function formerSpouseWonOverOwnPriorYear(args: {
   }
   const priorYear = startYear - 1
   const claimantAgePrior = projectedAge - 1
-  const bestPrior = bestMaritalBenefit([...formers], {
-    claimantDob,
-    claimantClaimAge: streamIncome.claimAge,
-    claimantAge: claimantAgePrior,
-    year: priorYear,
-    claimantIsSingle,
-  })
-  if (bestPrior === null) return false
+
+  // Mirror simulatePlan's former-spouse pass: each stream's formers are priced
+  // on that stream's claim age, then the best annual is compared to summed own.
+  let anyEligibleFormer = false
+  let bestFormerAnnual = 0
+  for (const stream of plan.incomes) {
+    if (stream.type !== 'socialSecurity' || stream.personId !== personId) continue
+    const formers = (stream.formerSpouses ?? []).filter(
+      (former) => former.relationship === formerRelationship,
+    )
+    if (formers.length === 0) continue
+    const bestPrior = bestMaritalBenefit(formers, {
+      claimantDob,
+      claimantClaimAge: stream.claimAge,
+      claimantAge: claimantAgePrior,
+      year: priorYear,
+      claimantIsSingle,
+    })
+    if (bestPrior === null) continue
+    anyEligibleFormer = true
+    const formerPayableMonths = payableMonthsAtAge(claimantAgePrior, stream.claimAge)
+    bestFormerAnnual = Math.max(bestFormerAnnual, bestPrior.monthly * formerPayableMonths)
+  }
+  if (!anyEligibleFormer) return false
 
   const ownAnnual = resolveOwnAnnualSum(plan, personId, claimant, claimantAgePrior)
   if (ownAnnual === null) return null
 
-  const formerPayableMonths = payableMonthsAtAge(claimantAgePrior, streamIncome.claimAge)
-  const formerAnnual = bestPrior.monthly * formerPayableMonths
-  return formerAnnual > ownAnnual
+  return bestFormerAnnual > ownAnnual
 }
 
 /**
@@ -370,21 +388,13 @@ function auxiliaryAlreadyPayingAtHorizonStart(args: {
     // the sim uses); do not reclassify that source as a new household
     // entitlement. When the deceased former never won pre-horizon, fall
     // through to the death-timing rule.
-    if (
-      hasDeceasedFormerSpouse &&
-      streamIncome !== undefined &&
-      streamIncome.formerSpouses !== undefined
-    ) {
-      const deceasedFormers = streamIncome.formerSpouses.filter(
-        (former) => former.relationship === 'deceased',
-      )
+    if (hasDeceasedFormerSpouse) {
       const win = formerSpouseWonOverOwnPriorYear({
         plan,
         personId,
-        streamIncome,
         projectedAge,
         startYear: firstProjectionYear.year,
-        formers: deceasedFormers,
+        formerRelationship: 'deceased',
         // Survivor eligibility does not require single household; pass false
         // when a co-person exists (divorced-spousal arm is N/A for deceased).
         claimantIsSingle: false,
@@ -403,25 +413,28 @@ function auxiliaryAlreadyPayingAtHorizonStart(args: {
     // former spouse was eligible under bestMaritalBenefit *and* that benefit
     // actually displaced the claimant's summed own benefit before start — the
     // same "larger of own vs marital" rule the sim uses when publishing the
-    // auxiliary (ssOwnByPerson sums ALL resolved streams for the person). Mere
-    // eligibility of a low-PIA ex is not already-paying when the published
-    // start-year spousal row first appears because a second ex turns 62 at
-    // start. First eligibility year at start (e.g. ex turns 62 in the start
-    // year) is a NEW entitlement — evaluate the year before start.
-    const livingFormers =
-      streamIncome?.formerSpouses?.filter((former) => former.relationship === 'divorced') ?? []
-    if (livingFormers.length === 0) {
-      // No living former on the stream: treat positive past claim age as pre-horizon.
+    // auxiliary (ssOwnByPerson sums ALL resolved streams; formers may be split
+    // across streams). Mere eligibility of a low-PIA ex is not already-paying
+    // when the published start-year spousal row first appears because a second
+    // ex turns 62 at start. First eligibility year at start (e.g. ex turns 62
+    // in the start year) is a NEW entitlement — evaluate the year before start.
+    const anyLivingFormerOnClaimant = plan.incomes.some(
+      (income) =>
+        income.type === 'socialSecurity' &&
+        income.personId === personId &&
+        income.formerSpouses?.some((former) => former.relationship === 'divorced') === true,
+    )
+    if (!anyLivingFormerOnClaimant) {
+      // No living former on any of the claimant's streams: treat positive past
+      // claim age as pre-horizon.
       return true
     }
-    if (streamIncome === undefined) return false
     const win = formerSpouseWonOverOwnPriorYear({
       plan,
       personId,
-      streamIncome,
       projectedAge,
       startYear: firstProjectionYear.year,
-      formers: livingFormers,
+      formerRelationship: 'divorced',
       claimantIsSingle: true,
     })
     // null = eligible former, no usable own on any stream → already-paying

@@ -69,4 +69,17 @@ describe('stale plan data detector', () => {
       severity: 'info',
     })
   })
+
+  it('accepts a valid ISO stamp with more than three fractional-second digits', () => {
+    // Microsecond (and longer) fractions are valid ISO-8601; the shared parser
+    // must not reject them at the regex gate while still applying the Date
+    // round-trip consistency check.
+    expect(stalePlanData.screen(context('2025-06-15T12:00:00.123456Z'))).toMatchObject({
+      title: 'Plan last saved in 2025',
+      severity: 'info',
+      evidence: expect.arrayContaining([
+        { label: 'Plan last updated', value: '2025-06', year: 2025 },
+      ]),
+    })
+  })
 })

@@ -1,11 +1,12 @@
 /**
  * Full ISO-8601 timestamp shape used by plan stamps
- * (`YYYY-MM-DDTHH:mm:ss[.sss]Z` or `±HH:mm` offset). A year-month prefix alone
- * is not enough — `"2025-02-not-a-date"` must not emit insight evidence
- * (GOVERNANCE silence on malformed input).
+ * (`YYYY-MM-DDTHH:mm:ss[.fraction]Z` or `±HH:mm` offset). Fractional seconds
+ * accept one or more digits (milliseconds, microseconds, …). A year-month
+ * prefix alone is not enough — `"2025-02-not-a-date"` must not emit insight
+ * evidence (GOVERNANCE silence on malformed input).
  */
 const FULL_ISO_TIMESTAMP =
-  /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/
+  /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/
 
 export interface ParsedPlanUpdatedAtIso {
   year: number

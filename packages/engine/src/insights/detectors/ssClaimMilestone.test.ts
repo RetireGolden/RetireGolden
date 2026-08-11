@@ -2460,6 +2460,93 @@ describe('Social Security claim milestone detector', () => {
     })
   })
 
+  it('considers best former benefit across split records on all claimant streams', () => {
+    // Former-spouse records split across two streams: the start-year published
+    // aux lands on the stream whose high-PIA ex first becomes eligible at
+    // start, but a sibling stream already carries a pre-horizon winning former.
+    // Single-stream formers-only comparison would treat start as NEW and fire;
+    // the sim's pass takes the best former across streams against summed own.
+    const ctx = context(70, 62, 0)
+    ctx.plan.incomes = [
+      {
+        id: 'ss-new-ex',
+        type: 'socialSecurity',
+        personId: 'p1',
+        piaMonthly: 0,
+        earnings: null,
+        claimAge: { years: 62, months: 0 },
+        formerSpouses: [
+          {
+            id: 'new-ex-at-start',
+            relationship: 'divorced',
+            dob: '1964-01-01', // turns 62 in 2026 — first eligibility at start
+            piaMonthly: 4_000, // 50% × 12 = 24_000 > own at start
+            marriageYears: 12,
+            remarriedAtAge: null,
+          },
+        ],
+      },
+      {
+        id: 'ss-prior-ex',
+        type: 'socialSecurity',
+        personId: 'p1',
+        piaMonthly: 800, // own annual 9_600; prior ex spousal 12_000 wins pre-horizon
+        earnings: null,
+        claimAge: { years: 62, months: 0 },
+        formerSpouses: [
+          {
+            id: 'already-winning-ex',
+            relationship: 'divorced',
+            dob: '1950-01-01', // eligible well before start
+            piaMonthly: 2_000, // 50% × 12 = 12_000 > own 9_600
+            marriageYears: 12,
+            remarriedAtAge: null,
+          },
+        ],
+      },
+    ] as never
+    const years = ctx.projection.result.years as Array<{
+      year: number
+      people: { personId: string; ageAttained: number; alive: boolean }[]
+      socialSecurityStreams?: {
+        personId: string
+        streamId: string
+        source: StreamSource
+        annualAmount: number
+        claimInForce: boolean
+        preWithholdingAnnual: number
+        isSpousalSurvivorGateStream: boolean
+      }[]
+    }>
+    for (const year of years) {
+      year.socialSecurityStreams = [
+        {
+          personId: 'p1',
+          streamId: 'ss-new-ex',
+          // Larger former at start pays here; siblings zeroed (sim publication).
+          source: 'spousal',
+          annualAmount: 24_000,
+          claimInForce: true,
+          preWithholdingAnnual: 24_000,
+          isSpousalSurvivorGateStream: false,
+        },
+        {
+          personId: 'p1',
+          streamId: 'ss-prior-ex',
+          source: 'none',
+          annualAmount: 0,
+          claimInForce: true,
+          preWithholdingAnnual: 0,
+          isSpousalSurvivorGateStream: true,
+        },
+      ]
+    }
+
+    // Already-paying former-spouse source (sibling stream's pre-horizon win) —
+    // do not re-fire when a second ex becomes eligible at start.
+    expect(ssClaimMilestone.screen(ctx)).toBeNull()
+  })
+
   it('recognizes auxiliary override paying through a non-gate unresolved stream', () => {
     // Former-spouse pass pays on an unresolved (non-gate) stream and zeros the
     // resolved sibling. Override-recognition must not require the gate marker —

@@ -311,12 +311,93 @@ describe('assumedSeedConsequentialSpill — FIFO residual walk', () => {
     expect(cfWalk.unseasonedTaxableSpill).toBeCloseTo(50, 6)
     expect(liveWalk.earningsSpill).toBeCloseTo(0, 6)
     expect(cfWalk.earningsSpill).toBeCloseTo(0, 6)
-    const cfExtra =
+    // Both-direction character gaps are zero when walks agree.
+    const cfOverLive =
       Math.max(0, cfWalk.earningsSpill - liveWalk.earningsSpill) +
       Math.max(0, cfWalk.unseasonedTaxableSpill - liveWalk.unseasonedTaxableSpill)
-    expect(cfExtra).toBeCloseTo(0, 6)
+    const liveOverCf =
+      Math.max(0, liveWalk.earningsSpill - cfWalk.earningsSpill) +
+      Math.max(0, liveWalk.unseasonedTaxableSpill - cfWalk.unseasonedTaxableSpill)
+    expect(Math.max(cfOverLive, liveOverCf)).toBeCloseTo(0, 6)
     // Buggy free-prefix-on-CF-head walk would report $12.50.
     const freePrefixOnCfHead = assumedSeedConsequentialSpill(cfState, 25, 2028, 55)
     expect(freePrefixOnCfHead.unseasonedTaxableSpill).toBeCloseTo(12.5, 6)
+  })
+
+  it('pins character-wise gaps both ways (CF-more and live-more unseasoned)', () => {
+    // Verdict magnitude = max(CF-over-live, live-over-CF) character gaps.
+    const characterVerdict = (
+      cf: { earningsSpill: number; unseasonedTaxableSpill: number },
+      live: { earningsSpill: number; unseasonedTaxableSpill: number },
+    ) => {
+      const cfOverLive =
+        Math.max(0, cf.earningsSpill - live.earningsSpill) +
+        Math.max(0, cf.unseasonedTaxableSpill - live.unseasonedTaxableSpill)
+      const liveOverCf =
+        Math.max(0, live.earningsSpill - cf.earningsSpill) +
+        Math.max(0, live.unseasonedTaxableSpill - cf.unseasonedTaxableSpill)
+      return Math.max(cfOverLive, liveOverCf)
+    }
+
+    // Direction CF > live: prior debt removed free head; CF conversion walk
+    // hits more unseasoned taxable than the live free-first walk.
+    const cfMoreLayers = [
+      { year: 2020, amount: 50, taxableAmount: 50 }, // seasoned free
+      { year: 2026, amount: 100, taxableAmount: 100 }, // unseasoned full taxable
+    ]
+    const liveCfMore = assumedSeedConsequentialSpill(
+      { contributionBasis: 0, conversionLayers: cfMoreLayers },
+      100, // live conversion
+      2028,
+      55,
+    )
+    const cfCfMore = assumedSeedConsequentialSpill(
+      {
+        contributionBasis: 0,
+        conversionLayers: applyConversionPrincipalDebt(cfMoreLayers, 50),
+      },
+      100, // same conversion (no new seed this draw)
+      2028,
+      55,
+    )
+    // Live: $50 free + $50 unseasoned. CF (free gone): $100 unseasoned.
+    expect(liveCfMore.unseasonedTaxableSpill).toBeCloseTo(50, 6)
+    expect(cfCfMore.unseasonedTaxableSpill).toBeCloseTo(100, 6)
+    expect(characterVerdict(cfCfMore, liveCfMore)).toBeCloseTo(50, 6)
+
+    // Direction live > CF: prior debt already consumed the unseasoned layer in
+    // CF; live still walks it. One-way Math.max(0, CF − live) clamps to 0.
+    const liveMoreLayers = [
+      { year: 2026, amount: 50, taxableAmount: 50 }, // unseasoned taxable
+      { year: 2027, amount: 50, taxableAmount: 0 }, // nontaxable free-behind
+    ]
+    const liveLiveMore = assumedSeedConsequentialSpill(
+      { contributionBasis: 0, conversionLayers: liveMoreLayers },
+      50,
+      2028,
+      55,
+    )
+    const cfLiveMore = assumedSeedConsequentialSpill(
+      {
+        contributionBasis: 0,
+        conversionLayers: applyConversionPrincipalDebt(liveMoreLayers, 50),
+      },
+      50,
+      2028,
+      55,
+    )
+    // Live: $50 unseasoned. CF (unseasoned already debt-consumed): $50 free.
+    expect(liveLiveMore.unseasonedTaxableSpill).toBeCloseTo(50, 6)
+    expect(cfLiveMore.unseasonedTaxableSpill).toBeCloseTo(0, 6)
+    expect(liveLiveMore.earningsSpill).toBeCloseTo(0, 6)
+    expect(cfLiveMore.earningsSpill).toBeCloseTo(0, 6)
+    const clampedOneWay =
+      Math.max(0, cfLiveMore.earningsSpill - liveLiveMore.earningsSpill) +
+      Math.max(
+        0,
+        cfLiveMore.unseasonedTaxableSpill - liveLiveMore.unseasonedTaxableSpill,
+      )
+    expect(clampedOneWay).toBe(0)
+    expect(characterVerdict(cfLiveMore, liveLiveMore)).toBeCloseTo(50, 6)
   })
 })

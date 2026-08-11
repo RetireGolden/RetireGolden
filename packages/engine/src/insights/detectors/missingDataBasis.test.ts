@@ -1487,4 +1487,77 @@ describe('missing data basis detector', () => {
 
     expect(missingDataBasis.screen(ctx)).toBeNull()
   })
+
+  it('suppresses a primary-residence gap when zero-basis gain is fully under §121', () => {
+    // Max gain = sale-year value at zero basis. With no recapture/selling costs
+    // and expectedNetProceeds unset, a fully-excluded gain cannot change tax
+    // when basis is supplied — conservative suppress (propertySaleTax).
+    const ctx = context()
+    ctx.plan.assumptions.inflationPct = 0
+    ctx.plan.accounts = [{
+      id: 'home',
+      name: 'Primary home',
+      type: 'property',
+      value: 200_000, // < $250k single §121
+      plannedSaleYear: 2029,
+      costBasis: undefined,
+      primaryResidence: true,
+    }] as never
+    ctx.plan.incomes = []
+    const year = ctx.projection.result.years[0] as {
+      ownedTraditionalIraAggregateActivity?: unknown[]
+      ownedRothIraPoolActivity?: unknown[]
+      employerRothAccountActivity?: unknown[]
+    }
+    year.ownedTraditionalIraAggregateActivity = []
+    year.ownedRothIraPoolActivity = []
+    year.employerRothAccountActivity = []
+    ctx.params = {
+      year: 2026,
+      federalTax: {
+        section121Exclusion: { single: 250_000, marriedFilingJointly: 500_000 },
+      },
+    } as never
+
+    expect(missingDataBasis.screen(ctx)).toBeNull()
+  })
+
+  it('still flags a primary-residence gap when zero-basis gain can exceed §121', () => {
+    // Opposite bound: sale-year value above the filing-status exclusion means
+    // supplied basis can change capital-gain tax — do not suppress.
+    const ctx = context()
+    ctx.plan.assumptions.inflationPct = 0
+    ctx.plan.accounts = [{
+      id: 'home',
+      name: 'Primary home',
+      type: 'property',
+      value: 400_000, // > $250k single §121
+      plannedSaleYear: 2029,
+      costBasis: undefined,
+      primaryResidence: true,
+    }] as never
+    ctx.plan.incomes = []
+    const year = ctx.projection.result.years[0] as {
+      ownedTraditionalIraAggregateActivity?: unknown[]
+      ownedRothIraPoolActivity?: unknown[]
+      employerRothAccountActivity?: unknown[]
+    }
+    year.ownedTraditionalIraAggregateActivity = []
+    year.ownedRothIraPoolActivity = []
+    year.employerRothAccountActivity = []
+    ctx.params = {
+      year: 2026,
+      federalTax: {
+        section121Exclusion: { single: 250_000, marriedFilingJointly: 500_000 },
+      },
+    } as never
+
+    expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
+      {
+        label: 'Primary home opening property value (legacy net-proceeds path)',
+        value: '$400,000',
+        year: 2026,
+      },
+    ])
+  })
 })
