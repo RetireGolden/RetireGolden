@@ -1,7 +1,7 @@
 import type { Detector, InsightCard } from '../types.js'
 import type { Plan } from '../../model/plan.js'
 import type { SocialSecurityStreamActivity } from '../../projection/types.js'
-import { fraForBirthYear } from '../../socialSecurity/nra.js'
+import { effectiveBirthYear, fraForBirthYear } from '../../socialSecurity/nra.js'
 
 type SocialSecurityIncome = Extract<Plan['incomes'][number], { type: 'socialSecurity' }>
 
@@ -97,8 +97,14 @@ export const ssClaimMilestone: Detector = {
       // A zero-benefit stream (both published amounts $0) is not "already
       // claimed" — keep it out of pre-horizon so a later auxiliary claim on the
       // same stream can still fire (zero-PIA retirement / SSDI auxiliary path).
+      // Calendar birth year for ageAttained alignment with simulatePlan;
+      // FRA uses effectiveBirthYear (Jan-1 rule) exactly as the sim does.
       const birthYear = Number(person.dob.slice(0, 4))
-      const personFraYears = fraForBirthYear(birthYear).years
+      const birthMonth = Number(person.dob.slice(5, 7))
+      const birthDay = Number(person.dob.slice(8, 10))
+      const personFraYears = fraForBirthYear(
+        effectiveBirthYear(birthYear, birthMonth, birthDay),
+      ).years
       const preHorizonStreamIds = new Set<string>()
       for (const entry of firstProjectionYear.socialSecurityStreams ?? []) {
         if (entry.personId !== person.id || !entry.claimInForce) continue

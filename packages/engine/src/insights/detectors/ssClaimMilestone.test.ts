@@ -173,6 +173,53 @@ describe('Social Security claim milestone detector', () => {
     })
   })
 
+  it('uses effectiveBirthYear for the onsetAge < FRA gate (1960-01-01 → FRA 66y10m)', () => {
+    // Jan-1 DOB uses prior calendar year for FRA. 1960-01-01 → effective 1959 →
+    // FRA 66y10m (fra.years = 66). Calendar-year FRA for 1960 is 67; without
+    // the Jan-1 rule, onsetAge 66 would wrongly count as valid SSDI and suppress
+    // a horizon-start own-retirement stream as an automatic FRA conversion.
+    // claimAge.years = 67 so the claim-age pre-horizon arm (age > claimAge.years)
+    // does not fire at age 67 — only the disability FRA gate can suppress.
+    const ctx = context(67, 67, 0)
+    expect(ctx.plan.household.people[0]!.dob).toBe('1960-01-01')
+    const income = ctx.plan.incomes[0] as { disability?: { onsetAge: number }; piaMonthly: number }
+    income.disability = { onsetAge: 66 }
+    income.piaMonthly = 2_000
+    const years = ctx.projection.result.years as Array<{
+      year: number
+      people: { personId: string; ageAttained: number; alive: boolean }[]
+      socialSecurityStreams?: {
+        personId: string
+        streamId: string
+        source: StreamSource
+        annualAmount: number
+        claimInForce: boolean
+        preWithholdingAnnual: number
+        isSpousalSurvivorGateStream: boolean
+      }[]
+    }>
+    for (const year of years) {
+      year.socialSecurityStreams = [
+        {
+          personId: 'p1',
+          streamId: 'ss',
+          source: 'own-retirement',
+          annualAmount: 24_000,
+          claimInForce: true,
+          preWithholdingAnnual: 24_000,
+          isSpousalSurvivorGateStream: true,
+        },
+      ]
+    }
+
+    // onsetAge 66 is not < effective FRA years 66 → not a conversion suppress.
+    // Without effectiveBirthYear, onsetAge 66 < calendar FRA 67 would silence.
+    expect(ssClaimMilestone.screen(ctx)).toMatchObject({
+      title: "Pat's Social Security claim is imminent",
+      severity: 'attention',
+    })
+  })
+
   it('stays silent when SSDI converts to own-retirement at FRA (no application)', () => {
     // Pre-FRA years publish source ssdi; FRA year publishes own-retirement for
     // the same dollars. That conversion is not a filing decision.

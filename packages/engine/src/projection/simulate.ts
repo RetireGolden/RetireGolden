@@ -1057,6 +1057,15 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
    * draws from contributions — never changes splitRothWithdrawal economics.
    */
   const rothAssumedContributionRemaining = new Map<string, number>()
+  /**
+   * Observation-only: free-cover dollars already re-homed onto conversion
+   * layers in the assumed-zero counterfactual (per pool). Live free cover is
+   * measured from actual conversion layers, which prior assumed-seed draws do
+   * not touch — so without this running total a later draw would re-use cover
+   * a prior suppressed spill already consumed in the counterfactual world.
+   * Per-attempt scoped with the other Roth observation maps.
+   */
+  const rothCounterfactualFreeCoverConsumed = new Map<string, number>()
   for (const account of plan.accounts) {
     if (account.type !== 'roth') continue
     // Seed only pure owned Roth; an inherited Roth (pre- or post-S2) stays out.
@@ -8831,12 +8840,39 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             // measures) after contributions; that consumption is not available
             // to absorb a counterfactual removal of the assumed seed. Observe
             // the split's own conversion take — do not re-scan layers.
+            // Prior draws whose assumed spill was suppressed by free cover
+            // also consumed that cover in the counterfactual world — track
+            // cumulative re-homing so later draws see less remaining cover.
             // If the spill fits entirely in remaining free cover, removing the
             // seed would shift the same dollars into those buckets with
             // identical zero tax/penalty — not consequential.
             const freeCover = freeRothCoverCapacity(rb, year, age)
-            const freeCoverRemaining = Math.max(0, freeCover - split.conversions)
-            const consequentialSpill = Math.max(0, fromAssumed - freeCoverRemaining)
+            const freeCoverAfterThisDrawConversions = Math.max(
+              0,
+              freeCover - split.conversions,
+            )
+            const priorCfCoverConsumed =
+              rothCounterfactualFreeCoverConsumed.get(key) ?? 0
+            const counterfactualCoverRemaining = Math.max(
+              0,
+              freeCoverAfterThisDrawConversions - priorCfCoverConsumed,
+            )
+            const consequentialSpill = Math.max(
+              0,
+              fromAssumed - counterfactualCoverRemaining,
+            )
+            // Counterfactual re-homes min(spill, remaining cover) onto free
+            // conversion layers whether or not the residual spills past cover.
+            const coverConsumedByThisDraw = Math.min(
+              fromAssumed,
+              counterfactualCoverRemaining,
+            )
+            if (coverConsumedByThisDraw > 0) {
+              rothCounterfactualFreeCoverConsumed.set(
+                key,
+                priorCfCoverConsumed + coverConsumedByThisDraw,
+              )
+            }
             if (consequentialSpill > 0) {
               if (key.startsWith('rothira:')) {
                 const ownerPersonId = key.slice('rothira:'.length)
@@ -9651,6 +9687,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       iraBasisByOwner,
       rothBasis,
       rothAssumedContributionRemaining,
+      rothCounterfactualFreeCoverConsumed,
       propertyValues,
       hecmStates,
       insuranceCashValues,

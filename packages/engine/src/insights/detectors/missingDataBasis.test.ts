@@ -64,7 +64,7 @@ describe('missing data basis detector', () => {
       evidence: [
         { label: 'Traditional IRA taxable character from assumed-zero basis (distributions)', value: '$1', year: 2026 },
         { label: 'Traditional IRA opening balance (assumed zero after-tax basis)', value: '$300,000', year: 2026 },
-        { label: 'Lake home planned-sale value (legacy net-proceeds path)', value: '$500,000', year: 2029 },
+        { label: 'Lake home opening property value (legacy net-proceeds path)', value: '$500,000', year: 2026 },
         { label: 'Pat age at projection start (wages assumed to continue for life)', value: '60', year: 2026 },
       ],
     })
@@ -914,6 +914,64 @@ describe('missing data basis detector', () => {
     expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
       { label: 'Missing-basis IRA taxable character from assumed-zero basis (distributions)', value: '$5,000', year: 2026 },
       { label: 'Missing-basis IRA opening balance (assumed zero after-tax basis)', value: '$50,000', year: 2026 },
+    ])
+  })
+
+  it('emits the owned-Roth owner-pool aggregate once when two Roth IRAs omit basis', () => {
+    const ctx = context()
+    ctx.projection.result.years[0]!.people[0]!.ageAttained = 59
+    const year = ctx.projection.result.years[0] as {
+      ownedRothIraPoolActivity?: {
+        ownerPersonId: string
+        withdrawals: number
+        creditedContributions: number
+        assumedBasisConsequential?: { withdrawal: number }
+      }[]
+      ownedTraditionalIraAggregateActivity?: unknown[]
+    }
+    year.ownedRothIraPoolActivity = [
+      {
+        ownerPersonId: 'p1',
+        withdrawals: 5_000,
+        creditedContributions: 0,
+        assumedBasisConsequential: { withdrawal: 5_000 },
+      },
+    ]
+    year.ownedTraditionalIraAggregateActivity = []
+    ctx.plan.accounts = [
+      {
+        id: 'roth-a',
+        name: 'Roth A',
+        type: 'roth',
+        kind: 'ira',
+        ownerPersonId: 'p1',
+        balance: 100_000,
+        contributionBasis: undefined,
+      },
+      {
+        id: 'roth-b',
+        name: 'Roth B',
+        type: 'roth',
+        kind: 'ira',
+        ownerPersonId: 'p1',
+        balance: 50_000,
+        contributionBasis: undefined,
+      },
+    ] as never
+    ctx.plan.incomes = []
+
+    expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
+      {
+        label:
+          'Roth A, Roth B owner-pool basis-sensitive spill past known contributions and free conversion cover',
+        value: '$5,000',
+        year: 2026,
+      },
+      {
+        label: 'Roth A, Roth B opening balance (assumed contribution basis)',
+        value: '$150,000',
+        year: 2026,
+      },
     ])
   })
 

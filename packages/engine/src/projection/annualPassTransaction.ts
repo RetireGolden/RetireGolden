@@ -61,6 +61,12 @@ export interface SimulatorAnnualPassStateBindings {
    * it so rejected/counterfactual attempts cannot drain a committed year.
    */
   rothAssumedContributionRemaining: Map<string, number>
+  /**
+   * Observation-only free-cover dollars re-homed onto conversion layers in the
+   * assumed-zero counterfactual (per pool). Mutated with the assumed-seed
+   * flag site; must roll back with the other Roth observation maps.
+   */
+  rothCounterfactualFreeCoverConsumed: Map<string, number>
   propertyValues: Map<string, number>
   hecmStates: Map<string, SimulatorAnnualPassHecmState>
   insuranceCashValues: Map<string, number>
@@ -156,6 +162,7 @@ interface AnnualPassSnapshot {
   iraBasisByOwner: Array<[string, number]>
   rothBasis: Array<[string, RothBasisState]>
   rothAssumedContributionRemaining: Array<[string, number]>
+  rothCounterfactualFreeCoverConsumed: Array<[string, number]>
   propertyValues: Array<[string, number]>
   hecmStates: Array<[string, SimulatorAnnualPassHecmState]>
   insuranceCashValues: Array<[string, number]>
@@ -287,6 +294,10 @@ function captureSnapshot(bindings: SimulatorAnnualPassStateBindings): AnnualPass
       bindings.rothAssumedContributionRemaining,
       (value) => value,
     ),
+    rothCounterfactualFreeCoverConsumed: snapshotMap(
+      bindings.rothCounterfactualFreeCoverConsumed,
+      (value) => value,
+    ),
     propertyValues: snapshotMap(bindings.propertyValues, (value) => value),
     hecmStates: snapshotMap(bindings.hecmStates, cloneHecmState),
     insuranceCashValues: snapshotMap(bindings.insuranceCashValues, (value) => value),
@@ -365,6 +376,11 @@ function restoreSnapshot(bindings: SimulatorAnnualPassStateBindings, snapshot: A
   restoreMap(
     bindings.rothAssumedContributionRemaining,
     snapshot.rothAssumedContributionRemaining,
+    (value) => value,
+  )
+  restoreMap(
+    bindings.rothCounterfactualFreeCoverConsumed,
+    snapshot.rothCounterfactualFreeCoverConsumed,
     (value) => value,
   )
   restoreMap(bindings.propertyValues, snapshot.propertyValues, (value) => value)

@@ -34,7 +34,9 @@ function usd(amount: number): string {
  *
  * Traditional §408(d)(2) aggregate figures are emitted once per owner (listing
  * every owned IRA that omitted nondeductibleBasis), not under each account name
- * — the aggregate can include contracts funded by a different IRA.
+ * — the aggregate can include contracts funded by a different IRA. Owned Roth
+ * IRA gaps mirror that: the published verdict is per-owner pool, so missing-
+ * basis Roth IRAs are aggregated once per owner.
  */
 export const missingDataBasis: Detector = {
   id: 'missing-data-basis',
@@ -125,75 +127,102 @@ export const missingDataBasis: Detector = {
       }
     }
 
+    // Owned Roth IRA gaps: one emission per owner for the published pool
+    // verdict, naming every missing-basis Roth IRA that participates.
+    const rothIraMissingByOwner = new Map<
+      string,
+      { name: string; balance: number }[]
+    >()
+    for (const account of ctx.plan.accounts) {
+      if (
+        account.type !== 'roth' ||
+        account.kind !== 'ira' ||
+        account.inherited !== undefined ||
+        account.contributionBasis !== undefined
+      ) {
+        continue
+      }
+      const ownerPersonId = ownerPersonIdFor(account)
+      if (ownerPersonId === undefined) continue
+      const owner = firstProjectionYear?.people.find(
+        (person) => person.personId === ownerPersonId,
+      )
+      if (owner === undefined || owner.ageAttained >= 60) continue
+      const list = rothIraMissingByOwner.get(ownerPersonId) ?? []
+      list.push({ name: account.name, balance: account.balance })
+      rothIraMissingByOwner.set(ownerPersonId, list)
+    }
+    for (const [ownerPersonId, accounts] of rothIraMissingByOwner) {
+      for (const year of ctx.projection.result.years) {
+        const entry = year.ownedRothIraPoolActivity?.find(
+          (row: OwnedRothIraPoolActivity) => row.ownerPersonId === ownerPersonId,
+        )
+        const verdict = entry?.assumedBasisConsequential
+        if (verdict === undefined || verdict.withdrawal <= 0) continue
+        const nameList = accounts.map((a) => a.name).join(', ')
+        gaps.push({
+          evidence: {
+            // Verdict is the basis-sensitive spill past known contributions
+            // and free conversion cover — not the pool's total withdrawal.
+            label:
+              `${nameList} owner-pool basis-sensitive spill past known contributions and free conversion cover`,
+            value: usd(verdict.withdrawal),
+            year: year.year,
+          },
+        })
+        const aggregateBalance = accounts.reduce((sum, a) => sum + a.balance, 0)
+        gaps.push({
+          evidence: {
+            // Plan opening balances, not the trigger year's live figure.
+            label: `${nameList} opening balance (assumed contribution basis)`,
+            value: usd(aggregateBalance),
+            year: ctx.projection.startYear,
+          },
+        })
+        break
+      }
+    }
+
     for (const account of ctx.plan.accounts) {
       const ownerPersonId = ownerPersonIdFor(account)
       const owner = firstProjectionYear?.people.find((person) => person.personId === ownerPersonId)
 
       if (
         account.type === 'roth' &&
+        account.kind === 'employer' &&
         account.inherited === undefined &&
         account.contributionBasis === undefined &&
         owner !== undefined &&
-        owner.ageAttained < 60 &&
-        ownerPersonId !== undefined
+        owner.ageAttained < 60
       ) {
-        if (account.kind === 'employer') {
-          for (const year of ctx.projection.result.years) {
-            const entry = year.employerRothAccountActivity?.find(
-              (row: EmployerRothAccountActivity) => row.accountId === account.id,
-            )
-            const verdict = entry?.assumedBasisConsequential
-            if (verdict === undefined || verdict.withdrawal <= 0) continue
-            gaps.push({
-              evidence: {
-                // Verdict is the basis-sensitive spill past known contributions
-                // and free conversion cover — not the account's total withdrawal.
-                label:
-                  `${account.name} basis-sensitive spill past known contributions and free conversion cover`,
-                value: usd(verdict.withdrawal),
-                year: year.year,
-              },
-            })
-            gaps.push({
-              evidence: {
-                // Engine models employer designated-Roth under IRA ordering
-                // (splitRothWithdrawal), not Treas. Reg. §1.402A-1 Q&A-3 pro-rata.
-                // Plan opening balance, not the trigger year's live figure.
-                label:
-                  `${account.name} opening balance (modeled as contribution basis under the engine's simplified ordering)`,
-                value: usd(account.balance),
-                year: ctx.projection.startYear,
-              },
-            })
-            break
-          }
-        } else if (account.kind === 'ira') {
-          for (const year of ctx.projection.result.years) {
-            const entry = year.ownedRothIraPoolActivity?.find(
-              (row: OwnedRothIraPoolActivity) => row.ownerPersonId === ownerPersonId,
-            )
-            const verdict = entry?.assumedBasisConsequential
-            if (verdict === undefined || verdict.withdrawal <= 0) continue
-            gaps.push({
-              evidence: {
-                // Verdict is the basis-sensitive spill past known contributions
-                // and free conversion cover — not the pool's total withdrawal.
-                label:
-                  `${account.name} owner-pool basis-sensitive spill past known contributions and free conversion cover`,
-                value: usd(verdict.withdrawal),
-                year: year.year,
-              },
-            })
-            gaps.push({
-              evidence: {
-                // Plan opening balance, not the trigger year's live figure.
-                label: `${account.name} opening balance (assumed contribution basis)`,
-                value: usd(account.balance),
-                year: ctx.projection.startYear,
-              },
-            })
-            break
-          }
+        for (const year of ctx.projection.result.years) {
+          const entry = year.employerRothAccountActivity?.find(
+            (row: EmployerRothAccountActivity) => row.accountId === account.id,
+          )
+          const verdict = entry?.assumedBasisConsequential
+          if (verdict === undefined || verdict.withdrawal <= 0) continue
+          gaps.push({
+            evidence: {
+              // Verdict is the basis-sensitive spill past known contributions
+              // and free conversion cover — not the account's total withdrawal.
+              label:
+                `${account.name} basis-sensitive spill past known contributions and free conversion cover`,
+              value: usd(verdict.withdrawal),
+              year: year.year,
+            },
+          })
+          gaps.push({
+            evidence: {
+              // Engine models employer designated-Roth under IRA ordering
+              // (splitRothWithdrawal), not Treas. Reg. §1.402A-1 Q&A-3 pro-rata.
+              // Plan opening balance, not the trigger year's live figure.
+              label:
+                `${account.name} opening balance (modeled as contribution basis under the engine's simplified ordering)`,
+              value: usd(account.balance),
+              year: ctx.projection.startYear,
+            },
+          })
+          break
         }
       }
 
@@ -228,11 +257,14 @@ export const missingDataBasis: Detector = {
             })
           }
         } else {
+          // Plan opening value; the sim compounds property to the sale year.
+          // Sale-year pre-sale value is zeroed before year-end balances publish,
+          // so it is not available without recomputation — label honestly.
           gaps.push({
             evidence: {
-              label: `${account.name} planned-sale value (legacy net-proceeds path)`,
+              label: `${account.name} opening property value (legacy net-proceeds path)`,
               value: usd(account.value),
-              year: account.plannedSaleYear,
+              year: ctx.projection.startYear,
             },
           })
         }

@@ -563,6 +563,45 @@ describe('simulatePlan published per-entity ledger facts', () => {
       )
     })
 
+    it('tracks free-cover consumption cumulatively across sequential draws in the counterfactual', () => {
+      // $200 omitted seed + $100 free conversion cover; two sequential $100
+      // pre-60 Roth draws. Draw 1's assumed spill is absorbed by free cover
+      // (no flag) but consumes that cover in the counterfactual world; draw 2
+      // must flag because remaining counterfactual cover is zero.
+      const plan = singlePersonPlan({ dob: '1971-01-01', planningAge: 90 })
+      plan.id = 'published-facts-roth-cumulative-free-cover'
+      plan.assumptions.inflationPct = 0
+      plan.assumptions.defaultReturnPct = 0
+      plan.expenses.baseAnnual = 100
+      plan.accounts = [
+        {
+          ...ownedIra('trad-basis', 100),
+          nondeductibleBasis: 100, // wholly nontaxable conversion = free cover
+        },
+        rothIra('roth', 200, 'p1'), // assumed seed $200
+        cash(0),
+      ]
+      plan.strategies.rothConversion = {
+        mode: 'manual',
+        conversions: [{ year: TAX_YEAR, amount: 100 }],
+      }
+      plan.incomes = [] as never
+
+      const years = run(plan, TAX_YEAR + 1)
+      const y0 = years.find((y) => y.year === TAX_YEAR)!
+      const y1 = years.find((y) => y.year === TAX_YEAR + 1)!
+      expect(y0.people[0]!.ageAttained).toBeLessThan(60)
+      expect(y1.people[0]!.ageAttained).toBeLessThan(60)
+      expect(y0.withdrawals.roth).toBeCloseTo(100, 6)
+      expect(y1.withdrawals.roth).toBeCloseTo(100, 6)
+      const owner0 = (y0.ownedRothIraPoolActivity ?? []).find((row) => row.ownerPersonId === 'p1')
+      const owner1 = (y1.ownedRothIraPoolActivity ?? []).find((row) => row.ownerPersonId === 'p1')
+      // First draw: $100 assumed spill fits in $100 free cover → silence.
+      expect(owner0?.assumedBasisConsequential).toBeUndefined()
+      // Second draw: free cover already re-homed in the counterfactual → flag.
+      expect(owner1?.assumedBasisConsequential?.withdrawal).toBeCloseTo(100, 6)
+    })
+
     it('flags when assumed-seed spill exceeds free cover into a mixed taxable layer', () => {
       // Small free cover, large assumed seed, pre-60 draw past free cover.
       const plan = singlePersonPlan({ dob: '1971-01-01', planningAge: 90 })
