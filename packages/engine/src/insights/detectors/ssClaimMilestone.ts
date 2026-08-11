@@ -178,7 +178,8 @@ function resolveCurrentSpouseSpousalAnnualPriorYear(args: {
   const coPerson = plan.household.people.find((row) => row.id === coPersonId)
   if (claimant === undefined || coPerson === undefined) return 0
 
-  // Gate stream = last SS income (sim last-wins / isSpousalSurvivorGateStream).
+  // Gate stream = last *resolved* SS income (sim ssStreamByPerson last-wins /
+  // isSpousalSurvivorGateStream — unresolved streams are skipped for gating).
   const claimantStream = lastSsIncomeForPerson(plan, claimantPersonId)
   const coStream = lastSsIncomeForPerson(plan, coPersonId)
   if (claimantStream === undefined || coStream === undefined) return 0
@@ -472,15 +473,24 @@ function streamPublishedSsdiThrough(
 }
 
 /**
- * Last socialSecurity income for a person — matches sim `ssStreamByPerson`
- * last-wins precedence and the published `isSpousalSurvivorGateStream` marker.
+ * Last *resolved* socialSecurity income for a person — matches sim
+ * `ssStreamByPerson` last-wins precedence (unresolved streams with no PIA
+ * resolution are skipped, same as simulatePlan's resolved-PIA gate) and the
+ * published `isSpousalSurvivorGateStream` marker. Plan-order last among
+ * resolved only: a trailing unresolved sibling (null PIA / no usable earnings)
+ * must not displace the resolved gate/winner stream used for prior-year
+ * current-spouse spousal pricing.
  */
 function lastSsIncomeForPerson(plan: Plan, personId: string): SocialSecurityIncome | undefined {
+  const person = plan.household.people.find((row) => row.id === personId)
+  if (person === undefined) return undefined
   let last: SocialSecurityIncome | undefined
   for (const candidate of plan.incomes) {
-    if (candidate.type === 'socialSecurity' && candidate.personId === personId) {
-      last = candidate
-    }
+    if (candidate.type !== 'socialSecurity' || candidate.personId !== personId) continue
+    // Skip unresolved (no published PIA resolution) — sim never writes them
+    // into ssStreamByPerson for spousal/survivor gating.
+    if (resolveOwnPiaMonthly(candidate, person) === null) continue
+    last = candidate
   }
   return last
 }
