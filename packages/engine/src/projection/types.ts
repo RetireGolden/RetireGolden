@@ -1275,10 +1275,13 @@ export type SocialSecurityBenefitSource =
  *
  * One entry per `socialSecurity` income stream each year (including streams
  * not yet in force, and **unresolved** streams with `piaMonthly: null` and no
- * usable earnings history). Unresolved streams publish an empty not-payable
- * row (`source: 'none'`, `claimInForce: false`, zero amounts) so consumers can
- * correlate every configured stream id; milestone detectors treat those rows
- * as unmodeled. When a person has multiple streams with unequal claim ages,
+ * usable earnings history). Unresolved streams that pay nothing publish an
+ * empty not-payable row (`source: 'none'`, `claimInForce: false`, zero amounts)
+ * so consumers can correlate every configured stream id; milestone detectors
+ * treat those rows as unmodeled. When the former-spouse marital menu still
+ * pays a positive spousal/survivor benefit through an unresolved stream, the
+ * row publishes the actual paid amounts and source (empty only when nothing
+ * pays). When a person has multiple streams with unequal claim ages,
  * each stream's payments and claim-in-force state are attributed exactly —
  * not collapsed into a single per-person row.
  *

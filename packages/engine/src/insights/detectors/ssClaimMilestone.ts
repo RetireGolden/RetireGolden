@@ -4,8 +4,41 @@ import type { SocialSecurityStreamActivity } from '../../projection/types.js'
 import { claimFactor } from '../../socialSecurity/claimFactor.js'
 import { bestMaritalBenefit } from '../../socialSecurity/maritalBenefits.js'
 import { effectiveBirthYear, fraForBirthYear } from '../../socialSecurity/nra.js'
+import {
+  computePiaFromEarnings,
+  isPiaFromEarningsError,
+  piaInputFromEarnings,
+  resolveEarningsProjection,
+} from '../../socialSecurity/piaFromEarnings.js'
 
 type SocialSecurityIncome = Extract<Plan['incomes'][number], { type: 'socialSecurity' }>
+type HouseholdPerson = Plan['household']['people'][number]
+
+/**
+ * Own PIA for the winning-anchor comparison — same resolver the sim uses:
+ * entered `piaMonthly`, else AIME → bend points from earnings history.
+ * Returns null when neither path yields a usable PIA (cannot prove a
+ * pre-horizon marital win over own).
+ */
+function resolveOwnPiaMonthly(
+  streamIncome: SocialSecurityIncome,
+  claimant: HouseholdPerson,
+): number | null {
+  if (streamIncome.piaMonthly !== null) return streamIncome.piaMonthly
+  if (!streamIncome.earnings || streamIncome.earnings.length === 0) return null
+  const y = Number(claimant.dob.slice(0, 4))
+  const m = Number(claimant.dob.slice(5, 7))
+  const d = Number(claimant.dob.slice(8, 10))
+  const projection = resolveEarningsProjection(
+    streamIncome.earningsProjection,
+    claimant.retirementAge,
+  )
+  const result = computePiaFromEarnings(
+    piaInputFromEarnings(y, m, d, streamIncome.earnings, projection),
+  )
+  if (isPiaFromEarningsError(result)) return null
+  return result.piaMonthly
+}
 
 /**
  * True when this stream's configured claim-age year is `year`
@@ -213,9 +246,10 @@ function auxiliaryAlreadyPayingAtHorizonStart(args: {
     }
     const claimant = plan.household.people.find((row) => row.id === personId)
     if (claimant === undefined || streamIncome === undefined) return false
-    // Own PIA from plan inputs; earnings-only resolution is not re-derived here.
-    // Without a known own PIA we cannot prove a pre-horizon marital win.
-    if (streamIncome.piaMonthly === null) return false
+    // Own PIA: same path as simulatePlan (entered amount, else earnings AIME).
+    // Without a usable own PIA we cannot prove a pre-horizon marital win.
+    const ownPiaMonthly = resolveOwnPiaMonthly(streamIncome, claimant)
+    if (ownPiaMonthly === null) return false
     const startYear = firstProjectionYear.year
     const claimantDob = {
       year: Number(claimant.dob.slice(0, 4)),
@@ -238,7 +272,7 @@ function auxiliaryAlreadyPayingAtHorizonStart(args: {
     // means the published start-year spousal source was already the paying
     // benefit, not a new entitlement from a first-time enabler at start.
     const ownMonthly =
-      streamIncome.piaMonthly *
+      ownPiaMonthly *
       claimFactor(
         claimantDob.year,
         claimantDob.month,

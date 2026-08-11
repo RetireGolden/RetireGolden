@@ -232,6 +232,105 @@ describe('missing data basis detector', () => {
     ])
   })
 
+  it('flags a treat-as-own traditional IRA with omitted basis when the published verdict binds', () => {
+    // Treat-as-own joins the owner's Form 8606 pool (isAggregatedIraThisYear);
+    // the detector must surface the gap, not skip all inherited accounts.
+    const ctx = context()
+    ctx.plan.accounts = [
+      {
+        id: 'tao-ira',
+        name: 'Treat-as-own IRA',
+        type: 'traditional',
+        kind: 'ira',
+        ownerPersonId: 'p1',
+        balance: 300_000,
+        // nondeductibleBasis omitted
+        inherited: {
+          ownerDeathYear: 2024,
+          decedentHadStartedRmds: true,
+          beneficiary: {
+            beneficiaryClass: 'designated-individual',
+            edbCategory: 'surviving-spouse',
+            beneficiaryBirthYear: 1960,
+            soleBeneficiary: true,
+            ownerBirthYear: 1945,
+            election: 'treat-as-own',
+            spouseUnlimitedWithdrawalRight: true,
+            treatAsOwnElectionYear: 2026,
+            ownerYearOfDeathRmdSatisfied: true,
+            provenance: { source: 'test', asOf: '2026-01-01' },
+          },
+        },
+      },
+    ] as never
+    ctx.plan.incomes = []
+
+    expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
+      {
+        label: 'Treat-as-own IRA taxable character from assumed-zero basis (distributions)',
+        value: '$1',
+        year: 2026,
+      },
+      {
+        label: 'Treat-as-own IRA opening balance (assumed zero after-tax basis)',
+        value: '$300,000',
+        year: 2026,
+      },
+    ])
+  })
+
+  it('stays silent for a genuinely inherited traditional IRA even when a verdict is present for the owner', () => {
+    // Permanent inherited regime never joins the owned Form 8606 pool; do not
+    // flag omitted basis on remain-beneficiary / non-spouse inherited IRAs.
+    const ctx = context()
+    ctx.plan.accounts = [
+      {
+        id: 'inherited-traditional',
+        name: 'Inherited traditional IRA',
+        type: 'traditional',
+        kind: 'ira',
+        ownerPersonId: 'p1',
+        balance: 300_000,
+        inherited: {
+          ownerDeathYear: 2024,
+          decedentHadStartedRmds: false,
+          beneficiary: {
+            beneficiaryClass: 'designated-individual',
+            edbCategory: 'none',
+            beneficiaryBirthYear: 1980,
+            soleBeneficiary: true,
+            provenance: { source: 'custodian statement', asOf: '2026-01-01' },
+          },
+        },
+      },
+    ] as never
+    ctx.plan.incomes = []
+    // Verdict would only exist if some other owned IRA joined; keep it so the
+    // test proves the inherited account itself is never named.
+    const year = ctx.projection.result.years[0] as {
+      ownedTraditionalIraAggregateActivity?: {
+        ownerPersonId: string
+        assumedBasisConsequential?: {
+          distributions: number
+          conversions: number
+          annuityPayments: number
+        }
+      }[]
+    }
+    year.ownedTraditionalIraAggregateActivity = [
+      {
+        ownerPersonId: 'p1',
+        assumedBasisConsequential: {
+          distributions: 1,
+          conversions: 0,
+          annuityPayments: 0,
+        },
+      },
+    ]
+
+    expect(missingDataBasis.screen(ctx)).toBeNull()
+  })
+
   it.each([
     ['an employer traditional account', { id: 'employer', name: '401(k)', type: 'traditional', kind: 'employer', balance: 300_000 }],
     [

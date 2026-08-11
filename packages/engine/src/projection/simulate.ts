@@ -2342,16 +2342,16 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             best.kind === 'survivor' ? 'survivor' : 'spousal'
           // Publication only: former-spouse aux replaces this stream's amount
           // and zeros sibling streams so published amounts stay person-faithful.
+          // Ensure a pub entry even when own PIA was unresolved (null PIA and no
+          // usable earnings) — aux still pays on the former-spouse record.
+          const paying = ensureSsStreamPub(stream.id, stream.personId)
+          paying.preWithholdingAnnual = annual
+          paying.source = maritalSource
+          paying.claimInForce = true
           for (const entry of ssStreamPub.values()) {
-            if (entry.personId !== stream.personId) continue
-            if (entry.streamId === stream.id) {
-              entry.preWithholdingAnnual = annual
-              entry.source = maritalSource
-              entry.claimInForce = true
-            } else {
-              entry.preWithholdingAnnual = 0
-              entry.source = 'none'
-            }
+            if (entry.personId !== stream.personId || entry.streamId === stream.id) continue
+            entry.preWithholdingAnnual = 0
+            entry.source = 'none'
           }
         }
       }
@@ -2567,38 +2567,47 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       )
     }
     // One row per configured socialSecurity stream (including unresolved
-    // streams with no usable PIA/earnings — empty not-payable rows so the
-    // per-stream contract is complete; detectors treat those as unmodeled).
+    // streams with no usable PIA/earnings). Truly unmodeled streams publish
+    // empty not-payable rows; when the former-spouse pass still pays a
+    // positive spousal/survivor benefit through an unresolved stream, publish
+    // those paid amounts/source (empty only when nothing pays).
     const socialSecurityStreams: SocialSecurityStreamActivity[] = []
     for (const stream of plan.incomes) {
       if (stream.type !== 'socialSecurity') continue
       const resolved = resolvedPiaByStreamId.get(stream.id) !== undefined
+      const entry = ssStreamPub.get(stream.id)
       if (!resolved) {
-        socialSecurityStreams.push({
-          personId: stream.personId,
-          streamId: stream.id,
-          source: 'none',
-          annualAmount: 0,
-          claimInForce: false,
-          preWithholdingAnnual: 0,
-          isSpousalSurvivorGateStream: false,
-        })
-        continue
+        const auxPaid =
+          entry !== undefined &&
+          (entry.source === 'spousal' || entry.source === 'survivor') &&
+          (entry.preWithholdingAnnual > 0 || entry.claimInForce)
+        if (!auxPaid) {
+          socialSecurityStreams.push({
+            personId: stream.personId,
+            streamId: stream.id,
+            source: 'none',
+            annualAmount: 0,
+            claimInForce: false,
+            preWithholdingAnnual: 0,
+            isSpousalSurvivorGateStream: false,
+          })
+          continue
+        }
       }
-      const entry = ensureSsStreamPub(stream.id, stream.personId)
+      const pub = entry ?? ensureSsStreamPub(stream.id, stream.personId)
       const gateStreamId = ssStreamByPerson.get(stream.personId)?.streamId
       const preSum = preWithholdingSumByPerson.get(stream.personId) ?? 0
       const post = postWithholdingByPerson.get(stream.personId) ?? 0
       const annualAmount = preSum > 0
-        ? entry.preWithholdingAnnual * (post / preSum)
+        ? pub.preWithholdingAnnual * (post / preSum)
         : 0
       socialSecurityStreams.push({
         personId: stream.personId,
         streamId: stream.id,
-        source: entry.source,
+        source: pub.source,
         annualAmount,
-        claimInForce: entry.claimInForce,
-        preWithholdingAnnual: entry.preWithholdingAnnual,
+        claimInForce: pub.claimInForce,
+        preWithholdingAnnual: pub.preWithholdingAnnual,
         isSpousalSurvivorGateStream: gateStreamId === stream.id,
       })
     }

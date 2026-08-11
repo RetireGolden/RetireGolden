@@ -193,6 +193,45 @@ describe('simulatePlan published per-entity ledger facts', () => {
     expect(resolved!.annualAmount).toBeGreaterThan(0)
   })
 
+  it('publishes former-spouse auxiliary amounts on an unresolved stream (no own PIA/earnings)', () => {
+    // Empty-row fix must not blank streams where the former-spouse pass still
+    // pays a positive spousal benefit with no usable own PIA.
+    const plan = singlePersonPlan({ dob: '1960-01-01', planningAge: 90 })
+    plan.id = 'published-facts-ss-unresolved-former-spouse-aux'
+    plan.assumptions.inflationPct = 0
+    plan.incomes = [
+      {
+        id: 'ss-unresolved-aux',
+        type: 'socialSecurity',
+        personId: 'p1',
+        piaMonthly: null,
+        earnings: null,
+        claimAge: { years: 62, months: 0 },
+        formerSpouses: [
+          {
+            id: 'ex',
+            relationship: 'divorced',
+            dob: '1950-01-01',
+            piaMonthly: 3_000,
+            marriageYears: 12,
+            remarriedAtAge: null,
+          },
+        ],
+      },
+    ] as never
+
+    const year = run(plan)[0]!
+    const streams = year.socialSecurityStreams ?? []
+    expect(streams).toHaveLength(1)
+    const row = streams[0]!
+    expect(row.streamId).toBe('ss-unresolved-aux')
+    expect(row.source).toBe('spousal')
+    expect(row.claimInForce).toBe(true)
+    expect(row.preWithholdingAnnual).toBeGreaterThan(0)
+    expect(row.annualAmount).toBeGreaterThan(0)
+    expect(year.incomes.socialSecurity).toBeCloseTo(row.annualAmount, 6)
+  })
+
   it('publishes per-stream Social Security with gate marker, source, and paid amount', () => {
     const plan = singlePersonPlan({ dob: '1960-01-01', planningAge: 90 })
     plan.id = 'published-facts-ss'

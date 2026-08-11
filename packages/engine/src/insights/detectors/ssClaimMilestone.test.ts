@@ -842,6 +842,64 @@ describe('Social Security claim milestone detector', () => {
     expect(ssClaimMilestone.screen(ctx)).toBeNull()
   })
 
+  it('stays silent when already-paying former-spouse spousal wins over earnings-resolved own PIA', () => {
+    // piaMonthly null but usable earnings: winning-anchor prior-year comparison
+    // must resolve own PIA through the earnings path (same as the sim) before
+    // comparing to the former-spouse benefit. Null PIA alone used to short-
+    // circuit and misclassify the start-row spousal as a NEW entitlement.
+    const earnings = []
+    for (let y = 1984; y <= 2023; y++) earnings.push({ year: y, amount: 5_000 })
+    const ctx = context(70, 62, 0)
+    ctx.plan.incomes = [
+      {
+        id: 'ss',
+        type: 'socialSecurity',
+        personId: 'p1',
+        piaMonthly: null,
+        earnings,
+        claimAge: { years: 62, months: 0 },
+        formerSpouses: [
+          {
+            id: 'former-spouse',
+            relationship: 'divorced',
+            dob: '1950-01-01', // age 76 at 2026 — eligible well before start
+            piaMonthly: 4_000,
+            marriageYears: 12,
+            remarriedAtAge: null,
+          },
+        ],
+      },
+    ] as never
+    const years = ctx.projection.result.years as Array<{
+      year: number
+      people: { personId: string; ageAttained: number; alive: boolean }[]
+      socialSecurityStreams?: {
+        personId: string
+        streamId: string
+        source: StreamSource
+        annualAmount: number
+        claimInForce: boolean
+        preWithholdingAnnual: number
+        isSpousalSurvivorGateStream: boolean
+      }[]
+    }>
+    for (const year of years) {
+      year.socialSecurityStreams = [
+        {
+          personId: 'p1',
+          streamId: 'ss',
+          source: 'spousal',
+          annualAmount: 24_000,
+          claimInForce: true,
+          preWithholdingAnnual: 24_000,
+          isSpousalSurvivorGateStream: true,
+        },
+      ]
+    }
+
+    expect(ssClaimMilestone.screen(ctx)).toBeNull()
+  })
+
   it('does not treat an ineligible living former spouse as a pre-horizon enabling event', () => {
     // Age-only gate would treat a long-ago-born ex as already-eligible pre-horizon
     // even when marriageYears < 10 cannot enable divorced-spousal under
