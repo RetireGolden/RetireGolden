@@ -1,9 +1,24 @@
 import type { Detector, InsightCard } from '../types.js'
 import type { Plan } from '../../model/plan.js'
 import type { SocialSecurityStreamActivity } from '../../projection/types.js'
+import { DIVORCED_EX_MIN_AGE } from '../../socialSecurity/maritalBenefits.js'
 import { effectiveBirthYear, fraForBirthYear } from '../../socialSecurity/nra.js'
 
 type SocialSecurityIncome = Extract<Plan['incomes'][number], { type: 'socialSecurity' }>
+
+/**
+ * True when this stream's configured claim-age year is `year`
+ * (`dobYear + claimAge.years` on the annual ledger). Used to treat claimInForce
+ * rows zeroed by an auxiliary override as real filing events — distinct from
+ * unmodeled zeros that have no filing-age transition.
+ */
+function isFilingAgeTransition(
+  streamIncome: SocialSecurityIncome | undefined,
+  year: number,
+  dobYear: number,
+): boolean {
+  return streamIncome !== undefined && year === dobYear + streamIncome.claimAge.years
+}
 
 function formatAge(totalMonths: number): string {
   const years = Math.floor(totalMonths / 12)
@@ -83,10 +98,11 @@ function lastSsIncomeForPerson(plan: Plan, personId: string): SocialSecurityInco
  * Distinguishes via published start-year rows only: positive aux with the same
  * source at start, no earlier in-horizon zero, and the enabling event already
  * present at start (co-spouse claim-in-force pre-horizon, co-spouse already
- * deceased for household survivor, or a deceased former spouse on the
- * claimant's stream for former-spouse survivor). A first-year NEW entitlement
- * — spouse claims or dies in year one, so the enabling event is not yet
- * pre-horizon-established — returns false so the start-year row can still fire.
+ * deceased for household survivor, a deceased former spouse on the claimant's
+ * stream for former-spouse survivor, or a living former spouse already eligible
+ * before the horizon). A first-year NEW entitlement — spouse claims or dies in
+ * year one, or a living former spouse first reaches eligibility age (62) at
+ * start — returns false so the start-year row can still fire.
  */
 function auxiliaryAlreadyPayingAtHorizonStart(args: {
   entry: SocialSecurityStreamActivity
@@ -94,6 +110,7 @@ function auxiliaryAlreadyPayingAtHorizonStart(args: {
   projectedAge: number
   claimAgeYears: number | undefined
   firstProjectionYear: {
+    year: number
     people: readonly { personId: string; ageAttained: number; alive: boolean }[]
     socialSecurityStreams?: readonly SocialSecurityStreamActivity[]
   }
@@ -124,10 +141,26 @@ function auxiliaryAlreadyPayingAtHorizonStart(args: {
     return hasDeceasedFormerSpouse
   }
 
-  // Spousal: enabling event = co-spouse already claim-in-force pre-horizon.
+  // Spousal: enabling event = co-spouse already claim-in-force pre-horizon, or a
+  // living former spouse already eligible (≥62) before the horizon start.
   if (coPerson === undefined) {
-    // Former-spouse spousal: positive past claim age at start → pre-horizon.
-    return true
+    // Former-spouse spousal (single household): pre-horizon only when a living
+    // former spouse was already eligible before start. Age-at-start == 62 means
+    // the ex first reaches eligibility in the start year — NEW entitlement.
+    const livingFormers =
+      streamIncome?.formerSpouses?.filter((former) => former.relationship === 'divorced') ?? []
+    if (livingFormers.length === 0) {
+      // No living former on the stream: treat positive past claim age as pre-horizon.
+      return true
+    }
+    const startYear = firstProjectionYear.year
+    // Enabling eligibility predates the horizon when any living former already
+    // had age > 62 at start (turned 62 in a prior year). Exactly 62 at start is
+    // first eligibility year — not already-paying.
+    return livingFormers.some((former) => {
+      const ageAtStart = startYear - Number(former.dob.slice(0, 4))
+      return ageAtStart > DIVORCED_EX_MIN_AGE
+    })
   }
   const coState = firstProjectionYear.people.find(
     (row) => row.personId === coPerson.id && row.alive,
@@ -279,31 +312,47 @@ export const ssClaimMilestone: Detector = {
       }
 
       // Earliest claim-in-force year among this person's non-SSDI, non-pre-horizon
-      // streams that actually model a benefit (positive paid or pre-withholding).
-      // An empty claim-in-force row (both amounts zero) is unmodeled — skip that
-      // stream and keep searching later years / sibling streams rather than
-      // stopping the person on the unmodeled row. Also skip own-retirement that
-      // follows a published SSDI year on the same stream (FRA conversion).
+      // streams that model a filing: positive paid or pre-withholding, or a
+      // claimInForce row zeroed by auxiliary override whose claim age falls in
+      // this year (filing-age transition). Unmodeled zeros (both amounts ≤ 0 and
+      // no filing-age transition) are skipped so later sibling streams still
+      // surface. Also skip own-retirement that follows a published SSDI year on
+      // the same stream (FRA conversion).
       let firstClaimYear: number | null = null
       let firstClaimStream: SocialSecurityStreamActivity | null = null
       for (const year of projectionYears) {
         const streams = (year.socialSecurityStreams ?? []).filter(
-          (entry: SocialSecurityStreamActivity) =>
-            entry.personId === person.id &&
-            entry.claimInForce &&
-            entry.source !== 'ssdi' &&
-            !(
-              entry.source === 'own-retirement' &&
-              streamPublishedSsdiThrough(projectionYears, entry.streamId, year.year - 1)
-            ) &&
-            !preHorizonStreamIds.has(entry.streamId) &&
-            // Unmodeled: claim-in-force with nothing published pre- or post-withholding.
-            (entry.annualAmount > 0 || entry.preWithholdingAnnual > 0),
+          (entry: SocialSecurityStreamActivity) => {
+            if (
+              entry.personId !== person.id ||
+              !entry.claimInForce ||
+              entry.source === 'ssdi' ||
+              (
+                entry.source === 'own-retirement' &&
+                streamPublishedSsdiThrough(projectionYears, entry.streamId, year.year - 1)
+              ) ||
+              preHorizonStreamIds.has(entry.streamId)
+            ) {
+              return false
+            }
+            // Positive paid or pre-withholding → modeled benefit (incl. withheld).
+            if (entry.annualAmount > 0 || entry.preWithholdingAnnual > 0) return true
+            // Zeroed-by-override filing: claimInForce stays true while auxiliary
+            // override zeroes source/amounts. Treat as a filing event when the
+            // stream's claim age falls in this year. Unmodeled-zero skip requires
+            // both amounts ≤ 0 AND no filing-age transition.
+            const streamIncome = ctx.plan.incomes.find(
+              (candidate): candidate is SocialSecurityIncome =>
+                candidate.type === 'socialSecurity' && candidate.id === entry.streamId,
+            )
+            return isFilingAgeTransition(streamIncome, year.year, birthYear)
+          },
         )
         if (streams.length === 0) continue
         // Same-year preference: positive published payment, then gate stream, then order.
         const preferred =
           streams.find((entry) => entry.annualAmount > 0) ??
+          streams.find((entry) => entry.preWithholdingAnnual > 0) ??
           streams.find((entry) => entry.isSpousalSurvivorGateStream) ??
           streams[0]!
         firstClaimYear = year.year
@@ -341,27 +390,52 @@ export const ssClaimMilestone: Detector = {
       const paidAmount = firstClaimStream.annualAmount
       const preWithholding = firstClaimStream.preWithholdingAnnual
       const sourceLabel = formatSource(firstClaimStream.source)
-      // Fold benefit source into the paid-amount label so evidence stays within
-      // the GOVERNANCE two-to-five cap (was six separate entries).
-      const paidEvidence = paidAmount > 0
-        ? {
-            label: `${person.name}'s modeled benefit in first claim year (${sourceLabel})`,
-            value: formatBenefitUsd(paidAmount),
-            year: firstClaimYear,
-          }
-        : {
-            // Only label earnings-test / SGA withholding when a positive
-            // pre-withholding benefit was actually reduced to $0.
-            // (Unmodeled zero/zero rows are filtered out of the search above.)
-            label:
-              `${person.name}'s modeled benefit in first claim year ` +
-              `(earnings test / SGA withheld to $0; ${sourceLabel})`,
-            value: '$0',
-            year: firstClaimYear,
-          }
+      const fullyWithheld = paidAmount <= 0 && preWithholding > 0
+      const zeroedFiling =
+        paidAmount <= 0 &&
+        preWithholding <= 0 &&
+        isFilingAgeTransition(income, firstClaimYear, birthYear)
+      // Unmodeled zero/zero without a filing-age transition should not reach here.
+      if (paidAmount <= 0 && preWithholding <= 0 && !zeroedFiling) continue
 
-      // Defense in depth: search filter already requires a positive amount.
-      if (paidAmount <= 0 && preWithholding <= 0) continue
+      // Benefit evidence stays within the GOVERNANCE two-to-five cap. Fully
+      // withheld claims need both the claim-age-sensitive pre-withholding amount
+      // and the withheld-to-$0 paid entry — free a slot by omitting age-at-start.
+      const benefitEvidence: InsightCard['evidence'] = fullyWithheld
+        ? [
+            {
+              label:
+                `${person.name}'s pre-withholding modeled benefit in first claim year ` +
+                `(${sourceLabel})`,
+              value: formatBenefitUsd(preWithholding),
+              year: firstClaimYear,
+            },
+            {
+              label:
+                `${person.name}'s paid amount in first claim year ` +
+                `(earnings test / SGA withheld to $0; ${sourceLabel})`,
+              value: '$0',
+              year: firstClaimYear,
+            },
+          ]
+        : paidAmount > 0
+          ? [
+              {
+                label: `${person.name}'s modeled benefit in first claim year (${sourceLabel})`,
+                value: formatBenefitUsd(paidAmount),
+                year: firstClaimYear,
+              },
+            ]
+          : [
+              // Zeroed-by-override filing: amounts cleared; claim facts carry the signal.
+              {
+                label:
+                  `${person.name}'s modeled benefit in first claim year ` +
+                  `(claim in force; ${sourceLabel})`,
+                value: '$0',
+                year: firstClaimYear,
+              },
+            ]
 
       const claimAgeLabel = formatAge(claimMonths)
       // Annual ledger ages are whole years; configured months are evidence-only.
@@ -391,9 +465,21 @@ export const ssClaimMilestone: Detector = {
             value: String(ageAtFirstPayableYear),
             year: firstClaimYear,
           },
-          { label: `Age at projection start (${firstProjectionYear.year})`, value: String(projectedPerson.ageAttained), year: firstProjectionYear.year },
-          { label: 'Modeled first claim year (claim in force; partial when claim months > 0)', value: String(firstClaimYear), year: firstClaimYear },
-          paidEvidence,
+          ...(fullyWithheld
+            ? []
+            : [
+                {
+                  label: `Age at projection start (${firstProjectionYear.year})`,
+                  value: String(projectedPerson.ageAttained),
+                  year: firstProjectionYear.year,
+                },
+              ]),
+          {
+            label: 'Modeled first claim year (claim in force; partial when claim months > 0)',
+            value: String(firstClaimYear),
+            year: firstClaimYear,
+          },
+          ...benefitEvidence,
         ],
         plannerRoute: 'social-security-analysis',
         action: { kind: 'advisory' },
