@@ -217,6 +217,48 @@ describe('simulatePlan published per-entity ledger facts', () => {
     expect(streams[0]!.annualAmount).toBeGreaterThan(0)
   })
 
+  it('publishes deceased-year SS streams as not-payable (not withheld-to-$0)', () => {
+    // Planning age 66 → last full year alive is age 66 (2026 for DOB 1960).
+    // 2027 is the first deceased year: pay-site publication must stay source
+    // 'none', claimInForce false, zero amounts — not claim-in-force with
+    // preWithholding > 0 and annualAmount 0 (withheld-to-$0 shape).
+    const plan = singlePersonPlan({ dob: '1960-01-01', planningAge: 66 })
+    plan.id = 'published-facts-ss-deceased-year'
+    plan.incomes = [
+      {
+        id: 'ss',
+        type: 'socialSecurity',
+        personId: 'p1',
+        piaMonthly: 2_000,
+        earnings: null,
+        claimAge: { years: 62, months: 0 },
+      },
+    ] as never
+
+    const years = run(plan, TAX_YEAR + 1)
+    const aliveYear = years.find((y) => y.year === TAX_YEAR)!
+    const deceasedYear = years.find((y) => y.year === TAX_YEAR + 1)!
+    expect(aliveYear.people[0]).toMatchObject({ ageAttained: 66, alive: true })
+    expect(deceasedYear.people[0]).toMatchObject({ ageAttained: 67, alive: false })
+
+    const aliveStream = (aliveYear.socialSecurityStreams ?? []).find((s) => s.streamId === 'ss')
+    const deadStream = (deceasedYear.socialSecurityStreams ?? []).find((s) => s.streamId === 'ss')
+    expect(aliveStream).toMatchObject({
+      source: 'own-retirement',
+      claimInForce: true,
+    })
+    expect(aliveStream!.preWithholdingAnnual).toBeGreaterThan(0)
+    expect(aliveStream!.annualAmount).toBeGreaterThan(0)
+
+    expect(deadStream).toMatchObject({
+      source: 'none',
+      claimInForce: false,
+      annualAmount: 0,
+      preWithholdingAnnual: 0,
+    })
+    expect(deceasedYear.incomes.socialSecurity).toBe(0)
+  })
+
   it('publishes own-retirement from the FRA year onward for an SSDI conversion (same dollars)', () => {
     // Born June 1960 → FRA 67 in 2027. Pre-FRA: source ssdi; FRA+: source own-retirement.
     // (Avoid Jan-1 DOB — SSA day-before rule shifts the effective birth year.)
@@ -640,6 +682,62 @@ describe('simulatePlan published per-entity ledger facts', () => {
       expect(owner0?.assumedBasisConsequential).toBeUndefined()
       // Draw 2: seed spent; free-conversion take $60 exceeds remaining CF cover $40 → $20.
       expect(owner1?.assumedBasisConsequential?.withdrawal).toBeCloseTo(20, 6)
+    })
+
+    it('does not double-count shared free-conversion takes after the seed is exhausted', () => {
+      // $60 omitted seed + $100 free conversion cover; draws $60, $20, $10.
+      // Draw 1 re-homes $60 of seed onto CF cover (tracker = 60, silence).
+      // Draws 2–3 take conversion principal in BOTH live and assumed-zero
+      // worlds — shared consumption must not accumulate on the tracker
+      // (live freeCover already reflects layer depletion). Before draw 3 the
+      // counterfactual still has $20 of free cover; over-counting shared
+      // takes would publish a false consequential spill on the third draw.
+      const plan = singlePersonPlan({ dob: '1971-01-01', planningAge: 90 })
+      plan.id = 'published-facts-roth-three-draw-shared-cover'
+      plan.assumptions.inflationPct = 0
+      plan.assumptions.defaultReturnPct = 0
+      plan.expenses.baseAnnual = 0
+      plan.expenses.oneTimeGoals = [
+        { id: 'd1', label: 'draw1', year: TAX_YEAR, amount: 60 },
+        { id: 'd2', label: 'draw2', year: TAX_YEAR + 1, amount: 20 },
+        { id: 'd3', label: 'draw3', year: TAX_YEAR + 2, amount: 10 },
+      ]
+      plan.accounts = [
+        {
+          ...ownedIra('trad-basis', 100),
+          nondeductibleBasis: 100, // wholly nontaxable conversion = free cover
+        },
+        rothIra('roth', 60, 'p1'), // assumed seed $60 — exhausted by draw 1
+        cash(0),
+      ]
+      plan.strategies.rothConversion = {
+        mode: 'manual',
+        conversions: [{ year: TAX_YEAR, amount: 100 }],
+      }
+      plan.incomes = [] as never
+
+      const years = run(plan, TAX_YEAR + 2)
+      const y0 = years.find((y) => y.year === TAX_YEAR)!
+      const y1 = years.find((y) => y.year === TAX_YEAR + 1)!
+      const y2 = years.find((y) => y.year === TAX_YEAR + 2)!
+      expect(y0.people[0]!.ageAttained).toBeLessThan(60)
+      expect(y1.people[0]!.ageAttained).toBeLessThan(60)
+      expect(y2.people[0]!.ageAttained).toBeLessThan(60)
+      expect(y0.withdrawals.roth).toBeCloseTo(60, 6)
+      expect(y1.withdrawals.roth).toBeCloseTo(20, 6)
+      expect(y2.withdrawals.roth).toBeCloseTo(10, 6)
+      const owner0 = (y0.ownedRothIraPoolActivity ?? []).find((row) => row.ownerPersonId === 'p1')
+      const owner1 = (y1.ownedRothIraPoolActivity ?? []).find((row) => row.ownerPersonId === 'p1')
+      const owner2 = (y2.ownedRothIraPoolActivity ?? []).find((row) => row.ownerPersonId === 'p1')
+      // Draw 1: $60 seed absorbed by $100 free cover → silence; CF cover left $40.
+      expect(owner0?.assumedBasisConsequential).toBeUndefined()
+      // Draw 2: free-conversion take $20 ≤ remaining CF cover $40 → silence; CF left $20.
+      // (Shared live conversion take must not bump the tracker.)
+      expect(owner1?.assumedBasisConsequential).toBeUndefined()
+      // Draw 3: free-conversion take $10 ≤ remaining CF cover $20 → silence.
+      // Double-counting shared takes would leave tracker at $80 with freeCover $80
+      // and falsely publish the full $10 as consequential.
+      expect(owner2?.assumedBasisConsequential).toBeUndefined()
     })
 
     it('flags when assumed-seed spill exceeds free cover into a mixed taxable layer', () => {

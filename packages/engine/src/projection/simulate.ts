@@ -2267,12 +2267,19 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         if (s.ageAttained >= onsetAge) {
           const monthly = ssdiMonthlyBenefit(pia)
           const annual = monthly * 12 * ssColaFactor * ssHaircutFactor
+          // Computation maps stay populated for deceased workers so the
+          // survivor pass can read the deceased's actual monthly benefit.
+          // Per-stream publication is alive-only: a deceased-year row is
+          // not-payable (source none / claimInForce false / zero amounts),
+          // not "withheld to $0".
           ssOwnByPerson.set(stream.personId, (ssOwnByPerson.get(stream.personId) ?? 0) + annual)
           ssActualMonthlyByPerson.set(stream.personId, (ssActualMonthlyByPerson.get(stream.personId) ?? 0) + monthly)
           ssdiByPerson.set(stream.personId, { onsetAge, benefit: annual, fraYears: fra.years })
-          streamPub.claimInForce = true
-          streamPub.preWithholdingAnnual += annual
-          streamPub.source = s.ageAttained >= fra.years ? 'own-retirement' : 'ssdi'
+          if (s.alive) {
+            streamPub.claimInForce = true
+            streamPub.preWithholdingAnnual += annual
+            streamPub.source = s.ageAttained >= fra.years ? 'own-retirement' : 'ssdi'
+          }
         }
         continue // SSDI replaces the retirement-claim path for this stream
       }
@@ -2287,13 +2294,17 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       const monthly = pia * factor
       let annual = monthly * payableMonths * ssColaFactor
       annual *= ssHaircutFactor
+      // Computation maps stay populated for deceased workers (survivor anchors).
+      // Gate pay-site publication on alive — deceased-year rows stay not-payable.
       ssOwnByPerson.set(stream.personId, (ssOwnByPerson.get(stream.personId) ?? 0) + annual)
       ssActualMonthlyByPerson.set(stream.personId, (ssActualMonthlyByPerson.get(stream.personId) ?? 0) + monthly)
-      streamPub.claimInForce = true
-      streamPub.preWithholdingAnnual += annual
-      // Per-stream source is recorded at this stream's own pay site (plan order
-      // must not change published stream sources).
-      streamPub.source = 'own-retirement'
+      if (s.alive) {
+        streamPub.claimInForce = true
+        streamPub.preWithholdingAnnual += annual
+        // Per-stream source is recorded at this stream's own pay site (plan order
+        // must not change published stream sources).
+        streamPub.source = 'own-retirement'
+      }
     }
 
     // Marital-history menu: a divorced-spousal or survivor benefit on a *former*
@@ -8881,6 +8892,12 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             // free in the counterfactual up to remaining cover after prior
             // re-homing. Excess would hit taxable/penalized layers without
             // the assumed seed.
+            //
+            // Shared conversion principal consumed in BOTH live and
+            // assumed-zero worlds is already reflected in next draw's live
+            // freeCover (layer depletion). Only counterfactual-EXTRA cover
+            // consumption accumulates on the tracker — after the seed is
+            // gone that extra is zero (CF has ≤ live free cover this draw).
             const freeConversionTake = Math.min(split.conversions, freeCover)
             const counterfactualCoverRemaining = Math.max(
               0,
@@ -8890,10 +8907,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
               0,
               freeConversionTake - counterfactualCoverRemaining,
             )
-            coverConsumedByThisDraw = Math.min(
-              freeConversionTake,
-              counterfactualCoverRemaining,
-            )
+            coverConsumedByThisDraw = 0
           }
           if (coverConsumedByThisDraw > 0) {
             rothCounterfactualFreeCoverConsumed.set(

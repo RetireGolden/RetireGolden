@@ -330,9 +330,10 @@ describe('missing data basis detector', () => {
           year: 2029,
         },
         {
-          label: 'Lake home property value',
+          // Opening value (same label/year stamp as the omitted-proceeds branch).
+          label: 'Lake home opening property value (legacy net-proceeds path)',
           value: '$500,000',
-          year: 2029,
+          year: 2026,
         },
       ]),
     )

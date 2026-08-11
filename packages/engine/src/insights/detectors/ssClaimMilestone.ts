@@ -14,14 +14,18 @@ function formatAge(totalMonths: number): string {
 }
 
 /**
- * Format a modeled benefit for evidence. Whole dollars stay rounded; positive
- * sub-dollar amounts keep cents so a $0.40 benefit is not shown as $0.
+ * Format a modeled benefit for evidence. Integral amounts stay whole dollars;
+ * any non-integral amount keeps exact cents (e.g. $0.60, $1,234.56).
  */
 function formatBenefitUsd(amount: number): string {
-  if (amount > 0 && amount < 0.5) {
-    return `$${amount.toFixed(2)}`
+  const cents = Math.round(amount * 100)
+  if (cents % 100 === 0) {
+    return `$${(cents / 100).toLocaleString('en-US')}`
   }
-  return `$${Math.round(amount).toLocaleString()}`
+  return `$${(cents / 100).toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`
 }
 
 function formatSource(source: SocialSecurityStreamActivity['source']): string {
@@ -59,6 +63,72 @@ function streamPublishedSsdiThrough(
 }
 
 /**
+ * True when a positive auxiliary row at the horizon start is already-paying
+ * pre-horizon (not a new in-horizon entitlement transition).
+ *
+ * Distinguishes via published start-year rows only: positive aux with the same
+ * source at start, no earlier in-horizon zero, and the enabling event already
+ * present at start (co-spouse claim-in-force pre-horizon, or co-spouse already
+ * deceased for survivor). A first-year NEW entitlement — spouse claims or dies
+ * in year one, so the enabling event is not yet pre-horizon-established —
+ * returns false so the start-year row can still fire.
+ */
+function auxiliaryAlreadyPayingAtHorizonStart(args: {
+  entry: SocialSecurityStreamActivity
+  personId: string
+  projectedAge: number
+  claimAgeYears: number | undefined
+  firstProjectionYear: {
+    people: readonly { personId: string; ageAttained: number; alive: boolean }[]
+    socialSecurityStreams?: readonly SocialSecurityStreamActivity[]
+  }
+  plan: Plan
+}): boolean {
+  const { entry, personId, projectedAge, claimAgeYears, firstProjectionYear, plan } = args
+  // First possible own-claim year is not "already paying" — keep NEW entitlements.
+  if (claimAgeYears !== undefined && projectedAge <= claimAgeYears) return false
+
+  const coPerson = plan.household.people.find((candidate) => candidate.id !== personId)
+  if (entry.source === 'survivor') {
+    if (coPerson === undefined) {
+      // Former-spouse survivor: positive past claim age at start → pre-horizon.
+      return true
+    }
+    const coState = firstProjectionYear.people.find((row) => row.personId === coPerson.id)
+    // Enabling death already present at start (co-spouse not alive).
+    return coState !== undefined && !coState.alive
+  }
+
+  // Spousal: enabling event = co-spouse already claim-in-force pre-horizon.
+  if (coPerson === undefined) {
+    // Former-spouse spousal: positive past claim age at start → pre-horizon.
+    return true
+  }
+  const coState = firstProjectionYear.people.find(
+    (row) => row.personId === coPerson.id && row.alive,
+  )
+  if (coState === undefined) return true
+  const coClaiming = (firstProjectionYear.socialSecurityStreams ?? []).some(
+    (row) =>
+      row.personId === coPerson.id &&
+      row.claimInForce &&
+      (row.annualAmount > 0 || row.preWithholdingAnnual > 0),
+  )
+  if (!coClaiming) return false
+  const coIncome = plan.incomes.find(
+    (candidate): candidate is SocialSecurityIncome =>
+      candidate.type === 'socialSecurity' && candidate.personId === coPerson.id,
+  )
+  // Co-spouse claim-in-force at start with age past their claim age = pre-horizon
+  // enabling event. If co-spouse is in their first claim year (age == claimAge),
+  // the enabling claim occurs in year one — not already-paying.
+  if (coIncome !== undefined && coState.ageAttained > coIncome.claimAge.years) {
+    return true
+  }
+  return false
+}
+
+/**
  * Highlights Social Security claim decisions occurring in the next two model years.
  *
  * Reads the ledger's published per-stream SS activity (`socialSecurityStreams`)
@@ -70,9 +140,11 @@ function streamPublishedSsdiThrough(
  * to $0 does not hide or delay a real claim. Automatic FRA conversion of SSDI
  * to own-retirement (no application) is excluded even when the published
  * source is no longer `ssdi`. Auxiliary (spousal/survivor) entitlements key on
- * the first year the published auxiliary amount becomes positive — not the
- * configured own-benefit claim age — so a zero-PIA pre-horizon filer who first
- * becomes entitled in the horizon still surfaces.
+ * the first year the published auxiliary amount becomes positive within the
+ * horizon (a transition) — not the configured own-benefit claim age. An
+ * auxiliary already positive at the horizon start with the same source is
+ * pre-horizon (already paying), not a new entitlement; a later in-horizon
+ * transition (e.g. spouse claims or dies after start) still surfaces.
  */
 export const ssClaimMilestone: Detector = {
   id: 'ss-claim-milestone',
@@ -142,11 +214,27 @@ export const ssClaimMilestone: Detector = {
         }
         // Auxiliary sources (spousal/survivor): claimAge is the own-benefit
         // filing age, not when the auxiliary entitlement becomes payable.
-        // Key on the first year the published auxiliary amount is positive
-        // (a new entitlement event) — do not pre-horizon-suppress via claim age.
-        // A zero-PIA filer who claimed years ago and first receives spousal in
-        // the horizon's first year must still fire.
+        // Key on a transition to positive within the horizon — not claim age.
+        // Already-paying pre-horizon: positive at the start year with the same
+        // auxiliary source, no earlier in-horizon zero row, and the enabling
+        // event already present at start (co-spouse pre-horizon claim-in-force,
+        // or co-spouse already deceased for survivor). First-year NEW
+        // entitlements (spouse claims or dies in year one; co-spouse not yet
+        // pre-horizon-established) stay out of this set so the search below
+        // can still fire at yearsToClaim = 0.
         if (entry.source === 'spousal' || entry.source === 'survivor') {
+          if (
+            auxiliaryAlreadyPayingAtHorizonStart({
+              entry,
+              personId: person.id,
+              projectedAge: projectedPerson.ageAttained,
+              claimAgeYears: streamIncome?.claimAge.years,
+              firstProjectionYear,
+              plan: ctx.plan,
+            })
+          ) {
+            preHorizonStreamIds.add(entry.streamId)
+          }
           continue
         }
         if (

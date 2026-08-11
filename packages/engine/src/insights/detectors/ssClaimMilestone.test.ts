@@ -1134,8 +1134,9 @@ describe('Social Security claim milestone detector', () => {
 
   it('fires for a first-year auxiliary entitlement when own claim age is pre-horizon', () => {
     // Zero-PIA claimant filed at 62; age 66 at the 2026 horizon. First becomes
-    // entitled to a positive spousal amount in the projection's first year.
-    // claimAge pre-horizon must not suppress this new auxiliary entitlement.
+    // entitled to a positive spousal amount in the projection's first year when
+    // the co-spouse's claim is also first-year (enabling event in year one) —
+    // not already-paying pre-horizon. claimAge pre-horizon must not suppress.
     const ctx = context(66, 62, 0)
     ctx.plan.incomes = [
       {
@@ -1161,7 +1162,8 @@ describe('Social Security claim milestone detector', () => {
       personId: 'p2',
       piaMonthly: 2_000,
       earnings: null,
-      claimAge: { years: 70, months: 0 },
+      // Co-spouse first claims in 2026 (age 66 == claim age) — year-one enabling event.
+      claimAge: { years: 66, months: 0 },
     } as never)
     const years = ctx.projection.result.years as Array<{
       year: number
@@ -1178,14 +1180,24 @@ describe('Social Security claim milestone detector', () => {
     }>
     for (const year of years) {
       year.people.push({ personId: 'p2', ageAttained: year.year - 1960, alive: true })
+      const spouseClaiming = year.year >= 2026
       year.socialSecurityStreams = [
         {
           personId: 'p1',
           streamId: 'ss-zero-pia',
-          source: 'spousal',
-          annualAmount: 12_000,
-          claimInForce: true,
-          preWithholdingAnnual: 12_000,
+          source: spouseClaiming ? 'spousal' : 'none',
+          annualAmount: spouseClaiming ? 12_000 : 0,
+          claimInForce: spouseClaiming,
+          preWithholdingAnnual: spouseClaiming ? 12_000 : 0,
+          isSpousalSurvivorGateStream: true,
+        },
+        {
+          personId: 'p2',
+          streamId: 'ss-spouse',
+          source: spouseClaiming ? 'own-retirement' : 'none',
+          annualAmount: spouseClaiming ? 24_000 : 0,
+          claimInForce: spouseClaiming,
+          preWithholdingAnnual: spouseClaiming ? 24_000 : 0,
           isSpousalSurvivorGateStream: true,
         },
       ]
@@ -1204,6 +1216,81 @@ describe('Social Security claim milestone detector', () => {
         { label: "Pat's modeled benefit in first claim year (spousal)", value: '$12,000', year: 2026 },
       ]),
     })
+  })
+
+  it('stays silent when an auxiliary benefit is already paying at the horizon start', () => {
+    // Ordinary couple: both claimed years before the horizon; lower earner has
+    // a positive spousal top-up at start. That is already-paying pre-horizon,
+    // not a new entitlement transition within the horizon.
+    const ctx = context(70, 62, 0)
+    ctx.plan.incomes = [
+      {
+        id: 'ss-lower',
+        type: 'socialSecurity',
+        personId: 'p1',
+        piaMonthly: 500,
+        earnings: null,
+        claimAge: { years: 62, months: 0 },
+      },
+    ] as never
+    ctx.plan.household.people.push({
+      id: 'p2',
+      name: 'Sam',
+      dob: '1954-01-01',
+      sex: 'average',
+      retirementAge: null,
+      longevity: { planningAge: 95, source: 'manual' },
+    })
+    ctx.plan.incomes.push({
+      id: 'ss-higher',
+      type: 'socialSecurity',
+      personId: 'p2',
+      piaMonthly: 2_500,
+      earnings: null,
+      claimAge: { years: 66, months: 0 },
+    } as never)
+    const years = ctx.projection.result.years as Array<{
+      year: number
+      people: { personId: string; ageAttained: number; alive: boolean }[]
+      socialSecurityStreams?: {
+        personId: string
+        streamId: string
+        source: StreamSource
+        annualAmount: number
+        claimInForce: boolean
+        preWithholdingAnnual: number
+        isSpousalSurvivorGateStream: boolean
+      }[]
+    }>
+    for (const year of years) {
+      // p1 age 70 at 2026; p2 age 72 at 2026 — both well past claim age.
+      year.people = [
+        { personId: 'p1', ageAttained: 70 + (year.year - 2026), alive: true },
+        { personId: 'p2', ageAttained: 72 + (year.year - 2026), alive: true },
+      ]
+      year.socialSecurityStreams = [
+        {
+          personId: 'p1',
+          streamId: 'ss-lower',
+          source: 'spousal',
+          annualAmount: 15_000,
+          claimInForce: true,
+          preWithholdingAnnual: 15_000,
+          isSpousalSurvivorGateStream: true,
+        },
+        {
+          personId: 'p2',
+          streamId: 'ss-higher',
+          source: 'own-retirement',
+          annualAmount: 30_000,
+          claimInForce: true,
+          preWithholdingAnnual: 30_000,
+          isSpousalSurvivorGateStream: true,
+        },
+      ]
+    }
+
+    expect(ssClaimMilestone.screen(ctx)).toBeNull()
   })
 
   it('formats sub-dollar positive benefits with cents', () => {
@@ -1228,6 +1315,62 @@ describe('Social Security claim milestone detector', () => {
         {
           label: "Pat's modeled benefit in first claim year (own retirement)",
           value: '$0.40',
+          year: 2027,
+        },
+      ]),
+    })
+  })
+
+  it('formats non-integral benefits at and above $0.50 with cents', () => {
+    const ctx = context(66, 67, 0)
+    const years = ctx.projection.result.years as Array<{
+      year: number
+      people: { personId: string; ageAttained: number; alive: boolean }[]
+      socialSecurityStreams?: {
+        personId: string
+        streamId: string
+        source: StreamSource
+        annualAmount: number
+        claimInForce: boolean
+        preWithholdingAnnual: number
+        isSpousalSurvivorGateStream: boolean
+      }[]
+    }>
+    withSsStreams(years, 'p1', 'ss', 2027, 0.6)
+
+    expect(ssClaimMilestone.screen(ctx)).toMatchObject({
+      evidence: expect.arrayContaining([
+        {
+          label: "Pat's modeled benefit in first claim year (own retirement)",
+          value: '$0.60',
+          year: 2027,
+        },
+      ]),
+    })
+  })
+
+  it('formats larger non-integral benefits with cents and grouping', () => {
+    const ctx = context(66, 67, 0)
+    const years = ctx.projection.result.years as Array<{
+      year: number
+      people: { personId: string; ageAttained: number; alive: boolean }[]
+      socialSecurityStreams?: {
+        personId: string
+        streamId: string
+        source: StreamSource
+        annualAmount: number
+        claimInForce: boolean
+        preWithholdingAnnual: number
+        isSpousalSurvivorGateStream: boolean
+      }[]
+    }>
+    withSsStreams(years, 'p1', 'ss', 2027, 1234.56)
+
+    expect(ssClaimMilestone.screen(ctx)).toMatchObject({
+      evidence: expect.arrayContaining([
+        {
+          label: "Pat's modeled benefit in first claim year (own retirement)",
+          value: '$1,234.56',
           year: 2027,
         },
       ]),

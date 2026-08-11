@@ -246,13 +246,15 @@ export const missingDataBasis: Detector = {
             },
           })
           // Zero proceeds alone are uninformative when the property still has
-          // positive value — cite the property value (labeled as such) too.
+          // positive value — cite the opening property value (same label/year
+          // stamp as the omitted-proceeds branch; sale-year compounded value
+          // is not published).
           if (expectedNetProceeds === 0 && account.value > 0) {
             gaps.push({
               evidence: {
-                label: `${account.name} property value`,
+                label: `${account.name} opening property value (legacy net-proceeds path)`,
                 value: usd(account.value),
-                year: account.plannedSaleYear,
+                year: ctx.projection.startYear,
               },
             })
           }
