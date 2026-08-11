@@ -176,8 +176,21 @@ export interface PersonYearState {
   personId: string
   /** Age attained during this calendar year (year − birth year). */
   ageAttained: number
-  /** Alive while ageAttained ≤ longevity planning age. */
+  /**
+   * Alive while `ageAttained` ≤ this run's effective life age for the person
+   * (`SimulateOptions.deathAgeByPersonId` when set, else plan
+   * `longevity.planningAge`). Detectors that classify death timing must read
+   * these flags (and year-to-year alive transitions) — never re-derive death
+   * year from plan planningAge alone, which drifts under longevity overrides.
+   */
   alive: boolean
+  /**
+   * Last full year of life used for this run's `alive` flag (deathAge override
+   * or planningAge). Optional on partial fixtures; `simulatePlan` always
+   * publishes it so detectors can place the first deceased year without
+   * re-reading plan longevity.
+   */
+  lifeAge?: number
 }
 
 /**
@@ -1211,7 +1224,13 @@ export interface EmployerRothAccountActivity {
 /**
  * One owner's Form 8606 owned-traditional-IRA aggregate activity for a
  * projection year (owned non-inherited IRAs only — never employer plans or
- * inherited IRAs).
+ * inherited IRAs that remain on the beneficiary path).
+ *
+ * Treat-as-own-elected accounts that still carry an `inherited` block are
+ * admitted per year via `isAggregatedIraThisYear` once the election is
+ * effective (and not the owner-death year), and can appear in this per-owner
+ * aggregate for those years. Static `isAggregatedIra` (seed / opening basis)
+ * still excludes them until that year-scoped gate applies.
  *
  * Published fact from the ledger's own execution — the one-source-of-truth
  * channel for insight detectors. Consumers must not re-derive attribution from

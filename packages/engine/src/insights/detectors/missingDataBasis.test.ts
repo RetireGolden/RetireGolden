@@ -1675,4 +1675,96 @@ describe('missing data basis detector', () => {
       },
     ])
   })
+
+  it('uses published inflationScale path for §121 bound under market.inflationPct override', () => {
+    // Pin: plan inflation is 0 so the old plan-assumptions compound leaves
+    // $200k under the $250k single exclusion (would suppress). The ledger ran
+    // with a high market.inflationPct path — sale-year value after published
+    // scales exceeds §121, so omitted basis is consequential and must fire.
+    // Growth through end of 2029 = inflationScale of 2030 (= 1.5^4).
+    const ctx = context()
+    ctx.plan.assumptions.inflationPct = 0
+    ctx.plan.accounts = [{
+      id: 'home',
+      name: 'Primary home',
+      type: 'property',
+      value: 200_000,
+      plannedSaleYear: 2029,
+      costBasis: undefined,
+      primaryResidence: true,
+    }] as never
+    ctx.plan.incomes = []
+    ctx.params = {
+      year: 2026,
+      federalTax: {
+        section121Exclusion: { single: 250_000, marriedFilingJointly: 500_000 },
+      },
+    } as never
+    ctx.projection.result.years = [
+      {
+        year: 2026,
+        inflationScale: 1,
+        people: [{ personId: 'p1', ageAttained: 60, alive: true }],
+        filingStatus: 'single',
+        ownedTraditionalIraAggregateActivity: [],
+        ownedRothIraPoolActivity: [],
+        employerRothAccountActivity: [],
+      },
+      { year: 2027, inflationScale: 1.5, people: [{ personId: 'p1', ageAttained: 61, alive: true }], filingStatus: 'single' },
+      { year: 2028, inflationScale: 2.25, people: [{ personId: 'p1', ageAttained: 62, alive: true }], filingStatus: 'single' },
+      { year: 2029, inflationScale: 3.375, people: [{ personId: 'p1', ageAttained: 63, alive: true }], filingStatus: 'single' },
+      // Post-sale scale = product of rates 2026..2029 inclusive (sale-year growth).
+      { year: 2030, inflationScale: 5.0625, people: [{ personId: 'p1', ageAttained: 64, alive: true }], filingStatus: 'single' },
+    ] as never
+
+    // 200_000 * 5.0625 = 1_012_500 > 250_000 — must flag.
+    expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
+      {
+        label: 'Primary home opening property value (legacy net-proceeds path)',
+        value: '$200,000',
+        year: 2026,
+      },
+    ])
+  })
+
+  it('suppresses §121 when published inflation path keeps zero-basis gain under the exclusion despite high plan inflationPct', () => {
+    // Opposite pin: plan assumptions say 50%/yr (old compound would blow past
+    // $250k), but the published path is flat (market override of 0). Bound must
+    // follow the ledger and suppress.
+    const ctx = context()
+    ctx.plan.assumptions.inflationPct = 50
+    ctx.plan.accounts = [{
+      id: 'home',
+      name: 'Primary home',
+      type: 'property',
+      value: 200_000,
+      plannedSaleYear: 2029,
+      costBasis: undefined,
+      primaryResidence: true,
+    }] as never
+    ctx.plan.incomes = []
+    ctx.params = {
+      year: 2026,
+      federalTax: {
+        section121Exclusion: { single: 250_000, marriedFilingJointly: 500_000 },
+      },
+    } as never
+    ctx.projection.result.years = [
+      {
+        year: 2026,
+        inflationScale: 1,
+        people: [{ personId: 'p1', ageAttained: 60, alive: true }],
+        filingStatus: 'single',
+        ownedTraditionalIraAggregateActivity: [],
+        ownedRothIraPoolActivity: [],
+        employerRothAccountActivity: [],
+      },
+      { year: 2027, inflationScale: 1, people: [{ personId: 'p1', ageAttained: 61, alive: true }], filingStatus: 'single' },
+      { year: 2028, inflationScale: 1, people: [{ personId: 'p1', ageAttained: 62, alive: true }], filingStatus: 'single' },
+      { year: 2029, inflationScale: 1, people: [{ personId: 'p1', ageAttained: 63, alive: true }], filingStatus: 'single' },
+      { year: 2030, inflationScale: 1, people: [{ personId: 'p1', ageAttained: 64, alive: true }], filingStatus: 'single' },
+    ] as never
+
+    expect(missingDataBasis.screen(ctx)).toBeNull()
+  })
 })

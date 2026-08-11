@@ -20,6 +20,69 @@ interface DataGap {
 const MIN_VISIBLE_CENT = 0.005
 
 /**
+ * Sale-year property value mirroring simulatePlan's property growth path.
+ *
+ * The sim multiplies each property by `1 + inflRateAt(year)` once per calendar
+ * year from the projection start through the sale year (sale-year growth
+ * accrues before the sale is priced). That cumulative product equals
+ * `inflFactorFrom(startYear, saleYear + 1)`, which is the published
+ * `YearResult.inflationScale` of the year after the sale when that year is in
+ * the ledger. Rates are recovered from consecutive published scales so a
+ * `market.inflationPct` override matches the ledger — never re-derived from
+ * `plan.assumptions.inflationPct` alone.
+ *
+ * When the sale year is the last published year (no next-year scale), year
+ * rates for start..sale-1 come from scale ratios; the sale-year rate holds the
+ * last observed yoy rate (same hold-last behavior as a finite market series).
+ * Partial fixtures without usable scales leave growth at 1 (no invented path).
+ */
+function projectedSaleYearPropertyValue(
+  openingValue: number,
+  startYear: number,
+  saleYear: number,
+  years: readonly { year: number; inflationScale?: number }[],
+): number {
+  const scaleByYear = new Map<number, number>()
+  for (const entry of years) {
+    const scale = entry.inflationScale
+    if (scale !== undefined && Number.isFinite(scale) && scale > 0) {
+      scaleByYear.set(entry.year, scale)
+    }
+  }
+  // Prefer next-year scale: product of rates startYear..saleYear inclusive.
+  const afterSaleScale = scaleByYear.get(saleYear + 1)
+  if (afterSaleScale !== undefined) {
+    return openingValue * afterSaleScale
+  }
+
+  // Reconstruct from consecutive published scales through the sale year.
+  let price = openingValue
+  let prevScale = scaleByYear.get(startYear)
+  if (prevScale === undefined) {
+    // No published path — do not invent growth from plan assumptions.
+    return openingValue
+  }
+  let lastRate = 0
+  let sawRate = false
+  for (let year = startYear; year < saleYear; year += 1) {
+    const nextScale = scaleByYear.get(year + 1)
+    if (nextScale === undefined) {
+      // Incomplete path mid-horizon — stop at last known compound.
+      return price
+    }
+    lastRate = nextScale / prevScale - 1
+    sawRate = true
+    price *= 1 + lastRate
+    prevScale = nextScale
+  }
+  // Sale year is last published year: apply hold-last rate when any yoy was
+  // observed; when the only published scale is the start year (scale 1) there
+  // is no growth signal for the sale year either.
+  if (sawRate) price *= 1 + lastRate
+  return price
+}
+
+/**
  * Format a decisive dollar amount for evidence. Integral amounts stay whole
  * dollars; any non-integral amount keeps exact cents (e.g. $0.60, not $1).
  */
@@ -289,15 +352,20 @@ export const missingDataBasis: Detector = {
               : ctx.plan.household.filingStatus
           const exclusionCap =
             ctx.params.federalTax.section121Exclusion[filingStatus] ?? 0
-          const inflPct = ctx.plan.assumptions.inflationPct / 100
-          let salePrice = account.value
-          for (
-            let year = ctx.projection.startYear;
-            year <= account.plannedSaleYear;
-            year += 1
-          ) {
-            salePrice *= 1 + inflPct
-          }
+          // Sale price compounds opening value once per calendar year from
+          // start through the sale year (sim multiplies inflRateAt(year)
+          // before pricing the sale). That product is the projection's
+          // published inflation path — not plan.assumptions.inflationPct —
+          // so market.inflationPct overrides match the ledger. Cumulative
+          // growth through end of year Y equals YearResult.inflationScale of
+          // Y+1 (inflFactorFrom(start, Y+1)); reconstruct from published
+          // scales when the post-sale year is absent.
+          const salePrice = projectedSaleYearPropertyValue(
+            account.value,
+            ctx.projection.startYear,
+            account.plannedSaleYear,
+            ctx.projection.result.years,
+          )
           // Zero basis, no selling costs, no recapture → gain = salePrice.
           if (salePrice <= exclusionCap) {
             continue

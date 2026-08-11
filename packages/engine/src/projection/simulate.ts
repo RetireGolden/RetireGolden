@@ -1922,7 +1922,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
 
     const peopleStates: PersonYearState[] = people.map((p) => {
       const ageAttained = year - dobYear(p)
-      return { personId: p.id, ageAttained, alive: ageAttained <= lifeAgeOf(p) }
+      const lifeAge = lifeAgeOf(p)
+      return { personId: p.id, ageAttained, alive: ageAttained <= lifeAge, lifeAge }
     })
     const stateOf = (personId: string) => peopleStates.find((s) => s.personId === personId)!
     const anyAlive = peopleStates.some((s) => s.alive)

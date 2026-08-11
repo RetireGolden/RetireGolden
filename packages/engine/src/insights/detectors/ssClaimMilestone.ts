@@ -316,6 +316,43 @@ function lastSsIncomeForPerson(plan: Plan, personId: string): SocialSecurityInco
 }
 
 /**
+ * Effective last full year of life for a person from the projection's published
+ * people series — never plan `planningAge`. Prefers the sim-published `lifeAge`
+ * on any person-year row; otherwise recovers the max `ageAttained` among years
+ * the person is still alive (the alive→dead transition). Returns null when the
+ * person is never alive and no `lifeAge` was published (cannot place first
+ * deceased year).
+ */
+function effectiveLifeAgeFromPublishedPeople(
+  years: readonly {
+    people: readonly {
+      personId: string
+      ageAttained: number
+      alive: boolean
+      lifeAge?: number
+    }[]
+  }[],
+  personId: string,
+): number | null {
+  let publishedLifeAge: number | null = null
+  let maxAliveAge: number | null = null
+  for (const year of years) {
+    for (const person of year.people) {
+      if (person.personId !== personId) continue
+      if (typeof person.lifeAge === 'number' && Number.isFinite(person.lifeAge)) {
+        publishedLifeAge = person.lifeAge
+      }
+      if (person.alive) {
+        maxAliveAge =
+          maxAliveAge === null ? person.ageAttained : Math.max(maxAliveAge, person.ageAttained)
+      }
+    }
+  }
+  if (publishedLifeAge !== null) return publishedLifeAge
+  return maxAliveAge
+}
+
+/**
  * True when a positive auxiliary row at the horizon start is already-paying
  * pre-horizon (not a new in-horizon entitlement transition).
  *
@@ -331,14 +368,22 @@ function lastSsIncomeForPerson(plan: Plan, personId: string): SocialSecurityInco
  * the projection start), or a living former spouse first reaches eligibility
  * age (62) at start — returns false so the start-year row can still fire.
  *
- * Household co-death uses published/projected alive transitions: simulatePlan
- * publishes `alive` when `ageAttained <= planningAge`, so the first deceased
- * year has `ageAttained === planningAge + 1`. Death-before-start is only when
- * the co-spouse is already past that first deceased year at the horizon start;
- * death-at-start (`ageAttained === planningAge + 1`, not alive) is a new
- * entitlement and must not suppress — **except** when a deceased-former-spouse
- * survivor already won over own pre-horizon (already-paying source stays
- * pre-horizon even when household death-at-start is another enabling event).
+ * Household co-death uses the projection's published people series only —
+ * never plan `planningAge`. simulatePlan sets `alive` from the run's effective
+ * life age (`deathAgeByPersonId` override when present, else planningAge) and
+ * publishes that life age on each person-year so the first deceased year is
+ * recoverable when the co-spouse is already dead at the horizon start (no
+ * in-horizon alive→dead transition to observe).
+ *
+ * Death-before-start: not alive at start and start age > lifeAge + 1.
+ * Death-at-start (new entitlement): not alive at start and start age ===
+ * lifeAge + 1 (first modeled deceased year is the projection start).
+ * Life age is read from published person-year `lifeAge` or recovered as the
+ * max ageAttained among years the co-person is still alive.
+ *
+ * Exception: a deceased-former-spouse survivor that already won over own
+ * pre-horizon stays already-paying even when household death-at-start is
+ * another enabling event.
  */
 function auxiliaryAlreadyPayingAtHorizonStart(args: {
   entry: SocialSecurityStreamActivity
@@ -347,12 +392,28 @@ function auxiliaryAlreadyPayingAtHorizonStart(args: {
   claimAgeYears: number | undefined
   firstProjectionYear: {
     year: number
-    people: readonly { personId: string; ageAttained: number; alive: boolean }[]
+    people: readonly {
+      personId: string
+      ageAttained: number
+      alive: boolean
+      lifeAge?: number
+    }[]
     socialSecurityStreams?: readonly SocialSecurityStreamActivity[]
   }
+  /** Full projection year series — death timing reads alive transitions here. */
+  projectionYears: readonly {
+    year: number
+    people: readonly {
+      personId: string
+      ageAttained: number
+      alive: boolean
+      lifeAge?: number
+    }[]
+  }[]
   plan: Plan
 }): boolean {
-  const { entry, personId, projectedAge, claimAgeYears, firstProjectionYear, plan } = args
+  const { entry, personId, projectedAge, claimAgeYears, firstProjectionYear, projectionYears, plan } =
+    args
   // First possible own-claim year is not "already paying" — keep NEW entitlements.
   if (claimAgeYears !== undefined && projectedAge <= claimAgeYears) return false
 
@@ -376,9 +437,10 @@ function auxiliaryAlreadyPayingAtHorizonStart(args: {
       return hasDeceasedFormerSpouse
     }
     // Household co-spouse not alive at start. Parallel to first-claim-year
-    // enabling: only death *before* the horizon is pre-horizon. simulatePlan
-    // alive rule is ageAttained <= planningAge, so first deceased year has
-    // ageAttained === planningAge + 1. When that year is the projection start,
+    // enabling: only death *before* the horizon is pre-horizon. Effective life
+    // age comes from published person-year data (deathAge override or the
+    // alive-series max), never plan planningAge — first deceased year has
+    // ageAttained === lifeAge + 1. When that year is the projection start,
     // death occurs AT start (new entitlement) — do not suppress. Ages past
     // that first deceased year mean death-before-start (already paying).
     //
@@ -402,7 +464,14 @@ function auxiliaryAlreadyPayingAtHorizonStart(args: {
       // true / null (eligible former, no usable own) → already-paying.
       if (win !== false) return true
     }
-    if (coState.ageAttained > coPerson.longevity.planningAge + 1) return true
+    const lifeAge = effectiveLifeAgeFromPublishedPeople(projectionYears, coPerson.id)
+    if (lifeAge === null) {
+      // No published life age and never alive in the series — cannot place the
+      // first deceased year; treat opening death as pre-horizon (already paying).
+      return true
+    }
+    // First deceased year age is lifeAge + 1; ages past that are death-before-start.
+    if (coState.ageAttained > lifeAge + 1) return true
     return false
   }
 
@@ -580,6 +649,7 @@ export const ssClaimMilestone: Detector = {
               projectedAge: projectedPerson.ageAttained,
               claimAgeYears: streamIncome?.claimAge.years,
               firstProjectionYear,
+              projectionYears,
               plan: ctx.plan,
             })
           ) {

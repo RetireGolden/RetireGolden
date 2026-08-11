@@ -2006,9 +2006,10 @@ describe('Social Security claim milestone detector', () => {
 
   it('fires for survivor at horizon start when co-spouse first deceased year is the start', () => {
     // Claimant past own claim age; co-spouse's first modeled deceased year is
-    // the projection start (planningAge + 1 at start, alive false). Survivor
+    // the projection start (lifeAge + 1 at start, alive false). Survivor
     // benefit at start is a new entitlement — death-at-start must fire, not
-    // be treated as already-paying pre-horizon.
+    // be treated as already-paying pre-horizon. Death timing reads published
+    // lifeAge / alive flags — not plan planningAge.
     const ctx = context(70, 62, 0)
     ctx.plan.incomes = [
       {
@@ -2020,14 +2021,16 @@ describe('Social Security claim milestone detector', () => {
         claimAge: { years: 62, months: 0 },
       },
     ] as never
-    // DOB 1960, planningAge 65 → last alive 2025, first deceased year 2026 (= start).
+    // DOB 1960, lifeAge 65 → last alive 2025, first deceased year 2026 (= start).
     ctx.plan.household.people.push({
       id: 'p2',
       name: 'Sam',
       dob: '1960-01-01',
       sex: 'average',
       retirementAge: null,
-      longevity: { planningAge: 65, source: 'manual' },
+      // Plan planningAge deliberately differs from published lifeAge below —
+      // detector must not read this for death timing.
+      longevity: { planningAge: 95, source: 'manual' },
     })
     ctx.plan.incomes.push({
       id: 'ss-decedent',
@@ -2039,7 +2042,7 @@ describe('Social Security claim milestone detector', () => {
     } as never)
     const years = ctx.projection.result.years as Array<{
       year: number
-      people: { personId: string; ageAttained: number; alive: boolean }[]
+      people: { personId: string; ageAttained: number; alive: boolean; lifeAge?: number }[]
       socialSecurityStreams?: {
         personId: string
         streamId: string
@@ -2051,10 +2054,10 @@ describe('Social Security claim milestone detector', () => {
       }[]
     }>
     for (const year of years) {
-      // ageAttained 66 = planningAge + 1 at 2026 — first deceased year at start.
+      // ageAttained 66 = lifeAge + 1 at 2026 — first deceased year at start.
       year.people = [
-        { personId: 'p1', ageAttained: 70 + (year.year - 2026), alive: true },
-        { personId: 'p2', ageAttained: 66 + (year.year - 2026), alive: false },
+        { personId: 'p1', ageAttained: 70 + (year.year - 2026), alive: true, lifeAge: 95 },
+        { personId: 'p2', ageAttained: 66 + (year.year - 2026), alive: false, lifeAge: 65 },
       ]
       year.socialSecurityStreams = [
         {
@@ -2089,7 +2092,7 @@ describe('Social Security claim milestone detector', () => {
 
   it('stays silent for survivor already paying when co-spouse died before the horizon', () => {
     // Co-spouse's first deceased year predates the projection start
-    // (ageAttained > planningAge + 1 at start). Positive survivor at start is
+    // (ageAttained > lifeAge + 1 at start). Positive survivor at start is
     // already-paying pre-horizon — not a new entitlement.
     const ctx = context(70, 62, 0)
     ctx.plan.incomes = [
@@ -2102,14 +2105,14 @@ describe('Social Security claim milestone detector', () => {
         claimAge: { years: 62, months: 0 },
       },
     ] as never
-    // DOB 1960, planningAge 60 → last alive 2020, first deceased 2021 (before 2026).
+    // DOB 1960, lifeAge 60 → last alive 2020, first deceased 2021 (before 2026).
     ctx.plan.household.people.push({
       id: 'p2',
       name: 'Sam',
       dob: '1960-01-01',
       sex: 'average',
       retirementAge: null,
-      longevity: { planningAge: 60, source: 'manual' },
+      longevity: { planningAge: 95, source: 'manual' },
     })
     ctx.plan.incomes.push({
       id: 'ss-decedent',
@@ -2121,7 +2124,7 @@ describe('Social Security claim milestone detector', () => {
     } as never)
     const years = ctx.projection.result.years as Array<{
       year: number
-      people: { personId: string; ageAttained: number; alive: boolean }[]
+      people: { personId: string; ageAttained: number; alive: boolean; lifeAge?: number }[]
       socialSecurityStreams?: {
         personId: string
         streamId: string
@@ -2133,10 +2136,85 @@ describe('Social Security claim milestone detector', () => {
       }[]
     }>
     for (const year of years) {
-      // ageAttained 66 > planningAge + 1 (61) — death-before-start.
+      // ageAttained 66 > lifeAge + 1 (61) — death-before-start.
       year.people = [
-        { personId: 'p1', ageAttained: 70 + (year.year - 2026), alive: true },
-        { personId: 'p2', ageAttained: 66 + (year.year - 2026), alive: false },
+        { personId: 'p1', ageAttained: 70 + (year.year - 2026), alive: true, lifeAge: 95 },
+        { personId: 'p2', ageAttained: 66 + (year.year - 2026), alive: false, lifeAge: 60 },
+      ]
+      year.socialSecurityStreams = [
+        {
+          personId: 'p1',
+          streamId: 'ss-survivor',
+          source: 'survivor',
+          annualAmount: 30_000,
+          claimInForce: true,
+          preWithholdingAnnual: 30_000,
+          isSpousalSurvivorGateStream: true,
+        },
+        {
+          personId: 'p2',
+          streamId: 'ss-decedent',
+          source: 'none',
+          annualAmount: 0,
+          claimInForce: false,
+          preWithholdingAnnual: 0,
+          isSpousalSurvivorGateStream: true,
+        },
+      ]
+    }
+
+    expect(ssClaimMilestone.screen(ctx)).toBeNull()
+  })
+
+  it('stays silent under deathAgeByPersonId override when plan planningAge still looks mid-life', () => {
+    // Pin: plan planningAge 95 would classify age 66 as death-at-start
+    // (66 === 95+1 is false, but 66 > 96 is also false → old code fired).
+    // Published lifeAge 60 (deathAge override) makes 66 > 61 → already paying.
+    const ctx = context(70, 62, 0)
+    ctx.plan.incomes = [
+      {
+        id: 'ss-survivor',
+        type: 'socialSecurity',
+        personId: 'p1',
+        piaMonthly: 500,
+        earnings: null,
+        claimAge: { years: 62, months: 0 },
+      },
+    ] as never
+    ctx.plan.household.people.push({
+      id: 'p2',
+      name: 'Sam',
+      dob: '1960-01-01',
+      sex: 'average',
+      retirementAge: null,
+      longevity: { planningAge: 95, source: 'manual' },
+    })
+    ctx.plan.incomes.push({
+      id: 'ss-decedent',
+      type: 'socialSecurity',
+      personId: 'p2',
+      piaMonthly: 2_500,
+      earnings: null,
+      claimAge: { years: 66, months: 0 },
+    } as never)
+    const years = ctx.projection.result.years as Array<{
+      year: number
+      people: { personId: string; ageAttained: number; alive: boolean; lifeAge?: number }[]
+      socialSecurityStreams?: {
+        personId: string
+        streamId: string
+        source: StreamSource
+        annualAmount: number
+        claimInForce: boolean
+        preWithholdingAnnual: number
+        isSpousalSurvivorGateStream: boolean
+      }[]
+    }>
+    for (const year of years) {
+      year.people = [
+        { personId: 'p1', ageAttained: 70 + (year.year - 2026), alive: true, lifeAge: 95 },
+        // deathAgeByPersonId: 60 — published alive/lifeAge, not plan planningAge 95.
+        { personId: 'p2', ageAttained: 66 + (year.year - 2026), alive: false, lifeAge: 60 },
       ]
       year.socialSecurityStreams = [
         {
@@ -2707,7 +2785,7 @@ describe('Social Security claim milestone detector', () => {
         ],
       },
     ] as never
-    // DOB 1960, planningAge 65 → last alive 2025, first deceased year 2026 (= start).
+    // DOB 1960, lifeAge 65 → last alive 2025, first deceased year 2026 (= start).
     ctx.plan.household.people.push({
       id: 'p2',
       name: 'Sam',
@@ -2726,7 +2804,7 @@ describe('Social Security claim milestone detector', () => {
     } as never)
     const years = ctx.projection.result.years as Array<{
       year: number
-      people: { personId: string; ageAttained: number; alive: boolean }[]
+      people: { personId: string; ageAttained: number; alive: boolean; lifeAge?: number }[]
       socialSecurityStreams?: {
         personId: string
         streamId: string
@@ -2739,8 +2817,8 @@ describe('Social Security claim milestone detector', () => {
     }>
     for (const year of years) {
       year.people = [
-        { personId: 'p1', ageAttained: 70 + (year.year - 2026), alive: true },
-        { personId: 'p2', ageAttained: 66 + (year.year - 2026), alive: false },
+        { personId: 'p1', ageAttained: 70 + (year.year - 2026), alive: true, lifeAge: 95 },
+        { personId: 'p2', ageAttained: 66 + (year.year - 2026), alive: false, lifeAge: 65 },
       ]
       year.socialSecurityStreams = [
         {
