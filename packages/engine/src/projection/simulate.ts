@@ -8826,11 +8826,17 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           )
           if (age < ROTH_QUALIFIED_AGE && taken > 0) {
             // Free-cover capacity at this moment (pre-commit pool balances).
-            // If the spill fits entirely in free cover, removing the seed would
-            // shift the same dollars into those buckets with identical zero
-            // tax/penalty — not consequential.
+            // The current draw may already have consumed free conversion cover
+            // (split.conversions — same FIFO layers freeRothCoverCapacity
+            // measures) after contributions; that consumption is not available
+            // to absorb a counterfactual removal of the assumed seed. Observe
+            // the split's own conversion take — do not re-scan layers.
+            // If the spill fits entirely in remaining free cover, removing the
+            // seed would shift the same dollars into those buckets with
+            // identical zero tax/penalty — not consequential.
             const freeCover = freeRothCoverCapacity(rb, year, age)
-            const consequentialSpill = Math.max(0, fromAssumed - freeCover)
+            const freeCoverRemaining = Math.max(0, freeCover - split.conversions)
+            const consequentialSpill = Math.max(0, fromAssumed - freeCoverRemaining)
             if (consequentialSpill > 0) {
               if (key.startsWith('rothira:')) {
                 const ownerPersonId = key.slice('rothira:'.length)

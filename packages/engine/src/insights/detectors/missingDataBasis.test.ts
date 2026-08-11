@@ -62,8 +62,8 @@ describe('missing data basis detector', () => {
       severity: 'info',
       confidence: 'high',
       evidence: [
-        { label: 'Traditional IRA owned-IRA owner-pool distributions (projection)', value: '$1', year: 2026 },
-        { label: 'Traditional IRA owned-IRA owner-pool balances (assumed zero after-tax basis)', value: '$300,000' },
+        { label: 'Traditional IRA taxable character from assumed-zero basis (distributions)', value: '$1', year: 2026 },
+        { label: 'Traditional IRA opening balance (assumed zero after-tax basis)', value: '$300,000', year: 2026 },
         { label: 'Lake home planned-sale value (legacy net-proceeds path)', value: '$500,000', year: 2029 },
         { label: 'Pat age at projection start (wages assumed to continue for life)', value: '60', year: 2026 },
       ],
@@ -136,14 +136,14 @@ describe('missing data basis detector', () => {
     ctx.plan.incomes = []
 
     const activityLabel = activity.distributions > 0
-      ? 'Traditional IRA owned-IRA owner-pool distributions (projection)'
-      : 'Traditional IRA owned-IRA owner-pool conversions (projection)'
+      ? 'Traditional IRA taxable character from assumed-zero basis (distributions)'
+      : 'Traditional IRA taxable character from assumed-zero basis (conversions)'
     const activityValue = activity.distributions > 0
       ? `$${activity.distributions}`
       : `$${activity.conversions}`
     expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
       { label: activityLabel, value: activityValue, year: 2026 },
-      { label: 'Traditional IRA owned-IRA owner-pool balances (assumed zero after-tax basis)', value: '$300,000' },
+      { label: 'Traditional IRA opening balance (assumed zero after-tax basis)', value: '$300,000', year: 2026 },
     ])
   })
 
@@ -203,8 +203,9 @@ describe('missing data basis detector', () => {
     ctx.plan.incomes = []
 
     expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
-      { label: 'Traditional IRA owned-IRA owner-pool distributions (projection)', value: '$4,000', year: 2027 },
-      { label: 'Traditional IRA owned-IRA owner-pool balances (assumed zero after-tax basis)', value: '$300,000' },
+      { label: 'Traditional IRA taxable character from assumed-zero basis (distributions)', value: '$4,000', year: 2027 },
+      // Opening balance is the plan figure — stamp with projection start, not the trigger year.
+      { label: 'Traditional IRA opening balance (assumed zero after-tax basis)', value: '$300,000', year: 2026 },
     ])
   })
 
@@ -225,8 +226,8 @@ describe('missing data basis detector', () => {
     ctx.plan.incomes = []
 
     expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
-      { label: 'Traditional IRA owned-IRA owner-pool distributions (projection)', value: '$1', year: 2026 },
-      { label: 'Traditional IRA owned-IRA owner-pool balances (assumed zero after-tax basis)', value: '$300,000' },
+      { label: 'Traditional IRA taxable character from assumed-zero basis (distributions)', value: '$1', year: 2026 },
+      { label: 'Traditional IRA opening balance (assumed zero after-tax basis)', value: '$300,000', year: 2026 },
     ])
   })
 
@@ -299,8 +300,8 @@ describe('missing data basis detector', () => {
     ctx.plan.incomes = []
 
     expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
-      { label: 'Roth IRA owner-pool pre-qualified-age withdrawals', value: '$1', year: 2026 },
-      { label: 'Roth IRA balance (assumed contribution basis)', value: '$125,000', year: 2026 },
+      { label: 'Roth IRA owner-pool basis-sensitive spill past known contributions and free conversion cover', value: '$1', year: 2026 },
+      { label: 'Roth IRA opening balance (assumed contribution basis)', value: '$125,000', year: 2026 },
     ])
   })
 
@@ -360,8 +361,8 @@ describe('missing data basis detector', () => {
     ctx.plan.incomes = []
 
     expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
-      { label: 'Roth IRA owner-pool pre-qualified-age withdrawals', value: '$0.40', year: 2026 },
-      { label: 'Roth IRA balance (assumed contribution basis)', value: '$125,000', year: 2026 },
+      { label: 'Roth IRA owner-pool basis-sensitive spill past known contributions and free conversion cover', value: '$0.40', year: 2026 },
+      { label: 'Roth IRA opening balance (assumed contribution basis)', value: '$125,000', year: 2026 },
     ])
   })
 
@@ -388,8 +389,8 @@ describe('missing data basis detector', () => {
     ctx.plan.incomes = []
 
     expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
-      { label: 'Roth IRA owner-pool pre-qualified-age withdrawals', value: '$0.60', year: 2026 },
-      { label: 'Roth IRA balance (assumed contribution basis)', value: '$125,000', year: 2026 },
+      { label: 'Roth IRA owner-pool basis-sensitive spill past known contributions and free conversion cover', value: '$0.60', year: 2026 },
+      { label: 'Roth IRA opening balance (assumed contribution basis)', value: '$125,000', year: 2026 },
     ])
   })
 
@@ -510,8 +511,8 @@ describe('missing data basis detector', () => {
     ctx.plan.incomes = []
 
     expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
-      { label: 'Roth IRA owner-pool pre-qualified-age withdrawals', value: '$1', year: 2026 },
-      { label: 'Roth IRA balance (assumed contribution basis)', value: '$125,000', year: 2026 },
+      { label: 'Roth IRA owner-pool basis-sensitive spill past known contributions and free conversion cover', value: '$1', year: 2026 },
+      { label: 'Roth IRA opening balance (assumed contribution basis)', value: '$125,000', year: 2026 },
     ])
   })
 
@@ -607,8 +608,8 @@ describe('missing data basis detector', () => {
     } as unknown as DetectorContext
 
     expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
-      { label: 'Pat Roth IRA owner-pool pre-qualified-age withdrawals', value: '$5,000', year: 2026 },
-      { label: 'Pat Roth IRA balance (assumed contribution basis)', value: '$125,000', year: 2026 },
+      { label: 'Pat Roth IRA owner-pool basis-sensitive spill past known contributions and free conversion cover', value: '$5,000', year: 2026 },
+      { label: 'Pat Roth IRA opening balance (assumed contribution basis)', value: '$125,000', year: 2026 },
     ])
   })
 
@@ -705,8 +706,8 @@ describe('missing data basis detector', () => {
     ctx.plan.incomes = []
 
     expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
-      { label: 'Roth IRA owner-pool pre-qualified-age withdrawals', value: '$5,000', year: 2026 },
-      { label: 'Roth IRA balance (assumed contribution basis)', value: '$125,000', year: 2026 },
+      { label: 'Roth IRA owner-pool basis-sensitive spill past known contributions and free conversion cover', value: '$5,000', year: 2026 },
+      { label: 'Roth IRA opening balance (assumed contribution basis)', value: '$125,000', year: 2026 },
     ])
   })
 
@@ -763,8 +764,8 @@ describe('missing data basis detector', () => {
     ctx.plan.incomes = []
 
     expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
-      { label: 'Roth IRA owner-pool pre-qualified-age withdrawals', value: '$5,000', year: 2026 },
-      { label: 'Roth IRA balance (assumed contribution basis)', value: '$125,000', year: 2026 },
+      { label: 'Roth IRA owner-pool basis-sensitive spill past known contributions and free conversion cover', value: '$5,000', year: 2026 },
+      { label: 'Roth IRA opening balance (assumed contribution basis)', value: '$125,000', year: 2026 },
     ])
   })
 
@@ -820,8 +821,8 @@ describe('missing data basis detector', () => {
     ctx.plan.incomes = []
 
     expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
-      { label: 'Missing-basis Roth IRA owner-pool pre-qualified-age withdrawals', value: '$5,000', year: 2026 },
-      { label: 'Missing-basis Roth IRA balance (assumed contribution basis)', value: '$125,000', year: 2026 },
+      { label: 'Missing-basis Roth IRA owner-pool basis-sensitive spill past known contributions and free conversion cover', value: '$5,000', year: 2026 },
+      { label: 'Missing-basis Roth IRA opening balance (assumed contribution basis)', value: '$125,000', year: 2026 },
     ])
   })
 
@@ -911,8 +912,8 @@ describe('missing data basis detector', () => {
     ctx.plan.incomes = []
 
     expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
-      { label: 'Missing-basis IRA owned-IRA owner-pool distributions (projection)', value: '$5,000', year: 2026 },
-      { label: 'Missing-basis IRA owned-IRA owner-pool balances (assumed zero after-tax basis)', value: '$50,000' },
+      { label: 'Missing-basis IRA taxable character from assumed-zero basis (distributions)', value: '$5,000', year: 2026 },
+      { label: 'Missing-basis IRA opening balance (assumed zero after-tax basis)', value: '$50,000', year: 2026 },
     ])
   })
 
@@ -965,8 +966,8 @@ describe('missing data basis detector', () => {
     ctx.plan.incomes = []
 
     expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
-      { label: 'IRA A, IRA B owned-IRA owner-pool distributions (projection)', value: '$5,000', year: 2026 },
-      { label: 'IRA A, IRA B owned-IRA owner-pool balances (assumed zero after-tax basis)', value: '$150,000' },
+      { label: 'IRA A, IRA B taxable character from assumed-zero basis (distributions)', value: '$5,000', year: 2026 },
+      { label: 'IRA A, IRA B opening balance (assumed zero after-tax basis)', value: '$150,000', year: 2026 },
     ])
   })
 
@@ -1011,8 +1012,8 @@ describe('missing data basis detector', () => {
     ctx.plan.incomes = []
 
     expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
-      { label: 'Traditional IRA owned-IRA owner-pool IRA-funded annuity payments (projection)', value: '$1,200', year: 2026 },
-      { label: 'Traditional IRA owned-IRA owner-pool balances (assumed zero after-tax basis)', value: '$300,000' },
+      { label: 'Traditional IRA taxable character from assumed-zero basis (IRA-funded annuity payments)', value: '$1,200', year: 2026 },
+      { label: 'Traditional IRA opening balance (assumed zero after-tax basis)', value: '$300,000', year: 2026 },
     ])
   })
 
@@ -1043,8 +1044,8 @@ describe('missing data basis detector', () => {
     ctx.plan.incomes = []
 
     expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
-      { label: 'Primary Roth IRA owner-pool pre-qualified-age withdrawals', value: '$5,000', year: 2026 },
-      { label: 'Primary Roth IRA balance (assumed contribution basis)', value: '$125,000', year: 2026 },
+      { label: 'Primary Roth IRA owner-pool basis-sensitive spill past known contributions and free conversion cover', value: '$5,000', year: 2026 },
+      { label: 'Primary Roth IRA opening balance (assumed contribution basis)', value: '$125,000', year: 2026 },
     ])
   })
 
@@ -1079,10 +1080,10 @@ describe('missing data basis detector', () => {
     ctx.plan.incomes = []
 
     expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
-      { label: 'Roth 401(k) pre-qualified-age withdrawals', value: '$5,000', year: 2026 },
+      { label: 'Roth 401(k) basis-sensitive spill past known contributions and free conversion cover', value: '$5,000', year: 2026 },
       {
         label:
-          "Roth 401(k) balance (modeled as contribution basis under the engine's simplified ordering)",
+          "Roth 401(k) opening balance (modeled as contribution basis under the engine's simplified ordering)",
         value: '$125,000',
         year: 2026,
       },

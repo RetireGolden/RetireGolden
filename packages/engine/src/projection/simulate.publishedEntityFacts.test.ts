@@ -525,6 +525,44 @@ describe('simulatePlan published per-entity ledger facts', () => {
       expect(owner?.assumedBasisConsequential).toBeUndefined()
     })
 
+    it('subtracts free cover already consumed by the current draw before comparing assumed spill', () => {
+      // freeCover is measured pre-draw. The draw takes assumed seed first
+      // (contributions), then conversion free cover (split.conversions). Cover
+      // already taken by this draw cannot also absorb the counterfactual
+      // assumed-seed spill.
+      // freeCover 30k nontaxable, assumed seed 20k, draw 40k → conversions 20k;
+      // remaining free cover 10k < fromAssumed 20k → consequential 10k.
+      const plan = singlePersonPlan({ dob: '1971-01-01', planningAge: 90 })
+      plan.id = 'published-facts-roth-free-cover-current-draw'
+      plan.assumptions.inflationPct = 0
+      plan.assumptions.defaultReturnPct = 0
+      plan.expenses.baseAnnual = 40_000
+      plan.accounts = [
+        {
+          ...ownedIra('trad-basis', 30_000),
+          nondeductibleBasis: 30_000, // wholly nontaxable conversion = free cover
+        },
+        rothIra('roth', 20_000, 'p1'), // assumed seed 20k
+        cash(0),
+      ]
+      plan.strategies.rothConversion = {
+        mode: 'manual',
+        conversions: [{ year: TAX_YEAR, amount: 30_000 }],
+      }
+      plan.incomes = [] as never
+
+      const year = run(plan)[0]!
+      expect(year.withdrawals.roth).toBeGreaterThan(0)
+      const owner = (year.ownedRothIraPoolActivity ?? []).find((row) => row.ownerPersonId === 'p1')
+      expect(owner).toBeDefined()
+      // Without subtracting split.conversions, freeCover (30k) ≥ fromAssumed (20k)
+      // would silence; remaining free cover after conversion take is 10k.
+      expect(owner!.assumedBasisConsequential!.withdrawal).toBeGreaterThan(0)
+      expect(owner!.assumedBasisConsequential!.withdrawal).toBeLessThanOrEqual(
+        year.withdrawals.roth,
+      )
+    })
+
     it('flags when assumed-seed spill exceeds free cover into a mixed taxable layer', () => {
       // Small free cover, large assumed seed, pre-60 draw past free cover.
       const plan = singlePersonPlan({ dob: '1971-01-01', planningAge: 90 })

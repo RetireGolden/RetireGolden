@@ -136,6 +136,43 @@ describe('Social Security claim milestone detector', () => {
     expect(ssClaimMilestone.screen(ctx)).toBeNull()
   })
 
+  it('fires when disability.onsetAge is at/after FRA (invalid SSDI falls through to retirement)', () => {
+    // simulate treats onsetAge >= FRA as invalid SSDI metadata and publishes
+    // normal own-retirement — never source `ssdi`. The detector must not
+    // suppress that stream as an automatic FRA conversion.
+    const ctx = context(66, 67, 0)
+    const income = ctx.plan.incomes[0] as { disability?: { onsetAge: number }; piaMonthly: number }
+    income.disability = { onsetAge: 70 } // FRA for 1960 birth is 67
+    income.piaMonthly = 2_000
+    const years = ctx.projection.result.years as Array<{
+      year: number
+      people: { personId: string; ageAttained: number; alive: boolean }[]
+      socialSecurityStreams?: {
+        personId: string
+        streamId: string
+        source: StreamSource
+        annualAmount: number
+        claimInForce: boolean
+        preWithholdingAnnual: number
+        isSpousalSurvivorGateStream: boolean
+      }[]
+    }>
+    // Truthful publication: own-retirement only (no ssdi year), claim in 2027.
+    withSsStreams(years, 'p1', 'ss', 2027, 24_000, 'own-retirement')
+
+    expect(ssClaimMilestone.screen(ctx)).toMatchObject({
+      title: "Pat's Social Security claim is imminent",
+      severity: 'attention',
+      evidence: expect.arrayContaining([
+        {
+          label: "Pat's modeled benefit in first claim year (own retirement)",
+          value: '$24,000',
+          year: 2027,
+        },
+      ]),
+    })
+  })
+
   it('stays silent when SSDI converts to own-retirement at FRA (no application)', () => {
     // Pre-FRA years publish source ssdi; FRA year publishes own-retirement for
     // the same dollars. That conversion is not a filing decision.

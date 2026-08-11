@@ -79,14 +79,14 @@ export const missingDataBasis: Detector = {
         if (verdict === undefined) continue
 
         const nameList = accounts.map((a) => a.name).join(', ')
-        // Cite the binding channel that produced taxable character — not the
-        // year's full distribution total (a QCD-plus-conversion year cites
-        // the conversion). Figures are the owner's §408(d)(2) owned-IRA
-        // aggregate, not a single account's distributions.
+        // Cite the binding channel's taxable ordinary-income character under
+        // assumed-zero basis — not the year's full distribution gross (a
+        // QCD-plus-conversion year cites the conversion). Figures are the
+        // owner's §408(d)(2) owned-IRA aggregate, not a single account's gross.
         if (verdict.distributions > 0) {
           gaps.push({
             evidence: {
-              label: `${nameList} owned-IRA owner-pool distributions (projection)`,
+              label: `${nameList} taxable character from assumed-zero basis (distributions)`,
               value: usd(verdict.distributions),
               year: year.year,
             },
@@ -94,7 +94,7 @@ export const missingDataBasis: Detector = {
         } else if (verdict.conversions > 0) {
           gaps.push({
             evidence: {
-              label: `${nameList} owned-IRA owner-pool conversions (projection)`,
+              label: `${nameList} taxable character from assumed-zero basis (conversions)`,
               value: usd(verdict.conversions),
               year: year.year,
             },
@@ -102,7 +102,8 @@ export const missingDataBasis: Detector = {
         } else if (verdict.annuityPayments > 0) {
           gaps.push({
             evidence: {
-              label: `${nameList} owned-IRA owner-pool IRA-funded annuity payments (projection)`,
+              label:
+                `${nameList} taxable character from assumed-zero basis (IRA-funded annuity payments)`,
               value: usd(verdict.annuityPayments),
               year: year.year,
             },
@@ -114,8 +115,10 @@ export const missingDataBasis: Detector = {
         const aggregateBalance = accounts.reduce((sum, a) => sum + a.balance, 0)
         gaps.push({
           evidence: {
-            label: `${nameList} owned-IRA owner-pool balances (assumed zero after-tax basis)`,
+            // Plan opening balances, not the trigger year's live figure.
+            label: `${nameList} opening balance (assumed zero after-tax basis)`,
             value: usd(aggregateBalance),
+            year: ctx.projection.startYear,
           },
         })
         break
@@ -143,7 +146,10 @@ export const missingDataBasis: Detector = {
             if (verdict === undefined || verdict.withdrawal <= 0) continue
             gaps.push({
               evidence: {
-                label: `${account.name} pre-qualified-age withdrawals`,
+                // Verdict is the basis-sensitive spill past known contributions
+                // and free conversion cover — not the account's total withdrawal.
+                label:
+                  `${account.name} basis-sensitive spill past known contributions and free conversion cover`,
                 value: usd(verdict.withdrawal),
                 year: year.year,
               },
@@ -152,10 +158,11 @@ export const missingDataBasis: Detector = {
               evidence: {
                 // Engine models employer designated-Roth under IRA ordering
                 // (splitRothWithdrawal), not Treas. Reg. §1.402A-1 Q&A-3 pro-rata.
+                // Plan opening balance, not the trigger year's live figure.
                 label:
-                  `${account.name} balance (modeled as contribution basis under the engine's simplified ordering)`,
+                  `${account.name} opening balance (modeled as contribution basis under the engine's simplified ordering)`,
                 value: usd(account.balance),
-                year: year.year,
+                year: ctx.projection.startYear,
               },
             })
             break
@@ -169,16 +176,20 @@ export const missingDataBasis: Detector = {
             if (verdict === undefined || verdict.withdrawal <= 0) continue
             gaps.push({
               evidence: {
-                label: `${account.name} owner-pool pre-qualified-age withdrawals`,
+                // Verdict is the basis-sensitive spill past known contributions
+                // and free conversion cover — not the pool's total withdrawal.
+                label:
+                  `${account.name} owner-pool basis-sensitive spill past known contributions and free conversion cover`,
                 value: usd(verdict.withdrawal),
                 year: year.year,
               },
             })
             gaps.push({
               evidence: {
-                label: `${account.name} balance (assumed contribution basis)`,
+                // Plan opening balance, not the trigger year's live figure.
+                label: `${account.name} opening balance (assumed contribution basis)`,
                 value: usd(account.balance),
-                year: year.year,
+                year: ctx.projection.startYear,
               },
             })
             break

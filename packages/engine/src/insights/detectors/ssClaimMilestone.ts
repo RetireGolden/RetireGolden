@@ -1,6 +1,7 @@
 import type { Detector, InsightCard } from '../types.js'
 import type { Plan } from '../../model/plan.js'
 import type { SocialSecurityStreamActivity } from '../../projection/types.js'
+import { fraForBirthYear } from '../../socialSecurity/nra.js'
 
 type SocialSecurityIncome = Extract<Plan['incomes'][number], { type: 'socialSecurity' }>
 
@@ -96,6 +97,8 @@ export const ssClaimMilestone: Detector = {
       // A zero-benefit stream (both published amounts $0) is not "already
       // claimed" — keep it out of pre-horizon so a later auxiliary claim on the
       // same stream can still fire (zero-PIA retirement / SSDI auxiliary path).
+      const birthYear = Number(person.dob.slice(0, 4))
+      const personFraYears = fraForBirthYear(birthYear).years
       const preHorizonStreamIds = new Set<string>()
       for (const entry of firstProjectionYear.socialSecurityStreams ?? []) {
         if (entry.personId !== person.id || !entry.claimInForce) continue
@@ -115,9 +118,14 @@ export const ssClaimMilestone: Detector = {
         )
         // Disability path already past onset with own-retirement published at
         // horizon start = automatic FRA conversion already in force (not a filing).
+        // Gate on onsetAge < FRA — the same validity check simulate uses. When
+        // disability.onsetAge >= FRA, simulate treats SSDI metadata as invalid
+        // and falls through to normal retirement (never publishes `ssdi`); do
+        // not suppress those streams as a non-filing conversion.
         if (
           entry.source === 'own-retirement' &&
           streamIncome?.disability?.onsetAge !== undefined &&
+          streamIncome.disability.onsetAge < personFraYears &&
           projectedPerson.ageAttained > streamIncome.disability.onsetAge
         ) {
           preHorizonStreamIds.add(entry.streamId)
@@ -187,7 +195,6 @@ export const ssClaimMilestone: Detector = {
       // matching simulatePlan's ageAttained. Auxiliary benefits (spousal/survivor)
       // often first pay later than the configured filing age — report both ages
       // so claim-age evidence is not read as the age in the payable year.
-      const birthYear = Number(person.dob.slice(0, 4))
       const ageAtFirstPayableYear = firstClaimYear - birthYear
 
       if (yearsToClaim >= smallestYearsToClaim) continue

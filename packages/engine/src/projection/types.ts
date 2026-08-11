@@ -1275,9 +1275,18 @@ export type SocialSecurityBenefitSource =
  * `isSpousalSurvivorGateStream` marks the sim's last-resolved stream for the
  * person (the stream that keys spousal/survivor auxiliary benefits).
  *
- * `claimInForce` / `preWithholdingAnnual` are captured **before** the
- * earnings-test / SGA withholding step so a filing decision is visible even
- * when withholding reduces the paid amount to zero.
+ * **`claimInForce` contract:** reports this stream's own filing / payability
+ * status from its pay site **before** auxiliary-gate overrides (former-spouse
+ * marital menu, current-spouse top-up, survivor step-up) and **before** the
+ * earnings-test / SGA withholding step. Auxiliary overrides may zero a
+ * sibling stream's amounts and set its `source` to `'none'` while leaving
+ * `claimInForce: true` — the filing fact remains true for that stream; do
+ * **not** clear `claimInForce` on sibling rows. A row may therefore
+ * legitimately be `{ claimInForce: true, source: 'none', annualAmount: 0,
+ * preWithholdingAnnual: 0 }` when an auxiliary benefit on another stream for
+ * the same person overrides it. Earnings-test / SGA withholding can likewise
+ * leave `claimInForce: true` with a zero paid amount while
+ * `preWithholdingAnnual` stays positive.
  */
 export interface SocialSecurityStreamActivity {
   personId: string
@@ -1286,17 +1295,21 @@ export interface SocialSecurityStreamActivity {
   /**
    * Annual amount actually paid this year after COLA, haircut, and
    * earnings-test / SGA withholding. May be $0 when a claim is in force but
-   * fully withheld.
+   * fully withheld, or when an auxiliary override zeroed this stream's
+   * published amount (see interface contract above).
    */
   annualAmount: number
   /**
-   * True when this stream has payable months > 0 this year (the claim is in
-   * force), independent of earnings-test / SGA withholding.
+   * True when this stream's own pay site had payable months > 0 this year
+   * (the claim is in force for this stream), independent of auxiliary-gate
+   * amount overrides and independent of earnings-test / SGA withholding.
+   * See the interface-level `claimInForce` contract.
    */
   claimInForce: boolean
   /**
    * Annual amount after COLA and haircut, before earnings-test / SGA
-   * withholding.
+   * withholding. May be zeroed by an auxiliary override on a sibling stream
+   * even when `claimInForce` remains true.
    */
   preWithholdingAnnual: number
   /**
