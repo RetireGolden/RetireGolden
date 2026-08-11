@@ -11,6 +11,13 @@ interface DataGap {
 }
 
 /**
+ * Half a cent in plan dollars. `usd` rounds with `Math.round(amount * 100)`, so
+ * amounts in (0, 0.005) render as `$0` and must not fire a consequential gap —
+ * same sub-cent residue floor used elsewhere in the engine (e.g. flexibleGoals).
+ */
+const MIN_VISIBLE_CENT = 0.005
+
+/**
  * Format a decisive dollar amount for evidence. Integral amounts stay whole
  * dollars; any non-integral amount keeps exact cents (e.g. $0.60, not $1).
  */
@@ -97,7 +104,7 @@ export const missingDataBasis: Detector = {
         // assumed-zero basis — not the year's full distribution gross (a
         // QCD-plus-conversion year cites the conversion). Figures are the
         // owner's §408(d)(2) owned-IRA aggregate, not a single account's gross.
-        if (verdict.distributions > 0) {
+        if (verdict.distributions >= MIN_VISIBLE_CENT) {
           gaps.push({
             evidence: {
               label: `${nameList} taxable character from assumed-zero basis (distributions)`,
@@ -105,7 +112,7 @@ export const missingDataBasis: Detector = {
               year: year.year,
             },
           })
-        } else if (verdict.conversions > 0) {
+        } else if (verdict.conversions >= MIN_VISIBLE_CENT) {
           gaps.push({
             evidence: {
               label: `${nameList} taxable character from assumed-zero basis (conversions)`,
@@ -113,7 +120,7 @@ export const missingDataBasis: Detector = {
               year: year.year,
             },
           })
-        } else if (verdict.annuityPayments > 0) {
+        } else if (verdict.annuityPayments >= MIN_VISIBLE_CENT) {
           gaps.push({
             evidence: {
               label:
@@ -123,7 +130,7 @@ export const missingDataBasis: Detector = {
             },
           })
         } else {
-          // Verdict present but all channels zero — still nothing to cite.
+          // Verdict present but all channels below a visible cent — nothing to cite.
           break
         }
         const aggregateBalance = accounts.reduce((sum, a) => sum + a.balance, 0)
@@ -170,7 +177,8 @@ export const missingDataBasis: Detector = {
           (row: OwnedRothIraPoolActivity) => row.ownerPersonId === ownerPersonId,
         )
         const verdict = entry?.assumedBasisConsequential
-        if (verdict === undefined || verdict.withdrawal <= 0) continue
+        // Sub-cent spill rounds to $0 evidence — require a visible cent.
+        if (verdict === undefined || verdict.withdrawal < MIN_VISIBLE_CENT) continue
         const nameList = accounts.map((a) => a.name).join(', ')
         gaps.push({
           evidence: {
@@ -212,7 +220,8 @@ export const missingDataBasis: Detector = {
             (row: EmployerRothAccountActivity) => row.accountId === account.id,
           )
           const verdict = entry?.assumedBasisConsequential
-          if (verdict === undefined || verdict.withdrawal <= 0) continue
+          // Sub-cent spill rounds to $0 evidence — require a visible cent.
+          if (verdict === undefined || verdict.withdrawal < MIN_VISIBLE_CENT) continue
           gaps.push({
             evidence: {
               // Verdict is the basis-sensitive spill past known contributions
@@ -257,11 +266,12 @@ export const missingDataBasis: Detector = {
               year: account.plannedSaleYear,
             },
           })
-          // Zero proceeds alone are uninformative when the property still has
-          // positive value — cite the opening property value (same label/year
-          // stamp as the omitted-proceeds branch; sale-year compounded value
-          // is not published).
-          if (expectedNetProceeds === 0 && account.value > 0) {
+          // Standalone property gap always pairs proceeds with opening value when
+          // value is positive — zero proceeds alone are uninformative, and a
+          // positive proceeds-only row lacks the basis-gap context (same
+          // label/year stamp as the omitted-proceeds branch; sale-year
+          // compounded value is not published).
+          if (account.value > 0) {
             gaps.push({
               evidence: {
                 label: `${account.name} opening property value (legacy net-proceeds path)`,

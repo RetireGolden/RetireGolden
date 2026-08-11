@@ -178,14 +178,22 @@ function lastSsIncomeForPerson(plan: Plan, personId: string): SocialSecurityInco
  *
  * Distinguishes via published start-year rows only: positive aux with the same
  * source at start, no earlier in-horizon zero, and the enabling event already
- * present at start (co-spouse claim-in-force pre-horizon, co-spouse already
- * deceased for household survivor, a deceased former spouse on the claimant's
- * stream for former-spouse survivor, or a living former spouse whose marital
- * benefit already *won* over own benefit pre-horizon — eligibility alone is
- * not enough when the published auxiliary first appears because a different
+ * present at start (co-spouse claim-in-force pre-horizon, co-spouse death
+ * *before* the horizon for household survivor, a deceased former spouse on the
+ * claimant's stream for former-spouse survivor, or a living former spouse whose
+ * marital benefit already *won* over own benefit pre-horizon — eligibility alone
+ * is not enough when the published auxiliary first appears because a different
  * enabler arrives at start). A first-year NEW entitlement — spouse claims or
- * dies in year one, or a living former spouse first reaches eligibility age
- * (62) at start — returns false so the start-year row can still fire.
+ * dies in year one (including death-at-start: first modeled deceased year is
+ * the projection start), or a living former spouse first reaches eligibility
+ * age (62) at start — returns false so the start-year row can still fire.
+ *
+ * Household co-death uses published/projected alive transitions: simulatePlan
+ * publishes `alive` when `ageAttained <= planningAge`, so the first deceased
+ * year has `ageAttained === planningAge + 1`. Death-before-start is only when
+ * the co-spouse is already past that first deceased year at the horizon start;
+ * death-at-start (`ageAttained === planningAge + 1`, not alive) is a new
+ * entitlement and must not suppress.
  */
 function auxiliaryAlreadyPayingAtHorizonStart(args: {
   entry: SocialSecurityStreamActivity
@@ -217,11 +225,19 @@ function auxiliaryAlreadyPayingAtHorizonStart(args: {
       return true
     }
     const coState = firstProjectionYear.people.find((row) => row.personId === coPerson.id)
-    // Enabling death already present at start (household co-spouse not alive).
-    if (coState !== undefined && !coState.alive) return true
-    // Survivor from a deceased former spouse on this stream while household
-    // co-person is still alive — death is a plan fact, not an in-horizon event.
-    return hasDeceasedFormerSpouse
+    if (coState === undefined || coState.alive) {
+      // Survivor from a deceased former spouse on this stream while household
+      // co-person is still alive — death is a plan fact, not an in-horizon event.
+      return hasDeceasedFormerSpouse
+    }
+    // Household co-spouse not alive at start. Parallel to first-claim-year
+    // enabling: only death *before* the horizon is pre-horizon. simulatePlan
+    // alive rule is ageAttained <= planningAge, so first deceased year has
+    // ageAttained === planningAge + 1. When that year is the projection start,
+    // death occurs AT start (new entitlement) — do not suppress. Ages past
+    // that first deceased year mean death-before-start (already paying).
+    if (coState.ageAttained > coPerson.longevity.planningAge + 1) return true
+    return false
   }
 
   // Spousal: enabling event = co-spouse already claim-in-force pre-horizon, or a
@@ -406,11 +422,12 @@ export const ssClaimMilestone: Detector = {
         // Already-paying pre-horizon: positive at the start year with the same
         // auxiliary source, no earlier in-horizon zero row, and the enabling
         // event already present at start (co-spouse pre-horizon claim-in-force
-        // via last-wins gate stream, household co-spouse already deceased, or a
-        // deceased former spouse on this stream). First-year NEW entitlements
-        // (spouse claims or dies in year one; co-spouse not yet
-        // pre-horizon-established) stay out of this set so the search below
-        // can still fire at yearsToClaim = 0.
+        // via last-wins gate stream, household co-spouse death-before-start,
+        // or a deceased former spouse on this stream). First-year NEW
+        // entitlements (spouse claims or dies in year one — including
+        // death-at-start when the first modeled deceased year is the
+        // projection start; co-spouse not yet pre-horizon-established) stay
+        // out of this set so the search below can still fire at yearsToClaim = 0.
         if (entry.source === 'spousal' || entry.source === 'survivor') {
           if (
             auxiliaryAlreadyPayingAtHorizonStart({

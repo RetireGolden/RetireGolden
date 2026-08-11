@@ -1288,18 +1288,23 @@ export type SocialSecurityBenefitSource =
  * `isSpousalSurvivorGateStream` marks the sim's last-resolved stream for the
  * person (the stream that keys spousal/survivor auxiliary benefits).
  *
- * **`claimInForce` contract:** reports this stream's own filing / payability
- * status from its pay site **before** auxiliary-gate overrides (former-spouse
- * marital menu, current-spouse top-up, survivor step-up) and **before** the
- * earnings-test / SGA withholding step. Auxiliary overrides may zero a
- * sibling stream's amounts and set its `source` to `'none'` while leaving
- * `claimInForce: true` — the filing fact remains true for that stream; do
- * **not** clear `claimInForce` on sibling rows. A row may therefore
- * legitimately be `{ claimInForce: true, source: 'none', annualAmount: 0,
- * preWithholdingAnnual: 0 }` when an auxiliary benefit on another stream for
- * the same person overrides it. Earnings-test / SGA withholding can likewise
- * leave `claimInForce: true` with a zero paid amount while
- * `preWithholdingAnnual` stays positive.
+ * **`claimInForce` contract:** true when either (1) this stream's own filing /
+ * payability status from its pay site is in force **before** auxiliary-gate
+ * overrides (former-spouse marital menu, current-spouse top-up, survivor
+ * step-up) and **before** the earnings-test / SGA withholding step, **or**
+ * (2) an auxiliary benefit is actually paying through this stream — including
+ * when the stream has no usable own PIA/earnings (unresolved) but the
+ * former-spouse marital menu, current-spouse top-up, or survivor step-up still
+ * publishes positive amounts on it (`simulatePlan` sets `claimInForce: true` at
+ * those pay sites). Auxiliary overrides may zero a *sibling* stream's amounts
+ * and set its `source` to `'none'` while leaving that sibling's
+ * `claimInForce: true` from its own pay site — the filing fact remains true for
+ * that stream; do **not** clear `claimInForce` on sibling rows. A row may
+ * therefore legitimately be `{ claimInForce: true, source: 'none',
+ * annualAmount: 0, preWithholdingAnnual: 0 }` when an auxiliary benefit on
+ * another stream for the same person overrides it. Earnings-test / SGA
+ * withholding can likewise leave `claimInForce: true` with a zero paid amount
+ * while `preWithholdingAnnual` stays positive.
  */
 export interface SocialSecurityStreamActivity {
   personId: string
@@ -1313,10 +1318,11 @@ export interface SocialSecurityStreamActivity {
    */
   annualAmount: number
   /**
-   * True when this stream's own pay site had payable months > 0 this year
-   * (the claim is in force for this stream), independent of auxiliary-gate
-   * amount overrides and independent of earnings-test / SGA withholding.
-   * See the interface-level `claimInForce` contract.
+   * True when this stream's own pay site had payable months > 0 this year,
+   * **or** an auxiliary benefit is actually paying through this stream
+   * (including unresolved own-PIA streams that still publish aux amounts).
+   * Independent of sibling-stream amount overrides and of earnings-test / SGA
+   * withholding. See the interface-level `claimInForce` contract.
    */
   claimInForce: boolean
   /**

@@ -432,6 +432,43 @@ describe('missing data basis detector', () => {
     })
   })
 
+  it('pins two-row property evidence for positive expected net proceeds with opening value', () => {
+    // Standalone property gap (no other gaps): positive proceeds must still
+    // emit the opening property value as the second fact — not a one-row card.
+    const ctx = context()
+    ctx.plan.accounts = [{
+      id: 'home',
+      name: 'Lake home',
+      type: 'property',
+      value: 500_000,
+      plannedSaleYear: 2029,
+      costBasis: undefined,
+      expectedNetProceeds: 450_000,
+    }] as never
+    ctx.plan.incomes = []
+    const year = ctx.projection.result.years[0] as {
+      ownedTraditionalIraAggregateActivity?: unknown[]
+      ownedRothIraPoolActivity?: unknown[]
+      employerRothAccountActivity?: unknown[]
+    }
+    year.ownedTraditionalIraAggregateActivity = []
+    year.ownedRothIraPoolActivity = []
+    year.employerRothAccountActivity = []
+
+    expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
+      {
+        label: 'Lake home expected net proceeds (legacy net-proceeds path)',
+        value: '$450,000',
+        year: 2029,
+      },
+      {
+        label: 'Lake home opening property value (legacy net-proceeds path)',
+        value: '$500,000',
+        year: 2026,
+      },
+    ])
+  })
+
   it('cites property value alongside zero expected net proceeds when value is positive', () => {
     const ctx = context()
     const property = ctx.plan.accounts[2] as { expectedNetProceeds?: number; value: number }
@@ -452,6 +489,65 @@ describe('missing data basis detector', () => {
         },
       ]),
     )
+  })
+
+  it('stays silent for a consequential Roth spill below half a cent', () => {
+    // Spill > 0 but < 0.005 rounds to $0 evidence — must not fire.
+    const ctx = context()
+    ctx.projection.result.years[0]!.people[0]!.ageAttained = 59
+    const year = ctx.projection.result.years[0] as {
+      ownedRothIraPoolActivity?: {
+        ownerPersonId: string
+        assumedBasisConsequential?: { withdrawal: number }
+      }[]
+      ownedTraditionalIraAggregateActivity?: unknown[]
+    }
+    year.ownedRothIraPoolActivity = [
+      {
+        ownerPersonId: 'p1',
+        assumedBasisConsequential: { withdrawal: 0.004 },
+      },
+    ]
+    year.ownedTraditionalIraAggregateActivity = []
+    ctx.plan.accounts = [{
+      id: 'roth', name: 'Roth IRA', type: 'roth', kind: 'ira', ownerPersonId: 'p1', balance: 125_000,
+    }] as never
+    ctx.plan.incomes = []
+
+    expect(missingDataBasis.screen(ctx)).toBeNull()
+  })
+
+  it('fires for a consequential Roth spill at the half-cent visible threshold', () => {
+    // 0.005 rounds to $0.01 — guaranteed nonzero rendered amount.
+    const ctx = context()
+    ctx.projection.result.years[0]!.people[0]!.ageAttained = 59
+    const year = ctx.projection.result.years[0] as {
+      ownedRothIraPoolActivity?: {
+        ownerPersonId: string
+        assumedBasisConsequential?: { withdrawal: number }
+      }[]
+      ownedTraditionalIraAggregateActivity?: unknown[]
+    }
+    year.ownedRothIraPoolActivity = [
+      {
+        ownerPersonId: 'p1',
+        assumedBasisConsequential: { withdrawal: 0.005 },
+      },
+    ]
+    year.ownedTraditionalIraAggregateActivity = []
+    ctx.plan.accounts = [{
+      id: 'roth', name: 'Roth IRA', type: 'roth', kind: 'ira', ownerPersonId: 'p1', balance: 125_000,
+    }] as never
+    ctx.plan.incomes = []
+
+    expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
+      {
+        label: 'Roth IRA owner-pool basis-sensitive spill past known contributions and free conversion cover',
+        value: '$0.01',
+        year: 2026,
+      },
+      { label: 'Roth IRA opening balance (assumed contribution basis)', value: '$125,000', year: 2026 },
+    ])
   })
 
   it('formats sub-dollar decisive Roth withdrawals with cents', () => {

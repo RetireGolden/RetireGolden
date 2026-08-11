@@ -2001,6 +2001,165 @@ describe('Social Security claim milestone detector', () => {
     })
   })
 
+  it('fires for survivor at horizon start when co-spouse first deceased year is the start', () => {
+    // Claimant past own claim age; co-spouse's first modeled deceased year is
+    // the projection start (planningAge + 1 at start, alive false). Survivor
+    // benefit at start is a new entitlement — death-at-start must fire, not
+    // be treated as already-paying pre-horizon.
+    const ctx = context(70, 62, 0)
+    ctx.plan.incomes = [
+      {
+        id: 'ss-survivor',
+        type: 'socialSecurity',
+        personId: 'p1',
+        piaMonthly: 500,
+        earnings: null,
+        claimAge: { years: 62, months: 0 },
+      },
+    ] as never
+    // DOB 1960, planningAge 65 → last alive 2025, first deceased year 2026 (= start).
+    ctx.plan.household.people.push({
+      id: 'p2',
+      name: 'Sam',
+      dob: '1960-01-01',
+      sex: 'average',
+      retirementAge: null,
+      longevity: { planningAge: 65, source: 'manual' },
+    })
+    ctx.plan.incomes.push({
+      id: 'ss-decedent',
+      type: 'socialSecurity',
+      personId: 'p2',
+      piaMonthly: 2_500,
+      earnings: null,
+      claimAge: { years: 66, months: 0 },
+    } as never)
+    const years = ctx.projection.result.years as Array<{
+      year: number
+      people: { personId: string; ageAttained: number; alive: boolean }[]
+      socialSecurityStreams?: {
+        personId: string
+        streamId: string
+        source: StreamSource
+        annualAmount: number
+        claimInForce: boolean
+        preWithholdingAnnual: number
+        isSpousalSurvivorGateStream: boolean
+      }[]
+    }>
+    for (const year of years) {
+      // ageAttained 66 = planningAge + 1 at 2026 — first deceased year at start.
+      year.people = [
+        { personId: 'p1', ageAttained: 70 + (year.year - 2026), alive: true },
+        { personId: 'p2', ageAttained: 66 + (year.year - 2026), alive: false },
+      ]
+      year.socialSecurityStreams = [
+        {
+          personId: 'p1',
+          streamId: 'ss-survivor',
+          source: 'survivor',
+          annualAmount: 30_000,
+          claimInForce: true,
+          preWithholdingAnnual: 30_000,
+          isSpousalSurvivorGateStream: true,
+        },
+        {
+          personId: 'p2',
+          streamId: 'ss-decedent',
+          source: 'none',
+          annualAmount: 0,
+          claimInForce: false,
+          preWithholdingAnnual: 0,
+          isSpousalSurvivorGateStream: true,
+        },
+      ]
+    }
+
+    expect(ssClaimMilestone.screen(ctx)).toMatchObject({
+      title: "Pat's Social Security claim is imminent",
+      severity: 'attention',
+      evidence: expect.arrayContaining([
+        { label: "Pat's modeled benefit in first claim year (survivor)", value: '$30,000', year: 2026 },
+      ]),
+    })
+  })
+
+  it('stays silent for survivor already paying when co-spouse died before the horizon', () => {
+    // Co-spouse's first deceased year predates the projection start
+    // (ageAttained > planningAge + 1 at start). Positive survivor at start is
+    // already-paying pre-horizon — not a new entitlement.
+    const ctx = context(70, 62, 0)
+    ctx.plan.incomes = [
+      {
+        id: 'ss-survivor',
+        type: 'socialSecurity',
+        personId: 'p1',
+        piaMonthly: 500,
+        earnings: null,
+        claimAge: { years: 62, months: 0 },
+      },
+    ] as never
+    // DOB 1960, planningAge 60 → last alive 2020, first deceased 2021 (before 2026).
+    ctx.plan.household.people.push({
+      id: 'p2',
+      name: 'Sam',
+      dob: '1960-01-01',
+      sex: 'average',
+      retirementAge: null,
+      longevity: { planningAge: 60, source: 'manual' },
+    })
+    ctx.plan.incomes.push({
+      id: 'ss-decedent',
+      type: 'socialSecurity',
+      personId: 'p2',
+      piaMonthly: 2_500,
+      earnings: null,
+      claimAge: { years: 66, months: 0 },
+    } as never)
+    const years = ctx.projection.result.years as Array<{
+      year: number
+      people: { personId: string; ageAttained: number; alive: boolean }[]
+      socialSecurityStreams?: {
+        personId: string
+        streamId: string
+        source: StreamSource
+        annualAmount: number
+        claimInForce: boolean
+        preWithholdingAnnual: number
+        isSpousalSurvivorGateStream: boolean
+      }[]
+    }>
+    for (const year of years) {
+      // ageAttained 66 > planningAge + 1 (61) — death-before-start.
+      year.people = [
+        { personId: 'p1', ageAttained: 70 + (year.year - 2026), alive: true },
+        { personId: 'p2', ageAttained: 66 + (year.year - 2026), alive: false },
+      ]
+      year.socialSecurityStreams = [
+        {
+          personId: 'p1',
+          streamId: 'ss-survivor',
+          source: 'survivor',
+          annualAmount: 30_000,
+          claimInForce: true,
+          preWithholdingAnnual: 30_000,
+          isSpousalSurvivorGateStream: true,
+        },
+        {
+          personId: 'p2',
+          streamId: 'ss-decedent',
+          source: 'none',
+          annualAmount: 0,
+          claimInForce: false,
+          preWithholdingAnnual: 0,
+          isSpousalSurvivorGateStream: true,
+        },
+      ]
+    }
+
+    expect(ssClaimMilestone.screen(ctx)).toBeNull()
+  })
+
   it('stays silent for a pre-horizon survivor benefit from a deceased former spouse', () => {
     // Household co-person is alive; survivor is from a deceased former spouse
     // on the claimant's stream (not household co-death). Positive survivor at
