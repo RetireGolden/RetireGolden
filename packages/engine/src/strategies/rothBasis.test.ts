@@ -214,4 +214,37 @@ describe('assumedSeedConsequentialSpill — FIFO residual walk', () => {
     expect(walked.consequentialSpill).toBeCloseTo(0, 6)
     expect(walked.freeCoverConsumed).toBeCloseTo(100, 6)
   })
+
+  it('prorates consequential spill on a mixed unseasoned layer ($100 seed / $10 taxable)', () => {
+    // Full $100 seed lands on a $100 residual layer with only $10 taxable —
+    // splitRothWithdrawal recaptures take * (taxable / amount) = $10, not $100.
+    const residual: RothBasisState = {
+      contributionBasis: 0,
+      conversionLayers: [{ year: 2026, amount: 100, taxableAmount: 10 }],
+    }
+    expect(freeRothCoverCapacity(residual, 2028, 55)).toBe(0)
+    const walked = assumedSeedConsequentialSpill(residual, 100, 2028, 55)
+    expect(walked.consequentialSpill).toBeCloseTo(10, 6)
+    expect(walked.freeCoverConsumed).toBeCloseTo(0, 6)
+    // Live penalty on the same residual would be 10% of that taxable share.
+    expect(splitRothWithdrawal(residual, 100, 2028, 55).penalty).toBeCloseTo(1, 6)
+  })
+
+  it('prorates on a partially-consumed mixed residual (remaining balances)', () => {
+    // Live draw already took half of a $100 / $10 mixed layer → residual
+    // amount=50, taxableAmount=5. A $50 seed take * (5/50) = $5 consequential;
+    // a $100 seed finishes the residual ($5) then spills $50 into earnings.
+    const residual: RothBasisState = {
+      contributionBasis: 0,
+      conversionLayers: [{ year: 2026, amount: 50, taxableAmount: 5 }],
+    }
+    const half = assumedSeedConsequentialSpill(residual, 50, 2028, 55)
+    expect(half.consequentialSpill).toBeCloseTo(5, 6)
+    expect(half.freeCoverConsumed).toBeCloseTo(0, 6)
+    expect(splitRothWithdrawal(residual, 50, 2028, 55).penalty).toBeCloseTo(0.5, 6)
+
+    const over = assumedSeedConsequentialSpill(residual, 100, 2028, 55)
+    expect(over.consequentialSpill).toBeCloseTo(5 + 50, 6) // residual taxable + earnings
+    expect(over.freeCoverConsumed).toBeCloseTo(0, 6)
+  })
 })

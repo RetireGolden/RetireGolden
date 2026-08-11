@@ -166,11 +166,13 @@ export function freeRothCoverCapacity(
  * Free layers (seasoned, wholly nontaxable unseasoned, or age-qualified) absorb
  * without consequence once `priorFreeCoverConsumed` has been charged against
  * free-cover *prefix* capacity (the same prefix `freeRothCoverCapacity` sums).
- * Unseasoned taxable takes are consequential; the walk continues past a
- * partial taxable blocker so free layers behind it still absorb residual seed
- * (those deeper free dollars are not free-cover capacity and are not tracked
- * as consumed prefix cover). Residual past every conversion layer is earnings
- * and is consequential.
+ * Unseasoned taxable takes are consequential only for the taxable share —
+ * matching `splitRothWithdrawal`'s pro-rata recapture
+ * `take * (taxableAmount / amount)` on residual layer balances after partial
+ * consumption. The walk continues past a partial taxable blocker so free
+ * layers behind it still absorb residual seed (those deeper free dollars are
+ * not free-cover capacity and are not tracked as consumed prefix cover).
+ * Residual past every conversion layer is earnings and is consequential.
  */
 export function assumedSeedConsequentialSpill(
   state: RothBasisState,
@@ -215,7 +217,11 @@ export function assumedSeedConsequentialSpill(
     } else {
       pastTaxableBlocker = true
       const take = Math.min(remaining, layer.amount)
-      consequentialSpill += take
+      // Mirror splitRothWithdrawal: only the taxable share of an unseasoned
+      // mixed layer is consequential (nondeductible basis recaptures nothing).
+      const taxableTake =
+        layer.amount > 0 ? take * (layer.taxableAmount / layer.amount) : 0
+      consequentialSpill += taxableTake
       remaining -= take
     }
   }
