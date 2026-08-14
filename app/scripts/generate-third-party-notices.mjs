@@ -15,8 +15,8 @@
  * `pnpm list` and reads the filesystem only. @see DOCS/enhancements/gap-analysis-closeout.md WS-E
  */
 import { execFileSync } from 'node:child_process'
-import { readFileSync, readdirSync, existsSync, statSync, writeFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
+import { readFileSync, readdirSync, existsSync, realpathSync, statSync, writeFileSync } from 'node:fs'
+import { dirname, isAbsolute, join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -42,77 +42,118 @@ function flatten(deps, out = new Map()) {
 }
 
 /**
+ * Resolve `path` only when the real target stays inside `treeRoot`.
+ * Dangling or escaping symlinks (including workspace links out of
+ * `node_modules`) return null and must not be followed.
+ */
+function containedRealpath(path, treeRoot) {
+  let resolved
+  try {
+    resolved = realpathSync(path)
+  } catch {
+    return null
+  }
+  const rel = relative(treeRoot, resolved)
+  if (rel.startsWith('..') || isAbsolute(rel)) return null
+  return resolved
+}
+
+function containedInAny(path, treeRoots) {
+  for (const root of treeRoots) {
+    const resolved = containedRealpath(path, root)
+    if (resolved !== null) return resolved
+  }
+  return null
+}
+
+/**
  * Walk node_modules (including nested copies) and return name -> [{version, dir}]
  * for every installed package. Filesystem reads are not restricted by a
  * package's `exports` field (which blocks `require.resolve('<pkg>/package.json')`
  * for d3-*, highs, clsx, …), so walking the directory tree directly is the
  * robust way to find each package's real install location(s).
+ *
+ * Symlinks are followed only when `realpath` stays inside this walk's
+ * `node_modules` root. That keeps pnpm's in-store links and `.pnpm` virtual
+ * store, and refuses targets that escape to `packages/`, the host app, or
+ * anywhere else on the filesystem.
  */
-function walkNodeModules(root, out = new Map()) {
+function walkNodeModules(root, out = new Map(), treeRoot = undefined) {
+  let allowedRoot = treeRoot
+  if (allowedRoot === undefined) {
+    try {
+      allowedRoot = realpathSync(root)
+    } catch {
+      return out
+    }
+  }
+  const rootResolved = containedRealpath(root, allowedRoot)
+  if (rootResolved === null) return out
+
   let entries
   try {
-    entries = readdirSync(root, { withFileTypes: true })
+    entries = readdirSync(rootResolved, { withFileTypes: true })
   } catch {
     return out
   }
   for (const ent of entries) {
     if (ent.name === '.bin' || ent.name === '.cache' || ent.name === '.vite' || ent.name === '.tmp') continue
-    const child = join(root, ent.name)
+    const child = join(rootResolved, ent.name)
     // pnpm links packages into node_modules; Dirent.isDirectory() is false for
-    // those symlinks. Follow them. Also walk the virtual store (`.pnpm`).
-    let isDir = ent.isDirectory()
-    if (!isDir && ent.isSymbolicLink()) {
-      try {
-        isDir = statSync(child).isDirectory()
-      } catch {
-        continue
-      }
+    // those symlinks. Follow only when the real target stays in this tree.
+    const resolved = containedRealpath(child, allowedRoot)
+    if (resolved === null) continue
+    let isDir
+    try {
+      isDir = statSync(resolved).isDirectory()
+    } catch {
+      continue
     }
     if (!isDir) continue
     if (ent.name === '.pnpm') {
-      walkNodeModules(child, out)
+      walkNodeModules(resolved, out, allowedRoot)
       continue
     }
     // Scoped package: @scope/pkg — descend into @scope then pkg.
     if (ent.name.startsWith('@') && !ent.name.includes('node_modules')) {
       // Is this a scoped dir containing packages?
-      const pkgJson = join(child, 'package.json')
-      if (!existsSync(pkgJson)) {
-        walkNodeModules(child, out) // it's a scope folder; descend
+      const pkgJson = join(resolved, 'package.json')
+      if (containedRealpath(pkgJson, allowedRoot) === null) {
+        walkNodeModules(resolved, out, allowedRoot) // it's a scope folder; descend
         continue
       }
     }
     // Read this package.json if present.
-    const pkgJson = join(child, 'package.json')
-    if (existsSync(pkgJson)) {
+    const pkgJson = containedRealpath(join(resolved, 'package.json'), allowedRoot)
+    if (pkgJson !== null) {
       try {
         const pkg = JSON.parse(readFileSync(pkgJson, 'utf8'))
         if (pkg.name) {
           if (!out.has(pkg.name)) out.set(pkg.name, [])
-          out.get(pkg.name).push({ version: pkg.version, dir: child, pkg })
+          out.get(pkg.name).push({ version: pkg.version, dir: resolved, pkg })
         }
       } catch {
         // invalid json; skip
       }
     }
     // Recurse into a nested node_modules.
-    const nested = join(child, 'node_modules')
-    if (existsSync(nested)) walkNodeModules(nested, out)
+    const nested = join(resolved, 'node_modules')
+    if (containedRealpath(nested, allowedRoot) !== null) walkNodeModules(nested, out, allowedRoot)
   }
   return out
 }
 
 /** Find the LICENSE/NOTICE file for a package at `pkgDir`. */
-function findLicenseFile(pkgDir) {
+function findLicenseFile(pkgDir, treeRoots) {
   for (const name of LICENSE_FILENAMES) {
-    const candidate = join(pkgDir, name)
-    if (existsSync(candidate)) return candidate
+    const candidate = containedInAny(join(pkgDir, name), treeRoots)
+    if (candidate !== null) return candidate
   }
   return null
 }
 
-function readLicenseText(pkgDir) {
-  const file = findLicenseFile(pkgDir)
+function readLicenseText(pkgDir, treeRoots) {
+  const file = findLicenseFile(pkgDir, treeRoots)
   if (!file) return null
   return readFileSync(file, 'utf8').trim()
 }
@@ -151,19 +192,32 @@ function main() {
   // Walk the actual install tree to find each package's directory. pnpm
   // links workspace packages and keeps the rest in the virtual store, so
   // walk app-local node_modules, the repo-root node_modules, and `.pnpm`.
-  const installed = walkNodeModules(join(appDir, 'node_modules'))
-  walkNodeModules(join(appDir, '..', 'node_modules'), installed)
+  // Each walk is confined to that node_modules realpath.
+  const appNodeModules = join(appDir, 'node_modules')
+  const rootNodeModules = join(appDir, '..', 'node_modules')
+  const treeRoots = []
+  for (const dir of [appNodeModules, rootNodeModules]) {
+    try {
+      treeRoots.push(realpathSync(dir))
+    } catch {
+      // install tree missing
+    }
+  }
+  const installed = walkNodeModules(appNodeModules)
+  walkNodeModules(rootNodeModules, installed)
   // Prefer the install path `pnpm list` already resolved — that is the
   // production tree, including transitive deps that are not top-level links.
   function collectListPaths(deps) {
     for (const node of Object.values(deps ?? {})) {
-      if (node.path && node.version && existsSync(join(node.path, 'package.json'))) {
+      const pkgDir = typeof node.path === 'string' ? containedInAny(node.path, treeRoots) : null
+      const pkgJson = pkgDir !== null ? containedInAny(join(pkgDir, 'package.json'), treeRoots) : null
+      if (pkgDir !== null && node.version && pkgJson !== null) {
         try {
-          const pkg = JSON.parse(readFileSync(join(node.path, 'package.json'), 'utf8'))
+          const pkg = JSON.parse(readFileSync(pkgJson, 'utf8'))
           if (pkg.name) {
             if (!installed.has(pkg.name)) installed.set(pkg.name, [])
-            const already = installed.get(pkg.name).some((c) => c.dir === node.path)
-            if (!already) installed.get(pkg.name).push({ version: pkg.version, dir: node.path, pkg })
+            const already = installed.get(pkg.name).some((c) => c.dir === pkgDir)
+            if (!already) installed.get(pkg.name).push({ version: pkg.version, dir: pkgDir, pkg })
           }
         } catch {
           // invalid json; skip
@@ -199,12 +253,12 @@ function main() {
       continue
     }
     // Prefer a copy that has a LICENSE file; fall back to the first.
-    const withLicense = copies.find((c) => findLicenseFile(c.dir) !== null) ?? copies[0]
+    const withLicense = copies.find((c) => findLicenseFile(c.dir, treeRoots) !== null) ?? copies[0]
     const { dir: pkgDir, pkg } = withLicense
     const licenseField = Array.isArray(pkg.licenses) ? pkg.licenses.map((l) => l.type ?? l).join(', ') : pkg.license ?? (typeof pkg.license === 'object' ? pkg.license.type : undefined)
     const author = typeof pkg.author === 'object' ? `${pkg.author.name ?? ''}${pkg.author.email ? ` <${pkg.author.email}>` : ''}${pkg.author.url ? ` (${pkg.author.url})` : ''}` : (pkg.author ?? '')
     const homepage = pkg.homepage ?? (typeof pkg.repository === 'object' ? pkg.repository.url : pkg.repository) ?? ''
-    const text = readLicenseText(pkgDir)
+    const text = readLicenseText(pkgDir, treeRoots)
 
     if (detectCopyleft(licenseField)) copyleftHits.push(`${name}@${[...versions].join('/')}`)
 
