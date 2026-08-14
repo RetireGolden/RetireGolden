@@ -54,11 +54,16 @@ if (!['auto', 'local', 'registry'].includes(engineSourceMode)) {
 }
 
 const plannerPackage = JSON.parse(readFileSync(join(pkgDir, 'package.json'), 'utf8'))
-const engineRange = plannerPackage.dependencies?.['@retiregolden/engine']
+const declaredEngineRange = plannerPackage.dependencies?.['@retiregolden/engine']
+// `workspace:^x.y.z` links the checkout locally and publishes as `^x.y.z`.
+const engineRange =
+  typeof declaredEngineRange === 'string'
+    ? declaredEngineRange.replace(/^workspace:/, '')
+    : declaredEngineRange
 const minimumEngineMatch = typeof engineRange === 'string' ? /^\^(\d+\.\d+\.\d+)$/.exec(engineRange) : null
 if (minimumEngineMatch === null) {
   throw new Error(
-    `pack smoke FAILED: expected planner-ui to declare a caret engine range, got ${JSON.stringify(engineRange)}`,
+    `pack smoke FAILED: expected planner-ui to declare a caret engine range, got ${JSON.stringify(declaredEngineRange)}`,
   )
 }
 const minimumEngineVersion = minimumEngineMatch[1]
