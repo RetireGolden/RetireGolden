@@ -8,3 +8,8 @@ packages:
 # this repo ships them with `npm publish` (OIDC), which does not rewrite
 # workspace protocol.
 linkWorkspacePackages: true
+
+# Supply-chain defaults Semgrep asked for (pnpm 10 workspace settings).
+blockExoticSubdeps: true
+minimumReleaseAge: 10080
+trustPolicy: no-downgrade
