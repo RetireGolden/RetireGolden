@@ -17,6 +17,10 @@
  * in `@retiregolden/engine`. The model records the provenance of what it
  * selected (parameter pack years, data vintage, generation timestamp).
  *
+ * `parseReportModel` accepts every released model version this package knows
+ * and preserves unknown fields and block ids for downstream renderers to
+ * handle. It never silently strips persisted report content.
+ *
  * Published as the stable `@retiregolden/planner-ui/report-model` subpath —
  * see the package README's "Published API surface".
  */
@@ -404,6 +408,19 @@ export interface ReportModel {
     /** Host-supplied only; null unless the host passed advisor content in. */
     'advisor-recommendations': ReportAdvisorRecommendationsBlock | null
   }
+}
+
+export type ParsedReportModel = {
+  kind: typeof REPORT_MODEL_KIND
+  version: number
+  planName: string
+  generatedAtIso: string
+  startYear: number
+  endYear: number
+  /** Validated to be an object; field presence/types are NOT verified. */
+  provenance: Record<string, unknown>
+  /** Known ids validated to be object-or-null; inner shapes are NOT verified. */
+  blocks: Record<string, unknown>
 }
 
 export interface ReportModelInput {
@@ -1116,10 +1133,139 @@ export function buildReportModel(input: ReportModelInput): ReportModel {
 }
 
 // ---------------------------------------------------------------------------
-// Serialization and table export (Workstream 7's structured-data half)
+// Parsing, serialization, and table export (Workstream 7's structured-data half)
 // ---------------------------------------------------------------------------
 
 type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue }
+
+/** Generous cap; primarily guards against importing the wrong (huge) file. */
+export const MAX_REPORT_MODEL_JSON_CHARS = 10_000_000
+
+export type ParseReportModelResult =
+  | { ok: true; model: ParsedReportModel }
+  | {
+      ok: false
+      reason:
+        | 'too_large'
+        | 'not_json'
+        | 'not_object'
+        | 'wrong_kind'
+        | 'missing_version'
+        | 'invalid_version'
+        | 'unsupported_version'
+        | 'newer_version'
+        | 'invalid_envelope'
+        | 'invalid_block'
+      message: string
+    }
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+/**
+ * Parses a persisted report model without recomputing it. Like
+ * `parseV2Backup`, this returns an `ok` result rather than throwing for
+ * caller-supplied bytes. The parser validates the envelope (kind, supported
+ * version 1..current, field types, block structure) and returns a
+ * `ParsedReportModel`. Unknown fields and block ids are retained exactly as
+ * parsed.
+ *
+ * Hosts that themselves produced the bytes with `serializeReportModel` at the
+ * current version may assert to `ReportModel` after checking
+ * `model.version === REPORT_MODEL_VERSION`; all other consumers must narrow
+ * field-by-field.
+ */
+export function parseReportModel(json: string): ParseReportModelResult {
+  if (json.length > MAX_REPORT_MODEL_JSON_CHARS) {
+    return {
+      ok: false,
+      reason: 'too_large',
+      message: `Report model JSON exceeds the ${MAX_REPORT_MODEL_JSON_CHARS} character limit.`,
+    }
+  }
+
+  let raw: unknown
+  try {
+    raw = JSON.parse(json)
+  } catch {
+    return { ok: false, reason: 'not_json', message: 'Report model contains malformed JSON.' }
+  }
+
+  if (!isObject(raw)) {
+    return { ok: false, reason: 'not_object', message: 'Report model root must be an object.' }
+  }
+
+  if (raw.kind !== REPORT_MODEL_KIND) {
+    return { ok: false, reason: 'wrong_kind', message: `Report model kind must be ${REPORT_MODEL_KIND}.` }
+  }
+
+  if (!Object.prototype.hasOwnProperty.call(raw, 'version')) {
+    return { ok: false, reason: 'missing_version', message: 'Report model version is required.' }
+  }
+
+  const version = raw.version
+  if (typeof version !== 'number' || !Number.isInteger(version)) {
+    return { ok: false, reason: 'invalid_version', message: 'Report model version must be an integer.' }
+  }
+
+  if (version > REPORT_MODEL_VERSION) {
+    return {
+      ok: false,
+      reason: 'newer_version',
+      message: `Report model version ${version} is newer than this package supports; upgrade @retiregolden/planner-ui.`,
+    }
+  }
+
+  if (version < 1) {
+    return {
+      ok: false,
+      reason: 'unsupported_version',
+      message: `Report model version must be between 1 and ${REPORT_MODEL_VERSION}.`,
+    }
+  }
+
+  const envelopeFields: Array<[keyof Pick<ReportModel, 'planName' | 'generatedAtIso' | 'startYear' | 'endYear'>, string]> = [
+    ['planName', 'a string'],
+    ['generatedAtIso', 'a string'],
+    ['startYear', 'a finite number'],
+    ['endYear', 'a finite number'],
+  ]
+  for (const [field, expected] of envelopeFields) {
+    const value = raw[field]
+    const valid =
+      (field === 'planName' || field === 'generatedAtIso')
+        ? typeof value === 'string'
+        : typeof value === 'number' && Number.isFinite(value)
+    if (!valid) {
+      return {
+        ok: false,
+        reason: 'invalid_envelope',
+        message: `Report model ${field} must be ${expected}.`,
+      }
+    }
+  }
+
+  if (!isObject(raw.provenance)) {
+    return { ok: false, reason: 'invalid_envelope', message: 'Report model provenance must be an object.' }
+  }
+
+  if (!isObject(raw.blocks)) {
+    return { ok: false, reason: 'invalid_envelope', message: 'Report model blocks must be an object.' }
+  }
+
+  for (const id of REPORT_BLOCK_IDS) {
+    if (Object.prototype.hasOwnProperty.call(raw.blocks, id) && raw.blocks[id] !== null && !isObject(raw.blocks[id])) {
+      return {
+        ok: false,
+        reason: 'invalid_block',
+        message: `Report model block ${id} must be an object or null.`,
+      }
+    }
+  }
+
+  return { ok: true, model: raw as ParsedReportModel }
+}
 
 function normalizeJson(value: unknown): JsonValue | undefined {
   if (value === undefined) return undefined

@@ -1,6 +1,6 @@
 {
   "name": "@retiregolden/planner-ui",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "The RetireGolden planner React UI: plan picker, planner workspace, results/Monte Carlo/optimizer pages, import wizard, Learning Center, and report export — the full planner tree a host app composes inside its own router. Ships TypeScript source and requires a Vite-class bundler.",
   "license": "AGPL-3.0-only",
   "type": "module",
@@ -37,6 +37,7 @@
     ".": "./src/index.ts",
     "./plan-format": "./src/data/planFormat.ts",
     "./plan-tax-calculator": "./src/planTaxCalculator.ts",
+    "./projection": "./src/projection.ts",
     "./import-provenance": "./src/import/provenance.ts",
     "./import-refresh": "./src/import/refresh.ts",
     "./intake-refresh": "./src/import/intakeRefresh.ts",

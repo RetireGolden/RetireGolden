@@ -22,7 +22,7 @@ import { EXAMPLE_FIXED_YEAR, exampleFixedNow, exampleIdFactory } from '../planne
 import { getExampleById } from '../planner/examples/registry'
 import { projectPlan } from '../planner/useProjection'
 import { buildStandaloneReportHtml, type ReportRecommendationEvidence } from './reportHtml'
-import { buildReportModel, serializeReportModel } from './reportModel'
+import { buildReportModel, parseReportModel, serializeReportModel } from './reportModel'
 
 // Noon UTC (repo convention, see EXAMPLE_FIXED_NOW_ISO): the report's
 // prepared-date line renders in the local timezone, and noon keeps the
@@ -162,7 +162,9 @@ describe('report model JSON goldens', () => {
         generatedAtIso: GOLDEN_PREPARED_AT,
         modeledFindings: findings,
       })
-      await expect(serializeReportModel(model)).toMatchFileSnapshot(`./goldens/${goldenCase.slug}.report-model.json`)
+      const serialized = serializeReportModel(model)
+      await expect(serialized).toMatchFileSnapshot(`./goldens/${goldenCase.slug}.report-model.json`)
+      expect(parseReportModel(serialized)).toMatchObject({ ok: true })
     })
   }
 

@@ -5,7 +5,7 @@ distributed under their respective licenses. Generated from the resolved
 production dependency tree (direct + transitive, excluding TypeScript-only
 @types/* packages that never reach the runtime bundle).
 
-Generated: 2026-07-30
+Generated: 2026-08-14
 Source:    npm ls --omit=dev --all (workspace root package-lock.json)
 
 ================================================================================
@@ -994,8 +994,8 @@ Packages with no LICENSE file found (metadata only above):
   - victory-vendor@37.3.6
 
 Excluded @types/* packages (TypeScript-only; not in the runtime bundle):
-  - @retiregolden/engine@0.1.8
-  - @retiregolden/planner-ui@0.7.0
+  - @retiregolden/engine@0.1.11
+  - @retiregolden/planner-ui@0.8.0
   - @types/react@19.2.17
   - @types/use-sync-external-store@0.0.6
   - @types/d3-array@3.2.2

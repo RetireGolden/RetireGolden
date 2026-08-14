@@ -145,6 +145,10 @@ The supported product API is:
   and local-income-tax stack used by planner projections and solvers. Hosts
   running shared engine comparisons can use it without importing React or
   planner screens;
+- the **`./projection` subpath** — `projectPlan`, `currentStartYear`, and
+  `ProjectionView`, the React-free deterministic projection seam. Hosts
+  capturing evidence should pass an explicit `startYear`, then persist the
+  returned result and summary without depending on the clock or recomputing;
 - the **`./spending-solve` subpath** — `runSpendingSolve` plus
   `SpendingSolveRequest`, `SpendingSolveRunOptions`, `SpendingSolveResult`,
   `SpendingSolveEvidence`, and `SpendingSolveResponse`. It runs the exact-ledger
@@ -156,9 +160,15 @@ The supported product API is:
   spawned;
 - the **`./report-model` subpath** — the edition-neutral report data model:
   `ReportModel` and its block types, `buildReportModel`, the stable
-  `REPORT_BLOCK_IDS`, `serializeReportModel` (deterministic JSON), and the
-  CSV table helpers (`chartDataCsv`, `yearLedgerCsv`, `accountsCsv`). See
-  "Report model" under "Hosting the workspace". Like `./plan-format`, its
+  `REPORT_BLOCK_IDS`, `serializeReportModel` (deterministic JSON),
+  `parseReportModel` (validates the envelope — kind, supported version
+  1..current, field types, block structure — and returns a `ParsedReportModel`
+  with structurally validated but untyped `provenance` and `blocks`
+  (`Record<string, unknown>`); rejects oversized payloads; hosts re-rendering
+  persisted models must handle absent or unknown blocks and warn rather than
+  drop silently), and the CSV table helpers (`chartDataCsv`, `yearLedgerCsv`,
+  `accountsCsv`).
+  See "Report model" under "Hosting the workspace". Like `./plan-format`, its
   exported names, signatures, and block ids only change with a semver-major
   release (new blocks/fields may be added in minors), and the module is
   browser-free and safe to run in Node;
@@ -522,11 +532,30 @@ years, data vintage, generation timestamp) — assembled from an
 already-computed projection, independent of any DOM, theme, or layout:
 
 ```ts
-import { buildReportModel, serializeReportModel } from '@retiregolden/planner-ui/report-model'
+import {
+  buildReportModel,
+  parseReportModel,
+  serializeReportModel,
+  REPORT_MODEL_VERSION,
+  type ReportModel,
+} from '@retiregolden/planner-ui/report-model'
 
 const model = buildReportModel({ plan, result, summary, startYear })
 const json = serializeReportModel(model) // deterministic: same input, same bytes
+const parsed = parseReportModel(json)
+if (!parsed.ok) throw new Error(parsed.message)
+// Hosts that wrote this JSON with serializeReportModel at the current version
+// may assert to ReportModel after checking parsed.model.version === REPORT_MODEL_VERSION;
+// otherwise narrow each block field-by-field before rendering.
+const persistedModel = parsed.model
 ```
+
+`parseReportModel` validates the envelope (kind, supported version 1..current,
+field types, block structure) and returns a `ParsedReportModel` whose
+`provenance` and `blocks` are structurally validated but untyped
+(`Record<string, unknown>`). It rejects malformed, oversized, or newer
+envelopes. Hosts re-rendering persisted models must handle absent or unknown
+blocks and warn rather than drop silently.
 
 Engine-computed dollar figures are carried as **whole nominal dollars** — the
 precision every report presents, and the same whole-dollar discipline as the
