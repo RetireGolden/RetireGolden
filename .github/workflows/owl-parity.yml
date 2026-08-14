@@ -45,7 +45,7 @@ jobs:
           if [ "$STRICT" = "true" ]; then
             args+=(--strict-owl)
           fi
-          pnpm owl-parity -- "${args[@]}"
+          pnpm owl-parity "${args[@]}"
 
       - name: Upload parity artifacts
         if: always()

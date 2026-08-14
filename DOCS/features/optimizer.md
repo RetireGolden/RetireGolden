@@ -167,7 +167,7 @@ schedule. See the
 `optimizer-exact-ledger-convergence` plan (private planning docs).
 
 **Proof ≥ Owl (Step 6 / Track 3).** With all of the above, the strict parity gate
-(`pnpm owl-parity -- --install-owl --strict-owl`; without Owl/Python the plain command reports a
+(`pnpm owl-parity --install-owl --strict-owl`; without Owl/Python the plain command reports a
 skipped gate and exits 0) **passes**: RetireGolden meets
 or beats [Owl](https://github.com/mdlacasse/Owl) (pinned to tag `v2026.07.04`, re-pinned 2026-07-08; both
 engines' schedules priced on

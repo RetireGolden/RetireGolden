@@ -9,7 +9,7 @@ const appDir = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 
 function usage() {
   return `Usage:
-  pnpm owl-parity -- [--out-dir dir] [--start-year 2026] [--tolerance 1000] [--skip-owl] [--install-owl] [--strict-owl]
+  pnpm owl-parity [--out-dir dir] [--start-year 2026] [--tolerance 1000] [--skip-owl] [--install-owl] [--strict-owl]
 
 Defaults:
   Generates Owl TOML cases, runs RetireGolden's optimizer, and tries to invoke an existing owlcli.
@@ -34,7 +34,8 @@ function parseArgs(argv) {
   }
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i]
-    if (arg === '--out-dir') opts.outDir = takeValue(argv, i++, arg)
+    if (arg === '--') continue
+    else if (arg === '--out-dir') opts.outDir = takeValue(argv, i++, arg)
     else if (arg === '--start-year') opts.startYear = Number(takeValue(argv, i++, arg))
     else if (arg === '--tolerance') opts.tolerance = Number(takeValue(argv, i++, arg))
     else if (arg === '--skip-owl') opts.skipOwl = true

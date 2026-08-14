@@ -311,7 +311,7 @@ of the annual ledger. Local regression review lives in [`cases/`](../../app/src/
 emits stable exact-ledger manifests over the example library or imported plans/scenario sets, and
 `pnpm cases:diff` flags unexpected changes; `pnpm owl-parity` re-prices the optimizer against a pinned
 [Owl](https://github.com/mdlacasse/Owl) oracle on a shared fixture matrix — the proof run is
-`pnpm owl-parity -- --install-owl --strict-owl`; without a working Owl/Python install the gate reports
+`pnpm owl-parity --install-owl --strict-owl`; without a working Owl/Python install the gate reports
 **skipped** and exits 0 (see [optimizer.md](optimizer.md)).
 (The old jsPDF/html2canvas export was removed during the v2 cutover.)
 

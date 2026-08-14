@@ -1080,9 +1080,9 @@ Not a CI gate — see the header comment for why.
 `
 
 async function main() {
-  // Positionals are allowed because `pnpm verify:quotes -- --filter x` has pnpm
-  // swallow the flag and forward only the bare value; a lone positional is then
-  // treated as the filter rather than crashing the run.
+  // Positionals are allowed because `pnpm verify:quotes --filter x` (or the
+  // npm-style `-- --filter x`) may forward only the bare value; a lone
+  // positional is then treated as the filter rather than crashing the run.
   const { values, positionals } = parseArgs({
     allowPositionals: true,
     options: {
