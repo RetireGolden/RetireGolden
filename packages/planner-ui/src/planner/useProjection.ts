@@ -1,43 +1,10 @@
-/**
- * Live deterministic projection: memoized simulatePlan over the standard tax
- * stack (federal engine + flat state rate — same stack the Monte Carlo
- * workers use, see src/mc/runRequest.ts). Fast enough (<5 ms typical) to run
- * on every committed keystroke.
- */
-
 import { useMemo } from 'react'
 
 import type { Plan } from '@retiregolden/engine/model/plan'
-import { summarizeProjection, type ProjectionSummary } from '@retiregolden/engine/projection/compare'
-import { simulatePlan } from '@retiregolden/engine/projection/simulate'
-import type { ProjectionResult } from '@retiregolden/engine/projection/types'
-import { taxCalculatorFor } from '../planTaxCalculator'
+import { projectPlan, type ProjectionView } from '../projection'
 
 export { taxCalculatorFor } from '../planTaxCalculator'
-
-export function currentStartYear(): number {
-  return new Date().getFullYear()
-}
-
-export interface ProjectionView {
-  result: ProjectionResult
-  summary: ProjectionSummary
-  startYear: number
-  /** Divide a nominal amount in `year` by this to get today's dollars. */
-  deflate: (year: number, amount: number) => number
-}
-
-export function projectPlan(plan: Plan, startYear = currentStartYear()): ProjectionView {
-  const result = simulatePlan(plan, { startYear, taxCalculator: taxCalculatorFor(plan) })
-  const summary = summarizeProjection(plan, result)
-  const r = 1 + plan.assumptions.inflationPct / 100
-  return {
-    result,
-    summary,
-    startYear,
-    deflate: (year, amount) => amount / Math.pow(r, year - startYear),
-  }
-}
+export { currentStartYear, projectPlan, type ProjectionView } from '../projection'
 
 export function useProjection(plan: Plan): ProjectionView {
   return useMemo(() => projectPlan(plan), [plan])

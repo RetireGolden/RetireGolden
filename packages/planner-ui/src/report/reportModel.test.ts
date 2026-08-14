@@ -21,8 +21,10 @@ import {
   buildReportModel,
   chartDataCsv,
   inheritedDeadlineExplanation,
+  parseReportModel,
   serializeReportModel,
   yearLedgerCsv,
+  type ParsedReportModel,
   type ReportModel,
   type ReportModelInput,
 } from './reportModel'
@@ -217,6 +219,84 @@ describe('serializeReportModel', () => {
     // Sorted keys: "blocks" precedes "kind" precedes "version".
     expect(first.indexOf('"blocks"')).toBeLessThan(first.indexOf('"kind"'))
     expect(JSON.parse(first)).toMatchObject({ kind: 'retiregolden.report-model', version: 3 })
+  })
+})
+
+describe('parseReportModel', () => {
+  it('round-trips serialized models without changing their data', () => {
+    const json = serializeReportModel(modelFor(fixturePlan()))
+    const parsed = parseReportModel(json)
+
+    expect(parsed).toEqual({ ok: true, model: JSON.parse(json) })
+  })
+
+  it('rejects malformed JSON', () => {
+    expect(parseReportModel('{')).toMatchObject({ ok: false, reason: 'not_json' })
+  })
+
+  it('rejects a wrong kind', () => {
+    const raw = JSON.parse(serializeReportModel(modelFor(fixturePlan())))
+    raw.kind = 'other.report-model'
+
+    expect(parseReportModel(JSON.stringify(raw))).toMatchObject({ ok: false, reason: 'wrong_kind' })
+  })
+
+  it('rejects a newer version and tells the caller to upgrade', () => {
+    const raw = JSON.parse(serializeReportModel(modelFor(fixturePlan())))
+    raw.version = 4
+    const parsed = parseReportModel(JSON.stringify(raw))
+
+    expect(parsed).toMatchObject({ ok: false, reason: 'newer_version' })
+    if (parsed.ok) throw new Error('expected newer report model version to be rejected')
+    expect(parsed.message).toMatch(/upgrade @retiregolden\/planner-ui/i)
+  })
+
+  it('rejects a non-integer version', () => {
+    const raw = JSON.parse(serializeReportModel(modelFor(fixturePlan())))
+    raw.version = 1.5
+
+    expect(parseReportModel(JSON.stringify(raw))).toMatchObject({ ok: false, reason: 'invalid_version' })
+  })
+
+  it('rejects a missing envelope field', () => {
+    const raw = JSON.parse(serializeReportModel(modelFor(fixturePlan())))
+    delete raw.planName
+
+    expect(parseReportModel(JSON.stringify(raw))).toMatchObject({ ok: false, reason: 'invalid_envelope' })
+  })
+
+  it('rejects scalar values for known blocks', () => {
+    const raw = JSON.parse(serializeReportModel(modelFor(fixturePlan())))
+    raw.blocks.accounts = 'not a block'
+
+    expect(parseReportModel(JSON.stringify(raw))).toMatchObject({ ok: false, reason: 'invalid_block' })
+  })
+
+  it('accepts a minimal version-1 envelope', () => {
+    const json = JSON.stringify({
+      kind: 'retiregolden.report-model',
+      version: 1,
+      planName: 'Archived plan',
+      generatedAtIso: '2025-01-01T00:00:00.000Z',
+      startYear: 2025,
+      endYear: 2060,
+      provenance: {},
+      blocks: {},
+    })
+    const parsed = parseReportModel(json)
+
+    expect(parsed).toEqual({ ok: true, model: JSON.parse(json) })
+    if (!parsed.ok) throw new Error('expected minimal v1 envelope to parse')
+    const model: ParsedReportModel = parsed.model
+    expect(model.blocks).toEqual({})
+  })
+
+  it('preserves unknown block keys', () => {
+    const raw = JSON.parse(serializeReportModel(modelFor(fixturePlan())))
+    raw.blocks['future-evidence'] = { immutable: true }
+    const parsed = parseReportModel(JSON.stringify(raw))
+
+    expect(parsed).toEqual({ ok: true, model: raw })
   })
 })
 

@@ -139,6 +139,17 @@ import {
   classifyIntakeRefresh,
   defaultIntakeRefreshSelection,
 } from '@retiregolden/planner-ui/intake-refresh'
+import {
+  buildReportModel,
+  parseReportModel,
+  serializeReportModel,
+  REPORT_BLOCK_IDS,
+} from '@retiregolden/planner-ui/report-model'
+import {
+  projectPlan,
+  currentStartYear,
+  type ProjectionView,
+} from '@retiregolden/planner-ui/projection'
 
 // A host-shaped adapter (not the browser store) so both injection routes —
 // the planStore prop and a wrapping PlanStoreProvider — compile against a
@@ -165,6 +176,9 @@ type SpendingSolveContract = {
 }
 const spendingSolveContract: SpendingSolveContract | undefined = undefined
 
+type ProjectionContract = ProjectionView | undefined
+const projectionContract: ProjectionContract = undefined
+
 console.debug(
   parseV2Backup(serializeV2Backup([])).ok,
   WorkspaceOnlyHost.name,
@@ -180,6 +194,13 @@ console.debug(
   taxCalculatorFor.name,
   runSpendingSolve.name,
   spendingSolveContract,
+  buildReportModel.name,
+  parseReportModel.name,
+  serializeReportModel.name,
+  REPORT_BLOCK_IDS.length,
+  projectPlan.name,
+  currentStartYear.name,
+  projectionContract,
 )
 
 createRoot(document.getElementById('root')!).render(

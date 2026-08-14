@@ -2,6 +2,26 @@
 
 This is a high-level, time-ordered summary of changes to the system, synthesized from git commit history and the project documentation. Focus is on material additions, refactors, and shifts in scope or architecture. See git history for full detail and code diffs. Enhancements plans (historical intent) are preserved in `DOCS/enhancements/`.
 
+## 2026-08
+
+**2026-08-13**
+- Prepared **`@retiregolden/planner-ui` 0.8.0** (minor — additive supported
+  governance record-capture seams; no calculation changes). The new public,
+  browser-free **`./projection`** subpath promotes the planner's deterministic
+  `projectPlan(plan, startYear)` projection, its view type, and the clock
+  helper without pulling in React. Evidence hosts pass and record an explicit
+  start year, then retain the exact projection result and summary instead of
+  re-running a plan later.
+
+  The existing **`./report-model`** subpath now adds backward-compatible
+  `parseReportModel`: it validates the envelope (kind, supported version
+  1..current, field types, block structure) and returns a `ParsedReportModel`
+  whose `blocks` may be partial for older versions. It rejects malformed or
+  newer envelopes with a caller-visible upgrade message. Hosts re-rendering
+  persisted models must handle absent or unknown blocks and warn rather than
+  drop silently. Serialization remains deterministic; no retirement, tax, or
+  money calculation changed.
+
 ## 2026-07 (July 2026 Depth Wave)
 
 **2026-07-30**
