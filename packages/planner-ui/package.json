@@ -58,7 +58,7 @@
     "benchmark:documents": "node scripts/document-benchmark.mjs"
   },
   "dependencies": {
-    "@retiregolden/engine": "workspace:^0.1.9",
+    "@retiregolden/engine": "^0.1.9",
     "highs": "^1.14.2",
     "idb": "^8.0.3",
     "recharts": "^3.8.1"

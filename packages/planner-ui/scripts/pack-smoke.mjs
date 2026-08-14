@@ -54,16 +54,15 @@ if (!['auto', 'local', 'registry'].includes(engineSourceMode)) {
 }
 
 const plannerPackage = JSON.parse(readFileSync(join(pkgDir, 'package.json'), 'utf8'))
-const declaredEngineRange = plannerPackage.dependencies?.['@retiregolden/engine']
-// `workspace:^x.y.z` links the checkout locally and publishes as `^x.y.z`.
-const engineRange =
-  typeof declaredEngineRange === 'string'
-    ? declaredEngineRange.replace(/^workspace:/, '')
-    : declaredEngineRange
+const engineRange = plannerPackage.dependencies?.['@retiregolden/engine']
+// Must be a normal caret range. `workspace:` would link locally, but this
+// package is released with `npm publish` (OIDC), which does not rewrite
+// workspace protocol — npm consumers cannot resolve it. Local checkout
+// linking comes from `linkWorkspacePackages: true` in pnpm-workspace.yaml.
 const minimumEngineMatch = typeof engineRange === 'string' ? /^\^(\d+\.\d+\.\d+)$/.exec(engineRange) : null
 if (minimumEngineMatch === null) {
   throw new Error(
-    `pack smoke FAILED: expected planner-ui to declare a caret engine range, got ${JSON.stringify(declaredEngineRange)}`,
+    `pack smoke FAILED: expected planner-ui to declare a caret engine range, got ${JSON.stringify(engineRange)}`,
   )
 }
 const minimumEngineVersion = minimumEngineMatch[1]
@@ -267,6 +266,17 @@ try {
     .split('\n')
     .at(-1)
   const tarball = packed.endsWith('.tgz') ? packed.split(/[\\/]/).pop() : packed
+
+  execFileSync('tar', ['-xzf', tarball, 'package/package.json'], { cwd: scratchDir })
+  const packedManifest = JSON.parse(readFileSync(join(scratchDir, 'package', 'package.json'), 'utf8'))
+  rmSync(join(scratchDir, 'package'), { recursive: true, force: true })
+  const packedEngineRange = packedManifest.dependencies?.['@retiregolden/engine']
+  if (packedEngineRange !== engineRange) {
+    throw new Error(
+      `pack smoke FAILED: packed manifest engine range ${JSON.stringify(packedEngineRange)} ` +
+        `does not match the declared caret range ${JSON.stringify(engineRange)}`,
+    )
+  }
 
   const registryMinimumAvailable =
     engineSourceMode === 'local' ? false : registryHasMinimumEngine()
