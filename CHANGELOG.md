@@ -16,11 +16,14 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   The existing **`./report-model`** subpath now adds backward-compatible
   `parseReportModel`: it validates the envelope (kind, supported version
   1..current, field types, block structure) and returns a `ParsedReportModel`
-  whose `blocks` may be partial for older versions. It rejects malformed or
-  newer envelopes with a caller-visible upgrade message. Hosts re-rendering
-  persisted models must handle absent or unknown blocks and warn rather than
-  drop silently. Serialization remains deterministic; no retirement, tax, or
-  money calculation changed.
+  whose `provenance` and `blocks` are structurally validated but untyped
+  (`Record<string, unknown>`). It rejects malformed, oversized, or newer
+  envelopes with a caller-visible upgrade message. Hosts that wrote the bytes
+  with `serializeReportModel` at the current version may assert to `ReportModel`
+  after checking `model.version === REPORT_MODEL_VERSION`; all other consumers
+  must narrow field-by-field. Hosts re-rendering persisted models must handle
+  absent or unknown blocks and warn rather than drop silently. Serialization
+  remains deterministic; no retirement, tax, or money calculation changed.
 
 ## 2026-07 (July 2026 Depth Wave)
 

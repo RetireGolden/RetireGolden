@@ -163,7 +163,8 @@ The supported product API is:
   `REPORT_BLOCK_IDS`, `serializeReportModel` (deterministic JSON),
   `parseReportModel` (validates the envelope — kind, supported version
   1..current, field types, block structure — and returns a `ParsedReportModel`
-  whose `blocks` may be partial for older versions; hosts re-rendering
+  with structurally validated but untyped `provenance` and `blocks`
+  (`Record<string, unknown>`); rejects oversized payloads; hosts re-rendering
   persisted models must handle absent or unknown blocks and warn rather than
   drop silently), and the CSV table helpers (`chartDataCsv`, `yearLedgerCsv`,
   `accountsCsv`).
@@ -537,15 +538,18 @@ const model = buildReportModel({ plan, result, summary, startYear })
 const json = serializeReportModel(model) // deterministic: same input, same bytes
 const parsed = parseReportModel(json)
 if (!parsed.ok) throw new Error(parsed.message)
-// Check each block id before rendering — older versions may omit blocks.
+// Hosts that wrote this JSON with serializeReportModel at the current version
+// may assert to ReportModel after checking parsed.model.version === REPORT_MODEL_VERSION;
+// otherwise narrow each block field-by-field before rendering.
 const persistedModel = parsed.model
 ```
 
 `parseReportModel` validates the envelope (kind, supported version 1..current,
-field types, block structure) and returns a `ParsedReportModel` whose `blocks`
-may be partial for older versions. It rejects malformed or newer envelopes.
-Hosts re-rendering persisted models must handle absent or unknown blocks and
-warn rather than drop silently.
+field types, block structure) and returns a `ParsedReportModel` whose
+`provenance` and `blocks` are structurally validated but untyped
+(`Record<string, unknown>`). It rejects malformed, oversized, or newer
+envelopes. Hosts re-rendering persisted models must handle absent or unknown
+blocks and warn rather than drop silently.
 
 Engine-computed dollar figures are carried as **whole nominal dollars** — the
 precision every report presents, and the same whole-dollar discipline as the

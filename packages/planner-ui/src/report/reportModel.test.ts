@@ -14,8 +14,10 @@ import { fmtMoney } from '../planner/format'
 import { renderStandaloneReportHtml, reportEvidenceFromOptimizeResult } from './reportHtml'
 import type { InheritedAccountYearEvidence, YearResult } from '@retiregolden/engine/projection/types'
 import {
+  MAX_REPORT_MODEL_JSON_CHARS,
   REPORT_BLOCK_IDS,
   REPORT_EDUCATIONAL_DISCLAIMER,
+  REPORT_MODEL_VERSION,
   accountsCsv,
   buildInheritedSchedules,
   buildReportModel,
@@ -234,6 +236,13 @@ describe('parseReportModel', () => {
     expect(parseReportModel('{')).toMatchObject({ ok: false, reason: 'not_json' })
   })
 
+  it('rejects oversized payloads', () => {
+    expect(parseReportModel('x'.repeat(MAX_REPORT_MODEL_JSON_CHARS + 1))).toMatchObject({
+      ok: false,
+      reason: 'too_large',
+    })
+  })
+
   it('rejects a wrong kind', () => {
     const raw = JSON.parse(serializeReportModel(modelFor(fixturePlan())))
     raw.kind = 'other.report-model'
@@ -243,7 +252,7 @@ describe('parseReportModel', () => {
 
   it('rejects a newer version and tells the caller to upgrade', () => {
     const raw = JSON.parse(serializeReportModel(modelFor(fixturePlan())))
-    raw.version = 4
+    raw.version = REPORT_MODEL_VERSION + 1
     const parsed = parseReportModel(JSON.stringify(raw))
 
     expect(parsed).toMatchObject({ ok: false, reason: 'newer_version' })
