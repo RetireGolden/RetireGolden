@@ -39,7 +39,7 @@ jobs:
           path-to-document: https://github.com/RetireGolden/RetireGolden/blob/main/CLA.md
           branch: main
           # Maintainers and bots are exempt from signing.
-          allowlist: FlyOverCoderKY,*[bot]
+          allowlist: FlyOverCoderKY,cursoragent,*[bot]
           custom-notsigned-prcomment: >
             Thank you for your contribution to RetireGolden! Before we can merge,
             we need you to sign our
