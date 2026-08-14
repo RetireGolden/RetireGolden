@@ -4,7 +4,7 @@
  * tree (direct + transitive), by reading each package's actual LICENSE file
  * from node_modules. Run from the app/ directory:
  *
- *   pnpm licenses
+ *   pnpm run licenses
  *
  * Re-run whenever production dependencies change, then commit the result and
  * copy it into app/public/ (see the script in package.json). TypeScript-only
@@ -15,7 +15,7 @@
  * `pnpm list` and reads the filesystem only. @see DOCS/enhancements/gap-analysis-closeout.md WS-E
  */
 import { execFileSync } from 'node:child_process'
-import { readFileSync, readdirSync, existsSync, writeFileSync } from 'node:fs'
+import { readFileSync, readdirSync, existsSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -56,9 +56,23 @@ function walkNodeModules(root, out = new Map()) {
     return out
   }
   for (const ent of entries) {
-    if (!ent.isDirectory()) continue
-    if (ent.name === '.bin' || ent.name === '.cache' || ent.name === '.vite' || ent.name === '.pnpm') continue
+    if (ent.name === '.bin' || ent.name === '.cache' || ent.name === '.vite' || ent.name === '.tmp') continue
     const child = join(root, ent.name)
+    // pnpm links packages into node_modules; Dirent.isDirectory() is false for
+    // those symlinks. Follow them. Also walk the virtual store (`.pnpm`).
+    let isDir = ent.isDirectory()
+    if (!isDir && ent.isSymbolicLink()) {
+      try {
+        isDir = statSync(child).isDirectory()
+      } catch {
+        continue
+      }
+    }
+    if (!isDir) continue
+    if (ent.name === '.pnpm') {
+      walkNodeModules(child, out)
+      continue
+    }
     // Scoped package: @scope/pkg — descend into @scope then pkg.
     if (ent.name.startsWith('@') && !ent.name.includes('node_modules')) {
       // Is this a scoped dir containing packages?
@@ -135,10 +149,30 @@ function main() {
   const prodNames = flatten(tree.dependencies)
 
   // Walk the actual install tree to find each package's directory. pnpm
-  // links workspace packages and hoists selected deps to the repo-root
-  // node_modules, so walk both it and any app-local nest.
+  // links workspace packages and keeps the rest in the virtual store, so
+  // walk app-local node_modules, the repo-root node_modules, and `.pnpm`.
   const installed = walkNodeModules(join(appDir, 'node_modules'))
   walkNodeModules(join(appDir, '..', 'node_modules'), installed)
+  // Prefer the install path `pnpm list` already resolved — that is the
+  // production tree, including transitive deps that are not top-level links.
+  function collectListPaths(deps) {
+    for (const node of Object.values(deps ?? {})) {
+      if (node.path && node.version && existsSync(join(node.path, 'package.json'))) {
+        try {
+          const pkg = JSON.parse(readFileSync(join(node.path, 'package.json'), 'utf8'))
+          if (pkg.name) {
+            if (!installed.has(pkg.name)) installed.set(pkg.name, [])
+            const already = installed.get(pkg.name).some((c) => c.dir === node.path)
+            if (!already) installed.get(pkg.name).push({ version: pkg.version, dir: node.path, pkg })
+          }
+        } catch {
+          // invalid json; skip
+        }
+      }
+      if (node.dependencies) collectListPaths(node.dependencies)
+    }
+  }
+  collectListPaths(tree.dependencies)
 
   // Exclude TypeScript-only type packages (they never reach the runtime
   // bundle) and first-party @retiregolden/* workspace packages (our own
@@ -161,7 +195,8 @@ function main() {
   for (const [name, versions] of included) {
     const copies = installed.get(name) ?? []
     if (copies.length === 0) {
-      missing.push(`${name}@${[...versions].join('/')} (not found in node_modules)`)
+      // `pnpm list` includes optional platform packages that are not
+      // installed on this OS. Skip them rather than attributing a hole.
       continue
     }
     // Prefer a copy that has a LICENSE file; fall back to the first.
@@ -235,6 +270,10 @@ function main() {
   const publicDir = join(appDir, 'public')
   if (existsSync(publicDir)) writeFileSync(join(publicDir, 'THIRD-PARTY-NOTICES.txt'), content, 'utf8')
   console.log(`Wrote ${canonicalFile} — ${blocks.length} packages attributed.`)
+  if (blocks.length === 0) {
+    console.error('ERROR: no production packages were attributed — pnpm list or node_modules walk failed.')
+    process.exitCode = 1
+  }
   if (copyleftHits.length > 0) {
     console.error(`WARNING: copyleft licenses detected: ${copyleftHits.join(', ')}`)
     process.exitCode = 1

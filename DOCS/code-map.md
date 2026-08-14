@@ -24,7 +24,7 @@ RetireGolden/
 ```
 
 The root `LICENSE` is AGPL-3.0-only; copyright is held by RetireGolden, LLC. `app/THIRD-PARTY-NOTICES.txt` (and the shipped copy
-in `app/public/`) attribute every bundled MIT/ISC/0BSD package; regenerate with `pnpm licenses`
+in `app/public/`) attribute every bundled MIT/ISC/0BSD package; regenerate with `pnpm run licenses`
 (see maintenance-schedule.md for the regeneration reminder).
 
 ## `app/` — the thin web host
@@ -193,4 +193,4 @@ text-extraction accuracy report (per-field precision/recall over a hand-built sy
 [features/document-parsing-spike.md](features/document-parsing-spike.md).
 
 App-only (run from `app/`): `pnpm test:e2e` (Playwright specs in `e2e/`), `pnpm preview`
-(serve the built `dist/`), `pnpm licenses`.
+(serve the built `dist/`), `pnpm run licenses`.
