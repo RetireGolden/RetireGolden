@@ -4,7 +4,7 @@
  * tree (direct + transitive), by reading each package's actual LICENSE file
  * from node_modules. Run from the app/ directory:
  *
- *   npm run licenses
+ *   pnpm licenses
  *
  * Re-run whenever production dependencies change, then commit the result and
  * copy it into app/public/ (see the script in package.json). TypeScript-only
@@ -12,7 +12,7 @@
  * runtime bundle, and carry no attribution obligation.
  *
  * This is a dev/build-time tool with no runtime dependencies; it shells out to
- * `npm ls` and reads the filesystem only. @see DOCS/enhancements/gap-analysis-closeout.md WS-E
+ * `pnpm list` and reads the filesystem only. @see DOCS/enhancements/gap-analysis-closeout.md WS-E
  */
 import { execFileSync } from 'node:child_process'
 import { readFileSync, readdirSync, existsSync, writeFileSync } from 'node:fs'
@@ -29,7 +29,7 @@ const LICENSE_FILENAMES = [
   'NOTICE', 'NOTICE.md',
 ]
 
-/** Recursively flatten the `npm ls` tree into name -> Set<version> (dedup). */
+/** Recursively flatten the `pnpm list` tree into name -> Set<version> (dedup). */
 function flatten(deps, out = new Map()) {
   for (const [name, node] of Object.entries(deps ?? {})) {
     if (node.version) {
@@ -116,19 +116,27 @@ function detectCopyleft(licenseField) {
 
 function main() {
   // Resolved production dependency tree (direct + transitive), excluding dev.
-  // shell:true so the `npm` shim is found on Windows.
-  const json = execFileSync('npm', ['ls', '--omit=dev', '--all', '--json'], {
-    cwd: appDir,
-    encoding: 'utf8',
-    maxBuffer: 64 * 1024 * 1024,
-    shell: true,
-  })
-  const tree = JSON.parse(json)
+  // shell:true so the `pnpm` shim is found on Windows. `pnpm list` exits
+  // non-zero when peers are unmet; stdout is still the JSON tree.
+  let json
+  try {
+    json = execFileSync('pnpm', ['list', '--prod', '--json', '--depth', 'Infinity'], {
+      cwd: appDir,
+      encoding: 'utf8',
+      maxBuffer: 64 * 1024 * 1024,
+      shell: true,
+    })
+  } catch (err) {
+    if (typeof err.stdout !== 'string' || err.stdout.trim() === '') throw err
+    json = err.stdout
+  }
+  const listed = JSON.parse(json)
+  const tree = Array.isArray(listed) ? listed[0] : listed
   const prodNames = flatten(tree.dependencies)
 
-  // Walk the actual install tree to find each package's directory. npm
-  // workspaces hoist to the repo-root node_modules, so walk both it and any
-  // app-local nest.
+  // Walk the actual install tree to find each package's directory. pnpm
+  // links workspace packages and hoists selected deps to the repo-root
+  // node_modules, so walk both it and any app-local nest.
   const installed = walkNodeModules(join(appDir, 'node_modules'))
   walkNodeModules(join(appDir, '..', 'node_modules'), installed)
 
@@ -185,7 +193,7 @@ function main() {
   out.push('@types/* packages that never reach the runtime bundle).')
   out.push('')
   out.push(`Generated: ${today}`)
-  out.push(`Source:    npm ls --omit=dev --all (workspace root package-lock.json)`)
+  out.push(`Source:    pnpm list --prod --depth Infinity (workspace root pnpm-lock.yaml)`)
   out.push('')
   out.push('================================================================================')
   out.push('')

@@ -307,11 +307,11 @@ report-model fixtures for the reference cases live in
 [`report/goldens/`](../../packages/planner-ui/src/report/goldens). Advisor-authored recommendation blocks exist in
 the model only as host-supplied content — never auto-populated (see the decision-support boundary posture doc). Plus JSON backup/restore
 (versioned envelope) + clear-all-data ([data/v2Backup.ts](../../packages/planner-ui/src/data/v2Backup.ts)) and CSV export
-of the annual ledger. Local regression review lives in [`cases/`](../../app/src/cases/): `npm run cases`
+of the annual ledger. Local regression review lives in [`cases/`](../../app/src/cases/): `pnpm cases`
 emits stable exact-ledger manifests over the example library or imported plans/scenario sets, and
-`npm run cases:diff` flags unexpected changes; `npm run owl-parity` re-prices the optimizer against a pinned
+`pnpm cases:diff` flags unexpected changes; `pnpm owl-parity` re-prices the optimizer against a pinned
 [Owl](https://github.com/mdlacasse/Owl) oracle on a shared fixture matrix — the proof run is
-`npm run owl-parity -- --install-owl --strict-owl`; without a working Owl/Python install the gate reports
+`pnpm owl-parity -- --install-owl --strict-owl`; without a working Owl/Python install the gate reports
 **skipped** and exits 0 (see [optimizer.md](optimizer.md)).
 (The old jsPDF/html2canvas export was removed during the v2 cutover.)
 

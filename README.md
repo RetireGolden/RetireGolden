@@ -27,27 +27,27 @@ RetireGolden is for **education only** — not tax, legal, financial, or medical
 
 ## Development
 
-The repo is an npm workspace: the web host lives in [`app/`](app/), the pure calculation engine in
+The repo is a pnpm workspace: the web host lives in [`app/`](app/), the pure calculation engine in
 [`packages/engine/`](packages/engine/) — published to npm as
 [`@retiregolden/engine`](https://www.npmjs.com/package/@retiregolden/engine) — and the planner React
 UI in [`packages/planner-ui/`](packages/planner-ui/) — published as
 [`@retiregolden/planner-ui`](https://www.npmjs.com/package/@retiregolden/planner-ui). The app
 consumes both as workspace dependencies.
 
-**Requirements:** Node.js 20+
+**Requirements:** Node.js 24+ (Corepack will use the `packageManager` pin)
 
 ```bash
-npm install
-npm run dev
+pnpm install
+pnpm dev
 ```
 
 | Command (repo root) | Purpose |
 |---------|---------|
-| `npm run dev` | Local dev server |
-| `npm run build` | Engine package build, then production app build → `app/dist/` |
-| `npm run test` | Vitest unit tests (engine package + app) |
-| `npm run lint` | ESLint (engine package + app) |
-| `npm run verify:quotes` | Checks every tax rule's quoted authority against the source it cites — manual, needs network, [not a CI gate](DOCS/operations/quote-fidelity.md) |
+| `pnpm dev` | Local dev server |
+| `pnpm build` | Engine package build, then production app build → `app/dist/` |
+| `pnpm test` | Vitest unit tests (engine package + app) |
+| `pnpm lint` | ESLint (engine package + app) |
+| `pnpm verify:quotes` | Checks every tax rule's quoted authority against the source it cites — manual, needs network, [not a CI gate](DOCS/operations/quote-fidelity.md) |
 
 ## CI/CD
 
@@ -59,10 +59,10 @@ Six GitHub Actions workflows: the SWA pipeline and both security scans run on pu
 
 | Job | What it does |
 |-----|----------------|
-| `lint` | Root `npm ci` + `npm run lint` (engine package + app) |
-| `test` | Root `npm ci` + `npm run test:coverage` (engine package + app, unit tests + coverage thresholds) |
-| `e2e` | Playwright browser smoke/layout specs (`npm run test:e2e` in `app/`) |
-| `build` | Runs after lint, test, and e2e pass; `npm run build` → `app/dist/` (artifact retained 1 day) |
+| `lint` | Root `pnpm install --frozen-lockfile` + `pnpm lint` (engine package + app) |
+| `test` | Root `pnpm install --frozen-lockfile` + `pnpm test:coverage` (engine package + app, unit tests + coverage thresholds) |
+| `e2e` | Playwright browser smoke/layout specs (`pnpm test:e2e` in `app/`) |
+| `build` | Runs after lint, test, and e2e pass; `pnpm build` → `app/dist/` (artifact retained 1 day) |
 | `deploy` | Uploads `app/dist` to **Azure Static Web Apps** (`skip_app_build: true`) |
 | `dast` | PR previews only — calls the ZAP workflow against the deployed preview URL |
 | `close_pull_request` | Tears down the SWA preview environment when a PR is closed |
@@ -77,7 +77,7 @@ Six GitHub Actions workflows: the SWA pipeline and both security scans run on pu
 
 [`.github/workflows/owl-parity.yml`](.github/workflows/owl-parity.yml)
 
-Manually triggered (Actions tab). Runs the Owl parity harness (`npm run owl-parity`), replaying the bundled fixtures through the open-source Owl planner and comparing ending after-tax estates against RetireGolden's exact ledger. How the harness and its gate work: [DOCS/operations/owl-parity.md](DOCS/operations/owl-parity.md).
+Manually triggered (Actions tab). Runs the Owl parity harness (`pnpm owl-parity`), replaying the bundled fixtures through the open-source Owl planner and comparing ending after-tax estates against RetireGolden's exact ledger. How the harness and its gate work: [DOCS/operations/owl-parity.md](DOCS/operations/owl-parity.md).
 
 ### Semgrep SAST — static analysis
 

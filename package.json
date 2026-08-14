@@ -2,28 +2,25 @@
   "name": "retiregolden",
   "private": true,
   "license": "AGPL-3.0-only",
+  "packageManager": "pnpm@10.34.5+sha512.a4ee05f2f73658255bd6a89859c065a45c28a57daefae2c893a168ee2b73168c37b91e83e57ea67654ad03f03031746430e8bce38e362e042605fb8abc80192e",
   "engines": {
     "node": ">=24"
   },
-  "workspaces": [
-    "app",
-    "packages/*"
-  ],
-  "overrides": {
-    "sharp": "^0.35.0",
-    "ejs": {
-      "jake": "^12.10.1"
+  "pnpm": {
+    "overrides": {
+      "sharp": "^0.35.0",
+      "ejs>jake": "^12.10.1"
     }
   },
   "scripts": {
-    "lint": "npm run lint -w @retiregolden/engine && npm run lint -w @retiregolden/planner-ui && npm run lint -w retiregolden-web",
-    "test": "npm run test -w @retiregolden/engine && npm run test -w @retiregolden/planner-ui && npm run test -w retiregolden-web",
-    "test:coverage": "npm run test:coverage -w @retiregolden/engine && npm run test:coverage -w @retiregolden/planner-ui && npm run test:coverage -w retiregolden-web",
-    "build": "npm run build -w @retiregolden/engine && npm run build -w @retiregolden/planner-ui && npm run build -w retiregolden-web",
-    "dev": "npm run dev -w retiregolden-web",
-    "cases": "npm run cases -w retiregolden-web",
-    "cases:diff": "npm run cases:diff -w retiregolden-web",
-    "owl-parity": "npm run owl-parity -w retiregolden-web",
-    "verify:quotes": "npm run verify:quotes -w @retiregolden/engine"
+    "lint": "pnpm --filter @retiregolden/engine lint && pnpm --filter @retiregolden/planner-ui lint && pnpm --filter retiregolden-web lint",
+    "test": "pnpm --filter @retiregolden/engine test && pnpm --filter @retiregolden/planner-ui test && pnpm --filter retiregolden-web test",
+    "test:coverage": "pnpm --filter @retiregolden/engine test:coverage && pnpm --filter @retiregolden/planner-ui test:coverage && pnpm --filter retiregolden-web test:coverage",
+    "build": "pnpm --filter @retiregolden/engine build && pnpm --filter @retiregolden/planner-ui build && pnpm --filter retiregolden-web build",
+    "dev": "pnpm --filter retiregolden-web dev",
+    "cases": "pnpm --filter retiregolden-web cases",
+    "cases:diff": "pnpm --filter retiregolden-web cases:diff",
+    "owl-parity": "pnpm --filter retiregolden-web owl-parity",
+    "verify:quotes": "pnpm --filter @retiregolden/engine verify:quotes"
   }
 }

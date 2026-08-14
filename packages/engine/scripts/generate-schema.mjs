@@ -16,8 +16,8 @@
  * a sync test (src/schema/planJsonSchema.test.ts) fails CI if either drifts from a
  * fresh generation — i.e. if `planSchema` changed and nobody reran this script.
  *
- * Requires a prior `npm run build` (imports the compiled generator from dist/).
- * Run:  npm run generate:schema   (from packages/engine, or -w @retiregolden/engine)
+ * Requires a prior `pnpm run build` (imports the compiled generator from dist/).
+ * Run:  pnpm generate:schema   (from packages/engine, or --filter @retiregolden/engine)
  */
 import { writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
@@ -45,7 +45,7 @@ try {
   ;({ generatePlanJsonSchema, PLAN_SCHEMA_VERSION } = await import(generatorUrl))
 } catch (err) {
   console.error(
-    'Could not import the compiled generator from dist/. Run `npm run build` first.\n' + String(err),
+    'Could not import the compiled generator from dist/. Run `pnpm run build` first.\n' + String(err),
   )
   process.exitCode = 1
   throw err
@@ -71,7 +71,7 @@ const tsText = `/**
  * GENERATED FILE — DO NOT EDIT BY HAND.
  *
  * The checked-in Plan JSON Schema, emitted from the engine's \`planSchema\`.
- * Regenerate with \`npm run generate:schema\` (rewrites this file and
+ * Regenerate with \`pnpm generate:schema\` (rewrites this file and
  * schema/plan.v${PLAN_SCHEMA_VERSION}.json). A sync test guards against hand-edits and drift.
  */
 import type { JsonSchemaDocument } from './planSchemaMeta.js'

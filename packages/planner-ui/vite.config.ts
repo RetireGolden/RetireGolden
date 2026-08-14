@@ -27,7 +27,7 @@ export default defineConfig({
         // Inlining it makes Vite (not Node) resolve its `@retiregolden/engine`
         // imports, so the alias above applies and BOTH sides of the comparison
         // run the same engine SOURCE — one module instance, and no dependency
-        // on `packages/engine/dist` existing (CI's test job runs `npm ci` and
+        // on `packages/engine/dist` existing (CI's test job runs `pnpm install --frozen-lockfile` and
         // nothing else, so it does not).
         inline: ['@retiregolden/mcp'],
       },

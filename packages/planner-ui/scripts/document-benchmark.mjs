@@ -2,8 +2,8 @@
 /**
  * Runs the WS5 document-parsing accuracy benchmark and prints the report.
  *
- *   npm run benchmark:documents -w @retiregolden/planner-ui
- *   npm run benchmark:documents -w @retiregolden/planner-ui -- --json
+ *   pnpm --filter @retiregolden/planner-ui benchmark:documents
+ *   pnpm --filter @retiregolden/planner-ui benchmark:documents -- --json
  *
  * The corpus is built in memory (`src/import/documentCorpus.ts`) — no file is
  * read and none is written, because the repo commits no binary fixtures and

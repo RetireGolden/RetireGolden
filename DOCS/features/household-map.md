@@ -143,4 +143,4 @@ actual layout size (no hard-coded shrink, no cards sliced across page breaks). L
 visually with the full name preserved in the tooltip and accessible label.
 
 Feature-off discipline: the map is read-only over the plan — it writes nothing, adds no schema
-fields, and touches no engine ledger path, so `npm run cases:diff` is unchanged by its presence.
+fields, and touches no engine ledger path, so `pnpm cases:diff` is unchanged by its presence.

@@ -27,7 +27,7 @@ terminals/
 .codex-artifacts/
 .impeccable/
 
-# Workspace dependencies (npm hoists to the repo root)
+# Workspace dependencies (pnpm virtual store + node_modules)
 node_modules/
 
 # Package build & test artifacts

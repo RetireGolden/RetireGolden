@@ -10,7 +10,7 @@
 
 ## Checklist
 
-- [ ] Tests pass locally (`npm test` in `app/`) and are updated/added alongside the change
+- [ ] Tests pass locally (`pnpm test`) and are updated/added alongside the change
 - [ ] All money math stays in the pure engine — no dollar computation in UI code
 - [ ] No new runtime dependencies without prior discussion
 - [ ] No telemetry, analytics, or network calls with user data

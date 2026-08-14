@@ -8,8 +8,8 @@ const appDir = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 
 function usage() {
   return `Usage:
-  npm run cases -- [run] [--input file-or-dir] [--scenario-set file] [--out manifest.json] [--reports-dir dir] [--prepared-at ISO] [--start-year 2026] [--include-decisions] [--include-plan-scenarios]
-  npm run cases -- diff --base old.json --head new.json [--allowlist allow.json]
+  pnpm cases -- [run] [--input file-or-dir] [--scenario-set file] [--out manifest.json] [--reports-dir dir] [--prepared-at ISO] [--start-year 2026] [--include-decisions] [--include-plan-scenarios]
+  pnpm cases -- diff --base old.json --head new.json [--allowlist allow.json]
 
 Defaults:
   run without --input uses the bundled example-plan library.

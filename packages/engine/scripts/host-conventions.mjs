@@ -7,7 +7,7 @@
  * (which Vitest's `vm.Script` evaluation does not strip, unlike Node's ESM
  * loader) and it runs a hundred-request verification pass on import. Guarding
  * its entry point would work, and would introduce a worse failure than the one
- * it solved: a guard that stops matching turns `npm run verify:quotes` into a
+ * it solved: a guard that stops matching turns `pnpm verify:quotes` into a
  * silent no-op. A constant that both files import has no such edge.
  *
  * What each publisher actually emits for the characters that quotes trip over.

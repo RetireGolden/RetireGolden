@@ -17,7 +17,7 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const pkgDir = resolve(dirname(fileURLToPath(import.meta.url)), '..')
-const shell = process.platform === 'win32' // npm is npm.cmd on Windows
+const shell = process.platform === 'win32' // pnpm is pnpm.cmd on Windows
 const require = createRequire(import.meta.url)
 
 const smokeScript = `
@@ -1490,15 +1490,16 @@ export const options: Pick<SimulateOptions, 'annualCounterfactual'> =
 
 const work = mkdtempSync(join(tmpdir(), 'engine-pack-smoke-'))
 try {
-  const packOutput = execFileSync('npm', ['pack', '--pack-destination', work], {
+  const packOutput = execFileSync('pnpm', ['pack', '--pack-destination', work], {
     cwd: pkgDir,
     encoding: 'utf8',
     shell,
   })
-  const tarball = packOutput.trim().split('\n').pop().trim()
+  const packed = packOutput.trim().split('\n').pop().trim()
+  const tarball = packed.endsWith('.tgz') ? packed : join(work, packed)
 
   writeFileSync(join(work, 'package.json'), JSON.stringify({ name: 'engine-pack-smoke', private: true, type: 'module' }))
-  execFileSync('npm', ['install', '--no-audit', '--no-fund', join(work, tarball)], {
+  execFileSync('pnpm', ['add', tarball], {
     cwd: work,
     stdio: 'inherit',
     shell,

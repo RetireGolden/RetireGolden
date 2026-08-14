@@ -61,7 +61,7 @@
  * the package's `files`, so the `./*` wildcard cannot reach them and no
  * consumer receives ~55 kB of test instrumentation. Only `documentText.ts`
  * ships from this spike. Run in-repo by
- * `npm run benchmark:documents -w @retiregolden/planner-ui` and pinned by
+ * `pnpm --filter @retiregolden/planner-ui benchmark:documents` and pinned by
  * `documentBenchmark.test.ts`.
  */
 

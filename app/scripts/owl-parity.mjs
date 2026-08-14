@@ -9,7 +9,7 @@ const appDir = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 
 function usage() {
   return `Usage:
-  npm run owl-parity -- [--out-dir dir] [--start-year 2026] [--tolerance 1000] [--skip-owl] [--install-owl] [--strict-owl]
+  pnpm owl-parity -- [--out-dir dir] [--start-year 2026] [--tolerance 1000] [--skip-owl] [--install-owl] [--strict-owl]
 
 Defaults:
   Generates Owl TOML cases, runs RetireGolden's optimizer, and tries to invoke an existing owlcli.

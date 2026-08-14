@@ -5,13 +5,14 @@ why) and [standards.md](standards.md) (the conventions).
 
 ## Repository top level
 
-The repo is an npm workspace: `npm ci` at the root installs everything; the app consumes the
+The repo is a pnpm workspace: `pnpm install` at the root installs everything; the app consumes the
 engine as `@retiregolden/engine` and the planner UI as `@retiregolden/planner-ui` (workspace
 dependencies, published to npm from `packages/`).
 
 ```
 RetireGolden/
-├── package.json          workspace root ("app", "packages/*") + cross-workspace scripts
+├── package.json          workspace root + cross-workspace scripts (`packageManager`: pnpm)
+├── pnpm-workspace.yaml   workspace packages: `app`, `packages/*`
 ├── app/                  the web host (Vite + React + TS): entry, PWA/SEO, cases harness, e2e
 ├── packages/engine/      @retiregolden/engine — the pure calculation engine (published to npm)
 ├── packages/planner-ui/  @retiregolden/planner-ui — the planner React UI (published to npm; ships TS source)
@@ -23,7 +24,7 @@ RetireGolden/
 ```
 
 The root `LICENSE` is AGPL-3.0-only; copyright is held by RetireGolden, LLC. `app/THIRD-PARTY-NOTICES.txt` (and the shipped copy
-in `app/public/`) attribute every bundled MIT/ISC/0BSD package; regenerate with `npm run licenses`
+in `app/public/`) attribute every bundled MIT/ISC/0BSD package; regenerate with `pnpm licenses`
 (see maintenance-schedule.md for the regeneration reminder).
 
 ## `app/` — the thin web host
@@ -45,7 +46,7 @@ app/
   `@retiregolden/planner-ui/index.css`, and mounts `<PlannerApp/>`. Everything inside the router
   lives in the planner-ui package.
 - `cases/` — the exact-ledger case runner, manifest diffing, Owl parity harness, and the standalone
-  report regression test (`npm run cases`, `npm run cases:diff`, `npm run owl-parity`).
+  report regression test (`pnpm cases`, `pnpm cases:diff`, `pnpm owl-parity`).
 - Host-level guards: `staticwebapp.config.test.ts` (SWA routing config) and
   `docsConsistency.test.ts` (docs ↔ tree drift).
 
@@ -117,7 +118,7 @@ test files.
 | `socialSecurity/` | SS analysis features on top of the engine's SS math: `expectedPv`, `breakEven`, `explain`, `ficaReturn`, `survivorSwitching`, `ssaStatementXml`, plus form storage/guards (the ledger-consumed math lives in the engine package) |
 | `longevity/` | Life-expectancy wizard: `model`, `factors`, `LongevityWizard.tsx`, `LongevityResults.tsx` (the SSA period table + types live in the engine package) |
 | `integration/` | Engine-adjacent tests that drive engine code through app harnesses (`useProjection`, the learning registry, the spending solver) |
-| `import/` | Import & migration wizard (`/import`): hardened CSV core (`csv.ts`), broker positions mappers (`brokerCsv.ts`), ProjectionLab JSON mapper (`projectionLab.ts`), generic/RPM column-mapping (`genericCsv.ts`), 1040 guided seed (`tenForty.ts`), shared review checklist (`reviewChecklist.ts` + `ReviewChecklistView.tsx`), the import-provenance contract + export envelope (`provenance.ts` — browser-free, the stable `import-provenance` subpath) and its source-hash helper (`sourceHash.ts` — Web Crypto, async, called at the UI boundary), the browser-free broker-refresh/reconciliation engine (`refresh.ts` — `classifyRefresh`/`buildRefreshDelta`/`applyRefresh`, the stable `import-refresh` subpath, consumed by `UpdateBalancesPanel.tsx`), the local PDF text extractor (`documentText.ts` — `extractDocumentText`, the stable `document-text` subpath; per-page text with 1-based page numbers as citations, `imageOnly` detection for scanned pages, a result union for every failure, exported caps, worker-free pdfjs behind an **optional** `pdfjs-dist` peer reached only by dynamic import — WS5 spike, deliberately NOT wired into the wizard) and its hand-emitted PDF fixtures (`pdfFixtures.ts` — the repo commits no binary fixtures, so test PDFs are built byte by byte, with multi-line and column layout so the corpus reproduces real spacing artifacts), plus the WS5 accuracy benchmark: `documentCorpus.ts` (eight synthetic documents whose field values and page numbers are declared by hand — the oracle, since the app is never its own) and `documentBenchmark.ts` (general field detectors, precision/recall **per field**, page-citation accuracy, and every miss split into "text present — selection gap" vs "text lost — extraction gap" — `npm run benchmark:documents`, findings in [features/document-parsing-spike.md](features/document-parsing-spike.md)). The three benchmark-only modules (`pdfFixtures.ts`, `documentCorpus.ts`, `documentBenchmark.ts`) are excluded from the published tarball by `files`, the way `report/goldens` is — only `documentText.ts` ships. The wizard itself (`ImportPage.tsx`) is untouched by WS5 and still offers no PDF upload. Alongside them, the migration-source identifier (`migrationSource.ts` — `identifyMigrationDocument` / `identifyMigrationExport` / `MIGRATION_ADAPTERS` / `buildMigrationReview`, the stable `migration-source` subpath) says WHICH incumbent tool a file came from and publishes what can and cannot be brought over, mapping no fields itself: ProjectionLab is identified structurally and mapped by `projectionLab.ts` unchanged, while RightCapital/eMoney/MoneyGuide are identified only — no substantiated export format exists for them, so the limitations are published instead of a guessed mapping. The report NAMES the pages worth reading and never carries their text: only bounded name excerpts and page numbers become review items, so a caller must keep the extracted `DocumentPage[]` itself (Pro does — WS5's reader emits the per-page notes separately). Name matching is word-bounded with verbatim excerpts, page citations ride as `none` locators (the union has no page kind), and a file naming two tools is reported ambiguous rather than guessed at. |
+| `import/` | Import & migration wizard (`/import`): hardened CSV core (`csv.ts`), broker positions mappers (`brokerCsv.ts`), ProjectionLab JSON mapper (`projectionLab.ts`), generic/RPM column-mapping (`genericCsv.ts`), 1040 guided seed (`tenForty.ts`), shared review checklist (`reviewChecklist.ts` + `ReviewChecklistView.tsx`), the import-provenance contract + export envelope (`provenance.ts` — browser-free, the stable `import-provenance` subpath) and its source-hash helper (`sourceHash.ts` — Web Crypto, async, called at the UI boundary), the browser-free broker-refresh/reconciliation engine (`refresh.ts` — `classifyRefresh`/`buildRefreshDelta`/`applyRefresh`, the stable `import-refresh` subpath, consumed by `UpdateBalancesPanel.tsx`), the local PDF text extractor (`documentText.ts` — `extractDocumentText`, the stable `document-text` subpath; per-page text with 1-based page numbers as citations, `imageOnly` detection for scanned pages, a result union for every failure, exported caps, worker-free pdfjs behind an **optional** `pdfjs-dist` peer reached only by dynamic import — WS5 spike, deliberately NOT wired into the wizard) and its hand-emitted PDF fixtures (`pdfFixtures.ts` — the repo commits no binary fixtures, so test PDFs are built byte by byte, with multi-line and column layout so the corpus reproduces real spacing artifacts), plus the WS5 accuracy benchmark: `documentCorpus.ts` (eight synthetic documents whose field values and page numbers are declared by hand — the oracle, since the app is never its own) and `documentBenchmark.ts` (general field detectors, precision/recall **per field**, page-citation accuracy, and every miss split into "text present — selection gap" vs "text lost — extraction gap" — `pnpm --filter @retiregolden/planner-ui benchmark:documents`, findings in [features/document-parsing-spike.md](features/document-parsing-spike.md)). The three benchmark-only modules (`pdfFixtures.ts`, `documentCorpus.ts`, `documentBenchmark.ts`) are excluded from the published tarball by `files`, the way `report/goldens` is — only `documentText.ts` ships. The wizard itself (`ImportPage.tsx`) is untouched by WS5 and still offers no PDF upload. Alongside them, the migration-source identifier (`migrationSource.ts` — `identifyMigrationDocument` / `identifyMigrationExport` / `MIGRATION_ADAPTERS` / `buildMigrationReview`, the stable `migration-source` subpath) says WHICH incumbent tool a file came from and publishes what can and cannot be brought over, mapping no fields itself: ProjectionLab is identified structurally and mapped by `projectionLab.ts` unchanged, while RightCapital/eMoney/MoneyGuide are identified only — no substantiated export format exists for them, so the limitations are published instead of a guessed mapping. The report NAMES the pages worth reading and never carries their text: only bounded name excerpts and page numbers become review items, so a caller must keep the extracted `DocumentPage[]` itself (Pro does — WS5's reader emits the per-page notes separately). Name matching is word-bounded with verbatim excerpts, page citations ride as `none` locators (the union has no page kind), and a file naming two tools is reported ambiguous rather than guessed at. |
 | `learn/` | Learning Center: pages, `learningRegistry.ts`, `glossary.ts`, `components/`, 137 articles in `content/` |
 | `testSupport/` | `samplePlan.ts` (deprecated shim over the example library); shared fixtures moved to the engine package's `testing/` |
 
@@ -171,25 +172,25 @@ test files.
 
 ## Commands
 
-Install once at the repo root with `npm ci` (npm workspaces). The root `package.json` runs each of
+Install once at the repo root with `pnpm install` (pnpm workspaces). The root `package.json` runs each of
 these across all three workspaces (engine, then planner-ui, then app); the same commands run from
 `app/` or a `packages/*` directory scope to that workspace.
 
 | Command (repo root) | Does |
 |---------|------|
-| `npm run dev` | Vite dev server (app) |
-| `npm run build` | Engine `tsc -b`, planner-ui `tsc -b` (type check — the package ships source), then app `tsc -b && vite build` + sitemap generation → `app/dist/` |
-| `npm run test` | Vitest in every workspace (co-located `*.test.ts(x)`) |
-| `npm run test:coverage` | Vitest with the coverage thresholds CI enforces (per workspace) |
-| `npm run lint` | ESLint in every workspace (incl. the engine-purity rule) |
-| `npm run cases` | Emit a stable exact-ledger case manifest (default: bundled example library) |
-| `npm run cases:diff` | Compare two case manifests and exit nonzero on unexpected deltas |
-| `npm run owl-parity` | Run the Owl parity oracle harness |
+| `pnpm dev` | Vite dev server (app) |
+| `pnpm build` | Engine `tsc -b`, planner-ui `tsc -b` (type check — the package ships source), then app `tsc -b && vite build` + sitemap generation → `app/dist/` |
+| `pnpm test` | Vitest in every workspace (co-located `*.test.ts(x)`) |
+| `pnpm test:coverage` | Vitest with the coverage thresholds CI enforces (per workspace) |
+| `pnpm lint` | ESLint in every workspace (incl. the engine-purity rule) |
+| `pnpm cases` | Emit a stable exact-ledger case manifest (default: bundled example library) |
+| `pnpm cases:diff` | Compare two case manifests and exit nonzero on unexpected deltas |
+| `pnpm owl-parity` | Run the Owl parity oracle harness |
 
-Package-only: `npm run benchmark:documents -w @retiregolden/planner-ui` prints the WS5 PDF
+Package-only: `pnpm --filter @retiregolden/planner-ui benchmark:documents` prints the WS5 PDF
 text-extraction accuracy report (per-field precision/recall over a hand-built synthetic corpus; add
 `-- --json` for the machine-readable form). Findings:
 [features/document-parsing-spike.md](features/document-parsing-spike.md).
 
-App-only (run from `app/`): `npm run test:e2e` (Playwright specs in `e2e/`), `npm run preview`
-(serve the built `dist/`), `npm run licenses`.
+App-only (run from `app/`): `pnpm test:e2e` (Playwright specs in `e2e/`), `pnpm preview`
+(serve the built `dist/`), `pnpm licenses`.

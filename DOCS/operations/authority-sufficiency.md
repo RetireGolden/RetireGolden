@@ -6,7 +6,7 @@ record writes above it?**
 
 They are independent, and only the first has a checker. A `statement` can rest on quotations that are
 character-exact, fetched from a primary publisher, and correctly attributed, and still assert something no
-span on the record establishes. `npm run verify:quotes` passes it. `taxRuleRegistry.conformance.test.ts`
+span on the record establishes. `pnpm verify:quotes` passes it. `taxRuleRegistry.conformance.test.ts`
 passes it — the guard there checks quote *presence* and publisher tier, not entailment. A reader skimming
 the record passes it too, because a fluent sentence sitting directly above four verbatim statutory
 quotations reads as though it were derived from them.
@@ -198,7 +198,7 @@ checked.
 
 ## Related
 
-- [quote-fidelity.md](quote-fidelity.md) — `npm run verify:quotes`, the other half: whether the quote matches
+- [quote-fidelity.md](quote-fidelity.md) — `pnpm verify:quotes`, the other half: whether the quote matches
   the source.
 - [../domain/state-tax-research/TEMPLATE.md](../domain/state-tax-research/TEMPLATE.md) — the sourcing rules
   for the research a state record is built from. An aggregator is admissible for finding a figure and never

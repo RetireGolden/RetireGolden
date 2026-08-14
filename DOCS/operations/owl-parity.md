@@ -9,8 +9,8 @@ Owl itself updates.
 Run it from the repo root:
 
 ```bash
-npm run owl-parity                             # skips cleanly if Python/Owl are unavailable
-npm run owl-parity -- --install-owl --strict-owl   # isolated pinned virtualenv + enforced gate
+pnpm owl-parity                             # skips cleanly if Python/Owl are unavailable
+pnpm owl-parity -- --install-owl --strict-owl   # isolated pinned virtualenv + enforced gate
 ```
 
 ## How the comparison works
@@ -42,13 +42,13 @@ annual ledger, so a delta reflects optimization quality rather than model differ
   `OWL_PARITY_OWL_PINNED_COMMIT`). Strict runs install exactly this pin in an isolated virtualenv; any
   other locally-available Owl invocation is marked **unverified** in the runner summary.
 - Without `--strict-owl`, a missing Python/Owl environment reports a skipped gate and exits 0 — a plain
-  `npm run owl-parity` stays safe for contributors who don't have Python set up.
+  `pnpm owl-parity` stays safe for contributors who don't have Python set up.
 
 ## CI
 
 [`.github/workflows/owl-parity.yml`](../../.github/workflows/owl-parity.yml) runs the harness on demand
 (`workflow_dispatch`, Actions tab) with a `strict` input that defaults to `true`. It installs Node 24 +
-Python 3.12, runs `npm run owl-parity -- --install-owl [--strict-owl]`, and uploads
+Python 3.12, runs `pnpm owl-parity -- --install-owl [--strict-owl]`, and uploads
 `app/artifacts/owl-parity` as a workflow artifact (14-day retention) — the report is the reviewable
 output.
 
