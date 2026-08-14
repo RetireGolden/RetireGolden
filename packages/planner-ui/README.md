@@ -532,7 +532,13 @@ years, data vintage, generation timestamp) — assembled from an
 already-computed projection, independent of any DOM, theme, or layout:
 
 ```ts
-import { buildReportModel, parseReportModel, serializeReportModel } from '@retiregolden/planner-ui/report-model'
+import {
+  buildReportModel,
+  parseReportModel,
+  serializeReportModel,
+  REPORT_MODEL_VERSION,
+  type ReportModel,
+} from '@retiregolden/planner-ui/report-model'
 
 const model = buildReportModel({ plan, result, summary, startYear })
 const json = serializeReportModel(model) // deterministic: same input, same bytes
