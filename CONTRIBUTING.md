@@ -14,6 +14,7 @@ entirely in your browser.
 ## Development
 
 ```bash
+corepack enable
 pnpm install
 pnpm dev      # local dev server
 pnpm test     # unit + engine tests (must pass)

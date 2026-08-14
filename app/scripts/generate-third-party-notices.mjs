@@ -195,8 +195,7 @@ function main() {
   for (const [name, versions] of included) {
     const copies = installed.get(name) ?? []
     if (copies.length === 0) {
-      // `pnpm list` includes optional platform packages that are not
-      // installed on this OS. Skip them rather than attributing a hole.
+      missing.push(`${name}@${[...versions].join('/')} (not found in node_modules)`)
       continue
     }
     // Prefer a copy that has a LICENSE file; fall back to the first.

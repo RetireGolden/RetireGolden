@@ -5,7 +5,7 @@ why) and [standards.md](standards.md) (the conventions).
 
 ## Repository top level
 
-The repo is a pnpm workspace: `pnpm install` at the root installs everything; the app consumes the
+The repo is a pnpm workspace: `corepack enable` then `pnpm install` at the root installs everything; the app consumes the
 engine as `@retiregolden/engine` and the planner UI as `@retiregolden/planner-ui` (workspace
 dependencies, published to npm from `packages/`).
 
@@ -172,7 +172,7 @@ test files.
 
 ## Commands
 
-Install once at the repo root with `pnpm install` (pnpm workspaces). The root `package.json` runs each of
+Install once at the repo root with `corepack enable` then `pnpm install` (pnpm workspaces). The root `package.json` runs each of
 these across all three workspaces (engine, then planner-ui, then app); the same commands run from
 `app/` or a `packages/*` directory scope to that workspace.
 

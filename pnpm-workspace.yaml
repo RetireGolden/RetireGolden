@@ -1,3 +1,7 @@
 packages:
   - app
   - packages/*
+
+# pnpm 10 defaults this to false and would install first-party packages from
+# the registry. Link the checkout, matching the old npm workspaces behavior.
+linkWorkspacePackages: true

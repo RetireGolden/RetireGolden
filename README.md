@@ -37,6 +37,7 @@ consumes both as workspace dependencies.
 **Requirements:** Node.js 24+ (Corepack will use the `packageManager` pin)
 
 ```bash
+corepack enable
 pnpm install
 pnpm dev
 ```
