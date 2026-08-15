@@ -63,11 +63,12 @@ jobs:
       # full commit SHAs (tags are mutable and can be repointed upstream).
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: '24'
-          cache: npm
-          cache-dependency-path: package-lock.json
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
           registry-url: https://registry.npmjs.org
 
       # actions/setup-node writes `//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}`
@@ -88,7 +89,7 @@ jobs:
         run: npm install -g 'npm@^11.5.1'
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Check tag matches package version
         if: startsWith(github.ref, 'refs/tags/engine-v')
@@ -101,13 +102,13 @@ jobs:
           fi
 
       - name: Lint
-        run: npm run lint -w @retiregolden/engine
+        run: pnpm --filter @retiregolden/engine lint
 
       - name: Build
-        run: npm run build -w @retiregolden/engine
+        run: pnpm --filter @retiregolden/engine build
 
       - name: Test
-        run: npm run test -w @retiregolden/engine
+        run: pnpm --filter @retiregolden/engine test
 
       # Prove the published surface (exports map + emitted dist) from plain
       # Node ESM, the way an external consumer will use it — the workspace

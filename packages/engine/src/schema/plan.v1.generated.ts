@@ -2,7 +2,7 @@
  * GENERATED FILE — DO NOT EDIT BY HAND.
  *
  * The checked-in Plan JSON Schema, emitted from the engine's `planSchema`.
- * Regenerate with `npm run generate:schema` (rewrites this file and
+ * Regenerate with `pnpm generate:schema` (rewrites this file and
  * schema/plan.v1.json). A sync test guards against hand-edits and drift.
  */
 import type { JsonSchemaDocument } from './planSchemaMeta.js'

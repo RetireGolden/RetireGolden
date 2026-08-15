@@ -1,0 +1,15 @@
+packages:
+  - app
+  - packages/*
+
+# pnpm 10 defaults this to false and would install first-party packages from
+# the registry. Link the checkout, matching the old npm workspaces behavior.
+# Published packages must keep a normal caret range (not `workspace:`):
+# this repo ships them with `npm publish` (OIDC), which does not rewrite
+# workspace protocol.
+linkWorkspacePackages: true
+
+# Supply-chain defaults Semgrep asked for (pnpm 10 workspace settings).
+blockExoticSubdeps: true
+minimumReleaseAge: 10080
+trustPolicy: no-downgrade

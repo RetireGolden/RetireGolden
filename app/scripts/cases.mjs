@@ -8,8 +8,8 @@ const appDir = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 
 function usage() {
   return `Usage:
-  npm run cases -- [run] [--input file-or-dir] [--scenario-set file] [--out manifest.json] [--reports-dir dir] [--prepared-at ISO] [--start-year 2026] [--include-decisions] [--include-plan-scenarios]
-  npm run cases -- diff --base old.json --head new.json [--allowlist allow.json]
+  pnpm cases [run] [--input file-or-dir] [--scenario-set file] [--out manifest.json] [--reports-dir dir] [--prepared-at ISO] [--start-year 2026] [--include-decisions] [--include-plan-scenarios]
+  pnpm cases diff --base old.json --head new.json [--allowlist allow.json]
 
 Defaults:
   run without --input uses the bundled example-plan library.
@@ -36,7 +36,8 @@ function parseRunArgs(argv) {
   }
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i]
-    if (arg === '--input') opts.inputs.push(takeValue(argv, i++, arg))
+    if (arg === '--') continue
+    else if (arg === '--input') opts.inputs.push(takeValue(argv, i++, arg))
     else if (arg === '--scenario-set') opts.scenarioSets.push(takeValue(argv, i++, arg))
     else if (arg === '--out') opts.out = takeValue(argv, i++, arg)
     else if (arg === '--reports-dir') opts.reportsDir = takeValue(argv, i++, arg)
@@ -65,7 +66,8 @@ function parseDiffArgs(argv) {
   const opts = { base: null, head: null, allowlist: null }
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i]
-    if (arg === '--base') opts.base = takeValue(argv, i++, arg)
+    if (arg === '--') continue
+    else if (arg === '--base') opts.base = takeValue(argv, i++, arg)
     else if (arg === '--head') opts.head = takeValue(argv, i++, arg)
     else if (arg === '--allowlist') opts.allowlist = takeValue(argv, i++, arg)
     else if (arg === '--help' || arg === '-h') {

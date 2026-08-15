@@ -8,8 +8,8 @@ any expected value without reverse-engineering the app.
 Commands (repo root):
 
 ```bash
-npm test              # Vitest across engine, planner-ui, and app
-npm run test:coverage # same, with per-package coverage thresholds
+pnpm test              # Vitest across engine, planner-ui, and app
+pnpm test:coverage     # same, with per-package coverage thresholds
 ```
 
 Coverage thresholds live with each package (`packages/engine/vitest.config.ts`,

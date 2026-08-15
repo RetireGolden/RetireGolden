@@ -14,11 +14,11 @@ entirely in your browser.
 ## Development
 
 ```bash
-cd app
-npm ci
-npm run dev      # local dev server
-npm test         # unit + engine tests (must pass)
-npm run build    # production build (must pass)
+corepack enable
+pnpm install
+pnpm dev      # local dev server
+pnpm test     # unit + engine tests (must pass)
+pnpm build    # production build (must pass)
 ```
 
 The test suite includes golden/regression gates for the financial math — see

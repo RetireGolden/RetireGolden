@@ -11,7 +11,7 @@ quote *presence*, and error direction — but it cannot fetch a source, so quote
 all. A fluent sentence assembled from three rows of a Rev. Proc. table passes conformance and human review
 alike, because it reads exactly like a quotation.
 
-`npm run verify:quotes` is that guard.
+`pnpm verify:quotes` is that guard.
 
 It answers one of the two questions a cited record has to survive. Fidelity is *does the quote match the
 source*; **sufficiency** is *does the quote support the statement written above it* — a separate failure
@@ -20,8 +20,8 @@ everything on this page and still be evidence for a claim the record does not ma
 claim it does.
 
 ```bash
-npm run verify:quotes                      # from the repo root
-npm run verify:quotes -w @retiregolden/engine
+pnpm verify:quotes                         # from the repo root
+pnpm --filter @retiregolden/engine verify:quotes
 node packages/engine/scripts/verify-quotes.mjs --help
 ```
 
@@ -162,7 +162,7 @@ Measured across every page this registry cites, not assumed. This is the table a
 guess. It is also encoded in `HOST_CONVENTIONS` in the script, and
 `packages/engine/src/rules/quoteFidelityDocs.test.ts` holds the two together: it parses the table below,
 imports `HOST_CONVENTIONS`, and fails if they name different hosts or disagree on an apostrophe, a
-structural dash or a section sign. So the drift is caught by `npm test`, not by a reader noticing. The
+structural dash or a section sign. So the drift is caught by `pnpm test`, not by a reader noticing. The
 notes column is prose and is not compared.
 
 | Host | Possessive apostrophe | Structural dash | Section sign | Also worth knowing |

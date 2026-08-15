@@ -22,16 +22,16 @@ e2e  ─┘
 
 | Job | Runs | What it does |
 |-----|------|--------------|
-| `lint` | push + labeled PR | root `npm ci` then `npm run lint` (ESLint in `packages/engine`, `packages/planner-ui`, and `app`) |
-| `test` | push + labeled PR | root `npm ci` then `npm run test:coverage` (Vitest in `packages/engine`, `packages/planner-ui`, and `app`) |
-| `e2e` | push + labeled PR | Playwright browser layout tests (`npm run test:e2e`) in `app/` |
-| `build` | needs `lint`, `test`, `e2e` | root `npm run build` (engine `tsc -b`, planner-ui `tsc -b`, then app `tsc -b && vite build`), then both packages' pack-smoke scripts (the engine tarball from plain Node ESM; the planner-ui tarball from a scratch Vite consumer); uploads `app/dist` as the `dist` artifact |
+| `lint` | push + labeled PR | root `pnpm install --frozen-lockfile` then `pnpm lint` (ESLint in `packages/engine`, `packages/planner-ui`, and `app`) |
+| `test` | push + labeled PR | root `pnpm install --frozen-lockfile` then `pnpm test:coverage` (Vitest in `packages/engine`, `packages/planner-ui`, and `app`) |
+| `e2e` | push + labeled PR | Playwright browser layout tests (`pnpm test:e2e`) in `app/` |
+| `build` | needs `lint`, `test`, `e2e` | root `pnpm build` (engine `tsc -b`, planner-ui `tsc -b`, then app `tsc -b && vite build`), then both packages' pack-smoke scripts (the engine tarball from plain Node ESM; the planner-ui tarball from a scratch Vite consumer); uploads `app/dist` as the `dist` artifact |
 | `deploy` | needs `build`; skipped on PR close | downloads `dist`, deploys via `Azure/static-web-apps-deploy@v1` with `skip_app_build: true`, `app_location: app/dist`; exposes the deployed URL as `preview_url` |
 | `dast` | PR only; needs `deploy` | OWASP ZAP baseline scan of the freshly deployed PR preview URL — see [security-scanning.md](security-scanning.md). On unlabeled PRs it still invokes `zap.yml` with an empty URL (the scan job skips itself) so the required nested check reports as skipped instead of hanging on "Expected" |
 | `close_pull_request` | PR close | tears down the SWA preview environment |
 
 CI uses **Node 24** (`actions/setup-node`); the workspaces require **Node ≥ 24**. Dependencies install
-once at the repo root (`npm ci` against the root `package-lock.json` — the repo is an npm workspace).
+once at the repo root (`pnpm install --frozen-lockfile` against the root `pnpm-lock.yaml` — the repo is a pnpm workspace).
 Semgrep SAST runs as a separate workflow on every push/PR — deliberately **not** label-gated, because the
 scan is cheap and it is a Main Guard required check (also in [security-scanning.md](security-scanning.md)).
 
@@ -79,9 +79,9 @@ renaming any job.
 
 ## Local commands
 
-From the repo root: `npm run dev` (Vite dev server), `npm run build` (type-check + production build),
-`npm run test` (Vitest, all workspaces), `npm run lint` (ESLint, all workspaces). From `app/`:
-`npm run preview` (serve the built `dist/`).
+From the repo root: `pnpm dev` (Vite dev server), `pnpm build` (type-check + production build),
+`pnpm test` (Vitest, all workspaces), `pnpm lint` (ESLint, all workspaces). From `app/`:
+`pnpm preview` (serve the built `dist/`).
 
 ## Package releases
 

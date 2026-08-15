@@ -44,7 +44,7 @@ simplified model that could diverge.
 4. **Parameters are data, not code.** Tax brackets, limits, SSA tables, and Medicare/FPL numbers live in
 versioned parameter packs; the annual refresh is a data change (see [maintenance-schedule.md](maintenance-schedule.md)).
 
-> **Workspace layout.** The repo is an npm workspace: the engine lives in `packages/engine`
+> **Workspace layout.** The repo is a pnpm workspace: the engine lives in `packages/engine`
 (published as **`@retiregolden/engine`**) and the planner UI in `packages/planner-ui` (published as
 **`@retiregolden/planner-ui`**), so downstream products (the commercial desktop edition) consume the
 identical code as pinned dependencies — fix once, ship twice. `app/` is a thin host: entry +
@@ -144,6 +144,6 @@ ZAP DAST (see [operations/](operations/)).
 
 ## Deployment
 
-`npm run build` (`tsc -b && vite build`) emits static files to `app/dist/`, which GitHub Actions uploads to
+`pnpm build` (`tsc -b && vite build`) emits static files to `app/dist/`, which GitHub Actions uploads to
 Azure Static Web Apps; SPA deep links fall back to `/index.html`. A PWA manifest + service worker make the
 app installable and offline-capable. Full pipeline in [operations/ci-cd-and-deploy.md](operations/ci-cd-and-deploy.md).

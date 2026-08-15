@@ -24,7 +24,7 @@ export default defineConfig({
       { find: /^@retiregolden\/planner-ui\/(.*)$/, replacement: `${plannerUiSrc}/$1` },
     ],
     // The aliased planner-ui source resolves bare imports from its own
-    // directory, so if npm ever nests a second copy of these under a
+    // directory, so if the package manager ever nests a second copy of these under a
     // workspace's node_modules (an in-place install can), the app and the
     // planner would each get their own instance — for the router that means
     // two contexts and every planner hook throwing. Force one instance.

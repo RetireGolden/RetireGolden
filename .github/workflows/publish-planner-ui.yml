@@ -64,11 +64,12 @@ jobs:
       # full commit SHAs (tags are mutable and can be repointed upstream).
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: '24'
-          cache: npm
-          cache-dependency-path: package-lock.json
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
           registry-url: https://registry.npmjs.org
 
       # actions/setup-node writes `//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}`
@@ -89,7 +90,7 @@ jobs:
         run: npm install -g 'npm@^11.5.1'
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Check tag matches package version
         if: startsWith(github.ref, 'refs/tags/planner-ui-v')
@@ -102,16 +103,16 @@ jobs:
           fi
 
       - name: Lint
-        run: npm run lint -w @retiregolden/planner-ui
+        run: pnpm --filter @retiregolden/planner-ui lint
 
       # `build` is a type-check (`tsc -b`): the package publishes its
       # TypeScript source verbatim, so there is no dist emit — but the check
       # also builds the engine project reference the tests compile against.
       - name: Type check
-        run: npm run build -w @retiregolden/planner-ui
+        run: pnpm --filter @retiregolden/planner-ui build
 
       - name: Test
-        run: npm run test -w @retiregolden/planner-ui
+        run: pnpm --filter @retiregolden/planner-ui test
 
       # Prove the published surface from a scratch Vite consumer installed
       # off the packed tarball (registry engine, no workspace symlink): the

@@ -10,14 +10,14 @@
  * at generation time is the only way the web planner can stamp which engine
  * produced a document.
  *
- * Unlike `generate-schema.mjs` this needs no prior `npm run build`: the input
+ * Unlike `generate-schema.mjs` this needs no prior `pnpm run build`: the input
  * is package.json, not the compiled generator.
  *
  * A unit test (src/version.test.ts) re-reads package.json independently and
  * fails if this was not rerun after a version bump — the only thing keeping
  * the constant honest, since no CI job regenerates it.
  *
- * Run:  npm run generate:version   (from packages/engine, or -w @retiregolden/engine)
+ * Run:  pnpm generate:version   (from packages/engine, or --filter @retiregolden/engine)
  */
 import { readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
@@ -37,7 +37,7 @@ const tsText = `/**
  * GENERATED FILE — DO NOT EDIT BY HAND.
  *
  * The engine's published package version, baked in at generation time so it is
- * readable in a browser bundle. Regenerate with \`npm run generate:version\`
+ * readable in a browser bundle. Regenerate with \`pnpm generate:version\`
  * after every version bump; src/version.test.ts fails if you forget.
  */
 

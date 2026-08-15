@@ -117,7 +117,7 @@ Those dropped rules are summarized in the schema's `description` and carried as 
 machine-readable `x-retiregolden-unrepresentableConstraints` array on the schema
 itself (also exported as `PLAN_SCHEMA_UNREPRESENTABLE_CONSTRAINTS`). The zod-backed
 generator behind the artifact is `@retiregolden/engine/schema/generate`
-(`generatePlanJsonSchema`), used by the build-time `npm run generate:schema`.
+(`generatePlanJsonSchema`), used by the build-time `pnpm generate:schema`.
 
 The engine's own package version is available as a bare string constant, for
 consumers that stamp provenance on a document they export:
@@ -127,7 +127,7 @@ import { ENGINE_VERSION } from '@retiregolden/engine/version' // or from the roo
 ```
 
 It is generated from `package.json` into a checked-in constant
-(`npm run generate:version`, guarded by a test) rather than read at runtime,
+(`pnpm generate:version`, guarded by a test) rather than read at runtime,
 because the engine ships into browser bundles where there is no package.json to
 read. The MCP's `build_plan` accepts this value back as `engineVersion` and warns
 when a document was exported under a different engine than the one running.

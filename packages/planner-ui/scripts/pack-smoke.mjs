@@ -45,7 +45,7 @@ import { fileURLToPath } from 'node:url'
 const scriptsDir = dirname(fileURLToPath(import.meta.url))
 const pkgDir = resolve(scriptsDir, '..')
 const enginePkgDir = resolve(pkgDir, '..', 'engine')
-const shell = process.platform === 'win32' // npm/npx are .cmd files on Windows
+const shell = process.platform === 'win32' // pnpm is pnpm.cmd on Windows
 const engineSourceMode = process.env.PLANNER_PACK_SMOKE_ENGINE_SOURCE ?? 'auto'
 if (!['auto', 'local', 'registry'].includes(engineSourceMode)) {
   throw new Error(
@@ -55,6 +55,10 @@ if (!['auto', 'local', 'registry'].includes(engineSourceMode)) {
 
 const plannerPackage = JSON.parse(readFileSync(join(pkgDir, 'package.json'), 'utf8'))
 const engineRange = plannerPackage.dependencies?.['@retiregolden/engine']
+// Must be a normal caret range. `workspace:` would link locally, but this
+// package is released with `npm publish` (OIDC), which does not rewrite
+// workspace protocol — npm consumers cannot resolve it. Local checkout
+// linking comes from `linkWorkspacePackages: true` in pnpm-workspace.yaml.
 const minimumEngineMatch = typeof engineRange === 'string' ? /^\^(\d+\.\d+\.\d+)$/.exec(engineRange) : null
 if (minimumEngineMatch === null) {
   throw new Error(
@@ -67,7 +71,7 @@ const registryHasMinimumEngine = () => {
   try {
     const found = JSON.parse(
       execFileSync(
-        'npm',
+        'pnpm',
         ['view', `@retiregolden/engine@${minimumEngineVersion}`, 'version', '--json'],
         {
           encoding: 'utf8',
@@ -253,7 +257,7 @@ const documentTextSmoke = [
 const scratchDir = mkdtempSync(join(tmpdir(), 'planner-ui-pack-smoke-'))
 try {
   console.log(`pack smoke: packing ${pkgDir} ...`)
-  const tarball = execFileSync('npm', ['pack', '--pack-destination', scratchDir], {
+  const packed = execFileSync('pnpm', ['pack', '--pack-destination', scratchDir], {
     cwd: pkgDir,
     encoding: 'utf8',
     shell,
@@ -261,6 +265,18 @@ try {
     .trim()
     .split('\n')
     .at(-1)
+  const tarball = packed.endsWith('.tgz') ? packed.split(/[\\/]/).pop() : packed
+
+  execFileSync('tar', ['-xzf', tarball, 'package/package.json'], { cwd: scratchDir })
+  const packedManifest = JSON.parse(readFileSync(join(scratchDir, 'package', 'package.json'), 'utf8'))
+  rmSync(join(scratchDir, 'package'), { recursive: true, force: true })
+  const packedEngineRange = packedManifest.dependencies?.['@retiregolden/engine']
+  if (packedEngineRange !== engineRange) {
+    throw new Error(
+      `pack smoke FAILED: packed manifest engine range ${JSON.stringify(packedEngineRange)} ` +
+        `does not match the declared caret range ${JSON.stringify(engineRange)}`,
+    )
+  }
 
   const registryMinimumAvailable =
     engineSourceMode === 'local' ? false : registryHasMinimumEngine()
@@ -284,7 +300,7 @@ try {
       )
     }
     console.log(`pack smoke: packing the exact local engine minimum ${minimumEngineVersion} ...`)
-    const engineTarball = execFileSync('npm', ['pack', '--pack-destination', scratchDir], {
+    const packedEngine = execFileSync('pnpm', ['pack', '--pack-destination', scratchDir], {
       cwd: enginePkgDir,
       encoding: 'utf8',
       shell,
@@ -292,6 +308,9 @@ try {
       .trim()
       .split('\n')
       .at(-1)
+    const engineTarball = packedEngine.endsWith('.tgz')
+      ? packedEngine.split(/[\\/]/).pop()
+      : packedEngine
     engineSpec = `file:./${engineTarball}`
     engineSource = `local minimum ${minimumEngineVersion}`
   }
@@ -328,7 +347,7 @@ try {
   writeFileSync(join(scratchDir, 'src', 'documentTextSmoke.ts'), documentTextSmoke)
 
   console.log(`pack smoke: installing the scratch consumer (${engineSource}, tarball planner-ui) ...`)
-  execFileSync('npm', ['install', '--no-audit', '--no-fund', '--ignore-scripts'], {
+  execFileSync('pnpm', ['install', '--ignore-scripts'], {
     cwd: scratchDir,
     stdio: 'inherit',
     shell,
@@ -345,7 +364,7 @@ try {
   }
 
   console.log('pack smoke: vite build ...')
-  execFileSync('npx', ['vite', 'build'], { cwd: scratchDir, stdio: 'inherit', shell })
+  execFileSync('pnpm', ['exec', 'vite', 'build'], { cwd: scratchDir, stdio: 'inherit', shell })
 
   const assets = readdirSync(join(scratchDir, 'dist', 'assets'))
   const require1 = (pattern, label) => {
@@ -367,7 +386,7 @@ try {
   // proves the call it publishes still answers, in a bundle produced from the
   // tarball, with the reason a host can act on.
   console.log('pack smoke: vite build --ssr (document-text without the peer) ...')
-  execFileSync('npx', ['vite', 'build', '--ssr', 'src/documentTextSmoke.ts', '--outDir', 'dist-ssr'], {
+  execFileSync('pnpm', ['exec', 'vite', 'build', '--ssr', 'src/documentTextSmoke.ts', '--outDir', 'dist-ssr'], {
     cwd: scratchDir,
     stdio: 'inherit',
     shell,

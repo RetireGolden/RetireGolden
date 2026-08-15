@@ -694,7 +694,7 @@ benchmark runs a hand-built corpus of synthetic statements, plan printouts,
 reports precision and recall **per field**, plus page-citation accuracy:
 
 ```sh
-npm run benchmark:documents -w @retiregolden/planner-ui
+pnpm --filter @retiregolden/planner-ui benchmark:documents
 ```
 
 Short version for a host deciding whether to offer PDF import: all 30 planted

@@ -53,7 +53,7 @@
  * surface, so it lives here, beside the other maintenance scripts, and never
  * ships (package.json `files` covers dist/ and schema/ only).
  *
- * Run:  npm run verify:quotes                (repo root, or -w @retiregolden/engine)
+ * Run:  pnpm verify:quotes                (repo root, or --filter @retiregolden/engine)
  *       node packages/engine/scripts/verify-quotes.mjs --help
  *
  * Full documentation, including how to read each verdict:
@@ -951,7 +951,7 @@ function apostropheMismatch(host, quotedText) {
  * Read the registry straight from source. Node 24 strips TypeScript types
  * natively, and the engine's tsconfig sets `erasableSyntaxOnly`, which
  * guarantees the file contains nothing that stripping cannot handle — so this
- * needs no prior `npm run build`, unlike generate-schema.mjs.
+ * needs no prior `pnpm run build`, unlike generate-schema.mjs.
  */
 async function loadRegistry() {
   const registryPath = join(pkgDir, 'src', 'rules', 'taxRuleRegistry.ts')
@@ -1080,9 +1080,9 @@ Not a CI gate — see the header comment for why.
 `
 
 async function main() {
-  // Positionals are allowed because `npm run verify:quotes -- --filter x` has npm
-  // swallow the flag and forward only the bare value; a lone positional is then
-  // treated as the filter rather than crashing the run.
+  // Positionals are allowed because `pnpm verify:quotes --filter x` (or the
+  // npm-style `-- --filter x`) may forward only the bare value; a lone
+  // positional is then treated as the filter rather than crashing the run.
   const { values, positionals } = parseArgs({
     allowPositionals: true,
     options: {

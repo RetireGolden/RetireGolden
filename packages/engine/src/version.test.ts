@@ -1,7 +1,7 @@
 /**
  * The freshness guard for the generated `ENGINE_VERSION`.
  *
- * This is not ceremony. Nothing in CI runs `npm run generate:version`, so the
+ * This is not ceremony. Nothing in CI runs `pnpm generate:version`, so the
  * checked-in constant is kept current by discipline alone — exactly the gap that
  * lets a release bump package.json and leave every document the browser stamps
  * claiming the previous engine. Reading package.json here INDEPENDENTLY (raw
@@ -15,7 +15,7 @@ import { ENGINE_VERSION as GENERATED } from './version.generated.js'
 
 describe('ENGINE_VERSION', () => {
   it('matches the version in package.json', () => {
-    // If this fails, run `npm run generate:version -w @retiregolden/engine`
+    // If this fails, run `pnpm --filter @retiregolden/engine generate:version`
     // and commit the regenerated src/version.generated.ts.
     expect(ENGINE_VERSION).toBe(packageJson.version)
   })

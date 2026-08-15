@@ -16,8 +16,8 @@ and its oracle), [`documentBenchmark.ts`](../../packages/planner-ui/src/import/d
 (the scorer), [`pdfFixtures.ts`](../../packages/planner-ui/src/import/pdfFixtures.ts) (the PDF emitter).
 
 ```bash
-npm run benchmark:documents -w @retiregolden/planner-ui           # the report
-npm run benchmark:documents -w @retiregolden/planner-ui -- --json # the same numbers, machine-readable
+pnpm --filter @retiregolden/planner-ui benchmark:documents           # the report
+pnpm --filter @retiregolden/planner-ui benchmark:documents -- --json # the same numbers, machine-readable
 ```
 
 The floors are pinned by

@@ -16,7 +16,7 @@ The annual refresh is a **data change, not a code change** (that's the point of 
 2. Update [domain/domain-rules-reference.md](domain/domain-rules-reference.md) with the new numbers and
    refresh the source links; bump the provenance dates (`engine/params/provenance.ts`).
 3. Re-run the engine tests and any offline oracle fixtures (Owl / PolicyEngine / Open Social Security).
-4. Run `npm run verify:quotes` and work the ledger. It re-fetches every source the tax rule registry cites
+4. Run `pnpm verify:quotes` and work the ledger. It re-fetches every source the tax rule registry cites
    and checks each `quotedText` against it — the one check that catches a citation whose page moved under
    it, or a quote that drifted into paraphrase. Needs network, so it is manual and never a CI gate:
    [operations/quote-fidelity.md](operations/quote-fidelity.md).
@@ -64,7 +64,7 @@ These don't follow the calendar — watch for the legislative or actuarial trigg
 | **SECURE 2.0 phase-ins** | RMD start age rises to 75 for those born 1960+ (from 2033); Roth catch-up mandate for >$150k wages. | Confirm `rmd/` cohort logic and contribution rules each year |
 | **WEP/GPO** | Repealed Jan 2025 (Social Security Fairness Act); the app no longer models them. | Only revisit if reinstated (unlikely) |
 | **License / open-sourcing** | **Decided: AGPL-3.0** for the public repository (2026-07-08); applied to the root `LICENSE` at the RetireGolden repo cut. The commercial desktop edition is dual-licensed by the LLC (CLA required for contributions). | On any license-posture change: update the root `LICENSE`, [code-map.md](code-map.md), and `CONTRIBUTING.md`/`TRADEMARKS.md` |
-| **Third-party notices** | Every MIT/ISC/0BSD package bundled in the shipped app must be attributed. New or upgraded production dependencies change the set. | Re-run `npm run licenses` (`app/scripts/generate-third-party-notices.mjs`) and re-ship the regenerated `app/public/THIRD-PARTY-NOTICES.txt`; confirm no copyleft entered the tree |
+| **Third-party notices** | Every MIT/ISC/0BSD package bundled in the shipped app must be attributed. New or upgraded production dependencies change the set. | Re-run `pnpm run licenses` (`app/scripts/generate-third-party-notices.mjs`) and re-ship the regenerated `app/public/THIRD-PARTY-NOTICES.txt`; confirm no copyleft entered the tree |
 
 ## Quick check: "is the app still current?"
 
