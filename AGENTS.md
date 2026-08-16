@@ -11,7 +11,10 @@ Engineering ground truth lives in [DOCS/README.md](DOCS/README.md). Read
 [PRODUCT.md](PRODUCT.md) and [DESIGN.md](DESIGN.md) before UI work.
 
 Docs before code. Do not invent tax, statute, or product behavior. If Docs
-and code disagree, stop.
+and code disagree on tax, statute, or product behavior, stop — do not invent
+a side. If a doc is stale relative to already-decided implementation, follow
+[DOCS/README.md](DOCS/README.md) and [DOCS/standards.md](DOCS/standards.md)
+and fix the doc to match the code.
 
 ## Bidirectional correctness
 
