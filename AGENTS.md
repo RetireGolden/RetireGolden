@@ -24,6 +24,12 @@ Research → Rules (`DOCS/domain` +
 
 Reverse: find code missing tests, or tests missing ground-truth rules.
 
+A calculation change is incomplete unless a unit test covers it, and that
+test's expected value comes from a citable source — statute subparagraph
+plus what it requires, IRS pub, or `DOCS/domain` — not from reading the new
+code. The fixture has to discriminate between plausible readings. Unsettled
+stays disclosed. Out of scope fails closed.
+
 ## Invariants
 
 - Money math stays in the engine. The UI never recomputes dollars.
