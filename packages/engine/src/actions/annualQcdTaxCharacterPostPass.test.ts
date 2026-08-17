@@ -633,4 +633,25 @@ describe('stageAnnualQcdTaxCharacterPostPass', () => {
       issues: [{ kind: 'contributionOffsetInvalid' }],
     })
   })
+
+  it('rejects a prior offset that already exceeds the §219 total', () => {
+    // Eligibility already refuses this shape. The post-pass must still fail
+    // closed if that evidence reaches it: clamping a negative remainder to
+    // zero would let the named arm proceed as if limb (ii) were exhausted
+    // rather than contradictory.
+    const input = structuredClone(fixture(
+      [{ id: 'qcd-a', amount: 1_000 }],
+      { contribution: { p1: 300 } },
+    )) as StageAnnualQcdTaxCharacterPostPassInput
+    const evidence = input.physicalInput.prerequisite.evidence[0]!
+    const consumedPastTotal = asUsdCents(400)
+    ;(evidence.eligibility.contributionHistory as { priorOffsetApplied: number })
+      .priorOffsetApplied = consumedPastTotal
+    ;(evidence.eligibility.priorQcdOffsetEvidence as { priorOffsetApplied: number })
+      .priorOffsetApplied = consumedPastTotal
+    expect(stageAnnualQcdTaxCharacterPostPass(input)).toMatchObject({
+      status: 'annualQcdTaxCharacterPostPassBlocked',
+      issues: [{ kind: 'contributionOffsetInvalid' }],
+    })
+  })
 })

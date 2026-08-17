@@ -1322,10 +1322,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
   /**
    * Each donor's deductible §219 total for years ending on or after age 70½,
    * in plan dollars. Seeded from Plan-declared contribution facts for years
-   * before the projection starts, then increased by this run's own traditional
-   * IRA contributions (the contribution loop is outside the annual-pass retry).
-   * Roth contributions, employer deferrals, and HSA deposits are not §219 and
-   * are not added.
+   * before the projection starts that are themselves on or after the 70½
+   * threshold year, then increased by this run's own traditional IRA
+   * contributions for tax years `>=` that same threshold year (the contribution
+   * loop is outside the annual-pass retry). A year that ends before the donor
+   * attains 70½ is outside limb (i) of 408(d)(8)(A) and is not added. Roth
+   * contributions, employer deferrals, and HSA deposits are not §219 and are
+   * not added.
    */
   const qcdSection219ByDonor = new Map<string, number>()
   for (const person of people) {
@@ -1347,11 +1350,14 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
    * about how much of it earlier gifts already absorbed, so the only consumption
    * this engine can prove is the consumption it performed itself. A gift the
    * Plan declares for a year before the projection begins, and an aggregate
-   * `qcdAnnual` gift in an earlier projected year, are both real gifts. The
-   * aggregate arm now applies the offset and records consumption, but it counts
-   * projected traditional IRA contributions that the named arm's declared-fact
-   * history may not include. A scalar year therefore still makes the named
-   * history unprovable: zero is never substituted for an unknown.
+   * `qcdAnnual` gift in an earlier projected year, are both real gifts. Limb
+   * (ii) of 408(d)(8)(A) is those already-taken reductions. Substituting zero
+   * would treat unused deductions as still available. The named arm omits the
+   * evidence and refuses the gift; the aggregate gift has already moved, so
+   * this arm fails the exclusion closed (the qualified gift stays includible)
+   * rather than applying the offset from an assumed-zero consumed start. A
+   * scalar year still makes the named history unprovable as well, because the
+   * two arms do not share one contribution ledger.
    */
   const namedQcdOffsetHistoryUnprovable = new Set<string>()
   for (const request of plan.strategies.retirementActions) {
@@ -3742,9 +3748,14 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       contributions += allowed
       if (isAggregatedIra(account)) ownedNonRothIraContributions += allowed
       if (account.type === 'traditional' && account.kind === 'ira') {
-        qcdSection219ByDonor.set(
-          ownerId, (qcdSection219ByDonor.get(ownerId) ?? 0) + allowed,
-        )
+        const owner = personById.get(ownerId)
+        const thresholdDate = owner === undefined ? null : addCalendarMonths(owner.dob, 846)
+        const thresholdYear = thresholdDate === null ? null : Number(thresholdDate.slice(0, 4))
+        if (thresholdYear !== null && year >= thresholdYear) {
+          qcdSection219ByDonor.set(
+            ownerId, (qcdSection219ByDonor.get(ownerId) ?? 0) + allowed,
+          )
+        }
       }
       if (account.type === 'traditional' || account.type === 'hsa') preTaxContributions += allowed
       if (account.type === 'traditional') traditionalInflow += allowed
@@ -5226,23 +5237,38 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       const fromRmd = Math.min(gift, qcdFromRmdByOwner.get(ownerId) ?? 0)
       const aggregateIncludible = Math.max(0, preDistribution - basis)
       const qualified = Math.min(gift, aggregateIncludible)
-      const offset = gift > 0
-        ? applyIrc408d8AContributionOffset({
-            candidateExclusion: qualified,
-            deductibleSection219Total: qcdSection219ByDonor.get(ownerId) ?? 0,
-            reductionsAlreadyTaken:
-              (namedQcdOffsetConsumedByDonor.get(ownerId) ?? 0) / 100,
-          })
-        : {
+      const section219 = qcdSection219ByDonor.get(ownerId) ?? 0
+      const consumedDollars = (namedQcdOffsetConsumedByDonor.get(ownerId) ?? 0) / 100
+      // Limb (ii) is already-taken reductions. A pre-start named QCD is a real
+      // gift this run cannot measure, and a zero consumed start would invent
+      // unused capacity. Named-arm reading: fail closed. The scalar gift has
+      // already moved, so the tax-character reading is the same — do not claim
+      // the exclusion, and do not write a guessed leftover into consumed.
+      const offsetUnprovable =
+        gift > 0 &&
+        section219 > 0 &&
+        namedQcdOffsetHistoryUnprovable.has(ownerId)
+      const offset = offsetUnprovable
+        ? {
             excludableAmount: 0,
-            offsetApplied: 0,
-            reductionsAfter: (namedQcdOffsetConsumedByDonor.get(ownerId) ?? 0) / 100,
+            offsetApplied: qualified,
+            reductionsAfter: consumedDollars,
           }
-      if (gift > 0) {
+        : gift > 0
+          ? applyIrc408d8AContributionOffset({
+              candidateExclusion: qualified,
+              deductibleSection219Total: section219,
+              reductionsAlreadyTaken: consumedDollars,
+            })
+          : {
+              excludableAmount: 0,
+              offsetApplied: 0,
+              reductionsAfter: consumedDollars,
+            }
+      if (gift > 0 && !offsetUnprovable) {
         namedQcdOffsetConsumedByDonor.set(
           ownerId, Math.round(offset.reductionsAfter * 100),
         )
-        qcd -= offset.offsetApplied
       }
       const leftover = offset.offsetApplied
       const nonQualified = gift - qualified

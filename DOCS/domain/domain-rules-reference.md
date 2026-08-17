@@ -188,11 +188,14 @@ Source: [IRS 2026 limits announcement](https://www.irs.gov/newsroom/401k-limit-i
   exclusion, but not below zero, by the excess of deductible §219 contributions for all years ending on or after
   age 70½ over reductions already taken. The aggregate arm uses the same lifetime running total as the named arm
   (`irc-408-d-8-A-projection-post-70-half-contribution-offset`, now `settled`): projected deductible traditional
-  IRA contributions in the run, plus Plan-declared `deductibleIraContributions` for years before the projection
-  starts. Roth contributions, employer deferrals, and nondeductible basis do not count. Leftover after the
-  reduction is ordinary income and does not lower MAGI. The user still enters one household number, no charity or
-  direct transfer is identified, and the per-owner attribution is a modeling convention rather than a source the
-  household chose.
+  IRA contributions in the run for tax years ending on or after the donor's 70½ threshold year, plus Plan-declared
+  `deductibleIraContributions` for pre-start years that are themselves on or after that threshold. Roth
+  contributions, employer deferrals, and nondeductible basis do not count. When a named QCD the Plan declares
+  before the projection starts makes the already-taken reductions in limb (ii) unprovable and §219 is positive,
+  the arm does not claim the exclusion (the gift still moves). `YearResult.qcd` is the gross gift; the exclusion
+  is the MAGI / `qcdIncomeOffset` channel. Leftover after the reduction is ordinary income and does not lower
+  MAGI. The user still enters one household number, no charity or direct transfer is identified, and the
+  per-owner attribution is a modeling convention rather than a source the household chose.
 - **Named QCD actions.** A `qcd` retirement action names the donor, one owned source IRA, an exact-cent
   allocation, and a charity, and the annual projection **commits** it — `simulate.ts` calls the execution
   prerequisite, the physical staging, and the executor, and only the executor can report a committed gift.

@@ -1453,7 +1453,14 @@ export interface YearResult {
    * beneficiary death).
    */
   inheritedAccounts?: InheritedAccountYearEvidence[]
-  /** Qualified charitable distributions routed out of the RMD (excluded from income). */
+  /**
+   * Gross qualified charitable distributions for the year — the physical gift,
+   * not the excludable portion after the 408(d)(8)(A) second-sentence offset.
+   * Exclusion from income is a separate tax-character channel
+   * (`qcdIncomeOffset` / MAGI), not a shrinkage of this total. The owned-IRA
+   * source series reconciles this figure to the overlay plus every moving QCD
+   * occurrence.
+   */
   qcd: number
   /** Dollars moved traditional → Roth this year (taxed as ordinary income, no penalty). */
   rothConversion: number

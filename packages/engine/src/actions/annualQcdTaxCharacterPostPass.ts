@@ -316,6 +316,12 @@ function stageUnchecked(input: StageAnnualQcdTaxCharacterPostPassInput): AnnualQ
       fail('contributionOffsetInvalid', 'One donor must use one complete deductible-contribution history.')
     }
     offsetTotals.set(donor, total)
+    if (consumed > total) {
+      fail(
+        'contributionOffsetInvalid',
+        'QCD contribution-offset consumption cannot exceed the deductible-contribution total.',
+      )
+    }
     const distribution = physicalApplication.charitableDistributionAmount
     const taxableUsed = asUsdCents(Math.min(distribution, poolBefore))
     const nonQcd = cents(BigInt(distribution) - BigInt(taxableUsed), 'Non-QCD charitable remainder')

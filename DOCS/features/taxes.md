@@ -67,7 +67,9 @@ State brackets are a separate question and are still held nominal (see `params/s
   denominator. The household number is charged to the donors whose IRAs fund it
   before it is measured, each donor is then held to their own annual limit, and a couple with two eligible donors
   may exclude up to two of them. The post-70½ deductible-contribution offset in the second sentence of
-  408(d)(8)(A) is applied on this arm as a lifetime running total (domain rules §6). A named `qcd`
+  408(d)(8)(A) is applied on this arm as a lifetime running total (domain rules §6): only §219 for years
+  ending on or after 70½ counts, a pre-start named QCD that makes already-taken reductions unprovable
+  fails the exclusion closed, and the published `qcd` total stays the gross gift. A named `qcd`
   action is the separate, per-donor arm, with its own eligibility, limit, and offset treatment
   ([Named QCD actions](#named-qcd-actions)); a named request stands the aggregate arm down for its year.
 - **Planning-grade AMT screen:** AMTI starts from taxable income plus modeled AMT add-backs (the §63(c)
