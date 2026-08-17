@@ -1,0 +1,22 @@
+# Thin caller for the org-required Grok Build PR review.
+# Implementation lives in RetireGolden/.github — do not copy it here.
+name: Grok code review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: PR number to review
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  review:
+    uses: RetireGolden/.github/.github/workflows/grok-code-review.yml@main
+    secrets: inherit
