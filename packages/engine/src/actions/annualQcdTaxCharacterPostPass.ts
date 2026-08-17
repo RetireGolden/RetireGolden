@@ -19,6 +19,7 @@ import { evaluateRetirementActionSchedule } from './execution.js'
 import type { AccountId, ActionId, AllocationId, PersonId } from './identity.js'
 import { asUsdCents, type UsdCents } from './money.js'
 import type { ClassifyOwnedNonRothIraAnnualWithdrawalsInput } from './ownedNonRothIraWithdrawalCharacter.js'
+import { applyIrc408d8AContributionOffset } from './qcdDeductibleContributionOffset.js'
 import { compareUtf16CodeUnits, deriveActionStructuralId } from './structuralId.js'
 
 export interface AnnualQcdPersonalLimitEvidence {
@@ -315,14 +316,19 @@ function stageUnchecked(input: StageAnnualQcdTaxCharacterPostPassInput): AnnualQ
       fail('contributionOffsetInvalid', 'One donor must use one complete deductible-contribution history.')
     }
     offsetTotals.set(donor, total)
-    const offsetBefore = cents(BigInt(total) - BigInt(consumed), 'QCD contribution offset')
     const distribution = physicalApplication.charitableDistributionAmount
     const taxableUsed = asUsdCents(Math.min(distribution, poolBefore))
     const nonQcd = cents(BigInt(distribution) - BigInt(taxableUsed), 'Non-QCD charitable remainder')
     const candidate = asUsdCents(Math.min(taxableUsed, personalBefore))
     const poolAfter = cents(BigInt(poolBefore) - BigInt(taxableUsed), 'QCD taxable capacity')
-    const offsetApplied = asUsdCents(Math.min(candidate, offsetBefore))
-    const excludable = cents(BigInt(candidate) - BigInt(offsetApplied), 'Excludable QCD')
+    const offset = applyIrc408d8AContributionOffset({
+      candidateExclusion: candidate,
+      deductibleSection219Total: total,
+      reductionsAlreadyTaken: consumed,
+    })
+    const offsetBefore = asUsdCents(Math.max(0, total - consumed))
+    const offsetApplied = asUsdCents(offset.offsetApplied)
+    const excludable = asUsdCents(offset.excludableAmount)
     const taxableQcd = cents(BigInt(taxableUsed) - BigInt(excludable), 'Taxable QCD')
     // `taxableUsed` implements IRC 408(d)(8)(D): "Notwithstanding section 72 ...
     // the entire amount of the distribution shall be treated as includible in
@@ -357,7 +363,7 @@ function stageUnchecked(input: StageAnnualQcdTaxCharacterPostPassInput): AnnualQ
       : 'notApplicable' as const
     const personalAfter = cents(BigInt(personalBefore) - BigInt(candidate), 'QCD personal limit')
     const offsetAfter = cents(BigInt(offsetBefore) - BigInt(offsetApplied), 'QCD contribution offset')
-    const consumedAfter = cents(BigInt(consumed) + BigInt(offsetApplied), 'QCD consumed offset')
+    const consumedAfter = asUsdCents(offset.reductionsAfter)
     const provisionalCharacter: AnnualQcdProvisionalCharacterPartition = {
       status: 'provisionalAwaitingResidualAndSection170Reconciliation',
       qcdIncomeExclusionAmount: excludable, ordinaryIncomeAmount: taxableQcd,

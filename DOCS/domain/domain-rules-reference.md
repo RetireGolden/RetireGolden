@@ -183,16 +183,20 @@ Source: [IRS 2026 limits announcement](https://www.irs.gov/newsroom/401k-limit-i
   paying it is cheaper than a year that stops settling at all. A gift year also settles at the statutory
   close-of-year denominator now, so it no longer reaches the legacy fallback measure, which stays `approximated`
   (`irc-408-d-2-C-projection-pro-rata-measurement-instant`) for the two shapes that still reach it: an
-  owned-IRA-funded annuity purchase and a Plan-declared exact owned-IRA withdrawal. **One approximation remains in
-  this arm.** The post-70½ deductible-contribution offset in the second sentence of 408(d)(8)(A) is not applied:
-  the aggregate arm excludes the full gift however much the donor has deducted since 70½ and keeps no running
-  total (`irc-408-d-8-A-projection-post-70-half-contribution-offset`). The user still enters one household number,
-  no charity or direct transfer is identified, and the per-owner attribution is a modeling convention rather than
-  a source the household chose.
+  owned-IRA-funded annuity purchase and a Plan-declared exact owned-IRA withdrawal. **The post-70½
+  deductible-contribution offset is applied on this arm.** The second sentence of 408(d)(8)(A) reduces the
+  exclusion, but not below zero, by the excess of deductible §219 contributions for all years ending on or after
+  age 70½ over reductions already taken. The aggregate arm uses the same lifetime running total as the named arm
+  (`irc-408-d-8-A-projection-post-70-half-contribution-offset`, now `settled`): projected deductible traditional
+  IRA contributions in the run, plus Plan-declared `deductibleIraContributions` for years before the projection
+  starts. Roth contributions, employer deferrals, and nondeductible basis do not count. Leftover after the
+  reduction is ordinary income and does not lower MAGI. The user still enters one household number, no charity or
+  direct transfer is identified, and the per-owner attribution is a modeling convention rather than a source the
+  household chose.
 - **Named QCD actions.** A `qcd` retirement action names the donor, one owned source IRA, an exact-cent
   allocation, and a charity, and the annual projection **commits** it — `simulate.ts` calls the execution
   prerequisite, the physical staging, and the executor, and only the executor can report a committed gift.
-  What the aggregate arm still approximates is answered exactly here. Age 70½ is the exact
+  Age 70½ is the exact
   civil date 846 calendar months from the birth date with a month-end clamp, published on the record as
   `calculation: 'addCalendarMonths846WithMonthEndClamp'` so a reader can see the arithmetic was chosen
   (`irc-408-d-8-B-ii-age-70-half`, `unsettled`: the six-calendar-months sentence survives only in a

@@ -1631,6 +1631,7 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
     implementedBy: [
+      'packages/engine/src/actions/qcdDeductibleContributionOffset.ts',
       'packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts',
       'packages/engine/src/actions/annualQcdActionExecutionEvidence.ts',
     ],
@@ -3424,12 +3425,12 @@ const registry = {
   'irc-408-d-8-A-projection-post-70-half-contribution-offset': {
     title: 'Reduction of the QCD exclusion by post-70.5 deductible IRA contributions',
     statement:
-      'The second sentence of 408(d)(8)(A) reduces the exclusion, but not below zero, by the excess of deductible section 219 contributions made for all taxable years ending on or after the donor attains age 70.5 over the reductions already taken in prior years. Not modelled in the aggregate qcdAnnual arm, which this record is about: it excludes the full gift no matter how much the donor has contributed and deducted since 70.5, and keeps no running total of reductions already applied. A named QCD request does apply the offset, from the donor-specific post-70.5 contribution history the Plan carries, and does keep the running per-donor total across the projected years; where the run cannot prove that total the named gift is non-actionable rather than offset by an assumed zero.',
-    classification: 'approximated',
+      'The second sentence of 408(d)(8)(A) reduces the exclusion, but not below zero, by the excess of deductible section 219 contributions made for all taxable years ending on or after the donor attains age 70.5 over the reductions already taken in prior years. The aggregate qcdAnnual arm now applies that lifetime running total, the same reading the named arm settles under irc-408-d-8-A-post-70-half-deduction-offset. Projected deductible traditional IRA contributions in the run, plus Plan-declared deductibleIraContributions for years before the projection starts, are the section 219 side; Roth contributions, employer deferrals, and nondeductible basis are not. Leftover after the reduction is ordinary income and does not lower MAGI. HISTORY, APPENDED RATHER THAN DELETED. Until 2026-08-17 this record was classified approximated and said the aggregate arm excluded the full gift no matter how much the donor had deducted since 70.5 and kept no running total. A named QCD request already applied the offset from declared per-donor history and failed closed where that history could not be proved.',
+    classification: 'settled',
     contraryReading: null,
-    errorDirection: 'understatesTax',
+    errorDirection: null,
     conventionRationale:
-      'Direction of error: permissive, dollar for dollar, up to the whole exclusion. The offset exists because the SECURE Act repealed the 219(d)(1) bar on deductible IRA contributions after 70.5, which opened a round trip: deduct a contribution, then exclude the same dollars on the way out as a gift. Omitting the sweep leaves that round trip open, so a still-working donor who contributes the deductible maximum and gives the same amount is shown a deduction and an exclusion where the statute allows one. This is a lifetime running total, not an annual one, and the ledger holds no state across years for it; the clause is cumulative on both sides, which is why the second limb subtracts reductions already taken so the same contribution is never swept twice. Distinct from the conditioning defect this record used to describe: gating a QCD on a positive RMD was removed, and the pre-RMD window from 70.5 to the applicable age is now modelled.',
+      'TWO CONVENTIONS THE STATUTE DOES NOT SUPPLY, because the aggregate arm is a household scalar and section 408(d)(8)(A) speaks only of an individual\'s deductions and gifts. DATA. The projection is the authority for years it simulates, so in-run traditional IRA contributions are counted and a declared fact for the same year is not added on top of them; years before the projection starts can be seen only through declared deductibleIraContributions. Roth, employer, and HSA deposits are omitted because they are not deductions allowed under section 219. LEFTOVER. The leftover after the reduction is ordinary income. A section 170 itemized deduction for those dollars is not booked on this arm — the household may enter itemized charitable separately — and that leftover does not lower MAGI. The named arm still fails closed when a scalar year has made its declared-fact history unprovable, because the two arms do not share one contribution ledger.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -3441,8 +3442,12 @@ const registry = {
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-04',
-    implementedBy: ['packages/engine/src/projection/simulate.ts'],
+    verifiedOn: '2026-08-17',
+    implementedBy: [
+      'packages/engine/src/actions/qcdDeductibleContributionOffset.ts',
+      'packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
   },
   'irc-408-d-8-A-projection-household-qcd-aggregation': {
     title: 'Annual-ledger attribution of a household QCD scalar to its donors',

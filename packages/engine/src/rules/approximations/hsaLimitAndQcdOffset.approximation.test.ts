@@ -1,5 +1,6 @@
 import { expect, it } from 'vitest'
 
+import { asUsdCents } from '../../actions/money.js'
 import { createEmptyPlan, parsePlan, type Account, type IncomeStream, type Plan } from '../../model/plan.js'
 import { packForYear } from '../../params/index.js'
 import { createFlatTaxCalculator } from '../../projection/flatTax.js'
@@ -65,6 +66,19 @@ function traditionalIra(balance: number, contribution = 0): Account {
   }
 }
 
+function rothIra(balance: number, contribution = 0): Account {
+  return {
+    type: 'roth',
+    id: testIds(),
+    name: 'Roth IRA',
+    ownerPersonId: 'p1',
+    annualReturnPct: null,
+    kind: 'ira',
+    balance,
+    annualContribution: contribution,
+  }
+}
+
 function hsa(balance: number, contribution: number): Account {
   return {
     type: 'hsa',
@@ -106,9 +120,9 @@ describeRule('irc-408-d-8-A-projection-post-70-half-contribution-offset', {
     engineExcludesTheGiftRegardless: GIFT,
   },
   accepted: 'statuteSweepsTheWholeExclusion',
-  produced: 'engineExcludesTheGiftRegardless',
-}, ({ accepted, produced }) => {
-  it('excludes a gift the statute would have offset to nothing', () => {
+  note: 'same-year §219 contribution swallows the gift',
+}, ({ accepted, readings }) => {
+  it('sweeps a gift the statute offsets to nothing', () => {
     const plan = workingSeptuagenarian()
     plan.accounts = [cash(0), traditionalIra(265_000, DEDUCTIBLE_IRA_CONTRIBUTION), hsa(0, 0)]
     plan.incomes = [wages(120_000)]
@@ -121,8 +135,95 @@ describeRule('irc-408-d-8-A-projection-post-70-half-contribution-offset', {
     // year in which the engine refused the contribution would produce the same
     // exclusion for an entirely different reason.
     expect(year.contributions).toBeGreaterThanOrEqual(DEDUCTIBLE_IRA_CONTRIBUTION)
-    expect(year.qcd).toBeCloseTo(produced, 6)
+    expect(year.qcd).toBeCloseTo(accepted, 6)
+    expect(year.qcd).not.toBeCloseTo(readings.engineExcludesTheGiftRegardless, 6)
+  })
+
+  it('does not sweep the same gift when the contribution is Roth, not §219', () => {
+    // Only deductions allowed under section 219 count. A Roth IRA contribution
+    // is 408A, not 219, so the same dollars deposited after 70½ leave the
+    // exclusion untouched.
+    const plan = workingSeptuagenarian()
+    plan.accounts = [
+      cash(0),
+      traditionalIra(265_000),
+      rothIra(0, DEDUCTIBLE_IRA_CONTRIBUTION),
+    ]
+    plan.incomes = [wages(120_000)]
+    plan.strategies.qcdAnnual = GIFT
+
+    const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
+    const year = result.years.find((y) => y.year === 2026)!
+
+    expect(year.contributions).toBeGreaterThanOrEqual(DEDUCTIBLE_IRA_CONTRIBUTION)
+    expect(year.qcd).toBeCloseTo(readings.engineExcludesTheGiftRegardless, 6)
     expect(year.qcd).not.toBeCloseTo(accepted, 6)
+  })
+})
+
+/**
+ * Pub. 590-B (2025), Jim’s illustrated QCD Adjustment Worksheets.
+ *
+ * Jim became 70½ in 2023 and deducted $5,000 in 2024 and $5,000 in 2025. No
+ * contribution for 2026. QCD of $6,000 for 2025 and $6,500 for 2026. The 2025
+ * worksheet reduces the exclusion to a $4,000 leftover; the 2026 worksheet
+ * excludes $2,500 ($6,500 − $4,000).
+ *
+ * The parameter pack’s first year is 2026, so the two gift years map onto
+ * 2026 and 2027. The $10,000 of §219 is seeded as declared facts for 2024 and
+ * 2025 — Jim’s actual contribution years, which sit before the projection.
+ * Inflation is exactly 6,500/6,000 − 1 so the second-year gift is the
+ * worksheet’s $6,500, not a price forecast.
+ *
+ * https://www.irs.gov/publications/p590b
+ */
+const JIM_FIRST_YEAR_QCD = 6_000
+const JIM_SECOND_YEAR_QCD = 6_500
+const JIM_SECTION_219_PER_YEAR = 5_000
+
+describeRule('irc-408-d-8-A-projection-post-70-half-contribution-offset', {
+  readings: {
+    statuteLifetimeCarryforward: { firstYear: 0, secondYear: 2_500 },
+    noOffset: { firstYear: JIM_FIRST_YEAR_QCD, secondYear: JIM_SECOND_YEAR_QCD },
+    annualOffsetNoCarryforward: { firstYear: 0, secondYear: JIM_SECOND_YEAR_QCD },
+  },
+  accepted: 'statuteLifetimeCarryforward',
+  note: 'Pub. 590-B Jim multi-year carryforward',
+}, ({ accepted, readings }) => {
+  it('carries Jim’s unused §219 offset into the next gift year', () => {
+    const plan = workingSeptuagenarian()
+    plan.accounts = [cash(0), traditionalIra(265_000)]
+    plan.strategies.qcdAnnual = JIM_FIRST_YEAR_QCD
+    plan.assumptions.inflationPct =
+      ((JIM_SECOND_YEAR_QCD / JIM_FIRST_YEAR_QCD) - 1) * 100
+    plan.retirementActionEligibilityFacts = {
+      iraClassifications: [],
+      sepSimpleActivities: [],
+      deductibleIraContributions: [2024, 2025].map((taxYear) => ({
+        donorPersonId: 'p1',
+        taxYear,
+        amountCents: asUsdCents(JIM_SECTION_219_PER_YEAR * 100),
+        evidenceId: `jim-219-${taxYear}`,
+        provenance: { source: 'manual', sourceId: `p590b-jim-${taxYear}` },
+      })),
+    }
+
+    const result = simulatePlan(validate(plan), {
+      startYear: 2026,
+      horizonEndYear: 2027,
+      taxCalculator: noTax,
+    })
+    const first = result.years.find((y) => y.year === 2026)!
+    const second = result.years.find((y) => y.year === 2027)!
+
+    expect(first.qcd).toBeCloseTo(accepted.firstYear, 6)
+    expect(second.qcd).toBeCloseTo(accepted.secondYear, 6)
+    expect(second.qcd).not.toBeCloseTo(readings.noOffset.secondYear, 6)
+    expect(second.qcd).not.toBeCloseTo(readings.annualOffsetNoCarryforward.secondYear, 6)
+    // Leftover is ordinary income and does not lower MAGI. Year 1 excludes
+    // nothing, so MAGI is the whole required distribution.
+    expect(first.magi).toBeCloseTo(first.rmd, 6)
+    expect(second.magi).toBeCloseTo(second.rmd - accepted.secondYear, 6)
   })
 })
 
