@@ -1360,9 +1360,18 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
    * two arms do not share one contribution ledger.
    */
   const namedQcdOffsetHistoryUnprovable = new Set<string>()
+  /**
+   * Pre-start named QCDs only. A scalar year also adds the donor to
+   * `namedQcdOffsetHistoryUnprovable` (the named arm cannot share this
+   * ledger), but that mark is written in the same year the aggregate offset
+   * runs and is not a reason to invent limb (ii). This set is the one that
+   * fails the aggregate exclusion closed.
+   */
+  const preProjectionQcdOffsetUnprovable = new Set<string>()
   for (const request of plan.strategies.retirementActions) {
     if (request.kind !== 'qcd' || request.year >= startYear) continue
     namedQcdOffsetHistoryUnprovable.add(request.donorPersonId)
+    preProjectionQcdOffsetUnprovable.add(request.donorPersonId)
   }
 
   // Earnings-test FRA credit: months of benefit fully withheld before FRA are
@@ -5247,7 +5256,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       const offsetUnprovable =
         gift > 0 &&
         section219 > 0 &&
-        namedQcdOffsetHistoryUnprovable.has(ownerId)
+        preProjectionQcdOffsetUnprovable.has(ownerId)
       const offset = offsetUnprovable
         ? {
             excludableAmount: 0,

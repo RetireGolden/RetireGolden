@@ -19,7 +19,10 @@ import { evaluateRetirementActionSchedule } from './execution.js'
 import type { AccountId, ActionId, AllocationId, PersonId } from './identity.js'
 import { asUsdCents, type UsdCents } from './money.js'
 import type { ClassifyOwnedNonRothIraAnnualWithdrawalsInput } from './ownedNonRothIraWithdrawalCharacter.js'
-import { applyIrc408d8AContributionOffset } from './qcdDeductibleContributionOffset.js'
+import {
+  applyIrc408d8AContributionOffset,
+  irc408d8APriorReductionsAreProvable,
+} from './qcdDeductibleContributionOffset.js'
 import { compareUtf16CodeUnits, deriveActionStructuralId } from './structuralId.js'
 
 export interface AnnualQcdPersonalLimitEvidence {
@@ -316,7 +319,7 @@ function stageUnchecked(input: StageAnnualQcdTaxCharacterPostPassInput): AnnualQ
       fail('contributionOffsetInvalid', 'One donor must use one complete deductible-contribution history.')
     }
     offsetTotals.set(donor, total)
-    if (consumed > total) {
+    if (!irc408d8APriorReductionsAreProvable(total, consumed)) {
       fail(
         'contributionOffsetInvalid',
         'QCD contribution-offset consumption cannot exceed the deductible-contribution total.',

@@ -138,6 +138,7 @@ export {
 } from './annualQcdResidualForm8606.js'
 export {
   applyIrc408d8AContributionOffset,
+  irc408d8APriorReductionsAreProvable,
   type Irc408d8AContributionOffsetInput,
   type Irc408d8AContributionOffsetResult,
 } from './qcdDeductibleContributionOffset.js'

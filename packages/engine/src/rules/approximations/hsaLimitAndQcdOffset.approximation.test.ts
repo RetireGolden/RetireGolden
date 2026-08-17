@@ -316,9 +316,12 @@ describeRule('irc-408-d-8-A-projection-post-70-half-contribution-offset', {
   readings: {
     // Limb (i) is deductions for taxable years ending on or after the date
     // the taxpayer attains 70½. A 2026 contribution does not reduce a 2027
-    // gift. Readings are the 2027 MAGI reduction.
-    statuteIgnoresYearsEndingBefore70Half: GIFT,
-    countsAnyTraditionalIraContribution: 0,
+    // gift. There is no RMD at 70, so a wrongly applied offset shows up as
+    // leftover ordinary income (gifted MAGI − ungifted MAGI), not as a
+    // missing MAGI reduction — a fully excluded beyond-RMD gift never
+    // entered income in the first place.
+    statuteIgnoresYearsEndingBefore70Half: 0,
+    countsAnyTraditionalIraContribution: GIFT,
   },
   accepted: 'statuteIgnoresYearsEndingBefore70Half',
   note: 'pre-70½ contributions do not reduce the exclusion',
@@ -351,8 +354,8 @@ describeRule('irc-408-d-8-A-projection-post-70-half-contribution-offset', {
     expect(gifted2027.contributions).toBe(0)
     expect(gifted2027.qcd).toBeCloseTo(GIFT, 6)
     expect(gifted2027.rmd).toBe(0)
-    expect(ungifted2027.magi - gifted2027.magi).toBeCloseTo(accepted, 6)
-    expect(ungifted2027.magi - gifted2027.magi)
+    expect(gifted2027.magi - ungifted2027.magi).toBeCloseTo(accepted, 6)
+    expect(gifted2027.magi - ungifted2027.magi)
       .not.toBeCloseTo(readings.countsAnyTraditionalIraContribution, 6)
   })
 
@@ -372,8 +375,8 @@ describeRule('irc-408-d-8-A-projection-post-70-half-contribution-offset', {
 
     expect(gifted.contributions).toBeGreaterThanOrEqual(PRE_THRESHOLD_CONTRIBUTION)
     expect(gifted.qcd).toBeCloseTo(GIFT, 6)
-    expect(ungifted.magi - gifted.magi).toBeCloseTo(readings.countsAnyTraditionalIraContribution, 6)
-    expect(ungifted.magi - gifted.magi).not.toBeCloseTo(accepted, 6)
+    expect(gifted.magi - ungifted.magi).toBeCloseTo(readings.countsAnyTraditionalIraContribution, 6)
+    expect(gifted.magi - ungifted.magi).not.toBeCloseTo(accepted, 6)
   })
 })
 

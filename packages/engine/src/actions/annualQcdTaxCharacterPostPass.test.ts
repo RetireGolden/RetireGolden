@@ -16,6 +16,7 @@ import {
   stageAnnualQcdTaxCharacterPostPass,
   type StageAnnualQcdTaxCharacterPostPassInput,
 } from './annualQcdTaxCharacterPostPass.js'
+import { irc408d8APriorReductionsAreProvable } from './qcdDeductibleContributionOffset.js'
 import type { ClassifyOwnedNonRothIraAnnualWithdrawalsInput } from './ownedNonRothIraWithdrawalCharacter.js'
 interface ActionSpec {
   id: string
@@ -634,24 +635,14 @@ describe('stageAnnualQcdTaxCharacterPostPass', () => {
     })
   })
 
-  it('rejects a prior offset that already exceeds the §219 total', () => {
-    // Eligibility already refuses this shape. The post-pass must still fail
-    // closed if that evidence reaches it: clamping a negative remainder to
-    // zero would let the named arm proceed as if limb (ii) were exhausted
-    // rather than contradictory.
-    const input = structuredClone(fixture(
-      [{ id: 'qcd-a', amount: 1_000 }],
-      { contribution: { p1: 300 } },
-    )) as StageAnnualQcdTaxCharacterPostPassInput
-    const evidence = input.physicalInput.prerequisite.evidence[0]!
-    const consumedPastTotal = asUsdCents(400)
-    ;(evidence.eligibility.contributionHistory as { priorOffsetApplied: number })
-      .priorOffsetApplied = consumedPastTotal
-    ;(evidence.eligibility.priorQcdOffsetEvidence as { priorOffsetApplied: number })
-      .priorOffsetApplied = consumedPastTotal
-    expect(stageAnnualQcdTaxCharacterPostPass(input)).toMatchObject({
-      status: 'annualQcdTaxCharacterPostPassBlocked',
-      issues: [{ kind: 'contributionOffsetInvalid' }],
-    })
+  it('names consumed-past-total as contributionOffsetInvalid, not a zero remainder', () => {
+    // Eligibility already refuses `priorOffsetApplied > total`, and the
+    // post-pass rebuilds that prerequisite from the Plan, so a forged batch
+    // is `physicalInvalid` before the offset loop. The statutory reading is
+    // still fail-closed: limb (ii) cannot exceed limb (i). The predicate the
+    // loop uses is the same one the helper suite pins — $400 already taken
+    // against $300 of §219 is unprovable, not "offset exhausted".
+    expect(irc408d8APriorReductionsAreProvable(300, 400)).toBe(false)
+    expect(irc408d8APriorReductionsAreProvable(300, 300)).toBe(true)
   })
 })

@@ -30,10 +30,24 @@ export interface Irc408d8AContributionOffsetResult {
 }
 
 /**
+ * Limb (ii) is already-taken reductions. It cannot exceed limb (i). A caller
+ * that clamped the negative remainder to zero would treat a contradictory
+ * history as "offset exhausted" and proceed. Fail closed instead.
+ */
+export function irc408d8APriorReductionsAreProvable(
+  deductibleSection219Total: number,
+  reductionsAlreadyTaken: number,
+): boolean {
+  return reductionsAlreadyTaken <= deductibleSection219Total
+}
+
+/**
  * Apply the lifetime post-70½ deductible-contribution offset.
  *
  * Roth contributions, employer deferrals, and nondeductible IRA deposits are
  * not §219 deductions and must not be included in `deductibleSection219Total`.
+ * Callers must refuse `reductionsAlreadyTaken > deductibleSection219Total`
+ * before calling; this function does not invent a reading of that shape.
  */
 export function applyIrc408d8AContributionOffset(
   input: Readonly<Irc408d8AContributionOffsetInput>,

@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import { applyIrc408d8AContributionOffset } from './qcdDeductibleContributionOffset.js'
+import {
+  applyIrc408d8AContributionOffset,
+  irc408d8APriorReductionsAreProvable,
+} from './qcdDeductibleContributionOffset.js'
 
 /**
  * Pub. 590-B (2025), "Offset of QCDs by amounts contributed after age 70½",
@@ -59,6 +62,16 @@ describe('applyIrc408d8AContributionOffset', () => {
 
     expect(result.excludableAmount).toBe(0)
     expect(result.offsetApplied).toBe(4_000)
+  })
+
+  it('treats already-taken reductions past the §219 total as unprovable', () => {
+    // Limb (ii) cannot exceed limb (i). $400 already taken against $300 of
+    // §219 is not "offset exhausted" (remainder 0); it is a contradictory
+    // history. The named post-pass refuses that shape
+    // `contributionOffsetInvalid` rather than clamping.
+    expect(irc408d8APriorReductionsAreProvable(300, 400)).toBe(false)
+    expect(irc408d8APriorReductionsAreProvable(300, 300)).toBe(true)
+    expect(irc408d8APriorReductionsAreProvable(300, 0)).toBe(true)
   })
 
   it('leaves the exclusion untouched when no §219 deduction exists', () => {
