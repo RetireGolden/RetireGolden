@@ -1,5 +1,8 @@
 import { expect, it } from 'vitest'
 
+import type { QualifiedCharitableDistributionRequest } from '../../actions/contract.js'
+import { asAccountId, asActionId, asAllocationId, asPersonId } from '../../actions/identity.js'
+import { asPositiveUsdCents, asUsdCents } from '../../actions/money.js'
 import { createEmptyPlan, parsePlan, type Account, type IncomeStream, type Plan } from '../../model/plan.js'
 import { packForYear } from '../../params/index.js'
 import { createFlatTaxCalculator } from '../../projection/flatTax.js'
@@ -65,6 +68,19 @@ function traditionalIra(balance: number, contribution = 0): Account {
   }
 }
 
+function rothIra(balance: number, contribution = 0): Account {
+  return {
+    type: 'roth',
+    id: testIds(),
+    name: 'Roth IRA',
+    ownerPersonId: 'p1',
+    annualReturnPct: null,
+    kind: 'ira',
+    balance,
+    annualContribution: contribution,
+  }
+}
+
 function hsa(balance: number, contribution: number): Account {
   return {
     type: 'hsa',
@@ -77,8 +93,53 @@ function hsa(balance: number, contribution: number): Account {
   }
 }
 
-function wages(annualGross: number): IncomeStream {
-  return { type: 'wages', id: testIds(), personId: 'p1', annualGross, endAge: null, realGrowthPct: 0 }
+function wages(annualGross: number, endAge: number | null = null): IncomeStream {
+  return { type: 'wages', id: testIds(), personId: 'p1', annualGross, endAge, realGrowthPct: 0 }
+}
+
+function traditionalIraWithId(id: string, balance: number, contribution = 0): Account {
+  return {
+    type: 'traditional',
+    id,
+    name: 'IRA',
+    ownerPersonId: 'p1',
+    annualReturnPct: null,
+    kind: 'ira',
+    balance,
+    annualContribution: contribution,
+  }
+}
+
+function preStartNamedQcd(
+  sourceAccountId: string,
+  taxYear: number,
+): QualifiedCharitableDistributionRequest {
+  const amount = asPositiveUsdCents(6_000 * 100)
+  return {
+    actionId: asActionId('pre-start-qcd'),
+    kind: 'qcd',
+    year: taxYear,
+    executionDate: `${taxYear}-08-01`,
+    executionSequence: 1,
+    requestedAmount: amount,
+    provenance: { source: 'manual' },
+    donorPersonId: asPersonId('p1'),
+    allocation: {
+      allocationId: asAllocationId('pre-start-qcd-alloc'),
+      sourceAccountId: asAccountId(sourceAccountId),
+      requestedAmount: amount,
+    },
+    charity: {
+      designationId: 'pre-start-charity',
+      name: 'Public charity',
+      designationKind: 'eligiblePublicCharity',
+      directFromCustodianAttested: true,
+      eligibleOrganizationAttested: true,
+      notDonorAdvisedFundOrSupportingOrganizationAttested: true,
+      notSplitInterestEntityAttested: true,
+      entireDistributionOtherwiseDeductibleAttested: true,
+    },
+  }
 }
 
 function validate(plan: Plan): Plan {
@@ -101,28 +162,299 @@ describeRule('irc-408-d-8-A-projection-post-70-half-contribution-offset', {
   readings: {
     // 408(d)(8)(A) second sentence: the exclusion is reduced, but not below
     // zero, by post-70.5 deductible section 219 contributions. The contribution
-    // here exceeds the gift, so the whole exclusion is swept.
+    // here exceeds the gift, so the whole exclusion is swept. Readings are the
+    // MAGI reduction (ungifted MAGI − gifted MAGI). YearResult.qcd is the
+    // gross gift on both readings.
     statuteSweepsTheWholeExclusion: 0,
     engineExcludesTheGiftRegardless: GIFT,
   },
   accepted: 'statuteSweepsTheWholeExclusion',
-  produced: 'engineExcludesTheGiftRegardless',
-}, ({ accepted, produced }) => {
-  it('excludes a gift the statute would have offset to nothing', () => {
-    const plan = workingSeptuagenarian()
-    plan.accounts = [cash(0), traditionalIra(265_000, DEDUCTIBLE_IRA_CONTRIBUTION), hsa(0, 0)]
-    plan.incomes = [wages(120_000)]
-    plan.strategies.qcdAnnual = GIFT
+  note: 'same-year §219 contribution swallows the gift',
+}, ({ accepted, readings }) => {
+  it('sweeps a gift the statute offsets to nothing', () => {
+    const withGift = workingSeptuagenarian()
+    withGift.accounts = [cash(0), traditionalIra(265_000, DEDUCTIBLE_IRA_CONTRIBUTION), hsa(0, 0)]
+    withGift.incomes = [wages(120_000)]
+    withGift.strategies.qcdAnnual = GIFT
+    const withoutGift = workingSeptuagenarian()
+    withoutGift.accounts = [cash(0), traditionalIra(265_000, DEDUCTIBLE_IRA_CONTRIBUTION), hsa(0, 0)]
+    withoutGift.incomes = [wages(120_000)]
 
-    const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
-    const year = result.years.find((y) => y.year === 2026)!
+    const gifted = simulatePlan(validate(withGift), { startYear: 2026, taxCalculator: noTax })
+      .years.find((y) => y.year === 2026)!
+    const ungifted = simulatePlan(validate(withoutGift), { startYear: 2026, taxCalculator: noTax })
+      .years.find((y) => y.year === 2026)!
 
     // The setup only discriminates if the contribution actually happened; a
     // year in which the engine refused the contribution would produce the same
     // exclusion for an entirely different reason.
-    expect(year.contributions).toBeGreaterThanOrEqual(DEDUCTIBLE_IRA_CONTRIBUTION)
-    expect(year.qcd).toBeCloseTo(produced, 6)
-    expect(year.qcd).not.toBeCloseTo(accepted, 6)
+    expect(gifted.contributions).toBeGreaterThanOrEqual(DEDUCTIBLE_IRA_CONTRIBUTION)
+    expect(gifted.qcd).toBeCloseTo(GIFT, 6)
+    expect(ungifted.qcd).toBe(0)
+    expect(ungifted.magi - gifted.magi).toBeCloseTo(accepted, 6)
+    expect(ungifted.magi - gifted.magi).not.toBeCloseTo(readings.engineExcludesTheGiftRegardless, 6)
+  })
+
+  it('does not sweep the same gift when the contribution is Roth, not §219', () => {
+    // Only deductions allowed under section 219 count. A Roth IRA contribution
+    // is 408A, not 219, so the same dollars deposited after 70½ leave the
+    // exclusion untouched.
+    const withGift = workingSeptuagenarian()
+    withGift.accounts = [
+      cash(0),
+      traditionalIra(265_000),
+      rothIra(0, DEDUCTIBLE_IRA_CONTRIBUTION),
+    ]
+    withGift.incomes = [wages(120_000)]
+    withGift.strategies.qcdAnnual = GIFT
+    const withoutGift = workingSeptuagenarian()
+    withoutGift.accounts = [
+      cash(0),
+      traditionalIra(265_000),
+      rothIra(0, DEDUCTIBLE_IRA_CONTRIBUTION),
+    ]
+    withoutGift.incomes = [wages(120_000)]
+
+    const gifted = simulatePlan(validate(withGift), { startYear: 2026, taxCalculator: noTax })
+      .years.find((y) => y.year === 2026)!
+    const ungifted = simulatePlan(validate(withoutGift), { startYear: 2026, taxCalculator: noTax })
+      .years.find((y) => y.year === 2026)!
+
+    expect(gifted.contributions).toBeGreaterThanOrEqual(DEDUCTIBLE_IRA_CONTRIBUTION)
+    expect(gifted.qcd).toBeCloseTo(GIFT, 6)
+    expect(ungifted.magi - gifted.magi).toBeCloseTo(readings.engineExcludesTheGiftRegardless, 6)
+    expect(ungifted.magi - gifted.magi).not.toBeCloseTo(accepted, 6)
+  })
+})
+
+/**
+ * Pub. 590-B (2025), Jim’s illustrated QCD Adjustment Worksheets.
+ *
+ * Jim became 70½ in 2023 and deducted $5,000 in 2024 and $5,000 in 2025. No
+ * contribution for 2026. QCD of $6,000 for 2025 and $6,500 for 2026. The 2025
+ * worksheet reduces the exclusion to a $4,000 leftover; the 2026 worksheet
+ * excludes $2,500 ($6,500 − $4,000).
+ *
+ * The parameter pack’s first year is 2026, so the two gift years map onto
+ * 2026 and 2027. The $10,000 of §219 is seeded as declared facts for 2024 and
+ * 2025 — Jim’s actual contribution years, which sit before the projection.
+ * Inflation is exactly 6,500/6,000 − 1 so the second-year gift is the
+ * worksheet’s $6,500, not a price forecast.
+ *
+ * https://www.irs.gov/publications/p590b
+ */
+const JIM_FIRST_YEAR_QCD = 6_000
+const JIM_SECOND_YEAR_QCD = 6_500
+const JIM_SECTION_219_PER_YEAR = 5_000
+
+describeRule('irc-408-d-8-A-projection-post-70-half-contribution-offset', {
+  readings: {
+    statuteLifetimeCarryforward: { firstYear: 0, secondYear: 2_500 },
+    noOffset: { firstYear: JIM_FIRST_YEAR_QCD, secondYear: JIM_SECOND_YEAR_QCD },
+    annualOffsetNoCarryforward: { firstYear: 0, secondYear: JIM_SECOND_YEAR_QCD },
+  },
+  accepted: 'statuteLifetimeCarryforward',
+  note: 'Pub. 590-B Jim multi-year carryforward',
+}, ({ accepted, readings }) => {
+  it('carries Jim’s unused §219 offset into the next gift year', () => {
+    const plan = workingSeptuagenarian()
+    plan.accounts = [cash(0), traditionalIra(265_000)]
+    plan.strategies.qcdAnnual = JIM_FIRST_YEAR_QCD
+    plan.assumptions.inflationPct =
+      ((JIM_SECOND_YEAR_QCD / JIM_FIRST_YEAR_QCD) - 1) * 100
+    plan.retirementActionEligibilityFacts = {
+      iraClassifications: [],
+      sepSimpleActivities: [],
+      deductibleIraContributions: [2024, 2025].map((taxYear) => ({
+        donorPersonId: 'p1',
+        taxYear,
+        amountCents: asUsdCents(JIM_SECTION_219_PER_YEAR * 100),
+        evidenceId: `jim-219-${taxYear}`,
+        provenance: { source: 'manual', sourceId: `p590b-jim-${taxYear}` },
+      })),
+    }
+
+    const result = simulatePlan(validate(plan), {
+      startYear: 2026,
+      horizonEndYear: 2027,
+      taxCalculator: noTax,
+    })
+    const first = result.years.find((y) => y.year === 2026)!
+    const second = result.years.find((y) => y.year === 2027)!
+
+    expect(first.qcd).toBeCloseTo(JIM_FIRST_YEAR_QCD, 6)
+    expect(second.qcd).toBeCloseTo(JIM_SECOND_YEAR_QCD, 6)
+    // Leftover is ordinary income and does not lower MAGI. Year 1 excludes
+    // nothing, so MAGI is the whole required distribution. Year 2 excludes
+    // $2,500. Those MAGI reductions are the statute's readings; YearResult.qcd
+    // stays the gross gift.
+    expect(first.rmd - first.magi).toBeCloseTo(accepted.firstYear, 6)
+    expect(second.rmd - second.magi).toBeCloseTo(accepted.secondYear, 6)
+    expect(second.rmd - second.magi).not.toBeCloseTo(readings.noOffset.secondYear, 6)
+    expect(second.rmd - second.magi).not.toBeCloseTo(
+      readings.annualOffsetNoCarryforward.secondYear, 6,
+    )
+    expect(first.magi).toBeCloseTo(first.rmd, 6)
+    expect(second.magi).toBeCloseTo(second.rmd - accepted.secondYear, 6)
+  })
+})
+
+/**
+ * Born 1957-03-15: attains 70½ on 2027-09-15. The 2026 taxable year ends
+ * 31 December 2026, before that date, so a 2026 §219 deduction is outside
+ * limb (i) of 408(d)(8)(A).
+ */
+function crossesSeventyAndAHalfIn2027(): Plan {
+  const plan = workingSeptuagenarian()
+  plan.household.people[0]!.dob = '1957-03-15'
+  return plan
+}
+
+const PRE_THRESHOLD_CONTRIBUTION = 5_000
+
+describeRule('irc-408-d-8-A-projection-post-70-half-contribution-offset', {
+  readings: {
+    // Limb (i) is deductions for taxable years ending on or after the date
+    // the taxpayer attains 70½. A 2026 contribution does not reduce a 2027
+    // gift. There is no RMD at 70, so a wrongly applied offset shows up as
+    // leftover ordinary income (gifted MAGI − ungifted MAGI), not as a
+    // missing MAGI reduction — a fully excluded beyond-RMD gift never
+    // entered income in the first place.
+    statuteIgnoresYearsEndingBefore70Half: 0,
+    countsAnyTraditionalIraContribution: GIFT,
+  },
+  accepted: 'statuteIgnoresYearsEndingBefore70Half',
+  note: 'pre-70½ contributions do not reduce the exclusion',
+}, ({ accepted, readings }) => {
+  it('does not reduce a post-threshold gift by a contribution from a year that ended before 70½', () => {
+    const withGift = crossesSeventyAndAHalfIn2027()
+    withGift.accounts = [cash(0), traditionalIra(100_000, PRE_THRESHOLD_CONTRIBUTION)]
+    withGift.incomes = [wages(50_000, 70)]
+    withGift.strategies.qcdAnnual = GIFT
+    const withoutGift = crossesSeventyAndAHalfIn2027()
+    withoutGift.accounts = [cash(0), traditionalIra(100_000, PRE_THRESHOLD_CONTRIBUTION)]
+    withoutGift.incomes = [wages(50_000, 70)]
+
+    const giftedYears = simulatePlan(validate(withGift), {
+      startYear: 2026,
+      horizonEndYear: 2027,
+      taxCalculator: noTax,
+    }).years
+    const ungiftedYears = simulatePlan(validate(withoutGift), {
+      startYear: 2026,
+      horizonEndYear: 2027,
+      taxCalculator: noTax,
+    }).years
+    const gifted2026 = giftedYears.find((y) => y.year === 2026)!
+    const gifted2027 = giftedYears.find((y) => y.year === 2027)!
+    const ungifted2027 = ungiftedYears.find((y) => y.year === 2027)!
+
+    expect(gifted2026.contributions).toBeGreaterThanOrEqual(PRE_THRESHOLD_CONTRIBUTION)
+    expect(gifted2026.qcd).toBe(0)
+    expect(gifted2027.contributions).toBe(0)
+    expect(gifted2027.qcd).toBeCloseTo(GIFT, 6)
+    expect(gifted2027.rmd).toBe(0)
+    expect(gifted2027.magi - ungifted2027.magi).toBeCloseTo(accepted, 6)
+    expect(gifted2027.magi - ungifted2027.magi)
+      .not.toBeCloseTo(readings.countsAnyTraditionalIraContribution, 6)
+  })
+
+  it('does reduce the same gift when the contribution is for the threshold year', () => {
+    const withGift = crossesSeventyAndAHalfIn2027()
+    withGift.accounts = [cash(0), traditionalIra(100_000, PRE_THRESHOLD_CONTRIBUTION)]
+    withGift.incomes = [wages(50_000)]
+    withGift.strategies.qcdAnnual = GIFT
+    const withoutGift = crossesSeventyAndAHalfIn2027()
+    withoutGift.accounts = [cash(0), traditionalIra(100_000, PRE_THRESHOLD_CONTRIBUTION)]
+    withoutGift.incomes = [wages(50_000)]
+
+    const gifted = simulatePlan(validate(withGift), { startYear: 2027, taxCalculator: noTax })
+      .years.find((y) => y.year === 2027)!
+    const ungifted = simulatePlan(validate(withoutGift), { startYear: 2027, taxCalculator: noTax })
+      .years.find((y) => y.year === 2027)!
+
+    expect(gifted.contributions).toBeGreaterThanOrEqual(PRE_THRESHOLD_CONTRIBUTION)
+    expect(gifted.qcd).toBeCloseTo(GIFT, 6)
+    expect(gifted.magi - ungifted.magi).toBeCloseTo(readings.countsAnyTraditionalIraContribution, 6)
+    expect(gifted.magi - ungifted.magi).not.toBeCloseTo(accepted, 6)
+  })
+})
+
+const PRIOR_SECTION_219 = 3_000
+const GIFT_LARGER_THAN_PRIOR_219 = 6_500
+const PRE_START_IRA_ID = 'ira-p1'
+
+describeRule('irc-408-d-8-A-projection-post-70-half-contribution-offset', {
+  readings: {
+    // Limb (ii) is reductions already taken. A named QCD the Plan declares
+    // before the projection starts is a real gift; the run cannot prove how
+    // much of the $3,000 §219 it absorbed. Substituting consumed = 0 would
+    // exclude $3,500 of a $6,500 gift. Fail-closed claims none of the
+    // exclusion. Readings are the MAGI reduction.
+    statuteFailsClosedWhenLimbIiUnprovable: 0,
+    assumesNoPriorReductions: GIFT_LARGER_THAN_PRIOR_219 - PRIOR_SECTION_219,
+  },
+  accepted: 'statuteFailsClosedWhenLimbIiUnprovable',
+  note: 'pre-start named QCD makes limb (ii) unprovable',
+}, ({ accepted, readings }) => {
+  function priorSection219Facts(): NonNullable<Plan['retirementActionEligibilityFacts']> {
+    return {
+      iraClassifications: [{
+        sourceAccountId: PRE_START_IRA_ID,
+        subtype: 'traditional',
+        evidenceId: 'classification-ira-p1',
+        provenance: { source: 'manual' },
+      }],
+      sepSimpleActivities: [],
+      deductibleIraContributions: [{
+        donorPersonId: 'p1',
+        taxYear: 2025,
+        amountCents: asUsdCents(PRIOR_SECTION_219 * 100),
+        evidenceId: 'prior-219-2025',
+        provenance: { source: 'manual', sourceId: 'ledger-2025' },
+      }],
+    }
+  }
+
+  it('does not claim the exclusion when a pre-start named QCD makes prior reductions unprovable', () => {
+    const withGift = workingSeptuagenarian()
+    withGift.accounts = [cash(0), traditionalIraWithId(PRE_START_IRA_ID, 265_000)]
+    withGift.strategies.qcdAnnual = GIFT_LARGER_THAN_PRIOR_219
+    withGift.strategies.retirementActions = [preStartNamedQcd(PRE_START_IRA_ID, 2025)]
+    withGift.retirementActionEligibilityFacts = priorSection219Facts()
+    const withoutGift = workingSeptuagenarian()
+    withoutGift.accounts = [cash(0), traditionalIraWithId(PRE_START_IRA_ID, 265_000)]
+    withoutGift.strategies.retirementActions = [preStartNamedQcd(PRE_START_IRA_ID, 2025)]
+    withoutGift.retirementActionEligibilityFacts = priorSection219Facts()
+
+    const gifted = simulatePlan(validate(withGift), { startYear: 2026, taxCalculator: noTax })
+      .years.find((y) => y.year === 2026)!
+    const ungifted = simulatePlan(validate(withoutGift), { startYear: 2026, taxCalculator: noTax })
+      .years.find((y) => y.year === 2026)!
+
+    expect(gifted.qcd).toBeCloseTo(GIFT_LARGER_THAN_PRIOR_219, 6)
+    expect(ungifted.qcd).toBe(0)
+    expect(ungifted.magi - gifted.magi).toBeCloseTo(accepted, 6)
+    expect(ungifted.magi - gifted.magi).not.toBeCloseTo(readings.assumesNoPriorReductions, 6)
+  })
+
+  it('applies the unused §219 when no pre-start gift has made limb (ii) unprovable', () => {
+    const withGift = workingSeptuagenarian()
+    withGift.accounts = [cash(0), traditionalIraWithId(PRE_START_IRA_ID, 265_000)]
+    withGift.strategies.qcdAnnual = GIFT_LARGER_THAN_PRIOR_219
+    withGift.retirementActionEligibilityFacts = priorSection219Facts()
+    const withoutGift = workingSeptuagenarian()
+    withoutGift.accounts = [cash(0), traditionalIraWithId(PRE_START_IRA_ID, 265_000)]
+    withoutGift.retirementActionEligibilityFacts = priorSection219Facts()
+
+    const gifted = simulatePlan(validate(withGift), { startYear: 2026, taxCalculator: noTax })
+      .years.find((y) => y.year === 2026)!
+    const ungifted = simulatePlan(validate(withoutGift), { startYear: 2026, taxCalculator: noTax })
+      .years.find((y) => y.year === 2026)!
+
+    expect(gifted.qcd).toBeCloseTo(GIFT_LARGER_THAN_PRIOR_219, 6)
+    expect(ungifted.magi - gifted.magi).toBeCloseTo(readings.assumesNoPriorReductions, 6)
+    expect(ungifted.magi - gifted.magi).not.toBeCloseTo(accepted, 6)
   })
 })
 

@@ -142,6 +142,7 @@ import {
   participatesInAggregateRothConversionAllocation,
 } from '../actions/aggregateRothConversionOwnerAllocation.js'
 import { addCalendarMonths } from '../actions/civilDate.js'
+import { applyIrc408d8AContributionOffset } from '../actions/qcdDeductibleContributionOffset.js'
 import type { NonpersistedPriorQcdOffsetEvidence } from '../strategies/accountEligibility.js'
 import {
   compareUtf16CodeUnits,
@@ -1319,21 +1320,58 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
    */
   const namedQcdOffsetConsumedByDonor = new Map<string, number>()
   /**
+   * Each donor's deductible §219 total for years ending on or after age 70½,
+   * in plan dollars. Seeded from Plan-declared contribution facts for years
+   * before the projection starts that are themselves on or after the 70½
+   * threshold year, then increased by this run's own traditional IRA
+   * contributions for tax years `>=` that same threshold year (the contribution
+   * loop is outside the annual-pass retry). A year that ends before the donor
+   * attains 70½ is outside limb (i) of 408(d)(8)(A) and is not added. Roth
+   * contributions, employer deferrals, and HSA deposits are not §219 and are
+   * not added.
+   */
+  const qcdSection219ByDonor = new Map<string, number>()
+  for (const person of people) {
+    const thresholdDate = addCalendarMonths(person.dob, 846)
+    if (thresholdDate === null) continue
+    const thresholdYear = Number(thresholdDate.slice(0, 4))
+    let total = 0
+    for (const record of plan.retirementActionEligibilityFacts?.deductibleIraContributions ?? []) {
+      if (record.donorPersonId !== person.id) continue
+      if (record.taxYear < thresholdYear || record.taxYear >= startYear) continue
+      total += record.amountCents / 100
+    }
+    if (total > 0) qcdSection219ByDonor.set(person.id, total)
+  }
+  /**
    * Donors whose prior offset consumption this run cannot state.
    *
    * The Plan carries the deductible-contribution history but records nothing
    * about how much of it earlier gifts already absorbed, so the only consumption
    * this engine can prove is the consumption it performed itself. A gift the
    * Plan declares for a year before the projection begins, and an aggregate
-   * `qcdAnnual` gift in an earlier projected year, are both real gifts whose
-   * offset application is unknown here. Either one makes the donor's history
-   * unprovable and the named gift non-actionable, which is the fail-closed
-   * answer the contract requires: zero is never substituted for an unknown.
+   * `qcdAnnual` gift in an earlier projected year, are both real gifts. Limb
+   * (ii) of 408(d)(8)(A) is those already-taken reductions. Substituting zero
+   * would treat unused deductions as still available. The named arm omits the
+   * evidence and refuses the gift; the aggregate gift has already moved, so
+   * this arm fails the exclusion closed (the qualified gift stays includible)
+   * rather than applying the offset from an assumed-zero consumed start. A
+   * scalar year still makes the named history unprovable as well, because the
+   * two arms do not share one contribution ledger.
    */
   const namedQcdOffsetHistoryUnprovable = new Set<string>()
+  /**
+   * Pre-start named QCDs only. A scalar year also adds the donor to
+   * `namedQcdOffsetHistoryUnprovable` (the named arm cannot share this
+   * ledger), but that mark is written in the same year the aggregate offset
+   * runs and is not a reason to invent limb (ii). This set is the one that
+   * fails the aggregate exclusion closed.
+   */
+  const preProjectionQcdOffsetUnprovable = new Set<string>()
   for (const request of plan.strategies.retirementActions) {
     if (request.kind !== 'qcd' || request.year >= startYear) continue
     namedQcdOffsetHistoryUnprovable.add(request.donorPersonId)
+    preProjectionQcdOffsetUnprovable.add(request.donorPersonId)
   }
 
   // Earnings-test FRA credit: months of benefit fully withheld before FRA are
@@ -3718,6 +3756,16 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       }
       contributions += allowed
       if (isAggregatedIra(account)) ownedNonRothIraContributions += allowed
+      if (account.type === 'traditional' && account.kind === 'ira') {
+        const owner = personById.get(ownerId)
+        const thresholdDate = owner === undefined ? null : addCalendarMonths(owner.dob, 846)
+        const thresholdYear = thresholdDate === null ? null : Number(thresholdDate.slice(0, 4))
+        if (thresholdYear !== null && year >= thresholdYear) {
+          qcdSection219ByDonor.set(
+            ownerId, (qcdSection219ByDonor.get(ownerId) ?? 0) + allowed,
+          )
+        }
+      }
       if (account.type === 'traditional' || account.type === 'hsa') preTaxContributions += allowed
       if (account.type === 'traditional') traditionalInflow += allowed
       else otherInflow += allowed
@@ -5117,12 +5165,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         }
         qcd += qcdFromRmd
         // The scalar gift has no donor, so it is charged to every eligible one.
-        // It is a real post-70½ charitable distribution whose share of the
-        // deductible-contribution offset this engine does not compute, so from
-        // this year on no named gift by these donors can state its own prior
-        // offset consumption. Recorded here rather than inferred later: the
-        // named arm stands the scalar down, so a year that reaches this line is
-        // the only place the fact exists.
+        // This arm now applies the §408(d)(8)(A) offset and records consumption,
+        // but it counts projected traditional IRA contributions that the named
+        // arm's declared-fact history may not include. From this year on no
+        // named gift by these donors can state its own prior offset
+        // consumption. Recorded here rather than inferred later: the named arm
+        // stands the scalar down, so a year that reaches this line is the only
+        // place the fact exists.
         if (qcd > 0) for (const donorId of donorIds) {
           namedQcdOffsetHistoryUnprovable.add(donorId)
         }
@@ -5176,9 +5225,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     //
     // (d)(8)(A)'s own limit is separate and applies earlier: `requested` is
     // already capped at the year's sourced annual limit, so the exclusion can
-    // never exceed it and no second clamp is needed here. The (A) reduction for
-    // post-70½ deductible contributions is not modelled in this arm at all --
-    // that is what `namedQcdOffsetHistoryUnprovable` above records.
+    // never exceed it and no second clamp is needed here. The (A) second
+    // sentence then reduces that exclusion, but not below zero, by the excess
+    // of deductible §219 contributions for years ending on or after 70½ over
+    // reductions already taken — the same lifetime running total the named
+    // arm settles in `applyIrc408d8AContributionOffset`. Leftover is ordinary
+    // income and does not lower MAGI; a §170 itemized deduction for that
+    // leftover is not booked here.
     const qcdQualifiedFromRmdByOwner = new Map<string, number>()
     const qcdNonQualifiedBeyondRmdByOwner = new Map<string, number>()
     const proRataOwnerIds = new Set<string>([...qcdGrossByOwner.keys()])
@@ -5193,15 +5246,53 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       const fromRmd = Math.min(gift, qcdFromRmdByOwner.get(ownerId) ?? 0)
       const aggregateIncludible = Math.max(0, preDistribution - basis)
       const qualified = Math.min(gift, aggregateIncludible)
+      const section219 = qcdSection219ByDonor.get(ownerId) ?? 0
+      const consumedDollars = (namedQcdOffsetConsumedByDonor.get(ownerId) ?? 0) / 100
+      // Limb (ii) is already-taken reductions. A pre-start named QCD is a real
+      // gift this run cannot measure, and a zero consumed start would invent
+      // unused capacity. Named-arm reading: fail closed. The scalar gift has
+      // already moved, so the tax-character reading is the same — do not claim
+      // the exclusion, and do not write a guessed leftover into consumed.
+      const offsetUnprovable =
+        gift > 0 &&
+        section219 > 0 &&
+        preProjectionQcdOffsetUnprovable.has(ownerId)
+      const offset = offsetUnprovable
+        ? {
+            excludableAmount: 0,
+            offsetApplied: qualified,
+            reductionsAfter: consumedDollars,
+          }
+        : gift > 0
+          ? applyIrc408d8AContributionOffset({
+              candidateExclusion: qualified,
+              deductibleSection219Total: section219,
+              reductionsAlreadyTaken: consumedDollars,
+            })
+          : {
+              excludableAmount: 0,
+              offsetApplied: 0,
+              reductionsAfter: consumedDollars,
+            }
+      if (gift > 0 && !offsetUnprovable) {
+        namedQcdOffsetConsumedByDonor.set(
+          ownerId, Math.round(offset.reductionsAfter * 100),
+        )
+      }
+      const leftover = offset.offsetApplied
       const nonQualified = gift - qualified
       // The excess lands on the from-RMD dollars first; whatever it cannot
       // absorb there is beyond-RMD gift that has to be booked as income.
       const nonQualifiedFromRmd = Math.min(fromRmd, nonQualified)
-      qcdQualifiedFromRmdByOwner.set(ownerId, fromRmd - nonQualifiedFromRmd)
+      const fromRmdQualified = fromRmd - nonQualifiedFromRmd
+      const fromRmdExcludable = Math.min(fromRmdQualified, offset.excludableAmount)
+      const beyondRmdLeftover = leftover - (fromRmdQualified - fromRmdExcludable)
+      qcdQualifiedFromRmdByOwner.set(ownerId, fromRmdQualified)
       qcdNonQualifiedBeyondRmdByOwner.set(
         ownerId, nonQualified - nonQualifiedFromRmd,
       )
-      qcdIncomeOffset += fromRmd - nonQualifiedFromRmd
+      qcdIncomeOffset += fromRmdExcludable
+      if (beyondRmdLeftover > 0) qcdNonQualifiedOrdinaryIncome += beyondRmdLeftover
       if (basis > 0) {
         iraProRata.set(
           ownerId, openIraProRataYear(basis, preDistribution - qualified),
