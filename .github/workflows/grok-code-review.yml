@@ -19,4 +19,7 @@ permissions:
 jobs:
   review:
     uses: RetireGolden/.github/.github/workflows/grok-code-review.yml@main
-    secrets: inherit
+    with:
+      pr_number: ${{ inputs.pr_number || github.event.inputs.pr_number || github.event.pull_request.number }}
+    secrets:
+      XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
