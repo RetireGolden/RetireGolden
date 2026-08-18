@@ -52,7 +52,7 @@ pnpm dev
 
 ## CI/CD
 
-Six GitHub Actions workflows: the SWA pipeline and both security scans run on pushes and pull requests to `main`; CLA enforcement runs on PR activity; the Owl parity oracle and the engine npm release are triggered manually (the release also fires on `engine-v*` tags). Full setup notes: [DOCS/operations/ci-cd-and-deploy.md](DOCS/operations/ci-cd-and-deploy.md).
+Eight GitHub Actions workflows: the SWA pipeline and both security scans run on pushes and pull requests to `main`; Grok Build review and CLA enforcement run on PR activity; the Owl parity oracle and the engine npm release are triggered manually (the release also fires on `engine-v*` tags). Full setup notes: [DOCS/operations/ci-cd-and-deploy.md](DOCS/operations/ci-cd-and-deploy.md).
 
 ### Azure Static Web Apps — build & deploy
 
@@ -97,6 +97,12 @@ Reusable workflow invoked by the Azure deploy job after a **PR preview** is live
 [`.github/workflows/cla.yml`](.github/workflows/cla.yml)
 
 Runs on pull-request activity. First-time contributors are asked to sign the [Contributor License Agreement](CLA.md) by replying with the acceptance phrase; the check blocks merge until every commit author has signed. See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+### Grok Build review
+
+[`.github/workflows/grok-code-review.yml`](.github/workflows/grok-code-review.yml)
+
+Runs on pull-request open, sync, reopen, and ready-for-review (and manually from the Actions tab). Delegates to the org workflow in `RetireGolden/.github` to post an automated Grok Build review on the PR diff.
 
 ### Engine package release
 

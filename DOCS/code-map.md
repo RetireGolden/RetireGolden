@@ -18,9 +18,9 @@ RetireGolden/
 ├── packages/planner-ui/  @retiregolden/planner-ui — the planner React UI (published to npm; ships TS source)
 ├── DOCS/             this documentation set
 ├── LICENSE            AGPL-3.0-only (© RetireGolden, LLC); see TRADEMARKS.md for the brand policy
-└── .github/workflows/  CI: azure-static-web-apps-retiregolden.yml, owl-parity.yml, semgrep.yml,
-                        zap.yml, cla.yml (CLA signatures), publish-engine.yml / publish-planner-ui.yml
-                        (npm releases on engine-v* / planner-ui-v* tags)
+└── .github/workflows/  CI: azure-static-web-apps-retiregolden.yml, grok-code-review.yml, owl-parity.yml,
+                        semgrep.yml, zap.yml, cla.yml (CLA signatures), publish-engine.yml /
+                        publish-planner-ui.yml (npm releases on engine-v* / planner-ui-v* tags)
 ```
 
 The root `LICENSE` is AGPL-3.0-only; copyright is held by RetireGolden, LLC. `app/THIRD-PARTY-NOTICES.txt` (and the shipped copy
