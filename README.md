@@ -52,7 +52,7 @@ pnpm dev
 
 ## CI/CD
 
-Eight GitHub Actions workflows: the SWA pipeline and both security scans run on pushes and pull requests to `main`; Grok Build review and CLA enforcement run on PR activity; the Owl parity oracle and the engine npm release are triggered manually (the release also fires on `engine-v*` tags). Full setup notes: [DOCS/operations/ci-cd-and-deploy.md](DOCS/operations/ci-cd-and-deploy.md).
+Eight GitHub Actions workflows: the SWA pipeline and both security scans run on pushes and pull requests to `main`; Grok Build review and CLA enforcement run on PR activity; the Owl parity oracle and the engine and planner-ui npm releases are triggered manually (the engine release also fires on `engine-v*` tags). Full setup notes: [DOCS/operations/ci-cd-and-deploy.md](DOCS/operations/ci-cd-and-deploy.md).
 
 ### Azure Static Web Apps — build & deploy
 
