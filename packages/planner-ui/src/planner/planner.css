@@ -687,6 +687,10 @@
   grid-column: 1 / -1;
 }
 
+.form-grid > .field-span-2 {
+  grid-column: span 2;
+}
+
 .form-grid .field {
   margin-top: 0;
 }
@@ -1634,7 +1638,7 @@ html:has(.kpi-bar) {
 
 .field-with-action {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: 1fr auto;
   column-gap: 0.5rem;
   row-gap: 0.25rem;
   align-items: end;
