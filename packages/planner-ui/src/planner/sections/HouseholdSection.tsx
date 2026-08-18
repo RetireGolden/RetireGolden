@@ -134,12 +134,14 @@ export function HouseholdSection() {
                     )
                   }
                 />
-                <button type="button" className="btn btn-secondary btn-small" onClick={() => setLongevityFor(i)}>
-                  Calculate
-                </button>
-                <button type="button" className="btn btn-secondary btn-small" onClick={() => setPercentileFor(i)}>
-                  Percentile
-                </button>
+                <div className="field-with-action-actions">
+                  <button type="button" className="btn btn-secondary btn-small" onClick={() => setLongevityFor(i)}>
+                    Calculate
+                  </button>
+                  <button type="button" className="btn btn-secondary btn-small" onClick={() => setPercentileFor(i)}>
+                    Percentile
+                  </button>
+                </div>
               </div>
               {person.longevity.source === 'percentile' && person.longevity.percentile ? (
                 <p className="field-hint" style={{ gridColumn: '1 / -1', margin: 0 }}>
