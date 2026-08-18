@@ -117,7 +117,7 @@ export function HouseholdSection() {
                 max={80}
                 onCommit={(v) => update((d) => void (d.household.people[i]!.retirementAge = v))}
               />
-              <div className="field-with-action">
+              <div className="field-with-action field-span-full">
                 <NumberField
                   label="Planning age"
                   help="How long the plan runs for this person. The age the money must last to, not a prediction of death. Planning beyond average life expectancy is prudent; 'Calculate' estimates an age from a short health questionnaire, and 'Percentile' anchors it to a survival probability (e.g. the age you have a 25% chance of reaching). Typing a number always overrides."
@@ -134,12 +134,14 @@ export function HouseholdSection() {
                     )
                   }
                 />
-                <button type="button" className="btn btn-secondary btn-small" onClick={() => setLongevityFor(i)}>
-                  Calculate
-                </button>
-                <button type="button" className="btn btn-secondary btn-small" onClick={() => setPercentileFor(i)}>
-                  Percentile
-                </button>
+                <div className="field-with-action-actions">
+                  <button type="button" className="btn btn-secondary btn-small" onClick={() => setLongevityFor(i)}>
+                    Calculate
+                  </button>
+                  <button type="button" className="btn btn-secondary btn-small" onClick={() => setPercentileFor(i)}>
+                    Percentile
+                  </button>
+                </div>
               </div>
               {person.longevity.source === 'percentile' && person.longevity.percentile ? (
                 <p className="field-hint" style={{ gridColumn: '1 / -1', margin: 0 }}>

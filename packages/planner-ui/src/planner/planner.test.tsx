@@ -645,6 +645,23 @@ describe('planner learn links', () => {
     container.remove()
     spy.mockRestore()
   })
+
+  it('Household keeps Calculate and Percentile as separate planning-age actions', async () => {
+    const { container, root, errors, spy } = await mountSection(HouseholdSection, '/plan/x/household')
+    const clusters = Array.from(container.querySelectorAll('.field-with-action-actions'))
+    expect(clusters).toHaveLength(2)
+    for (const cluster of clusters) {
+      const actions = Array.from(cluster.querySelectorAll(':scope > button.btn'))
+      expect(actions.map((button) => button.textContent?.trim())).toEqual(['Calculate', 'Percentile'])
+      expect(actions[0]).not.toBe(actions[1])
+      expect(actions[0]!.parentElement).toBe(cluster)
+      expect(actions[1]!.parentElement).toBe(cluster)
+    }
+    expect(unknownSlug(errors)).toEqual([])
+    await act(async () => root.unmount())
+    container.remove()
+    spy.mockRestore()
+  })
 })
 
 describe('PlanWorkspace information architecture', () => {

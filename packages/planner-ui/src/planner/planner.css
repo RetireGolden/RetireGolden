@@ -1655,10 +1655,30 @@ html:has(.kpi-bar) {
   min-width: 0;
 }
 
+/* One suffix slot beside the control. Multiple actions must share this cell
+   via .field-with-action-actions (flex + gap); pinning each > button here
+   stacks their boxes on the same ~one-chip rect. On Household, span the
+   whole .field-with-action with field-span-full so the input keeps width. */
+.field-with-action > .field-with-action-actions,
 .field-with-action > button {
   grid-column: 2;
   grid-row: 2;
   margin-bottom: 1px;
+}
+
+.field-with-action > button {
+  white-space: nowrap;
+}
+
+.field-with-action-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.35rem;
+}
+
+.field-with-action-actions > button {
   white-space: nowrap;
 }
 
