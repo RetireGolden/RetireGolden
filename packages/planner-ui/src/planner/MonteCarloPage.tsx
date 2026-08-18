@@ -694,9 +694,12 @@ export function MonteCarloPage() {
                   Each point trades that share of your investable assets for an immediate life annuity (payout rate{' '}
                   {visibleFrontier.annuitization.payoutRatePct.toFixed(1)}% at age {visibleFrontier.annuitization.startAge},{' '}
                   {visibleFrontier.annuitization.rateSource === 'default-table'
-                    ? 'from a published-quote planning table. Check a marketplace quote before acting'
+                    ? 'from a published-quote planning table'
                     : 'from your entered quote'}
                   ), priced on the full year-by-year projection over the same market simulations.
+                  {visibleFrontier.annuitization.rateSource === 'default-table'
+                    ? ' Check a marketplace quote before acting.'
+                    : ''}
                   {visibleFrontier.annuitization.attributionAvailable
                     ? ' The dashed line holds the same dollars but shifts them from bonds to stocks instead of buying the annuity, the implicit rising-equity glidepath that research attributes much of a SPIA\'s benefit to. The gap between the lines is what annuitization adds beyond it (mortality credits, spending floor), net of lost liquidity.'
                     : ''}
