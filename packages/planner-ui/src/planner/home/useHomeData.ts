@@ -29,6 +29,8 @@ export function useHomeData() {
   // leaves a plan half-deleted; Undo simply re-saves the in-memory copy.
   const [undoPlan, setUndoPlan] = useState<Plan | null>(null)
   const undoPlanRef = useRef<Plan | null>(null)
+  // True while an Undo restore save is in flight; finalize must not purge.
+  const undoRestoreInFlight = useRef(false)
   const undoTimer = useRef<number | null>(null)
   const fileInput = useRef<HTMLInputElement>(null)
   const { confirm, prompt, dialogs } = useDialogs()
@@ -49,6 +51,11 @@ export function useHomeData() {
   // (or the user dismisses it), that plan cannot return through this flow, so
   // its operational history is safe to erase.
   const finalizePendingDelete = (clearVisibleToast = true) => {
+    // While an Undo restore is saving, the deletion is being REVERSED, not
+    // finalized: purging here would destroy the returning plan's snapshots.
+    // A save that later fails after an unmount leaks that history rather
+    // than losing it - the safe side of the trade.
+    if (undoRestoreInFlight.current) return
     const deleted = undoPlanRef.current
     if (deleted === null) return
     clearUndoTimer()
@@ -170,6 +177,7 @@ export function useHomeData() {
     // lands — if the save fails, the user must not lose both the plan and
     // the affordance at once.
     try {
+    undoRestoreInFlight.current = true
       const r = await savePlanVia(store, restored)
       if (r.ok) {
         undoPlanRef.current = null
@@ -180,6 +188,8 @@ export function useHomeData() {
       }
     } catch {
       setNotice(`Could not restore "${restored.name}". Storage is unavailable in this browser right now.`)
+    } finally {
+      undoRestoreInFlight.current = false
     }
   }
 
