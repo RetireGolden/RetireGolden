@@ -120,7 +120,8 @@ documented in [The plan file format](plan-file-format.md)) as a JSON string:
 jq -r --arg q "'" \
   '[.id, .clientId, (.name | if test("^[=+@\\t\\r-]") then $q + . else . end), .updatedAtIso] | @csv' \
   library/plans.jsonl > plans.csv
-jq -e -r 'select(.id == "PLAN_ID") | .json | fromjson' library/plans.jsonl > plan.json.tmp \n  && mv plan.json.tmp plan.json
+jq -e -r 'select(.id == "PLAN_ID") | .json | fromjson' library/plans.jsonl > plan.json.tmp \
+  && mv plan.json.tmp plan.json
 ```
 
 Plan names take the same formula guard as client names. The `-e` on the extraction makes a
