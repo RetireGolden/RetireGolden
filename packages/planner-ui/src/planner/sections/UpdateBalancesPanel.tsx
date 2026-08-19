@@ -575,6 +575,10 @@ export function UpdateBalancesPanel() {
   // another row may then select the account, see it blocked, and release it itself.
   // Selecting the SAME account again is a no-op and keeps any existing release.
   const changeTarget = (i: number, next: string) => {
+    // Any assignment change invalidates an apply suspended on its durable
+    // writes: the mutation must never apply a selection the preview no
+    // longer shows (the panel's preview/apply-agreement rule).
+    panelEpoch.current += 1
     setParsed((prev) => {
       if (!prev) return prev
       const manualTargetIndexes = new Set(prev.manualTargetIndexes)
@@ -599,6 +603,8 @@ export function UpdateBalancesPanel() {
   // release; the target assignment is kept idempotently for robustness. Keyed by
   // account id → row index so sibling rows stay locked out of the same account.
   const allowRefresh = (i: number, accId: string) => {
+    // A release changes the effective protection set; same rule as above.
+    panelEpoch.current += 1
     setReleased((prev) => new Map(prev).set(accId, i))
     setParsed((prev) => (prev ? { ...prev, targets: prev.targets.map((t, j) => (j === i ? accId : t)) } : prev))
   }
