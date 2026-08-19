@@ -608,6 +608,7 @@ export function UpdateBalancesPanel() {
     applying.current = true
     try {
     const applyEpoch = panelEpoch.current
+    const applyProtectionEpoch = protectionUnknownEpoch.current
     const targetPlanId = plan.id
     // `protectionPending` joins `blocked` as a refusal: applying against a set the
     // host has not resolved is exactly the overwrite the seam exists to prevent.
@@ -651,7 +652,7 @@ export function UpdateBalancesPanel() {
       // Hosts without IndexedDB have no durable store and stay synchronous.
       if (refreshHistoryAvailable()) {
         snapshotPersisted = await saveRefreshSnapshot(snapshot)
-        if (applyEpoch !== panelEpoch.current || committedPlanId.current !== targetPlanId) {
+        if (applyEpoch !== panelEpoch.current || committedPlanId.current !== targetPlanId || protectionUnknownEpoch.current !== applyProtectionEpoch) {
           // Cancelled, or the user switched plans while the undo record was
           // being written: a snapshot for an apply that never ran must not
           // offer a restore.
@@ -698,7 +699,7 @@ export function UpdateBalancesPanel() {
           } catch {
             // Best-effort; classification simply re-derives next time.
           }
-          if (applyEpoch !== panelEpoch.current || committedPlanId.current !== targetPlanId) {
+          if (applyEpoch !== panelEpoch.current || committedPlanId.current !== targetPlanId || protectionUnknownEpoch.current !== applyProtectionEpoch) {
             // Same rule as the first await: a cancelled (or plan-switched)
             // apply must leave neither a restore record nor remembered
             // assignments - a cancelled apply is not an apply.
@@ -765,6 +766,7 @@ export function UpdateBalancesPanel() {
         return
       }
       const targetPlanId = plan.id
+      const restoreProtectionEpoch = protectionUnknownEpoch.current
       const beforeRestore = restoreDeltas(plan, snapshot, hostProtectedIds)
       const outcome = revertToSnapshot(plan, snapshot)
       const protectedRestoreAccountIds = new Set<string>()
@@ -788,7 +790,7 @@ export function UpdateBalancesPanel() {
           // undo point for a restore that never ran must not exist.
           if (refreshHistoryAvailable()) {
             undoPersisted = await saveRefreshSnapshot(undoSnapshot)
-            if (committedPlanId.current !== targetPlanId) {
+            if (committedPlanId.current !== targetPlanId || protectionUnknownEpoch.current !== restoreProtectionEpoch) {
               if (undoPersisted) void deleteRefreshSnapshot(undoSnapshot.id)
               return
             }
@@ -802,7 +804,7 @@ export function UpdateBalancesPanel() {
           )
         }
       }
-      if (committedPlanId.current !== targetPlanId) return
+      if (committedPlanId.current !== targetPlanId || protectionUnknownEpoch.current !== restoreProtectionEpoch) return
       update((draft) => {
         if (draft.id !== targetPlanId) return
         const reverted = revertToSnapshot(draft, snapshot)

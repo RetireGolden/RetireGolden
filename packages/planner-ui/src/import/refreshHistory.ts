@@ -107,7 +107,14 @@ export async function clearAllRefreshHistory(): Promise<void> {
       const request = indexedDB.deleteDatabase(DB_NAME)
       request.onsuccess = () => resolve()
       request.onerror = () => resolve()
-      request.onblocked = () => resolve()
+      // onblocked means the deletion has NOT run - a straggler transaction
+      // (e.g. an unawaited per-plan clear) still holds a connection. With
+      // db() latched shut nothing from this module reopens, so the queued
+      // delete fires the moment that transaction ends; keep waiting for
+      // onsuccess rather than declaring success early. The timeout is the
+      // multi-tab escape hatch: another tab's connection is outside this
+      // module's control, and hanging Clear-all on it would be worse.
+      setTimeout(resolve, 10_000)
     })
   } finally {
     clearingAll = false
