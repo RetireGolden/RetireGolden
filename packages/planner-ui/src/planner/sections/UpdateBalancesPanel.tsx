@@ -69,6 +69,7 @@ import {
   deleteRefreshManualMapping,
   deleteRefreshSnapshot,
   listRefreshManualMappings,
+  pruneRefreshSnapshots,
   listRefreshSnapshots,
   refreshHistoryAvailable,
   saveRefreshManualMapping,
@@ -722,6 +723,9 @@ export function UpdateBalancesPanel() {
       if (d.id !== targetPlanId) return
       applyRefresh(d, delta, safeSelection, effective)
     })
+    // Retention runs only after the mutation commits, so an aborted write can
+    // be deleted without ever having evicted a real older snapshot.
+    void pruneRefreshSnapshots(targetPlanId)
     // Keep the table and releases intact when the ONLY reason nothing landed is
     // protection: the zero-write message points the user at the "Allow this refresh"
     // controls, which must still be on screen to act on. A genuine nothing-selected
@@ -770,6 +774,7 @@ export function UpdateBalancesPanel() {
           protectedRestoreAccountIds.add(account.id)
         }
       }
+      let undoPersisted = false
       if (beforeRestore.length > 0) {
         const undoSnapshot = captureRefreshSnapshot(plan, beforeRestore, {
           id: snapshotId(),
@@ -778,11 +783,15 @@ export function UpdateBalancesPanel() {
           sourceSha256: snapshot.sourceSha256,
         })
         if (undoSnapshot.changes.length > 0) {
-          // Try the same pre-mutation durable write as Apply, so a successful
-          // restore undo point survives a reload without blocking the restore
-          // when browser storage is unavailable.
+          // Same pre-mutation durable write as Apply, with the same abort
+          // rule: a plan switch during the await deletes the record — an
+          // undo point for a restore that never ran must not exist.
           if (refreshHistoryAvailable()) {
-            await saveRefreshSnapshot(undoSnapshot)
+            undoPersisted = await saveRefreshSnapshot(undoSnapshot)
+            if (committedPlanId.current !== targetPlanId) {
+              if (undoPersisted) void deleteRefreshSnapshot(undoSnapshot.id)
+              return
+            }
           } else {
             void saveRefreshSnapshot(undoSnapshot)
           }
@@ -793,9 +802,6 @@ export function UpdateBalancesPanel() {
           )
         }
       }
-      // The await above yields; committedPlanId is the deterministic
-      // cancellation token for a plan switch, and the in-mutator guard stays
-      // the last line of defense.
       if (committedPlanId.current !== targetPlanId) return
       update((draft) => {
         if (draft.id !== targetPlanId) return
@@ -817,6 +823,8 @@ export function UpdateBalancesPanel() {
           }
         }
       })
+      // Retention after the restore commits, mirroring apply.
+      void pruneRefreshSnapshots(targetPlanId)
       resetPanel()
       const restoredCount = new Set(
         beforeRestore.filter((delta) => delta.field === 'balance').map((delta) => delta.path.slice(0, delta.path.lastIndexOf('.'))),
@@ -826,6 +834,9 @@ export function UpdateBalancesPanel() {
       setMessage(
         restoredCount > 0
           ? `Restored previous balances for ${restoredCount} account${restoredCount === 1 ? '' : 's'} from ${snapshot.sourceLabel}.` +
+            (refreshHistoryAvailable() && !undoPersisted && beforeRestore.length > 0
+              ? ' No undo record could be saved in this browser.'
+              : '') +
             (deletedCount > 0 ? ` Skipped ${deletedCount} deleted account${deletedCount === 1 ? '' : 's'}.` : '') +
             (protectedCount > 0
               ? ` ${protectedCount} account${protectedCount === 1 ? ' was' : 's were'} left unchanged, protected by advisor overrides.`

@@ -10,6 +10,7 @@ import {
   listRefreshManualMappings,
   listRefreshSnapshots,
   saveRefreshManualMapping,
+  pruneRefreshSnapshots,
   saveRefreshSnapshot,
 } from './refreshHistory'
 
@@ -35,6 +36,9 @@ describe('refreshHistory', () => {
       expect(await saveRefreshSnapshot(snapshot(`p1-${day}`, 'plan-1', `2026-07-${String(day).padStart(2, '0')}T12:00:00.000Z`))).toBe(true)
     }
     await saveRefreshSnapshot(snapshot('p2-1', 'plan-2', '2026-07-01T12:00:00.000Z'))
+    // Pruning runs after a mutation commits, never inside the write itself,
+    // so an aborted write can be deleted without having evicted anything.
+    await pruneRefreshSnapshots('plan-1')
 
     const planOne = await listRefreshSnapshots('plan-1')
     expect(planOne).toHaveLength(10)

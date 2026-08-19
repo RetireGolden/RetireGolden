@@ -60,6 +60,24 @@ export function refreshHistoryAvailable(): boolean {
   return typeof indexedDB !== 'undefined'
 }
 
+/** Prune a plan's snapshots to the retention bound; call after a mutation commits. */
+export async function pruneRefreshSnapshots(planId: string): Promise<void> {
+  try {
+    const database = await openHistoryDb()
+    if (database === null) return
+    const tx = database.transaction(SNAPSHOTS_STORE, 'readwrite')
+    const stale = ((await tx.store.getAll()) as unknown[])
+      .filter(isSnapshot)
+      .filter((candidate) => candidate.planId === planId)
+      .sort((left, right) => right.appliedAtIso.localeCompare(left.appliedAtIso) || right.id.localeCompare(left.id))
+      .slice(SNAPSHOT_LIMIT_PER_PLAN)
+    await Promise.all(stale.map((candidate) => tx.store.delete(candidate.id)))
+    await tx.done
+  } catch {
+    // Retention is best-effort; the next successful prune catches up.
+  }
+}
+
 /** Remove one snapshot (an apply that aborted after its durable write). */
 export async function deleteRefreshSnapshot(id: string): Promise<void> {
   const database = await openHistoryDb()
@@ -142,20 +160,17 @@ export async function listRefreshSnapshots(planId: string): Promise<RefreshSnaps
     .sort((left, right) => right.appliedAtIso.localeCompare(left.appliedAtIso) || right.id.localeCompare(left.id))
 }
 
-/** Persist a snapshot and atomically prune older snapshots for that plan to ten. */
+/**
+ * Persist a snapshot. Pruning is deliberately NOT done here: an aborted
+ * apply/restore deletes its own record, and pruning at write time would let
+ * that aborted write permanently evict a real older snapshot. Callers prune
+ * with pruneRefreshSnapshots AFTER their mutation commits.
+ */
 export async function saveRefreshSnapshot(snapshot: RefreshSnapshot): Promise<boolean> {
   try {
     const database = await openHistoryDb()
     if (database === null) return false
-    const tx = database.transaction(SNAPSHOTS_STORE, 'readwrite')
-    await tx.store.put(snapshot)
-    const stale = ((await tx.store.getAll()) as unknown[])
-      .filter(isSnapshot)
-      .filter((candidate) => candidate.planId === snapshot.planId)
-      .sort((left, right) => right.appliedAtIso.localeCompare(left.appliedAtIso) || right.id.localeCompare(left.id))
-      .slice(SNAPSHOT_LIMIT_PER_PLAN)
-    await Promise.all(stale.map((candidate) => tx.store.delete(candidate.id)))
-    await tx.done
+    await database.put(SNAPSHOTS_STORE, snapshot)
     return true
   } catch {
     // A private-browsing, quota, or transaction failure must not turn the
