@@ -78,6 +78,84 @@ validates the manifest contract; `verifyManifestText` checks the exact sidecar g
 `verifyComponentBytes` checks length before SHA-256. Hashing uses Web Crypto in browsers and Node. A host
 without Web Crypto fails loudly rather than reporting an invented digest.
 
+## Recovering core data without RetireGolden
+
+Offboarding means the archive alone has to be enough. Every component is plaintext JSON or JSONL
+(a store with nothing in it exports as a zero-byte component, not as `{}`), so any ZIP tool plus
+ordinary JSON tooling recovers core data. With `unzip`, `sha256sum`, and `jq`:
+
+```bash
+unzip library.rgcomplete -d record
+cd record
+sha256sum -c manifest.sha256
+jq -r '.components[] | .sha256 + "  " + .path' manifest.json | sha256sum -c -
+```
+
+The first `sha256sum` line checks the manifest itself; the second verifies **every component**
+against the hashes the manifest declares. Recover nothing from a component that fails its check.
+Two disciplines when running recovery commands: these checksums are *integrity*, not
+*authenticity* — whoever can rewrite the archive can rewrite its hashes too, so provenance comes
+from where you kept the file (the trust boundary above), not from the sidecar. And run multi-step
+pipelines under `set -euo pipefail` so a failing `jq` or `sha256sum` stops the recovery instead
+of feeding partial output into the next step.
+
+Client records in `library/clients.jsonl` carry `id`, `name`, `notes`, `tags`, `archived`,
+`createdAtIso`, and `updatedAtIso` — one JSON object per line, which `jq` consumes directly:
+
+```bash
+jq -r --arg q "'" \
+  '[.id, (.name | if test("^\\s*[=+@-]") then $q + . else . end), .updatedAtIso] | @csv' \
+  library/clients.jsonl > clients.csv
+```
+
+The `if test(...)` guard neutralizes spreadsheet formula injection: a client name whose first
+non-whitespace character is `=`, `+`, `-`, or `@` (spreadsheets skip leading whitespace — including
+tabs and carriage returns — before evaluating) would otherwise execute as a formula when the CSV is
+opened in a spreadsheet. `@csv` alone quotes fields but does not defuse formulas.
+
+Plan records in `library/plans.jsonl` carry `id`, `clientId`, `name`, `schemaVersion`,
+`createdAtIso`, `updatedAtIso`, and `json` — the complete plan document (the same object
+documented in [The plan file format](plan-file-format.md)) as a JSON string:
+
+```bash
+jq -r --arg q "'" \
+  '[.id, .clientId, (.name | if test("^\\s*[=+@-]") then $q + . else . end), .updatedAtIso] | @csv' \
+  library/plans.jsonl > plans.csv
+jq -e -r 'select(.id == "PLAN_ID") | .json | fromjson' library/plans.jsonl > plan.json.tmp \
+  && mv plan.json.tmp plan.json
+```
+
+Plan names take the same formula guard as client names. The `-e` on the extraction makes a
+mistyped or absent `PLAN_ID` exit nonzero, and the temp-file-then-move keeps a failed extraction
+from leaving an empty `plan.json` behind — the shell truncates its redirect target before `jq`
+runs, so writing directly would.
+
+When the archive carries the `portable/plans-v2.json` Free-bridge component (see the
+compatibility policy below), use it directly — it *is* the v2 backup envelope. For archives
+without it, the plan documents can be rebuilt into one with `jq` alone, which makes the web
+planner at retiregolden.app a working reader of last resort:
+
+```bash
+jq -r '.json | fromjson' library/plans.jsonl | jq -s \
+  '{kind: "retiregolden.v2.backup", backupVersion: 1, exportedAtIso: (now | todate), plans: .}' \
+  > plans-backup.json.tmp && mv plans-backup.json.tmp plans-backup.json
+```
+
+Two honest limits on that bridge. Free refuses backup files over 10,000,000 characters
+(`MAX_BACKUP_JSON_CHARS`), so a large library needs filtering before wrapping — for example
+`jq -r 'select(.clientId == "CLIENT_ID") | .json | fromjson'` to build one envelope per
+household. And Free imports plans whose `schemaVersion` is at most what the deployed web app
+knows; a plan written by a newer Pro is skipped with an explicit `newer_than_app` warning rather
+than guessed at — and an envelope whose plans are *all* newer is refused outright rather than
+imported empty — per the [stability guarantees](plan-file-format.md#stability-guarantees).
+
+Plan version history (`library/plan-history.jsonl`), annual reviews, workflow records, and the
+governance audit ledger (`advisor/audit-ledger.jsonl`) follow the same pattern: one JSON record
+per line, field names visible in the data itself. RetireGolden-Pro's test suite pins this whole
+path — the backup → wipe → restore drill plus archive verification and CSV/JSON index generation
+implemented against node builtins only (`tests/complete-export-independent-recovery.test.ts` in
+the Pro repository) — so the recipe above is contract, not aspiration.
+
 ## Deliberately omitted data
 
 The omissions ledger is the redaction model. It is part of the file so an archive reports what it leaves out
