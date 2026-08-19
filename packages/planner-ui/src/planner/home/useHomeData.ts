@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 
 import { clearAllPlans } from '../../data/planStore'
+import { clearAllRefreshHistory } from '../../import/refreshHistory'
 import {
   deletePlanVia,
   duplicatePlanVia,
@@ -169,6 +170,9 @@ export function useHomeData() {
       for (const s of await store.listPlans()) await deletePlanVia(store, s.id)
     }
     await clearAllPlans()
+    // Refresh snapshots and remembered broker mappings live in their own
+    // database; "erases ALL data" must cover them too.
+    await clearAllRefreshHistory()
     try {
       for (const key of Object.keys(localStorage)) {
         if (key.startsWith('retiregolden.')) localStorage.removeItem(key)

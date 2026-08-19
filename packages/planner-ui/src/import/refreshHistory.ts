@@ -56,6 +56,17 @@ export function refreshHistoryAvailable(): boolean {
   return typeof indexedDB !== 'undefined'
 }
 
+/** Erase the entire refresh-history database ("Clear all data" support). */
+export function clearAllRefreshHistory(): Promise<void> {
+  if (typeof indexedDB === 'undefined') return Promise.resolve()
+  return new Promise((resolve) => {
+    const request = indexedDB.deleteDatabase(DB_NAME)
+    request.onsuccess = () => resolve()
+    request.onerror = () => resolve()
+    request.onblocked = () => resolve()
+  })
+}
+
 export function _resetRefreshHistoryForTests(): void {
   dbPromise = null
 }

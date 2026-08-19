@@ -246,7 +246,11 @@ export function normalizeBrokerAccountLabel(raw: string): string {
       (inner.match(/\d/g) ?? []).length >= 4 ? ' ' : whole,
     )
     .replace(/\b[a-z]?\d{4,}\b/g, ' ') // bare long account numbers (Vanguard rows)
-  return collapseText(unmasked) // punctuation only — short digit runs are name content
+  const collapsed = collapseText(unmasked) // punctuation only — short digit runs are name content
+  // A label that is ONLY an account number (Vanguard) collapses to nothing,
+  // which would make remembered-mapping keys empty and the feature inert for
+  // that broker; fall back to the collapsed raw label as the stable key.
+  return collapsed !== '' ? collapsed : collapseText(raw.toLowerCase())
 }
 
 /** Lowercase a PLAN account name: punctuation goes, digits stay ("401k", "529"). */
@@ -517,6 +521,12 @@ function computeDuplicateGroups(
   return groups
 }
 
+// Reconciliation strings are exact to the cent; whole-dollar rounding would
+// print a real one-cent remainder as $0.
+function moneyCents(n: number): string {
+  return n.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
 function money(n: number): string {
   return `$${Math.round(n).toLocaleString('en-US')}`
 }
@@ -594,8 +604,8 @@ function reconciliationReview(
     status: 'mapped',
     source: 'Refresh reconciliation',
     detail:
-      `File total ${money(reconciliation.fileTotal)}; matched total ${money(reconciliation.matchedTotal)}; ` +
-      `unmatched remainder ${money(reconciliation.unmatchedRemainder)}; plan balances ${money(reconciliation.planTotalBefore)} to ${money(reconciliation.planTotalAfter)}.`,
+      `File total ${moneyCents(reconciliation.fileTotal)}; matched total ${moneyCents(reconciliation.matchedTotal)}; ` +
+      `unmatched remainder ${moneyCents(reconciliation.unmatchedRemainder)}; plan balances ${moneyCents(reconciliation.planTotalBefore)} to ${moneyCents(reconciliation.planTotalAfter)}.`,
     locator:
       from.length > 0
         ? { kind: 'derived', from, note: 'summed parsed account totals and previewed plan balances' }

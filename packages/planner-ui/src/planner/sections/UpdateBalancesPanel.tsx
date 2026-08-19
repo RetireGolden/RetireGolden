@@ -84,6 +84,11 @@ import {
 } from '../refreshProtectionContext'
 import { fmtMoney } from '../format'
 
+// The reconciliation identity is exact to the cent; rounding its display to
+// whole dollars would show 0 for a real 1-cent remainder.
+const fmtCents = (value: number): string =>
+  value.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
 const EMPTY_PROTECTED: ReadonlySet<string> = new Set()
 const EMPTY_REMEMBERED: ReadonlyMap<string, string> = new Map()
 
@@ -569,6 +574,7 @@ export function UpdateBalancesPanel() {
   }
 
   const apply = async () => {
+    const targetPlanId = plan.id
     // `protectionPending` joins `blocked` as a refusal: applying against a set the
     // host has not resolved is exactly the overwrite the seam exists to prevent.
     if (!parsed || !delta || blocked || protectionPending) return
@@ -604,10 +610,10 @@ export function UpdateBalancesPanel() {
         sourceLabel: parsed.sourceLabel,
         sourceSha256: parsed.sourceSha256,
       })
-      // Durability ordering is the acceptance criterion: the undo record must
-      // be on disk BEFORE the plan mutates, so a crash or reload between the
-      // two still leaves the previous balances recoverable. Hosts without
-      // IndexedDB have no durable store to order against and stay synchronous.
+      // Durability ordering is the acceptance criterion: the undo record and
+      // the remembered mappings must be on disk BEFORE the plan mutates, so a
+      // crash or reload between the two still leaves them recoverable. Hosts
+      // without IndexedDB have no durable store and stay synchronous.
       if (refreshHistoryAvailable()) {
         try {
           await saveRefreshSnapshot(snapshot)
@@ -635,17 +641,32 @@ export function UpdateBalancesPanel() {
         const accountId = safeSelection.get(index)
         const normalizedBrokerLabel = normalizeBrokerAccountLabel(parsed.accounts[index]?.accountLabel ?? '')
         if (!accountId || !appliedAccountIds.has(accountId) || normalizedBrokerLabel === '') continue
-        void saveRefreshManualMapping({
+        const mapping = {
           planId: plan.id,
           normalizedBrokerLabel,
           accountId,
           assignedAtIso: new Date().toISOString(),
-        })
+        }
+        // Remembered overrides share the durability ordering: on disk before
+        // the mutation when a durable store exists.
+        if (refreshHistoryAvailable()) {
+          try {
+            await saveRefreshManualMapping(mapping)
+          } catch {
+            // Best-effort; classification simply re-derives next time.
+          }
+        } else {
+          void saveRefreshManualMapping(mapping)
+        }
       }
     }
     // The mutator still performs the real write; its return value drives no UI decision
     // (it may run after this function returns), so it is intentionally not captured.
+    // The awaits above yield; if the user navigated to a different plan in
+    // that window, mutating whatever is now current would corrupt it.
+    if (plan.id !== targetPlanId) return
     update((d) => {
+      if (d.id !== targetPlanId) return
       applyRefresh(d, delta, safeSelection, effective)
     })
     // Keep the table and releases intact when the ONLY reason nothing landed is
@@ -671,8 +692,9 @@ export function UpdateBalancesPanel() {
     )
   }
 
-  const restoreSnapshot = (snapshot: RefreshSnapshot) => {
+  const restoreSnapshot = async (snapshot: RefreshSnapshot) => {
     if (snapshot.planId !== plan.id) return
+    const targetPlanId = plan.id
     const beforeRestore = restoreDeltas(plan, snapshot)
     const outcome = revertToSnapshot(plan, snapshot)
     if (beforeRestore.length > 0) {
@@ -683,7 +705,17 @@ export function UpdateBalancesPanel() {
         sourceSha256: snapshot.sourceSha256,
       })
       if (undoSnapshot.changes.length > 0) {
-        void saveRefreshSnapshot(undoSnapshot)
+        // Same durability ordering as apply: the undo record must be on disk
+        // before the plan mutates so restore stays undoable across a reload.
+        if (refreshHistoryAvailable()) {
+          try {
+            await saveRefreshSnapshot(undoSnapshot)
+          } catch {
+            // Best-effort: the in-session list below still works.
+          }
+        } else {
+          void saveRefreshSnapshot(undoSnapshot)
+        }
         setSnapshots((previous) =>
           [...previous.filter((item) => item.id !== undoSnapshot.id), undoSnapshot]
             .sort((left, right) => right.appliedAtIso.localeCompare(left.appliedAtIso) || right.id.localeCompare(left.id))
@@ -691,7 +723,11 @@ export function UpdateBalancesPanel() {
         )
       }
     }
+    // The await above yields; if the user navigated to a different plan in
+    // that window, mutating whatever is now current would corrupt it.
+    if (plan.id !== targetPlanId) return
     update((draft) => {
+      if (draft.id !== targetPlanId) return
       const reverted = revertToSnapshot(draft, snapshot)
       const restoredById = new Map(reverted.plan.accounts.map((account) => [account.id, account]))
       for (const account of draft.accounts) {
@@ -735,7 +771,7 @@ export function UpdateBalancesPanel() {
             {snapshots.map((snapshot) => (
               <li key={snapshot.id}>
                 <span>
-                  {snapshot.appliedAtIso.slice(0, 10)} â€” {snapshot.sourceLabel} â€” {snapshot.changes.length} account
+                  {snapshot.appliedAtIso.slice(0, 10)} — {snapshot.sourceLabel} — {snapshot.changes.length} account
                   {snapshot.changes.length === 1 ? '' : 's'}
                 </span>{' '}
                 <button type="button" className="btn btn-secondary btn-small" onClick={() => restoreSnapshot(snapshot)}>
@@ -869,10 +905,10 @@ export function UpdateBalancesPanel() {
             </table>
           </div>
           <div className="callout callout--info" role="status">
-            Reconciliation: file total {fmtMoney(delta.reconciliation.fileTotal)}; matched total{' '}
-            {fmtMoney(delta.reconciliation.matchedTotal)}; unmatched remainder{' '}
-            {fmtMoney(delta.reconciliation.unmatchedRemainder)}; plan balances {fmtMoney(delta.reconciliation.planTotalBefore)}{' '}
-            â†’ {fmtMoney(delta.reconciliation.planTotalAfter)}.
+            Reconciliation: file total {fmtCents(delta.reconciliation.fileTotal)}; matched total{' '}
+            {fmtCents(delta.reconciliation.matchedTotal)}; unmatched remainder{' '}
+            {fmtCents(delta.reconciliation.unmatchedRemainder)}; plan balances {fmtCents(delta.reconciliation.planTotalBefore)}{' '}
+            → {fmtCents(delta.reconciliation.planTotalAfter)}.
           </div>
           {staleNames.length > 0 ? (
             <div className="callout callout--info" role="status">

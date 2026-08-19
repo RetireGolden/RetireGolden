@@ -165,6 +165,35 @@ describe('classifyRefresh — matching', () => {
     expect(plan.accounts.find((account) => account.id === 'acct-other')).toMatchObject({ balance: 55_000, costBasis: 40_000 })
   })
 
+  it('demotes to ambiguous when a remembered mapping conflicts with a different exact match', () => {
+    // The file label exactly names one account while a stored mapping points
+    // at another; neither silently wins - the engine refuses to guess.
+    const plan = planWith(
+      loadedTaxable('acct-exact', 'Vanguard Brokerage'),
+      loadedTaxable('acct-remembered', 'Old Brokerage'),
+    )
+    const label = 'Vanguard Brokerage ...789'
+    const { candidates: [c] } = classifyRefresh(plan, [src(label, 55_000, 40_000)], {
+      rememberedMappings: new Map([[normalizeBrokerAccountLabel(label), 'acct-remembered']]),
+    })
+    expect(c!.match).toBe('ambiguous')
+    expect([c!.targetAccountId, ...c!.alternativeAccountIds]).toEqual(
+      expect.arrayContaining(['acct-exact', 'acct-remembered']),
+    )
+  })
+
+  it('remembers a Vanguard numeric-only label via the raw-label fallback key', () => {
+    const plan = planWith(loadedTaxable('acct-vg', 'Vanguard Account'))
+    const label = '87654321'
+    const key = normalizeBrokerAccountLabel(label)
+    expect(key).not.toBe('')
+    const { candidates: [c] } = classifyRefresh(plan, [src(label, 55_000, 40_000)], {
+      rememberedMappings: new Map([[key, 'acct-vg']]),
+    })
+    expect(c!.match).toBe('remembered')
+    expect(c!.targetAccountId).toBe('acct-vg')
+  })
+
   it('ignores a remembered mapping whose account no longer exists', () => {
     const plan = planWith(loadedTaxable('acct-individual', 'Individual Brokerage'))
     const label = 'Individual ...789'
