@@ -90,16 +90,26 @@ sha256sum -c manifest.sha256
 jq -r '.components[] | .sha256 + "  " + .path' manifest.json | sha256sum -c -
 ```
 
-The first `sha256sum` line authenticates the manifest itself; the second verifies **every
-component** against the hashes the manifest declares. Recover nothing from a component that fails
-its check.
+The first `sha256sum` line checks the manifest itself; the second verifies **every component**
+against the hashes the manifest declares. Recover nothing from a component that fails its check.
+Two disciplines when running recovery commands: these checksums are *integrity*, not
+*authenticity* — whoever can rewrite the archive can rewrite its hashes too, so provenance comes
+from where you kept the file (the trust boundary above), not from the sidecar. And run multi-step
+pipelines under `set -euo pipefail` so a failing `jq` or `sha256sum` stops the recovery instead
+of feeding partial output into the next step.
 
 Client records in `library/clients.jsonl` carry `id`, `name`, `notes`, `tags`, `archived`,
 `createdAtIso`, and `updatedAtIso` — one JSON object per line, which `jq` consumes directly:
 
 ```bash
-jq -r '[.id, .name, .updatedAtIso] | @csv' library/clients.jsonl > clients.csv
+jq -r --arg q "'" \
+  '[.id, (.name | if test("^[=+@\\t\\r-]") then $q + . else . end), .updatedAtIso] | @csv' \
+  library/clients.jsonl > clients.csv
 ```
+
+The `if test(...)` guard neutralizes spreadsheet formula injection: a client name beginning with
+`=`, `+`, `-`, `@`, tab, or carriage return would otherwise execute as a formula when the CSV is
+opened in a spreadsheet. `@csv` alone quotes fields but does not defuse formulas.
 
 Plan records in `library/plans.jsonl` carry `id`, `clientId`, `name`, `schemaVersion`,
 `createdAtIso`, `updatedAtIso`, and `json` — the complete plan document (the same object
