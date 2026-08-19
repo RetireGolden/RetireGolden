@@ -88,38 +88,43 @@ export async function deleteRefreshSnapshot(id: string): Promise<void> {
 /** Erase the entire refresh-history database ("Clear all data" support). */
 export async function clearAllRefreshHistory(): Promise<void> {
   if (typeof indexedDB === 'undefined') return
-  // deleteDatabase blocks while a connection is open. Close this module's
-  // own connection and latch db() shut so an in-flight per-plan clear cannot
-  // reopen it; a blocked deletion is then queued by the browser and completes
-  // the moment the last straggler transaction ends.
-  clearingAll = true
+  // Phase 1 - erase the DATA. Clearing the object stores works regardless of
+  // other tabs' open connections, so every record is deterministically gone
+  // even when the database-file deletion below stays queued behind another
+  // tab's connection.
   try {
-    if (dbPromise !== null) {
-      try {
-        const open = await dbPromise
-        open.close()
-      } catch {
-        // An unopenable database still gets the delete attempt below.
-      }
-      dbPromise = null
+    const open = await db()
+    if (open) {
+      const tx = open.transaction([SNAPSHOTS_STORE, MAPPINGS_STORE], 'readwrite')
+      await tx.objectStore(SNAPSHOTS_STORE).clear()
+      await tx.objectStore(MAPPINGS_STORE).clear()
+      await tx.done
+      open.close()
     }
+  } catch {
+    // An unopenable database has nothing readable to erase; the delete
+    // attempt below still runs.
+  }
+  // Phase 2 - remove the database file, best-effort. Latch db() shut so an
+  // in-flight per-plan clear cannot reopen it from this module; a deletion
+  // blocked by our own straggler transaction then fires the moment that
+  // transaction ends. The timeout is the multi-tab escape hatch: another
+  // tab's connection is outside this module's control, and the data is
+  // already gone either way.
+  clearingAll = true
+  dbPromise = null
+  try {
     await new Promise<void>((resolve) => {
       const request = indexedDB.deleteDatabase(DB_NAME)
       request.onsuccess = () => resolve()
       request.onerror = () => resolve()
-      // onblocked means the deletion has NOT run - a straggler transaction
-      // (e.g. an unawaited per-plan clear) still holds a connection. With
-      // db() latched shut nothing from this module reopens, so the queued
-      // delete fires the moment that transaction ends; keep waiting for
-      // onsuccess rather than declaring success early. The timeout is the
-      // multi-tab escape hatch: another tab's connection is outside this
-      // module's control, and hanging Clear-all on it would be worse.
       setTimeout(resolve, 10_000)
     })
   } finally {
     clearingAll = false
   }
 }
+
 
 export function _resetRefreshHistoryForTests(): void {
   dbPromise = null
