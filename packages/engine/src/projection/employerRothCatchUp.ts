@@ -72,6 +72,14 @@ export interface EmployerElectiveAllocation {
   readonly designatedRothCatchUp: number
   /** Catch-up dollars refused because the plan has no Roth feature. */
   readonly refusedCatchUp: number
+  /**
+   * Catch-up dollars moved from a traditional account onto the same-owner Roth
+   * sibling. The Roth account is the plan's qualified Roth feature, so these
+   * dollars remain elective deferrals of the source plan for employer match.
+   */
+  readonly redirectedCatchUpBySource: ReadonlyMap<string, number>
+  /** Destination of redirected catch-up, if the owner has a Roth employer account. */
+  readonly catchUpRothAccountId: string | undefined
 }
 
 /**
@@ -94,6 +102,7 @@ export function allocateEmployerElectiveDeferrals(
   let usedCatchUp = 0
   let designatedRothCatchUp = 0
   let refusedCatchUp = 0
+  const redirectedCatchUpBySource = new Map<string, number>()
   const hasRothFeature = requests.some((request) => request.type === 'roth')
   const firstRothId = requests.find((request) => request.type === 'roth')?.accountId
 
@@ -147,10 +156,49 @@ export function allocateEmployerElectiveDeferrals(
       consume(catchUpTake)
       add(firstRothId, catchUpTake)
       designatedRothCatchUp += catchUpTake
+      redirectedCatchUpBySource.set(
+        request.accountId,
+        (redirectedCatchUpBySource.get(request.accountId) ?? 0) + catchUpTake,
+      )
     } else {
       refusedCatchUp += catchUpTake
     }
   }
 
-  return { allowed, designatedRothCatchUp, refusedCatchUp }
+  return {
+    allowed,
+    designatedRothCatchUp,
+    refusedCatchUp,
+    redirectedCatchUpBySource,
+    catchUpRothAccountId: firstRothId,
+  }
+}
+
+/**
+ * Employee elective dollars that a given employer account's match formula
+ * should see. Redirected catch-up stays elective deferral of the source plan
+ * (the Roth sibling is that plan's qualified Roth feature), so it is added to
+ * the source account and subtracted from the destination. §415(c) cuts on the
+ * destination scale the redirected slice in proportion to what actually landed.
+ */
+export function employerMatchElectiveBase(opts: {
+  readonly accountId: string
+  readonly employeeLandedByAccountId: ReadonlyMap<string, number>
+  readonly allocatedByAccountId: ReadonlyMap<string, number>
+  readonly redirectedCatchUpBySource: ReadonlyMap<string, number>
+  readonly catchUpRothAccountId: string | undefined
+}): number {
+  const landedHere = opts.employeeLandedByAccountId.get(opts.accountId) ?? 0
+  const destId = opts.catchUpRothAccountId
+  const destAllocated = destId === undefined ? 0 : (opts.allocatedByAccountId.get(destId) ?? 0)
+  const destLanded = destId === undefined ? 0 : (opts.employeeLandedByAccountId.get(destId) ?? 0)
+  const landedSlice = (slice: number): number =>
+    destAllocated <= 0 || slice <= 0 ? 0 : destLanded * (slice / destAllocated)
+
+  const redirectedFromHere = opts.redirectedCatchUpBySource.get(opts.accountId) ?? 0
+  let redirectedOntoHere = 0
+  if (destId === opts.accountId) {
+    for (const amount of opts.redirectedCatchUpBySource.values()) redirectedOntoHere += amount
+  }
+  return Math.max(0, landedHere + landedSlice(redirectedFromHere) - landedSlice(redirectedOntoHere))
 }

@@ -7,7 +7,9 @@ import { createFederalTaxCalculator } from '../tax/federalTax.js'
 import { createFlatTaxCalculator } from './flatTax.js'
 import {
   allocateEmployerElectiveDeferrals,
+  employerMatchElectiveBase,
   highEarnerRothCatchUpMandated,
+  indexRothCatchUpWageThreshold,
 } from './employerRothCatchUp.js'
 import { simulatePlan } from './simulate.js'
 
@@ -18,6 +20,7 @@ const CATCH_UP_50 = pack2026.contributionLimits.catchUp50
 const SUPER_CATCH_UP = pack2026.contributionLimits.superCatchUp60to63
 const IRA = pack2026.contributionLimits.ira
 const IRA_CATCH_UP = pack2026.contributionLimits.iraCatchUp50
+const IRS_LIMIT_WARNING = 'Some contributions were reduced to stay within IRS annual limits.'
 
 // Notice 2025-67: the 2026 wage test uses the 2025 threshold of 150,000.
 // IRC 414(v)(7)(A): "exceed" — 150,000 is out; 150,000.01 is in.
@@ -101,11 +104,15 @@ function validate(plan: Plan): Plan {
 }
 
 function year2026(plan: Plan, taxCalculator = noTax) {
+  return run2026(plan, taxCalculator).years[0]!
+}
+
+function run2026(plan: Plan, taxCalculator = noTax) {
   return simulatePlan(validate(plan), {
     startYear: 2026,
     horizonEndYear: 2026,
     taxCalculator,
-  }).years[0]!
+  })
 }
 
 function limits(catchUpLimit: number) {
@@ -125,6 +132,48 @@ function request(
 ): { accountId: string; type: 'traditional' | 'roth'; desired: number; priorCalendarYearFicaWages: number } {
   return { accountId, type, desired, priorCalendarYearFicaWages: priorFica }
 }
+
+// ---------------------------------------------------------------------------
+// Settled indexer — IRC 414(v)(7)(E) five-thousand-dollar step
+// ---------------------------------------------------------------------------
+
+// 414(v)(7)(E): "any increase under this subparagraph which is not a multiple
+// of $5,000 shall be rounded to the next lower multiple of $5,000." The 2026
+// published figure is 150,000. An increase of 4,999.99 is not a multiple of
+// 5,000, so it rounds to 0 and the threshold holds. Scaling 150,000 by
+// limitGrowth without the step would yield 154,999.99.
+describeRule('irc-414-v-7-E-roth-catch-up-wage-threshold', {
+  readings: {
+    roundIncreaseDownToFiveThousand: 150_000,
+    scaleByLimitGrowthWithoutStep: 154_999.99,
+  },
+  accepted: 'roundIncreaseDownToFiveThousand',
+  note: 'an increase of 4,999.99 holds the prior step',
+}, ({ accepted, readings }) => {
+  it('holds 150,000 when the COLA increase is 4,999.99', () => {
+    const indexed = indexRothCatchUpWageThreshold(THRESHOLD, 1 + 4_999.99 / THRESHOLD)
+    expect(indexed).toBe(accepted)
+    expect(indexed).not.toBe(readings.scaleByLimitGrowthWithoutStep)
+  })
+})
+
+// An increase of exactly 5,000 is already a multiple of 5,000, so (v)(7)(E)
+// does not round it down. The threshold becomes 155,000. Holding 150,000 would
+// be the reading that treats every non-zero increase as still below a step.
+describeRule('irc-414-v-7-E-roth-catch-up-wage-threshold', {
+  readings: {
+    fiveThousandIsAWholeStep: 155_000,
+    holdAtPriorStep: 150_000,
+  },
+  accepted: 'fiveThousandIsAWholeStep',
+  note: 'an increase of 5,000 is a whole step',
+}, ({ accepted, readings }) => {
+  it('returns 155,000 when the COLA increase is 5,000', () => {
+    const indexed = indexRothCatchUpWageThreshold(THRESHOLD, 1 + 5_000 / THRESHOLD)
+    expect(indexed).toBe(accepted)
+    expect(indexed).not.toBe(readings.holdAtPriorStep)
+  })
+})
 
 // ---------------------------------------------------------------------------
 // Settled mandate — atomic allocator fixtures
@@ -337,11 +386,13 @@ describe('irc-414-v-7-A ledger integration', () => {
       employer('traditional', BASE_402G + CATCH_UP_50, FICA_ONE_CENT_OVER, 'trad'),
       employer('roth', 0, FICA_ONE_CENT_OVER, 'roth'),
     ]
-    const year = year2026(plan, createFederalTaxCalculator())
+    const result = run2026(plan, createFederalTaxCalculator())
+    const year = result.years[0]!
     expect(year.balances.trad).toBeCloseTo(BASE_402G, 6)
     expect(year.balances.roth).toBeCloseTo(CATCH_UP_50, 6)
     expect(year.magi).toBeCloseTo(175_500, 6)
     expect(year.magi).not.toBeCloseTo(167_500, 6)
+    expect(result.warnings).not.toContain(IRS_LIMIT_WARNING)
   })
 
   it('keeps MAGI at the pre-tax-catch-up figure when FICA is exactly 150,000', () => {
@@ -372,5 +423,109 @@ describe('irc-414-v-7-A ledger integration', () => {
     const year = year2026(plan)
     expect(year.balances.trad).toBeCloseTo(20_000, 6)
     expect(year.balances.roth).toBeCloseTo(0, 6)
+  })
+
+  it('still warns when the high earner has no Roth feature and catch-up is refused', () => {
+    const plan = soloPlan('1976-06-15')
+    plan.incomes = [wages(200_000)]
+    plan.accounts = [
+      cash(),
+      employer('traditional', BASE_402G + CATCH_UP_50, FICA_ONE_CENT_OVER, 'trad'),
+    ]
+    const result = run2026(plan)
+    expect(result.years[0]!.balances.trad).toBeCloseTo(BASE_402G, 6)
+    expect(result.warnings).toContain(IRS_LIMIT_WARNING)
+  })
+})
+
+// IRC 415(c)(1) lesser-of, with 415(c)(2) counting employee contributions among
+// annual additions. Employee deferrals land first; match takes only leftover
+// room. A high earner whose $8,000 catch-up is 414(v)(7)-redirected onto a Roth
+// sibling is still deferring those dollars as employee contributions.
+//
+// Wages 30,000 (the 415(c) pay prong — current-year compensation, not Box 3),
+// election 32,500, 200% match on all pay, traditional processed before Roth:
+//   deferrals first:  24,500 pre-tax + 5,500 of the Roth catch-up, match 0
+//   match first:      24,500 pre-tax + 5,500 match, Roth catch-up 0
+describeRule('irc-415-c-1-annual-additions-lesser-of', {
+  readings: {
+    deferralsBeforeMatch: { traditional: 24_500, roth: 5_500, match: 0 },
+    matchConsumesRoomBeforeRedirect: { traditional: 30_000, roth: 0, match: 5_500 },
+  },
+  accepted: 'deferralsBeforeMatch',
+  note: 'redirected Roth catch-up lands before match',
+}, ({ accepted, readings }) => {
+  it('lets the redirected catch-up consume remaining 415(c) room before match', () => {
+    const plan = soloPlan('1976-06-15')
+    plan.incomes = [wages(30_000)]
+    const trad = employer('traditional', BASE_402G + CATCH_UP_50, FICA_ONE_CENT_OVER, 'trad')
+    if (trad.type !== 'traditional') throw new Error('expected traditional')
+    plan.accounts = [
+      cash(),
+      { ...trad, employerMatch: { matchPct: 200, capPctOfPay: 100 } },
+      employer('roth', 0, FICA_ONE_CENT_OVER, 'roth'),
+    ]
+    const year = year2026(plan)
+    expect(year.balances.trad).toBeCloseTo(accepted.traditional, 6)
+    expect(year.balances.roth).toBeCloseTo(accepted.roth, 6)
+    expect(year.employerMatch).toBeCloseTo(accepted.match, 6)
+    expect(year.balances.roth).not.toBeCloseTo(readings.matchConsumesRoomBeforeRedirect.roth, 6)
+    expect(year.employerMatch).not.toBeCloseTo(readings.matchConsumesRoomBeforeRedirect.match, 6)
+  })
+})
+
+// The same-owner Roth employer account is the plan's qualified Roth feature
+// (T.D. 10033 §1.414(v)-2(b)(2)). Redirected catch-up is still an elective
+// deferral of that plan, so the source account's match formula applies to the
+// combined elective, not only the residual pre-tax base.
+//
+// Wages 200,000, 100% match on 100% of pay, election 32,500:
+//   one plan:     min(32,500, 200,000) × 100% = 32,500
+//   two plans:    min(24,500, 200,000) × 100% = 24,500
+describeRule('irc-414-v-7-A-high-earner-roth-catch-up-mandate', {
+  readings: {
+    matchOnFullElective: 32_500,
+    matchOnlyResidualPretax: 24_500,
+  },
+  accepted: 'matchOnFullElective',
+  note: 'redirected catch-up stays elective deferral for match',
+}, ({ accepted, readings }) => {
+  it('applies the source match formula to the redirected catch-up', () => {
+    const plan = soloPlan('1976-06-15')
+    plan.incomes = [wages(200_000)]
+    const trad = employer('traditional', BASE_402G + CATCH_UP_50, FICA_ONE_CENT_OVER, 'trad')
+    if (trad.type !== 'traditional') throw new Error('expected traditional')
+    plan.accounts = [
+      cash(),
+      { ...trad, employerMatch: { matchPct: 100, capPctOfPay: 100 } },
+      employer('roth', 0, FICA_ONE_CENT_OVER, 'roth'),
+    ]
+    const year = year2026(plan)
+    expect(year.employerMatch).toBeCloseTo(accepted, 6)
+    expect(year.employerMatch).not.toBeCloseTo(readings.matchOnlyResidualPretax, 6)
+    expect(year.balances.roth).toBeCloseTo(CATCH_UP_50, 6)
+    expect(year.balances.trad).toBeCloseTo(BASE_402G + accepted, 6)
+  })
+})
+
+describe('employerMatchElectiveBase', () => {
+  it('adds redirected catch-up to the source and removes it from the Roth sibling', () => {
+    const allocated = new Map([['trad', 24_500], ['roth', 8_000]])
+    const landed = new Map([['trad', 24_500], ['roth', 8_000]])
+    const redirected = new Map([['trad', 8_000]])
+    expect(employerMatchElectiveBase({
+      accountId: 'trad',
+      employeeLandedByAccountId: landed,
+      allocatedByAccountId: allocated,
+      redirectedCatchUpBySource: redirected,
+      catchUpRothAccountId: 'roth',
+    })).toBe(32_500)
+    expect(employerMatchElectiveBase({
+      accountId: 'roth',
+      employeeLandedByAccountId: landed,
+      allocatedByAccountId: allocated,
+      redirectedCatchUpBySource: redirected,
+      catchUpRothAccountId: 'roth',
+    })).toBe(0)
   })
 })
