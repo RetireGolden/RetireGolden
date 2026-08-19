@@ -127,7 +127,7 @@ Plan names take the same formula guard as client names. The `-e` on the extracti
 mistyped or absent `PLAN_ID` exit nonzero instead of silently writing an empty file.
 
 When the archive carries the `portable/plans-v2.json` Free-bridge component (see the
-compatibility policy above), use it directly — it *is* the v2 backup envelope. For archives
+compatibility policy below), use it directly — it *is* the v2 backup envelope. For archives
 without it, the plan documents can be rebuilt into one with `jq` alone, which makes the web
 planner at retiregolden.app a working reader of last resort:
 
