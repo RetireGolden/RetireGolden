@@ -169,6 +169,13 @@ describe('parseCompleteExportManifest refusals and tolerances', () => {
       entries(raw, 'components')[0]!['path'] = 'manifest.json.'
     }, 'malformed')
     expectRefusal((raw) => {
+      // A segment of only dots folds to an empty name on Win32.
+      entries(raw, 'components')[0]!['path'] = 'library/...'
+    }, 'malformed')
+    expectRefusal((raw) => {
+      entries(raw, 'components')[0]!['path'] = ' .'
+    }, 'malformed')
+    expectRefusal((raw) => {
       // Trailing-space fold: extracts to the same file as library/clients.jsonl.
       const components = entries(raw, 'components')
       components.push({ ...components[0]!, path: 'library/clients.jsonl ' })

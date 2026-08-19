@@ -227,7 +227,11 @@ function isSafeComponentPath(value: unknown): value is string {
     return false
   }
   const segments = value.split('/')
-  return segments.every((segment) => segment.length > 0 && segment !== '.' && segment !== '..')
+  // Each segment must survive Win32 folding non-empty: a segment of only
+  // dots/spaces (".", "..", "...", " .") folds to nothing on extraction.
+  return segments.every(
+    (segment) => segment.length > 0 && segment.replace(/[. ]+$/, '').length > 0,
+  )
 }
 
 // Reserved-name collisions are checked case-insensitively: extracting
