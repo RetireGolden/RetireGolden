@@ -3736,14 +3736,20 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       // are the first addition to land, so the cap has to bind them here.
       // Capping only the match leaves a participant paid less than the §402(g)
       // limit deferring more than they earned, and zeroing the match cannot
-      // bring that back under the pay prong.
+      // bring that back under the pay prong. IRC 414(v)(3)(A) then carves
+      // paragraph-(1) catch-up out of 415(c) entirely, including as a charge
+      // against other contributions, so only the §402(g) base is countable.
       const used415c = addition415cUsed.get(ownerId) ?? 0
+      let countableEmployee = 0
       if (isEmployerAccount) {
+        const catchUp = employerAllocationByOwner.get(ownerId)?.catchUpByAccount.get(account.id) ?? 0
+        const countable = Math.max(0, allowed - catchUp)
         const limit415c = Math.min(
           pack.contributionLimits.section415cLimit * limitGrowth,
           wagesByPerson.get(ownerId) ?? 0,
         )
-        allowed = Math.max(0, Math.min(allowed, limit415c - used415c))
+        countableEmployee = Math.max(0, Math.min(countable, limit415c - used415c))
+        allowed = countableEmployee + catchUp
       }
 
       if (groupKey !== null) {
@@ -3767,9 +3773,9 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       }
       if (allowed <= 0) continue
 
-      // Update employee contribution inside 415(c) tracker
+      // Update the countable (non-catch-up) employee contribution inside 415(c)
       if (isEmployerAccount) {
-        addition415cUsed.set(ownerId, used415c + allowed)
+        addition415cUsed.set(ownerId, used415c + countableEmployee)
       }
 
       const contributionBalanceBefore = state.balance
@@ -3846,9 +3852,9 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     }
 
     // Employer match after every employee deferral, including 414(v)(7)
-    // redirected catch-up, so a traditional match cannot consume the remaining
-    // §415(c) room that the Roth catch-up still needs. 415(c)(2) counts
-    // employee contributions among annual additions and they land first.
+    // redirected catch-up. Regular elective still lands before match so it
+    // consumes §415(c) first; 414(v)(3)(A) keeps the catch-up slice out of
+    // that limit, so match takes leftover room after the §402(g) base only.
     for (const state of balances) {
       const account = state.account
       if (!isEmployerPlanAccount(account) || !desiredByAccountId.has(account.id)) continue

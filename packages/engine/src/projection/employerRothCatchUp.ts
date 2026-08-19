@@ -78,6 +78,11 @@ export interface EmployerElectiveAllocation {
    * dollars remain elective deferrals of the source plan for employer match.
    */
   readonly redirectedCatchUpBySource: ReadonlyMap<string, number>
+  /**
+   * Portion of each account's `allowed` that is §414(v) catch-up. Paragraph
+   * (3)(A) keeps that slice out of §415(c) annual additions.
+   */
+  readonly catchUpByAccount: ReadonlyMap<string, number>
   /** Destination of redirected catch-up, if the owner has a Roth employer account. */
   readonly catchUpRothAccountId: string | undefined
 }
@@ -103,6 +108,7 @@ export function allocateEmployerElectiveDeferrals(
   let designatedRothCatchUp = 0
   let refusedCatchUp = 0
   const redirectedCatchUpBySource = new Map<string, number>()
+  const catchUpByAccount = new Map<string, number>()
   const hasRothFeature = requests.some((request) => request.type === 'roth')
   const firstRothId = requests.find((request) => request.type === 'roth')?.accountId
 
@@ -120,6 +126,10 @@ export function allocateEmployerElectiveDeferrals(
   const add = (accountId: string, amount: number): void => {
     allowed.set(accountId, (allowed.get(accountId) ?? 0) + amount)
   }
+  const addCatchUp = (accountId: string, amount: number): void => {
+    if (amount <= 0) return
+    catchUpByAccount.set(accountId, (catchUpByAccount.get(accountId) ?? 0) + amount)
+  }
 
   for (const request of requests) {
     if (request.desired <= 0) continue
@@ -136,6 +146,7 @@ export function allocateEmployerElectiveDeferrals(
       const take = Math.min(request.desired, remaining)
       const { fromCatchUp } = consume(take)
       add(request.accountId, take)
+      addCatchUp(request.accountId, fromCatchUp)
       if (mandated && request.type === 'roth') designatedRothCatchUp += fromCatchUp
       continue
     }
@@ -155,6 +166,7 @@ export function allocateEmployerElectiveDeferrals(
     if (hasRothFeature && firstRothId !== undefined) {
       consume(catchUpTake)
       add(firstRothId, catchUpTake)
+      addCatchUp(firstRothId, catchUpTake)
       designatedRothCatchUp += catchUpTake
       redirectedCatchUpBySource.set(
         request.accountId,
@@ -170,6 +182,7 @@ export function allocateEmployerElectiveDeferrals(
     designatedRothCatchUp,
     refusedCatchUp,
     redirectedCatchUpBySource,
+    catchUpByAccount,
     catchUpRothAccountId: firstRothId,
   }
 }

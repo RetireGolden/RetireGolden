@@ -14,8 +14,9 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   SIMPLE IRA are untouched. The wage test is a user-entered Box 3 proxy on the
   employer account (`priorCalendarYearFicaWages`); omitted defaults to 0 and is
   not subject. T.D. 10033 does not delay the 2026 statutory mandate to 2027.
-  Redirected catch-up is not reported as an IRS-limit cut, lands before employer
-  match under §415(c), and remains elective deferral of the source plan for match.
+  Redirected catch-up is not reported as an IRS-limit cut, is excluded from
+  §415(c) by §414(v)(3)(A), and remains elective deferral of the source plan
+  for match.
 
 **2026-08-13**
 - Prepared **`@retiregolden/planner-ui` 0.8.0** (minor — additive supported

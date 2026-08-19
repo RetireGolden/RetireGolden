@@ -4092,6 +4092,38 @@ const registry = {
       'packages/engine/src/tax/federalTax.ts',
     ],
   },
+  'irc-414-v-3-A-catch-up-excluded-from-415c': {
+    title: 'Section 414(v) catch-up is not an annual addition under 415(c)',
+    statement:
+      'A contribution to an applicable employer plan under 414(v)(1) — the additional elective deferral an eligible participant may make — is not subject to section 415(c) in the year it is made, and is not taken into account in applying 415(c) to other contributions or benefits. Designated Roth catch-up under 414(v)(7) is still a paragraph (1) contribution; paragraph (7) conditions whether paragraph (1) applies, it does not displace paragraph (3). The §402(g) base remains countable. Employer match therefore sees leftover 415(c) room after that base, not after the base plus catch-up.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The engine already split the §402(g) base from the 414(v) catch-up slice for the Roth-character mandate. That same slice is the paragraph (1) contribution paragraph (3)(A) names. IRA catch-up under 219(b)(5) is outside 414(v) and never enters this carve-out.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 414(v)(3)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section414&num=0&edition=prelim',
+      quotedText:
+        'In the case of any contribution to a plan under paragraph (1)- (A) such contribution shall not, with respect to the year in which the contribution is made- (i) be subject to any otherwise applicable limitation contained in sections 401(a)(30), 402(h), 403(b), 408, 415(c), and 457(b)(2) (determined without regard to section 457(b)(3)), or (ii) be taken into account in applying such limitations to other contributions or benefits under such plan or any other such plan',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 414(v)(7)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section414&num=0&edition=prelim',
+      quotedText:
+        'paragraph (1) shall apply only if any additional elective deferrals are designated Roth contributions (as defined in section 402A(c)(1)) made pursuant to an employee election.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-19',
+    implementedBy: [
+      'packages/engine/src/projection/employerRothCatchUp.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+  },
   'irc-414-v-7-E-roth-catch-up-wage-threshold': {
     title: 'The Roth catch-up wage threshold moves in five-thousand-dollar steps',
     statement:

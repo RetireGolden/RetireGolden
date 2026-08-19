@@ -438,24 +438,23 @@ describe('irc-414-v-7-A ledger integration', () => {
   })
 })
 
-// IRC 415(c)(1) lesser-of, with 415(c)(2) counting employee contributions among
-// annual additions. Employee deferrals land first; match takes only leftover
-// room. A high earner whose $8,000 catch-up is 414(v)(7)-redirected onto a Roth
-// sibling is still deferring those dollars as employee contributions.
-//
-// Wages 30,000 (the 415(c) pay prong — current-year compensation, not Box 3),
-// election 32,500, 200% match on all pay, traditional processed before Roth:
-//   deferrals first:  24,500 pre-tax + 5,500 of the Roth catch-up, match 0
-//   match first:      24,500 pre-tax + 5,500 match, Roth catch-up 0
-describeRule('irc-415-c-1-annual-additions-lesser-of', {
+// IRC 414(v)(3)(A): a paragraph (1) catch-up "shall not ... be subject to"
+// 415(c) and "shall not ... be taken into account in applying such
+// limitations to other contributions". 414(v)(7) designated Roth catch-up
+// is still a paragraph (1) contribution. Wages 30,000 (the 415(c) pay
+// prong — current-year compensation, not Box 3), election 32,500, 200%
+// match on all pay:
+//   statute:            24,500 countable + 8,000 catch-up, 5,500 match left
+//   catch-up countable: 24,500 + 5,500 of the Roth catch-up, match 0
+describeRule('irc-414-v-3-A-catch-up-excluded-from-415c', {
   readings: {
-    deferralsBeforeMatch: { traditional: 24_500, roth: 5_500, match: 0 },
-    matchConsumesRoomBeforeRedirect: { traditional: 30_000, roth: 0, match: 5_500 },
+    catchUpExcludedFromAnnualAdditions: { traditional: 24_500, roth: 8_000, match: 5_500 },
+    catchUpConsumesAnnualAdditions: { traditional: 24_500, roth: 5_500, match: 0 },
   },
-  accepted: 'deferralsBeforeMatch',
-  note: 'redirected Roth catch-up lands before match',
+  accepted: 'catchUpExcludedFromAnnualAdditions',
+  note: '414(v) catch-up is not an annual addition',
 }, ({ accepted, readings }) => {
-  it('lets the redirected catch-up consume remaining 415(c) room before match', () => {
+  it('lands the full redirected catch-up and leaves leftover 415(c) room for match', () => {
     const plan = soloPlan('1976-06-15')
     plan.incomes = [wages(30_000)]
     const trad = employer('traditional', BASE_402G + CATCH_UP_50, FICA_ONE_CENT_OVER, 'trad')
@@ -466,11 +465,11 @@ describeRule('irc-415-c-1-annual-additions-lesser-of', {
       employer('roth', 0, FICA_ONE_CENT_OVER, 'roth'),
     ]
     const year = year2026(plan)
-    expect(year.balances.trad).toBeCloseTo(accepted.traditional, 6)
+    expect(year.balances.trad).toBeCloseTo(accepted.traditional + accepted.match, 6)
     expect(year.balances.roth).toBeCloseTo(accepted.roth, 6)
     expect(year.employerMatch).toBeCloseTo(accepted.match, 6)
-    expect(year.balances.roth).not.toBeCloseTo(readings.matchConsumesRoomBeforeRedirect.roth, 6)
-    expect(year.employerMatch).not.toBeCloseTo(readings.matchConsumesRoomBeforeRedirect.match, 6)
+    expect(year.balances.roth).not.toBeCloseTo(readings.catchUpConsumesAnnualAdditions.roth, 6)
+    expect(year.employerMatch).not.toBeCloseTo(readings.catchUpConsumesAnnualAdditions.match, 6)
   })
 })
 
