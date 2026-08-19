@@ -87,7 +87,12 @@ ZIP tool plus ordinary JSON tooling recovers core data. With `unzip`, `sha256sum
 unzip library.rgcomplete -d record
 cd record
 sha256sum -c manifest.sha256
+jq -r '.components[] | .sha256 + "  " + .path' manifest.json | sha256sum -c -
 ```
+
+The first `sha256sum` line authenticates the manifest itself; the second verifies **every
+component** against the hashes the manifest declares. Recover nothing from a component that fails
+its check.
 
 Client records in `library/clients.jsonl` carry `id`, `name`, `notes`, `tags`, `archived`,
 `createdAtIso`, and `updatedAtIso` — one JSON object per line, which `jq` consumes directly:
@@ -114,11 +119,19 @@ jq -r '.json | fromjson' library/plans.jsonl | jq -s \
   > plans-backup.json
 ```
 
+Two honest limits on that bridge. Free refuses backup files over 10,000,000 characters
+(`MAX_BACKUP_JSON_CHARS`), so a large library needs filtering before wrapping — for example
+`jq -r 'select(.clientId == "CLIENT_ID") | .json | fromjson'` to build one envelope per
+household. And Free imports plans whose `schemaVersion` is at most what the deployed web app
+knows; a plan written by a newer Pro is skipped with an explicit `newer_than_app` warning rather
+than guessed at, per the [stability guarantees](plan-file-format.md#stability-guarantees).
+
 Plan version history (`library/plan-history.jsonl`), annual reviews, workflow records, and the
 governance audit ledger (`advisor/audit-ledger.jsonl`) follow the same pattern: one JSON record
 per line, field names visible in the data itself. RetireGolden-Pro's test suite pins this whole
-path — export, verify, and index generation using only standard tooling — so the recipe above is
-contract, not aspiration.
+path — the backup → wipe → restore drill plus archive verification and CSV/JSON index generation
+implemented against node builtins only (`tests/complete-export-independent-recovery.test.ts` in
+the Pro repository) — so the recipe above is contract, not aspiration.
 
 ## Deliberately omitted data
 
