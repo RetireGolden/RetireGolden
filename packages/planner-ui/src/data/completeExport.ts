@@ -166,7 +166,9 @@ export type ParseCompleteExportManifestResult =
 type RecordValue = Record<string, unknown>
 
 const SHA256_RE = /^[0-9a-f]{64}$/
-const UTC_TIMESTAMP_RE = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(\.\d+)?Z$/
+// Fractional seconds are capped at millisecond precision so that ordering
+// comparisons via Date.parse can never truncate away a real difference.
+const UTC_TIMESTAMP_RE = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(\.\d{1,3})?Z$/
 // eslint-disable-next-line no-control-regex -- rejecting control characters in entry paths is the point
 const CONTROL_CHARACTER_RE = /[\u0000-\u001f\u007f]/
 
@@ -226,6 +228,13 @@ function isSafeComponentPath(value: unknown): value is string {
   return segments.every((segment) => segment.length > 0 && segment !== '.' && segment !== '..')
 }
 
+// Reserved-name collisions are checked case-insensitively: extracting
+// "MANIFEST.JSON" on a case-insensitive filesystem would clobber the real one.
+function isReservedManifestPath(path: string): boolean {
+  const folded = path.toLowerCase()
+  return folded === MANIFEST_ENTRY_NAME || folded === MANIFEST_SHA256_ENTRY_NAME
+}
+
 function malformed(detail: string): ParseCompleteExportManifestResult {
   return { ok: false, reason: 'malformed', detail }
 }
@@ -239,9 +248,7 @@ function parseComponentEntry(value: unknown, index: number): ParsedEntry<Complet
 
   const path = record['path']
   if (!isSafeComponentPath(path)) return { ok: false, detail: `${prefix}.path` }
-  if (path === MANIFEST_ENTRY_NAME || path === MANIFEST_SHA256_ENTRY_NAME) {
-    return { ok: false, detail: `${prefix}.path` }
-  }
+  if (isReservedManifestPath(path)) return { ok: false, detail: `${prefix}.path` }
   const mediaType = record['mediaType']
   if (!isNonEmptyString(mediaType)) return { ok: false, detail: `${prefix}.mediaType` }
   const schema = record['schema']
@@ -319,7 +326,13 @@ function parseOmissionEntry(value: unknown, index: number): ParsedEntry<Complete
  * v1 contract field.
  */
 export function parseCompleteExportManifest(json: string): ParseCompleteExportManifestResult {
-  if (new TextEncoder().encode(json).byteLength > MAX_COMPLETE_EXPORT_MANIFEST_BYTES) {
+  // UTF-8 never encodes to fewer bytes than the string has UTF-16 code units,
+  // so an over-cap length refuses before allocating an encoded copy.
+  if (json.length > MAX_COMPLETE_EXPORT_MANIFEST_BYTES) {
+    return { ok: false, reason: 'too_large' }
+  }
+  const manifestByteLength = new TextEncoder().encode(json).byteLength
+  if (manifestByteLength > MAX_COMPLETE_EXPORT_MANIFEST_BYTES) {
     return { ok: false, reason: 'too_large' }
   }
 
@@ -427,6 +440,10 @@ export function parseCompleteExportManifest(json: string): ParseCompleteExportMa
   if (typeof proImportable !== 'boolean') return malformed('compatibility.pro.importable')
   const minimumContainerVersion = proCompatibility['minimumContainerVersion']
   if (!isPositiveInteger(minimumContainerVersion)) return malformed('compatibility.pro.minimumContainerVersion')
+  // "Importable, but only above this container's own version" is contradictory.
+  if (proImportable && minimumContainerVersion > COMPLETE_EXPORT_FORMAT_VERSION) {
+    return malformed('compatibility.pro.minimumContainerVersion')
+  }
   const freeCompatibility = asRecord(compatibility['free'])
   if (freeCompatibility === null) return malformed('compatibility.free')
   const importableContainer = freeCompatibility['importableContainer']
@@ -442,6 +459,12 @@ export function parseCompleteExportManifest(json: string): ParseCompleteExportMa
   }
   const freeReason = freeCompatibility['reason']
   if (freeReason !== undefined && typeof freeReason !== 'string') return malformed('compatibility.free.reason')
+  // The documented contract: the free block either names the bridge component
+  // or records why it is absent. A reason beside a present component is
+  // allowed (extra explanation is not a contradiction); a silent absence is.
+  if (plansComponent === undefined && !isNonEmptyString(freeReason)) {
+    return malformed('compatibility.free.reason')
+  }
 
   const limits = asRecord(manifest['limits'])
   if (limits === null) return malformed('limits')
@@ -466,6 +489,7 @@ export function parseCompleteExportManifest(json: string): ParseCompleteExportMa
   }
   if (totalBytes > maxTotalStoredBytes) return malformed('limits.maxTotalStoredBytes')
   if (components.length + 2 > maxEntries) return malformed('limits.maxEntries')
+  if (manifestByteLength > maxManifestBytes) return malformed('limits.maxManifestBytes')
 
   return {
     ok: true,

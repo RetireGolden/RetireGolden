@@ -194,6 +194,27 @@ describe('parseCompleteExportManifest refusals and tolerances', () => {
       free['plansComponent'] = 'advisor/audit-ledger.jsonl'
     }, 'malformed')
     expectRefusal((raw) => {
+      // Sub-millisecond precision would let Date.parse comparisons truncate
+      // away a real ordering difference, so the timestamp grammar refuses it.
+      const snapshot = raw['snapshot'] as Record<string, unknown>
+      snapshot['startedAtUtc'] = '2026-08-18T12:00:00.0009Z'
+    }, 'malformed')
+    expectRefusal((raw) => {
+      entries(raw, 'components')[0]!['path'] = 'MANIFEST.JSON'
+    }, 'malformed')
+    expectRefusal((raw) => {
+      const pro = (raw['compatibility'] as Record<string, Record<string, unknown>>)['pro']!
+      pro['minimumContainerVersion'] = 2
+    }, 'malformed')
+    expectRefusal((raw) => {
+      const free = (raw['compatibility'] as Record<string, Record<string, unknown>>)['free']!
+      delete free['reason']
+    }, 'malformed')
+    expectRefusal((raw) => {
+      const limits = raw['limits'] as Record<string, unknown>
+      limits['maxManifestBytes'] = 10
+    }, 'malformed')
+    expectRefusal((raw) => {
       const components = entries(raw, 'components')
       components.push({ ...components[0]! })
     }, 'malformed')
