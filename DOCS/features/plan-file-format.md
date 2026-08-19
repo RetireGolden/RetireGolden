@@ -191,3 +191,13 @@ documents. It mirrors this page's envelope conventions (`kind`/`version` pair, `
 named reasons) on its own stability-promised `@retiregolden/planner-ui/import-provenance` subpath
 (`packages/planner-ui/src/import/provenance.ts`, browser-free). Full detail lives in
 [imports-and-migration.md](imports-and-migration.md#import-provenance-contract).
+
+## A sibling portability artifact: the planning record
+
+The plan file answers "keep my plans safe / hand one plan to a tool". RetireGolden-Pro's
+`retiregolden.complete-export` planning record answers "move or archive everything": a store-only ZIP64
+`.rgcomplete` archive with a canonical manifest, per-component SHA-256 checksums, and an explicit omissions
+ledger. It carries a Pro personal library or an Advisor firm's client, workflow, and governance records; it is
+not importable as a container by the Free web app. When present, its `portable/plans-v2.json` component is the
+same v2 backup envelope documented here, so that remains the Free interchange bridge. Full contract and
+verification guidance live in [planning-record.md](planning-record.md).

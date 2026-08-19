@@ -36,6 +36,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./plan-format": "./src/data/planFormat.ts",
+    "./complete-export": "./src/data/completeExport.ts",
     "./plan-tax-calculator": "./src/planTaxCalculator.ts",
     "./projection": "./src/projection.ts",
     "./import-provenance": "./src/import/provenance.ts",
