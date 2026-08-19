@@ -120,11 +120,13 @@ documented in [The plan file format](plan-file-format.md)) as a JSON string:
 jq -r --arg q "'" \
   '[.id, .clientId, (.name | if test("^[=+@\\t\\r-]") then $q + . else . end), .updatedAtIso] | @csv' \
   library/plans.jsonl > plans.csv
-jq -e -r 'select(.id == "PLAN_ID") | .json | fromjson' library/plans.jsonl > plan.json
+jq -e -r 'select(.id == "PLAN_ID") | .json | fromjson' library/plans.jsonl > plan.json.tmp \n  && mv plan.json.tmp plan.json
 ```
 
 Plan names take the same formula guard as client names. The `-e` on the extraction makes a
-mistyped or absent `PLAN_ID` exit nonzero instead of silently writing an empty file.
+mistyped or absent `PLAN_ID` exit nonzero, and the temp-file-then-move keeps a failed extraction
+from leaving an empty `plan.json` behind — the shell truncates its redirect target before `jq`
+runs, so writing directly would.
 
 When the archive carries the `portable/plans-v2.json` Free-bridge component (see the
 compatibility policy below), use it directly — it *is* the v2 backup envelope. For archives
