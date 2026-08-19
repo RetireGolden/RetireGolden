@@ -161,6 +161,8 @@ export interface ClassifyRefreshOptions {
   protectedTargets?: ReadonlySet<string>
   /** Manual assignments remembered by normalized broker label for this plan. */
   rememberedMappings?: ReadonlyMap<string, string>
+  /** Broker id scoping the remembered-mapping keys (see refreshMappingKey). */
+  broker?: string
 }
 
 export type RefreshSourceDateFlag =
@@ -253,6 +255,16 @@ export function normalizeBrokerAccountLabel(raw: string): string {
   return collapsed !== '' ? collapsed : collapseText(raw.toLowerCase())
 }
 
+/**
+ * Stable key for remembered manual mappings. Unlike match normalization this
+ * KEEPS masked account digits ("...789") and prefixes the broker, so two
+ * accounts sharing a descriptive label — or two brokers reusing one — cannot
+ * collide onto the same remembered assignment.
+ */
+export function refreshMappingKey(broker: string, rawLabel: string): string {
+  return `${broker}:${collapseText(rawLabel.toLowerCase())}`
+}
+
 /** Lowercase a PLAN account name: punctuation goes, digits stay ("401k", "529"). */
 function normalizeName(raw: string): string {
   return collapseText(raw.toLowerCase())
@@ -338,6 +350,7 @@ function classifyOne(
   updatable: UpdatableRef[],
   protectedTargets: ReadonlySet<string>,
   rememberedMappings: ReadonlyMap<string, string>,
+  broker?: string,
 ): RefreshCandidate {
   const sourceNorm = normalizeBrokerAccountLabel(source.accountLabel)
   // Grade every updatable account once, then rank strong→fuzzy→weak (keeping the
@@ -349,7 +362,12 @@ function classifyOne(
       .filter((g): g is { ref: UpdatableRef; tier: MatchTier } => g.tier !== null)
       .map((g) => [g.ref.id, g] as const),
   )
-  const rememberedAccountId = rememberedMappings.get(sourceNorm)
+  // Identity-preserving key first (broker-scoped, masks kept); the bare
+  // normalized label remains the compatibility lookup for callers without a
+  // broker context.
+  const rememberedAccountId =
+    (broker !== undefined ? rememberedMappings.get(refreshMappingKey(broker, source.accountLabel)) : undefined) ??
+    rememberedMappings.get(sourceNorm)
   const remembered = rememberedAccountId ? updatable.find((ref) => ref.id === rememberedAccountId) : undefined
   if (remembered) {
     const existing = byAccountId.get(remembered.id)
@@ -415,7 +433,7 @@ export function classifyRefresh(
     .map((account, index) => ({ account, index }))
     .filter(({ account }) => isBalanceUpdatable(account))
     .map(({ account, index }) => ({ id: account.id, index, nameNorm: normalizeName(account.name) }))
-  const candidates = accounts.map((source) => classifyOne(source, updatable, protectedTargets, rememberedMappings))
+  const candidates = accounts.map((source) => classifyOne(source, updatable, protectedTargets, rememberedMappings, opts.broker))
   return { candidates, protectedPaths: [...protectedTargets] }
 }
 
@@ -566,7 +584,7 @@ function sourceDateFlags(candidates: readonly RefreshCandidate[], now: Date): Re
   const nowDay = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
   const flags: RefreshSourceDateFlag[] = []
   candidates.forEach((candidate, sourceIndex) => {
-    const sourceDay = candidate.source.asOfIso === null ? null : isoCalendarDay(candidate.source.asOfIso)
+    const sourceDay = candidate.source.asOfIso == null ? null : isoCalendarDay(candidate.source.asOfIso)
     if (sourceDay === null) {
       flags.push({ sourceIndex, kind: 'unknownDate', ageDays: null })
       return
@@ -860,6 +878,12 @@ export function captureRefreshSnapshot(
  * and otherwise ignored, so an old snapshot is always safe to inspect/apply.
  */
 export function revertToSnapshot(plan: Plan, snapshot: RefreshSnapshot): RevertRefreshSnapshotResult {
+  // A snapshot binds the plan it was captured from; applying one plan's
+  // balances to another would be silent corruption, so every change is
+  // reported skipped instead.
+  if (snapshot.planId !== plan.id) {
+    return { plan: structuredClone(plan), skippedAccountIds: snapshot.changes.map((change) => change.accountId) }
+  }
   const reverted = structuredClone(plan)
   const skipped = new Set<string>()
   for (const change of snapshot.changes) {

@@ -59,7 +59,7 @@ import {
   buildRefreshDelta,
   applyRefresh,
   captureRefreshSnapshot,
-  normalizeBrokerAccountLabel,
+  refreshMappingKey,
   revertToSnapshot,
   type RefreshCandidate,
   type RefreshFieldDelta,
@@ -266,6 +266,9 @@ export function UpdateBalancesPanel() {
   // VISIBLE plan the discarded render never replaced. Handlers only ever run for a
   // committed tree, so an epoch bumped there is always real.
   const readEpoch = useRef(0)
+  // Re-entrancy guard: the durable-write awaits inside apply yield to the
+  // event loop, so a second click must not start a second apply.
+  const applying = useRef(false)
   // Plan identity guard, separate from the read epoch. `committedPlanId` tracks the
   // plan whose render actually COMMITTED, updated in a layout effect. Layout effects
   // run synchronously inside the commit task, so a pending `file.text()` microtask
@@ -428,7 +431,7 @@ export function UpdateBalancesPanel() {
     // cleared above — so seed the selection from a classification against the
     // host's full set resolved to current positions.
     const seedProtected = positionalProtectedSet(plan, protectedAccounts, EMPTY_RELEASED)
-    const classification = classifyRefresh(plan, r.accounts, { protectedTargets: seedProtected, rememberedMappings })
+    const classification = classifyRefresh(plan, r.accounts, { protectedTargets: seedProtected, rememberedMappings, broker: r.broker })
     setParsed({
       broker: r.broker,
       sourceLabel: `${BROKER_LABEL[r.broker]} — ${file.name}`,
@@ -574,6 +577,9 @@ export function UpdateBalancesPanel() {
   }
 
   const apply = async () => {
+    if (applying.current) return
+    applying.current = true
+    try {
     const targetPlanId = plan.id
     // `protectionPending` joins `blocked` as a refusal: applying against a set the
     // host has not resolved is exactly the overwrite the seam exists to prevent.
@@ -639,8 +645,10 @@ export function UpdateBalancesPanel() {
       }
       for (const index of parsed.manualTargetIndexes) {
         const accountId = safeSelection.get(index)
-        const normalizedBrokerLabel = normalizeBrokerAccountLabel(parsed.accounts[index]?.accountLabel ?? '')
-        if (!accountId || !appliedAccountIds.has(accountId) || normalizedBrokerLabel === '') continue
+        // Identity-preserving broker-scoped key (masks kept), so two accounts
+        // sharing a descriptive label cannot overwrite each other's mapping.
+        const normalizedBrokerLabel = refreshMappingKey(parsed.broker, parsed.accounts[index]?.accountLabel ?? '')
+        if (!accountId || !appliedAccountIds.has(accountId) || normalizedBrokerLabel.endsWith(':')) continue
         const mapping = {
           planId: plan.id,
           normalizedBrokerLabel,
@@ -662,9 +670,9 @@ export function UpdateBalancesPanel() {
     }
     // The mutator still performs the real write; its return value drives no UI decision
     // (it may run after this function returns), so it is intentionally not captured.
-    // The awaits above yield; if the user navigated to a different plan in
-    // that window, mutating whatever is now current would corrupt it.
-    if (plan.id !== targetPlanId) return
+    // The awaits above yield; a navigation during the yield swaps the plan
+    // the context holds. The closure's `plan` binding cannot observe that,
+    // so the guard lives inside the mutator, which sees the current document.
     update((d) => {
       if (d.id !== targetPlanId) return
       applyRefresh(d, delta, safeSelection, effective)
@@ -690,10 +698,19 @@ export function UpdateBalancesPanel() {
             `No balances were applied. ${protectionBlocked} selected account${protectionBlocked === 1 ? ' is' : 's are'} protected by advisor overrides. Use “Allow this refresh” to update one deliberately.`
           : 'No accounts were assigned, so nothing changed.',
     )
+    } finally {
+      applying.current = false
+    }
   }
 
   const restoreSnapshot = async (snapshot: RefreshSnapshot) => {
     if (snapshot.planId !== plan.id) return
+    // Advisor-frozen accounts are off-limits to restore exactly as they are
+    // to refresh; while protection is still resolving, nothing is written.
+    if (protectionPending) {
+      setMessage(PENDING_EXPLANATION)
+      return
+    }
     const targetPlanId = plan.id
     const beforeRestore = restoreDeltas(plan, snapshot)
     const outcome = revertToSnapshot(plan, snapshot)
@@ -723,9 +740,8 @@ export function UpdateBalancesPanel() {
         )
       }
     }
-    // The await above yields; if the user navigated to a different plan in
-    // that window, mutating whatever is now current would corrupt it.
-    if (plan.id !== targetPlanId) return
+    // The await above yields; the guard lives inside the mutator, which sees
+    // the document the context holds NOW (the closure's `plan` cannot).
     update((draft) => {
       if (draft.id !== targetPlanId) return
       const reverted = revertToSnapshot(draft, snapshot)
@@ -733,6 +749,10 @@ export function UpdateBalancesPanel() {
       for (const account of draft.accounts) {
         const restored = restoredById.get(account.id)
         if (!restored || !isBalanceUpdatable(account) || !isBalanceUpdatable(restored)) continue
+        // Restore never writes through an advisor override: protected
+        // accounts keep their current values (release is a per-refresh,
+        // per-row act, not a standing waiver).
+        if (hostProtectedIds.has(account.id)) continue
         account.balance = restored.balance
         if (
           (account.type === 'taxable' || account.type === 'equityComp') &&

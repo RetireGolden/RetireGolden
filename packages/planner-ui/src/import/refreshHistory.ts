@@ -57,9 +57,20 @@ export function refreshHistoryAvailable(): boolean {
 }
 
 /** Erase the entire refresh-history database ("Clear all data" support). */
-export function clearAllRefreshHistory(): Promise<void> {
-  if (typeof indexedDB === 'undefined') return Promise.resolve()
-  return new Promise((resolve) => {
+export async function clearAllRefreshHistory(): Promise<void> {
+  if (typeof indexedDB === 'undefined') return
+  // deleteDatabase blocks while this module's own connection is open; close
+  // it first or the deletion silently never completes.
+  if (dbPromise !== null) {
+    try {
+      const open = await dbPromise
+      open.close()
+    } catch {
+      // An unopenable database still gets the delete attempt below.
+    }
+    dbPromise = null
+  }
+  await new Promise<void>((resolve) => {
     const request = indexedDB.deleteDatabase(DB_NAME)
     request.onsuccess = () => resolve()
     request.onerror = () => resolve()

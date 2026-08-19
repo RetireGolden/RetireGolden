@@ -27,8 +27,13 @@ export const BROKER_LABEL: Record<BrokerId, string> = {
 export interface BrokerAccountBalance {
   /** Account label as it appears in the file (brokers mask numbers themselves). */
   accountLabel: string
-  /** Broker-reported calendar date for this balance, or null when the file did not carry a readable one. */
-  asOfIso: string | null
+  /**
+   * Broker-reported calendar date for this balance; null when the file did
+   * not carry a readable one. Optional at the public boundary so aggregates
+   * built against the pre-WS5 shape keep type-checking (omitted reads as
+   * null downstream).
+   */
+  asOfIso?: string | null
   /** Sum of position market values, including cash/money-market rows. */
   totalValue: number
   /** Sum of cost basis over rows that had one; null when the file carries none. */
