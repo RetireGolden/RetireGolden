@@ -80,8 +80,9 @@ without Web Crypto fails loudly rather than reporting an invented digest.
 
 ## Recovering core data without RetireGolden
 
-Offboarding means the archive alone has to be enough. Every component is plaintext JSON or JSONL, so any
-ZIP tool plus ordinary JSON tooling recovers core data. With `unzip`, `sha256sum`, and `jq`:
+Offboarding means the archive alone has to be enough. Every component is plaintext JSON or JSONL
+(a store with nothing in it exports as a zero-byte component, not as `{}`), so any ZIP tool plus
+ordinary JSON tooling recovers core data. With `unzip`, `sha256sum`, and `jq`:
 
 ```bash
 unzip library.rgcomplete -d record
@@ -125,8 +126,10 @@ jq -e -r 'select(.id == "PLAN_ID") | .json | fromjson' library/plans.jsonl > pla
 Plan names take the same formula guard as client names. The `-e` on the extraction makes a
 mistyped or absent `PLAN_ID` exit nonzero instead of silently writing an empty file.
 
-The extracted plan documents can be rebuilt into a Free-importable v2 backup envelope with `jq`
-alone, which makes the web planner at retiregolden.app a working reader of last resort:
+When the archive carries the `portable/plans-v2.json` Free-bridge component (see the
+compatibility policy above), use it directly — it *is* the v2 backup envelope. For archives
+without it, the plan documents can be rebuilt into one with `jq` alone, which makes the web
+planner at retiregolden.app a working reader of last resort:
 
 ```bash
 jq -r '.json | fromjson' library/plans.jsonl | jq -s \
