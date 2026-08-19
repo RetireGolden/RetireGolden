@@ -692,7 +692,13 @@ export function UpdateBalancesPanel() {
           } catch {
             // Best-effort; classification simply re-derives next time.
           }
-          if (applyEpoch !== panelEpoch.current) return
+          if (applyEpoch !== panelEpoch.current) {
+            // Same rule as the first await: an apply cancelled mid-write must
+            // not leave a restore record - durable or in the visible list.
+            if (snapshotPersisted) void deleteRefreshSnapshot(snapshot.id)
+            setSnapshots((previous) => previous.filter((item) => item.id !== snapshot.id))
+            return
+          }
         } else {
           void saveRefreshManualMapping(mapping)
         }

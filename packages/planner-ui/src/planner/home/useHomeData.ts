@@ -143,6 +143,12 @@ export function useHomeData() {
     const loaded = await loadPlanVia(store, s.id)
     await deletePlanVia(store, s.id)
     refresh()
+    if (!loaded.ok) {
+      // No undo window can arm (the plan could not be loaded), so nothing can
+      // resurrect it - purge its refresh history now rather than leaking
+      // balances and source hashes until a later clear-all.
+      void clearRefreshHistoryForPlan(s.id)
+    }
     if (loaded.ok) {
       // Replacing an earlier undo toast makes that earlier deletion final.
       finalizePendingDelete()
