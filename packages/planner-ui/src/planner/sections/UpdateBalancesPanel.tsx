@@ -650,9 +650,10 @@ export function UpdateBalancesPanel() {
       // Hosts without IndexedDB have no durable store and stay synchronous.
       if (refreshHistoryAvailable()) {
         snapshotPersisted = await saveRefreshSnapshot(snapshot)
-        if (applyEpoch !== panelEpoch.current) {
-          // The apply was cancelled while its undo record was being written;
-          // a snapshot for an apply that never ran must not offer a restore.
+        if (applyEpoch !== panelEpoch.current || committedPlanId.current !== targetPlanId) {
+          // Cancelled, or the user switched plans while the undo record was
+          // being written: a snapshot for an apply that never ran must not
+          // offer a restore.
           if (snapshotPersisted) void deleteRefreshSnapshot(snapshot.id)
           return
         }
@@ -672,6 +673,7 @@ export function UpdateBalancesPanel() {
         const account = index ? plan.accounts[Number(index[1])] : undefined
         if (account) appliedAccountIds.add(account.id)
       }
+      const writtenMappings: string[] = []
       for (const index of parsed.manualTargetIndexes) {
         const accountId = safeSelection.get(index)
         // Identity-preserving broker-scoped key (masks kept), so two accounts
@@ -692,13 +694,18 @@ export function UpdateBalancesPanel() {
           } catch {
             // Best-effort; classification simply re-derives next time.
           }
-          if (applyEpoch !== panelEpoch.current) {
-            // Same rule as the first await: an apply cancelled mid-write must
-            // not leave a restore record - durable or in the visible list.
+          if (applyEpoch !== panelEpoch.current || committedPlanId.current !== targetPlanId) {
+            // Same rule as the first await: a cancelled (or plan-switched)
+            // apply must leave neither a restore record nor remembered
+            // assignments - a cancelled apply is not an apply.
             if (snapshotPersisted) void deleteRefreshSnapshot(snapshot.id)
             setSnapshots((previous) => previous.filter((item) => item.id !== snapshot.id))
+            for (const written of writtenMappings) {
+              void deleteRefreshManualMapping(targetPlanId, written)
+            }
             return
           }
+          writtenMappings.push(mapping.normalizedBrokerLabel)
         } else {
           void saveRefreshManualMapping(mapping)
         }
@@ -784,8 +791,10 @@ export function UpdateBalancesPanel() {
           )
         }
       }
-      // The await above yields; the guard lives inside the mutator, which sees
-      // the document the context holds NOW (the closure's `plan` cannot).
+      // The await above yields; committedPlanId is the deterministic
+      // cancellation token for a plan switch, and the in-mutator guard stays
+      // the last line of defense.
+      if (committedPlanId.current !== targetPlanId) return
       update((draft) => {
         if (draft.id !== targetPlanId) return
         const reverted = revertToSnapshot(draft, snapshot)

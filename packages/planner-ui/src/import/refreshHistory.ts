@@ -16,11 +16,15 @@ const MAPPINGS_STORE = 'manualMappings'
 const SNAPSHOT_LIMIT_PER_PLAN = 10
 
 let dbPromise: Promise<IDBPDatabase> | null = null
+// While a clear-all deletion is pending, no new connection may open from
+// this module - an in-flight per-plan clear would otherwise re-block it.
+let clearingAll = false
 
 function db(): Promise<IDBPDatabase> | null {
   // `openDB` is only reached from an interaction in the browser. Keeping this
   // guard means the planner package remains importable by browser-free hosts.
   if (typeof indexedDB === 'undefined') return null
+  if (clearingAll) return null
   dbPromise ??= openDB(DB_NAME, DB_VERSION, {
     upgrade(database) {
       if (!database.objectStoreNames.contains(SNAPSHOTS_STORE)) {
@@ -66,23 +70,30 @@ export async function deleteRefreshSnapshot(id: string): Promise<void> {
 /** Erase the entire refresh-history database ("Clear all data" support). */
 export async function clearAllRefreshHistory(): Promise<void> {
   if (typeof indexedDB === 'undefined') return
-  // deleteDatabase blocks while this module's own connection is open; close
-  // it first or the deletion silently never completes.
-  if (dbPromise !== null) {
-    try {
-      const open = await dbPromise
-      open.close()
-    } catch {
-      // An unopenable database still gets the delete attempt below.
+  // deleteDatabase blocks while a connection is open. Close this module's
+  // own connection and latch db() shut so an in-flight per-plan clear cannot
+  // reopen it; a blocked deletion is then queued by the browser and completes
+  // the moment the last straggler transaction ends.
+  clearingAll = true
+  try {
+    if (dbPromise !== null) {
+      try {
+        const open = await dbPromise
+        open.close()
+      } catch {
+        // An unopenable database still gets the delete attempt below.
+      }
+      dbPromise = null
     }
-    dbPromise = null
+    await new Promise<void>((resolve) => {
+      const request = indexedDB.deleteDatabase(DB_NAME)
+      request.onsuccess = () => resolve()
+      request.onerror = () => resolve()
+      request.onblocked = () => resolve()
+    })
+  } finally {
+    clearingAll = false
   }
-  await new Promise<void>((resolve) => {
-    const request = indexedDB.deleteDatabase(DB_NAME)
-    request.onsuccess = () => resolve()
-    request.onerror = () => resolve()
-    request.onblocked = () => resolve()
-  })
 }
 
 export function _resetRefreshHistoryForTests(): void {

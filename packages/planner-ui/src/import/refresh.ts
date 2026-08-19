@@ -588,7 +588,10 @@ function isoCalendarDay(iso: string): number | null {
 }
 
 function sourceDateFlags(candidates: readonly RefreshCandidate[], now: Date): RefreshSourceDateFlag[] {
-  const nowDay = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
+  // The broker's as-of value is a naive calendar date and the user's "today"
+  // is their local day; comparing against the UTC day would flag a file one
+  // day early for any timezone behind UTC.
+  const nowDay = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate())
   const flags: RefreshSourceDateFlag[] = []
   candidates.forEach((candidate, sourceIndex) => {
     const sourceDay = candidate.source.asOfIso == null ? null : isoCalendarDay(candidate.source.asOfIso)
