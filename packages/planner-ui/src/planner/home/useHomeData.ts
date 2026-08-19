@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 
 import { clearAllPlans } from '../../data/planStore'
+import { clearAllRefreshHistory, clearRefreshHistoryForPlan } from '../../import/refreshHistory'
 import {
   deletePlanVia,
   duplicatePlanVia,
@@ -27,6 +28,9 @@ export function useHomeData() {
   // already committed to storage, so an expired or navigated-away toast never
   // leaves a plan half-deleted; Undo simply re-saves the in-memory copy.
   const [undoPlan, setUndoPlan] = useState<Plan | null>(null)
+  const undoPlanRef = useRef<Plan | null>(null)
+  // True while an Undo restore save is in flight; finalize must not purge.
+  const undoRestoreInFlight = useRef(false)
   const undoTimer = useRef<number | null>(null)
   const fileInput = useRef<HTMLInputElement>(null)
   const { confirm, prompt, dialogs } = useDialogs()
@@ -42,11 +46,43 @@ export function useHomeData() {
     }
   }
 
+  // A plan's refresh snapshots and remembered assignments stay available for
+  // exactly as long as its delete can still be undone. Once the toast expires
+  // (or the user dismisses it), that plan cannot return through this flow, so
+  // its operational history is safe to erase.
+  const finalizePendingDelete = (clearVisibleToast = true) => {
+    // While an Undo restore is saving, the deletion is being REVERSED, not
+    // finalized: purging here would destroy the returning plan's snapshots.
+    // A save that later fails after an unmount leaks that history rather
+    // than losing it - the safe side of the trade.
+    if (undoRestoreInFlight.current) return
+    const deleted = undoPlanRef.current
+    if (deleted === null) return
+    clearUndoTimer()
+    undoPlanRef.current = null
+    if (clearVisibleToast) setUndoPlan(null)
+    void clearRefreshHistoryForPlan(deleted.id)
+  }
+
   useEffect(() => {
     refresh()
   }, [refresh])
 
-  useEffect(() => () => clearUndoTimer(), [])
+  // The unmount finalizer must observe the LATEST pending delete while the
+  // cleanup registers exactly once; the ref is written inside an effect (refs
+  // must not be written during render) and read only in the cleanup.
+  const finalizePendingDeleteRef = useRef(finalizePendingDelete)
+  useEffect(() => {
+    finalizePendingDeleteRef.current = finalizePendingDelete
+  })
+  useEffect(
+    () => () => {
+      // Leaving this screen removes the only Undo affordance, so the delete is
+      // final at unmount too.
+      finalizePendingDeleteRef.current(false)
+    },
+    [],
+  )
 
   const openPlan = (id: string) => navigate(`/plan/${id}`)
 
@@ -114,23 +150,37 @@ export function useHomeData() {
     const loaded = await loadPlanVia(store, s.id)
     await deletePlanVia(store, s.id)
     refresh()
+    if (!loaded.ok) {
+      // No undo window can arm (the plan could not be loaded), so nothing can
+      // resurrect it - purge its refresh history now rather than leaking
+      // balances and source hashes until a later clear-all.
+      void clearRefreshHistoryForPlan(s.id)
+    }
     if (loaded.ok) {
+      // Replacing an earlier undo toast makes that earlier deletion final.
+      finalizePendingDelete()
       clearUndoTimer()
+      undoPlanRef.current = loaded.plan
       setUndoPlan(loaded.plan)
-      undoTimer.current = window.setTimeout(() => setUndoPlan(null), 5000)
+      undoTimer.current = window.setTimeout(() => {
+        undoTimer.current = null
+        finalizePendingDelete()
+      }, 5000)
     }
   }
 
   const undoDelete = async () => {
-    if (!undoPlan) return
+    const restored = undoPlanRef.current
+    if (!restored) return
     clearUndoTimer()
-    const restored = undoPlan
     // Keep the in-memory plan (and the toast) until the restore actually
     // lands — if the save fails, the user must not lose both the plan and
     // the affordance at once.
     try {
+    undoRestoreInFlight.current = true
       const r = await savePlanVia(store, restored)
       if (r.ok) {
+        undoPlanRef.current = null
         setUndoPlan(null)
         refresh()
       } else {
@@ -138,12 +188,13 @@ export function useHomeData() {
       }
     } catch {
       setNotice(`Could not restore "${restored.name}". Storage is unavailable in this browser right now.`)
+    } finally {
+      undoRestoreInFlight.current = false
     }
   }
 
   const dismissUndo = () => {
-    clearUndoTimer()
-    setUndoPlan(null)
+    finalizePendingDelete()
   }
 
   const handleClearAll = async () => {
@@ -169,6 +220,9 @@ export function useHomeData() {
       for (const s of await store.listPlans()) await deletePlanVia(store, s.id)
     }
     await clearAllPlans()
+    // Refresh snapshots and remembered broker mappings live in their own
+    // database; "erases ALL data" must cover them too.
+    await clearAllRefreshHistory()
     try {
       for (const key of Object.keys(localStorage)) {
         if (key.startsWith('retiregolden.')) localStorage.removeItem(key)

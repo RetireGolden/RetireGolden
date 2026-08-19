@@ -27,6 +27,13 @@ export const BROKER_LABEL: Record<BrokerId, string> = {
 export interface BrokerAccountBalance {
   /** Account label as it appears in the file (brokers mask numbers themselves). */
   accountLabel: string
+  /**
+   * Broker-reported calendar date for this balance; null when the file did
+   * not carry a readable one. Optional at the public boundary so aggregates
+   * built against the pre-WS5 shape keep type-checking (omitted reads as
+   * null downstream).
+   */
+  asOfIso?: string | null
   /** Sum of position market values, including cash/money-market rows. */
   totalValue: number
   /** Sum of cost basis over rows that had one; null when the file carries none. */
@@ -53,8 +60,42 @@ function isFooterOrNoise(cells: string[]): boolean {
   return false
 }
 
+/** Return an ISO calendar date only for the explicit US broker date shapes we recognize. */
+function parseAsOfIso(raw: string): string | null {
+  const iso = /\b(\d{4})-(\d{1,2})-(\d{1,2})\b/.exec(raw)
+  const numeric = /\b(\d{1,2})[/-](\d{1,2})[/-](\d{4})\b/.exec(raw)
+  const named = /\b(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec)\.?\s+(\d{1,2}),?\s+(\d{4})\b/i.exec(raw)
+  const months: Record<string, number> = {
+    january: 1, jan: 1, february: 2, feb: 2, march: 3, mar: 3, april: 4, apr: 4,
+    may: 5, june: 6, jun: 6, july: 7, jul: 7, august: 8, aug: 8, september: 9,
+    sep: 9, sept: 9, october: 10, oct: 10, november: 11, nov: 11, december: 12, dec: 12,
+  }
+  const parts = iso
+    ? { year: Number(iso[1]), month: Number(iso[2]), day: Number(iso[3]) }
+    : numeric
+      ? { year: Number(numeric[3]), month: Number(numeric[1]), day: Number(numeric[2]) }
+      : named
+        ? { year: Number(named[3]), month: months[named[1]!.toLowerCase().replace('.', '')]!, day: Number(named[2]) }
+        : null
+  if (!parts || !Number.isInteger(parts.year) || parts.year < 1000 || parts.year > 9999) return null
+  if (!Number.isInteger(parts.month) || parts.month < 1 || parts.month > 12 || !Number.isInteger(parts.day) || parts.day < 1) return null
+  const daysInMonth = new Date(Date.UTC(parts.year, parts.month, 0)).getUTCDate()
+  if (parts.day > daysInMonth) return null
+  return `${String(parts.year).padStart(4, '0')}-${String(parts.month).padStart(2, '0')}-${String(parts.day).padStart(2, '0')}`
+}
+
+/** Fidelity and Vanguard put one "Date downloaded" footer date on the whole file. */
+function downloadedAsOfIso(rows: string[][]): string | null {
+  for (const cells of rows) {
+    const first = (cells[0] ?? '').trim()
+    if (/^date downloaded\b/i.test(first)) return parseAsOfIso(cells.join(' '))
+  }
+  return null
+}
+
 interface Aggregate {
   label: string
+  asOfIso: string | null
   total: number
   basis: number
   basisRows: number
@@ -68,9 +109,10 @@ interface Aggregate {
   rowsWithBasis: number[]
 }
 
-function newAggregate(label: string): Aggregate {
+function newAggregate(label: string, asOfIso: string | null): Aggregate {
   return {
     label,
+    asOfIso,
     total: 0,
     basis: 0,
     basisRows: 0,
@@ -95,6 +137,7 @@ function finishAggregates(
     if (agg.positions === 0) continue
     accounts.push({
       accountLabel: agg.label,
+      asOfIso: agg.asOfIso,
       totalValue: Math.round(agg.total * 100) / 100,
       costBasis: agg.basisRows > 0 ? Math.round(agg.basis * 100) / 100 : null,
       positionCount: agg.positions,
@@ -155,10 +198,12 @@ function parseSchwab(rows: string[][]): BrokerCsvResult {
     const cells = rows[r]!
     const first = (cells[0] ?? '').trim()
 
-    const section = /^positions for (?:account )?(.+?) as of /i.exec(first)
+    const section = /^positions for (?:account )?(.+?)\s+as of\s+(.+)$/i.exec(first)
     if (section) {
       const label = section[1]!.trim()
-      current = byAccount.get(label) ?? newAggregate(label)
+      const asOfIso = parseAsOfIso(section[2]!)
+      current = byAccount.get(label) ?? newAggregate(label, asOfIso)
+      if (current.asOfIso === null) current.asOfIso = asOfIso
       byAccount.set(label, current)
       valueCol = -1
       basisCol = -1
@@ -216,6 +261,7 @@ function parseAccountColumnFile(
   broker: BrokerId,
   rows: string[][],
   headerIndex: number,
+  asOfIso: string | null,
   cols: { account: number; accountName: number; value: number; basis: number; symbol: number; description: number },
 ): BrokerCsvResult {
   const review: ImportReviewItem[] = []
@@ -269,7 +315,7 @@ function parseAccountColumnFile(
       })
       continue
     }
-    const agg = byAccount.get(key) ?? newAggregate(label)
+    const agg = byAccount.get(key) ?? newAggregate(label, asOfIso)
     byAccount.set(key, agg)
     agg.total += value
     agg.positions++
@@ -289,7 +335,7 @@ function parseAccountColumnFile(
     review.push({
       status: 'unmapped',
       source: 'Cost basis',
-      detail: "Vanguard's holdings download has no cost basis column. Enter basis on taxable accounts from vanguard.com's cost basis page.",
+      detail: "Vanguard's holdings download has no cost basis column. A balance refresh leaves existing taxable-account basis unchanged; enter basis from vanguard.com's cost basis page.",
       locator: { kind: 'none', note: "Vanguard's holdings download has no cost basis column" },
       confidence: 'unmapped',
     })
@@ -313,6 +359,7 @@ export function parseBrokerPositionsCsv(text: string): BrokerCsvResult {
   }
 
   // Fidelity / Vanguard: locate the header row among leading junk.
+  const asOfIso = downloadedAsOfIso(rows)
   for (let r = 0; r < Math.min(rows.length, 20); r++) {
     const cells = rows[r]!
     const account = findColumn(cells, 'account number')
@@ -320,7 +367,7 @@ export function parseBrokerPositionsCsv(text: string): BrokerCsvResult {
 
     const fidelityValue = findColumn(cells, 'current value')
     if (fidelityValue !== -1) {
-      return parseAccountColumnFile('fidelity', rows, r, {
+      return parseAccountColumnFile('fidelity', rows, r, asOfIso, {
         account,
         accountName: findColumn(cells, 'account name'),
         value: fidelityValue,
@@ -332,7 +379,7 @@ export function parseBrokerPositionsCsv(text: string): BrokerCsvResult {
 
     const vanguardValue = findColumn(cells, 'total value')
     if (vanguardValue !== -1 && findColumn(cells, 'investment name') !== -1) {
-      return parseAccountColumnFile('vanguard', rows, r, {
+      return parseAccountColumnFile('vanguard', rows, r, asOfIso, {
         account,
         accountName: -1,
         value: vanguardValue,

@@ -49,6 +49,7 @@ const VANGUARD_FIXTURE = `Account Number,Investment Name,Symbol,Shares,Share Pri
 
 Account Number,Trade Date,Settlement Date,Transaction Type,Transaction Description,Investment Name,Symbol,Shares,Share Price,Principal Amount,Commission Fees,Net Amount,Accrued Interest,Account Type
 12345678,2026-06-01,2026-06-02,Buy,Buy,Vanguard Total Stock Market Index Fund,VTSAX,10.0,120.00,-1200.00,0.00,-1200.00,0.00,CASH
+"Date downloaded 07/07/2026 9:12 PM ET"
 `
 
 describe('parseBrokerPositionsCsv — Schwab', () => {
@@ -63,10 +64,12 @@ describe('parseBrokerPositionsCsv — Schwab', () => {
     expect(individual.totalValue).toBe(25250)
     expect(individual.costBasis).toBe(15000)
     expect(individual.positionCount).toBe(3)
+    expect(individual.asOfIso).toBe('2026-07-07')
 
     const roth = r.accounts.find((a) => a.accountLabel.startsWith('Roth IRA'))!
     expect(roth.totalValue).toBe(14000)
     expect(roth.costBasis).toBe(10000)
+    expect(roth.asOfIso).toBe('2026-07-07')
   })
 
   it('reports positions without basis as a review item, and never a silent import', () => {
@@ -90,10 +93,12 @@ describe('parseBrokerPositionsCsv — Fidelity', () => {
     expect(individual.totalValue).toBe(25050) // positions + money market; totals and pending activity excluded
     expect(individual.positionCount).toBe(2)
     expect(individual.costBasis).toBe(15000)
+    expect(individual.asOfIso).toBe('2026-07-07')
 
     const roth = r.accounts.find((a) => a.accountLabel === 'ROTH IRA (Z87654321)')!
     expect(roth.totalValue).toBe(14400)
     expect(roth.costBasis).toBe(12000)
+    expect(roth.asOfIso).toBe('2026-07-07')
   })
 
   it('never double-counts the Account Total row, and reports skipped pending activity', () => {
@@ -118,6 +123,7 @@ describe('parseBrokerPositionsCsv — Vanguard', () => {
     expect(r.accounts.find((a) => a.accountLabel === '12345678')!.totalValue).toBe(15000)
     expect(r.accounts.find((a) => a.accountLabel === '12345678')!.positionCount).toBe(2)
     expect(r.accounts.find((a) => a.accountLabel === '87654321')!.totalValue).toBe(500)
+    expect(r.accounts.every((account) => account.asOfIso === '2026-07-07')).toBe(true)
   })
 
   it('reports the missing cost basis column as unmapped', () => {
@@ -126,6 +132,14 @@ describe('parseBrokerPositionsCsv — Vanguard', () => {
     if (!r.ok) return
     expect(r.accounts.every((a) => a.costBasis === null)).toBe(true)
     expect(r.review.some((i) => i.status === 'unmapped' && i.source === 'Cost basis')).toBe(true)
+  })
+
+  it('leaves as-of null when a broker date is present but not parseable', () => {
+    const unreadable = VANGUARD_FIXTURE.replace('07/07/2026 9:12 PM ET', 'after market close')
+    const r = parseBrokerPositionsCsv(unreadable)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    expect(r.accounts.every((account) => account.asOfIso === null)).toBe(true)
   })
 })
 
@@ -189,7 +203,7 @@ describe('parseBrokerPositionsCsv — hostile and malformed input', () => {
 
 describe('applyBrokerBalance / guessAccountTypeFromLabel / draftPlanFromBrokerAccounts', () => {
   it('updates balance and basis on taxable accounts, balance only elsewhere', () => {
-    const source = { accountLabel: 'X', totalValue: 12345.67, costBasis: 9000, positionCount: 2 }
+    const source = { accountLabel: 'X', asOfIso: null, totalValue: 12345.67, costBasis: 9000, positionCount: 2 }
     const taxable = applyBrokerBalance(
       { type: 'taxable', id: 't', name: 'B', ownerPersonId: null, annualReturnPct: null, balance: 1, costBasis: 1, annualContribution: 0 },
       source,
@@ -206,7 +220,7 @@ describe('applyBrokerBalance / guessAccountTypeFromLabel / draftPlanFromBrokerAc
 
   it('leaves non-balance accounts (property, debt, pension) untouched', () => {
     const debt = { type: 'debt' as const, id: 'd', name: 'Mortgage', ownerPersonId: null, annualReturnPct: null, balance: 100, interestPct: 5, monthlyPayment: 1 }
-    expect(applyBrokerBalance(debt, { accountLabel: 'X', totalValue: 999, costBasis: null, positionCount: 1 })).toBe(debt)
+    expect(applyBrokerBalance(debt, { accountLabel: 'X', asOfIso: null, totalValue: 999, costBasis: null, positionCount: 1 })).toBe(debt)
   })
 
   it('guesses account types from labels', () => {
@@ -222,8 +236,8 @@ describe('applyBrokerBalance / guessAccountTypeFromLabel / draftPlanFromBrokerAc
     const r = draftPlanFromBrokerAccounts(
       'schwab',
       [
-        { accountLabel: 'Individual ...789', totalValue: 25250, costBasis: 15000, positionCount: 3 },
-        { accountLabel: 'Roth IRA ...321', totalValue: 14000, costBasis: null, positionCount: 1 },
+        { accountLabel: 'Individual ...789', asOfIso: null, totalValue: 25250, costBasis: 15000, positionCount: 3 },
+        { accountLabel: 'Roth IRA ...321', asOfIso: null, totalValue: 14000, costBasis: null, positionCount: 1 },
       ],
       () => `id-${++n}`,
     )
@@ -290,7 +304,7 @@ describe('brokerCsv provenance (WS1)', () => {
   it('marks guessed account types assumed and the not-imported remainder unmapped in the draft', () => {
     const r = draftPlanFromBrokerAccounts(
       'schwab',
-      [{ accountLabel: 'Individual ...789', totalValue: 25250, costBasis: 15000, positionCount: 3 }],
+      [{ accountLabel: 'Individual ...789', asOfIso: null, totalValue: 25250, costBasis: 15000, positionCount: 3 }],
       (() => {
         let n = 0
         return () => `id-${++n}`

@@ -70,7 +70,7 @@ import type { SourceLocator } from './provenance'
  *                    `alternativeAccountIds` lists any runners-up.
  *  - `'unmatched'` — no updatable plan account plausibly matches.
  */
-export type RefreshMatchKind = 'exact' | 'likely' | 'ambiguous' | 'unmatched'
+export type RefreshMatchKind = 'exact' | 'remembered' | 'likely' | 'ambiguous' | 'unmatched'
 
 /** One broker-file account matched (or not) to a plan account. */
 export interface RefreshCandidate {
@@ -142,6 +142,17 @@ export interface RefreshDelta {
   duplicateGroups: RefreshDuplicateGroup[]
   /** Honesty checklist, compatible with `reviewToProvenance`. */
   review: ImportReviewItem[]
+  /** Informational source-date flags, indexed to the parsed broker account row. */
+  /** Optional on the published contract: pre-WS5 delta constructors keep compiling. */
+  dateFlags?: RefreshSourceDateFlag[]
+  /**
+   * Exact-cent file/plan totals for checking this refresh before it is applied.
+   *
+   * `buildRefreshDelta` always supplies this, but it remains optional at the
+   * published boundary so callers written before reconciliation was added can
+   * continue to construct a delta.
+   */
+  reconciliation?: RefreshReconciliation
   /**
    * The effective protected set this delta was built with — the union of the
    * classification's `protectedPaths`, any `protectedTargets` passed to
@@ -155,6 +166,63 @@ export interface RefreshDelta {
 export interface ClassifyRefreshOptions {
   /** Plan paths (`accounts[i]` or `accounts[i].balance`) the refresh must not write. */
   protectedTargets?: ReadonlySet<string>
+  /** Manual assignments remembered by normalized broker label for this plan. */
+  rememberedMappings?: ReadonlyMap<string, string>
+  /** Broker id scoping the remembered-mapping keys (see refreshMappingKey). */
+  broker?: string
+}
+
+export type RefreshSourceDateFlag =
+  | { sourceIndex: number; kind: 'staleDate'; ageDays: number }
+  | { sourceIndex: number; kind: 'unknownDate'; ageDays: null }
+
+export interface RefreshReconciliation {
+  /** Sum of every parsed account total in the file. */
+  fileTotal: number
+  /** Sum of parsed totals whose rows will actually be applied. */
+  matchedTotal: number
+  /** File total not represented by an applied row (including unassigned/blocked rows). */
+  unmatchedRemainder: number
+  /** Sum of all balance-updatable plan accounts before the previewed writes. */
+  planTotalBefore: number
+  /** Same plan-side aggregate after the previewed writes. */
+  planTotalAfter: number
+}
+
+export interface RefreshSnapshotAccountValues {
+  balance: number
+  costBasis: number | null
+}
+
+export interface RefreshSnapshotChange {
+  accountId: string
+  accountName: string
+  before: RefreshSnapshotAccountValues
+  after: RefreshSnapshotAccountValues
+}
+
+/** A local operational undo point; this never becomes part of the plan file. */
+export interface RefreshSnapshot {
+  id: string
+  planId: string
+  appliedAtIso: string
+  sourceLabel: string
+  sourceSha256: string
+  changes: RefreshSnapshotChange[]
+}
+
+/** Caller-supplied operational metadata keeps snapshot construction deterministic. */
+export interface RefreshSnapshotMeta {
+  id: string
+  appliedAtIso: string
+  sourceLabel: string
+  sourceSha256: string
+}
+
+export interface RevertRefreshSnapshotResult {
+  plan: Plan
+  /** Snapshot account ids absent (or no longer balance-updatable) in this plan. */
+  skippedAccountIds: string[]
 }
 
 const EMPTY_PROTECTED: ReadonlySet<string> = new Set()
@@ -176,7 +244,7 @@ const collapseText = (s: string): string => s.replace(/[^a-z0-9 ]+/g, ' ').repla
  * empty string, matching nothing — the user assigns it by hand, exactly as
  * the panel's original heuristic did.
  */
-function normalizeLabel(raw: string): string {
+export function normalizeBrokerAccountLabel(raw: string): string {
   const unmasked = raw
     .toLowerCase()
     .replace(/\.\.\.\s*\w+/g, ' ') // Schwab/Fidelity trailing "...789" mask
@@ -187,7 +255,21 @@ function normalizeLabel(raw: string): string {
       (inner.match(/\d/g) ?? []).length >= 4 ? ' ' : whole,
     )
     .replace(/\b[a-z]?\d{4,}\b/g, ' ') // bare long account numbers (Vanguard rows)
-  return collapseText(unmasked) // punctuation only — short digit runs are name content
+  const collapsed = collapseText(unmasked) // punctuation only — short digit runs are name content
+  // A label that is ONLY an account number (Vanguard) collapses to nothing,
+  // which would make remembered-mapping keys empty and the feature inert for
+  // that broker; fall back to the collapsed raw label as the stable key.
+  return collapsed !== '' ? collapsed : collapseText(raw.toLowerCase())
+}
+
+/**
+ * Stable key for remembered manual mappings. Unlike match normalization this
+ * KEEPS masked account digits ("...789") and prefixes the broker, so two
+ * accounts sharing a descriptive label — or two brokers reusing one — cannot
+ * collide onto the same remembered assignment.
+ */
+export function refreshMappingKey(broker: string, rawLabel: string): string {
+  return `${broker}:${collapseText(rawLabel.toLowerCase())}`
 }
 
 /** Lowercase a PLAN account name: punctuation goes, digits stay ("401k", "529"). */
@@ -220,18 +302,27 @@ const GENERIC_WORDS: ReadonlySet<string> = new Set([
  * `'strong'` match when its whole normalized name is a substring of the file
  * label, a `'fuzzy'` match when a *distinctive* word (length > 2, not an
  * account-type category word) of its name is, and a `'weak'` match when only a
- * shared category word ("IRA") is. Preserving `includes` (not word-boundary)
- * keeps this a superset of the old heuristic for the distinctive words, so no
- * confident guess the panel used to make regresses; the weak tier only ever
- * *demotes* a former lone-`'ira'` `'likely'` to default-off `'ambiguous'`.
+ * shared category word ("IRA") is. Distinctive words match on whole-word
+ * boundaries (not substrings), so "Tax" no longer matches "Taxable"; the weak
+ * tier only ever *demotes* a former lone-`'ira'` `'likely'` to default-off
+ * `'ambiguous'`.
  */
-type MatchTier = 'strong' | 'fuzzy' | 'weak'
+type MatchTier = 'strong' | 'remembered' | 'fuzzy' | 'weak'
 
 /** Match tiers, strongest first — the order candidates are ranked in. */
-const TIER_ORDER: readonly MatchTier[] = ['strong', 'fuzzy', 'weak']
+const TIER_ORDER: readonly MatchTier[] = ['strong', 'remembered', 'fuzzy', 'weak']
 
 /** How a lone plausible match of each tier grades: whole-name → exact, distinctive word → likely, category word → ambiguous. */
-const TIER_TO_KIND: Record<MatchTier, RefreshMatchKind> = { strong: 'exact', fuzzy: 'likely', weak: 'ambiguous' }
+const TIER_TO_KIND: Record<MatchTier, RefreshMatchKind> = {
+  strong: 'exact',
+  remembered: 'remembered',
+  fuzzy: 'likely',
+  weak: 'ambiguous',
+}
+
+function containsWholeWords(sourceNorm: string, phraseNorm: string): boolean {
+  return ` ${sourceNorm} `.includes(` ${phraseNorm} `)
+}
 
 function matchStrength(sourceNorm: string, nameNorm: string): MatchTier | null {
   if (nameNorm === '' || sourceNorm === '') return null
@@ -244,11 +335,12 @@ function matchStrength(sourceNorm: string, nameNorm: string): MatchTier | null {
   // inside a label carrying EXTRA words ("Roth IRA …") proves only the account
   // family — the row describes something more specific than the name, so it
   // must not be promoted past 'weak' (default OFF).
-  if (sourceNorm.includes(nameNorm)) {
+  if (containsWholeWords(sourceNorm, nameNorm)) {
     const distinctive = nameNorm.length > 2 && !GENERIC_WORDS.has(nameNorm)
     return distinctive ? 'strong' : 'weak'
   }
-  const hits = nameNorm.split(' ').filter((w) => w.length > 2 && sourceNorm.includes(w))
+  const sourceWords = new Set(sourceNorm.split(' '))
+  const hits = nameNorm.split(' ').filter((w) => w.length > 2 && sourceWords.has(w))
   if (hits.length === 0) return null
   return hits.some((w) => !GENERIC_WORDS.has(w)) ? 'fuzzy' : 'weak'
 }
@@ -264,14 +356,33 @@ function classifyOne(
   source: BrokerAccountBalance,
   updatable: UpdatableRef[],
   protectedTargets: ReadonlySet<string>,
+  rememberedMappings: ReadonlyMap<string, string>,
+  broker?: string,
 ): RefreshCandidate {
-  const sourceNorm = normalizeLabel(source.accountLabel)
+  const sourceNorm = normalizeBrokerAccountLabel(source.accountLabel)
   // Grade every updatable account once, then rank strong→fuzzy→weak (keeping the
   // plan's account order within a tier). The first entry is the primary guess;
   // the rest are the plausible runners-up.
-  const graded = updatable
-    .map((ref) => ({ ref, tier: matchStrength(sourceNorm, ref.nameNorm) }))
-    .filter((g): g is { ref: UpdatableRef; tier: MatchTier } => g.tier !== null)
+  const byAccountId = new Map(
+    updatable
+      .map((ref) => ({ ref, tier: matchStrength(sourceNorm, ref.nameNorm) }))
+      .filter((g): g is { ref: UpdatableRef; tier: MatchTier } => g.tier !== null)
+      .map((g) => [g.ref.id, g] as const),
+  )
+  // Identity-preserving key first (broker-scoped, masks kept); the bare
+  // normalized label remains the compatibility lookup for callers without a
+  // broker context.
+  const rememberedAccountId =
+    (broker !== undefined ? rememberedMappings.get(refreshMappingKey(broker, source.accountLabel)) : undefined) ??
+    rememberedMappings.get(sourceNorm)
+  const remembered = rememberedAccountId ? updatable.find((ref) => ref.id === rememberedAccountId) : undefined
+  if (remembered) {
+    const existing = byAccountId.get(remembered.id)
+    if (!existing || TIER_ORDER.indexOf('remembered') < TIER_ORDER.indexOf(existing.tier)) {
+      byAccountId.set(remembered.id, { ref: remembered, tier: 'remembered' })
+    }
+  }
+  const graded = [...byAccountId.values()]
   const plausible = TIER_ORDER.flatMap((tier) => graded.filter((g) => g.tier === tier))
 
   if (plausible.length === 0) {
@@ -287,8 +398,14 @@ function classifyOne(
   // top-ranked account, still filled so the user can confirm with one click; the
   // runners-up are the false-positive audit trail.
   const primary = plausible[0]!.ref
-  const match: RefreshMatchKind = plausible.length > 1 ? 'ambiguous' : TIER_TO_KIND[plausible[0]!.tier]
-  const alternatives = plausible.slice(1).map((g) => g.ref.id)
+  const primaryTier = plausible[0]!.tier
+  // A remembered manual assignment is intentionally decisive over lower
+  // word-only guesses: the user already chose this destination on a prior
+  // applied refresh. A whole-name hit still ranks above it and keeps the
+  // existing ambiguity guard if the file appears to name more than one account.
+  const match: RefreshMatchKind =
+    primaryTier === 'remembered' ? 'remembered' : plausible.length > 1 ? 'ambiguous' : TIER_TO_KIND[primaryTier]
+  const alternatives = match === 'remembered' ? [] : plausible.slice(1).map((g) => g.ref.id)
 
   const targetPath = `accounts[${primary.index}]`
   return {
@@ -318,11 +435,12 @@ export function classifyRefresh(
   opts: ClassifyRefreshOptions = {},
 ): RefreshClassification {
   const protectedTargets = opts.protectedTargets ?? EMPTY_PROTECTED
+  const rememberedMappings = opts.rememberedMappings ?? new Map<string, string>()
   const updatable: UpdatableRef[] = plan.accounts
     .map((account, index) => ({ account, index }))
     .filter(({ account }) => isBalanceUpdatable(account))
     .map(({ account, index }) => ({ id: account.id, index, nameNorm: normalizeName(account.name) }))
-  const candidates = accounts.map((source) => classifyOne(source, updatable, protectedTargets))
+  const candidates = accounts.map((source) => classifyOne(source, updatable, protectedTargets, rememberedMappings, opts.broker))
   return { candidates, protectedPaths: [...protectedTargets] }
 }
 
@@ -428,6 +546,12 @@ function computeDuplicateGroups(
   return groups
 }
 
+// Reconciliation strings are exact to the cent; whole-dollar rounding would
+// print a real one-cent remainder as $0.
+function moneyCents(n: number): string {
+  return n.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
 function money(n: number): string {
   return `$${Math.round(n).toLocaleString('en-US')}`
 }
@@ -435,6 +559,103 @@ function money(n: number): string {
 /** The refresh has no per-row source location — the file parser's own review carries that. */
 function aggregateLocator(note: string): SourceLocator {
   return { kind: 'none', note }
+}
+
+function cents(value: number): number {
+  return Math.round(value * 100)
+}
+
+function fromCents(value: number): number {
+  return value / 100
+}
+
+function sumCents(values: Iterable<number>): number {
+  let total = 0
+  for (const value of values) total += cents(value)
+  return fromCents(total)
+}
+
+function isoCalendarDay(iso: string): number | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso)
+  if (!match) return null
+  const year = Number(match[1])
+  const month = Number(match[2])
+  const day = Number(match[3])
+  if (month < 1 || month > 12 || day < 1) return null
+  const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate()
+  if (day > daysInMonth) return null
+  return Date.UTC(year, month - 1, day)
+}
+
+function sourceDateFlags(candidates: readonly RefreshCandidate[], now: Date): RefreshSourceDateFlag[] {
+  // The broker's as-of value is a naive calendar date and the user's "today"
+  // is their local day; comparing against the UTC day would flag a file one
+  // day early for any timezone behind UTC.
+  const nowDay = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate())
+  const flags: RefreshSourceDateFlag[] = []
+  candidates.forEach((candidate, sourceIndex) => {
+    const sourceDay = candidate.source.asOfIso == null ? null : isoCalendarDay(candidate.source.asOfIso)
+    if (sourceDay === null) {
+      flags.push({ sourceIndex, kind: 'unknownDate', ageDays: null })
+      return
+    }
+    const ageDays = Math.floor((nowDay - sourceDay) / 86_400_000)
+    if (ageDays > 7) flags.push({ sourceIndex, kind: 'staleDate', ageDays })
+  })
+  return flags
+}
+
+function reconciliationFor(
+  beforeAccounts: readonly Account[],
+  afterAccounts: readonly Account[],
+  candidates: readonly RefreshCandidate[],
+  writes: readonly RefreshWrite[],
+): RefreshReconciliation {
+  const fileTotal = sumCents(candidates.map((candidate) => candidate.source.totalValue))
+  const matchedTotal = sumCents(writes.map((write) => write.source.totalValue))
+  return {
+    fileTotal,
+    matchedTotal,
+    // Subtract as integer cents so this invariant survives binary floating-point.
+    unmatchedRemainder: fromCents(cents(fileTotal) - cents(matchedTotal)),
+    planTotalBefore: sumCents(beforeAccounts.filter(isBalanceUpdatable).map((account) => account.balance)),
+    planTotalAfter: sumCents(afterAccounts.filter(isBalanceUpdatable).map((account) => account.balance)),
+  }
+}
+
+function reconciliationReview(
+  candidates: readonly RefreshCandidate[],
+  reconciliation: RefreshReconciliation,
+): ImportReviewItem {
+  const from = candidates.map((candidate) => aggregateLocator(`parsed account total for ${candidate.source.accountLabel}`))
+  return {
+    status: 'mapped',
+    source: 'Refresh reconciliation',
+    detail:
+      `File total ${moneyCents(reconciliation.fileTotal)}; matched total ${moneyCents(reconciliation.matchedTotal)}; ` +
+      `unmatched remainder ${moneyCents(reconciliation.unmatchedRemainder)}; plan balances ${moneyCents(reconciliation.planTotalBefore)} to ${moneyCents(reconciliation.planTotalAfter)}.`,
+    locator:
+      from.length > 0
+        ? { kind: 'derived', from, note: 'summed parsed account totals and previewed plan balances' }
+        : aggregateLocator('no parsed broker account totals'),
+    confidence: 'derived',
+  }
+}
+
+function dateFlagReview(candidate: RefreshCandidate, flag: RefreshSourceDateFlag): ImportReviewItem {
+  return {
+    // The balance can still land. `defaulted` is the checklist's existing
+    // informational "Assumed, review" status; `skipped` would incorrectly put
+    // this warning in the unresolved/import-did-not-land bucket.
+    status: 'defaulted',
+    source: candidate.source.accountLabel,
+    detail:
+      flag.kind === 'staleDate'
+        ? `This balance is dated ${candidate.source.asOfIso} — ${flag.ageDays} days ago; review it before applying. The flag does not block refresh.`
+        : 'The broker file did not carry a readable as-of date; review this balance before applying it. The flag does not block refresh.',
+    locator: aggregateLocator(flag.kind === 'staleDate' ? `broker as-of date ${candidate.source.asOfIso}` : 'broker as-of date unavailable'),
+    confidence: 'assumed',
+  }
 }
 
 /**
@@ -450,6 +671,7 @@ export function buildRefreshDelta(
   classification: RefreshClassification,
   selection: ReadonlyMap<number, string>,
   protectedTargets: ReadonlySet<string> = EMPTY_PROTECTED,
+  now: () => Date = () => new Date(),
 ): RefreshDelta {
   const { candidates } = classification
   const duplicateGroups = computeDuplicateGroups(plan.accounts, candidates, selection)
@@ -477,6 +699,7 @@ export function buildRefreshDelta(
 
   const changes: RefreshFieldDelta[] = []
   const review: ImportReviewItem[] = []
+  const dateFlags = sourceDateFlags(candidates, now())
   for (const { accountIndex, source } of writes) {
     const b = before.get(accountIndex)!
     const after = clone[accountIndex]!
@@ -535,6 +758,15 @@ export function buildRefreshDelta(
           : 'exact',
       target: path,
     })
+    if (source.costBasis !== null && after.type !== 'taxable' && after.type !== 'equityComp') {
+      review.push({
+        status: 'unmapped',
+        source: source.accountLabel,
+        detail: `The file's ${money(source.costBasis)} cost basis was not written to ${after.name}; basis refresh applies only to taxable and equity-comp accounts.`,
+        locator: aggregateLocator('cost basis is not modeled for this plan account type'),
+        confidence: 'unmapped',
+      })
+    }
   }
 
   // Selected rows that were skipped, so the report says why nothing landed.
@@ -580,7 +812,105 @@ export function buildRefreshDelta(
     .filter((a) => !matched.has(a.id) && !written.has(a.id))
     .map((a) => a.id)
 
-  return { candidates, changes, staleAccountIds, duplicateGroups, review, protectedPaths: [...effective] }
+  const reconciliation = reconciliationFor(plan.accounts, clone, candidates, writes)
+  review.push(reconciliationReview(candidates, reconciliation))
+  for (const flag of dateFlags) review.push(dateFlagReview(candidates[flag.sourceIndex]!, flag))
+
+  return {
+    candidates,
+    changes,
+    staleAccountIds,
+    duplicateGroups,
+    review,
+    dateFlags,
+    reconciliation,
+    protectedPaths: [...effective],
+  }
+}
+
+function accountIndexForRefreshPath(path: string): number | null {
+  const match = /^accounts\[(\d+)\]\.(balance|costBasis)$/.exec(path)
+  if (!match) return null
+  const index = Number(match[1])
+  return Number.isSafeInteger(index) ? index : null
+}
+
+function snapshotCostBasis(account: Account): number | null {
+  return account.type === 'taxable' || account.type === 'equityComp' ? account.costBasis : null
+}
+
+/**
+ * Build the durable, local-only undo record for a previewed refresh. The
+ * caller supplies id/time/source metadata, so this is pure and can be used by
+ * non-browser hosts as well as the panel.
+ */
+export function captureRefreshSnapshot(
+  plan: Plan,
+  deltas: RefreshDelta | readonly RefreshFieldDelta[],
+  meta: RefreshSnapshotMeta,
+): RefreshSnapshot {
+  // 'in' narrowing: Array.isArray does not narrow the readonly-array union.
+  const changes: readonly RefreshFieldDelta[] = 'changes' in deltas ? deltas.changes : deltas
+  const byAccountIndex = new Map<number, { balance?: RefreshFieldDelta; costBasis?: RefreshFieldDelta }>()
+  for (const delta of changes) {
+    const index = accountIndexForRefreshPath(delta.path)
+    if (index === null) continue
+    if (delta.field === 'balance') {
+      const entry = byAccountIndex.get(index)
+      byAccountIndex.set(index, { ...entry, balance: delta })
+    } else if (delta.field === 'costBasis') {
+      const entry = byAccountIndex.get(index)
+      byAccountIndex.set(index, { ...entry, costBasis: delta })
+    }
+  }
+
+  const snapshotChanges: RefreshSnapshotChange[] = []
+  for (const [index, deltasForAccount] of byAccountIndex) {
+    const account = plan.accounts[index]
+    if (!account || !isBalanceUpdatable(account) || !deltasForAccount.balance) continue
+    const existingBasis = snapshotCostBasis(account)
+    snapshotChanges.push({
+      accountId: account.id,
+      accountName: account.name,
+      before: {
+        balance: deltasForAccount.balance.before,
+        costBasis: deltasForAccount.costBasis?.before ?? existingBasis,
+      },
+      after: {
+        balance: deltasForAccount.balance.after,
+        costBasis: deltasForAccount.costBasis?.after ?? existingBasis,
+      },
+    })
+  }
+  return { planId: plan.id, ...meta, changes: snapshotChanges }
+}
+
+/**
+ * Restore the pre-refresh balance/basis values from a durable snapshot without
+ * mutating the supplied plan. Accounts deleted since the snapshot are reported
+ * and otherwise ignored, so an old snapshot is always safe to inspect/apply.
+ */
+export function revertToSnapshot(plan: Plan, snapshot: RefreshSnapshot): RevertRefreshSnapshotResult {
+  // A snapshot binds the plan it was captured from; applying one plan's
+  // balances to another would be silent corruption, so every change is
+  // reported skipped instead.
+  if (snapshot.planId !== plan.id) {
+    return { plan: structuredClone(plan), skippedAccountIds: snapshot.changes.map((change) => change.accountId) }
+  }
+  const reverted = structuredClone(plan)
+  const skipped = new Set<string>()
+  for (const change of snapshot.changes) {
+    const account = reverted.accounts.find((candidate) => candidate.id === change.accountId)
+    if (!account || !isBalanceUpdatable(account)) {
+      skipped.add(change.accountId)
+      continue
+    }
+    account.balance = change.before.balance
+    if ((account.type === 'taxable' || account.type === 'equityComp') && change.before.costBasis !== null) {
+      account.costBasis = change.before.costBasis
+    }
+  }
+  return { plan: reverted, skippedAccountIds: [...skipped] }
 }
 
 /**

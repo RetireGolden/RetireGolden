@@ -172,10 +172,13 @@ the same match-and-apply headless. The panel is a thin view over it.
 
 **Match classification, not source fidelity.** `classifyRefresh` scores each file account against the
 plan's balance-updatable accounts (property, debt, pension, annuity are never refresh targets) and grades
-the match on a four-way scale of *certainty about which plan account a row refers to*:
+the match on a five-way scale of *certainty about which plan account a row refers to*:
 
 - **`exact`** — one plan account whose whole (normalized) name appears in the file label. Defaults ON.
-- **`likely`** — one plan account sharing a distinctive word with the label. Defaults ON.
+- **`remembered`** — a manual assignment the user made in an earlier refresh of this plan, persisted
+  locally and re-offered; it outranks `likely` but a *different* exact match makes the row
+  `ambiguous` rather than silently overriding it. Defaults ON.
+- **`likely`** — one plan account sharing a distinctive word (whole-word match) with the label. Defaults ON.
 - **`ambiguous`** — more than one plausible plan account (e.g. "Roth IRA" and "Rollover IRA" both share
   "ira"); the runners-up are recorded in `alternativeAccountIds` as a false-positive audit trail and the
   row defaults **OFF** — the engine refuses to guess between them.
@@ -197,6 +200,36 @@ hints the panel shows but never acts on by itself:
   **suggestions that block apply**, never silent merges: the callout names the collision, Apply disables,
   and the engine writes nothing for that account until the user re-points one of the rows. The panel never
   sums two file rows into one plan account on its own.
+
+### Custodian refresh hardening
+
+Each parsed balance carries a broker date when the export supplies one: Schwab account-section headers use
+their **as of** date, while Fidelity and Vanguard use a file-wide **Date downloaded** footer. Dates are
+accepted only in recognized calendar shapes and normalized to `YYYY-MM-DD`; an unreadable or absent date is
+kept as unknown. The preview flags a source date older than seven days with its age in days, and flags an
+unknown date too. Both are informational review items: neither stops a user from applying a deliberately
+reviewed refresh.
+
+When a user manually assigns a file row and applies it, the planner remembers that normalized broker label
+and account id locally for that plan. A later file gives that destination the `remembered` match tier (below
+an exact whole-name match and above a likely word match), while the dropdown remains editable. A remembered
+destination that no longer exists in the plan is silently discarded rather than offered again.
+
+Every preview includes an exact-cent reconciliation: the total of all parsed file accounts, the total of
+rows that will be applied, the remaining unassigned/not-applied total, and the plan's aggregate updatable
+balance before and after the preview. The same derived reconciliation is carried into the review checklist;
+it is a check, not a tolerance or an automatic adjustment.
+
+Before a successful refresh, the planner records the affected account balances and bases in local IndexedDB,
+with the source label and available SHA-256. It retains the newest 10 snapshots per plan. **Restore previous
+balances** lists those local snapshots and records a new snapshot before restoring, so a restore is undoable;
+accounts deleted since a snapshot are skipped and reported. Snapshots and remembered assignments are
+operational data only: they survive reloads on that device but never enter a plan file.
+
+The refresh checklist states that Vanguard holdings exports contain no basis, so a Vanguard balance refresh
+leaves existing taxable-account basis untouched. It also reports a file basis that is not written because the
+matched account is not taxable or equity compensation; those are the only account types that receive a
+broker-file cost basis.
 
 **The before→after preview cannot diverge from apply.** The panel derives the delta from the live
 selection every render and shows, per row, the account's current balance → its refreshed value (plus a

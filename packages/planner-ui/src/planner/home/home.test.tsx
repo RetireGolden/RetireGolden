@@ -8,6 +8,13 @@ import { IDBFactory } from 'fake-indexeddb'
 
 import { _resetPlanStoreForTests, listUserPlanSummaries, savePlan } from '../../data/planStore'
 import { createEmptyPlan, type Account } from '@retiregolden/engine/model/plan'
+import {
+  _resetRefreshHistoryForTests,
+  listRefreshManualMappings,
+  listRefreshSnapshots,
+  saveRefreshManualMapping,
+  saveRefreshSnapshot,
+} from '../../import/refreshHistory'
 import { getArticle } from '../../learn/learningRegistry'
 import { isPlanIncomplete } from '../planCompleteness'
 import { PlanPickerPage } from '../PlanPickerPage'
@@ -23,6 +30,7 @@ import {
 beforeEach(() => {
   globalThis.indexedDB = new IDBFactory()
   _resetPlanStoreForTests()
+  _resetRefreshHistoryForTests()
   localStorage.clear()
 })
 
@@ -220,6 +228,52 @@ describe('planner home adaptive layout', () => {
     const restored = await listUserPlanSummaries()
     expect(restored).toHaveLength(1)
     expect(restored[0]!.name).toBe('Doomed plan')
+  })
+
+  it('keeps refresh history during the delete undo window, then purges it on final dismissal', async () => {
+    const plan = createEmptyPlan({ name: 'History plan' })
+    await savePlan(plan)
+    await saveRefreshSnapshot({
+      id: 'history-plan-snapshot',
+      planId: plan.id,
+      appliedAtIso: '2026-07-15T12:00:00.000Z',
+      sourceLabel: 'Schwab — positions.csv',
+      sourceSha256: '',
+      changes: [],
+    })
+    await saveRefreshManualMapping({
+      planId: plan.id,
+      normalizedBrokerLabel: 'schwab:brokerage 789',
+      accountId: 'acct-brokerage',
+      assignedAtIso: '2026-07-15T12:00:00.000Z',
+    })
+    await renderHome()
+
+    const deleteBtn = Array.from(container.querySelectorAll('.plan-card button')).find((button) => button.textContent === 'Delete')!
+    await act(async () => {
+      ;(deleteBtn as HTMLButtonElement).click()
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    await act(async () => {
+      Array.from(document.querySelectorAll<HTMLButtonElement>('.modal-panel button'))
+        .find((button) => button.textContent === 'Delete plan')!
+        .click()
+      await new Promise((resolve) => setTimeout(resolve, 50))
+    })
+
+    // The plan is absent from the picker, but Undo can still resurrect it, so
+    // its operational snapshot and remembered mapping must remain available.
+    expect(await listRefreshSnapshots(plan.id)).toHaveLength(1)
+    expect(await listRefreshManualMappings(plan.id)).toHaveLength(1)
+
+    const dismiss = container.querySelector<HTMLButtonElement>('button[aria-label="Dismiss"]')!
+    await act(async () => {
+      dismiss.click()
+      await new Promise((resolve) => setTimeout(resolve, 50))
+    })
+
+    expect(await listRefreshSnapshots(plan.id)).toEqual([])
+    expect(await listRefreshManualMappings(plan.id)).toEqual([])
   })
 })
 

@@ -7,8 +7,26 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { act, type ReactNode } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
+import {
+  IDBCursor,
+  IDBDatabase,
+  IDBFactory,
+  IDBIndex,
+  IDBKeyRange,
+  IDBObjectStore,
+  IDBOpenDBRequest,
+  IDBRequest,
+  IDBTransaction,
+} from 'fake-indexeddb'
 
 import { createEmptyPlan, type Plan } from '@retiregolden/engine/model/plan'
+import { refreshMappingKey, type RefreshSnapshot } from '../../import/refresh'
+import {
+  _resetRefreshHistoryForTests,
+  listRefreshSnapshots,
+  saveRefreshManualMapping,
+  saveRefreshSnapshot,
+} from '../../import/refreshHistory'
 import { PlanCtx } from '../planContextCore'
 import { RefreshProtectionProvider } from '../RefreshProtectionProvider'
 import {
@@ -20,12 +38,15 @@ import { UpdateBalancesPanel } from './UpdateBalancesPanel'
 
 let root: Root | null = null
 let container: HTMLDivElement | null = null
+const initialIndexedDb = globalThis.indexedDB
 
 afterEach(() => {
   if (root) act(() => root!.unmount())
   container?.remove()
   root = null
   container = null
+  _resetRefreshHistoryForTests()
+  globalThis.indexedDB = initialIndexedDb
 })
 
 let n = 0
@@ -169,17 +190,49 @@ async function chooseFile(el: HTMLElement, text: string) {
   })
 }
 
+function enableDurableRefreshHistory() {
+  // The idb wrapper touches more than `indexedDB`; installing only the
+  // factory leaves IDBRequest and friends undefined and open() throws mid
+  // file-parse, so every constructor the wrapper wraps is installed. The
+  // afterEach below restores the jsdom default (no IndexedDB) because the
+  // legacy tests in this file rely on the synchronous no-store apply path.
+  globalThis.indexedDB = new IDBFactory()
+  globalThis.IDBRequest = IDBRequest
+  globalThis.IDBOpenDBRequest = IDBOpenDBRequest
+  globalThis.IDBTransaction = IDBTransaction
+  globalThis.IDBDatabase = IDBDatabase
+  globalThis.IDBObjectStore = IDBObjectStore
+  globalThis.IDBIndex = IDBIndex
+  globalThis.IDBCursor = IDBCursor
+  globalThis.IDBKeyRange = IDBKeyRange
+  _resetRefreshHistoryForTests()
+}
+
+async function settlePanel() {
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 20))
+  })
+}
+
 function selects(el: HTMLElement): HTMLSelectElement[] {
   return Array.from(el.querySelectorAll('tbody select'))
 }
 
 function applyButton(el: HTMLElement): HTMLButtonElement {
-  return Array.from(el.querySelectorAll('button')).find((b) => b.textContent?.includes('Apply selected'))!
+  return el.querySelector<HTMLButtonElement>('.picker-actions .btn-primary')!
 }
 
 /** Apply, or `null` — the control only exists once a file has been parsed. */
 function maybeApplyButton(el: HTMLElement): HTMLButtonElement | null {
-  return Array.from(el.querySelectorAll('button')).find((b) => b.textContent?.includes('Apply selected')) ?? null
+  return el.querySelector<HTMLButtonElement>('.picker-actions .btn-primary')
+}
+
+function cancelButton(el: HTMLElement): HTMLButtonElement {
+  return el.querySelector<HTMLButtonElement>('.picker-actions .btn-secondary')!
+}
+
+function restoreButtons(el: HTMLElement): HTMLButtonElement[] {
+  return Array.from(el.querySelectorAll<HTMLButtonElement>('.refresh-history .btn-small'))
 }
 
 function chooseButton(el: HTMLElement): HTMLButtonElement {
@@ -215,6 +268,221 @@ describe('UpdateBalancesPanel', () => {
     expect(brokerage).toMatchObject({ balance: 55000, costBasis: 40000 })
     const roth = plan.accounts.find((a) => a.id === 'acct-roth')!
     expect(roth).toMatchObject({ balance: 14000 })
+  })
+
+  it('applies when durable history is unavailable and says no undo record was saved', async () => {
+    // Keep this host explicitly browser-history-free: applying must stay
+    // synchronous in jsdom, while its message honestly distinguishes the
+    // in-session refresh from a durable undo point.
+    globalThis.indexedDB = undefined as unknown as IDBFactory
+    _resetRefreshHistoryForTests()
+    const plan = planWithAccounts()
+    const el = renderPanel(plan)
+    await chooseFile(el, TWO_ACCOUNT_CSV)
+
+    act(() => applyButton(el).click())
+
+    expect(plan.accounts.find((account) => account.id === 'acct-brokerage')!).toMatchObject({ balance: 55_000, costBasis: 40_000 })
+    expect(el.querySelector('[role="status"]')?.textContent).toContain('No undo record could be saved in this browser.')
+  })
+
+  it('omits the no-undo warning after a durable snapshot is saved', async () => {
+    enableDurableRefreshHistory()
+    const plan = planWithAccounts()
+    const el = renderPanel(plan)
+    await chooseFile(el, TWO_ACCOUNT_CSV)
+
+    act(() => applyButton(el).click())
+    await settlePanel()
+
+    expect(plan.accounts.find((account) => account.id === 'acct-brokerage')!).toMatchObject({ balance: 55_000, costBasis: 40_000 })
+    expect(el.querySelector('[role="status"]')?.textContent).not.toContain('No undo record could be saved in this browser.')
+  })
+
+  it('cancels an apply suspended on its durable history write', async () => {
+    enableDurableRefreshHistory()
+    const plan = planWithAccounts()
+    const el = renderPanel(plan)
+    await chooseFile(el, TWO_ACCOUNT_CSV)
+    const cancel = cancelButton(el)
+
+    // IndexedDB makes Apply yield after it captures the epoch. Cancel runs
+    // before that write settles, so no mutation or stale success message may
+    // survive its reset.
+    act(() => {
+      applyButton(el).click()
+      cancel.click()
+    })
+    await settlePanel()
+
+    expect(plan.accounts.find((account) => account.id === 'acct-brokerage')!).toMatchObject({ balance: 1, costBasis: 1 })
+    expect(plan.accounts.find((account) => account.id === 'acct-roth')!).toMatchObject({ balance: 1 })
+    expect(el.querySelector('tbody')).toBeNull()
+    expect(el.querySelector('[role="status"]')).toBeNull()
+  })
+
+  it('rejects a file above 16 MiB before reading or hashing it', async () => {
+    const plan = planWithAccounts()
+    const el = renderPanel(plan)
+    const tooLarge = new File(['not read'], 'too-large.csv', { type: 'text/csv' })
+    let textRead = false
+    let hashRead = false
+    Object.defineProperties(tooLarge, {
+      size: { value: 16 * 1024 * 1024 + 1 },
+      text: {
+        value: () => {
+          textRead = true
+          return Promise.resolve('')
+        },
+      },
+      arrayBuffer: {
+        value: () => {
+          hashRead = true
+          return Promise.resolve(new ArrayBuffer(0))
+        },
+      },
+    })
+    const input = el.querySelector<HTMLInputElement>('input[type="file"]')!
+    Object.defineProperty(input, 'files', { value: [tooLarge], configurable: true })
+
+    await act(async () => {
+      input.dispatchEvent(new Event('change', { bubbles: true }))
+      await Promise.resolve()
+    })
+
+    expect(textRead).toBe(false)
+    expect(hashRead).toBe(false)
+    expect(el.querySelector('[role="status"]')?.textContent).toContain('no larger than 16 MiB')
+  })
+
+  it('keeps a broker-scoped remembered match through a protection-driven reclassification', async () => {
+    enableDurableRefreshHistory()
+    const plan = planWithAccounts()
+    // The file label shares no words with any account name, so without the
+    // stored mapping this row is unmatched; 'remembered' is the operative
+    // tier, not shadowed by an exact name hit.
+    await saveRefreshManualMapping({
+      planId: plan.id,
+      normalizedBrokerLabel: refreshMappingKey('schwab', 'Acct X ...999'),
+      accountId: 'acct-brokerage',
+      assignedAtIso: '2026-07-15T12:00:00.000Z',
+    })
+    const rememberedCsv = `"Positions for account Acct X ...999 as of 07/07/2026"
+"Symbol","Description","Mkt Val (Market Value)","Cost Basis"
+"VTI","FUND","$50,000.00","$40,000.00"
+
+"Positions for account Roth IRA ...321 as of 07/07/2026"
+"Symbol","Description","Mkt Val (Market Value)","Cost Basis"
+"FXAIX","FUND","$14,000.00","$12,000.00"
+`
+    // Protect the OTHER row's account: releasing it forces the render-time
+    // reclassification while the remembered row stays a plain candidate.
+    const el = renderPanel(plan, { protectedAccounts: protect(plan, { accountId: 'acct-roth' }) })
+    await chooseFile(el, rememberedCsv)
+
+    expect(el.textContent).toContain('Remembered match')
+    act(() => el.querySelector<HTMLButtonElement>('button[aria-label="Allow this refresh for Roth IRA"]')!.click())
+
+    // The release changes the effective protection set and forces render-time
+    // classification, which must keep the same broker-scoped key.
+    expect(el.textContent).toContain('Remembered match')
+  })
+
+  it('omits advisor-protected accounts from a restore undo snapshot and its count', async () => {
+    enableDurableRefreshHistory()
+    const plan = planWithAccounts()
+    const brokerage = plan.accounts.find((account) => account.id === 'acct-brokerage')!
+    const roth = plan.accounts.find((account) => account.id === 'acct-roth')!
+    if (brokerage.type !== 'taxable') throw new Error('expected taxable account')
+    if (roth.type !== 'roth') throw new Error('expected Roth account')
+    brokerage.balance = 50_000
+    brokerage.costBasis = 30_000
+    roth.balance = 14_000
+    const snapshot: RefreshSnapshot = {
+      id: 'restore-protected',
+      planId: plan.id,
+      appliedAtIso: '2026-07-15T12:00:00.000Z',
+      sourceLabel: 'Schwab — positions.csv',
+      sourceSha256: '',
+      changes: [
+        {
+          accountId: 'acct-brokerage',
+          accountName: 'Brokerage',
+          before: { balance: 10_000, costBasis: 8_000 },
+          after: { balance: 50_000, costBasis: 30_000 },
+        },
+        {
+          accountId: 'acct-roth',
+          accountName: 'Roth IRA',
+          before: { balance: 5_000, costBasis: null },
+          after: { balance: 14_000, costBasis: null },
+        },
+      ],
+    }
+    await saveRefreshSnapshot(snapshot)
+    const el = renderPanel(plan, { protectedAccounts: protect(plan, { accountId: 'acct-brokerage' }) })
+    await settlePanel()
+
+    act(() => restoreButtons(el)[0]!.click())
+    await settlePanel()
+
+    expect(brokerage).toMatchObject({ balance: 50_000, costBasis: 30_000 })
+    expect(roth).toMatchObject({ balance: 5_000 })
+    const status = el.querySelector('[role="status"]')?.textContent ?? ''
+    expect(status).toContain('Restored previous balances for 1 account')
+    expect(status).toContain('1 account was left unchanged, protected by advisor overrides')
+    const undoSnapshot = (await listRefreshSnapshots(plan.id)).find((item) => item.sourceLabel.startsWith('Restore previous balances'))!
+    expect(undoSnapshot.changes.map((change) => change.accountId)).toEqual(['acct-roth'])
+  })
+
+  it('serializes two restore clicks so the first restore owns the undo point', async () => {
+    enableDurableRefreshHistory()
+    const plan = planWithAccounts()
+    const brokerage = plan.accounts.find((account) => account.id === 'acct-brokerage')!
+    if (brokerage.type !== 'taxable') throw new Error('expected taxable account')
+    brokerage.balance = 50_000
+    brokerage.costBasis = 30_000
+    await saveRefreshSnapshot({
+      id: 'older-restore',
+      planId: plan.id,
+      appliedAtIso: '2026-07-14T12:00:00.000Z',
+      sourceLabel: 'Older snapshot',
+      sourceSha256: '',
+      changes: [
+        {
+          accountId: 'acct-brokerage',
+          accountName: 'Brokerage',
+          before: { balance: 5_000, costBasis: 3_000 },
+          after: { balance: 10_000, costBasis: 8_000 },
+        },
+      ],
+    })
+    await saveRefreshSnapshot({
+      id: 'newer-restore',
+      planId: plan.id,
+      appliedAtIso: '2026-07-15T12:00:00.000Z',
+      sourceLabel: 'Newer snapshot',
+      sourceSha256: '',
+      changes: [
+        {
+          accountId: 'acct-brokerage',
+          accountName: 'Brokerage',
+          before: { balance: 10_000, costBasis: 8_000 },
+          after: { balance: 50_000, costBasis: 30_000 },
+        },
+      ],
+    })
+    const el = renderPanel(plan)
+    await settlePanel()
+    const restores = restoreButtons(el)
+
+    act(() => {
+      restores[0]!.click()
+      restores[1]!.click()
+    })
+    await settlePanel()
+
+    expect(brokerage).toMatchObject({ balance: 10_000, costBasis: 8_000 })
   })
 
   it('blocks Apply when two file accounts target the same plan account', async () => {
@@ -718,7 +986,7 @@ describe('UpdateBalancesPanel refresh protection', () => {
     // User-initiated Cancel tears the table down — and must clear the now-orphaned
     // status message too, which pointed at "Allow this refresh" controls the reset
     // just removed. Leaving it up would direct the user at gone controls.
-    const cancel = Array.from(el.querySelectorAll('button')).find((b) => b.textContent === 'Cancel')!
+    const cancel = cancelButton(el)
     act(() => cancel.click())
     expect(el.querySelector('tbody')).toBeNull()
     expect(el.querySelector('[role="status"]')).toBeNull()
