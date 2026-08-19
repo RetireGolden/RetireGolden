@@ -165,6 +165,15 @@ describe('parseCompleteExportManifest refusals and tolerances', () => {
       entries(raw, 'components')[0]!['path'] = 'manifest.json'
     }, 'malformed')
     expectRefusal((raw) => {
+      // Win32 strips trailing dots from the final component on disk.
+      entries(raw, 'components')[0]!['path'] = 'manifest.json.'
+    }, 'malformed')
+    expectRefusal((raw) => {
+      // Trailing-space fold: extracts to the same file as library/clients.jsonl.
+      const components = entries(raw, 'components')
+      components.push({ ...components[0]!, path: 'library/clients.jsonl ' })
+    }, 'malformed')
+    expectRefusal((raw) => {
       // Individually safe byteLengths whose IEEE sum collides with a rounded
       // total: without the overflow guard this parses "consistently".
       const components = entries(raw, 'components')

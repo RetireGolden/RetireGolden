@@ -233,8 +233,18 @@ function isSafeComponentPath(value: unknown): value is string {
 // Reserved-name collisions are checked case-insensitively: extracting
 // "MANIFEST.JSON" on a case-insensitive filesystem would clobber the real one.
 function isReservedManifestPath(path: string): boolean {
-  const folded = path.toLowerCase()
+  const folded = win32FoldedPath(path)
   return folded === MANIFEST_ENTRY_NAME || folded === MANIFEST_SHA256_ENTRY_NAME
+}
+
+// Win32 name folding: the filesystem lowercases and strips trailing dots and
+// spaces from each component, so collision checks must fold the same way.
+function win32FoldedPath(path: string): string {
+  return path
+    .toLowerCase()
+    .split('/')
+    .map((segment) => segment.replace(/[. ]+$/, ''))
+    .join('/')
 }
 
 function malformed(detail: string): ParseCompleteExportManifestResult {
@@ -395,8 +405,8 @@ export function parseCompleteExportManifest(json: string): ParseCompleteExportMa
     if (!parsed.ok) return malformed(parsed.detail)
     // Duplicates are detected case-folded: two entries differing only by case
     // collide on case-insensitive filesystems when the archive is extracted.
-    if (foldedComponentPaths.has(parsed.value.path.toLowerCase())) return malformed(`components[${index}].path`)
-    foldedComponentPaths.add(parsed.value.path.toLowerCase())
+    if (foldedComponentPaths.has(win32FoldedPath(parsed.value.path))) return malformed(`components[${index}].path`)
+    foldedComponentPaths.add(win32FoldedPath(parsed.value.path))
     componentPaths.add(parsed.value.path)
     components.push(parsed.value)
   }
