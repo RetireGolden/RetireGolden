@@ -78,6 +78,48 @@ validates the manifest contract; `verifyManifestText` checks the exact sidecar g
 `verifyComponentBytes` checks length before SHA-256. Hashing uses Web Crypto in browsers and Node. A host
 without Web Crypto fails loudly rather than reporting an invented digest.
 
+## Recovering core data without RetireGolden
+
+Offboarding means the archive alone has to be enough. Every component is plaintext JSON or JSONL, so any
+ZIP tool plus ordinary JSON tooling recovers core data. With `unzip`, `sha256sum`, and `jq`:
+
+```bash
+unzip library.rgcomplete -d record
+cd record
+sha256sum -c manifest.sha256
+```
+
+Client records in `library/clients.jsonl` carry `id`, `name`, `notes`, `tags`, `archived`,
+`createdAtIso`, and `updatedAtIso` — one JSON object per line, which `jq` consumes directly:
+
+```bash
+jq -r '[.id, .name, .updatedAtIso] | @csv' library/clients.jsonl > clients.csv
+```
+
+Plan records in `library/plans.jsonl` carry `id`, `clientId`, `name`, `schemaVersion`,
+`createdAtIso`, `updatedAtIso`, and `json` — the complete plan document (the same object
+documented in [The plan file format](plan-file-format.md)) as a JSON string:
+
+```bash
+jq -r '[.id, .clientId, .name, .updatedAtIso] | @csv' library/plans.jsonl > plans.csv
+jq -r 'select(.id == "PLAN_ID") | .json | fromjson' library/plans.jsonl > plan.json
+```
+
+The extracted plan documents can be rebuilt into a Free-importable v2 backup envelope with `jq`
+alone, which makes the web planner at retiregolden.app a working reader of last resort:
+
+```bash
+jq -r '.json | fromjson' library/plans.jsonl | jq -s \
+  '{kind: "retiregolden.v2.backup", backupVersion: 1, exportedAtIso: (now | todate), plans: .}' \
+  > plans-backup.json
+```
+
+Plan version history (`library/plan-history.jsonl`), annual reviews, workflow records, and the
+governance audit ledger (`advisor/audit-ledger.jsonl`) follow the same pattern: one JSON record
+per line, field names visible in the data itself. RetireGolden-Pro's test suite pins this whole
+path — export, verify, and index generation using only standard tooling — so the recipe above is
+contract, not aspiration.
+
 ## Deliberately omitted data
 
 The omissions ledger is the redaction model. It is part of the file so an archive reports what it leaves out
