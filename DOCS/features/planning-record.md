@@ -104,12 +104,13 @@ Client records in `library/clients.jsonl` carry `id`, `name`, `notes`, `tags`, `
 
 ```bash
 jq -r --arg q "'" \
-  '[.id, (.name | if test("^[=+@\\t\\r-]") then $q + . else . end), .updatedAtIso] | @csv' \
+  '[.id, (.name | if test("^\\s*[=+@-]") then $q + . else . end), .updatedAtIso] | @csv' \
   library/clients.jsonl > clients.csv
 ```
 
-The `if test(...)` guard neutralizes spreadsheet formula injection: a client name beginning with
-`=`, `+`, `-`, `@`, tab, or carriage return would otherwise execute as a formula when the CSV is
+The `if test(...)` guard neutralizes spreadsheet formula injection: a client name whose first
+non-whitespace character is `=`, `+`, `-`, or `@` (spreadsheets skip leading whitespace — including
+tabs and carriage returns — before evaluating) would otherwise execute as a formula when the CSV is
 opened in a spreadsheet. `@csv` alone quotes fields but does not defuse formulas.
 
 Plan records in `library/plans.jsonl` carry `id`, `clientId`, `name`, `schemaVersion`,
@@ -118,7 +119,7 @@ documented in [The plan file format](plan-file-format.md)) as a JSON string:
 
 ```bash
 jq -r --arg q "'" \
-  '[.id, .clientId, (.name | if test("^[=+@\\t\\r-]") then $q + . else . end), .updatedAtIso] | @csv' \
+  '[.id, .clientId, (.name | if test("^\\s*[=+@-]") then $q + . else . end), .updatedAtIso] | @csv' \
   library/plans.jsonl > plans.csv
 jq -e -r 'select(.id == "PLAN_ID") | .json | fromjson' library/plans.jsonl > plan.json.tmp \
   && mv plan.json.tmp plan.json
@@ -137,7 +138,7 @@ planner at retiregolden.app a working reader of last resort:
 ```bash
 jq -r '.json | fromjson' library/plans.jsonl | jq -s \
   '{kind: "retiregolden.v2.backup", backupVersion: 1, exportedAtIso: (now | todate), plans: .}' \
-  > plans-backup.json
+  > plans-backup.json.tmp && mv plans-backup.json.tmp plans-backup.json
 ```
 
 Two honest limits on that bridge. Free refuses backup files over 10,000,000 characters
