@@ -144,8 +144,14 @@ export interface RefreshDelta {
   review: ImportReviewItem[]
   /** Informational source-date flags, indexed to the parsed broker account row. */
   dateFlags: RefreshSourceDateFlag[]
-  /** Exact-cent file/plan totals for checking this refresh before it is applied. */
-  reconciliation: RefreshReconciliation
+  /**
+   * Exact-cent file/plan totals for checking this refresh before it is applied.
+   *
+   * `buildRefreshDelta` always supplies this, but it remains optional at the
+   * published boundary so callers written before reconciliation was added can
+   * continue to construct a delta.
+   */
+  reconciliation?: RefreshReconciliation
   /**
    * The effective protected set this delta was built with — the union of the
    * classification's `protectedPaths`, any `protectedTargets` passed to
@@ -634,14 +640,17 @@ function reconciliationReview(
 
 function dateFlagReview(candidate: RefreshCandidate, flag: RefreshSourceDateFlag): ImportReviewItem {
   return {
-    status: 'skipped',
+    // The balance can still land. `defaulted` is the checklist's existing
+    // informational "Assumed, review" status; `skipped` would incorrectly put
+    // this warning in the unresolved/import-did-not-land bucket.
+    status: 'defaulted',
     source: candidate.source.accountLabel,
     detail:
       flag.kind === 'staleDate'
         ? `The broker file is ${flag.ageDays} days old as of ${candidate.source.asOfIso}; review this balance before applying it. The flag does not block refresh.`
         : 'The broker file did not carry a readable as-of date; review this balance before applying it. The flag does not block refresh.',
     locator: aggregateLocator(flag.kind === 'staleDate' ? `broker as-of date ${candidate.source.asOfIso}` : 'broker as-of date unavailable'),
-    confidence: 'unmapped',
+    confidence: 'assumed',
   }
 }
 

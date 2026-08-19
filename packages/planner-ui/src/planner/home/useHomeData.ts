@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 
 import { clearAllPlans } from '../../data/planStore'
-import { clearAllRefreshHistory } from '../../import/refreshHistory'
+import { clearAllRefreshHistory, clearRefreshHistoryForPlan } from '../../import/refreshHistory'
 import {
   deletePlanVia,
   duplicatePlanVia,
@@ -28,6 +28,7 @@ export function useHomeData() {
   // already committed to storage, so an expired or navigated-away toast never
   // leaves a plan half-deleted; Undo simply re-saves the in-memory copy.
   const [undoPlan, setUndoPlan] = useState<Plan | null>(null)
+  const undoPlanRef = useRef<Plan | null>(null)
   const undoTimer = useRef<number | null>(null)
   const fileInput = useRef<HTMLInputElement>(null)
   const { confirm, prompt, dialogs } = useDialogs()
@@ -43,11 +44,38 @@ export function useHomeData() {
     }
   }
 
+  // A plan's refresh snapshots and remembered assignments stay available for
+  // exactly as long as its delete can still be undone. Once the toast expires
+  // (or the user dismisses it), that plan cannot return through this flow, so
+  // its operational history is safe to erase.
+  const finalizePendingDelete = (clearVisibleToast = true) => {
+    const deleted = undoPlanRef.current
+    if (deleted === null) return
+    clearUndoTimer()
+    undoPlanRef.current = null
+    if (clearVisibleToast) setUndoPlan(null)
+    void clearRefreshHistoryForPlan(deleted.id)
+  }
+
   useEffect(() => {
     refresh()
   }, [refresh])
 
-  useEffect(() => () => clearUndoTimer(), [])
+  // The unmount finalizer must observe the LATEST pending delete while the
+  // cleanup registers exactly once; the ref is written inside an effect (refs
+  // must not be written during render) and read only in the cleanup.
+  const finalizePendingDeleteRef = useRef(finalizePendingDelete)
+  useEffect(() => {
+    finalizePendingDeleteRef.current = finalizePendingDelete
+  })
+  useEffect(
+    () => () => {
+      // Leaving this screen removes the only Undo affordance, so the delete is
+      // final at unmount too.
+      finalizePendingDeleteRef.current(false)
+    },
+    [],
+  )
 
   const openPlan = (id: string) => navigate(`/plan/${id}`)
 
@@ -116,22 +144,29 @@ export function useHomeData() {
     await deletePlanVia(store, s.id)
     refresh()
     if (loaded.ok) {
+      // Replacing an earlier undo toast makes that earlier deletion final.
+      finalizePendingDelete()
       clearUndoTimer()
+      undoPlanRef.current = loaded.plan
       setUndoPlan(loaded.plan)
-      undoTimer.current = window.setTimeout(() => setUndoPlan(null), 5000)
+      undoTimer.current = window.setTimeout(() => {
+        undoTimer.current = null
+        finalizePendingDelete()
+      }, 5000)
     }
   }
 
   const undoDelete = async () => {
-    if (!undoPlan) return
+    const restored = undoPlanRef.current
+    if (!restored) return
     clearUndoTimer()
-    const restored = undoPlan
     // Keep the in-memory plan (and the toast) until the restore actually
     // lands — if the save fails, the user must not lose both the plan and
     // the affordance at once.
     try {
       const r = await savePlanVia(store, restored)
       if (r.ok) {
+        undoPlanRef.current = null
         setUndoPlan(null)
         refresh()
       } else {
@@ -143,8 +178,7 @@ export function useHomeData() {
   }
 
   const dismissUndo = () => {
-    clearUndoTimer()
-    setUndoPlan(null)
+    finalizePendingDelete()
   }
 
   const handleClearAll = async () => {

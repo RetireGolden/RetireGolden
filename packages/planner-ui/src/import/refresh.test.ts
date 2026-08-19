@@ -20,6 +20,7 @@ import {
   revertToSnapshot,
   type RefreshCandidate,
   type RefreshClassification,
+  type RefreshDelta,
 } from './refresh'
 
 let seq = 0
@@ -324,7 +325,10 @@ describe('classifyRefresh — matching', () => {
     )
     expect(stale.dateFlags).toEqual([{ sourceIndex: 0, kind: 'staleDate', ageDays: 8 }])
     expect(stale.changes).not.toEqual([])
-    expect(stale.review.some((item) => item.detail.includes('8 days old'))).toBe(true)
+    expect(stale.review.find((item) => item.detail.includes('8 days old'))).toMatchObject({
+      status: 'defaulted',
+      confidence: 'assumed',
+    })
 
     const unknown = buildRefreshDelta(
       plan,
@@ -334,6 +338,10 @@ describe('classifyRefresh — matching', () => {
       now,
     )
     expect(unknown.dateFlags).toEqual([{ sourceIndex: 0, kind: 'unknownDate', ageDays: null }])
+    expect(unknown.review.find((item) => item.detail.includes('did not carry a readable as-of date'))).toMatchObject({
+      status: 'defaulted',
+      confidence: 'assumed',
+    })
   })
 
   it('reconciles parsed totals and plan-side before/after totals in exact cents', () => {
@@ -344,15 +352,34 @@ describe('classifyRefresh — matching', () => {
     ])
     const delta = buildRefreshDelta(plan, classification, new Map([[0, 'acct-brokerage']]), undefined, () => new Date('2026-07-15T12:00:00.000Z'))
 
-    expect(delta.reconciliation).toEqual({
+    const reconciliation = delta.reconciliation
+    expect(reconciliation).toEqual({
       fileTotal: 27_000,
       matchedTotal: 12_000,
       unmatchedRemainder: 15_000,
       planTotalBefore: 100_000,
       planTotalAfter: 12_000,
     })
-    expect(delta.reconciliation.fileTotal).toBe(delta.reconciliation.matchedTotal + delta.reconciliation.unmatchedRemainder)
+    if (reconciliation === undefined) throw new Error('buildRefreshDelta must supply reconciliation')
+    expect(reconciliation.fileTotal).toBe(reconciliation.matchedTotal + reconciliation.unmatchedRemainder)
     expect(delta.review.some((item) => item.source === 'Refresh reconciliation' && item.confidence === 'derived')).toBe(true)
+  })
+
+  it('accepts a legacy caller delta with no reconciliation field', () => {
+    // `RefreshDelta` is published from the planner-ui package. Reconciliation
+    // was additive, so a pre-field object literal must remain valid until the
+    // next semver-major release.
+    const plan = planWith(loadedTaxable('acct-brokerage', 'Brokerage'))
+    const legacy: RefreshDelta = {
+      candidates: [],
+      changes: [],
+      staleAccountIds: [],
+      duplicateGroups: [],
+      review: [],
+      dateFlags: [],
+      protectedPaths: [],
+    }
+    expect(applyRefresh(plan, legacy, new Map())).toBe(0)
   })
 
   it('does not list an account as stale when a row is manually reassigned onto it', () => {

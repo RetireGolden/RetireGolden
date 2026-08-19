@@ -125,18 +125,52 @@ export async function listRefreshSnapshots(planId: string): Promise<RefreshSnaps
 }
 
 /** Persist a snapshot and atomically prune older snapshots for that plan to ten. */
-export async function saveRefreshSnapshot(snapshot: RefreshSnapshot): Promise<void> {
+export async function saveRefreshSnapshot(snapshot: RefreshSnapshot): Promise<boolean> {
+  try {
+    const database = await openHistoryDb()
+    if (database === null) return false
+    const tx = database.transaction(SNAPSHOTS_STORE, 'readwrite')
+    await tx.store.put(snapshot)
+    const stale = ((await tx.store.getAll()) as unknown[])
+      .filter(isSnapshot)
+      .filter((candidate) => candidate.planId === snapshot.planId)
+      .sort((left, right) => right.appliedAtIso.localeCompare(left.appliedAtIso) || right.id.localeCompare(left.id))
+      .slice(SNAPSHOT_LIMIT_PER_PLAN)
+    await Promise.all(stale.map((candidate) => tx.store.delete(candidate.id)))
+    await tx.done
+    return true
+  } catch {
+    // A private-browsing, quota, or transaction failure must not turn the
+    // refresh itself into a failure. Callers use the boolean to describe the
+    // missing durable undo record accurately.
+    return false
+  }
+}
+
+/** Remove all local refresh history that belongs to one permanently deleted plan. */
+export async function clearRefreshHistoryForPlan(planId: string): Promise<void> {
   const database = await openHistoryDb()
   if (database === null) return
-  const tx = database.transaction(SNAPSHOTS_STORE, 'readwrite')
-  await tx.store.put(snapshot)
-  const stale = ((await tx.store.getAll()) as unknown[])
-    .filter(isSnapshot)
-    .filter((candidate) => candidate.planId === snapshot.planId)
-    .sort((left, right) => right.appliedAtIso.localeCompare(left.appliedAtIso) || right.id.localeCompare(left.id))
-    .slice(SNAPSHOT_LIMIT_PER_PLAN)
-  await Promise.all(stale.map((candidate) => tx.store.delete(candidate.id)))
-  await tx.done
+  try {
+    const tx = database.transaction([SNAPSHOTS_STORE, MAPPINGS_STORE], 'readwrite')
+    const snapshots = tx.objectStore(SNAPSHOTS_STORE)
+    const mappings = tx.objectStore(MAPPINGS_STORE)
+    const [storedSnapshots, storedMappings] = await Promise.all([snapshots.getAll(), mappings.getAll()])
+    await Promise.all([
+      ...(storedSnapshots as unknown[])
+        .filter(isSnapshot)
+        .filter((snapshot) => snapshot.planId === planId)
+        .map((snapshot) => snapshots.delete(snapshot.id)),
+      ...(storedMappings as unknown[])
+        .filter(isMapping)
+        .filter((mapping) => mapping.planId === planId)
+        .map((mapping) => mappings.delete([mapping.planId, mapping.normalizedBrokerLabel])),
+    ])
+    await tx.done
+  } catch {
+    // Deleting a plan must still succeed if browser policy makes its
+    // operational history unavailable. A later clear-all remains a fallback.
+  }
 }
 
 /** Read remembered manual row assignments for one plan. */

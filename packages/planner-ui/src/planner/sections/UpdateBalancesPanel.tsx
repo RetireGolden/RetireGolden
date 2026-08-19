@@ -91,6 +91,7 @@ const fmtCents = (value: number): string =>
 
 const EMPTY_PROTECTED: ReadonlySet<string> = new Set()
 const EMPTY_REMEMBERED: ReadonlyMap<string, string> = new Map()
+const MAX_REFRESH_FILE_BYTES = 16 * 1024 * 1024
 
 /**
  * The one explanation for the protection-pending gate, shared by the visible
@@ -182,12 +183,16 @@ async function sourceIdentity(file: File): Promise<{ sha256: string; bytes: numb
   }
 }
 
-function restoreDeltas(plan: Plan, snapshot: RefreshSnapshot): RefreshFieldDelta[] {
+function restoreDeltas(
+  plan: Plan,
+  snapshot: RefreshSnapshot,
+  protectedAccountIds: ReadonlySet<string>,
+): RefreshFieldDelta[] {
   const deltas: RefreshFieldDelta[] = []
   for (const change of snapshot.changes) {
     const index = plan.accounts.findIndex((account) => account.id === change.accountId)
     const account = plan.accounts[index]
-    if (index < 0 || !account || !isBalanceUpdatable(account)) continue
+    if (index < 0 || !account || !isBalanceUpdatable(account) || protectedAccountIds.has(account.id)) continue
     deltas.push({
       path: `accounts[${index}].balance`,
       field: 'balance',
@@ -269,6 +274,13 @@ export function UpdateBalancesPanel() {
   // Re-entrancy guard: the durable-write awaits inside apply yield to the
   // event loop, so a second click must not start a second apply.
   const applying = useRef(false)
+  // Restore also persists its new undo point before it mutates, so two clicks
+  // could otherwise both capture the same before-state.
+  const restoring = useRef(false)
+  // Cancel must invalidate an apply suspended on a durable-history write.
+  // Like the read epoch, this is advanced only from real event/continuation
+  // paths, never while rendering.
+  const panelEpoch = useRef(0)
   // Plan identity guard, separate from the read epoch. `committedPlanId` tracks the
   // plan whose render actually COMMITTED, updated in a layout effect. Layout effects
   // run synchronously inside the commit task, so a pending `file.text()` microtask
@@ -365,6 +377,7 @@ export function UpdateBalancesPanel() {
   // AND clear the status message — a message left behind would point the user at
   // controls the reset just removed.
   const resetPanel = () => {
+    panelEpoch.current += 1
     setParsed(null)
     setReleased(new Map())
     setMessage(null)
@@ -375,6 +388,18 @@ export function UpdateBalancesPanel() {
     // disabled, but the hidden input can still be driven directly). Parsing here
     // would seed row selections from a protected set the host has not resolved.
     if (protectionPending) return
+    // Every new selection supersedes an older read, including one rejected on
+    // size before it starts reading either the text or hash bytes.
+    const token = ++readEpoch.current
+    // A programmatic file selection can arrive while a durable Apply is
+    // suspended even though the visible chooser has been replaced by its
+    // preview. Treat it like Cancel: the older preview is no longer current.
+    panelEpoch.current += 1
+    if (file.size > MAX_REFRESH_FILE_BYTES) {
+      resetPanel()
+      setMessage('This broker CSV is too large to read. Choose a CSV no larger than 16 MiB.')
+      return
+    }
     setMessage(null)
     // Clear the transient state SYNCHRONOUSLY, before the async read. `file.text()`
     // can take a while for a large file; if the old parsed table and its releases
@@ -395,7 +420,6 @@ export function UpdateBalancesPanel() {
     // must not seed a table if the host has said, at any point since, that it no longer
     // knows. Every one of the three refs is advanced in an event handler or a layout
     // effect, so this microtask cannot slip in before the change is recorded.
-    const token = ++readEpoch.current
     const capturedPlanId = plan.id
     const capturedProtectionEpoch = protectionUnknownEpoch.current
     const [text, source, storedMappings] = await Promise.all([
@@ -450,9 +474,10 @@ export function UpdateBalancesPanel() {
   // selection change alone does not re-classify.
   const rawAccounts = parsed?.accounts ?? null
   const rememberedMappings = parsed?.rememberedMappings ?? EMPTY_REMEMBERED
+  const broker = parsed?.broker
   const classification = useMemo(
-    () => (rawAccounts ? classifyRefresh(plan, rawAccounts, { protectedTargets: effective, rememberedMappings }) : null),
-    [plan, rawAccounts, effective, rememberedMappings],
+    () => (rawAccounts ? classifyRefresh(plan, rawAccounts, { protectedTargets: effective, rememberedMappings, broker }) : null),
+    [plan, rawAccounts, effective, rememberedMappings, broker],
   )
 
   // The raw selection, as the engine's index→account-id map (empty = skip).
@@ -580,6 +605,7 @@ export function UpdateBalancesPanel() {
     if (applying.current) return
     applying.current = true
     try {
+    const applyEpoch = panelEpoch.current
     const targetPlanId = plan.id
     // `protectionPending` joins `blocked` as a refusal: applying against a set the
     // host has not resolved is exactly the overwrite the seam exists to prevent.
@@ -609,6 +635,7 @@ export function UpdateBalancesPanel() {
       delta.duplicateGroups.length > 0
         ? 0
         : new Set(delta.changes.map((c) => c.path.slice(0, c.path.lastIndexOf('.')))).size
+    let snapshotPersisted = false
     if (applied > 0) {
       const snapshot = captureRefreshSnapshot(plan, delta, {
         id: snapshotId(),
@@ -616,17 +643,13 @@ export function UpdateBalancesPanel() {
         sourceLabel: parsed.sourceLabel,
         sourceSha256: parsed.sourceSha256,
       })
-      // Durability ordering is the acceptance criterion: the undo record and
-      // the remembered mappings must be on disk BEFORE the plan mutates, so a
-      // crash or reload between the two still leaves them recoverable. Hosts
-      // without IndexedDB have no durable store and stay synchronous.
+      // Try the durable undo write before the plan mutates, so a successful
+      // write survives a crash or reload between the two. A browser can refuse
+      // it; that refresh still proceeds with an explicit no-undo message.
+      // Hosts without IndexedDB have no durable store and stay synchronous.
       if (refreshHistoryAvailable()) {
-        try {
-          await saveRefreshSnapshot(snapshot)
-        } catch {
-          // A failed history write must not block the refresh itself; the
-          // in-session restore list below still works for this session.
-        }
+        snapshotPersisted = await saveRefreshSnapshot(snapshot)
+        if (applyEpoch !== panelEpoch.current) return
       } else {
         void saveRefreshSnapshot(snapshot)
       }
@@ -663,6 +686,7 @@ export function UpdateBalancesPanel() {
           } catch {
             // Best-effort; classification simply re-derives next time.
           }
+          if (applyEpoch !== panelEpoch.current) return
         } else {
           void saveRefreshManualMapping(mapping)
         }
@@ -691,7 +715,8 @@ export function UpdateBalancesPanel() {
           // selected account was deliberately left unchanged.
           (protectionBlocked > 0
             ? ` ${protectionBlocked} selected account${protectionBlocked === 1 ? ' was' : 's were'} left unchanged, protected by advisor overrides.`
-            : '')
+            : '') +
+          (snapshotPersisted ? '' : ' No undo record could be saved in this browser.')
         : protectionBlocked > 0
           ? // Nothing landed, but the visible selections weren't ignored — they were
             // held back by advisor overrides. Say so, and point at the escape hatch.
@@ -704,74 +729,93 @@ export function UpdateBalancesPanel() {
   }
 
   const restoreSnapshot = async (snapshot: RefreshSnapshot) => {
-    if (snapshot.planId !== plan.id) return
-    // Advisor-frozen accounts are off-limits to restore exactly as they are
-    // to refresh; while protection is still resolving, nothing is written.
-    if (protectionPending) {
-      setMessage(PENDING_EXPLANATION)
-      return
-    }
-    const targetPlanId = plan.id
-    const beforeRestore = restoreDeltas(plan, snapshot)
-    const outcome = revertToSnapshot(plan, snapshot)
-    if (beforeRestore.length > 0) {
-      const undoSnapshot = captureRefreshSnapshot(plan, beforeRestore, {
-        id: snapshotId(),
-        appliedAtIso: new Date().toISOString(),
-        sourceLabel: `Restore previous balances (${snapshot.sourceLabel})`,
-        sourceSha256: snapshot.sourceSha256,
-      })
-      if (undoSnapshot.changes.length > 0) {
-        // Same durability ordering as apply: the undo record must be on disk
-        // before the plan mutates so restore stays undoable across a reload.
-        if (refreshHistoryAvailable()) {
-          try {
+    if (restoring.current) return
+    restoring.current = true
+    try {
+      if (snapshot.planId !== plan.id) return
+      // Advisor-frozen accounts are off-limits to restore exactly as they are
+      // to refresh; while protection is still resolving, nothing is written.
+      if (protectionPending) {
+        setMessage(PENDING_EXPLANATION)
+        return
+      }
+      const targetPlanId = plan.id
+      const beforeRestore = restoreDeltas(plan, snapshot, hostProtectedIds)
+      const outcome = revertToSnapshot(plan, snapshot)
+      const protectedRestoreAccountIds = new Set<string>()
+      for (const change of snapshot.changes) {
+        const account = plan.accounts.find((candidate) => candidate.id === change.accountId)
+        if (account && isBalanceUpdatable(account) && hostProtectedIds.has(account.id)) {
+          protectedRestoreAccountIds.add(account.id)
+        }
+      }
+      if (beforeRestore.length > 0) {
+        const undoSnapshot = captureRefreshSnapshot(plan, beforeRestore, {
+          id: snapshotId(),
+          appliedAtIso: new Date().toISOString(),
+          sourceLabel: `Restore previous balances (${snapshot.sourceLabel})`,
+          sourceSha256: snapshot.sourceSha256,
+        })
+        if (undoSnapshot.changes.length > 0) {
+          // Try the same pre-mutation durable write as Apply, so a successful
+          // restore undo point survives a reload without blocking the restore
+          // when browser storage is unavailable.
+          if (refreshHistoryAvailable()) {
             await saveRefreshSnapshot(undoSnapshot)
-          } catch {
-            // Best-effort: the in-session list below still works.
+          } else {
+            void saveRefreshSnapshot(undoSnapshot)
           }
-        } else {
-          void saveRefreshSnapshot(undoSnapshot)
+          setSnapshots((previous) =>
+            [...previous.filter((item) => item.id !== undoSnapshot.id), undoSnapshot]
+              .sort((left, right) => right.appliedAtIso.localeCompare(left.appliedAtIso) || right.id.localeCompare(left.id))
+              .slice(0, 10),
+          )
         }
-        setSnapshots((previous) =>
-          [...previous.filter((item) => item.id !== undoSnapshot.id), undoSnapshot]
-            .sort((left, right) => right.appliedAtIso.localeCompare(left.appliedAtIso) || right.id.localeCompare(left.id))
-            .slice(0, 10),
-        )
       }
+      // The await above yields; the guard lives inside the mutator, which sees
+      // the document the context holds NOW (the closure's `plan` cannot).
+      update((draft) => {
+        if (draft.id !== targetPlanId) return
+        const reverted = revertToSnapshot(draft, snapshot)
+        const restoredById = new Map(reverted.plan.accounts.map((account) => [account.id, account]))
+        for (const account of draft.accounts) {
+          const restored = restoredById.get(account.id)
+          if (!restored || !isBalanceUpdatable(account) || !isBalanceUpdatable(restored)) continue
+          // Restore never writes through an advisor override: protected
+          // accounts keep their current values (release is a per-refresh,
+          // per-row act, not a standing waiver).
+          if (hostProtectedIds.has(account.id)) continue
+          account.balance = restored.balance
+          if (
+            (account.type === 'taxable' || account.type === 'equityComp') &&
+            (restored.type === 'taxable' || restored.type === 'equityComp')
+          ) {
+            account.costBasis = restored.costBasis
+          }
+        }
+      })
+      resetPanel()
+      const restoredCount = new Set(
+        beforeRestore.filter((delta) => delta.field === 'balance').map((delta) => delta.path.slice(0, delta.path.lastIndexOf('.'))),
+      ).size
+      const protectedCount = protectedRestoreAccountIds.size
+      const deletedCount = outcome.skippedAccountIds.length
+      setMessage(
+        restoredCount > 0
+          ? `Restored previous balances for ${restoredCount} account${restoredCount === 1 ? '' : 's'} from ${snapshot.sourceLabel}.` +
+            (deletedCount > 0 ? ` Skipped ${deletedCount} deleted account${deletedCount === 1 ? '' : 's'}.` : '') +
+            (protectedCount > 0
+              ? ` ${protectedCount} account${protectedCount === 1 ? ' was' : 's were'} left unchanged, protected by advisor overrides.`
+              : '')
+          : `No balances were restored from ${snapshot.sourceLabel}.` +
+            (deletedCount > 0 ? ` ${deletedCount} account${deletedCount === 1 ? ' is' : 's are'} no longer in this plan.` : '') +
+            (protectedCount > 0
+              ? ` ${protectedCount} account${protectedCount === 1 ? ' was' : 's were'} left unchanged, protected by advisor overrides.`
+              : ''),
+      )
+    } finally {
+      restoring.current = false
     }
-    // The await above yields; the guard lives inside the mutator, which sees
-    // the document the context holds NOW (the closure's `plan` cannot).
-    update((draft) => {
-      if (draft.id !== targetPlanId) return
-      const reverted = revertToSnapshot(draft, snapshot)
-      const restoredById = new Map(reverted.plan.accounts.map((account) => [account.id, account]))
-      for (const account of draft.accounts) {
-        const restored = restoredById.get(account.id)
-        if (!restored || !isBalanceUpdatable(account) || !isBalanceUpdatable(restored)) continue
-        // Restore never writes through an advisor override: protected
-        // accounts keep their current values (release is a per-refresh,
-        // per-row act, not a standing waiver).
-        if (hostProtectedIds.has(account.id)) continue
-        account.balance = restored.balance
-        if (
-          (account.type === 'taxable' || account.type === 'equityComp') &&
-          (restored.type === 'taxable' || restored.type === 'equityComp')
-        ) {
-          account.costBasis = restored.costBasis
-        }
-      }
-    })
-    resetPanel()
-    const restoredCount = snapshot.changes.length - outcome.skippedAccountIds.length
-    setMessage(
-      restoredCount > 0
-        ? `Restored previous balances for ${restoredCount} account${restoredCount === 1 ? '' : 's'} from ${snapshot.sourceLabel}.` +
-          (outcome.skippedAccountIds.length > 0
-            ? ` Skipped ${outcome.skippedAccountIds.length} deleted account${outcome.skippedAccountIds.length === 1 ? '' : 's'}.`
-            : '')
-        : `No balances were restored from ${snapshot.sourceLabel}; ${outcome.skippedAccountIds.length} account${outcome.skippedAccountIds.length === 1 ? ' is' : 's are'} no longer in this plan.`,
-    )
   }
 
   return (
@@ -924,12 +968,14 @@ export function UpdateBalancesPanel() {
               </tbody>
             </table>
           </div>
-          <div className="callout callout--info" role="status">
-            Reconciliation: file total {fmtCents(delta.reconciliation.fileTotal)}; matched total{' '}
-            {fmtCents(delta.reconciliation.matchedTotal)}; unmatched remainder{' '}
-            {fmtCents(delta.reconciliation.unmatchedRemainder)}; plan balances {fmtCents(delta.reconciliation.planTotalBefore)}{' '}
-            → {fmtCents(delta.reconciliation.planTotalAfter)}.
-          </div>
+          {delta.reconciliation ? (
+            <div className="callout callout--info" role="status">
+              Reconciliation: file total {fmtCents(delta.reconciliation.fileTotal)}; matched total{' '}
+              {fmtCents(delta.reconciliation.matchedTotal)}; unmatched remainder{' '}
+              {fmtCents(delta.reconciliation.unmatchedRemainder)}; plan balances {fmtCents(delta.reconciliation.planTotalBefore)}{' '}
+              → {fmtCents(delta.reconciliation.planTotalAfter)}.
+            </div>
+          ) : null}
           {staleNames.length > 0 ? (
             <div className="callout callout--info" role="status">
               These plan accounts aren&apos;t in the file, so their balances stay as they are (going stale):{' '}

@@ -5,6 +5,7 @@ import { IDBFactory } from 'fake-indexeddb'
 import type { RefreshSnapshot } from './refresh'
 import {
   _resetRefreshHistoryForTests,
+  clearRefreshHistoryForPlan,
   deleteRefreshManualMapping,
   listRefreshManualMappings,
   listRefreshSnapshots,
@@ -31,7 +32,7 @@ beforeEach(() => {
 describe('refreshHistory', () => {
   it('keeps the ten newest snapshots per plan, without pruning another plan', async () => {
     for (let day = 1; day <= 11; day++) {
-      await saveRefreshSnapshot(snapshot(`p1-${day}`, 'plan-1', `2026-07-${String(day).padStart(2, '0')}T12:00:00.000Z`))
+      expect(await saveRefreshSnapshot(snapshot(`p1-${day}`, 'plan-1', `2026-07-${String(day).padStart(2, '0')}T12:00:00.000Z`))).toBe(true)
     }
     await saveRefreshSnapshot(snapshot('p2-1', 'plan-2', '2026-07-01T12:00:00.000Z'))
 
@@ -66,5 +67,37 @@ describe('refreshHistory', () => {
     ])
     await deleteRefreshManualMapping('plan-1', 'individual')
     expect(await listRefreshManualMappings('plan-1')).toEqual([])
+  })
+
+  it('reports an unavailable durable snapshot store without rejecting the caller', async () => {
+    // This is the browser-policy/private-mode branch. The panel still applies
+    // the refresh, but needs this result to avoid claiming a durable undo.
+    globalThis.indexedDB = undefined as unknown as IDBFactory
+    _resetRefreshHistoryForTests()
+    await expect(saveRefreshSnapshot(snapshot('unpersisted', 'plan-1', '2026-07-15T12:00:00.000Z'))).resolves.toBe(false)
+  })
+
+  it('clears snapshots and remembered mappings for a final deletion only', async () => {
+    await saveRefreshSnapshot(snapshot('p1', 'plan-1', '2026-07-15T12:00:00.000Z'))
+    await saveRefreshSnapshot(snapshot('p2', 'plan-2', '2026-07-15T12:00:00.000Z'))
+    await saveRefreshManualMapping({
+      planId: 'plan-1',
+      normalizedBrokerLabel: 'schwab:brokerage 789',
+      accountId: 'acct-1',
+      assignedAtIso: '2026-07-15T12:00:00.000Z',
+    })
+    await saveRefreshManualMapping({
+      planId: 'plan-2',
+      normalizedBrokerLabel: 'schwab:brokerage 456',
+      accountId: 'acct-2',
+      assignedAtIso: '2026-07-15T12:00:00.000Z',
+    })
+
+    await clearRefreshHistoryForPlan('plan-1')
+
+    expect(await listRefreshSnapshots('plan-1')).toEqual([])
+    expect(await listRefreshManualMappings('plan-1')).toEqual([])
+    expect(await listRefreshSnapshots('plan-2')).toEqual([snapshot('p2', 'plan-2', '2026-07-15T12:00:00.000Z')])
+    expect(await listRefreshManualMappings('plan-2')).toHaveLength(1)
   })
 })
