@@ -121,7 +121,7 @@ function request(
   type: 'traditional' | 'roth',
   desired: number,
   priorFica: number,
-  accountId = type,
+  accountId: string = type,
 ): { accountId: string; type: 'traditional' | 'roth'; desired: number; priorCalendarYearFicaWages: number } {
   return { accountId, type, desired, priorCalendarYearFicaWages: priorFica }
 }

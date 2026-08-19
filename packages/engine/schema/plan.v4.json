@@ -1055,6 +1055,10 @@
                   ]
                 }
               },
+              "priorCalendarYearFicaWages": {
+                "type": "number",
+                "minimum": 0
+              },
               "allocation": {
                 "oneOf": [
                   {
@@ -1603,6 +1607,10 @@
                     "annualAmount"
                   ]
                 }
+              },
+              "priorCalendarYearFicaWages": {
+                "type": "number",
+                "minimum": 0
               },
               "allocation": {
                 "oneOf": [

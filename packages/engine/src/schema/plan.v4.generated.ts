@@ -1064,6 +1064,10 @@ export const planJsonSchema: JsonSchemaDocument = {
                   ]
                 }
               },
+              "priorCalendarYearFicaWages": {
+                "type": "number",
+                "minimum": 0
+              },
               "allocation": {
                 "oneOf": [
                   {
@@ -1612,6 +1616,10 @@ export const planJsonSchema: JsonSchemaDocument = {
                     "annualAmount"
                   ]
                 }
+              },
+              "priorCalendarYearFicaWages": {
+                "type": "number",
+                "minimum": 0
               },
               "allocation": {
                 "oneOf": [
