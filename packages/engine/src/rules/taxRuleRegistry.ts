@@ -4095,12 +4095,12 @@ const registry = {
   'irc-414-v-3-A-catch-up-excluded-from-415c': {
     title: 'Section 414(v) catch-up is not an annual addition under 415(c)',
     statement:
-      'A contribution to an applicable employer plan under 414(v)(1) — the additional elective deferral an eligible participant may make — is not subject to section 415(c) in the year it is made, and is not taken into account in applying 415(c) to other contributions or benefits. Designated Roth catch-up under 414(v)(7) is still a paragraph (1) contribution; paragraph (7) conditions whether paragraph (1) applies, it does not displace paragraph (3). The §402(g) base remains countable. Employer match therefore sees leftover 415(c) room after that base, not after the base plus catch-up.',
+      'A contribution to an applicable employer plan under 414(v)(1) — the additional elective deferral an eligible participant may make — is not subject to section 415(c) in the year it is made, and is not taken into account in applying 415(c) to other contributions or benefits. Designated Roth catch-up under 414(v)(7) is still a paragraph (1) contribution; paragraph (7) conditions whether paragraph (1) applies, it does not displace paragraph (3). The §402(g) base remains countable. Employer match therefore sees leftover 415(c) room after that base, not after the base plus catch-up. How much catch-up paragraph (1) permits in the first place is 414(v)(2)(A), registered separately.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The engine already split the §402(g) base from the 414(v) catch-up slice for the Roth-character mandate. That same slice is the paragraph (1) contribution paragraph (3)(A) names. IRA catch-up under 219(b)(5) is outside 414(v) and never enters this carve-out.',
+      'The engine already split the §402(g) base from the 414(v) catch-up slice for the Roth-character mandate. That same slice is the paragraph (1) contribution paragraph (3)(A) names. IRA catch-up under 219(b)(5) is outside 414(v) and never enters this carve-out. Current-year wages stand in for 415(c)(3) compensation, as they already do for the 415(c) pay prong.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -4114,6 +4114,32 @@ const registry = {
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section414&num=0&edition=prelim',
       quotedText:
         'paragraph (1) shall apply only if any additional elective deferrals are designated Roth contributions (as defined in section 402A(c)(1)) made pursuant to an employee election.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-19',
+    implementedBy: [
+      'packages/engine/src/projection/employerRothCatchUp.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+  },
+  'irc-414-v-2-A-catch-up-limited-to-compensation-excess': {
+    title: 'Catch-up cannot exceed compensation minus other elective deferrals',
+    statement:
+      'Additional elective deferrals under 414(v)(1) cannot exceed the lesser of the applicable dollar amount and the excess of the participant\'s section 415(c)(3) compensation for the year over other elective deferrals made without regard to subsection (v). The dollar amount is 414(v)(2)(A)(i); this record is the compensation excess in (A)(ii). A participant paid 30,000 who has already deferred the 24,500 section 402(g) base may catch up only 5,500, not the full 8,000 age-50 dollar amount. Designated Roth catch-up under 414(v)(7) is still that additional elective deferral and is subject to the same ceiling.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'Wages are the engine\'s only 415(c)(3) compensation source, the same stand-in the 415(c) pay prong already uses. IRA catch-up under 219(b)(5) is outside 414(v).',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 414(v)(2)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section414&num=0&edition=prelim',
+      quotedText:
+        'A plan shall not permit additional elective deferrals under paragraph (1) for any year in an amount greater than the lesser of- (i) the applicable dollar amount, or (ii) the excess (if any) of- (I) the participant\'s compensation (as defined in section 415(c)(3)) for the year, over (II) any other elective deferrals of the participant for such year which are made without regard to this subsection.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,

@@ -64,6 +64,11 @@ export interface EmployerElectiveLimits {
   readonly baseLimit: number
   readonly catchUpLimit: number
   readonly wageThreshold: number
+  /**
+   * IRC 415(c)(3) compensation stand-in for 414(v)(2)(A)(ii). The engine
+   * uses current-year wages, the same proxy 415(c) already uses.
+   */
+  readonly compensation: number
 }
 
 export interface EmployerElectiveAllocation {
@@ -114,9 +119,16 @@ export function allocateEmployerElectiveDeferrals(
 
   const consume = (amount: number): { fromBase: number; fromCatchUp: number } => {
     const fromBase = Math.min(amount, Math.max(0, limits.baseLimit - usedBase))
+    // 414(v)(2)(A)(ii): catch-up cannot exceed compensation minus other
+    // elective deferrals made without regard to subsection (v) — the base.
+    const catchUpCompensationCap = Math.max(
+      0,
+      limits.compensation - (usedBase + fromBase) - usedCatchUp,
+    )
     const fromCatchUp = Math.min(
       amount - fromBase,
       Math.max(0, limits.catchUpLimit - usedCatchUp),
+      catchUpCompensationCap,
     )
     usedBase += fromBase
     usedCatchUp += fromCatchUp
@@ -140,12 +152,15 @@ export function allocateEmployerElectiveDeferrals(
     })
 
     if (!mandated || request.type === 'roth') {
-      const remaining =
-        Math.max(0, limits.baseLimit - usedBase) +
-        Math.max(0, limits.catchUpLimit - usedCatchUp)
-      const take = Math.min(request.desired, remaining)
-      const { fromCatchUp } = consume(take)
-      add(request.accountId, take)
+      const remainingBase = Math.max(0, limits.baseLimit - usedBase)
+      const catchUpCompensationCap = Math.max(0, limits.compensation - usedBase - usedCatchUp)
+      const remainingCatchUp = Math.min(
+        Math.max(0, limits.catchUpLimit - usedCatchUp),
+        catchUpCompensationCap,
+      )
+      const take = Math.min(request.desired, remainingBase + remainingCatchUp)
+      const { fromBase, fromCatchUp } = consume(take)
+      add(request.accountId, fromBase + fromCatchUp)
       addCatchUp(request.accountId, fromCatchUp)
       if (mandated && request.type === 'roth') designatedRothCatchUp += fromCatchUp
       continue
@@ -159,7 +174,14 @@ export function allocateEmployerElectiveDeferrals(
 
     const leftover = request.desired - baseTake
     if (leftover <= 0) continue
-    const remainingCatchUp = Math.max(0, limits.catchUpLimit - usedCatchUp)
+    const catchUpCompensationCap = Math.max(
+      0,
+      limits.compensation - usedBase - usedCatchUp,
+    )
+    const remainingCatchUp = Math.min(
+      Math.max(0, limits.catchUpLimit - usedCatchUp),
+      catchUpCompensationCap,
+    )
     const catchUpTake = Math.min(leftover, remainingCatchUp)
     if (catchUpTake <= 0) continue
 

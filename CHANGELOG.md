@@ -15,7 +15,8 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   employer account (`priorCalendarYearFicaWages`); omitted defaults to 0 and is
   not subject. T.D. 10033 does not delay the 2026 statutory mandate to 2027.
   Redirected catch-up is not reported as an IRS-limit cut, is excluded from
-  §415(c) by §414(v)(3)(A), and remains elective deferral of the source plan
+  §415(c) by §414(v)(3)(A), is limited by §414(v)(2)(A)(ii) to compensation
+  minus other electives, and remains elective deferral of the source plan
   for match.
 
 **2026-08-13**

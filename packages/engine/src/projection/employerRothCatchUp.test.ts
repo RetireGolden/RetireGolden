@@ -115,12 +115,13 @@ function run2026(plan: Plan, taxCalculator = noTax) {
   })
 }
 
-function limits(catchUpLimit: number) {
+function limits(catchUpLimit: number, compensation = 1_000_000) {
   return {
     contributionYear: 2026,
     baseLimit: BASE_402G,
     catchUpLimit,
     wageThreshold: THRESHOLD,
+    compensation,
   }
 }
 
@@ -438,23 +439,23 @@ describe('irc-414-v-7-A ledger integration', () => {
   })
 })
 
-// IRC 414(v)(3)(A): a paragraph (1) catch-up "shall not ... be subject to"
-// 415(c) and "shall not ... be taken into account in applying such
-// limitations to other contributions". 414(v)(7) designated Roth catch-up
-// is still a paragraph (1) contribution. Wages 30,000 (the 415(c) pay
-// prong — current-year compensation, not Box 3), election 32,500, 200%
-// match on all pay:
-//   statute:            24,500 countable + 8,000 catch-up, 5,500 match left
-//   catch-up countable: 24,500 + 5,500 of the Roth catch-up, match 0
-describeRule('irc-414-v-3-A-catch-up-excluded-from-415c', {
+// IRC 414(v)(2)(A): additional elective deferrals cannot exceed the lesser
+// of the applicable dollar amount and compensation minus other elective
+// deferrals made without regard to subsection (v). Wages 30,000, 402(g)
+// base 24,500, age-50 dollar amount 8,000:
+//   (A)(ii) binds:      catch-up 5,500
+//   dollar amount only: catch-up 8,000
+// 414(v)(3)(A) then keeps that 5,500 out of 415(c), so match still gets
+// the leftover 5,500 of pay. Charging catch-up to 415(c) would zero match.
+describeRule('irc-414-v-2-A-catch-up-limited-to-compensation-excess', {
   readings: {
-    catchUpExcludedFromAnnualAdditions: { traditional: 24_500, roth: 8_000, match: 5_500 },
-    catchUpConsumesAnnualAdditions: { traditional: 24_500, roth: 5_500, match: 0 },
+    compensationMinusOtherElectives: { traditional: 24_500, roth: 5_500, match: 5_500 },
+    dollarAmountWithoutCompensationCap: { traditional: 24_500, roth: 8_000, match: 5_500 },
   },
-  accepted: 'catchUpExcludedFromAnnualAdditions',
-  note: '414(v) catch-up is not an annual addition',
+  accepted: 'compensationMinusOtherElectives',
+  note: 'catch-up is limited to pay minus the 402(g) base',
 }, ({ accepted, readings }) => {
-  it('lands the full redirected catch-up and leaves leftover 415(c) room for match', () => {
+  it('caps redirected catch-up at compensation minus other electives', () => {
     const plan = soloPlan('1976-06-15')
     plan.incomes = [wages(30_000)]
     const trad = employer('traditional', BASE_402G + CATCH_UP_50, FICA_ONE_CENT_OVER, 'trad')
@@ -465,10 +466,38 @@ describeRule('irc-414-v-3-A-catch-up-excluded-from-415c', {
       employer('roth', 0, FICA_ONE_CENT_OVER, 'roth'),
     ]
     const year = year2026(plan)
-    expect(year.balances.trad).toBeCloseTo(accepted.traditional + accepted.match, 6)
     expect(year.balances.roth).toBeCloseTo(accepted.roth, 6)
     expect(year.employerMatch).toBeCloseTo(accepted.match, 6)
-    expect(year.balances.roth).not.toBeCloseTo(readings.catchUpConsumesAnnualAdditions.roth, 6)
+    expect(year.balances.trad).toBeCloseTo(accepted.traditional + accepted.match, 6)
+    expect(year.balances.roth).not.toBeCloseTo(readings.dollarAmountWithoutCompensationCap.roth, 6)
+  })
+})
+
+// Isolate 414(v)(3)(A)(ii) where (v)(2)(A)(ii) does not bind: wages 40,000
+// permits the full 8,000 catch-up (40,000 − 24,500 = 15,500). Catch-up is
+// not an annual addition, so leftover 415(c) room for match is 15,500.
+// Counting catch-up against 415(c) would leave only 7,500 for match.
+describeRule('irc-414-v-3-A-catch-up-excluded-from-415c', {
+  readings: {
+    catchUpExcludedFromAnnualAdditions: { roth: 8_000, match: 15_500 },
+    catchUpConsumesAnnualAdditions: { roth: 8_000, match: 7_500 },
+  },
+  accepted: 'catchUpExcludedFromAnnualAdditions',
+  note: 'catch-up is not taken into account for match room',
+}, ({ accepted, readings }) => {
+  it('leaves leftover 415(c) room for match after the 402(g) base only', () => {
+    const plan = soloPlan('1976-06-15')
+    plan.incomes = [wages(40_000)]
+    const trad = employer('traditional', BASE_402G + CATCH_UP_50, FICA_ONE_CENT_OVER, 'trad')
+    if (trad.type !== 'traditional') throw new Error('expected traditional')
+    plan.accounts = [
+      cash(),
+      { ...trad, employerMatch: { matchPct: 200, capPctOfPay: 100 } },
+      employer('roth', 0, FICA_ONE_CENT_OVER, 'roth'),
+    ]
+    const year = year2026(plan)
+    expect(year.balances.roth).toBeCloseTo(accepted.roth, 6)
+    expect(year.employerMatch).toBeCloseTo(accepted.match, 6)
     expect(year.employerMatch).not.toBeCloseTo(readings.catchUpConsumesAnnualAdditions.match, 6)
   })
 })

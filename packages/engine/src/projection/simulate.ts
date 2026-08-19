@@ -3653,6 +3653,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           pack.contributionLimits.rothCatchUpWageThreshold,
           limitGrowth,
         ),
+        compensation: wagesByPerson.get(ownerId) ?? 0,
       })
       employerAllocationByOwner.set(ownerId, allocation)
       for (const [accountId, amount] of allocation.allowed) {
