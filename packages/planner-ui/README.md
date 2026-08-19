@@ -140,6 +140,16 @@ The supported product API is:
   may extend the envelope with their own top-level keys and the file still
   imports everywhere. The module is browser-free (no IndexedDB/DOM) and safe
   to run in Node — e.g. an Electron main process assembling backups;
+- the **`./complete-export` subpath** — the public read/verify contract for
+  the `retiregolden.complete-export` planning-record container (`.rgcomplete`)
+  produced by RetireGolden-Pro: the manifest types and kind/version constants,
+  `parseCompleteExportManifest` (liberal on producer labels, strict on paths,
+  hashes, counts, totals equations, and the manifest's own declared limits),
+  the exact `manifest.sha256` sidecar grammar, and Web Crypto helpers
+  (`verifyManifestText`, `verifyComponentBytes`) that fail loud when hashing
+  is unavailable. There is deliberately no writer here — the producer lives in
+  Pro. Browser-free; the format itself is documented in
+  `DOCS/features/planning-record.md` in the repository;
 - the **`./plan-tax-calculator` subpath** — `taxCalculatorFor(plan)`, the
   edition-neutral adapter that constructs the same federal, state-override,
   and local-income-tax stack used by planner projections and solvers. Hosts

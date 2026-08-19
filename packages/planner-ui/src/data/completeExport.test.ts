@@ -215,6 +215,11 @@ describe('parseCompleteExportManifest refusals and tolerances', () => {
       limits['maxManifestBytes'] = 10
     }, 'malformed')
     expectRefusal((raw) => {
+      // Case-folded duplicate: both entries extract to one path on Windows.
+      const components = entries(raw, 'components')
+      components.push({ ...components[0]!, path: (components[0]!['path'] as string).toUpperCase() })
+    }, 'malformed')
+    expectRefusal((raw) => {
       const components = entries(raw, 'components')
       components.push({ ...components[0]! })
     }, 'malformed')
@@ -262,6 +267,27 @@ describe('parseCompleteExportManifest refusals and tolerances', () => {
     expect(parsed.manifest.stores[0]!.disposition).toBe('future-disposition')
     expect(parsed.manifest).not.toHaveProperty('futureTopLevel')
     expect(parsed.manifest.components[0]).not.toHaveProperty('futureComponentField')
+  })
+
+  it('accepts the documented Free bridge: portable/plans-v2.json, free-compatible', () => {
+    const raw = fixtureObject()
+    const components = entries(raw, 'components')
+    components.push({
+      ...components[0]!,
+      path: 'portable/plans-v2.json',
+      mediaType: 'application/json',
+      edition: 'free-compatible',
+      restorePolicy: 'compatibility-only',
+      byteLength: 0,
+      logicalCount: 0,
+      sha256: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+    })
+    const totals = raw['totals'] as Record<string, unknown>
+    totals['components'] = (totals['components'] as number) + 1
+    const free = (raw['compatibility'] as Record<string, Record<string, unknown>>)['free']!
+    free['plansComponent'] = 'portable/plans-v2.json'
+    const parsed = parseCompleteExportManifest(JSON.stringify(raw))
+    expect(parsed).toMatchObject({ ok: true })
   })
 
   it('never copies __proto__ or constructor keys onto the returned manifest', () => {

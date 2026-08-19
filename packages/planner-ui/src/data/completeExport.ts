@@ -19,6 +19,8 @@ export const MANIFEST_ENTRY_NAME = 'manifest.json'
 export const MANIFEST_SHA256_ENTRY_NAME = 'manifest.sha256'
 /** UTF-8 manifest byte cap; matches the RetireGolden-Pro producer. */
 export const MAX_COMPLETE_EXPORT_MANIFEST_BYTES = 2 * 1024 * 1024
+/** The one v1 Free-bridge component: the v2 backup envelope, when present. */
+export const FREE_BRIDGE_COMPONENT_PATH = 'portable/plans-v2.json'
 
 /** One independently verifiable component stored in the archive. */
 export interface CompleteExportComponentEntry {
@@ -387,10 +389,14 @@ export function parseCompleteExportManifest(json: string): ParseCompleteExportMa
   if (!Array.isArray(rawComponents)) return malformed('components')
   const components: CompleteExportComponentEntry[] = []
   const componentPaths = new Set<string>()
+  const foldedComponentPaths = new Set<string>()
   for (const [index, entry] of rawComponents.entries()) {
     const parsed = parseComponentEntry(entry, index)
     if (!parsed.ok) return malformed(parsed.detail)
-    if (componentPaths.has(parsed.value.path)) return malformed(`components[${index}].path`)
+    // Duplicates are detected case-folded: two entries differing only by case
+    // collide on case-insensitive filesystems when the archive is extracted.
+    if (foldedComponentPaths.has(parsed.value.path.toLowerCase())) return malformed(`components[${index}].path`)
+    foldedComponentPaths.add(parsed.value.path.toLowerCase())
     componentPaths.add(parsed.value.path)
     components.push(parsed.value)
   }
@@ -450,10 +456,15 @@ export function parseCompleteExportManifest(json: string): ParseCompleteExportMa
   if (typeof importableContainer !== 'boolean') return malformed('compatibility.free.importableContainer')
   const plansComponent = freeCompatibility['plansComponent']
   if (plansComponent !== undefined) {
-    // The Free bridge must point at a component actually labeled for Free;
-    // accepting a pro-only payload here would misdirect a Free importer.
+    // The v1 Free bridge is a documented identity, not a label: it is the
+    // portable/plans-v2.json component carrying the v2 backup envelope, and
+    // it must exist and be labeled free-compatible.
     const bridged = components.find((component) => component.path === plansComponent)
-    if (!isNonEmptyString(plansComponent) || bridged === undefined || bridged.edition !== 'free-compatible') {
+    if (
+      plansComponent !== FREE_BRIDGE_COMPONENT_PATH ||
+      bridged === undefined ||
+      bridged.edition !== 'free-compatible'
+    ) {
       return malformed('compatibility.free.plansComponent')
     }
   }
