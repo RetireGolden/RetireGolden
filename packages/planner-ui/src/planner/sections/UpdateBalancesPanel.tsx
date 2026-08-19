@@ -44,7 +44,7 @@
  * two rows on one plan account), and the two say so separately.
  */
 
-import { useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 
 import type { Plan } from '@retiregolden/engine/model/plan'
 import {
@@ -58,10 +58,24 @@ import {
   classifyRefresh,
   buildRefreshDelta,
   applyRefresh,
+  captureRefreshSnapshot,
+  normalizeBrokerAccountLabel,
+  revertToSnapshot,
   type RefreshCandidate,
+  type RefreshFieldDelta,
+  type RefreshSnapshot,
 } from '../../import/refresh'
+import {
+  deleteRefreshManualMapping,
+  listRefreshManualMappings,
+  listRefreshSnapshots,
+  refreshHistoryAvailable,
+  saveRefreshManualMapping,
+  saveRefreshSnapshot,
+} from '../../import/refreshHistory'
 import type { ImportReviewItem } from '../../import/reviewChecklist'
 import { ReviewChecklist } from '../../import/ReviewChecklistView'
+import { digestSource } from '../../import/sourceHash'
 import { usePlan } from '../planContextCore'
 import {
   useRefreshProtection,
@@ -71,6 +85,7 @@ import {
 import { fmtMoney } from '../format'
 
 const EMPTY_PROTECTED: ReadonlySet<string> = new Set()
+const EMPTY_REMEMBERED: ReadonlyMap<string, string> = new Map()
 
 /**
  * The one explanation for the protection-pending gate, shared by the visible
@@ -90,6 +105,8 @@ const EMPTY_RELEASED: ReadonlyMap<string, number> = new Map()
 
 interface ParsedFile {
   broker: BrokerId
+  sourceLabel: string
+  sourceSha256: string
   /**
    * The raw parsed broker accounts. Classification is DERIVED from these plus the
    * effective protected set each render (not stored), so releasing a protected
@@ -101,6 +118,10 @@ interface ParsedFile {
   targets: string[]
   /** The parser's honesty checklist (partial basis, skipped rows, …). */
   review: ImportReviewItem[]
+  /** Per-plan manual assignments loaded from the local refresh-history store. */
+  rememberedMappings: ReadonlyMap<string, string>
+  /** Row indexes the user explicitly assigned in this panel session. */
+  manualTargetIndexes: ReadonlySet<number>
 }
 
 /**
@@ -142,8 +163,49 @@ function positionalProtectedSet(
  * so a defaulted-on protected account writes nothing until the user allows it.
  */
 function defaultTarget(candidate: RefreshCandidate): string {
-  if (candidate.match === 'exact' || candidate.match === 'likely') return candidate.targetAccountId ?? ''
+  if (candidate.match === 'exact' || candidate.match === 'remembered' || candidate.match === 'likely') return candidate.targetAccountId ?? ''
   return ''
+}
+
+async function sourceIdentity(file: File): Promise<{ sha256: string; bytes: number }> {
+  const arrayBuffer = (file as File & { arrayBuffer?: () => Promise<ArrayBuffer> }).arrayBuffer
+  if (!arrayBuffer) return { sha256: '', bytes: file.size }
+  try {
+    return await digestSource(await arrayBuffer.call(file))
+  } catch {
+    return { sha256: '', bytes: file.size }
+  }
+}
+
+function restoreDeltas(plan: Plan, snapshot: RefreshSnapshot): RefreshFieldDelta[] {
+  const deltas: RefreshFieldDelta[] = []
+  for (const change of snapshot.changes) {
+    const index = plan.accounts.findIndex((account) => account.id === change.accountId)
+    const account = plan.accounts[index]
+    if (index < 0 || !account || !isBalanceUpdatable(account)) continue
+    deltas.push({
+      path: `accounts[${index}].balance`,
+      field: 'balance',
+      before: account.balance,
+      after: change.before.balance,
+      clamped: false,
+    })
+    if ((account.type === 'taxable' || account.type === 'equityComp') && change.before.costBasis !== null) {
+      deltas.push({
+        path: `accounts[${index}].costBasis`,
+        field: 'costBasis',
+        before: account.costBasis,
+        after: change.before.costBasis,
+        clamped: false,
+      })
+    }
+  }
+  return deltas
+}
+
+function snapshotId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') return crypto.randomUUID()
+  return `refresh-${Date.now()}-${Math.random().toString(36).slice(2)}`
 }
 
 export function UpdateBalancesPanel() {
@@ -154,6 +216,7 @@ export function UpdateBalancesPanel() {
   const protectionPending = useRefreshProtectionPending()
   const [parsed, setParsed] = useState<ParsedFile | null>(null)
   const [message, setMessage] = useState<string | null>(null)
+  const [snapshots, setSnapshots] = useState<RefreshSnapshot[]>([])
   // Accounts the user has transiently released from protection for THIS panel
   // instance via "Allow this refresh", keyed by account id → the broker-row index
   // that requested the release. This is UI-local and deliberately does not touch
@@ -163,6 +226,20 @@ export function UpdateBalancesPanel() {
   // parsed or the panel resets.
   const [released, setReleased] = useState<ReadonlyMap<string, number>>(() => new Map())
   const fileInput = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    let current = true
+    void listRefreshSnapshots(plan.id)
+      .then((stored) => {
+        if (current) setSnapshots(stored)
+      })
+      .catch(() => {
+        if (current) setSnapshots([])
+      })
+    return () => {
+      current = false
+    }
+  }, [plan.id])
 
   // The workspace reuses this one panel instance across `/plan/:id` navigation, so
   // the transient file state (parsed table, row-scoped releases, status message)
@@ -230,6 +307,7 @@ export function UpdateBalancesPanel() {
     setParsed(null)
     setReleased(new Map())
     setMessage(null)
+    setSnapshots([])
   }
 
   // Protection going back to UNKNOWN gets the same render-phase reset. Anything
@@ -312,7 +390,11 @@ export function UpdateBalancesPanel() {
     const token = ++readEpoch.current
     const capturedPlanId = plan.id
     const capturedProtectionEpoch = protectionUnknownEpoch.current
-    const text = await file.text()
+    const [text, source, storedMappings] = await Promise.all([
+      file.text(),
+      sourceIdentity(file),
+      listRefreshManualMappings(capturedPlanId),
+    ])
     if (
       token !== readEpoch.current ||
       committedPlanId.current !== capturedPlanId ||
@@ -326,16 +408,31 @@ export function UpdateBalancesPanel() {
       setMessage(r.message)
       return
     }
+    const rememberedMappings = new Map<string, string>()
+    const currentAccountIds = new Set(plan.accounts.map((account) => account.id))
+    for (const mapping of storedMappings) {
+      if (!currentAccountIds.has(mapping.accountId)) {
+        // A stale operational preference must not point a future row at a
+        // deleted account. Drop it quietly: the file is still valid to review.
+        void deleteRefreshManualMapping(mapping.planId, mapping.normalizedBrokerLabel)
+        continue
+      }
+      if (mapping.normalizedBrokerLabel !== '') rememberedMappings.set(mapping.normalizedBrokerLabel, mapping.accountId)
+    }
     // A fresh file starts with protection fully restored (no releases) — already
     // cleared above — so seed the selection from a classification against the
     // host's full set resolved to current positions.
     const seedProtected = positionalProtectedSet(plan, protectedAccounts, EMPTY_RELEASED)
-    const classification = classifyRefresh(plan, r.accounts, { protectedTargets: seedProtected })
+    const classification = classifyRefresh(plan, r.accounts, { protectedTargets: seedProtected, rememberedMappings })
     setParsed({
       broker: r.broker,
+      sourceLabel: `${BROKER_LABEL[r.broker]} — ${file.name}`,
+      sourceSha256: source.sha256,
       accounts: r.accounts,
       targets: classification.candidates.map(defaultTarget),
       review: r.review,
+      rememberedMappings,
+      manualTargetIndexes: new Set(),
     })
   }
 
@@ -344,9 +441,10 @@ export function UpdateBalancesPanel() {
   // Keyed on the raw accounts (stable across target edits) and `effective`, so a
   // selection change alone does not re-classify.
   const rawAccounts = parsed?.accounts ?? null
+  const rememberedMappings = parsed?.rememberedMappings ?? EMPTY_REMEMBERED
   const classification = useMemo(
-    () => (rawAccounts ? classifyRefresh(plan, rawAccounts, { protectedTargets: effective }) : null),
-    [plan, rawAccounts, effective],
+    () => (rawAccounts ? classifyRefresh(plan, rawAccounts, { protectedTargets: effective, rememberedMappings }) : null),
+    [plan, rawAccounts, effective, rememberedMappings],
   )
 
   // The raw selection, as the engine's index→account-id map (empty = skip).
@@ -406,8 +504,9 @@ export function UpdateBalancesPanel() {
   // selection. The panel never applies balances itself — it renders exactly what
   // `applyRefresh` would write, because both go through `buildRefreshDelta`'s
   // single primitive with the same sanitized selection and effective set.
-  const delta = parsed && classification ? buildRefreshDelta(plan, classification, safeSelection, effective) : null
+  const delta = parsed && classification ? buildRefreshDelta(plan, classification, safeSelection, effective, () => new Date()) : null
   const candidates = classification?.candidates ?? []
+  const dateFlagBySourceIndex = new Map((delta?.dateFlags ?? []).map((flag) => [flag.sourceIndex, flag]))
 
   // The plan-account index each selected row resolves to, so the row can show
   // that account's before→after from the delta's field writes.
@@ -441,7 +540,12 @@ export function UpdateBalancesPanel() {
   // another row may then select the account, see it blocked, and release it itself.
   // Selecting the SAME account again is a no-op and keeps any existing release.
   const changeTarget = (i: number, next: string) => {
-    setParsed((prev) => (prev ? { ...prev, targets: prev.targets.map((t, j) => (j === i ? next : t)) } : prev))
+    setParsed((prev) => {
+      if (!prev) return prev
+      const manualTargetIndexes = new Set(prev.manualTargetIndexes)
+      manualTargetIndexes.add(i)
+      return { ...prev, targets: prev.targets.map((t, j) => (j === i ? next : t)), manualTargetIndexes }
+    })
     setReleased((prev) => {
       let out: Map<string, number> | null = null
       for (const [accId, row] of prev) {
@@ -464,7 +568,7 @@ export function UpdateBalancesPanel() {
     setParsed((prev) => (prev ? { ...prev, targets: prev.targets.map((t, j) => (j === i ? accId : t)) } : prev))
   }
 
-  const apply = () => {
+  const apply = async () => {
     // `protectionPending` joins `blocked` as a refusal: applying against a set the
     // host has not resolved is exactly the overwrite the seam exists to prevent.
     if (!parsed || !delta || blocked || protectionPending) return
@@ -493,6 +597,52 @@ export function UpdateBalancesPanel() {
       delta.duplicateGroups.length > 0
         ? 0
         : new Set(delta.changes.map((c) => c.path.slice(0, c.path.lastIndexOf('.')))).size
+    if (applied > 0) {
+      const snapshot = captureRefreshSnapshot(plan, delta, {
+        id: snapshotId(),
+        appliedAtIso: new Date().toISOString(),
+        sourceLabel: parsed.sourceLabel,
+        sourceSha256: parsed.sourceSha256,
+      })
+      // Durability ordering is the acceptance criterion: the undo record must
+      // be on disk BEFORE the plan mutates, so a crash or reload between the
+      // two still leaves the previous balances recoverable. Hosts without
+      // IndexedDB have no durable store to order against and stay synchronous.
+      if (refreshHistoryAvailable()) {
+        try {
+          await saveRefreshSnapshot(snapshot)
+        } catch {
+          // A failed history write must not block the refresh itself; the
+          // in-session restore list below still works for this session.
+        }
+      } else {
+        void saveRefreshSnapshot(snapshot)
+      }
+      setSnapshots((previous) =>
+        [...previous.filter((item) => item.id !== snapshot.id), snapshot]
+          .sort((left, right) => right.appliedAtIso.localeCompare(left.appliedAtIso) || right.id.localeCompare(left.id))
+          .slice(0, 10),
+      )
+
+      const appliedAccountIds = new Set<string>()
+      for (const change of delta.changes) {
+        if (change.field !== 'balance') continue
+        const index = /^accounts\[(\d+)\]\.balance$/.exec(change.path)
+        const account = index ? plan.accounts[Number(index[1])] : undefined
+        if (account) appliedAccountIds.add(account.id)
+      }
+      for (const index of parsed.manualTargetIndexes) {
+        const accountId = safeSelection.get(index)
+        const normalizedBrokerLabel = normalizeBrokerAccountLabel(parsed.accounts[index]?.accountLabel ?? '')
+        if (!accountId || !appliedAccountIds.has(accountId) || normalizedBrokerLabel === '') continue
+        void saveRefreshManualMapping({
+          planId: plan.id,
+          normalizedBrokerLabel,
+          accountId,
+          assignedAtIso: new Date().toISOString(),
+        })
+      }
+    }
     // The mutator still performs the real write; its return value drives no UI decision
     // (it may run after this function returns), so it is intentionally not captured.
     update((d) => {
@@ -521,6 +671,53 @@ export function UpdateBalancesPanel() {
     )
   }
 
+  const restoreSnapshot = (snapshot: RefreshSnapshot) => {
+    if (snapshot.planId !== plan.id) return
+    const beforeRestore = restoreDeltas(plan, snapshot)
+    const outcome = revertToSnapshot(plan, snapshot)
+    if (beforeRestore.length > 0) {
+      const undoSnapshot = captureRefreshSnapshot(plan, beforeRestore, {
+        id: snapshotId(),
+        appliedAtIso: new Date().toISOString(),
+        sourceLabel: `Restore previous balances (${snapshot.sourceLabel})`,
+        sourceSha256: snapshot.sourceSha256,
+      })
+      if (undoSnapshot.changes.length > 0) {
+        void saveRefreshSnapshot(undoSnapshot)
+        setSnapshots((previous) =>
+          [...previous.filter((item) => item.id !== undoSnapshot.id), undoSnapshot]
+            .sort((left, right) => right.appliedAtIso.localeCompare(left.appliedAtIso) || right.id.localeCompare(left.id))
+            .slice(0, 10),
+        )
+      }
+    }
+    update((draft) => {
+      const reverted = revertToSnapshot(draft, snapshot)
+      const restoredById = new Map(reverted.plan.accounts.map((account) => [account.id, account]))
+      for (const account of draft.accounts) {
+        const restored = restoredById.get(account.id)
+        if (!restored || !isBalanceUpdatable(account) || !isBalanceUpdatable(restored)) continue
+        account.balance = restored.balance
+        if (
+          (account.type === 'taxable' || account.type === 'equityComp') &&
+          (restored.type === 'taxable' || restored.type === 'equityComp')
+        ) {
+          account.costBasis = restored.costBasis
+        }
+      }
+    })
+    resetPanel()
+    const restoredCount = snapshot.changes.length - outcome.skippedAccountIds.length
+    setMessage(
+      restoredCount > 0
+        ? `Restored previous balances for ${restoredCount} account${restoredCount === 1 ? '' : 's'} from ${snapshot.sourceLabel}.` +
+          (outcome.skippedAccountIds.length > 0
+            ? ` Skipped ${outcome.skippedAccountIds.length} deleted account${outcome.skippedAccountIds.length === 1 ? '' : 's'}.`
+            : '')
+        : `No balances were restored from ${snapshot.sourceLabel}; ${outcome.skippedAccountIds.length} account${outcome.skippedAccountIds.length === 1 ? ' is' : 's are'} no longer in this plan.`,
+    )
+  }
+
   return (
     <div className="card">
       <h2>Update balances from a broker CSV</h2>
@@ -530,6 +727,25 @@ export function UpdateBalancesPanel() {
         Your return, yield, contribution, and beneficiary settings are left alone. The file is read on this
         device only. To start a whole new plan from a file, use Import &amp; migrate on the home screen.
       </p>
+      {snapshots.length > 0 ? (
+        <details className="refresh-history">
+          <summary>Restore previous balances</summary>
+          <p className="card-hint">Saved refresh snapshots stay on this device and do not travel with the plan file.</p>
+          <ul>
+            {snapshots.map((snapshot) => (
+              <li key={snapshot.id}>
+                <span>
+                  {snapshot.appliedAtIso.slice(0, 10)} â€” {snapshot.sourceLabel} â€” {snapshot.changes.length} account
+                  {snapshot.changes.length === 1 ? '' : 's'}
+                </span>{' '}
+                <button type="button" className="btn btn-secondary btn-small" onClick={() => restoreSnapshot(snapshot)}>
+                  Restore
+                </button>
+              </li>
+            ))}
+          </ul>
+        </details>
+      ) : null}
       {message ? (
         <div className="callout callout--info" role="status">
           {message}
@@ -561,6 +777,7 @@ export function UpdateBalancesPanel() {
                 {candidates.map((candidate, i) => {
                   const acc = candidate.source
                   const preview = rowPreview(i)
+                  const dateFlag = dateFlagBySourceIndex.get(i)
                   // Blocking is driven by the row's CURRENT SELECTION, not the
                   // classifier's guess: any row (even an unmatched one) may select a
                   // host-protected account, and doing so never auto-releases — the row
@@ -577,7 +794,17 @@ export function UpdateBalancesPanel() {
                   const canRelease = selectionProtected && releasedRow === undefined
                   return (
                     <tr key={`${acc.accountLabel}-${i}`}>
-                      <td>{acc.accountLabel}</td>
+                      <td>
+                        {acc.accountLabel}
+                        {candidate.match === 'remembered' ? <div className="muted">Remembered match</div> : null}
+                        {dateFlag ? (
+                          <div className="muted">
+                            {dateFlag.kind === 'staleDate'
+                              ? `Stale file date: ${dateFlag.ageDays} days old`
+                              : 'File date unavailable'}
+                          </div>
+                        ) : null}
+                      </td>
                       <td>{fmtMoney(acc.totalValue)}</td>
                       <td>{acc.costBasis === null ? '—' : fmtMoney(acc.costBasis)}</td>
                       <td>
@@ -640,6 +867,12 @@ export function UpdateBalancesPanel() {
                 })}
               </tbody>
             </table>
+          </div>
+          <div className="callout callout--info" role="status">
+            Reconciliation: file total {fmtMoney(delta.reconciliation.fileTotal)}; matched total{' '}
+            {fmtMoney(delta.reconciliation.matchedTotal)}; unmatched remainder{' '}
+            {fmtMoney(delta.reconciliation.unmatchedRemainder)}; plan balances {fmtMoney(delta.reconciliation.planTotalBefore)}{' '}
+            â†’ {fmtMoney(delta.reconciliation.planTotalAfter)}.
           </div>
           {staleNames.length > 0 ? (
             <div className="callout callout--info" role="status">

@@ -14,7 +14,10 @@ import type { BrokerAccountBalance } from './brokerCsv'
 import {
   applyRefresh,
   buildRefreshDelta,
+  captureRefreshSnapshot,
   classifyRefresh,
+  normalizeBrokerAccountLabel,
+  revertToSnapshot,
   type RefreshCandidate,
   type RefreshClassification,
 } from './refresh'
@@ -37,8 +40,14 @@ function classified(candidates: RefreshCandidate[], protectedPaths: readonly str
   return { candidates, protectedPaths }
 }
 
-function src(accountLabel: string, totalValue: number, costBasis: number | null = null, positionCount = 2): BrokerAccountBalance {
-  return { accountLabel, totalValue, costBasis, positionCount }
+function src(
+  accountLabel: string,
+  totalValue: number,
+  costBasis: number | null = null,
+  positionCount = 2,
+  asOfIso: string | null = null,
+): BrokerAccountBalance {
+  return { accountLabel, asOfIso, totalValue, costBasis, positionCount }
 }
 
 /** A taxable account carrying every strategy field the refresh must not touch. */
@@ -129,6 +138,41 @@ describe('classifyRefresh — matching', () => {
     const { candidates: [c] } = classifyRefresh(plan, [src('Individual ...789', 25_000, 15_000)])
     expect(c!.match).toBe('likely')
     expect(c!.targetAccountId).toBe('acct-ind')
+  })
+
+  it('uses whole-word distinctive matching, not a substring inside a longer word', () => {
+    const plan = planWith(loadedTaxable('acct-tax', 'Tax Account'))
+    const { candidates: [c] } = classifyRefresh(plan, [src('Taxable Brokerage ...789', 55_000, 40_000)])
+    expect(c!.match).toBe('unmatched')
+    expect(c!.targetAccountId).toBeNull()
+  })
+
+  it('upgrades a valid stored manual assignment to remembered, while a manual selection remains overridable', () => {
+    const plan = planWith(
+      loadedTaxable('acct-individual', 'Individual Brokerage'),
+      loadedTaxable('acct-other', 'Individual Joint'),
+    )
+    const label = 'Individual ...789'
+    const classification = classifyRefresh(plan, [src(label, 55_000, 40_000)], {
+      rememberedMappings: new Map([[normalizeBrokerAccountLabel(label), 'acct-individual']]),
+    })
+    expect(classification.candidates[0]!.match).toBe('remembered')
+    expect(classification.candidates[0]!.targetAccountId).toBe('acct-individual')
+
+    const selection = new Map([[0, 'acct-other']])
+    const delta = buildRefreshDelta(plan, classification, selection)
+    expect(applyRefresh(plan, delta, selection)).toBe(1)
+    expect(plan.accounts.find((account) => account.id === 'acct-other')).toMatchObject({ balance: 55_000, costBasis: 40_000 })
+  })
+
+  it('ignores a remembered mapping whose account no longer exists', () => {
+    const plan = planWith(loadedTaxable('acct-individual', 'Individual Brokerage'))
+    const label = 'Individual ...789'
+    const { candidates: [c] } = classifyRefresh(plan, [src(label, 55_000, 40_000)], {
+      rememberedMappings: new Map([[normalizeBrokerAccountLabel(label), 'deleted-account']]),
+    })
+    expect(c!.match).toBe('likely')
+    expect(c!.targetAccountId).toBe('acct-individual')
   })
 
   it('keeps digits in names — "401k" never collapses to a stray letter that false-matches', () => {
@@ -226,6 +270,60 @@ describe('classifyRefresh — matching', () => {
     const delta = buildRefreshDelta(plan, classification, new Map([[0, 'acct-brokerage']]))
     expect(delta.staleAccountIds).toContain('acct-roth')
     expect(delta.staleAccountIds).not.toContain('acct-brokerage')
+  })
+
+  it('flags an unknown or older-than-seven-days source date without blocking the preview', () => {
+    const plan = planWith(loadedTaxable('acct-brokerage', 'Brokerage'))
+    const now = () => new Date('2026-07-15T12:00:00.000Z')
+    const selection = new Map([[0, 'acct-brokerage']])
+
+    const boundary = buildRefreshDelta(
+      plan,
+      classifyRefresh(plan, [src('Brokerage ...789', 55_000, 40_000, 1, '2026-07-08')]),
+      selection,
+      undefined,
+      now,
+    )
+    expect(boundary.dateFlags).toEqual([]) // exactly seven days old is not older than seven days
+
+    const stale = buildRefreshDelta(
+      plan,
+      classifyRefresh(plan, [src('Brokerage ...789', 55_000, 40_000, 1, '2026-07-07')]),
+      selection,
+      undefined,
+      now,
+    )
+    expect(stale.dateFlags).toEqual([{ sourceIndex: 0, kind: 'staleDate', ageDays: 8 }])
+    expect(stale.changes).not.toEqual([])
+    expect(stale.review.some((item) => item.detail.includes('8 days old'))).toBe(true)
+
+    const unknown = buildRefreshDelta(
+      plan,
+      classifyRefresh(plan, [src('Brokerage ...789', 55_000, 40_000, 1, null)]),
+      selection,
+      undefined,
+      now,
+    )
+    expect(unknown.dateFlags).toEqual([{ sourceIndex: 0, kind: 'unknownDate', ageDays: null }])
+  })
+
+  it('reconciles parsed totals and plan-side before/after totals in exact cents', () => {
+    const plan = planWith(loadedTaxable('acct-brokerage', 'Brokerage'))
+    const classification = classifyRefresh(plan, [
+      src('Brokerage ...789', 12_000, 9_000, 1, '2026-07-15'),
+      src('Unassigned account ...123', 15_000, null, 1, '2026-07-15'),
+    ])
+    const delta = buildRefreshDelta(plan, classification, new Map([[0, 'acct-brokerage']]), undefined, () => new Date('2026-07-15T12:00:00.000Z'))
+
+    expect(delta.reconciliation).toEqual({
+      fileTotal: 27_000,
+      matchedTotal: 12_000,
+      unmatchedRemainder: 15_000,
+      planTotalBefore: 100_000,
+      planTotalAfter: 12_000,
+    })
+    expect(delta.reconciliation.fileTotal).toBe(delta.reconciliation.matchedTotal + delta.reconciliation.unmatchedRemainder)
+    expect(delta.review.some((item) => item.source === 'Refresh reconciliation' && item.confidence === 'derived')).toBe(true)
   })
 
   it('does not list an account as stale when a row is manually reassigned onto it', () => {
@@ -351,6 +449,7 @@ describe('applyRefresh — the structural acceptance', () => {
     expect(plan.accounts[0]).toEqual({ ...before, balance: 14_000 })
     expect('costBasis' in plan.accounts[0]!).toBe(false)
     expect(delta.changes.some((c) => c.field === 'costBasis')).toBe(false)
+    expect(delta.review.some((item) => item.status === 'unmapped' && item.detail.includes('basis refresh applies only'))).toBe(true)
   })
 })
 
@@ -512,5 +611,61 @@ describe('preview/apply agreement', () => {
     for (const change of delta.changes) {
       expect(readPath(plan, change.path), change.path).toBe(change.after)
     }
+  })
+})
+
+describe('refresh snapshots', () => {
+  it('captures exact pre-refresh balances/basis and reverts without mutating the supplied plan', () => {
+    const plan = planWith(loadedTaxable('acct-brokerage', 'Brokerage'))
+    const classification = classifyRefresh(plan, [src('Brokerage ...789', 55_000, 40_000, 1, '2026-07-15')])
+    const selection = new Map([[0, 'acct-brokerage']])
+    const delta = buildRefreshDelta(plan, classification, selection, undefined, () => new Date('2026-07-15T12:00:00.000Z'))
+    const snapshot = captureRefreshSnapshot(plan, delta, {
+      id: 'snapshot-1',
+      appliedAtIso: '2026-07-15T12:00:00.000Z',
+      sourceLabel: 'Schwab — positions.csv',
+      sourceSha256: 'a'.repeat(64),
+    })
+    expect(snapshot.changes).toEqual([
+      {
+        accountId: 'acct-brokerage',
+        accountName: 'Brokerage',
+        before: { balance: 100_000, costBasis: 60_000 },
+        after: { balance: 55_000, costBasis: 40_000 },
+      },
+    ])
+
+    applyRefresh(plan, delta, selection)
+    const reverted = revertToSnapshot(plan, snapshot)
+    expect(plan.accounts[0]).toMatchObject({ balance: 55_000, costBasis: 40_000 })
+    expect(reverted.plan.accounts[0]).toMatchObject({ balance: 100_000, costBasis: 60_000 })
+    expect(reverted.skippedAccountIds).toEqual([])
+  })
+
+  it('skips a deleted account in a snapshot instead of throwing on plan drift', () => {
+    const plan = planWith(loadedTaxable('acct-brokerage', 'Brokerage'))
+    const snapshot = captureRefreshSnapshot(
+      plan,
+      [
+        {
+          path: 'accounts[0].balance',
+          field: 'balance',
+          before: 100_000,
+          after: 55_000,
+          clamped: false,
+        },
+      ],
+      {
+        id: 'snapshot-deleted',
+        appliedAtIso: '2026-07-15T12:00:00.000Z',
+        sourceLabel: 'Fidelity — positions.csv',
+        sourceSha256: '',
+      },
+    )
+    const drifted = structuredClone(plan)
+    drifted.accounts = []
+    const reverted = revertToSnapshot(drifted, snapshot)
+    expect(reverted.plan.accounts).toEqual([])
+    expect(reverted.skippedAccountIds).toEqual(['acct-brokerage'])
   })
 })
