@@ -116,9 +116,14 @@ Plan records in `library/plans.jsonl` carry `id`, `clientId`, `name`, `schemaVer
 documented in [The plan file format](plan-file-format.md)) as a JSON string:
 
 ```bash
-jq -r '[.id, .clientId, .name, .updatedAtIso] | @csv' library/plans.jsonl > plans.csv
-jq -r 'select(.id == "PLAN_ID") | .json | fromjson' library/plans.jsonl > plan.json
+jq -r --arg q "'" \
+  '[.id, .clientId, (.name | if test("^[=+@\\t\\r-]") then $q + . else . end), .updatedAtIso] | @csv' \
+  library/plans.jsonl > plans.csv
+jq -e -r 'select(.id == "PLAN_ID") | .json | fromjson' library/plans.jsonl > plan.json
 ```
+
+Plan names take the same formula guard as client names. The `-e` on the extraction makes a
+mistyped or absent `PLAN_ID` exit nonzero instead of silently writing an empty file.
 
 The extracted plan documents can be rebuilt into a Free-importable v2 backup envelope with `jq`
 alone, which makes the web planner at retiregolden.app a working reader of last resort:
@@ -134,7 +139,8 @@ Two honest limits on that bridge. Free refuses backup files over 10,000,000 char
 `jq -r 'select(.clientId == "CLIENT_ID") | .json | fromjson'` to build one envelope per
 household. And Free imports plans whose `schemaVersion` is at most what the deployed web app
 knows; a plan written by a newer Pro is skipped with an explicit `newer_than_app` warning rather
-than guessed at, per the [stability guarantees](plan-file-format.md#stability-guarantees).
+than guessed at — and an envelope whose plans are *all* newer is refused outright rather than
+imported empty — per the [stability guarantees](plan-file-format.md#stability-guarantees).
 
 Plan version history (`library/plan-history.jsonl`), annual reviews, workflow records, and the
 governance audit ledger (`advisor/audit-ledger.jsonl`) follow the same pattern: one JSON record
