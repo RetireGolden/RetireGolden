@@ -362,6 +362,12 @@ export function parseCompleteExportManifest(json: string): ParseCompleteExportMa
   if (!isUtcTimestamp(startedAtUtc)) return malformed('snapshot.startedAtUtc')
   const completedAtUtc = snapshot['completedAtUtc']
   if (!isUtcTimestamp(completedAtUtc)) return malformed('snapshot.completedAtUtc')
+  // A snapshot window that ends before it starts is impossible; createdAtUtc
+  // is deliberately not ordered against it, since producers may stamp the
+  // manifest from a different clock read than the snapshot.
+  if (Date.parse(completedAtUtc) < Date.parse(startedAtUtc)) {
+    return malformed('snapshot.completedAtUtc')
+  }
   if (manifest['plaintext'] !== true) return malformed('plaintext')
 
   const rawComponents = manifest['components']
@@ -399,8 +405,16 @@ export function parseCompleteExportManifest(json: string): ParseCompleteExportMa
 
   const totals = asRecord(manifest['totals'])
   if (totals === null) return malformed('totals')
-  const totalBytes = components.reduce((sum, component) => sum + component.byteLength, 0)
-  const totalLogicalRecords = components.reduce((sum, component) => sum + component.logicalCount, 0)
+  // Refuse sums past 2**53 - 1: above that, IEEE rounding lets a wrong total
+  // collide with the true one, so the equations would stop discriminating.
+  let totalBytes = 0
+  let totalLogicalRecords = 0
+  for (const component of components) {
+    totalBytes += component.byteLength
+    totalLogicalRecords += component.logicalCount
+    if (totalBytes > Number.MAX_SAFE_INTEGER) return malformed('totals.bytes')
+    if (totalLogicalRecords > Number.MAX_SAFE_INTEGER) return malformed('totals.logicalRecords')
+  }
   if (totals['components'] !== components.length) return malformed('totals.components')
   if (totals['bytes'] !== totalBytes) return malformed('totals.bytes')
   if (totals['logicalRecords'] !== totalLogicalRecords) return malformed('totals.logicalRecords')
@@ -418,8 +432,13 @@ export function parseCompleteExportManifest(json: string): ParseCompleteExportMa
   const importableContainer = freeCompatibility['importableContainer']
   if (typeof importableContainer !== 'boolean') return malformed('compatibility.free.importableContainer')
   const plansComponent = freeCompatibility['plansComponent']
-  if (plansComponent !== undefined && (!isNonEmptyString(plansComponent) || !componentPaths.has(plansComponent))) {
-    return malformed('compatibility.free.plansComponent')
+  if (plansComponent !== undefined) {
+    // The Free bridge must point at a component actually labeled for Free;
+    // accepting a pro-only payload here would misdirect a Free importer.
+    const bridged = components.find((component) => component.path === plansComponent)
+    if (!isNonEmptyString(plansComponent) || bridged === undefined || bridged.edition !== 'free-compatible') {
+      return malformed('compatibility.free.plansComponent')
+    }
   }
   const freeReason = freeCompatibility['reason']
   if (freeReason !== undefined && typeof freeReason !== 'string') return malformed('compatibility.free.reason')
@@ -438,6 +457,15 @@ export function parseCompleteExportManifest(json: string): ParseCompleteExportMa
   if (!isPositiveInteger(maxJsonlLineBytes)) return malformed('limits.maxJsonlLineBytes')
   const maxJsonNesting = limits['maxJsonNesting']
   if (!isPositiveInteger(maxJsonNesting)) return malformed('limits.maxJsonNesting')
+  // The manifest must satisfy its own advertised bounds: a component larger
+  // than the declared per-component cap, a total above the archive cap, or
+  // more entries (components plus the manifest pair) than declared is
+  // internally inconsistent, not a bigger archive.
+  if (components.some((component) => component.byteLength > maxComponentBytes)) {
+    return malformed('limits.maxComponentBytes')
+  }
+  if (totalBytes > maxTotalStoredBytes) return malformed('limits.maxTotalStoredBytes')
+  if (components.length + 2 > maxEntries) return malformed('limits.maxEntries')
 
   return {
     ok: true,

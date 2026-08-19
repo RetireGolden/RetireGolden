@@ -67,6 +67,11 @@ component's raw stored byte length and SHA-256 against its manifest entry. Final
 equations above. An archive whose sidecar, component digest, length, or totals fail is not a verified planning
 record.
 
+A manifest must also satisfy its own advertised bounds: no component may exceed the declared
+per-component byte cap, the summed bytes may not exceed the declared archive cap, and the entry count
+(components plus the manifest pair) may not exceed the declared entry cap. When
+`compatibility.free.plansComponent` is present it must name a `free-compatible` component.
+
 JavaScript and TypeScript hosts can use the browser-free
 `@retiregolden/planner-ui/complete-export` subpath instead of hand-rolling those checks. Its typed parser
 validates the manifest contract; `verifyManifestText` checks the exact sidecar grammar and digest; and

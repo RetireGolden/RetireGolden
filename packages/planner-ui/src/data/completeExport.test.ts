@@ -165,6 +165,35 @@ describe('parseCompleteExportManifest refusals and tolerances', () => {
       entries(raw, 'components')[0]!['path'] = 'manifest.json'
     }, 'malformed')
     expectRefusal((raw) => {
+      // Individually safe byteLengths whose IEEE sum collides with a rounded
+      // total: without the overflow guard this parses "consistently".
+      const components = entries(raw, 'components')
+      components[0]!['byteLength'] = Number.MAX_SAFE_INTEGER
+      components[1]!['byteLength'] = 2
+      const totals = raw['totals'] as Record<string, unknown>
+      totals['bytes'] = Number.MAX_SAFE_INTEGER + 2
+    }, 'malformed')
+    expectRefusal((raw) => {
+      const component = entries(raw, 'components')[0]!
+      const totals = raw['totals'] as Record<string, unknown>
+      const limits = raw['limits'] as Record<string, unknown>
+      limits['maxComponentBytes'] = 100
+      component['byteLength'] = 101
+      totals['bytes'] = (totals['bytes'] as number) - 194 + 101
+    }, 'malformed')
+    expectRefusal((raw) => {
+      const limits = raw['limits'] as Record<string, unknown>
+      limits['maxEntries'] = 24
+    }, 'malformed')
+    expectRefusal((raw) => {
+      const snapshot = raw['snapshot'] as Record<string, unknown>
+      snapshot['completedAtUtc'] = '2026-08-18T11:59:59.000Z'
+    }, 'malformed')
+    expectRefusal((raw) => {
+      const free = (raw['compatibility'] as Record<string, Record<string, unknown>>)['free']!
+      free['plansComponent'] = 'advisor/audit-ledger.jsonl'
+    }, 'malformed')
+    expectRefusal((raw) => {
       const components = entries(raw, 'components')
       components.push({ ...components[0]! })
     }, 'malformed')
