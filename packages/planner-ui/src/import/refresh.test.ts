@@ -325,7 +325,7 @@ describe('classifyRefresh — matching', () => {
     )
     expect(stale.dateFlags).toEqual([{ sourceIndex: 0, kind: 'staleDate', ageDays: 8 }])
     expect(stale.changes).not.toEqual([])
-    expect(stale.review.find((item) => item.detail.includes('8 days old'))).toMatchObject({
+    expect(stale.review.find((item) => item.detail.includes('8 days ago'))).toMatchObject({
       status: 'defaulted',
       confidence: 'assumed',
     })

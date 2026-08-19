@@ -143,7 +143,8 @@ export interface RefreshDelta {
   /** Honesty checklist, compatible with `reviewToProvenance`. */
   review: ImportReviewItem[]
   /** Informational source-date flags, indexed to the parsed broker account row. */
-  dateFlags: RefreshSourceDateFlag[]
+  /** Optional on the published contract: pre-WS5 delta constructors keep compiling. */
+  dateFlags?: RefreshSourceDateFlag[]
   /**
    * Exact-cent file/plan totals for checking this refresh before it is applied.
    *
@@ -647,7 +648,7 @@ function dateFlagReview(candidate: RefreshCandidate, flag: RefreshSourceDateFlag
     source: candidate.source.accountLabel,
     detail:
       flag.kind === 'staleDate'
-        ? `The broker file is ${flag.ageDays} days old as of ${candidate.source.asOfIso}; review this balance before applying it. The flag does not block refresh.`
+        ? `This balance is dated ${candidate.source.asOfIso} — ${flag.ageDays} days ago; review it before applying. The flag does not block refresh.`
         : 'The broker file did not carry a readable as-of date; review this balance before applying it. The flag does not block refresh.',
     locator: aggregateLocator(flag.kind === 'staleDate' ? `broker as-of date ${candidate.source.asOfIso}` : 'broker as-of date unavailable'),
     confidence: 'assumed',

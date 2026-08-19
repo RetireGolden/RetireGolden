@@ -67,6 +67,7 @@ import {
 } from '../../import/refresh'
 import {
   deleteRefreshManualMapping,
+  deleteRefreshSnapshot,
   listRefreshManualMappings,
   listRefreshSnapshots,
   refreshHistoryAvailable,
@@ -602,7 +603,7 @@ export function UpdateBalancesPanel() {
   }
 
   const apply = async () => {
-    if (applying.current) return
+    if (applying.current || restoring.current) return
     applying.current = true
     try {
     const applyEpoch = panelEpoch.current
@@ -649,7 +650,12 @@ export function UpdateBalancesPanel() {
       // Hosts without IndexedDB have no durable store and stay synchronous.
       if (refreshHistoryAvailable()) {
         snapshotPersisted = await saveRefreshSnapshot(snapshot)
-        if (applyEpoch !== panelEpoch.current) return
+        if (applyEpoch !== panelEpoch.current) {
+          // The apply was cancelled while its undo record was being written;
+          // a snapshot for an apply that never ran must not offer a restore.
+          if (snapshotPersisted) void deleteRefreshSnapshot(snapshot.id)
+          return
+        }
       } else {
         void saveRefreshSnapshot(snapshot)
       }
@@ -729,7 +735,7 @@ export function UpdateBalancesPanel() {
   }
 
   const restoreSnapshot = async (snapshot: RefreshSnapshot) => {
-    if (restoring.current) return
+    if (restoring.current || applying.current) return
     restoring.current = true
     try {
       if (snapshot.planId !== plan.id) return

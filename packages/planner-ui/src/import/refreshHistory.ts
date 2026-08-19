@@ -56,6 +56,13 @@ export function refreshHistoryAvailable(): boolean {
   return typeof indexedDB !== 'undefined'
 }
 
+/** Remove one snapshot (an apply that aborted after its durable write). */
+export async function deleteRefreshSnapshot(id: string): Promise<void> {
+  const database = await openHistoryDb()
+  if (!database) return
+  await database.delete(SNAPSHOTS_STORE, id)
+}
+
 /** Erase the entire refresh-history database ("Clear all data" support). */
 export async function clearAllRefreshHistory(): Promise<void> {
   if (typeof indexedDB === 'undefined') return
