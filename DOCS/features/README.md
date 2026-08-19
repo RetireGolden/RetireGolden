@@ -161,8 +161,8 @@ One-time goals (amount + year). Healthcare:
 ## 5. Contributions and accumulation (pre-retirement)
 
 Per-year contributions by account with annual-limit enforcement (401(k), IRA, HSA — data-driven),
-age-50 catch-ups, the age 60–63 super catch-up, and the Roth catch-up mandate for prior-year wages
-> $150k. Employer match (simple % formulas). Contributions support **time-aware phases**
+age-50 catch-ups, the age 60–63 super catch-up, and the Roth catch-up mandate for prior-year Box 3
+FICA wages that **exceed** $150k (2026+; user-entered on the employer account). Employer match (simple % formulas). Contributions support **time-aware phases**
 (`contributionPhaseSchema`: per-phase amount with optional `fromAge`/`toAge` window and annual `escalationPct`
 for salary-growth ramps), so an early-career accumulator's rising savings are modeled honestly.
 

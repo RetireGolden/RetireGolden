@@ -914,6 +914,13 @@ export const traditionalAccountSchema = z.object({
   sepp: seppElectionSchema.optional(),
   employerMatch: employerMatchSchema.optional(),
   contributionSchedule: z.array(contributionPhaseSchema).optional(),
+  /**
+   * Preceding-calendar-year FICA wages (IRC 3121(a) / Form W-2 Box 3) from the
+   * employer sponsoring this plan. Read only for `kind: 'employer'`. Omitted or
+   * 0 is not subject to the 414(v)(7) Roth catch-up mandate (fail closed).
+   * Not MAGI and not the HCE test. Additive — no schema-version bump.
+   */
+  priorCalendarYearFicaWages: nonNegative.optional(),
   /** Opt-in class allocation; supersedes annualReturnPct. Rebalancing here is tax-free. */
   allocation: assetAllocationPolicySchema.optional(),
 })
@@ -943,6 +950,13 @@ export const rothAccountSchema = z.object({
   inherited: inheritedAccountSchema.optional(),
   employerMatch: employerMatchSchema.optional(),
   contributionSchedule: z.array(contributionPhaseSchema).optional(),
+  /**
+   * Preceding-calendar-year FICA wages (IRC 3121(a) / Form W-2 Box 3) from the
+   * employer sponsoring this plan. Read only for `kind: 'employer'`. Omitted or
+   * 0 is not subject to the 414(v)(7) Roth catch-up mandate (fail closed).
+   * Not MAGI and not the HCE test. Additive — no schema-version bump.
+   */
+  priorCalendarYearFicaWages: nonNegative.optional(),
   /** Opt-in class allocation; supersedes annualReturnPct. Rebalancing here is tax-free. */
   allocation: assetAllocationPolicySchema.optional(),
 })

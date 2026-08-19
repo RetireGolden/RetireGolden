@@ -798,7 +798,20 @@ export function AccountFields({ account, index }: { account: Account; index: num
         </>
       ) : null}
       {(account.type === 'traditional' || account.type === 'roth') && account.kind === 'employer' ? (
-        account.employerMatch !== undefined ? (
+        <>
+        <MoneyField
+          label="Prior-year FICA wages (Box 3)"
+          help="Social Security wages from this plan's sponsoring employer for the calendar year before the contribution year (Form W-2 Box 3, IRC 3121(a)). Leave at $0 if this person had no FICA wages from that employer — a new hire or self-employment only. When the amount exceeds the IRS threshold ($150,000 for 2026), catch-up contributions must be designated Roth; if this same person has no Roth employer account of their own, that catch-up is $0. A spouse's Roth 401(k) does not count. This is not MAGI and not the highly compensated employee test."
+          hint="Blank or $0 = not subject to the Roth catch-up mandate."
+          source={{
+            label: 'IRC 414(v)(7)(A)',
+            url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section414&num=0&edition=prelim',
+          }}
+          value={account.priorCalendarYearFicaWages ?? 0}
+          fractionDigits={2}
+          onCommit={(v) => set('priorCalendarYearFicaWages', v ?? 0)}
+        />
+        {account.employerMatch !== undefined ? (
           <div className="nested-form-section field-span-full" data-testid="employer-match-panel">
             <div className="form-grid nested-control-grid">
               <CheckboxField
@@ -836,7 +849,8 @@ export function AccountFields({ account, index }: { account: Account; index: num
               set('employerMatch', v ? { matchPct: 100, capPctOfPay: 4 } : undefined)
             }}
           />
-        )
+        )}
+        </>
       ) : null}
       {account.type === 'pension' ? (
         <SelectField

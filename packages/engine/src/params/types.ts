@@ -132,7 +132,11 @@ export interface ParameterPack {
      * rule registry for the authority and for the reading this displaced.
      */
     superCatchUp60to63: number
-    /** Prior-year FICA wages above this force catch-ups to be Roth. */
+    /**
+     * Prior-year FICA (IRC 3121(a) / W-2 Box 3) wage threshold. Catch-ups must
+     * be designated Roth when the sponsoring-employer figure *exceeds* this
+     * amount. See `irc-414-v-7-A-high-earner-roth-catch-up-mandate`.
+     */
     rothCatchUpWageThreshold: number
     ira: number
     iraCatchUp50: number

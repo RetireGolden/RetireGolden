@@ -79,6 +79,13 @@ import {
   type InheritedRegimeResult,
 } from '../strategies/inheritedIra.js'
 import {
+  allocateEmployerElectiveDeferrals,
+  employerMatchElectiveBase,
+  indexRothCatchUpWageThreshold,
+  type EmployerElectiveAllocation,
+  type EmployerElectiveRequest,
+} from './employerRothCatchUp.js'
+import {
   acceptsContributions,
   hsaNonQualifiedPenaltyRate,
   isAggregatedIra,
@@ -3553,10 +3560,24 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       }
     }
 
+    const isEmployerPlanAccount = (account: Account): boolean =>
+      (account.type === 'traditional' || account.type === 'roth') && account.kind === 'employer'
+
+    const employerCatchUpForAge = (age: number): number =>
+      age >= 60 && age <= 63
+        ? indexWithStatutoryRounding(pack.contributionLimits.superCatchUp60to63, limitGrowth)
+        : age >= 50
+          // The (B)(i)/(C)(i) first-sentence catch-up does index normally.
+          ? pack.contributionLimits.catchUp50 * limitGrowth
+          : 0
+
+    const desiredByAccountId = new Map<string, number>()
     for (const state of balances) {
       const account = state.account
       const hasSchedule = 'contributionSchedule' in account && account.contributionSchedule && account.contributionSchedule.length > 0
-      if (account.annualContribution <= 0 && !hasSchedule) continue
+      // A Roth employer account with a zero schedule still has to sit in the
+      // 414(v)(7) allocator so a high-earner catch-up can be redirected onto it.
+      if (account.annualContribution <= 0 && !hasSchedule && !isEmployerPlanAccount(account)) continue
       if (!acceptsContributions(account)) continue // inherited accounts can't receive contributions
       const ownerId = account.ownerPersonId ?? primary.id
       const ownerState = stateOf(ownerId)
@@ -3580,8 +3601,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           }
         }
         // Employer accounts require wages even with a schedule
-        const isEmployer = (account.type === 'traditional' || account.type === 'roth') && account.kind === 'employer'
-        if (isEmployer && (wagesByPerson.get(ownerId) ?? 0) <= 0) {
+        if (isEmployerPlanAccount(account) && (wagesByPerson.get(ownerId) ?? 0) <= 0) {
           desired = 0
         }
       } else {
@@ -3592,34 +3612,72 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           desired = account.annualContribution * inflFactor
         }
       }
+      desiredByAccountId.set(account.id, desired)
+    }
 
-      if (desired <= 0) continue
+    const employerAllocated = new Map<string, number>()
+    const employerAllocationByOwner = new Map<string, EmployerElectiveAllocation>()
+    const employerRequestsByOwner = new Map<string, EmployerElectiveRequest[]>()
+    const employeeLandedByAccountId = new Map<string, number>()
+    for (const state of balances) {
+      const account = state.account
+      if (!isEmployerPlanAccount(account) || !desiredByAccountId.has(account.id)) continue
+      if (account.type !== 'traditional' && account.type !== 'roth') continue
+      const ownerId = account.ownerPersonId ?? primary.id
+      const list = employerRequestsByOwner.get(ownerId) ?? []
+      list.push({
+        accountId: account.id,
+        type: account.type,
+        desired: desiredByAccountId.get(account.id) ?? 0,
+        priorCalendarYearFicaWages: account.priorCalendarYearFicaWages ?? 0,
+      })
+      employerRequestsByOwner.set(ownerId, list)
+    }
+    for (const [ownerId, requests] of employerRequestsByOwner) {
+      const age = stateOf(ownerId).ageAttained
+      // IRC 414(v)(2)(C)(i) sentence two indexes "the adjusted dollar amounts
+      // applicable under clauses (i) and (ii) of subparagraph (E)" -- the
+      // greater-of OUTPUT, not the 10,000 dollar leg inside it. Congress used
+      // figure-specific wording one sentence earlier ("the $5,000 amount in
+      // subparagraph (B)(i)") and switched deliberately here. Treasury settles
+      // it outright: 26 CFR 1.414(v)-1(c)(2)(iii)(B) indexes "the initial
+      // amount ($11,250 ...)", so it is the operative figure that moves and
+      // the 10,000 leg never governs. That provision governs taxable years
+      // beginning after 2025 by its own terms, which covers 2027 -- the first
+      // year in which the candidate readings produce different amounts.
+      const allocation = allocateEmployerElectiveDeferrals(requests, {
+        contributionYear: year,
+        baseLimit: pack.contributionLimits.employee401k * limitGrowth,
+        catchUpLimit: employerCatchUpForAge(age),
+        wageThreshold: indexRothCatchUpWageThreshold(
+          pack.contributionLimits.rothCatchUpWageThreshold,
+          limitGrowth,
+        ),
+        compensation: wagesByPerson.get(ownerId) ?? 0,
+      })
+      employerAllocationByOwner.set(ownerId, allocation)
+      for (const [accountId, amount] of allocation.allowed) {
+        employerAllocated.set(accountId, amount)
+      }
+    }
+
+    for (const state of balances) {
+      const account = state.account
+      if (!desiredByAccountId.has(account.id)) continue
+      const ownerId = account.ownerPersonId ?? primary.id
+      const ownerState = stateOf(ownerId)
+      const desired = desiredByAccountId.get(account.id) ?? 0
+      const isEmployerAccount = isEmployerPlanAccount(account)
+      if (desired <= 0 && !isEmployerAccount) continue
 
       let allowed = desired
       let groupKey: string | null = null
       let compensationKey: string | null = null
       let limit = Infinity
       const age = ownerState.ageAttained
-      if ((account.type === 'traditional' || account.type === 'roth') && account.kind === 'employer') {
+      if (isEmployerAccount) {
         groupKey = `${ownerId}:employer`
-        // IRC 414(v)(2)(C)(i) sentence two indexes "the adjusted dollar amounts
-        // applicable under clauses (i) and (ii) of subparagraph (E)" -- the
-        // greater-of OUTPUT, not the 10,000 dollar leg inside it. Congress used
-        // figure-specific wording one sentence earlier ("the $5,000 amount in
-        // subparagraph (B)(i)") and switched deliberately here. Treasury settles
-        // it outright: 26 CFR 1.414(v)-1(c)(2)(iii)(B) indexes "the initial
-        // amount ($11,250 ...)", so it is the operative figure that moves and
-        // the 10,000 leg never governs. That provision governs taxable years
-        // beginning after 2025 by its own terms, which covers 2027 -- the first
-        // year in which the candidate readings produce different amounts.
-        const catchUp =
-          age >= 60 && age <= 63
-            ? indexWithStatutoryRounding(pack.contributionLimits.superCatchUp60to63, limitGrowth)
-            : age >= 50
-              // The (B)(i)/(C)(i) first-sentence catch-up does index normally.
-              ? pack.contributionLimits.catchUp50 * limitGrowth
-              : 0
-        limit = pack.contributionLimits.employee401k * limitGrowth + catchUp
+        allowed = employerAllocated.get(account.id) ?? 0
       } else if ((account.type === 'traditional' || account.type === 'roth') && account.kind === 'ira') {
         // One group for traditional and Roth together: IRC 408A(c)(2) makes the
         // Roth limit the 219(b)(1) amount reduced by traditional contributions,
@@ -3668,8 +3726,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         const catchUp = age >= 55 ? pack.contributionLimits.hsaCatchUp55 : 0
         limit = base * limitGrowth + catchUp
       }
-      const isEmployerAccount = (account.type === 'traditional' || account.type === 'roth') && account.kind === 'employer'
-      if (groupKey !== null) {
+      if (groupKey !== null && !isEmployerAccount) {
         const used = groupUsed.get(groupKey) ?? 0
         allowed = Math.max(0, Math.min(desired, limit - used))
       }
@@ -3680,14 +3737,20 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       // are the first addition to land, so the cap has to bind them here.
       // Capping only the match leaves a participant paid less than the §402(g)
       // limit deferring more than they earned, and zeroing the match cannot
-      // bring that back under the pay prong.
+      // bring that back under the pay prong. IRC 414(v)(3)(A) then carves
+      // paragraph-(1) catch-up out of 415(c) entirely, including as a charge
+      // against other contributions, so only the §402(g) base is countable.
       const used415c = addition415cUsed.get(ownerId) ?? 0
+      let countableEmployee = 0
       if (isEmployerAccount) {
+        const catchUp = employerAllocationByOwner.get(ownerId)?.catchUpByAccount.get(account.id) ?? 0
+        const countable = Math.max(0, allowed - catchUp)
         const limit415c = Math.min(
           pack.contributionLimits.section415cLimit * limitGrowth,
           wagesByPerson.get(ownerId) ?? 0,
         )
-        allowed = Math.max(0, Math.min(allowed, limit415c - used415c))
+        countableEmployee = Math.max(0, Math.min(countable, limit415c - used415c))
+        allowed = countableEmployee + catchUp
       }
 
       if (groupKey !== null) {
@@ -3700,16 +3763,20 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           allowed = Math.max(0, Math.min(allowed, compensation))
           iraCompensationRemaining.set(compensationKey, compensation - allowed)
         }
-        if (allowed < desired - EPSILON) {
+        // Employer 414(v)(7) redirects leave the traditional account's
+        // `allowed` below `desired` even when the owner still deferred the
+        // full request as designated Roth. Compare owner totals after every
+        // employee deferral has landed, not this per-account gap.
+        if (!isEmployerAccount && allowed < desired - EPSILON) {
           warnings.add('Some contributions were reduced to stay within IRS annual limits.')
         }
         groupUsed.set(groupKey, (groupUsed.get(groupKey) ?? 0) + allowed)
       }
       if (allowed <= 0) continue
 
-      // Update employee contribution inside 415(c) tracker
+      // Update the countable (non-catch-up) employee contribution inside 415(c)
       if (isEmployerAccount) {
-        addition415cUsed.set(ownerId, used415c + allowed)
+        addition415cUsed.set(ownerId, used415c + countableEmployee)
       }
 
       const contributionBalanceBefore = state.balance
@@ -3770,51 +3837,80 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       if (account.type === 'traditional') traditionalInflow += allowed
       else otherInflow += allowed
       if (account.type === 'taxable' || account.type === 'equityComp') taxableInflow += allowed
+      if (isEmployerAccount) employeeLandedByAccountId.set(account.id, allowed)
+    }
 
-      // Employer match calculation
-      if (isEmployerAccount && 'employerMatch' in account && account.employerMatch) {
-        const matchInfo = account.employerMatch
-        const ownerWages = wagesByPerson.get(ownerId) ?? 0
-        if (ownerWages > 0) {
-          const matchCap = (matchInfo.capPctOfPay / 100) * ownerWages
-          const baseMatch = Math.min(allowed, matchCap)
-          let matchVal = baseMatch * (matchInfo.matchPct / 100)
+    for (const [, requests] of employerRequestsByOwner) {
+      let desiredTotal = 0
+      let landedTotal = 0
+      for (const request of requests) {
+        desiredTotal += request.desired
+        landedTotal += employeeLandedByAccountId.get(request.accountId) ?? 0
+      }
+      if (landedTotal < desiredTotal - EPSILON) {
+        warnings.add('Some contributions were reduced to stay within IRS annual limits.')
+      }
+    }
 
-          // Capped by §415(c) total additions limit, which is the LESSER of the
-          // indexed dollar amount and 100 percent of compensation — a low-paid
-          // participant with a generous match is bound by pay, not the dollar
-          // figure. Wages stand in for section 415(c)(3) compensation here.
-          const limit415c = Math.min(
-            pack.contributionLimits.section415cLimit * limitGrowth,
-            ownerWages,
-          )
-          const usedSoFar = addition415cUsed.get(ownerId) ?? 0
-          const remaining415cLimit = Math.max(0, limit415c - usedSoFar)
-          matchVal = Math.min(matchVal, remaining415cLimit)
+    // Employer match after every employee deferral, including 414(v)(7)
+    // redirected catch-up. Regular elective still lands before match so it
+    // consumes §415(c) first; 414(v)(3)(A) keeps the catch-up slice out of
+    // that limit, so match takes leftover room after the §402(g) base only.
+    for (const state of balances) {
+      const account = state.account
+      if (!isEmployerPlanAccount(account) || !desiredByAccountId.has(account.id)) continue
+      if (!('employerMatch' in account) || !account.employerMatch) continue
+      const ownerId = account.ownerPersonId ?? primary.id
+      const matchInfo = account.employerMatch
+      const ownerWages = wagesByPerson.get(ownerId) ?? 0
+      if (ownerWages <= 0) continue
+      const allocation = employerAllocationByOwner.get(ownerId)
+      const electiveForMatch = allocation === undefined
+        ? (employeeLandedByAccountId.get(account.id) ?? 0)
+        : employerMatchElectiveBase({
+          accountId: account.id,
+          employeeLandedByAccountId,
+          allocatedByAccountId: employerAllocated,
+          redirectedCatchUpBySource: allocation.redirectedCatchUpBySource,
+          catchUpRothAccountId: allocation.catchUpRothAccountId,
+        })
+      const matchCap = (matchInfo.capPctOfPay / 100) * ownerWages
+      const baseMatch = Math.min(electiveForMatch, matchCap)
+      let matchVal = baseMatch * (matchInfo.matchPct / 100)
 
-          if (matchVal > 0) {
-            state.balance += matchVal
-            if (account.type === 'traditional') {
-              const kind = 'employerPlanEmployerMatch' as const
-              recordAnnualRetirementRuntimeOccurrence({
-                producerOccurrenceKey: runtimeOccurrenceKey(kind, account.id),
-                kind,
-                grossAmountPlanDollars: matchVal,
-                ownerPersonId: account.ownerPersonId,
-                sourceAccountId: account.id,
-                executionDate: null,
-                executionSequence: null,
-                movementAuthorityId: null,
-              })
-            }
-            employerMatch += matchVal
-            // Employer match only lands in traditional or Roth employer accounts,
-            // never a taxable brokerage, so taxableInflow is unaffected here.
-            if (account.type === 'traditional') traditionalInflow += matchVal
-            else otherInflow += matchVal
-            addition415cUsed.set(ownerId, usedSoFar + matchVal)
-          }
+      // Capped by §415(c) total additions limit, which is the LESSER of the
+      // indexed dollar amount and 100 percent of compensation — a low-paid
+      // participant with a generous match is bound by pay, not the dollar
+      // figure. Wages stand in for section 415(c)(3) compensation here.
+      const limit415c = Math.min(
+        pack.contributionLimits.section415cLimit * limitGrowth,
+        ownerWages,
+      )
+      const usedSoFar = addition415cUsed.get(ownerId) ?? 0
+      const remaining415cLimit = Math.max(0, limit415c - usedSoFar)
+      matchVal = Math.min(matchVal, remaining415cLimit)
+
+      if (matchVal > 0) {
+        state.balance += matchVal
+        if (account.type === 'traditional') {
+          const kind = 'employerPlanEmployerMatch' as const
+          recordAnnualRetirementRuntimeOccurrence({
+            producerOccurrenceKey: runtimeOccurrenceKey(kind, account.id),
+            kind,
+            grossAmountPlanDollars: matchVal,
+            ownerPersonId: account.ownerPersonId,
+            sourceAccountId: account.id,
+            executionDate: null,
+            executionSequence: null,
+            movementAuthorityId: null,
+          })
         }
+        employerMatch += matchVal
+        // Employer match only lands in traditional or Roth employer accounts,
+        // never a taxable brokerage, so taxableInflow is unaffected here.
+        if (account.type === 'traditional') traditionalInflow += matchVal
+        else otherInflow += matchVal
+        addition415cUsed.set(ownerId, usedSoFar + matchVal)
       }
     }
 

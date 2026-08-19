@@ -41,7 +41,10 @@ State brackets are a separate question and are still held nominal (see `params/s
 - **Ordinary income stack:** wages, interest, non-qualified dividends, traditional withdrawals/conversions,
   pension/annuity taxable parts, and **taxable Social Security** (provisional-income 0/50/85% tiers — the
   thresholds are statutorily unindexed, so more benefit becomes taxable over time; this is modeled, not
-  indexed).
+  indexed). For contribution years 2026+, a high-earner employer-plan catch-up that meets the
+  §414(v)(7)(A) Box 3 wage test is designated Roth (or dropped if the plan has no Roth feature), so it
+  does not reduce ordinary income / MAGI the way a pre-tax catch-up would
+  (`irc-414-v-7-A-high-earner-roth-catch-up-mandate`).
 - **LTCG + qualified dividends** stack at 0/15/20% on top of ordinary income; the 0%-bracket headroom is
   surfaced as a gain-harvesting opportunity.
 - **Deductions:** standard deduction + age-65 additions + the **$6,000/person senior deduction

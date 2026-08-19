@@ -120,7 +120,7 @@ Maximum 85% of benefits taxable; thresholds are **statutorily unindexed** (more 
 | 401(k)/403(b)/457 employee deferral | $24,500 |
 | Catch-up 50+ | $8,000 |
 | **Super catch-up, ages 60–63** (SECURE 2.0) | $11,250 (replaces the 50+ amount) |
-| **Roth catch-up mandate** | Prior-year FICA wages > $150,000 ⇒ catch-ups must be Roth |
+| **Roth catch-up mandate** | Prior-year FICA wages (IRC 3121(a) / W-2 Box 3 from the **sponsoring employer**) **exceed** $150,000 (Notice 2025-67) ⇒ employer-plan catch-ups must be designated Roth. Exactly $150,000 is out. Zero / omitted Box 3 (new hire, SE-only) is not subject. No Roth employer account **for that owner** ⇒ high earner’s catch-up is **$0**, not pre-tax. Super catch-up ages 60–63 ($11,250) is the same §414(v) slice. Redirected catch-up remains elective deferral of the source plan for employer match. IRC §414(v)(2)(A)(ii) limits catch-up to compensation minus other elective deferrals; §414(v)(3)(A) then keeps that slice out of §415(c) annual additions, including as a charge against match. SEP / SIMPLE IRA and IRA catch-up are excepted. **2026** is statute + reasonable good-faith (Notice 2023-62 transition expired 2025-12-31); T.D. 10033’s regulatory applicability date of years after 2026-12-31 does **not** delay the mandate to 2027. Engine input: user-entered `priorCalendarYearFicaWages` on the employer account (`irc-414-v-7-A-high-earner-roth-catch-up-mandate`, `irc-414-v-7-A-prior-year-fica-wage-proxy`, `irc-414-v-2-A-catch-up-limited-to-compensation-excess`, `irc-414-v-3-A-catch-up-excluded-from-415c`). |
 | IRA | $7,500; catch-up 50+ $1,100 |
 | HSA (self/family) | parameter data (≈$4,400/$8,750) + $1,000 55+ catch-up |
 
