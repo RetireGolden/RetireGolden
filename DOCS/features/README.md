@@ -9,7 +9,8 @@ Financial rules and current-year numbers are in
 [roth-and-withdrawals.md](roth-and-withdrawals.md) ·
 [monte-carlo-and-scenarios.md](monte-carlo-and-scenarios.md) · [insurance.md](insurance.md) ·
 [optimizer.md](optimizer.md) · [learning-center.md](learning-center.md) · [longevity.md](longevity.md) ·
-[plan-file-format.md](plan-file-format.md) · [imports-and-migration.md](imports-and-migration.md) ·
+[plan-file-format.md](plan-file-format.md) · [planning-record.md](planning-record.md) ·
+[imports-and-migration.md](imports-and-migration.md) ·
 [household-map.md](household-map.md)
 
 **Code:** pure engine in `packages/engine/src/` (model/params/tax/rmd/strategies/projection/montecarlo/

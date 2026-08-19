@@ -109,8 +109,8 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, useRoutes } from 'react-router'
 import '@retiregolden/planner-ui/index.css'
-// The 0.2.0 host surface: the seam, the route groups, and the stable
-// plan-format subpath must all resolve from the tarball's exports map.
+// The host surface, route groups, and stable format subpaths must all resolve
+// from the tarball's exports map.
 import {
   PlannerApp,
   PlanStoreProvider,
@@ -120,6 +120,7 @@ import {
   type PlanStore,
 } from '@retiregolden/planner-ui'
 import { parseV2Backup, serializeV2Backup } from '@retiregolden/planner-ui/plan-format'
+import { parseCompleteExportManifest } from '@retiregolden/planner-ui/complete-export'
 import { taxCalculatorFor } from '@retiregolden/planner-ui/plan-tax-calculator'
 import {
   runSpendingSolve,
@@ -182,9 +183,14 @@ const spendingSolveContract: SpendingSolveContract | undefined = undefined
 
 type ProjectionContract = ProjectionView | undefined
 const projectionContract: ProjectionContract = undefined
+const completeExportProbe = parseCompleteExportManifest('{}')
+if (completeExportProbe.ok || completeExportProbe.reason !== 'not_complete_export') {
+  throw new Error('pack smoke FAILED: complete-export must refuse an empty object as not_complete_export')
+}
 
 console.debug(
   parseV2Backup(serializeV2Backup([])).ok,
+  completeExportProbe.reason,
   WorkspaceOnlyHost.name,
   PlanStoreProvider.name,
   MAX_DOCUMENT_BYTES,

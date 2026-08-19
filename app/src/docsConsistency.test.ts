@@ -9,8 +9,10 @@ import { describe, expect, it } from 'vitest'
 // Vite raw/glob imports keep this test inside the browser-typed src tree.
 import codeMap from '../../DOCS/code-map.md?raw'
 import planFileFormat from '../../DOCS/features/plan-file-format.md?raw'
+import planningRecord from '../../DOCS/features/planning-record.md?raw'
 import readme from '../../README.md?raw'
 import { V2_BACKUP_VERSION } from '@retiregolden/planner-ui/data/v2Backup'
+import { COMPLETE_EXPORT_FORMAT_VERSION } from '../../packages/planner-ui/src/data/completeExport'
 import { CURRENT_PLAN_SCHEMA_VERSION } from '@retiregolden/engine/model/plan'
 import { LEARNING_ARTICLES } from '@retiregolden/planner-ui/learn/learningRegistry'
 
@@ -36,5 +38,10 @@ describe('docs consistency', () => {
   it('plan-file-format.md states the current plan schema and backup envelope versions', () => {
     expect(planFileFormat).toContain(`\`schemaVersion\` is currently **${CURRENT_PLAN_SCHEMA_VERSION}**`)
     expect(planFileFormat).toContain(`currently **${V2_BACKUP_VERSION}**`)
+  })
+
+  it('planning-record.md states the current complete-export format version', () => {
+    expect(planningRecord).toContain('retiregolden.complete-export')
+    expect(planningRecord).toContain(`\`formatVersion\` is currently **${COMPLETE_EXPORT_FORMAT_VERSION}**`)
   })
 })
