@@ -577,10 +577,6 @@
   flex-direction: column;
   gap: 0.05rem;
   min-width: 0;
-  /* A 10rem auto-fit column is narrower than Lifetime Tax's
-     "nominal $ · federal + state + penalties". Without containment that
-     nowrap line painted into Roth Converted (`penaltiesending Roth $0`). */
-  overflow: hidden;
 }
 
 .kpi-label {
@@ -635,6 +631,11 @@
   color: var(--muted);
   min-width: 0;
   overflow-wrap: break-word;
+  /* Lifetime Tax's "nominal $ · federal + state + penalties" is wider than
+     a 10rem auto-fit column. nowrap used to paint into Roth Converted
+     (`penaltiesending Roth $0`). Contain the caption only — not the cell —
+     so focus rings and large values stay visible. */
+  overflow: hidden;
 }
 
 @media (max-width: 880px) {
