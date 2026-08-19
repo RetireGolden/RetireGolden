@@ -4,6 +4,17 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## 2026-08
 
+**2026-08-19**
+- Implemented **IRC §414(v)(7) high-earner designated Roth catch-up** (SECURE 2.0
+  §603) for contribution years 2026+. Employer-plan catch-up above the §402(g)
+  base is recharacterized as designated Roth when prior-year FICA wages from the
+  sponsoring employer **exceed** $150,000 (Notice 2025-67). Exactly $150,000
+  stays pre-tax-eligible. No Roth employer account ⇒ the high-earner catch-up
+  is $0. Super catch-up ages 60–63 is the same §414(v) slice. IRA / HSA / SEP /
+  SIMPLE IRA are untouched. The wage test is a user-entered Box 3 proxy on the
+  employer account (`priorCalendarYearFicaWages`); omitted defaults to 0 and is
+  not subject. T.D. 10033 does not delay the 2026 statutory mandate to 2027.
+
 **2026-08-13**
 - Prepared **`@retiregolden/planner-ui` 0.8.0** (minor — additive supported
   governance record-capture seams; no calculation changes). The new public,

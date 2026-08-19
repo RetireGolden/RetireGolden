@@ -871,3 +871,28 @@ describe('AccountFields inherited traditional treat-as-own contributions', () =>
     expect(labelTexts.some((text) => text.includes('Schedule contributions over time'))).toBe(false)
   })
 })
+
+describe('prior-year FICA wages (414(v)(7) Box 3 proxy)', () => {
+  it('shows the Box 3 field on an employer 401(k) and not on an IRA', () => {
+    renderFields(planWithAccount(retirementAccount({
+      id: 'k',
+      name: '401k',
+      kind: 'employer',
+      annualContribution: 24_500,
+    })))
+    expect(container?.textContent).toContain('Prior-year FICA wages (Box 3)')
+
+    if (root) act(() => root!.unmount())
+    container?.remove()
+    root = null
+    container = null
+
+    renderFields(planWithAccount(retirementAccount({
+      id: 'ira',
+      name: 'IRA',
+      kind: 'ira',
+      annualContribution: 7_500,
+    })))
+    expect(container?.textContent).not.toContain('Prior-year FICA wages (Box 3)')
+  })
+})

@@ -4100,7 +4100,7 @@ const registry = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The parameter pack carries the threshold but no engine calculator reads it, so nothing in the projection currently forces a high-wage catch-up into Roth. Registering the rule against the pack fields that hold the figure means a later implementation inherits the authority and the rounding rule rather than re-deriving them, and the fixture pins the published figure against the un-adjusted statutory base in the meantime.',
+      'The pack carries the published 2026 step. The projection now reads that figure for the 414(v)(7)(A) wage test; the character mandate and the Box 3 input proxy are registered separately at irc-414-v-7-A-high-earner-roth-catch-up-mandate and irc-414-v-7-A-prior-year-fica-wage-proxy. What remains settled here is the FIGURE and the five-thousand-dollar rounding, not the character of the catch-up.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -4122,6 +4122,109 @@ const registry = {
     implementedBy: [
       'packages/engine/src/params/data/year2026.ts',
       'packages/engine/src/params/types.ts',
+      'packages/engine/src/projection/employerRothCatchUp.ts',
+    ],
+  },
+  'irc-414-v-7-A-high-earner-roth-catch-up-mandate': {
+    title: 'High-earner employer-plan catch-up must be designated Roth in 2026 and later',
+    statement:
+      'For contribution years beginning after December 31, 2025, a participant in an applicable employer plan other than a SEP or SIMPLE IRA whose section 3121(a) wages from the employer sponsoring the plan for the preceding calendar year exceed the 414(v)(7)(A) threshold — 150,000 for 2026 per Notice 2025-67 — may make additional elective deferrals under 414(v)(1) only as designated Roth contributions. Exactly 150,000 does not exceed. A participant with no such FICA wages is not subject. If the plan has no qualified Roth contribution program, the high earner\'s catch-up maximum is 0 rather than a pre-tax catch-up. The ages 60-63 super catch-up is the same 414(v) additional elective deferral and is Roth-mandated when the wage test is met. IRA catch-up under 219(b)(5) is outside 414(v). T.D. 10033 generally applies to contributions in years beginning after December 31, 2026, but that regulatory applicability date does not postpone the statutory mandate; 2026 is statute plus reasonable good-faith after Notice 2023-62\'s administrative transition expired December 31, 2025.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The wage figure the engine compares to the threshold is a user-entered prior-calendar-year FICA amount on the employer account, not a Form W-2 Box 3 retrieved per sponsoring employer; that input gap is registered separately at irc-414-v-7-A-prior-year-fica-wage-proxy. Roth capability is inferred from the presence of a Roth employer account for the same owner, because the plan model has no employer identity and no qualified-Roth-contribution-program flag. SEP and SIMPLE IRA are the IRA kind and never enter this allocator. Regular (non-catch-up) elective deferrals keep the account type the plan already states. Named-arm RMD coordination and the age-70½ proxy are outside this record.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 414(v)(7)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section414&num=0&edition=prelim',
+      quotedText:
+        'Except as provided in subparagraph (C), in the case of an eligible participant whose wages (as defined in section 3121(a)) for the preceding calendar year from the employer sponsoring the plan exceed $145,000, paragraph (1) shall apply only if any additional elective deferrals are designated Roth contributions (as defined in section 402A(c)(1)) made pursuant to an employee election.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 414(v)(7)(C)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section414&num=0&edition=prelim',
+      quotedText:
+        'Subparagraph (A) shall not apply in the case of an applicable employer plan described in paragraph (6)(A)(iv).',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 414(v)(6)(A)(iv)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section414&num=0&edition=prelim',
+      quotedText:
+        'The term "applicable employer plan" means- (i) an employees\' trust described in section 401(a) which is exempt from tax under section 501(a), (ii) a plan under which amounts are contributed by an individual\'s employer for an annuity contract described in section 403(b), (iii) an eligible deferred compensation plan under section 457 of an eligible employer described in section 457(e)(1)(A), and (iv) an arrangement meeting the requirements of section 408(k) or (p).',
+    }, {
+      kind: 'irsNotice',
+      citation: 'Notice 2025-67, section on the Roth catch-up wage threshold',
+      url: 'https://www.irs.gov/pub/irs-drop/n-25-67.pdf',
+      quotedText:
+        'The Roth catch-up wage threshold for 2025, which under section 414(v)(7)(A) is used to determine whether an individual’s catch-up contributions to an applicable employer plan (other than a plan described in section 408(k) or (p)) for 2026 must be designated as Roth contributions, is increased from $145,000 to $150,000.',
+    }, {
+      kind: 'regulation',
+      citation: 'T.D. 10033, 26 CFR 1.414(v)-2(b)(2)',
+      url: 'https://www.govinfo.gov/content/pkg/FR-2025-09-16/html/2025-17865.htm',
+      quotedText:
+        'if an applicable employer plan does not include a qualified Roth contribution program (within the meaning of section 402A(b)), then, for a catch-up eligible participant who is subject to the Roth catch-up requirement under paragraph (a)(2) of this section, the maximum amount of catch-up contributions permitted under section 414(v) is $0.',
+    }, {
+      kind: 'regulation',
+      citation: 'T.D. 10033, DATES / Applicability Dates',
+      url: 'https://www.govinfo.gov/content/pkg/FR-2025-09-16/html/2025-17865.htm',
+      quotedText:
+        'These regulations generally apply with respect to contributions in taxable years beginning after December 31, 2026. ... Prior to the applicability date of the final regulations, a reasonable, good faith interpretation standard applies with respect to the statutory provisions reflected in the final regulations. ... Under section 603(c) of the SECURE 2.0 Act, the amendments made by section 603 of the SECURE 2.0 Act apply to taxable years beginning after December 31, 2023. ... the first two taxable years beginning after December 31, 2023, are regarded as an administrative transition period with respect to the Roth catch-up requirement.',
+    }, {
+      kind: 'regulation',
+      citation: 'T.D. 10033, preamble on FICA wages and self-employment',
+      url: 'https://www.govinfo.gov/content/pkg/FR-2025-09-16/html/2025-17865.htm',
+      quotedText:
+        'an individual who did not have any FICA wages from the employer sponsoring the plan for the preceding calendar year (for example, a partner who had only self-employment income ... ) would not be subject to the Roth catch-up requirement under the plan in the current year. ... FICA wages that are Social Security wages reported in Box 3 of Form W-2',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-19',
+    implementedBy: [
+      'packages/engine/src/projection/employerRothCatchUp.ts',
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/params/data/year2026.ts',
+    ],
+  },
+  'irc-414-v-7-A-prior-year-fica-wage-proxy': {
+    title: 'The 414(v)(7) wage test uses a user-entered Box 3 proxy, and omission fails closed',
+    statement:
+      'Section 414(v)(7)(A) turns on wages as defined in section 3121(a) from the employer sponsoring the plan for the preceding calendar year — Social Security wages reported in Form W-2 Box 3, not MAGI and not the section 414(q) highly compensated employee dollar amount. The plan model has no W-2 and no employer identity, so the engine compares a user-entered prior-calendar-year FICA wage figure on the employer account to the published threshold. When that field is omitted it defaults to zero, and a zero figure does not exceed the threshold, so the participant is treated as not subject. That is the statutory result for a new hire or a partner with only self-employment income, and it understates tax whenever the omitted Box 3 would have exceeded the threshold: the catch-up remains pre-tax, ordinary income and MAGI fall, and later section 86, ACA, and IRMAA readings follow the flatter income. Current-year wages are not substituted.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'understatesTax',
+    conventionRationale:
+      'The mandate itself is enacted; the approximation is the input. Inferring Box 3 from current-year wages, MAGI, or the HCE test would invent a wage test the statute does not use and would over-apply the mandate to self-employment and to wages from a different employer. Leaving the field at zero matches T.D. 10033\'s no-FICA result and is the fail-closed reading the fixtures pin. The field is a single static figure for every contribution year 2026 and later; the engine does not reconstruct a year-by-year Box 3 series.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 414(v)(7)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section414&num=0&edition=prelim',
+      quotedText:
+        'in the case of an eligible participant whose wages (as defined in section 3121(a)) for the preceding calendar year from the employer sponsoring the plan exceed $145,000',
+    }, {
+      kind: 'regulation',
+      citation: 'T.D. 10033, preamble on FICA wages and self-employment',
+      url: 'https://www.govinfo.gov/content/pkg/FR-2025-09-16/html/2025-17865.htm',
+      quotedText:
+        'an individual who did not have any FICA wages from the employer sponsoring the plan for the preceding calendar year (for example, a partner who had only self-employment income ... ) would not be subject to the Roth catch-up requirement under the plan in the current year. ... FICA wages that are Social Security wages reported in Box 3 of Form W-2',
+    }, {
+      kind: 'irsNotice',
+      citation: 'Notice 2025-67, section on the Roth catch-up wage threshold',
+      url: 'https://www.irs.gov/pub/irs-drop/n-25-67.pdf',
+      quotedText:
+        'The Roth catch-up wage threshold for 2025, which under section 414(v)(7)(A) is used to determine whether an individual’s catch-up contributions to an applicable employer plan (other than a plan described in section 408(k) or (p)) for 2026 must be designated as Roth contributions, is increased from $145,000 to $150,000.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-19',
+    implementedBy: [
+      'packages/engine/src/projection/employerRothCatchUp.ts',
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/model/plan.ts',
     ],
   },
   'irc-415-d-cost-of-living-adjustment-anchor': {

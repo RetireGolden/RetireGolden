@@ -79,6 +79,11 @@ import {
   type InheritedRegimeResult,
 } from '../strategies/inheritedIra.js'
 import {
+  allocateEmployerElectiveDeferrals,
+  indexRothCatchUpWageThreshold,
+  type EmployerElectiveRequest,
+} from './employerRothCatchUp.js'
+import {
   acceptsContributions,
   hsaNonQualifiedPenaltyRate,
   isAggregatedIra,
@@ -3553,10 +3558,24 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       }
     }
 
+    const isEmployerPlanAccount = (account: Account): boolean =>
+      (account.type === 'traditional' || account.type === 'roth') && account.kind === 'employer'
+
+    const employerCatchUpForAge = (age: number): number =>
+      age >= 60 && age <= 63
+        ? indexWithStatutoryRounding(pack.contributionLimits.superCatchUp60to63, limitGrowth)
+        : age >= 50
+          // The (B)(i)/(C)(i) first-sentence catch-up does index normally.
+          ? pack.contributionLimits.catchUp50 * limitGrowth
+          : 0
+
+    const desiredByAccountId = new Map<string, number>()
     for (const state of balances) {
       const account = state.account
       const hasSchedule = 'contributionSchedule' in account && account.contributionSchedule && account.contributionSchedule.length > 0
-      if (account.annualContribution <= 0 && !hasSchedule) continue
+      // A Roth employer account with a zero schedule still has to sit in the
+      // 414(v)(7) allocator so a high-earner catch-up can be redirected onto it.
+      if (account.annualContribution <= 0 && !hasSchedule && !isEmployerPlanAccount(account)) continue
       if (!acceptsContributions(account)) continue // inherited accounts can't receive contributions
       const ownerId = account.ownerPersonId ?? primary.id
       const ownerState = stateOf(ownerId)
@@ -3580,8 +3599,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           }
         }
         // Employer accounts require wages even with a schedule
-        const isEmployer = (account.type === 'traditional' || account.type === 'roth') && account.kind === 'employer'
-        if (isEmployer && (wagesByPerson.get(ownerId) ?? 0) <= 0) {
+        if (isEmployerPlanAccount(account) && (wagesByPerson.get(ownerId) ?? 0) <= 0) {
           desired = 0
         }
       } else {
@@ -3592,34 +3610,68 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           desired = account.annualContribution * inflFactor
         }
       }
+      desiredByAccountId.set(account.id, desired)
+    }
 
-      if (desired <= 0) continue
+    const employerAllocated = new Map<string, number>()
+    const employerRequestsByOwner = new Map<string, EmployerElectiveRequest[]>()
+    for (const state of balances) {
+      const account = state.account
+      if (!isEmployerPlanAccount(account) || !desiredByAccountId.has(account.id)) continue
+      if (account.type !== 'traditional' && account.type !== 'roth') continue
+      const ownerId = account.ownerPersonId ?? primary.id
+      const list = employerRequestsByOwner.get(ownerId) ?? []
+      list.push({
+        accountId: account.id,
+        type: account.type,
+        desired: desiredByAccountId.get(account.id) ?? 0,
+        priorCalendarYearFicaWages: account.priorCalendarYearFicaWages ?? 0,
+      })
+      employerRequestsByOwner.set(ownerId, list)
+    }
+    for (const [ownerId, requests] of employerRequestsByOwner) {
+      const age = stateOf(ownerId).ageAttained
+      // IRC 414(v)(2)(C)(i) sentence two indexes "the adjusted dollar amounts
+      // applicable under clauses (i) and (ii) of subparagraph (E)" -- the
+      // greater-of OUTPUT, not the 10,000 dollar leg inside it. Congress used
+      // figure-specific wording one sentence earlier ("the $5,000 amount in
+      // subparagraph (B)(i)") and switched deliberately here. Treasury settles
+      // it outright: 26 CFR 1.414(v)-1(c)(2)(iii)(B) indexes "the initial
+      // amount ($11,250 ...)", so it is the operative figure that moves and
+      // the 10,000 leg never governs. That provision governs taxable years
+      // beginning after 2025 by its own terms, which covers 2027 -- the first
+      // year in which the candidate readings produce different amounts.
+      const allocation = allocateEmployerElectiveDeferrals(requests, {
+        contributionYear: year,
+        baseLimit: pack.contributionLimits.employee401k * limitGrowth,
+        catchUpLimit: employerCatchUpForAge(age),
+        wageThreshold: indexRothCatchUpWageThreshold(
+          pack.contributionLimits.rothCatchUpWageThreshold,
+          limitGrowth,
+        ),
+      })
+      for (const [accountId, amount] of allocation.allowed) {
+        employerAllocated.set(accountId, amount)
+      }
+    }
+
+    for (const state of balances) {
+      const account = state.account
+      if (!desiredByAccountId.has(account.id)) continue
+      const ownerId = account.ownerPersonId ?? primary.id
+      const ownerState = stateOf(ownerId)
+      const desired = desiredByAccountId.get(account.id) ?? 0
+      const isEmployerAccount = isEmployerPlanAccount(account)
+      if (desired <= 0 && !isEmployerAccount) continue
 
       let allowed = desired
       let groupKey: string | null = null
       let compensationKey: string | null = null
       let limit = Infinity
       const age = ownerState.ageAttained
-      if ((account.type === 'traditional' || account.type === 'roth') && account.kind === 'employer') {
+      if (isEmployerAccount) {
         groupKey = `${ownerId}:employer`
-        // IRC 414(v)(2)(C)(i) sentence two indexes "the adjusted dollar amounts
-        // applicable under clauses (i) and (ii) of subparagraph (E)" -- the
-        // greater-of OUTPUT, not the 10,000 dollar leg inside it. Congress used
-        // figure-specific wording one sentence earlier ("the $5,000 amount in
-        // subparagraph (B)(i)") and switched deliberately here. Treasury settles
-        // it outright: 26 CFR 1.414(v)-1(c)(2)(iii)(B) indexes "the initial
-        // amount ($11,250 ...)", so it is the operative figure that moves and
-        // the 10,000 leg never governs. That provision governs taxable years
-        // beginning after 2025 by its own terms, which covers 2027 -- the first
-        // year in which the candidate readings produce different amounts.
-        const catchUp =
-          age >= 60 && age <= 63
-            ? indexWithStatutoryRounding(pack.contributionLimits.superCatchUp60to63, limitGrowth)
-            : age >= 50
-              // The (B)(i)/(C)(i) first-sentence catch-up does index normally.
-              ? pack.contributionLimits.catchUp50 * limitGrowth
-              : 0
-        limit = pack.contributionLimits.employee401k * limitGrowth + catchUp
+        allowed = employerAllocated.get(account.id) ?? 0
       } else if ((account.type === 'traditional' || account.type === 'roth') && account.kind === 'ira') {
         // One group for traditional and Roth together: IRC 408A(c)(2) makes the
         // Roth limit the 219(b)(1) amount reduced by traditional contributions,
@@ -3668,8 +3720,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         const catchUp = age >= 55 ? pack.contributionLimits.hsaCatchUp55 : 0
         limit = base * limitGrowth + catchUp
       }
-      const isEmployerAccount = (account.type === 'traditional' || account.type === 'roth') && account.kind === 'employer'
-      if (groupKey !== null) {
+      if (groupKey !== null && !isEmployerAccount) {
         const used = groupUsed.get(groupKey) ?? 0
         allowed = Math.max(0, Math.min(desired, limit - used))
       }
