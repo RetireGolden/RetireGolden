@@ -1,7 +1,7 @@
 import { fileURLToPath } from 'node:url'
 
 import react from '@vitejs/plugin-react'
-import { defineConfig } from 'vitest/config'
+import { coverageConfigDefaults, defineConfig } from 'vitest/config'
 
 // Engine package source, as a posix path for Vite's resolver.
 const engineSrc = fileURLToPath(new URL('../engine/src', import.meta.url)).replaceAll('\\', '/')
@@ -37,6 +37,11 @@ export default defineConfig({
       // Only package code: aliased engine sources must not dilute the report
       // (engine coverage and its thresholds live in packages/engine).
       include: ['src/**'],
+      // Checked-in data fixtures have no executable statements; counting
+      // them as 0%-covered modules dilutes the directory thresholds below.
+      // Spread the defaults: a bare `exclude` would replace them and pull
+      // test files into the report.
+      exclude: [...coverageConfigDefaults.exclude, 'src/**/*.fixture.json'],
       thresholds: {
         // Carried over from app/vite.config.ts when the planner UI moved
         // here — see that file's history for how the floors were derived.
