@@ -691,6 +691,9 @@ export function UpdateBalancesPanel() {
         if (refreshHistoryAvailable()) {
           try {
             await saveRefreshManualMapping(mapping)
+            // Record the write BEFORE the abort check so a cancellation that
+            // lands on this very await still rolls this mapping back.
+            writtenMappings.push(mapping.normalizedBrokerLabel)
           } catch {
             // Best-effort; classification simply re-derives next time.
           }
@@ -705,7 +708,6 @@ export function UpdateBalancesPanel() {
             }
             return
           }
-          writtenMappings.push(mapping.normalizedBrokerLabel)
         } else {
           void saveRefreshManualMapping(mapping)
         }
