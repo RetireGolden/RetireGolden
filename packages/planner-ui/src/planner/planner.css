@@ -629,7 +629,13 @@
 .kpi-sub {
   font-size: 0.78rem;
   color: var(--muted);
-  white-space: nowrap;
+  min-width: 0;
+  overflow-wrap: break-word;
+  /* Lifetime Tax's "nominal $ · federal + state + penalties" is wider than
+     a 10rem auto-fit column. nowrap used to paint into Roth Converted
+     (`penaltiesending Roth $0`). Contain the caption only — not the cell —
+     so focus rings and large values stay visible. */
+  overflow: hidden;
 }
 
 @media (max-width: 880px) {
