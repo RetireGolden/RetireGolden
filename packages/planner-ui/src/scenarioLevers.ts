@@ -336,7 +336,7 @@ function accountConvertibleToRothInWindow(
   account: Plan['accounts'][number],
   startYear: number,
   endYear: number,
-): boolean {
+): account is Extract<Plan['accounts'][number], { type: 'traditional' }> {
   const owner = plan.household.people.find((person) => person.id === account.ownerPersonId)
   for (let year = startYear; year <= endYear; year += 1) {
     if (isConvertibleToRoth(account, rothConversionSourceContextForPerson(owner, year))) {
