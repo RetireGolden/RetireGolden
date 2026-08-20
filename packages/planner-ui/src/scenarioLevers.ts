@@ -37,6 +37,7 @@ import {
 import {
   acceptsContributions,
   isConvertibleToRoth,
+  rothConversionSourceContextForPerson,
   traditionalWithdrawalPenaltyRate,
 } from '@retiregolden/engine/strategies/accountEligibility'
 import { taxCalculatorFor as standardTaxCalculatorForPlan } from './planTaxCalculator'
@@ -330,10 +331,25 @@ function traditionalReceivesContributionInWindow(
   return false
 }
 
+function accountConvertibleToRothInWindow(
+  plan: Plan,
+  account: Plan['accounts'][number],
+  startYear: number,
+  endYear: number,
+): boolean {
+  const owner = plan.household.people.find((person) => person.id === account.ownerPersonId)
+  for (let year = startYear; year <= endYear; year += 1) {
+    if (isConvertibleToRoth(account, rothConversionSourceContextForPerson(owner, year))) {
+      return true
+    }
+  }
+  return false
+}
+
 function hasRothConversionSources(plan: Plan, startYear: number, endYear: number): boolean {
   return plan.accounts.some(
     (account) =>
-      isConvertibleToRoth(account) &&
+      accountConvertibleToRothInWindow(plan, account, startYear, endYear) &&
       (account.balance > 0 ||
         traditionalReceivesContributionInWindow(plan, account, startYear, endYear) ||
         plan.accounts.some(

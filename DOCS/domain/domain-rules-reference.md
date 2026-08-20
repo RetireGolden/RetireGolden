@@ -406,9 +406,11 @@ Source: [IRS 2026 limits announcement](https://www.irs.gov/newsroom/401k-limit-i
   recapture amount is then the credited dollars net of that basis return (`irc-408A-d-3-F-roth-conversion-recapture`).
   Still refused with balances unchanged: withholding from conversion principal, and a request larger than the
   source — there is no partial-execution arm. An employer plan is refused as a named source for want of dated
-  rollover-availability evidence and as a named destination outright; the legacy aggregate schedules do convert an
-  employer balance with no distributability gate, registered `approximated`
-  (`irc-401-k-2-B-i-employer-plan-conversion-source-not-gated-by-distributability`).
+  rollover-availability evidence and as a named destination outright. The legacy aggregate schedules convert an
+  employer balance to a Roth IRA only when a §401(k)(2)(B)(i) event is provable from Plan facts (attained age 60,
+  or attained age at or past `retirementAge`); otherwise the source is fail-closed and the year names the refusal
+  (`irc-401-k-2-B-i-employer-plan-conversion-source-not-gated-by-distributability`, `settled`). In-plan Roth of
+  otherwise nondistributable amounts under §402A(c)(4)(E) is a different enacted act and is not modelled.
 - **Conversion-linked tax funding.** A named conversion may name a sibling ordinary withdrawal that pays its tax,
   and the annual projection moves both legs or neither: the disposition is `executedAsAtomicGroup` or
   `refusedPendingGroupExecution`. Sizing the funding takes three runs of the same annual pass — a T0

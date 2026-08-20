@@ -284,12 +284,12 @@ describe('a two-owner household promotes to the ledger’s own allocation', () =
 
   it('is NOT called repriced when the source is an employer plan and nothing executed', () => {
     // The shipped example couple's own shape: Alex's convertible balance is a
-    // 401(k). The aggregate ledger converts employer traditional balances --
-    // `isConvertibleToRoth` admits them, under the still-`approximated`
-    // record `irc-401-k-2-B-i-employer-plan-conversion-source-not-gated-by-
-    // distributability` -- but the named executor refuses one, because the
-    // Plan schema records no plan-availability evidence for it and will not
-    // even accept an IRA classification on such an account.
+    // 401(k). The aggregate ledger converts an employer traditional balance
+    // when a 401(k)(2)(B)(i) event is provable -- default couple ages are 60
+    // in 2026, so the in-service proxy admits the 401(k) -- but the named
+    // executor refuses one, because the Plan schema records no plan-
+    // availability evidence for it and will not even accept an IRA
+    // classification on such an account.
     //
     // So promotion mints the requests and the ledger declines to execute them.
     // That is why the veto lift cannot reach the flagship example: not the

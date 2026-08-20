@@ -4,6 +4,18 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## 2026-08
 
+**2026-08-20**
+- Closed the reverse gap on **IRC §401(k)(2)(B)(i) employer-plan conversion
+  source / distributability** for the aggregate Roth-IRA path. `isConvertibleToRoth`
+  now refuses an owned employer traditional account unless the projection year
+  can prove severance (attained age at or past `retirementAge`) or age 59½
+  (attained-age-60 proxy). The weight and drain loops both read that predicate,
+  so a still-working participant under 59½ converts $0 and the year names the
+  refusal. In-plan Roth of otherwise nondistributable amounts under
+  §402A(c)(4)(E) remains a different enacted act and is not modelled.
+  Registry record `irc-401-k-2-B-i-employer-plan-conversion-source-not-gated-by-distributability`
+  reclassified `approximated` → `settled`.
+
 **2026-08-19**
 - Implemented **IRC §414(v)(7) high-earner designated Roth catch-up** (SECURE 2.0
   §603) for contribution years 2026+. Employer-plan catch-up above the §402(g)

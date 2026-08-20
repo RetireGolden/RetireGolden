@@ -15,6 +15,13 @@
  *   contributions, cannot be converted to Roth, are exempt from the owner's
  *   Uniform-Lifetime RMDs (they follow their own forced-distribution schedule),
  *   and are never subject to the 10% early-withdrawal penalty.
+ * - An owned traditional IRA may convert to a Roth IRA without a plan
+ *   distributability event. An owned employer traditional plan may convert to a
+ *   Roth IRA only when the Plan can prove a 401(k)(2)(B)(i) event from facts
+ *   it already carries: attained age 60 (the engine's 59½ proxy) or attained
+ *   age at or past `retirementAge` (the existing separation proxy). In-plan
+ *   Roth of otherwise nondistributable amounts (402A(c)(4)(E)) is a different
+ *   enacted act and is not modelled.
  * - Cliff-vesting equity compensation is not spendable before its vest year.
  * - Traditional withdrawals before 59½ (approximated as age < 60) carry a 10%
  *   penalty unless the Rule of 55 applies (employer plan, separation in/after
@@ -1279,12 +1286,80 @@ export function acceptsContributions(account: Account): boolean {
 }
 
 /**
- * Can this account's balance be converted to Roth? Only an owned (non-
- * inherited) traditional account qualifies: inherited accounts follow the
- * 10-year rule and are never convertible by a non-spouse beneficiary.
+ * Facts the Roth-IRA conversion source gate can read from the Plan.
+ *
+ * `ownerAgeAttained` is the projection year's attained age (`year − birth
+ * year`), the same integer the ledger already uses for the 72(t) age test.
+ * `ownerRetirementAge` is the Plan's existing separation-from-service proxy;
+ * `null` means the Plan states no separation at all.
  */
-export function isConvertibleToRoth(account: Account): account is TraditionalAccount {
-  return account.type === 'traditional' && account.inherited === undefined
+export interface RothConversionSourceContext {
+  readonly ownerAgeAttained: number
+  readonly ownerRetirementAge: number | null
+}
+
+/**
+ * Attained-age-60 proxy for IRC 401(k)(2)(B)(i)(III) age 59½ — the same
+ * annual threshold the 72(t) additional-tax path already uses. The Plan
+ * carries no day-of-year conversion date, so a half-year test cannot be
+ * proved and the gate fails closed until the year the owner attains 60.
+ */
+const EMPLOYER_PLAN_IN_SERVICE_AGE_ATTAINED = 60
+
+/** Build the source-gate context from a Plan person and a calendar year. */
+export function rothConversionSourceContextForPerson(
+  person: Pick<Person, 'dob' | 'retirementAge'> | undefined,
+  year: number,
+): RothConversionSourceContext {
+  if (person === undefined) {
+    return { ownerAgeAttained: 0, ownerRetirementAge: null }
+  }
+  return {
+    ownerAgeAttained: year - Number(person.dob.slice(0, 4)),
+    ownerRetirementAge: person.retirementAge,
+  }
+}
+
+/**
+ * Whether an employer-plan balance is treated as distributable for a
+ * qualified rollover contribution to a Roth IRA.
+ *
+ * Two 401(k)(2)(B)(i) events this engine can prove from Plan facts:
+ * attainment of age 59½ (attained-age-60 proxy) and severance from
+ * employment (`ownerAgeAttained >= ownerRetirementAge`). Hardship is
+ * distributable but not an eligible rollover distribution under 402(c)(4)(C)
+ * and is not a conversion path. Rule of 55 is a 72(t) penalty exception
+ * after severance, not a new distributable event — severance itself is the
+ * event. In-plan Roth of otherwise nondistributable amounts under
+ * 402A(c)(4)(E) is a different act, lands in a designated Roth account in
+ * the same plan, and is not modelled here.
+ */
+export function employerPlanIsDistributableForRothIraRollover(
+  ctx: RothConversionSourceContext,
+): boolean {
+  if (ctx.ownerAgeAttained >= EMPLOYER_PLAN_IN_SERVICE_AGE_ATTAINED) return true
+  return ctx.ownerRetirementAge !== null
+    && ctx.ownerAgeAttained >= ctx.ownerRetirementAge
+}
+
+/**
+ * Can this account's balance be converted to a Roth IRA this year?
+ *
+ * An owned (non-inherited) traditional IRA qualifies without a plan
+ * distributability event. An owned employer traditional plan qualifies only
+ * when `employerPlanIsDistributableForRothIraRollover` can prove a
+ * 401(k)(2)(B)(i) event from Plan facts. `kind: 'employer'` is the only
+ * discriminant the schema carries, so 403(b) and 457 balances fail closed
+ * under the same gate. Inherited accounts follow the 10-year rule and are
+ * never convertible by a non-spouse beneficiary.
+ */
+export function isConvertibleToRoth(
+  account: Account,
+  ctx: RothConversionSourceContext,
+): account is TraditionalAccount {
+  if (account.type !== 'traditional' || account.inherited !== undefined) return false
+  if (account.kind !== 'employer') return true
+  return employerPlanIsDistributableForRothIraRollover(ctx)
 }
 
 /**

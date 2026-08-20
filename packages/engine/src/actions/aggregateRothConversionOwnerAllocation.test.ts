@@ -1,10 +1,17 @@
 import { describe, expect, it } from 'vitest'
 
 import type { Account } from '../model/plan.js'
+import type { RothConversionSourceContext } from '../strategies/accountEligibility.js'
 import {
   allocateAggregateRothConversionByOwner,
   type AggregateRothConversionBalance,
 } from './aggregateRothConversionOwnerAllocation.js'
+
+/** Age 60 / no retirement age: the 59½ in-service proxy admits an employer plan. */
+const ADMIT_EMPLOYER: RothConversionSourceContext = {
+  ownerAgeAttained: 60,
+  ownerRetirementAge: null,
+}
 
 /**
  * The allocation policy on its own, away from the ledger that executes it.
@@ -94,11 +101,16 @@ function states(...accounts: Account[]): TestBalance[] {
   }))
 }
 
-function allocate(balances: TestBalance[], desiredPlanDollars: number) {
+function allocate(
+  balances: TestBalance[],
+  desiredPlanDollars: number,
+  sourceContextForOwner: (ownerPersonId: string) => RothConversionSourceContext = () => ADMIT_EMPLOYER,
+) {
   return allocateAggregateRothConversionByOwner({
     balances,
     desiredPlanDollars,
     primaryPersonId: 'p1',
+    sourceContextForOwner,
   })
 }
 
@@ -163,9 +175,10 @@ describe('owner slices', () => {
     ])
   })
 
-  it('weights owners by gross convertible balance, employer plans included', () => {
+  it('weights owners by gross convertible balance, employer plans included when distributable', () => {
     // The set the draws take from is the set the weight is built from: Alex's
-    // 401(k) counts for the split exactly as an IRA would.
+    // 401(k) counts for the split exactly as an IRA would, once a
+    // 401(k)(2)(B)(i) event is provable. Age 60 is the in-service proxy.
     const balances = states(
       employerTraditional('alex-401k', 820_000, 'alex'),
       ira('sam-ira', 310_000, 'sam'),
@@ -179,6 +192,24 @@ describe('owner slices', () => {
       ['sam-ira', 27_433.63],
     ])
     expect(72_566.37 + 27_433.63).toBe(100_000)
+  })
+
+  it('does not weight or drain an employer plan that is not distributable', () => {
+    // Age 46, retiring at 65: no 401(k)(2)(B)(i) event the Plan can prove.
+    // An IRA of the same owner still converts; the locked 401(k) does not
+    // inflate the weight or supply a draw.
+    const balances = states(
+      employerTraditional('pat-401k', 400_000, 'p1'),
+      ira('pat-ira', 100_000, 'p1'),
+      rothIra('pat-roth', 'p1'),
+    )
+    const allocation = allocate(
+      balances,
+      50_000,
+      () => ({ ownerAgeAttained: 46, ownerRetirementAge: 65 }),
+    )
+
+    expect(drawnAmounts(allocation)).toEqual([['pat-ira', 50_000]])
   })
 
   it('ignores an account that holds nothing when it weights owners', () => {

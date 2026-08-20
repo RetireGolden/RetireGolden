@@ -24,6 +24,7 @@ import {
 } from '../decisions/rothConversionCandidateAdapter.js'
 import type { DecisionCandidate } from '../decisions/types.js'
 import type { Account, Plan } from '../model/plan.js'
+import { rothConversionSourceContextForPerson } from '../strategies/accountEligibility.js'
 
 /**
  * Turn an aggregate optimizer winner into identity-complete conversion intents,
@@ -101,16 +102,13 @@ import type { Account, Plan } from '../model/plan.js'
  * not). This is the one place the two arms genuinely disagree rather than one
  * being a subset of the other.
  *
- * WHAT IT INHERITS AND CANNOT FIX. The policy's convertible set is
- * `isConvertibleToRoth`, which admits every owned traditional account including
- * an employer plan and applies no distributability gate --
- * `irc-401-k-2-B-i-employer-plan-conversion-source-not-gated-by-distributability`,
- * still `approximated`. Promotion raises the stakes on that record rather than
- * changing it: the same ungated balance now appears as the named source account
- * on an identity-bearing request instead of only inside a projection's
- * aggregate arithmetic. The registry record names this module for that reason.
- * A distributability gate belongs in `accountEligibility.ts`, where both
- * callers would pick it up at once, and not here.
+ * WHAT IT INHERITS. The policy's convertible set is `isConvertibleToRoth`,
+ * which now gates an employer traditional plan on a provable 401(k)(2)(B)(i)
+ * event -- attained age 60 or attained age at or past `retirementAge`. This
+ * module passes that year's owner context into the same allocation the ledger
+ * runs, so a still-locked 401(k) is not named as a source on an identity-
+ * bearing request. In-plan Roth of otherwise nondistributable amounts
+ * (402A(c)(4)(E)) remains a different act and is not modelled.
  *
  * Two more identities the aggregate schedule does not carry and a request must:
  * the execution date is the last lawful day of the conversion year (see
@@ -537,6 +535,11 @@ function promoteOneYear(
       balances,
       desiredPlanDollars: ledgerCentsToPlanDollars(asPositiveUsdCents(winnerCents)),
       primaryPersonId,
+      sourceContextForOwner: (ownerPersonId) =>
+        rothConversionSourceContextForPerson(
+          plan.household.people.find((person) => person.id === ownerPersonId),
+          year,
+        ),
     })
   if (allocation.status === 'refused') {
     return {
