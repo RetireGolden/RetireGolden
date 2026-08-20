@@ -1631,16 +1631,16 @@ export type YearCashFlowUseKind =
   | 'surplusInvestment'
 
 /**
- * Closed early-withdrawal penalty vocabulary. Traditional pre-59.5 and HSA
- * nonmedical penalties are account-attributed; owned Roth-IRA early effects
- * are pooled per owner and never assigned to a member account.
+ * Closed early-withdrawal penalty vocabulary. Traditional, HSA, and employer
+ * designated-Roth penalties are account-attributed; owned Roth-IRA early
+ * effects are pooled per owner and never assigned to a member account.
  */
 export type YearCashFlowPenaltyClass =
   /** Traditional pre-59.5 early-distribution penalty. */
   | 'traditionalEarly'
   /** HSA nonmedical pre-65 distribution penalty. */
   | 'hsaNonMedical'
-  /** Owned Roth-IRA early-distribution effects, pooled per owner. */
+  /** Roth early-distribution effects: per account for employer designated-Roth pools, per owner for owned Roth IRAs. */
   | 'rothEarly'
 
 /**
@@ -1651,6 +1651,8 @@ export type YearCashFlowPenaltyClass =
 export interface YearCashFlowUseLine {
   readonly id: YearCashFlowLineId
   readonly kind: YearCashFlowUseKind
+  /** Present exactly when `kind` is `earlyWithdrawalPenalty`; the closed class is payload, not ID parsing. */
+  readonly penaltyClass?: YearCashFlowPenaltyClass
   readonly requestedPlanDollars: number
   readonly fundedPlanDollars: number
   readonly unfundedPlanDollars: number
@@ -1680,11 +1682,22 @@ export type YearCashFlowTransferKind =
   /** `surplus` cash deposited to its account or unassigned-cash destination. */
   | 'surplusInvestment'
 
-/** Why a transfer references a cash-view line containing the same lineage. */
+/**
+ * Why a transfer references a cash-view line. `sameDollarLaterStage` points at
+ * the SAME funded dollars at another stage. `divertedBeforeHouseholdCash` is a
+ * complement pointer: it names the cash-view line carrying the remaining
+ * household-available dollars of the same gross event, not the diverted
+ * dollars themselves. Either way the referenced line must exist and the two
+ * amounts are never summed within one view.
+ */
 export type YearCashFlowLineageRelationship =
   /** The same funded contribution or surplus dollar at its later account-credit stage. */
   | 'sameDollarLaterStage'
-  /** A gross RMD dollar routed to charity before becoming household-available cash. */
+  /**
+   * A charity-routed slice of a gross owned-IRA RMD. Points at the owner's net
+   * RMD cash line - the complement of this gift - which is published, possibly
+   * with a zero amount, whenever the owner's diversion is positive.
+   */
   | 'divertedBeforeHouseholdCash'
 
 /** Explicit cross-view lineage; consumers must never sum the referenced stages. */
