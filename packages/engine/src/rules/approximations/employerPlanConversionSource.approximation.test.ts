@@ -175,6 +175,49 @@ describeRule('irc-401-k-2-B-i-employer-plan-conversion-source-not-gated-by-distr
     )).toBe(false)
   })
 
+  it('names the unused locked 401(k) when an IRA only partly fills the request', () => {
+    // Silence on the unused employer balance would read as assent: the
+    // displayed traditional total is $550,000 and $50,000 converted, so the
+    // year has to say why the other $500,000 did not move. The IRA is the
+    // only source 401(k)(2)(B)(i) lets out; the request is $100,000.
+    const IRA_BALANCE = 50_000
+    const LOCKED_EMPLOYER = 500_000
+    const PARTIAL_REQUEST = 100_000
+    const plan = employerPlanPlan({ dob: '1980-04-02', retirementAge: 65 })
+    plan.strategies.rothConversion = {
+      mode: 'manual',
+      conversions: [{ year: CONVERSION_YEAR, amount: PARTIAL_REQUEST }],
+    }
+    const employer = plan.accounts.find((account) => account.id === 'plan401k')
+    if (employer && employer.type === 'traditional') {
+      employer.balance = LOCKED_EMPLOYER
+    }
+    plan.accounts.push({
+      type: 'traditional',
+      id: 'tradIra',
+      name: 'Pat Traditional IRA',
+      ownerPersonId: 'p1',
+      annualReturnPct: null,
+      kind: 'ira',
+      balance: IRA_BALANCE,
+      annualContribution: 0,
+    })
+
+    const parsed = parsePlan(plan)
+    if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+    const result = simulatePlan(parsed.plan, {
+      startYear: CONVERSION_YEAR,
+      taxCalculator: noTax,
+    })
+    const year = result.years.find((row) => row.year === CONVERSION_YEAR)!
+
+    expect(year.rothConversion).toBeCloseTo(IRA_BALANCE, 6)
+    expect(year.balances['tradIra']).toBeCloseTo(0, 6)
+    expect(year.balances['plan401k']).toBeCloseTo(LOCKED_EMPLOYER, 6)
+    const conversionWarnings = result.warnings.filter((warning) => warning.includes('convers'))
+    expect(conversionWarnings.some((warning) => warning.includes('not distributable'))).toBe(true)
+  })
+
   it('agrees with the statute for a separated participant past 59½', () => {
     // The control: 401(k)(2)(B)(i)(I) and (III) let this same balance out, so
     // here the engine's answer is the statute's. Without it the fixture would

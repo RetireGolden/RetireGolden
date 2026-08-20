@@ -108,6 +108,16 @@ describe('contributions / convertibility / RMD eligibility', () => {
     expect(isAggregatedIra(employer)).toBe(false)
   })
 
+  it('preserves the public one-argument call: IRAs convert, employer accounts fail closed', () => {
+    // Existing consumers call isConvertibleToRoth(account). Absent year-level
+    // context the employer gate cannot prove a 401(k)(2)(B)(i) event, so that
+    // arm fails closed rather than throwing. An owned IRA does not need the
+    // event and stays convertible.
+    expect(isConvertibleToRoth(ownedIra())).toBe(true)
+    expect(isConvertibleToRoth(ownedIra({ kind: 'employer' }))).toBe(false)
+    expect(isConvertibleToRoth(inheritedIra())).toBe(false)
+  })
+
   it('a Roth account is neither convertible nor RMD-bearing', () => {
     const roth: Account = {
       type: 'roth',

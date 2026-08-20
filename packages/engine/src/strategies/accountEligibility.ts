@@ -1346,19 +1346,31 @@ export function employerPlanIsDistributableForRothIraRollover(
  * Can this account's balance be converted to a Roth IRA this year?
  *
  * An owned (non-inherited) traditional IRA qualifies without a plan
- * distributability event. An owned employer traditional plan qualifies only
- * when `employerPlanIsDistributableForRothIraRollover` can prove a
- * 401(k)(2)(B)(i) event from Plan facts. `kind: 'employer'` is the only
- * discriminant the schema carries, so 403(b) and 457 balances fail closed
- * under the same gate. Inherited accounts follow the 10-year rule and are
- * never convertible by a non-spouse beneficiary.
+ * distributability event, and without year-level context. An owned employer
+ * traditional plan qualifies only when `ctx` is supplied and
+ * `employerPlanIsDistributableForRothIraRollover` can prove a 401(k)(2)(B)(i)
+ * event from Plan facts. Absent context, an employer account fails closed
+ * rather than throwing. `kind: 'employer'` is the only discriminant the
+ * schema carries, so 403(b) and 457 balances fail closed under the same
+ * gate. Inherited accounts follow the 10-year rule and are never convertible
+ * by a non-spouse beneficiary.
+ *
+ * The one-argument form is a public `@retiregolden/engine` export; keep it.
  */
 export function isConvertibleToRoth(
   account: Account,
+): account is TraditionalAccount
+export function isConvertibleToRoth(
+  account: Account,
   ctx: RothConversionSourceContext,
+): account is TraditionalAccount
+export function isConvertibleToRoth(
+  account: Account,
+  ctx?: RothConversionSourceContext,
 ): account is TraditionalAccount {
   if (account.type !== 'traditional' || account.inherited !== undefined) return false
   if (account.kind !== 'employer') return true
+  if (ctx === undefined) return false
   return employerPlanIsDistributableForRothIraRollover(ctx)
 }
 

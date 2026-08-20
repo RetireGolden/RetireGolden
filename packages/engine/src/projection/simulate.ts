@@ -7454,7 +7454,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
               if (yearConvertibleToRoth(account)) continue
               gatedEmployerOwners.add(personById.get(ownerId)?.name ?? ownerId)
             }
-            if (gatedEmployerOwners.size > 0 && rothConversion <= 0.01) {
+            if (gatedEmployerOwners.size > 0) {
+              // Name the unused locked employer balance whenever it caused
+              // the shortfall, including when an IRA filled only part of the
+              // request. Silence on that unused balance reads as assent.
               for (const ownerName of gatedEmployerOwners) {
                 warnings.add(
                   `${ownerName}’s employer-plan balance is not distributable this year ` +

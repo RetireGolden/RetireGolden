@@ -11,8 +11,12 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   can prove severance (attained age at or past `retirementAge`) or age 59½
   (attained-age-60 proxy). The weight and drain loops both read that predicate,
   so a still-working participant under 59½ converts $0 and the year names the
-  refusal. In-plan Roth of otherwise nondistributable amounts under
-  §402A(c)(4)(E) remains a different enacted act and is not modelled.
+  refusal. The same locked-employer warning fires when an IRA only partly fills
+  the request and a gated 401(k) sits unused. The public one-argument
+  `isConvertibleToRoth(account)` call is kept: IRAs stay convertible; employer
+  accounts fail closed when year-level context is absent. In-plan Roth of
+  otherwise nondistributable amounts under §402A(c)(4)(E) remains a different
+  enacted act and is not modelled.
   Registry record `irc-401-k-2-B-i-employer-plan-conversion-source-not-gated-by-distributability`
   reclassified `approximated` → `settled`.
 
