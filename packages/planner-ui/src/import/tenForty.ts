@@ -196,7 +196,9 @@ export function seedPlanFromTenForty(
       id: newId(),
       type: 'taxable',
       name: 'Brokerage (estimated from your 1040)',
-      ownerPersonId: null,
+      // A Single return has one person — Joint ownership is a couple label.
+      // MFJ interest/dividends are combined, so the estimate stays Joint.
+      ownerPersonId: inputs.filingStatus === 'single' ? primary.id : null,
       annualReturnPct: null,
       balance: estimatedBalance,
       costBasis: estimatedBalance,

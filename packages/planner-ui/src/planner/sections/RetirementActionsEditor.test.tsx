@@ -1318,14 +1318,12 @@ describe('RetirementActionsEditor eligibility facts', () => {
     const host = () => row(mounted.container, '[data-eligibility-ira="source-ira"]')
 
     await change(controlByLabel(host(), 'IRA type'), 'simple')
-    // A five-digit year survives the date control but is not a civil date.
-    await change(controlByLabel(host(), 'SIMPLE participation start date'), '12345-06-07')
-    await act(async () => buttonByText(
-      host(),
-      'Record: Traditional IRA is a SIMPLE IRA I first took part in on 12345-06-07',
-    ).click())
+    // Start a SIMPLE date, then abandon it by switching type. DateField now
+    // caps the year at four digits, so a five-digit overflow is no longer a
+    // way to park a non-civil value in the control.
+    await change(controlByLabel(host(), 'SIMPLE participation start date'), '2020-06-07')
     expect(host().textContent).toContain(
-      'Enter a real participation start date, or leave it blank.',
+      'Record: Traditional IRA is a SIMPLE IRA I first took part in on 2020-06-07',
     )
     expect(mounted.current().retirementActionEligibilityFacts).toBeUndefined()
 

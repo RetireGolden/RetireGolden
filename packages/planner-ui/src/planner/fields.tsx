@@ -1,12 +1,18 @@
 /**
  * Shared form fields. Numeric fields hold local text state while focused and
  * commit parsed values on change, so partial input ("1,2") never fights the
- * plan state; money fields accept "$450k"-style shorthand.
+ * plan state; money fields accept "$450k"-style shorthand. A money field
+ * opens empty (or selected) so typing replaces the formatted value instead
+ * of appending into it; a doubled Chromium insertReplacementText (450→450450)
+ * is treated as a full-field replace, while a partial selection keeps the
+ * input's target value.
+ * Date fields cap the year segment at 4 digits.
  */
 
 import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 
 import { LearnLink, type LearnHook } from '../learn/LearnLink'
+import { capIsoDateYear, editingMoneyText, nextMoneyFieldText } from './fieldInput'
 import { fmtMoney, parseAmount } from './format'
 
 /** External citation shown inside a ⓘ help bubble (cite-the-authority pattern). */
@@ -243,23 +249,55 @@ export function MoneyField({
           minimumFractionDigits: fractionDigits,
           maximumFractionDigits: fractionDigits,
         })
-  const { text, setText, setFocused } = useLocalText(formatted)
+  const { text, setText, focused, setFocused } = useLocalText(formatted)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const selectOnFocus = useRef(false)
+  const commitText = (next: string) => {
+    setText(next)
+    const parsed = parseAmount(next)
+    if (parsed !== null) onCommit(parsed)
+    else if (next.trim() === '') onCommit(allowNull ? null : 0)
+    else onInvalid?.()
+  }
+  useLayoutEffect(() => {
+    if (!selectOnFocus.current) return
+    selectOnFocus.current = false
+    inputRef.current?.select()
+  }, [focused, text])
   return (
     <FieldShell label={label} hint={hint} help={help} learn={learn} source={source} id={id}>
       <div className="input-affix">
         <span aria-hidden>$</span>
         <input
+          ref={inputRef}
           id={id}
+          type="text"
           inputMode="decimal"
+          autoComplete="off"
+          autoCorrect="off"
+          spellCheck={false}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') e.preventDefault()
+          }}
           value={text.replace(/^\$/, '')}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
+          onFocus={() => {
+            setFocused(true)
+            setText(editingMoneyText(value))
+            selectOnFocus.current = true
+          }}
+          onBlur={() => {
+            setFocused(false)
+            setText(formatted)
+          }}
           onChange={(e) => {
-            setText(e.target.value)
-            const parsed = parseAmount(e.target.value)
-            if (parsed !== null) onCommit(parsed)
-            else if (e.target.value.trim() === '') onCommit(allowNull ? null : 0)
-            else onInvalid?.()
+            const native = e.nativeEvent as InputEvent
+            commitText(
+              nextMoneyFieldText({
+                targetValue: e.target.value,
+                inputType: native.inputType,
+                data: native.data,
+              }),
+            )
           }}
         />
       </div>
@@ -349,7 +387,14 @@ export function DateField({
   const id = useId()
   return (
     <FieldShell label={label} hint={hint} help={help} learn={learn} source={source} id={id}>
-      <input id={id} type="date" value={value} onChange={(e) => onCommit(e.target.value)} />
+      <input
+        id={id}
+        type="date"
+        min="1900-01-01"
+        max="9999-12-31"
+        value={capIsoDateYear(value)}
+        onChange={(e) => onCommit(capIsoDateYear(e.target.value))}
+      />
     </FieldShell>
   )
 }
