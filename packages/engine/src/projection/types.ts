@@ -1406,6 +1406,12 @@ export interface YearCashFlowGoalReference {
   readonly goalId: string
 }
 
+/** A durable care-event identity from the Plan's long-term-care configuration. */
+export interface YearCashFlowCareEventReference {
+  readonly entityKind: 'careEvent'
+  readonly careEventId: string
+}
+
 /** A TIPS ladder identity from the Plan. */
 export interface YearCashFlowTipsLadderReference {
   readonly entityKind: 'tipsLadder'
@@ -1445,6 +1451,7 @@ export type YearCashFlowEntityReference =
   | Readonly<YearCashFlowPolicyReference>
   | Readonly<YearCashFlowAnnuityContractReference>
   | Readonly<YearCashFlowGoalReference>
+  | Readonly<YearCashFlowCareEventReference>
   | Readonly<YearCashFlowTipsLadderReference>
   | Readonly<YearCashFlowRetirementActionReference>
   | Readonly<YearCashFlowRequiredDistributionPoolReference>
