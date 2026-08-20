@@ -549,7 +549,9 @@ export function SpendingSection() {
                 help="Multiplies baseline spending from this age forward. For example, 0.90 means recurring lifestyle spending is 10% lower before inflation."
                 hint="1.00 = no change."
                 learn={LEARN.spendingProfiles}
-                step={0.05}
+                // Presets write two-decimal multipliers (smirk 0.78, custom −1.5%/yr 0.64).
+                // A 0.05 step marks those values HTML5-invalid even though they are editable plan rows.
+                step={0.01}
                 value={p.multiplier}
                 min={0}
                 max={3}
