@@ -1457,6 +1457,8 @@ export interface YearCashFlowHouseholdCashReference {
 /** A charity endpoint; the current aggregate strategy has no durable charity ID. */
 export interface YearCashFlowCharityReference {
   readonly entityKind: 'charity'
+  /** Durable charity designation from a named QCD request; absent for the aggregate strategy's anonymous charity. */
+  readonly designationId?: string
 }
 
 /** The employer side of an employer-match credit. */
