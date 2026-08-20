@@ -3,7 +3,9 @@
  * commit parsed values on change, so partial input ("1,2") never fights the
  * plan state; money fields accept "$450k"-style shorthand. A money field
  * opens empty (or selected) so typing replaces the formatted value instead
- * of appending into it; Chromium insertReplacementText is treated as replace.
+ * of appending into it; a doubled Chromium insertReplacementText (450→450450)
+ * is treated as a full-field replace, while a partial selection keeps the
+ * input's target value.
  * Date fields cap the year segment at 4 digits.
  */
 

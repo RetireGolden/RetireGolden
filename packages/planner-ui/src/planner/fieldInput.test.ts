@@ -35,6 +35,25 @@ describe('nextMoneyFieldText', () => {
       }),
     ).toBe('450')
   })
+
+  it('keeps unaffected digits when replacement is only a selected span', () => {
+    // Replacing `25` in `12,500` with `30`: target is the full result, data is
+    // only the inserted fragment. Committing data would drop the rest ($30).
+    expect(
+      nextMoneyFieldText({
+        targetValue: '13,000',
+        inputType: 'insertReplacementText',
+        data: '30',
+      }),
+    ).toBe('13,000')
+    expect(
+      nextMoneyFieldText({
+        targetValue: '13000',
+        inputType: 'insertFromAutocomplete',
+        data: '30',
+      }),
+    ).toBe('13000')
+  })
 })
 
 describe('editingMoneyText', () => {

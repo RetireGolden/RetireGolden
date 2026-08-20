@@ -5,19 +5,41 @@
 
 const REPLACEMENT_INPUT_TYPES = new Set(['insertReplacementText', 'insertFromAutocomplete'])
 
+/** Digits (and sign/decimal) of a money string, ignoring $ / commas / spaces. */
+function amountCore(text: string): string {
+  return text.trim().replace(/[$,\s]/g, '')
+}
+
+/**
+ * True when Chromium concatenated a full-field replacement onto the value
+ * that was already there ("450" + "450" → "450450"). A partial selection
+ * does not double the inserted fragment that way.
+ */
+function isDoubledFullFieldReplacement(targetValue: string, data: string): boolean {
+  const inserted = amountCore(data)
+  return inserted !== '' && amountCore(targetValue) === inserted + inserted
+}
+
 /**
  * Next money-field text after a browser `input` event.
  *
- * Chromium autofill and insertReplacementText can concatenate into an
- * already-formatted display ("450" + replacement "450" → "450450"). For
- * those input types the event's `data` is the whole new value.
+ * Default is the input's target value — that is the complete result when
+ * only a selected span is replaced (e.g. `25` in `12,500` → `13,000`).
+ * Chromium autofill / insertReplacementText can instead concatenate a
+ * full-field replacement onto the already-displayed value ("450" →
+ * "450450"); only that doubled case uses `data` as the whole new value.
  */
 export function nextMoneyFieldText(args: {
   targetValue: string
   inputType?: string
   data?: string | null
 }): string {
-  if (args.inputType !== undefined && REPLACEMENT_INPUT_TYPES.has(args.inputType) && args.data != null) {
+  if (
+    args.inputType !== undefined &&
+    REPLACEMENT_INPUT_TYPES.has(args.inputType) &&
+    args.data != null &&
+    isDoubledFullFieldReplacement(args.targetValue, args.data)
+  ) {
     return args.data
   }
   return args.targetValue

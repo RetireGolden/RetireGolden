@@ -101,6 +101,28 @@ describe('MoneyField', () => {
     })
     expect(input.value).toBe('450')
   })
+
+  it('keeps unaffected digits when insertReplacementText is only a selected span', async () => {
+    function Harness() {
+      const [value, setValue] = useState<number | null>(12_500)
+      return <MoneyField label="Wages" value={value} onCommit={(v) => setValue(v ?? 0)} />
+    }
+    const container = await render(<Harness />)
+    const input = container.querySelector('input')!
+
+    await act(async () => {
+      input.focus()
+      input.dispatchEvent(new FocusEvent('focus', { bubbles: true }))
+    })
+
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')!.set!.call(input, '13,000')
+      input.dispatchEvent(
+        new InputEvent('input', { bubbles: true, inputType: 'insertReplacementText', data: '30' }),
+      )
+    })
+    expect(input.value).toBe('13,000')
+  })
 })
 
 describe('DateField', () => {
