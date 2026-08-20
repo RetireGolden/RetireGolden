@@ -1595,18 +1595,37 @@ export interface YearCashFlowStandaloneTaxCharacter {
   readonly relatedLineId?: YearCashFlowLineId
 }
 
-/** One nominal Plan-dollar source in the household-cash or post-solve view. */
-export interface YearCashFlowSourceLine {
+/** One nominal Plan-dollar source that entered household cash during the funding solve. */
+export interface YearCashFlowCashSourceLine {
   readonly id: YearCashFlowLineId
   readonly kind: YearCashFlowSourceKind
-  readonly role: YearCashFlowSourceRole
+  readonly role: Exclude<YearCashFlowSourceRole, 'postSolveDeposit'>
   readonly amountPlanDollars: number
   readonly identities: readonly YearCashFlowEntityReference[]
   /** Present only when the physical amount also has separately useful tax character. */
   readonly taxCharacter?: readonly Readonly<YearCashFlowTaxCharacter>[]
-  /** Required for `postSolveDeposit`; absent for sources that enter household cash. */
-  readonly postSolveDestination?: YearCashFlowTransferEndpoint
 }
+
+/**
+ * One nominal Plan-dollar receipt deposited after the funding solve. Excluded
+ * from the cash identity, so the destination is required - without it a
+ * consumer could not route the deposited dollars anywhere.
+ */
+export interface YearCashFlowPostSolveDepositLine {
+  readonly id: YearCashFlowLineId
+  readonly kind: YearCashFlowSourceKind
+  readonly role: 'postSolveDeposit'
+  readonly amountPlanDollars: number
+  readonly identities: readonly YearCashFlowEntityReference[]
+  /** Present only when the physical amount also has separately useful tax character. */
+  readonly taxCharacter?: readonly Readonly<YearCashFlowTaxCharacter>[]
+  readonly postSolveDestination: YearCashFlowTransferEndpoint
+}
+
+/** One nominal Plan-dollar source in the household-cash or post-solve view. */
+export type YearCashFlowSourceLine =
+  | Readonly<YearCashFlowCashSourceLine>
+  | Readonly<YearCashFlowPostSolveDepositLine>
 
 /** Closed use vocabulary for the inventoried `simulate.ts` cash terms. */
 export type YearCashFlowUseKind =
@@ -1674,7 +1693,7 @@ export type YearCashFlowTransferKind =
   | 'namedRothConversion'
   /** Aggregate `rothConversion`, from an allocated traditional source to Roth destination. */
   | 'aggregateRothConversion'
-  /** `qcdFromRmd`, beyond-RMD `legacyQcd`, or `namedQcdExecuted` sent to charity. */
+  /** The physical IRA-to-charity distribution channel (`qcdFromRmd`, beyond-RMD `legacyQcd`, `namedQcdExecuted`). Qualification is NOT implied: the excludable portion is the `qcdIncomeExclusion` metadata and any non-qualified excess is `nonQualifiedQcdOrdinaryIncome`; consumers must not label dollars qualified beyond that metadata. */
   | 'qualifiedCharitableDistribution'
   /** Allowed `contributions`, from household cash to each destination account. */
   | 'employeeContribution'
@@ -1847,7 +1866,7 @@ export interface YearResult {
   expenses: YearExpenses
   /**
    * Optional identity-bearing annual cash-flow reporting detail. `simulatePlan`
-   * publishes it only when `SimulateOptions.captureAnnualCashFlow` is true;
+   * publishes it only when the capture option defined by DOCS/features/year-cash-flow.md (landing with the capture workstream) is enabled;
    * optionality also preserves external fixture compatibility. Its presence
    * never changes this year's economic outputs. Absence means detail was not
    * captured, not that the year had no cash flow.

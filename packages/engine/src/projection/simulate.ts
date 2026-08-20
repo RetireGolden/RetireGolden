@@ -267,14 +267,6 @@ export interface SimulateOptions {
    */
   captureOptimizerInputs?: (probe: OptimizerYearProbe) => void
   /**
-   * Opts into additive annual cash-flow reporting detail. Defaults off for
-   * Monte Carlo, optimizer, and historical sweeps; enable only for the live
-   * deterministic Results projection. Omitted or false means no `cashFlow`
-   * detail is published. Enabling it must not change economics; a later
-   * workstream proves that no-op guarantee.
-   */
-  captureAnnualCashFlow?: boolean
-  /**
    * Opt-in seam for the counterfactual (`T0`) annual pass. A no-op when
    * omitted, which is every product call.
    *
