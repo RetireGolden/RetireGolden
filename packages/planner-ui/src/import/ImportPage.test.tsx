@@ -67,6 +67,14 @@ function findSelect(el: HTMLElement, label: string): HTMLSelectElement {
   return sel as HTMLSelectElement
 }
 
+function findInput(el: HTMLElement, label: string): HTMLInputElement {
+  const lab = Array.from(el.querySelectorAll('label')).find((l) => l.textContent?.includes(label))
+  expect(lab, `expected a label containing "${label}"`).toBeTruthy()
+  const input = el.ownerDocument.getElementById(lab!.htmlFor)
+  expect(input instanceof HTMLInputElement, `expected an input labelled "${label}"`).toBe(true)
+  return input as HTMLInputElement
+}
+
 /**
  * Drive a select the way a keyboard commit does: focus it, then update the
  * value and fire the bubbling change event a browser fires when an option is
@@ -136,6 +144,24 @@ describe('ImportPage', () => {
     expect(after).toHaveLength(1)
     expect(after[0]!.name).toBe('Seeded from your 1040')
     expect(el.querySelector('[data-testid="plan-route"]')).not.toBeNull()
+  })
+
+  it('does not build the 1040 draft when Backspace is pressed in Line 7', () => {
+    const el = render()
+    click(findButton(el, 'tax return'))
+    selectByKeyboard(findSelect(el, 'State of residence'), 'CO')
+
+    const line7 = findInput(el, 'Line 7')
+    act(() => {
+      line7.focus()
+      line7.dispatchEvent(new KeyboardEvent('keydown', { key: 'Backspace', bubbles: true, cancelable: true }))
+      line7.dispatchEvent(new KeyboardEvent('keyup', { key: 'Backspace', bubbles: true }))
+      line7.form?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    })
+
+    expect(el.querySelector('.import-review')).toBeNull()
+    expect(findButton(el, 'Build my draft plan')).toBeTruthy()
+    expect(line7.form).toBeTruthy()
   })
 
   it('starts the 1040 state unanswered and refuses to build until one is chosen', () => {

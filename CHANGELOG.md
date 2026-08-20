@@ -19,6 +19,10 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   enacted act and is not modelled.
   Registry record `irc-401-k-2-B-i-employer-plan-conversion-source-not-gated-by-distributability`
   reclassified `approximated` → `settled`.
+- 1040 guided seed form handling: money fields replace (instead of appending into
+  a formatted value / Chromium `insertReplacementText`), the date-of-birth year
+  segment is capped at 4 digits, and Backspace in Line 7 no longer submits the
+  form. A Single-filing estimated brokerage is owned by the primary, not Joint.
 
 **2026-08-19**
 - Prepared **`@retiregolden/engine` 0.1.12** (patch — the engine half of the

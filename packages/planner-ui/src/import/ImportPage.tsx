@@ -347,46 +347,55 @@ export function ImportPage() {
                 Copy the values from last year&apos;s Form 1040. Zero is fine for any line that doesn&apos;t
                 apply. No PDF upload. You stay in control of what is entered.
               </p>
-              <div className="form-grid">
-                <SelectField
-                  label="Filing status (1040 header)"
-                  value={tenForty.filingStatus}
-                  options={[
-                    { value: 'single', label: 'Single' },
-                    { value: 'marriedFilingJointly', label: 'Married filing jointly' },
-                  ]}
-                  onCommit={(v) =>
-                    set1040({ filingStatus: v, spouseDob: v === 'marriedFilingJointly' ? (tenForty.spouseDob ?? '1970-01-01') : undefined })
-                  }
-                />
-                <SelectField
-                  label="State of residence"
-                  help="Not read off the return. A 1040 only carries a mailing address, and your state changes the state-tax estimate."
-                  value={tenForty.state}
-                  options={US_STATES}
-                  placeholder="Select your state…"
-                  onCommit={(v) => set1040({ state: v })}
-                />
-                <DateField label="Your date of birth" help="Not on the 1040, but every projection needs it to anchor ages." value={tenForty.primaryDob} onCommit={(v) => set1040({ primaryDob: v })} />
-                {tenForty.filingStatus === 'marriedFilingJointly' ? (
-                  <DateField label="Spouse's date of birth" value={tenForty.spouseDob ?? ''} onCommit={(v) => set1040({ spouseDob: v })} />
-                ) : null}
-                <MoneyField label="Line 1a: wages" value={tenForty.wages} onCommit={(v) => set1040({ wages: v ?? 0 })} />
-                <MoneyField label="Line 2a: tax-exempt interest" value={tenForty.taxExemptInterest} onCommit={(v) => set1040({ taxExemptInterest: v ?? 0 })} />
-                <MoneyField label="Line 2b: taxable interest" value={tenForty.taxableInterest} onCommit={(v) => set1040({ taxableInterest: v ?? 0 })} />
-                <MoneyField label="Line 3a: qualified dividends" value={tenForty.qualifiedDividends} onCommit={(v) => set1040({ qualifiedDividends: v ?? 0 })} />
-                <MoneyField label="Line 3b: ordinary dividends" value={tenForty.ordinaryDividends} onCommit={(v) => set1040({ ordinaryDividends: v ?? 0 })} />
-                <MoneyField label="Line 4b: IRA distributions (taxable)" value={tenForty.iraDistributions} onCommit={(v) => set1040({ iraDistributions: v ?? 0 })} />
-                <MoneyField label="Line 5b: pensions & annuities (taxable)" value={tenForty.pensionsAndAnnuities} onCommit={(v) => set1040({ pensionsAndAnnuities: v ?? 0 })} />
-                <MoneyField label="Line 6a: Social Security benefits" value={tenForty.socialSecurityBenefits} onCommit={(v) => set1040({ socialSecurityBenefits: v ?? 0 })} />
-                <MoneyField label="Line 7: capital gain or loss" help="Enter a loss as a negative number." value={tenForty.capitalGain} onCommit={(v) => set1040({ capitalGain: v ?? 0 })} />
-                <MoneyField label="Line 11: adjusted gross income" value={tenForty.agi} onCommit={(v) => set1040({ agi: v ?? 0 })} />
-              </div>
-              <div className="picker-actions">
-                <button type="button" className="btn btn-primary" onClick={buildTenFortyDraft}>
-                  Build my draft plan
-                </button>
-              </div>
+              <form
+                onSubmit={(e) => {
+                  // Implicit submit (Enter, and in some hosts Backspace leaking
+                  // as a submit) must not build the draft. The explicit button
+                  // below is type="button" and is the only way to continue.
+                  e.preventDefault()
+                }}
+              >
+                <div className="form-grid">
+                  <SelectField
+                    label="Filing status (1040 header)"
+                    value={tenForty.filingStatus}
+                    options={[
+                      { value: 'single', label: 'Single' },
+                      { value: 'marriedFilingJointly', label: 'Married filing jointly' },
+                    ]}
+                    onCommit={(v) =>
+                      set1040({ filingStatus: v, spouseDob: v === 'marriedFilingJointly' ? (tenForty.spouseDob ?? '1970-01-01') : undefined })
+                    }
+                  />
+                  <SelectField
+                    label="State of residence"
+                    help="Not read off the return. A 1040 only carries a mailing address, and your state changes the state-tax estimate."
+                    value={tenForty.state}
+                    options={US_STATES}
+                    placeholder="Select your state…"
+                    onCommit={(v) => set1040({ state: v })}
+                  />
+                  <DateField label="Your date of birth" help="Not on the 1040, but every projection needs it to anchor ages." value={tenForty.primaryDob} onCommit={(v) => set1040({ primaryDob: v })} />
+                  {tenForty.filingStatus === 'marriedFilingJointly' ? (
+                    <DateField label="Spouse's date of birth" value={tenForty.spouseDob ?? ''} onCommit={(v) => set1040({ spouseDob: v })} />
+                  ) : null}
+                  <MoneyField label="Line 1a: wages" value={tenForty.wages} onCommit={(v) => set1040({ wages: v ?? 0 })} />
+                  <MoneyField label="Line 2a: tax-exempt interest" value={tenForty.taxExemptInterest} onCommit={(v) => set1040({ taxExemptInterest: v ?? 0 })} />
+                  <MoneyField label="Line 2b: taxable interest" value={tenForty.taxableInterest} onCommit={(v) => set1040({ taxableInterest: v ?? 0 })} />
+                  <MoneyField label="Line 3a: qualified dividends" value={tenForty.qualifiedDividends} onCommit={(v) => set1040({ qualifiedDividends: v ?? 0 })} />
+                  <MoneyField label="Line 3b: ordinary dividends" value={tenForty.ordinaryDividends} onCommit={(v) => set1040({ ordinaryDividends: v ?? 0 })} />
+                  <MoneyField label="Line 4b: IRA distributions (taxable)" value={tenForty.iraDistributions} onCommit={(v) => set1040({ iraDistributions: v ?? 0 })} />
+                  <MoneyField label="Line 5b: pensions & annuities (taxable)" value={tenForty.pensionsAndAnnuities} onCommit={(v) => set1040({ pensionsAndAnnuities: v ?? 0 })} />
+                  <MoneyField label="Line 6a: Social Security benefits" value={tenForty.socialSecurityBenefits} onCommit={(v) => set1040({ socialSecurityBenefits: v ?? 0 })} />
+                  <MoneyField label="Line 7: capital gain or loss" help="Enter a loss as a negative number." value={tenForty.capitalGain} onCommit={(v) => set1040({ capitalGain: v ?? 0 })} />
+                  <MoneyField label="Line 11: adjusted gross income" value={tenForty.agi} onCommit={(v) => set1040({ agi: v ?? 0 })} />
+                </div>
+                <div className="picker-actions">
+                  <button type="button" className="btn btn-primary" onClick={buildTenFortyDraft}>
+                    Build my draft plan
+                  </button>
+                </div>
+              </form>
             </>
           ) : analysis ? (
             <>

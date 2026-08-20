@@ -77,7 +77,9 @@ else taxable-with-review-item). Negative or unreadable balances are skipped item
 - 1a wages → a wages stream (joint wages land on the primary with a split-it-yourself note).
 - 2b + 3b interest/dividends → an **estimated** taxable account sized at a 2.5% combined yield
   (`ASSUMED_TAXABLE_YIELD_PCT`), with the qualified ratio from 3a/3b — flagged as an estimate to
-  replace with the real balance.
+  replace with the real balance. On a Single return the account is owned by the primary (Joint
+  is a couple label and would be wrong for a one-person household). On MFJ the estimate stays
+  Joint because the 1040 lines are the combined total.
 - 4b IRA distributions → unmapped pointer (withdrawals are modeled from balances, not history).
 - 5b pensions → a pension account paying that amount monthly starting now (COLA/survivor defaults
   flagged).

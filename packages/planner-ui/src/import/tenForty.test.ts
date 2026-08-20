@@ -122,7 +122,33 @@ describe('seedPlanFromTenForty', () => {
     // $150 of interest still produces a (small) estimated account, flagged as an estimate.
     const taxable = r.plan.accounts.find((a) => a.type === 'taxable')
     expect(taxable?.type === 'taxable' && taxable.balance).toBe(6000)
+    // Single has one person — the estimate is theirs, not a Joint label.
+    expect(taxable?.ownerPersonId).toBe(r.plan.household.people[0]!.id)
     expect(r.plan.accounts.some((a) => a.type === 'pension')).toBe(false)
+  })
+
+  it('assigns a Single-filer estimated brokerage to the primary, matching the $76,000 walk', () => {
+    // Hosted walk: Single / Colorado, interest+dividends $1,900 → $76,000 at 2.5%.
+    // Owner must be the primary, not Joint (ownerPersonId null).
+    const r = seedPlanFromTenForty(
+      { ...WORKER_1040, state: 'CO', taxableInterest: 1_000, ordinaryDividends: 900 },
+      testIds,
+      fixedNow,
+    )
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    const taxable = r.plan.accounts.find((a) => a.type === 'taxable')!
+    expect(taxable.balance).toBe(76_000)
+    expect(taxable.ownerPersonId).toBe(r.plan.household.people[0]!.id)
+    expect(r.plan.household.people).toHaveLength(1)
+  })
+
+  it('keeps the estimated brokerage Joint on an MFJ return', () => {
+    const r = seedPlanFromTenForty(RETIREE_1040, testIds, fixedNow)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    const taxable = r.plan.accounts.find((a) => a.type === 'taxable')!
+    expect(taxable.ownerPersonId).toBeNull()
   })
 
   it('handles a capital loss with a carryforward pointer', () => {
