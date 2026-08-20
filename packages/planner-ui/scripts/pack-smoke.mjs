@@ -344,6 +344,14 @@ try {
       2,
     ),
   )
+  // pnpm resolves planner-ui's own engine range independently of the root
+  // install (npm deduped to the root tarball); pin the transitive resolution
+  // to the exact supported minimum under test. pnpm 10 reads overrides from
+  // pnpm-workspace.yaml, not package.json.
+  writeFileSync(
+    join(scratchDir, 'pnpm-workspace.yaml'),
+    `overrides:\n  '@retiregolden/engine': '${engineSpec}'\n`,
+  )
   writeFileSync(join(scratchDir, 'vite.config.ts'), viteConfig)
   // Sibling fixture avoids an inline HTML string in this script (Semgrep XSS FP
   // when a mkdtemp path sits next to a script-tag literal).

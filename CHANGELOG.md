@@ -5,9 +5,17 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 ## 2026-08
 
 **2026-08-19**
+- Prepared **`@retiregolden/engine` 0.1.12** (patch — the engine half of the
+  §414(v)(7) high-earner designated Roth catch-up below, including its
+  §415(c) exclusion, the compensation-minus-other-electives cap, the Plan v4
+  schema regeneration carrying `priorCalendarYearFicaWages`, and the
+  §408(d)(8)(A) post-70½ QCD offset corrections on the aggregate `qcdAnnual`
+  arm). Released as a pair with planner-ui 0.9.0, whose engine floor moves to
+  `^0.1.12` because the UI reads and writes the new Box 3 field — the pins
+  move together.
 - Prepared **`@retiregolden/planner-ui` 0.9.0** (minor — additive public
   subpaths and import hardening, plus the §414(v)(7) calculation addition
-  below). The new public, browser-free **`./complete-export`** subpath
+  below; requires `@retiregolden/engine ^0.1.12`). The new public, browser-free **`./complete-export`** subpath
   publishes the read/verify half of the `retiregolden.complete-export` v1
   planning-record contract: the typed manifest shape, `parseCompleteExportManifest`
   (liberal on producer labels, strict on integrity — safe-integer totals
