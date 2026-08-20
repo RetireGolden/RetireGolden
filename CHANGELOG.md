@@ -5,6 +5,31 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 ## 2026-08
 
 **2026-08-19**
+- Prepared **`@retiregolden/engine` 0.1.12** (patch — the engine half of the
+  §414(v)(7) high-earner designated Roth catch-up below, including its
+  §415(c) exclusion, the compensation-minus-other-electives cap, the Plan v4
+  schema regeneration carrying `priorCalendarYearFicaWages`, and the
+  §408(d)(8)(A) post-70½ QCD offset corrections on the aggregate `qcdAnnual`
+  arm). Released as a pair with planner-ui 0.9.0, whose engine floor moves to
+  `^0.1.12` because the UI reads and writes the new Box 3 field — the pins
+  move together.
+- Prepared **`@retiregolden/planner-ui` 0.9.0** (minor — additive public
+  subpaths and import hardening, plus the §414(v)(7) calculation addition
+  below; requires `@retiregolden/engine ^0.1.12`). The new public, browser-free **`./complete-export`** subpath
+  publishes the read/verify half of the `retiregolden.complete-export` v1
+  planning-record contract: the typed manifest shape, `parseCompleteExportManifest`
+  (liberal on producer labels, strict on integrity — safe-integer totals
+  equations, Win32-folded path-collision refusal, declared-limit
+  self-consistency, the pinned Free bridge path), the `manifest.sha256`
+  sidecar grammar, and fail-loud Web Crypto verifiers. There is deliberately
+  no writer — RetireGolden Pro remains the sole producer. Custodian file
+  refresh (Schwab/Fidelity) hardened end-to-end: statement as-of extraction
+  with local-calendar staleness flags, whole-word account matching with
+  broker-scoped remembered assignments, exact-cent reconciliation, and
+  durable pre-mutation refresh snapshots with protection-honoring
+  restore-and-undo. Also carries KPI-bar and planning-age layout fixes and
+  the workspace's npm→pnpm switch (packaging and publish pipeline
+  unchanged in behavior).
 - Implemented **IRC §414(v)(7) high-earner designated Roth catch-up** (SECURE 2.0
   §603) for contribution years 2026+. Employer-plan catch-up above the §402(g)
   base is recharacterized as designated Roth when prior-year FICA wages from the

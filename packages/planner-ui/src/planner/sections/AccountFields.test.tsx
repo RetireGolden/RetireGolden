@@ -889,13 +889,13 @@ describe('prior-year FICA wages (414(v)(7) Box 3 proxy)', () => {
     root = null
     container = null
 
-    renderFields(planWithAccount(retirementAccount({
+    const iraContainer = renderFields(planWithAccount(retirementAccount({
       id: 'ira',
       name: 'IRA',
       kind: 'ira',
       annualContribution: 7_500,
     })))
-    expect(container?.textContent).not.toContain('Prior-year FICA wages (Box 3)')
+    expect(iraContainer.textContent).not.toContain('Prior-year FICA wages (Box 3)')
   })
 
   it('displays the one-cent-over Box 3 boundary instead of rounding to whole dollars', () => {
