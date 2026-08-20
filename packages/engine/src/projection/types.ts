@@ -1570,6 +1570,8 @@ export type YearCashFlowTaxCharacterKind =
   | 'nonQualifiedQcdOrdinaryIncome'
   /** TIPS inflation accretion/OID that is taxable without current-year cash. */
   | 'tipsPhantomOidIncome'
+  /** ACA `foreignExclusionAddback` attested for MAGI; tax-only, never cash. */
+  | 'foreignExclusionAddback'
 
 /**
  * Tax-only characterization. `amountPlanDollars` is nominal and is never
@@ -1721,6 +1723,13 @@ export type YearCashFlowTransferKind =
 export type YearCashFlowLineageRelationship =
   /** The same funded contribution or surplus dollar at its later account-credit stage. */
   | 'sameDollarLaterStage'
+  /**
+   * A committed account credit whose linked use was only partly funded - the
+   * committed-credit edge. The transfer's amount exceeds the use line's funded
+   * amount by exactly its unfunded remainder; validators accept that exact
+   * difference here and only here.
+   */
+  | 'committedCreditBeyondFunding'
   /**
    * A charity-routed slice of a gross owned-IRA RMD. Points at the owner's net
    * RMD cash line - the complement of this gift - which is published, possibly
