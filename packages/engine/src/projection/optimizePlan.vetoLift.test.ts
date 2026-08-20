@@ -315,12 +315,11 @@ describe('repriced: published on its own pricing, the aggregate beside it', () =
 describe('notComparable: the boundary is presented, not a broken recommendation', () => {
   it('withholds when the source is an employer plan the named executor refuses', () => {
     // The shipped example couple's own shape. The aggregate ledger converts
-    // employer traditional balances -- `isConvertibleToRoth` admits them, under
-    // the still-`approximated` record
-    // `irc-401-k-2-B-i-employer-plan-conversion-source-not-gated-by-distributability`
-    // -- and the named executor refuses one, because the Plan records no
-    // plan-availability evidence for it and the schema will not even accept an
-    // IRA classification on such an account.
+    // an employer traditional balance only when a 401(k)(2)(B)(i) event is
+    // provable -- default couple ages are 60 in 2026, so the in-service proxy
+    // admits the 401(k) -- and the named executor refuses one, because the
+    // Plan records no plan-availability evidence for it and the schema will
+    // not even accept an IRA classification on such an account.
     const plan = couple(employer401k('alex-401k', 820_000, ALEX), ['sam-ira'])
     const tournament = tournamentFor(plan)
     assertPublicationPairing(tournament)

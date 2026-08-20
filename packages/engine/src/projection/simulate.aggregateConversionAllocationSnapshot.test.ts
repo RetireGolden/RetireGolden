@@ -147,6 +147,7 @@ describe('the published snapshot is what the policy consumed', () => {
         .map((account) => ({ account, balance: snapshot[account.id]! })),
       desiredPlanDollars: 100_000,
       primaryPersonId: ALEX,
+      sourceContextForOwner: () => ({ ownerAgeAttained: 60, ownerRetirementAge: null }),
     })
     if (replay.status !== 'allocated') throw new Error('expected an allocated replay')
 

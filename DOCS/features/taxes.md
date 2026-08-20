@@ -205,8 +205,10 @@ larger than the source. There is no partial-execution arm: a conversion that wou
 converting what fits. An employer plan cannot be a named source or a named destination — the source is refused
 `conversion-plan-availability-unknown` because no dated rollover-availability evidence exists for it, and an
 employer designated Roth is refused `conversion-employer-destination-unsupported` as a destination. The legacy
-aggregate schedules do convert an employer balance with no distributability gate, which is a separate registered
-approximation (`irc-401-k-2-B-i-employer-plan-conversion-source-not-gated-by-distributability`).
+aggregate schedules convert an employer balance to a Roth IRA only when a §401(k)(2)(B)(i) event is provable from
+Plan facts (attained age 60 or attained age at or past `retirementAge`); otherwise the source is fail-closed
+(`irc-401-k-2-B-i-employer-plan-conversion-source-not-gated-by-distributability`). In-plan Roth of otherwise
+nondistributable amounts under §402A(c)(4)(E) is a different enacted act and is not modelled.
 
 ## Conversion-linked tax funding
 

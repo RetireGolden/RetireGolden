@@ -28,6 +28,7 @@ import {
   hsaNonQualifiedPenaltyRate,
   isAggregatedIra,
   isConvertibleToRoth,
+  employerPlanIsDistributableForRothIraRollover,
   isEquityCompVested,
   isSpendableInYear,
   isTreatAsOwnEffective,
@@ -75,11 +76,15 @@ function equityComp(over: Partial<EquityCompAccount> = {}): EquityCompAccount {
   }
 }
 
+const workingUnder59 = { ownerAgeAttained: 46, ownerRetirementAge: 65 }
+const inServiceAt59Half = { ownerAgeAttained: 60, ownerRetirementAge: 65 }
+const separatedBefore59Half = { ownerAgeAttained: 50, ownerRetirementAge: 50 }
+
 describe('contributions / convertibility / RMD eligibility', () => {
   it('inherited traditional accounts cannot contribute, convert, or follow owner RMDs', () => {
     const inherited = inheritedIra()
     expect(acceptsContributions(inherited)).toBe(false)
-    expect(isConvertibleToRoth(inherited)).toBe(false)
+    expect(isConvertibleToRoth(inherited, inServiceAt59Half)).toBe(false)
     expect(followsOwnerRmds(inherited)).toBe(false)
     expect(isAggregatedIra(inherited)).toBe(false)
   })
@@ -87,15 +92,30 @@ describe('contributions / convertibility / RMD eligibility', () => {
   it('owned traditional IRAs contribute, convert, follow RMDs, and aggregate for 8606', () => {
     const owned = ownedIra()
     expect(acceptsContributions(owned)).toBe(true)
-    expect(isConvertibleToRoth(owned)).toBe(true)
+    expect(isConvertibleToRoth(owned, workingUnder59)).toBe(true)
     expect(followsOwnerRmds(owned)).toBe(true)
     expect(isAggregatedIra(owned)).toBe(true)
   })
 
-  it('employer traditional plans convert but do not aggregate for the IRA 8606 rule', () => {
+  it('employer traditional plans convert only on a provable 401(k)(2)(B)(i) event and never aggregate for 8606', () => {
     const employer = ownedIra({ kind: 'employer' })
-    expect(isConvertibleToRoth(employer)).toBe(true)
+    expect(isConvertibleToRoth(employer, workingUnder59)).toBe(false)
+    expect(isConvertibleToRoth(employer, inServiceAt59Half)).toBe(true)
+    expect(isConvertibleToRoth(employer, separatedBefore59Half)).toBe(true)
+    expect(employerPlanIsDistributableForRothIraRollover(workingUnder59)).toBe(false)
+    expect(employerPlanIsDistributableForRothIraRollover(inServiceAt59Half)).toBe(true)
+    expect(employerPlanIsDistributableForRothIraRollover(separatedBefore59Half)).toBe(true)
     expect(isAggregatedIra(employer)).toBe(false)
+  })
+
+  it('preserves the public one-argument call: IRAs convert, employer accounts fail closed', () => {
+    // Existing consumers call isConvertibleToRoth(account). Absent year-level
+    // context the employer gate cannot prove a 401(k)(2)(B)(i) event, so that
+    // arm fails closed rather than throwing. An owned IRA does not need the
+    // event and stays convertible.
+    expect(isConvertibleToRoth(ownedIra())).toBe(true)
+    expect(isConvertibleToRoth(ownedIra({ kind: 'employer' }))).toBe(false)
+    expect(isConvertibleToRoth(inheritedIra())).toBe(false)
   })
 
   it('a Roth account is neither convertible nor RMD-bearing', () => {
@@ -109,7 +129,7 @@ describe('contributions / convertibility / RMD eligibility', () => {
       balance: 1,
       annualContribution: 0,
     }
-    expect(isConvertibleToRoth(roth)).toBe(false)
+    expect(isConvertibleToRoth(roth, inServiceAt59Half)).toBe(false)
     expect(followsOwnerRmds(roth)).toBe(false)
     expect(acceptsContributions(roth)).toBe(true)
   })

@@ -330,10 +330,35 @@ function traditionalReceivesContributionInWindow(
   return false
 }
 
+function accountConvertibleToRothInWindow(
+  plan: Plan,
+  account: Plan['accounts'][number],
+  startYear: number,
+  endYear: number,
+): account is Extract<Plan['accounts'][number], { type: 'traditional' }> {
+  const owner = plan.household.people.find((person) => person.id === account.ownerPersonId)
+  for (let year = startYear; year <= endYear; year += 1) {
+    // Construct the year-level facts here rather than importing
+    // `rothConversionSourceContextForPerson`: pack-smoke installs the
+    // published engine floor, which does not export that helper yet.
+    // `isConvertibleToRoth` still receives the same `{ ownerAgeAttained,
+    // ownerRetirementAge }` shape the engine gate reads.
+    if (
+      isConvertibleToRoth(account, {
+        ownerAgeAttained: owner === undefined ? 0 : year - Number(owner.dob.slice(0, 4)),
+        ownerRetirementAge: owner?.retirementAge ?? null,
+      })
+    ) {
+      return true
+    }
+  }
+  return false
+}
+
 function hasRothConversionSources(plan: Plan, startYear: number, endYear: number): boolean {
   return plan.accounts.some(
     (account) =>
-      isConvertibleToRoth(account) &&
+      accountConvertibleToRothInWindow(plan, account, startYear, endYear) &&
       (account.balance > 0 ||
         traditionalReceivesContributionInWindow(plan, account, startYear, endYear) ||
         plan.accounts.some(

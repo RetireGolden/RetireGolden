@@ -93,7 +93,9 @@ import {
   isConvertibleToRoth,
   isSpendableInYear,
   isTreatAsOwnEffective,
+  rothConversionSourceContextForPerson,
   traditionalWithdrawalPenaltyRate,
+  type RothConversionSourceContext,
   type NonpersistedActionPersonAliveEvidence,
   type NonpersistedOwnerAggregatedIraBasisEvidence,
   type NonpersistedOwnerIraRmdSatisfactionEvidence,
@@ -6977,6 +6979,22 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       )
       assumedLine8ByOwner.set(effect.ownerPersonId, current)
     }
+    const conversionSourceContextForOwner = (
+      ownerPersonId: string,
+    ): RothConversionSourceContext => {
+      const person = personById.get(ownerPersonId)
+      return {
+        ownerAgeAttained: person !== undefined ? stateOf(ownerPersonId).ageAttained : 0,
+        ownerRetirementAge: person?.retirementAge ?? null,
+      }
+    }
+    const yearConvertibleToRoth = (
+      account: Account,
+    ): account is Extract<Account, { type: 'traditional' }> =>
+      isConvertibleToRoth(
+        account,
+        conversionSourceContextForOwner(account.ownerPersonId ?? primary.id),
+      )
     const ownedIraConversionTaxableFraction = (ownerPersonId: string) => {
       const assumed = assumedLine8ByOwner.get(ownerPersonId)
       if (assumed !== undefined && assumed.gross > 0) {
@@ -6994,7 +7012,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       let remainingGross = Math.max(0, grossTarget)
       let taxable = 0
       for (const state of balances) {
-        if (!isConvertibleToRoth(state.account) || remainingGross <= 0) continue
+        if (!yearConvertibleToRoth(state.account) || remainingGross <= 0) continue
         const gross = Math.min(state.balance, remainingGross)
         const fraction = isAggregatedIra(state.account)
           ? ownedIraConversionTaxableFraction(
@@ -7012,7 +7030,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       let remainingTaxable = Math.max(0, taxableTarget)
       let gross = 0
       for (const state of balances) {
-        if (!isConvertibleToRoth(state.account)) continue
+        if (!yearConvertibleToRoth(state.account)) continue
         const fraction = isAggregatedIra(state.account)
           ? ownedIraConversionTaxableFraction(
             state.account.ownerPersonId ?? primary.id,
@@ -7251,6 +7269,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           balances,
           desiredPlanDollars: desired,
           primaryPersonId: primary.id,
+          sourceContextForOwner: conversionSourceContextForOwner,
         })
         if (allocation.status === 'refused') {
           warnings.add(allocation.reason === 'householdHoldsNoRothAccount'
@@ -7422,7 +7441,32 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           // anyone about. Above it, the enclosing `desired > 0.01` guarantees
           // the no-balance case clears the threshold and speaks.
           if (rothConversion < allocation.convertibleTargetPlanDollars - 0.01) {
-            warnings.add('A requested Roth conversion exceeded the available traditional balance and was reduced.')
+            const gatedEmployerOwners = new Set<string>()
+            for (const state of balances) {
+              const account = state.account
+              if (
+                account.type !== 'traditional'
+                || account.inherited !== undefined
+                || account.kind !== 'employer'
+                || state.balance <= 0
+              ) continue
+              const ownerId = account.ownerPersonId ?? primary.id
+              if (yearConvertibleToRoth(account)) continue
+              gatedEmployerOwners.add(personById.get(ownerId)?.name ?? ownerId)
+            }
+            if (gatedEmployerOwners.size > 0) {
+              // Name the unused locked employer balance whenever it caused
+              // the shortfall, including when an IRA filled only part of the
+              // request. Silence on that unused balance reads as assent.
+              for (const ownerName of gatedEmployerOwners) {
+                warnings.add(
+                  `${ownerName}’s employer-plan balance is not distributable this year ` +
+                    `(no separation from service and under 59½), so that Roth conversion was skipped.`,
+                )
+              }
+            } else {
+              warnings.add('A requested Roth conversion exceeded the available traditional balance and was reduced.')
+            }
           }
         }
       }
@@ -8614,7 +8658,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           remainingTraditionalGross += gross
           remainingTraditionalTaxable += gross * fraction
         }
-        if (isConvertibleToRoth(state.account)) {
+        if (yearConvertibleToRoth(state.account)) {
           remainingConvertibleGross += Math.max(0, state.balance)
         }
       }
@@ -10284,8 +10328,14 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           }
           const traditionalFraction = weightedTaxableFraction((account) =>
             account.type === 'traditional' && !account.inherited)
-          const conversionFraction = weightedTaxableFraction(
-            isConvertibleToRoth,
+          const conversionFraction = weightedTaxableFraction((account) =>
+            isConvertibleToRoth(
+              account,
+              rothConversionSourceContextForPerson(
+                personById.get(account.ownerPersonId ?? primary.id),
+                year,
+              ),
+            ),
           )
           settledAnnualPass = {
             ...settledAnnualPass,

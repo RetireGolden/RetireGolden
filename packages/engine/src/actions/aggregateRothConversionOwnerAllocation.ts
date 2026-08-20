@@ -1,6 +1,7 @@
 import type { Account } from '../model/plan.js'
 import {
   isConvertibleToRoth,
+  type RothConversionSourceContext,
   type TraditionalAccount,
 } from '../strategies/accountEligibility.js'
 import { exactCentLargestRemainderSlices } from './exactCentProRata.js'
@@ -47,6 +48,10 @@ import {
  *   its own.
  * - `treas-reg-1-408A-4-a-6-rmd-precedes-conversion` — why the caller must
  *   snapshot balances after the forced distribution and before any drain.
+ * - `irc-401-k-2-B-i-employer-plan-conversion-source-not-gated-by-distributability`
+ *   — an employer traditional balance is convertible to a Roth IRA only when
+ *   a 401(k)(2)(B)(i) event is provable from the caller's year-level owner
+ *   context. The predicate is applied on both the weight and the drain.
  *
  * This module reads balances and returns the movements it would take — an
  * `AggregateRothConversionOwnerAllocation`, never a `Plan`; nothing here
@@ -195,6 +200,15 @@ export interface AggregateRothConversionOwnerAllocationInput<
    * itself.
    */
   readonly primaryPersonId: string
+  /**
+   * Year-level facts the source gate needs for each owner: attained age and
+   * the Plan `retirementAge` separation proxy. Required because an employer
+   * traditional balance is convertible to a Roth IRA only when a
+   * 401(k)(2)(B)(i) event is provable. The two callers — the ledger drain
+   * and the promotion chooser — must pass the same year's facts so they
+   * cannot disagree about whose 401(k) may move.
+   */
+  readonly sourceContextForOwner: (ownerPersonId: string) => RothConversionSourceContext
 }
 
 /**
@@ -217,7 +231,13 @@ export interface AggregateRothConversionOwnerAllocationInput<
 export function participatesInAggregateRothConversionAllocation(
   account: Account,
 ): boolean {
-  return isConvertibleToRoth(account) || account.type === 'roth'
+  // Year-agnostic reading set: every owned traditional account and every Roth.
+  // Convertibility of an employer plan is year-specific and is applied by
+  // `isConvertibleToRoth` on the weight and drain loops, not here. Dropping
+  // a still-locked 401(k) from the snapshot would hide an account the policy
+  // still has to see in order to refuse it.
+  return (account.type === 'traditional' && account.inherited === undefined)
+    || account.type === 'roth'
 }
 
 /**
@@ -258,7 +278,7 @@ export function allocateAggregateRothConversionByOwner<
 >(
   input: AggregateRothConversionOwnerAllocationInput<TBalance>,
 ): AggregateRothConversionOwnerAllocation<TBalance> {
-  const { balances, desiredPlanDollars, primaryPersonId } = input
+  const { balances, desiredPlanDollars, primaryPersonId, sourceContextForOwner } = input
   if (!Number.isFinite(desiredPlanDollars)) {
     throw new RangeError(
       'A household Roth conversion amount must be a finite Plan-dollar figure',
@@ -276,16 +296,19 @@ export function allocateAggregateRothConversionByOwner<
   }
   const ownerOf = (account: Account): string =>
     account.ownerPersonId ?? primaryPersonId
+  const convertibleToRothIra = (account: Account): account is TraditionalAccount =>
+    isConvertibleToRoth(account, sourceContextForOwner(ownerOf(account)))
 
   // Only a Roth IRA can receive these dollars. For an IRA source the statute
   // decides it: 408A(d)(3)(B) applies the conversion paragraph to an amount
   // contributed to a Roth IRA, and the one route into a designated Roth
   // account -- 402A(c)(4)(B) -- reaches only a distribution from the plan that
   // maintains the account, which an IRA never is. The draws below also take
-  // employer traditional balances, where that in-plan route exists in law, but
-  // the Plan schema records no plan identity linking an employer traditional
-  // account to an employer Roth account, so "the same plan" cannot be
-  // established and a Roth IRA is the only destination whose lawfulness is
+  // employer traditional balances when a 401(k)(2)(B)(i) event is provable.
+  // The in-plan Roth route for otherwise nondistributable amounts
+  // (402A(c)(4)(E)) exists in law but lands in a designated Roth account in
+  // the same plan, an identity the Plan schema cannot establish, and is not
+  // modelled. A Roth IRA is the only destination whose lawfulness is
   // verifiable. The wider Roth list survives the filter because the two
   // reasons a person can lack a destination read differently to them: no Roth
   // at all, against a Roth that sits where this conversion cannot go.
@@ -311,13 +334,14 @@ export function allocateAggregateRothConversionByOwner<
   // convert is limited by what they hold, not by how much of it is pre-tax.
   //
   // Inherited accounts follow the 10-year rule and can't be converted.
-  // `isConvertibleToRoth` also admits employer traditional plans, which is
-  // deliberately a wider set than the Form 8606 basis pool (`isAggregatedIra`,
+  // `isConvertibleToRoth` admits an employer traditional plan only when a
+  // 401(k)(2)(B)(i) event is provable from this year's context. That is
+  // still a wider set than the Form 8606 basis pool (`isAggregatedIra`,
   // IRAs only): it is the set the draws are actually taken from, so it is the
   // set the weight has to be built from.
   const convertibleWeightByOwner = new Map<string, number>()
   for (const state of balances) {
-    if (!isConvertibleToRoth(state.account) || state.balance <= 0) continue
+    if (!convertibleToRothIra(state.account) || state.balance <= 0) continue
     const ownerId = ownerOf(state.account)
     convertibleWeightByOwner.set(
       ownerId,
@@ -388,7 +412,7 @@ export function allocateAggregateRothConversionByOwner<
 
   const draws: AggregateRothConversionDraw<TBalance>[] = []
   for (const state of balances) {
-    if (!isConvertibleToRoth(state.account)) continue
+    if (!convertibleToRothIra(state.account)) continue
     const ownerId = ownerOf(state.account)
     const ownerRemaining = remainingByOwner.get(ownerId) ?? 0
     if (ownerRemaining <= 0) continue
