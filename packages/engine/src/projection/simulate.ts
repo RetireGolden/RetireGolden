@@ -93,6 +93,7 @@ import {
   isConvertibleToRoth,
   isSpendableInYear,
   isTreatAsOwnEffective,
+  rothConversionSourceContextForPerson,
   traditionalWithdrawalPenaltyRate,
   type RothConversionSourceContext,
   type NonpersistedActionPersonAliveEvidence,
@@ -7448,16 +7449,16 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
                 || account.inherited !== undefined
                 || account.kind !== 'employer'
                 || state.balance <= 0
-                || yearConvertibleToRoth(account)
               ) continue
               const ownerId = account.ownerPersonId ?? primary.id
+              if (yearConvertibleToRoth(account)) continue
               gatedEmployerOwners.add(personById.get(ownerId)?.name ?? ownerId)
             }
             if (gatedEmployerOwners.size > 0 && rothConversion <= 0.01) {
               for (const ownerName of gatedEmployerOwners) {
                 warnings.add(
                   `${ownerName}’s employer-plan balance is not distributable this year ` +
-                    `(no separation from service and under 59½), so it was not converted to a Roth IRA.`,
+                    `(no separation from service and under 59½), so that Roth conversion was skipped.`,
                 )
               }
             } else {
@@ -10324,8 +10325,14 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           }
           const traditionalFraction = weightedTaxableFraction((account) =>
             account.type === 'traditional' && !account.inherited)
-          const conversionFraction = weightedTaxableFraction(
-            yearConvertibleToRoth,
+          const conversionFraction = weightedTaxableFraction((account) =>
+            isConvertibleToRoth(
+              account,
+              rothConversionSourceContextForPerson(
+                personById.get(account.ownerPersonId ?? primary.id),
+                year,
+              ),
+            ),
           )
           settledAnnualPass = {
             ...settledAnnualPass,

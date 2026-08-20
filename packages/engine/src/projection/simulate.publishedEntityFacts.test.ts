@@ -910,7 +910,9 @@ describe('simulatePlan published per-entity ledger facts', () => {
       // multi-source conversions collapse into one mixed layer under Form 8606
       // pro-rata, so stage them: year-1 employer (fully taxable, outside the
       // IRA basis pool), year-2 full-basis IRA (wholly nontaxable).
-      const plan = singlePersonPlan({ dob: '1971-01-01', planningAge: 90 })
+      // retirementAge 50: still under 59½ for the Roth 72(t) test, but
+      // severed so the employer layer is distributable to a Roth IRA.
+      const plan = singlePersonPlan({ dob: '1971-01-01', planningAge: 90, retirementAge: 50 })
       plan.id = 'published-facts-roth-post-draw-prefix-100-seed'
       plan.assumptions.inflationPct = 0
       plan.assumptions.defaultReturnPct = 0
@@ -954,7 +956,7 @@ describe('simulatePlan published per-entity ledger facts', () => {
       // heads the queue). Counterfactual finishes the $30 taxable remainder
       // then reaches free cover — consequential spill is $30, not the whole
       // $100 seed.
-      const plan = singlePersonPlan({ dob: '1971-01-01', planningAge: 90 })
+      const plan = singlePersonPlan({ dob: '1971-01-01', planningAge: 90, retirementAge: 50 })
       plan.id = 'published-facts-roth-partial-blocker-seed'
       plan.assumptions.inflationPct = 0
       plan.assumptions.defaultReturnPct = 0
@@ -1125,7 +1127,7 @@ describe('simulatePlan published per-entity ledger facts', () => {
       // conversion principal left, so the take is earnings (ordinary income),
       // not merely a free-cover/penalty difference. Free-cover-only comparison
       // silences (freeConversionTake=0 when taxable heads the queue).
-      const plan = singlePersonPlan({ dob: '1971-01-01', planningAge: 90 })
+      const plan = singlePersonPlan({ dob: '1971-01-01', planningAge: 90, retirementAge: 50 })
       plan.id = 'published-facts-roth-seed-exhaust-taxable-debt-earnings'
       plan.assumptions.inflationPct = 0
       plan.assumptions.defaultReturnPct = 0
@@ -1179,7 +1181,7 @@ describe('simulatePlan published per-entity ledger facts', () => {
       // deepen the live take slightly into free). Draw 3 takes the remaining
       // free conversion live, but CF free is gone → must flag. Without taxable-
       // principal debt the guard would stop after seed exhaustion and silence.
-      const plan = singlePersonPlan({ dob: '1971-01-01', planningAge: 90 })
+      const plan = singlePersonPlan({ dob: '1971-01-01', planningAge: 90, retirementAge: 50 })
       plan.id = 'published-facts-roth-100-seed-100-taxable-subsequent'
       plan.assumptions.inflationPct = 0
       plan.assumptions.defaultReturnPct = 0
