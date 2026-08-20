@@ -68,7 +68,7 @@ function multiplierInputs(rootEl: HTMLElement): HTMLInputElement[] {
     .map((label) => {
       const id = label.getAttribute('for')
       if (!id) throw new Error('Multiplier label has no for=')
-      const input = rootEl.querySelector<HTMLInputElement>(`[id="${CSS.escape(id)}"]`)
+      const input = rootEl.querySelector<HTMLInputElement>(`[id="${id.replace(/"/g, '\\"')}"]`)
       if (!input) throw new Error(`no Multiplier input for ${id}`)
       return input
     })
