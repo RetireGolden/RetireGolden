@@ -238,3 +238,41 @@ rounding plug, synthetic source, or synthetic owner. Any graphical consumer must
   by web, desktop, or another host edition.
 - It does not contain presentation labels, colors, node order, coordinates, chart-library objects, or UI
   rounding.
+
+## Results drill-down (planner-ui)
+
+The live Results year table ends with a **Flow** column. **View flow** opens the selected year in a
+dialog that reads `YearResult.cashFlow` through
+[`buildYearCashFlowSankey`](../../packages/planner-ui/src/planner/yearCashFlow/buildYearCashFlow.ts).
+The dialog never recomputes tax, funding, or shortfall. Dollar amounts are the engine's nominal Plan
+dollars passed through the same Results display transform, so nominal and today's-dollar modes stay
+in parity with the rest of the page.
+
+Two chart views are offered: **Cash flow** (household-available sources through the cash hub into
+funded uses, with unfunded uses on a separate origin) and **Transfers** (direct debit/credit edges
+that bypass or follow that hub). Post-solve deposits and tax-character metadata never appear on
+either Sankey. They remain on the accessible table.
+
+The dialog is URL-addressable. `flowYear` is a projection year that exists on the current run;
+`flowView` is `cash` or `transfers`. Opening from **View flow** *pushes* both parameters
+(`flowView=cash`). Toggling the view *replaces* `flowView` so Back leaves the drill-down rather than
+the previous chart. Close *replaces* and strips both parameters. An invalid or out-of-range
+`flowYear`, or an orphan `flowView` with no year, is cleaned the same way and the dialog does not
+open. An unrecognized `flowView` beside a valid year is replaced with `cash` and the year stays
+open.
+
+Small same-person, same-kind cash-flow lines may collapse into one `Other (n)` node per
+(side, kind, person) group. Transfer endpoints stay distinct. **Show all** rebuilds the selector
+with grouping off for the open year; that choice is session state, not a URL parameter. The
+accessible table is always complete: one row per underlying engine line, including split
+funded/unfunded uses, transfers, post-solve deposits, and standalone tax-character rows, whether or
+not the chart collapsed any nodes.
+
+A year with no capture, or with `reconciliation.status === 'notReconciled'`, is a refusal: reason
+codes and a non-chart failure state, never a best-effort graph or an “Other” plug.
+
+**Download detail CSV** emits the selected-year serializer, not the compact Results ledger. The
+first data row is the reconciliation summary (`view=reconciliation`, `kind=summary`,
+`reconciliationStatus`, reason codes on `lineage`). Every later row is one cash-flow line. Text
+cells that begin with `=`, `+`, `-`, or `@` are prefixed with an apostrophe before CSV escaping;
+numeric cells are untouched.
