@@ -3,7 +3,7 @@ import { NavLink, useLocation, useRoutes } from 'react-router'
 import { RouteErrorBoundary } from './RouteErrorBoundary.tsx'
 import { plannerContentRoutes, plannerHomeRoutes, plannerWorkspaceRoutes } from './routes/groups'
 import { readLocal, STORAGE_KEYS, writeLocal } from './data/localStore'
-import { usePlanStore, type PlanStore } from './data/planStoreContext'
+import { listPlansVia, usePlanStore, type PlanStore } from './data/planStoreContext'
 import { PlanStoreProvider } from './data/PlanStoreProvider'
 import { ReportBrandingContext } from './report/brandingContext'
 import type { ReportBranding } from './report/reportHtml'
@@ -13,8 +13,8 @@ const navClass = ({ isActive }: { isActive: boolean }) =>
   isActive ? 'nav-link nav-link--active' : 'nav-link'
 
 /** Tab/history titles for non-plan routes; plan routes are owned by PlanWorkspace.
- *  `/` is owned by PlanPickerPage so first-run (empty library) stays
- *  `RetireGolden` instead of `Your plans · RetireGolden`. */
+ *  `/` is owned here (PlannerApp), not by PlanPickerPage, so hosts that mount
+ *  `plannerHomeRoutes` under their own chrome do not have their title overwritten. */
 const ROUTE_TITLES: ReadonlyArray<[prefix: string, title: string]> = [
   ['/examples', 'Examples'],
   ['/import', 'Import & migrate'],
@@ -82,6 +82,7 @@ export function App({ reportBranding, planStore, readOnly }: PlannerAppProps = {
   // default; with neither prop nor provider this resolves to the browser
   // store (the context's default value).
   const ambientStore = usePlanStore()
+  const store = planStore ?? ambientStore
   const location = useLocation()
   // The full route table — <Routes> is exactly useRoutes over its children,
   // so composing the exported groups this way renders identically.
@@ -91,21 +92,37 @@ export function App({ reportBranding, planStore, readOnly }: PlannerAppProps = {
   const isFirstRoute = useRef(true)
 
   // Page identity: retitle the tab per route (plan routes retitle themselves in
-  // PlanWorkspace with the plan name; `/` is owned by PlanPickerPage) and move
-  // focus to the main landmark on SPA navigation so screen readers hear the
-  // new page instead of silence.
+  // PlanWorkspace with the plan name) and move focus to the main landmark on
+  // SPA navigation so screen readers hear the new page instead of silence.
+  // `/` is set immediately — do not leave the previous route title up while
+  // the home skeleton waits on IndexedDB — then refined once the list returns.
   useEffect(() => {
-    if (!location.pathname.startsWith('/plan/') && location.pathname !== '/') {
-      const title = routeTitleOf(location.pathname)
-      document.title = title ? `${title} · RetireGolden` : 'RetireGolden'
+    let cancelled = false
+    if (!location.pathname.startsWith('/plan/')) {
+      if (location.pathname === '/') {
+        document.title = 'RetireGolden'
+        void listPlansVia(store).then((summaries) => {
+          if (!cancelled && summaries.length > 0) {
+            document.title = 'Your plans · RetireGolden'
+          }
+        })
+      } else {
+        const title = routeTitleOf(location.pathname)
+        document.title = title ? `${title} · RetireGolden` : 'RetireGolden'
+      }
     }
     if (isFirstRoute.current) {
       // Initial load: the browser's own focus/scroll behavior is correct.
       isFirstRoute.current = false
-      return
+      return () => {
+        cancelled = true
+      }
     }
     document.getElementById('main-content')?.focus()
-  }, [location.pathname])
+    return () => {
+      cancelled = true
+    }
+  }, [location.pathname, store])
 
   useEffect(() => {
     const root = document.documentElement
@@ -129,7 +146,7 @@ export function App({ reportBranding, planStore, readOnly }: PlannerAppProps = {
   }, [themeMode])
 
   return (
-    <PlanStoreProvider store={planStore ?? ambientStore} readOnly={readOnly}>
+    <PlanStoreProvider store={store} readOnly={readOnly}>
     <ReportBrandingContext.Provider value={reportBranding ?? null}>
     <div className={`app-shell planner-shell${isLanding ? ' app-shell--landing' : ''}`}>
       <a className="skip-link" href="#main-content">
@@ -139,7 +156,7 @@ export function App({ reportBranding, planStore, readOnly }: PlannerAppProps = {
         {/* Mark + real wordmark text. The lockup PNGs bake the tagline in at
             ~5–6px, which is illegible; do not restore those as the header
             identity. The existing tagline copy lives in the first-run hero. */}
-        <NavLink to="/" className="brand brand-logo-link" end>
+        <NavLink to="/" className="brand brand-logo-link" end aria-label="RetireGolden home">
           <img className="brand-mark" src="/favicon.svg" alt="" />
           <span className="brand-wordmark">RetireGolden</span>
         </NavLink>

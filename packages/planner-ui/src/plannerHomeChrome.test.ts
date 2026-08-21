@@ -1,8 +1,9 @@
 /**
  * First-run planner-home chrome (#297): selected theme must not share the
- * primary-CTA gold fill, skip-to-content must sit in flow when focused, and
- * Getting started is a 2×2 — asserted from the stylesheets so a later
- * “make it gold again” or auto-fill grid cannot silently regress.
+ * primary-CTA gold fill, shell skip-to-content sits in flow when focused,
+ * workspace skip stays out of the two-column grid, and Getting started is a
+ * real 2×2 that beats `.plan-grid` auto-fill. Import source cards stay
+ * auto-fill.
  */
 
 import { describe, expect, it } from 'vitest'
@@ -32,6 +33,56 @@ function extractBlock(css: string, selectorStart: string): string {
   return css.slice(open + 1, i - 1)
 }
 
+/** Specificity as (id, class, type) packed so later equal-spec rules can win by source order. */
+function specificity(selector: string): number {
+  const sel = selector.trim()
+  const ids = (sel.match(/#/g) ?? []).length
+  const classes = (sel.match(/\./g) ?? []).length
+  const types = (sel.match(/(^|[\s>+~])[a-zA-Z][\w-]*/g) ?? []).length
+  return ids * 10000 + classes * 100 + types
+}
+
+function winningDeclaration(css: string, className: string, property: string, ancestorClass?: string): string | null {
+  const doc = `<!doctype html><html><head><style>${css}</style></head><body>
+    ${ancestorClass ? `<div class="${ancestorClass}">` : ''}<div class="${className}" id="target"></div>${ancestorClass ? '</div>' : ''}
+  </body></html>`
+  // Cascade in this helper: last matching rule of highest specificity wins.
+  // Used when jsdom computed-style is unavailable (this file is node-env).
+  const ruleRe = /([^{}]+)\{([^{}]+)\}/g
+  let match: RegExpExecArray | null
+  let bestSpec = -1
+  let bestValue: string | null = null
+  const targetClasses = new Set(className.split(/\s+/))
+  while ((match = ruleRe.exec(css)) !== null) {
+    const selectors = match[1]!.split(',').map((s) => s.trim())
+    const body = match[2]!
+    const prop = body.match(new RegExp(`${property}\\s*:\\s*([^;]+)`))
+    if (!prop) continue
+    for (const sel of selectors) {
+      if (sel.includes('@') || sel.includes(':') || sel.includes('[')) continue
+      const parts = sel.split(/\s+/).filter(Boolean)
+      const last = parts[parts.length - 1]!
+      const lastClasses = [...last.matchAll(/\.([\w-]+)/g)].map((m) => m[1]!)
+      if (lastClasses.length === 0) continue
+      if (!lastClasses.every((c) => targetClasses.has(c))) continue
+      if (parts.length > 1) {
+        const ancestorSel = parts[0]!
+        const ancestorNames = [...ancestorSel.matchAll(/\.([\w-]+)/g)].map((m) => m[1]!)
+        if (!ancestorClass || !ancestorNames.every((c) => c === ancestorClass || ancestorClass.split(/\s+/).includes(c))) {
+          continue
+        }
+      }
+      const spec = specificity(sel)
+      if (spec >= bestSpec) {
+        bestSpec = spec
+        bestValue = prop[1]!.trim()
+      }
+    }
+  }
+  void doc
+  return bestValue
+}
+
 describe('planner home chrome (#297)', () => {
   it('selected theme segment does not use the primary-CTA accent fill', () => {
     const block = extractBlock(indexCss, ".theme-switcher-button[aria-pressed='true']")
@@ -40,20 +91,61 @@ describe('planner home chrome (#297)', () => {
     expect(block).toMatch(/var\(--fg\)/)
   })
 
-  it('focused skip-to-content is in document flow, not pinned over the wordmark', () => {
-    const block = extractBlock(indexCss, '.skip-link:focus')
-    expect(block).toMatch(/position:\s*static/)
-    expect(block).not.toMatch(/top:\s*0\.5rem/)
+  it('focused shell skip-to-content is in document flow; generic skip-link:focus stays out of flow', () => {
+    const generic = extractBlock(indexCss, '.skip-link:focus')
+    expect(generic).toMatch(/position:\s*absolute/)
+    expect(generic).not.toMatch(/position:\s*static/)
+    const shell = extractBlock(indexCss, '.app-shell > .skip-link:focus')
+    expect(shell).toMatch(/position:\s*static/)
   })
 
-  it('Getting started grid is a 2-column 2×2, not auto-fill 16rem (3+1)', () => {
-    const block = extractBlock(plannerCss, '.home-paths-grid {')
-    expect(block).toMatch(/grid-template-columns:\s*repeat\(2/)
-    expect(block).not.toMatch(/auto-fill/)
+  it('workspace is a positioning context so its skip-link stays out of the grid', () => {
+    const block = extractBlock(plannerCss, '.workspace {')
+    expect(block).toMatch(/position:\s*relative/)
+    expect(block).toMatch(/grid-template-columns:\s*13\.5rem/)
+  })
+
+  it('narrow header hides the wordmark so nav stays one row', () => {
+    const mobile = extractBlock(indexCss, '@media (max-width: 640px)')
+    const wordmark = extractBlock(mobile, '.brand-wordmark')
+    expect(wordmark).toMatch(/display:\s*none/)
+    const nav = extractBlock(mobile, '.nav {')
+    expect(nav).toMatch(/flex-wrap:\s*nowrap/)
+  })
+
+  it('privacy-card actions do not stretch siblings to the backup-hint height', () => {
+    const block = extractBlock(plannerCss, '.home-privacy-card .picker-actions')
+    expect(block).toMatch(/align-items:\s*flex-start/)
   })
 
   it('Start here is a column list', () => {
     const block = extractBlock(plannerCss, '.home-start-here-list {')
     expect(block).toMatch(/flex-direction:\s*column/)
+  })
+
+  it('Getting started 2×2 beats later .plan-grid auto-fill; Import stays auto-fill', () => {
+    const homeCols = winningDeclaration(
+      plannerCss,
+      'home-paths-grid plan-grid',
+      'grid-template-columns',
+      'home-paths',
+    )
+    expect(homeCols, 'home Getting started winning track list').toMatch(/repeat\(2/)
+    expect(homeCols).not.toMatch(/auto-fill/)
+
+    const importCols = winningDeclaration(
+      plannerCss,
+      'plan-grid home-paths-grid',
+      'grid-template-columns',
+    )
+    expect(importCols, 'ImportPage winning track list').toMatch(/auto-fill/)
+    expect(importCols).not.toMatch(/repeat\(2/)
+
+    // The override must appear after `.plan-grid` so a same-specificity tie
+    // cannot restore the 3+1 rag this PR exists to remove.
+    const planGridAt = plannerCss.indexOf('\n.plan-grid {')
+    const overrideAt = plannerCss.indexOf('.home-paths .home-paths-grid.plan-grid')
+    expect(planGridAt).toBeGreaterThanOrEqual(0)
+    expect(overrideAt).toBeGreaterThan(planGridAt)
   })
 })

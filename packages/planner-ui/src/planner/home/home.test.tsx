@@ -102,7 +102,12 @@ describe('planner home adaptive layout', () => {
     expect(container.querySelectorAll('h1')).toHaveLength(1)
     expect(container.querySelector('.home-getting-started-reopener')).toBeNull()
     expect(container.querySelector('#example-library-heading')).toBeNull()
-    expect(document.title).toBe('RetireGolden')
+  })
+
+  it('does not write document.title — hosts mounting plannerHomeRoutes own the tab', async () => {
+    document.title = 'Host chrome title'
+    await renderHome()
+    expect(document.title).toBe('Host chrome title')
   })
 
   it('names why Download plan backup is disabled on first-run', async () => {
@@ -134,7 +139,6 @@ describe('planner home adaptive layout', () => {
     expect(plansHeading).not.toBeNull()
     expect(reopener!.compareDocumentPosition(plansHeading!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     expect(plansHeading?.textContent).toBe('Your plans')
-    expect(document.title).toBe('Your plans · RetireGolden')
     expect(container.querySelector('.home-hero')).toBeNull()
     expect(reopener?.getAttribute('aria-expanded')).toBe('false')
     expect(container.querySelectorAll('h1')).toHaveLength(1)
