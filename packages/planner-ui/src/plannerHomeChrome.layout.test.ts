@@ -12,7 +12,11 @@ import { readFileSync } from 'node:fs'
 // @ts-expect-error -- node builtins in a jsdom test; the app tsconfig omits node types
 import { join } from 'node:path'
 
-const plannerCss: string = readFileSync(join(process.cwd(), 'src/planner/planner.css'), 'utf8')
+// jsdom's import.meta.url is not a file: URL, so sibling chrome tests' fileURLToPath
+// pattern cannot load planner.css here. Read from the package cwd instead. `process`
+// is untyped because tsconfig.src.json omits node types (this file is still in `src/`).
+const cwd = (globalThis as unknown as { process: { cwd: () => string } }).process.cwd()
+const plannerCss: string = readFileSync(join(cwd, 'src/planner/planner.css'), 'utf8')
 
 function injectPlannerCss() {
   const style = document.createElement('style')
