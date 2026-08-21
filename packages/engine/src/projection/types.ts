@@ -15,6 +15,7 @@ import type {
   UsdCents,
 } from '../actions/index.js'
 import type { FederalTaxDetail } from '../tax/federalTax.js'
+import type { RmdShortfallExciseResult } from '../rmd/rmdShortfallExcise.js'
 import type { SimulatorAnnualRetirementRuntimeOccurrence } from './annualRetirementRuntimeJournal.js'
 import type { CompleteSimulatorOwnedNonRothIraAnnualObservation } from
   './ownedNonRothIraAnnualObservation.js'
@@ -1940,6 +1941,10 @@ export interface YearResult {
   employerMatch: number
   /** Forced traditional-account distributions (included in withdrawals.traditional). */
   rmd: number
+  /** IRC §4974 excise included in `penalties`, never in `tax`, AGI, or MAGI. */
+  rmdShortfallExciseTax?: number
+  /** Per-applicable-plan required, timely-paid, shortfall, rate, and tax evidence. */
+  rmdShortfallExciseDetails?: readonly Readonly<RmdShortfallExciseResult>[]
   /** Penalty-free 72(t) SEPP distributions this year (included in withdrawals.traditional). */
   sepp: number
   /**
@@ -2166,7 +2171,7 @@ export interface YearResult {
    * proven before any gift moved. The two are always present together.
    */
   qcdActionExecution?: ExecuteAnnualQcdsResult
-  /** Early-withdrawal penalties (10% traditional pre-59½, 20% HSA non-medical pre-65); not in `tax`. */
+  /** Early-withdrawal penalties plus IRC §4974 RMD-shortfall excise; not in `tax`. */
   penalties: number
   /** MAGI realized this year (drives IRMAA two years later and the ACA credit). */
   magi: number

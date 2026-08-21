@@ -761,6 +761,13 @@ export type InheritedBeneficiary = z.infer<typeof inheritedBeneficiarySchema>
  */
 export const inheritedAccountSchema = z
   .object({
+    /**
+     * Stable identity of the original owner. When present, inherited IRAs for
+     * the same beneficiary and decedent may share the §1.408-8 aggregation
+     * group. Omitted fails closed per account; demographic coincidence never
+     * establishes same-decedent status.
+     */
+    decedentId: idSchema.optional(),
     /** Calendar year the original owner died (starts the 10-year clock). */
     ownerDeathYear: calendarYear,
     /**
@@ -889,6 +896,13 @@ export const traditionalAccountSchema = z.object({
   type: z.literal('traditional'),
   /** 'employer' = 401(k)/403(b)-style; 'ira' = IRA. Affects RMD aggregation + rules later. */
   kind: z.enum(['ira', 'employer']),
+  /**
+   * Employer-plan class for RMD aggregation. Explicit 403(b) contracts may
+   * aggregate with the owner's other explicit 403(b) contracts; omitted,
+   * 401(k), and 457(b) fail closed to the particular plan. This field is not
+   * read by the separate §401(k)(2)(B)(i) Roth-conversion source gate.
+   */
+  employerPlanType: z.enum(['401k', '403b', '457b']).optional(),
   balance: nonNegative,
   annualContribution,
   inherited: inheritedAccountSchema.optional(),
@@ -1237,6 +1251,17 @@ const accountUnionSchema = z.discriminatedUnion('type', [
   debtSchema,
 ])
 export const accountSchema = accountUnionSchema.superRefine((account, ctx) => {
+  if (
+    account.type === 'traditional' &&
+    account.kind !== 'employer' &&
+    account.employerPlanType !== undefined
+  ) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['employerPlanType'],
+      message: 'employerPlanType can only be set on an employer retirement account.',
+    })
+  }
   if (
     (account.type === 'traditional' || account.type === 'roth') &&
     account.kind !== 'employer' &&

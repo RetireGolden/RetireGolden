@@ -60,6 +60,17 @@ State brackets are a separate question and are still held nominal (see `params/s
   from the parameter pack, which is unisex and fixed by regulation, so nothing in the SEPP path takes a sex; a
   SEPP on an employer plan additionally requires separation from service, proved in the annual ledger from the
   owner's plan retirement age (domain rules §11).
+- **RMD-shortfall excise:** the annual ledger prices IRC §4974 at 25% of each applicable plan's computed
+  `required − distributed-by-deadline` shortfall and includes it in `YearResult.penalties`, never `tax` or MAGI.
+  Partial payment reduces the base dollar for dollar. Explicit correction evidence earns 10% only when the whole
+  miss comes from the same plan/aggregable IRA or 403(b) group and both the corrective distribution and Form 5329
+  filing fall before the earliest statutory window endpoint. Requested or denied reasonable-error waivers stay at
+  the otherwise-applicable rate; only a modeled grant or, for 2025-and-later tax years, one of the final
+  regulation's two automatic-waiver fact patterns reaches zero. An opt-in first-year deferral holds the
+  attainment-year amount until April 1: no excise
+  is charged before that date, and a miss lands in the RBD year beside any separate current-year miss. Correction
+  evidence prices the excise only; the corrective account movement and its income character remain separate ledger
+  inputs. See [domain rules §6](../domain/domain-rules-reference.md#6-rmds-secure-20).
 - **QCD:** a modeled household QCD's qualified portion is excluded from ordinary income, and the gift counts toward an RMD when one is due. It
   is **not** conditional on an RMD: the pre-RMD window from 70½ (resolved from the birth month at annual
   granularity — attained 71, or attained 70 with a January–June birth month) to the applicable RMD age is open,

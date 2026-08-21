@@ -21,10 +21,12 @@
  *   retirement/survivor family maximum; survivors step up to the deceased's
  *   benefit with the early-claim widow(er) reduction and RIB-LIM widow's-limit cap.
  * - RMDs are forced from traditional accounts at SECURE 2.0 start ages
- *   (Uniform Lifetime Table; no April-1 first-year deferral). QCDs route
+ *   (Uniform Lifetime Table; an opt-in April-1 first-year deferral is available
+ *   to the exact ledger). QCDs route
  *   charitable dollars out of the RMD (age 70½ ≈ age attained 71).
- *   Early-withdrawal penalties: 10% traditional pre-59½ (≈ age < 60), 20%
- *   HSA non-medical pre-65. Healthcare expenses: ACA-credited marketplace
+ *   IRC §4974 prices any RMD shortfall at 25% by default, with explicit
+ *   correction/waiver evidence seams. Early-withdrawal penalties: 10%
+ *   traditional pre-59½ (≈ age < 60), 20% HSA non-medical pre-65. Healthcare expenses: ACA-credited marketplace
  *   premiums pre-65 (credit vs prior-year MAGI; 400% FPL cliff), Medicare
  *   Part B + IRMAA (MAGI 2-year lookback) + Part D surcharge + extras from
  *   65. Roth conversions run after RMDs (manual amounts or fill-to-target
@@ -53,7 +55,7 @@ import {
   resolveAssetClassParams,
   targetWeightsAt,
 } from '../allocation/assetClasses.js'
-import { packForYear, LATEST_PACK_YEAR, hecmPrincipalLimitFactorPct, EMBEDDED_REAL_YIELD_CURVE, irmaaTierThreshold } from '../params/index.js'
+import { packForYear, LATEST_PACK_YEAR, hecmPrincipalLimitFactorPct, EMBEDDED_REAL_YIELD_CURVE, irmaaTierThreshold, rmdStartAgeForBirthYear } from '../params/index.js'
 import { assembleYearCashFlow, type AnnualCashFlowPenaltySnapshot } from './annualCashFlowCapture.js'
 import {
   collidingEncodedCashFlowSegments,
@@ -65,6 +67,15 @@ import { buildLadder, ladderRealFlowsAtOffset, ladderRemainingFace, type LadderR
 import { stateParamsFor } from '../params/state/index.js'
 import type { ParameterPack } from '../params/types.js'
 import { requiredMinimumDistribution } from '../rmd/rmd.js'
+import {
+  computeRmdShortfallExcise,
+  rmdApplicablePlanKey,
+  rmdShortfallObligationId,
+  sameRmdApplicablePlan,
+  type RmdApplicablePlan,
+  type RmdShortfallExciseResult,
+  type RmdShortfallReliefElection,
+} from '../rmd/rmdShortfallExcise.js'
 import { claimFactor, spousalBenefitFactor, type ClaimAge } from '../socialSecurity/claimFactor.js'
 import { bestMaritalBenefit } from '../socialSecurity/maritalBenefits.js'
 import { capAuxiliaryForFamilyMaximum, claimAgeTotalMonths } from '../socialSecurity/familyMaximum.js'
@@ -297,6 +308,23 @@ export interface SimulateOptions {
    * Must not change any economic output.
    */
   captureAnnualCashFlow?: boolean
+  /**
+   * Opt-in first-RMD deferrals. The distribution-calendar-year amount is held
+   * until April 1 of the following year; default projections continue to take
+   * it in the attainment year. A missed April 1 amount is taxed under §4974 in
+   * the following (RBD) year, never in the attainment year.
+   */
+  rmdFirstYearDeferrals?: readonly Readonly<{
+    distributionCalendarYear: number
+    applicablePlan: RmdApplicablePlan
+  }>[]
+  /**
+   * Explicit §4974 relief evidence keyed to a computed obligation. A correction
+   * must carry the same applicable-plan identity, its amount and both window
+   * dates; a waiver request alone changes nothing. These facts price the excise
+   * only and do not synthesize the corrective account movement or its income.
+   */
+  rmdShortfallReliefElections?: readonly RmdShortfallReliefElection[]
 }
 
 /**
@@ -749,6 +777,56 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
   const people = plan.household.people
   const primary = people[0]!
   const personById = new Map(people.map((p) => [p.id, p]))
+  /**
+   * Identify the §54.4974-1(a)(2)(iv) applicable plan without inferring facts
+   * the Plan does not carry. Owned traditional IRAs aggregate per owner;
+   * explicitly typed 403(b)s aggregate per owner; an ordinary employer plan is
+   * its own plan. Inherited IRAs aggregate only when an explicit decedentId
+   * proves the same decedent. Absence fails closed per account instead of
+   * grouping accounts whose demographic facts merely happen to match.
+   */
+  const rmdApplicablePlanForAccount = (
+    account: Extract<Account, { type: 'traditional' | 'roth' }>,
+  ): RmdApplicablePlan => {
+    const payeePersonId = account.ownerPersonId ?? primary.id
+    if (account.inherited !== undefined) {
+      return account.inherited.decedentId === undefined
+        ? { kind: 'inheritedIraAccount', payeePersonId, accountId: account.id }
+        : {
+            kind: 'inheritedIras',
+            payeePersonId,
+            decedentId: account.inherited.decedentId,
+          }
+    }
+    if (account.type === 'traditional' && account.kind === 'ira') {
+      return { kind: 'ownedTraditionalIras', payeePersonId }
+    }
+    if (
+      account.type === 'traditional' &&
+      account.kind === 'employer' &&
+      account.employerPlanType === '403b'
+    ) {
+      return { kind: 'aggregable403bPlans', payeePersonId }
+    }
+    return { kind: 'employerPlan', accountId: account.id }
+  }
+  const reliefCandidatesByObligationId = new Map<string, RmdShortfallReliefElection[]>()
+  for (const election of opts.rmdShortfallReliefElections ?? []) {
+    reliefCandidatesByObligationId.set(election.obligationId, [
+      ...(reliefCandidatesByObligationId.get(election.obligationId) ?? []),
+      election,
+    ])
+  }
+  const rmdReliefElectionFor = (
+    obligationId: string,
+  ): RmdShortfallReliefElection | undefined => {
+    const candidates = reliefCandidatesByObligationId.get(obligationId) ?? []
+    if (candidates.length <= 1) return candidates[0]
+    warnings.add(
+      `Duplicate RMD-shortfall relief elections targeted ${obligationId}; the excise stayed at its default rate.`,
+    )
+    return undefined
+  }
   // Clamped: the dob schema enforces YYYY-MM-DD shape but not month range, and
   // an out-of-range month must not produce negative or >12 coverage months.
   const birthMonthByPerson = new Map(people.map((p) => [p.id, Math.min(12, Math.max(1, dobParts(p).m || 1))]))
@@ -1232,6 +1310,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
   }
 
   const years: YearResult[] = []
+  /** First-distribution-calendar-year amounts elected into the following RBD year. */
+  const deferredFirstRmdByApplicablePlan = new Map<string, {
+    applicablePlan: RmdApplicablePlan
+    distributionCalendarYear: number
+    dueYear: number
+    requiredAmount: number
+  }>()
   // Owned-IRA annual settlement disposition. A rolled-back year commits no
   // carryforward, so the exact-cent figure the replay derived for that owner is
   // discarded and the owner keeps whatever the legacy fallback pass wrote. When
@@ -4644,7 +4729,12 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     const rmdTakeByAccount = new Map<string, number>()
     /** Per-account owner-RMD obligation before balance cap and IRA sweep. */
     const rmdObligationByAccount = new Map<string, number>()
-    const unmetIraRmdByOwner = new Map<string, number>()
+    /** Current distribution-year required and timely-paid dollars by applicable plan. */
+    const currentRmdRequiredByApplicablePlan = new Map<string, number>()
+    const currentRmdDistributedByApplicablePlan = new Map<string, number>()
+    const applicablePlanByKey = new Map<string, RmdApplicablePlan>()
+    /** Unmet current-year amount that may be swept only inside an aggregable group. */
+    const unmetAggregableRmdByApplicablePlan = new Map<string, number>()
     /**
      * The owner's (e)(1)(i) sum: the separately calculated amounts of the IRAs
      * they hold as owner, and nothing else. An employer plan's amount and an
@@ -4655,6 +4745,50 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     const iraRmdRequiredByOwner = new Map<string, number>()
     /** The part of that sum still undistributed once the sweep has finished. */
     const iraRmdUnsatisfiedByOwner = new Map<string, number>()
+    /** §4974 obligations whose deadline falls in this tax year. */
+    const rmdShortfallObligations: Array<Parameters<typeof computeRmdShortfallExcise>[0]> = []
+
+    // April 1 amounts due this year move first. That preserves the split when
+    // the applicable plan cannot cover both the deferred first amount and this
+    // year's separate December 31 amount: a dollar cannot satisfy both, and the
+    // older obligation gets the first available dollar.
+    for (const [planKey, deferred] of deferredFirstRmdByApplicablePlan) {
+      if (deferred.dueYear !== year) continue
+      let distributedByDeadline = 0
+      for (const state of balances) {
+        if (distributedByDeadline >= deferred.requiredAmount - EPSILON) break
+        if (state.account.type !== 'traditional') continue
+        if (!followsOwnerRmdsThisYear(state.account)) continue
+        if (!sameRmdApplicablePlan(
+          rmdApplicablePlanForAccount(state.account),
+          deferred.applicablePlan,
+        )) continue
+        const capacity = state.balance - (rmdTakeByAccount.get(state.account.id) ?? 0)
+        if (capacity <= EPSILON) continue
+        const take = Math.min(capacity, deferred.requiredAmount - distributedByDeadline)
+        rmdTakeByAccount.set(
+          state.account.id,
+          (rmdTakeByAccount.get(state.account.id) ?? 0) + take,
+        )
+        distributedByDeadline += take
+      }
+      const obligationId = rmdShortfallObligationId(
+        deferred.applicablePlan,
+        deferred.distributionCalendarYear,
+        year,
+      )
+      rmdShortfallObligations.push({
+        obligationId,
+        distributionCalendarYear: deferred.distributionCalendarYear,
+        taxYear: year,
+        taxImposedOn: `${year}-04-01`,
+        applicablePlan: deferred.applicablePlan,
+        requiredAmount: deferred.requiredAmount,
+        distributedByDeadline,
+      })
+      applicablePlanByKey.set(planKey, deferred.applicablePlan)
+      deferredFirstRmdByApplicablePlan.delete(planKey)
+    }
     for (const state of balances) {
       if (state.account.type !== 'traditional') continue
       if (!followsOwnerRmdsThisYear(state.account)) continue // inherited (pre-S2) follows the beneficiary schedule below
@@ -4677,41 +4811,114 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         { ownerSex: owner.sex, spouse },
       )
       if (rmd <= 0) continue
+      const applicablePlan = rmdApplicablePlanForAccount(state.account)
+      const applicablePlanKey = rmdApplicablePlanKey(applicablePlan)
+      applicablePlanByKey.set(applicablePlanKey, applicablePlan)
+      const firstDistributionCalendarYear =
+        ownerState.ageAttained === rmdStartAgeForBirthYear(dobYear(owner))
+      const deferFirstAmount = firstDistributionCalendarYear &&
+        (opts.rmdFirstYearDeferrals ?? []).some((election) =>
+          election.distributionCalendarYear === year &&
+          sameRmdApplicablePlan(election.applicablePlan, applicablePlan))
+      if (deferFirstAmount) {
+        const existing = deferredFirstRmdByApplicablePlan.get(applicablePlanKey)
+        deferredFirstRmdByApplicablePlan.set(applicablePlanKey, {
+          applicablePlan,
+          distributionCalendarYear: year,
+          dueYear: year + 1,
+          requiredAmount: (existing?.requiredAmount ?? 0) + rmd,
+        })
+        // Preserve the owned-IRA RMD reserve used by the conversion and named
+        // QCD gates. Deferral moves the deadline; it does not turn the amount
+        // into an eligible rollover or let a conversion absorb it.
+        if (applicablePlan.kind === 'ownedTraditionalIras') {
+          iraRmdRequiredByOwner.set(ownerId, (iraRmdRequiredByOwner.get(ownerId) ?? 0) + rmd)
+          iraRmdUnsatisfiedByOwner.set(ownerId, (iraRmdUnsatisfiedByOwner.get(ownerId) ?? 0) + rmd)
+        }
+        continue
+      }
       rmdObligationByAccount.set(state.account.id, rmd)
-      if (isAggregatedIraThisYear(state.account)) {
+      currentRmdRequiredByApplicablePlan.set(
+        applicablePlanKey,
+        (currentRmdRequiredByApplicablePlan.get(applicablePlanKey) ?? 0) + rmd,
+      )
+      if (applicablePlan.kind === 'ownedTraditionalIras') {
         iraRmdRequiredByOwner.set(ownerId, (iraRmdRequiredByOwner.get(ownerId) ?? 0) + rmd)
       }
-      const take = Math.min(rmd, state.balance)
-      if (take > 0) rmdTakeByAccount.set(state.account.id, take)
-      // Only an IRA share can be satisfied elsewhere. An employer plan short
-      // of its own amount stays short: it is outside the section 408
-      // aggregation, so no other account may distribute on its behalf.
-      if (rmd - take > EPSILON && isAggregatedIraThisYear(state.account)) {
-        unmetIraRmdByOwner.set(ownerId, (unmetIraRmdByOwner.get(ownerId) ?? 0) + (rmd - take))
+      const alreadyTaken = rmdTakeByAccount.get(state.account.id) ?? 0
+      const take = Math.min(rmd, Math.max(0, state.balance - alreadyTaken))
+      if (take > 0) {
+        rmdTakeByAccount.set(state.account.id, alreadyTaken + take)
+        currentRmdDistributedByApplicablePlan.set(
+          applicablePlanKey,
+          (currentRmdDistributedByApplicablePlan.get(applicablePlanKey) ?? 0) + take,
+        )
+      }
+      // Owned IRAs and explicit 403(b)s may satisfy the group amount from
+      // another member. Every other employer plan stays account-specific.
+      if (
+        rmd - take > EPSILON &&
+        (applicablePlan.kind === 'ownedTraditionalIras' ||
+          applicablePlan.kind === 'aggregable403bPlans')
+      ) {
+        unmetAggregableRmdByApplicablePlan.set(
+          applicablePlanKey,
+          (unmetAggregableRmdByApplicablePlan.get(applicablePlanKey) ?? 0) + (rmd - take),
+        )
       }
     }
     // (e)(1)(i) lets a living owner take the sum "from any one or more of the
     // IRAs", so the order below is a permitted choice rather than a required
     // one; plan account order is used because it is deterministic and no
     // ordering changes the total distributed or its character.
-    for (const [ownerId, unmet] of unmetIraRmdByOwner) {
+    for (const [applicablePlanKey, unmet] of unmetAggregableRmdByApplicablePlan) {
+      const applicablePlan = applicablePlanByKey.get(applicablePlanKey)!
       let remaining = unmet
       for (const state of balances) {
         if (remaining <= EPSILON) break
-        if (!isAggregatedIraThisYear(state.account)) continue
-        if ((state.account.ownerPersonId ?? primary.id) !== ownerId) continue
+        if (state.account.type !== 'traditional') continue
+        if (!followsOwnerRmdsThisYear(state.account)) continue
+        if (!sameRmdApplicablePlan(
+          rmdApplicablePlanForAccount(state.account),
+          applicablePlan,
+        )) continue
         const ownShare = rmdTakeByAccount.get(state.account.id) ?? 0
         const capacity = state.balance - ownShare
         if (capacity <= EPSILON) continue
         const swept = Math.min(capacity, remaining)
         rmdTakeByAccount.set(state.account.id, ownShare + swept)
+        currentRmdDistributedByApplicablePlan.set(
+          applicablePlanKey,
+          (currentRmdDistributedByApplicablePlan.get(applicablePlanKey) ?? 0) + swept,
+        )
         remaining -= swept
       }
       // After the sweep an owner's IRA RMD can only remain unsatisfied when
       // every one of their aggregated IRAs is empty. EPSILON is half a cent,
       // so a residue that survives this test is at least one cent short in the
       // exact-cent ledger the conversion executor reads.
-      if (remaining > EPSILON) iraRmdUnsatisfiedByOwner.set(ownerId, remaining)
+      if (
+        remaining > EPSILON &&
+        applicablePlan.kind === 'ownedTraditionalIras'
+      ) {
+        iraRmdUnsatisfiedByOwner.set(
+          applicablePlan.payeePersonId,
+          (iraRmdUnsatisfiedByOwner.get(applicablePlan.payeePersonId) ?? 0) + remaining,
+        )
+      }
+    }
+    for (const [applicablePlanKey, requiredAmount] of currentRmdRequiredByApplicablePlan) {
+      const applicablePlan = applicablePlanByKey.get(applicablePlanKey)!
+      rmdShortfallObligations.push({
+        obligationId: rmdShortfallObligationId(applicablePlan, year),
+        distributionCalendarYear: year,
+        taxYear: year,
+        taxImposedOn: `${year}-12-31`,
+        applicablePlan,
+        requiredAmount,
+        distributedByDeadline:
+          currentRmdDistributedByApplicablePlan.get(applicablePlanKey) ?? 0,
+      })
     }
     for (const state of balances) {
       // Only traditional accounts were ever entered above; the guard is here
@@ -5273,6 +5480,62 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         disclosures,
         citations,
       })
+    }
+
+    // Inherited traditional and Roth IRAs are both §4974 plans. Group only
+    // rows whose explicit decedentId proves the same decedent; otherwise the
+    // applicable-plan helper keys the account to itself and fails closed.
+    const inheritedRequiredByApplicablePlan = new Map<string, number>()
+    const inheritedDistributedByApplicablePlan = new Map<string, number>()
+    for (const evidence of inheritedYearEvidenceDraft) {
+      if (evidence.requiredAmount <= 0 || evidence.noticeWaived === true) continue
+      const account = plan.accounts.find((candidate) => candidate.id === evidence.accountId)
+      if (
+        account === undefined ||
+        (account.type !== 'traditional' && account.type !== 'roth') ||
+        account.inherited === undefined
+      ) continue
+      const applicablePlan = rmdApplicablePlanForAccount(account)
+      const applicablePlanKey = rmdApplicablePlanKey(applicablePlan)
+      applicablePlanByKey.set(applicablePlanKey, applicablePlan)
+      inheritedRequiredByApplicablePlan.set(
+        applicablePlanKey,
+        (inheritedRequiredByApplicablePlan.get(applicablePlanKey) ?? 0) +
+          evidence.requiredAmount,
+      )
+      inheritedDistributedByApplicablePlan.set(
+        applicablePlanKey,
+        (inheritedDistributedByApplicablePlan.get(applicablePlanKey) ?? 0) +
+          evidence.executedRequiredAmount,
+      )
+    }
+    for (const [applicablePlanKey, requiredAmount] of inheritedRequiredByApplicablePlan) {
+      const applicablePlan = applicablePlanByKey.get(applicablePlanKey)!
+      rmdShortfallObligations.push({
+        obligationId: rmdShortfallObligationId(applicablePlan, year),
+        distributionCalendarYear: year,
+        taxYear: year,
+        taxImposedOn: `${year}-12-31`,
+        applicablePlan,
+        requiredAmount,
+        distributedByDeadline:
+          inheritedDistributedByApplicablePlan.get(applicablePlanKey) ?? 0,
+      })
+    }
+    const rmdShortfallExciseResults: RmdShortfallExciseResult[] =
+      rmdShortfallObligations.map((obligation) =>
+        computeRmdShortfallExcise(
+          obligation,
+          rmdReliefElectionFor(obligation.obligationId),
+        ))
+    const rmdShortfallExciseTax = rmdShortfallExciseResults.reduce(
+      (total, result) => total + result.tax,
+      0,
+    )
+    if (rmdShortfallExciseTax > 0) {
+      warnings.add(
+        'An IRC §4974 excise tax was charged on a required-minimum-distribution shortfall.',
+      )
     }
 
     // QCD: charitable dollars distributed from an IRA and excluded from income.
@@ -8359,7 +8622,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       const penalties = penaltiesFor(
         withdrawalPlan.byAccountId,
         iraCharacterProbe,
-      ) + rothEffect.penalty + hsaProbe.penalty
+      ) + rothEffect.penalty + hsaProbe.penalty + rmdShortfallExciseTax
       return {
         withdrawalPlan,
         tax,
@@ -10483,6 +10746,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       socialSecurityStreams,
       employerMatch,
       rmd: rmdTotal,
+      rmdShortfallExciseTax,
+      rmdShortfallExciseDetails: rmdShortfallExciseResults,
       sepp: seppTotal,
       inheritedDistribution: inheritedTotal,
       inheritedTraditionalDistribution: inheritedOrdinaryIncome,

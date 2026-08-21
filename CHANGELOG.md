@@ -4,6 +4,21 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## 2026-08
 
+**2026-08-21**
+- Closed reverse-gap registry record `irc-4974-rmd-shortfall-excise-tax`.
+  The annual ledger now charges 25% of each computed RMD shortfall on
+  `YearResult.penalties`, with partial payments reducing the base dollar for
+  dollar. Explicit same-applicable-plan correction plus Form 5329 evidence can
+  select 10% only inside the earliest statutory correction-window endpoint;
+  requested or denied reasonable-error waivers retain tax, while an explicit
+  grant and the final regulation's two automatic fact patterns reach zero. An
+  opt-in first-year deferral carries the first amount to April 1 and places a
+  miss in the RBD year alongside that year's separate RMD. Explicit 403(b)s
+  aggregate per owner; inherited accounts aggregate only with an explicit
+  same-decedent identity. Living-owner Roth IRAs stay outside lifetime RMDs;
+  inherited Roth shortfalls are covered. The chapter 43 tax is isolated from
+  income tax, AGI, MAGI, IRMAA, §86, and ACA calculations.
+
 **2026-08-20**
 - Closed the reverse gap on **IRC §401(k)(2)(B)(i) employer-plan conversion
   source / distributability** for the aggregate Roth-IRA path. `isConvertibleToRoth`

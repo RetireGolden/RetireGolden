@@ -182,15 +182,23 @@ matrix must enumerate the join and prove it.
   sweep deadline is unaffected. The waiver does not extend the 10-year deadline and does not apply
   to EDB life-expectancy payments.
 
-## 5. Out-of-scope penalty and relief mechanics (explicit)
+## 5. Penalty integration and remaining out-of-scope mechanics
 
-Named so no consumer can assume them: §4974(a) excise tax (25%, 10% in the SECURE 2.0 §302
-correction window) — the engine schedules compliant amounts and never computes the excise; Form
-5329 waiver requests and reasonable-cause relief; treatment of relief-notice years beyond marking
+The projection now prices §4974(a) on an inherited traditional or Roth IRA's computed shortfall: 25% by default,
+10% only with explicit same-applicable-plan correction and Form 5329 evidence inside the statutory window, and
+zero only for an explicit discretionary grant or the two final-regulation automatic-waiver fact patterns. An
+explicit `decedentId` is required before multiple inherited IRAs aggregate; absent identity fails closed per
+account. The excise is reported in `penalties`, outside ordinary income and MAGI. Correction evidence does not
+itself move account dollars or synthesize the corrective distribution's tax character. If a balance survives a
+5-year or 10-year emptying deadline, the entire remaining balance stays required in every subsequent year and the
+engine continues pricing each later miss.
+
+Still named so no consumer can assume them: treatment of relief-notice years beyond marking
 those annual amounts non-enforced; separate-account rules (§1.401(a)(9)-8(a)); see-through-trust
 qualification (§1.401(a)(9)-4(f)); qualified disclaimers and the September 30 / October 31
 determination mechanics (§1.401(a)(9)-4(c), (e)(7)); annuitized payouts (§1.401(a)(9)-6); the
-same-decedent aggregation election (§1.408-8(e)(2)(ii)); SECURE 2.0 §327 spouse-as-employee; the
+same-decedent aggregation election's allocation mechanics beyond the explicit identity group
+(§1.408-8(e)(2)(ii)); SECURE 2.0 §327 spouse-as-employee; the
 §1.408-8(c)(2) deemed treat-as-own election; successor-beneficiary schedules.
 
 ## 6. Reconciliation with what is already shipped

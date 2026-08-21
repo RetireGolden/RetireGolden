@@ -140,7 +140,30 @@ Source: [IRS 2026 limits announcement](https://www.irs.gov/newsroom/401k-limit-i
 - Annual RMD = prior Dec 31 balance ÷ Uniform Lifetime Table divisor (Joint Life Table II when a sole-beneficiary spouse is >10 yrs younger).
 - Joint Life Table II is 26 CFR 1.401(a)(9)-9(d), Table 3. It includes spouse-beneficiary ages below 20; do not regenerate it from Pub 590-B displays that only show the age 20+ slice.
 - Applies to traditional IRA/401(k)/403(b); **Roth 401(k) exempt since 2024**; Roth IRA exempt.
-- Penalty: 25% of shortfall (10% if timely corrected).
+- **IRC §4974 excise.** The default tax is **25% of the actual shortfall** —
+  `max(0, required − distributed by the statutory deadline)` — and is charged to the payee on the year row's
+  `penalties` channel, outside AGI/MAGI. It is not 25% of the whole required amount when part was paid. The rate
+  becomes **10%** only when the whole shortfall is distributed from the same applicable plan (or a legally
+  aggregable IRA/403(b) group) **and** a return reflecting the reduced tax is filed inside the correction window.
+  The window ends at the earliest of a notice-of-deficiency mailing, assessment, or December 31 of the second
+  taxable year beginning after the tax year; the first two dates can shorten the calendar-year endpoint. A
+  reasonable-error waiver request does not erase the tax: only an explicit modeled grant does. The two automatic
+  waiver fact patterns, for tax years beginning in 2025 or later, are the final regulation's EDB
+  pre-RBD-death/life-expectancy-default-to-10-year election and the
+  beneficiary's timely correction of a decedent's year-of-death miss. Corrective distributions do not rewrite
+  the prior shortfall and, fail-closed while proposed §1.401(a)(9)-5(g)(2)(iv) remains unfinalized, do not also
+  satisfy the current-year RMD. The excise is a chapter 43 tax barred from deduction by §275(a)(6); it never enters
+  AGI, §86 income, IRMAA MAGI, or ACA MAGI. A corrective distribution has its own ordinary-income treatment in the
+  year received except for basis, qualified Roth, or QCD character. After a 5-year or 10-year emptying deadline,
+  any balance left is the entire required amount in the deadline year and every subsequent year, so a residue can
+  create a fresh §4974 shortfall each year. Sources: [26 U.S.C. §4974](https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleD-chap43-sec4974.htm),
+  [Treas. Reg. §54.4974-1 / T.D. 10001](https://www.govinfo.gov/content/pkg/FR-2024-07-19/pdf/2024-14542.pdf), and
+  [2025 Form 5329 instructions](https://www.irs.gov/pub/irs-pdf/i5329.pdf).
+- **First-year April 1 split.** A first distribution-calendar-year amount elected for April 1 of the following
+  year has no §4974 tax in the attainment year because its deadline has not passed. If April 1 is missed, the
+  excise is imposed in the RBD year on that deferred amount; that year's separate December 31 RMD can create a
+  second shortfall. The tax year is therefore the year containing the due date, not always the year whose balance
+  and divisor produced the amount (Treas. Reg. §54.4974-1(f)).
 - **Aggregation and the unmet-amount sweep.** An IRA's RMD is calculated separately per account, but the sum may
   be taken from any one or more of the owner's IRAs — so an IRA too small to cover its own calculated amount
   leaves a shortfall the owner's other IRAs must still distribute rather than extinguishing it. The ledger sweeps
