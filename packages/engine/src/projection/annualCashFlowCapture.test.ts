@@ -34,6 +34,7 @@ function emptyPassLocals(
     qcdOrdinaryFromRmdByOwner: new Map(),
     qcdBasisFromRmdByOwner: new Map(),
     hsaNonqualifiedOrdinaryByAccountId: new Map(),
+    employerRothTaxableOrdinaryByAccountId: new Map(),
     ...overrides,
   }
 }
@@ -301,6 +302,36 @@ describe('assembleYearCashFlow', () => {
     ])
     expect(second!.taxCharacter).toEqual([
       { kind: 'qcdIncomeExclusion', amountPlanDollars: 5_000 },
+    ])
+    expect(result.reconciliation.status).toBe('reconciled')
+  })
+
+  it('attaches recovered cost basis as returnOfBasis alongside gain on a taxable need-based withdrawal', () => {
+    // Independent worksheet: 20,000 sale of a 100,000 FMV / 40,000 basis
+    // taxable account. Sold fraction 0.2 → recoveredCostBasis 8,000,
+    // realizedCapitalGainOrLoss 12,000. Surplus closes the cash identity.
+    const result = assemble({
+      withdrawalPlanByAccountId: new Map([['brokerage-1', 20_000]]),
+      withdrawalPlanTaxableSales: new Map([
+        ['brokerage-1', {
+          openingFairMarketValue: 100_000,
+          openingCostBasis: 40_000,
+          saleProceeds: 20_000,
+          recoveredCostBasis: 8_000,
+          realizedCapitalGainOrLoss: 12_000,
+          remainingFairMarketValue: 80_000,
+          remainingCostBasis: 32_000,
+        }],
+      ]),
+      surplus: 20_000,
+    })
+    const line = result.sourceLines.find(
+      (row) => row.id === cashFlowLineIds.sourceNeedBasedPortfolioWithdrawal('brokerage-1'),
+    )
+    expect(line).toBeDefined()
+    expect(line!.taxCharacter).toEqual([
+      { kind: 'capitalGain', amountPlanDollars: 12_000 },
+      { kind: 'returnOfBasis', amountPlanDollars: 8_000 },
     ])
     expect(result.reconciliation.status).toBe('reconciled')
   })

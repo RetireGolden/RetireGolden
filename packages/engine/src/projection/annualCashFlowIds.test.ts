@@ -67,6 +67,35 @@ describe('encodeCashFlowSegment', () => {
     expect(collidingEncodedCashFlowSegments(planIds)).toEqual([encodedReplacement])
   })
 
+  it('includes retirement action IDs and allocation IDs in the plan-level collision scan', () => {
+    // Action IDs are E(value) segments on retirementActionWithdrawal, named
+    // conversion, and named QCD lines. Omitting them from the producer scan
+    // would miss a plan-level duplicateLineId that only those grammars hit.
+    const encodedReplacement = encodeURIComponent('\uFFFD')
+    const planIds = collectPlanCashFlowProducerIds({
+      household: { people: [{ id: 'p1' }] },
+      accounts: [],
+      incomes: [],
+      expenses: { oneTimeGoals: [] },
+      insurance: [],
+      careEvents: [],
+      strategies: {
+        retirementActions: [
+          {
+            actionId: '\uD800',
+            allocations: [{ allocationId: 'alloc-1' }],
+          },
+          {
+            actionId: '\uFFFD',
+            allocation: { allocationId: 'alloc-2' },
+          },
+        ],
+      },
+    })
+    expect(planIds).toEqual(['p1', '\uD800', 'alloc-1', '\uFFFD', 'alloc-2'])
+    expect(collidingEncodedCashFlowSegments(planIds)).toEqual([encodedReplacement])
+  })
+
   it('leaves unreserved ASCII unchanged', () => {
     expect(encodeCashFlowSegment('wage-stream_1')).toBe('wage-stream_1')
   })

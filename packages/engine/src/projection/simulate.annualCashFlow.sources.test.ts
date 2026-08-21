@@ -12,6 +12,7 @@ import {
   cashAccount,
   couplePlan,
   singlePersonPlan,
+  taxableAccount,
   traditionalAccount,
 } from '../testing/planFixtures.js'
 import { expectMoney } from '../testing/money.js'
@@ -414,5 +415,108 @@ describe('simulatePlan annual cash-flow portfolio and property sources', () => {
     expect(line.taxCharacter![0]!.kind).toBe('ordinaryIncome')
     expect(line.taxCharacter![0]!.amountPlanDollars).toBe(line.amountPlanDollars)
     expectMoney(y2026.penalties, 2_500)
+  })
+
+  it('attaches ordinaryIncome on a pre-60 designated-Roth need-based withdrawal that reaches earnings', () => {
+    // Independent worksheet, year 2026, 0% inflation, $0 tax, p1 attained 50:
+    //   employer Roth 100,000, contributionBasis 0 → the whole draw is earnings.
+    //   Lifestyle 9,000. Pre-59½ earnings ordinary + 10% penalty.
+    //   Closed form W = 9,000 + 0.1W → W = 10,000; penalty 1,000.
+    //   Designated-Roth pools are per account (`roth:`), so ordinary sits on
+    //   the need-based line, not the owned-Roth-IRA pool metadata row.
+    const plan = singlePersonPlan({ dob: '1976-01-01', planningAge: 60, retirementAge: 50 })
+    plan.expenses.baseAnnual = 9_000
+    plan.accounts = [
+      {
+        type: 'roth',
+        id: 'roth-401k',
+        name: 'Roth 401k',
+        ownerPersonId: 'p1',
+        annualReturnPct: 0,
+        kind: 'employer',
+        balance: 100_000,
+        annualContribution: 0,
+        contributionBasis: 0,
+      },
+    ]
+    const y2026 = yearOf(run(plan, { horizonEndYear: 2026 }), START_YEAR)
+
+    const line = sourceById(y2026, 'source:needBasedPortfolioWithdrawal:roth-401k')
+    expect(line.kind).toBe('needBasedPortfolioWithdrawal')
+    expectMoney(line.amountPlanDollars, 10_000)
+    expect(line.taxCharacter).toHaveLength(1)
+    expect(line.taxCharacter![0]!.kind).toBe('ordinaryIncome')
+    expect(line.taxCharacter![0]!.amountPlanDollars).toBe(line.amountPlanDollars)
+    expect(y2026.cashFlow!.taxCharacterMetadata.some(
+      (row) => row.id === 'metadata:ordinaryIncome:rothPool:p1',
+    )).toBe(false)
+    expectMoney(y2026.penalties, 1_000)
+  })
+
+  it('attaches recovered cost basis as returnOfBasis alongside gain on a taxable need-based withdrawal', () => {
+    // Independent worksheet, year 2026, 0% inflation, $0 tax, p1 attained 60:
+    //   taxable 100,000, cost basis 40,000, sequential, lifestyle 20,000.
+    //   Sale proceeds 20,000. Sold fraction 20,000 / 100,000 = 0.2.
+    //   recoveredCostBasis = 0.2 × 40,000 = 8,000.
+    //   realizedCapitalGainOrLoss = 20,000 − 8,000 = 12,000.
+    const plan = singlePersonPlan({ dob: '1966-01-01', planningAge: 70 })
+    plan.expenses.baseAnnual = 20_000
+    plan.accounts = [taxableAccount('brokerage-1', 100_000, 40_000)]
+    const y2026 = yearOf(run(plan, { horizonEndYear: 2026 }), START_YEAR)
+
+    const line = sourceById(y2026, 'source:needBasedPortfolioWithdrawal:brokerage-1')
+    expect(line.kind).toBe('needBasedPortfolioWithdrawal')
+    expectMoney(line.amountPlanDollars, 20_000)
+    expect(line.taxCharacter).toEqual([
+      { kind: 'capitalGain', amountPlanDollars: 12_000 },
+      { kind: 'returnOfBasis', amountPlanDollars: 8_000 },
+    ])
+    expect(y2026.cashFlow!.reconciliation.status).toBe('reconciled')
+  })
+
+  it('carries both recipient and funding-owner person references on a cross-spouse funded annuity', () => {
+    // Independent worksheet, year 2026, 0% inflation, $0 tax:
+    //   p1 owns the traditional IRA that funded the qualified contract.
+    //   p2 owns the annuity (recipient while alive). Pre-start purchase so
+    //   the 2026 year is a payment year, not a purchase year.
+    //   monthlyAmount 1,000 × 12, cola 0, startAge 60, attained 60 → paid 12,000.
+    const plan = couplePlan({
+      p1Dob: '1966-01-01',
+      p2Dob: '1966-01-01',
+      p1PlanningAge: 70,
+      p2PlanningAge: 70,
+    })
+    plan.accounts = [
+      cashAccount('cash-1', 0),
+      traditionalAccount('ira-p1', 10_000, 'p1', 'ira'),
+      {
+        type: 'annuity',
+        id: 'ann-1',
+        name: 'SPIA',
+        ownerPersonId: 'p2',
+        annualReturnPct: null,
+        startAge: 60,
+        monthlyAmount: 1_000,
+        colaPct: 0,
+        taxablePct: 100,
+        purchase: {
+          year: 2021,
+          premium: 50_000,
+          fundingAccountId: 'ira-p1',
+          taxQualification: 'qualified',
+        },
+      },
+    ]
+    const y2026 = yearOf(run(plan, { horizonEndYear: 2026 }), START_YEAR)
+    const payment = sourceById(y2026, 'source:annuityPayment:ann-1')
+    expect(payment.kind).toBe('annuityPayment')
+    expectMoney(payment.amountPlanDollars, 12_000)
+    expect(payment.identities).toEqual([
+      { entityKind: 'annuityContract', annuityAccountId: 'ann-1' },
+      { entityKind: 'account', accountId: 'ann-1' },
+      { entityKind: 'person', personId: 'p2' },
+      { entityKind: 'person', personId: 'p1' },
+    ])
+    expect(y2026.cashFlow!.reconciliation.status).toBe('reconciled')
   })
 })

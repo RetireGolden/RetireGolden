@@ -186,9 +186,21 @@ export interface CashFlowProducerIdSource {
   readonly insurance: readonly { readonly id: string }[]
   readonly careEvents: readonly { readonly id: string }[]
   readonly incomeFloor?: { readonly ladders: readonly { readonly id: string }[] } | null
+  /**
+   * Named retirement actions and their allocations. Both `actionId` and each
+   * `allocationId` are `E(value)` segments (`retirementActionWithdrawal`,
+   * named conversion, named QCD). QCD requests carry a singular `allocation`.
+   */
+  readonly strategies?: {
+    readonly retirementActions: readonly {
+      readonly actionId: string
+      readonly allocations?: readonly { readonly allocationId: string }[]
+      readonly allocation?: { readonly allocationId: string }
+    }[]
+  }
 }
 
-/** Account, income-stream, goal, policy, ladder, care-event, and person ids. */
+/** Account, income-stream, goal, policy, ladder, care-event, person, action, and allocation ids. */
 export function collectPlanCashFlowProducerIds(
   plan: CashFlowProducerIdSource,
 ): readonly string[] {
@@ -200,6 +212,13 @@ export function collectPlanCashFlowProducerIds(
   for (const policy of plan.insurance) ids.push(policy.id)
   for (const event of plan.careEvents) ids.push(event.id)
   for (const ladder of plan.incomeFloor?.ladders ?? []) ids.push(ladder.id)
+  for (const action of plan.strategies?.retirementActions ?? []) {
+    ids.push(action.actionId)
+    if (action.allocations !== undefined) {
+      for (const allocation of action.allocations) ids.push(allocation.allocationId)
+    }
+    if (action.allocation !== undefined) ids.push(action.allocation.allocationId)
+  }
   return ids
 }
 

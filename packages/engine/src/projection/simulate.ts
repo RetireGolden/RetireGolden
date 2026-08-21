@@ -2899,6 +2899,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
               paid,
               nonqualifiedExcludable,
               qualifiedIraFunded: account.purchase?.taxQualification === 'qualified',
+              fundingOwnerPersonId: annuityContractPoolOwner.get(account.id) ?? null,
             })
           }
         } else {
@@ -3383,7 +3384,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     let ltcBenefit = 0
     // Reporting-only aggregation. Capture-off allocates nothing extra.
     const ltcByPerson = captureAnnualCashFlow
-      ? new Map<string, { careEventIds: string[]; gross: number; benefit: number }>()
+      ? new Map<string, { careEventIds: string[]; payingPolicyIds: string[]; gross: number; benefit: number }>()
       : null
     for (const event of plan.careEvents) {
       const s = stateOf(event.personId)
@@ -3393,6 +3394,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       const gross = event.annualCost * healthInflFactor
       careCost += gross
       let remaining = gross
+      const payingPolicyIds: string[] = []
       for (const policy of plan.insurance) {
         if (policy.kind !== 'ltc' || policy.owner !== event.personId || remaining <= 0) continue
         const used = ltcBenefitYearsUsed.get(policy.id) ?? 0
@@ -3407,13 +3409,22 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           ltcBenefit += pay
           remaining -= pay
           ltcBenefitYearsUsed.set(policy.id, used + 1)
+          payingPolicyIds.push(policy.id)
         }
       }
       if (ltcByPerson !== null) {
-        const existing = ltcByPerson.get(event.personId) ?? { careEventIds: [], gross: 0, benefit: 0 }
+        const existing = ltcByPerson.get(event.personId) ?? {
+          careEventIds: [],
+          payingPolicyIds: [],
+          gross: 0,
+          benefit: 0,
+        }
         existing.careEventIds.push(event.id)
         existing.gross += gross
         existing.benefit += gross - remaining
+        for (const policyId of payingPolicyIds) {
+          if (!existing.payingPolicyIds.includes(policyId)) existing.payingPolicyIds.push(policyId)
+        }
         ltcByPerson.set(event.personId, existing)
       }
     }
@@ -3422,6 +3433,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         yearSites?.recordLongTermCare({
           personId,
           careEventIds: row.careEventIds,
+          payingPolicyIds: row.payingPolicyIds,
           gross: row.gross,
           benefit: row.benefit,
           net: row.gross - row.benefit,
@@ -4271,6 +4283,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     let qcdOrdinaryFromRmdByOwner: Map<string, number> | null = null
     let qcdBasisFromRmdByOwner: Map<string, number> | null = null
     let hsaNonqualifiedOrdinaryByAccountId: Map<string, number> | null = null
+    let employerRothTaxableOrdinaryByAccountId: Map<string, number> | null = null
     if (publishCashFlow) {
       seppByAccountId = new Map()
       hecmCoordinatedByProperty = new Map()
@@ -4293,6 +4306,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       qcdOrdinaryFromRmdByOwner = new Map()
       qcdBasisFromRmdByOwner = new Map()
       hsaNonqualifiedOrdinaryByAccountId = new Map()
+      employerRothTaxableOrdinaryByAccountId = new Map()
     }
 
     let rmdNontaxable = 0
@@ -8727,13 +8741,19 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           if (split.taxableOrdinary > 0) {
             rothPoolTaxableOrdinaryByPersonId!.set(personId, split.taxableOrdinary)
           }
-        } else if (key.startsWith('roth:') && split.penalty > 0) {
-          cashFlowPenaltyLines!.push({
-            attribution: 'account',
-            accountId: key.slice('roth:'.length),
-            penaltyClass: 'rothEarly',
-            amount: split.penalty,
-          })
+        } else if (key.startsWith('roth:')) {
+          const accountId = key.slice('roth:'.length)
+          if (split.penalty > 0) {
+            cashFlowPenaltyLines!.push({
+              attribution: 'account',
+              accountId,
+              penaltyClass: 'rothEarly',
+              amount: split.penalty,
+            })
+          }
+          if (split.taxableOrdinary > 0) {
+            employerRothTaxableOrdinaryByAccountId!.set(accountId, split.taxableOrdinary)
+          }
         }
       }
     }
@@ -10562,6 +10582,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
                 qcdOrdinaryFromRmdByOwner: qcdOrdinaryFromRmdByOwner!,
                 qcdBasisFromRmdByOwner: qcdBasisFromRmdByOwner!,
                 hsaNonqualifiedOrdinaryByAccountId: hsaNonqualifiedOrdinaryByAccountId!,
+                employerRothTaxableOrdinaryByAccountId: employerRothTaxableOrdinaryByAccountId!,
               },
               socialSecurityStreams,
               rmdTakeByAccount,

@@ -279,6 +279,7 @@ describe('simulatePlan annual cash-flow spending uses', () => {
     expect(ltc.identities).toEqual([
       { entityKind: 'person', personId: 'p1' },
       { entityKind: 'careEvent', careEventId: 'care-1' },
+      { entityKind: 'insurancePolicy', policyId: 'ltc-1' },
     ])
     expect(y2026.cashFlow!.sourceLines.some((line) => line.kind === 'wages' && line.amountPlanDollars === 24_000)).toBe(false)
     expect(y2026.cashFlow!.sourceLines.every((line) => (line.kind as string) !== 'longTermCare')).toBe(true)

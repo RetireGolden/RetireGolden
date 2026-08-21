@@ -158,6 +158,12 @@ export interface AnnualCashFlowPassLocals {
    * (`capByMedicalExpenses` excess only). Missing key → omit character.
    */
   readonly hsaNonqualifiedOrdinaryByAccountId: ReadonlyMap<string, number>
+  /**
+   * Committed designated-Roth (`roth:` per-account pool) taxable ordinary on
+   * need-based withdrawals. Missing key → omit character. Owned Roth-IRA
+   * (`rothira:`) ordinary stays on `rothPoolTaxableOrdinaryByPersonId`.
+   */
+  readonly employerRothTaxableOrdinaryByAccountId: ReadonlyMap<string, number>
 }
 
 /**
@@ -450,6 +456,15 @@ function collectSourceLines(input: AssembleYearCashFlowInput): YearCashFlowSourc
       accountRef(row.accountId),
       personRef(row.recipientPersonId),
     ]
+    // Funding owner is additional evidence, never a replacement for the
+    // living recipient. Same-person qualified contracts already carry that
+    // person as the recipient.
+    if (
+      row.fundingOwnerPersonId !== null &&
+      row.fundingOwnerPersonId !== row.recipientPersonId
+    ) {
+      identities.push(personRef(row.fundingOwnerPersonId))
+    }
     // Qualified-IRA settled basis is a pass-local map (stage 4). Missing key
     // → omit character rather than pro-rate the household scalar.
     const qualifiedBasis = row.qualifiedIraFunded
@@ -663,11 +678,14 @@ function collectSourceLines(input: AssembleYearCashFlowInput): YearCashFlowSourc
     const sale = input.withdrawalPlanTaxableSales.get(accountId)
     const iraTaxable = input.iraCharacterFinal.taxableBySourceAccountId.get(accountId)
     const hsaOrdinary = passLocals.hsaNonqualifiedOrdinaryByAccountId.get(accountId)
+    const employerRothOrdinary = passLocals.employerRothTaxableOrdinaryByAccountId.get(accountId)
     const taxCharacter = chars([
       sale !== undefined ? capitalGain(sale.realizedCapitalGainOrLoss) : undefined,
+      sale !== undefined ? returnOfBasis(sale.recoveredCostBasis) : undefined,
       iraTaxable !== undefined ? returnOfBasis(amount - iraTaxable) : undefined,
       iraTaxable !== undefined ? ordinary(iraTaxable) : undefined,
       hsaOrdinary !== undefined ? ordinary(hsaOrdinary) : undefined,
+      employerRothOrdinary !== undefined ? ordinary(employerRothOrdinary) : undefined,
     ])
     lines.push({
       id: cashFlowLineIds.sourceNeedBasedPortfolioWithdrawal(accountId),
@@ -864,6 +882,7 @@ function collectUseLines(
     if (row.net <= 0) continue
     const identities: YearCashFlowEntityReference[] = [personRef(row.personId)]
     for (const careEventId of row.careEventIds) identities.push(careEventRef(careEventId))
+    for (const policyId of row.payingPolicyIds) identities.push(policyRef(policyId))
     pushUse(pending, {
       id: cashFlowLineIds.useLongTermCare(row.personId),
       kind: 'longTermCare',

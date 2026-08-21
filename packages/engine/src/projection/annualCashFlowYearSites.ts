@@ -34,6 +34,12 @@ export interface RecordedAnnuityPayment {
   /** Nonqualified exclusion-ratio return of basis at the pay site. 0 if none. */
   readonly nonqualifiedExcludable: number
   readonly qualifiedIraFunded: boolean
+  /**
+   * Form 8606 pool owner of an IRA-funded qualified contract
+   * (`annuityContractPoolOwner`). Null when the contract has no channel.
+   * Distinct from `recipientPersonId` on a cross-spouse funded payment.
+   */
+  readonly fundingOwnerPersonId: string | null
 }
 export interface RecordedTipsLadderCash {
   readonly ladderId: string
@@ -77,6 +83,8 @@ export interface RecordedPolicyPremium {
 export interface RecordedLongTermCare {
   readonly personId: string
   readonly careEventIds: readonly string[]
+  /** Policies that paid a positive benefit toward this person's care this year. */
+  readonly payingPolicyIds: readonly string[]
   readonly gross: number
   readonly benefit: number
   readonly net: number
