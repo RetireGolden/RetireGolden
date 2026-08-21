@@ -15,14 +15,19 @@ export const whereTheMoneyComesFromAndGoesArticle: LearningArticle = {
   audience: 'beginner',
   status: 'ready',
   lastReviewed: '2026-08-21',
-  reviewCadence: 'stable',
-  sourceUrls: [],
+  reviewCadence: 'annual',
+  sourceUrls: [
+    'https://www.irs.gov/retirement-plans/roth-iras',
+    'https://www.irs.gov/retirement-plans/retirement-plan-and-ira-required-minimum-distributions-faqs',
+    'https://www.irs.gov/retirement-plans/retirement-plans-faqs-regarding-iras-distributions-withdrawals',
+  ],
   relatedArticles: [
     'how-to-read-a-retirement-projection',
     'reading-the-results-page',
     'todays-dollars-vs-future-dollars',
     'roth-conversion-basics',
     'rmds-required-minimum-distributions',
+    'qcds-qualified-charitable-distributions',
   ],
   relatedPlannerRoutes: ['/plan/:planId/results'],
   currentYearSensitive: false,
@@ -39,7 +44,7 @@ export const whereTheMoneyComesFromAndGoesArticle: LearningArticle = {
       items: [
         'Cash you can spend and money you pay tax on are different pictures. A Roth conversion can raise tax without putting new cash in your pocket.',
         '**View flow** on a Results year opens two pictures: **Cash flow** (sources and funded uses) and **Transfers** (account-to-account moves kept separate so the same dollar is not counted twice).',
-        'A shortfall branch is spending the plan did not fund. It is never drawn as if it was paid.',
+        'A shortfall branch is an unfunded use. It is usually spending. In a hard year it can be the tax bill or a planned contribution that cash could not cover. It is never drawn as if it was paid.',
       ],
     },
     { type: 'heading', text: 'The basic idea' },
@@ -55,7 +60,7 @@ export const whereTheMoneyComesFromAndGoesArticle: LearningArticle = {
     { type: 'heading', text: 'Cash you can spend vs money you pay tax on' },
     {
       type: 'prose',
-      md: '**Taxable income** is money the tax rules count. **Cash available to spend** is money that actually arrived this year: a paycheck, Social Security, a pension, or a withdrawal from an account.\n\nA [Roth conversion](/learn/roth-conversion-basics) moves money from a traditional Individual Retirement Account (IRA) or similar pre-tax account into a Roth account. The dollars stay invested. They do not become cash you can spend that year. The converted amount is often taxable, so the **Settled tax** use on Cash flow can rise while the conversion itself sits on Transfers.\n\nA [required minimum distribution (RMD)](/learn/rmds-required-minimum-distributions) is a withdrawal the tax rules eventually require from most pre-tax accounts. That withdrawal is often taxable. The cash comes from savings you already owned, not from a new paycheck. If you already needed a withdrawal of that size for spending, the RMD is that withdrawal (or part of it), not extra cash on top. If the required amount is larger than spending, leftover cash can show as **Surplus** that later appears on Transfers as money going back into an account.',
+      md: '**Taxable income** is money the tax rules count. **Cash available to spend** is money that actually arrived this year: a paycheck, Social Security, a pension, a withdrawal from an account, or cash from a loan or a home sale.\n\nA [Roth conversion](/learn/roth-conversion-basics) moves money from a traditional Individual Retirement Account (IRA) or similar pre-tax account into a Roth account. The dollars stay invested. They do not become cash you can spend that year. The converted amount is often taxable, so the **Settled tax** use on Cash flow can rise while the conversion itself sits on Transfers.\n\nA [required minimum distribution (RMD)](/learn/rmds-required-minimum-distributions) is a withdrawal the tax rules eventually require from most pre-tax accounts. That withdrawal is often taxable. The cash comes from savings you already owned, not from a new paycheck. If you already needed a withdrawal of that size for spending, the RMD is that withdrawal (or part of it), not extra cash on top. If the required amount is larger than spending, leftover cash can show as **Surplus** that later appears on Transfers as money going back into an account.',
     },
     {
       type: 'scenario',
@@ -67,14 +72,15 @@ export const whereTheMoneyComesFromAndGoesArticle: LearningArticle = {
         { label: 'Spending', value: '$50,000' },
       ],
       summary:
-        'Cash available in this simplified picture is **$36,000 + $24,000 = $60,000**. The **$40,000** conversion is not in that total. It can still raise the tax line. Spending and tax are uses of the $60,000. This is a reading aid, not a tax calculation.',
+        'Cash available in this simplified picture is **$36,000 + $24,000 = $60,000**. The **$40,000** conversion is not in that total. It can still raise the tax line. This example has no loan or sale proceeds. Spending and tax are uses of the $60,000. This is a reading aid, not a tax calculation.',
     },
     {
       type: 'formula',
-      expression: 'cash available = income + withdrawals from accounts',
+      expression: 'cash available = income + withdrawals from accounts + loan or sale proceeds',
       where: [
         { symbol: 'income', meaning: 'Social Security, pension, wages, and similar cash from outside the accounts' },
         { symbol: 'withdrawals from accounts', meaning: 'money taken from savings, including an RMD taken in cash' },
+        { symbol: 'loan or sale proceeds', meaning: 'cash from a reverse-mortgage draw or a home sale. The dialog counts these as household-cash sources, same as income and withdrawals.' },
         { symbol: 'cash available', meaning: 'the Cash flow sources; the Source total on the dialog' },
       ],
       basis: 'nominal',
@@ -83,7 +89,7 @@ export const whereTheMoneyComesFromAndGoesArticle: LearningArticle = {
     { type: 'heading', text: 'Portfolio withdrawals vs income' },
     {
       type: 'prose',
-      md: 'On Cash flow, income and withdrawals can both feed the same middle, labeled **Household cash**. They are not the same job.\n\nIncome is cash that arrived from outside the accounts: wages, Social Security, a pension. A withdrawal reduces an account balance. An RMD taken in cash is a withdrawal, labeled **Required minimum distribution**. A later withdrawal to cover remaining spending is often labeled **Need-based withdrawal**.',
+      md: 'On Cash flow, income, withdrawals, and loan or sale proceeds can all feed the same middle, labeled **Household cash**. They are not the same job.\n\nIncome is cash that arrived from outside the accounts: wages, Social Security, a pension. A withdrawal reduces an account balance. An RMD taken in cash is a withdrawal, labeled **Required minimum distribution**. A later withdrawal to cover remaining spending is often labeled **Need-based withdrawal**. Loan or sale proceeds are cash from a reverse-mortgage draw or a home sale. They are sources, not income from work or benefits.',
     },
     {
       type: 'table',
@@ -93,7 +99,7 @@ export const whereTheMoneyComesFromAndGoesArticle: LearningArticle = {
         ['Social Security, pension, or wages', 'Yes', 'Sometimes', 'Cash flow, as income'],
         ['Withdrawal from an account, including an RMD taken in cash', 'Yes, from that account', 'Often, when the account is pre-tax', 'Cash flow, as a portfolio withdrawal'],
         ['Roth conversion', 'No. The dollars stay in a Roth account.', 'Often', 'Transfers. Any tax is a use on Cash flow.'],
-        ['Gift from an IRA to charity', 'No. The dollars go to the charity.', 'The gift itself is not household spending', 'Transfers'],
+        ['Gift from an IRA to charity', 'No. The dollars go to the charity.', 'Only the portion that qualifies as a [qualified charitable distribution (QCD)](/learn/qcds-qualified-charitable-distributions) avoids ordinary income. An amount beyond the eligible limit can raise the tax line even though it never becomes spendable cash.', 'Transfers'],
         ['Reinvested dividend or interest', 'No. The dollars stayed in the account.', 'The dividend or interest can still be taxable', 'Transfers, as reinvested yield'],
         ['Contribution into an account', 'This uses cash you already had', 'Not a second source of cash', 'Cash flow as a funded use, and Transfers as the account credit. Do not add the two.'],
       ],
@@ -111,17 +117,17 @@ export const whereTheMoneyComesFromAndGoesArticle: LearningArticle = {
     { type: 'heading', text: 'What a shortfall branch means' },
     {
       type: 'prose',
-      md: 'The summary strip shows **Source total**, **Funded uses**, **Surplus**, and **Shortfall**. Funded uses are the spending, tax, and other outflows the year actually covered.\n\nA shortfall branch is the part of requested spending the plan did not fund. On the diagram it starts from a separate **Unfunded** side, not through Household cash. It is never drawn as if it was paid. The table shows requested, funded, and unfunded amounts on the same use line so you can see the miss without treating it as cash that moved.',
+      md: 'The summary strip shows **Source total**, **Funded uses**, **Surplus**, and **Shortfall**. Funded uses are the spending, tax, and other outflows the year actually covered.\n\nA shortfall branch is an unfunded use. It is usually spending the plan did not fund. After those spending layers are covered, a hard year can leave the tax bill or a planned contribution as the thing cash could not cover. On the diagram it starts from a separate **Unfunded** side, not through Household cash. It is never drawn as if it was paid. The table shows requested, funded, and unfunded amounts on the same use line so you can see the miss without treating it as cash that moved.',
     },
     {
       type: 'callout',
       tone: 'warn',
-      md: 'If a year cannot be fully accounted for, the dialog shows an explanation instead of a chart. The app shows you the limitation rather than guessing. **Download detail CSV** is still available.',
+      md: 'If a year cannot be fully accounted for, the dialog shows an explanation instead of a chart. The app shows you the limitation rather than guessing. **Download detail CSV** is still available. That download is a header and a summary row that state why, not the every-line export.',
     },
     { type: 'heading', text: "Today's dollars vs nominal dollars" },
     {
       type: 'prose',
-      md: 'The drill-down follows the same **Today\'s $ / Nominal $** toggle as the rest of Results. The dialog states **Amounts in today\'s dollars** or **Amounts in nominal dollars** so the picture stays in parity with the year table you opened.\n\n**Download detail CSV** is different. It lists every line for that year in nominal dollars, not the on-screen toggle. Use it when you want the full line list in a spreadsheet. Do not compare those nominal cells to a today\'s-dollar diagram as if they were the same units.',
+      md: 'The drill-down follows the same **Today\'s $ / Nominal $** toggle as the rest of Results. The dialog states **Amounts in today\'s dollars** or **Amounts in nominal dollars** so the picture stays in parity with the year table you opened.\n\n**Download detail CSV** is different. For a year the engine fully accounts for, it lists every line in nominal dollars, not the on-screen toggle. A year that shows an explanation instead of a chart downloads only a header and a summary row that state why. Use the full export when you want the complete line list in a spreadsheet. Do not compare those nominal cells to a today\'s-dollar diagram as if they were the same units.',
     },
     { type: 'heading', text: 'Small lines and the full table' },
     {
@@ -134,15 +140,15 @@ export const whereTheMoneyComesFromAndGoesArticle: LearningArticle = {
       items: [
         'Treating a Roth conversion as extra spending money. It is a transfer. The tax on it is the cash use.',
         'Adding Cash flow totals to Transfers totals and reading the sum as one pile of money.',
-        'Reading a shortfall branch as a bill that was paid. It is the part that was not funded.',
-        'Comparing the on-screen today\'s-dollar picture to the detail CSV. The CSV is nominal.',
+        'Reading a shortfall branch as a bill that was paid. It is an unfunded use, not cash that moved.',
+        'Comparing the on-screen today\'s-dollar picture to the detail CSV. The CSV is nominal. A year that shows an explanation instead of a chart is only a header and a summary row.',
         'Treating **Other (n)** as money the model invented. It is a grouping of small real lines. The table already lists each one.',
       ],
     },
     { type: 'heading', text: 'Where to use this in the app' },
     {
       type: 'prose',
-      md: 'Open **View flow** on a year row on **Results**. Switch **Cash flow** and **Transfers** for the same year. Use **Show all** when small lines are grouped. Use **Download detail CSV** when you want every line in nominal dollars.\n\nFor the rest of the Results page, see [Reading the Results page](/learn/reading-the-results-page). For today\'s dollars vs future dollars, see [Today\'s dollars vs future dollars](/learn/todays-dollars-vs-future-dollars).',
+      md: 'Open **View flow** on a year row on **Results**. Switch **Cash flow** and **Transfers** for the same year. Use **Show all** when small lines are grouped. Use **Download detail CSV** when you want the nominal-dollar line list for a year the engine fully accounts for.\n\nFor the rest of the Results page, see [Reading the Results page](/learn/reading-the-results-page). For today\'s dollars vs future dollars, see [Today\'s dollars vs future dollars](/learn/todays-dollars-vs-future-dollars).',
     },
   ],
 }
