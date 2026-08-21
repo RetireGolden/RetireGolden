@@ -2582,3 +2582,172 @@ html:has(.kpi-bar) {
     height: 1.4rem;
   }
 }
+
+/* --- year cash-flow dialog ------------------------------------------------- */
+
+.modal-panel--wide,
+.modal-panel:has(.year-cash-flow-dialog) {
+  max-width: min(72rem, calc(100vw - 2rem));
+}
+
+.year-cash-flow-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.year-cash-flow-mode {
+  margin: 0;
+}
+
+.year-cash-flow-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+  gap: 0.5rem;
+}
+
+.year-cash-flow-summary-item {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-1);
+  padding: 0.45rem 0.65rem;
+}
+
+.year-cash-flow-summary-label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.year-cash-flow-summary-value,
+.year-cash-flow-num {
+  font-variant-numeric: tabular-nums;
+}
+
+.year-cash-flow-summary-value {
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.year-cash-flow-summary-item--shortfall {
+  border-color: color-mix(in srgb, var(--bad) 45%, var(--border));
+}
+
+.year-cash-flow-summary-item--shortfall .year-cash-flow-summary-value {
+  color: var(--bad);
+}
+
+.year-cash-flow-shortfall-badge {
+  background: color-mix(in srgb, var(--bad) 14%, transparent);
+  color: var(--bad);
+  text-transform: uppercase;
+}
+
+.year-cash-flow-toolbar,
+.year-cash-flow-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.year-cash-flow-refusal {
+  max-width: 65ch;
+}
+
+.year-cash-flow-refusal p {
+  margin: 0 0 0.6rem;
+}
+
+.year-cash-flow-refusal ul {
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+.year-cash-flow-sankey {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-1);
+  padding: 0.65rem 0.75rem 0.5rem;
+  overflow: hidden;
+}
+
+.year-cash-flow-sankey-chart {
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.year-cash-flow-sankey-chart .recharts-wrapper {
+  max-width: 100%;
+}
+
+.year-cash-flow-sankey-tooltip {
+  padding: 0.45rem 0.6rem;
+  font-size: 0.88rem;
+}
+
+.year-cash-flow-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem 1rem;
+  margin: 0.45rem 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.year-cash-flow-legend-swatch {
+  display: inline-block;
+  width: 0.75rem;
+  height: 0.75rem;
+  margin-right: 0.35rem;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  vertical-align: -0.1rem;
+}
+
+.year-cash-flow-legend-swatch--unfunded {
+  background: var(--bad);
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 2px,
+    var(--surface-1) 2px,
+    var(--surface-1) 4px
+  );
+  border-style: dashed;
+  border-color: var(--bad);
+}
+
+.year-cash-flow-table caption {
+  caption-side: top;
+  text-align: left;
+  padding: 0.45rem 0.7rem;
+  font-weight: 600;
+  white-space: normal;
+}
+
+@media (max-width: 640px) {
+  .modal-backdrop:has(.year-cash-flow-dialog) {
+    padding: 0;
+    align-items: stretch;
+    justify-content: stretch;
+  }
+
+  .modal-panel--wide,
+  .modal-panel:has(.year-cash-flow-dialog) {
+    max-width: none;
+    width: 100%;
+    max-height: none;
+    height: 100vh;
+    height: 100dvh;
+    border-radius: 0;
+  }
+}

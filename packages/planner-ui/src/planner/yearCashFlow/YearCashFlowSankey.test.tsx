@@ -1,0 +1,185 @@
+/** @vitest-environment jsdom */
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { act } from 'react'
+import { createRoot, type Root } from 'react-dom/client'
+import { renderToStaticMarkup } from 'react-dom/server'
+
+import type { YearCashFlowSankeyView } from './buildYearCashFlow'
+import { YearCashFlowSankey } from './YearCashFlowSankey'
+
+const view: YearCashFlowSankeyView = {
+  nodes: [
+    {
+      id: 'wages',
+      view: 'cashFlow',
+      side: 'source',
+      role: 'spendableSource',
+      kind: 'wages',
+      kindLabel: 'Wages',
+      personKey: 'household',
+      personLabel: 'Household',
+      label: 'Wages',
+      amountPlanDollars: 50_000,
+      underlyingLineIds: ['wages'],
+      unresolved: false,
+      collapsed: false,
+      flag: null,
+    },
+    {
+      id: 'householdCash',
+      view: 'cashFlow',
+      side: 'hub',
+      role: 'householdCash',
+      kind: 'householdCash',
+      kindLabel: 'Household cash',
+      personKey: 'household',
+      personLabel: 'Household',
+      label: 'Household cash',
+      amountPlanDollars: 50_000,
+      underlyingLineIds: [],
+      unresolved: false,
+      collapsed: false,
+      flag: null,
+    },
+    {
+      id: 'lifestyle',
+      view: 'cashFlow',
+      side: 'fundedUse',
+      role: 'fundedUse',
+      kind: 'requiredLifestyle',
+      kindLabel: 'Required lifestyle',
+      personKey: 'household',
+      personLabel: 'Household',
+      label: 'Required lifestyle',
+      amountPlanDollars: 40_000,
+      underlyingLineIds: ['lifestyle'],
+      unresolved: false,
+      collapsed: false,
+      flag: null,
+    },
+    {
+      id: 'unfunded',
+      view: 'cashFlow',
+      side: 'unfundedOrigin',
+      role: 'unfundedOrigin',
+      kind: 'unfunded',
+      kindLabel: 'Unfunded',
+      personKey: 'household',
+      personLabel: 'Household',
+      label: 'Unfunded',
+      amountPlanDollars: 10_000,
+      underlyingLineIds: [],
+      unresolved: false,
+      collapsed: false,
+      flag: 'unfunded',
+    },
+    {
+      id: 'unfunded:lifestyle',
+      view: 'cashFlow',
+      side: 'unfundedUse',
+      role: 'unfundedUse',
+      kind: 'requiredLifestyle',
+      kindLabel: 'Required lifestyle',
+      personKey: 'household',
+      personLabel: 'Household',
+      label: 'Required lifestyle',
+      amountPlanDollars: 10_000,
+      underlyingLineIds: ['lifestyle'],
+      unresolved: false,
+      collapsed: false,
+      flag: 'unfunded',
+    },
+  ],
+  links: [
+    {
+      id: 'wages->householdCash',
+      view: 'cashFlow',
+      source: 'wages',
+      target: 'householdCash',
+      amountPlanDollars: 50_000,
+      underlyingLineIds: ['wages'],
+      flag: null,
+    },
+    {
+      id: 'householdCash->lifestyle',
+      view: 'cashFlow',
+      source: 'householdCash',
+      target: 'lifestyle',
+      amountPlanDollars: 40_000,
+      underlyingLineIds: ['lifestyle'],
+      flag: null,
+    },
+    {
+      id: 'unfunded->unfunded:lifestyle',
+      view: 'cashFlow',
+      source: 'unfunded',
+      target: 'unfunded:lifestyle',
+      amountPlanDollars: 10_000,
+      underlyingLineIds: ['lifestyle'],
+      flag: 'unfunded',
+    },
+  ],
+}
+
+function chart() {
+  return (
+    <YearCashFlowSankey
+      view={view}
+      viewId="cashFlow"
+      year={2030}
+      displayAmount={(_year, amount) => amount}
+      sourceTotalPlanDollars={50_000}
+      fundedUsesPlanDollars={40_000}
+      shortfallPlanDollars={10_000}
+    />
+  )
+}
+
+let container: HTMLDivElement
+let root: Root
+
+beforeEach(() => {
+  container = document.createElement('div')
+  document.body.appendChild(container)
+  root = createRoot(container)
+})
+
+afterEach(async () => {
+  await act(async () => root.unmount())
+  container.remove()
+})
+
+describe('YearCashFlowSankey', () => {
+  it('renders nodes and links from a synthetic model with animation disabled', async () => {
+    await act(async () => {
+      root.render(chart())
+    })
+    const host = container.querySelector('.year-cash-flow-sankey')
+    expect(host).not.toBeNull()
+    expect(host!.getAttribute('data-animation-active')).toBe('false')
+    expect(host!.getAttribute('data-node-ids')?.split(' ')).toEqual([
+      'wages',
+      'householdCash',
+      'lifestyle',
+      'unfunded',
+      'unfunded:lifestyle',
+    ])
+    expect(host!.getAttribute('data-link-ids')?.split(' ')).toEqual([
+      'wages->householdCash',
+      'householdCash->lifestyle',
+      'unfunded->unfunded:lifestyle',
+    ])
+    expect(host!.getAttribute('aria-label')).toBe(
+      'Cash flow for 2030. Source total $50,000. Funded uses $40,000. Shortfall $10,000.',
+    )
+    expect(container.querySelector('.year-cash-flow-legend')?.textContent).toContain('Unfunded')
+    expect(container.querySelector('svg')).not.toBeNull()
+  })
+
+  it('keeps the unfunded legend cue textual, not color alone', () => {
+    const html = renderToStaticMarkup(chart())
+    expect(html).toContain('year-cash-flow-legend-swatch--unfunded')
+    expect(html).toContain('Unfunded')
+    expect(html).toContain('data-animation-active="false"')
+  })
+})
