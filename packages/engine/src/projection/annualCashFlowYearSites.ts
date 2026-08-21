@@ -219,7 +219,14 @@ class AnnualCashFlowYearSitesBuffer implements AnnualCashFlowYearSites {
     this._distributedYield.push(row)
   }
   recordPropertySaleProceeds(row: RecordedPropertySale): void {
-    if (skipNonPositive(row.netProceedsAfterHecm)) return
+    // A HECM payoff can consume every cash dollar while gain character is
+    // still nonzero. Keep the row so assemble can emit standalone metadata
+    // when the zero-net source itself is omitted.
+    if (
+      skipNonPositive(row.netProceedsAfterHecm) &&
+      skipNonPositive(row.ordinaryGain) &&
+      row.capitalGain === 0
+    ) return
     this._propertySales.push(row)
   }
   recordGoalOutcome(row: RecordedGoalOutcome): void {

@@ -3374,7 +3374,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // benefitPeriodYears. The net (careCost − ltcBenefit) is what hits spending.
     let careCost = 0
     let ltcBenefit = 0
-    const ltcByPerson = new Map<string, { careEventIds: string[]; gross: number; benefit: number }>()
+    // Reporting-only aggregation. Capture-off allocates nothing extra.
+    const ltcByPerson = captureAnnualCashFlow
+      ? new Map<string, { careEventIds: string[]; gross: number; benefit: number }>()
+      : null
     for (const event of plan.careEvents) {
       const s = stateOf(event.personId)
       if (!s.alive) continue
@@ -3399,20 +3402,24 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           ltcBenefitYearsUsed.set(policy.id, used + 1)
         }
       }
-      const existing = ltcByPerson.get(event.personId) ?? { careEventIds: [], gross: 0, benefit: 0 }
-      existing.careEventIds.push(event.id)
-      existing.gross += gross
-      existing.benefit += gross - remaining
-      ltcByPerson.set(event.personId, existing)
+      if (ltcByPerson !== null) {
+        const existing = ltcByPerson.get(event.personId) ?? { careEventIds: [], gross: 0, benefit: 0 }
+        existing.careEventIds.push(event.id)
+        existing.gross += gross
+        existing.benefit += gross - remaining
+        ltcByPerson.set(event.personId, existing)
+      }
     }
-    for (const [personId, row] of ltcByPerson) {
-      yearSites?.recordLongTermCare({
-        personId,
-        careEventIds: row.careEventIds,
-        gross: row.gross,
-        benefit: row.benefit,
-        net: row.gross - row.benefit,
-      })
+    if (ltcByPerson !== null) {
+      for (const [personId, row] of ltcByPerson) {
+        yearSites?.recordLongTermCare({
+          personId,
+          careEventIds: row.careEventIds,
+          gross: row.gross,
+          benefit: row.benefit,
+          net: row.gross - row.benefit,
+        })
+      }
     }
 
     // Property carrying costs: tax + insurance charged while the property is
@@ -4245,6 +4252,9 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       amount: number
       nontaxable: number
     }[] | null = null
+    let qcdExclusionFromRmdByOwner: Map<string, number> | null = null
+    let qcdExclusionBeyondRmdByOwner: Map<string, number> | null = null
+    let qcdOrdinaryBeyondRmdByOwner: Map<string, number> | null = null
     if (publishCashFlow) {
       seppByAccountId = new Map()
       hecmCoordinatedByProperty = new Map()
@@ -4260,6 +4270,9 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       rmdNontaxableByOwner = new Map()
       seppNontaxableByAccountId = new Map()
       aggregateConversionDraws = []
+      qcdExclusionFromRmdByOwner = new Map()
+      qcdExclusionBeyondRmdByOwner = new Map()
+      qcdOrdinaryBeyondRmdByOwner = new Map()
     }
 
     let rmdNontaxable = 0
@@ -5633,6 +5646,22 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       )
       qcdIncomeOffset += fromRmdExcludable
       if (beyondRmdLeftover > 0) qcdNonQualifiedOrdinaryIncome += beyondRmdLeftover
+      if (publishCashFlow) {
+        // Reporting snapshots of FINAL character. Economic maps above stay
+        // pre-offset qualified / gross-beyond for the Form 8606 carve.
+        if (fromRmd > 0) {
+          qcdExclusionFromRmdByOwner!.set(ownerId, fromRmdExcludable)
+        }
+        const beyondAmount = gift - fromRmd
+        if (beyondAmount > 0) {
+          const beyondStatutoryExcess = nonQualified - nonQualifiedFromRmd
+          const beyondExclusion = Math.max(
+            0, beyondAmount - Math.max(0, beyondRmdLeftover) - beyondStatutoryExcess,
+          )
+          qcdExclusionBeyondRmdByOwner!.set(ownerId, beyondExclusion)
+          qcdOrdinaryBeyondRmdByOwner!.set(ownerId, Math.max(0, beyondRmdLeftover))
+        }
+      }
       if (basis > 0) {
         iraProRata.set(
           ownerId, openIraProRataYear(basis, preDistribution - qualified),
@@ -5850,6 +5879,12 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       if (proRata === undefined) {
         noteForm8606Taxable(entry.ownerId, nonQualified, 'distributions')
         qcdNonQualifiedOrdinaryIncome += nonQualified
+        if (publishCashFlow) {
+          qcdOrdinaryBeyondRmdByOwner!.set(
+            entry.ownerId,
+            (qcdOrdinaryBeyondRmdByOwner!.get(entry.ownerId) ?? 0) + nonQualified,
+          )
+        }
         continue
       }
       const split = splitWithAssumedCharacter(proRata, nonQualified, {
@@ -5862,6 +5897,12 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       })
       iraProRata.set(entry.ownerId, split.next)
       qcdNonQualifiedOrdinaryIncome += split.taxable
+      if (publishCashFlow && split.taxable > 0) {
+        qcdOrdinaryBeyondRmdByOwner!.set(
+          entry.ownerId,
+          (qcdOrdinaryBeyondRmdByOwner!.get(entry.ownerId) ?? 0) + split.taxable,
+        )
+      }
     }
 
     // --- exact-cent identity-bearing ordinary withdrawals ------------------
@@ -10403,18 +10444,26 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
                 legacyPropertySaleDeposits: legacyPropertySaleDeposits!,
                 deathBenefits: deathBenefits!,
                 surplusDestination: surplusDestination!,
+                qcdExclusionFromRmdByOwner: qcdExclusionFromRmdByOwner!,
+                qcdExclusionBeyondRmdByOwner: qcdExclusionBeyondRmdByOwner!,
+                qcdOrdinaryBeyondRmdByOwner: qcdOrdinaryBeyondRmdByOwner!,
               },
               socialSecurityStreams,
               rmdTakeByAccount,
               ownedIraRmdGrossByOwner,
               qcdFromRmdByOwner,
-              qcdQualifiedFromRmdByOwner,
               qcdGrossByOwner,
-              qcdNonQualifiedBeyondRmdByOwner,
               deferredLegacyQcdDistributions,
               employerPlanAccountIds: new Set(
                 plan.accounts.flatMap((account) =>
                   account.type === 'traditional' && account.kind !== 'ira' ? [account.id] : [],
+                ),
+              ),
+              inheritedTraditionalAccountIds: new Set(
+                plan.accounts.flatMap((account) =>
+                  account.type === 'traditional' && account.inherited !== undefined
+                    ? [account.id]
+                    : [],
                 ),
               ),
               withdrawalPlanByAccountId: withdrawalPlan.byAccountId,

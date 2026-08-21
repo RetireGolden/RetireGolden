@@ -119,6 +119,7 @@ describe('cashFlowLineIds', () => {
       [cashFlowLineIds.metadataForeignExclusionAddback(), 'metadata:foreignExclusionAddback:household'],
       [cashFlowLineIds.metadataRothPoolOrdinaryIncome('p1'), 'metadata:ordinaryIncome:rothPool:p1'],
       [cashFlowLineIds.metadataRebalancingCapitalGain('tax1'), 'metadata:capitalGain:rebalancing:tax1'],
+      [cashFlowLineIds.metadataPropertySaleCapitalGain('home-1'), 'metadata:capitalGain:propertySale:home-1'],
     ]
     for (const [actual, expected] of rows) {
       expect(actual).toBe(expected)

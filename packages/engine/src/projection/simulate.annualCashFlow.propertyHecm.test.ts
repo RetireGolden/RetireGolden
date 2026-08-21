@@ -62,6 +62,7 @@ function home(opts: {
   plannedSaleYear?: number | null
   costBasis?: number
   expectedNetProceeds?: number | null
+  sellingCostPct?: number
   hecm?: Extract<Account, { type: 'property' }>['hecm']
 }): Account {
   return {
@@ -75,6 +76,7 @@ function home(opts: {
     expectedNetProceeds: opts.expectedNetProceeds ?? null,
     primaryResidence: true,
     ...(opts.costBasis !== undefined ? { costBasis: opts.costBasis } : {}),
+    ...(opts.sellingCostPct !== undefined ? { sellingCostPct: opts.sellingCostPct } : {}),
     ...(opts.hecm ? { hecm: opts.hecm } : {}),
   }
 }
@@ -246,5 +248,52 @@ describe('simulatePlan annual cash-flow property, HECM, and death benefit', () =
     expectMoney(y2026.deathBenefit, 100_000)
     expect(y2026.cashFlow!.reconciliation.cash.differencePlanDollars).toBe(0)
     expect(y2026.cashFlow!.reconciliation.status).toBe('reconciled')
+  })
+
+  it('publishes standalone capitalGain metadata when an exact-basis sale nets to zero after HECM payoff', () => {
+    // Independent worksheet, 0% inflation, p1 born 1964-01-01 (attained 62 in 2026):
+    //   value 400,000, costBasis 0, sellingCostPct 25, primary residence.
+    //   HECM open 2026, PL 75% = 300,000, upfront 10% = 40,000.
+    //   2026: spending 260,000, cash 0 → lastResort draws remaining capacity 260,000.
+    //         loanBalance = 300,000.
+    //   2027 sale: salePrice 400,000, selling costs 100,000, netProceeds 300,000.
+    //         payoff min(300,000, 300,000) = 300,000 → net after HECM 0.
+    //         amount realized 300,000 − basis 0 = 300,000 gain.
+    //         §121 single exclusion 250,000 → capitalGain 50,000.
+    //   Sale source omitted at zero; gain publishes as
+    //   metadata:capitalGain:propertySale:home-1.
+    const plan = singlePersonPlan({ dob: '1964-01-01', planningAge: 70 })
+    plan.expenses.baseAnnual = 260_000
+    plan.accounts = [
+      cashAccount('cash-1', 0),
+      home({
+        value: 400_000,
+        costBasis: 0,
+        sellingCostPct: 25,
+        plannedSaleYear: 2027,
+        hecm: {
+          openYear: 2026,
+          principalLimitPct: 75,
+          growthRatePct: 0,
+          upfrontCostPct: 10,
+          drawPolicy: 'lastResort',
+        },
+      }),
+    ]
+    const y2027 = yearOf(run(plan, { horizonEndYear: 2027 }), 2027)
+
+    expect(y2027.cashFlow!.sourceLines.some((line) =>
+      line.id === 'source:propertySaleProceeds:home-1',
+    )).toBe(false)
+    const gain = y2027.cashFlow!.taxCharacterMetadata.find(
+      (row) => row.id === 'metadata:capitalGain:propertySale:home-1',
+    )
+    expect(gain).toBeDefined()
+    expect(gain!.taxCharacter).toEqual({ kind: 'capitalGain', amountPlanDollars: 50_000 })
+    expect(gain!.identities).toEqual([
+      { entityKind: 'propertyAccount', propertyAccountId: 'home-1' },
+    ])
+    expect(gain!.relatedLineId).toBeUndefined()
+    expect(y2027.cashFlow!.reconciliation.status).toBe('reconciled')
   })
 })

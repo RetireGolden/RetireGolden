@@ -157,6 +157,8 @@ export const cashFlowLineIds = {
     `metadata:ordinaryIncome:rothPool:${encodeCashFlowSegment(personId)}`,
   metadataRebalancingCapitalGain: (accountId: string) =>
     `metadata:capitalGain:rebalancing:${encodeCashFlowSegment(accountId)}`,
+  metadataPropertySaleCapitalGain: (propertyAccountId: string) =>
+    `metadata:capitalGain:propertySale:${encodeCashFlowSegment(propertyAccountId)}`,
 } as const
 
 /**

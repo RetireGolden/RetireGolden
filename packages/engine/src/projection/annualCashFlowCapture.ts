@@ -106,6 +106,22 @@ export interface AnnualCashFlowPassLocals {
     readonly destination: YearCashFlowTransferEndpoint
   }[]
   readonly surplusDestination: YearCashFlowTransferEndpoint
+  /**
+   * Final post-offset QCD exclusion on the RMD-diverted gift (`fromRmdExcludable`
+   * after the 408(d)(8)(A) second-sentence / §219 offset). Never the pre-offset
+   * `fromRmdQualified` carve used by Form 8606 line 7.
+   */
+  readonly qcdExclusionFromRmdByOwner: ReadonlyMap<string, number>
+  /**
+   * Final post-offset QCD exclusion on the beyond-RMD gift. Independent of the
+   * ordinary amount: basis recovery is neither exclusion nor ordinary.
+   */
+  readonly qcdExclusionBeyondRmdByOwner: ReadonlyMap<string, number>
+  /**
+   * Final beyond-RMD ordinary character: §219 leftover plus Form 8606
+   * `split.taxable` on the statutory excess. Never the pre-split gross excess.
+   */
+  readonly qcdOrdinaryBeyondRmdByOwner: ReadonlyMap<string, number>
 }
 
 /**
@@ -127,15 +143,15 @@ export interface AssembleYearCashFlowInput {
   readonly rmdTakeByAccount: ReadonlyMap<string, number>
   readonly ownedIraRmdGrossByOwner: ReadonlyMap<string, number>
   readonly qcdFromRmdByOwner: ReadonlyMap<string, number>
-  readonly qcdQualifiedFromRmdByOwner: ReadonlyMap<string, number>
   readonly qcdGrossByOwner: ReadonlyMap<string, number>
-  readonly qcdNonQualifiedBeyondRmdByOwner: ReadonlyMap<string, number>
   readonly deferredLegacyQcdDistributions: readonly {
     readonly ownerId: string
     readonly amount: number
     readonly sourceAccountId: string
   }[]
   readonly employerPlanAccountIds: ReadonlySet<string>
+  /** Traditional inherited accounts. Roth forced lines carry no ordinary character. */
+  readonly inheritedTraditionalAccountIds: ReadonlySet<string>
   readonly withdrawalPlanByAccountId: ReadonlyMap<string, number>
   readonly withdrawalPlanTaxableSales: ReadonlyMap<string, Readonly<AggregateBasisSaleResult>>
   readonly iraCharacterFinal: {
@@ -476,6 +492,7 @@ function collectSourceLines(input: AssembleYearCashFlowInput): YearCashFlowSourc
   }
 
   for (const row of yearSites.propertySales) {
+    if (row.netProceedsAfterHecm <= 0) continue
     const taxCharacter = chars([ordinary(row.ordinaryGain), capitalGain(row.capitalGain)])
     lines.push({
       id: cashFlowLineIds.sourcePropertySaleProceeds(row.propertyAccountId),
@@ -541,12 +558,16 @@ function collectSourceLines(input: AssembleYearCashFlowInput): YearCashFlowSourc
 
   for (const evidence of input.inheritedYearEvidence) {
     if (evidence.executedRequiredAmount <= 0) continue
+    const taxCharacter = input.inheritedTraditionalAccountIds.has(evidence.accountId)
+      ? chars([ordinary(evidence.executedRequiredAmount)])
+      : undefined
     lines.push({
       id: cashFlowLineIds.sourceInheritedAccountDistribution(evidence.accountId),
       kind: 'inheritedAccountDistribution',
       role: 'portfolioFunding',
       amountPlanDollars: evidence.executedRequiredAmount,
       identities: ownerRefs(evidence.accountId, evidence.ownerPersonId),
+      ...(taxCharacter ? { taxCharacter } : {}),
     })
   }
 
@@ -573,6 +594,7 @@ function collectSourceLines(input: AssembleYearCashFlowInput): YearCashFlowSourc
           if (part.kind === 'capitalGain') return [capitalGain(dollars)]
           if (part.kind === 'capitalLoss') return [capitalGain(-dollars)]
           if (part.kind === 'basisReturn') return [returnOfBasis(dollars)]
+          if (part.kind === 'ordinaryIncome') return [ordinary(dollars)]
           return []
         }))
         lines.push({
@@ -933,10 +955,13 @@ function collectTransferLines(
     if (row.credited <= 0) continue
     const useId = cashFlowLineIds.useContribution(row.destinationAccountId)
     const useLine = useById.get(useId)
-    const residualUnfunded = useLine?.unfundedPlanDollars ?? 0
-    const relationship = residualUnfunded > CASH_FLOW_RECONCILIATION_TOLERANCE_PLAN_DOLLARS
-      ? 'committedCreditBeyondFunding' as const
-      : 'sameDollarLaterStage' as const
+    // Residual attribution, not statutory-cap rejection: committed-credit
+    // lineage only when the transfer actually exceeds the funded use.
+    const funded = useLine?.fundedPlanDollars ?? 0
+    const relationship =
+      row.credited - funded > CASH_FLOW_RECONCILIATION_TOLERANCE_PLAN_DOLLARS
+        ? 'committedCreditBeyondFunding' as const
+        : 'sameDollarLaterStage' as const
     push({
       id: cashFlowLineIds.transferEmployeeContribution(row.destinationAccountId),
       kind: 'employeeContribution',
@@ -1080,7 +1105,12 @@ function collectTransferLines(
   }>()
   for (const draw of input.aggregateConversionDraws) {
     if (draw.amount <= 0) continue
-    const key = `${draw.sourceAccountId}\0${draw.destinationAccountId}`
+    // Reuse the published line-ID builder so schema-valid IDs containing NUL
+    // or ':' cannot merge distinct source/destination pairs.
+    const key = cashFlowLineIds.transferAggregateRothConversion(
+      draw.sourceAccountId,
+      draw.destinationAccountId,
+    )
     const existing = aggregateByPair.get(key)
     if (existing === undefined) {
       aggregateByPair.set(key, { ...draw })
@@ -1089,16 +1119,13 @@ function collectTransferLines(
       existing.nontaxable += draw.nontaxable
     }
   }
-  for (const draw of aggregateByPair.values()) {
+  for (const [id, draw] of aggregateByPair) {
     const taxCharacter = conversionCharacter(
       draw.nontaxable,
       draw.amount - draw.nontaxable,
     )
     push({
-      id: cashFlowLineIds.transferAggregateRothConversion(
-        draw.sourceAccountId,
-        draw.destinationAccountId,
-      ),
+      id,
       kind: 'aggregateRothConversion',
       source: {
         entityKind: 'account',
@@ -1121,10 +1148,10 @@ function collectTransferLines(
 
   for (const [ownerId, diverted] of input.qcdFromRmdByOwner) {
     if (diverted <= 0) continue
-    const qualified = input.qcdQualifiedFromRmdByOwner.get(ownerId) ?? 0
-    const nonQualified = Math.max(0, diverted - qualified)
+    const exclusion = passLocals.qcdExclusionFromRmdByOwner.get(ownerId) ?? 0
+    const nonQualified = Math.max(0, diverted - exclusion)
     const rmdLineId = cashFlowLineIds.sourceOwnedIraRmd(ownerId)
-    const taxCharacter = qcdCharacter(qualified, nonQualified)
+    const taxCharacter = qcdCharacter(exclusion, nonQualified)
     push({
       id: cashFlowLineIds.transferRmdQcd(ownerId),
       kind: 'qualifiedCharitableDistribution',
@@ -1138,13 +1165,16 @@ function collectTransferLines(
     })
   }
 
-  const beyondRmdRemaining = new Map(input.qcdNonQualifiedBeyondRmdByOwner)
+  const beyondExclusionRemaining = new Map(passLocals.qcdExclusionBeyondRmdByOwner)
+  const beyondOrdinaryRemaining = new Map(passLocals.qcdOrdinaryBeyondRmdByOwner)
   for (const entry of input.deferredLegacyQcdDistributions) {
     if (entry.amount <= 0) continue
-    const remainingExcess = Math.max(0, beyondRmdRemaining.get(entry.ownerId) ?? 0)
-    const nonQualified = Math.min(remainingExcess, entry.amount)
-    beyondRmdRemaining.set(entry.ownerId, remainingExcess - nonQualified)
-    const exclusion = Math.max(0, entry.amount - nonQualified)
+    const remainingExclusion = Math.max(0, beyondExclusionRemaining.get(entry.ownerId) ?? 0)
+    const exclusion = Math.min(remainingExclusion, entry.amount)
+    beyondExclusionRemaining.set(entry.ownerId, remainingExclusion - exclusion)
+    const remainingOrdinary = Math.max(0, beyondOrdinaryRemaining.get(entry.ownerId) ?? 0)
+    const nonQualified = Math.min(remainingOrdinary, Math.max(0, entry.amount - exclusion))
+    beyondOrdinaryRemaining.set(entry.ownerId, remainingOrdinary - nonQualified)
     const taxCharacter = qcdCharacter(exclusion, nonQualified)
     push({
       id: cashFlowLineIds.transferBeyondRmdQcd(entry.ownerId, entry.sourceAccountId),
@@ -1294,6 +1324,16 @@ function collectTaxCharacterMetadata(
       id: cashFlowLineIds.metadataRebalancingCapitalGain(row.accountId),
       taxCharacter: { kind: 'capitalGain', amountPlanDollars: row.realizedCapitalGainOrLoss },
       identities: [accountRef(row.accountId)],
+    })
+  }
+
+  for (const row of yearSites.propertySales) {
+    if (row.netProceedsAfterHecm > 0) continue
+    if (row.capitalGain === 0) continue
+    lines.push({
+      id: cashFlowLineIds.metadataPropertySaleCapitalGain(row.propertyAccountId),
+      taxCharacter: { kind: 'capitalGain', amountPlanDollars: row.capitalGain },
+      identities: [propertyRef(row.propertyAccountId)],
     })
   }
 

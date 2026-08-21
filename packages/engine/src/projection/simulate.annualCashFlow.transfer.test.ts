@@ -13,8 +13,6 @@ import { asAccountId, asActionId, asAllocationId, asPersonId } from '../actions/
 import { asPositiveUsdCents, asUsdCents } from '../actions/money.js'
 import type { QualifiedCharitableDistributionRequest } from '../actions/contract.js'
 import { parsePlan, type Account, type Plan } from '../model/plan.js'
-import { EMBEDDED_REAL_YIELD_CURVE } from '../params/index.js'
-import { buildLadder } from '../ladder/ladderMath.js'
 import {
   cashAccount,
   singlePersonPlan,
@@ -271,6 +269,93 @@ describe('simulatePlan annual cash-flow transfers', () => {
     expect(y2026.cashFlow!.reconciliation.status).toBe('reconciled')
   })
 
+  it('publishes aggregate QCD character after the §219 offset, not the pre-offset qualified amount', () => {
+    // Independent worksheet, year 2026, 0% inflation, $0 tax, $0 spending:
+    //   p1 born 1950-01-01 → attained 76. Uniform Lifetime divisor 23.7 (Pub 590-B).
+    //   IRA opening 118,500 → RMD = 118,500 / 23.7 = 5,000.
+    //   qcdAnnual 10,000; no basis; post-70½ deductible §219 = 8,000 (tax year 2025).
+    //   (D) qualified = min(10,000, 118,500) = 10,000.
+    //   408(d)(8)(A) second sentence: exclusion = max(0, 10,000 − 8,000) = 2,000.
+    //   Leftover ordinary 8,000: 3,000 of the RMD diversion + 5,000 beyond-RMD.
+    const plan = singlePersonPlan({ dob: '1950-01-01', planningAge: 90, retirementAge: null })
+    plan.accounts = [
+      cashAccount('cash-1', 0),
+      traditionalAccount('ira-1', 118_500, 'p1', 'ira'),
+    ]
+    plan.strategies.qcdAnnual = 10_000
+    plan.retirementActionEligibilityFacts = {
+      iraClassifications: [{
+        sourceAccountId: 'ira-1',
+        subtype: 'traditional',
+        evidenceId: 'classification-ira-1',
+        provenance: { source: 'manual' },
+      }],
+      sepSimpleActivities: [],
+      deductibleIraContributions: [{
+        donorPersonId: 'p1',
+        taxYear: 2025,
+        amountCents: asUsdCents(8_000 * 100),
+        evidenceId: 'section219-2025',
+        provenance: { source: 'manual', sourceId: 'ledger-2025' },
+      }],
+    }
+    const y2026 = yearOf(run(plan, { horizonEndYear: 2026 }), START_YEAR)
+
+    const rmdQcd = transferById(y2026, 'transfer:qualifiedCharitableDistribution:rmd:p1')
+    expect(rmdQcd.taxCharacter).toEqual([
+      { kind: 'qcdIncomeExclusion', amountPlanDollars: 2_000 },
+      { kind: 'nonQualifiedQcdOrdinaryIncome', amountPlanDollars: 3_000 },
+    ])
+    const beyond = transferById(
+      y2026,
+      'transfer:qualifiedCharitableDistribution:beyondRmd:p1:ira-1',
+    )
+    expect(beyond.taxCharacter).toEqual([
+      { kind: 'nonQualifiedQcdOrdinaryIncome', amountPlanDollars: 5_000 },
+    ])
+    const exclusion = y2026.cashFlow!.transferLines
+      .flatMap((line) => line.taxCharacter ?? [])
+      .filter((part) => part.kind === 'qcdIncomeExclusion')
+      .reduce((sum, part) => sum + part.amountPlanDollars, 0)
+    const ordinary = y2026.cashFlow!.transferLines
+      .flatMap((line) => line.taxCharacter ?? [])
+      .filter((part) => part.kind === 'nonQualifiedQcdOrdinaryIncome')
+      .reduce((sum, part) => sum + part.amountPlanDollars, 0)
+    expectMoney(exclusion, 2_000)
+    expectMoney(ordinary, 8_000)
+    expect(y2026.cashFlow!.reconciliation.status).toBe('reconciled')
+  })
+
+  it('publishes aggregate QCD ordinary character after the Form 8606 split, not the gross beyond-includible amount', () => {
+    // Independent worksheet, year 2026, 0% inflation, 0% growth, $0 tax:
+    //   p1 born 1955-01-01 → attained 71, before SECURE 2.0 RMD age 73. RMD 0.
+    //   IRA 10,000 with nondeductible basis 4,000. qcdAnnual 10,000.
+    //   (D) aggregate includible I = max(0, 10,000 − 4,000) = 6,000.
+    //   Qualified QCD Q = min(10,000, 6,000) = 6,000.
+    //   Gross beyond-includible 4,000 is Form 8606 line 7; residual denominator
+    //   is the basis itself (fraction 1), so split.taxable = 0 (all basis recovery).
+    const plan = singlePersonPlan({ dob: '1955-01-01', planningAge: 90, retirementAge: null })
+    const ira = traditionalAccount('ira-1', 10_000, 'p1', 'ira') as Extract<Account, { type: 'traditional' }>
+    ira.nondeductibleBasis = 4_000
+    plan.accounts = [cashAccount('cash-1', 0), ira]
+    plan.strategies.qcdAnnual = 10_000
+    const y2026 = yearOf(run(plan, { horizonEndYear: 2026 }), START_YEAR)
+
+    const beyond = transferById(
+      y2026,
+      'transfer:qualifiedCharitableDistribution:beyondRmd:p1:ira-1',
+    )
+    expectMoney(beyond.debitPlanDollars, 10_000)
+    expect(beyond.taxCharacter).toEqual([
+      { kind: 'qcdIncomeExclusion', amountPlanDollars: 6_000 },
+    ])
+    expect(beyond.taxCharacter?.some((part) => part.kind === 'nonQualifiedQcdOrdinaryIncome')).toBe(false)
+    expect(y2026.cashFlow!.sourceLines.some((line) =>
+      line.kind === 'requiredMinimumDistribution',
+    )).toBe(false)
+    expect(y2026.cashFlow!.reconciliation.status).toBe('reconciled')
+  })
+
   it('carries the named QCD charity designationId from the action oracle', () => {
     // Independent worksheet / simulate.qcdNamedExecution oracle:
     //   donor born 1950-03-01, IRA 500,000, named gift 20,000, designationId charity-1.
@@ -389,6 +474,42 @@ describe('simulatePlan annual cash-flow transfers', () => {
     expect(y2026.cashFlow!.reconciliation.status).toBe('reconciled')
   })
 
+  it('links a statutory-cap-reduced IRA contribution with sameDollarLaterStage, not committedCreditBeyondFunding', () => {
+    // Independent worksheet, year 2026, 0% inflation, $0 tax, $0 spending:
+    //   p1 born 1966-01-01 → attained 60. Wages 50,000 (ample compensation and cash).
+    //   Traditional IRA requested 20,000.
+    //   IRC 219(b)(5) IRA limit: 7,500 + age-50 catch-up 1,100 = 8,600
+    //   (2026 pack; limitGrowth 1). Transfer = funded = 8,600.
+    //   Unfunded 11,400 is statutory-cap rejection; no residual cash shortage.
+    const plan = singlePersonPlan({ dob: '1966-01-01', planningAge: 70, retirementAge: 70 })
+    const ira = traditionalAccount('ira-1', 0, 'p1', 'ira') as Extract<Account, { type: 'traditional' }>
+    ira.annualContribution = 20_000
+    plan.accounts = [cashAccount('cash-1', 0), ira]
+    plan.incomes = [{
+      type: 'wages',
+      id: 'wage-1',
+      personId: 'p1',
+      annualGross: 50_000,
+      endAge: null,
+      realGrowthPct: 0,
+    }]
+    const y2026 = yearOf(run(plan, { horizonEndYear: 2026 }), START_YEAR)
+
+    const use = y2026.cashFlow!.useLines.find((line) => line.id === 'use:contribution:ira-1')
+    expect(use).toBeDefined()
+    expectMoney(use!.requestedPlanDollars, 20_000)
+    expectMoney(use!.fundedPlanDollars, 8_600)
+    expectMoney(use!.unfundedPlanDollars, 11_400)
+
+    const contrib = transferById(y2026, 'transfer:employeeContribution:ira-1')
+    expectMoney(contrib.debitPlanDollars, 8_600)
+    expectMoney(contrib.creditPlanDollars, 8_600)
+    expect(contrib.lineage).toEqual([
+      { lineId: 'use:contribution:ira-1', relationship: 'sameDollarLaterStage' },
+    ])
+    expect(y2026.cashFlow!.reconciliation.status).toBe('reconciled')
+  })
+
   it('attaches capitalGain metadata to an annuity-purchase transfer, not to rebalancing', () => {
     // Independent worksheet, year 2026, 0% inflation:
     //   taxable 100,000 / basis 50,000 funds a 20,000 nonqualified premium.
@@ -433,15 +554,16 @@ describe('simulatePlan annual cash-flow transfers', () => {
   })
 
   it('publishes a TIPS-ladder purchase transfer of the quoted real cost', () => {
-    // Independent worksheet from incomeFloor.test.ts purchase oracle:
-    //   5-year floor of 10,000 real, first payout offset 1, curve-priced cost.
+    // Independent hand-priced 3-rung ladder on the 2026-06-30 Treasury curve.
+    // Oracle: packages/engine/src/ladder/ladderMath.worksheet.golden.test.ts
+    // (U.S. Treasury par real yield curve snapshot of 2026-06-30).
+    //   T = $12,000 real, firstPayoutOffset 5, payoutYears 3 (offsets 5..7).
+    //   Faces: f5 = 11,324.52444, f6 = 11,534.02814, f7 = 11,758.94169.
+    //   Prices: p5 = 11,324.52444 (par), p6 = 11,537.11902, p7 = 11,766.81129.
+    //   Total cost = 34,628.45475.
+    //   Purchase year 2026 → startYear 2031, endYear 2033.
     //   cash 100,000 funds at book value → capitalGain omitted (zero).
-    const build = buildLadder({
-      annualRealIncome: 10_000,
-      firstPayoutOffset: 1,
-      payoutYears: 5,
-      curve: EMBEDDED_REAL_YIELD_CURVE,
-    })
+    const tipsPurchaseCost = 34_628.45475
     const plan = singlePersonPlan({ dob: '1966-01-01', planningAge: 95, retirementAge: 60 })
     plan.accounts = [cashAccount('cash1', 100_000)]
     plan.incomeFloor = {
@@ -449,9 +571,9 @@ describe('simulatePlan annual cash-flow transfers', () => {
         id: 'lad1',
         name: 'Income floor',
         purpose: 'floor',
-        startYear: 2027,
-        endYear: 2031,
-        annualRealAmount: 10_000,
+        startYear: 2031,
+        endYear: 2033,
+        annualRealAmount: 12_000,
         purchase: { year: 2026, fundingAccountId: 'cash1' },
       }],
     }
@@ -459,8 +581,8 @@ describe('simulatePlan annual cash-flow transfers', () => {
 
     const line = transferById(y2026, 'transfer:tipsLadderPurchase:lad1')
     expect(line.kind).toBe('tipsLadderPurchase')
-    expectMoney(line.debitPlanDollars, build.totalCost)
-    expectMoney(line.creditPlanDollars, build.totalCost)
+    expectMoney(line.debitPlanDollars, tipsPurchaseCost)
+    expectMoney(line.creditPlanDollars, tipsPurchaseCost)
     expect(line.source).toEqual({ entityKind: 'account', accountId: 'cash1' })
     expect(line.destination).toEqual({ entityKind: 'tipsLadder', ladderId: 'lad1' })
     expect(line.taxCharacter).toBeUndefined()

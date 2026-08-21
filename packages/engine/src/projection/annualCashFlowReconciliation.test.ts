@@ -237,7 +237,8 @@ describe('reconcileYearCashFlow', () => {
 
   it('accepts committedCreditBeyondFunding when the transfer delta equals the use unfunded remainder', () => {
     // Worksheet: requested 8,000, funded 1,000, unfunded 7,000. Transfer
-    // records the full committed credit 8,000. 8,000 − 1,000 = 7,000.
+    // records the full committed credit 8,000. Residual attributed
+    // 8,000 − 1,000 = 7,000, which does not exceed unfunded.
     const result = reconcile({
       sourceLines: [propertySale(1_000)],
       useLines: [contributionUse({ requested: 8_000, funded: 1_000, unfunded: 7_000 })],
@@ -248,7 +249,34 @@ describe('reconcileYearCashFlow', () => {
     expect(result.cash.differencePlanDollars).toBe(0)
   })
 
-  it('rejects committedCreditBeyondFunding when the delta is anything other than the unfunded remainder', () => {
+  it('accepts committedCreditBeyondFunding when transfer − funded is residual, not all unfunded', () => {
+    // Worksheet: requested 20,000, credited 8,000. Residual cash shortage
+    // 1,000 and statutory-cap rejection 11,000. Funded 7,000, unfunded
+    // 13,000, transfer 8,000. Residual attributed = 1,000, not 13,000.
+    const result = reconcile({
+      sourceLines: [propertySale(7_000)],
+      useLines: [contributionUse({ requested: 20_000, funded: 7_000, unfunded: 13_000 })],
+      transferLines: [employeeContributionTransfer(8_000, 'committedCreditBeyondFunding')],
+    })
+    expect(result.status).toBe('reconciled')
+    expect(result.reasonCodes).not.toContain('invalidLineage')
+    expect(result.cash.differencePlanDollars).toBe(0)
+  })
+
+  it('accepts sameDollarLaterStage when transfer equals funded despite cap-rejected unfunded', () => {
+    // Worksheet: requested 20,000, statutory cap 8,600, ample cash. Transfer
+    // = funded = 8,600; unfunded 11,400 is cap rejection, not residual.
+    const result = reconcile({
+      sourceLines: [propertySale(8_600)],
+      useLines: [contributionUse({ requested: 20_000, funded: 8_600, unfunded: 11_400 })],
+      transferLines: [employeeContributionTransfer(8_600, 'sameDollarLaterStage')],
+    })
+    expect(result.status).toBe('reconciled')
+    expect(result.reasonCodes).not.toContain('invalidLineage')
+    expect(result.cash.differencePlanDollars).toBe(0)
+  })
+
+  it('rejects committedCreditBeyondFunding when the residual exceeds the unfunded remainder', () => {
     const result = reconcile({
       sourceLines: [propertySale(1_000)],
       useLines: [contributionUse({ requested: 8_000, funded: 1_000, unfunded: 7_000 })],

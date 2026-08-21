@@ -6,6 +6,7 @@
  */
 import { describe, expect, it } from 'vitest'
 
+import { parseRetirementActionRequest } from '../actions/index.js'
 import { parsePlan, type Account, type Plan } from '../model/plan.js'
 import {
   cashAccount,
@@ -251,6 +252,133 @@ describe('simulatePlan annual cash-flow portfolio and property sources', () => {
       { entityKind: 'account', accountId: 'ann-1' },
       { entityKind: 'person', personId: 'p1' },
     ])
+    expect(y2026.cashFlow!.reconciliation.status).toBe('reconciled')
+  })
+
+  it('emits ordinaryIncome character on an equity-compensation retirement-action withdrawal', () => {
+    // Independent worksheet, year 2026, 0% tax, $0 spending:
+    //   vested equity compensation 10,000, ordinary-withdrawal action 10,000.
+    //   Executor publishes a $10,000 ordinaryIncome segment; cash is 10,000
+    //   with that non-cash character attached (not a second money line).
+    const parsed = parseRetirementActionRequest({
+      actionId: 'equity-income',
+      kind: 'ordinaryWithdrawal',
+      personId: 'p1',
+      year: START_YEAR,
+      executionDate: '2026-06-15',
+      executionSequence: 1,
+      requestedAmount: 10_000_00,
+      allocations: [{
+        allocationId: 'allocation-equity-income',
+        sourceAccountId: 'equity',
+        requestedAmount: 10_000_00,
+      }],
+      purpose: { kind: 'spending' },
+      provenance: { source: 'manual' },
+    })
+    if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+    const plan = singlePersonPlan({ dob: '1966-01-01', planningAge: 70, retirementAge: 60 })
+    plan.accounts = [
+      cashAccount('cash-1', 0),
+      {
+        type: 'equityComp',
+        id: 'equity',
+        name: 'equity',
+        ownerPersonId: 'p1',
+        annualReturnPct: 0,
+        balance: 10_000,
+        costBasis: 0,
+        annualContribution: 0,
+        vestingMode: 'final',
+        vestDate: null,
+      },
+    ]
+    plan.strategies.retirementActions = [parsed.request]
+    const y2026 = yearOf(run(plan, { horizonEndYear: 2026 }), START_YEAR)
+
+    const line = sourceById(
+      y2026,
+      'source:retirementActionWithdrawal:equity-income:allocation-equity-income',
+    )
+    expect(line.kind).toBe('retirementActionWithdrawal')
+    expect(line.role).toBe('portfolioFunding')
+    expectMoney(line.amountPlanDollars, 10_000)
+    expect(line.taxCharacter).toEqual([
+      { kind: 'ordinaryIncome', amountPlanDollars: 10_000 },
+    ])
+    expect(y2026.cashFlow!.reconciliation.status).toBe('reconciled')
+  })
+
+  it('attaches ordinaryIncome to inherited traditional forced lines and none to Roth', () => {
+    // Independent worksheet / simulate.inheritedRegimeExecution R1 + K1 oracles:
+    //   Traditional: owner death 2022 on/after RBD, beneficiary born 1965-06-15.
+    //     2026 divisor 25.9 (beneficiary-fixed Single Life). Forced = 300,000 / 25.9
+    //     and carries ordinary character equal to the forced cash.
+    //   Roth: owner death 2016 (always before RBD), 2026 is the year-ten sweep
+    //     of 100,000. Roth forced carries no ordinary character.
+    const plan = singlePersonPlan({ dob: '1965-06-15', planningAge: 100, retirementAge: null })
+    plan.accounts = [
+      cashAccount('cash-1', 1_000_000),
+      {
+        type: 'traditional',
+        id: 'inherited-trad',
+        name: 'Inherited IRA',
+        ownerPersonId: 'p1',
+        annualReturnPct: 0,
+        kind: 'ira',
+        balance: 300_000,
+        annualContribution: 0,
+        inherited: {
+          ownerDeathYear: 2022,
+          decedentHadStartedRmds: true,
+          beneficiary: {
+            beneficiaryClass: 'designated-individual',
+            edbCategory: 'none',
+            beneficiaryBirthYear: 1965,
+            soleBeneficiary: true,
+            ownerBirthYear: 1940,
+            ownerYearOfDeathRmdSatisfied: true,
+            provenance: { source: 'test', asOf: '2026-01-01' },
+          },
+        },
+      },
+      {
+        type: 'roth',
+        id: 'inherited-roth',
+        name: 'Inherited Roth',
+        ownerPersonId: 'p1',
+        annualReturnPct: 0,
+        kind: 'ira',
+        balance: 100_000,
+        annualContribution: 0,
+        inherited: {
+          ownerDeathYear: 2016,
+          decedentHadStartedRmds: false,
+          beneficiary: {
+            beneficiaryClass: 'designated-individual',
+            edbCategory: 'none',
+            beneficiaryBirthYear: 1965,
+            soleBeneficiary: true,
+            ownerBirthYear: 1940,
+            roth5YearStartYear: 2010,
+            provenance: { source: 'test', asOf: '2026-01-01' },
+          },
+        },
+      },
+    ]
+    const y2026 = yearOf(run(plan, { horizonEndYear: 2026 }), START_YEAR)
+    const traditionalForced = 300_000 / 25.9
+
+    const traditional = sourceById(y2026, 'source:inheritedAccountDistribution:inherited-trad')
+    expect(traditional.kind).toBe('inheritedAccountDistribution')
+    expectMoney(traditional.amountPlanDollars, traditionalForced)
+    expect(traditional.taxCharacter).toEqual([
+      { kind: 'ordinaryIncome', amountPlanDollars: traditional.amountPlanDollars },
+    ])
+
+    const roth = sourceById(y2026, 'source:inheritedAccountDistribution:inherited-roth')
+    expectMoney(roth.amountPlanDollars, 100_000)
+    expect(roth.taxCharacter).toBeUndefined()
     expect(y2026.cashFlow!.reconciliation.status).toBe('reconciled')
   })
 })

@@ -502,6 +502,8 @@ export function reconcileYearCashFlow(input: ReconcileYearCashFlowInput): YearCa
           push('invalidLineage', { lineIds: [line.id, link.lineId] })
           continue
         }
+        // Transfer must equal funded exactly, even when the use still has
+        // cap-rejected unfunded dollars.
         const difference = transferAmount - targetAmount
         if (Math.abs(difference) > tolerancePlanDollars) {
           push('invalidLineage', {
@@ -516,14 +518,22 @@ export function reconcileYearCashFlow(input: ReconcileYearCashFlowInput): YearCa
           push('invalidLineage', { lineIds: [line.id, link.lineId] })
           continue
         }
-        const delta = transferAmount - target.fundedPlanDollars
-        const difference = delta - target.unfundedPlanDollars
-        if (Math.abs(difference) > tolerancePlanDollars) {
+        // Residual-attributed unfunded is transfer − funded, not the whole
+        // unfunded amount (which also holds statutory-cap rejection).
+        const residualAttributed = transferAmount - target.fundedPlanDollars
+        if (residualAttributed <= tolerancePlanDollars) {
+          push('invalidLineage', {
+            lineIds: [line.id, link.lineId],
+            expectedPlanDollars: residualAttributed,
+            actualPlanDollars: residualAttributed,
+            differencePlanDollars: residualAttributed,
+          })
+        } else if (residualAttributed - target.unfundedPlanDollars > tolerancePlanDollars) {
           push('invalidLineage', {
             lineIds: [line.id, link.lineId],
             expectedPlanDollars: target.unfundedPlanDollars,
-            actualPlanDollars: delta,
-            differencePlanDollars: difference,
+            actualPlanDollars: residualAttributed,
+            differencePlanDollars: residualAttributed - target.unfundedPlanDollars,
           })
         }
       } else if (link.relationship === 'divertedBeforeHouseholdCash') {
