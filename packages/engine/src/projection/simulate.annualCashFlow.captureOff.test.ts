@@ -113,12 +113,10 @@ describe('SimulateOptions.captureAnnualCashFlow', () => {
     expect(year.cashFlow?.reconciliation.tolerancePlanDollars).toBe(1e-6)
   })
 
-  it('marks a wages-only year notReconciled because uses have not landed yet', () => {
+  it('reconciles a wages-only year once lifestyle uses land (stage 3)', () => {
     // Worksheet: wages $50,000, lifestyle $50,000, 0% tax, 0% inflation.
-    // Stage 2 publishes the wage source (id source:wages:wage-1).
-    // Spendable-source probe no longer fires (the group is nonempty).
-    // Uses are still empty, so cash identity is 50,000 vs 0 — not a lying
-    // reconciled year. Surplus is 0, so the surplus probe does not fire.
+    // requiredAnnual omitted → required lifestyle = baseAnnual 50,000, target 0.
+    // Wage source 50,000 = funded required-lifestyle use 50,000.
     const plan = emptyPlan()
     plan.incomes = [wages(50_000)]
     plan.expenses.baseAnnual = 50_000
@@ -139,10 +137,17 @@ describe('SimulateOptions.captureAnnualCashFlow', () => {
         amountPlanDollars: 50_000,
       }),
     ])
-    expect(year.cashFlow?.useLines).toEqual([])
-    expect(year.cashFlow?.reconciliation.status).toBe('notReconciled')
-    expect(year.cashFlow?.reconciliation.reasonCodes).toContain('cashIdentityMismatch')
-    expect(year.cashFlow?.reconciliation.reasonCodes).not.toContain('unsupportedLedgerTerm')
+    expect(year.cashFlow?.useLines).toEqual([
+      expect.objectContaining({
+        id: 'use:requiredLifestyle:household',
+        kind: 'requiredLifestyle',
+        requestedPlanDollars: 50_000,
+        fundedPlanDollars: 50_000,
+        unfundedPlanDollars: 0,
+      }),
+    ])
+    expect(year.cashFlow?.reconciliation.status).toBe('reconciled')
+    expect(year.cashFlow?.reconciliation.reasonCodes).toEqual([])
   })
 
   it('marks a reinvest-only year notReconciled because taxableYieldReinvested has no reinvestedYield transfers', () => {

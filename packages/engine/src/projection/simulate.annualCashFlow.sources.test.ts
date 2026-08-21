@@ -1,8 +1,9 @@
 /**
  * Stage 2 portfolio-funding, loan-proceeds, and post-solve source lines.
  *
- * Sources-without-uses years may be `notReconciled`. Assert identities and
- * amounts; never assert a lying `reconciled` status.
+ * Stage 3 emits uses, so years without diverting transfers (no QCD, no
+ * reinvest) reconcile when destinations land. Post-solve-only and
+ * transfer-incomplete years stay `notReconciled` until later stages.
  */
 import { describe, expect, it } from 'vitest'
 
@@ -113,7 +114,7 @@ describe('simulatePlan annual cash-flow portfolio and property sources', () => {
       line.id === 'source:requiredMinimumDistribution:account:ira-p2',
     )).toBe(false)
     expectMoney(y2026.rmd, 15_000)
-    expect(y2026.cashFlow!.reconciliation.status).toBe('notReconciled')
+    expect(y2026.cashFlow!.reconciliation.status).toBe('reconciled')
   })
 
   it('publishes employer-plan RMD per account and gross, separate from the owned-IRA pool', () => {
@@ -166,7 +167,7 @@ describe('simulatePlan annual cash-flow portfolio and property sources', () => {
       { entityKind: 'propertyAccount', propertyAccountId: 'home-1' },
     ])
     expect(y2026.cashFlow!.sourceLines.some((line) => line.kind === 'legacyPropertySaleDeposit')).toBe(false)
-    expect(y2026.cashFlow!.reconciliation.status).toBe('notReconciled')
+    expect(y2026.cashFlow!.reconciliation.status).toBe('reconciled')
   })
 
   it('publishes a legacy property sale as a post-solve deposit with the cash destination', () => {
@@ -217,7 +218,7 @@ describe('simulatePlan annual cash-flow portfolio and property sources', () => {
       { entityKind: 'propertyAccount', propertyAccountId: 'home-1' },
     ])
     expect(y2027.cashFlow!.sourceLines.some((line) => line.kind === 'hecmCoordinatedDraw')).toBe(false)
-    expect(y2027.cashFlow!.reconciliation.status).toBe('notReconciled')
+    expect(y2027.cashFlow!.reconciliation.status).toBe('reconciled')
   })
 
   it('publishes an already-owned annuity payment with the living recipient', () => {

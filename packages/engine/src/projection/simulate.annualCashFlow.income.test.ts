@@ -1,10 +1,9 @@
 /**
  * Stage 2 source-line capture for income streams.
  *
- * Sources-without-uses years cannot reconcile without a synthetic destination,
- * which is forbidden. These tests assert identities and amounts and allow
- * `notReconciled` / `cashIdentityMismatch`. They never assert a lying
- * `reconciled` status.
+ * Stage 3 emits uses, so a year whose only gap was empty destinations now
+ * reconciles when there is no diverting transfer (no QCD, no reinvest).
+ * Reinvest-only years stay `notReconciled` until stage 4 emits transfers.
  */
 import { describe, expect, it } from 'vitest'
 
@@ -102,8 +101,7 @@ describe('simulatePlan annual cash-flow income sources', () => {
     const y2027 = yearOf(run(plan), 2027)
 
     expect(y2027.cashFlow).toBeDefined()
-    expect(y2027.cashFlow!.reconciliation.status).toBe('notReconciled')
-    expect(y2027.cashFlow!.reconciliation.reasonCodes).toContain('cashIdentityMismatch')
+    expect(y2027.cashFlow!.reconciliation.status).toBe('reconciled')
 
     const wage = sourceById(y2027, 'source:wages:wage-p1')
     expect(wage.kind).toBe('wages')
@@ -190,7 +188,7 @@ describe('simulatePlan annual cash-flow income sources', () => {
 
     expectMoney(y2028.incomes.pension, 18_000)
     expectMoney(y2028.incomes.socialSecurity, 24_000)
-    expect(y2028.cashFlow!.reconciliation.status).toBe('notReconciled')
+    expect(y2028.cashFlow!.reconciliation.status).toBe('reconciled')
   })
 
   it('(c) reinvested taxable yield is not a spendable source', () => {
@@ -245,7 +243,7 @@ describe('simulatePlan annual cash-flow income sources', () => {
     expect(exempt.identities).toEqual([{ entityKind: 'account', accountId: 'brokerage-1' }])
 
     expect(y2026.cashFlow!.transferLines).toEqual([])
-    expect(y2026.cashFlow!.reconciliation.status).toBe('notReconciled')
+    expect(y2026.cashFlow!.reconciliation.status).toBe('reconciled')
   })
 
   it('recurring and one-time streams carry stream identity only, with tax treatment as character', () => {

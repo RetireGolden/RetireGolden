@@ -1,11 +1,12 @@
 /**
  * Capture-after-commit publisher for `YearResult.cashFlow`.
  *
- * Stage 2 emits identity-bearing source lines (spendable, portfolio funding,
- * loan proceeds, post-solve deposits). Use/transfer emission lands later.
+ * Stage 3 emits identity-bearing source lines and funded/unfunded use lines
+ * after residual shortfall attribution. Transfer emission lands in stage 4.
  * `assembleYearCashFlow` still runs on every capture-on committed year so
  * `yearResult` shape is stable (`cashFlow` present iff the option is on).
- * Sources-without-uses years are honestly `notReconciled`.
+ * Leftover remaining after the contribution group is not plugged; the cash
+ * identity then fails closed with `cashIdentityMismatch`.
  *
  * @see DOCS/features/year-cash-flow.md
  */
@@ -21,6 +22,11 @@ import {
   type CashFlowIncompleteInventoryProbes,
   reconcileYearCashFlow,
 } from './annualCashFlowReconciliation.js'
+import {
+  attributeCashFlowShortfall,
+  type CashFlowShortfallLayer,
+  type CashFlowShortfallLineInput,
+} from './annualCashFlowShortfallAttribution.js'
 import type {
   AnnualCashFlowYearSites,
 } from './annualCashFlowYearSites.js'
@@ -29,12 +35,14 @@ import type {
   SocialSecurityStreamActivity,
   YearCashFlow,
   YearCashFlowEntityReference,
+  YearCashFlowLineId,
   YearCashFlowPenaltyClass,
   YearCashFlowSourceLine,
   YearCashFlowStandaloneTaxCharacter,
   YearCashFlowTaxCharacter,
   YearCashFlowTransferEndpoint,
   YearCashFlowTransferLine,
+  YearCashFlowUseKind,
   YearCashFlowUseLine,
 } from './types.js'
 
@@ -128,6 +136,18 @@ export interface AssembleYearCashFlowInput extends CashFlowIncompleteInventoryPr
    * account's `ownerPersonId` is null.
    */
   readonly ownerPersonIdByAccountId: ReadonlyMap<string, string | null>
+
+  /** Pre-guardrail required lifestyle; assemble does not re-derive from `baseAnnual`. */
+  readonly requiredLifestyle: number
+  readonly targetLifestyle: number
+  readonly targetLifestyleFunded: number
+  readonly idealLifestyle: number
+  readonly idealLifestyleFunded: number
+  readonly excessLifestyle: number
+  readonly excessLifestyleFunded: number
+  /** Final ACA-converged healthcare. */
+  readonly healthcare: number
+  readonly shortfallAfterHecm: number
 }
 
 function asReportingAccountId(id: string): AccountId {
@@ -168,6 +188,14 @@ function poolRef(personId: string): YearCashFlowEntityReference {
 
 function annuityContractRef(annuityAccountId: string): YearCashFlowEntityReference {
   return { entityKind: 'annuityContract', annuityAccountId: asReportingAccountId(annuityAccountId) }
+}
+
+function goalRef(goalId: string): YearCashFlowEntityReference {
+  return { entityKind: 'goal', goalId }
+}
+
+function careEventRef(careEventId: string): YearCashFlowEntityReference {
+  return { entityKind: 'careEvent', careEventId }
 }
 
 function ownerRefs(accountId: string, ownerPersonId: string | null | undefined): YearCashFlowEntityReference[] {
@@ -502,13 +530,267 @@ function collectSourceLines(input: AssembleYearCashFlowInput): YearCashFlowSourc
   return lines
 }
 
+interface PendingUseLine {
+  readonly id: YearCashFlowLineId
+  readonly kind: YearCashFlowUseKind
+  readonly layer: CashFlowShortfallLayer
+  readonly requestedPlanDollars: number
+  readonly attemptedFundedPlanDollars: number
+  readonly identities: readonly YearCashFlowEntityReference[]
+  readonly penaltyClass?: YearCashFlowPenaltyClass
+}
+
+function pushUse(
+  pending: PendingUseLine[],
+  row: {
+    id: YearCashFlowLineId
+    kind: YearCashFlowUseKind
+    layer: CashFlowShortfallLayer
+    requested: number
+    attempted: number
+    identities: readonly YearCashFlowEntityReference[]
+    penaltyClass?: YearCashFlowPenaltyClass
+  },
+): void {
+  if (row.requested <= 0 && row.attempted <= 0) return
+  pending.push({
+    id: row.id,
+    kind: row.kind,
+    layer: row.layer,
+    requestedPlanDollars: row.requested,
+    attemptedFundedPlanDollars: row.attempted,
+    identities: row.identities,
+    ...(row.penaltyClass !== undefined ? { penaltyClass: row.penaltyClass } : {}),
+  })
+}
+
+function goalLayer(classification: 'required' | 'target' | 'ideal' | 'excess'): CashFlowShortfallLayer {
+  return classification
+}
+
+function collectUseLines(input: AssembleYearCashFlowInput): YearCashFlowUseLine[] {
+  const pending: PendingUseLine[] = []
+  const { yearSites, passLocals } = input
+
+  pushUse(pending, {
+    id: cashFlowLineIds.useRequiredLifestyle(),
+    kind: 'requiredLifestyle',
+    layer: 'required',
+    requested: input.requiredLifestyle,
+    attempted: input.requiredLifestyle,
+    identities: [],
+  })
+  pushUse(pending, {
+    id: cashFlowLineIds.useTargetLifestyle(),
+    kind: 'targetLifestyle',
+    layer: 'target',
+    requested: input.targetLifestyle,
+    attempted: input.targetLifestyleFunded,
+    identities: [],
+  })
+  pushUse(pending, {
+    id: cashFlowLineIds.useIdealLifestyle(),
+    kind: 'idealLifestyle',
+    layer: 'ideal',
+    requested: input.idealLifestyle,
+    attempted: input.idealLifestyleFunded,
+    identities: [],
+  })
+  pushUse(pending, {
+    id: cashFlowLineIds.useExcessLifestyle(),
+    kind: 'excessLifestyle',
+    layer: 'excess',
+    requested: input.excessLifestyle,
+    attempted: input.excessLifestyleFunded,
+    identities: [],
+  })
+
+  for (const row of yearSites.goals) {
+    pushUse(pending, {
+      id: cashFlowLineIds.useOneTimeGoal(row.goalId),
+      kind: 'oneTimeGoal',
+      layer: goalLayer(row.classification),
+      requested: row.requested,
+      attempted: row.fundedNominal,
+      identities: [goalRef(row.goalId)],
+    })
+  }
+
+  for (const row of yearSites.debtService) {
+    pushUse(pending, {
+      id: cashFlowLineIds.useDebtService(row.accountId),
+      kind: 'debtService',
+      layer: 'required',
+      requested: row.amount,
+      attempted: row.amount,
+      identities: ownerRefs(row.accountId, row.ownerPersonId),
+    })
+  }
+
+  for (const row of yearSites.propertyCosts) {
+    pushUse(pending, {
+      id: cashFlowLineIds.usePropertyCosts(row.accountId),
+      kind: 'propertyCosts',
+      layer: 'required',
+      requested: row.amount,
+      attempted: row.amount,
+      identities: [propertyRef(row.accountId)],
+    })
+  }
+
+  pushUse(pending, {
+    id: cashFlowLineIds.useHealthcare(),
+    kind: 'healthcare',
+    layer: 'required',
+    requested: input.healthcare,
+    attempted: input.healthcare,
+    identities: [],
+  })
+
+  for (const row of yearSites.insurancePremiums) {
+    pushUse(pending, {
+      id: cashFlowLineIds.useInsurancePremium(row.policyId),
+      kind: 'insurancePremium',
+      layer: 'required',
+      requested: row.amount,
+      attempted: row.amount,
+      identities: [policyRef(row.policyId), personRef(row.subjectPersonId)],
+    })
+  }
+
+  for (const row of yearSites.longTermCare) {
+    if (row.net <= 0) continue
+    const identities: YearCashFlowEntityReference[] = [personRef(row.personId)]
+    for (const careEventId of row.careEventIds) identities.push(careEventRef(careEventId))
+    pushUse(pending, {
+      id: cashFlowLineIds.useLongTermCare(row.personId),
+      kind: 'longTermCare',
+      layer: 'required',
+      requested: row.net,
+      attempted: row.net,
+      identities,
+    })
+  }
+
+  pushUse(pending, {
+    id: cashFlowLineIds.useSettledTax(),
+    kind: 'settledTax',
+    layer: 'tax',
+    requested: input.tax,
+    attempted: input.tax,
+    identities: [],
+  })
+
+  let attributedPenalties = 0
+  const snapshotClasses = new Set<YearCashFlowPenaltyClass>()
+  for (const row of passLocals.penaltyLines) {
+    if (row.amount <= 0) continue
+    attributedPenalties += row.amount
+    snapshotClasses.add(row.penaltyClass)
+    if (row.attribution === 'account') {
+      pushUse(pending, {
+        id: cashFlowLineIds.usePenaltyAccount(row.accountId, row.penaltyClass),
+        kind: 'earlyWithdrawalPenalty',
+        layer: 'penalty',
+        requested: row.amount,
+        attempted: row.amount,
+        identities: ownerRefs(row.accountId, input.ownerPersonIdByAccountId.get(row.accountId)),
+        penaltyClass: row.penaltyClass,
+      })
+    } else {
+      pushUse(pending, {
+        id: cashFlowLineIds.usePenaltyRothPool(row.personId),
+        kind: 'earlyWithdrawalPenalty',
+        layer: 'penalty',
+        requested: row.amount,
+        attempted: row.amount,
+        identities: [poolRef(row.personId)],
+        penaltyClass: 'rothEarly',
+      })
+    }
+  }
+  const penaltyRemainder = input.penalties - attributedPenalties
+  if (penaltyRemainder > CASH_FLOW_RECONCILIATION_TOLERANCE_PLAN_DOLLARS && snapshotClasses.size === 1) {
+    const penaltyClass = [...snapshotClasses][0]!
+    pushUse(pending, {
+      id: cashFlowLineIds.usePenaltyHousehold(penaltyClass),
+      kind: 'earlyWithdrawalPenalty',
+      layer: 'penalty',
+      requested: penaltyRemainder,
+      attempted: penaltyRemainder,
+      identities: [],
+      penaltyClass,
+    })
+  }
+
+  for (const row of yearSites.contributions) {
+    pushUse(pending, {
+      id: cashFlowLineIds.useContribution(row.destinationAccountId),
+      kind: 'contribution',
+      layer: 'contribution',
+      requested: row.requested,
+      attempted: row.credited,
+      identities: ownerRefs(row.destinationAccountId, row.ownerPersonId),
+    })
+  }
+
+  if (input.surplus > 0) {
+    const dest = passLocals.surplusDestination
+    const surplusId = dest.entityKind === 'account'
+      ? cashFlowLineIds.useSurplusAccount(dest.accountId)
+      : cashFlowLineIds.useSurplusUnassigned()
+    const identities = dest.entityKind === 'account' ? [accountRef(dest.accountId)] : []
+    pushUse(pending, {
+      id: surplusId,
+      kind: 'surplusInvestment',
+      layer: 'surplus',
+      requested: input.surplus,
+      attempted: input.surplus,
+      identities,
+    })
+  }
+
+  const attributionInput: CashFlowShortfallLineInput[] = pending.map((row) => ({
+    id: row.id,
+    layer: row.layer,
+    requestedPlanDollars: row.requestedPlanDollars,
+    attemptedFundedPlanDollars: row.attemptedFundedPlanDollars,
+  }))
+  const attributed = attributeCashFlowShortfall({
+    lines: attributionInput,
+    shortfallAfterHecm: input.shortfallAfterHecm,
+  })
+  const fundingById = new Map(attributed.lines.map((row) => [row.id, row]))
+  // leftover remaining after contributions is not plugged; recon then
+  // cashIdentityMismatch when destination funded exceeds sources.
+
+  const useLines: YearCashFlowUseLine[] = []
+  for (const row of pending) {
+    const funding = fundingById.get(row.id)
+    if (funding === undefined) continue
+    if (funding.requestedPlanDollars <= 0 && funding.fundedPlanDollars <= 0) continue
+    useLines.push({
+      id: row.id,
+      kind: row.kind,
+      ...(row.penaltyClass !== undefined ? { penaltyClass: row.penaltyClass } : {}),
+      requestedPlanDollars: funding.requestedPlanDollars,
+      fundedPlanDollars: funding.fundedPlanDollars,
+      unfundedPlanDollars: funding.unfundedPlanDollars,
+      identities: row.identities,
+    })
+  }
+  useLines.sort((a, b) => compareCashFlowLineId(a.id, b.id))
+  return useLines
+}
+
 /**
  * Publish one year's cash-flow report from frozen committed locals.
- * Stage 2: source lines plus an honest reconciliation status.
+ * Stage 3: source lines, use lines after residual attribution, and an honest
+ * reconciliation status (stage-1 incomplete-inventory heuristic still applies).
  */
 export function assembleYearCashFlow(input: AssembleYearCashFlowInput): YearCashFlow {
   const sourceLines: readonly YearCashFlowSourceLine[] = collectSourceLines(input)
-  const useLines: readonly YearCashFlowUseLine[] = []
+  const useLines: readonly YearCashFlowUseLine[] = collectUseLines(input)
   const transferLines: readonly YearCashFlowTransferLine[] = []
   const taxCharacterMetadata: readonly YearCashFlowStandaloneTaxCharacter[] = []
   return {

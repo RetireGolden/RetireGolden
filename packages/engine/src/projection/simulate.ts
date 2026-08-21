@@ -54,7 +54,7 @@ import {
   targetWeightsAt,
 } from '../allocation/assetClasses.js'
 import { packForYear, LATEST_PACK_YEAR, hecmPrincipalLimitFactorPct, EMBEDDED_REAL_YIELD_CURVE, irmaaTierThreshold } from '../params/index.js'
-import { assembleYearCashFlow } from './annualCashFlowCapture.js'
+import { assembleYearCashFlow, type AnnualCashFlowPenaltySnapshot } from './annualCashFlowCapture.js'
 import { createAnnualCashFlowYearSites, type AnnualCashFlowYearSites } from './annualCashFlowYearSites.js'
 import { annuityExclusionMultiple, annuityPayoutForm, annuityPayoutFraction } from './annuityForms.js'
 import { buildLadder, ladderRealFlowsAtOffset, ladderRemainingFace, type LadderRung } from '../ladder/ladderMath.js'
@@ -3018,6 +3018,11 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       bal -= payment
       debtBalances.set(account.id, bal)
       debtService += payment
+      yearSites?.recordDebtService({
+        accountId: account.id,
+        ownerPersonId: account.ownerPersonId ?? null,
+        amount: payment,
+      })
     }
     // Healthcare: ACA-credited marketplace pre-65, Medicare + IRMAA from 65.
     // Medicare eligibility begins in the birth month of the year a member
@@ -3328,6 +3333,11 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         continue
       }
       insurancePremiums += policy.annualPremium
+      yearSites?.recordInsurancePremium({
+        policyId: policy.id,
+        subjectPersonId: subjectId,
+        amount: policy.annualPremium,
+      })
     }
 
     // LTC care episodes: a deterministic late-life cost spike, additive to
@@ -3336,6 +3346,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // benefitPeriodYears. The net (careCost − ltcBenefit) is what hits spending.
     let careCost = 0
     let ltcBenefit = 0
+    const ltcByPerson = new Map<string, { careEventIds: string[]; gross: number; benefit: number }>()
     for (const event of plan.careEvents) {
       const s = stateOf(event.personId)
       if (!s.alive) continue
@@ -3360,6 +3371,20 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           ltcBenefitYearsUsed.set(policy.id, used + 1)
         }
       }
+      const existing = ltcByPerson.get(event.personId) ?? { careEventIds: [], gross: 0, benefit: 0 }
+      existing.careEventIds.push(event.id)
+      existing.gross += gross
+      existing.benefit += gross - remaining
+      ltcByPerson.set(event.personId, existing)
+    }
+    for (const [personId, row] of ltcByPerson) {
+      yearSites?.recordLongTermCare({
+        personId,
+        careEventIds: row.careEventIds,
+        gross: row.gross,
+        benefit: row.benefit,
+        net: row.gross - row.benefit,
+      })
     }
 
     // Property carrying costs: tax + insurance charged while the property is
@@ -3371,7 +3396,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       for (const account of plan.accounts) {
         if (account.type !== 'property') continue
         if (account.plannedSaleYear !== null && year >= account.plannedSaleYear) continue
-        propertyCosts += ((account.propertyTaxAnnual ?? 0) + (account.insuranceAnnual ?? 0)) * inflFactor
+        const amount = ((account.propertyTaxAnnual ?? 0) + (account.insuranceAnnual ?? 0)) * inflFactor
+        propertyCosts += amount
+        yearSites?.recordPropertyCosts({
+          accountId: account.id,
+          ownerPersonId: account.ownerPersonId ?? null,
+          amount,
+        })
       }
     }
 
@@ -3503,6 +3534,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
               else if (r.classification === 'ideal') skippedIdealNominal += r.unfundedNominal
               else skippedExcessNominal += r.unfundedNominal
             }
+            yearSites?.recordGoalOutcome({
+              goalId: r.id,
+              classification: r.classification,
+              outcome: r.outcome,
+              requested: r.fundedNominal + r.unfundedNominal,
+              fundedNominal: r.fundedNominal,
+            })
           } else if (r.outcome === 'deferred') {
             goalOutcomeCounts.deferred++
           } else {
@@ -3512,6 +3550,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             else skippedExcessNominal += r.amountNominal
             goalOutcomeCounts.unfundedAmount += r.amountNominal
             goalOutcomeCounts.skipped++
+            yearSites?.recordGoalOutcome({
+              goalId: r.id,
+              classification: r.classification,
+              outcome: 'skipped',
+              requested: r.amountNominal,
+              fundedNominal: 0,
+            })
           }
         }
       } else {
@@ -3524,6 +3569,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           else if (classification === 'target') targetGoalsFunded += amount
           else if (classification === 'ideal') idealGoalsFunded += amount
           else excessGoalsFunded += amount
+          yearSites?.recordGoalOutcome({
+            goalId: goal.id,
+            classification,
+            outcome: 'funded',
+            requested: amount,
+            fundedNominal: amount,
+          })
         }
       }
     }
@@ -3851,7 +3903,23 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         }
         groupUsed.set(groupKey, (groupUsed.get(groupKey) ?? 0) + allowed)
       }
-      if (allowed <= 0) continue
+      const catchUpAllocation = employerAllocationByOwner.get(ownerId)
+      const redirectedFromHere = catchUpAllocation?.redirectedCatchUpBySource.get(account.id) ?? 0
+      const redirectedOntoHere =
+        catchUpAllocation !== undefined && catchUpAllocation.catchUpRothAccountId === account.id
+          ? [...catchUpAllocation.redirectedCatchUpBySource.values()].reduce((sum, amount) => sum + amount, 0)
+          : 0
+      const postRoutingRequested = Math.max(0, desired - redirectedFromHere) + redirectedOntoHere
+      const contributionOwnerPersonId = 'ownerPersonId' in account ? account.ownerPersonId ?? null : null
+      if (allowed <= 0) {
+        yearSites?.recordContribution({
+          destinationAccountId: account.id,
+          ownerPersonId: contributionOwnerPersonId,
+          requested: postRoutingRequested,
+          credited: 0,
+        })
+        continue
+      }
 
       // Update the countable (non-catch-up) employee contribution inside 415(c)
       if (isEmployerAccount) {
@@ -3917,6 +3985,12 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       else otherInflow += allowed
       if (account.type === 'taxable' || account.type === 'equityComp') taxableInflow += allowed
       if (isEmployerAccount) employeeLandedByAccountId.set(account.id, allowed)
+      yearSites?.recordContribution({
+        destinationAccountId: account.id,
+        ownerPersonId: contributionOwnerPersonId,
+        requested: postRoutingRequested,
+        credited: allowed,
+      })
     }
 
     for (const [, requests] of employerRequestsByOwner) {
@@ -3970,6 +4044,11 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       matchVal = Math.min(matchVal, remaining415cLimit)
 
       if (matchVal > 0) {
+        yearSites?.recordEmployerMatch({
+          destinationAccountId: account.id,
+          ownerPersonId: 'ownerPersonId' in account ? account.ownerPersonId ?? null : null,
+          amount: matchVal,
+        })
         state.balance += matchVal
         if (account.type === 'traditional') {
           const kind = 'employerPlanEmployerMatch' as const
@@ -4126,6 +4205,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       destination: YearCashFlowTransferEndpoint
     }[] | null = null
     let surplusDestination: YearCashFlowTransferEndpoint | null = null
+    let cashFlowPenaltyLines: AnnualCashFlowPenaltySnapshot[] | null = null
+    let rothPoolTaxableOrdinaryByPersonId: Map<string, number> | null = null
     if (publishCashFlow) {
       seppByAccountId = new Map()
       hecmCoordinatedByProperty = new Map()
@@ -4135,6 +4216,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       surplusDestination = surplusDepositTarget
         ? { entityKind: 'account', accountId: asAccountId(surplusDepositTarget.account.id) }
         : { entityKind: 'unassignedCash' }
+      cashFlowPenaltyLines = []
+      rothPoolTaxableOrdinaryByPersonId = new Map()
     }
 
     let rmdNontaxable = 0
@@ -8343,6 +8426,91 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       withdrawalPlan.byAccountId,
     )
     const iraNontaxableFinal = iraCharacterFinal.nontaxable
+    if (publishCashFlow) {
+      // Pass-local penalty snapshot at committed finals. Assemble does not
+      // re-walk penaltiesFor / rothEarlyEffect / hsaEffect.
+      for (const state of balances) {
+        const taken = withdrawalPlan.byAccountId.get(state.account.id) ?? 0
+        if (taken <= 0) continue
+        const ownerId = state.account.ownerPersonId ?? primary.id
+        const ownerAge = stateOf(ownerId).ageAttained
+        if (state.account.type === 'traditional') {
+          const penalizable = isAggregatedIraThisYear(state.account)
+            ? iraCharacterFinal.taxableBySourceAccountId.get(state.account.id) ?? taken
+            : taken
+          const penaltyAccount =
+            isTreatAsOwnEffective(state.account, year)
+              ? { ...state.account, inherited: undefined }
+              : state.account
+          const amount =
+            penalizable *
+            traditionalWithdrawalPenaltyRate(penaltyAccount, {
+              ownerAgeAttained: ownerAge,
+              ownerRetirementAge: personById.get(ownerId)?.retirementAge ?? null,
+            })
+          if (amount > 0) {
+            cashFlowPenaltyLines!.push({
+              attribution: 'account',
+              accountId: state.account.id,
+              penaltyClass: 'traditionalEarly',
+              amount,
+            })
+          }
+        }
+      }
+      let hsaCapLeft = hsaQualifiedCap
+      for (const state of balances) {
+        if (state.account.type !== 'hsa') continue
+        const taken = withdrawalPlan.byAccountId.get(state.account.id) ?? 0
+        if (taken <= 0) continue
+        const ownerAge = stateOf(state.account.ownerPersonId ?? primary.id).ageAttained
+        const treatment = state.account.withdrawalTreatment
+        let amount: number
+        if (treatment === 'capByMedicalExpenses') {
+          const qualified = Math.min(taken, hsaCapLeft)
+          hsaCapLeft -= qualified
+          amount = (taken - qualified) * hsaNonQualifiedPenaltyRate(ownerAge)
+        } else if (treatment === 'assumeAllQualified') {
+          amount = 0
+        } else {
+          amount = taken * hsaNonQualifiedPenaltyRate(ownerAge)
+        }
+        if (amount > 0) {
+          cashFlowPenaltyLines!.push({
+            attribution: 'account',
+            accountId: state.account.id,
+            penaltyClass: 'hsaNonMedical',
+            amount,
+          })
+        }
+      }
+      for (const [key, { taken, age }] of rothPoolWithdrawals(withdrawalPlan.byAccountId)) {
+        const rb = rothBasis.get(key)
+        if (!rb) continue
+        const split = splitRothWithdrawal(rb, taken, year, age)
+        if (key.startsWith('rothira:')) {
+          const personId = key.slice('rothira:'.length)
+          if (split.penalty > 0) {
+            cashFlowPenaltyLines!.push({
+              attribution: 'rothPool',
+              personId,
+              penaltyClass: 'rothEarly',
+              amount: split.penalty,
+            })
+          }
+          if (split.taxableOrdinary > 0) {
+            rothPoolTaxableOrdinaryByPersonId!.set(personId, split.taxableOrdinary)
+          }
+        } else if (key.startsWith('roth:') && split.penalty > 0) {
+          cashFlowPenaltyLines!.push({
+            attribution: 'account',
+            accountId: key.slice('roth:'.length),
+            penaltyClass: 'rothEarly',
+            amount: split.penalty,
+          })
+        }
+      }
+    }
     if (withdrawalPlan.reserveUsed > EPSILON) {
       warnings.add('Spending needs dipped into the taxable safety-net floor after all other accounts were exhausted.')
     }
@@ -10156,8 +10324,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
                 annuityBasisReturnByAccountId: new Map(),
                 rmdNontaxableByOwner: new Map(),
                 seppNontaxableByAccountId: new Map(),
-                penaltyLines: [],
-                rothPoolTaxableOrdinaryByPersonId: new Map(),
+                penaltyLines: cashFlowPenaltyLines!,
+                rothPoolTaxableOrdinaryByPersonId: rothPoolTaxableOrdinaryByPersonId!,
                 legacyPropertySaleDeposits: legacyPropertySaleDeposits!,
                 deathBenefits: deathBenefits!,
                 surplusDestination: surplusDestination!,
@@ -10196,6 +10364,15 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
               contributionsTotal: contributions,
               employerMatchTotal: employerMatch,
               surplus,
+              requiredLifestyle,
+              targetLifestyle,
+              targetLifestyleFunded,
+              idealLifestyle,
+              idealLifestyleFunded,
+              excessLifestyle,
+              excessLifestyleFunded,
+              healthcare,
+              shortfallAfterHecm,
             }),
           }
         : {}),
