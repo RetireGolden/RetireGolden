@@ -2258,6 +2258,51 @@ export const planSchema = z
     const accountById = new Map(plan.accounts.map((account) => [account.id, account]))
     const personById = new Map(plan.household.people.map((p) => [p.id, p]))
 
+    // The projection aggregates inherited IRAs only within one payee,
+    // decedent, and IRA-type pool. Every member of such a pool must therefore
+    // describe the same schedule-driving death and beneficiary facts; letting
+    // array order select one account's facts would price a different RMD when
+    // the accounts disagree. Provenance may differ because two custodians can
+    // substantiate the same facts independently.
+    const inheritedIraFactsByGroup = new Map<string, Map<string, number[]>>()
+    plan.accounts.forEach((account, accountIndex) => {
+      if (
+        (account.type !== 'traditional' && account.type !== 'roth') ||
+        account.kind !== 'ira' ||
+        account.inherited?.decedentId === undefined
+      ) return
+      const payeePersonId = account.ownerPersonId ?? plan.household.people[0]?.id ?? null
+      const groupKey = JSON.stringify([
+        payeePersonId,
+        account.inherited.decedentId,
+        account.type,
+      ])
+      const beneficiary = account.inherited.beneficiary
+      const factsKey = JSON.stringify({
+        ownerDeathYear: account.inherited.ownerDeathYear,
+        decedentHadStartedRmds: account.inherited.decedentHadStartedRmds,
+        beneficiary: beneficiary === undefined
+          ? null
+          : { ...beneficiary, provenance: undefined },
+      })
+      const facts = inheritedIraFactsByGroup.get(groupKey) ?? new Map<string, number[]>()
+      facts.set(factsKey, [...(facts.get(factsKey) ?? []), accountIndex])
+      inheritedIraFactsByGroup.set(groupKey, facts)
+    })
+    for (const facts of inheritedIraFactsByGroup.values()) {
+      if (facts.size <= 1) continue
+      for (const accountIndexes of facts.values()) {
+        for (const accountIndex of accountIndexes) {
+          ctx.addIssue({
+            code: 'custom',
+            path: ['accounts', accountIndex, 'inherited', 'decedentId'],
+            message:
+              'inherited IRAs in the same payee/decedent/type aggregation pool must carry consistent death and beneficiary schedule facts',
+          })
+        }
+      }
+    }
+
     /**
      * The document's own "as of" calendar year, or null when the stamp is not a
      * plain ISO date.

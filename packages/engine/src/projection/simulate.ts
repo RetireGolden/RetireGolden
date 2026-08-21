@@ -768,6 +768,14 @@ function planWithdrawals(
 
 export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResult {
   const { startYear, taxCalculator, market } = opts
+  const preHorizonFirstRmdDeferral = (opts.rmdFirstYearDeferrals ?? [])
+    .find((election) => election.distributionCalendarYear < startYear)
+  if (preHorizonFirstRmdDeferral !== undefined) {
+    throw new RangeError(
+      'An RMD first-year deferral cannot begin before the projection horizon; ' +
+        'start the projection in the distribution calendar year so the April 1 amount can be computed.',
+    )
+  }
   const captureAnnualCashFlow = opts.captureAnnualCashFlow === true
   const collidingEncodedProducerSegments = captureAnnualCashFlow
     ? collidingEncodedCashFlowSegments(collectPlanCashFlowProducerIds(plan))
@@ -782,20 +790,30 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
    * the Plan does not carry. Owned traditional IRAs aggregate per owner;
    * explicitly typed 403(b)s aggregate per owner; an ordinary employer plan is
    * its own plan. Inherited IRAs aggregate only when an explicit decedentId
-   * proves the same decedent. Absence fails closed per account instead of
-   * grouping accounts whose demographic facts merely happen to match.
+   * proves the same decedent, and traditional and Roth pools remain separate.
+   * An inherited employer account remains particular to its plan. Absence
+   * fails closed per account instead of grouping accounts whose demographic
+   * facts merely happen to match.
    */
   const rmdApplicablePlanForAccount = (
     account: Extract<Account, { type: 'traditional' | 'roth' }>,
   ): RmdApplicablePlan => {
     const payeePersonId = account.ownerPersonId ?? primary.id
     if (account.inherited !== undefined) {
+      if (account.kind === 'employer') {
+        return {
+          kind: 'inheritedEmployerPlan',
+          payeePersonId,
+          accountId: account.id,
+        }
+      }
       return account.inherited.decedentId === undefined
         ? { kind: 'inheritedIraAccount', payeePersonId, accountId: account.id }
         : {
             kind: 'inheritedIras',
             payeePersonId,
             decedentId: account.inherited.decedentId,
+            iraType: account.type,
           }
     }
     if (account.type === 'traditional' && account.kind === 'ira') {
@@ -4783,6 +4801,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         taxYear: year,
         taxImposedOn: `${year}-04-01`,
         applicablePlan: deferred.applicablePlan,
+        requirementKind: 'ownedAnnual',
         requiredAmount: deferred.requiredAmount,
         distributedByDeadline,
       })
@@ -4915,6 +4934,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         taxYear: year,
         taxImposedOn: `${year}-12-31`,
         applicablePlan,
+        requirementKind: 'ownedAnnual',
         requiredAmount,
         distributedByDeadline:
           currentRmdDistributedByApplicablePlan.get(applicablePlanKey) ?? 0,
@@ -5482,11 +5502,16 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       })
     }
 
-    // Inherited traditional and Roth IRAs are both §4974 plans. Group only
-    // rows whose explicit decedentId proves the same decedent; otherwise the
-    // applicable-plan helper keys the account to itself and fails closed.
+    // Inherited traditional and Roth IRAs are both §4974 plans, but not one
+    // aggregation pool. Group IRA rows only when type plus explicit decedentId
+    // prove the same group. Inherited employer plans and IRAs without a
+    // decedent identity stay account-specific and fail closed.
     const inheritedRequiredByApplicablePlan = new Map<string, number>()
     const inheritedDistributedByApplicablePlan = new Map<string, number>()
+    const inheritedRequirementKindsByApplicablePlan = new Map<
+      string,
+      Set<Parameters<typeof computeRmdShortfallExcise>[0]['requirementKind']>
+    >()
     for (const evidence of inheritedYearEvidenceDraft) {
       if (evidence.requiredAmount <= 0 || evidence.noticeWaived === true) continue
       const account = plan.accounts.find((candidate) => candidate.id === evidence.accountId)
@@ -5508,15 +5533,29 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         (inheritedDistributedByApplicablePlan.get(applicablePlanKey) ?? 0) +
           evidence.executedRequiredAmount,
       )
+      const requirementKind = evidence.requirementKind === 'annual-rmd'
+        ? 'inheritedAnnualLifeExpectancy' as const
+        : evidence.requirementKind === 'year-of-death-rmd'
+          ? 'inheritedYearOfDeath' as const
+          : evidence.requirementKind === 'final-sweep'
+            ? 'inheritedFinalSweep' as const
+            : 'inheritedLegacy' as const
+      const kinds = inheritedRequirementKindsByApplicablePlan.get(applicablePlanKey) ?? new Set()
+      kinds.add(requirementKind)
+      inheritedRequirementKindsByApplicablePlan.set(applicablePlanKey, kinds)
     }
     for (const [applicablePlanKey, requiredAmount] of inheritedRequiredByApplicablePlan) {
       const applicablePlan = applicablePlanByKey.get(applicablePlanKey)!
+      const requirementKinds = inheritedRequirementKindsByApplicablePlan.get(applicablePlanKey)!
       rmdShortfallObligations.push({
         obligationId: rmdShortfallObligationId(applicablePlan, year),
         distributionCalendarYear: year,
         taxYear: year,
         taxImposedOn: `${year}-12-31`,
         applicablePlan,
+        requirementKind: requirementKinds.size === 1
+          ? [...requirementKinds][0]!
+          : 'mixedInheritedRequirements',
         requiredAmount,
         distributedByDeadline:
           inheritedDistributedByApplicablePlan.get(applicablePlanKey) ?? 0,
@@ -7944,21 +7983,57 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         // integer-like keys first whatever order they went in, so a consumer
         // recovers Plan order by joining on `plan.accounts`. Stated on the
         // field itself.
-        aggregateRothConversionAllocationBalances = Object.freeze(
-          Object.fromEntries(
-            balances
-              .filter((state) =>
-                participatesInAggregateRothConversionAllocation(state.account))
-              .map((state) => [state.account.id, state.balance]),
-          ),
-        )
         aggregateRothConversionAllocationDesired = desired
-        const allocation = allocateAggregateRothConversionByOwner({
-          balances,
-          desiredPlanDollars: desired,
-          primaryPersonId: primary.id,
-          sourceContextForOwner: conversionSourceContextForOwner,
-        })
+        const allocation = (() => {
+          // A first RMD elected to the following April 1 is still an RMD and
+          // cannot be converted. The ordinary RMD pass leaves those dollars in
+          // the accounts, so make that owner-wide reserve unavailable while
+          // the shared aggregate allocator snapshots, weights, and draws. The
+          // live balances are restored before the returned movements execute;
+          // only the allocator's available-balance view carries the reserve.
+          const reservations: Array<{
+            state: (typeof balances)[number]
+            amount: number
+          }> = []
+          for (const [ownerPersonId, unsatisfiedRmd] of iraRmdUnsatisfiedByOwner) {
+            let remaining = Math.max(0, unsatisfiedRmd)
+            for (let index = balances.length - 1; index >= 0 && remaining > EPSILON; index -= 1) {
+              const state = balances[index]!
+              const account = state.account
+              if (
+                account.type !== 'traditional' ||
+                account.kind !== 'ira' ||
+                account.inherited !== undefined ||
+                (account.ownerPersonId ?? primary.id) !== ownerPersonId
+              ) continue
+              const amount = Math.min(state.balance, remaining)
+              if (amount <= 0) continue
+              state.balance -= amount
+              remaining -= amount
+              reservations.push({ state, amount })
+            }
+          }
+          try {
+            aggregateRothConversionAllocationBalances = Object.freeze(
+              Object.fromEntries(
+                balances
+                  .filter((state) =>
+                    participatesInAggregateRothConversionAllocation(state.account))
+                  .map((state) => [state.account.id, state.balance]),
+              ),
+            )
+            return allocateAggregateRothConversionByOwner({
+              balances,
+              desiredPlanDollars: desired,
+              primaryPersonId: primary.id,
+              sourceContextForOwner: conversionSourceContextForOwner,
+            })
+          } finally {
+            for (const reservation of reservations) {
+              reservation.state.balance += reservation.amount
+            }
+          }
+        })()
         if (allocation.status === 'refused') {
           warnings.add(allocation.reason === 'householdHoldsNoRothAccount'
             ? 'Roth conversions were requested but the plan has no Roth account; conversions skipped.'

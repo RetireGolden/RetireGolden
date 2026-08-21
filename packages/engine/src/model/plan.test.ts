@@ -2207,4 +2207,63 @@ describe('inherited-IRA beneficiary facts (WS2)', () => {
       )
     }
   })
+
+  it('rejects conflicting schedule facts inside one inherited-IRA aggregation pool', () => {
+    const plan = withTraditionalInherited({
+      decedentId: 'decedent-a',
+      ownerDeathYear: 2023,
+      decedentHadStartedRmds: true,
+      beneficiary: { ...fullBeneficiary, ownerBirthYear: 1940 },
+    })
+    const first = plan.accounts.find((account) => account.id === 'inh-trad')!
+    if (first.type !== 'traditional') throw new Error('fixture account mismatch')
+    plan.accounts.push({
+      ...first,
+      id: 'inh-trad-2',
+      name: 'Inherited traditional 2',
+      inherited: {
+        ...first.inherited!,
+        ownerDeathYear: 2024,
+      },
+    } as Plan['accounts'][number])
+
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(false)
+    if (!parsed.ok) {
+      expect(parsed.issues.join('\n')).toContain(
+        'inherited IRAs in the same payee/decedent/type aggregation pool must carry consistent death and beneficiary schedule facts',
+      )
+    }
+  })
+
+  it('keeps traditional and Roth inherited IRAs from the same decedent in separate fact pools', () => {
+    const plan = withTraditionalInherited({
+      decedentId: 'decedent-a',
+      ownerDeathYear: 2023,
+      decedentHadStartedRmds: true,
+      beneficiary: { ...fullBeneficiary, ownerBirthYear: 1940 },
+    })
+    plan.accounts.push({
+      type: 'roth',
+      kind: 'ira',
+      id: 'inh-roth-same-decedent',
+      name: 'Inherited Roth from same decedent',
+      ownerPersonId: 'p1',
+      annualReturnPct: null,
+      balance: 100_000,
+      annualContribution: 0,
+      inherited: {
+        decedentId: 'decedent-a',
+        ownerDeathYear: 2023,
+        decedentHadStartedRmds: false,
+        beneficiary: {
+          ...fullBeneficiary,
+          ownerBirthYear: 1940,
+          roth5YearStartYear: 2010,
+        },
+      },
+    })
+
+    expect(parsePlan(plan).ok).toBe(true)
+  })
 })

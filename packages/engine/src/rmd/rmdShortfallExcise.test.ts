@@ -28,6 +28,7 @@ function obligation(
     taxYear: 2026,
     taxImposedOn: '2026-12-31',
     applicablePlan: OWNED_IRAS,
+    requirementKind: 'ownedAnnual',
     requiredAmount: 10_000,
     distributedByDeadline: 8_000,
     ...overrides,
@@ -137,16 +138,37 @@ describeRule('irc-4974-rmd-shortfall-excise-tax', {
   })
 })
 
+describe('historical §4974 rate boundary', () => {
+  it('uses the former 50 percent default and rejects the modern 10 percent path before 2023', () => {
+    const historical = obligation({
+      obligationId: rmdShortfallObligationId(OWNED_IRAS, 2022),
+      distributionCalendarYear: 2022,
+      taxYear: 2022,
+      taxImposedOn: '2022-12-31',
+    })
+    const result = computeRmdShortfallExcise(historical, {
+      ...corrected(),
+      obligationId: historical.obligationId,
+    })
+
+    expect(result.tax).toBe(1_000)
+    expect(result.rate).toBe(0.50)
+    expect(result.reason).toBe('preSecure2Default50Percent')
+  })
+})
+
 describe('final-regulation automatic waivers', () => {
   it('waives an EDB default-to-life-expectancy miss after a timely 10-year election', () => {
     const inherited: RmdApplicablePlan = {
       kind: 'inheritedIras',
       payeePersonId: 'beneficiary',
       decedentId: 'decedent',
+      iraType: 'traditional',
     }
     const inheritedObligation = obligation({
       obligationId: rmdShortfallObligationId(inherited, 2026),
       applicablePlan: inherited,
+      requirementKind: 'inheritedAnnualLifeExpectancy',
     })
     const result = computeRmdShortfallExcise(inheritedObligation, {
       obligationId: inheritedObligation.obligationId,
@@ -169,10 +191,12 @@ describe('final-regulation automatic waivers', () => {
       kind: 'inheritedIras',
       payeePersonId: 'beneficiary',
       decedentId: 'decedent',
+      iraType: 'traditional',
     }
     const inheritedObligation = obligation({
       obligationId: rmdShortfallObligationId(inherited, 2026),
       applicablePlan: inherited,
+      requirementKind: 'inheritedAnnualLifeExpectancy',
     })
     const result = computeRmdShortfallExcise(inheritedObligation, {
       obligationId: inheritedObligation.obligationId,
@@ -195,6 +219,7 @@ describe('final-regulation automatic waivers', () => {
       kind: 'inheritedIras',
       payeePersonId: 'beneficiary',
       decedentId: 'decedent',
+      iraType: 'traditional',
     }
     const inheritedObligation = obligation({
       obligationId: rmdShortfallObligationId(inherited, 2024),
@@ -202,6 +227,7 @@ describe('final-regulation automatic waivers', () => {
       taxYear: 2024,
       taxImposedOn: '2024-12-31',
       applicablePlan: inherited,
+      requirementKind: 'inheritedAnnualLifeExpectancy',
     })
     const result = computeRmdShortfallExcise(inheritedObligation, {
       obligationId: inheritedObligation.obligationId,
@@ -224,10 +250,12 @@ describe('final-regulation automatic waivers', () => {
       kind: 'inheritedIras',
       payeePersonId: 'beneficiary',
       decedentId: 'decedent',
+      iraType: 'traditional',
     }
     const yod = obligation({
       obligationId: rmdShortfallObligationId(inherited, 2026),
       applicablePlan: inherited,
+      requirementKind: 'inheritedYearOfDeath',
     })
     const result = computeRmdShortfallExcise(yod, {
       obligationId: yod.obligationId,
@@ -245,6 +273,43 @@ describe('final-regulation automatic waivers', () => {
     expect(result.tax).toBe(0)
     expect(result.reason).toBe('automaticYearOfDeathWaiver')
   })
+
+  it.each([
+    ['the election year itself', 2033, 'inheritedAnnualLifeExpectancy' as const],
+    ['a later year', 2034, 'inheritedAnnualLifeExpectancy' as const],
+    ['a final-sweep obligation', 2032, 'inheritedFinalSweep' as const],
+    ['a year-of-death obligation', 2026, 'inheritedYearOfDeath' as const],
+  ])('does not extend an EDB ten-year election waiver to %s', (_label, taxYear, requirementKind) => {
+    const inherited: RmdApplicablePlan = {
+      kind: 'inheritedIras',
+      payeePersonId: 'beneficiary',
+      decedentId: 'decedent',
+      iraType: 'traditional',
+    }
+    const target = obligation({
+      obligationId: rmdShortfallObligationId(inherited, taxYear),
+      distributionCalendarYear: taxYear,
+      taxYear,
+      taxImposedOn: `${taxYear}-12-31`,
+      applicablePlan: inherited,
+      requirementKind,
+    })
+    const result = computeRmdShortfallExcise(target, {
+      obligationId: target.obligationId,
+      automaticWaiver: {
+        kind: 'edbTenYearElection',
+        ownerDeathYear: 2024,
+        electionMadeOn: '2033-12-31',
+        ownerDiedBeforeRequiredBeginningDate: true,
+        eligibleDesignatedBeneficiary: true,
+        defaultLifeExpectancyApplied: true,
+        affirmativeLifeExpectancyElectionMade: false,
+      },
+    })
+
+    expect(result.tax).toBe(500)
+    expect(result.reason).toBe('default25Percent')
+  })
 })
 
 describe('applicable-plan and evidence-key fail-closed checks', () => {
@@ -253,6 +318,7 @@ describe('applicable-plan and evidence-key fail-closed checks', () => {
       kind: 'inheritedIras',
       payeePersonId: 'beneficiary',
       decedentId: 'decedent-a',
+      iraType: 'traditional',
     }
     const target = obligation({
       obligationId: rmdShortfallObligationId(targetPlan, 2026),
@@ -273,11 +339,13 @@ describe('applicable-plan and evidence-key fail-closed checks', () => {
       kind: 'inheritedIras',
       payeePersonId: 'beneficiary',
       decedentId: 'decedent-a',
+      iraType: 'traditional',
     })).tax).toBe(200)
     expect(computeRmdShortfallExcise(target, relief({
       kind: 'inheritedIras',
       payeePersonId: 'beneficiary',
       decedentId: 'decedent-b',
+      iraType: 'traditional',
     })).tax).toBe(500)
   })
 
@@ -300,6 +368,7 @@ describe('applicable-plan and evidence-key fail-closed checks', () => {
           kind: 'inheritedIras',
           payeePersonId: 'beneficiary',
           decedentId: 'account:ira-a',
+          iraType: 'traditional',
         },
         form5329FiledOn: '2027-04-15',
         returnReflectsReducedTax: true,

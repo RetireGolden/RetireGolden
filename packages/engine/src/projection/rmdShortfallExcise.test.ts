@@ -176,6 +176,59 @@ describeRule('irc-4974-rmd-shortfall-excise-tax', {
   })
 })
 
+describe('first-year deferral boundary', () => {
+  it.each(['manual', 'optimized'] as const)(
+    'reserves the deferred amount from an aggregate %s Roth conversion',
+    (mode) => {
+      const plan = singlePersonPlan({ dob: OWNER_DOB, planningAge: 95 })
+      plan.accounts = [
+        traditionalAccount('ira', START_BALANCE),
+        {
+          type: 'roth',
+          kind: 'ira',
+          id: 'roth',
+          name: 'Roth IRA',
+          ownerPersonId: 'p1',
+          annualReturnPct: 0,
+          balance: 0,
+          annualContribution: 0,
+        },
+      ]
+      plan.strategies.rothConversion = mode === 'manual'
+        ? { mode, conversions: [{ year: 2026, amount: START_BALANCE }] }
+        : {
+            mode,
+            conversions: [{ year: 2026, amount: START_BALANCE }],
+            optimizedAtIso: '2026-01-01T00:00:00.000Z',
+          }
+
+      const first = run(plan, {
+        horizonEndYear: 2026,
+        rmdFirstYearDeferrals: [{
+          distributionCalendarYear: 2026,
+          applicablePlan: OWNER_IRAS,
+        }],
+      }).years[0]!
+
+      expect(first.rmd).toBe(0)
+      expect(first.rothConversion).toBeCloseTo(START_BALANCE - FIRST_YEAR_AMOUNT, 8)
+      expect(first.aggregateRothConversionAllocationBalances?.['ira'])
+        .toBeCloseTo(START_BALANCE - FIRST_YEAR_AMOUNT, 8)
+      expect(first.rmdShortfallExciseTax).toBe(0)
+    },
+  )
+
+  it('refuses a deferral whose distribution year predates the projection horizon', () => {
+    expect(() => run(wholeMissPlan(2027), {
+      startYear: 2027,
+      rmdFirstYearDeferrals: [{
+        distributionCalendarYear: 2026,
+        applicablePlan: OWNER_IRAS,
+      }],
+    })).toThrow(/cannot begin before the projection horizon/u)
+  })
+})
+
 describe('applicable-plan boundaries and Roth scope', () => {
   it('does not cure an employer-plan shortfall from an IRA', () => {
     const plan = singlePersonPlan({ dob: OWNER_DOB, planningAge: 95 })
@@ -268,5 +321,115 @@ describe('applicable-plan boundaries and Roth scope', () => {
       expect(year.inheritedDistribution).toBe(0)
       expect(year.rmdShortfallExciseTax).toBeCloseTo(0.001, 12)
     }
+  })
+
+  it('keeps traditional and Roth inherited IRAs from the same decedent in separate §4974 pools', () => {
+    const plan = singlePersonPlan({ dob: '1980-06-15', planningAge: 60 })
+    plan.household.people[0]!.id = 'beneficiary'
+    const beneficiary = {
+      beneficiaryClass: 'designated-individual' as const,
+      edbCategory: 'none' as const,
+      beneficiaryBirthYear: 1980,
+      soleBeneficiary: true,
+      ownerBirthYear: 1970,
+      provenance: { source: 'test fixture', asOf: '2026-01-01' },
+    }
+    plan.accounts = [
+      {
+        type: 'traditional',
+        kind: 'ira',
+        id: 'inherited-traditional',
+        name: 'Inherited traditional IRA',
+        ownerPersonId: 'beneficiary',
+        annualReturnPct: 0,
+        balance: 0.004,
+        annualContribution: 0,
+        inherited: {
+          decedentId: 'decedent',
+          ownerDeathYear: 2022,
+          decedentHadStartedRmds: false,
+          beneficiary,
+        },
+      },
+      {
+        type: 'roth',
+        kind: 'ira',
+        id: 'inherited-roth',
+        name: 'Inherited Roth IRA',
+        ownerPersonId: 'beneficiary',
+        annualReturnPct: 0,
+        balance: 0.004,
+        annualContribution: 0,
+        inherited: {
+          decedentId: 'decedent',
+          ownerDeathYear: 2022,
+          decedentHadStartedRmds: false,
+          beneficiary: { ...beneficiary, roth5YearStartYear: 2010 },
+        },
+      },
+    ]
+    const traditionalPool: RmdApplicablePlan = {
+      kind: 'inheritedIras',
+      payeePersonId: 'beneficiary',
+      decedentId: 'decedent',
+      iraType: 'traditional',
+    }
+    const obligationId = rmdShortfallObligationId(traditionalPool, 2032)
+
+    const result = run(plan, {
+      horizonEndYear: 2032,
+      rmdShortfallReliefElections: [{
+        obligationId,
+        correctiveDistribution: {
+          amount: 0.004,
+          receivedOn: '2033-03-01',
+          sourceApplicablePlan: traditionalPool,
+          form5329FiledOn: '2033-04-15',
+          returnReflectsReducedTax: true,
+        },
+      }],
+    })
+    const emptyingYear = result.years.find((year) => year.year === 2032)!
+
+    expect(emptyingYear.rmdShortfallExciseDetails).toHaveLength(2)
+    expect(emptyingYear.rmdShortfallExciseDetails?.map((detail) => detail.reason))
+      .toEqual(['corrected10Percent', 'default25Percent'])
+    expect(emptyingYear.rmdShortfallExciseTax).toBeCloseTo(0.004 * 0.10 + 0.004 * 0.25, 12)
+  })
+
+  it('keeps inherited employer plans particular to each account even for one decedent', () => {
+    const plan = singlePersonPlan({ dob: '1980-06-15', planningAge: 60 })
+    plan.household.people[0]!.id = 'beneficiary'
+    const inherited = {
+      decedentId: 'decedent',
+      ownerDeathYear: 2022,
+      decedentHadStartedRmds: false,
+      beneficiary: {
+        beneficiaryClass: 'designated-individual' as const,
+        edbCategory: 'none' as const,
+        beneficiaryBirthYear: 1980,
+        soleBeneficiary: true,
+        ownerBirthYear: 1970,
+        provenance: { source: 'test fixture', asOf: '2026-01-01' },
+      },
+    }
+    const first = traditionalAccount('employer-a', 0.004, 'beneficiary', 'employer')
+    const second = traditionalAccount('employer-b', 0.004, 'beneficiary', 'employer')
+    if (first.type !== 'traditional' || second.type !== 'traditional') {
+      throw new Error('fixture account mismatch')
+    }
+    first.inherited = inherited
+    second.inherited = inherited
+    plan.accounts = [first, second]
+
+    const result = run(plan, { horizonEndYear: 2032 })
+    const emptyingYear = result.years.find((year) => year.year === 2032)!
+
+    expect(emptyingYear.rmdShortfallExciseDetails).toHaveLength(2)
+    expect(emptyingYear.rmdShortfallExciseDetails?.map((detail) => detail.obligationId))
+      .toEqual(expect.arrayContaining([
+        expect.stringContaining('employer-a'),
+        expect.stringContaining('employer-b'),
+      ]))
   })
 })

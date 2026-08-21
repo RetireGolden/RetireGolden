@@ -8,6 +8,7 @@
 
 export const RMD_SHORTFALL_DEFAULT_RATE = 0.25
 export const RMD_SHORTFALL_CORRECTED_RATE = 0.10
+export const RMD_SHORTFALL_PRE_SECURE_2_RATE = 0.50
 
 /** The plan or legally aggregable plan group to which an RMD belongs. */
 export type RmdApplicablePlan =
@@ -28,6 +29,8 @@ export type RmdApplicablePlan =
       payeePersonId: string
       /** Explicit identity proving that this beneficiary's IRAs share a decedent. */
       decedentId: string
+      /** Traditional and Roth inherited IRAs are separate aggregation pools. */
+      iraType: 'traditional' | 'roth'
     }>
   | Readonly<{
       /** Account-only fallback when no decedent identity was supplied. */
@@ -35,6 +38,20 @@ export type RmdApplicablePlan =
       payeePersonId: string
       accountId: string
     }>
+  | Readonly<{
+      /** An inherited employer plan remains particular to that plan. */
+      kind: 'inheritedEmployerPlan'
+      payeePersonId: string
+      accountId: string
+    }>
+
+export type RmdShortfallRequirementKind =
+  | 'ownedAnnual'
+  | 'inheritedAnnualLifeExpectancy'
+  | 'inheritedYearOfDeath'
+  | 'inheritedFinalSweep'
+  | 'inheritedLegacy'
+  | 'mixedInheritedRequirements'
 
 export interface RmdShortfallObligation {
   readonly obligationId: string
@@ -45,6 +62,8 @@ export interface RmdShortfallObligation {
   /** The statutory deadline and the first day of the correction window. */
   readonly taxImposedOn: string
   readonly applicablePlan: RmdApplicablePlan
+  /** The §401(a)(9) requirement that produced this obligation. */
+  readonly requirementKind: RmdShortfallRequirementKind
   readonly requiredAmount: number
   readonly distributedByDeadline: number
 }
@@ -100,6 +119,7 @@ export interface RmdShortfallReliefElection {
 
 export type RmdShortfallExciseReason =
   | 'noShortfall'
+  | 'preSecure2Default50Percent'
   | 'default25Percent'
   | 'corrected10Percent'
   | 'discretionaryWaiverGranted'
@@ -154,10 +174,17 @@ export function rmdApplicablePlanKey(applicablePlan: RmdApplicablePlan): string 
         'inherited-iras',
         applicablePlan.payeePersonId,
         applicablePlan.decedentId,
+        applicablePlan.iraType,
       ])
     case 'inheritedIraAccount':
       return JSON.stringify([
         'inherited-ira-account',
+        applicablePlan.payeePersonId,
+        applicablePlan.accountId,
+      ])
+    case 'inheritedEmployerPlan':
+      return JSON.stringify([
+        'inherited-employer-plan',
         applicablePlan.payeePersonId,
         applicablePlan.accountId,
       ])
@@ -209,6 +236,11 @@ function correctedRateApplies(
   shortfall: number,
   correction: RmdCorrectiveDistributionElection | undefined,
 ): boolean {
+  // SECURE 2.0 §302 made the 10-percent corrected rate available only for
+  // taxable years beginning after December 29, 2022. Historical projections
+  // retain the former 50-percent default even when handed modern correction
+  // evidence.
+  if (obligation.taxYear < 2023) return false
   if (correction === undefined) return false
   if (!Number.isFinite(correction.amount) || !(correction.amount >= shortfall)) return false
   if (!sameRmdApplicablePlan(obligation.applicablePlan, correction.sourceApplicablePlan)) return false
@@ -238,13 +270,17 @@ function automaticWaiverReason(
   if (obligation.taxYear < 2025) return null
   if (
     obligation.applicablePlan.kind !== 'inheritedIras' &&
-    obligation.applicablePlan.kind !== 'inheritedIraAccount'
+    obligation.applicablePlan.kind !== 'inheritedIraAccount' &&
+    obligation.applicablePlan.kind !== 'inheritedEmployerPlan'
   ) return null
   if (evidence.kind === 'edbTenYearElection') {
     if (!isCivilIsoDate(evidence.electionMadeOn)) return null
+    const electionYear = Number(evidence.electionMadeOn.slice(0, 4))
     const electionWindowStart = `${evidence.ownerDeathYear}-01-01`
     const deadline = `${evidence.ownerDeathYear + 9}-12-31`
-    if (evidence.ownerDiedBeforeRequiredBeginningDate !== true ||
+    if (obligation.requirementKind !== 'inheritedAnnualLifeExpectancy' ||
+        obligation.taxYear >= electionYear ||
+        evidence.ownerDiedBeforeRequiredBeginningDate !== true ||
         evidence.eligibleDesignatedBeneficiary !== true ||
         evidence.defaultLifeExpectancyApplied !== true ||
         evidence.affirmativeLifeExpectancyElectionMade === true ||
@@ -256,6 +292,7 @@ function automaticWaiverReason(
   const correction = evidence.correctiveDistribution
   if (!isCivilIsoDate(evidence.beneficiaryReturnDueDateIncludingExtensions) ||
       !isCivilIsoDate(correction.receivedOn) ||
+      obligation.requirementKind !== 'inheritedYearOfDeath' ||
       evidence.ownerDeathYear !== obligation.distributionCalendarYear ||
       !Number.isFinite(correction.amount) ||
       correction.amount < shortfall ||
@@ -301,6 +338,9 @@ export function computeRmdShortfallExcise(
     )) {
       rate = RMD_SHORTFALL_CORRECTED_RATE
       reason = 'corrected10Percent'
+    } else if (obligation.taxYear < 2023) {
+      rate = RMD_SHORTFALL_PRE_SECURE_2_RATE
+      reason = 'preSecure2Default50Percent'
     } else {
       rate = RMD_SHORTFALL_DEFAULT_RATE
       reason = 'default25Percent'
