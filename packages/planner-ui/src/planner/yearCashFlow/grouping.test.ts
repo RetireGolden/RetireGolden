@@ -183,6 +183,9 @@ describe('year cash-flow grouping', () => {
     const otherLink = model.views.cashFlow.links.find((link) => link.source === other!.id)
     expect(otherLink?.amountPlanDollars).toBe(300)
     expect(otherLink?.target).toBe('householdCash')
+    expect(otherLink?.lineLabel).toBe('Pat — Other (3) — Need-based withdrawal')
+    expect(otherLink?.lineLabel).not.toBe('Pat - Tiny A (IRA)')
+    expect(otherLink?.kindLabel).toBe('Need-based withdrawal')
   })
 
   it('never merges two spouses\' accounts into one collapsed node', () => {

@@ -82,6 +82,18 @@ function twoOwnerPlan(): Plan {
       realGrowthPct: 0,
     },
   ]
+  plan.incomeFloor = {
+    ladders: [
+      {
+        id: 'ladder-1',
+        name: 'Retirement TIPS',
+        purpose: 'bridge',
+        startYear: 2030,
+        endYear: 2035,
+        annualRealAmount: 10_000,
+      },
+    ],
+  }
   return validatePlan(plan)
 }
 
@@ -544,6 +556,16 @@ describe('buildYearCashFlowSankey', () => {
 
   it('publishes endpoints, entities, penalty, tax character, lineage, and metadata amounts on table rows', () => {
     const cashFlow = twoOwnerCashFlow({
+      sourceLines: [
+        ...twoOwnerCashFlow().sourceLines,
+        source({
+          id: 'source:tipsLadderCash:ladder-1',
+          kind: 'tipsLadderCash',
+          role: 'spendableSource',
+          amountPlanDollars: 500,
+          identities: [{ entityKind: 'tipsLadder', ladderId: 'ladder-1' }],
+        }),
+      ],
       useLines: [
         ...twoOwnerCashFlow().useLines,
         asUseLine({
@@ -576,12 +598,21 @@ describe('buildYearCashFlowSankey', () => {
     expect(transferRow?.lineageNotes.length).toBeGreaterThan(0)
     const penalty = model.table.find((row) => row.id === 'use:earlyWithdrawalPenalty:ira-pat')
     expect(penalty?.penaltyClass).toBe('traditionalEarly')
+    const relatedSource = model.table.find((row) => row.id === 'source:tipsLadderCash:ladder-1')
+    expect(relatedSource).toMatchObject({
+      label: 'Retirement TIPS',
+      amountPlanDollars: 500,
+    })
     const meta = model.table.find((row) => row.id === 'tax:tipsPhantomOidIncome:ladder-1')
     expect(meta?.view).toBe('taxCharacter')
     expect(meta?.amountPlanDollars).toBe(250)
     expect(meta?.sourceRef).toBe('ladder:ladder-1')
     expect(meta?.lineageNotes).toEqual([
-      { relationship: 'characterizes', lineId: 'source:tipsLadderCash:ladder-1' },
+      {
+        relationship: 'characterizes',
+        lineId: 'source:tipsLadderCash:ladder-1',
+        lineLabel: 'Retirement TIPS',
+      },
     ])
     const wages = model.table.find((row) => row.id === 'source:wages:w-pat')
     expect(wages?.sourceRef).toBe('incomeStream:w-pat;person:p1')

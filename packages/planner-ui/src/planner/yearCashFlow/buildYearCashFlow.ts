@@ -135,6 +135,11 @@ export interface YearCashFlowSankeyView {
  */
 export type YearCashFlowTableView = 'cashFlow' | 'transfers' | 'postSolve' | 'taxCharacter'
 
+/** Table/CSV lineage keeps stable {@link YearCashFlowLineage.lineId}; optional label is display-only. */
+export interface YearCashFlowTableLineage extends YearCashFlowLineage {
+  readonly lineLabel?: string
+}
+
 export interface YearCashFlowTableRow {
   readonly id: string
   readonly view: YearCashFlowTableView
@@ -161,7 +166,7 @@ export interface YearCashFlowTableRow {
   readonly creditPlanDollars: number | null
   readonly penaltyClass: YearCashFlowPenaltyClass | null
   readonly taxCharacter: readonly Readonly<YearCashFlowTaxCharacter>[]
-  readonly lineageNotes: readonly Readonly<YearCashFlowLineage>[]
+  readonly lineageNotes: readonly Readonly<YearCashFlowTableLineage>[]
   readonly unresolved: boolean
 }
 
@@ -851,7 +856,7 @@ function transferTableRow(index: PlanIndex, line: YearCashFlowTransferLine): Yea
 
 const CHARACTERIZES_LINEAGE = 'characterizes' as YearCashFlowLineageRelationship
 
-function resolveRelatedLineReference(
+function resolveRelatedLineLabel(
   index: PlanIndex,
   cashFlow: YearCashFlow,
   relatedLineId: YearCashFlowLineId,
@@ -882,12 +887,13 @@ function metadataTableRow(
   line: YearCashFlowStandaloneTaxCharacter,
 ): YearCashFlowTableRow {
   const resolved = resolveLineLabel(index, line.identities, line.taxCharacter.kind)
-  const lineageNotes: YearCashFlowLineage[] =
+  const lineageNotes: YearCashFlowTableLineage[] =
     line.relatedLineId === undefined
       ? []
       : [{
           relationship: CHARACTERIZES_LINEAGE,
-          lineId: resolveRelatedLineReference(index, cashFlow, line.relatedLineId) as YearCashFlowLineId,
+          lineId: line.relatedLineId,
+          lineLabel: resolveRelatedLineLabel(index, cashFlow, line.relatedLineId),
         }]
   return {
     id: line.id,

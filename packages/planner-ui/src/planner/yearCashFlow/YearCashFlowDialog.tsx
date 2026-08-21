@@ -63,7 +63,9 @@ function taxCharacterSummary(
 
 function lineageSummary(row: YearCashFlowTableRow): string {
   if (row.lineageNotes.length === 0) return ''
-  return row.lineageNotes.map((item) => `${item.relationship} → ${item.lineId}`).join('; ')
+  return row.lineageNotes
+    .map((item) => `${item.relationship} → ${item.lineLabel ?? item.lineId}`)
+    .join('; ')
 }
 
 function moneyCell(
@@ -75,11 +77,11 @@ function moneyCell(
   return fmtMoney(displayAmount(year, value))
 }
 
-function hasCollapsedLines(model: YearCashFlowSankeyReady): boolean {
-  return (
-    model.views.cashFlow.nodes.some((node) => node.collapsed) ||
-    model.views.transfers.nodes.some((node) => node.collapsed)
-  )
+function hasCollapsedLinesInView(
+  model: YearCashFlowSankeyReady,
+  viewId: YearCashFlowSankeyViewId,
+): boolean {
+  return model.views[viewId].nodes.some((node) => node.collapsed)
 }
 
 function downloadDetailCsv(model: YearCashFlowSankeyModel, year: number): void {
@@ -264,7 +266,7 @@ export function YearCashFlowDialog({
 
   const readyModel: YearCashFlowSankeyReady = model
   const sankeyView = readyModel.views[viewId]
-  const showAllControl = !readyModel.showAll && hasCollapsedLines(readyModel)
+  const showAllControl = !readyModel.showAll && hasCollapsedLinesInView(readyModel, viewId)
 
   return (
     <Modal title={`${year} cash flow`} onClose={onClose}>

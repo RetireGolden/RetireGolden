@@ -132,16 +132,34 @@ export function applyYearCashFlowGrouping(
     nodes.push(otherById.get(otherId)!)
   }
 
+  function linkLabelsForEndpoints(
+    source: string,
+    target: string,
+    link: Pick<YearCashFlowSankeyLink, 'kindLabel' | 'lineLabel'>,
+  ): Pick<YearCashFlowSankeyLink, 'kindLabel' | 'lineLabel'> {
+    const sourceOther = otherById.get(source)
+    if (sourceOther !== undefined) {
+      return { lineLabel: sourceOther.label, kindLabel: sourceOther.kindLabel }
+    }
+    const targetOther = otherById.get(target)
+    if (targetOther !== undefined) {
+      return { lineLabel: targetOther.label, kindLabel: targetOther.kindLabel }
+    }
+    return { lineLabel: link.lineLabel, kindLabel: link.kindLabel }
+  }
+
   const merged = new Map<string, YearCashFlowSankeyLink>()
   const order: string[] = []
   for (const link of view.links) {
     const source = collapsedToOther.get(link.source) ?? link.source
     const target = collapsedToOther.get(link.target) ?? link.target
     const key = `${source}\0${target}\0${link.flag ?? ''}`
+    const labels = linkLabelsForEndpoints(source, target, link)
     const existing = merged.get(key)
     if (existing) {
       merged.set(key, {
         ...existing,
+        ...labels,
         amountPlanDollars: existing.amountPlanDollars + link.amountPlanDollars,
         underlyingLineIds: uniqueSorted([...existing.underlyingLineIds, ...link.underlyingLineIds]),
       })
@@ -157,8 +175,8 @@ export function applyYearCashFlowGrouping(
       underlyingLineIds: uniqueSorted(link.underlyingLineIds),
       flag: link.flag,
       kind: link.kind,
-      kindLabel: link.kindLabel,
-      lineLabel: link.lineLabel,
+      kindLabel: labels.kindLabel,
+      lineLabel: labels.lineLabel,
     })
   }
   const links = order.map((key) => merged.get(key)!)

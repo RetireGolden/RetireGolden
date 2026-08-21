@@ -295,6 +295,17 @@ describe('YearCashFlowDialog', () => {
     expect(buttonByLabel('Show all')).toBeUndefined()
   })
 
+  it('shows Show all only on the cash-flow view when that view has collapsed nodes', async () => {
+    await render(<YearCashFlowDialog {...dialogProps(readyModel())} />)
+    expect(buttonByLabel('Show all')).toBeTruthy()
+
+    await click(buttonByLabel('Transfers'))
+    expect(buttonByLabel('Show all')).toBeUndefined()
+
+    await click(buttonByLabel('Cash flow'))
+    expect(buttonByLabel('Show all')).toBeTruthy()
+  })
+
   it('surfaces an unresolved identity in the table label and marker', () => {
     const plan = collapsePlan()
     const base = collapseCashFlow()
