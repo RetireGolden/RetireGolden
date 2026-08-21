@@ -3,7 +3,11 @@ import { describe, expect, it } from 'vitest'
 import { parsePlan, type Account, type IncomeStream, type Plan } from '../model/plan.js'
 import { singlePersonPlan } from '../testing/planFixtures.js'
 import { createFlatTaxCalculator } from './flatTax.js'
-import { simulatePlan } from './simulate.js'
+import {
+  simulatePlan,
+  type CounterfactualAnnualLiabilityResult,
+  type SimulateAnnualCounterfactualRequest,
+} from './simulate.js'
 import type { ProjectionResult, YearResult } from './types.js'
 
 const noTax = createFlatTaxCalculator(0)
@@ -182,5 +186,87 @@ describe('SimulateOptions.captureAnnualCashFlow', () => {
     expect(year.cashFlow?.reconciliation.cash.spendableSourcesPlanDollars).toBe(0)
     expect(year.cashFlow?.reconciliation.status).toBe('reconciled')
     expect(year.cashFlow?.reconciliation.reasonCodes).toEqual([])
+  })
+
+  it('does not leak cashFlow onto annualCounterfactual empty-omit years while committed years publish it', () => {
+    // Isolation: runPostContributionAnnualPass defaults publishCashFlow false.
+    // The option-counterfactual at simulate.ts (empty omit set) re-enters the
+    // pass before commit. Capture-on must not write cashFlow on that discarded
+    // year; committed years still publish. Economic fields match a capture-off
+    // run; committed cashFlow matches a capture-on run that never set
+    // annualCounterfactual.
+    const plan = emptyPlan()
+    plan.incomes = [wages(40_000)]
+    plan.expenses.baseAnnual = 40_000
+    const validated = validate(plan)
+    const options = { startYear: START_YEAR, taxCalculator: noTax }
+
+    const off = simulatePlan(validated, options)
+    const on = simulatePlan(validated, { ...options, captureAnnualCashFlow: true })
+    const captured: CounterfactualAnnualLiabilityResult[] = []
+    const emptyOmit: SimulateAnnualCounterfactualRequest = {
+      omitActionIds: [],
+      taxUnitId: 'cf-tax-unit',
+      nonGroupTaxInputs: [
+        {
+          inputId: 'federalFilingStatus',
+          value: { representation: 'declaredTerm', term: 'single' },
+        },
+      ],
+      capture: (result) => {
+        captured.push(result)
+      },
+    }
+    const onWithCounterfactual = simulatePlan(validated, {
+      ...options,
+      captureAnnualCashFlow: true,
+      annualCounterfactual: emptyOmit,
+    })
+
+    expect(captured.length).toBe(onWithCounterfactual.years.length)
+    expect(captured.length).toBeGreaterThan(0)
+    for (const result of captured) {
+      expect('cashFlow' in result).toBe(false)
+    }
+    for (const year of onWithCounterfactual.years) {
+      expect('cashFlow' in year).toBe(true)
+      expect(year.cashFlow).toBeDefined()
+    }
+    expect(stripCashFlow(onWithCounterfactual)).toEqual(off)
+    expect(stripCashFlow(onWithCounterfactual)).toEqual(stripCashFlow(on))
+    expect(onWithCounterfactual.years.map((year) => year.cashFlow)).toEqual(
+      on.years.map((year) => year.cashFlow),
+    )
+  })
+
+  it('relocation- and optimizer-shaped SimulateOptions without the flag stay key-absent', () => {
+    const plan = emptyPlan()
+    plan.incomes = [wages(40_000)]
+    plan.expenses.baseAnnual = 40_000
+    const validated = validate(plan)
+
+    // Same call shape as projection/relocation.ts:378.
+    const relocationShaped = simulatePlan(validated, {
+      startYear: START_YEAR,
+      taxCalculator: noTax,
+    })
+    // Same call shape as projection/optimizePlan.ts:503 (probe) and the shared
+    // simulateOptions object at 2636 — captureOptimizerInputs may be set; the
+    // cash-flow flag is not.
+    const optimizerShaped = simulatePlan(validated, {
+      startYear: START_YEAR,
+      taxCalculator: noTax,
+      captureOptimizerInputs: () => {},
+    })
+
+    for (const year of [...relocationShaped.years, ...optimizerShaped.years]) {
+      expect('cashFlow' in year).toBe(false)
+      expect(year.cashFlow).toBeUndefined()
+    }
+    const relocationJson = JSON.parse(JSON.stringify(relocationShaped)) as ProjectionResult
+    const optimizerJson = JSON.parse(JSON.stringify(optimizerShaped)) as ProjectionResult
+    for (const year of [...relocationJson.years, ...optimizerJson.years]) {
+      expect('cashFlow' in year).toBe(false)
+    }
   })
 })
