@@ -122,6 +122,19 @@ describe('ledger invariants', () => {
     expectMoney(result.endingInvestable, 10_000)
   })
 
+  it('default simulatePlan years omit the cashFlow key', () => {
+    const plan = singlePersonPlan({ dob: '1964-01-01', planningAge: 65 })
+    plan.accounts = [cashAccount('cash', 40_000), taxableAccount('taxable', 120_000, 90_000), traditionalAccount('ira', 200_000)]
+    plan.incomes = [recurringOrdinaryIncome('pension', 25_000, 2026)]
+    plan.expenses.baseAnnual = 50_000
+
+    const result = runPlan(plan, createFederalTaxCalculator())
+    expect(result.years.length).toBeGreaterThan(0)
+    for (const year of result.years) {
+      expect('cashFlow' in year).toBe(false)
+    }
+  })
+
   it('is deterministic for repeated runs of the same validated plan', () => {
     const plan = singlePersonPlan({ dob: '1964-01-01', planningAge: 65 })
     plan.accounts = [cashAccount('cash', 40_000), taxableAccount('taxable', 120_000, 90_000), traditionalAccount('ira', 200_000)]

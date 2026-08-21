@@ -54,6 +54,12 @@ import {
   targetWeightsAt,
 } from '../allocation/assetClasses.js'
 import { packForYear, LATEST_PACK_YEAR, hecmPrincipalLimitFactorPct, EMBEDDED_REAL_YIELD_CURVE, irmaaTierThreshold } from '../params/index.js'
+import { assembleYearCashFlow, type AnnualCashFlowPenaltySnapshot } from './annualCashFlowCapture.js'
+import {
+  collidingEncodedCashFlowSegments,
+  collectPlanCashFlowProducerIds,
+} from './annualCashFlowIds.js'
+import { createAnnualCashFlowYearSites, type AnnualCashFlowYearSites } from './annualCashFlowYearSites.js'
 import { annuityExclusionMultiple, annuityPayoutForm, annuityPayoutFraction } from './annuityForms.js'
 import { buildLadder, ladderRealFlowsAtOffset, ladderRemainingFace, type LadderRung } from '../ladder/ladderMath.js'
 import { stateParamsFor } from '../params/state/index.js'
@@ -241,6 +247,7 @@ import {
   type EmployerRothAccountActivity,
   type OwnedTraditionalIraAggregateActivity,
   type QualifiedAnnuityPaymentActivity,
+  type YearCashFlowTransferEndpoint,
 } from './types.js'
 
 export interface SimulateOptions {
@@ -284,6 +291,12 @@ export interface SimulateOptions {
    * @see internal/counterfactualAnnualLiability.ts
    */
   annualCounterfactual?: Readonly<SimulateAnnualCounterfactualRequest>
+  /**
+   * When true, each YearResult includes identity-bearing cashFlow detail.
+   * Default off. Intended only for the live deterministic Results projection.
+   * Must not change any economic output.
+   */
+  captureAnnualCashFlow?: boolean
 }
 
 /**
@@ -727,6 +740,10 @@ function planWithdrawals(
 
 export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResult {
   const { startYear, taxCalculator, market } = opts
+  const captureAnnualCashFlow = opts.captureAnnualCashFlow === true
+  const collidingEncodedProducerSegments = captureAnnualCashFlow
+    ? collidingEncodedCashFlowSegments(collectPlanCashFlowProducerIds(plan))
+    : []
   const warnings = new Set<string>()
   const inflation = plan.assumptions.inflationPct / 100
   const people = plan.household.people
@@ -1639,6 +1656,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
      */
     const startOfYearAnnuityContractValue = new Map(annuityContractValue)
 
+    const yearSites: AnnualCashFlowYearSites | null = captureAnnualCashFlow
+      ? createAnnualCashFlowYearSites()
+      : null
+
     // --- annual rebalance to target (start-of-year trade) -------------------
     // Allocated accounts trade drifted weights back to this year's glidepath
     // target. Taxable sells realize gains pro-rata through the same basis-ratio
@@ -1662,6 +1683,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             saleProceeds: sellAmount,
           })
           rebalanceRealizedGains += sale.realizedCapitalGainOrLoss
+          yearSites?.recordRebalancingGain({
+            accountId: state.account.id,
+            realizedCapitalGainOrLoss: sale.realizedCapitalGainOrLoss,
+          })
           state.costBasis = sale.remainingCostBasis + sellAmount
         }
         track.weights = target
@@ -1736,20 +1761,29 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         warnings.add('An annuity premium exceeded its funding account balance and was reduced to the available amount.')
       }
       const fundingBalanceBefore = funding.balance
+      let annuityPurchaseCapitalGainOrLoss = 0
       if (funding.account.type === 'taxable') {
         const sale = aggregateBasisSale({
           openingFairMarketValue: funding.balance,
           openingCostBasis: funding.costBasis,
           saleProceeds: funded,
         })
+        annuityPurchaseCapitalGainOrLoss = sale.realizedCapitalGainOrLoss
         rebalanceRealizedGains += sale.realizedCapitalGainOrLoss
         funding.costBasis = sale.remainingCostBasis
       } else if (funding.account.type === 'equityComp' && funding.balance > 0) {
         const basisRatio = Math.min(1, funding.costBasis / funding.balance)
-        rebalanceRealizedGains += funded * (1 - basisRatio)
+        annuityPurchaseCapitalGainOrLoss = funded * (1 - basisRatio)
+        rebalanceRealizedGains += annuityPurchaseCapitalGainOrLoss
         funding.costBasis = Math.max(0, funding.costBasis - funded * basisRatio)
       }
       funding.balance -= funded
+      yearSites?.recordAnnuityPurchase({
+        fundingAccountId: funding.account.id,
+        annuityAccountId: account.id,
+        funded,
+        capitalGainOrLoss: annuityPurchaseCapitalGainOrLoss,
+      })
       // The premium leaves an LP bucket for a contract the LP does not carry.
       // Captured here rather than from the occurrence below, which is emitted
       // only for a traditional funding source — a cash- or brokerage-funded
@@ -1855,6 +1889,12 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       if (!target) continue
       const targetBalanceBefore = target.balance
       target.balance += account.lumpSumOffer.amount
+      yearSites?.recordPensionRollover({
+        pensionAccountId: account.id,
+        destinationAccountId: target.account.id,
+        ownerPersonId: target.account.ownerPersonId ?? null,
+        amount: account.lumpSumOffer.amount,
+      })
       // This credit reaches the optimizer through the occurrence recorded just
       // below, not through a mutation-site capture like the two purchases: the
       // occurrence covers every case this line can reach, because
@@ -1937,20 +1977,29 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           'A TIPS ladder purchase exceeded its funding account balance; the ladder was scaled down to what the available money buys.',
         )
       }
+      let tipsPurchaseCapitalGainOrLoss = 0
       if (funding.account.type === 'taxable') {
         const sale = aggregateBasisSale({
           openingFairMarketValue: funding.balance,
           openingCostBasis: funding.costBasis,
           saleProceeds: funded,
         })
+        tipsPurchaseCapitalGainOrLoss = sale.realizedCapitalGainOrLoss
         rebalanceRealizedGains += sale.realizedCapitalGainOrLoss
         funding.costBasis = sale.remainingCostBasis
       } else if (funding.account.type === 'equityComp' && funding.balance > 0) {
         const basisRatio = Math.min(1, funding.costBasis / funding.balance)
-        rebalanceRealizedGains += funded * (1 - basisRatio)
+        tipsPurchaseCapitalGainOrLoss = funded * (1 - basisRatio)
+        rebalanceRealizedGains += tipsPurchaseCapitalGainOrLoss
         funding.costBasis = Math.max(0, funding.costBasis - funded * basisRatio)
       }
       funding.balance -= funded
+      yearSites?.recordTipsLadderPurchase({
+        fundingAccountId: funding.account.id,
+        ladderId: ls.id,
+        funded,
+        capitalGainOrLoss: tipsPurchaseCapitalGainOrLoss,
+      })
       // The same booking the annuity premium above gets, for the reason this
       // block's own opening sentence gives: these ARE the same transfer
       // semantics. The purchase price leaves an LP bucket for a ladder the LP
@@ -2210,6 +2259,15 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       const reinvest = state.account.reinvestDividends ?? true
       if (reinvest) taxableYieldReinvested += gross
       distributedYieldByAccountId.set(state.account.id, { gross, distributedYieldPct: totalDistributedYieldPct, reinvest })
+      yearSites?.recordDistributedYield({
+        accountId: state.account.id,
+        taxableGross,
+        interest,
+        ordinaryDividends,
+        qualified,
+        exempt,
+        reinvest,
+      })
     }
 
     // Pass 1: wages (must precede Social Security for the earnings test).
@@ -2224,6 +2282,11 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       incomes.wages += amount
       ordinaryIncome += amount
       wagesByPerson.set(stream.personId, (wagesByPerson.get(stream.personId) ?? 0) + amount)
+      yearSites?.recordWages({
+        incomeStreamId: stream.id,
+        personId: stream.personId,
+        amount,
+      })
     }
 
     // Pass 2: other non-SS streams.
@@ -2234,11 +2297,21 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         const amount = stream.annualAmount * (stream.inflationAdjusted ? inflFactor : 1)
         incomes.recurring += amount
         if (stream.taxTreatment === 'ordinary') ordinaryIncome += amount
+        yearSites?.recordRecurringIncome({
+          incomeStreamId: stream.id,
+          amount,
+          taxTreatment: stream.taxTreatment,
+        })
       } else if (stream.type === 'oneTime') {
         if (stream.year !== year) continue
         incomes.oneTime += stream.amount
         if (stream.taxTreatment === 'ordinary') ordinaryIncome += stream.amount
         if (stream.taxTreatment === 'capitalGain') oneTimeGains += stream.amount
+        yearSites?.recordOneTimeIncome({
+          incomeStreamId: stream.id,
+          amount: stream.amount,
+          taxTreatment: stream.taxTreatment,
+        })
       }
     }
 
@@ -2714,6 +2787,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           //    continues the same excludable share);
           //  - no purchase (already-owned stream) → the entered taxablePct.
           let annuityTaxable: number
+          let nonqualifiedExcludable = 0
           if (account.purchase?.taxQualification === 'qualified') {
             // Publish the paid amount for IRA-funded contracts so detectors
             // never re-derive the payout-form gate or funding owner.
@@ -2808,12 +2882,26 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             }
             const excludable = Math.min(paid * ex.ratio, ex.remaining)
             ex.remaining -= excludable
+            nonqualifiedExcludable = excludable
             annuityTaxable = paid - excludable
           } else {
             annuityTaxable = paid * (account.taxablePct / 100)
           }
           ordinaryIncome += annuityTaxable
           privateRetirementOrdinary += annuityTaxable
+          const recipientPersonId = ownerState.alive
+            ? ownerId
+            : peopleStates.find((s) => s.personId !== ownerId && s.alive)?.personId
+          if (recipientPersonId !== undefined) {
+            yearSites?.recordAnnuityPayment({
+              accountId: account.id,
+              recipientPersonId,
+              paid,
+              nonqualifiedExcludable,
+              qualifiedIraFunded: account.purchase?.taxQualification === 'qualified',
+              fundingOwnerPersonId: annuityContractPoolOwner.get(account.id) ?? null,
+            })
+          }
         } else {
           const survivor = peopleStates.find((s) => s.personId !== ownerId && s.alive)
           // Survivor benefit requires payments to have started before the owner died.
@@ -2823,12 +2911,24 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             ordinaryIncome += grown
             if ((account.source ?? 'private') === 'public') publicPensionOrdinary += grown
             else privateRetirementOrdinary += grown
+            yearSites?.recordPension({
+              accountId: account.id,
+              payeePersonId: ownerId,
+              amount: grown,
+              source: account.source ?? 'private',
+            })
           } else if (survivor && ownerStartedBeforeDeath) {
             const amount = grown * (account.survivorPct / 100)
             incomes.pension += amount
             ordinaryIncome += amount
             if ((account.source ?? 'private') === 'public') publicPensionOrdinary += amount
             else privateRetirementOrdinary += amount
+            yearSites?.recordPension({
+              accountId: account.id,
+              payeePersonId: survivor.personId,
+              amount,
+              source: account.source ?? 'private',
+            })
           }
         }
       }
@@ -2861,6 +2961,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         ordinaryIncome += taxable
         ladderTaxableInterest += taxable
         ladderValueTotal += ladderRemainingFace(ls.rungs, offset) * ls.scale * inflFactor
+        yearSites?.recordTipsLadderCash({
+          ladderId: ls.id,
+          cash,
+          coupons: flows.coupons * ls.scale * inflFactor,
+          maturingPrincipal: flows.maturingPrincipal * ls.scale * inflFactor,
+          accretion,
+        })
       } else {
         // No one alive: rungs stop maturing — freeze the remaining face as of
         // the last living year (the rung maturing that year already paid cash)
@@ -2947,6 +3054,11 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       bal -= payment
       debtBalances.set(account.id, bal)
       debtService += payment
+      yearSites?.recordDebtService({
+        accountId: account.id,
+        ownerPersonId: account.ownerPersonId ?? null,
+        amount: payment,
+      })
     }
     // Healthcare: ACA-credited marketplace pre-65, Medicare + IRMAA from 65.
     // Medicare eligibility begins in the birth month of the year a member
@@ -3257,6 +3369,11 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         continue
       }
       insurancePremiums += policy.annualPremium
+      yearSites?.recordInsurancePremium({
+        policyId: policy.id,
+        subjectPersonId: subjectId,
+        amount: policy.annualPremium,
+      })
     }
 
     // LTC care episodes: a deterministic late-life cost spike, additive to
@@ -3265,6 +3382,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // benefitPeriodYears. The net (careCost − ltcBenefit) is what hits spending.
     let careCost = 0
     let ltcBenefit = 0
+    // Reporting-only aggregation. Capture-off allocates nothing extra.
+    const ltcByPerson = captureAnnualCashFlow
+      ? new Map<string, { careEventIds: string[]; payingPolicyIds: string[]; gross: number; benefit: number }>()
+      : null
     for (const event of plan.careEvents) {
       const s = stateOf(event.personId)
       if (!s.alive) continue
@@ -3273,6 +3394,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       const gross = event.annualCost * healthInflFactor
       careCost += gross
       let remaining = gross
+      const payingPolicyIds: string[] = []
       for (const policy of plan.insurance) {
         if (policy.kind !== 'ltc' || policy.owner !== event.personId || remaining <= 0) continue
         const used = ltcBenefitYearsUsed.get(policy.id) ?? 0
@@ -3287,7 +3409,35 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           ltcBenefit += pay
           remaining -= pay
           ltcBenefitYearsUsed.set(policy.id, used + 1)
+          payingPolicyIds.push(policy.id)
         }
+      }
+      if (ltcByPerson !== null) {
+        const existing = ltcByPerson.get(event.personId) ?? {
+          careEventIds: [],
+          payingPolicyIds: [],
+          gross: 0,
+          benefit: 0,
+        }
+        existing.careEventIds.push(event.id)
+        existing.gross += gross
+        existing.benefit += gross - remaining
+        for (const policyId of payingPolicyIds) {
+          if (!existing.payingPolicyIds.includes(policyId)) existing.payingPolicyIds.push(policyId)
+        }
+        ltcByPerson.set(event.personId, existing)
+      }
+    }
+    if (ltcByPerson !== null) {
+      for (const [personId, row] of ltcByPerson) {
+        yearSites?.recordLongTermCare({
+          personId,
+          careEventIds: row.careEventIds,
+          payingPolicyIds: row.payingPolicyIds,
+          gross: row.gross,
+          benefit: row.benefit,
+          net: row.gross - row.benefit,
+        })
       }
     }
 
@@ -3300,7 +3450,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       for (const account of plan.accounts) {
         if (account.type !== 'property') continue
         if (account.plannedSaleYear !== null && year >= account.plannedSaleYear) continue
-        propertyCosts += ((account.propertyTaxAnnual ?? 0) + (account.insuranceAnnual ?? 0)) * inflFactor
+        const amount = ((account.propertyTaxAnnual ?? 0) + (account.insuranceAnnual ?? 0)) * inflFactor
+        propertyCosts += amount
+        yearSites?.recordPropertyCosts({
+          accountId: account.id,
+          ownerPersonId: account.ownerPersonId ?? null,
+          amount,
+        })
       }
     }
 
@@ -3432,6 +3588,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
               else if (r.classification === 'ideal') skippedIdealNominal += r.unfundedNominal
               else skippedExcessNominal += r.unfundedNominal
             }
+            yearSites?.recordGoalOutcome({
+              goalId: r.id,
+              classification: r.classification,
+              outcome: r.outcome,
+              requested: r.fundedNominal + r.unfundedNominal,
+              fundedNominal: r.fundedNominal,
+            })
           } else if (r.outcome === 'deferred') {
             goalOutcomeCounts.deferred++
           } else {
@@ -3441,6 +3604,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             else skippedExcessNominal += r.amountNominal
             goalOutcomeCounts.unfundedAmount += r.amountNominal
             goalOutcomeCounts.skipped++
+            yearSites?.recordGoalOutcome({
+              goalId: r.id,
+              classification: r.classification,
+              outcome: 'skipped',
+              requested: r.amountNominal,
+              fundedNominal: 0,
+            })
           }
         }
       } else {
@@ -3453,6 +3623,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           else if (classification === 'target') targetGoalsFunded += amount
           else if (classification === 'ideal') idealGoalsFunded += amount
           else excessGoalsFunded += amount
+          yearSites?.recordGoalOutcome({
+            goalId: goal.id,
+            classification,
+            outcome: 'funded',
+            requested: amount,
+            fundedNominal: amount,
+          })
         }
       }
     }
@@ -3528,6 +3705,12 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         hecmStates.delete(account.id)
       }
       propertySaleProceedsTotal += sale.netProceeds - hecmPayoff
+      yearSites?.recordPropertySaleProceeds({
+        propertyAccountId: account.id,
+        netProceedsAfterHecm: sale.netProceeds - hecmPayoff,
+        ordinaryGain: sale.ordinaryGain,
+        capitalGain: sale.capitalGain,
+      })
     }
 
     // --- contributions & employer match --------------------
@@ -3774,7 +3957,23 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         }
         groupUsed.set(groupKey, (groupUsed.get(groupKey) ?? 0) + allowed)
       }
-      if (allowed <= 0) continue
+      const catchUpAllocation = employerAllocationByOwner.get(ownerId)
+      const redirectedFromHere = catchUpAllocation?.redirectedCatchUpBySource.get(account.id) ?? 0
+      const redirectedOntoHere =
+        catchUpAllocation !== undefined && catchUpAllocation.catchUpRothAccountId === account.id
+          ? [...catchUpAllocation.redirectedCatchUpBySource.values()].reduce((sum, amount) => sum + amount, 0)
+          : 0
+      const postRoutingRequested = Math.max(0, desired - redirectedFromHere) + redirectedOntoHere
+      const contributionOwnerPersonId = 'ownerPersonId' in account ? account.ownerPersonId ?? null : null
+      if (allowed <= 0) {
+        yearSites?.recordContribution({
+          destinationAccountId: account.id,
+          ownerPersonId: contributionOwnerPersonId,
+          requested: postRoutingRequested,
+          credited: 0,
+        })
+        continue
+      }
 
       // Update the countable (non-catch-up) employee contribution inside 415(c)
       if (isEmployerAccount) {
@@ -3840,6 +4039,12 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       else otherInflow += allowed
       if (account.type === 'taxable' || account.type === 'equityComp') taxableInflow += allowed
       if (isEmployerAccount) employeeLandedByAccountId.set(account.id, allowed)
+      yearSites?.recordContribution({
+        destinationAccountId: account.id,
+        ownerPersonId: contributionOwnerPersonId,
+        requested: postRoutingRequested,
+        credited: allowed,
+      })
     }
 
     for (const [, requests] of employerRequestsByOwner) {
@@ -3893,6 +4098,11 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       matchVal = Math.min(matchVal, remaining415cLimit)
 
       if (matchVal > 0) {
+        yearSites?.recordEmployerMatch({
+          destinationAccountId: account.id,
+          ownerPersonId: 'ownerPersonId' in account ? account.ownerPersonId ?? null : null,
+          amount: matchVal,
+        })
         state.balance += matchVal
         if (account.type === 'traditional') {
           const kind = 'employerPlanEmployerMatch' as const
@@ -3970,6 +4180,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
        * `authorizeConversionLinkedWithdrawalGroups` from that run's own facts.
        */
       linkedGroupRelease: Readonly<LinkedGroupRelease> = REFUSE_LINKED_GROUPS,
+      /**
+       * When true, this committed pass publishes `YearResult.cashFlow`.
+       * Default false so a forgotten T0, staging-probe, or option-counterfactual
+       * call site cannot leak capture onto a published year. Only the three
+       * committed call sites pass `captureAnnualCashFlow`.
+       */
+      publishCashFlow = false,
     ): { yearResult: YearResult; optimizerProbe: OptimizerYearProbe | null } => {
     /**
      * The Plan's retirement actions as *this* run of the pass sees them.
@@ -4024,6 +4241,74 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           retirementActions: passRetirementActions,
         },
       }
+
+    // Reporting-only. Allocated only on the committed publish path so T0 /
+    // staging / option-counterfactual re-entries construct nothing.
+    let seppByAccountId: Map<string, { ownerPersonId: string | null; take: number }> | null = null
+    let hecmCoordinatedByProperty: Map<string, number> | null = null
+    let hecmBackstopByProperty: Map<string, number> | null = null
+    let legacyPropertySaleDeposits: {
+      propertyAccountId: string
+      amount: number
+      destination: YearCashFlowTransferEndpoint
+    }[] | null = null
+    let deathBenefits: {
+      policyId: string
+      insuredPersonId: string
+      amount: number
+      destination: YearCashFlowTransferEndpoint
+    }[] | null = null
+    let surplusDestination: YearCashFlowTransferEndpoint | null = null
+    let cashFlowPenaltyLines: AnnualCashFlowPenaltySnapshot[] | null = null
+    let rothPoolTaxableOrdinaryByPersonId: Map<string, number> | null = null
+    let annuityBasisReturnByAccountId: Map<string, number> | null = null
+    let rmdNontaxableByOwner: Map<string, number> | null = null
+    let seppNontaxableByAccountId: Map<string, number> | null = null
+    let aggregateConversionDraws: {
+      sourceAccountId: string
+      destinationAccountId: string
+      ownerPersonId: string
+      amount: number
+      nontaxable: number
+    }[] | null = null
+    let qcdExclusionFromRmdByOwner: Map<string, number> | null = null
+    let qcdExclusionBeyondRmdByOwner: Map<string, number> | null = null
+    let qcdOrdinaryBeyondRmdByOwner: Map<string, number> | null = null
+    let qcdBeyondRmdCharacterByOccurrence: {
+      ownerId: string
+      sourceAccountId: string
+      exclusion: number
+      ordinary: number
+    }[] | null = null
+    let qcdOrdinaryFromRmdByOwner: Map<string, number> | null = null
+    let qcdBasisFromRmdByOwner: Map<string, number> | null = null
+    let hsaNonqualifiedOrdinaryByAccountId: Map<string, number> | null = null
+    let employerRothTaxableOrdinaryByAccountId: Map<string, number> | null = null
+    if (publishCashFlow) {
+      seppByAccountId = new Map()
+      hecmCoordinatedByProperty = new Map()
+      hecmBackstopByProperty = new Map()
+      legacyPropertySaleDeposits = []
+      deathBenefits = []
+      surplusDestination = surplusDepositTarget
+        ? { entityKind: 'account', accountId: asAccountId(surplusDepositTarget.account.id) }
+        : { entityKind: 'unassignedCash' }
+      cashFlowPenaltyLines = []
+      rothPoolTaxableOrdinaryByPersonId = new Map()
+      annuityBasisReturnByAccountId = new Map()
+      rmdNontaxableByOwner = new Map()
+      seppNontaxableByAccountId = new Map()
+      aggregateConversionDraws = []
+      qcdExclusionFromRmdByOwner = new Map()
+      qcdExclusionBeyondRmdByOwner = new Map()
+      qcdOrdinaryBeyondRmdByOwner = new Map()
+      qcdBeyondRmdCharacterByOccurrence = []
+      qcdOrdinaryFromRmdByOwner = new Map()
+      qcdBasisFromRmdByOwner = new Map()
+      hsaNonqualifiedOrdinaryByAccountId = new Map()
+      employerRothTaxableOrdinaryByAccountId = new Map()
+    }
+
     let rmdNontaxable = 0
     let seppNontaxable = 0
     const assumedEffectByIdentity = new Map(
@@ -4608,6 +4893,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         })
       }
       seppTotal += take
+      seppByAccountId?.set(state.account.id, {
+        ownerPersonId: state.account.ownerPersonId ?? null,
+        take,
+      })
       // Pro-rata return of basis on IRA SEPP distributions (step 5), deferred
       // for the same reason the required distribution above is: the year's
       // pro-rata denominator is not settled until the charitable gift is.
@@ -5391,6 +5680,29 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       )
       qcdIncomeOffset += fromRmdExcludable
       if (beyondRmdLeftover > 0) qcdNonQualifiedOrdinaryIncome += beyondRmdLeftover
+      if (publishCashFlow) {
+        // Reporting snapshots of FINAL character. Economic maps above stay
+        // pre-offset qualified / gross-beyond for the Form 8606 carve.
+        if (fromRmd > 0) {
+          qcdExclusionFromRmdByOwner!.set(ownerId, fromRmdExcludable)
+          // §219 leftover on the from-RMD qualified dollars is fully ordinary
+          // (those dollars were carved out of Form 8606). Form 8606 taxable
+          // on the nonqualified diverted portion is added at commit below.
+          const leftoverFromRmd = Math.max(0, fromRmdQualified - fromRmdExcludable)
+          if (leftoverFromRmd > 0) {
+            qcdOrdinaryFromRmdByOwner!.set(ownerId, leftoverFromRmd)
+          }
+        }
+        const beyondAmount = gift - fromRmd
+        if (beyondAmount > 0) {
+          const beyondStatutoryExcess = nonQualified - nonQualifiedFromRmd
+          const beyondExclusion = Math.max(
+            0, beyondAmount - Math.max(0, beyondRmdLeftover) - beyondStatutoryExcess,
+          )
+          qcdExclusionBeyondRmdByOwner!.set(ownerId, beyondExclusion)
+          qcdOrdinaryBeyondRmdByOwner!.set(ownerId, Math.max(0, beyondRmdLeftover))
+        }
+      }
       if (basis > 0) {
         iraProRata.set(
           ownerId, openIraProRataYear(basis, preDistribution - qualified),
@@ -5487,12 +5799,27 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       )
       if (assumed.basisReturn <= 0) continue
       annuityPaymentNontaxable += assumed.basisReturn
+      if (publishCashFlow) {
+        annuityBasisReturnByAccountId!.set(
+          payment.annuityAccountId,
+          (annuityBasisReturnByAccountId!.get(payment.annuityAccountId) ?? 0) +
+            assumed.basisReturn,
+        )
+      }
       const proRata = iraProRata.get(payment.poolOwnerPersonId)
       if (proRata !== undefined) {
         iraProRata.set(payment.poolOwnerPersonId, {
           basis: Math.max(0, proRata.basis - assumed.basisReturn),
           nontaxableFraction: proRata.nontaxableFraction,
         })
+      }
+    }
+    const qcdNonQualifiedFromRmdRemaining = new Map<string, number>()
+    if (publishCashFlow) {
+      for (const [ownerId, fromRmd] of qcdFromRmdByOwner) {
+        if (fromRmd <= 0) continue
+        const nq = Math.max(0, fromRmd - (qcdQualifiedFromRmdByOwner.get(ownerId) ?? 0))
+        if (nq > 0) qcdNonQualifiedFromRmdRemaining.set(ownerId, nq)
       }
     }
     const commitDeferredForcedDistributions = (
@@ -5508,9 +5835,44 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         const line7Gross = entry.amount - carve
         const proRata = iraProRata.get(entry.ownerId)
         if (line7Gross <= 0) continue
+        const nqThis = publishCashFlow && entry.occurrenceKind === 'ownedIraRmd'
+          ? Math.min(qcdNonQualifiedFromRmdRemaining.get(entry.ownerId) ?? 0, line7Gross)
+          : 0
+        if (nqThis > 0) {
+          qcdNonQualifiedFromRmdRemaining.set(
+            entry.ownerId,
+            (qcdNonQualifiedFromRmdRemaining.get(entry.ownerId) ?? 0) - nqThis,
+          )
+        }
+        const nqShare = nqThis === 0 ? 0 : nqThis / line7Gross
+        const snapshotFromRmdSplit = (taxable: number, nontaxable: number): void => {
+          if (!publishCashFlow || entry.occurrenceKind !== 'ownedIraRmd') return
+          const nqTaxable = taxable * nqShare
+          const nqBasis = nontaxable * nqShare
+          if (nqTaxable > 0) {
+            qcdOrdinaryFromRmdByOwner!.set(
+              entry.ownerId,
+              (qcdOrdinaryFromRmdByOwner!.get(entry.ownerId) ?? 0) + nqTaxable,
+            )
+          }
+          if (nqBasis > 0) {
+            qcdBasisFromRmdByOwner!.set(
+              entry.ownerId,
+              (qcdBasisFromRmdByOwner!.get(entry.ownerId) ?? 0) + nqBasis,
+            )
+          }
+          const netBasis = nontaxable - nqBasis
+          if (netBasis > 0) {
+            rmdNontaxableByOwner!.set(
+              entry.ownerId,
+              (rmdNontaxableByOwner!.get(entry.ownerId) ?? 0) + netBasis,
+            )
+          }
+        }
         if (proRata === undefined) {
           // Zero aggregate basis: entire line-7 gross is ordinary income.
           noteForm8606Taxable(entry.ownerId, line7Gross, 'distributions')
+          snapshotFromRmdSplit(line7Gross, 0)
           continue
         }
         const split = splitWithAssumedCharacter(proRata, line7Gross, {
@@ -5523,6 +5885,17 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         })
         iraProRata.set(entry.ownerId, split.next)
         credit(split.nontaxable)
+        if (publishCashFlow) {
+          if (entry.occurrenceKind === 'ownedIraRmd') {
+            snapshotFromRmdSplit(split.taxable, split.nontaxable)
+          } else if (entry.occurrenceKind === 'automaticSeppDistribution') {
+            seppNontaxableByAccountId!.set(
+              entry.sourceAccountId,
+              (seppNontaxableByAccountId!.get(entry.sourceAccountId) ?? 0) +
+                split.nontaxable,
+            )
+          }
+        }
       }
     }
     commitDeferredForcedDistributions(
@@ -5570,6 +5943,17 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // year, its figure supersedes, and it is not required to agree that the
     // fraction was 1.
     const legacyQcdExcessByOwner = new Map(qcdNonQualifiedBeyondRmdByOwner)
+    // Reporting copies taken before this walk adds Form 8606 taxable onto
+    // the owner ordinary map. Leftover is already there; exclusion is the
+    // post-offset remainder. Charged onto each draw after the statutory
+    // excess, in this same order, so the cash-flow transfer matches the
+    // ledger instead of re-deriving exclusion-first from owner totals.
+    const legacyQcdLeftoverRemainingForCapture = publishCashFlow
+      ? new Map(qcdOrdinaryBeyondRmdByOwner)
+      : null
+    const legacyQcdExclusionRemainingForCapture = publishCashFlow
+      ? new Map(qcdExclusionBeyondRmdByOwner)
+      : null
     for (const entry of deferredLegacyQcdDistributions) {
       const remainingExcess = Math.max(
         0, legacyQcdExcessByOwner.get(entry.ownerId) ?? 0,
@@ -5581,24 +5965,65 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         grossAmountPlanDollars: entry.amount,
         nonQualifiedLine7GrossPlanDollars: nonQualified,
       })
-      if (nonQualified <= 0) continue
-      legacyQcdExcessByOwner.set(entry.ownerId, remainingExcess - nonQualified)
-      const proRata = iraProRata.get(entry.ownerId)
-      if (proRata === undefined) {
-        noteForm8606Taxable(entry.ownerId, nonQualified, 'distributions')
-        qcdNonQualifiedOrdinaryIncome += nonQualified
-        continue
+      let taxableFromExcess = 0
+      if (nonQualified > 0) {
+        legacyQcdExcessByOwner.set(entry.ownerId, remainingExcess - nonQualified)
+        const proRata = iraProRata.get(entry.ownerId)
+        if (proRata === undefined) {
+          noteForm8606Taxable(entry.ownerId, nonQualified, 'distributions')
+          qcdNonQualifiedOrdinaryIncome += nonQualified
+          if (publishCashFlow) {
+            qcdOrdinaryBeyondRmdByOwner!.set(
+              entry.ownerId,
+              (qcdOrdinaryBeyondRmdByOwner!.get(entry.ownerId) ?? 0) + nonQualified,
+            )
+          }
+          taxableFromExcess = nonQualified
+        } else {
+          const split = splitWithAssumedCharacter(proRata, nonQualified, {
+            ownerPersonId: entry.ownerId,
+            calculationScope: 'form8606Line7Distributions',
+            occurrenceKind: 'legacyQcd',
+            producerOccurrenceKey: entry.producerOccurrenceKey,
+            sourceAccountId: entry.sourceAccountId,
+            mutationOrdinal: entry.mutationOrdinal,
+          })
+          iraProRata.set(entry.ownerId, split.next)
+          qcdNonQualifiedOrdinaryIncome += split.taxable
+          if (publishCashFlow && split.taxable > 0) {
+            qcdOrdinaryBeyondRmdByOwner!.set(
+              entry.ownerId,
+              (qcdOrdinaryBeyondRmdByOwner!.get(entry.ownerId) ?? 0) + split.taxable,
+            )
+          }
+          taxableFromExcess = split.taxable
+        }
       }
-      const split = splitWithAssumedCharacter(proRata, nonQualified, {
-        ownerPersonId: entry.ownerId,
-        calculationScope: 'form8606Line7Distributions',
-        occurrenceKind: 'legacyQcd',
-        producerOccurrenceKey: entry.producerOccurrenceKey,
-        sourceAccountId: entry.sourceAccountId,
-        mutationOrdinal: entry.mutationOrdinal,
-      })
-      iraProRata.set(entry.ownerId, split.next)
-      qcdNonQualifiedOrdinaryIncome += split.taxable
+      if (publishCashFlow && entry.amount > 0) {
+        const leftoverRemaining = Math.max(
+          0, legacyQcdLeftoverRemainingForCapture!.get(entry.ownerId) ?? 0,
+        )
+        const afterExcess = Math.max(0, entry.amount - nonQualified)
+        const leftoverTake = Math.min(leftoverRemaining, afterExcess)
+        legacyQcdLeftoverRemainingForCapture!.set(
+          entry.ownerId, leftoverRemaining - leftoverTake,
+        )
+        const exclusionRemaining = Math.max(
+          0, legacyQcdExclusionRemainingForCapture!.get(entry.ownerId) ?? 0,
+        )
+        const exclusionTake = Math.min(
+          exclusionRemaining, afterExcess - leftoverTake,
+        )
+        legacyQcdExclusionRemainingForCapture!.set(
+          entry.ownerId, exclusionRemaining - exclusionTake,
+        )
+        qcdBeyondRmdCharacterByOccurrence!.push({
+          ownerId: entry.ownerId,
+          sourceAccountId: entry.sourceAccountId,
+          exclusion: exclusionTake,
+          ordinary: leftoverTake + taxableFromExcess,
+        })
+      }
     }
 
     // --- exact-cent identity-bearing ordinary withdrawals ------------------
@@ -7355,6 +7780,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             }
             // Pro-rata return of basis on converted IRA dollars (step 5): the
             // basis portion moves to Roth without creating ordinary income.
+            let drawNontaxable = 0
             if (sourceAccount.kind === 'ira' &&
                 ownedIraApplication?.applicationKind === 'debit') {
               const proRata = iraProRata.get(ownerId)
@@ -7374,9 +7800,19 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
                 // destinations are per owner.
                 conversionNontaxable += split.nontaxable
                 credit.nontaxablePlanDollars += split.nontaxable
+                drawNontaxable = split.nontaxable
               } else {
                 noteForm8606Taxable(ownerId, take, 'conversions')
               }
+            }
+            if (publishCashFlow) {
+              aggregateConversionDraws!.push({
+                sourceAccountId: sourceAccount.id,
+                destinationAccountId: destinationAccount.id,
+                ownerPersonId: ownerId,
+                amount: take,
+                nontaxable: drawNontaxable,
+              })
             }
           }
           rothConversion = [...creditByOwner.values()]
@@ -8196,6 +8632,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       if (draw <= 0) continue
       line.loanBalance += draw
       remainingCoordinatedDraw -= draw
+      hecmCoordinatedByProperty?.set(account.id, draw)
     }
     // Any open HECM line backstops a true portfolio shortfall regardless of
     // draw policy — no borrower defaults on spending with credit available.
@@ -8212,6 +8649,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         line.loanBalance += draw
         hecmShortfallDraw += draw
         remaining -= draw
+        hecmBackstopByProperty?.set(account.id, draw)
         if (remaining <= EPSILON) break
       }
       hecmDraw += hecmShortfallDraw
@@ -8224,6 +8662,101 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       withdrawalPlan.byAccountId,
     )
     const iraNontaxableFinal = iraCharacterFinal.nontaxable
+    if (publishCashFlow) {
+      // Pass-local penalty snapshot at committed finals. Assemble does not
+      // re-walk penaltiesFor / rothEarlyEffect / hsaEffect.
+      for (const state of balances) {
+        const taken = withdrawalPlan.byAccountId.get(state.account.id) ?? 0
+        if (taken <= 0) continue
+        const ownerId = state.account.ownerPersonId ?? primary.id
+        const ownerAge = stateOf(ownerId).ageAttained
+        if (state.account.type === 'traditional') {
+          const penalizable = isAggregatedIraThisYear(state.account)
+            ? iraCharacterFinal.taxableBySourceAccountId.get(state.account.id) ?? taken
+            : taken
+          const penaltyAccount =
+            isTreatAsOwnEffective(state.account, year)
+              ? { ...state.account, inherited: undefined }
+              : state.account
+          const amount =
+            penalizable *
+            traditionalWithdrawalPenaltyRate(penaltyAccount, {
+              ownerAgeAttained: ownerAge,
+              ownerRetirementAge: personById.get(ownerId)?.retirementAge ?? null,
+            })
+          if (amount > 0) {
+            cashFlowPenaltyLines!.push({
+              attribution: 'account',
+              accountId: state.account.id,
+              penaltyClass: 'traditionalEarly',
+              amount,
+            })
+          }
+        }
+      }
+      let hsaCapLeft = hsaQualifiedCap
+      for (const state of balances) {
+        if (state.account.type !== 'hsa') continue
+        const taken = withdrawalPlan.byAccountId.get(state.account.id) ?? 0
+        if (taken <= 0) continue
+        const ownerAge = stateOf(state.account.ownerPersonId ?? primary.id).ageAttained
+        const treatment = state.account.withdrawalTreatment
+        let amount: number
+        if (treatment === 'capByMedicalExpenses') {
+          const qualified = Math.min(taken, hsaCapLeft)
+          hsaCapLeft -= qualified
+          const nonqualifiedOrdinary = taken - qualified
+          if (nonqualifiedOrdinary > 0) {
+            hsaNonqualifiedOrdinaryByAccountId!.set(state.account.id, nonqualifiedOrdinary)
+          }
+          amount = nonqualifiedOrdinary * hsaNonQualifiedPenaltyRate(ownerAge)
+        } else if (treatment === 'assumeAllQualified') {
+          amount = 0
+        } else {
+          amount = taken * hsaNonQualifiedPenaltyRate(ownerAge)
+        }
+        if (amount > 0) {
+          cashFlowPenaltyLines!.push({
+            attribution: 'account',
+            accountId: state.account.id,
+            penaltyClass: 'hsaNonMedical',
+            amount,
+          })
+        }
+      }
+      for (const [key, { taken, age }] of rothPoolWithdrawals(withdrawalPlan.byAccountId)) {
+        const rb = rothBasis.get(key)
+        if (!rb) continue
+        const split = splitRothWithdrawal(rb, taken, year, age)
+        if (key.startsWith('rothira:')) {
+          const personId = key.slice('rothira:'.length)
+          if (split.penalty > 0) {
+            cashFlowPenaltyLines!.push({
+              attribution: 'rothPool',
+              personId,
+              penaltyClass: 'rothEarly',
+              amount: split.penalty,
+            })
+          }
+          if (split.taxableOrdinary > 0) {
+            rothPoolTaxableOrdinaryByPersonId!.set(personId, split.taxableOrdinary)
+          }
+        } else if (key.startsWith('roth:')) {
+          const accountId = key.slice('roth:'.length)
+          if (split.penalty > 0) {
+            cashFlowPenaltyLines!.push({
+              attribution: 'account',
+              accountId,
+              penaltyClass: 'rothEarly',
+              amount: split.penalty,
+            })
+          }
+          if (split.taxableOrdinary > 0) {
+            employerRothTaxableOrdinaryByAccountId!.set(accountId, split.taxableOrdinary)
+          }
+        }
+      }
+    }
     if (withdrawalPlan.reserveUsed > EPSILON) {
       warnings.add('Spending needs dipped into the taxable safety-net floor after all other accounts were exhausted.')
     }
@@ -9311,7 +9844,15 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           const line = hecmStates.get(account.id)
           const hecmPayoff = line ? Math.min(line.loanBalance, Math.max(0, proceeds)) : 0
           if (line) hecmStates.delete(account.id)
-          deposit(proceeds - hecmPayoff)
+          const amount = proceeds - hecmPayoff
+          deposit(amount)
+          if (amount > 0) {
+            legacyPropertySaleDeposits?.push({
+              propertyAccountId: account.id,
+              amount,
+              destination: surplusDestination!,
+            })
+          }
         }
         value = 0
       }
@@ -9354,6 +9895,14 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         const payout = Math.max(policy.deathBenefit, cashValue)
         deposit(payout)
         deathBenefitPaid += payout
+        if (payout > 0) {
+          deathBenefits?.push({
+            policyId: policy.id,
+            insuredPersonId: policy.insured,
+            amount: payout,
+            destination: surplusDestination!,
+          })
+        }
         insuranceCashValues.set(policy.id, 0)
       } else {
         insuranceCashValues.set(policy.id, 0)
@@ -10010,6 +10559,101 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       hecmDraw,
       hecmLoanBalance: hecmLoanTotal,
       netWorth: investableTotal + propertyTotal - debtTotal + insuranceCashValueTotal + ladderValueTotal - hecmEffectiveDebt,
+      ...(publishCashFlow
+        ? {
+            cashFlow: assembleYearCashFlow({
+              yearSites: yearSites!,
+              passLocals: {
+                seppByAccountId: seppByAccountId!,
+                hecmCoordinatedByProperty: hecmCoordinatedByProperty!,
+                hecmBackstopByProperty: hecmBackstopByProperty!,
+                annuityBasisReturnByAccountId: annuityBasisReturnByAccountId!,
+                rmdNontaxableByOwner: rmdNontaxableByOwner!,
+                seppNontaxableByAccountId: seppNontaxableByAccountId!,
+                penaltyLines: cashFlowPenaltyLines!,
+                rothPoolTaxableOrdinaryByPersonId: rothPoolTaxableOrdinaryByPersonId!,
+                legacyPropertySaleDeposits: legacyPropertySaleDeposits!,
+                deathBenefits: deathBenefits!,
+                surplusDestination: surplusDestination!,
+                qcdExclusionFromRmdByOwner: qcdExclusionFromRmdByOwner!,
+                qcdExclusionBeyondRmdByOwner: qcdExclusionBeyondRmdByOwner!,
+                qcdOrdinaryBeyondRmdByOwner: qcdOrdinaryBeyondRmdByOwner!,
+                qcdBeyondRmdCharacterByOccurrence: qcdBeyondRmdCharacterByOccurrence!,
+                qcdOrdinaryFromRmdByOwner: qcdOrdinaryFromRmdByOwner!,
+                qcdBasisFromRmdByOwner: qcdBasisFromRmdByOwner!,
+                hsaNonqualifiedOrdinaryByAccountId: hsaNonqualifiedOrdinaryByAccountId!,
+                employerRothTaxableOrdinaryByAccountId: employerRothTaxableOrdinaryByAccountId!,
+              },
+              socialSecurityStreams,
+              rmdTakeByAccount,
+              ownedIraRmdGrossByOwner,
+              qcdFromRmdByOwner,
+              qcdGrossByOwner,
+              deferredLegacyQcdDistributions,
+              employerPlanAccountIds: new Set(
+                plan.accounts.flatMap((account) =>
+                  account.type === 'traditional' && account.kind !== 'ira' ? [account.id] : [],
+                ),
+              ),
+              inheritedTraditionalAccountIds: new Set(
+                plan.accounts.flatMap((account) =>
+                  account.type === 'traditional' && account.inherited !== undefined
+                    ? [account.id]
+                    : [],
+                ),
+              ),
+              withdrawalPlanByAccountId: withdrawalPlan.byAccountId,
+              withdrawalPlanTaxableSales: withdrawalPlan.taxableSales,
+              iraCharacterFinal,
+              inheritedYearEvidence: inheritedYearEvidenceDraft,
+              retirementActionExecution,
+              rothConversionActionExecution,
+              qcdActionExecution,
+              namedRothConversionExecuted,
+              namedRothConversionNontaxable,
+              conversionNontaxable,
+              rothConversion,
+              aggregateConversionDraws: aggregateConversionDraws!,
+              distributedYieldByAccountId,
+              ownerPersonIdByAccountId: new Map(
+                plan.accounts.map((account) => [
+                  account.id,
+                  'ownerPersonId' in account ? account.ownerPersonId ?? null : null,
+                ]),
+              ),
+              employerAllocationByOwner,
+              desiredByAccountId,
+              yearTaxExemptInterest,
+              generatedTaxExemptInterest,
+              acaForeignExclusionAddback,
+              incomesTotal: incomes.total,
+              taxableYieldReinvested,
+              propertySaleProceedsTotal,
+              rmdTotal,
+              seppTotal,
+              inheritedTotal,
+              needBasedWithdrawalTotal: withdrawalPlan.byCategory.total,
+              retirementActionProceeds,
+              hecmDraw,
+              hecmShortfallDraw,
+              tax,
+              penalties,
+              contributionsTotal: contributions,
+              collidingEncodedProducerSegments,
+              employerMatchTotal: employerMatch,
+              surplus,
+              requiredLifestyle,
+              targetLifestyle,
+              targetLifestyleFunded,
+              idealLifestyle,
+              idealLifestyleFunded,
+              excessLifestyle,
+              excessLifestyleFunded,
+              healthcare,
+              shortfallAfterHecm,
+            }),
+          }
+        : {}),
     }
     return { yearResult, optimizerProbe }
     }
@@ -10274,6 +10918,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             undefined,
             permission.baseline,
             permission.release,
+            captureAnnualCashFlow,
           )
           finalAttempt = attempt
           return [attempt.yearResult]
@@ -10423,6 +11068,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           undefined,
           permission.baseline,
           permission.release,
+          captureAnnualCashFlow,
         )
       }
     } else {
@@ -10432,6 +11078,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         undefined,
         permission.baseline,
         permission.release,
+        captureAnnualCashFlow,
       )
     }
     years.push(settledAnnualPass.yearResult)
