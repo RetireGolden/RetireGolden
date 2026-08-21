@@ -54,6 +54,7 @@ import {
   targetWeightsAt,
 } from '../allocation/assetClasses.js'
 import { packForYear, LATEST_PACK_YEAR, hecmPrincipalLimitFactorPct, EMBEDDED_REAL_YIELD_CURVE, irmaaTierThreshold } from '../params/index.js'
+import { assembleYearCashFlow } from './annualCashFlowCapture.js'
 import { annuityExclusionMultiple, annuityPayoutForm, annuityPayoutFraction } from './annuityForms.js'
 import { buildLadder, ladderRealFlowsAtOffset, ladderRemainingFace, type LadderRung } from '../ladder/ladderMath.js'
 import { stateParamsFor } from '../params/state/index.js'
@@ -284,6 +285,12 @@ export interface SimulateOptions {
    * @see internal/counterfactualAnnualLiability.ts
    */
   annualCounterfactual?: Readonly<SimulateAnnualCounterfactualRequest>
+  /**
+   * When true, each YearResult includes identity-bearing cashFlow detail.
+   * Default off. Intended only for the live deterministic Results projection.
+   * Must not change any economic output.
+   */
+  captureAnnualCashFlow?: boolean
 }
 
 /**
@@ -727,6 +734,7 @@ function planWithdrawals(
 
 export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResult {
   const { startYear, taxCalculator, market } = opts
+  const captureAnnualCashFlow = opts.captureAnnualCashFlow === true
   const warnings = new Set<string>()
   const inflation = plan.assumptions.inflationPct / 100
   const people = plan.household.people
@@ -3970,6 +3978,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
        * `authorizeConversionLinkedWithdrawalGroups` from that run's own facts.
        */
       linkedGroupRelease: Readonly<LinkedGroupRelease> = REFUSE_LINKED_GROUPS,
+      /**
+       * When true, this committed pass publishes `YearResult.cashFlow`.
+       * Default false so a forgotten T0, staging-probe, or option-counterfactual
+       * call site cannot leak capture onto a published year. Only the three
+       * committed call sites pass `captureAnnualCashFlow`.
+       */
+      publishCashFlow = false,
     ): { yearResult: YearResult; optimizerProbe: OptimizerYearProbe | null } => {
     /**
      * The Plan's retirement actions as *this* run of the pass sees them.
@@ -10010,6 +10025,27 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       hecmDraw,
       hecmLoanBalance: hecmLoanTotal,
       netWorth: investableTotal + propertyTotal - debtTotal + insuranceCashValueTotal + ladderValueTotal - hecmEffectiveDebt,
+      ...(publishCashFlow
+        ? {
+            cashFlow: assembleYearCashFlow({
+              incomesTotal: incomes.total,
+              taxableYieldReinvested,
+              propertySaleProceedsTotal,
+              rmdTotal,
+              seppTotal,
+              inheritedTotal,
+              needBasedWithdrawalTotal: withdrawalPlan.byCategory.total,
+              retirementActionProceeds,
+              hecmDraw,
+              hecmShortfallDraw,
+              tax,
+              penalties,
+              contributionsTotal: contributions,
+              employerMatchTotal: employerMatch,
+              surplus,
+            }),
+          }
+        : {}),
     }
     return { yearResult, optimizerProbe }
     }
@@ -10274,6 +10310,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             undefined,
             permission.baseline,
             permission.release,
+            captureAnnualCashFlow,
           )
           finalAttempt = attempt
           return [attempt.yearResult]
@@ -10423,6 +10460,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           undefined,
           permission.baseline,
           permission.release,
+          captureAnnualCashFlow,
         )
       }
     } else {
@@ -10432,6 +10470,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         undefined,
         permission.baseline,
         permission.release,
+        captureAnnualCashFlow,
       )
     }
     years.push(settledAnnualPass.yearResult)
