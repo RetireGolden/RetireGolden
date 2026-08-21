@@ -851,6 +851,14 @@ export const planJsonSchema: JsonSchemaDocument = {
                   "employer"
                 ]
               },
+              "employerPlanType": {
+                "type": "string",
+                "enum": [
+                  "401k",
+                  "403b",
+                  "457b"
+                ]
+              },
               "balance": {
                 "type": "number",
                 "minimum": 0
@@ -862,6 +870,10 @@ export const planJsonSchema: JsonSchemaDocument = {
               "inherited": {
                 "type": "object",
                 "properties": {
+                  "decedentId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
                   "ownerDeathYear": {
                     "type": "integer",
                     "minimum": 1900,
@@ -1443,6 +1455,10 @@ export const planJsonSchema: JsonSchemaDocument = {
               "inherited": {
                 "type": "object",
                 "properties": {
+                  "decedentId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
                   "ownerDeathYear": {
                     "type": "integer",
                     "minimum": 1900,

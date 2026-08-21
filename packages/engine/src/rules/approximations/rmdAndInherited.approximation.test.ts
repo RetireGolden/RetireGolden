@@ -1,13 +1,15 @@
 /**
- * Pins the five `approximated` registry records that govern required minimum
- * distributions and inherited traditional accounts.
+ * Pins the remaining `approximated` registry records that govern required
+ * minimum distributions and inherited traditional accounts, plus the settled
+ * §4974 fixture whose former zero-penalty reading this file exposed.
  *
  * An approximated record is a claim about a figure this engine knowingly gets
  * wrong. Nothing watched those claims until now, and two of them rotted into
- * describing gaps that had already been closed. Each fixture below therefore
- * names the reading the authority supports, names the different reading this
- * engine actually returns, and asserts the engine returns the second — so the
- * day the gap closes the assertion fails and names the record to reclassify.
+ * describing gaps that had already been closed. Each approximation fixture
+ * below therefore names the reading the authority supports and the different
+ * reading the engine returns. The §4974 fixture now asserts the accepted
+ * reading directly, preserving its original discriminating input after the
+ * registry record's reclassification.
  *
  * Every fixture calls the real engine entry point named in the record's
  * `implementedBy`, at the narrowest level that exhibits the gap. Where the
@@ -247,20 +249,19 @@ describeRule('irc-401-a-9-E-ii-eligible-designated-beneficiary', {
  * required amount was already fixed on the start-of-year balance. The owner is
  * therefore short the WHOLE year's required minimum distribution — the engine
  * computes that shortfall and carries it into the Roth-conversion evidence —
- * and the projection charges nothing for it. `penalties` is the only channel
- * the year row has for a distribution-rule charge; it stays at zero.
+ * and the projection now charges it on `penalties`, the year row's
+ * distribution-rule channel, without putting the excise into MAGI.
  */
 const SHORTFALL_EXCISE_RATE = 0.25
 
 describeRule('irc-4974-rmd-shortfall-excise-tax', {
   readings: {
     statuteImposes25PercentOfTheShortfall: FIRST_YEAR_AMOUNT * SHORTFALL_EXCISE_RATE,
-    engineChargesNothingForTheMissedDistribution: 0,
+    rejectedZeroPenaltyReading: 0,
   },
   accepted: 'statuteImposes25PercentOfTheShortfall',
-  produced: 'engineChargesNothingForTheMissedDistribution',
-}, ({ accepted, produced }) => {
-  it('charges nothing for a year in which the whole required amount goes undistributed', () => {
+}, ({ accepted, readings }) => {
+  it('charges 25 percent when the whole required amount goes undistributed', () => {
     const plan = singlePersonPlan({ dob: OWNER_DOB, planningAge: OWNER_PLANNING_AGE })
     const annuity: Account = {
       type: 'annuity',
@@ -292,9 +293,8 @@ describeRule('irc-4974-rmd-shortfall-excise-tax', {
     expect(FIRST_YEAR_AMOUNT).toBeGreaterThan(0)
     expect(first.rmd).toBe(0)
 
-    // And it costs the plan nothing.
-    expect(first.penalties).toBe(produced)
-    expect(first.penalties).not.toBeCloseTo(accepted, 6)
+    expect(first.penalties).toBeCloseTo(accepted, 6)
+    expect(first.penalties).not.toBe(readings.rejectedZeroPenaltyReading)
   })
 })
 
