@@ -1,10 +1,19 @@
 /** @vitest-environment jsdom */
-import { describe, expect, it } from 'vitest'
+import 'fake-indexeddb/auto'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { act } from 'react'
 import { renderToString } from 'react-dom/server'
 import { createRoot } from 'react-dom/client'
 import { MemoryRouter } from 'react-router'
+import { IDBFactory } from 'fake-indexeddb'
+
 import { App } from './App.tsx'
+import { _resetPlanStoreForTests } from './data/planStore'
+
+beforeEach(() => {
+  globalThis.indexedDB = new IDBFactory()
+  _resetPlanStoreForTests()
+})
 
 describe('App shell smoke', () => {
   it('renders the planner navigation and plan picker without throwing', () => {
