@@ -2596,7 +2596,8 @@ html:has(.kpi-bar) {
   gap: 0.85rem;
 }
 
-.year-cash-flow-mode {
+.year-cash-flow-mode,
+.year-cash-flow-learn {
   margin: 0;
 }
 

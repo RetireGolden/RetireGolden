@@ -30,7 +30,7 @@ export const whereTheMoneyComesFromAndGoesArticle: LearningArticle = {
     'qcds-qualified-charitable-distributions',
   ],
   relatedPlannerRoutes: ['/plan/:planId/results'],
-  currentYearSensitive: false,
+  currentYearSensitive: true,
   priority: 'P1',
   featured: false,
   blocks: [
@@ -43,7 +43,7 @@ export const whereTheMoneyComesFromAndGoesArticle: LearningArticle = {
       type: 'list',
       items: [
         'Cash you can spend and money you pay tax on are different pictures. A Roth conversion can raise tax without putting new cash in your pocket.',
-        '**View flow** on a Results year opens two pictures: **Cash flow** (sources and funded uses) and **Transfers** (account-to-account moves kept separate so the same dollar is not counted twice).',
+        '**View flow** on a Results year opens two pictures: **Cash flow** (sources and funded uses) and **Transfers** (direct moves that never enter your pocket, kept separate so the same dollar is not counted twice). Transfers include gifts from an IRA to a charity, money set aside into accounts from your cash, and dividends that stayed invested, not only account-to-account moves.',
         'A shortfall branch is an unfunded use. It is usually spending. In a hard year it can be the tax bill or a planned contribution that cash could not cover. It is never drawn as if it was paid.',
       ],
     },
@@ -60,7 +60,7 @@ export const whereTheMoneyComesFromAndGoesArticle: LearningArticle = {
     { type: 'heading', text: 'Cash you can spend vs money you pay tax on' },
     {
       type: 'prose',
-      md: '**Taxable income** is money the tax rules count. **Cash available to spend** is money that actually arrived this year: a paycheck, Social Security, a pension, a withdrawal from an account, or cash from a loan or a home sale.\n\nA [Roth conversion](/learn/roth-conversion-basics) moves money from a traditional Individual Retirement Account (IRA) or similar pre-tax account into a Roth account. The dollars stay invested. They do not become cash you can spend that year. The converted amount is often taxable, so the **Settled tax** use on Cash flow can rise while the conversion itself sits on Transfers.\n\nA [required minimum distribution (RMD)](/learn/rmds-required-minimum-distributions) is a withdrawal the tax rules eventually require from most pre-tax accounts. That withdrawal is often taxable. The cash comes from savings you already owned, not from a new paycheck. If you already needed a withdrawal of that size for spending, the RMD is that withdrawal (or part of it), not extra cash on top. If the required amount is larger than spending, leftover cash can show as **Surplus** that later appears on Transfers as money going back into an account.',
+      md: '**Taxable income** is money the tax rules count. **Cash available to spend** is money that actually arrived this year: money coming in from outside (paychecks, Social Security, pensions), money paid out by your accounts and holdings (dividends and interest you did not reinvest, TIPS ladder cash), money taken from accounts, and loan or sale proceeds.\n\nA [Roth conversion](/learn/roth-conversion-basics) moves money from a traditional Individual Retirement Account (IRA) or similar pre-tax account into a Roth account. The dollars stay invested. They do not become cash you can spend that year. The converted amount is often taxable, so the **Settled tax** use on Cash flow can rise while the conversion itself sits on Transfers.\n\nA [required minimum distribution (RMD)](/learn/rmds-required-minimum-distributions) is a withdrawal the tax rules eventually require from most pre-tax accounts. That withdrawal is often taxable. The cash comes from savings you already owned, not from a new paycheck. If you already needed a withdrawal of that size for spending, the RMD is that withdrawal (or part of it), not extra cash on top. If the required amount is larger than spending, leftover cash can show as **Surplus** that later appears on Transfers as money going back into an account.',
     },
     {
       type: 'scenario',
@@ -72,15 +72,17 @@ export const whereTheMoneyComesFromAndGoesArticle: LearningArticle = {
         { label: 'Spending', value: '$50,000' },
       ],
       summary:
-        'Cash available in this simplified picture is **$36,000 + $24,000 = $60,000**. The **$40,000** conversion is not in that total. It can still raise the tax line. This example has no loan or sale proceeds. Spending and tax are uses of the $60,000. This is a reading aid, not a tax calculation.',
+        'Cash available in this simplified picture is **$36,000 + $24,000 = $60,000**. The **$40,000** conversion is not in that total. It can still raise the tax line. This example has no loan or sale proceeds and no dividends, interest, or TIPS ladder cash paid out to the household. Spending and tax are uses of the $60,000. This is a reading aid, not a tax calculation.',
     },
     {
       type: 'formula',
-      expression: 'cash available = income + withdrawals from accounts + loan or sale proceeds',
+      expression:
+        'cash available = money coming in from outside + money paid out by your accounts and holdings + money taken from accounts + loan or sale proceeds',
       where: [
-        { symbol: 'income', meaning: 'Social Security, pension, wages, and similar cash from outside the accounts' },
-        { symbol: 'withdrawals from accounts', meaning: 'money taken from savings, including an RMD taken in cash' },
-        { symbol: 'loan or sale proceeds', meaning: 'cash from a reverse-mortgage draw or a home sale. The dialog counts these as household-cash sources, same as income and withdrawals.' },
+        { symbol: 'money coming in from outside', meaning: 'paychecks, Social Security, pensions, and similar cash that arrived from outside your accounts' },
+        { symbol: 'money paid out by your accounts and holdings', meaning: 'dividends and interest you did not reinvest, including tax-exempt interest, and TIPS ladder cash' },
+        { symbol: 'money taken from accounts', meaning: 'withdrawals from savings, including an RMD taken in cash' },
+        { symbol: 'loan or sale proceeds', meaning: 'cash from a reverse-mortgage draw or a home sale' },
         { symbol: 'cash available', meaning: 'the Cash flow sources; the Source total on the dialog' },
       ],
       basis: 'nominal',
@@ -89,7 +91,7 @@ export const whereTheMoneyComesFromAndGoesArticle: LearningArticle = {
     { type: 'heading', text: 'Portfolio withdrawals vs income' },
     {
       type: 'prose',
-      md: 'On Cash flow, income, withdrawals, and loan or sale proceeds can all feed the same middle, labeled **Household cash**. They are not the same job.\n\nIncome is cash that arrived from outside the accounts: wages, Social Security, a pension. A withdrawal reduces an account balance. An RMD taken in cash is a withdrawal, labeled **Required minimum distribution**. A later withdrawal to cover remaining spending is often labeled **Need-based withdrawal**. Loan or sale proceeds are cash from a reverse-mortgage draw or a home sale. They are sources, not income from work or benefits.',
+      md: 'On Cash flow, money coming in from outside, money paid out by your accounts and holdings, money taken from accounts, and loan or sale proceeds can all feed the same middle, labeled **Household cash**. They are not the same job.\n\nMoney coming in from outside is a paycheck, Social Security, or a pension. Money paid out by your accounts and holdings is dividends and interest you did not reinvest, including tax-exempt interest, and TIPS ladder cash. Those dollars are spendable even though they are not a new paycheck and not a withdrawal. A withdrawal reduces an account balance. An RMD taken in cash is a withdrawal, labeled **Required minimum distribution**. A later withdrawal to cover remaining spending is often labeled **Need-based withdrawal**. Loan or sale proceeds are cash from a reverse-mortgage draw or a home sale. They are sources, not income from work or benefits.',
     },
     {
       type: 'table',
@@ -122,12 +124,12 @@ export const whereTheMoneyComesFromAndGoesArticle: LearningArticle = {
     {
       type: 'callout',
       tone: 'warn',
-      md: 'If a year cannot be fully accounted for, the dialog shows an explanation instead of a chart. The app shows you the limitation rather than guessing. **Download detail CSV** is still available. That download is a header and a summary row that state why, not the every-line export.',
+      md: 'For a year the engine cannot fully account for, the whole drill-down is replaced by the explanation: the summary, the table, and the chart. The app shows you the limitation rather than guessing. **Download detail CSV** is still available. That download then contains only the summary row.',
     },
     { type: 'heading', text: "Today's dollars vs nominal dollars" },
     {
       type: 'prose',
-      md: 'The drill-down follows the same **Today\'s $ / Nominal $** toggle as the rest of Results. The dialog states **Amounts in today\'s dollars** or **Amounts in nominal dollars** so the picture stays in parity with the year table you opened.\n\n**Download detail CSV** is different. For a year the engine fully accounts for, it lists every line in nominal dollars, not the on-screen toggle. A year that shows an explanation instead of a chart downloads only a header and a summary row that state why. Use the full export when you want the complete line list in a spreadsheet. Do not compare those nominal cells to a today\'s-dollar diagram as if they were the same units.',
+      md: 'The drill-down follows the same **Today\'s $ / Nominal $** toggle as the rest of Results. The dialog states **Amounts in today\'s dollars** or **Amounts in nominal dollars** so the picture stays in parity with the year table you opened.\n\n**Download detail CSV** is different. For a year the engine fully accounts for, it lists every line in nominal dollars, not the on-screen toggle. For a year the engine cannot fully account for, the whole drill-down is replaced by the explanation, and the download then contains only the summary row. Use the full export when you want the complete line list in a spreadsheet. Do not compare those nominal cells to a today\'s-dollar diagram as if they were the same units.',
     },
     { type: 'heading', text: 'Small lines and the full table' },
     {
@@ -141,7 +143,7 @@ export const whereTheMoneyComesFromAndGoesArticle: LearningArticle = {
         'Treating a Roth conversion as extra spending money. It is a transfer. The tax on it is the cash use.',
         'Adding Cash flow totals to Transfers totals and reading the sum as one pile of money.',
         'Reading a shortfall branch as a bill that was paid. It is an unfunded use, not cash that moved.',
-        'Comparing the on-screen today\'s-dollar picture to the detail CSV. The CSV is nominal. A year that shows an explanation instead of a chart is only a header and a summary row.',
+        'Comparing the on-screen today\'s-dollar picture to the detail CSV. The CSV is nominal. A year the engine cannot fully account for downloads only the summary row.',
         'Treating **Other (n)** as money the model invented. It is a grouping of small real lines. The table already lists each one.',
       ],
     },
