@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { Plan } from '@retiregolden/engine/model/plan'
+import type { AccountId, PersonId } from '@retiregolden/engine/actions/identity'
 import type {
   YearCashFlow,
   YearCashFlowReconciliation,
@@ -18,6 +19,9 @@ import {
   YEAR_CASH_FLOW_DETAIL_CSV_COLUMNS,
   serializeYearCashFlowDetailCsv,
 } from './detailCsv'
+
+const personId = (id: string): PersonId => id as PersonId
+const accountId = (id: string): AccountId => id as AccountId
 
 function reconciled(): YearCashFlowReconciliation {
   return {
@@ -78,7 +82,7 @@ function csvCashFlow(): YearCashFlow {
         amountPlanDollars: 1_000,
         identities: [
           { entityKind: 'incomeStream', incomeStreamId: 'w-pat' },
-          { entityKind: 'person', personId: 'p1' },
+          { entityKind: 'person', personId: personId('p1') },
         ],
         taxCharacter: [{ kind: 'ordinaryIncome', amountPlanDollars: 1_000 }],
       },
@@ -126,7 +130,7 @@ describe('serializeYearCashFlowDetailCsv', () => {
           kind: 'needBasedPortfolioWithdrawal',
           role: 'portfolioFunding',
           amountPlanDollars: 1_000,
-          identities: [{ entityKind: 'account', accountId: 'ira-pat' }],
+          identities: [{ entityKind: 'account', accountId: accountId('ira-pat') }],
         },
       ],
     }
@@ -138,7 +142,7 @@ describe('serializeYearCashFlowDetailCsv', () => {
 
   it('emits header plus reconciliation summary only for an unavailable year', () => {
     const missing = serializeYearCashFlowDetailCsv(
-      buildYearCashFlowSankey(csvPlan(), { year: 2031 } as YearResult),
+      buildYearCashFlowSankey(csvPlan(), { year: 2031 } as unknown as YearResult),
     )
     expect(missing.trimEnd().split('\n')).toEqual([
       YEAR_CASH_FLOW_DETAIL_CSV_COLUMNS.join(','),
@@ -157,7 +161,7 @@ describe('serializeYearCashFlowDetailCsv', () => {
             diagnostics: [{ reasonCode: 'cashIdentityMismatch', lineIds: ['source:wages:w-pat'] }],
           },
         },
-      } as YearResult),
+      } as unknown as YearResult),
     )
     expect(failed).toContain('notReconciled')
     expect(failed).toContain('cashIdentityMismatch;invalidAmount')

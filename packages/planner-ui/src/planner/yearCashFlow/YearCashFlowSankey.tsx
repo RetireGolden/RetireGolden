@@ -332,7 +332,6 @@ export function YearCashFlowSankey(props: YearCashFlowSankeyProps) {
             margin={{ top: 12, right: 140, bottom: 12, left: 140 }}
             node={<YearCashFlowSankeyNode />}
             link={<YearCashFlowSankeyLink />}
-            isAnimationActive={false}
           >
             <Tooltip content={YearCashFlowSankeyTooltip} isAnimationActive={false} />
           </Sankey>

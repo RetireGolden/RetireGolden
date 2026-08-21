@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { Plan } from '@retiregolden/engine/model/plan'
+import type { AccountId, PersonId } from '@retiregolden/engine/actions/identity'
 import type {
   YearCashFlow,
   YearCashFlowReconciliation,
@@ -22,6 +23,9 @@ import {
   buildYearCashFlowSankey,
   type YearCashFlowSankeyReady,
 } from './buildYearCashFlow'
+
+const personId = (id: string): PersonId => id as PersonId
+const accountId = (id: string): AccountId => id as AccountId
 
 function reconciled(): YearCashFlowReconciliation {
   return {
@@ -106,7 +110,7 @@ function twoOwnerCashFlow(overrides: Partial<YearCashFlow> = {}): YearCashFlow {
         amountPlanDollars: 50_000,
         identities: [
           { entityKind: 'incomeStream', incomeStreamId: 'w-pat' },
-          { entityKind: 'person', personId: 'p1' },
+          { entityKind: 'person', personId: personId('p1') },
         ],
       }),
       source({
@@ -115,8 +119,8 @@ function twoOwnerCashFlow(overrides: Partial<YearCashFlow> = {}): YearCashFlow {
         role: 'portfolioFunding',
         amountPlanDollars: 20_000,
         identities: [
-          { entityKind: 'account', accountId: 'ira-pat' },
-          { entityKind: 'person', personId: 'p1' },
+          { entityKind: 'account', accountId: accountId('ira-pat') },
+          { entityKind: 'person', personId: personId('p1') },
         ],
       }),
       source({
@@ -125,8 +129,8 @@ function twoOwnerCashFlow(overrides: Partial<YearCashFlow> = {}): YearCashFlow {
         role: 'portfolioFunding',
         amountPlanDollars: 15_000,
         identities: [
-          { entityKind: 'account', accountId: 'k-robin' },
-          { entityKind: 'person', personId: 'p2' },
+          { entityKind: 'account', accountId: accountId('k-robin') },
+          { entityKind: 'person', personId: personId('p2') },
         ],
       }),
     ],
@@ -153,7 +157,7 @@ function twoOwnerCashFlow(overrides: Partial<YearCashFlow> = {}): YearCashFlow {
         requestedPlanDollars: 10_000,
         fundedPlanDollars: 10_000,
         unfundedPlanDollars: 0,
-        identities: [{ entityKind: 'account', accountId: 'cash' }],
+        identities: [{ entityKind: 'account', accountId: accountId('cash') }],
       }),
     ],
     transferLines: [
@@ -161,10 +165,10 @@ function twoOwnerCashFlow(overrides: Partial<YearCashFlow> = {}): YearCashFlow {
         id: 'transfer:surplusInvestment:account:cash',
         kind: 'surplusInvestment',
         source: { entityKind: 'householdCash' },
-        destination: { entityKind: 'account', accountId: 'cash' },
+        destination: { entityKind: 'account', accountId: accountId('cash') },
         debitPlanDollars: 10_000,
         creditPlanDollars: 10_000,
-        identities: [{ entityKind: 'account', accountId: 'cash' }],
+        identities: [{ entityKind: 'account', accountId: accountId('cash') }],
         lineage: [{ lineId: 'use:surplusInvestment:account:cash', relationship: 'sameDollarLaterStage' }],
       }),
     ],
@@ -202,7 +206,7 @@ describe('buildYearCashFlowSankey', () => {
           kind: 'needBasedPortfolioWithdrawal',
           role: 'portfolioFunding',
           amountPlanDollars: 1,
-          identities: [{ entityKind: 'account', accountId: 'ghost-ira' }],
+          identities: [{ entityKind: 'account', accountId: accountId('ghost-ira') }],
         }),
       ],
     })

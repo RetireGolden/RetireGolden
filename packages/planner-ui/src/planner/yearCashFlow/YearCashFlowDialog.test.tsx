@@ -5,6 +5,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import { renderToStaticMarkup } from 'react-dom/server'
 
 import type { Plan } from '@retiregolden/engine/model/plan'
+import type { AccountId, PersonId } from '@retiregolden/engine/actions/identity'
 import type {
   YearCashFlow,
   YearCashFlowReconciliation,
@@ -22,6 +23,9 @@ import {
 import { buildYearCashFlowSankey, type YearCashFlowSankeyModel } from './buildYearCashFlow'
 import { serializeYearCashFlowDetailCsv } from './detailCsv'
 import { YearCashFlowDialog, type YearCashFlowDialogProps } from './YearCashFlowDialog'
+
+const personId = (id: string): PersonId => id as PersonId
+const accountId = (id: string): AccountId => id as AccountId
 
 function reconciled(overrides: Partial<YearCashFlowReconciliation> = {}): YearCashFlowReconciliation {
   return {
@@ -87,15 +91,15 @@ function collapsePlan(): Plan {
   return validatePlan(plan)
 }
 
-function withdrawal(id: string, accountId: string, personId: string, amount: number): YearCashFlowSourceLine {
+function withdrawal(id: string, acct: string, owner: string, amount: number): YearCashFlowSourceLine {
   return {
     id,
     kind: 'needBasedPortfolioWithdrawal',
     role: 'portfolioFunding',
     amountPlanDollars: amount,
     identities: [
-      { entityKind: 'account', accountId },
-      { entityKind: 'person', personId },
+      { entityKind: 'account', accountId: accountId(acct) },
+      { entityKind: 'person', personId: personId(owner) },
     ],
   }
 }
@@ -118,7 +122,7 @@ function collapseCashFlow(): YearCashFlow {
         amountPlanDollars: 99_700,
         identities: [
           { entityKind: 'incomeStream', incomeStreamId: 'w-pat' },
-          { entityKind: 'person', personId: 'p1' },
+          { entityKind: 'person', personId: personId('p1') },
         ],
       },
       {
@@ -139,10 +143,10 @@ function collapseCashFlow(): YearCashFlow {
         id: 'transfer:surplusInvestment:account:cash',
         kind: 'surplusInvestment',
         source: { entityKind: 'householdCash' },
-        destination: { entityKind: 'account', accountId: 'cash' },
+        destination: { entityKind: 'account', accountId: accountId('cash') },
         debitPlanDollars: 10_100,
         creditPlanDollars: 10_100,
-        identities: [{ entityKind: 'account', accountId: 'cash' }],
+        identities: [{ entityKind: 'account', accountId: accountId('cash') }],
       },
     ],
     taxCharacterMetadata: [],

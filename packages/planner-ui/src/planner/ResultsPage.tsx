@@ -4,8 +4,8 @@
  * with a nominal / today's-dollars toggle and CSV export.
  */
 
-import { useMemo, useState } from 'react'
-import { Link } from 'react-router'
+import { useCallback, useMemo, useState } from 'react'
+import { Link, Navigate, useLocation, useSearchParams } from 'react-router'
 import {
   Area,
   AreaChart,
@@ -55,8 +55,45 @@ import {
 } from './capitalLossCarryforwardVisibility'
 import { ProfessionalConfirmationMarker } from './ProfessionalConfirmationMarker'
 import { citationHref } from './provenanceLinks'
+import { buildYearCashFlowSankey, type YearCashFlowSankeyViewId } from './yearCashFlow'
+import { YearCashFlowDialog } from './yearCashFlow/YearCashFlowDialog'
 
 type Dollars = 'nominal' | 'today'
+
+const FLOW_YEAR_PARAM = 'flowYear'
+const FLOW_VIEW_PARAM = 'flowView'
+
+type FlowViewParam = 'cash' | 'transfers'
+
+function parseFlowYearParam(
+  raw: string | null,
+  years: readonly { year: number }[],
+): number | null {
+  if (raw === null || raw === '') return null
+  if (!/^[0-9]+$/.test(raw)) return null
+  const year = Number(raw)
+  if (!Number.isSafeInteger(year)) return null
+  return years.some((y) => y.year === year) ? year : null
+}
+
+function parseFlowViewParam(raw: string | null): FlowViewParam {
+  return raw === 'transfers' ? 'transfers' : 'cash'
+}
+
+function flowViewToSankey(view: FlowViewParam): YearCashFlowSankeyViewId {
+  return view === 'transfers' ? 'transfers' : 'cashFlow'
+}
+
+function sankeyToFlowView(view: YearCashFlowSankeyViewId): FlowViewParam {
+  return view === 'transfers' ? 'transfers' : 'cash'
+}
+
+function stripFlowParams(params: URLSearchParams): URLSearchParams {
+  const next = new URLSearchParams(params)
+  next.delete(FLOW_YEAR_PARAM)
+  next.delete(FLOW_VIEW_PARAM)
+  return next
+}
 
 const CATEGORIES = ['cash', 'taxable', 'equityComp', 'traditional', 'roth', 'hsa'] as const
 const CAT_LABEL: Record<(typeof CATEGORIES)[number], string> = {
@@ -423,10 +460,212 @@ function FireLens({
   )
 }
 
+export function YearByYearLedger({
+  plan,
+  years,
+  adj,
+  dollars,
+  dollarLabel,
+  hasLayeredSpending,
+  hasAmt,
+  hasCarryforward,
+}: {
+  plan: Plan
+  years: readonly YearResult[]
+  adj: (year: number, v: number) => number
+  dollars: Dollars
+  dollarLabel: string
+  hasLayeredSpending: boolean
+  hasAmt: boolean
+  hasCarryforward: boolean
+}) {
+  const location = useLocation()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [showAllFlowYear, setShowAllFlowYear] = useState<number | null>(null)
+  const rawFlowYear = searchParams.get(FLOW_YEAR_PARAM)
+  const flowYear = parseFlowYearParam(rawFlowYear, years)
+  const flowView = parseFlowViewParam(searchParams.get(FLOW_VIEW_PARAM))
+  const showAll = flowYear !== null && showAllFlowYear === flowYear
+  const selectedYear = flowYear === null ? undefined : years.find((y) => y.year === flowYear)
+  const model = useMemo(
+    () => (selectedYear === undefined ? null : buildYearCashFlowSankey(plan, selectedYear, { showAll })),
+    [plan, selectedYear, showAll],
+  )
+  const invalidFlowYear = rawFlowYear !== null && flowYear === null
+  const invalidFlowRedirect = invalidFlowYear
+    ? (() => {
+        const cleaned = stripFlowParams(searchParams)
+        const search = cleaned.toString()
+        return search ? `?${search}` : ''
+      })()
+    : null
+
+  const openYear = useCallback(
+    (year: number) => {
+      setShowAllFlowYear(null)
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev)
+          next.set(FLOW_YEAR_PARAM, String(year))
+          next.set(FLOW_VIEW_PARAM, 'cash')
+          return next
+        },
+        { replace: false },
+      )
+    },
+    [setSearchParams],
+  )
+
+  const closeFlow = useCallback(() => {
+    setShowAllFlowYear(null)
+    setSearchParams((prev) => stripFlowParams(prev), { replace: true })
+  }, [setSearchParams])
+
+  const onViewChange = useCallback(
+    (viewId: YearCashFlowSankeyViewId) => {
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev)
+          next.set(FLOW_VIEW_PARAM, sankeyToFlowView(viewId))
+          return next
+        },
+        { replace: true },
+      )
+    },
+    [setSearchParams],
+  )
+
+  return (
+    <>
+      {invalidFlowRedirect !== null ? (
+        <Navigate to={{ pathname: location.pathname, search: invalidFlowRedirect }} replace />
+      ) : null}
+      <div className="year-table-wrap">
+        <table className="year-table">
+          <thead>
+            <tr>
+              <th className="year-table-flow">Flow</th>
+              <th>Year</th>
+              <th>Age</th>
+              <th>Income</th>
+              <th>Expenses</th>
+              {hasLayeredSpending ? <th title="Must-fund floor spending, including required lifestyle and system costs.">Required</th> : null}
+              {hasLayeredSpending ? <th title="Required plus target lifestyle spending before ideal/excess upside.">Target</th> : null}
+              {hasLayeredSpending ? <th title="Ideal and excess spending intended above target.">Upside</th> : null}
+              <th>Contrib.</th>
+              <th>Match</th>
+              <th>RMD</th>
+              <th>Conversion</th>
+              <th>Withdrawals</th>
+              <th>Tax</th>
+              {hasAmt ? <th title="Federal alternative minimum tax included in Tax.">AMT</th> : null}
+              <th title="Displayed in the active dollar mode. IRMAA and ACA threshold checks use the nominal dollars for each rule.">
+                MAGI ({dollarLabel})
+              </th>
+              <th title="Additional long-term gains you could realize this year at $0 federal tax: your remaining loss carryforward absorbs gains dollar-for-dollar, then the 0% long-term bracket covers more on top.">Tax-free gains room</th>
+              {hasCarryforward ? <th title="Capital-loss carryforward remaining at year end.">Loss carryf'd</th> : null}
+              <th>Shortfall</th>
+              {hasLayeredSpending ? <th title="Required-floor shortfall / target-lifestyle shortfall / upside miss.">Layer miss</th> : null}
+              {hasLayeredSpending ? <th title="Guardrail action and flexible goal outcomes.">Guardrails</th> : null}
+              <th>Investable</th>
+              <th>Net worth</th>
+            </tr>
+          </thead>
+          <tbody>
+            {years.map((y) => (
+              <tr key={y.year} className={y.shortfall > 0.005 ? 'row-depleted' : undefined}>
+                <td className="year-table-flow">
+                  <button
+                    type="button"
+                    className="btn-ghost btn-small"
+                    aria-label={`View cash flow for ${y.year}`}
+                    onClick={() => openYear(y.year)}
+                  >
+                    View flow
+                  </button>
+                </td>
+                <td className="year-table-year">{y.year}</td>
+                <td>{y.people.map((p) => (p.alive ? p.ageAttained : '—')).join(' / ')}</td>
+                <td>{fmtMoney(adj(y.year, y.incomes.total))}</td>
+                <td>{fmtMoney(adj(y.year, y.expenses.total))}</td>
+                {hasLayeredSpending ? <td>{fmtMoney(adj(y.year, y.expenses.requiredSpending))}</td> : null}
+                {hasLayeredSpending ? <td>{fmtMoney(adj(y.year, y.expenses.targetSpending))}</td> : null}
+                {hasLayeredSpending ? (
+                  <td>
+                    {y.expenses.idealSpending + y.expenses.excessSpending > 0.5
+                      ? fmtMoney(adj(y.year, y.expenses.idealSpending + y.expenses.excessSpending))
+                      : ''}
+                  </td>
+                ) : null}
+                <td>{y.contributions > 0.005 ? fmtMoney(adj(y.year, y.contributions)) : ''}</td>
+                <td>{y.employerMatch > 0.005 ? fmtMoney(adj(y.year, y.employerMatch)) : ''}</td>
+                <td>{fmtMoney(adj(y.year, y.rmd))}</td>
+                <td>{fmtMoney(adj(y.year, y.rothConversion))}</td>
+                <td>{fmtMoney(adj(y.year, y.withdrawals.total))}</td>
+                <td>{fmtMoney(adj(y.year, y.tax + y.penalties))}</td>
+                {hasAmt ? <td>{y.amt > 0.5 ? fmtMoney(adj(y.year, y.amt)) : ''}</td> : null}
+                <td>{fmtMoney(adj(y.year, y.magi))}</td>
+                <td>{y.ltcgZeroHeadroom + y.capitalLossCarryforwardRemaining > 0.5 ? fmtMoney(adj(y.year, y.ltcgZeroHeadroom + y.capitalLossCarryforwardRemaining)) : ''}</td>
+                {hasCarryforward ? <td>{y.capitalLossCarryforwardRemaining > 0.5 ? fmtMoney(adj(y.year, y.capitalLossCarryforwardRemaining)) : '—'}</td> : null}
+                <td>{y.shortfall > 0.005 ? fmtMoney(adj(y.year, y.shortfall)) : ''}</td>
+                {hasLayeredSpending ? (
+                  <td>
+                    {y.requiredShortfall + y.targetShortfall + y.idealShortfall + y.excessShortfall > 0.5 ? (
+                      <>
+                        {y.requiredShortfall > 0.5 ? `Req ${fmtMoney(adj(y.year, y.requiredShortfall))} ` : ''}
+                        {y.targetShortfall > 0.5 ? `Target ${fmtMoney(adj(y.year, y.targetShortfall))} ` : ''}
+                        {y.idealShortfall + y.excessShortfall > 0.5
+                          ? `Upside ${fmtMoney(adj(y.year, y.idealShortfall + y.excessShortfall))}`
+                          : ''}
+                      </>
+                    ) : (
+                      ''
+                    )}
+                  </td>
+                ) : null}
+                {hasLayeredSpending ? (
+                  <td>
+                    {y.guardrailAction !== 'hold' ? y.guardrailAction : ''}
+                    {y.flexibleGoals.funded + y.flexibleGoals.partiallyFunded + y.flexibleGoals.deferred + y.flexibleGoals.skipped > 0 ? (
+                      <span
+                        title={`Goals: ${y.flexibleGoals.funded} funded, ${y.flexibleGoals.partiallyFunded} partially funded, ${y.flexibleGoals.deferred} deferred, ${y.flexibleGoals.skipped} skipped`}
+                        aria-label={`Goals: ${y.flexibleGoals.funded} funded, ${y.flexibleGoals.partiallyFunded} partially funded, ${y.flexibleGoals.deferred} deferred, ${y.flexibleGoals.skipped} skipped`}
+                      >
+                        {y.guardrailAction !== 'hold' ? ' · ' : ''}
+                        {y.flexibleGoals.funded}F/{y.flexibleGoals.partiallyFunded}P/{y.flexibleGoals.deferred}D/{y.flexibleGoals.skipped}S
+                      </span>
+                    ) : null}
+                  </td>
+                ) : null}
+                <td>{fmtMoney(adj(y.year, y.investableTotal))}</td>
+                <td>{fmtMoney(adj(y.year, y.netWorth))}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {selectedYear !== undefined && model !== null ? (
+        <YearCashFlowDialog
+          model={model}
+          displayAmount={adj}
+          dollarMode={dollars}
+          onClose={closeFlow}
+          year={selectedYear.year}
+          viewId={flowViewToSankey(flowView)}
+          onViewChange={onViewChange}
+          onShowAll={() => {
+            if (flowYear !== null) setShowAllFlowYear(flowYear)
+          }}
+        />
+      ) : null}
+    </>
+  )
+}
+
 export function ResultsPage() {
   const { plan } = usePlan()
   const reportBranding = useReportBranding()
-  const view = useProjection(plan)
+  const view = useProjection(plan, { captureAnnualCashFlow: true })
   const [dollars, setDollars] = useState<Dollars>('today')
   const dollarLabel = dollars === 'today' ? 'today\'s $' : 'nominal $'
   const adj = useMemo(
@@ -917,99 +1156,16 @@ export function ResultsPage() {
         <summary className="year-table-summary">
           <h2>Year-by-year detail</h2>
         </summary>
-        <div className="year-table-wrap">
-          <table className="year-table">
-            <thead>
-              <tr>
-                <th>Year</th>
-                <th>Age</th>
-                <th>Income</th>
-                <th>Expenses</th>
-                {hasLayeredSpending ? <th title="Must-fund floor spending, including required lifestyle and system costs.">Required</th> : null}
-                {hasLayeredSpending ? <th title="Required plus target lifestyle spending before ideal/excess upside.">Target</th> : null}
-                {hasLayeredSpending ? <th title="Ideal and excess spending intended above target.">Upside</th> : null}
-                <th>Contrib.</th>
-                <th>Match</th>
-                <th>RMD</th>
-                <th>Conversion</th>
-                <th>Withdrawals</th>
-                <th>Tax</th>
-                {hasAmt ? <th title="Federal alternative minimum tax included in Tax.">AMT</th> : null}
-                <th title="Displayed in the active dollar mode. IRMAA and ACA threshold checks use the nominal dollars for each rule.">
-                  MAGI ({dollarLabel})
-                </th>
-                <th title="Additional long-term gains you could realize this year at $0 federal tax: your remaining loss carryforward absorbs gains dollar-for-dollar, then the 0% long-term bracket covers more on top.">Tax-free gains room</th>
-                {hasCarryforward ? <th title="Capital-loss carryforward remaining at year end.">Loss carryf'd</th> : null}
-                <th>Shortfall</th>
-                {hasLayeredSpending ? <th title="Required-floor shortfall / target-lifestyle shortfall / upside miss.">Layer miss</th> : null}
-                {hasLayeredSpending ? <th title="Guardrail action and flexible goal outcomes.">Guardrails</th> : null}
-                <th>Investable</th>
-                <th>Net worth</th>
-              </tr>
-            </thead>
-            <tbody>
-              {view.result.years.map((y) => (
-                <tr key={y.year} className={y.shortfall > 0.005 ? 'row-depleted' : undefined}>
-                  <td>{y.year}</td>
-                  <td>{y.people.map((p) => (p.alive ? p.ageAttained : '—')).join(' / ')}</td>
-                  <td>{fmtMoney(adj(y.year, y.incomes.total))}</td>
-                  <td>{fmtMoney(adj(y.year, y.expenses.total))}</td>
-                  {hasLayeredSpending ? <td>{fmtMoney(adj(y.year, y.expenses.requiredSpending))}</td> : null}
-                  {hasLayeredSpending ? <td>{fmtMoney(adj(y.year, y.expenses.targetSpending))}</td> : null}
-                  {hasLayeredSpending ? (
-                    <td>
-                      {y.expenses.idealSpending + y.expenses.excessSpending > 0.5
-                        ? fmtMoney(adj(y.year, y.expenses.idealSpending + y.expenses.excessSpending))
-                        : ''}
-                    </td>
-                  ) : null}
-                  <td>{y.contributions > 0.005 ? fmtMoney(adj(y.year, y.contributions)) : ''}</td>
-                  <td>{y.employerMatch > 0.005 ? fmtMoney(adj(y.year, y.employerMatch)) : ''}</td>
-                  <td>{fmtMoney(adj(y.year, y.rmd))}</td>
-                  <td>{fmtMoney(adj(y.year, y.rothConversion))}</td>
-                  <td>{fmtMoney(adj(y.year, y.withdrawals.total))}</td>
-                  <td>{fmtMoney(adj(y.year, y.tax + y.penalties))}</td>
-                  {hasAmt ? <td>{y.amt > 0.5 ? fmtMoney(adj(y.year, y.amt)) : ''}</td> : null}
-                  <td>{fmtMoney(adj(y.year, y.magi))}</td>
-                  <td>{y.ltcgZeroHeadroom + y.capitalLossCarryforwardRemaining > 0.5 ? fmtMoney(adj(y.year, y.ltcgZeroHeadroom + y.capitalLossCarryforwardRemaining)) : ''}</td>
-                  {hasCarryforward ? <td>{y.capitalLossCarryforwardRemaining > 0.5 ? fmtMoney(adj(y.year, y.capitalLossCarryforwardRemaining)) : '—'}</td> : null}
-                  <td>{y.shortfall > 0.005 ? fmtMoney(adj(y.year, y.shortfall)) : ''}</td>
-                  {hasLayeredSpending ? (
-                    <td>
-                      {y.requiredShortfall + y.targetShortfall + y.idealShortfall + y.excessShortfall > 0.5 ? (
-                        <>
-                          {y.requiredShortfall > 0.5 ? `Req ${fmtMoney(adj(y.year, y.requiredShortfall))} ` : ''}
-                          {y.targetShortfall > 0.5 ? `Target ${fmtMoney(adj(y.year, y.targetShortfall))} ` : ''}
-                          {y.idealShortfall + y.excessShortfall > 0.5
-                            ? `Upside ${fmtMoney(adj(y.year, y.idealShortfall + y.excessShortfall))}`
-                            : ''}
-                        </>
-                      ) : (
-                        ''
-                      )}
-                    </td>
-                  ) : null}
-                  {hasLayeredSpending ? (
-                    <td>
-                      {y.guardrailAction !== 'hold' ? y.guardrailAction : ''}
-                      {y.flexibleGoals.funded + y.flexibleGoals.partiallyFunded + y.flexibleGoals.deferred + y.flexibleGoals.skipped > 0 ? (
-                        <span
-                          title={`Goals: ${y.flexibleGoals.funded} funded, ${y.flexibleGoals.partiallyFunded} partially funded, ${y.flexibleGoals.deferred} deferred, ${y.flexibleGoals.skipped} skipped`}
-                          aria-label={`Goals: ${y.flexibleGoals.funded} funded, ${y.flexibleGoals.partiallyFunded} partially funded, ${y.flexibleGoals.deferred} deferred, ${y.flexibleGoals.skipped} skipped`}
-                        >
-                          {y.guardrailAction !== 'hold' ? ' · ' : ''}
-                          {y.flexibleGoals.funded}F/{y.flexibleGoals.partiallyFunded}P/{y.flexibleGoals.deferred}D/{y.flexibleGoals.skipped}S
-                        </span>
-                      ) : null}
-                    </td>
-                  ) : null}
-                  <td>{fmtMoney(adj(y.year, y.investableTotal))}</td>
-                  <td>{fmtMoney(adj(y.year, y.netWorth))}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <YearByYearLedger
+          plan={plan}
+          years={view.result.years}
+          adj={adj}
+          dollars={dollars}
+          dollarLabel={dollarLabel}
+          hasLayeredSpending={hasLayeredSpending}
+          hasAmt={hasAmt}
+          hasCarryforward={hasCarryforward}
+        />
         {/* Column semantics used to live only in title= tooltips — invisible on
             touch and unreliable for screen readers. This legend is the
             keyboard/touch-reachable copy of the same explanations. */}

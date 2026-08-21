@@ -22,13 +22,37 @@ export interface ProjectionView {
   deflate: (year: number, amount: number) => number
 }
 
+export interface ProjectPlanOptions {
+  startYear?: number
+  /**
+   * Opt-in annual cash-flow ledger on each `YearResult`. Absent by default so
+   * existing callers (and every shared `useProjection` consumer) stay unchanged.
+   */
+  captureAnnualCashFlow?: boolean
+}
+
 /**
  * Deterministic projection: the same `(plan, startYear)` produces the same
  * `result` and `summary`. Hosts capturing evidence must pass an explicit
  * `startYear` instead of relying on the clock default.
+ *
+ * The second argument remains a start year for existing callers. Results may
+ * pass `{ captureAnnualCashFlow: true }` (optionally with `startYear`) instead.
  */
-export function projectPlan(plan: Plan, startYear = currentStartYear()): ProjectionView {
-  const result = simulatePlan(plan, { startYear, taxCalculator: taxCalculatorFor(plan) })
+export function projectPlan(plan: Plan, startYear?: number): ProjectionView
+export function projectPlan(plan: Plan, opts: ProjectPlanOptions): ProjectionView
+export function projectPlan(
+  plan: Plan,
+  startYearOrOpts: number | ProjectPlanOptions = currentStartYear(),
+): ProjectionView {
+  const opts: ProjectPlanOptions =
+    typeof startYearOrOpts === 'object' ? startYearOrOpts : { startYear: startYearOrOpts }
+  const startYear = opts.startYear ?? currentStartYear()
+  const result = simulatePlan(plan, {
+    startYear,
+    taxCalculator: taxCalculatorFor(plan),
+    ...(opts.captureAnnualCashFlow === true ? { captureAnnualCashFlow: true } : {}),
+  })
   const summary = summarizeProjection(plan, result)
   const r = 1 + plan.assumptions.inflationPct / 100
   return {

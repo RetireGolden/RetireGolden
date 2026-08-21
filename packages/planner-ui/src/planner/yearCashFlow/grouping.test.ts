@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { Plan } from '@retiregolden/engine/model/plan'
+import type { AccountId, PersonId } from '@retiregolden/engine/actions/identity'
 import type {
   YearCashFlow,
   YearCashFlowReconciliation,
@@ -20,6 +21,9 @@ import {
   YEAR_CASH_FLOW_COLLAPSE_THRESHOLD_SHARE,
   applyYearCashFlowGrouping,
 } from './grouping'
+
+const personId = (id: string): PersonId => id as PersonId
+const accountId = (id: string): AccountId => id as AccountId
 
 function reconciled(): YearCashFlowReconciliation {
   return {
@@ -84,15 +88,15 @@ function collapsePlan(): Plan {
   return validatePlan(plan)
 }
 
-function withdrawal(id: string, accountId: string, personId: string, amount: number): YearCashFlowSourceLine {
+function withdrawal(id: string, acct: string, owner: string, amount: number): YearCashFlowSourceLine {
   return {
     id,
     kind: 'needBasedPortfolioWithdrawal',
     role: 'portfolioFunding',
     amountPlanDollars: amount,
     identities: [
-      { entityKind: 'account', accountId },
-      { entityKind: 'person', personId },
+      { entityKind: 'account', accountId: accountId(acct) },
+      { entityKind: 'person', personId: personId(owner) },
     ],
   }
 }
@@ -115,7 +119,7 @@ function collapseCashFlow(): YearCashFlow {
         amountPlanDollars: 99_700,
         identities: [
           { entityKind: 'incomeStream', incomeStreamId: 'w-pat' },
-          { entityKind: 'person', personId: 'p1' },
+          { entityKind: 'person', personId: personId('p1') },
         ],
       },
       {

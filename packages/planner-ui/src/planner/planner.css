@@ -2751,3 +2751,15 @@ html:has(.kpi-bar) {
     border-radius: 0;
   }
 }
+
+/* Narrow leading Flow column on the Results year table. Year stays a row header. */
+.year-table th.year-table-flow,
+.year-table td.year-table-flow {
+  width: 1%;
+  font-weight: 400;
+  padding-right: 0.4rem;
+}
+
+.year-table td.year-table-year {
+  font-weight: 600;
+}

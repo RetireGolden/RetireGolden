@@ -32,6 +32,9 @@ export interface YearCashFlowDialogProps {
   readonly year: number
   /** Rebuild the selector with grouping off. Shown only when lines were collapsed. */
   readonly onShowAll?: () => void
+  /** Controlled Sankey view. Uncontrolled (defaults to cash flow) when omitted. */
+  readonly viewId?: YearCashFlowSankeyViewId
+  readonly onViewChange?: (viewId: YearCashFlowSankeyViewId) => void
 }
 
 const TABLE_VIEW_LABEL: Record<YearCashFlowTableView, string> = {
@@ -186,50 +189,69 @@ export function YearCashFlowDialog({
   onClose,
   year,
   onShowAll,
+  viewId: viewIdProp,
+  onViewChange,
 }: YearCashFlowDialogProps) {
-  const [viewId, setViewId] = useState<YearCashFlowSankeyViewId>('cashFlow')
-  const ready = model.kind === 'ready' ? model : null
-  const showAllControl = ready !== null && !ready.showAll && hasCollapsedLines(ready)
+  const [uncontrolledViewId, setUncontrolledViewId] = useState<YearCashFlowSankeyViewId>('cashFlow')
+  const viewId = viewIdProp ?? uncontrolledViewId
+  const selectView = (next: YearCashFlowSankeyViewId) => {
+    onViewChange?.(next)
+    if (viewIdProp === undefined) setUncontrolledViewId(next)
+  }
   const modeLabel = dollarMode === 'today' ? "Amounts in today's dollars" : 'Amounts in nominal dollars'
+
+  if (model.kind === 'unavailable') {
+    return (
+      <Modal title={`${year} cash flow`} onClose={onClose}>
+        <div className="year-cash-flow-dialog">
+          <p className="small year-cash-flow-mode">{modeLabel}</p>
+          <RefusalState model={model} />
+          <div className="year-cash-flow-actions">
+            <button type="button" className="btn btn-secondary" onClick={() => downloadDetailCsv(model, year)}>
+              Download detail CSV
+            </button>
+          </div>
+        </div>
+      </Modal>
+    )
+  }
+
+  const readyModel: YearCashFlowSankeyReady = model
+  const sankeyView = readyModel.views[viewId]
+  const showAllControl = !readyModel.showAll && hasCollapsedLines(readyModel)
 
   return (
     <Modal title={`${year} cash flow`} onClose={onClose}>
       <div className="year-cash-flow-dialog">
         <p className="small year-cash-flow-mode">{modeLabel}</p>
-        {ready === null ? (
-          <RefusalState model={model} />
-        ) : (
-          <>
-            <SummaryStrip model={ready} year={year} displayAmount={displayAmount} />
-            <div className="year-cash-flow-toolbar">
-              <div className="seg" role="group" aria-label="Cash-flow view">
-                <button type="button" aria-pressed={viewId === 'cashFlow'} onClick={() => setViewId('cashFlow')}>
-                  Cash flow
-                </button>
-                <button type="button" aria-pressed={viewId === 'transfers'} onClick={() => setViewId('transfers')}>
-                  Transfers
-                </button>
-              </div>
-              {showAllControl ? (
-                <button type="button" className="btn btn-secondary" onClick={() => onShowAll?.()}>
-                  Show all
-                </button>
-              ) : null}
-            </div>
-            <YearCashFlowSankey
-              view={ready.views[viewId]}
-              viewId={viewId}
-              year={year}
-              displayAmount={displayAmount}
-              sourceTotalPlanDollars={ready.reconciliation.cash.sourceTotalPlanDollars}
-              fundedUsesPlanDollars={ready.reconciliation.uses.fundedUsesPlanDollars}
-              shortfallPlanDollars={ready.reconciliation.uses.unfundedUsesPlanDollars}
-              transferDebitsPlanDollars={ready.reconciliation.transfers.debitsPlanDollars}
-              transferCreditsPlanDollars={ready.reconciliation.transfers.creditsPlanDollars}
-            />
-            <DetailTable rows={ready.table} year={year} displayAmount={displayAmount} dollarMode={dollarMode} />
-          </>
-        )}
+        <SummaryStrip model={readyModel} year={year} displayAmount={displayAmount} />
+        <div className="year-cash-flow-toolbar">
+          <div className="seg" role="group" aria-label="Cash-flow view">
+            <button type="button" aria-pressed={viewId === 'cashFlow'} onClick={() => selectView('cashFlow')}>
+              Cash flow
+            </button>
+            <button type="button" aria-pressed={viewId === 'transfers'} onClick={() => selectView('transfers')}>
+              Transfers
+            </button>
+          </div>
+          {showAllControl ? (
+            <button type="button" className="btn btn-secondary" onClick={() => onShowAll?.()}>
+              Show all
+            </button>
+          ) : null}
+        </div>
+        <YearCashFlowSankey
+          view={{ nodes: [...sankeyView.nodes], links: [...sankeyView.links] }}
+          viewId={viewId}
+          year={year}
+          displayAmount={displayAmount}
+          sourceTotalPlanDollars={readyModel.reconciliation.cash.sourceTotalPlanDollars}
+          fundedUsesPlanDollars={readyModel.reconciliation.uses.fundedUsesPlanDollars}
+          shortfallPlanDollars={readyModel.reconciliation.uses.unfundedUsesPlanDollars}
+          transferDebitsPlanDollars={readyModel.reconciliation.transfers.debitsPlanDollars}
+          transferCreditsPlanDollars={readyModel.reconciliation.transfers.creditsPlanDollars}
+        />
+        <DetailTable rows={readyModel.table} year={year} displayAmount={displayAmount} dollarMode={dollarMode} />
         <div className="year-cash-flow-actions">
           <button type="button" className="btn btn-secondary" onClick={() => downloadDetailCsv(model, year)}>
             Download detail CSV

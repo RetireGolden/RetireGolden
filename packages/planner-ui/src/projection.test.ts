@@ -35,4 +35,14 @@ describe('projectPlan', () => {
 
     expect(projection.deflate(START_YEAR + 2, 10_000)).toBeCloseTo(10_000 / Math.pow(rate, 2))
   })
+
+  it('omits YearResult.cashFlow unless captureAnnualCashFlow is requested', () => {
+    const plan = fixturePlan()
+    const byStartYear = projectPlan(plan, START_YEAR)
+    expect(byStartYear.result.years.some((year) => year.cashFlow !== undefined)).toBe(false)
+
+    const captured = projectPlan(plan, { startYear: START_YEAR, captureAnnualCashFlow: true })
+    expect(captured.result.years.some((year) => year.cashFlow !== undefined)).toBe(true)
+    expect(captured.result.years[0]?.cashFlow?.reconciliation.status).toBeDefined()
+  })
 })

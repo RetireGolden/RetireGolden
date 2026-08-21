@@ -1,13 +1,19 @@
 import { useMemo } from 'react'
 
 import type { Plan } from '@retiregolden/engine/model/plan'
-import { projectPlan, type ProjectionView } from '../projection'
+import { projectPlan, type ProjectPlanOptions, type ProjectionView } from '../projection'
 
 export { taxCalculatorFor } from '../planTaxCalculator'
-export { currentStartYear, projectPlan, type ProjectionView } from '../projection'
+export { currentStartYear, projectPlan, type ProjectPlanOptions, type ProjectionView } from '../projection'
 
-export function useProjection(plan: Plan): ProjectionView {
-  return useMemo(() => projectPlan(plan), [plan])
+export type UseProjectionOptions = Pick<ProjectPlanOptions, 'captureAnnualCashFlow'>
+
+export function useProjection(plan: Plan, opts?: UseProjectionOptions): ProjectionView {
+  const captureAnnualCashFlow = opts?.captureAnnualCashFlow === true
+  return useMemo(
+    () => (captureAnnualCashFlow ? projectPlan(plan, { captureAnnualCashFlow: true }) : projectPlan(plan)),
+    [plan, captureAnnualCashFlow],
+  )
 }
 
 /** Stable Monte Carlo seed per plan (re-rollable in the UI). */
