@@ -17,6 +17,8 @@ import {
 } from '../../import/refreshHistory'
 import { getArticle } from '../../learn/learningRegistry'
 import { isPlanIncomplete } from '../planCompleteness'
+import { PlanStoreProvider } from '../../data/PlanStoreProvider'
+import type { PlanStore } from '../../data/planStoreContext'
 import { PlanPickerPage } from '../PlanPickerPage'
 import { PlanWorkspace } from '../PlanWorkspace'
 import { START_HERE_SLUGS } from './startHereSlugs'
@@ -118,6 +120,31 @@ describe('planner home adaptive layout', () => {
     expect(exportBtn.disabled).toBe(true)
     expect(container.querySelector('#home-export-why')?.textContent).toMatch(/No plan to export yet/)
     expect(exportBtn.getAttribute('aria-describedby')).toBe('home-export-why')
+  })
+
+  it('does not claim there is no plan to export while the library is still loading', async () => {
+    const hangingStore: PlanStore = {
+      listPlans: () => new Promise(() => {}),
+      loadPlan: async () => null,
+      savePlan: async () => undefined,
+      deletePlan: async () => undefined,
+    }
+    await act(async () => {
+      root.render(
+        <MemoryRouter>
+          <PlanStoreProvider store={hangingStore}>
+            <PlanPickerPage />
+          </PlanStoreProvider>
+        </MemoryRouter>,
+      )
+    })
+    expect(container.querySelector('[aria-label="Loading plans"]')).not.toBeNull()
+    const exportBtn = Array.from(container.querySelectorAll('button')).find(
+      (b) => b.textContent === 'Download plan backup',
+    ) as HTMLButtonElement
+    expect(exportBtn.disabled).toBe(true)
+    expect(exportBtn.getAttribute('aria-describedby')).toBeNull()
+    expect(container.querySelector('#home-export-why')).toBeNull()
   })
 
   it('lists Start here articles as a column of full phrases', async () => {

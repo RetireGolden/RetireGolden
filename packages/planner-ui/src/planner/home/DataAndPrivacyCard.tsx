@@ -19,7 +19,9 @@ export function DataAndPrivacyCard({
   onClearAll,
 }: DataAndPrivacyCardProps) {
   const readOnly = useWorkspaceReadOnly()
-  const canExport = Boolean(plans && plans.length > 0)
+  const listReady = plans !== null
+  const canExport = listReady && plans.length > 0
+  const emptyLibrary = listReady && plans.length === 0
   return (
     <div className="card home-privacy-card">
       <h2>Your data stays on your device, not on our servers</h2>
@@ -38,15 +40,15 @@ export function DataAndPrivacyCard({
             className="btn btn-secondary"
             onClick={() => void onExportAll()}
             disabled={!canExport}
-            aria-describedby={canExport ? undefined : 'home-export-why'}
+            aria-describedby={emptyLibrary ? 'home-export-why' : undefined}
           >
             Download plan backup
           </button>
-          {canExport ? null : (
+          {emptyLibrary ? (
             <p id="home-export-why" className="field-hint home-export-why">
               No plan to export yet
             </p>
-          )}
+          ) : null}
         </div>
         {readOnly ? null : (
           <>
