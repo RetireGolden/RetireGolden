@@ -86,7 +86,7 @@ export const whereTheMoneyComesFromAndGoesArticle: LearningArticle = {
         { symbol: 'cash available', meaning: 'the Cash flow sources; the Source total on the dialog' },
       ],
       basis: 'nominal',
-      note: 'Roth conversions, IRA gifts to charity, and reinvested dividends are not in this total. They appear on Transfers. The dialog follows the Results today\'s-dollars / nominal-dollars toggle; this reading aid uses nominal dollars.',
+      note: 'Roth conversions, IRA gifts to charity, and reinvested dividends are not in this total. They appear on Transfers. When the plan includes a property\'s cost basis, a home sale\'s net cash counts among that year\'s sources; without a cost basis, proceeds are deposited after the year\'s spending is settled, so they appear in the detail table but not in the diagram\'s Source total. The dialog follows the Results today\'s-dollars / nominal-dollars toggle; this reading aid uses nominal dollars.',
     },
     { type: 'heading', text: 'Portfolio withdrawals vs income' },
     {

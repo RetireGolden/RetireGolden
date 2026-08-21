@@ -100,7 +100,7 @@ export const howToReadProjectionArticle: LearningArticle = {
     { type: 'heading', text: 'Open any year to see the flow' },
     {
       type: 'prose',
-      md: 'On Results, each year row has a **View flow** button. It opens a source-to-use picture of that year: a diagram plus a table of every line. One view is cash the household could spend. The other is direct moves that never enter your pocket, including gifts from an IRA to charity, money set aside into accounts from your cash, and dividends that stayed invested. Amounts follow the same today\'s-dollars / nominal-dollars toggle as the rest of the page.',
+      md: 'On Results, each year row has a **View flow** button. It opens a source-to-use picture of that year: a diagram plus a table of every line. Most years show that diagram and the full table; when the engine cannot fully account for a year, you see an explanation instead. One view is cash the household could spend. The other is direct moves that never enter your pocket, including gifts from an IRA to charity, money set aside into accounts from your cash, and dividends that stayed invested. Amounts follow the same today\'s-dollars / nominal-dollars toggle as the rest of the page.',
     },
     {
       type: 'prose',
