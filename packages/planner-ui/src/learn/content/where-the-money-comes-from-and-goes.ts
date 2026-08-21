@@ -103,8 +103,12 @@ export const whereTheMoneyComesFromAndGoesArticle: LearningArticle = {
         ['Roth conversion', 'No. The dollars stay in a Roth account.', 'Often', 'Transfers. Any tax is a use on Cash flow.'],
         ['Gift from an IRA to charity', 'No. The dollars go to the charity.', 'Only the portion that qualifies as a [qualified charitable distribution (QCD)](/learn/qcds-qualified-charitable-distributions) avoids ordinary income. An amount beyond the eligible limit can raise the tax line even though it never becomes spendable cash.', 'Transfers'],
         ['Reinvested dividend or interest', 'No. The dollars stayed in the account.', 'The dividend or interest can still be taxable', 'Transfers, as reinvested yield'],
-        ['Contribution into an account', 'This uses cash you already had', 'Not a second source of cash', 'Cash flow as a funded use, and Transfers as the account credit. Do not add the two.'],
+        ['Contribution into an account', 'This uses cash you already had', 'Traditional and HSA: lower taxable income. Roth and taxable: no change that year.', 'Cash flow as a funded use, and Transfers as the account credit. Do not add the two.'],
       ],
+    },
+    {
+      type: 'prose',
+      md: 'Contributions into traditional or HSA accounts lower that year\'s taxable income in the projection. Contributions into Roth or taxable accounts do not change taxable income that year. The cash still leaves household cash on Cash flow and credits the account on Transfers.',
     },
     { type: 'heading', text: 'Why transfers have their own view' },
     {
