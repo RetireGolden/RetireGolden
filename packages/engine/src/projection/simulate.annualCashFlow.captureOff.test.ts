@@ -92,6 +92,11 @@ describe('SimulateOptions.captureAnnualCashFlow', () => {
     expect(omitted).toEqual(off)
     expect(stripCashFlow(on)).toEqual(omitted)
     expect(stripCashFlow(on)).toEqual(off)
+    // Stage 5 economic clone: capture-on with cashFlow stripped is byte-equal
+    // to a run that never set the flag. JSON.stringify also proves the clone
+    // carries no `"cashFlow"` key (toEqual would miss `cashFlow: undefined`).
+    expect(JSON.stringify(stripCashFlow(on))).toBe(JSON.stringify(omitted))
+    expect(JSON.stringify(stripCashFlow(on))).toBe(JSON.stringify(off))
   })
 
   it('publishes status reconciled for a $0 empty plan year', () => {

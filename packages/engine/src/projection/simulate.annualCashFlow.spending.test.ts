@@ -1,9 +1,9 @@
 /**
  * Stage 3 use-line capture for lifestyle, goals, system costs, and healthcare.
  *
- * Spending-only fixtures (no QCD, no reinvest, no conversions) should
- * reconcile under the stage-1 incomplete-inventory heuristic. Expected values
- * are independent hand worksheets, never taken from running the assembler.
+ * Spending-only fixtures (no QCD, no reinvest, no conversions) reconcile
+ * under the stage-5 cash/use/transfer identities. Expected values are
+ * independent hand worksheets, never taken from running the assembler.
  */
 import { describe, expect, it } from 'vitest'
 
@@ -189,6 +189,7 @@ describe('simulatePlan annual cash-flow spending uses', () => {
     expect(deferredYear).toBeDefined()
     expect(deferredYear!.cashFlow!.useLines.some((line) => line.id === 'use:oneTimeGoal:roof')).toBe(false)
     expect(years.some((row) => row.cashFlow?.useLines.some((line) => line.id === 'use:oneTimeGoal:roof' && row.flexibleGoals.deferred > 0 && row.year < 2036))).toBe(false)
+    expect(y2026.cashFlow!.reconciliation.status).toBe('reconciled')
   })
 
   it('publishes a skipped goal with unfunded = requested', () => {
@@ -221,6 +222,7 @@ describe('simulatePlan annual cash-flow spending uses', () => {
     expectMoney(trip.fundedPlanDollars, 0)
     expectMoney(trip.unfundedPlanDollars, 25_000)
     expect(trip.identities).toEqual([{ entityKind: 'goal', goalId: 'lux-trip' }])
+    expect(skipYear!.cashFlow!.reconciliation.status).toBe('reconciled')
   })
 
   it('publishes per-account debt, per-property costs, per-policy insurance, and per-person net LTC', () => {

@@ -1,9 +1,8 @@
 /**
  * Stage 2 portfolio-funding, loan-proceeds, and post-solve source lines.
  *
- * Stage 3 emits uses, so years without diverting transfers (no QCD, no
- * reinvest) reconcile when destinations land. Post-solve-only and
- * transfer-incomplete years stay `notReconciled` until later stages.
+ * Stage 5 identities close for these fixtures: uses and transfers have
+ * landed, and post-solve deposits are excluded from both cash sides.
  */
 import { describe, expect, it } from 'vitest'
 
@@ -145,6 +144,7 @@ describe('simulatePlan annual cash-flow portfolio and property sources', () => {
       { entityKind: 'requiredDistributionPool', personId: 'p1' },
     ])
     expectMoney(y2026.rmd, 20_000)
+    expect(y2026.cashFlow!.reconciliation.status).toBe('reconciled')
   })
 
   it('publishes exact-basis property sale as spendable proceeds, not a post-solve deposit', () => {
@@ -191,6 +191,7 @@ describe('simulatePlan annual cash-flow portfolio and property sources', () => {
     if (deposit.role !== 'postSolveDeposit') throw new Error('expected post-solve')
     expect(deposit.postSolveDestination).toEqual({ entityKind: 'account', accountId: 'cash-1' })
     expect(y2026.cashFlow!.sourceLines.some((line) => line.kind === 'propertySaleProceeds')).toBe(false)
+    expect(y2026.cashFlow!.reconciliation.status).toBe('reconciled')
   })
 
   it('publishes a HECM last-resort draw as hecmBackstopDraw loan proceeds on the property', () => {
@@ -250,5 +251,6 @@ describe('simulatePlan annual cash-flow portfolio and property sources', () => {
       { entityKind: 'account', accountId: 'ann-1' },
       { entityKind: 'person', personId: 'p1' },
     ])
+    expect(y2026.cashFlow!.reconciliation.status).toBe('reconciled')
   })
 })

@@ -2,10 +2,8 @@
  * Stage 2 source-line capture for income streams, with the stage 4
  * reinvestment-branch transfer.
  *
- * Stage 3 emits uses, so a year whose only gap was empty destinations now
- * reconciles when there is no diverting transfer (no QCD). Reinvest-only years
- * publish one `reinvestedYield` transfer of gross (taxable + exempt) and
- * keep spendable yield sources empty.
+ * Stage 5 identities close: reinvest-only years publish one `reinvestedYield`
+ * transfer of gross (taxable + exempt) and keep spendable yield sources empty.
  */
 import { describe, expect, it } from 'vitest'
 
@@ -298,5 +296,6 @@ describe('simulatePlan annual cash-flow income sources', () => {
     expectMoney(oneTime.amountPlanDollars, 5_000)
     expect(oneTime.identities).toEqual([{ entityKind: 'incomeStream', incomeStreamId: 'gift-1' }])
     expect(oneTime.taxCharacter).toEqual([{ kind: 'capitalGain', amountPlanDollars: 5_000 }])
+    expect(y2026.cashFlow!.reconciliation.status).toBe('reconciled')
   })
 })

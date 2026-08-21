@@ -1,10 +1,9 @@
 /**
  * Capture-after-commit publisher for `YearResult.cashFlow`.
  *
- * Stage 4 emits identity-bearing source lines, funded/unfunded use lines
- * after residual shortfall attribution, direct transfers with debit/credit
- * pairing and lineage, and standalone tax-character metadata. Assemble still
- * runs on every capture-on committed year so `yearResult` shape is stable
+ * Stage 5 emits identity-bearing source, use, transfer, and tax-character
+ * lines, then runs the full cash/use/transfer checker. Assemble still runs
+ * on every capture-on committed year so `yearResult` shape is stable
  * (`cashFlow` present iff the option is on). Leftover remaining after the
  * contribution group is not plugged; the cash identity then fails closed
  * with `cashIdentityMismatch`.
@@ -25,8 +24,8 @@ import type { EmployerElectiveAllocation } from './employerRothCatchUp.js'
 import { cashFlowLineIds, compareCashFlowLineId } from './annualCashFlowIds.js'
 import type { AggregateBasisSaleResult } from '../tax/aggregateBasisSale.js'
 import {
-  type CashFlowIncompleteInventoryProbes,
-  reconcileYearCashFlow,
+  finalizeYearCashFlow,
+  type MissingRequiredIdentityReport,
 } from './annualCashFlowReconciliation.js'
 import {
   attributeCashFlowShortfall,
@@ -53,10 +52,10 @@ import type {
 } from './types.js'
 
 /**
- * Applied engine floating-point tolerance for both conservation identities
- * and the stage-1–4 incomplete-inventory probes. Not display rounding, not
- * funding `EPSILON` (0.005), not Monte Carlo `SHORTFALL_EPSILON` (0.5).
- * Compare with `Math.abs(difference) > tolerance` (strict greater than).
+ * Applied engine floating-point tolerance for both conservation identities.
+ * Not display rounding, not funding `EPSILON` (0.005), not Monte Carlo
+ * `SHORTFALL_EPSILON` (0.5). Compare with `Math.abs(difference) > tolerance`
+ * (strict greater than).
  */
 export const CASH_FLOW_RECONCILIATION_TOLERANCE_PLAN_DOLLARS = 1e-6
 
@@ -112,8 +111,13 @@ export interface AnnualCashFlowPassLocals {
 /**
  * Values `assembleYearCashFlow` may read. It does not close over
  * `simulatePlan`, `evaluateWithdrawalNeed`, or live balances.
+ *
+ * `tax` / `penalties` / `surplus` feed published uses. The remaining
+ * committed scalars are still gathered by `simulate.ts` so the call site
+ * type-checks without a simulate.ts edit; they are not incomplete-inventory
+ * probes (that heuristic retired at stage 5).
  */
-export interface AssembleYearCashFlowInput extends CashFlowIncompleteInventoryProbes {
+export interface AssembleYearCashFlowInput {
   readonly yearSites: AnnualCashFlowYearSites
   readonly passLocals: AnnualCashFlowPassLocals
 
@@ -188,6 +192,24 @@ export interface AssembleYearCashFlowInput extends CashFlowIncompleteInventoryPr
   /** Final ACA-converged healthcare. */
   readonly healthcare: number
   readonly shortfallAfterHecm: number
+
+  readonly tax: number
+  readonly penalties: number
+  readonly surplus: number
+
+  /** Gathered by simulate.ts; unused after the stage-5 heuristic retirement. */
+  readonly incomesTotal: number
+  readonly taxableYieldReinvested: number
+  readonly propertySaleProceedsTotal: number
+  readonly rmdTotal: number
+  readonly seppTotal: number
+  readonly inheritedTotal: number
+  readonly needBasedWithdrawalTotal: number
+  readonly retirementActionProceeds: number
+  readonly hecmDraw: number
+  readonly hecmShortfallDraw: number
+  readonly contributionsTotal: number
+  readonly employerMatchTotal: number
 }
 
 function asReportingAccountId(id: string): AccountId {
@@ -672,7 +694,10 @@ function goalLayer(classification: 'required' | 'target' | 'ideal' | 'excess'): 
   return classification
 }
 
-function collectUseLines(input: AssembleYearCashFlowInput): YearCashFlowUseLine[] {
+function collectUseLines(
+  input: AssembleYearCashFlowInput,
+  missingRequiredIdentityReports: MissingRequiredIdentityReport[],
+): YearCashFlowUseLine[] {
   const pending: PendingUseLine[] = []
   const { yearSites, passLocals } = input
 
@@ -825,6 +850,10 @@ function collectUseLines(input: AssembleYearCashFlowInput): YearCashFlowUseLine[
       identities: [],
       penaltyClass,
     })
+  } else if (penaltyRemainder > CASH_FLOW_RECONCILIATION_TOLERANCE_PLAN_DOLLARS) {
+    // Contract: omit rather than invent a class. Empty lineIds — even the
+    // household grammar needs a known YearCashFlowPenaltyClass.
+    missingRequiredIdentityReports.push({ lineIds: [] })
   }
 
   for (const row of yearSites.contributions) {
@@ -1274,27 +1303,23 @@ function collectTaxCharacterMetadata(
 
 /**
  * Publish one year's cash-flow report from frozen committed locals.
- * Stage 4: source lines, use lines after residual attribution, transfers with
- * lineage, standalone tax-character metadata, and an honest reconciliation
- * status (stage-1 incomplete-inventory heuristic still applies).
+ * Stage 5: source, use, transfer, and tax-character lines, then the full
+ * cash/use/transfer checker (zero-line omission, lexicographic sort,
+ * identities, diagnostics). The stage-1 incomplete-inventory heuristic is
+ * retired.
  */
 export function assembleYearCashFlow(input: AssembleYearCashFlowInput): YearCashFlow {
-  const sourceLines: readonly YearCashFlowSourceLine[] = collectSourceLines(input)
-  const useLines: readonly YearCashFlowUseLine[] = collectUseLines(input)
-  const transferLines: readonly YearCashFlowTransferLine[] = collectTransferLines(input, useLines)
-  const taxCharacterMetadata: readonly YearCashFlowStandaloneTaxCharacter[] =
-    collectTaxCharacterMetadata(input)
-  return {
+  const missingRequiredIdentityReports: MissingRequiredIdentityReport[] = []
+  const sourceLines = collectSourceLines(input)
+  const useLines = collectUseLines(input, missingRequiredIdentityReports)
+  const transferLines = collectTransferLines(input, useLines)
+  const taxCharacterMetadata = collectTaxCharacterMetadata(input)
+  return finalizeYearCashFlow({
     sourceLines,
     useLines,
     transferLines,
     taxCharacterMetadata,
-    reconciliation: reconcileYearCashFlow({
-      sourceLines,
-      useLines,
-      transferLines,
-      probes: input,
-      tolerancePlanDollars: CASH_FLOW_RECONCILIATION_TOLERANCE_PLAN_DOLLARS,
-    }),
-  }
+    missingRequiredIdentityReports,
+    tolerancePlanDollars: CASH_FLOW_RECONCILIATION_TOLERANCE_PLAN_DOLLARS,
+  })
 }

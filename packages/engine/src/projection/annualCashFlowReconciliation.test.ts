@@ -3,56 +3,103 @@ import { describe, expect, it } from 'vitest'
 import { asAccountId, asPersonId } from '../actions/identity.js'
 import { CASH_FLOW_RECONCILIATION_TOLERANCE_PLAN_DOLLARS } from './annualCashFlowCapture.js'
 import {
-  type CashFlowIncompleteInventoryProbes,
+  finalizeYearCashFlow,
   reconcileYearCashFlow,
 } from './annualCashFlowReconciliation.js'
 import type {
   YearCashFlowSourceLine,
+  YearCashFlowStandaloneTaxCharacter,
   YearCashFlowTransferLine,
   YearCashFlowUseLine,
 } from './types.js'
 
 const TOLERANCE = CASH_FLOW_RECONCILIATION_TOLERANCE_PLAN_DOLLARS
-
-function probes(
-  overrides: Partial<CashFlowIncompleteInventoryProbes> = {},
-): CashFlowIncompleteInventoryProbes {
-  return {
-    incomesTotal: 0,
-    taxableYieldReinvested: 0,
-    propertySaleProceedsTotal: 0,
-    rmdTotal: 0,
-    seppTotal: 0,
-    inheritedTotal: 0,
-    needBasedWithdrawalTotal: 0,
-    retirementActionProceeds: 0,
-    hecmDraw: 0,
-    hecmShortfallDraw: 0,
-    tax: 0,
-    penalties: 0,
-    contributionsTotal: 0,
-    employerMatchTotal: 0,
-    surplus: 0,
-    ...overrides,
-  }
-}
+const accountId = asAccountId('tax1')
+const propertyId = asAccountId('prop1')
+const personId = asPersonId('p1')
 
 function reconcile(opts: {
   sourceLines?: readonly YearCashFlowSourceLine[]
   useLines?: readonly YearCashFlowUseLine[]
   transferLines?: readonly YearCashFlowTransferLine[]
-  probes?: CashFlowIncompleteInventoryProbes
+  taxCharacterMetadata?: readonly YearCashFlowStandaloneTaxCharacter[]
+  missingRequiredIdentityReports?: readonly { readonly lineIds: readonly string[] }[]
 }) {
   return reconcileYearCashFlow({
     sourceLines: opts.sourceLines ?? [],
     useLines: opts.useLines ?? [],
     transferLines: opts.transferLines ?? [],
-    probes: opts.probes ?? probes(),
+    taxCharacterMetadata: opts.taxCharacterMetadata ?? [],
+    missingRequiredIdentityReports: opts.missingRequiredIdentityReports,
     tolerancePlanDollars: TOLERANCE,
   })
 }
 
-describe('reconcileYearCashFlow stage-1 stub', () => {
+function reinvestedYield(amount: number): YearCashFlowTransferLine {
+  return {
+    id: 'transfer:reinvestedYield:tax1',
+    kind: 'reinvestedYield',
+    source: { entityKind: 'accountYield', accountId },
+    destination: { entityKind: 'account', accountId },
+    debitPlanDollars: amount,
+    creditPlanDollars: amount,
+    identities: [{ entityKind: 'account', accountId }],
+  }
+}
+
+function propertySale(amount: number): YearCashFlowSourceLine {
+  return {
+    id: 'source:propertySaleProceeds:prop1',
+    kind: 'propertySaleProceeds',
+    role: 'spendableSource',
+    amountPlanDollars: amount,
+    identities: [{ entityKind: 'propertyAccount', propertyAccountId: propertyId }],
+  }
+}
+
+function surplusUse(amount: number): YearCashFlowUseLine {
+  return {
+    id: 'use:surplusInvestment:unassignedCash',
+    kind: 'surplusInvestment',
+    requestedPlanDollars: amount,
+    fundedPlanDollars: amount,
+    unfundedPlanDollars: 0,
+    identities: [],
+  }
+}
+
+function contributionUse(opts: {
+  requested: number
+  funded: number
+  unfunded: number
+}): YearCashFlowUseLine {
+  return {
+    id: 'use:contribution:tax1',
+    kind: 'contribution',
+    requestedPlanDollars: opts.requested,
+    fundedPlanDollars: opts.funded,
+    unfundedPlanDollars: opts.unfunded,
+    identities: [{ entityKind: 'account', accountId }],
+  }
+}
+
+function employeeContributionTransfer(
+  amount: number,
+  relationship: 'sameDollarLaterStage' | 'committedCreditBeyondFunding',
+): YearCashFlowTransferLine {
+  return {
+    id: 'transfer:employeeContribution:tax1',
+    kind: 'employeeContribution',
+    source: { entityKind: 'householdCash' },
+    destination: { entityKind: 'account', accountId },
+    debitPlanDollars: amount,
+    creditPlanDollars: amount,
+    identities: [{ entityKind: 'account', accountId }],
+    lineage: [{ lineId: 'use:contribution:tax1', relationship }],
+  }
+}
+
+describe('reconcileYearCashFlow', () => {
   it('reconciles the 0=0 empty year', () => {
     const result = reconcile({})
     expect(result.status).toBe('reconciled')
@@ -66,182 +113,326 @@ describe('reconcileYearCashFlow stage-1 stub', () => {
     expect(result.transfers.differencePlanDollars).toBe(0)
   })
 
-  it('flags a wages-like year via the spendable-source probe, not incomes.total 1:1', () => {
-    // Worksheet: wages $50,000, no reinvested yield, no property sale, empty
-    // published spendableSource lines. Probe scalar = 50,000 - 0 + 0.
-    const result = reconcile({
-      probes: probes({ incomesTotal: 50_000 }),
-    })
-    expect(result.status).toBe('notReconciled')
-    expect(result.reasonCodes).toContain('unsupportedLedgerTerm')
-    expect(result.diagnostics).toEqual([
-      expect.objectContaining({
-        reasonCode: 'unsupportedLedgerTerm',
-        lineIds: [],
-        expectedPlanDollars: 50_000,
-        actualPlanDollars: 0,
-      }),
-    ])
-    // Published cash identity is still 0=0; the year is notReconciled because
-    // the inventory is incomplete, not because the empty arrays fail to balance.
-    expect(result.cash.differencePlanDollars).toBe(0)
-    expect(result.reasonCodes).not.toContain('cashIdentityMismatch')
-  })
-
-  it('flags a reinvest-only year because reinvestedYield transfers are empty, not because incomesTotal is nonzero', () => {
+  it('reconciles a reinvest-only year: empty spendable sources, one gross reinvestedYield transfer', () => {
     // Worksheet: taxable yield $4,000, all reinvested. incomes.total includes
-    // that yield; the spendable-source probe subtracts it (4,000 - 4,000 = 0)
-    // so empty spendable sources are correct. Until stage 4 emits the
-    // reinvestedYield transfer, the reinvest probe is the nonempty one.
-    const emptyTransfers = reconcile({
-      probes: probes({ incomesTotal: 4_000, taxableYieldReinvested: 4_000 }),
-    })
-    expect(emptyTransfers.status).toBe('notReconciled')
-    expect(emptyTransfers.reasonCodes).toEqual(['unsupportedLedgerTerm'])
-    expect(emptyTransfers.diagnostics).toHaveLength(1)
-    expect(emptyTransfers.diagnostics[0]).toEqual(expect.objectContaining({
-      reasonCode: 'unsupportedLedgerTerm',
-      expectedPlanDollars: 4_000,
-    }))
-    expect(emptyTransfers.cash.spendableSourcesPlanDollars).toBe(0)
-
-    // Discriminator: the same incomesTotal with a published reinvestedYield
-    // transfer of the gross must reconcile. A 1:1 incomes.total vs spendable
-    // sources probe would still fail this year.
-    const accountId = asAccountId('tax1')
-    const withTransfer = reconcile({
-      probes: probes({ incomesTotal: 4_000, taxableYieldReinvested: 4_000 }),
-      transferLines: [
-        {
-          id: 'transfer:reinvestedYield:tax1',
-          kind: 'reinvestedYield',
-          source: { entityKind: 'accountYield', accountId },
-          destination: { entityKind: 'account', accountId },
-          debitPlanDollars: 4_000,
-          creditPlanDollars: 4_000,
-          identities: [],
-        },
-      ],
-    })
-    expect(withTransfer.status).toBe('reconciled')
-    expect(withTransfer.reasonCodes).toEqual([])
-  })
-
-  it('flags nonempty needBasedWithdrawalTotal with empty need-based lines, and never probes withdrawals.total', () => {
-    // withdrawals.total folds RMD+SEPP+inherited+actions+need-based. This year
-    // has only need-based $8,000; a withdrawals.total probe is not a field
-    // the stub accepts, and RMD/SEPP/inherited/action scalars stay 0.
+    // that yield; spendable sources stay empty by design. The transfer is
+    // excluded from both cash sides, so 0=0 cash and 4,000=4,000 pairing.
     const result = reconcile({
-      probes: probes({ needBasedWithdrawalTotal: 8_000 }),
-    })
-    expect(result.status).toBe('notReconciled')
-    expect(result.diagnostics[0]?.expectedPlanDollars).toBe(8_000)
-
-    const withdrawalsTotalWouldBe = 12_000
-    const noNeedBased = reconcile({
-      probes: probes({
-        // If the stub probed withdrawals.total, this leftover would flag.
-        needBasedWithdrawalTotal: 0,
-        rmdTotal: 0,
-        seppTotal: 0,
-        inheritedTotal: 0,
-        retirementActionProceeds: 0,
-      }),
-    })
-    expect(withdrawalsTotalWouldBe).toBe(12_000)
-    expect(noNeedBased.status).toBe('reconciled')
-  })
-
-  it('probes coordinated and backstop HECM separately and does not treat hecmDraw as a third group', () => {
-    // Worksheet: coordinated $50 + backstop $50. hecmDraw (the YearResult
-    // scalar) is 100 because it already includes hecmShortfallDraw. Matching
-    // published lines for both kinds must not fire unsupportedLedgerTerm; a
-    // third 1:1 hecmDraw probe against an empty "hecmDraw" kind would.
-    const propertyId = asAccountId('prop1')
-    const result = reconcile({
-      probes: probes({ hecmDraw: 100, hecmShortfallDraw: 50, surplus: 100 }),
-      sourceLines: [
-        {
-          id: 'source:hecmCoordinatedDraw:prop1',
-          kind: 'hecmCoordinatedDraw',
-          role: 'loanProceeds',
-          amountPlanDollars: 50,
-          identities: [{ entityKind: 'propertyAccount', propertyAccountId: propertyId }],
-        },
-        {
-          id: 'source:hecmBackstopDraw:prop1',
-          kind: 'hecmBackstopDraw',
-          role: 'loanProceeds',
-          amountPlanDollars: 50,
-          identities: [{ entityKind: 'propertyAccount', propertyAccountId: propertyId }],
-        },
-      ],
-      useLines: [
-        {
-          id: 'use:surplusInvestment:unassignedCash',
-          kind: 'surplusInvestment',
-          requestedPlanDollars: 100,
-          fundedPlanDollars: 100,
-          unfundedPlanDollars: 0,
-          identities: [],
-        },
-      ],
+      transferLines: [reinvestedYield(4_000)],
     })
     expect(result.status).toBe('reconciled')
-    expect(result.reasonCodes).not.toContain('unsupportedLedgerTerm')
-  })
-
-  it('treats an owned-IRA RMD as complete when the RMD-diverted QCD transfer is present even without a source line', () => {
-    // Stages 1–4: the RMD group is RMD portfolioFunding lines PLUS QCD
-    // transfers with divertedBeforeHouseholdCash lineage. Gross $10,000 all
-    // diverted still has a nonempty group.
-    const withDiversion = reconcile({
-      probes: probes({ rmdTotal: 10_000 }),
-      transferLines: [
-        {
-          id: 'transfer:qualifiedCharitableDistribution:rmd:p1',
-          kind: 'qualifiedCharitableDistribution',
-          source: { entityKind: 'requiredDistributionPool', personId: asPersonId('p1') },
-          destination: { entityKind: 'charity' },
-          debitPlanDollars: 10_000,
-          creditPlanDollars: 10_000,
-          identities: [],
-          lineage: [{ lineId: 'source:requiredMinimumDistribution:ownedIraPool:p1', relationship: 'divertedBeforeHouseholdCash' }],
-        },
-      ],
-    })
-    expect(withDiversion.reasonCodes).not.toContain('unsupportedLedgerTerm')
-    expect(withDiversion.status).toBe('reconciled')
+    expect(result.reasonCodes).toEqual([])
+    expect(result.cash.spendableSourcesPlanDollars).toBe(0)
+    expect(result.cash.differencePlanDollars).toBe(0)
+    expect(result.transfers.debitsPlanDollars).toBe(4_000)
+    expect(result.transfers.creditsPlanDollars).toBe(4_000)
+    expect(result.transfers.differencePlanDollars).toBe(0)
   })
 
   it('fails closed on identity noise above 1e-6 and ignores 1e-7 association noise', () => {
-    const propertyId = asAccountId('prop1')
     const noisy = reconcile({
-      sourceLines: [
-        {
-          id: 'source:propertySaleProceeds:prop1',
-          kind: 'propertySaleProceeds',
-          role: 'spendableSource',
-          amountPlanDollars: 1e-7,
-          identities: [{ entityKind: 'propertyAccount', propertyAccountId: propertyId }],
-        },
-      ],
+      sourceLines: [propertySale(1e-7)],
     })
     expect(noisy.status).toBe('reconciled')
     expect(Math.abs(noisy.cash.differencePlanDollars)).toBe(1e-7)
 
     const mismatch = reconcile({
-      sourceLines: [
-        {
-          id: 'source:propertySaleProceeds:prop1',
-          kind: 'propertySaleProceeds',
-          role: 'spendableSource',
-          amountPlanDollars: 1e-6 + 1e-12,
-          identities: [{ entityKind: 'propertyAccount', propertyAccountId: propertyId }],
-        },
-      ],
+      sourceLines: [propertySale(1e-6 + 1e-12)],
     })
     expect(mismatch.status).toBe('notReconciled')
     expect(mismatch.reasonCodes).toContain('cashIdentityMismatch')
+    expect(mismatch.diagnostics).toEqual([
+      expect.objectContaining({
+        reasonCode: 'cashIdentityMismatch',
+        expectedPlanDollars: 0,
+        actualPlanDollars: 1e-6 + 1e-12,
+      }),
+    ])
+  })
+
+  it('flags a duplicate published id once per colliding id and still publishes both lines', () => {
+    const result = reconcile({
+      sourceLines: [propertySale(50), { ...propertySale(50) }],
+      useLines: [surplusUse(100)],
+    })
+    expect(result.status).toBe('notReconciled')
+    expect(result.reasonCodes).toContain('duplicateLineId')
+    expect(result.diagnostics.filter((row) => row.reasonCode === 'duplicateLineId')).toEqual([
+      { reasonCode: 'duplicateLineId', lineIds: ['source:propertySaleProceeds:prop1'] },
+    ])
+    expect(result.cash.sourceTotalPlanDollars).toBe(100)
+  })
+
+  it('flags a negative physical amount as invalidAmount', () => {
+    const result = reconcile({
+      sourceLines: [propertySale(-1)],
+    })
+    expect(result.status).toBe('notReconciled')
+    expect(result.reasonCodes).toContain('invalidAmount')
+    expect(result.diagnostics).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        reasonCode: 'invalidAmount',
+        lineIds: ['source:propertySaleProceeds:prop1'],
+        actualPlanDollars: -1,
+      }),
+    ]))
+  })
+
+  it('flags a nonfinite physical amount as invalidAmount', () => {
+    const result = reconcile({
+      sourceLines: [propertySale(Number.POSITIVE_INFINITY)],
+    })
+    expect(result.status).toBe('notReconciled')
+    expect(result.reasonCodes).toContain('invalidAmount')
+    expect(result.diagnostics[0]).toEqual(expect.objectContaining({
+      reasonCode: 'invalidAmount',
+      actualPlanDollars: Number.POSITIVE_INFINITY,
+    }))
+  })
+
+  it('allows a negative capitalGain character and never folds it into a money total', () => {
+    const result = reconcile({
+      taxCharacterMetadata: [
+        {
+          id: 'metadata:capitalGain:rebalancing:tax1',
+          taxCharacter: { kind: 'capitalGain', amountPlanDollars: -250 },
+          identities: [{ entityKind: 'account', accountId }],
+        },
+      ],
+    })
+    expect(result.status).toBe('reconciled')
+    expect(result.cash.differencePlanDollars).toBe(0)
+    expect(result.transfers.differencePlanDollars).toBe(0)
+  })
+
+  it('flags dangling lineage as invalidLineage', () => {
+    const result = reconcile({
+      transferLines: [
+        {
+          ...reinvestedYield(4_000),
+          kind: 'qualifiedCharitableDistribution',
+          id: 'transfer:qualifiedCharitableDistribution:rmd:p1',
+          source: { entityKind: 'requiredDistributionPool', personId },
+          destination: { entityKind: 'charity' },
+          identities: [{ entityKind: 'requiredDistributionPool', personId }],
+          lineage: [{
+            lineId: 'source:requiredMinimumDistribution:ownedIraPool:p1',
+            relationship: 'divertedBeforeHouseholdCash',
+          }],
+        },
+      ],
+    })
+    expect(result.status).toBe('notReconciled')
+    expect(result.reasonCodes).toContain('invalidLineage')
+    expect(result.diagnostics).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        reasonCode: 'invalidLineage',
+        lineIds: [
+          'transfer:qualifiedCharitableDistribution:rmd:p1',
+          'source:requiredMinimumDistribution:ownedIraPool:p1',
+        ],
+      }),
+    ]))
+  })
+
+  it('accepts committedCreditBeyondFunding when the transfer delta equals the use unfunded remainder', () => {
+    // Worksheet: requested 8,000, funded 1,000, unfunded 7,000. Transfer
+    // records the full committed credit 8,000. 8,000 − 1,000 = 7,000.
+    const result = reconcile({
+      sourceLines: [propertySale(1_000)],
+      useLines: [contributionUse({ requested: 8_000, funded: 1_000, unfunded: 7_000 })],
+      transferLines: [employeeContributionTransfer(8_000, 'committedCreditBeyondFunding')],
+    })
+    expect(result.status).toBe('reconciled')
+    expect(result.reasonCodes).not.toContain('invalidLineage')
+    expect(result.cash.differencePlanDollars).toBe(0)
+  })
+
+  it('rejects committedCreditBeyondFunding when the delta is anything other than the unfunded remainder', () => {
+    const result = reconcile({
+      sourceLines: [propertySale(1_000)],
+      useLines: [contributionUse({ requested: 8_000, funded: 1_000, unfunded: 7_000 })],
+      transferLines: [employeeContributionTransfer(8_001, 'committedCreditBeyondFunding')],
+    })
+    expect(result.status).toBe('notReconciled')
+    expect(result.reasonCodes).toContain('invalidLineage')
+    expect(result.diagnostics).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        reasonCode: 'invalidLineage',
+        lineIds: ['transfer:employeeContribution:tax1', 'use:contribution:tax1'],
+        expectedPlanDollars: 7_000,
+        actualPlanDollars: 7_001,
+        differencePlanDollars: 1,
+      }),
+    ]))
+  })
+
+  it('flags a transfer whose debit and credit differ beyond tolerance', () => {
+    const result = reconcile({
+      transferLines: [
+        {
+          ...reinvestedYield(4_000),
+          creditPlanDollars: 3_999,
+        },
+      ],
+    })
+    expect(result.status).toBe('notReconciled')
+    expect(result.reasonCodes).toContain('transferIdentityMismatch')
+    expect(result.diagnostics).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        reasonCode: 'transferIdentityMismatch',
+        lineIds: ['transfer:reinvestedYield:tax1'],
+        expectedPlanDollars: 3_999,
+        actualPlanDollars: 4_000,
+        differencePlanDollars: 1,
+      }),
+    ]))
+  })
+
+  it('flags a use line whose requested amount is not funded plus unfunded', () => {
+    const result = reconcile({
+      useLines: [contributionUse({ requested: 10, funded: 3, unfunded: 6 })],
+    })
+    expect(result.status).toBe('notReconciled')
+    expect(result.reasonCodes).toContain('useIdentityMismatch')
+    expect(result.diagnostics).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        reasonCode: 'useIdentityMismatch',
+        lineIds: ['use:contribution:tax1'],
+        expectedPlanDollars: 10,
+        actualPlanDollars: 9,
+        differencePlanDollars: 1,
+      }),
+    ]))
+  })
+
+  it('flags a published line that lacks a grammar-required identity', () => {
+    const result = reconcile({
+      sourceLines: [
+        {
+          id: 'source:wages:wage-1',
+          kind: 'wages',
+          role: 'spendableSource',
+          amountPlanDollars: 50_000,
+          identities: [{ entityKind: 'incomeStream', incomeStreamId: 'wage-1' }],
+        },
+      ],
+      useLines: [
+        {
+          id: 'use:requiredLifestyle:household',
+          kind: 'requiredLifestyle',
+          requestedPlanDollars: 50_000,
+          fundedPlanDollars: 50_000,
+          unfundedPlanDollars: 0,
+          identities: [],
+        },
+      ],
+    })
+    expect(result.status).toBe('notReconciled')
+    expect(result.reasonCodes).toContain('missingRequiredIdentity')
+    expect(result.diagnostics).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        reasonCode: 'missingRequiredIdentity',
+        lineIds: ['source:wages:wage-1'],
+      }),
+    ]))
+  })
+
+  it('records an assemble-omitted producer as missingRequiredIdentity with empty lineIds', () => {
+    const result = reconcile({
+      missingRequiredIdentityReports: [{ lineIds: [] }],
+    })
+    expect(result.status).toBe('notReconciled')
+    expect(result.reasonCodes).toEqual(['missingRequiredIdentity'])
+    expect(result.diagnostics).toEqual([
+      { reasonCode: 'missingRequiredIdentity', lineIds: [] },
+    ])
+  })
+})
+
+describe('finalizeYearCashFlow', () => {
+  it('omits a zero physical line except an owned-IRA RMD zero-net with a QCD diversion target', () => {
+    const zeroWage: YearCashFlowSourceLine = {
+      id: 'source:wages:wage-1',
+      kind: 'wages',
+      role: 'spendableSource',
+      amountPlanDollars: 0,
+      identities: [
+        { entityKind: 'incomeStream', incomeStreamId: 'wage-1' },
+        { entityKind: 'person', personId },
+      ],
+    }
+    const zeroRmd: YearCashFlowSourceLine = {
+      id: 'source:requiredMinimumDistribution:ownedIraPool:p1',
+      kind: 'requiredMinimumDistribution',
+      role: 'portfolioFunding',
+      amountPlanDollars: 0,
+      identities: [{ entityKind: 'requiredDistributionPool', personId }],
+    }
+    const qcd: YearCashFlowTransferLine = {
+      id: 'transfer:qualifiedCharitableDistribution:rmd:p1',
+      kind: 'qualifiedCharitableDistribution',
+      source: { entityKind: 'requiredDistributionPool', personId },
+      destination: { entityKind: 'charity' },
+      debitPlanDollars: 10_000,
+      creditPlanDollars: 10_000,
+      identities: [{ entityKind: 'requiredDistributionPool', personId }],
+      lineage: [{
+        lineId: 'source:requiredMinimumDistribution:ownedIraPool:p1',
+        relationship: 'divertedBeforeHouseholdCash',
+      }],
+    }
+    const published = finalizeYearCashFlow({
+      sourceLines: [zeroWage, zeroRmd],
+      useLines: [],
+      transferLines: [qcd],
+      taxCharacterMetadata: [],
+      tolerancePlanDollars: TOLERANCE,
+    })
+    expect(published.sourceLines.map((line) => line.id)).toEqual([
+      'source:requiredMinimumDistribution:ownedIraPool:p1',
+    ])
+    expect(published.reconciliation.status).toBe('reconciled')
+  })
+
+  it('emits each reporting array in lexicographic id order', () => {
+    const published = finalizeYearCashFlow({
+      sourceLines: [
+        propertySale(50),
+        {
+          id: 'source:wages:wage-1',
+          kind: 'wages',
+          role: 'spendableSource',
+          amountPlanDollars: 50,
+          identities: [
+            { entityKind: 'incomeStream', incomeStreamId: 'wage-1' },
+            { entityKind: 'person', personId },
+          ],
+        },
+      ],
+      useLines: [
+        surplusUse(40),
+        {
+          id: 'use:requiredLifestyle:household',
+          kind: 'requiredLifestyle',
+          requestedPlanDollars: 60,
+          fundedPlanDollars: 60,
+          unfundedPlanDollars: 0,
+          identities: [],
+        },
+      ],
+      transferLines: [],
+      taxCharacterMetadata: [],
+      tolerancePlanDollars: TOLERANCE,
+    })
+    expect(published.sourceLines.map((line) => line.id)).toEqual([
+      'source:propertySaleProceeds:prop1',
+      'source:wages:wage-1',
+    ])
+    expect(published.useLines.map((line) => line.id)).toEqual([
+      'use:requiredLifestyle:household',
+      'use:surplusInvestment:unassignedCash',
+    ])
+    expect(published.reconciliation.status).toBe('reconciled')
   })
 })

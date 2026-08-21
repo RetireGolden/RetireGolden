@@ -268,6 +268,7 @@ describe('simulatePlan annual cash-flow transfers', () => {
       line.kind === 'qualifiedCharitableDistribution' as string,
     )).toBe(false)
     expectMoney(y2026.qcd, 15_000)
+    expect(y2026.cashFlow!.reconciliation.status).toBe('reconciled')
   })
 
   it('carries the named QCD charity designationId from the action oracle', () => {
@@ -312,6 +313,7 @@ describe('simulatePlan annual cash-flow transfers', () => {
       { kind: 'qcdIncomeExclusion', amountPlanDollars: 20_000 },
     ])
     expectMoney(y2026.qcd, 20_000)
+    expect(y2026.cashFlow!.reconciliation.status).toBe('reconciled')
   })
 
   it('publishes employer match as a transfer only, not a use and not income', () => {
@@ -344,6 +346,7 @@ describe('simulatePlan annual cash-flow transfers', () => {
     expectMoney(y2026.employerMatch, 3_000)
     expectMoney(y2026.incomes.wages, 50_000)
     expect(y2026.incomes.total).toBe(50_000)
+    expect(y2026.cashFlow!.reconciliation.status).toBe('reconciled')
   })
 
   it('links an employee contribution transfer to its use with sameDollarLaterStage', () => {
@@ -426,6 +429,7 @@ describe('simulatePlan annual cash-flow transfers', () => {
     expect(y2026.cashFlow!.taxCharacterMetadata.some((row) =>
       row.id === 'metadata:capitalGain:rebalancing:brokerage-1',
     )).toBe(false)
+    expect(y2026.cashFlow!.reconciliation.status).toBe('reconciled')
   })
 
   it('publishes a TIPS-ladder purchase transfer of the quoted real cost', () => {
@@ -460,6 +464,7 @@ describe('simulatePlan annual cash-flow transfers', () => {
     expect(line.source).toEqual({ entityKind: 'account', accountId: 'cash1' })
     expect(line.destination).toEqual({ entityKind: 'tipsLadder', ladderId: 'lad1' })
     expect(line.taxCharacter).toBeUndefined()
+    expect(y2026.cashFlow!.reconciliation.status).toBe('reconciled')
   })
 
   it('publishes a pension lump-sum rollover as a direct transfer, never household cash', () => {
@@ -495,6 +500,7 @@ describe('simulatePlan annual cash-flow transfers', () => {
     expect(y2026.cashFlow!.sourceLines.some((row) => row.kind === 'pension')).toBe(false)
     expectMoney(y2026.incomes.pension, 0)
     expectMoney(y2026.balances['ira-1'] ?? 0, 50_000)
+    expect(y2026.cashFlow!.reconciliation.status).toBe('reconciled')
   })
 
   it('pairs every published transfer debit with an equal credit', () => {
@@ -516,5 +522,6 @@ describe('simulatePlan annual cash-flow transfers', () => {
       expect(line.debitPlanDollars).toBe(line.creditPlanDollars)
     }
     expect(y2026.cashFlow!.reconciliation.transfers.differencePlanDollars).toBe(0)
+    expect(y2026.cashFlow!.reconciliation.status).toBe('reconciled')
   })
 })
