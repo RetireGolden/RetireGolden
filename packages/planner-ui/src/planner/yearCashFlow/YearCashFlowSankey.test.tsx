@@ -257,6 +257,13 @@ describe('YearCashFlowSankey', () => {
     expect(html).not.toContain('$19,000')
   })
 
+  it('renders node labels at readable font sizes for the 50+ audience', () => {
+    const html = renderToStaticMarkup(chart())
+    expect(html).toContain('font-size="16"')
+    expect(html).toContain('font-size="13.6"')
+    expect(html).not.toContain('font-size="11"')
+  })
+
   it('colors nodes by side so legend swatches match the chart', () => {
     const html = renderToStaticMarkup(chart())
     expect(html).toContain('background:var(--chart-1)')

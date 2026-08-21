@@ -45,6 +45,12 @@ const UNFUNDED_HATCH_ID = 'year-cash-flow-unfunded-hatch'
 const LABEL_MAX = 20
 const MIN_CHART_WIDTH = 560
 const FALLBACK_CHART_WIDTH = 720
+/** Primary node label — DESIGN.md 1rem minimum for 50+ readability. */
+const NODE_LABEL_FONT_PX = 16
+/** Secondary amount line — no smaller than 0.85rem at a 16px root. */
+const NODE_AMOUNT_FONT_PX = 13.6
+const NODE_PADDING = 26
+const NODE_HEIGHT_PER_NODE = 50
 
 /**
  * Ordinary link stroke vs --surface-1 (index.css), opacity 1:
@@ -252,6 +258,8 @@ function YearCashFlowSankeyNode({ x = 0, y = 0, width = 0, height = 0, payload, 
   const labelOnRight = payload.side === 'fundedUse' || payload.side === 'unfundedUse' || x > 280
   const textX = labelOnRight ? x + nodeWidth + 6 : x - 6
   const textAnchor = labelOnRight ? 'start' : 'end'
+  const labelBlockHeight = NODE_LABEL_FONT_PX + NODE_AMOUNT_FONT_PX + 4
+  const labelTopY = y + (nodeHeight - labelBlockHeight) / 2
   const title = `${payload.label} (${payload.kindLabel}): ${payload.amountLabel}`
   return (
     <g className="year-cash-flow-sankey-node" data-node-id={payload.id} data-flag={payload.flag ?? undefined} data-unresolved={payload.unresolved ? 'true' : undefined}>
@@ -279,19 +287,23 @@ function YearCashFlowSankeyNode({ x = 0, y = 0, width = 0, height = 0, payload, 
         strokeDasharray={unfunded ? '3 2' : undefined}
         rx={2}
       />
-      <text
-        x={textX}
-        y={y + nodeHeight / 2}
-        textAnchor={textAnchor}
-        dominantBaseline="middle"
-        fill="var(--fg)"
-        fontSize={11}
-      >
+      <text x={textX} y={labelTopY} textAnchor={textAnchor} fill="var(--fg)">
         <title>{title}</title>
-        {truncateLabel(payload.label)}
-        {payload.unresolved ? (
-          <tspan className="year-cash-flow-unresolved-marker"> Unresolved</tspan>
-        ) : null}
+        <tspan fontSize={NODE_LABEL_FONT_PX}>
+          {truncateLabel(payload.label)}
+          {payload.unresolved ? (
+            <tspan className="year-cash-flow-unresolved-marker"> Unresolved</tspan>
+          ) : null}
+        </tspan>
+        <tspan
+          x={textX}
+          dy={NODE_AMOUNT_FONT_PX + 4}
+          fontSize={NODE_AMOUNT_FONT_PX}
+          fill="var(--muted)"
+          className="year-cash-flow-num"
+        >
+          {payload.amountLabel}
+        </tspan>
       </text>
     </g>
   )
@@ -312,11 +324,13 @@ function YearCashFlowSankeyNodeMap({ nodes }: { nodes: readonly ChartNode[] }) {
         >
           <rect fill={node.fill} width="1" height="1" />
           <text>
-            {node.label}
-            {node.unresolved ? (
-              <tspan className="year-cash-flow-unresolved-marker"> Unresolved</tspan>
-            ) : null}
-            <tspan>{` ${node.amountLabel}`}</tspan>
+            <tspan fontSize={NODE_LABEL_FONT_PX}>
+              {node.label}
+              {node.unresolved ? (
+                <tspan className="year-cash-flow-unresolved-marker"> Unresolved</tspan>
+              ) : null}
+            </tspan>
+            <tspan fontSize={NODE_AMOUNT_FONT_PX}>{` ${node.amountLabel}`}</tspan>
           </text>
         </g>
       ))}
@@ -409,7 +423,7 @@ export function YearCashFlowSankey(props: YearCashFlowSankeyProps) {
   const { ref: chartRef, width } = useMeasuredChartWidth()
   const data = toChartData(view, props.year, props.displayAmount)
   const hasUnfunded = view.nodes.some(isUnfundedNode) || view.links.some((link) => link.flag === 'unfunded')
-  const height = Math.max(280, data.nodes.length * 36)
+  const height = Math.max(280, data.nodes.length * NODE_HEIGHT_PER_NODE)
   const empty = data.nodes.length === 0 || data.links.length === 0
 
   return (
@@ -434,7 +448,7 @@ export function YearCashFlowSankey(props: YearCashFlowSankeyProps) {
             height={height}
             data={data}
             nodeWidth={12}
-            nodePadding={18}
+            nodePadding={NODE_PADDING}
             iterations={32}
             margin={{ top: 12, right: 140, bottom: 12, left: 140 }}
             node={<YearCashFlowSankeyNode />}

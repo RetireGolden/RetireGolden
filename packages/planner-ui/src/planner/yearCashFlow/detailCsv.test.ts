@@ -125,6 +125,32 @@ describe('serializeYearCashFlowDetailCsv', () => {
     expect(lines[3]).toContain('1000,1000,1000,0')
   })
 
+  it('neutralizes a tab-prefixed formula label so leading control characters cannot bypass the guard', () => {
+    const plan = csvPlan()
+    plan.accounts = [...plan.accounts, { ...cashAccount('hostile-tab', 1), name: '\t=HYPERLINK("evil")' }]
+    const cashFlow: YearCashFlow = {
+      ...csvCashFlow(),
+      sourceLines: [
+        {
+          id: 'source:needBasedPortfolioWithdrawal:hostile-tab',
+          kind: 'needBasedPortfolioWithdrawal',
+          role: 'portfolioFunding',
+          amountPlanDollars: 1_000,
+          identities: [{ entityKind: 'account', accountId: accountId('hostile-tab') }],
+        },
+      ],
+    }
+    const model = buildYearCashFlowSankey(validatePlan(plan), { year: 2031, cashFlow } as YearResult)
+    const csv = serializeYearCashFlowDetailCsv(model)
+    const labelCell = csv
+      .trimEnd()
+      .split('\n')
+      .find((line) => line.includes('source:needBasedPortfolioWithdrawal:hostile-tab'))
+      ?.split(',')[6]
+    expect(labelCell).toBe("\"'\t=HYPERLINK(\"\"evil\"\") (Cash)\"")
+    expect(csv).not.toMatch(/(?:^|,)=HYPERLINK\("evil"\)/)
+  })
+
   it('neutralizes a formula-like account label so the serialized cell cannot execute', () => {
     const plan = csvPlan()
     plan.accounts = [...plan.accounts, { ...cashAccount('hostile', 1), name: '=SUM(A1)' }]

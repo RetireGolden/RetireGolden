@@ -23,7 +23,6 @@ import type {
   YearCashFlow,
   YearCashFlowEntityReference,
   YearCashFlowLineId,
-  YearCashFlowLineage,
   YearCashFlowLineageRelationship,
   YearCashFlowPenaltyClass,
   YearCashFlowReconciliation,
@@ -135,8 +134,10 @@ export interface YearCashFlowSankeyView {
  */
 export type YearCashFlowTableView = 'cashFlow' | 'transfers' | 'postSolve' | 'taxCharacter'
 
-/** Table/CSV lineage keeps stable {@link YearCashFlowLineage.lineId}; optional label is display-only. */
-export interface YearCashFlowTableLineage extends YearCashFlowLineage {
+/** Table/CSV lineage keeps stable engine {@link YearCashFlowLineId}; optional label is display-only. */
+export interface YearCashFlowTableLineage {
+  readonly relationship: YearCashFlowLineageRelationship | 'characterizes'
+  readonly lineId: YearCashFlowLineId
   readonly lineLabel?: string
 }
 
@@ -854,8 +855,6 @@ function transferTableRow(index: PlanIndex, line: YearCashFlowTransferLine): Yea
   }
 }
 
-const CHARACTERIZES_LINEAGE = 'characterizes' as YearCashFlowLineageRelationship
-
 function resolveRelatedLineLabel(
   index: PlanIndex,
   cashFlow: YearCashFlow,
@@ -891,7 +890,7 @@ function metadataTableRow(
     line.relatedLineId === undefined
       ? []
       : [{
-          relationship: CHARACTERIZES_LINEAGE,
+          relationship: 'characterizes',
           lineId: line.relatedLineId,
           lineLabel: resolveRelatedLineLabel(index, cashFlow, line.relatedLineId),
         }]
