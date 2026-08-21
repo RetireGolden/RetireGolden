@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, useState, type ReactNode } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { renderToStaticMarkup } from 'react-dom/server'
+import { MemoryRouter } from 'react-router'
 
 import type { Plan } from '@retiregolden/engine/model/plan'
 import type { AccountId, PersonId } from '@retiregolden/engine/actions/identity'
@@ -190,6 +191,14 @@ function dialogProps(model: YearCashFlowSankeyModel, extras: Partial<YearCashFlo
   }
 }
 
+function withRouter(node: ReactNode) {
+  return <MemoryRouter initialEntries={['/plan/test/results']}>{node}</MemoryRouter>
+}
+
+function dialogHtml(model: YearCashFlowSankeyModel, extras: Partial<YearCashFlowDialogProps> = {}): string {
+  return renderToStaticMarkup(withRouter(<YearCashFlowDialog {...dialogProps(model, extras)} />))
+}
+
 let container: HTMLDivElement
 let root: Root
 
@@ -208,7 +217,7 @@ afterEach(async () => {
 
 async function render(node: ReactNode) {
   await act(async () => {
-    root.render(node)
+    root.render(withRouter(node))
   })
 }
 
@@ -225,7 +234,7 @@ function buttonByLabel(label: string): HTMLButtonElement | undefined {
 
 describe('YearCashFlowDialog', () => {
   it('renders the compact summary from selector totals', () => {
-    const html = renderToStaticMarkup(<YearCashFlowDialog {...dialogProps(readyModel())} />)
+    const html = dialogHtml(readyModel())
     expect(html).toContain('Source total')
     expect(html).toContain('Funded uses')
     expect(html).toContain('Surplus')
@@ -234,8 +243,25 @@ describe('YearCashFlowDialog', () => {
     expect(html).toContain('$12,000')
   })
 
+  it('renders a contextual learn link to the year cash-flow article', () => {
+    const html = dialogHtml(readyModel())
+    expect(html).toContain('href="/learn/where-the-money-comes-from-and-goes"')
+    expect(html).toContain('Learn where the money comes from and goes')
+    expect(html).toContain('learn-link')
+
+    const unavailable: YearCashFlowSankeyModel = {
+      kind: 'unavailable',
+      year: 2030,
+      unavailableReason: 'notReconciled',
+      reasonCodes: ['cashIdentityMismatch'],
+      diagnostics: [],
+    }
+    const refusal = dialogHtml(unavailable)
+    expect(refusal).toContain('href="/learn/where-the-money-comes-from-and-goes"')
+  })
+
   it('marks the shortfall with a text badge, not color alone', () => {
-    const html = renderToStaticMarkup(<YearCashFlowDialog {...dialogProps(readyModel())} />)
+    const html = dialogHtml(readyModel())
     expect(html).toContain('year-cash-flow-summary-item--shortfall')
     expect(html).toContain('year-cash-flow-shortfall-badge')
     expect(html).toMatch(/<span[^>]*year-cash-flow-shortfall-badge[^>]*>Shortfall<\/span>/)
@@ -250,7 +276,7 @@ describe('YearCashFlowDialog', () => {
         uses: { ...base.reconciliation.uses, unfundedUsesPlanDollars: 0 },
       },
     }
-    const html = renderToStaticMarkup(<YearCashFlowDialog {...dialogProps(model)} />)
+    const html = dialogHtml(model)
     expect(html).toContain('Shortfall')
     expect(html).not.toContain('year-cash-flow-summary-item--shortfall')
     expect(html).not.toContain('year-cash-flow-shortfall-badge')
@@ -327,7 +353,7 @@ describe('YearCashFlowDialog', () => {
     }
     const model = buildYearCashFlowSankey(plan, { year: 2030, cashFlow } as YearResult)
     if (model.kind !== 'ready') throw new Error('expected ready')
-    const html = renderToStaticMarkup(<YearCashFlowDialog {...dialogProps(model)} />)
+    const html = dialogHtml(model)
     expect(html).toContain('Unknown source (ID ghost)')
     expect(html).toContain('year-cash-flow-unresolved-marker')
     expect(html).toContain('Unresolved')
@@ -335,7 +361,7 @@ describe('YearCashFlowDialog', () => {
 
   it('lists every underlying line in the accessible table', () => {
     const model = readyModel()
-    const html = renderToStaticMarkup(<YearCashFlowDialog {...dialogProps(model)} />)
+    const html = dialogHtml(model)
     expect(html).toContain('<caption>')
     expect(html).toContain('scope="col"')
     expect(html).toContain('scope="row"')
@@ -384,7 +410,7 @@ describe('YearCashFlowDialog', () => {
       reasonCodes: ['cashIdentityMismatch', 'duplicateLineId'],
       diagnostics: [],
     }
-    const html = renderToStaticMarkup(<YearCashFlowDialog {...dialogProps(model)} />)
+    const html = dialogHtml(model)
     expect(html).toContain('cashIdentityMismatch')
     expect(html).toContain('duplicateLineId')
     expect(html).toContain('did not reconcile')

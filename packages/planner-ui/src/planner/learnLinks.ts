@@ -69,6 +69,10 @@ export const LEARN = {
     label: 'Learn how conversions raise other costs',
   },
   todaysDollars: { slug: 'todays-dollars-vs-future-dollars', label: "Learn: today's vs future dollars" },
+  yearCashFlow: {
+    slug: 'where-the-money-comes-from-and-goes',
+    label: 'Learn where the money comes from and goes',
+  },
   lossHarvesting: { slug: 'tax-loss-and-gain-harvesting', label: 'Learn about tax-loss harvesting' },
   fiNumber: { slug: 'fi-number-and-four-percent-rule', label: 'Learn about FI number and SWR' },
   accumulation: { slug: 'how-to-model-accumulation', label: 'Learn how to model accumulation' },

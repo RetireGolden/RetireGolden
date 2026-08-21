@@ -7,6 +7,8 @@
 
 import { useState } from 'react'
 
+import { LearnLink } from '../../learn/LearnLink'
+import { LEARN } from '../learnLinks'
 import { Modal } from '../Modal'
 import { fmtMoney } from '../format'
 import type {
@@ -91,6 +93,14 @@ function downloadDetailCsv(model: YearCashFlowSankeyModel, year: number): void {
   a.download = `${year}-cash-flow-detail.csv`
   a.click()
   URL.revokeObjectURL(a.href)
+}
+
+function YearCashFlowLearnMore() {
+  return (
+    <p className="small year-cash-flow-learn">
+      <LearnLink {...LEARN.yearCashFlow} />
+    </p>
+  )
 }
 
 function RefusalState({ model }: { model: Extract<YearCashFlowSankeyModel, { kind: 'unavailable' }> }) {
@@ -254,6 +264,7 @@ export function YearCashFlowDialog({
         <div className="year-cash-flow-dialog">
           <p className="small year-cash-flow-mode">{modeLabel}</p>
           <RefusalState model={model} />
+          <YearCashFlowLearnMore />
           <div className="year-cash-flow-actions">
             <button type="button" className="btn btn-secondary" onClick={() => downloadDetailCsv(model, year)}>
               Download detail CSV
@@ -273,6 +284,7 @@ export function YearCashFlowDialog({
       <div className="year-cash-flow-dialog">
         <p className="small year-cash-flow-mode">{modeLabel}</p>
         <SummaryStrip model={readyModel} year={year} displayAmount={displayAmount} />
+        <YearCashFlowLearnMore />
         <div className="year-cash-flow-toolbar">
           <div className="seg" role="group" aria-label="Cash-flow view">
             <button type="button" aria-pressed={viewId === 'cashFlow'} onClick={() => selectView('cashFlow')}>

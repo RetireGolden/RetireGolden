@@ -12,10 +12,11 @@ export const howToReadProjectionArticle: LearningArticle = {
   tags: ['projection', 'cash flow', 'results', 'shortfall', 'net worth'],
   audience: 'beginner',
   status: 'ready',
-  lastReviewed: '2026-06-19',
+  lastReviewed: '2026-08-21',
   reviewCadence: 'stable',
   sourceUrls: [],
   relatedArticles: [
+    'where-the-money-comes-from-and-goes',
     'todays-dollars-vs-future-dollars',
     'reading-the-results-page',
     'understanding-monte-carlo-success-rate',
@@ -96,6 +97,15 @@ export const howToReadProjectionArticle: LearningArticle = {
       type: 'prose',
       md: 'RetireGolden gives you both the summary view and the year-by-year detail. The summary tells you whether the plan lasts through the modeled horizon. The detail shows **why**. When the headline result surprises you, the table is usually where the explanation lives.',
     },
+    { type: 'heading', text: 'Open any year to see the flow' },
+    {
+      type: 'prose',
+      md: 'On Results, each year row has a **View flow** button. It opens a source-to-use picture of that year: a diagram plus a table of every line. Most years show that diagram and the full table; when the engine cannot fully account for a year, you see an explanation instead. One view is cash the household could spend. The other is direct moves that never enter your pocket, including gifts from an IRA to charity, money set aside into accounts from your cash, and dividends that stayed invested. Amounts follow the same today\'s-dollars / nominal-dollars toggle as the rest of the page.',
+    },
+    {
+      type: 'prose',
+      md: 'That picture is where a tax spike, a conversion, or a shortfall becomes concrete. [Where the money comes from and goes](/learn/where-the-money-comes-from-and-goes) walks through cash versus taxable income, transfers, reinvested dividends, and what a shortfall branch means.',
+    },
     { type: 'heading', text: 'Common mistakes' },
     {
       type: 'list',
@@ -109,7 +119,7 @@ export const howToReadProjectionArticle: LearningArticle = {
     { type: 'heading', text: 'Where to use this in the app' },
     {
       type: 'prose',
-      md: 'Use this reading order on the **Results** screen first. Then use **Monte Carlo** to ask how the same plan behaves when returns and inflation vary, and **Scenarios** to compare deliberate changes side by side.',
+      md: 'Use this reading order on the **Results** screen first. Open **View flow** on a year row when you want that year\'s source-to-use picture. Then use **Monte Carlo** to ask how the same plan behaves when returns and inflation vary, and **Scenarios** to compare deliberate changes side by side.',
     },
   ],
 }

@@ -298,6 +298,7 @@ import { widowsPenaltyAndSurvivorBracketsArticle } from './content/widows-penalt
 import { whatRetireGoldenModelsArticle } from './content/what-retiregolden-models'
 import { whatMonteCarloProvesArticle } from './content/what-monte-carlo-proves'
 import { whatRetirementHealthcareReallyCostsArticle } from './content/what-retirement-healthcare-really-costs'
+import { whereTheMoneyComesFromAndGoesArticle } from './content/where-the-money-comes-from-and-goes'
 import { withdrawalOrderBasicsArticle } from './content/withdrawal-order-basics'
 import { why95PercentIsNotGuaranteeArticle } from './content/why-95-percent-is-not-a-guarantee'
 import { rothConversionsRaiseOtherCostsArticle } from './content/why-roth-conversions-raise-other-costs'
@@ -325,6 +326,7 @@ export const LEARNING_ARTICLES: LearningArticle[] = [
   whatRetireGoldenModelsArticle,
   howRetireGoldenChecksItsMathArticle,
   readingResultsPageArticle,
+  whereTheMoneyComesFromAndGoesArticle,
   understandingMonteCarloArticle,
   rothConversionBasicsArticle,
   fillingTaxBracketArticle,

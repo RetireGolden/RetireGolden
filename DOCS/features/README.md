@@ -314,6 +314,15 @@ emits stable exact-ledger manifests over the example library or imported plans/s
 [Owl](https://github.com/mdlacasse/Owl) oracle on a shared fixture matrix — the proof run is
 `pnpm owl-parity --install-owl --strict-owl`; without a working Owl/Python install the gate reports
 **skipped** and exits 0 (see [optimizer.md](optimizer.md)).
+
+**Results per-year cash-flow drill-down:** the Results year table's Flow selector opens the selected year in
+cash-flow or transfer Sankey views, keeps the complete accessible detail table, and downloads the selected-year
+detail CSV from the captured engine `YearResult.cashFlow` (Sankey views, the complete table, and the detail CSV
+apply only to years the engine fully accounts for; a year that cannot shows an explanation instead, and its
+download contains only a summary row); it never recomputes money math. The selector and
+dialog live in [`ResultsPage.tsx`](../../packages/planner-ui/src/planner/ResultsPage.tsx) and
+[`planner/yearCashFlow/`](../../packages/planner-ui/src/planner/yearCashFlow). The contract and UI deep dive is
+[`year-cash-flow.md`](year-cash-flow.md).
 (The old jsPDF/html2canvas export was removed during the v2 cutover.)
 
 ## 14. Data management and trust
