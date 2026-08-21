@@ -125,6 +125,32 @@ describe('serializeYearCashFlowDetailCsv', () => {
     expect(lines[3]).toContain('1000,1000,1000,0')
   })
 
+  it('neutralizes a formula-like account label so the serialized cell cannot execute', () => {
+    const plan = csvPlan()
+    plan.accounts = [...plan.accounts, { ...cashAccount('hostile', 1), name: '=SUM(A1)' }]
+    const cashFlow: YearCashFlow = {
+      ...csvCashFlow(),
+      sourceLines: [
+        {
+          id: 'source:needBasedPortfolioWithdrawal:hostile',
+          kind: 'needBasedPortfolioWithdrawal',
+          role: 'portfolioFunding',
+          amountPlanDollars: 1_000,
+          identities: [{ entityKind: 'account', accountId: accountId('hostile') }],
+        },
+      ],
+    }
+    const model = buildYearCashFlowSankey(validatePlan(plan), { year: 2031, cashFlow } as YearResult)
+    const csv = serializeYearCashFlowDetailCsv(model)
+    const labelCell = csv
+      .trimEnd()
+      .split('\n')
+      .find((line) => line.includes('source:needBasedPortfolioWithdrawal:hostile'))
+      ?.split(',')[6]
+    expect(labelCell).toBe("'=SUM(A1) (Cash)")
+    expect(csv).not.toMatch(/(?:^|,)=SUM\(A1\)/)
+  })
+
   it('csvEscape\'s hostile labels the same way inheritedCsv does', () => {
     const plan = csvPlan()
     const cashFlow: YearCashFlow = {

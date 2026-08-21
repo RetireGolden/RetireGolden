@@ -464,6 +464,63 @@ describe('buildYearCashFlowSankey', () => {
     expect(unnamed.views.transfers.nodes.find((n) => n.id === 'charity:cf-1')?.label).toBe('Charity (cf-1)')
   })
 
+  it('sizes a bidirectional transfer endpoint as max(in, out) and exposes both totals', () => {
+    const plan = twoOwnerPlan()
+    plan.accounts = [
+      ...plan.accounts,
+      {
+        type: 'roth',
+        id: 'roth-pat',
+        name: 'Roth IRA',
+        ownerPersonId: 'p1',
+        annualReturnPct: null,
+        kind: 'ira',
+        balance: 10_000,
+        annualContribution: 0,
+      },
+    ]
+    const cashFlow = twoOwnerCashFlow({
+      transferLines: [
+        transfer({
+          id: 'transfer:employeeContribution:ira-pat',
+          kind: 'employeeContribution',
+          source: { entityKind: 'householdCash' },
+          destination: { entityKind: 'account', accountId: accountId('ira-pat') },
+          debitPlanDollars: 7_000,
+          creditPlanDollars: 7_000,
+          identities: [{ entityKind: 'account', accountId: accountId('ira-pat') }],
+        }),
+        transfer({
+          id: 'transfer:namedRothConversion:ira-pat:roth-pat',
+          kind: 'namedRothConversion',
+          source: { entityKind: 'account', accountId: accountId('ira-pat') },
+          destination: { entityKind: 'account', accountId: accountId('roth-pat') },
+          debitPlanDollars: 12_000,
+          creditPlanDollars: 12_000,
+          identities: [{ entityKind: 'account', accountId: accountId('ira-pat') }],
+        }),
+      ],
+      reconciliation: {
+        ...reconciled(),
+        transfers: { debitsPlanDollars: 19_000, creditsPlanDollars: 19_000, differencePlanDollars: 0 },
+      },
+    })
+    const model = ready(validatePlan(plan), cashFlow)
+    const ira = model.views.transfers.nodes.find((n) => n.id === 'account:ira-pat')
+    expect(ira?.totalInPlanDollars).toBe(7_000)
+    expect(ira?.totalOutPlanDollars).toBe(12_000)
+    expect(ira?.amountPlanDollars).toBe(12_000)
+    expect(ira?.amountPlanDollars).not.toBe(19_000)
+    const contribution = model.views.transfers.nodes.find((n) => n.id === HOUSEHOLD_CASH_NODE_ID)
+    expect(contribution?.totalInPlanDollars).toBe(0)
+    expect(contribution?.totalOutPlanDollars).toBe(7_000)
+    expect(contribution?.amountPlanDollars).toBe(7_000)
+    const roth = model.views.transfers.nodes.find((n) => n.id === 'account:roth-pat')
+    expect(roth?.totalInPlanDollars).toBe(12_000)
+    expect(roth?.totalOutPlanDollars).toBe(0)
+    expect(roth?.amountPlanDollars).toBe(12_000)
+  })
+
   it('publishes endpoints, entities, penalty, tax character, lineage, and metadata amounts on table rows', () => {
     const cashFlow = twoOwnerCashFlow({
       useLines: [

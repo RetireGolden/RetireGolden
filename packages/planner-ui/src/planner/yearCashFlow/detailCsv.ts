@@ -29,6 +29,9 @@
  * row only — never a best-effort dump of an unsafe graph.
  *
  * Cells are `csvEscape`'d with the same quoting rules as `inheritedCsv.ts`.
+ * Text cells that begin with `=`, `+`, `-`, or `@` are prefixed with an
+ * apostrophe before that escape so spreadsheet hosts treat them as text.
+ * Numeric cells are left as bare numbers.
  */
 
 import { csvEscape } from '../inheritedCsv'
@@ -58,7 +61,9 @@ export type YearCashFlowDetailCsvColumn = (typeof YEAR_CASH_FLOW_DETAIL_CSV_COLU
 
 function cell(value: string | number | null | undefined): string {
   if (value === null || value === undefined) return ''
-  return csvEscape(typeof value === 'number' ? String(value) : value)
+  if (typeof value === 'number') return csvEscape(String(value))
+  const neutralized = /^[=+\-@]/.test(value) ? `'${value}` : value
+  return csvEscape(neutralized)
 }
 
 function rowCells(values: readonly (string | number | null | undefined)[]): string {

@@ -58,6 +58,7 @@ interface ChartNode extends YearCashFlowSankeyNode {
   readonly name: string
   readonly fill: string
   readonly displayAmount: number
+  readonly amountLabel: string
 }
 
 interface ChartLink {
@@ -128,6 +129,19 @@ function truncateLabel(label: string): string {
   return `${label.slice(0, LABEL_MAX - 1)}…`
 }
 
+function nodeAmountLabel(
+  node: YearCashFlowSankeyNode,
+  year: number,
+  displayAmount: YearCashFlowDisplayAmount,
+): string {
+  const totalIn = node.totalInPlanDollars
+  const totalOut = node.totalOutPlanDollars
+  if (totalIn !== undefined && totalOut !== undefined && totalIn > 0 && totalOut > 0) {
+    return `in ${fmtMoney(displayAmount(year, totalIn))} / out ${fmtMoney(displayAmount(year, totalOut))}`
+  }
+  return fmtMoney(displayAmount(year, node.amountPlanDollars))
+}
+
 function toChartData(
   view: YearCashFlowSankeyView,
   year: number,
@@ -138,6 +152,7 @@ function toChartData(
     name: node.label,
     fill: nodeColor(node),
     displayAmount: displayAmount(year, node.amountPlanDollars),
+    amountLabel: nodeAmountLabel(node, year, displayAmount),
   }))
   const indexById = new Map(nodes.map((node, index) => [node.id, index]))
   const links: ChartLink[] = []
@@ -165,9 +180,9 @@ function toChartData(
   return { nodes, links }
 }
 
-function tooltipFields(payload: unknown): { label: string; amount: number; kind: string } {
+function tooltipFields(payload: unknown): { label: string; amount: number; amountLabel: string; kind: string } {
   if (!payload || typeof payload !== 'object') {
-    return { label: '', amount: Number.NaN, kind: '' }
+    return { label: '', amount: Number.NaN, amountLabel: '', kind: '' }
   }
   const record = payload as Record<string, unknown>
   const label =
@@ -182,7 +197,8 @@ function tooltipFields(payload: unknown): { label: string; amount: number; kind:
     typeof record.displayAmount === 'number' ? record.displayAmount
     : typeof record.value === 'number' ? record.value
     : Number.NaN
-  return { label, amount, kind }
+  const amountLabel = typeof record.amountLabel === 'string' ? record.amountLabel : ''
+  return { label, amount, amountLabel, kind }
 }
 
 function YearCashFlowSankeyTooltip({
@@ -198,7 +214,7 @@ function YearCashFlowSankeyTooltip({
   return (
     <div className="year-cash-flow-sankey-tooltip" style={chartTooltipStyle}>
       <div>{fields.label}</div>
-      <div className="year-cash-flow-num">{fmtMoney(fields.amount)}</div>
+      <div className="year-cash-flow-num">{fields.amountLabel || fmtMoney(fields.amount)}</div>
       <div className="small">{fields.kind}</div>
     </div>
   )
@@ -218,7 +234,7 @@ function YearCashFlowSankeyNode({ x = 0, y = 0, width = 0, height = 0, payload, 
   const labelOnRight = payload.side === 'fundedUse' || payload.side === 'unfundedUse' || x > 280
   const textX = labelOnRight ? x + nodeWidth + 6 : x - 6
   const textAnchor = labelOnRight ? 'start' : 'end'
-  const title = `${payload.label} (${payload.kindLabel}): ${fmtMoney(payload.displayAmount)}`
+  const title = `${payload.label} (${payload.kindLabel}): ${payload.amountLabel}`
   return (
     <g className="year-cash-flow-sankey-node" data-node-id={payload.id} data-flag={payload.flag ?? undefined} data-unresolved={payload.unresolved ? 'true' : undefined}>
       {index === 0 ? (
@@ -282,6 +298,7 @@ function YearCashFlowSankeyNodeMap({ nodes }: { nodes: readonly ChartNode[] }) {
             {node.unresolved ? (
               <tspan className="year-cash-flow-unresolved-marker"> Unresolved</tspan>
             ) : null}
+            <tspan>{` ${node.amountLabel}`}</tspan>
           </text>
         </g>
       ))}
@@ -379,6 +396,7 @@ export function YearCashFlowSankey(props: YearCashFlowSankeyProps) {
 
   return (
     <div
+      ref={chartRef}
       className="year-cash-flow-sankey"
       role="group"
       aria-label={chartAriaLabel(props)}
@@ -392,7 +410,7 @@ export function YearCashFlowSankey(props: YearCashFlowSankeyProps) {
       {empty ? (
         <p className="small">No lines to graph in this view.</p>
       ) : (
-        <div className="year-cash-flow-sankey-chart" ref={chartRef}>
+        <div className="year-cash-flow-sankey-chart">
           <Sankey
             width={width}
             height={height}

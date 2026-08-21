@@ -91,8 +91,16 @@ export interface YearCashFlowSankeyNode {
   readonly personKey: string
   readonly personLabel: string
   readonly label: string
-  /** Nominal Plan dollars: a published engine amount, or the exact sum of such amounts. */
+  /**
+   * Nominal Plan dollars: a published engine amount, or a defined aggregate of
+   * such amounts. Transfer endpoints use `max(totalIn, totalOut)` so an account
+   * that both receives and sends is not sized as the sum of both sides.
+   */
   readonly amountPlanDollars: number
+  /** Incoming transfer credits. Transfer-view endpoints only; omitted elsewhere. */
+  readonly totalInPlanDollars?: number
+  /** Outgoing transfer debits. Transfer-view endpoints only; omitted elsewhere. */
+  readonly totalOutPlanDollars?: number
   readonly underlyingLineIds: readonly string[]
   readonly unresolved: boolean
   readonly collapsed: boolean
@@ -1075,17 +1083,28 @@ function buildTransfersView(index: PlanIndex, cashFlow: YearCashFlow): YearCashF
   const nodeById = new Map<string, YearCashFlowSankeyNode>()
   const links: YearCashFlowSankeyLink[] = []
 
-  const takeEndpoint = (endpoint: YearCashFlowTransferEndpoint, amount: number, lineId: string) => {
+  const takeEndpoint = (
+    endpoint: YearCashFlowTransferEndpoint,
+    amount: number,
+    lineId: string,
+    direction: 'in' | 'out',
+  ) => {
     const id = endpointNodeId(endpoint)
     const resolved = resolveEndpoint(index, endpoint)
     const existing = nodeById.get(id)
+    const totalIn = (existing?.totalInPlanDollars ?? 0) + (direction === 'in' ? amount : 0)
+    const totalOut = (existing?.totalOutPlanDollars ?? 0) + (direction === 'out' ? amount : 0)
+    const amountPlanDollars = Math.max(totalIn, totalOut)
+    const unresolved = (existing?.unresolved ?? false) || resolved.unresolved
     if (existing) {
       nodeById.set(id, {
         ...existing,
-        amountPlanDollars: existing.amountPlanDollars + amount,
+        amountPlanDollars,
+        totalInPlanDollars: totalIn,
+        totalOutPlanDollars: totalOut,
         underlyingLineIds: [...existing.underlyingLineIds, lineId],
-        unresolved: existing.unresolved || resolved.unresolved,
-        flag: existing.unresolved || resolved.unresolved ? 'unresolved' : existing.flag,
+        unresolved,
+        flag: unresolved ? 'unresolved' : existing.flag,
       })
       return id
     }
@@ -1099,7 +1118,9 @@ function buildTransfersView(index: PlanIndex, cashFlow: YearCashFlow): YearCashF
       personKey: resolved.personKey,
       personLabel: resolved.personLabel,
       label: resolved.label,
-      amountPlanDollars: amount,
+      amountPlanDollars,
+      totalInPlanDollars: totalIn,
+      totalOutPlanDollars: totalOut,
       underlyingLineIds: [lineId],
       unresolved: resolved.unresolved,
     }))
@@ -1107,16 +1128,15 @@ function buildTransfersView(index: PlanIndex, cashFlow: YearCashFlow): YearCashF
   }
 
   for (const line of cashFlow.transferLines) {
-    const amount = line.debitPlanDollars
-    const source = takeEndpoint(line.source, amount, line.id)
-    const target = takeEndpoint(line.destination, amount, line.id)
-    if (amount > 0) {
+    const source = takeEndpoint(line.source, line.debitPlanDollars, line.id, 'out')
+    const target = takeEndpoint(line.destination, line.creditPlanDollars, line.id, 'in')
+    if (line.debitPlanDollars > 0) {
       const unresolved = (nodeById.get(source)?.unresolved ?? false) || (nodeById.get(target)?.unresolved ?? false)
       links.push(makeLink(
         'transfers',
         source,
         target,
-        amount,
+        line.debitPlanDollars,
         line.id,
         unresolved ? 'unresolved' : null,
       ))

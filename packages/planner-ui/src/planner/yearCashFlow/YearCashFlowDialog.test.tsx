@@ -236,8 +236,24 @@ describe('YearCashFlowDialog', () => {
 
   it('marks the shortfall with a text badge, not color alone', () => {
     const html = renderToStaticMarkup(<YearCashFlowDialog {...dialogProps(readyModel())} />)
+    expect(html).toContain('year-cash-flow-summary-item--shortfall')
     expect(html).toContain('year-cash-flow-shortfall-badge')
     expect(html).toMatch(/<span[^>]*year-cash-flow-shortfall-badge[^>]*>Shortfall<\/span>/)
+  })
+
+  it('renders a zero shortfall as a neutral summary tile', () => {
+    const base = readyModel()
+    const model = {
+      ...base,
+      reconciliation: {
+        ...base.reconciliation,
+        uses: { ...base.reconciliation.uses, unfundedUsesPlanDollars: 0 },
+      },
+    }
+    const html = renderToStaticMarkup(<YearCashFlowDialog {...dialogProps(model)} />)
+    expect(html).toContain('Shortfall')
+    expect(html).not.toContain('year-cash-flow-summary-item--shortfall')
+    expect(html).not.toContain('year-cash-flow-shortfall-badge')
   })
 
   it('toggles between cash flow and transfers views', async () => {

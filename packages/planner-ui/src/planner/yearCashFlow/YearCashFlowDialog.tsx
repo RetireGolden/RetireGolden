@@ -128,6 +128,7 @@ function SummaryStrip({
   const fundedUses = displayAmount(year, model.reconciliation.uses.fundedUsesPlanDollars)
   const surplus = displayAmount(year, model.reconciliation.cash.surplusInvestmentPlanDollars)
   const shortfall = displayAmount(year, model.reconciliation.uses.unfundedUsesPlanDollars)
+  const hasShortfall = shortfall > 0
   return (
     <div className="year-cash-flow-summary">
       <div className="year-cash-flow-summary-item">
@@ -142,10 +143,16 @@ function SummaryStrip({
         <div className="year-cash-flow-summary-label">Surplus</div>
         <div className="year-cash-flow-summary-value year-cash-flow-num">{fmtMoney(surplus)}</div>
       </div>
-      <div className="year-cash-flow-summary-item year-cash-flow-summary-item--shortfall">
+      <div
+        className={
+          hasShortfall
+            ? 'year-cash-flow-summary-item year-cash-flow-summary-item--shortfall'
+            : 'year-cash-flow-summary-item'
+        }
+      >
         <div className="year-cash-flow-summary-label">
           Shortfall
-          <span className="type-chip year-cash-flow-shortfall-badge">Shortfall</span>
+          {hasShortfall ? <span className="type-chip year-cash-flow-shortfall-badge">Shortfall</span> : null}
         </div>
         <div className="year-cash-flow-summary-value year-cash-flow-num">{fmtMoney(shortfall)}</div>
       </div>

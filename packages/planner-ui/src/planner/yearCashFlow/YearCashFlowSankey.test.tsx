@@ -1,11 +1,14 @@
 /** @vitest-environment jsdom */
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { renderToStaticMarkup } from 'react-dom/server'
 
 import type { YearCashFlowSankeyView } from './buildYearCashFlow'
 import { YearCashFlowSankey } from './YearCashFlowSankey'
+
+;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean })
+  .IS_REACT_ACT_ENVIRONMENT = true
 
 const view: YearCashFlowSankeyView = {
   nodes: [
@@ -206,6 +209,45 @@ describe('YearCashFlowSankey', () => {
     expect(html).toContain('Unknown source (ID ghost)')
   })
 
+  it('titles a bidirectional transfer endpoint with in and out totals', () => {
+    const transferView: YearCashFlowSankeyView = {
+      nodes: [
+        {
+          id: 'account:ira-pat',
+          view: 'transfers',
+          side: 'transfer',
+          role: 'transferEndpoint',
+          kind: 'account',
+          kindLabel: 'Rollover IRA',
+          personKey: 'p1',
+          personLabel: 'Pat',
+          label: 'Pat - Rollover IRA (IRA)',
+          amountPlanDollars: 12_000,
+          totalInPlanDollars: 7_000,
+          totalOutPlanDollars: 12_000,
+          underlyingLineIds: ['transfer:employeeContribution:ira-pat', 'transfer:namedRothConversion:ira-pat:roth-pat'],
+          unresolved: false,
+          collapsed: false,
+          flag: null,
+        },
+      ],
+      links: [],
+    }
+    const html = renderToStaticMarkup(
+      <YearCashFlowSankey
+        view={transferView}
+        viewId="transfers"
+        year={2030}
+        displayAmount={(_year, amount) => amount}
+        sourceTotalPlanDollars={0}
+        fundedUsesPlanDollars={0}
+        shortfallPlanDollars={0}
+      />,
+    )
+    expect(html).toContain('in $7,000 / out $12,000')
+    expect(html).not.toContain('$19,000')
+  })
+
   it('colors nodes by side so legend swatches match the chart', () => {
     const html = renderToStaticMarkup(chart())
     expect(html).toContain('background:var(--chart-1)')
@@ -216,5 +258,80 @@ describe('YearCashFlowSankey', () => {
     expect(html).toMatch(/data-node-id="lifestyle"[^>]*>[\s\S]*?fill="var\(--chart-4\)"/)
     expect(html).not.toMatch(/stroke-opacity="0\.55"/)
     expect(html).toContain('data-chart-width=')
+  })
+
+  it('observes host width when opening empty then switching to a populated view', async () => {
+    const observed: Element[] = []
+    const disconnect = vi.fn()
+    let resizeCallback: ResizeObserverCallback | undefined
+    let observerInstance: ResizeObserver | undefined
+
+    class MockResizeObserver {
+      private readonly callback: ResizeObserverCallback
+
+      constructor(callback: ResizeObserverCallback) {
+        this.callback = callback
+        resizeCallback = this.callback
+        observerInstance = {
+          observe: (el: Element) => observed.push(el),
+          disconnect,
+        } as unknown as ResizeObserver
+      }
+
+      observe(el: Element) {
+        observed.push(el)
+      }
+
+      disconnect() {
+        disconnect()
+      }
+    }
+
+    globalThis.ResizeObserver = MockResizeObserver as unknown as typeof ResizeObserver
+
+    const fireResize = async (el: Element, width: number) => {
+      Object.defineProperty(el, 'clientWidth', { configurable: true, value: width })
+      await act(async () => {
+        resizeCallback?.(
+          [{ contentRect: { width } as DOMRectReadOnly, target: el } as ResizeObserverEntry],
+          observerInstance!,
+        )
+      })
+    }
+
+    const emptyView: YearCashFlowSankeyView = { nodes: [], links: [] }
+    const props = {
+      viewId: 'cashFlow' as const,
+      year: 2030,
+      displayAmount: (_year: number, amount: number) => amount,
+      sourceTotalPlanDollars: 0,
+      fundedUsesPlanDollars: 0,
+      shortfallPlanDollars: 0,
+    }
+
+    await act(async () => {
+      root.render(<YearCashFlowSankey view={emptyView} {...props} />)
+    })
+
+    const hostAfterEmpty = container.querySelector('.year-cash-flow-sankey')
+    expect(hostAfterEmpty).not.toBeNull()
+    const hostObserved = () =>
+      observed.filter((el) => el.classList.contains('year-cash-flow-sankey'))
+    expect(hostObserved()).toHaveLength(1)
+    expect(hostObserved()[0]).toBe(hostAfterEmpty)
+    expect(container.querySelector('.year-cash-flow-sankey-chart')).toBeNull()
+
+    await fireResize(hostAfterEmpty!, 640)
+    expect(hostAfterEmpty!.getAttribute('data-chart-width')).toBe('640')
+
+    await act(async () => {
+      root.render(chart())
+    })
+
+    expect(hostObserved()).toHaveLength(1)
+    expect(container.querySelector('.year-cash-flow-sankey-chart')).not.toBeNull()
+    expect(hostAfterEmpty!.getAttribute('data-chart-width')).toBe('640')
+
+    delete (globalThis as { ResizeObserver?: typeof ResizeObserver }).ResizeObserver
   })
 })
