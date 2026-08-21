@@ -3,7 +3,7 @@ import { NavLink, useLocation, useRoutes } from 'react-router'
 import { RouteErrorBoundary } from './RouteErrorBoundary.tsx'
 import { plannerContentRoutes, plannerHomeRoutes, plannerWorkspaceRoutes } from './routes/groups'
 import { readLocal, STORAGE_KEYS, writeLocal } from './data/localStore'
-import { usePlanStore, type PlanStore } from './data/planStoreContext'
+import { listPlansVia, usePlanStore, type PlanStore } from './data/planStoreContext'
 import { PlanStoreProvider } from './data/PlanStoreProvider'
 import { ReportBrandingContext } from './report/brandingContext'
 import type { ReportBranding } from './report/reportHtml'
@@ -12,7 +12,9 @@ import './planner/planner.css'
 const navClass = ({ isActive }: { isActive: boolean }) =>
   isActive ? 'nav-link nav-link--active' : 'nav-link'
 
-/** Tab/history titles for non-plan routes; plan routes are owned by PlanWorkspace. */
+/** Tab/history titles for non-plan routes; plan routes are owned by PlanWorkspace.
+ *  `/` is owned here (PlannerApp), not by PlanPickerPage, so hosts that mount
+ *  `plannerHomeRoutes` under their own chrome do not have their title overwritten. */
 const ROUTE_TITLES: ReadonlyArray<[prefix: string, title: string]> = [
   ['/examples', 'Examples'],
   ['/import', 'Import & migrate'],
@@ -23,7 +25,6 @@ const ROUTE_TITLES: ReadonlyArray<[prefix: string, title: string]> = [
 ]
 
 function routeTitleOf(pathname: string): string | null {
-  if (pathname === '/') return 'Your plans'
   for (const [prefix, title] of ROUTE_TITLES) {
     if (pathname === prefix || pathname.startsWith(`${prefix}/`)) return title
   }
@@ -81,31 +82,47 @@ export function App({ reportBranding, planStore, readOnly }: PlannerAppProps = {
   // default; with neither prop nor provider this resolves to the browser
   // store (the context's default value).
   const ambientStore = usePlanStore()
+  const store = planStore ?? ambientStore
   const location = useLocation()
   // The full route table — <Routes> is exactly useRoutes over its children,
   // so composing the exported groups this way renders identically.
   const routeTree = useRoutes([...plannerHomeRoutes, ...plannerWorkspaceRoutes, ...plannerContentRoutes])
   const isLanding = location.pathname === '/' || location.pathname === '/examples'
   const [themeMode, setThemeMode] = useState<ThemeMode>(getInitialThemeMode)
-  const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>(() => getResolvedTheme(getInitialThemeMode()))
-  const [logoLoadFailed, setLogoLoadFailed] = useState(false)
   const isFirstRoute = useRef(true)
 
   // Page identity: retitle the tab per route (plan routes retitle themselves in
   // PlanWorkspace with the plan name) and move focus to the main landmark on
   // SPA navigation so screen readers hear the new page instead of silence.
+  // `/` is set immediately — do not leave the previous route title up while
+  // the home skeleton waits on IndexedDB — then refined once the list returns.
   useEffect(() => {
+    let cancelled = false
     if (!location.pathname.startsWith('/plan/')) {
-      const title = routeTitleOf(location.pathname)
-      document.title = title ? `${title} · RetireGolden` : 'RetireGolden'
+      if (location.pathname === '/') {
+        document.title = 'RetireGolden'
+        void listPlansVia(store).then((summaries) => {
+          if (!cancelled && summaries.length > 0) {
+            document.title = 'Your plans · RetireGolden'
+          }
+        })
+      } else {
+        const title = routeTitleOf(location.pathname)
+        document.title = title ? `${title} · RetireGolden` : 'RetireGolden'
+      }
     }
     if (isFirstRoute.current) {
       // Initial load: the browser's own focus/scroll behavior is correct.
       isFirstRoute.current = false
-      return
+      return () => {
+        cancelled = true
+      }
     }
     document.getElementById('main-content')?.focus()
-  }, [location.pathname])
+    return () => {
+      cancelled = true
+    }
+  }, [location.pathname, store])
 
   useEffect(() => {
     const root = document.documentElement
@@ -115,7 +132,6 @@ export function App({ reportBranding, planStore, readOnly }: PlannerAppProps = {
       const nextResolvedTheme = getResolvedTheme(themeMode)
 
       root.dataset.theme = themeMode
-      setResolvedTheme(nextResolvedTheme)
       writeLocal(THEME_STORAGE_KEY, themeMode)
       themeColor?.setAttribute('content', nextResolvedTheme === 'dark' ? '#0e1116' : '#f4f6f8')
     }
@@ -129,32 +145,20 @@ export function App({ reportBranding, planStore, readOnly }: PlannerAppProps = {
     return () => media.removeEventListener('change', applyTheme)
   }, [themeMode])
 
-  const logoSrc = logoLoadFailed
-    ? '/favicon.svg'
-    : resolvedTheme === 'dark'
-      ? '/brand/retiregolden-logo-lockup.png'
-      : '/brand/retiregolden-logo-lockup-light.png'
-
   return (
-    <PlanStoreProvider store={planStore ?? ambientStore} readOnly={readOnly}>
+    <PlanStoreProvider store={store} readOnly={readOnly}>
     <ReportBrandingContext.Provider value={reportBranding ?? null}>
     <div className={`app-shell planner-shell${isLanding ? ' app-shell--landing' : ''}`}>
       <a className="skip-link" href="#main-content">
         Skip to content
       </a>
       <header className="app-header">
+        {/* Mark + real wordmark text. The lockup PNGs bake the tagline in at
+            ~5–6px, which is illegible; do not restore those as the header
+            identity. The existing tagline copy lives in the first-run hero. */}
         <NavLink to="/" className="brand brand-logo-link" end aria-label="RetireGolden home">
-          <picture>
-            {/* Phones get the compact square mark; it's theme-independent and
-                skips loading the lockup PNG on mobile. */}
-            <source media="(max-width: 640px)" srcSet="/favicon.svg" />
-            <img
-              className="brand-logo"
-              src={logoSrc}
-              alt="RetireGolden"
-              onError={() => setLogoLoadFailed(true)}
-            />
-          </picture>
+          <img className="brand-mark" src="/favicon.svg" alt="" />
+          <span className="brand-wordmark">RetireGolden</span>
         </NavLink>
         {/* No hamburger at any width (owner preference): on narrow screens the
             nav shares the logo row and the theme switcher wraps below, keeping
@@ -174,18 +178,23 @@ export function App({ reportBranding, planStore, readOnly }: PlannerAppProps = {
               Disclaimer
             </NavLink>
           </nav>
-          <div className="theme-switcher" role="group" aria-label="Color theme">
-            {THEME_MODES.map((mode) => (
-              <button
-                key={mode}
-                className="theme-switcher-button"
-                type="button"
-                aria-pressed={themeMode === mode}
-                onClick={() => setThemeMode(mode)}
-              >
-                {mode[0].toUpperCase() + mode.slice(1)}
-              </button>
-            ))}
+          <div className="theme-switcher-cluster">
+            <span className="theme-switcher-label" id="theme-switcher-label">
+              Theme
+            </span>
+            <div className="theme-switcher" role="group" aria-labelledby="theme-switcher-label">
+              {THEME_MODES.map((mode) => (
+                <button
+                  key={mode}
+                  className="theme-switcher-button"
+                  type="button"
+                  aria-pressed={themeMode === mode}
+                  onClick={() => setThemeMode(mode)}
+                >
+                  {mode[0].toUpperCase() + mode.slice(1)}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </header>

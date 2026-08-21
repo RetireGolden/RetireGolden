@@ -97,8 +97,14 @@
   font-size: 1.15rem;
 }
 
+/* Shared by Getting started and ImportPage. Column count is not set here:
+   `.plan-grid` auto-fill wins at this specificity, which ImportPage wants. */
 .home-paths-grid {
   margin: 0;
+}
+
+.home-paths-grid .home-path-card {
+  height: 100%;
 }
 
 .home-path-card {
@@ -126,11 +132,23 @@
 
 .home-start-here-list {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem 1.25rem;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.45rem;
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+.home-start-here-list li {
+  max-width: 100%;
+}
+
+/* One phrase per row. `white-space: nowrap` would overflow the 390px
+   first-run walk; a column still keeps “results →” from becoming a leftover
+   of an inline run. */
+.home-start-here-list a {
+  display: inline-block;
 }
 
 .home-your-plans h1,
@@ -187,6 +205,21 @@
 
 .home-privacy-card {
   margin-top: 1.5rem;
+}
+
+.home-privacy-card .picker-actions {
+  align-items: flex-start;
+}
+
+.home-export-action {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+}
+
+.home-export-why {
+  margin: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -273,6 +306,14 @@
   margin: 1.25rem 0;
 }
 
+/* After `.plan-grid` and more specific, so Getting started is a real 2×2 on
+   the 60rem landing shell. ImportPage uses the same two classes outside
+   `.home-paths` and keeps auto-fill. */
+.home-paths .home-paths-grid.plan-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+}
+
 .plan-card {
   position: relative;
   display: flex;
@@ -354,6 +395,7 @@
 /* --- workspace shell ------------------------------------------------------ */
 
 .workspace {
+  position: relative;
   display: grid;
   grid-template-columns: 13.5rem minmax(0, 1fr);
   gap: 1.75rem;

@@ -1,4 +1,4 @@
-/** Curated beginner articles surfaced on the planner home "Start here" row. */
+/** Curated beginner articles surfaced on the planner home "Start here" list. */
 export const START_HERE_SLUGS = [
   'about-retiregolden',
   'privacy-what-stays-in-your-browser',

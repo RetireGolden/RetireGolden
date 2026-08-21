@@ -134,9 +134,10 @@ A restrained cool-neutral field where gold is the only voice and verdict colors 
 computed outcomes.
 
 ### Primary
-- **Ledger Gold** (#84620F): the light-theme accent — primary buttons, links, focus rings, active
-  rail items, the selected theme toggle. Deep bronze-gold chosen to hold 5.6:1 against white so
-  white-on-gold buttons and gold-on-light text both clear WCAG AA.
+- **Ledger Gold** (#84620F): the light-theme accent — primary buttons, links, focus rings, and
+  active rail items. Deep bronze-gold chosen to hold 5.6:1 against white so white-on-gold buttons
+  and gold-on-light text both clear WCAG AA. The header theme segment does **not** use this fill
+  when selected — a 14px chip must not read as the page's primary CTA.
 - **Lamplit Gold** (#E3B341): the dark-theme accent, brightened to carry the same roles against
   Night surfaces with dark text (#241A03) on filled controls.
 - **Gold Soft** (#D9A521 light / #F0C75E dark): the supporting gold tint for soft emphasis.
@@ -257,7 +258,9 @@ transitions, restrained hover states that shift a border or tint a background by
 ### Navigation
 - **Top nav** (`.nav-link`): muted text, 6px radius, hover tints 6% Ink; active is 600 weight on
   a 10% Ink tint. No hamburger — the header wraps to two rows on phones, DOM order = visual
-  order = tab order.
+  order = tab order. The theme control sits beside the nav with a visible **Theme** group label;
+  the selected Light/Dark/System segment uses the same ink-tint treatment as an active nav
+  link, not the gold primary-button fill.
 - **Workspace rail** (`.rail-link`): the planner's left spine; sticky at 13.5rem wide, collapsing
   to a horizontal chip strip under 880px. Active item is Ledger Gold at 650 on a 12% gold tint.
   Group headers use the Label style.

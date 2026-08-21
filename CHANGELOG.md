@@ -18,6 +18,13 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   same-decedent identity. Living-owner Roth IRAs stay outside lifetime RMDs;
   inherited Roth shortfalls are covered. The chapter 43 tax is isolated from
   income tax, AGI, MAGI, IRMAA, §86, and ACA calculations.
+- Planner-home first-run chrome (#297): empty-library tab title is `RetireGolden`
+  (not `Your plans`), Getting started is a 2×2 of equal cards, the header uses a
+  readable wordmark instead of the lockup PNG's 5–6px baked-in tagline, skip-to-content
+  sits in flow above the header when focused, the Theme control has a visible
+  group label and no longer shares the primary-CTA gold fill, Start here is a
+  column of links, and disabled **Download plan backup** names why
+  (`No plan to export yet`).
 
 **2026-08-20**
 - Closed the reverse gap on **IRC §401(k)(2)(B)(i) employer-plan conversion

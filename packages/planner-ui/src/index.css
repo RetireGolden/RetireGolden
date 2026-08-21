@@ -169,6 +169,7 @@ code {
 .brand {
   display: inline-flex;
   align-items: center;
+  gap: 0.5rem;
   font-weight: 700;
   font-size: 1.15rem;
   color: var(--fg);
@@ -183,16 +184,25 @@ code {
   text-decoration: none;
 }
 
-.brand-logo-link picture {
-  display: inline-flex;
+.brand-logo-link:hover .brand-wordmark {
+  text-decoration: underline;
 }
 
-/* Sized by height so the header bar height is stable (no vertical CLS) while the
-   logo width follows the artwork's aspect ratio. */
-.brand-logo {
+/* Square mark + real wordmark (the lockup PNGs bake an unreadably small
+   tagline into the artwork). Height is fixed so the header bar does not CLS. */
+.brand-mark {
   display: block;
-  height: clamp(3rem, 4.5vw, 3.5rem);
-  width: auto;
+  height: 2.25rem;
+  width: 2.25rem;
+  flex-shrink: 0;
+}
+
+.brand-wordmark {
+  color: var(--fg);
+  font-weight: 700;
+  font-size: 1.15rem;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
 }
 
 /* Wraps nav + theme switcher. On wide screens it's an inline strip that fills the
@@ -214,10 +224,22 @@ code {
   flex-wrap: wrap;
 }
 
+.theme-switcher-cluster {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+.theme-switcher-label {
+  font-size: 1rem;
+  color: var(--muted);
+  line-height: 1.2;
+}
+
 .theme-switcher {
   display: inline-flex;
   flex-wrap: nowrap;
-  margin-left: auto;
   border: 1px solid var(--border);
   border-radius: 999px;
   overflow: hidden;
@@ -245,9 +267,11 @@ code {
   background: color-mix(in srgb, var(--fg) 6%, transparent);
 }
 
+/* Selected theme is header chrome, not a primary CTA: ink tint like the
+   active nav link, never the gold fill used by .btn-primary. */
 .theme-switcher-button[aria-pressed='true'] {
-  background: var(--accent);
-  color: var(--accent-fg);
+  background: color-mix(in srgb, var(--fg) 12%, var(--surface-1));
+  color: var(--fg);
   font-weight: 650;
 }
 
@@ -288,8 +312,16 @@ code {
     padding: 0.65rem 0;
   }
 
-  .brand-logo {
-    height: 2.25rem;
+  .brand-mark {
+    height: 1.85rem;
+    width: 1.85rem;
+  }
+
+  /* Mark only at the two-row mobile breakpoint: mark+wordmark (~140px)
+     leaves too little room for the four nav links at ~390px, so nav wraps
+     and the header becomes three rows. The link keeps aria-label. */
+  .brand-wordmark {
+    display: none;
   }
 
   .header-menu {
@@ -298,6 +330,7 @@ code {
 
   .nav {
     flex: 1 1 auto;
+    flex-wrap: nowrap;
     min-width: 0;
     gap: 0.15rem;
   }
@@ -307,7 +340,7 @@ code {
     font-size: 0.92rem;
   }
 
-  .theme-switcher {
+  .theme-switcher-cluster {
     margin-left: auto;
   }
 
@@ -616,28 +649,48 @@ code {
   border: 0;
 }
 
-/* Keyboard skip link: off-screen until focused, then pinned top-left. */
+/* Keyboard skip link: clipped until focused, then in document flow above
+   the header so it never covers the wordmark. */
 .skip-link {
   position: absolute;
-  left: 0.5rem;
-  top: -3rem;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
   z-index: 100;
-  padding: 0.5rem 0.9rem;
-  border-radius: 8px;
   background: var(--accent);
   color: var(--accent-fg);
   text-decoration: none;
-  transition: top 0.15s ease;
 }
 
+/* Default focused skip stays out of flow so a workspace skip (first child
+   of the two-column `.workspace` grid) cannot become a grid item. */
 .skip-link:focus {
+  position: absolute;
+  left: 0.5rem;
   top: 0.5rem;
+  width: auto;
+  height: auto;
+  padding: 0.5rem 0.9rem;
+  margin: 0;
+  overflow: visible;
+  clip: auto;
+  white-space: nowrap;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .skip-link {
-    transition: none;
-  }
+/* Shell skip-to-content: in document flow above the header, clear of the wordmark. */
+.app-shell > .skip-link:focus {
+  position: static;
+  left: auto;
+  top: auto;
+  margin: 0.65rem 0 0;
 }
 
 #main-content:focus {
