@@ -6,7 +6,7 @@
  * is labeled and dashed/patterned, never distinguished by color alone.
  */
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type SVGProps } from 'react'
 import { Sankey, Tooltip } from 'recharts'
 
 import { chartTooltipStyle } from '../chartStyle'
@@ -249,7 +249,10 @@ function nodeFill(node: YearCashFlowSankeyNode, fill?: string): string {
   return fill ?? nodeColor(node)
 }
 
-function YearCashFlowSankeyNode({ x = 0, y = 0, width = 0, height = 0, payload, index = 0 }: PlacedNode) {
+type SankeyNodeProps = PlacedNode & Omit<SVGProps<SVGRectElement>, keyof PlacedNode>
+
+export function YearCashFlowSankeyNode(props: SankeyNodeProps) {
+  const { x = 0, y = 0, width = 0, height = 0, payload, index = 0, ...rest } = props
   if (!payload) return <g />
   const nodeWidth = width > 0 ? width : 12
   const nodeHeight = height > 0 ? height : 12
@@ -286,6 +289,7 @@ function YearCashFlowSankeyNode({ x = 0, y = 0, width = 0, height = 0, payload, 
         stroke={unfunded ? 'var(--bad)' : 'var(--border)'}
         strokeDasharray={unfunded ? '3 2' : undefined}
         rx={2}
+        {...rest}
       />
       <text x={textX} y={labelTopY} textAnchor={textAnchor} fill="var(--fg)">
         <title>{title}</title>
@@ -338,7 +342,9 @@ function YearCashFlowSankeyNodeMap({ nodes }: { nodes: readonly ChartNode[] }) {
   )
 }
 
-function YearCashFlowSankeyLink(props: PlacedLink) {
+type SankeyLinkProps = PlacedLink & Omit<SVGProps<SVGPathElement>, keyof PlacedLink>
+
+export function YearCashFlowSankeyLink(props: SankeyLinkProps) {
   const {
     sourceX,
     sourceY,
@@ -348,6 +354,7 @@ function YearCashFlowSankeyLink(props: PlacedLink) {
     targetControlX,
     linkWidth = 1,
     payload,
+    ...rest
   } = props
   if (
     sourceX === undefined ||
@@ -370,6 +377,7 @@ function YearCashFlowSankeyLink(props: PlacedLink) {
       strokeWidth={Math.max(linkWidth, 1.5)}
       strokeOpacity={unfunded ? 1 : LINK_STROKE_OPACITY}
       strokeDasharray={unfunded ? '6 4' : undefined}
+      {...rest}
     />
   )
 }

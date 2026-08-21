@@ -5,7 +5,12 @@ import { createRoot, type Root } from 'react-dom/client'
 import { renderToStaticMarkup } from 'react-dom/server'
 
 import type { YearCashFlowSankeyView } from './buildYearCashFlow'
-import { YearCashFlowSankey, YearCashFlowSankeyTooltip } from './YearCashFlowSankey'
+import {
+  YearCashFlowSankey,
+  YearCashFlowSankeyLink,
+  YearCashFlowSankeyNode,
+  YearCashFlowSankeyTooltip,
+} from './YearCashFlowSankey'
 
 ;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean })
   .IS_REACT_ACT_ENVIRONMENT = true
@@ -276,10 +281,71 @@ describe('YearCashFlowSankey', () => {
     expect(html).toContain('data-chart-width=')
   })
 
-  it('uses originating line kind and label on link tooltip fields', () => {
+  it('forwards Recharts interaction props onto custom Sankey links and nodes', async () => {
     const link = view.links.find((item) => item.id === 'householdCash->lifestyle')
     expect(link).toBeDefined()
-    const html = renderToStaticMarkup(
+    const onLinkMouseEnter = vi.fn()
+    const onNodeMouseEnter = vi.fn()
+
+    await act(async () => {
+      root.render(
+        <svg>
+          <YearCashFlowSankeyLink
+            sourceX={10}
+            sourceY={20}
+            targetX={200}
+            targetY={80}
+            sourceControlX={70}
+            targetControlX={140}
+            linkWidth={6}
+            payload={{
+              source: 0,
+              target: 1,
+              value: 40_000,
+              flag: null,
+              kind: link!.kind,
+              kindLabel: link!.kindLabel,
+              label: link!.lineLabel,
+              name: `${link!.kindLabel} - $40,000`,
+              displayAmount: 40_000,
+              amountLabel: '$40,000',
+            }}
+            onMouseEnter={onLinkMouseEnter}
+          />
+          <YearCashFlowSankeyNode
+            x={12}
+            y={24}
+            width={12}
+            height={40}
+            index={1}
+            payload={{
+              ...view.nodes.find((node) => node.id === 'lifestyle')!,
+              name: 'Required lifestyle',
+              fill: 'var(--chart-4)',
+              displayAmount: 40_000,
+              amountLabel: '$40,000',
+            }}
+            onMouseEnter={onNodeMouseEnter}
+          />
+        </svg>,
+      )
+    })
+
+    const path = container.querySelector('.year-cash-flow-sankey-link')
+    const rect = container.querySelector('.year-cash-flow-sankey-node rect')
+    expect(path).not.toBeNull()
+    expect(rect).not.toBeNull()
+
+    await act(async () => {
+      // React derives synthetic mouseenter from bubbling mouseover events.
+      path!.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
+      rect!.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
+    })
+
+    expect(onLinkMouseEnter).toHaveBeenCalledTimes(1)
+    expect(onNodeMouseEnter).toHaveBeenCalledTimes(1)
+
+    const tooltipHtml = renderToStaticMarkup(
       <YearCashFlowSankeyTooltip
         active
         payload={[
@@ -297,8 +363,8 @@ describe('YearCashFlowSankey', () => {
         ]}
       />,
     )
-    expect(html).toContain('Required lifestyle - $40,000')
-    expect(html).not.toContain('Household cash')
+    expect(tooltipHtml).toContain('Required lifestyle - $40,000')
+    expect(tooltipHtml).not.toContain('Household cash')
   })
 
   it('observes host width when opening empty then switching to a populated view', async () => {
