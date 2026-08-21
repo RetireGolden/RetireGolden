@@ -19,6 +19,7 @@ export function DataAndPrivacyCard({
   onClearAll,
 }: DataAndPrivacyCardProps) {
   const readOnly = useWorkspaceReadOnly()
+  const canExport = Boolean(plans && plans.length > 0)
   return (
     <div className="card home-privacy-card">
       <h2>Your data stays on your device, not on our servers</h2>
@@ -30,10 +31,23 @@ export function DataAndPrivacyCard({
       <div className="picker-actions" style={{ margin: 0 }}>
         {/* Download backup is an export (read) path — always available.
             Import (writes plans) and Clear all (deletes) are hidden when
-            read-only. */}
-        <button type="button" className="btn btn-secondary" onClick={() => void onExportAll()} disabled={!plans || plans.length === 0}>
-          Download plan backup
-        </button>
+            read-only. Disabled until a plan exists; the hint names why. */}
+        <div className="home-export-action">
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => void onExportAll()}
+            disabled={!canExport}
+            aria-describedby={canExport ? undefined : 'home-export-why'}
+          >
+            Download plan backup
+          </button>
+          {canExport ? null : (
+            <p id="home-export-why" className="field-hint home-export-why">
+              No plan to export yet
+            </p>
+          )}
+        </div>
         {readOnly ? null : (
           <>
             <button type="button" className="btn btn-secondary" onClick={() => fileInput.current?.click()}>

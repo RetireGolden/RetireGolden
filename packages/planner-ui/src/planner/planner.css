@@ -97,8 +97,16 @@
   font-size: 1.15rem;
 }
 
+/* Four equal getting-started cards as 2×2. `.plan-grid`'s auto-fill/16rem
+   minmax produces a 3+1 rag on the 60rem landing shell. */
 .home-paths-grid {
   margin: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+}
+
+.home-paths-grid .home-path-card {
+  height: 100%;
 }
 
 .home-path-card {
@@ -126,11 +134,23 @@
 
 .home-start-here-list {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem 1.25rem;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.45rem;
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+.home-start-here-list li {
+  max-width: 100%;
+}
+
+/* One phrase per row. `white-space: nowrap` would overflow the 390px
+   first-run walk; a column still keeps “results →” from becoming a leftover
+   of an inline run. */
+.home-start-here-list a {
+  display: inline-block;
 }
 
 .home-your-plans h1,
@@ -187,6 +207,17 @@
 
 .home-privacy-card {
   margin-top: 1.5rem;
+}
+
+.home-export-action {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+}
+
+.home-export-why {
+  margin: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -104,8 +104,8 @@ tree to copy from:
 
 | Path | Used by | Notes |
 |------|---------|-------|
-| `/favicon.svg` | Header brand mark (mobile), logo fallback | |
-| `/brand/retiregolden-logo-lockup.png`, `/brand/retiregolden-logo-lockup-light.png` | Header logo (dark/light) | Missing files degrade to `/favicon.svg` |
+| `/favicon.svg` | Header brand mark | Paired with a real-text wordmark; the lockup PNGs are not the header identity | |
+| `/brand/retiregolden-logo-lockup.png`, `/brand/retiregolden-logo-lockup-light.png` | Open Graph / social lockup | Not used as in-app chrome (baked-in tagline is unreadably small) |
 | `/learn/images/*.webp` | Learning Center article illustrations (~5 MB total) | Copy from `app/public/learn/images/` |
 | `/THIRD-PARTY-NOTICES.txt` | Disclaimer page's third-party attribution link | **Must describe the host's own bundle** — generate it from your dependency tree (the upstream generator is `app/scripts/generate-third-party-notices.mjs`); do not copy the web app's file verbatim |
 

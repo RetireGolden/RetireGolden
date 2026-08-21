@@ -97,10 +97,31 @@ describe('planner home adaptive layout', () => {
     await renderHome()
     expect(container.querySelector('.home-hero h1')?.textContent).toContain('Plan your retirement')
     expect(container.querySelectorAll('.home-path-card')).toHaveLength(4)
+    expect(container.querySelector('.home-paths-grid')).not.toBeNull()
     expect(container.querySelector('.home-start-here')).not.toBeNull()
     expect(container.querySelectorAll('h1')).toHaveLength(1)
     expect(container.querySelector('.home-getting-started-reopener')).toBeNull()
     expect(container.querySelector('#example-library-heading')).toBeNull()
+    expect(document.title).toBe('RetireGolden')
+  })
+
+  it('names why Download plan backup is disabled on first-run', async () => {
+    await renderHome()
+    const exportBtn = Array.from(container.querySelectorAll('button')).find(
+      (b) => b.textContent === 'Download plan backup',
+    ) as HTMLButtonElement
+    expect(exportBtn.disabled).toBe(true)
+    expect(container.querySelector('#home-export-why')?.textContent).toMatch(/No plan to export yet/)
+    expect(exportBtn.getAttribute('aria-describedby')).toBe('home-export-why')
+  })
+
+  it('lists Start here articles as a column of full phrases', async () => {
+    await renderHome()
+    const items = container.querySelectorAll('.home-start-here-list li')
+    expect(items.length).toBe(START_HERE_SLUGS.length)
+    const overview = Array.from(items).find((li) => li.textContent?.includes('Planner overview'))
+    expect(overview?.textContent).toMatch(/from household to results/)
+    expect(overview?.textContent).not.toMatch(/^\s*results/)
   })
 
   it('shows getting started above plans with a collapsed reopener for returning users', async () => {
@@ -113,10 +134,16 @@ describe('planner home adaptive layout', () => {
     expect(plansHeading).not.toBeNull()
     expect(reopener!.compareDocumentPosition(plansHeading!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     expect(plansHeading?.textContent).toBe('Your plans')
+    expect(document.title).toBe('Your plans · RetireGolden')
     expect(container.querySelector('.home-hero')).toBeNull()
     expect(reopener?.getAttribute('aria-expanded')).toBe('false')
     expect(container.querySelectorAll('h1')).toHaveLength(1)
     expect(container.querySelector('.home-your-plans .home-returning-actions')).not.toBeNull()
+    expect(container.querySelector('#home-export-why')).toBeNull()
+    const exportBtn = Array.from(container.querySelectorAll('button')).find(
+      (b) => b.textContent === 'Download plan backup',
+    ) as HTMLButtonElement
+    expect(exportBtn.disabled).toBe(false)
   })
 
   it('reveals getting started when the reopener is expanded', async () => {

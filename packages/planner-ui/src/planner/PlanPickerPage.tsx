@@ -3,6 +3,7 @@
  * Composes section components from ./home/.
  */
 
+import { useEffect } from 'react'
 import { Link, useNavigate } from 'react-router'
 
 import { createEmptyPlan } from '@retiregolden/engine/model/plan'
@@ -41,6 +42,13 @@ export function PlanPickerPage() {
   const readOnly = useWorkspaceReadOnly()
   const isLoading = plans === null
   const isFirstRun = !isLoading && mode === 'first-run'
+
+  // App leaves `/` alone so this page can match the body: empty library is
+  // just `RetireGolden`, not `Your plans · RetireGolden`.
+  useEffect(() => {
+    if (isLoading) return
+    document.title = isFirstRun ? 'RetireGolden' : 'Your plans · RetireGolden'
+  }, [isLoading, isFirstRun])
 
   const gettingStartedBlock = (
     <>

@@ -342,9 +342,9 @@ simplifications stated as prominently as the strengths.
 
 The planner home at `/` ([`PlanPickerPage.tsx`](../../packages/planner-ui/src/planner/PlanPickerPage.tsx)) is **adaptive**:
 
-- **First-time visitors** (no saved user plans) see a welcome hero with trust cues, three getting-started path
-  cards (*Learn the basics* → Learning Center, *Try an example* → `/examples`, *Build your own* → new plan),
-  and a curated **Start here** article row.
+- **First-time visitors** (no saved user plans) see a welcome hero with trust cues, four getting-started path
+  cards in a 2×2 grid (*Learn the basics* → Learning Center, *Try an example* → `/examples`, *Build your own* →
+  new plan, *Import from a file* → `/import`), and a curated **Start here** article list (one link per row).
 - **Returning users** (≥1 saved plan) see **Your plans** first with New plan / Compare actions; getting-started
 guidance is collapsed behind a slim *New here? Getting started* disclosure (state in
 `retiregolden.home.welcomeDismissed`, reset by Clear all data).

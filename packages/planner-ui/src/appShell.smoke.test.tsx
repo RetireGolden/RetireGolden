@@ -14,11 +14,17 @@ describe('App shell smoke', () => {
       </MemoryRouter>,
     )
     expect(html).toContain('RetireGolden')
+    expect(html).toContain('class="brand-wordmark"')
+    expect(html).toContain('class="brand-mark"')
+    expect(html).toContain('Skip to content')
+    expect(html).toContain('Theme')
+    expect(html).toContain('theme-switcher-label')
     expect(html).toContain('Planner')
     expect(html).toContain('Examples')
     expect(html).toContain('Disclaimer')
     expect(html).toContain('Clear all data')
     expect(html).not.toContain('Legacy v1')
+    expect(html).not.toContain('retiregolden-logo-lockup')
   })
 
   it('accepts a host reportBranding prop without changing the chrome', () => {
@@ -31,6 +37,30 @@ describe('App shell smoke', () => {
     )
     expect(html).toContain('RetireGolden')
     expect(html).not.toContain('Acme Wealth')
+  })
+
+  it('titles first-run home RetireGolden, not Your plans', async () => {
+    const container = document.createElement('div')
+    document.body.appendChild(container)
+    const root = createRoot(container)
+    await act(async () => {
+      root.render(
+        <MemoryRouter initialEntries={['/']}>
+          <App />
+        </MemoryRouter>,
+      )
+    })
+    for (let attempt = 0; attempt < 50 && document.title !== 'RetireGolden'; attempt++) {
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 10))
+      })
+    }
+    expect(document.title).toBe('RetireGolden')
+    expect(document.title).not.toMatch(/Your plans/)
+    expect(container.querySelector('#theme-switcher-label')?.textContent).toBe('Theme')
+    expect(container.querySelector('.skip-link')?.textContent).toMatch(/Skip to content/)
+    expect(container.querySelector('.brand-wordmark')?.textContent).toBe('RetireGolden')
+    await act(async () => root.unmount())
   })
 
   it('renders the examples page', async () => {
