@@ -72,7 +72,7 @@ type-checks against the real `dist/` through a project reference). No React/DOM/
 | `socialSecurity/` | Pure SS math consumed by the ledger: `nra`, `benefitFactor`, `claimFactor`, `piaFromEarnings`, `ssaWageData`, `maritalBenefits`, `survivorBenefit`, `familyMaximum`, `disability` |
 | `longevity/` | `ssaPeriod2022.ts` (SSA period life table) + shared `types.ts` |
 | `strategies/` | `rothConversion.ts`, `optimizer.ts`, `sepp.ts`, `inheritedIra.ts` |
-| `projection/` | `simulate.ts` (the annual ledger), `compare.ts`, `optimizePlan.ts`, `types.ts` (`YearResult`), `annualPassTransaction.ts` (the checkpoint/rollback the staging probe runs under), `optimizerAggregateConversionPromotion*.ts` (turning an aggregate optimizer winner into named requests) |
+| `projection/` | `simulate.ts` (the annual ledger), `compare.ts`, `optimizePlan.ts`, `types.ts` (`YearResult`), `annualPassTransaction.ts` (the checkpoint/rollback the staging probe runs under), `annualCashFlowIds.ts` (stable reporting line IDs), `annualCashFlowYearSites.ts` (capture sites), `annualCashFlowShortfallAttribution.ts` (deterministic residual attribution), `annualCashFlowReconciliation.ts` (native-precision identity and failure diagnostics), `annualCashFlowCapture.ts` (post-commit `YearResult.cashFlow` assembly), `optimizerAggregateConversionPromotion*.ts` (turning an aggregate optimizer winner into named requests) |
 | `montecarlo/` | `marketModels.ts`, `historicalReturns.ts`, `rng.ts`, `mortality.ts`, `survival.ts` (survival-percentile ages), `ltcShock.ts`, `run.ts`, `frontiers.ts` |
 | `decisions/` | Shared exact-ledger decision engine: `objectives.ts` (objective policies), candidate `generators.ts`, `evaluateCandidate.ts`, `tournament.ts`, `search.ts`, `spendingSolver.ts`, `swrComparator.ts` (published SWR rules on the user's plan) |
 | `spending/` | Spending layers, guardrails, flexible goals, ABW, and shape presets (`layers.ts`, `guardrails.ts`, `flexibleGoals.ts`, `abw.ts`, `shapePresets.ts`) |
@@ -134,6 +134,10 @@ test files.
   `MonteCarloPage.tsx`, `OptimizePage.tsx`, `SpendingSolverPage.tsx`, `ScenariosPage.tsx`,
   `RelocationComparePage.tsx`, `ComparePlansPage.tsx`, `ProvenancePanel.tsx`, `insights/`
   (`InsightsPage.tsx`, `InsightCardView.tsx`).
+- Year cash-flow drill-down: `yearCashFlow/` (`index.ts` selector exports, `buildYearCashFlow.ts` model, `grouping.ts`
+  collapse policy, `detailCsv.ts` selected-year serializer, `YearCashFlowDialog.tsx`,
+  `YearCashFlowSankey.tsx`) consumes captured `YearResult.cashFlow`; see
+  [features/year-cash-flow.md](features/year-cash-flow.md).
 - Retirement actions: `sections/RetirementActionsEditor.tsx` (authoring + the migrated-action manual review),
   `sections/RetirementActionQcdAuthoringSection.tsx` + `retirementActionQcdAuthoring.ts`,
   `sections/RetirementActionEligibilityFactsEditor.tsx` + `retirementActionEligibilityFacts.ts` (the IRA

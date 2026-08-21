@@ -10,6 +10,11 @@ localStorage). All money math lives in
 (a dependency of this package, not re-exported by it); this package is the UI
 and persistence around it.
 
+The Results Flow selector opens cash-flow and transfer Sankeys, a complete
+accessible detail table, and a selected-year detail CSV from the engine's
+`YearResult.cashFlow`; it never recomputes money math. See the
+[annual cash-flow reporting contract](../../DOCS/features/year-cash-flow.md).
+
 Source of truth: [github.com/RetireGolden/RetireGolden](https://github.com/RetireGolden/RetireGolden)
 (`packages/planner-ui`). Engineering docs live in the repo's `DOCS/`.
 

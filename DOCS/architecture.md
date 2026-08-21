@@ -116,6 +116,20 @@ step-up, pension survivor %, expense change, insurance death benefit) is handled
 engine emits a full per-year `YearResult` ledger that powers the table, charts, CSV, and report with no
 recomputation.
 
+Annual cash-flow reporting is an opt-in extension of that ledger. `SimulateOptions.captureAnnualCashFlow`
+defaults off; only the live deterministic Results projection enables it. The committed annual pass publishes
+identity-bearing `YearResult.cashFlow` after the year's economic commit, while staging, counterfactual, and
+repeated-sweep passes do not publish it. Capture is therefore observational: it must not change balances, tax,
+withdrawals, shortfalls, warnings, or any other economic output. The `YearCashFlowReconciliation` block reconciles
+sources, funded and unfunded uses, and transfers at native precision; a `notReconciled` year remains
+published with machine-readable diagnostics rather than a synthetic plug. The full reporting contract is in
+[features/year-cash-flow.md](features/year-cash-flow.md).
+
+The planner-ui projection requests the capture for Results, and its per-year Flow selector opens a dialog backed
+by `planner/yearCashFlow/`: cash-flow and transfer Sankeys, a complete accessible detail table, and selected-year
+detail CSV. It consumes `YearResult.cashFlow` and applies only the existing display transform; it never
+recomputes money math.
+
 - **Monte Carlo** drives the identical `simulate` with stochastic inputs across a **Web Worker pool**
   (`src/mc/`), seedable for reproducibility.
 - **The optimizer** (`src/optimize/`) solves a MILP with **HiGHS compiled to WASM** in a worker (the ~3 MB

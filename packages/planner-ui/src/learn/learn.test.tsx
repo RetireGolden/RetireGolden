@@ -412,6 +412,19 @@ describe('learning registry integrity', () => {
     }
   })
 
+  it('has the Results year cash-flow drill-down article available as a readable article', () => {
+    const article = getArticle('where-the-money-comes-from-and-goes')
+    expect(article ? isReadable(article) : false).toBe(true)
+    expect(article!.relatedPlannerRoutes).toContain('/plan/:planId/results')
+    expect(getArticle('how-to-read-a-retirement-projection')!.relatedArticles).toContain(
+      'where-the-money-comes-from-and-goes',
+    )
+    expect(
+      article!.blocks?.some((block) => ['figure', 'formula', 'scenario', 'table'].includes(block.type)),
+      'where-the-money-comes-from-and-goes has a rich teaching block',
+    ).toBe(true)
+  })
+
   it('has no planned stub articles remaining', () => {
     expect(LEARNING_ARTICLES.filter((a) => a.status === 'stub')).toHaveLength(0)
   })
