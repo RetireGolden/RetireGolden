@@ -182,4 +182,39 @@ describe('YearCashFlowSankey', () => {
     expect(html).toContain('Unfunded')
     expect(html).toContain('data-animation-active="false"')
   })
+
+  it('renders an explicit Unresolved marker on an unresolved node label', () => {
+    const unresolvedView: YearCashFlowSankeyView = {
+      ...view,
+      nodes: view.nodes.map((node) =>
+        node.id === 'wages' ? { ...node, unresolved: true, flag: 'unresolved', label: 'Wages · Unknown source (ID ghost)' } : node,
+      ),
+    }
+    const html = renderToStaticMarkup(
+      <YearCashFlowSankey
+        view={unresolvedView}
+        viewId="cashFlow"
+        year={2030}
+        displayAmount={(_year, amount) => amount}
+        sourceTotalPlanDollars={50_000}
+        fundedUsesPlanDollars={40_000}
+        shortfallPlanDollars={10_000}
+      />,
+    )
+    expect(html).toContain('data-unresolved="true"')
+    expect(html).toContain('Unresolved')
+    expect(html).toContain('Unknown source (ID ghost)')
+  })
+
+  it('colors nodes by side so legend swatches match the chart', () => {
+    const html = renderToStaticMarkup(chart())
+    expect(html).toContain('background:var(--chart-1)')
+    expect(html).toContain('background:var(--chart-3)')
+    expect(html).toContain('background:var(--chart-4)')
+    expect(html).toMatch(/data-node-id="wages"[^>]*>[\s\S]*?fill="var\(--chart-1\)"/)
+    expect(html).toMatch(/data-node-id="householdCash"[^>]*>[\s\S]*?fill="var\(--chart-3\)"/)
+    expect(html).toMatch(/data-node-id="lifestyle"[^>]*>[\s\S]*?fill="var\(--chart-4\)"/)
+    expect(html).not.toMatch(/stroke-opacity="0\.55"/)
+    expect(html).toContain('data-chart-width=')
+  })
 })

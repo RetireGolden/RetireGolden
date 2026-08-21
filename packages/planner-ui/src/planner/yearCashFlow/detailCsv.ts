@@ -16,6 +16,13 @@
  *                       or when detail was not captured)
  *   reconciliationStatus = reconciled | notReconciled | notCaptured
  *
+ * Endpoint columns
+ * ----------------
+ * `sourceRef` and `targetRef` are always flow endpoints: Plan identity keys
+ * (`account:…`, `person:…`, `incomeStream:…`) or a transfer/hub endpoint id
+ * (`householdCash`, `charity:cf-1`, `account:cash`). They are never the
+ * engine line id. That id lives in `lineId` (empty on the summary row).
+ *
  * Every subsequent line row repeats `reconciliationStatus` so a spreadsheet
  * filter keeps the year's verdict next to the dollars. An unavailable year
  * (no `cashFlow`, or `notReconciled`) emits the header plus this summary
@@ -31,6 +38,7 @@ export const YEAR_CASH_FLOW_DETAIL_CSV_COLUMNS = [
   'year',
   'view',
   'kind',
+  'lineId',
   'sourceRef',
   'targetRef',
   'label',
@@ -72,24 +80,26 @@ function summaryRow(
   status: string,
   lineage: string,
 ): string {
-  return rowCells([
-    String(year),
-    'reconciliation',
-    'summary',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
+  const cells: Record<YearCashFlowDetailCsvColumn, string> = {
+    year: String(year),
+    view: 'reconciliation',
+    kind: 'summary',
+    lineId: '',
+    sourceRef: '',
+    targetRef: '',
+    label: '',
+    nominalAmount: '',
+    requested: '',
+    funded: '',
+    unfunded: '',
+    debit: '',
+    credit: '',
+    penaltyClass: '',
+    taxCharacter: '',
     lineage,
-    status,
-  ])
+    reconciliationStatus: status,
+  }
+  return rowCells(YEAR_CASH_FLOW_DETAIL_CSV_COLUMNS.map((column) => cells[column]))
 }
 
 function lineRow(year: number, status: string, row: YearCashFlowTableRow): string {
@@ -97,6 +107,7 @@ function lineRow(year: number, status: string, row: YearCashFlowTableRow): strin
     String(year),
     row.view,
     row.kind,
+    row.id,
     row.sourceRef,
     row.targetRef,
     row.label,

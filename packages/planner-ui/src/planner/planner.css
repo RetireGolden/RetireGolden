@@ -2675,16 +2675,17 @@ html:has(.kpi-bar) {
   border-radius: var(--radius);
   background: var(--surface-1);
   padding: 0.65rem 0.75rem 0.5rem;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .year-cash-flow-sankey-chart {
   max-width: 100%;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
 .year-cash-flow-sankey-chart .recharts-wrapper {
-  max-width: 100%;
+  max-width: none;
 }
 
 .year-cash-flow-sankey-tooltip {
@@ -2726,6 +2727,20 @@ html:has(.kpi-bar) {
   border-color: var(--bad);
 }
 
+.year-cash-flow-unresolved-marker {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 0.05rem 0.35rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
 .year-cash-flow-table caption {
   caption-side: top;
   text-align: left;
@@ -2752,12 +2767,12 @@ html:has(.kpi-bar) {
   }
 }
 
-/* Narrow leading Flow column on the Results year table. Year stays a row header. */
+/* Trailing Flow control. Year remains the sticky first data column. */
 .year-table th.year-table-flow,
 .year-table td.year-table-flow {
   width: 1%;
   font-weight: 400;
-  padding-right: 0.4rem;
+  text-align: right;
 }
 
 .year-table td.year-table-year {

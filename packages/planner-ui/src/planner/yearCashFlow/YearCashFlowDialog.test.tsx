@@ -32,23 +32,23 @@ function reconciled(overrides: Partial<YearCashFlowReconciliation> = {}): YearCa
     status: 'reconciled',
     tolerancePlanDollars: 1e-6,
     cash: {
-      spendableSourcesPlanDollars: 99_700,
+      spendableSourcesPlanDollars: 99_800,
       portfolioFundingPlanDollars: 400,
       loanProceedsPlanDollars: 0,
-      sourceTotalPlanDollars: 100_100,
-      fundedHouseholdUsesPlanDollars: 90_000,
+      sourceTotalPlanDollars: 100_200,
+      fundedHouseholdUsesPlanDollars: 90_100,
       settledTaxPlanDollars: 0,
       penaltiesPlanDollars: 0,
       contributionsPlanDollars: 0,
       surplusInvestmentPlanDollars: 10_100,
-      destinationTotalPlanDollars: 100_100,
+      destinationTotalPlanDollars: 100_200,
       differencePlanDollars: 0,
     },
     uses: {
-      requestedUsesPlanDollars: 112_100,
-      fundedUsesPlanDollars: 100_100,
+      requestedUsesPlanDollars: 112_200,
+      fundedUsesPlanDollars: 100_200,
       unfundedUsesPlanDollars: 12_000,
-      dispositionTotalPlanDollars: 112_100,
+      dispositionTotalPlanDollars: 112_200,
       differencePlanDollars: 0,
     },
     transfers: { debitsPlanDollars: 10_100, creditsPlanDollars: 10_100, differencePlanDollars: 0 },
@@ -108,10 +108,18 @@ function collapseCashFlow(): YearCashFlow {
   const lifestyle: YearCashFlowUseLine = {
     id: 'use:requiredLifestyle:household',
     kind: 'requiredLifestyle',
-    requestedPlanDollars: 112_100,
-    fundedPlanDollars: 100_100,
+    requestedPlanDollars: 102_100,
+    fundedPlanDollars: 90_100,
     unfundedPlanDollars: 12_000,
     identities: [],
+  }
+  const surplus: YearCashFlowUseLine = {
+    id: 'use:surplusInvestment:account:cash',
+    kind: 'surplusInvestment',
+    requestedPlanDollars: 10_100,
+    fundedPlanDollars: 10_100,
+    unfundedPlanDollars: 0,
+    identities: [{ entityKind: 'account', accountId: accountId('cash') }],
   }
   return {
     sourceLines: [
@@ -137,7 +145,7 @@ function collapseCashFlow(): YearCashFlow {
       withdrawal('source:needBasedPortfolioWithdrawal:tiny-c', 'tiny-c', 'p1', 100),
       withdrawal('source:needBasedPortfolioWithdrawal:tiny-robin', 'tiny-robin', 'p2', 100),
     ],
-    useLines: [lifestyle],
+    useLines: [lifestyle, surplus],
     transferLines: [
       {
         id: 'transfer:surplusInvestment:account:cash',
@@ -149,7 +157,13 @@ function collapseCashFlow(): YearCashFlow {
         identities: [{ entityKind: 'account', accountId: accountId('cash') }],
       },
     ],
-    taxCharacterMetadata: [],
+    taxCharacterMetadata: [
+      {
+        id: 'tax:tipsPhantomOidIncome:ladder-1',
+        taxCharacter: { kind: 'tipsPhantomOidIncome', amountPlanDollars: 250 },
+        identities: [],
+      },
+    ],
     reconciliation: reconciled(),
   }
 }
@@ -215,7 +229,7 @@ describe('YearCashFlowDialog', () => {
     expect(html).toContain('Source total')
     expect(html).toContain('Funded uses')
     expect(html).toContain('Surplus')
-    expect(html).toContain('$100,100')
+    expect(html).toContain('$100,200')
     expect(html).toContain('$10,100')
     expect(html).toContain('$12,000')
   })
@@ -265,16 +279,54 @@ describe('YearCashFlowDialog', () => {
     expect(buttonByLabel('Show all')).toBeUndefined()
   })
 
+  it('surfaces an unresolved identity in the table label and marker', () => {
+    const plan = collapsePlan()
+    const base = collapseCashFlow()
+    const cashFlow: YearCashFlow = {
+      ...base,
+      sourceLines: [
+        ...base.sourceLines,
+        {
+          id: 'source:needBasedPortfolioWithdrawal:ira-pat',
+          kind: 'needBasedPortfolioWithdrawal',
+          role: 'portfolioFunding',
+          amountPlanDollars: 100,
+          identities: [
+            { entityKind: 'account', accountId: accountId('ira-pat') },
+            { entityKind: 'person', personId: personId('ghost') },
+          ],
+        },
+      ],
+    }
+    const model = buildYearCashFlowSankey(plan, { year: 2030, cashFlow } as YearResult)
+    if (model.kind !== 'ready') throw new Error('expected ready')
+    const html = renderToStaticMarkup(<YearCashFlowDialog {...dialogProps(model)} />)
+    expect(html).toContain('Unknown source (ID ghost)')
+    expect(html).toContain('year-cash-flow-unresolved-marker')
+    expect(html).toContain('Unresolved')
+  })
+
   it('lists every underlying line in the accessible table', () => {
     const model = readyModel()
     const html = renderToStaticMarkup(<YearCashFlowDialog {...dialogProps(model)} />)
     expect(html).toContain('<caption>')
     expect(html).toContain('scope="col"')
     expect(html).toContain('scope="row"')
+    expect(html).toContain('Entities')
+    expect(html).toContain('From')
+    expect(html).toContain('To')
+    expect(html).toContain('Penalty')
+    expect(html).toContain('Tax character')
+    expect(html).toContain('Lineage')
     for (const row of model.table) {
       expect(html).toContain(`data-line-id="${row.id}"`)
       expect(html).toContain(row.label)
     }
+    const surplus = model.table.find((row) => row.id === 'transfer:surplusInvestment:account:cash')
+    expect(html).toContain('Household cash')
+    expect(html).toContain(surplus!.targetLabel)
+    expect(html).toContain('tipsPhantomOidIncome')
+    expect(html).toContain('$250')
   })
 
   it('downloads the Stage A detail CSV through a mockable object URL', async () => {

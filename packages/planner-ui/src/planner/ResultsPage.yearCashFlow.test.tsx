@@ -318,6 +318,29 @@ describe('Results year cash-flow drill-down', () => {
     expect(searchParams().get('flowView')).toBeNull()
   })
 
+  it('replaces an invalid flowView with cash and keeps the year open', async () => {
+    await renderLedger('/plan/p1/results?flowYear=2030&flowView=bogus')
+    expect(document.querySelector('.year-cash-flow-dialog')).not.toBeNull()
+    expect(searchParams().get('flowYear')).toBe('2030')
+    expect(searchParams().get('flowView')).toBe('cash')
+  })
+
+  it('cleans an orphan flowView when flowYear is absent', async () => {
+    await renderLedger('/plan/p1/results?flowView=transfers')
+    expect(document.querySelector('.year-cash-flow-dialog')).toBeNull()
+    expect(searchParams().get('flowView')).toBeNull()
+    expect(searchParams().get('flowYear')).toBeNull()
+  })
+
+  it('keeps Year as the first column and places Flow last', async () => {
+    await renderLedger('/plan/p1/results')
+    const headers = Array.from(container.querySelectorAll('.year-table thead th')).map((th) => th.textContent)
+    expect(headers[0]).toBe('Year')
+    expect(headers[headers.length - 1]).toBe('Flow')
+    expect(container.querySelector('.year-table tbody tr td:first-child')?.textContent).toBe('2030')
+    expect(flowButton(2030)).toBeTruthy()
+  })
+
   it('updates flowView with replace when the view is toggled', async () => {
     await renderLedger('/plan/p1/results')
     await click(flowButton(2030))

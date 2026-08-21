@@ -329,6 +329,184 @@ describe('buildYearCashFlowSankey', () => {
     ])
   })
 
+  it('labels and groups a survivor pension by the living payee, not the deceased owner', () => {
+    const plan = twoOwnerPlan()
+    plan.accounts = [
+      ...plan.accounts,
+      {
+        type: 'pension',
+        id: 'pen-p2',
+        name: 'Pension',
+        ownerPersonId: 'p2',
+        annualReturnPct: 0,
+        startAge: 65,
+        monthlyAmount: 3_000,
+        colaPct: 0,
+        survivorPct: 50,
+      },
+    ]
+    const cashFlow = twoOwnerCashFlow({
+      sourceLines: [
+        source({
+          id: 'source:pension:pen-p2',
+          kind: 'pension',
+          role: 'spendableSource',
+          amountPlanDollars: 18_000,
+          identities: [
+            { entityKind: 'account', accountId: accountId('pen-p2') },
+            { entityKind: 'person', personId: personId('p1') },
+          ],
+        }),
+      ],
+    })
+    const model = ready(plan, cashFlow)
+    const node = model.views.cashFlow.nodes.find((n) => n.id === 'source:pension:pen-p2')
+    expect(node?.label).toBe('Pat - Pension (Pension)')
+    expect(node?.personKey).toBe('p1')
+    expect(node?.personLabel).toBe('Pat')
+    expect(node?.label).not.toContain('Robin')
+    const row = model.table.find((item) => item.id === 'source:pension:pen-p2')
+    expect(row?.label).toBe('Pat - Pension (Pension)')
+    expect(row?.entityLabels).toEqual(expect.arrayContaining(['Robin - Pension (Pension)', 'Pat']))
+  })
+
+  it('discloses a secondary unknown identity on the label, table, and chart node', () => {
+    const cashFlow = twoOwnerCashFlow({
+      sourceLines: [
+        source({
+          id: 'source:needBasedPortfolioWithdrawal:ira-pat',
+          kind: 'needBasedPortfolioWithdrawal',
+          role: 'portfolioFunding',
+          amountPlanDollars: 20_000,
+          identities: [
+            { entityKind: 'account', accountId: accountId('ira-pat') },
+            { entityKind: 'person', personId: personId('ghost') },
+          ],
+        }),
+      ],
+    })
+    const model = ready(twoOwnerPlan(), cashFlow)
+    const node = model.views.cashFlow.nodes.find((n) => n.id === 'source:needBasedPortfolioWithdrawal:ira-pat')
+    expect(node?.unresolved).toBe(true)
+    expect(node?.label).toContain('Rollover IRA (IRA)')
+    expect(node?.label).toContain('Unknown source (ID ghost)')
+    const row = model.table.find((item) => item.id === node!.id)
+    expect(row?.unresolved).toBe(true)
+    expect(row?.label).toContain('Unknown source (ID ghost)')
+  })
+
+  it('joins a named QCD charity and donor from the current Plan', () => {
+    const plan = twoOwnerPlan()
+    plan.strategies = {
+      ...plan.strategies,
+      retirementActions: [
+        {
+          actionId: 'qcd-cf',
+          kind: 'qcd',
+          donorPersonId: 'p2',
+          year: 2030,
+          executionSequence: 1,
+          requestedAmount: 5_000,
+          allocation: {
+            allocationId: 'qcd-alloc',
+            sourceAccountId: 'ira-pat',
+            requestedAmount: 5_000,
+          },
+          charity: {
+            designationId: 'cf-1',
+            name: 'Community Foundation',
+            designationKind: 'eligiblePublicCharity',
+            directFromCustodianAttested: true,
+            eligibleOrganizationAttested: true,
+            notDonorAdvisedFundOrSupportingOrganizationAttested: true,
+            notSplitInterestEntityAttested: true,
+            entireDistributionOtherwiseDeductibleAttested: true,
+          },
+          provenance: { source: 'manual' },
+        } as Plan['strategies']['retirementActions'][number],
+      ],
+    }
+    const cashFlow = twoOwnerCashFlow({
+      transferLines: [
+        transfer({
+          id: 'transfer:qualifiedCharitableDistribution:action:qcd-cf',
+          kind: 'qualifiedCharitableDistribution',
+          source: { entityKind: 'account', accountId: accountId('ira-pat') },
+          destination: { entityKind: 'charity', designationId: 'cf-1' },
+          debitPlanDollars: 5_000,
+          creditPlanDollars: 5_000,
+          identities: [{ entityKind: 'retirementAction', actionId: 'qcd-cf' }],
+        }),
+      ],
+    })
+    const model = ready(plan as Plan, cashFlow)
+    const charity = model.views.transfers.nodes.find((n) => n.id === 'charity:cf-1')
+    expect(charity?.label).toBe('Community Foundation')
+    const row = model.table.find((item) => item.id === 'transfer:qualifiedCharitableDistribution:action:qcd-cf')
+    expect(row?.targetLabel).toBe('Community Foundation')
+    expect(row?.label).toContain('Robin')
+    const unnamed = ready(
+      twoOwnerPlan(),
+      twoOwnerCashFlow({
+        transferLines: [
+          transfer({
+            id: 'transfer:qualifiedCharitableDistribution:legacy',
+            kind: 'qualifiedCharitableDistribution',
+            source: { entityKind: 'account', accountId: accountId('ira-pat') },
+            destination: { entityKind: 'charity', designationId: 'cf-1' },
+            debitPlanDollars: 5_000,
+            creditPlanDollars: 5_000,
+            identities: [],
+          }),
+        ],
+      }),
+    )
+    expect(unnamed.views.transfers.nodes.find((n) => n.id === 'charity:cf-1')?.label).toBe('Charity (cf-1)')
+  })
+
+  it('publishes endpoints, entities, penalty, tax character, lineage, and metadata amounts on table rows', () => {
+    const cashFlow = twoOwnerCashFlow({
+      useLines: [
+        ...twoOwnerCashFlow().useLines,
+        asUseLine({
+          id: 'use:earlyWithdrawalPenalty:ira-pat',
+          kind: 'earlyWithdrawalPenalty',
+          requestedPlanDollars: 1_000,
+          fundedPlanDollars: 1_000,
+          unfundedPlanDollars: 0,
+          penaltyClass: 'traditionalEarly',
+          identities: [{ entityKind: 'account', accountId: accountId('ira-pat') }],
+        }),
+      ],
+      taxCharacterMetadata: [
+        {
+          id: 'tax:tipsPhantomOidIncome:ladder-1',
+          taxCharacter: { kind: 'tipsPhantomOidIncome', amountPlanDollars: 250 },
+          identities: [{ entityKind: 'tipsLadder', ladderId: 'ladder-1' }],
+          relatedLineId: 'source:tipsLadderCash:ladder-1',
+        },
+      ],
+    })
+    const model = ready(twoOwnerPlan(), cashFlow)
+    const transferRow = model.table.find((row) => row.id === 'transfer:surplusInvestment:account:cash')
+    expect(transferRow).toMatchObject({
+      sourceRef: HOUSEHOLD_CASH_NODE_ID,
+      targetRef: 'account:cash',
+      sourceLabel: 'Household cash',
+      targetLabel: 'cash (Cash)',
+    })
+    expect(transferRow?.lineageNotes.length).toBeGreaterThan(0)
+    const penalty = model.table.find((row) => row.id === 'use:earlyWithdrawalPenalty:ira-pat')
+    expect(penalty?.penaltyClass).toBe('traditionalEarly')
+    const meta = model.table.find((row) => row.id === 'tax:tipsPhantomOidIncome:ladder-1')
+    expect(meta?.view).toBe('taxCharacter')
+    expect(meta?.amountPlanDollars).toBe(250)
+    expect(meta?.sourceRef).toBe('ladder:ladder-1')
+    const wages = model.table.find((row) => row.id === 'source:wages:w-pat')
+    expect(wages?.sourceRef).toBe('incomeStream:w-pat;person:p1')
+    expect(wages?.sourceRef).not.toBe(wages?.id)
+  })
+
   it('orders groups by contract role then lexicographic line id, deterministically across runs', () => {
     const plan = twoOwnerPlan()
     const cashFlow = twoOwnerCashFlow()

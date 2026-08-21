@@ -76,8 +76,10 @@ function parseFlowYearParam(
   return years.some((y) => y.year === year) ? year : null
 }
 
-function parseFlowViewParam(raw: string | null): FlowViewParam {
-  return raw === 'transfers' ? 'transfers' : 'cash'
+function parseFlowViewParam(raw: string | null): { view: FlowViewParam; invalid: boolean } {
+  if (raw === null || raw === '') return { view: 'cash', invalid: false }
+  if (raw === 'cash' || raw === 'transfers') return { view: raw, invalid: false }
+  return { view: 'cash', invalid: true }
 }
 
 function flowViewToSankey(view: FlowViewParam): YearCashFlowSankeyViewId {
@@ -483,8 +485,10 @@ export function YearByYearLedger({
   const [searchParams, setSearchParams] = useSearchParams()
   const [showAllFlowYear, setShowAllFlowYear] = useState<number | null>(null)
   const rawFlowYear = searchParams.get(FLOW_YEAR_PARAM)
+  const rawFlowView = searchParams.get(FLOW_VIEW_PARAM)
   const flowYear = parseFlowYearParam(rawFlowYear, years)
-  const flowView = parseFlowViewParam(searchParams.get(FLOW_VIEW_PARAM))
+  const parsedFlowView = parseFlowViewParam(rawFlowView)
+  const flowView = parsedFlowView.view
   const showAll = flowYear !== null && showAllFlowYear === flowYear
   const selectedYear = flowYear === null ? undefined : years.find((y) => y.year === flowYear)
   const model = useMemo(
@@ -492,13 +496,22 @@ export function YearByYearLedger({
     [plan, selectedYear, showAll],
   )
   const invalidFlowYear = rawFlowYear !== null && flowYear === null
-  const invalidFlowRedirect = invalidFlowYear
+  const orphanFlowView = (rawFlowYear === null || rawFlowYear === '') && rawFlowView !== null
+  const invalidFlowView = flowYear !== null && parsedFlowView.invalid
+  const invalidFlowRedirect = invalidFlowYear || orphanFlowView
     ? (() => {
         const cleaned = stripFlowParams(searchParams)
         const search = cleaned.toString()
         return search ? `?${search}` : ''
       })()
-    : null
+    : invalidFlowView
+      ? (() => {
+          const next = new URLSearchParams(searchParams)
+          next.set(FLOW_VIEW_PARAM, 'cash')
+          const search = next.toString()
+          return search ? `?${search}` : ''
+        })()
+      : null
 
   const openYear = useCallback(
     (year: number) => {
@@ -544,7 +557,6 @@ export function YearByYearLedger({
         <table className="year-table">
           <thead>
             <tr>
-              <th className="year-table-flow">Flow</th>
               <th>Year</th>
               <th>Age</th>
               <th>Income</th>
@@ -569,21 +581,12 @@ export function YearByYearLedger({
               {hasLayeredSpending ? <th title="Guardrail action and flexible goal outcomes.">Guardrails</th> : null}
               <th>Investable</th>
               <th>Net worth</th>
+              <th className="year-table-flow">Flow</th>
             </tr>
           </thead>
           <tbody>
             {years.map((y) => (
               <tr key={y.year} className={y.shortfall > 0.005 ? 'row-depleted' : undefined}>
-                <td className="year-table-flow">
-                  <button
-                    type="button"
-                    className="btn-ghost btn-small"
-                    aria-label={`View cash flow for ${y.year}`}
-                    onClick={() => openYear(y.year)}
-                  >
-                    View flow
-                  </button>
-                </td>
                 <td className="year-table-year">{y.year}</td>
                 <td>{y.people.map((p) => (p.alive ? p.ageAttained : '—')).join(' / ')}</td>
                 <td>{fmtMoney(adj(y.year, y.incomes.total))}</td>
@@ -639,6 +642,16 @@ export function YearByYearLedger({
                 ) : null}
                 <td>{fmtMoney(adj(y.year, y.investableTotal))}</td>
                 <td>{fmtMoney(adj(y.year, y.netWorth))}</td>
+                <td className="year-table-flow">
+                  <button
+                    type="button"
+                    className="btn-ghost btn-small"
+                    aria-label={`View cash flow for ${y.year}`}
+                    onClick={() => openYear(y.year)}
+                  >
+                    View flow
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>

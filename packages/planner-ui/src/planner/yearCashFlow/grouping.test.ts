@@ -16,7 +16,7 @@ import {
   validatePlan,
 } from '@retiregolden/engine/testing/planFixtures'
 
-import { buildYearCashFlowSankey, type YearCashFlowSankeyReady } from './buildYearCashFlow'
+import { HOUSEHOLD_CASH_NODE_ID, buildYearCashFlowSankey, type YearCashFlowSankeyReady } from './buildYearCashFlow'
 import {
   YEAR_CASH_FLOW_COLLAPSE_THRESHOLD_SHARE,
   applyYearCashFlowGrouping,
@@ -30,23 +30,23 @@ function reconciled(): YearCashFlowReconciliation {
     status: 'reconciled',
     tolerancePlanDollars: 1e-6,
     cash: {
-      spendableSourcesPlanDollars: 99_700,
+      spendableSourcesPlanDollars: 99_800,
       portfolioFundingPlanDollars: 400,
       loanProceedsPlanDollars: 0,
-      sourceTotalPlanDollars: 100_100,
-      fundedHouseholdUsesPlanDollars: 100_100,
+      sourceTotalPlanDollars: 100_200,
+      fundedHouseholdUsesPlanDollars: 100_200,
       settledTaxPlanDollars: 0,
       penaltiesPlanDollars: 0,
       contributionsPlanDollars: 0,
       surplusInvestmentPlanDollars: 0,
-      destinationTotalPlanDollars: 100_100,
+      destinationTotalPlanDollars: 100_200,
       differencePlanDollars: 0,
     },
     uses: {
-      requestedUsesPlanDollars: 100_100,
-      fundedUsesPlanDollars: 100_100,
+      requestedUsesPlanDollars: 100_200,
+      fundedUsesPlanDollars: 100_200,
       unfundedUsesPlanDollars: 0,
-      dispositionTotalPlanDollars: 100_100,
+      dispositionTotalPlanDollars: 100_200,
       differencePlanDollars: 0,
     },
     transfers: { debitsPlanDollars: 0, creditsPlanDollars: 0, differencePlanDollars: 0 },
@@ -105,8 +105,8 @@ function collapseCashFlow(): YearCashFlow {
   const lifestyle: YearCashFlowUseLine = {
     id: 'use:requiredLifestyle:household',
     kind: 'requiredLifestyle',
-    requestedPlanDollars: 100_100,
-    fundedPlanDollars: 100_100,
+    requestedPlanDollars: 100_200,
+    fundedPlanDollars: 100_200,
     unfundedPlanDollars: 0,
     identities: [],
   }
@@ -154,6 +154,18 @@ function ready(options?: { showAll?: boolean }): YearCashFlowSankeyReady {
 describe('year cash-flow grouping', () => {
   it('exposes a 1% default collapse threshold', () => {
     expect(YEAR_CASH_FLOW_COLLAPSE_THRESHOLD_SHARE).toBe(0.01)
+  })
+
+  it('keeps source, hub, and reconciliation totals in agreement', () => {
+    const model = ready()
+    const sourceSum = model.views.cashFlow.nodes
+      .filter((node) => node.side === 'source')
+      .reduce((sum, node) => sum + node.amountPlanDollars, 0)
+    const hub = model.views.cashFlow.nodes.find((node) => node.id === HOUSEHOLD_CASH_NODE_ID)
+    expect(sourceSum).toBe(100_200)
+    expect(hub?.amountPlanDollars).toBe(100_200)
+    expect(model.reconciliation.cash.sourceTotalPlanDollars).toBe(sourceSum)
+    expect(model.reconciliation.uses.fundedUsesPlanDollars).toBe(100_200)
   })
 
   it('collapses same-person same-kind lines below the side-share threshold into Other (n)', () => {

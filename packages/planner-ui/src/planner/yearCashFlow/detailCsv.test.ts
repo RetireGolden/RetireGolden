@@ -109,13 +109,18 @@ describe('serializeYearCashFlowDetailCsv', () => {
     const csv = serializeYearCashFlowDetailCsv(model)
     const lines = csv.trimEnd().split('\n')
     expect(lines[0]).toBe(YEAR_CASH_FLOW_DETAIL_CSV_COLUMNS.join(','))
-    expect(lines[1]).toBe('2031,reconciliation,summary,,,,,,,,,,,,,reconciled')
+    expect(lines[1]).toBe('2031,reconciliation,summary,,,,,,,,,,,,,,reconciled')
     expect(lines).toHaveLength(4)
     expect(lines[2]).toContain('source:wages:w-pat')
     expect(lines[2]).toContain('cashFlow')
     expect(lines[2]).toContain('wages')
+    expect(lines[2]).toContain('incomeStream:w-pat;person:p1')
+    expect(lines[2]).toContain('householdCash')
     expect(lines[2]).toContain('1000')
     expect(lines[2]).toContain('ordinaryIncome:1000')
+    expect(YEAR_CASH_FLOW_DETAIL_CSV_COLUMNS).toContain('lineId')
+    expect(lines[2].split(',')[3]).toBe('source:wages:w-pat')
+    expect(lines[2].split(',')[4]).not.toBe('source:wages:w-pat')
     expect(lines[3]).toContain('use:requiredLifestyle:household')
     expect(lines[3]).toContain('1000,1000,1000,0')
   })
@@ -146,7 +151,7 @@ describe('serializeYearCashFlowDetailCsv', () => {
     )
     expect(missing.trimEnd().split('\n')).toEqual([
       YEAR_CASH_FLOW_DETAIL_CSV_COLUMNS.join(','),
-      '2031,reconciliation,summary,,,,,,,,,,,,,notCaptured',
+      '2031,reconciliation,summary,,,,,,,,,,,,,,notCaptured',
     ])
 
     const failed = serializeYearCashFlowDetailCsv(

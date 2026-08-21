@@ -127,8 +127,18 @@ export interface YearCashFlowTableRow {
   readonly kind: string
   readonly label: string
   readonly entityLabels: readonly string[]
+  /**
+   * Origin endpoint: Plan identity keys, or a transfer/hub endpoint id.
+   * Never the engine line id — that is {@link YearCashFlowTableRow.id}.
+   */
   readonly sourceRef: string
+  /**
+   * Destination endpoint: Plan identity keys, or a transfer/hub endpoint id.
+   * Never the engine line id — that is {@link YearCashFlowTableRow.id}.
+   */
   readonly targetRef: string
+  readonly sourceLabel: string
+  readonly targetLabel: string
   readonly amountPlanDollars: number | null
   readonly requestedPlanDollars: number | null
   readonly fundedPlanDollars: number | null
@@ -314,6 +324,7 @@ interface PlanIndex {
   readonly ladders: Map<string, string>
   readonly careEvents: Map<string, string>
   readonly actions: Map<string, { kind: string; personId?: string }>
+  readonly charities: Map<string, string>
 }
 
 function unknownLabel(id: string): string {
@@ -362,13 +373,20 @@ function buildPlanIndex(plan: Plan): PlanIndex {
   const careEvents = new Map<string, string>()
   for (const event of plan.careEvents) careEvents.set(event.id, event.personId)
   const actions = new Map<string, { kind: string; personId?: string }>()
+  const charities = new Map<string, string>()
   for (const action of plan.strategies.retirementActions) {
-    actions.set(String(action.actionId), {
-      kind: action.kind,
-      personId: 'personId' in action ? String(action.personId) : undefined,
-    })
+    const personId =
+      action.kind === 'qcd' ? String(action.donorPersonId)
+      : 'personId' in action ? String(action.personId)
+      : undefined
+    actions.set(String(action.actionId), { kind: action.kind, personId })
+    if (action.kind === 'qcd') {
+      const designationId = action.charity.designationId
+      const name = action.charity.name.trim()
+      if (designationId !== '' && name !== '') charities.set(designationId, name)
+    }
   }
-  return { people, accounts, incomes, goals, policies, ladders, careEvents, actions }
+  return { people, accounts, incomes, goals, policies, ladders, careEvents, actions, charities }
 }
 
 function personName(index: PlanIndex, personId: string): string | null {
@@ -565,13 +583,16 @@ function resolveEndpoint(index: PlanIndex, endpoint: YearCashFlowTransferEndpoin
   switch (endpoint.entityKind) {
     case 'householdCash':
       return { label: 'Household cash', unresolved: false, personKey: 'household', personLabel: 'Household' }
-    case 'charity':
+    case 'charity': {
+      const designationId = endpoint.designationId
+      const named = designationId ? index.charities.get(designationId) : undefined
       return {
-        label: endpoint.designationId ? `Charity (${endpoint.designationId})` : 'Charity',
+        label: named ? named : designationId ? `Charity (${designationId})` : 'Charity',
         unresolved: false,
         personKey: 'household',
         personLabel: 'Household',
       }
+    }
     case 'employer':
       return { label: 'Employer', unresolved: false, personKey: 'household', personLabel: 'Household' }
     case 'unassignedCash':
@@ -632,6 +653,36 @@ function rawUnknownId(ref: YearCashFlowEntityReference): string {
   }
 }
 
+function isAccountLike(ref: YearCashFlowEntityReference): boolean {
+  return ref.entityKind === 'account' || ref.entityKind === 'propertyAccount' || ref.entityKind === 'annuityContract'
+}
+
+function accountRestLabel(index: PlanIndex, ref: YearCashFlowEntityReference): string | null {
+  const accountId =
+    ref.entityKind === 'account' ? ref.accountId
+    : ref.entityKind === 'propertyAccount' ? ref.propertyAccountId
+    : ref.entityKind === 'annuityContract' ? ref.annuityAccountId
+    : null
+  if (accountId === null) return null
+  const account = index.accounts.get(accountId)
+  if (!account) return null
+  return `${account.name} (${accountKindTag(account)})`
+}
+
+function appendUnresolvedMarkers(
+  label: string,
+  identities: readonly YearCashFlowEntityReference[],
+  resolved: readonly ResolvedEntity[],
+): string {
+  const extras: string[] = []
+  for (let i = 0; i < identities.length; i++) {
+    if (!resolved[i]!.unresolved) continue
+    const marker = unknownLabel(rawUnknownId(identities[i]!))
+    if (!label.includes(marker)) extras.push(marker)
+  }
+  return extras.length === 0 ? label : `${label} · ${extras.join(' · ')}`
+}
+
 function resolveLineLabel(
   index: PlanIndex,
   identities: readonly YearCashFlowEntityReference[],
@@ -650,14 +701,19 @@ function resolveLineLabel(
   const resolved = identities.map((ref) => resolveEntity(index, ref))
   const unresolved = resolved.some((item) => item.unresolved)
   const primary = resolved.find((item) => !item.unresolved) ?? resolved[0]!
-  const person = resolved.find((item) => item.personKey !== 'household') ?? primary
-  const firstUnresolved = identities.find((_, i) => resolved[i]!.unresolved)
-  const allUnresolved = resolved.every((item) => item.unresolved)
-  const label = allUnresolved && firstUnresolved
-    ? unknownLabel(rawUnknownId(firstUnresolved))
-    : primary.label
+  const payeeIndex = identities.findIndex((ref) => ref.entityKind === 'person')
+  const payee = payeeIndex >= 0 ? resolved[payeeIndex]! : null
+  const instrumentIndex = identities.findIndex(isAccountLike)
+  // Pension/annuity (and any account+person pair): the person reference is the
+  // living payee the engine emitted, not the account owner.
+  const person = payee ?? (resolved.find((item) => item.personKey !== 'household') ?? primary)
+  const rest = instrumentIndex >= 0 ? accountRestLabel(index, identities[instrumentIndex]!) : null
+  const knownLabel =
+    payee !== null && !payee.unresolved && rest !== null
+      ? withPerson(payee.personLabel, rest)
+      : primary.label
   return {
-    label,
+    label: appendUnresolvedMarkers(knownLabel, identities, resolved),
     entityLabels: resolved.map((item) => item.label),
     unresolved,
     personKey: person.personKey,
@@ -676,16 +732,40 @@ function sourceTableRow(
 ): YearCashFlowTableRow {
   const kindLabel = SOURCE_KIND_LABEL[line.kind]
   const resolved = resolveLineLabel(index, line.identities, kindLabel)
-  const postSolve = line.role === 'postSolveDeposit'
-  const targetRef = postSolve ? endpointNodeId(line.postSolveDestination) : HOUSEHOLD_CASH_NODE_ID
+  if (line.role === 'postSolveDeposit') {
+    const dest = resolveEndpoint(index, line.postSolveDestination)
+    return {
+      id: line.id,
+      view: 'postSolve',
+      kind: line.kind,
+      label: resolved.label,
+      entityLabels: resolved.entityLabels,
+      sourceRef: resolved.sourceRef,
+      targetRef: endpointNodeId(line.postSolveDestination),
+      sourceLabel: resolved.label,
+      targetLabel: dest.label,
+      amountPlanDollars: line.amountPlanDollars,
+      requestedPlanDollars: null,
+      fundedPlanDollars: null,
+      unfundedPlanDollars: null,
+      debitPlanDollars: null,
+      creditPlanDollars: null,
+      penaltyClass: null,
+      taxCharacter: line.taxCharacter ?? [],
+      lineageNotes: [],
+      unresolved: resolved.unresolved,
+    }
+  }
   return {
     id: line.id,
-    view: postSolve ? 'postSolve' : 'cashFlow',
+    view: 'cashFlow',
     kind: line.kind,
     label: resolved.label,
     entityLabels: resolved.entityLabels,
-    sourceRef: line.id,
-    targetRef,
+    sourceRef: resolved.sourceRef,
+    targetRef: HOUSEHOLD_CASH_NODE_ID,
+    sourceLabel: resolved.label,
+    targetLabel: 'Household cash',
     amountPlanDollars: line.amountPlanDollars,
     requestedPlanDollars: null,
     fundedPlanDollars: null,
@@ -702,6 +782,7 @@ function sourceTableRow(
 function fundedUseTableRow(index: PlanIndex, line: YearCashFlowUseLine): YearCashFlowTableRow {
   const kindLabel = USE_KIND_LABEL[line.kind]
   const resolved = resolveLineLabel(index, line.identities, kindLabel)
+  const targetRef = resolved.sourceRef === 'household' ? `use:${line.kind}` : resolved.sourceRef
   return {
     id: line.id,
     view: 'cashFlow',
@@ -709,7 +790,9 @@ function fundedUseTableRow(index: PlanIndex, line: YearCashFlowUseLine): YearCas
     label: resolved.label,
     entityLabels: resolved.entityLabels,
     sourceRef: HOUSEHOLD_CASH_NODE_ID,
-    targetRef: line.id,
+    targetRef,
+    sourceLabel: 'Household cash',
+    targetLabel: resolved.label,
     amountPlanDollars: line.fundedPlanDollars,
     requestedPlanDollars: line.requestedPlanDollars,
     fundedPlanDollars: line.fundedPlanDollars,
@@ -737,6 +820,8 @@ function transferTableRow(index: PlanIndex, line: YearCashFlowTransferLine): Yea
     entityLabels: resolved.entityLabels.length > 0 ? resolved.entityLabels : [source.label, dest.label],
     sourceRef: endpointNodeId(line.source),
     targetRef: endpointNodeId(line.destination),
+    sourceLabel: source.label,
+    targetLabel: dest.label,
     amountPlanDollars: line.debitPlanDollars,
     requestedPlanDollars: null,
     fundedPlanDollars: null,
@@ -762,8 +847,10 @@ function metadataTableRow(
     label: resolved.label,
     entityLabels: resolved.entityLabels,
     sourceRef: resolved.sourceRef,
-    targetRef: line.relatedLineId ?? '',
-    amountPlanDollars: null,
+    targetRef: '',
+    sourceLabel: resolved.label,
+    targetLabel: '',
+    amountPlanDollars: line.taxCharacter.amountPlanDollars,
     requestedPlanDollars: null,
     fundedPlanDollars: null,
     unfundedPlanDollars: null,

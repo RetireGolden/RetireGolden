@@ -44,6 +44,28 @@ const TABLE_VIEW_LABEL: Record<YearCashFlowTableView, string> = {
   taxCharacter: 'Tax character',
 }
 
+const PENALTY_CLASS_LABEL: Record<NonNullable<YearCashFlowTableRow['penaltyClass']>, string> = {
+  traditionalEarly: 'Traditional early',
+  hsaNonMedical: 'HSA nonmedical',
+  rothEarly: 'Roth early',
+}
+
+function taxCharacterSummary(
+  year: number,
+  displayAmount: YearCashFlowDisplayAmount,
+  row: YearCashFlowTableRow,
+): string {
+  if (row.taxCharacter.length === 0) return ''
+  return row.taxCharacter
+    .map((item) => `${item.kind} ${fmtMoney(displayAmount(year, item.amountPlanDollars))}`)
+    .join('; ')
+}
+
+function lineageSummary(row: YearCashFlowTableRow): string {
+  if (row.lineageNotes.length === 0) return ''
+  return row.lineageNotes.map((item) => `${item.relationship} → ${item.lineId}`).join('; ')
+}
+
 function moneyCell(
   year: number,
   displayAmount: YearCashFlowDisplayAmount,
@@ -154,26 +176,43 @@ function DetailTable({
             <th scope="col">Label</th>
             <th scope="col">View</th>
             <th scope="col">Kind</th>
+            <th scope="col">Entities</th>
+            <th scope="col">From</th>
+            <th scope="col">To</th>
             <th scope="col">Amount</th>
             <th scope="col">Requested</th>
             <th scope="col">Funded</th>
             <th scope="col">Unfunded</th>
             <th scope="col">Debit</th>
             <th scope="col">Credit</th>
+            <th scope="col">Penalty</th>
+            <th scope="col">Tax character</th>
+            <th scope="col">Lineage</th>
           </tr>
         </thead>
         <tbody>
           {rows.map((row) => (
-            <tr key={row.id} data-line-id={row.id}>
-              <th scope="row">{row.label}</th>
+            <tr key={row.id} data-line-id={row.id} data-unresolved={row.unresolved ? 'true' : undefined}>
+              <th scope="row">
+                {row.label}
+                {row.unresolved ? (
+                  <span className="year-cash-flow-unresolved-marker">Unresolved</span>
+                ) : null}
+              </th>
               <td>{TABLE_VIEW_LABEL[row.view]}</td>
               <td>{row.kind}</td>
+              <td>{row.entityLabels.join('; ')}</td>
+              <td>{row.sourceLabel}</td>
+              <td>{row.targetLabel}</td>
               <td className="year-cash-flow-num">{moneyCell(year, displayAmount, row.amountPlanDollars)}</td>
               <td className="year-cash-flow-num">{moneyCell(year, displayAmount, row.requestedPlanDollars)}</td>
               <td className="year-cash-flow-num">{moneyCell(year, displayAmount, row.fundedPlanDollars)}</td>
               <td className="year-cash-flow-num">{moneyCell(year, displayAmount, row.unfundedPlanDollars)}</td>
               <td className="year-cash-flow-num">{moneyCell(year, displayAmount, row.debitPlanDollars)}</td>
               <td className="year-cash-flow-num">{moneyCell(year, displayAmount, row.creditPlanDollars)}</td>
+              <td>{row.penaltyClass ? PENALTY_CLASS_LABEL[row.penaltyClass] : ''}</td>
+              <td>{taxCharacterSummary(year, displayAmount, row)}</td>
+              <td>{lineageSummary(row)}</td>
             </tr>
           ))}
         </tbody>

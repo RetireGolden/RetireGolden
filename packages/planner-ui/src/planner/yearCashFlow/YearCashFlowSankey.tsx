@@ -6,6 +6,7 @@
  * is labeled and dashed/patterned, never distinguished by color alone.
  */
 
+import { useEffect, useRef, useState } from 'react'
 import { Sankey, Tooltip } from 'recharts'
 
 import { chartTooltipStyle } from '../chartStyle'
@@ -31,18 +32,27 @@ export interface YearCashFlowSankeyProps {
   readonly transferCreditsPlanDollars?: number
 }
 
-const CHART_COLORS = [
-  'var(--chart-1)',
-  'var(--chart-2)',
-  'var(--chart-3)',
-  'var(--chart-4)',
-  'var(--chart-5)',
-  'var(--chart-6)',
-  'var(--chart-7)',
-] as const
+/** Semantic node fills — one token per side, matching the legend swatches. */
+const NODE_COLOR = {
+  source: 'var(--chart-1)',
+  hub: 'var(--chart-3)',
+  fundedUse: 'var(--chart-4)',
+  unfunded: 'var(--bad)',
+  transfer: 'var(--chart-6)',
+} as const
 
 const UNFUNDED_HATCH_ID = 'year-cash-flow-unfunded-hatch'
 const LABEL_MAX = 20
+const MIN_CHART_WIDTH = 560
+const FALLBACK_CHART_WIDTH = 720
+
+/**
+ * Ordinary link stroke vs --surface-1 (index.css), opacity 1:
+ * light #5b6470 on #ffffff ≈ 6.0:1; dark #97a1ad on #161b22 ≈ 6.6:1.
+ * Both clear WCAG 1.4.11's 3:1 floor (the prior 55% mix did not).
+ */
+const LINK_STROKE = 'var(--muted)'
+const LINK_STROKE_OPACITY = 1
 
 interface ChartNode extends YearCashFlowSankeyNode {
   readonly name: string
@@ -86,9 +96,31 @@ function isUnfundedNode(node: Pick<YearCashFlowSankeyNode, 'flag' | 'role'>): bo
   return node.flag === 'unfunded' || node.role === 'unfundedOrigin' || node.role === 'unfundedUse'
 }
 
-function nodeColor(node: YearCashFlowSankeyNode, index: number): string {
-  if (isUnfundedNode(node)) return 'var(--bad)'
-  return CHART_COLORS[index % CHART_COLORS.length]
+function nodeColor(node: YearCashFlowSankeyNode): string {
+  if (isUnfundedNode(node)) return NODE_COLOR.unfunded
+  if (node.side === 'source') return NODE_COLOR.source
+  if (node.side === 'hub') return NODE_COLOR.hub
+  if (node.side === 'fundedUse') return NODE_COLOR.fundedUse
+  if (node.side === 'transfer') return NODE_COLOR.transfer
+  return NODE_COLOR.hub
+}
+
+function useMeasuredChartWidth() {
+  const ref = useRef<HTMLDivElement>(null)
+  const [width, setWidth] = useState(FALLBACK_CHART_WIDTH)
+  useEffect(() => {
+    const el = ref.current
+    if (!el || typeof ResizeObserver === 'undefined') return
+    const apply = () => {
+      const measured = Math.floor(el.clientWidth)
+      setWidth(Math.max(MIN_CHART_WIDTH, measured > 0 ? measured : FALLBACK_CHART_WIDTH))
+    }
+    apply()
+    const observer = new ResizeObserver(apply)
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
+  return { ref, width }
 }
 
 function truncateLabel(label: string): string {
@@ -101,10 +133,10 @@ function toChartData(
   year: number,
   displayAmount: YearCashFlowDisplayAmount,
 ): { nodes: ChartNode[]; links: ChartLink[] } {
-  const nodes = view.nodes.map((node, index) => ({
+  const nodes = view.nodes.map((node) => ({
     ...node,
     name: node.label,
-    fill: nodeColor(node, index),
+    fill: nodeColor(node),
     displayAmount: displayAmount(year, node.amountPlanDollars),
   }))
   const indexById = new Map(nodes.map((node, index) => [node.id, index]))
@@ -172,16 +204,23 @@ function YearCashFlowSankeyTooltip({
   )
 }
 
+function nodeFill(node: YearCashFlowSankeyNode, fill?: string): string {
+  if (isUnfundedNode(node)) return `url(#${UNFUNDED_HATCH_ID})`
+  return fill ?? nodeColor(node)
+}
+
 function YearCashFlowSankeyNode({ x = 0, y = 0, width = 0, height = 0, payload, index = 0 }: PlacedNode) {
-  if (!payload || width <= 0 || height <= 0) return <g />
+  if (!payload) return <g />
+  const nodeWidth = width > 0 ? width : 12
+  const nodeHeight = height > 0 ? height : 12
   const unfunded = isUnfundedNode(payload)
-  const fill = unfunded ? `url(#${UNFUNDED_HATCH_ID})` : payload.fill
+  const fill = nodeFill(payload, payload.fill)
   const labelOnRight = payload.side === 'fundedUse' || payload.side === 'unfundedUse' || x > 280
-  const textX = labelOnRight ? x + width + 6 : x - 6
+  const textX = labelOnRight ? x + nodeWidth + 6 : x - 6
   const textAnchor = labelOnRight ? 'start' : 'end'
   const title = `${payload.label} (${payload.kindLabel}): ${fmtMoney(payload.displayAmount)}`
   return (
-    <g className="year-cash-flow-sankey-node" data-node-id={payload.id} data-flag={payload.flag ?? undefined}>
+    <g className="year-cash-flow-sankey-node" data-node-id={payload.id} data-flag={payload.flag ?? undefined} data-unresolved={payload.unresolved ? 'true' : undefined}>
       {index === 0 ? (
         <defs>
           <pattern
@@ -199,8 +238,8 @@ function YearCashFlowSankeyNode({ x = 0, y = 0, width = 0, height = 0, payload, 
       <rect
         x={x}
         y={y}
-        width={width}
-        height={height}
+        width={nodeWidth}
+        height={nodeHeight}
         fill={fill}
         stroke={unfunded ? 'var(--bad)' : 'var(--border)'}
         strokeDasharray={unfunded ? '3 2' : undefined}
@@ -208,7 +247,7 @@ function YearCashFlowSankeyNode({ x = 0, y = 0, width = 0, height = 0, payload, 
       />
       <text
         x={textX}
-        y={y + height / 2}
+        y={y + nodeHeight / 2}
         textAnchor={textAnchor}
         dominantBaseline="middle"
         fill="var(--fg)"
@@ -216,8 +255,37 @@ function YearCashFlowSankeyNode({ x = 0, y = 0, width = 0, height = 0, payload, 
       >
         <title>{title}</title>
         {truncateLabel(payload.label)}
+        {payload.unresolved ? (
+          <tspan className="year-cash-flow-unresolved-marker"> Unresolved</tspan>
+        ) : null}
       </text>
     </g>
+  )
+}
+
+/** Always in the tree: Recharts only mounts custom nodes after a size effect, so SSR/a11y need this. */
+function YearCashFlowSankeyNodeMap({ nodes }: { nodes: readonly ChartNode[] }) {
+  if (nodes.length === 0) return null
+  return (
+    <svg className="sr-only" aria-hidden="true" width="0" height="0">
+      {nodes.map((node) => (
+        <g
+          key={node.id}
+          className="year-cash-flow-sankey-node"
+          data-node-id={node.id}
+          data-flag={node.flag ?? undefined}
+          data-unresolved={node.unresolved ? 'true' : undefined}
+        >
+          <rect fill={node.fill} width="1" height="1" />
+          <text>
+            {node.label}
+            {node.unresolved ? (
+              <tspan className="year-cash-flow-unresolved-marker"> Unresolved</tspan>
+            ) : null}
+          </text>
+        </g>
+      ))}
+    </svg>
   )
 }
 
@@ -249,9 +317,9 @@ function YearCashFlowSankeyLink(props: PlacedLink) {
       data-flag={payload?.flag ?? undefined}
       d={`M${sourceX},${sourceY} C${sourceControlX},${sourceY} ${targetControlX},${targetY} ${targetX},${targetY}`}
       fill="none"
-      stroke={unfunded ? 'var(--bad)' : 'var(--muted)'}
+      stroke={unfunded ? 'var(--bad)' : LINK_STROKE}
       strokeWidth={Math.max(linkWidth, 1.5)}
-      strokeOpacity={0.55}
+      strokeOpacity={unfunded ? 1 : LINK_STROKE_OPACITY}
       strokeDasharray={unfunded ? '6 4' : undefined}
     />
   )
@@ -260,13 +328,13 @@ function YearCashFlowSankeyLink(props: PlacedLink) {
 function YearCashFlowSankeyLegend({ viewId, hasUnfunded }: { viewId: YearCashFlowSankeyViewId; hasUnfunded: boolean }) {
   const items =
     viewId === 'transfers'
-      ? [{ key: 'transfer', label: 'Transfer', swatch: 'var(--chart-6)', dashed: false }]
+      ? [{ key: 'transfer', label: 'Transfer', swatch: NODE_COLOR.transfer, dashed: false }]
       : [
-          { key: 'source', label: 'Sources', swatch: 'var(--chart-1)', dashed: false },
-          { key: 'hub', label: 'Household cash', swatch: 'var(--chart-3)', dashed: false },
-          { key: 'funded', label: 'Funded uses', swatch: 'var(--chart-4)', dashed: false },
+          { key: 'source', label: 'Sources', swatch: NODE_COLOR.source, dashed: false },
+          { key: 'hub', label: 'Household cash', swatch: NODE_COLOR.hub, dashed: false },
+          { key: 'funded', label: 'Funded uses', swatch: NODE_COLOR.fundedUse, dashed: false },
           ...(hasUnfunded
-            ? [{ key: 'unfunded', label: 'Unfunded', swatch: 'var(--bad)', dashed: true }]
+            ? [{ key: 'unfunded', label: 'Unfunded', swatch: NODE_COLOR.unfunded, dashed: true }]
             : []),
         ]
   return (
@@ -303,6 +371,7 @@ function chartAriaLabel(props: YearCashFlowSankeyProps): string {
 
 export function YearCashFlowSankey(props: YearCashFlowSankeyProps) {
   const { view, viewId } = props
+  const { ref: chartRef, width } = useMeasuredChartWidth()
   const data = toChartData(view, props.year, props.displayAmount)
   const hasUnfunded = view.nodes.some(isUnfundedNode) || view.links.some((link) => link.flag === 'unfunded')
   const height = Math.max(280, data.nodes.length * 36)
@@ -315,15 +384,17 @@ export function YearCashFlowSankey(props: YearCashFlowSankeyProps) {
       aria-label={chartAriaLabel(props)}
       data-animation-active="false"
       data-view={viewId}
+      data-chart-width={String(width)}
       data-node-ids={view.nodes.map((node) => node.id).join(' ')}
       data-link-ids={view.links.map((link) => link.id).join(' ')}
     >
+      <YearCashFlowSankeyNodeMap nodes={data.nodes} />
       {empty ? (
         <p className="small">No lines to graph in this view.</p>
       ) : (
-        <div className="year-cash-flow-sankey-chart">
+        <div className="year-cash-flow-sankey-chart" ref={chartRef}>
           <Sankey
-            width={720}
+            width={width}
             height={height}
             data={data}
             nodeWidth={12}
