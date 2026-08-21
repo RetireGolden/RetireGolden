@@ -1,23 +1,29 @@
 /**
  * Capture-after-commit publisher for `YearResult.cashFlow`.
  *
- * Stage 3 emits identity-bearing source lines and funded/unfunded use lines
- * after residual shortfall attribution. Transfer emission lands in stage 4.
- * `assembleYearCashFlow` still runs on every capture-on committed year so
- * `yearResult` shape is stable (`cashFlow` present iff the option is on).
- * Leftover remaining after the contribution group is not plugged; the cash
- * identity then fails closed with `cashIdentityMismatch`.
+ * Stage 4 emits identity-bearing source lines, funded/unfunded use lines
+ * after residual shortfall attribution, direct transfers with debit/credit
+ * pairing and lineage, and standalone tax-character metadata. Assemble still
+ * runs on every capture-on committed year so `yearResult` shape is stable
+ * (`cashFlow` present iff the option is on). Leftover remaining after the
+ * contribution group is not plugged; the cash identity then fails closed
+ * with `cashIdentityMismatch`.
  *
  * @see DOCS/features/year-cash-flow.md
  */
 
 import {
+  asUsdCents,
   planDollarsMoveNoLedgerCent,
   ledgerCentsToPlanDollars,
+  type ExecuteAnnualQcdsResult,
   type ExecuteOrdinaryWithdrawalsResult,
+  type ExecuteRothConversionsResult,
 } from '../actions/index.js'
 import type { AccountId, PersonId } from '../actions/identity.js'
+import type { EmployerElectiveAllocation } from './employerRothCatchUp.js'
 import { cashFlowLineIds, compareCashFlowLineId } from './annualCashFlowIds.js'
+import type { AggregateBasisSaleResult } from '../tax/aggregateBasisSale.js'
 import {
   type CashFlowIncompleteInventoryProbes,
   reconcileYearCashFlow,
@@ -117,14 +123,40 @@ export interface AssembleYearCashFlowInput extends CashFlowIncompleteInventoryPr
   readonly rmdTakeByAccount: ReadonlyMap<string, number>
   readonly ownedIraRmdGrossByOwner: ReadonlyMap<string, number>
   readonly qcdFromRmdByOwner: ReadonlyMap<string, number>
+  readonly qcdQualifiedFromRmdByOwner: ReadonlyMap<string, number>
+  readonly qcdGrossByOwner: ReadonlyMap<string, number>
+  readonly qcdNonQualifiedBeyondRmdByOwner: ReadonlyMap<string, number>
+  readonly deferredLegacyQcdDistributions: readonly {
+    readonly ownerId: string
+    readonly amount: number
+    readonly sourceAccountId: string
+  }[]
   readonly employerPlanAccountIds: ReadonlySet<string>
   readonly withdrawalPlanByAccountId: ReadonlyMap<string, number>
+  readonly withdrawalPlanTaxableSales: ReadonlyMap<string, Readonly<AggregateBasisSaleResult>>
+  readonly iraCharacterFinal: {
+    readonly nontaxable: number
+    readonly taxableBySourceAccountId: ReadonlyMap<string, number>
+  }
   readonly inheritedYearEvidence: readonly InheritedAccountYearEvidence[]
   readonly retirementActionExecution: ExecuteOrdinaryWithdrawalsResult | undefined
+  readonly rothConversionActionExecution: ExecuteRothConversionsResult | undefined
+  readonly qcdActionExecution: ExecuteAnnualQcdsResult | undefined
+  readonly namedRothConversionExecuted: number
+  readonly namedRothConversionNontaxable: number
+  readonly conversionNontaxable: number
+  readonly rothConversion: number
+  readonly aggregateConversionDraws: readonly {
+    readonly sourceAccountId: string
+    readonly destinationAccountId: string
+    readonly ownerPersonId: string
+    readonly amount: number
+    readonly nontaxable: number
+  }[]
   /**
    * Economic yield map. Sources must not gather `gross` from this — it mixes
    * taxable + exempt. The per-account split lives on `yearSites.distributedYield`.
-   * Reinvested-yield transfers (stage 4) gather `gross` when `reinvest`.
+   * Reinvested-yield transfers gather `gross` when `reinvest`.
    */
   readonly distributedYieldByAccountId: ReadonlyMap<string, {
     readonly gross: number
@@ -136,6 +168,14 @@ export interface AssembleYearCashFlowInput extends CashFlowIncompleteInventoryPr
    * account's `ownerPersonId` is null.
    */
   readonly ownerPersonIdByAccountId: ReadonlyMap<string, string | null>
+
+  /** Employer Roth-catch-up routing (pre-pass, survives). */
+  readonly employerAllocationByOwner: ReadonlyMap<string, EmployerElectiveAllocation>
+  readonly desiredByAccountId: ReadonlyMap<string, number>
+
+  readonly yearTaxExemptInterest: number
+  readonly generatedTaxExemptInterest: number
+  readonly acaForeignExclusionAddback: number
 
   /** Pre-guardrail required lifestyle; assemble does not re-derive from `baseAnnual`. */
   readonly requiredLifestyle: number
@@ -221,6 +261,56 @@ function capitalGain(amount: number): YearCashFlowTaxCharacter | undefined {
 
 function returnOfBasis(amount: number): YearCashFlowTaxCharacter | undefined {
   return amount <= 0 ? undefined : { kind: 'returnOfBasis', amountPlanDollars: amount }
+}
+
+function qcdExclusion(amount: number): YearCashFlowTaxCharacter | undefined {
+  return amount <= 0 ? undefined : { kind: 'qcdIncomeExclusion', amountPlanDollars: amount }
+}
+
+function qcdNonQualified(amount: number): YearCashFlowTaxCharacter | undefined {
+  return amount <= 0 ? undefined : { kind: 'nonQualifiedQcdOrdinaryIncome', amountPlanDollars: amount }
+}
+
+function householdCash(): YearCashFlowTransferEndpoint {
+  return { entityKind: 'householdCash' }
+}
+
+function employerEndpoint(): YearCashFlowTransferEndpoint {
+  return { entityKind: 'employer' }
+}
+
+function charityEndpoint(designationId?: string): YearCashFlowTransferEndpoint {
+  return designationId === undefined || designationId === ''
+    ? { entityKind: 'charity' }
+    : { entityKind: 'charity', designationId }
+}
+
+function pensionPlanRef(pensionAccountId: string): YearCashFlowTransferEndpoint {
+  return { entityKind: 'pensionPlan', pensionAccountId: asReportingAccountId(pensionAccountId) }
+}
+
+function accountYieldRef(accountId: string): YearCashFlowTransferEndpoint {
+  return { entityKind: 'accountYield', accountId: asReportingAccountId(accountId) }
+}
+
+function unassignedCash(): YearCashFlowTransferEndpoint {
+  return { entityKind: 'unassignedCash' }
+}
+
+function actionRef(actionId: string, allocationId?: string): YearCashFlowEntityReference {
+  return allocationId === undefined
+    ? { entityKind: 'retirementAction', actionId }
+    : { entityKind: 'retirementAction', actionId, allocationId }
+}
+
+function conversionCharacter(nontaxable: number, taxable: number):
+  readonly YearCashFlowTaxCharacter[] | undefined {
+  return chars([returnOfBasis(nontaxable), ordinary(taxable)])
+}
+
+function qcdCharacter(exclusion: number, nonQualified: number):
+  readonly YearCashFlowTaxCharacter[] | undefined {
+  return chars([qcdExclusion(exclusion), qcdNonQualified(nonQualified)])
 }
 
 function streamCharacter(taxTreatment: 'ordinary' | 'capitalGain' | 'none', amount: number):
@@ -442,6 +532,7 @@ function collectSourceLines(input: AssembleYearCashFlowInput): YearCashFlowSourc
   if (execution !== undefined) {
     for (const evidence of execution.evidence) {
       const personId = evidence.personId
+      const actionCharacters = evidence.readiness === 'actionable' ? evidence.taxCharacter : []
       for (const allocation of evidence.allocations) {
         if (allocation.executedAmount <= 0) continue
         const amountPlanDollars = ledgerCentsToPlanDollars(allocation.executedAmount)
@@ -450,20 +541,25 @@ function collectSourceLines(input: AssembleYearCashFlowInput): YearCashFlowSourc
         const allocationId = String(allocation.allocationId)
         const sourceAccountId = String(allocation.sourceAccountId)
         const identities: YearCashFlowEntityReference[] = [
-          {
-            entityKind: 'retirementAction',
-            actionId,
-            allocationId,
-          },
+          actionRef(actionId, allocationId),
           accountRef(sourceAccountId),
         ]
         if (personId) identities.push(personRef(String(personId)))
+        const taxCharacter = chars(actionCharacters.flatMap((part) => {
+          if (String(part.allocationId) !== allocationId) return []
+          const dollars = ledgerCentsToPlanDollars(part.amount)
+          if (part.kind === 'capitalGain') return [capitalGain(dollars)]
+          if (part.kind === 'capitalLoss') return [capitalGain(-dollars)]
+          if (part.kind === 'basisReturn') return [returnOfBasis(dollars)]
+          return []
+        }))
         lines.push({
           id: cashFlowLineIds.sourceRetirementActionWithdrawal(actionId, allocationId),
           kind: 'retirementActionWithdrawal',
           role: 'portfolioFunding',
           amountPlanDollars,
           identities,
+          ...(taxCharacter ? { taxCharacter } : {}),
         })
       }
     }
@@ -471,12 +567,20 @@ function collectSourceLines(input: AssembleYearCashFlowInput): YearCashFlowSourc
 
   for (const [accountId, amount] of input.withdrawalPlanByAccountId) {
     if (amount <= 0) continue
+    const sale = input.withdrawalPlanTaxableSales.get(accountId)
+    const iraTaxable = input.iraCharacterFinal.taxableBySourceAccountId.get(accountId)
+    const taxCharacter = chars([
+      sale !== undefined ? capitalGain(sale.realizedCapitalGainOrLoss) : undefined,
+      iraTaxable !== undefined ? returnOfBasis(amount - iraTaxable) : undefined,
+      iraTaxable !== undefined ? ordinary(iraTaxable) : undefined,
+    ])
     lines.push({
       id: cashFlowLineIds.sourceNeedBasedPortfolioWithdrawal(accountId),
       kind: 'needBasedPortfolioWithdrawal',
       role: 'portfolioFunding',
       amountPlanDollars: amount,
       identities: ownerRefs(accountId, input.ownerPersonIdByAccountId.get(accountId)),
+      ...(taxCharacter ? { taxCharacter } : {}),
     })
   }
 
@@ -783,16 +887,403 @@ function collectUseLines(input: AssembleYearCashFlowInput): YearCashFlowUseLine[
   return useLines
 }
 
+function collectTransferLines(
+  input: AssembleYearCashFlowInput,
+  useLines: readonly YearCashFlowUseLine[],
+): YearCashFlowTransferLine[] {
+  const lines: YearCashFlowTransferLine[] = []
+  const { yearSites, passLocals } = input
+  const useById = new Map(useLines.map((line) => [line.id, line]))
+
+  const push = (line: YearCashFlowTransferLine): void => {
+    if (line.debitPlanDollars <= 0 && line.creditPlanDollars <= 0) return
+    lines.push(line)
+  }
+
+  for (const row of yearSites.contributions) {
+    if (row.credited <= 0) continue
+    const useId = cashFlowLineIds.useContribution(row.destinationAccountId)
+    const useLine = useById.get(useId)
+    const residualUnfunded = useLine?.unfundedPlanDollars ?? 0
+    const relationship = residualUnfunded > CASH_FLOW_RECONCILIATION_TOLERANCE_PLAN_DOLLARS
+      ? 'committedCreditBeyondFunding' as const
+      : 'sameDollarLaterStage' as const
+    push({
+      id: cashFlowLineIds.transferEmployeeContribution(row.destinationAccountId),
+      kind: 'employeeContribution',
+      source: householdCash(),
+      destination: {
+        entityKind: 'account',
+        accountId: asReportingAccountId(row.destinationAccountId),
+      },
+      debitPlanDollars: row.credited,
+      creditPlanDollars: row.credited,
+      identities: ownerRefs(row.destinationAccountId, row.ownerPersonId),
+      ...(useLine !== undefined
+        ? { lineage: [{ lineId: useLine.id, relationship }] }
+        : {}),
+    })
+  }
+
+  for (const row of yearSites.employerMatch) {
+    push({
+      id: cashFlowLineIds.transferEmployerMatch(row.destinationAccountId),
+      kind: 'employerMatch',
+      source: employerEndpoint(),
+      destination: {
+        entityKind: 'account',
+        accountId: asReportingAccountId(row.destinationAccountId),
+      },
+      debitPlanDollars: row.amount,
+      creditPlanDollars: row.amount,
+      identities: ownerRefs(row.destinationAccountId, row.ownerPersonId),
+    })
+  }
+
+  for (const row of yearSites.annuityPurchases) {
+    if (row.funded <= 0) continue
+    const taxCharacter = chars([capitalGain(row.capitalGainOrLoss)])
+    const fundingOwner = input.ownerPersonIdByAccountId.get(row.fundingAccountId)
+    push({
+      id: cashFlowLineIds.transferAnnuityPurchase(row.annuityAccountId),
+      kind: 'annuityPurchase',
+      source: {
+        entityKind: 'account',
+        accountId: asReportingAccountId(row.fundingAccountId),
+      },
+      destination: annuityContractRef(row.annuityAccountId),
+      debitPlanDollars: row.funded,
+      creditPlanDollars: row.funded,
+      identities: [
+        ...ownerRefs(row.fundingAccountId, fundingOwner),
+        annuityContractRef(row.annuityAccountId),
+      ],
+      ...(taxCharacter ? { taxCharacter } : {}),
+    })
+  }
+
+  for (const row of yearSites.tipsPurchases) {
+    if (row.funded <= 0) continue
+    const taxCharacter = chars([capitalGain(row.capitalGainOrLoss)])
+    push({
+      id: cashFlowLineIds.transferTipsLadderPurchase(row.ladderId),
+      kind: 'tipsLadderPurchase',
+      source: {
+        entityKind: 'account',
+        accountId: asReportingAccountId(row.fundingAccountId),
+      },
+      destination: tipsRef(row.ladderId),
+      debitPlanDollars: row.funded,
+      creditPlanDollars: row.funded,
+      identities: [accountRef(row.fundingAccountId), tipsRef(row.ladderId)],
+      ...(taxCharacter ? { taxCharacter } : {}),
+    })
+  }
+
+  for (const row of yearSites.pensionRollovers) {
+    push({
+      id: cashFlowLineIds.transferPensionRollover(row.pensionAccountId, row.destinationAccountId),
+      kind: 'pensionRollover',
+      source: pensionPlanRef(row.pensionAccountId),
+      destination: {
+        entityKind: 'account',
+        accountId: asReportingAccountId(row.destinationAccountId),
+      },
+      debitPlanDollars: row.amount,
+      creditPlanDollars: row.amount,
+      identities: ownerRefs(row.destinationAccountId, row.ownerPersonId),
+    })
+  }
+
+  const namedConversions = input.rothConversionActionExecution
+  if (namedConversions?.committed === true) {
+    for (const evidence of namedConversions.evidence) {
+      if (evidence.outcome !== 'executed') continue
+      const personId = String(evidence.request.personId)
+      const destId = String(evidence.destinationRothAccountId)
+      for (const allocation of evidence.allocations) {
+        if (allocation.executedAmount <= 0) continue
+        const amountPlanDollars = ledgerCentsToPlanDollars(asUsdCents(allocation.executedAmount))
+        if (amountPlanDollars <= 0) continue
+        const actionId = String(evidence.actionId)
+        const allocationId = String(allocation.allocationId)
+        const sourceAccountId = String(allocation.sourceAccountId)
+        const identities: YearCashFlowEntityReference[] = [
+          actionRef(actionId, allocationId),
+          accountRef(sourceAccountId),
+          accountRef(destId),
+          personRef(personId),
+        ]
+        const taxCharacter =
+          allocation.nontaxableConvertedAmount !== null &&
+          allocation.taxableConvertedAmount !== null
+            ? conversionCharacter(
+                ledgerCentsToPlanDollars(asUsdCents(allocation.nontaxableConvertedAmount)),
+                ledgerCentsToPlanDollars(asUsdCents(allocation.taxableConvertedAmount)),
+              )
+            : undefined
+        push({
+          id: cashFlowLineIds.transferNamedRothConversion(actionId, allocationId),
+          kind: 'namedRothConversion',
+          source: {
+            entityKind: 'account',
+            accountId: asReportingAccountId(sourceAccountId),
+          },
+          destination: {
+            entityKind: 'account',
+            accountId: asReportingAccountId(destId),
+          },
+          debitPlanDollars: amountPlanDollars,
+          creditPlanDollars: amountPlanDollars,
+          identities,
+          ...(taxCharacter ? { taxCharacter } : {}),
+        })
+      }
+    }
+  }
+
+  const aggregateByPair = new Map<string, {
+    sourceAccountId: string
+    destinationAccountId: string
+    ownerPersonId: string
+    amount: number
+    nontaxable: number
+  }>()
+  for (const draw of input.aggregateConversionDraws) {
+    if (draw.amount <= 0) continue
+    const key = `${draw.sourceAccountId}\0${draw.destinationAccountId}`
+    const existing = aggregateByPair.get(key)
+    if (existing === undefined) {
+      aggregateByPair.set(key, { ...draw })
+    } else {
+      existing.amount += draw.amount
+      existing.nontaxable += draw.nontaxable
+    }
+  }
+  for (const draw of aggregateByPair.values()) {
+    const taxCharacter = conversionCharacter(
+      draw.nontaxable,
+      draw.amount - draw.nontaxable,
+    )
+    push({
+      id: cashFlowLineIds.transferAggregateRothConversion(
+        draw.sourceAccountId,
+        draw.destinationAccountId,
+      ),
+      kind: 'aggregateRothConversion',
+      source: {
+        entityKind: 'account',
+        accountId: asReportingAccountId(draw.sourceAccountId),
+      },
+      destination: {
+        entityKind: 'account',
+        accountId: asReportingAccountId(draw.destinationAccountId),
+      },
+      debitPlanDollars: draw.amount,
+      creditPlanDollars: draw.amount,
+      identities: [
+        accountRef(draw.sourceAccountId),
+        accountRef(draw.destinationAccountId),
+        personRef(draw.ownerPersonId),
+      ],
+      ...(taxCharacter ? { taxCharacter } : {}),
+    })
+  }
+
+  for (const [ownerId, diverted] of input.qcdFromRmdByOwner) {
+    if (diverted <= 0) continue
+    const qualified = input.qcdQualifiedFromRmdByOwner.get(ownerId) ?? 0
+    const nonQualified = Math.max(0, diverted - qualified)
+    const rmdLineId = cashFlowLineIds.sourceOwnedIraRmd(ownerId)
+    const taxCharacter = qcdCharacter(qualified, nonQualified)
+    push({
+      id: cashFlowLineIds.transferRmdQcd(ownerId),
+      kind: 'qualifiedCharitableDistribution',
+      source: poolRef(ownerId),
+      destination: charityEndpoint(),
+      debitPlanDollars: diverted,
+      creditPlanDollars: diverted,
+      identities: [poolRef(ownerId)],
+      ...(taxCharacter ? { taxCharacter } : {}),
+      lineage: [{ lineId: rmdLineId, relationship: 'divertedBeforeHouseholdCash' }],
+    })
+  }
+
+  const beyondRmdRemaining = new Map(input.qcdNonQualifiedBeyondRmdByOwner)
+  for (const entry of input.deferredLegacyQcdDistributions) {
+    if (entry.amount <= 0) continue
+    const remainingExcess = Math.max(0, beyondRmdRemaining.get(entry.ownerId) ?? 0)
+    const nonQualified = Math.min(remainingExcess, entry.amount)
+    beyondRmdRemaining.set(entry.ownerId, remainingExcess - nonQualified)
+    const exclusion = Math.max(0, entry.amount - nonQualified)
+    const taxCharacter = qcdCharacter(exclusion, nonQualified)
+    push({
+      id: cashFlowLineIds.transferBeyondRmdQcd(entry.ownerId, entry.sourceAccountId),
+      kind: 'qualifiedCharitableDistribution',
+      source: {
+        entityKind: 'account',
+        accountId: asReportingAccountId(entry.sourceAccountId),
+      },
+      destination: charityEndpoint(),
+      debitPlanDollars: entry.amount,
+      creditPlanDollars: entry.amount,
+      identities: ownerRefs(entry.sourceAccountId, entry.ownerId),
+      ...(taxCharacter ? { taxCharacter } : {}),
+    })
+  }
+
+  const namedQcds = input.qcdActionExecution
+  if (namedQcds?.committed === true) {
+    for (const evidence of namedQcds.evidence) {
+      if (evidence.executedAmount <= 0) continue
+      const amountPlanDollars = ledgerCentsToPlanDollars(evidence.executedAmount)
+      if (amountPlanDollars <= 0) continue
+      const actionId = String(evidence.actionId)
+      const allocationId = String(evidence.allocationId)
+      const sourceAccountId = String(evidence.sourceAccountId)
+      const donorId = String(evidence.donorPersonId)
+      const designationId = evidence.request.charity.designationId
+      const facts = evidence.derivedFacts
+      const taxCharacter = qcdCharacter(
+        ledgerCentsToPlanDollars(facts.excludableQcdAmount),
+        ledgerCentsToPlanDollars(facts.taxableQcdAmount),
+      )
+      push({
+        id: cashFlowLineIds.transferNamedQcd(actionId, allocationId),
+        kind: 'qualifiedCharitableDistribution',
+        source: {
+          entityKind: 'account',
+          accountId: asReportingAccountId(sourceAccountId),
+        },
+        destination: charityEndpoint(designationId),
+        debitPlanDollars: amountPlanDollars,
+        creditPlanDollars: amountPlanDollars,
+        identities: [
+          actionRef(actionId, allocationId),
+          accountRef(sourceAccountId),
+          personRef(donorId),
+        ],
+        ...(taxCharacter ? { taxCharacter } : {}),
+      })
+    }
+  }
+
+  for (const [accountId, row] of input.distributedYieldByAccountId) {
+    if (!row.reinvest || row.gross <= 0) continue
+    push({
+      id: cashFlowLineIds.transferReinvestedYield(accountId),
+      kind: 'reinvestedYield',
+      source: accountYieldRef(accountId),
+      destination: {
+        entityKind: 'account',
+        accountId: asReportingAccountId(accountId),
+      },
+      debitPlanDollars: row.gross,
+      creditPlanDollars: row.gross,
+      identities: [accountRef(accountId)],
+    })
+  }
+
+  if (input.surplus > 0) {
+    const dest = passLocals.surplusDestination
+    const useId = dest.entityKind === 'account'
+      ? cashFlowLineIds.useSurplusAccount(dest.accountId)
+      : cashFlowLineIds.useSurplusUnassigned()
+    const transferId = dest.entityKind === 'account'
+      ? cashFlowLineIds.transferSurplusAccount(dest.accountId)
+      : cashFlowLineIds.transferSurplusUnassigned()
+    const identities = dest.entityKind === 'account' ? [accountRef(dest.accountId)] : []
+    const destination: YearCashFlowTransferEndpoint = dest.entityKind === 'account'
+      ? dest
+      : unassignedCash()
+    push({
+      id: transferId,
+      kind: 'surplusInvestment',
+      source: householdCash(),
+      destination,
+      debitPlanDollars: input.surplus,
+      creditPlanDollars: input.surplus,
+      identities,
+      lineage: [{ lineId: useId, relationship: 'sameDollarLaterStage' }],
+    })
+  }
+
+  lines.sort((a, b) => compareCashFlowLineId(a.id, b.id))
+  return lines
+}
+
+function collectTaxCharacterMetadata(
+  input: AssembleYearCashFlowInput,
+): YearCashFlowStandaloneTaxCharacter[] {
+  const lines: YearCashFlowStandaloneTaxCharacter[] = []
+  const { yearSites, passLocals } = input
+
+  for (const row of yearSites.tipsLadderCash) {
+    if (row.accretion === 0) continue
+    lines.push({
+      id: cashFlowLineIds.metadataTipsPhantomOid(row.ladderId),
+      taxCharacter: { kind: 'tipsPhantomOidIncome', amountPlanDollars: row.accretion },
+      identities: [tipsRef(row.ladderId)],
+      ...(row.cash > 0
+        ? { relatedLineId: cashFlowLineIds.sourceTipsLadderCash(row.ladderId) }
+        : {}),
+    })
+  }
+
+  const attestedExcess = Math.max(0, input.yearTaxExemptInterest - input.generatedTaxExemptInterest)
+  if (attestedExcess > 0) {
+    lines.push({
+      id: cashFlowLineIds.metadataTaxExemptInterestAttestedExcess(),
+      taxCharacter: { kind: 'taxExemptIncome', amountPlanDollars: attestedExcess },
+      identities: [],
+    })
+  }
+
+  if (input.acaForeignExclusionAddback > 0) {
+    lines.push({
+      id: cashFlowLineIds.metadataForeignExclusionAddback(),
+      taxCharacter: {
+        kind: 'foreignExclusionAddback',
+        amountPlanDollars: input.acaForeignExclusionAddback,
+      },
+      identities: [],
+    })
+  }
+
+  for (const [personId, amount] of passLocals.rothPoolTaxableOrdinaryByPersonId) {
+    if (amount <= 0) continue
+    lines.push({
+      id: cashFlowLineIds.metadataRothPoolOrdinaryIncome(personId),
+      taxCharacter: { kind: 'ordinaryIncome', amountPlanDollars: amount },
+      identities: [poolRef(personId)],
+    })
+  }
+
+  for (const row of yearSites.rebalancingGains) {
+    if (row.realizedCapitalGainOrLoss === 0) continue
+    lines.push({
+      id: cashFlowLineIds.metadataRebalancingCapitalGain(row.accountId),
+      taxCharacter: { kind: 'capitalGain', amountPlanDollars: row.realizedCapitalGainOrLoss },
+      identities: [accountRef(row.accountId)],
+    })
+  }
+
+  lines.sort((a, b) => compareCashFlowLineId(a.id, b.id))
+  return lines
+}
+
 /**
  * Publish one year's cash-flow report from frozen committed locals.
- * Stage 3: source lines, use lines after residual attribution, and an honest
- * reconciliation status (stage-1 incomplete-inventory heuristic still applies).
+ * Stage 4: source lines, use lines after residual attribution, transfers with
+ * lineage, standalone tax-character metadata, and an honest reconciliation
+ * status (stage-1 incomplete-inventory heuristic still applies).
  */
 export function assembleYearCashFlow(input: AssembleYearCashFlowInput): YearCashFlow {
   const sourceLines: readonly YearCashFlowSourceLine[] = collectSourceLines(input)
   const useLines: readonly YearCashFlowUseLine[] = collectUseLines(input)
-  const transferLines: readonly YearCashFlowTransferLine[] = []
-  const taxCharacterMetadata: readonly YearCashFlowStandaloneTaxCharacter[] = []
+  const transferLines: readonly YearCashFlowTransferLine[] = collectTransferLines(input, useLines)
+  const taxCharacterMetadata: readonly YearCashFlowStandaloneTaxCharacter[] =
+    collectTaxCharacterMetadata(input)
   return {
     sourceLines,
     useLines,

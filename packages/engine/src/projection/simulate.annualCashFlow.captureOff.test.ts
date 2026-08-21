@@ -150,11 +150,11 @@ describe('SimulateOptions.captureAnnualCashFlow', () => {
     expect(year.cashFlow?.reconciliation.reasonCodes).toEqual([])
   })
 
-  it('marks a reinvest-only year notReconciled because taxableYieldReinvested has no reinvestedYield transfers', () => {
+  it('excludes reinvested yield from spendable sources exactly once and transfers the gross once', () => {
     // Worksheet: taxable $100,000, interestYieldPct 4, reinvestDividends true.
     // taxableYield = 4,000 = incomes.total = taxableYieldReinvested.
     // Spendable probe = 4,000 - 4,000 = 0 (empty spendable sources are correct).
-    // Reinvest probe = 4,000 with empty transferLines (incomplete until stage 4).
+    // Stage 4 publishes one reinvestedYield transfer of gross 4,000.
     const plan = emptyPlan()
     plan.accounts = [taxableReinvest(100_000, 4)]
     const year = simulatePlan(validate(plan), {
@@ -166,16 +166,16 @@ describe('SimulateOptions.captureAnnualCashFlow', () => {
     expect(year.incomes.total).toBe(4_000)
     expect(year.incomes.taxableYield).toBe(4_000)
     expect(year.cashFlow?.sourceLines).toEqual([])
-    expect(year.cashFlow?.transferLines).toEqual([])
-    expect(year.cashFlow?.reconciliation.cash.spendableSourcesPlanDollars).toBe(0)
-    expect(year.cashFlow?.reconciliation.status).toBe('notReconciled')
-    expect(year.cashFlow?.reconciliation.reasonCodes).toEqual(['unsupportedLedgerTerm'])
-    expect(year.cashFlow?.reconciliation.diagnostics).toEqual([
+    expect(year.cashFlow?.transferLines).toEqual([
       expect.objectContaining({
-        reasonCode: 'unsupportedLedgerTerm',
-        expectedPlanDollars: 4_000,
-        actualPlanDollars: 0,
+        id: 'transfer:reinvestedYield:brokerage-1',
+        kind: 'reinvestedYield',
+        debitPlanDollars: 4_000,
+        creditPlanDollars: 4_000,
       }),
     ])
+    expect(year.cashFlow?.reconciliation.cash.spendableSourcesPlanDollars).toBe(0)
+    expect(year.cashFlow?.reconciliation.status).toBe('reconciled')
+    expect(year.cashFlow?.reconciliation.reasonCodes).toEqual([])
   })
 })

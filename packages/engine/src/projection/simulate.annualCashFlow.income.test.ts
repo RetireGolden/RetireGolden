@@ -1,9 +1,11 @@
 /**
- * Stage 2 source-line capture for income streams.
+ * Stage 2 source-line capture for income streams, with the stage 4
+ * reinvestment-branch transfer.
  *
  * Stage 3 emits uses, so a year whose only gap was empty destinations now
- * reconciles when there is no diverting transfer (no QCD, no reinvest).
- * Reinvest-only years stay `notReconciled` until stage 4 emits transfers.
+ * reconciles when there is no diverting transfer (no QCD). Reinvest-only years
+ * publish one `reinvestedYield` transfer of gross (taxable + exempt) and
+ * keep spendable yield sources empty.
  */
 import { describe, expect, it } from 'vitest'
 
@@ -196,7 +198,9 @@ describe('simulatePlan annual cash-flow income sources', () => {
     //   taxable 100,000; interestYieldPct 4; taxExemptInterestYieldPct 1; dividends 0.
     //   taxableGross = 4,000; exempt = 1,000; gross = 5,000 = taxableYieldReinvested.
     //   reinvestDividends true → no taxableAccountYield / taxExemptInterest sources.
-    //   reinvestedYield transfer is stage 4; empty transfers keep this year notReconciled.
+    //   one reinvestedYield transfer of gross 5,000 (taxable + exempt).
+    //   reinvested yield is excluded from cash inflows, so surplus is 0 and
+    //   spendable sources stay empty. Transfer pairing 5,000 = 5,000.
     const plan = singlePersonPlan({ dob: '1966-01-01', planningAge: 60 })
     const brokerage = taxableAccount('brokerage-1', 100_000, 100_000) as Extract<Account, { type: 'taxable' }>
     brokerage.interestYieldPct = 4
@@ -210,10 +214,19 @@ describe('simulatePlan annual cash-flow income sources', () => {
     expectMoney(y2026.incomes.taxExemptInterest, 1_000)
     expect(y2026.cashFlow!.sourceLines.some((line) => line.kind === 'taxableAccountYield')).toBe(false)
     expect(y2026.cashFlow!.sourceLines.some((line) => line.kind === 'taxExemptInterest')).toBe(false)
-    expect(y2026.cashFlow!.transferLines).toEqual([])
     expect(y2026.cashFlow!.reconciliation.cash.spendableSourcesPlanDollars).toBe(0)
-    expect(y2026.cashFlow!.reconciliation.status).toBe('notReconciled')
-    expect(y2026.cashFlow!.reconciliation.reasonCodes).toContain('unsupportedLedgerTerm')
+
+    const transfer = y2026.cashFlow!.transferLines.find(
+      (line) => line.id === 'transfer:reinvestedYield:brokerage-1',
+    )
+    expect(transfer).toBeDefined()
+    expect(transfer!.kind).toBe('reinvestedYield')
+    expectMoney(transfer!.debitPlanDollars, 5_000)
+    expectMoney(transfer!.creditPlanDollars, 5_000)
+    expect(transfer!.source).toEqual({ entityKind: 'accountYield', accountId: 'brokerage-1' })
+    expect(transfer!.destination).toEqual({ entityKind: 'account', accountId: 'brokerage-1' })
+    expect(y2026.cashFlow!.transferLines.filter((line) => line.kind === 'reinvestedYield')).toHaveLength(1)
+    expect(y2026.cashFlow!.reconciliation.status).toBe('reconciled')
   })
 
   it('(d) distributed taxable yield and tax-exempt interest are split source kinds, not a transfer', () => {
@@ -242,7 +255,7 @@ describe('simulatePlan annual cash-flow income sources', () => {
     expectMoney(exempt.amountPlanDollars, 1_000)
     expect(exempt.identities).toEqual([{ entityKind: 'account', accountId: 'brokerage-1' }])
 
-    expect(y2026.cashFlow!.transferLines).toEqual([])
+    expect(y2026.cashFlow!.transferLines.some((line) => line.kind === 'reinvestedYield')).toBe(false)
     expect(y2026.cashFlow!.reconciliation.status).toBe('reconciled')
   })
 

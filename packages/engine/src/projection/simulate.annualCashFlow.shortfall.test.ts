@@ -3,8 +3,8 @@
  *
  * Reporting attribution must never rewrite `YearResult` layer scalars.
  * Expected values are independent hand worksheets, never taken from running
- * the assembler. Contribution transfers (committedCreditBeyondFunding) land
- * in stage 4; this file asserts the use-line side of that contract.
+ * the assembler. The committed-credit contribution transfer records the full
+ * credited amount with `committedCreditBeyondFunding` lineage to the use.
  */
 import { describe, expect, it } from 'vitest'
 
@@ -206,6 +206,17 @@ describe('simulatePlan annual cash-flow residual shortfall', () => {
     expect(contrib.identities).toEqual([
       { entityKind: 'account', accountId: 'rsu-1' },
       { entityKind: 'person', personId: 'p1' },
+    ])
+
+    const transfer = yOn.cashFlow!.transferLines.find(
+      (line) => line.id === 'transfer:employeeContribution:rsu-1',
+    )
+    expect(transfer).toBeDefined()
+    expect(transfer!.kind).toBe('employeeContribution')
+    expectMoney(transfer!.debitPlanDollars, 8_000)
+    expectMoney(transfer!.creditPlanDollars, 8_000)
+    expect(transfer!.lineage).toEqual([
+      { lineId: 'use:contribution:rsu-1', relationship: 'committedCreditBeyondFunding' },
     ])
     expect(yOn.cashFlow!.reconciliation.status).toBe('reconciled')
   })
