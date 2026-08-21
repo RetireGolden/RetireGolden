@@ -55,6 +55,7 @@ import {
 } from '../allocation/assetClasses.js'
 import { packForYear, LATEST_PACK_YEAR, hecmPrincipalLimitFactorPct, EMBEDDED_REAL_YIELD_CURVE, irmaaTierThreshold } from '../params/index.js'
 import { assembleYearCashFlow } from './annualCashFlowCapture.js'
+import { createAnnualCashFlowYearSites, type AnnualCashFlowYearSites } from './annualCashFlowYearSites.js'
 import { annuityExclusionMultiple, annuityPayoutForm, annuityPayoutFraction } from './annuityForms.js'
 import { buildLadder, ladderRealFlowsAtOffset, ladderRemainingFace, type LadderRung } from '../ladder/ladderMath.js'
 import { stateParamsFor } from '../params/state/index.js'
@@ -242,6 +243,7 @@ import {
   type EmployerRothAccountActivity,
   type OwnedTraditionalIraAggregateActivity,
   type QualifiedAnnuityPaymentActivity,
+  type YearCashFlowTransferEndpoint,
 } from './types.js'
 
 export interface SimulateOptions {
@@ -1647,6 +1649,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
      */
     const startOfYearAnnuityContractValue = new Map(annuityContractValue)
 
+    const yearSites: AnnualCashFlowYearSites | null = captureAnnualCashFlow
+      ? createAnnualCashFlowYearSites()
+      : null
+
     // --- annual rebalance to target (start-of-year trade) -------------------
     // Allocated accounts trade drifted weights back to this year's glidepath
     // target. Taxable sells realize gains pro-rata through the same basis-ratio
@@ -2218,6 +2224,15 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       const reinvest = state.account.reinvestDividends ?? true
       if (reinvest) taxableYieldReinvested += gross
       distributedYieldByAccountId.set(state.account.id, { gross, distributedYieldPct: totalDistributedYieldPct, reinvest })
+      yearSites?.recordDistributedYield({
+        accountId: state.account.id,
+        taxableGross,
+        interest,
+        ordinaryDividends,
+        qualified,
+        exempt,
+        reinvest,
+      })
     }
 
     // Pass 1: wages (must precede Social Security for the earnings test).
@@ -2232,6 +2247,11 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       incomes.wages += amount
       ordinaryIncome += amount
       wagesByPerson.set(stream.personId, (wagesByPerson.get(stream.personId) ?? 0) + amount)
+      yearSites?.recordWages({
+        incomeStreamId: stream.id,
+        personId: stream.personId,
+        amount,
+      })
     }
 
     // Pass 2: other non-SS streams.
@@ -2242,11 +2262,21 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         const amount = stream.annualAmount * (stream.inflationAdjusted ? inflFactor : 1)
         incomes.recurring += amount
         if (stream.taxTreatment === 'ordinary') ordinaryIncome += amount
+        yearSites?.recordRecurringIncome({
+          incomeStreamId: stream.id,
+          amount,
+          taxTreatment: stream.taxTreatment,
+        })
       } else if (stream.type === 'oneTime') {
         if (stream.year !== year) continue
         incomes.oneTime += stream.amount
         if (stream.taxTreatment === 'ordinary') ordinaryIncome += stream.amount
         if (stream.taxTreatment === 'capitalGain') oneTimeGains += stream.amount
+        yearSites?.recordOneTimeIncome({
+          incomeStreamId: stream.id,
+          amount: stream.amount,
+          taxTreatment: stream.taxTreatment,
+        })
       }
     }
 
@@ -2722,6 +2752,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           //    continues the same excludable share);
           //  - no purchase (already-owned stream) → the entered taxablePct.
           let annuityTaxable: number
+          let nonqualifiedExcludable = 0
           if (account.purchase?.taxQualification === 'qualified') {
             // Publish the paid amount for IRA-funded contracts so detectors
             // never re-derive the payout-form gate or funding owner.
@@ -2816,12 +2847,25 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             }
             const excludable = Math.min(paid * ex.ratio, ex.remaining)
             ex.remaining -= excludable
+            nonqualifiedExcludable = excludable
             annuityTaxable = paid - excludable
           } else {
             annuityTaxable = paid * (account.taxablePct / 100)
           }
           ordinaryIncome += annuityTaxable
           privateRetirementOrdinary += annuityTaxable
+          const recipientPersonId = ownerState.alive
+            ? ownerId
+            : peopleStates.find((s) => s.personId !== ownerId && s.alive)?.personId
+          if (recipientPersonId !== undefined) {
+            yearSites?.recordAnnuityPayment({
+              accountId: account.id,
+              recipientPersonId,
+              paid,
+              nonqualifiedExcludable,
+              qualifiedIraFunded: account.purchase?.taxQualification === 'qualified',
+            })
+          }
         } else {
           const survivor = peopleStates.find((s) => s.personId !== ownerId && s.alive)
           // Survivor benefit requires payments to have started before the owner died.
@@ -2831,12 +2875,24 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             ordinaryIncome += grown
             if ((account.source ?? 'private') === 'public') publicPensionOrdinary += grown
             else privateRetirementOrdinary += grown
+            yearSites?.recordPension({
+              accountId: account.id,
+              payeePersonId: ownerId,
+              amount: grown,
+              source: account.source ?? 'private',
+            })
           } else if (survivor && ownerStartedBeforeDeath) {
             const amount = grown * (account.survivorPct / 100)
             incomes.pension += amount
             ordinaryIncome += amount
             if ((account.source ?? 'private') === 'public') publicPensionOrdinary += amount
             else privateRetirementOrdinary += amount
+            yearSites?.recordPension({
+              accountId: account.id,
+              payeePersonId: survivor.personId,
+              amount,
+              source: account.source ?? 'private',
+            })
           }
         }
       }
@@ -2869,6 +2925,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         ordinaryIncome += taxable
         ladderTaxableInterest += taxable
         ladderValueTotal += ladderRemainingFace(ls.rungs, offset) * ls.scale * inflFactor
+        yearSites?.recordTipsLadderCash({
+          ladderId: ls.id,
+          cash,
+          coupons: flows.coupons * ls.scale * inflFactor,
+          maturingPrincipal: flows.maturingPrincipal * ls.scale * inflFactor,
+          accretion,
+        })
       } else {
         // No one alive: rungs stop maturing — freeze the remaining face as of
         // the last living year (the rung maturing that year already paid cash)
@@ -3536,6 +3599,12 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         hecmStates.delete(account.id)
       }
       propertySaleProceedsTotal += sale.netProceeds - hecmPayoff
+      yearSites?.recordPropertySaleProceeds({
+        propertyAccountId: account.id,
+        netProceedsAfterHecm: sale.netProceeds - hecmPayoff,
+        ordinaryGain: sale.ordinaryGain,
+        capitalGain: sale.capitalGain,
+      })
     }
 
     // --- contributions & employer match --------------------
@@ -4039,6 +4108,35 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           retirementActions: passRetirementActions,
         },
       }
+
+    // Reporting-only. Allocated only on the committed publish path so T0 /
+    // staging / option-counterfactual re-entries construct nothing.
+    let seppByAccountId: Map<string, { ownerPersonId: string | null; take: number }> | null = null
+    let hecmCoordinatedByProperty: Map<string, number> | null = null
+    let hecmBackstopByProperty: Map<string, number> | null = null
+    let legacyPropertySaleDeposits: {
+      propertyAccountId: string
+      amount: number
+      destination: YearCashFlowTransferEndpoint
+    }[] | null = null
+    let deathBenefits: {
+      policyId: string
+      insuredPersonId: string
+      amount: number
+      destination: YearCashFlowTransferEndpoint
+    }[] | null = null
+    let surplusDestination: YearCashFlowTransferEndpoint | null = null
+    if (publishCashFlow) {
+      seppByAccountId = new Map()
+      hecmCoordinatedByProperty = new Map()
+      hecmBackstopByProperty = new Map()
+      legacyPropertySaleDeposits = []
+      deathBenefits = []
+      surplusDestination = surplusDepositTarget
+        ? { entityKind: 'account', accountId: asAccountId(surplusDepositTarget.account.id) }
+        : { entityKind: 'unassignedCash' }
+    }
+
     let rmdNontaxable = 0
     let seppNontaxable = 0
     const assumedEffectByIdentity = new Map(
@@ -4623,6 +4721,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         })
       }
       seppTotal += take
+      seppByAccountId?.set(state.account.id, {
+        ownerPersonId: state.account.ownerPersonId ?? null,
+        take,
+      })
       // Pro-rata return of basis on IRA SEPP distributions (step 5), deferred
       // for the same reason the required distribution above is: the year's
       // pro-rata denominator is not settled until the charitable gift is.
@@ -8211,6 +8313,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       if (draw <= 0) continue
       line.loanBalance += draw
       remainingCoordinatedDraw -= draw
+      hecmCoordinatedByProperty?.set(account.id, draw)
     }
     // Any open HECM line backstops a true portfolio shortfall regardless of
     // draw policy — no borrower defaults on spending with credit available.
@@ -8227,6 +8330,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         line.loanBalance += draw
         hecmShortfallDraw += draw
         remaining -= draw
+        hecmBackstopByProperty?.set(account.id, draw)
         if (remaining <= EPSILON) break
       }
       hecmDraw += hecmShortfallDraw
@@ -9326,7 +9430,15 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           const line = hecmStates.get(account.id)
           const hecmPayoff = line ? Math.min(line.loanBalance, Math.max(0, proceeds)) : 0
           if (line) hecmStates.delete(account.id)
-          deposit(proceeds - hecmPayoff)
+          const amount = proceeds - hecmPayoff
+          deposit(amount)
+          if (amount > 0) {
+            legacyPropertySaleDeposits?.push({
+              propertyAccountId: account.id,
+              amount,
+              destination: surplusDestination!,
+            })
+          }
         }
         value = 0
       }
@@ -9369,6 +9481,14 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         const payout = Math.max(policy.deathBenefit, cashValue)
         deposit(payout)
         deathBenefitPaid += payout
+        if (payout > 0) {
+          deathBenefits?.push({
+            policyId: policy.id,
+            insuredPersonId: policy.insured,
+            amount: payout,
+            destination: surplusDestination!,
+          })
+        }
         insuranceCashValues.set(policy.id, 0)
       } else {
         insuranceCashValues.set(policy.id, 0)
@@ -10028,6 +10148,39 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       ...(publishCashFlow
         ? {
             cashFlow: assembleYearCashFlow({
+              yearSites: yearSites!,
+              passLocals: {
+                seppByAccountId: seppByAccountId!,
+                hecmCoordinatedByProperty: hecmCoordinatedByProperty!,
+                hecmBackstopByProperty: hecmBackstopByProperty!,
+                annuityBasisReturnByAccountId: new Map(),
+                rmdNontaxableByOwner: new Map(),
+                seppNontaxableByAccountId: new Map(),
+                penaltyLines: [],
+                rothPoolTaxableOrdinaryByPersonId: new Map(),
+                legacyPropertySaleDeposits: legacyPropertySaleDeposits!,
+                deathBenefits: deathBenefits!,
+                surplusDestination: surplusDestination!,
+              },
+              socialSecurityStreams,
+              rmdTakeByAccount,
+              ownedIraRmdGrossByOwner,
+              qcdFromRmdByOwner,
+              employerPlanAccountIds: new Set(
+                plan.accounts.flatMap((account) =>
+                  account.type === 'traditional' && account.kind !== 'ira' ? [account.id] : [],
+                ),
+              ),
+              withdrawalPlanByAccountId: withdrawalPlan.byAccountId,
+              inheritedYearEvidence: inheritedYearEvidenceDraft,
+              retirementActionExecution,
+              distributedYieldByAccountId,
+              ownerPersonIdByAccountId: new Map(
+                plan.accounts.map((account) => [
+                  account.id,
+                  'ownerPersonId' in account ? account.ownerPersonId ?? null : null,
+                ]),
+              ),
               incomesTotal: incomes.total,
               taxableYieldReinvested,
               propertySaleProceedsTotal,

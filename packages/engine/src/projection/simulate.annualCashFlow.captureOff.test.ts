@@ -113,11 +113,12 @@ describe('SimulateOptions.captureAnnualCashFlow', () => {
     expect(year.cashFlow?.reconciliation.tolerancePlanDollars).toBe(1e-6)
   })
 
-  it('marks a wages-only year notReconciled via the spendable-source probe', () => {
+  it('marks a wages-only year notReconciled because uses have not landed yet', () => {
     // Worksheet: wages $50,000, lifestyle $50,000, 0% tax, 0% inflation.
-    // cashInflows = 50,000; expenses.total = 50,000; surplus = 0.
-    // Spendable probe = incomesTotal - taxableYieldReinvested = 50,000 with
-    // empty spendableSource lines.
+    // Stage 2 publishes the wage source (id source:wages:wage-1).
+    // Spendable-source probe no longer fires (the group is nonempty).
+    // Uses are still empty, so cash identity is 50,000 vs 0 — not a lying
+    // reconciled year. Surplus is 0, so the surplus probe does not fire.
     const plan = emptyPlan()
     plan.incomes = [wages(50_000)]
     plan.expenses.baseAnnual = 50_000
@@ -130,16 +131,18 @@ describe('SimulateOptions.captureAnnualCashFlow', () => {
     expect(year.incomes.wages).toBe(50_000)
     expect(year.incomes.total).toBe(50_000)
     expect(year.surplusInvested).toBe(0)
-    expect(year.cashFlow?.sourceLines).toEqual([])
-    expect(year.cashFlow?.reconciliation.status).toBe('notReconciled')
-    expect(year.cashFlow?.reconciliation.reasonCodes).toContain('unsupportedLedgerTerm')
-    expect(year.cashFlow?.reconciliation.diagnostics).toEqual([
+    expect(year.cashFlow?.sourceLines).toEqual([
       expect.objectContaining({
-        reasonCode: 'unsupportedLedgerTerm',
-        expectedPlanDollars: 50_000,
-        actualPlanDollars: 0,
+        id: 'source:wages:wage-1',
+        kind: 'wages',
+        role: 'spendableSource',
+        amountPlanDollars: 50_000,
       }),
     ])
+    expect(year.cashFlow?.useLines).toEqual([])
+    expect(year.cashFlow?.reconciliation.status).toBe('notReconciled')
+    expect(year.cashFlow?.reconciliation.reasonCodes).toContain('cashIdentityMismatch')
+    expect(year.cashFlow?.reconciliation.reasonCodes).not.toContain('unsupportedLedgerTerm')
   })
 
   it('marks a reinvest-only year notReconciled because taxableYieldReinvested has no reinvestedYield transfers', () => {
