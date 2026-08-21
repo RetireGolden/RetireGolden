@@ -381,4 +381,38 @@ describe('simulatePlan annual cash-flow portfolio and property sources', () => {
     expect(roth.taxCharacter).toBeUndefined()
     expect(y2026.cashFlow!.reconciliation.status).toBe('reconciled')
   })
+
+  it('attaches ordinaryIncome to a nonqualified capByMedicalExpenses HSA withdrawal', () => {
+    // Independent worksheet, year 2026, 0% inflation, $0 tax, p1 attained 60:
+    //   HSA 100,000, withdrawalTreatment capByMedicalExpenses.
+    //   No modeled qualified medical (premiums 0, no care event) → cap 0.
+    //   Lifestyle 10,000. Pre-65 HSA excess penalty 20%.
+    //   Closed form W = 10,000 + 0.2W → W = 12,500 ordinary; penalty 2,500.
+    //   Every withdrawn dollar is nonqualified, so ordinary character equals
+    //   the HSA source amount (the penalty fixed-point may sit a few
+    //   thousandths above the closed form).
+    const plan = singlePersonPlan({ dob: '1966-01-01', planningAge: 60 })
+    plan.expenses.baseAnnual = 10_000
+    plan.accounts = [
+      {
+        type: 'hsa',
+        id: 'hsa-1',
+        name: 'HSA',
+        ownerPersonId: 'p1',
+        annualReturnPct: 0,
+        balance: 100_000,
+        annualContribution: 0,
+        withdrawalTreatment: 'capByMedicalExpenses',
+      },
+    ]
+    const y2026 = yearOf(run(plan, { horizonEndYear: 2026 }), START_YEAR)
+
+    const line = sourceById(y2026, 'source:needBasedPortfolioWithdrawal:hsa-1')
+    expect(line.kind).toBe('needBasedPortfolioWithdrawal')
+    expectMoney(line.amountPlanDollars, 12_500)
+    expect(line.taxCharacter).toHaveLength(1)
+    expect(line.taxCharacter![0]!.kind).toBe('ordinaryIncome')
+    expect(line.taxCharacter![0]!.amountPlanDollars).toBe(line.amountPlanDollars)
+    expectMoney(y2026.penalties, 2_500)
+  })
 })

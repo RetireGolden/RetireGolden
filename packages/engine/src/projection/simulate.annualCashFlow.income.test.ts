@@ -223,6 +223,10 @@ describe('simulatePlan annual cash-flow income sources', () => {
     expectMoney(transfer!.creditPlanDollars, 5_000)
     expect(transfer!.source).toEqual({ entityKind: 'accountYield', accountId: 'brokerage-1' })
     expect(transfer!.destination).toEqual({ entityKind: 'account', accountId: 'brokerage-1' })
+    expect(transfer!.taxCharacter).toEqual([
+      { kind: 'ordinaryIncome', amountPlanDollars: 4_000 },
+      { kind: 'taxExemptIncome', amountPlanDollars: 1_000 },
+    ])
     expect(y2026.cashFlow!.transferLines.filter((line) => line.kind === 'reinvestedYield')).toHaveLength(1)
     expect(y2026.cashFlow!.reconciliation.status).toBe('reconciled')
   })

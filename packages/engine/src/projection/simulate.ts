@@ -55,6 +55,10 @@ import {
 } from '../allocation/assetClasses.js'
 import { packForYear, LATEST_PACK_YEAR, hecmPrincipalLimitFactorPct, EMBEDDED_REAL_YIELD_CURVE, irmaaTierThreshold } from '../params/index.js'
 import { assembleYearCashFlow, type AnnualCashFlowPenaltySnapshot } from './annualCashFlowCapture.js'
+import {
+  collidingEncodedCashFlowSegments,
+  collectPlanCashFlowProducerIds,
+} from './annualCashFlowIds.js'
 import { createAnnualCashFlowYearSites, type AnnualCashFlowYearSites } from './annualCashFlowYearSites.js'
 import { annuityExclusionMultiple, annuityPayoutForm, annuityPayoutFraction } from './annuityForms.js'
 import { buildLadder, ladderRealFlowsAtOffset, ladderRemainingFace, type LadderRung } from '../ladder/ladderMath.js'
@@ -737,6 +741,9 @@ function planWithdrawals(
 export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResult {
   const { startYear, taxCalculator, market } = opts
   const captureAnnualCashFlow = opts.captureAnnualCashFlow === true
+  const collidingEncodedProducerSegments = captureAnnualCashFlow
+    ? collidingEncodedCashFlowSegments(collectPlanCashFlowProducerIds(plan))
+    : []
   const warnings = new Set<string>()
   const inflation = plan.assumptions.inflationPct / 100
   const people = plan.household.people
@@ -4255,6 +4262,15 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     let qcdExclusionFromRmdByOwner: Map<string, number> | null = null
     let qcdExclusionBeyondRmdByOwner: Map<string, number> | null = null
     let qcdOrdinaryBeyondRmdByOwner: Map<string, number> | null = null
+    let qcdBeyondRmdCharacterByOccurrence: {
+      ownerId: string
+      sourceAccountId: string
+      exclusion: number
+      ordinary: number
+    }[] | null = null
+    let qcdOrdinaryFromRmdByOwner: Map<string, number> | null = null
+    let qcdBasisFromRmdByOwner: Map<string, number> | null = null
+    let hsaNonqualifiedOrdinaryByAccountId: Map<string, number> | null = null
     if (publishCashFlow) {
       seppByAccountId = new Map()
       hecmCoordinatedByProperty = new Map()
@@ -4273,6 +4289,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       qcdExclusionFromRmdByOwner = new Map()
       qcdExclusionBeyondRmdByOwner = new Map()
       qcdOrdinaryBeyondRmdByOwner = new Map()
+      qcdBeyondRmdCharacterByOccurrence = []
+      qcdOrdinaryFromRmdByOwner = new Map()
+      qcdBasisFromRmdByOwner = new Map()
+      hsaNonqualifiedOrdinaryByAccountId = new Map()
     }
 
     let rmdNontaxable = 0
@@ -5651,6 +5671,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         // pre-offset qualified / gross-beyond for the Form 8606 carve.
         if (fromRmd > 0) {
           qcdExclusionFromRmdByOwner!.set(ownerId, fromRmdExcludable)
+          // §219 leftover on the from-RMD qualified dollars is fully ordinary
+          // (those dollars were carved out of Form 8606). Form 8606 taxable
+          // on the nonqualified diverted portion is added at commit below.
+          const leftoverFromRmd = Math.max(0, fromRmdQualified - fromRmdExcludable)
+          if (leftoverFromRmd > 0) {
+            qcdOrdinaryFromRmdByOwner!.set(ownerId, leftoverFromRmd)
+          }
         }
         const beyondAmount = gift - fromRmd
         if (beyondAmount > 0) {
@@ -5773,6 +5800,14 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         })
       }
     }
+    const qcdNonQualifiedFromRmdRemaining = new Map<string, number>()
+    if (publishCashFlow) {
+      for (const [ownerId, fromRmd] of qcdFromRmdByOwner) {
+        if (fromRmd <= 0) continue
+        const nq = Math.max(0, fromRmd - (qcdQualifiedFromRmdByOwner.get(ownerId) ?? 0))
+        if (nq > 0) qcdNonQualifiedFromRmdRemaining.set(ownerId, nq)
+      }
+    }
     const commitDeferredForcedDistributions = (
       entries: readonly DeferredForcedIraDistribution[],
       carveByOwner: Map<string, number>,
@@ -5786,9 +5821,44 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         const line7Gross = entry.amount - carve
         const proRata = iraProRata.get(entry.ownerId)
         if (line7Gross <= 0) continue
+        const nqThis = publishCashFlow && entry.occurrenceKind === 'ownedIraRmd'
+          ? Math.min(qcdNonQualifiedFromRmdRemaining.get(entry.ownerId) ?? 0, line7Gross)
+          : 0
+        if (nqThis > 0) {
+          qcdNonQualifiedFromRmdRemaining.set(
+            entry.ownerId,
+            (qcdNonQualifiedFromRmdRemaining.get(entry.ownerId) ?? 0) - nqThis,
+          )
+        }
+        const nqShare = nqThis === 0 ? 0 : nqThis / line7Gross
+        const snapshotFromRmdSplit = (taxable: number, nontaxable: number): void => {
+          if (!publishCashFlow || entry.occurrenceKind !== 'ownedIraRmd') return
+          const nqTaxable = taxable * nqShare
+          const nqBasis = nontaxable * nqShare
+          if (nqTaxable > 0) {
+            qcdOrdinaryFromRmdByOwner!.set(
+              entry.ownerId,
+              (qcdOrdinaryFromRmdByOwner!.get(entry.ownerId) ?? 0) + nqTaxable,
+            )
+          }
+          if (nqBasis > 0) {
+            qcdBasisFromRmdByOwner!.set(
+              entry.ownerId,
+              (qcdBasisFromRmdByOwner!.get(entry.ownerId) ?? 0) + nqBasis,
+            )
+          }
+          const netBasis = nontaxable - nqBasis
+          if (netBasis > 0) {
+            rmdNontaxableByOwner!.set(
+              entry.ownerId,
+              (rmdNontaxableByOwner!.get(entry.ownerId) ?? 0) + netBasis,
+            )
+          }
+        }
         if (proRata === undefined) {
           // Zero aggregate basis: entire line-7 gross is ordinary income.
           noteForm8606Taxable(entry.ownerId, line7Gross, 'distributions')
+          snapshotFromRmdSplit(line7Gross, 0)
           continue
         }
         const split = splitWithAssumedCharacter(proRata, line7Gross, {
@@ -5803,10 +5873,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         credit(split.nontaxable)
         if (publishCashFlow) {
           if (entry.occurrenceKind === 'ownedIraRmd') {
-            rmdNontaxableByOwner!.set(
-              entry.ownerId,
-              (rmdNontaxableByOwner!.get(entry.ownerId) ?? 0) + split.nontaxable,
-            )
+            snapshotFromRmdSplit(split.taxable, split.nontaxable)
           } else if (entry.occurrenceKind === 'automaticSeppDistribution') {
             seppNontaxableByAccountId!.set(
               entry.sourceAccountId,
@@ -5862,6 +5929,17 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // year, its figure supersedes, and it is not required to agree that the
     // fraction was 1.
     const legacyQcdExcessByOwner = new Map(qcdNonQualifiedBeyondRmdByOwner)
+    // Reporting copies taken before this walk adds Form 8606 taxable onto
+    // the owner ordinary map. Leftover is already there; exclusion is the
+    // post-offset remainder. Charged onto each draw after the statutory
+    // excess, in this same order, so the cash-flow transfer matches the
+    // ledger instead of re-deriving exclusion-first from owner totals.
+    const legacyQcdLeftoverRemainingForCapture = publishCashFlow
+      ? new Map(qcdOrdinaryBeyondRmdByOwner)
+      : null
+    const legacyQcdExclusionRemainingForCapture = publishCashFlow
+      ? new Map(qcdExclusionBeyondRmdByOwner)
+      : null
     for (const entry of deferredLegacyQcdDistributions) {
       const remainingExcess = Math.max(
         0, legacyQcdExcessByOwner.get(entry.ownerId) ?? 0,
@@ -5873,35 +5951,64 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         grossAmountPlanDollars: entry.amount,
         nonQualifiedLine7GrossPlanDollars: nonQualified,
       })
-      if (nonQualified <= 0) continue
-      legacyQcdExcessByOwner.set(entry.ownerId, remainingExcess - nonQualified)
-      const proRata = iraProRata.get(entry.ownerId)
-      if (proRata === undefined) {
-        noteForm8606Taxable(entry.ownerId, nonQualified, 'distributions')
-        qcdNonQualifiedOrdinaryIncome += nonQualified
-        if (publishCashFlow) {
-          qcdOrdinaryBeyondRmdByOwner!.set(
-            entry.ownerId,
-            (qcdOrdinaryBeyondRmdByOwner!.get(entry.ownerId) ?? 0) + nonQualified,
-          )
+      let taxableFromExcess = 0
+      if (nonQualified > 0) {
+        legacyQcdExcessByOwner.set(entry.ownerId, remainingExcess - nonQualified)
+        const proRata = iraProRata.get(entry.ownerId)
+        if (proRata === undefined) {
+          noteForm8606Taxable(entry.ownerId, nonQualified, 'distributions')
+          qcdNonQualifiedOrdinaryIncome += nonQualified
+          if (publishCashFlow) {
+            qcdOrdinaryBeyondRmdByOwner!.set(
+              entry.ownerId,
+              (qcdOrdinaryBeyondRmdByOwner!.get(entry.ownerId) ?? 0) + nonQualified,
+            )
+          }
+          taxableFromExcess = nonQualified
+        } else {
+          const split = splitWithAssumedCharacter(proRata, nonQualified, {
+            ownerPersonId: entry.ownerId,
+            calculationScope: 'form8606Line7Distributions',
+            occurrenceKind: 'legacyQcd',
+            producerOccurrenceKey: entry.producerOccurrenceKey,
+            sourceAccountId: entry.sourceAccountId,
+            mutationOrdinal: entry.mutationOrdinal,
+          })
+          iraProRata.set(entry.ownerId, split.next)
+          qcdNonQualifiedOrdinaryIncome += split.taxable
+          if (publishCashFlow && split.taxable > 0) {
+            qcdOrdinaryBeyondRmdByOwner!.set(
+              entry.ownerId,
+              (qcdOrdinaryBeyondRmdByOwner!.get(entry.ownerId) ?? 0) + split.taxable,
+            )
+          }
+          taxableFromExcess = split.taxable
         }
-        continue
       }
-      const split = splitWithAssumedCharacter(proRata, nonQualified, {
-        ownerPersonId: entry.ownerId,
-        calculationScope: 'form8606Line7Distributions',
-        occurrenceKind: 'legacyQcd',
-        producerOccurrenceKey: entry.producerOccurrenceKey,
-        sourceAccountId: entry.sourceAccountId,
-        mutationOrdinal: entry.mutationOrdinal,
-      })
-      iraProRata.set(entry.ownerId, split.next)
-      qcdNonQualifiedOrdinaryIncome += split.taxable
-      if (publishCashFlow && split.taxable > 0) {
-        qcdOrdinaryBeyondRmdByOwner!.set(
-          entry.ownerId,
-          (qcdOrdinaryBeyondRmdByOwner!.get(entry.ownerId) ?? 0) + split.taxable,
+      if (publishCashFlow && entry.amount > 0) {
+        const leftoverRemaining = Math.max(
+          0, legacyQcdLeftoverRemainingForCapture!.get(entry.ownerId) ?? 0,
         )
+        const afterExcess = Math.max(0, entry.amount - nonQualified)
+        const leftoverTake = Math.min(leftoverRemaining, afterExcess)
+        legacyQcdLeftoverRemainingForCapture!.set(
+          entry.ownerId, leftoverRemaining - leftoverTake,
+        )
+        const exclusionRemaining = Math.max(
+          0, legacyQcdExclusionRemainingForCapture!.get(entry.ownerId) ?? 0,
+        )
+        const exclusionTake = Math.min(
+          exclusionRemaining, afterExcess - leftoverTake,
+        )
+        legacyQcdExclusionRemainingForCapture!.set(
+          entry.ownerId, exclusionRemaining - exclusionTake,
+        )
+        qcdBeyondRmdCharacterByOccurrence!.push({
+          ownerId: entry.ownerId,
+          sourceAccountId: entry.sourceAccountId,
+          exclusion: exclusionTake,
+          ordinary: leftoverTake + taxableFromExcess,
+        })
       }
     }
 
@@ -8584,7 +8691,11 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         if (treatment === 'capByMedicalExpenses') {
           const qualified = Math.min(taken, hsaCapLeft)
           hsaCapLeft -= qualified
-          amount = (taken - qualified) * hsaNonQualifiedPenaltyRate(ownerAge)
+          const nonqualifiedOrdinary = taken - qualified
+          if (nonqualifiedOrdinary > 0) {
+            hsaNonqualifiedOrdinaryByAccountId!.set(state.account.id, nonqualifiedOrdinary)
+          }
+          amount = nonqualifiedOrdinary * hsaNonQualifiedPenaltyRate(ownerAge)
         } else if (treatment === 'assumeAllQualified') {
           amount = 0
         } else {
@@ -10447,6 +10558,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
                 qcdExclusionFromRmdByOwner: qcdExclusionFromRmdByOwner!,
                 qcdExclusionBeyondRmdByOwner: qcdExclusionBeyondRmdByOwner!,
                 qcdOrdinaryBeyondRmdByOwner: qcdOrdinaryBeyondRmdByOwner!,
+                qcdBeyondRmdCharacterByOccurrence: qcdBeyondRmdCharacterByOccurrence!,
+                qcdOrdinaryFromRmdByOwner: qcdOrdinaryFromRmdByOwner!,
+                qcdBasisFromRmdByOwner: qcdBasisFromRmdByOwner!,
+                hsaNonqualifiedOrdinaryByAccountId: hsaNonqualifiedOrdinaryByAccountId!,
               },
               socialSecurityStreams,
               rmdTakeByAccount,
@@ -10503,6 +10618,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
               tax,
               penalties,
               contributionsTotal: contributions,
+              collidingEncodedProducerSegments,
               employerMatchTotal: employerMatch,
               surplus,
               requiredLifestyle,

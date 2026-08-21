@@ -51,6 +51,11 @@ export interface ReconcileYearCashFlowInput {
    * identity. Empty `lineIds` is valid when even a partial id is unknown.
    */
   readonly missingRequiredIdentityReports?: readonly MissingRequiredIdentityReport[]
+  /**
+   * Encoded segments that two distinct Plan producer IDs collide onto.
+   * Each becomes a `duplicateLineId` diagnostic naming that segment.
+   */
+  readonly collidingEncodedProducerSegments?: readonly string[]
 }
 
 /** Funded household uses in the cash identity, excluding tax/penalties/contributions/surplus. */
@@ -447,6 +452,9 @@ export function reconcileYearCashFlow(input: ReconcileYearCashFlowInput): YearCa
   for (const [id, count] of idCounts) {
     if (count > 1) push('duplicateLineId', { lineIds: [id] })
   }
+  for (const segment of input.collidingEncodedProducerSegments ?? []) {
+    push('duplicateLineId', { lineIds: [segment] })
+  }
 
   // 3. missingRequiredIdentity
   for (const line of sourceLines) {
@@ -635,6 +643,7 @@ export function finalizeYearCashFlow(input: ReconcileYearCashFlowInput): YearCas
       taxCharacterMetadata,
       tolerancePlanDollars: input.tolerancePlanDollars,
       missingRequiredIdentityReports: input.missingRequiredIdentityReports,
+      collidingEncodedProducerSegments: input.collidingEncodedProducerSegments,
     }),
   }
 }

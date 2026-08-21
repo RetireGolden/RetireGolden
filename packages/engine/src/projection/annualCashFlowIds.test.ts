@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 
 import {
   cashFlowLineIds,
+  collidingEncodedCashFlowSegments,
+  collectPlanCashFlowProducerIds,
   compareCashFlowLineId,
   encodeCashFlowSegment,
 } from './annualCashFlowIds.js'
@@ -46,6 +48,23 @@ describe('encodeCashFlowSegment', () => {
   it('collides two IDs that differ only by U+FFFD replacement (duplicate detection is the safety valve)', () => {
     expect(encodeCashFlowSegment('\uD800')).toBe(encodeCashFlowSegment('\uFFFD'))
     expect(cashFlowLineIds.sourceWages('\uD800')).toBe(cashFlowLineIds.sourceWages('\uFFFD'))
+  })
+
+  it('reports a plan-level encoded collision between a lone surrogate and a literal U+FFFD', () => {
+    const encodedReplacement = encodeURIComponent('\uFFFD')
+    expect(collidingEncodedCashFlowSegments(['\uD800', '\uFFFD'])).toEqual([encodedReplacement])
+    expect(collidingEncodedCashFlowSegments(['\uD800'])).toEqual([])
+    expect(collidingEncodedCashFlowSegments(['\uD800', '\uD800'])).toEqual([])
+    expect(collidingEncodedCashFlowSegments(['a', 'b'])).toEqual([])
+    const planIds = collectPlanCashFlowProducerIds({
+      household: { people: [{ id: 'p1' }] },
+      accounts: [],
+      incomes: [{ id: '\uD800' }, { id: '\uFFFD' }],
+      expenses: { oneTimeGoals: [] },
+      insurance: [],
+      careEvents: [],
+    })
+    expect(collidingEncodedCashFlowSegments(planIds)).toEqual([encodedReplacement])
   })
 
   it('leaves unreserved ASCII unchanged', () => {
@@ -120,6 +139,7 @@ describe('cashFlowLineIds', () => {
       [cashFlowLineIds.metadataRothPoolOrdinaryIncome('p1'), 'metadata:ordinaryIncome:rothPool:p1'],
       [cashFlowLineIds.metadataRebalancingCapitalGain('tax1'), 'metadata:capitalGain:rebalancing:tax1'],
       [cashFlowLineIds.metadataPropertySaleCapitalGain('home-1'), 'metadata:capitalGain:propertySale:home-1'],
+      [cashFlowLineIds.metadataPropertySaleOrdinaryIncome('home-1'), 'metadata:ordinaryIncome:propertySale:home-1'],
     ]
     for (const [actual, expected] of rows) {
       expect(actual).toBe(expected)

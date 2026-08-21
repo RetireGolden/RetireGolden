@@ -176,7 +176,7 @@ year as a disambiguator. Lines are emitted in lexicographic ID order, and duplic
 | Foreign-exclusion addback | `metadata:foreignExclusionAddback:household` |
 | Pooled Roth taxable earnings | `metadata:ordinaryIncome:rothPool:E(personId)` |
 | Standalone rebalancing gain | `metadata:capitalGain:rebalancing:E(accountId)` |
-| Standalone property-sale gain (appears only when the sale line itself is omitted at zero) | `metadata:capitalGain:propertySale:E(propertyAccountId)` |
+| Standalone property-sale gain (appears only when the sale line itself is omitted at zero; a nonzero ordinary recapture uses the same grammar with kind `ordinaryIncome`) | `metadata:capitalGain:propertySale:E(propertyAccountId)` or `metadata:ordinaryIncome:propertySale:E(propertyAccountId)` |
 
 If a producer has a nonzero amount but lacks an identity required by its grammar, it must not synthesize
 an ordinal or owner. The year publishes `notReconciled` with `missingRequiredIdentity` or

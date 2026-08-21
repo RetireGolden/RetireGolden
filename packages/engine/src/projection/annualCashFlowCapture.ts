@@ -115,13 +115,49 @@ export interface AnnualCashFlowPassLocals {
   /**
    * Final post-offset QCD exclusion on the beyond-RMD gift. Independent of the
    * ordinary amount: basis recovery is neither exclusion nor ordinary.
+   *
+   * Owner totals only. Per-transfer assignment lives on
+   * `qcdBeyondRmdCharacterByOccurrence` because the Form 8606 walk charges
+   * statutory excess onto the earliest draws; these maps cannot reconstruct
+   * that when the excess is basis recovery (ordinary 0).
    */
   readonly qcdExclusionBeyondRmdByOwner: ReadonlyMap<string, number>
   /**
    * Final beyond-RMD ordinary character: §219 leftover plus Form 8606
    * `split.taxable` on the statutory excess. Never the pre-split gross excess.
+   *
+   * Owner totals. Same caveat as `qcdExclusionBeyondRmdByOwner`.
    */
   readonly qcdOrdinaryBeyondRmdByOwner: ReadonlyMap<string, number>
+  /**
+   * Per-occurrence beyond-RMD QCD character, snapshotted at the Form 8606
+   * walk in mutation order. Excess (then leftover ordinary) is charged onto
+   * the earliest `deferredLegacyQcdDistributions` entries; exclusion fills
+   * the remainder. Empty → assemble falls back to the owner totals,
+   * excess-first in that same order.
+   */
+  readonly qcdBeyondRmdCharacterByOccurrence: readonly {
+    readonly ownerId: string
+    readonly sourceAccountId: string
+    readonly exclusion: number
+    readonly ordinary: number
+  }[]
+  /**
+   * Final from-RMD ordinary character: §219 leftover on the diverted qualified
+   * dollars plus Form 8606 `split.taxable` on the nonqualified diverted portion.
+   * Never `diverted − exclusion`, which would label basis recovery as ordinary.
+   */
+  readonly qcdOrdinaryFromRmdByOwner: ReadonlyMap<string, number>
+  /**
+   * Form 8606 `split.nontaxable` on the from-RMD nonqualified diverted portion.
+   * Not also assigned to the owner's net RMD source line.
+   */
+  readonly qcdBasisFromRmdByOwner: ReadonlyMap<string, number>
+  /**
+   * Committed `hsaEffectFinal` nonqualified ordinary per HSA account
+   * (`capByMedicalExpenses` excess only). Missing key → omit character.
+   */
+  readonly hsaNonqualifiedOrdinaryByAccountId: ReadonlyMap<string, number>
 }
 
 /**
@@ -226,6 +262,11 @@ export interface AssembleYearCashFlowInput {
   readonly hecmShortfallDraw: number
   readonly contributionsTotal: number
   readonly employerMatchTotal: number
+  /**
+   * Plan-level encoded-segment collisions, computed once per capture-on
+   * projection. Empty when every distinct producer ID encodes uniquely.
+   */
+  readonly collidingEncodedProducerSegments?: readonly string[]
 }
 
 function asReportingAccountId(id: string): AccountId {
@@ -346,9 +387,17 @@ function conversionCharacter(nontaxable: number, taxable: number):
   return chars([returnOfBasis(nontaxable), ordinary(taxable)])
 }
 
-function qcdCharacter(exclusion: number, nonQualified: number):
+function qcdCharacter(exclusion: number, nonQualified: number, basis = 0):
   readonly YearCashFlowTaxCharacter[] | undefined {
-  return chars([qcdExclusion(exclusion), qcdNonQualified(nonQualified)])
+  return chars([qcdExclusion(exclusion), qcdNonQualified(nonQualified), returnOfBasis(basis)])
+}
+
+function qualifiedDividend(amount: number): YearCashFlowTaxCharacter | undefined {
+  return amount === 0 ? undefined : { kind: 'qualifiedDividend', amountPlanDollars: amount }
+}
+
+function taxExemptIncome(amount: number): YearCashFlowTaxCharacter | undefined {
+  return amount === 0 ? undefined : { kind: 'taxExemptIncome', amountPlanDollars: amount }
 }
 
 function streamCharacter(taxTreatment: 'ordinary' | 'capitalGain' | 'none', amount: number):
@@ -613,10 +662,12 @@ function collectSourceLines(input: AssembleYearCashFlowInput): YearCashFlowSourc
     if (amount <= 0) continue
     const sale = input.withdrawalPlanTaxableSales.get(accountId)
     const iraTaxable = input.iraCharacterFinal.taxableBySourceAccountId.get(accountId)
+    const hsaOrdinary = passLocals.hsaNonqualifiedOrdinaryByAccountId.get(accountId)
     const taxCharacter = chars([
       sale !== undefined ? capitalGain(sale.realizedCapitalGainOrLoss) : undefined,
       iraTaxable !== undefined ? returnOfBasis(amount - iraTaxable) : undefined,
       iraTaxable !== undefined ? ordinary(iraTaxable) : undefined,
+      hsaOrdinary !== undefined ? ordinary(hsaOrdinary) : undefined,
     ])
     lines.push({
       id: cashFlowLineIds.sourceNeedBasedPortfolioWithdrawal(accountId),
@@ -1149,9 +1200,10 @@ function collectTransferLines(
   for (const [ownerId, diverted] of input.qcdFromRmdByOwner) {
     if (diverted <= 0) continue
     const exclusion = passLocals.qcdExclusionFromRmdByOwner.get(ownerId) ?? 0
-    const nonQualified = Math.max(0, diverted - exclusion)
+    const nonQualified = passLocals.qcdOrdinaryFromRmdByOwner.get(ownerId) ?? 0
+    const basis = passLocals.qcdBasisFromRmdByOwner.get(ownerId) ?? 0
     const rmdLineId = cashFlowLineIds.sourceOwnedIraRmd(ownerId)
-    const taxCharacter = qcdCharacter(exclusion, nonQualified)
+    const taxCharacter = qcdCharacter(exclusion, nonQualified, basis)
     push({
       id: cashFlowLineIds.transferRmdQcd(ownerId),
       kind: 'qualifiedCharitableDistribution',
@@ -1165,19 +1217,47 @@ function collectTransferLines(
     })
   }
 
+  // Same mutation order as the Form 8606 walk (`legacyQcdExcessByOwner` over
+  // `deferredLegacyQcdDistributions`): statutory excess / leftover ordinary
+  // first on the earliest draws, exclusion filling the remainder. The
+  // pass-local occurrence snapshots are that walk's per-draw result; owner
+  // totals are the fallback when a unit test does not supply them.
+  const beyondOccurrenceByLineId = new Map(
+    passLocals.qcdBeyondRmdCharacterByOccurrence.map((row) => [
+      cashFlowLineIds.transferBeyondRmdQcd(row.ownerId, row.sourceAccountId),
+      row,
+    ]),
+  )
   const beyondExclusionRemaining = new Map(passLocals.qcdExclusionBeyondRmdByOwner)
   const beyondOrdinaryRemaining = new Map(passLocals.qcdOrdinaryBeyondRmdByOwner)
   for (const entry of input.deferredLegacyQcdDistributions) {
     if (entry.amount <= 0) continue
-    const remainingExclusion = Math.max(0, beyondExclusionRemaining.get(entry.ownerId) ?? 0)
-    const exclusion = Math.min(remainingExclusion, entry.amount)
-    beyondExclusionRemaining.set(entry.ownerId, remainingExclusion - exclusion)
-    const remainingOrdinary = Math.max(0, beyondOrdinaryRemaining.get(entry.ownerId) ?? 0)
-    const nonQualified = Math.min(remainingOrdinary, Math.max(0, entry.amount - exclusion))
-    beyondOrdinaryRemaining.set(entry.ownerId, remainingOrdinary - nonQualified)
+    const lineId = cashFlowLineIds.transferBeyondRmdQcd(
+      entry.ownerId, entry.sourceAccountId,
+    )
+    const occurrence = beyondOccurrenceByLineId.get(lineId)
+    let exclusion: number
+    let nonQualified: number
+    if (occurrence !== undefined) {
+      exclusion = occurrence.exclusion
+      nonQualified = occurrence.ordinary
+    } else {
+      const remainingOrdinary = Math.max(
+        0, beyondOrdinaryRemaining.get(entry.ownerId) ?? 0,
+      )
+      nonQualified = Math.min(remainingOrdinary, entry.amount)
+      beyondOrdinaryRemaining.set(entry.ownerId, remainingOrdinary - nonQualified)
+      const remainingExclusion = Math.max(
+        0, beyondExclusionRemaining.get(entry.ownerId) ?? 0,
+      )
+      exclusion = Math.min(
+        remainingExclusion, Math.max(0, entry.amount - nonQualified),
+      )
+      beyondExclusionRemaining.set(entry.ownerId, remainingExclusion - exclusion)
+    }
     const taxCharacter = qcdCharacter(exclusion, nonQualified)
     push({
-      id: cashFlowLineIds.transferBeyondRmdQcd(entry.ownerId, entry.sourceAccountId),
+      id: lineId,
       kind: 'qualifiedCharitableDistribution',
       source: {
         entityKind: 'account',
@@ -1227,8 +1307,19 @@ function collectTransferLines(
     }
   }
 
+  const distributedYieldSitesByAccountId = new Map(
+    yearSites.distributedYield.map((row) => [row.accountId, row]),
+  )
   for (const [accountId, row] of input.distributedYieldByAccountId) {
     if (!row.reinvest || row.gross <= 0) continue
+    const site = distributedYieldSitesByAccountId.get(accountId)
+    const taxCharacter = site === undefined
+      ? undefined
+      : chars([
+        ordinary(site.interest + site.ordinaryDividends),
+        qualifiedDividend(site.qualified),
+        taxExemptIncome(site.exempt),
+      ])
     push({
       id: cashFlowLineIds.transferReinvestedYield(accountId),
       kind: 'reinvestedYield',
@@ -1240,6 +1331,7 @@ function collectTransferLines(
       debitPlanDollars: row.gross,
       creditPlanDollars: row.gross,
       identities: [accountRef(accountId)],
+      ...(taxCharacter ? { taxCharacter } : {}),
     })
   }
 
@@ -1329,12 +1421,20 @@ function collectTaxCharacterMetadata(
 
   for (const row of yearSites.propertySales) {
     if (row.netProceedsAfterHecm > 0) continue
-    if (row.capitalGain === 0) continue
-    lines.push({
-      id: cashFlowLineIds.metadataPropertySaleCapitalGain(row.propertyAccountId),
-      taxCharacter: { kind: 'capitalGain', amountPlanDollars: row.capitalGain },
-      identities: [propertyRef(row.propertyAccountId)],
-    })
+    if (row.capitalGain !== 0) {
+      lines.push({
+        id: cashFlowLineIds.metadataPropertySaleCapitalGain(row.propertyAccountId),
+        taxCharacter: { kind: 'capitalGain', amountPlanDollars: row.capitalGain },
+        identities: [propertyRef(row.propertyAccountId)],
+      })
+    }
+    if (row.ordinaryGain !== 0) {
+      lines.push({
+        id: cashFlowLineIds.metadataPropertySaleOrdinaryIncome(row.propertyAccountId),
+        taxCharacter: { kind: 'ordinaryIncome', amountPlanDollars: row.ordinaryGain },
+        identities: [propertyRef(row.propertyAccountId)],
+      })
+    }
   }
 
   lines.sort((a, b) => compareCashFlowLineId(a.id, b.id))
@@ -1360,6 +1460,7 @@ export function assembleYearCashFlow(input: AssembleYearCashFlowInput): YearCash
     transferLines,
     taxCharacterMetadata,
     missingRequiredIdentityReports,
+    collidingEncodedProducerSegments: input.collidingEncodedProducerSegments,
     tolerancePlanDollars: CASH_FLOW_RECONCILIATION_TOLERANCE_PLAN_DOLLARS,
   })
 }

@@ -159,6 +159,8 @@ export const cashFlowLineIds = {
     `metadata:capitalGain:rebalancing:${encodeCashFlowSegment(accountId)}`,
   metadataPropertySaleCapitalGain: (propertyAccountId: string) =>
     `metadata:capitalGain:propertySale:${encodeCashFlowSegment(propertyAccountId)}`,
+  metadataPropertySaleOrdinaryIncome: (propertyAccountId: string) =>
+    `metadata:ordinaryIncome:propertySale:${encodeCashFlowSegment(propertyAccountId)}`,
 } as const
 
 /**
@@ -168,4 +170,59 @@ export const cashFlowLineIds = {
  */
 export function compareCashFlowLineId(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0
+}
+
+/**
+ * Plan identities that become dynamic `E(value)` cash-flow segments.
+ * Distinct raw IDs that encode to the same segment are a projection-wide
+ * `duplicateLineId` collision, including when the producers are active in
+ * different years.
+ */
+export interface CashFlowProducerIdSource {
+  readonly household: { readonly people: readonly { readonly id: string }[] }
+  readonly accounts: readonly { readonly id: string }[]
+  readonly incomes: readonly { readonly id: string }[]
+  readonly expenses: { readonly oneTimeGoals: readonly { readonly id: string }[] }
+  readonly insurance: readonly { readonly id: string }[]
+  readonly careEvents: readonly { readonly id: string }[]
+  readonly incomeFloor?: { readonly ladders: readonly { readonly id: string }[] } | null
+}
+
+/** Account, income-stream, goal, policy, ladder, care-event, and person ids. */
+export function collectPlanCashFlowProducerIds(
+  plan: CashFlowProducerIdSource,
+): readonly string[] {
+  const ids: string[] = []
+  for (const person of plan.household.people) ids.push(person.id)
+  for (const account of plan.accounts) ids.push(account.id)
+  for (const stream of plan.incomes) ids.push(stream.id)
+  for (const goal of plan.expenses.oneTimeGoals) ids.push(goal.id)
+  for (const policy of plan.insurance) ids.push(policy.id)
+  for (const event of plan.careEvents) ids.push(event.id)
+  for (const ladder of plan.incomeFloor?.ladders ?? []) ids.push(ladder.id)
+  return ids
+}
+
+/**
+ * Encoded segments that two or more distinct raw producer IDs map onto via
+ * `encodeCashFlowSegment`. Empty when every distinct raw ID encodes uniquely.
+ */
+export function collidingEncodedCashFlowSegments(
+  rawIds: Iterable<string>,
+): readonly string[] {
+  const unique = new Set<string>()
+  for (const id of rawIds) unique.add(id)
+  const firstRawByEncoded = new Map<string, string>()
+  const colliding: string[] = []
+  for (const raw of unique) {
+    const encoded = encodeCashFlowSegment(raw)
+    const first = firstRawByEncoded.get(encoded)
+    if (first === undefined) {
+      firstRawByEncoded.set(encoded, raw)
+      continue
+    }
+    if (!colliding.includes(encoded)) colliding.push(encoded)
+  }
+  colliding.sort(compareCashFlowLineId)
+  return colliding
 }

@@ -24,6 +24,7 @@ function reconcile(opts: {
   transferLines?: readonly YearCashFlowTransferLine[]
   taxCharacterMetadata?: readonly YearCashFlowStandaloneTaxCharacter[]
   missingRequiredIdentityReports?: readonly { readonly lineIds: readonly string[] }[]
+  collidingEncodedProducerSegments?: readonly string[]
 }) {
   return reconcileYearCashFlow({
     sourceLines: opts.sourceLines ?? [],
@@ -31,6 +32,7 @@ function reconcile(opts: {
     transferLines: opts.transferLines ?? [],
     taxCharacterMetadata: opts.taxCharacterMetadata ?? [],
     missingRequiredIdentityReports: opts.missingRequiredIdentityReports,
+    collidingEncodedProducerSegments: opts.collidingEncodedProducerSegments,
     tolerancePlanDollars: TOLERANCE,
   })
 }
@@ -161,6 +163,18 @@ describe('reconcileYearCashFlow', () => {
       { reasonCode: 'duplicateLineId', lineIds: ['source:propertySaleProceeds:prop1'] },
     ])
     expect(result.cash.sourceTotalPlanDollars).toBe(100)
+  })
+
+  it('flags a plan-level encoded producer collision as duplicateLineId naming the segment', () => {
+    const encoded = encodeURIComponent('\uFFFD')
+    const result = reconcile({
+      collidingEncodedProducerSegments: [encoded],
+    })
+    expect(result.status).toBe('notReconciled')
+    expect(result.reasonCodes).toContain('duplicateLineId')
+    expect(result.diagnostics.filter((row) => row.reasonCode === 'duplicateLineId')).toEqual([
+      { reasonCode: 'duplicateLineId', lineIds: [encoded] },
+    ])
   })
 
   it('flags a negative physical amount as invalidAmount', () => {

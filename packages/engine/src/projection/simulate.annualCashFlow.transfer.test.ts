@@ -326,6 +326,115 @@ describe('simulatePlan annual cash-flow transfers', () => {
     expect(y2026.cashFlow!.reconciliation.status).toBe('reconciled')
   })
 
+  it('charges a two-draw beyond-RMD QCD excess onto the earliest account, matching the Form 8606 walk', () => {
+    // Independent worksheet, year 2026, 0% inflation, 0% growth, $0 tax:
+    //   p1 born 1955-01-01 → attained 71, before SECURE 2.0 RMD age 73. RMD 0.
+    //   Two owned IRAs, $5,000 each, no basis. qcdAnnual 10,000.
+    //   Drain order is plan-account order: ira-1 then ira-2; two $5,000 draws.
+    //   (D) qualified = min(10,000, 10,000) = 10,000. Statutory excess 0.
+    //   Post-70½ deductible §219 = 4,000 (tax year 2025).
+    //   408(d)(8)(A) exclusion = max(0, 10,000 − 4,000) = 6,000.
+    //   Leftover ordinary 4,000 is the owner's "excess" on this gift.
+    //   Form 8606 walk / leftover charge in mutation order:
+    //     ira-1 = $4,000 ordinary + $1,000 exclusion
+    //     ira-2 = $5,000 exclusion
+    const plan = singlePersonPlan({ dob: '1955-01-01', planningAge: 90, retirementAge: null })
+    plan.accounts = [
+      cashAccount('cash-1', 0),
+      traditionalAccount('ira-1', 5_000, 'p1', 'ira'),
+      traditionalAccount('ira-2', 5_000, 'p1', 'ira'),
+    ]
+    plan.strategies.qcdAnnual = 10_000
+    plan.retirementActionEligibilityFacts = {
+      iraClassifications: [
+        {
+          sourceAccountId: 'ira-1',
+          subtype: 'traditional',
+          evidenceId: 'classification-ira-1',
+          provenance: { source: 'manual' },
+        },
+        {
+          sourceAccountId: 'ira-2',
+          subtype: 'traditional',
+          evidenceId: 'classification-ira-2',
+          provenance: { source: 'manual' },
+        },
+      ],
+      sepSimpleActivities: [],
+      deductibleIraContributions: [{
+        donorPersonId: 'p1',
+        taxYear: 2025,
+        amountCents: asUsdCents(4_000 * 100),
+        evidenceId: 'section219-2025',
+        provenance: { source: 'manual', sourceId: 'ledger-2025' },
+      }],
+    }
+    const y2026 = yearOf(run(plan, { horizonEndYear: 2026 }), START_YEAR)
+
+    const first = transferById(
+      y2026,
+      'transfer:qualifiedCharitableDistribution:beyondRmd:p1:ira-1',
+    )
+    const second = transferById(
+      y2026,
+      'transfer:qualifiedCharitableDistribution:beyondRmd:p1:ira-2',
+    )
+    expectMoney(first.debitPlanDollars, 5_000)
+    expectMoney(second.debitPlanDollars, 5_000)
+    expect(first.taxCharacter).toEqual([
+      { kind: 'qcdIncomeExclusion', amountPlanDollars: 1_000 },
+      { kind: 'nonQualifiedQcdOrdinaryIncome', amountPlanDollars: 4_000 },
+    ])
+    expect(second.taxCharacter).toEqual([
+      { kind: 'qcdIncomeExclusion', amountPlanDollars: 5_000 },
+    ])
+    expect(y2026.cashFlow!.reconciliation.status).toBe('reconciled')
+  })
+
+  it('places beyond-RMD QCD exclusion after Form 8606 excess on the earliest of two draws', () => {
+    // Independent worksheet, year 2026, 0% inflation, 0% growth, $0 tax:
+    //   p1 born 1955-01-01 → attained 71. RMD 0.
+    //   Two owned IRAs, $5,000 each. Owner nondeductible basis 4,000 on ira-1.
+    //   qcdAnnual 10,000. Drain order ira-1 then ira-2.
+    //   (D) aggregate includible I = max(0, 10,000 − 4,000) = 6,000.
+    //   Qualified Q = min(10,000, 6,000) = 6,000. Statutory excess 4,000.
+    //   Residual denominator is the basis itself (fraction 1): excess is
+    //   return of basis, not ordinary, and is unpublished on the transfer.
+    //   Form 8606 walk in mutation order:
+    //     ira-1 = $4,000 excess + $1,000 exclusion
+    //     ira-2 = $5,000 exclusion
+    const plan = singlePersonPlan({ dob: '1955-01-01', planningAge: 90, retirementAge: null })
+    const ira1 = traditionalAccount('ira-1', 5_000, 'p1', 'ira') as Extract<Account, { type: 'traditional' }>
+    ira1.nondeductibleBasis = 4_000
+    plan.accounts = [
+      cashAccount('cash-1', 0),
+      ira1,
+      traditionalAccount('ira-2', 5_000, 'p1', 'ira'),
+    ]
+    plan.strategies.qcdAnnual = 10_000
+    const y2026 = yearOf(run(plan, { horizonEndYear: 2026 }), START_YEAR)
+
+    const first = transferById(
+      y2026,
+      'transfer:qualifiedCharitableDistribution:beyondRmd:p1:ira-1',
+    )
+    const second = transferById(
+      y2026,
+      'transfer:qualifiedCharitableDistribution:beyondRmd:p1:ira-2',
+    )
+    expectMoney(first.debitPlanDollars, 5_000)
+    expectMoney(second.debitPlanDollars, 5_000)
+    expect(first.taxCharacter).toEqual([
+      { kind: 'qcdIncomeExclusion', amountPlanDollars: 1_000 },
+    ])
+    expect(second.taxCharacter).toEqual([
+      { kind: 'qcdIncomeExclusion', amountPlanDollars: 5_000 },
+    ])
+    expect(first.taxCharacter?.some((part) => part.kind === 'nonQualifiedQcdOrdinaryIncome')).toBe(false)
+    expect(second.taxCharacter?.some((part) => part.kind === 'nonQualifiedQcdOrdinaryIncome')).toBe(false)
+    expect(y2026.cashFlow!.reconciliation.status).toBe('reconciled')
+  })
+
   it('publishes aggregate QCD ordinary character after the Form 8606 split, not the gross beyond-includible amount', () => {
     // Independent worksheet, year 2026, 0% inflation, 0% growth, $0 tax:
     //   p1 born 1955-01-01 → attained 71, before SECURE 2.0 RMD age 73. RMD 0.
@@ -354,6 +463,80 @@ describe('simulatePlan annual cash-flow transfers', () => {
       line.kind === 'requiredMinimumDistribution',
     )).toBe(false)
     expect(y2026.cashFlow!.reconciliation.status).toBe('reconciled')
+  })
+
+  it('carries Form 8606 taxable/basis on an RMD-diverted QCD that exceeds the eligible exclusion', () => {
+    // Independent worksheet, year 2026, 0% inflation, 0% growth, $0 tax:
+    //   p1 born 1950-01-01 → attained 76. Uniform Lifetime divisor 23.7.
+    //   IRA 237,000 with nondeductible basis 230,000 → RMD 10,000.
+    //   qcdAnnual 10,000 routes the entire RMD (zero-net source).
+    //   (D) includible I = 237,000 − 230,000 = 7,000.
+    //   Qualified Q = min(10,000, 7,000) = 7,000; from-RMD nonqualified = 3,000.
+    //   Line-7 gross after the qualified carve = 3,000; residual denominator is
+    //   the basis itself (fraction 1), so split.taxable = 0, split.nontaxable = 3,000.
+    //   Exclusion 7,000; basis recovery lives on the QCD transfer, not the
+    //   zero-net RMD source, and is never labeled nonQualifiedQcdOrdinaryIncome.
+    const plan = singlePersonPlan({ dob: '1950-01-01', planningAge: 90, retirementAge: null })
+    const ira = traditionalAccount('ira-1', 237_000, 'p1', 'ira') as Extract<Account, { type: 'traditional' }>
+    ira.nondeductibleBasis = 230_000
+    plan.accounts = [cashAccount('cash-1', 0), ira]
+    plan.strategies.qcdAnnual = 10_000
+    const y2026 = yearOf(run(plan, { horizonEndYear: 2026 }), START_YEAR)
+
+    const qcd = transferById(y2026, 'transfer:qualifiedCharitableDistribution:rmd:p1')
+    expectMoney(qcd.debitPlanDollars, 10_000)
+    expect(qcd.taxCharacter).toEqual([
+      { kind: 'qcdIncomeExclusion', amountPlanDollars: 7_000 },
+      { kind: 'returnOfBasis', amountPlanDollars: 3_000 },
+    ])
+    expect(qcd.taxCharacter?.some((part) => part.kind === 'nonQualifiedQcdOrdinaryIncome')).toBe(false)
+
+    const rmd = y2026.cashFlow!.sourceLines.find(
+      (line) => line.id === 'source:requiredMinimumDistribution:ownedIraPool:p1',
+    )
+    expect(rmd).toBeDefined()
+    expectMoney(rmd!.amountPlanDollars, 0)
+    expect(rmd!.taxCharacter).toBeUndefined()
+    expect(y2026.cashFlow!.reconciliation.status).toBe('reconciled')
+  })
+
+  it('marks every captured year notReconciled when distinct producer IDs encode to the same segment', () => {
+    // Lone UTF-16 surrogate vs literal U+FFFD: encodeCashFlowSegment maps both
+    // to %EF%BF%BD. Scheduled in different years, so intra-year duplicate
+    // detection would miss them.
+    const plan = singlePersonPlan({ dob: '1966-01-01', planningAge: 62 })
+    plan.accounts = [cashAccount('cash-1', 0)]
+    plan.incomes = [
+      {
+        type: 'oneTime',
+        id: '\uD800',
+        label: 'Surrogate',
+        year: 2026,
+        amount: 1_000,
+        taxTreatment: 'none',
+      },
+      {
+        type: 'oneTime',
+        id: '\uFFFD',
+        label: 'Replacement',
+        year: 2027,
+        amount: 2_000,
+        taxTreatment: 'none',
+      },
+    ]
+    const years = run(plan, { horizonEndYear: 2027 })
+    const encoded = encodeURIComponent('\uFFFD')
+    const y2026 = yearOf(years, 2026)
+    const y2027 = yearOf(years, 2027)
+    for (const year of [y2026, y2027]) {
+      expect(year.cashFlow!.reconciliation.status).toBe('notReconciled')
+      expect(year.cashFlow!.reconciliation.reasonCodes).toContain('duplicateLineId')
+      expect(
+        year.cashFlow!.reconciliation.diagnostics.filter((row) => row.reasonCode === 'duplicateLineId'),
+      ).toEqual([
+        { reasonCode: 'duplicateLineId', lineIds: [encoded] },
+      ])
+    }
   })
 
   it('carries the named QCD charity designationId from the action oracle', () => {
