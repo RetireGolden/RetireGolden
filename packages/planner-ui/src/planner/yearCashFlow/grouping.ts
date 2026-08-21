@@ -156,6 +156,9 @@ export function applyYearCashFlowGrouping(
       amountPlanDollars: link.amountPlanDollars,
       underlyingLineIds: uniqueSorted(link.underlyingLineIds),
       flag: link.flag,
+      kind: link.kind,
+      kindLabel: link.kindLabel,
+      lineLabel: link.lineLabel,
     })
   }
   const links = order.map((key) => merged.get(key)!)

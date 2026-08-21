@@ -5,7 +5,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import { renderToStaticMarkup } from 'react-dom/server'
 
 import type { YearCashFlowSankeyView } from './buildYearCashFlow'
-import { YearCashFlowSankey } from './YearCashFlowSankey'
+import { YearCashFlowSankey, YearCashFlowSankeyTooltip } from './YearCashFlowSankey'
 
 ;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean })
   .IS_REACT_ACT_ENVIRONMENT = true
@@ -102,6 +102,9 @@ const view: YearCashFlowSankeyView = {
       amountPlanDollars: 50_000,
       underlyingLineIds: ['wages'],
       flag: null,
+      kind: 'wages',
+      kindLabel: 'Wages',
+      lineLabel: 'Wages',
     },
     {
       id: 'householdCash->lifestyle',
@@ -111,6 +114,9 @@ const view: YearCashFlowSankeyView = {
       amountPlanDollars: 40_000,
       underlyingLineIds: ['lifestyle'],
       flag: null,
+      kind: 'requiredLifestyle',
+      kindLabel: 'Required lifestyle',
+      lineLabel: 'Required lifestyle',
     },
     {
       id: 'unfunded->unfunded:lifestyle',
@@ -120,6 +126,9 @@ const view: YearCashFlowSankeyView = {
       amountPlanDollars: 10_000,
       underlyingLineIds: ['lifestyle'],
       flag: 'unfunded',
+      kind: 'requiredLifestyle',
+      kindLabel: 'Required lifestyle',
+      lineLabel: 'Required lifestyle',
     },
   ],
 }
@@ -258,6 +267,31 @@ describe('YearCashFlowSankey', () => {
     expect(html).toMatch(/data-node-id="lifestyle"[^>]*>[\s\S]*?fill="var\(--chart-4\)"/)
     expect(html).not.toMatch(/stroke-opacity="0\.55"/)
     expect(html).toContain('data-chart-width=')
+  })
+
+  it('uses originating line kind and label on link tooltip fields', () => {
+    const link = view.links.find((item) => item.id === 'householdCash->lifestyle')
+    expect(link).toBeDefined()
+    const html = renderToStaticMarkup(
+      <YearCashFlowSankeyTooltip
+        active
+        payload={[
+          {
+            payload: {
+              source: 0,
+              target: 1,
+              kind: link!.kind,
+              kindLabel: link!.kindLabel,
+              label: link!.lineLabel,
+              displayAmount: 40_000,
+              amountLabel: '$40,000',
+            },
+          },
+        ]}
+      />,
+    )
+    expect(html).toContain('Required lifestyle - $40,000')
+    expect(html).not.toContain('Household cash')
   })
 
   it('observes host width when opening empty then switching to a populated view', async () => {

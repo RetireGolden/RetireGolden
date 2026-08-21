@@ -22,7 +22,9 @@ import type { Account, IncomeStream, Plan } from '@retiregolden/engine/model/pla
 import type {
   YearCashFlow,
   YearCashFlowEntityReference,
+  YearCashFlowLineId,
   YearCashFlowLineage,
+  YearCashFlowLineageRelationship,
   YearCashFlowPenaltyClass,
   YearCashFlowReconciliation,
   YearCashFlowReconciliationDiagnostic,
@@ -115,6 +117,10 @@ export interface YearCashFlowSankeyLink {
   readonly amountPlanDollars: number
   readonly underlyingLineIds: readonly string[]
   readonly flag: YearCashFlowSankeyFlag | null
+  /** Originating engine line kind — used for link tooltips, not the source endpoint. */
+  readonly kind: string
+  readonly kindLabel: string
+  readonly lineLabel: string
 }
 
 export interface YearCashFlowSankeyView {
@@ -843,11 +849,46 @@ function transferTableRow(index: PlanIndex, line: YearCashFlowTransferLine): Yea
   }
 }
 
+const CHARACTERIZES_LINEAGE = 'characterizes' as YearCashFlowLineageRelationship
+
+function resolveRelatedLineReference(
+  index: PlanIndex,
+  cashFlow: YearCashFlow,
+  relatedLineId: YearCashFlowLineId,
+): string {
+  const source = cashFlow.sourceLines.find((item) => item.id === relatedLineId)
+  if (source !== undefined) {
+    return resolveLineLabel(index, source.identities, SOURCE_KIND_LABEL[source.kind]).label
+  }
+  const use = cashFlow.useLines.find((item) => item.id === relatedLineId)
+  if (use !== undefined) {
+    return resolveLineLabel(index, use.identities, USE_KIND_LABEL[use.kind]).label
+  }
+  const transfer = cashFlow.transferLines.find((item) => item.id === relatedLineId)
+  if (transfer !== undefined) {
+    const kindLabel = TRANSFER_KIND_LABEL[transfer.kind]
+    const resolved = resolveLineLabel(index, transfer.identities, kindLabel)
+    if (resolved.label !== kindLabel) return resolved.label
+    const from = resolveEndpoint(index, transfer.source)
+    const to = resolveEndpoint(index, transfer.destination)
+    return `${from.label} → ${to.label}`
+  }
+  return relatedLineId
+}
+
 function metadataTableRow(
   index: PlanIndex,
+  cashFlow: YearCashFlow,
   line: YearCashFlowStandaloneTaxCharacter,
 ): YearCashFlowTableRow {
   const resolved = resolveLineLabel(index, line.identities, line.taxCharacter.kind)
+  const lineageNotes: YearCashFlowLineage[] =
+    line.relatedLineId === undefined
+      ? []
+      : [{
+          relationship: CHARACTERIZES_LINEAGE,
+          lineId: resolveRelatedLineReference(index, cashFlow, line.relatedLineId) as YearCashFlowLineId,
+        }]
   return {
     id: line.id,
     view: 'taxCharacter',
@@ -866,7 +907,7 @@ function metadataTableRow(
     creditPlanDollars: null,
     penaltyClass: null,
     taxCharacter: [line.taxCharacter],
-    lineageNotes: [],
+    lineageNotes,
     unresolved: resolved.unresolved,
   }
 }
@@ -896,7 +937,7 @@ function buildTable(index: PlanIndex, cashFlow: YearCashFlow): YearCashFlowTable
   for (const line of cashFlow.sourceLines) rows.push(sourceTableRow(index, line))
   for (const line of cashFlow.useLines) rows.push(fundedUseTableRow(index, line))
   for (const line of cashFlow.transferLines) rows.push(transferTableRow(index, line))
-  for (const line of cashFlow.taxCharacterMetadata) rows.push(metadataTableRow(index, line))
+  for (const line of cashFlow.taxCharacterMetadata) rows.push(metadataTableRow(index, cashFlow, line))
   rows.sort(compareTableRows)
   return rows
 }
@@ -931,6 +972,7 @@ function makeLink(
   target: string,
   amountPlanDollars: number,
   lineId: string,
+  line: Pick<YearCashFlowSankeyLink, 'kind' | 'kindLabel' | 'lineLabel'>,
   flag: YearCashFlowSankeyFlag | null = null,
 ): YearCashFlowSankeyLink {
   return {
@@ -941,6 +983,9 @@ function makeLink(
     amountPlanDollars,
     underlyingLineIds: [lineId],
     flag,
+    kind: line.kind,
+    kindLabel: line.kindLabel,
+    lineLabel: line.lineLabel,
   }
 }
 
@@ -995,7 +1040,14 @@ function buildCashFlowView(index: PlanIndex, cashFlow: YearCashFlow): YearCashFl
       unresolved: resolved.unresolved,
     }))
     if (line.amountPlanDollars > 0) {
-      links.push(makeLink('cashFlow', line.id, HOUSEHOLD_CASH_NODE_ID, line.amountPlanDollars, line.id))
+      links.push(makeLink(
+        'cashFlow',
+        line.id,
+        HOUSEHOLD_CASH_NODE_ID,
+        line.amountPlanDollars,
+        line.id,
+        { kind: line.kind, kindLabel, lineLabel: resolved.label },
+      ))
     }
   }
 
@@ -1032,7 +1084,14 @@ function buildCashFlowView(index: PlanIndex, cashFlow: YearCashFlow): YearCashFl
         underlyingLineIds: [line.id],
         unresolved: resolved.unresolved,
       }))
-      links.push(makeLink('cashFlow', HOUSEHOLD_CASH_NODE_ID, line.id, line.fundedPlanDollars, line.id))
+      links.push(makeLink(
+        'cashFlow',
+        HOUSEHOLD_CASH_NODE_ID,
+        line.id,
+        line.fundedPlanDollars,
+        line.id,
+        { kind: line.kind, kindLabel, lineLabel: resolved.label },
+      ))
     }
     if (line.unfundedPlanDollars > 0) {
       unfundedTotal += line.unfundedPlanDollars
@@ -1052,7 +1111,15 @@ function buildCashFlowView(index: PlanIndex, cashFlow: YearCashFlow): YearCashFl
         unresolved: resolved.unresolved,
         flag: resolved.unresolved ? 'unresolved' : 'unfunded',
       }))
-      links.push(makeLink('cashFlow', UNFUNDED_ORIGIN_NODE_ID, unfundedId, line.unfundedPlanDollars, line.id, 'unfunded'))
+      links.push(makeLink(
+        'cashFlow',
+        UNFUNDED_ORIGIN_NODE_ID,
+        unfundedId,
+        line.unfundedPlanDollars,
+        line.id,
+        { kind: line.kind, kindLabel, lineLabel: resolved.label },
+        'unfunded',
+      ))
     }
   }
 
@@ -1128,6 +1195,11 @@ function buildTransfersView(index: PlanIndex, cashFlow: YearCashFlow): YearCashF
   }
 
   for (const line of cashFlow.transferLines) {
+    const kindLabel = TRANSFER_KIND_LABEL[line.kind]
+    const resolved = resolveLineLabel(index, line.identities, kindLabel)
+    const sourceEp = resolveEndpoint(index, line.source)
+    const destEp = resolveEndpoint(index, line.destination)
+    const lineLabel = resolved.label === kindLabel ? `${sourceEp.label} → ${destEp.label}` : resolved.label
     const source = takeEndpoint(line.source, line.debitPlanDollars, line.id, 'out')
     const target = takeEndpoint(line.destination, line.creditPlanDollars, line.id, 'in')
     if (line.debitPlanDollars > 0) {
@@ -1138,6 +1210,7 @@ function buildTransfersView(index: PlanIndex, cashFlow: YearCashFlow): YearCashF
         target,
         line.debitPlanDollars,
         line.id,
+        { kind: line.kind, kindLabel, lineLabel },
         unresolved ? 'unresolved' : null,
       ))
     }

@@ -171,6 +171,30 @@ describe('serializeYearCashFlowDetailCsv', () => {
     expect(csv).not.toMatch(/,Pat - Rollover "IRA", primary/)
   })
 
+  it('serializes characterizes lineage for standalone tax-character metadata rows', () => {
+    const plan = csvPlan()
+    const cashFlow: YearCashFlow = {
+      ...csvCashFlow(),
+      taxCharacterMetadata: [
+        {
+          id: 'tax:tipsPhantomOidIncome:ladder-1',
+          taxCharacter: { kind: 'tipsPhantomOidIncome', amountPlanDollars: 250 },
+          identities: [{ entityKind: 'tipsLadder', ladderId: 'ladder-1' }],
+          relatedLineId: 'source:tipsLadderCash:ladder-1',
+        },
+      ],
+    }
+    const model = buildYearCashFlowSankey(plan, { year: 2031, cashFlow } as YearResult)
+    const csv = serializeYearCashFlowDetailCsv(model)
+    const row = csv
+      .trimEnd()
+      .split('\n')
+      .find((line) => line.includes('tax:tipsPhantomOidIncome:ladder-1'))
+    expect(row).toBeDefined()
+    const lineageCell = row!.split(',')[15]
+    expect(lineageCell).toBe('characterizes>source:tipsLadderCash:ladder-1')
+  })
+
   it('emits header plus reconciliation summary only for an unavailable year', () => {
     const missing = serializeYearCashFlowDetailCsv(
       buildYearCashFlowSankey(csvPlan(), { year: 2031 } as unknown as YearResult),

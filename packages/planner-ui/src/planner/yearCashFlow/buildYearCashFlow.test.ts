@@ -289,6 +289,27 @@ describe('buildYearCashFlowSankey', () => {
     expect(fundedLifestyle?.amountPlanDollars).toBe(70_000)
   })
 
+  it('carries originating line kind and label on Sankey links for tooltips', () => {
+    const model = ready(twoOwnerPlan(), twoOwnerCashFlow())
+    const settledTaxLink = model.views.cashFlow.links.find(
+      (link) => link.target === 'use:settledTax:household',
+    )
+    expect(settledTaxLink).toMatchObject({
+      kind: 'settledTax',
+      kindLabel: 'Settled tax',
+      lineLabel: 'Settled tax',
+    })
+    expect(settledTaxLink?.kindLabel).not.toBe('Household cash')
+    const transferLink = model.views.transfers.links.find(
+      (link) => link.underlyingLineIds.includes('transfer:surplusInvestment:account:cash'),
+    )
+    expect(transferLink).toMatchObject({
+      kind: 'surplusInvestment',
+      kindLabel: 'Surplus investment',
+    })
+    expect(transferLink?.kindLabel).not.toBe('Household cash')
+  })
+
   it('keeps transfer debit and credit as a paired view that bypasses the cash hub', () => {
     const model = ready(twoOwnerPlan(), twoOwnerCashFlow())
     const row = model.table.find((item) => item.id === 'transfer:surplusInvestment:account:cash')
@@ -559,6 +580,9 @@ describe('buildYearCashFlowSankey', () => {
     expect(meta?.view).toBe('taxCharacter')
     expect(meta?.amountPlanDollars).toBe(250)
     expect(meta?.sourceRef).toBe('ladder:ladder-1')
+    expect(meta?.lineageNotes).toEqual([
+      { relationship: 'characterizes', lineId: 'source:tipsLadderCash:ladder-1' },
+    ])
     const wages = model.table.find((row) => row.id === 'source:wages:w-pat')
     expect(wages?.sourceRef).toBe('incomeStream:w-pat;person:p1')
     expect(wages?.sourceRef).not.toBe(wages?.id)

@@ -71,6 +71,7 @@ interface ChartLink {
   readonly label: string
   readonly name: string
   readonly displayAmount: number
+  readonly amountLabel: string
 }
 
 interface PlacedNode {
@@ -162,27 +163,33 @@ function toChartData(
     if (source === undefined || target === undefined) continue
     const value = displayAmount(year, link.amountPlanDollars)
     if (value <= 0) continue
-    const sourceNode = nodes[source]!
-    const targetNode = nodes[target]!
-    const label = `${sourceNode.label} to ${targetNode.label}`
+    const amountLabel = fmtMoney(value)
+    const headline = `${link.kindLabel} - ${amountLabel}`
     links.push({
       source,
       target,
       value,
       flag: link.flag,
-      kind: sourceNode.kind,
-      kindLabel: sourceNode.kindLabel,
-      label,
-      name: label,
+      kind: link.kind,
+      kindLabel: link.kindLabel,
+      label: link.lineLabel,
+      name: headline,
       displayAmount: value,
+      amountLabel,
     })
   }
   return { nodes, links }
 }
 
-function tooltipFields(payload: unknown): { label: string; amount: number; amountLabel: string; kind: string } {
+function tooltipFields(payload: unknown): {
+  label: string
+  amount: number
+  amountLabel: string
+  kind: string
+  isLink: boolean
+} {
   if (!payload || typeof payload !== 'object') {
-    return { label: '', amount: Number.NaN, amountLabel: '', kind: '' }
+    return { label: '', amount: Number.NaN, amountLabel: '', kind: '', isLink: false }
   }
   const record = payload as Record<string, unknown>
   const label =
@@ -198,10 +205,11 @@ function tooltipFields(payload: unknown): { label: string; amount: number; amoun
     : typeof record.value === 'number' ? record.value
     : Number.NaN
   const amountLabel = typeof record.amountLabel === 'string' ? record.amountLabel : ''
-  return { label, amount, amountLabel, kind }
+  const isLink = typeof record.source === 'number' && typeof record.target === 'number'
+  return { label, amount, amountLabel, kind, isLink }
 }
 
-function YearCashFlowSankeyTooltip({
+export function YearCashFlowSankeyTooltip({
   active,
   payload,
 }: {
@@ -211,6 +219,16 @@ function YearCashFlowSankeyTooltip({
   if (!active || !payload?.[0]) return null
   const fields = tooltipFields(payload[0].payload)
   if (!fields.label && !fields.kind) return null
+  if (fields.isLink) {
+    return (
+      <div className="year-cash-flow-sankey-tooltip" style={chartTooltipStyle}>
+        <div>{`${fields.kind} - ${fields.amountLabel || fmtMoney(fields.amount)}`}</div>
+        {fields.label && fields.label !== fields.kind ? (
+          <div className="small">{fields.label}</div>
+        ) : null}
+      </div>
+    )
+  }
   return (
     <div className="year-cash-flow-sankey-tooltip" style={chartTooltipStyle}>
       <div>{fields.label}</div>
