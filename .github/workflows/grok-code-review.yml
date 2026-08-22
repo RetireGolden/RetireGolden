@@ -1,5 +1,6 @@
 # Thin caller for the org-required Grok Build PR review.
 # Implementation lives in RetireGolden/.github — do not copy it here.
+# That reusable workflow pins FlyOverCoderKY/grok-pr-review-action@v1.0.0.
 name: Grok code review
 
 on:
