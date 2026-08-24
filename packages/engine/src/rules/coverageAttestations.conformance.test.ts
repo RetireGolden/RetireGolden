@@ -4,10 +4,13 @@ import {
   COVERAGE_ATTESTATIONS,
   type CoverageAttestationStatus,
 } from './coverageAttestations.js'
+import { TAX_RULE_REGISTRY } from './taxRuleRegistry.js'
 
 // Vite requires the options to be an inline object literal.
-const engineSources = import.meta.glob('../**/*.ts', { query: '?raw', import: 'default', eager: true })
+const engineSources = import.meta.glob('../**/*.{ts,mts,cts,tsx}', { query: '?raw', import: 'default', eager: true })
 const ATTESTATION_STATUSES: readonly CoverageAttestationStatus[] = ['registered', 'partial', 'rule-free', 'unswept']
+const TEST_SOURCE = /\.test\.(ts|mts|cts|tsx)$/u
+const DECLARATION_SOURCE = /\.d\.(ts|mts|cts)$/u
 
 /**
  * Glob keys are relative to this directory; attestation paths are
@@ -15,7 +18,7 @@ const ATTESTATION_STATUSES: readonly CoverageAttestationStatus[] = ['registered'
  * rather than `../rules/name`, so both prefixes need normalizing.
  */
 const sourcePaths = Object.keys(engineSources)
-  .filter((path) => !path.endsWith('.test.ts') && !path.endsWith('.d.ts'))
+  .filter((path) => !TEST_SOURCE.test(path) && !DECLARATION_SOURCE.test(path))
   .map((path) => path.replace(/^\.\.\//u, '').replace(/^\.\//u, 'rules/'))
   .sort()
 
@@ -47,7 +50,7 @@ describe('coverage attestations', () => {
       } else if (
         attestation.sweptOn === null ||
         !/^\d{4}-\d{2}-\d{2}$/u.test(attestation.sweptOn) ||
-        Number.isNaN(Date.parse(attestation.sweptOn + 'T00:00:00Z'))
+        new Date(attestation.sweptOn + 'T00:00:00Z').toISOString().slice(0, 10) !== attestation.sweptOn
       ) {
         malformedSweepDates.push(path)
       }
@@ -58,6 +61,22 @@ describe('coverage attestations', () => {
     expect(invalidStatuses, 'unknown attestation statuses').toEqual([])
     expect(malformedSweepDates, 'attestations with an invalid sweep date').toEqual([])
     expect(partialWithoutNotes, 'partial attestations without residual claims').toEqual([])
+  })
+
+  it('does not mark registry-named implementers as rule-free', () => {
+    const registryNamedPaths = new Set<string>()
+    for (const rule of Object.values(TAX_RULE_REGISTRY)) {
+      for (const implementedBy of rule.implementedBy) {
+        registryNamedPaths.add(implementedBy.replace(/^packages\/engine\/src\//u, ''))
+      }
+    }
+    const ruleFreeButNamed = [...registryNamedPaths]
+      .filter((path) => COVERAGE_ATTESTATIONS[path]?.status === 'rule-free')
+      .sort()
+    expect(
+      ruleFreeButNamed,
+      'registry-named paths attested as rule-free: ' + (ruleFreeButNamed.join(', ') || 'none'),
+    ).toEqual([])
   })
 
   it('keeps unswept files to the frozen grandfather set', () => {

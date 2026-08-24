@@ -8,6 +8,8 @@ const repositoryDir = resolve(engineDir, '..', '..')
 const sourceDir = join(engineDir, 'src')
 const rulesDir = join(sourceDir, 'rules')
 
+const TEST_SOURCE = /\.test\.(ts|mts|cts|tsx)$/
+
 export function testSourcesInGlobShape(directory = sourceDir) {
   const sources = {}
   for (const entry of readdirSync(directory, { withFileTypes: true }).sort((left, right) =>
@@ -15,7 +17,7 @@ export function testSourcesInGlobShape(directory = sourceDir) {
     const path = join(directory, entry.name)
     if (entry.isDirectory()) {
       Object.assign(sources, testSourcesInGlobShape(path))
-    } else if (entry.isFile() && entry.name.endsWith('.test.ts')) {
+    } else if (entry.isFile() && TEST_SOURCE.test(entry.name)) {
       const sourcePath = relative(sourceDir, path).split('\\').join('/')
       sources['../' + sourcePath] = readFileSync(path, 'utf8')
     }

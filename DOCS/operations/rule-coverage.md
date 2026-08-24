@@ -54,8 +54,8 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | Swept | 100.0% |
 | Grandfathered unswept baseline | 0 |
 | partial | 65 |
-| registered | 39 |
-| rule-free | 130 |
+| registered | 42 |
+| rule-free | 127 |
 | unswept | 0 |
 
 ## Per-directory rollup
@@ -63,7 +63,7 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | Directory | Files | Partial | Registered | Rule-free | Unswept |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | (root) | 3 | 0 | 0 | 3 | 0 |
-| actions | 74 | 27 | 18 | 29 | 0 |
+| actions | 74 | 27 | 19 | 28 | 0 |
 | allocation | 1 | 0 | 0 | 1 | 0 |
 | decisions | 19 | 5 | 0 | 14 | 0 |
 | insights | 22 | 1 | 1 | 20 | 0 |
@@ -72,7 +72,7 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | longevity | 2 | 1 | 0 | 1 | 0 |
 | model | 3 | 3 | 0 | 0 | 0 |
 | montecarlo | 11 | 1 | 0 | 10 | 0 |
-| params | 8 | 1 | 3 | 4 | 0 |
+| params | 8 | 1 | 5 | 2 | 0 |
 | projection | 23 | 8 | 2 | 13 | 0 |
 | rmd | 4 | 2 | 2 | 0 | 0 |
 | rules | 5 | 0 | 1 | 4 | 0 |
@@ -192,4 +192,4 @@ The 25 earliest due dates are shown below (234 rules total); comparing dueOn to 
 
 ## Quote fidelity
 
-No committed ledger — run pnpm verify:quotes.
+No committed ledger — generate one with: pnpm verify:quotes -- --json > DOCS/operations/quote-fidelity-ledger.json (network required; see quote-fidelity.md).

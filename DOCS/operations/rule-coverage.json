@@ -46,8 +46,8 @@
     "totalFiles": 234,
     "byStatus": {
       "partial": 65,
-      "registered": 39,
-      "rule-free": 130,
+      "registered": 42,
+      "rule-free": 127,
       "unswept": 0
     },
     "sweptPct": 100,
@@ -394,8 +394,8 @@
       "files": 74,
       "byStatus": {
         "partial": 27,
-        "registered": 18,
-        "rule-free": 29
+        "registered": 19,
+        "rule-free": 28
       }
     },
     {
@@ -467,8 +467,8 @@
       "files": 8,
       "byStatus": {
         "partial": 1,
-        "registered": 3,
-        "rule-free": 4
+        "registered": 5,
+        "rule-free": 2
       }
     },
     {

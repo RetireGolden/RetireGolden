@@ -13,7 +13,7 @@ import committedMarkdown from '../../../../DOCS/operations/rule-coverage.md?raw'
 import { testSourcesInGlobShape } from '../../scripts/rules-coverage.mjs'
 
 // Vite requires the options to be inline object literals.
-const testSources = import.meta.glob('../**/*.test.ts', { query: '?raw', import: 'default', eager: true })
+const testSources = import.meta.glob('../**/*.test.{ts,mts,cts,tsx}', { query: '?raw', import: 'default', eager: true })
 const operationJsonSources = import.meta.glob('../../../../DOCS/operations/*.json', {
   query: '?raw',
   import: 'default',

@@ -143,11 +143,26 @@ function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
-function quoteFidelitySummary(ledger: string | null): CoverageReportManifest['quoteFidelity'] {
+function quoteFidelitySummary(
+  ledger: string | null,
+  expectedAuthorityEntryCount: number,
+): CoverageReportManifest['quoteFidelity'] {
   if (ledger === null) return { status: 'no-committed-ledger' }
   const parsed: unknown = JSON.parse(ledger)
   if (!isRecord(parsed) || typeof parsed.generatedAt !== 'string' || !isRecord(parsed.counts)) {
     throw new Error('quote-fidelity ledger must contain generatedAt and verdict counts')
+  }
+  if (typeof parsed.entryCount !== 'number' || !Number.isFinite(parsed.entryCount)) {
+    throw new Error('quote-fidelity ledger must contain a finite entryCount')
+  }
+  if (parsed.entryCount !== expectedAuthorityEntryCount) {
+    throw new Error(
+      'quote-fidelity ledger does not cover the whole registry (' +
+        parsed.entryCount +
+        ' entries vs ' +
+        expectedAuthorityEntryCount +
+        ' expected; filtered run or stale ledger)',
+    )
   }
   const counts: Record<string, number> = {}
   for (const [verdict, count] of Object.entries(parsed.counts)) {
@@ -254,7 +269,9 @@ function buildMarkdown(manifest: CoverageReportManifest): string {
     '',
   ]
   if ('status' in manifest.quoteFidelity) {
-    lines.push('No committed ledger — run pnpm verify:quotes.')
+    lines.push(
+      'No committed ledger — generate one with: pnpm verify:quotes -- --json > DOCS/operations/quote-fidelity-ledger.json (network required; see quote-fidelity.md).',
+    )
   } else {
     lines.push('Committed ledger generated at ' + manifest.quoteFidelity.generatedAt + '.')
     lines.push('', '| Verdict | Count |', '| --- | ---: |')
@@ -301,6 +318,10 @@ export function buildCoverageReport(input: CoverageReportInput): CoverageReport 
   }
   const totalFiles = attestationEntries.length
   const swept = totalFiles - unswept.length
+  const expectedAuthorityEntryCount = Object.values(input.registry).reduce(
+    (total, rule) => total + rule.authority.length,
+    0,
+  )
   const manifest: CoverageReportManifest = {
     kind: 'retiregolden.rules-coverage.manifest',
     version: 1,
@@ -324,7 +345,7 @@ export function buildCoverageReport(input: CoverageReportInput): CoverageReport 
     partial,
     directoryRollup: directoryRollup(input.attestations),
     rules,
-    quoteFidelity: quoteFidelitySummary(input.quoteFidelityLedger),
+    quoteFidelity: quoteFidelitySummary(input.quoteFidelityLedger, expectedAuthorityEntryCount),
   }
   return { manifest, markdown: buildMarkdown(manifest), json: JSON.stringify(manifest, null, 2) + '\n' }
 }
