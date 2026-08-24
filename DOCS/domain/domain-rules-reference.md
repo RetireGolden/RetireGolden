@@ -21,15 +21,14 @@ Four classifications:
 - `unsettled` — authority is absent or conflicting; the rejected reading is recorded in `contraryReading`.
 
 The split between `approximated` and `outOfScope` is the load-bearing one: "computes a knowably-wrong number" and
-"refuses to answer" are different risks to whoever consumes the result, and one field used to carry both. As of
-**2026-08-05** the registry holds 179 records — 130 settled, 36 approximated, 9 outOfScope, 4 unsettled; the
-registry itself is where those counts are current. Every record also carries a `jurisdiction`, which fixes the
-publisher tier its citations may be drawn from: a federal rule may cite only federal publishers, and a state rule
-may cite its own state's publishers plus the federal law its state code incorporates by reference — a state source
-may never carry a federal rule. Twenty-one records now carry a state jurisdiction, across twelve states
-(FL, IA, IL, ME, MO, ND, NV, NY, PA, SC, TX, WV); a state whose publisher tier has not been researched admits
-nothing at all, so the tier fails closed and the first record for a new state cannot be written until its
-publishers have been checked.
+"refuses to answer" are different risks to whoever consumes the result, and one field used to carry both. Current
+counts — total records, the classification split, and the per-state jurisdiction spread — live in the generated
+[operations/rule-coverage.md](../operations/rule-coverage.md) and are asserted against the registry at test time;
+this document deliberately states none, because dated prose counts rot. Every record also carries a `jurisdiction`,
+which fixes the publisher tier its citations may be drawn from: a federal rule may cite only federal publishers, and a
+state rule may cite its own state's publishers plus the federal law its state code incorporates by reference — a state
+source may never carry a federal rule; a state whose publisher tier has not been researched admits nothing at all, so
+the tier fails closed.
 
 ---
 
