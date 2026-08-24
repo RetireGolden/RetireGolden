@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
 import { asAccountId, asPersonId } from '../actions/identity.js'
-import { CASH_FLOW_RECONCILIATION_TOLERANCE_PLAN_DOLLARS } from './annualCashFlowCapture.js'
+import {
+  CASH_FLOW_CASH_IDENTITY_TOLERANCE_PLAN_DOLLARS,
+  CASH_FLOW_RECONCILIATION_TOLERANCE_PLAN_DOLLARS,
+} from './annualCashFlowCapture.js'
 import {
   finalizeYearCashFlow,
   reconcileYearCashFlow,
@@ -25,6 +28,7 @@ function reconcile(opts: {
   taxCharacterMetadata?: readonly YearCashFlowStandaloneTaxCharacter[]
   missingRequiredIdentityReports?: readonly { readonly lineIds: readonly string[] }[]
   collidingEncodedProducerSegments?: readonly string[]
+  cashIdentityTolerancePlanDollars?: number
 }) {
   return reconcileYearCashFlow({
     sourceLines: opts.sourceLines ?? [],
@@ -34,6 +38,7 @@ function reconcile(opts: {
     missingRequiredIdentityReports: opts.missingRequiredIdentityReports,
     collidingEncodedProducerSegments: opts.collidingEncodedProducerSegments,
     tolerancePlanDollars: TOLERANCE,
+    cashIdentityTolerancePlanDollars: opts.cashIdentityTolerancePlanDollars ?? TOLERANCE,
   })
 }
 
@@ -108,6 +113,7 @@ describe('reconcileYearCashFlow', () => {
     expect(result.reasonCodes).toEqual([])
     expect(result.diagnostics).toEqual([])
     expect(result.tolerancePlanDollars).toBe(1e-6)
+    expect(result.cashIdentityTolerancePlanDollars).toBe(TOLERANCE)
     expect(result.cash.sourceTotalPlanDollars).toBe(0)
     expect(result.cash.destinationTotalPlanDollars).toBe(0)
     expect(result.cash.differencePlanDollars).toBe(0)
@@ -131,15 +137,17 @@ describe('reconcileYearCashFlow', () => {
     expect(result.transfers.differencePlanDollars).toBe(0)
   })
 
-  it('fails closed on identity noise above 1e-6 and ignores 1e-7 association noise', () => {
+  it('supports an explicit strict cash override for direct reconciliation callers', () => {
     const noisy = reconcile({
       sourceLines: [propertySale(1e-7)],
+      cashIdentityTolerancePlanDollars: TOLERANCE,
     })
     expect(noisy.status).toBe('reconciled')
     expect(Math.abs(noisy.cash.differencePlanDollars)).toBe(1e-7)
 
     const mismatch = reconcile({
       sourceLines: [propertySale(1e-6 + 1e-12)],
+      cashIdentityTolerancePlanDollars: TOLERANCE,
     })
     expect(mismatch.status).toBe('notReconciled')
     expect(mismatch.reasonCodes).toContain('cashIdentityMismatch')
@@ -150,6 +158,63 @@ describe('reconcileYearCashFlow', () => {
         actualPlanDollars: 1e-6 + 1e-12,
       }),
     ])
+  })
+
+  it('preserves the strict single-tolerance contract when the cash override is omitted', () => {
+    const result = reconcileYearCashFlow({
+      sourceLines: [propertySale(0.004)],
+      useLines: [],
+      transferLines: [],
+      tolerancePlanDollars: TOLERANCE,
+    })
+    expect(result.cashIdentityTolerancePlanDollars).toBe(TOLERANCE)
+    expect(result.status).toBe('notReconciled')
+    expect(result.reasonCodes).toContain('cashIdentityMismatch')
+  })
+
+  it('accepts the funding solve half-cent cash residual without weakening structural checks', () => {
+    // Funding-root worksheet rule (simulate.ts): a solve is accepted when
+    // Math.abs(requiredNeed - need) <= EPSILON. Both exact +/- $0.005 cash
+    // boundaries must therefore remain graphable; > $0.005 must fail closed.
+    for (const boundary of [
+      { sourceLines: [propertySale(0.005)], useLines: [] },
+      { sourceLines: [], useLines: [surplusUse(0.005)] },
+    ]) {
+      const exactBoundary = reconcile({
+        ...boundary,
+        cashIdentityTolerancePlanDollars: CASH_FLOW_CASH_IDENTITY_TOLERANCE_PLAN_DOLLARS,
+      })
+      expect(exactBoundary.status).toBe('reconciled')
+      expect(Math.abs(exactBoundary.cash.differencePlanDollars)).toBe(0.005)
+    }
+
+    const cash = reconcile({
+      sourceLines: [propertySale(100)],
+      useLines: [surplusUse(100.004)],
+      cashIdentityTolerancePlanDollars: CASH_FLOW_CASH_IDENTITY_TOLERANCE_PLAN_DOLLARS,
+    })
+    expect(cash.status).toBe('reconciled')
+    expect(cash.cash.differencePlanDollars).toBeCloseTo(-0.004, 12)
+    expect(cash.cashIdentityTolerancePlanDollars).toBe(0.005)
+
+    const cashMismatch = reconcile({
+      sourceLines: [propertySale(100)],
+      useLines: [surplusUse(100.006)],
+      cashIdentityTolerancePlanDollars: CASH_FLOW_CASH_IDENTITY_TOLERANCE_PLAN_DOLLARS,
+    })
+    expect(cashMismatch.status).toBe('notReconciled')
+    expect(cashMismatch.reasonCodes).toContain('cashIdentityMismatch')
+
+    const transfer = reconcile({
+      transferLines: [{
+        ...reinvestedYield(100),
+        creditPlanDollars: 100.004,
+      }],
+      cashIdentityTolerancePlanDollars: CASH_FLOW_CASH_IDENTITY_TOLERANCE_PLAN_DOLLARS,
+    })
+    expect(transfer.status).toBe('notReconciled')
+    expect(transfer.reasonCodes).not.toContain('cashIdentityMismatch')
+    expect(transfer.reasonCodes).toContain('transferIdentityMismatch')
   })
 
   it('flags a duplicate published id once per colliding id and still publishes both lines', () => {
@@ -430,6 +495,7 @@ describe('finalizeYearCashFlow', () => {
       transferLines: [qcd],
       taxCharacterMetadata: [],
       tolerancePlanDollars: TOLERANCE,
+      cashIdentityTolerancePlanDollars: CASH_FLOW_CASH_IDENTITY_TOLERANCE_PLAN_DOLLARS,
     })
     expect(published.sourceLines.map((line) => line.id)).toEqual([
       'source:requiredMinimumDistribution:ownedIraPool:p1',
@@ -466,6 +532,7 @@ describe('finalizeYearCashFlow', () => {
       transferLines: [],
       taxCharacterMetadata: [],
       tolerancePlanDollars: TOLERANCE,
+      cashIdentityTolerancePlanDollars: CASH_FLOW_CASH_IDENTITY_TOLERANCE_PLAN_DOLLARS,
     })
     expect(published.sourceLines.map((line) => line.id)).toEqual([
       'source:propertySaleProceeds:prop1',

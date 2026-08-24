@@ -99,6 +99,17 @@ function assemble(overrides: Partial<AssembleYearCashFlowInput> = {}) {
 }
 
 describe('assembleYearCashFlow', () => {
+  it('fails closed on an unattributed sub-half-cent shortfall', () => {
+    const result = assemble({ shortfallAfterHecm: 0.004 })
+
+    // There is no use inventory to receive the shortfall. Cash still reads
+    // 0=0, so the structural missing-inventory diagnostic—not cash slack—must
+    // keep the year out of the graph.
+    expect(result.reconciliation.cash.differencePlanDollars).toBe(0)
+    expect(result.reconciliation.status).toBe('notReconciled')
+    expect(result.reconciliation.reasonCodes).toContain('missingRequiredIdentity')
+  })
+
   it('does not merge aggregate-conversion pairs whose raw NUL keys collide', () => {
     // Schema-valid IDs may contain NUL. Concatenating source + NUL + dest
     // maps both of these distinct pairs onto "a\0b\0c":

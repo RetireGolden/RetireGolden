@@ -10,6 +10,7 @@ import { MemoryRouter, useLocation, useNavigate } from 'react-router'
 
 import type { Plan } from '@retiregolden/engine/model/plan'
 import type { AccountId, PersonId } from '@retiregolden/engine/actions/identity'
+import { CASH_FLOW_CASH_IDENTITY_TOLERANCE_PLAN_DOLLARS } from '@retiregolden/engine/projection/annualCashFlowCapture'
 import type {
   YearCashFlow,
   YearCashFlowReconciliation,
@@ -28,6 +29,7 @@ function reconciled(): YearCashFlowReconciliation {
   return {
     status: 'reconciled',
     tolerancePlanDollars: 1e-6,
+    cashIdentityTolerancePlanDollars: CASH_FLOW_CASH_IDENTITY_TOLERANCE_PLAN_DOLLARS,
     cash: {
       spendableSourcesPlanDollars: 99_700,
       portfolioFundingPlanDollars: 400,

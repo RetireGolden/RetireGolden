@@ -45,7 +45,14 @@ export interface ReconcileYearCashFlowInput {
   readonly useLines: readonly YearCashFlowUseLine[]
   readonly transferLines: readonly YearCashFlowTransferLine[]
   readonly taxCharacterMetadata?: readonly YearCashFlowStandaloneTaxCharacter[]
+  /** Strict structural tolerance for line, use, transfer, and lineage checks. */
   readonly tolerancePlanDollars: number
+  /**
+   * Cash identity tolerance. Capture passes the annual funding solver's
+   * inclusive half-cent tolerance. Omitted values retain the caller's
+   * historical single-tolerance contract.
+   */
+  readonly cashIdentityTolerancePlanDollars?: number
   /**
    * Nonzero producers assemble omitted rather than synthesizing a grammar
    * identity. Empty `lineIds` is valid when even a partial id is unknown.
@@ -373,8 +380,10 @@ function sortByLineId<T extends { readonly id: string }>(lines: readonly T[]): T
  * Native-precision reconciliation for one assembled year. Empty published
  * arrays yield the 0=0 identities. Physical amounts must be nonnegative;
  * `capitalGain` metadata may be negative and never enters a money total.
- * Compare identity residuals with `Math.abs(difference) > tolerance`
- * (strict greater than).
+ * Cash identity compares with `cashIdentityTolerancePlanDollars`; use,
+ * transfer, and lineage checks compare with `tolerancePlanDollars`. Both use
+ * `Math.abs(difference) > tolerance` (strict greater than), so the boundary is
+ * accepted.
  */
 export function reconcileYearCashFlow(input: ReconcileYearCashFlowInput): YearCashFlowReconciliation {
   const sourceLines = input.sourceLines
@@ -382,6 +391,8 @@ export function reconcileYearCashFlow(input: ReconcileYearCashFlowInput): YearCa
   const transferLines = input.transferLines
   const taxCharacterMetadata = input.taxCharacterMetadata ?? []
   const { tolerancePlanDollars } = input
+  const cashIdentityTolerancePlanDollars =
+    input.cashIdentityTolerancePlanDollars ?? tolerancePlanDollars
   const cash = cashIdentity(sourceLines, useLines)
   const uses = useIdentity(useLines)
   const transfers = transferIdentity(transferLines)
@@ -558,7 +569,7 @@ export function reconcileYearCashFlow(input: ReconcileYearCashFlowInput): YearCa
   }
 
   // 6. cashIdentityMismatch
-  if (Math.abs(cash.differencePlanDollars) > tolerancePlanDollars) {
+  if (Math.abs(cash.differencePlanDollars) > cashIdentityTolerancePlanDollars) {
     push('cashIdentityMismatch', {
       lineIds: [],
       expectedPlanDollars: cash.destinationTotalPlanDollars,
@@ -613,6 +624,7 @@ export function reconcileYearCashFlow(input: ReconcileYearCashFlowInput): YearCa
   return {
     status: reasonCodes.length === 0 ? 'reconciled' : 'notReconciled',
     tolerancePlanDollars,
+    cashIdentityTolerancePlanDollars,
     cash,
     uses,
     transfers,
@@ -642,6 +654,7 @@ export function finalizeYearCashFlow(input: ReconcileYearCashFlowInput): YearCas
       transferLines,
       taxCharacterMetadata,
       tolerancePlanDollars: input.tolerancePlanDollars,
+      cashIdentityTolerancePlanDollars: input.cashIdentityTolerancePlanDollars,
       missingRequiredIdentityReports: input.missingRequiredIdentityReports,
       collidingEncodedProducerSegments: input.collidingEncodedProducerSegments,
     }),

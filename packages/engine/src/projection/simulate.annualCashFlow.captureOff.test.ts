@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { parsePlan, type Account, type IncomeStream, type Plan } from '../model/plan.js'
 import { singlePersonPlan } from '../testing/planFixtures.js'
 import { createFlatTaxCalculator } from './flatTax.js'
+import { ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS } from './moneyTolerance.js'
 import {
   simulatePlan,
   type CounterfactualAnnualLiabilityResult,
@@ -120,6 +121,8 @@ describe('SimulateOptions.captureAnnualCashFlow', () => {
     expect(year.cashFlow?.reconciliation.status).toBe('reconciled')
     expect(year.cashFlow?.reconciliation.reasonCodes).toEqual([])
     expect(year.cashFlow?.reconciliation.tolerancePlanDollars).toBe(1e-6)
+    expect(year.cashFlow?.reconciliation.cashIdentityTolerancePlanDollars)
+      .toBe(ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS)
   })
 
   it('reconciles a wages-only year once lifestyle uses land (stage 3)', () => {

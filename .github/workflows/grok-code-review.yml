@@ -15,10 +15,12 @@ on:
 permissions:
   contents: read
   pull-requests: write
+  statuses: write
+  checks: write
 
 jobs:
   review:
-    uses: RetireGolden/.github/.github/workflows/grok-code-review.yml@main
+    uses: RetireGolden/.github/.github/workflows/grok-code-review.yml@6de80588419f91e60cceb3382f34ac7ce3eb3c22
     with:
       pr_number: ${{ inputs.pr_number || github.event.inputs.pr_number || github.event.pull_request.number }}
     secrets:

@@ -119,6 +119,7 @@ import {
 } from '../strategies/accountEligibility.js'
 import { openIraProRataYear, splitIraDistribution, type IraProRataYear } from '../strategies/iraBasis.js'
 import { propertySaleTax } from '../tax/propertySale.js'
+import { ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS } from './moneyTolerance.js'
 import {
   aggregateBasisSale,
   type AggregateBasisSaleResult,
@@ -422,7 +423,7 @@ function annualPassValueBinding<T>(
   return { read, write }
 }
 
-const EPSILON = 0.005
+const EPSILON = ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS
 
 /**
  * Statutory rounding step for the cost-of-living adjustments under IRC 415(d),

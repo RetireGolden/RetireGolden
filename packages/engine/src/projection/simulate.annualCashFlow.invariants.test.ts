@@ -23,7 +23,10 @@ import {
   traditionalAccount,
 } from '../testing/planFixtures.js'
 import { compareCashFlowLineId } from './annualCashFlowIds.js'
-import { CASH_FLOW_RECONCILIATION_TOLERANCE_PLAN_DOLLARS } from './annualCashFlowCapture.js'
+import {
+  CASH_FLOW_CASH_IDENTITY_TOLERANCE_PLAN_DOLLARS,
+  CASH_FLOW_RECONCILIATION_TOLERANCE_PLAN_DOLLARS,
+} from './annualCashFlowCapture.js'
 import { createFlatTaxCalculator } from './flatTax.js'
 import { simulatePlan } from './simulate.js'
 import type {
@@ -182,7 +185,12 @@ function assertYearCashFlowInvariants(year: YearResult, planName: string): void 
 
   const { sourceLines, useLines, transferLines, taxCharacterMetadata, reconciliation } = cashFlow
   expect(reconciliation.tolerancePlanDollars).toBe(TOLERANCE)
+  expect(reconciliation.cashIdentityTolerancePlanDollars)
+    .toBe(CASH_FLOW_CASH_IDENTITY_TOLERANCE_PLAN_DOLLARS)
 
+  // These representative fixtures use a zero-tax calculator and do not need
+  // fixed-point slack; retain the strict capture regression even though the
+  // published production budget is the funding tolerance.
   expectWithinTolerance(reconciliation.cash.differencePlanDollars, 0, `${label} cash identity`)
   expectWithinTolerance(reconciliation.uses.differencePlanDollars, 0, `${label} use identity`)
   expectWithinTolerance(reconciliation.transfers.differencePlanDollars, 0, `${label} transfer pairing`)

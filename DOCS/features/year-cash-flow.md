@@ -184,7 +184,7 @@ an ordinal or owner. The year publishes `notReconciled` with `missingRequiredIde
 
 ## Conservation and failure contract
 
-At the engine's native floating-point precision, with the applied tolerance published in the
+At the engine's native floating-point precision, with the applied tolerances published in the
 reconciliation block, every report must satisfy:
 
 ```text
@@ -214,13 +214,20 @@ The transfer view also pairs debits and credits:
 transfer debits = transfer credits
 ```
 
-`YearCashFlowReconciliation` publishes both sides, their differences, the applied tolerance, paired
-transfer totals, a status of `reconciled` or `notReconciled`, reason codes, and exact diagnostics. Native
-precision means the engine's unrounded JavaScript numbers and its explicit floating-point tolerance;
-there is no cent rounding or display formatting in reconciliation. Currency formatting, today-dollar
-conversion, aggregation for legibility, and rounding-error presentation belong to the UI and are
-specified separately. Physical flow amounts are nonnegative. `capitalGain` tax-character metadata may
-be negative for a realized loss; tax-character metadata never enters a money total.
+`YearCashFlowReconciliation` publishes both sides, their differences, the applied tolerances, paired
+transfer totals, a status of `reconciled` or `notReconciled`, reason codes, and exact diagnostics.
+`tolerancePlanDollars` is the strict `1e-6` structural tolerance for use, transfer, and lineage checks.
+`cashIdentityTolerancePlanDollars` publishes the cash tolerance actually applied. Captured reports use
+`$0.005`, matching the annual tax/withdrawal funding fixed point's inclusive rule: a committed funding
+solution may retain a residual at or below half a cent, and the reporting view must not reject a result
+the ledger accepted. The half-cent value is one budget for the solved annual cash identity; it does not
+accumulate for each numerical guard that uses the shared constant. The distinct cash tolerance does not
+weaken use or transfer conservation. Native precision means the engine's unrounded JavaScript numbers
+and these explicit tolerances; there is no cent rounding or display formatting in reconciliation. Currency
+formatting, today-dollar conversion, aggregation for legibility, and rounding-error presentation belong
+to the UI and are specified separately. Physical flow amounts are nonnegative. `capitalGain`
+tax-character metadata may be negative for a realized loss; tax-character metadata never enters a money
+total.
 
 A failed year is still published so it can be diagnosed. It is not silently repaired with an “Other,”
 rounding plug, synthetic source, or synthetic owner. Any graphical consumer must refuse to graph a
