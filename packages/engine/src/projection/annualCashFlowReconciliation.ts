@@ -16,6 +16,7 @@
  */
 
 import { compareCashFlowLineId } from './annualCashFlowIds.js'
+import { ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS } from './moneyTolerance.js'
 import type {
   YearCashFlow,
   YearCashFlowCashIdentityTotals,
@@ -49,7 +50,8 @@ export interface ReconcileYearCashFlowInput {
   readonly tolerancePlanDollars: number
   /**
    * Cash identity tolerance. Capture passes the annual funding solver's
-   * half-cent tolerance; direct callers default to `tolerancePlanDollars`.
+   * inclusive half-cent tolerance; omitted values use that same production
+   * default rather than silently restoring the stricter structural threshold.
    */
   readonly cashIdentityTolerancePlanDollars?: number
   /**
@@ -379,8 +381,10 @@ function sortByLineId<T extends { readonly id: string }>(lines: readonly T[]): T
  * Native-precision reconciliation for one assembled year. Empty published
  * arrays yield the 0=0 identities. Physical amounts must be nonnegative;
  * `capitalGain` metadata may be negative and never enters a money total.
- * Compare identity residuals with `Math.abs(difference) > tolerance`
- * (strict greater than).
+ * Cash identity compares with `cashIdentityTolerancePlanDollars`; use,
+ * transfer, and lineage checks compare with `tolerancePlanDollars`. Both use
+ * `Math.abs(difference) > tolerance` (strict greater than), so the boundary is
+ * accepted.
  */
 export function reconcileYearCashFlow(input: ReconcileYearCashFlowInput): YearCashFlowReconciliation {
   const sourceLines = input.sourceLines
@@ -389,7 +393,7 @@ export function reconcileYearCashFlow(input: ReconcileYearCashFlowInput): YearCa
   const taxCharacterMetadata = input.taxCharacterMetadata ?? []
   const { tolerancePlanDollars } = input
   const cashIdentityTolerancePlanDollars =
-    input.cashIdentityTolerancePlanDollars ?? tolerancePlanDollars
+    input.cashIdentityTolerancePlanDollars ?? ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS
   const cash = cashIdentity(sourceLines, useLines)
   const uses = useIdentity(useLines)
   const transfers = transferIdentity(transferLines)

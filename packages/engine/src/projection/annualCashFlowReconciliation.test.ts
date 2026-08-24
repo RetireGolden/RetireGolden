@@ -113,7 +113,8 @@ describe('reconcileYearCashFlow', () => {
     expect(result.reasonCodes).toEqual([])
     expect(result.diagnostics).toEqual([])
     expect(result.tolerancePlanDollars).toBe(1e-6)
-    expect(result.cashIdentityTolerancePlanDollars).toBe(1e-6)
+    expect(result.cashIdentityTolerancePlanDollars)
+      .toBe(CASH_FLOW_CASH_IDENTITY_TOLERANCE_PLAN_DOLLARS)
     expect(result.cash.sourceTotalPlanDollars).toBe(0)
     expect(result.cash.destinationTotalPlanDollars).toBe(0)
     expect(result.cash.differencePlanDollars).toBe(0)
@@ -137,15 +138,17 @@ describe('reconcileYearCashFlow', () => {
     expect(result.transfers.differencePlanDollars).toBe(0)
   })
 
-  it('fails closed on identity noise above 1e-6 and ignores 1e-7 association noise', () => {
+  it('supports an explicit strict cash override for direct reconciliation callers', () => {
     const noisy = reconcile({
       sourceLines: [propertySale(1e-7)],
+      cashIdentityTolerancePlanDollars: TOLERANCE,
     })
     expect(noisy.status).toBe('reconciled')
     expect(Math.abs(noisy.cash.differencePlanDollars)).toBe(1e-7)
 
     const mismatch = reconcile({
       sourceLines: [propertySale(1e-6 + 1e-12)],
+      cashIdentityTolerancePlanDollars: TOLERANCE,
     })
     expect(mismatch.status).toBe('notReconciled')
     expect(mismatch.reasonCodes).toContain('cashIdentityMismatch')
@@ -159,6 +162,21 @@ describe('reconcileYearCashFlow', () => {
   })
 
   it('accepts the funding solve half-cent cash residual without weakening structural checks', () => {
+    // Funding-root worksheet rule (simulate.ts): a solve is accepted when
+    // Math.abs(requiredNeed - need) <= EPSILON. Both exact +/- $0.005 cash
+    // boundaries must therefore remain graphable; > $0.005 must fail closed.
+    for (const boundary of [
+      { sourceLines: [propertySale(0.005)], useLines: [] },
+      { sourceLines: [], useLines: [surplusUse(0.005)] },
+    ]) {
+      const exactBoundary = reconcile({
+        ...boundary,
+        cashIdentityTolerancePlanDollars: CASH_FLOW_CASH_IDENTITY_TOLERANCE_PLAN_DOLLARS,
+      })
+      expect(exactBoundary.status).toBe('reconciled')
+      expect(Math.abs(exactBoundary.cash.differencePlanDollars)).toBe(0.005)
+    }
+
     const cash = reconcile({
       sourceLines: [propertySale(100)],
       useLines: [surplusUse(100.004)],
@@ -466,6 +484,7 @@ describe('finalizeYearCashFlow', () => {
       transferLines: [qcd],
       taxCharacterMetadata: [],
       tolerancePlanDollars: TOLERANCE,
+      cashIdentityTolerancePlanDollars: CASH_FLOW_CASH_IDENTITY_TOLERANCE_PLAN_DOLLARS,
     })
     expect(published.sourceLines.map((line) => line.id)).toEqual([
       'source:requiredMinimumDistribution:ownedIraPool:p1',
@@ -502,6 +521,7 @@ describe('finalizeYearCashFlow', () => {
       transferLines: [],
       taxCharacterMetadata: [],
       tolerancePlanDollars: TOLERANCE,
+      cashIdentityTolerancePlanDollars: CASH_FLOW_CASH_IDENTITY_TOLERANCE_PLAN_DOLLARS,
     })
     expect(published.sourceLines.map((line) => line.id)).toEqual([
       'source:propertySaleProceeds:prop1',

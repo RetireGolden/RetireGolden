@@ -5,8 +5,8 @@
  * lines, then runs the full cash/use/transfer checker. Assemble still runs
  * on every capture-on committed year so `yearResult` shape is stable
  * (`cashFlow` present iff the option is on). Leftover remaining after the
- * contribution group is not plugged; the cash identity then fails closed
- * with `cashIdentityMismatch`.
+ * contribution group is not plugged. Cash identity accepts the funding
+ * solver's inclusive half-cent residual and fails closed above it.
  *
  * @see DOCS/features/year-cash-flow.md
  */
@@ -990,8 +990,9 @@ function collectUseLines(
     shortfallAfterHecm: input.shortfallAfterHecm,
   })
   const fundingById = new Map(attributed.lines.map((row) => [row.id, row]))
-  // leftover remaining after contributions is not plugged; recon then
-  // cashIdentityMismatch when destination funded exceeds sources.
+  // Leftover remaining after contributions is not plugged. Reconciliation
+  // accepts the funding solve's inclusive half-cent residual, then reports
+  // cashIdentityMismatch when destination funding exceeds that budget.
 
   const useLines: YearCashFlowUseLine[] = []
   for (const row of pending) {

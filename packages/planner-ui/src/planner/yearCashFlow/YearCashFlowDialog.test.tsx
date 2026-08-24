@@ -32,6 +32,7 @@ function reconciled(overrides: Partial<YearCashFlowReconciliation> = {}): YearCa
   return {
     status: 'reconciled',
     tolerancePlanDollars: 1e-6,
+    cashIdentityTolerancePlanDollars: 0.005,
     cash: {
       spendableSourcesPlanDollars: 99_800,
       portfolioFundingPlanDollars: 400,

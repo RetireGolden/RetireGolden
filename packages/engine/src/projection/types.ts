@@ -1837,7 +1837,7 @@ export interface YearCashFlowReconciliation {
   /** Strict structural tolerance for line, use, transfer, and lineage checks. */
   readonly tolerancePlanDollars: number
   /** Cash conservation tolerance, aligned with the annual funding fixed point. */
-  readonly cashIdentityTolerancePlanDollars?: number
+  readonly cashIdentityTolerancePlanDollars: number
   readonly cash: Readonly<YearCashFlowCashIdentityTotals>
   readonly uses: Readonly<YearCashFlowUseIdentityTotals>
   readonly transfers: Readonly<YearCashFlowTransferIdentityTotals>

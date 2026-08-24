@@ -31,6 +31,7 @@ function reconciled(): YearCashFlowReconciliation {
   return {
     status: 'reconciled',
     tolerancePlanDollars: 1e-6,
+    cashIdentityTolerancePlanDollars: 0.005,
     cash: {
       spendableSourcesPlanDollars: 50_000,
       portfolioFundingPlanDollars: 35_000,

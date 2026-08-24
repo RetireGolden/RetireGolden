@@ -188,17 +188,17 @@ function assertYearCashFlowInvariants(year: YearResult, planName: string): void 
   expect(reconciliation.cashIdentityTolerancePlanDollars)
     .toBe(CASH_FLOW_CASH_IDENTITY_TOLERANCE_PLAN_DOLLARS)
 
-  expect(Math.abs(reconciliation.cash.differencePlanDollars), `${label} cash identity`)
-    .toBeLessThanOrEqual(CASH_FLOW_CASH_IDENTITY_TOLERANCE_PLAN_DOLLARS)
+  // These representative fixtures use a zero-tax calculator and do not need
+  // fixed-point slack; retain the strict capture regression even though the
+  // published production budget is the funding tolerance.
+  expectWithinTolerance(reconciliation.cash.differencePlanDollars, 0, `${label} cash identity`)
   expectWithinTolerance(reconciliation.uses.differencePlanDollars, 0, `${label} use identity`)
   expectWithinTolerance(reconciliation.transfers.differencePlanDollars, 0, `${label} transfer pairing`)
-  expect(
-    Math.abs(
-      reconciliation.cash.sourceTotalPlanDollars -
-      reconciliation.cash.destinationTotalPlanDollars,
-    ),
+  expectWithinTolerance(
+    reconciliation.cash.sourceTotalPlanDollars,
+    reconciliation.cash.destinationTotalPlanDollars,
     `${label} cash source vs destination`,
-  ).toBeLessThanOrEqual(CASH_FLOW_CASH_IDENTITY_TOLERANCE_PLAN_DOLLARS)
+  )
   expectWithinTolerance(
     reconciliation.uses.requestedUsesPlanDollars,
     reconciliation.uses.dispositionTotalPlanDollars,
