@@ -1834,8 +1834,10 @@ export interface YearCashFlowReconciliationDiagnostic {
  */
 export interface YearCashFlowReconciliation {
   readonly status: 'reconciled' | 'notReconciled'
-  /** Applied engine floating-point tolerance; no display rounding participates. */
+  /** Strict structural tolerance for line, use, transfer, and lineage checks. */
   readonly tolerancePlanDollars: number
+  /** Cash conservation tolerance, aligned with the annual funding fixed point. */
+  readonly cashIdentityTolerancePlanDollars?: number
   readonly cash: Readonly<YearCashFlowCashIdentityTotals>
   readonly uses: Readonly<YearCashFlowUseIdentityTotals>
   readonly transfers: Readonly<YearCashFlowTransferIdentityTotals>

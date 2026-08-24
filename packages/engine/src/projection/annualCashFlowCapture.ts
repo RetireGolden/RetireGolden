@@ -23,6 +23,7 @@ import type { AccountId, PersonId } from '../actions/identity.js'
 import type { EmployerElectiveAllocation } from './employerRothCatchUp.js'
 import { cashFlowLineIds, compareCashFlowLineId } from './annualCashFlowIds.js'
 import type { AggregateBasisSaleResult } from '../tax/aggregateBasisSale.js'
+import { ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS } from './moneyTolerance.js'
 import {
   finalizeYearCashFlow,
   type MissingRequiredIdentityReport,
@@ -52,12 +53,15 @@ import type {
 } from './types.js'
 
 /**
- * Applied engine floating-point tolerance for both conservation identities.
- * Not display rounding, not funding `EPSILON` (0.005), not Monte Carlo
- * `SHORTFALL_EPSILON` (0.5). Compare with `Math.abs(difference) > tolerance`
- * (strict greater than).
+ * Strict structural tolerance for use, transfer, and lineage checks. Cash
+ * conservation separately follows the annual funding tolerance below.
+ * Compare with `Math.abs(difference) > tolerance` (strict greater than).
  */
 export const CASH_FLOW_RECONCILIATION_TOLERANCE_PLAN_DOLLARS = 1e-6
+
+/** Cash conservation follows the annual funding solve's accepted half-cent residual. */
+export const CASH_FLOW_CASH_IDENTITY_TOLERANCE_PLAN_DOLLARS =
+  ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS
 
 export type AnnualCashFlowPenaltySnapshot =
   | {
@@ -1481,5 +1485,6 @@ export function assembleYearCashFlow(input: AssembleYearCashFlowInput): YearCash
     missingRequiredIdentityReports,
     collidingEncodedProducerSegments: input.collidingEncodedProducerSegments,
     tolerancePlanDollars: CASH_FLOW_RECONCILIATION_TOLERANCE_PLAN_DOLLARS,
+    cashIdentityTolerancePlanDollars: CASH_FLOW_CASH_IDENTITY_TOLERANCE_PLAN_DOLLARS,
   })
 }

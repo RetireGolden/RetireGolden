@@ -120,6 +120,7 @@ describe('SimulateOptions.captureAnnualCashFlow', () => {
     expect(year.cashFlow?.reconciliation.status).toBe('reconciled')
     expect(year.cashFlow?.reconciliation.reasonCodes).toEqual([])
     expect(year.cashFlow?.reconciliation.tolerancePlanDollars).toBe(1e-6)
+    expect(year.cashFlow?.reconciliation.cashIdentityTolerancePlanDollars).toBe(0.005)
   })
 
   it('reconciles a wages-only year once lifestyle uses land (stage 3)', () => {

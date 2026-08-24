@@ -23,7 +23,10 @@ import {
   traditionalAccount,
 } from '../testing/planFixtures.js'
 import { compareCashFlowLineId } from './annualCashFlowIds.js'
-import { CASH_FLOW_RECONCILIATION_TOLERANCE_PLAN_DOLLARS } from './annualCashFlowCapture.js'
+import {
+  CASH_FLOW_CASH_IDENTITY_TOLERANCE_PLAN_DOLLARS,
+  CASH_FLOW_RECONCILIATION_TOLERANCE_PLAN_DOLLARS,
+} from './annualCashFlowCapture.js'
 import { createFlatTaxCalculator } from './flatTax.js'
 import { simulatePlan } from './simulate.js'
 import type {
@@ -182,15 +185,20 @@ function assertYearCashFlowInvariants(year: YearResult, planName: string): void 
 
   const { sourceLines, useLines, transferLines, taxCharacterMetadata, reconciliation } = cashFlow
   expect(reconciliation.tolerancePlanDollars).toBe(TOLERANCE)
+  expect(reconciliation.cashIdentityTolerancePlanDollars)
+    .toBe(CASH_FLOW_CASH_IDENTITY_TOLERANCE_PLAN_DOLLARS)
 
-  expectWithinTolerance(reconciliation.cash.differencePlanDollars, 0, `${label} cash identity`)
+  expect(Math.abs(reconciliation.cash.differencePlanDollars), `${label} cash identity`)
+    .toBeLessThanOrEqual(CASH_FLOW_CASH_IDENTITY_TOLERANCE_PLAN_DOLLARS)
   expectWithinTolerance(reconciliation.uses.differencePlanDollars, 0, `${label} use identity`)
   expectWithinTolerance(reconciliation.transfers.differencePlanDollars, 0, `${label} transfer pairing`)
-  expectWithinTolerance(
-    reconciliation.cash.sourceTotalPlanDollars,
-    reconciliation.cash.destinationTotalPlanDollars,
+  expect(
+    Math.abs(
+      reconciliation.cash.sourceTotalPlanDollars -
+      reconciliation.cash.destinationTotalPlanDollars,
+    ),
     `${label} cash source vs destination`,
-  )
+  ).toBeLessThanOrEqual(CASH_FLOW_CASH_IDENTITY_TOLERANCE_PLAN_DOLLARS)
   expectWithinTolerance(
     reconciliation.uses.requestedUsesPlanDollars,
     reconciliation.uses.dispositionTotalPlanDollars,

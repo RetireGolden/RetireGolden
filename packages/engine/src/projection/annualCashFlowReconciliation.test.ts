@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
 import { asAccountId, asPersonId } from '../actions/identity.js'
-import { CASH_FLOW_RECONCILIATION_TOLERANCE_PLAN_DOLLARS } from './annualCashFlowCapture.js'
+import {
+  CASH_FLOW_CASH_IDENTITY_TOLERANCE_PLAN_DOLLARS,
+  CASH_FLOW_RECONCILIATION_TOLERANCE_PLAN_DOLLARS,
+} from './annualCashFlowCapture.js'
 import {
   finalizeYearCashFlow,
   reconcileYearCashFlow,
@@ -25,6 +28,7 @@ function reconcile(opts: {
   taxCharacterMetadata?: readonly YearCashFlowStandaloneTaxCharacter[]
   missingRequiredIdentityReports?: readonly { readonly lineIds: readonly string[] }[]
   collidingEncodedProducerSegments?: readonly string[]
+  cashIdentityTolerancePlanDollars?: number
 }) {
   return reconcileYearCashFlow({
     sourceLines: opts.sourceLines ?? [],
@@ -34,6 +38,7 @@ function reconcile(opts: {
     missingRequiredIdentityReports: opts.missingRequiredIdentityReports,
     collidingEncodedProducerSegments: opts.collidingEncodedProducerSegments,
     tolerancePlanDollars: TOLERANCE,
+    cashIdentityTolerancePlanDollars: opts.cashIdentityTolerancePlanDollars,
   })
 }
 
@@ -108,6 +113,7 @@ describe('reconcileYearCashFlow', () => {
     expect(result.reasonCodes).toEqual([])
     expect(result.diagnostics).toEqual([])
     expect(result.tolerancePlanDollars).toBe(1e-6)
+    expect(result.cashIdentityTolerancePlanDollars).toBe(1e-6)
     expect(result.cash.sourceTotalPlanDollars).toBe(0)
     expect(result.cash.destinationTotalPlanDollars).toBe(0)
     expect(result.cash.differencePlanDollars).toBe(0)
@@ -150,6 +156,36 @@ describe('reconcileYearCashFlow', () => {
         actualPlanDollars: 1e-6 + 1e-12,
       }),
     ])
+  })
+
+  it('accepts the funding solve half-cent cash residual without weakening structural checks', () => {
+    const cash = reconcile({
+      sourceLines: [propertySale(100)],
+      useLines: [surplusUse(100.004)],
+      cashIdentityTolerancePlanDollars: CASH_FLOW_CASH_IDENTITY_TOLERANCE_PLAN_DOLLARS,
+    })
+    expect(cash.status).toBe('reconciled')
+    expect(cash.cash.differencePlanDollars).toBeCloseTo(-0.004, 12)
+    expect(cash.cashIdentityTolerancePlanDollars).toBe(0.005)
+
+    const cashMismatch = reconcile({
+      sourceLines: [propertySale(100)],
+      useLines: [surplusUse(100.006)],
+      cashIdentityTolerancePlanDollars: CASH_FLOW_CASH_IDENTITY_TOLERANCE_PLAN_DOLLARS,
+    })
+    expect(cashMismatch.status).toBe('notReconciled')
+    expect(cashMismatch.reasonCodes).toContain('cashIdentityMismatch')
+
+    const transfer = reconcile({
+      transferLines: [{
+        ...reinvestedYield(100),
+        creditPlanDollars: 100.004,
+      }],
+      cashIdentityTolerancePlanDollars: CASH_FLOW_CASH_IDENTITY_TOLERANCE_PLAN_DOLLARS,
+    })
+    expect(transfer.status).toBe('notReconciled')
+    expect(transfer.reasonCodes).not.toContain('cashIdentityMismatch')
+    expect(transfer.reasonCodes).toContain('transferIdentityMismatch')
   })
 
   it('flags a duplicate published id once per colliding id and still publishes both lines', () => {
