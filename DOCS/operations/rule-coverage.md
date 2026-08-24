@@ -53,9 +53,9 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | Engine source files | 234 |
 | Swept | 100.0% |
 | Grandfathered unswept baseline | 0 |
-| partial | 65 |
+| partial | 66 |
 | registered | 42 |
-| rule-free | 127 |
+| rule-free | 126 |
 | unswept | 0 |
 
 ## Per-directory rollup
@@ -66,7 +66,7 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | actions | 74 | 27 | 19 | 28 | 0 |
 | allocation | 1 | 0 | 0 | 1 | 0 |
 | decisions | 19 | 5 | 0 | 14 | 0 |
-| insights | 22 | 1 | 1 | 20 | 0 |
+| insights | 22 | 2 | 1 | 19 | 0 |
 | internal | 9 | 2 | 2 | 5 | 0 |
 | ladder | 4 | 2 | 0 | 2 | 0 |
 | longevity | 2 | 1 | 0 | 1 | 0 |
@@ -124,6 +124,7 @@ None.
 | decisions/objectives.ts | 2026-08-24 | Age-73 pre-RMD bridge heuristic; no record |
 | decisions/pensionElection.ts | 2026-08-24 | Tax-free direct rollover into traditional IRA; no record |
 | decisions/rothConversionCandidateAdapter.ts | 2026-08-24 | Same-owner Roth destination/date gate; no record |
+| insights/detectors/rothBridgeHeadroom.ts | 2026-08-24 | treats every 73+ person as post-RMD; applicable age is cohort-dependent (73 or 75, rmd/applicableAge) — detector should consume the registered helper; no record names this file |
 | insights/detectors/ssClaimMilestone.ts | 2026-08-24 | Re-derives SS entitlement/eligibility (former-spouse gates, family max, payable months) beyond registry gaps for maritalBenefits/nra |
 | internal/ownedNonRothIraAnnualAttemptSettlement.ts | 2026-08-24 | 408(d)(3)(A)(i) same-owner conversion identity; no record |
 | internal/ownedNonRothIraRuntimeSourceSeries.ts | 2026-08-24 | Records cover QCD and annuity aggregation; residual 408(d)(3)(A)(i) same-owner conversion, 408(d)(3)(C) inherited-rollover bar, and RMD-before-conversion ordering |
@@ -160,7 +161,7 @@ None.
 
 ## Re-verification due dates
 
-The 25 earliest due dates are shown below (234 rules total); comparing dueOn to today is the rules:due script’s job so this page stays deterministic.
+The 25 earliest due dates are shown below (234 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; the planned rules:due runner (change-loop workstream) will flag overdue rules, and taxRulesDueForVerification() from @retiregolden/engine/rules answers the question programmatically today.
 
 | Rule | Volatility | Verified on | Due on |
 | --- | --- | --- | --- |

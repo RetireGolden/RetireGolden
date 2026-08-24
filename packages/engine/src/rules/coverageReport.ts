@@ -256,7 +256,7 @@ function buildMarkdown(manifest: CoverageReportManifest): string {
     '## Re-verification due dates',
     '',
     'The 25 earliest due dates are shown below (' + manifest.rules.length +
-      ' rules total); comparing dueOn to today is the rules:due script’s job so this page stays deterministic.',
+      ' rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; the planned rules:due runner (change-loop workstream) will flag overdue rules, and taxRulesDueForVerification() from @retiregolden/engine/rules answers the question programmatically today.',
     '',
     '| Rule | Volatility | Verified on | Due on |',
     '| --- | --- | --- | --- |',

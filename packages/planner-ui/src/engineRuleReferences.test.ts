@@ -8,7 +8,7 @@ import { describe, expect, it } from 'vitest'
 import { taxRuleIds } from '@retiregolden/engine/rules'
 
 // Vite requires the options to be an inline object literal.
-const packageSources = import.meta.glob('./**/*.{ts,tsx}', { query: '?raw', import: 'default', eager: true })
+const packageSources = import.meta.glob('./**/*.{ts,tsx,mts,cts}', { query: '?raw', import: 'default', eager: true })
 
 const SELF = 'engineRuleReferences.test.ts'
 const registeredRuleIds = new Set<string>(taxRuleIds)

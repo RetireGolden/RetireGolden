@@ -127,7 +127,7 @@ export const COVERAGE_ATTESTATIONS: Readonly<Record<string, CoverageAttestation>
   'insights/detectors/missingDataBasis.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'insights/detectors/pensionElectionPending.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'insights/detectors/qcdEfficiency.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
-  'insights/detectors/rothBridgeHeadroom.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
+  'insights/detectors/rothBridgeHeadroom.ts': Object.freeze({ status: 'partial', sweptOn: '2026-08-24', note: 'treats every 73+ person as post-RMD; applicable age is cohort-dependent (73 or 75, rmd/applicableAge) — detector should consume the registered helper; no record names this file' }),
   'insights/detectors/spendingGuardrails.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'insights/detectors/spendingHeadroom.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'insights/detectors/ssBridgeGap.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),

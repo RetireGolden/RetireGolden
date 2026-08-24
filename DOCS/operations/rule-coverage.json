@@ -45,9 +45,9 @@
   "attestations": {
     "totalFiles": 234,
     "byStatus": {
-      "partial": 65,
+      "partial": 66,
       "registered": 42,
-      "rule-free": 127,
+      "rule-free": 126,
       "unswept": 0
     },
     "sweptPct": 100,
@@ -214,6 +214,11 @@
       "path": "decisions/rothConversionCandidateAdapter.ts",
       "sweptOn": "2026-08-24",
       "note": "Same-owner Roth destination/date gate; no record"
+    },
+    {
+      "path": "insights/detectors/rothBridgeHeadroom.ts",
+      "sweptOn": "2026-08-24",
+      "note": "treats every 73+ person as post-RMD; applicable age is cohort-dependent (73 or 75, rmd/applicableAge) — detector should consume the registered helper; no record names this file"
     },
     {
       "path": "insights/detectors/ssClaimMilestone.ts",
@@ -417,9 +422,9 @@
       "directory": "insights",
       "files": 22,
       "byStatus": {
-        "partial": 1,
+        "partial": 2,
         "registered": 1,
-        "rule-free": 20
+        "rule-free": 19
       }
     },
     {
