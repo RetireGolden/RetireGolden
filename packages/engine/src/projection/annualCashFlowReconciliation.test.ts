@@ -38,7 +38,7 @@ function reconcile(opts: {
     missingRequiredIdentityReports: opts.missingRequiredIdentityReports,
     collidingEncodedProducerSegments: opts.collidingEncodedProducerSegments,
     tolerancePlanDollars: TOLERANCE,
-    cashIdentityTolerancePlanDollars: opts.cashIdentityTolerancePlanDollars,
+    cashIdentityTolerancePlanDollars: opts.cashIdentityTolerancePlanDollars ?? TOLERANCE,
   })
 }
 
@@ -113,8 +113,7 @@ describe('reconcileYearCashFlow', () => {
     expect(result.reasonCodes).toEqual([])
     expect(result.diagnostics).toEqual([])
     expect(result.tolerancePlanDollars).toBe(1e-6)
-    expect(result.cashIdentityTolerancePlanDollars)
-      .toBe(CASH_FLOW_CASH_IDENTITY_TOLERANCE_PLAN_DOLLARS)
+    expect(result.cashIdentityTolerancePlanDollars).toBe(TOLERANCE)
     expect(result.cash.sourceTotalPlanDollars).toBe(0)
     expect(result.cash.destinationTotalPlanDollars).toBe(0)
     expect(result.cash.differencePlanDollars).toBe(0)
@@ -159,6 +158,18 @@ describe('reconcileYearCashFlow', () => {
         actualPlanDollars: 1e-6 + 1e-12,
       }),
     ])
+  })
+
+  it('preserves the strict single-tolerance contract when the cash override is omitted', () => {
+    const result = reconcileYearCashFlow({
+      sourceLines: [propertySale(0.004)],
+      useLines: [],
+      transferLines: [],
+      tolerancePlanDollars: TOLERANCE,
+    })
+    expect(result.cashIdentityTolerancePlanDollars).toBe(TOLERANCE)
+    expect(result.status).toBe('notReconciled')
+    expect(result.reasonCodes).toContain('cashIdentityMismatch')
   })
 
   it('accepts the funding solve half-cent cash residual without weakening structural checks', () => {

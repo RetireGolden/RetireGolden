@@ -16,7 +16,6 @@
  */
 
 import { compareCashFlowLineId } from './annualCashFlowIds.js'
-import { ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS } from './moneyTolerance.js'
 import type {
   YearCashFlow,
   YearCashFlowCashIdentityTotals,
@@ -50,8 +49,8 @@ export interface ReconcileYearCashFlowInput {
   readonly tolerancePlanDollars: number
   /**
    * Cash identity tolerance. Capture passes the annual funding solver's
-   * inclusive half-cent tolerance; omitted values use that same production
-   * default rather than silently restoring the stricter structural threshold.
+   * inclusive half-cent tolerance. Omitted values retain the caller's
+   * historical single-tolerance contract.
    */
   readonly cashIdentityTolerancePlanDollars?: number
   /**
@@ -393,7 +392,7 @@ export function reconcileYearCashFlow(input: ReconcileYearCashFlowInput): YearCa
   const taxCharacterMetadata = input.taxCharacterMetadata ?? []
   const { tolerancePlanDollars } = input
   const cashIdentityTolerancePlanDollars =
-    input.cashIdentityTolerancePlanDollars ?? ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS
+    input.cashIdentityTolerancePlanDollars ?? tolerancePlanDollars
   const cash = cashIdentity(sourceLines, useLines)
   const uses = useIdentity(useLines)
   const transfers = transferIdentity(transferLines)

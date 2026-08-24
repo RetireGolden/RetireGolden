@@ -990,9 +990,14 @@ function collectUseLines(
     shortfallAfterHecm: input.shortfallAfterHecm,
   })
   const fundingById = new Map(attributed.lines.map((row) => [row.id, row]))
-  // Leftover remaining after contributions is not plugged. Reconciliation
-  // accepts the funding solve's inclusive half-cent residual, then reports
-  // cashIdentityMismatch when destination funding exceeds that budget.
+  if (attributed.remainingUnattributed > CASH_FLOW_RECONCILIATION_TOLERANCE_PLAN_DOLLARS) {
+    // An unattributed shortfall is an incomplete use inventory, not funding
+    // fixed-point residue. Fail closed even when the hole is below half a cent.
+    missingRequiredIdentityReports.push({ lineIds: [] })
+  }
+  // Leftover remaining is never plugged. Separately, the complete cash
+  // identity accepts either sign of solved residual through the inclusive
+  // half-cent budget and fails closed outside it.
 
   const useLines: YearCashFlowUseLine[] = []
   for (const row of pending) {
