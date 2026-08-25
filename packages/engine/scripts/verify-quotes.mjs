@@ -1083,7 +1083,10 @@ async function main() {
   // Positionals are allowed because `pnpm verify:quotes --filter x` (or the
   // npm-style `-- --filter x`) may forward only the bare value; a lone
   // positional is then treated as the filter rather than crashing the run.
+  const args = process.argv.slice(2)
+  while (args[0] === '--') args.shift()
   const { values, positionals } = parseArgs({
+    args,
     allowPositionals: true,
     options: {
       filter: { type: 'string' },

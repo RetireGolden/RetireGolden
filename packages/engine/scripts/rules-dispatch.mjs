@@ -1,30 +1,18 @@
-import { existsSync, readFileSync, writeFileSync } from 'node:fs'
-import { dirname, join, resolve } from 'node:path'
-import { fileURLToPath, pathToFileURL } from 'node:url'
+import { existsSync, readdirSync, unlinkSync, writeFileSync } from 'node:fs'
+import { basename, dirname, join, resolve } from 'node:path'
 import { parseArgs } from 'node:util'
 import { testSourcesInGlobShape } from './rules-coverage.mjs'
+import { loadModule, stripLeadingSeparators, todayUtcIso, validateAsOf } from './rule-tooling-shared.mjs'
 
-const scriptDir = dirname(fileURLToPath(import.meta.url))
-const engineDir = resolve(scriptDir, '..')
-const repositoryDir = resolve(engineDir, '..', '..')
-const sourceDir = join(engineDir, 'src')
-const rulesDir = join(sourceDir, 'rules')
+const HELP = `Usage: pnpm rules:dispatch [-- --rule <id>[,<id>...]] [--due] [--as-of YYYY-MM-DD] [--out <path>] [--chunk-size N]
 
-async function loadModule(name) {
-  const path = join(rulesDir, name)
-  return import(pathToFileURL(path).href)
-}
-
-function todayUtcIso() {
-  return new Date().toISOString().slice(0, 10)
-}
-
-function validateAsOf(asOf) {
-  if (new Date(asOf + 'T00:00:00Z').toISOString().slice(0, 10) !== asOf) {
-    console.error('Invalid --as-of date: ' + asOf)
-    process.exit(1)
-  }
-}
+  --rule <id>      Rule id to dispatch (repeatable; comma-separated lists union)
+  --due            Include every rule due as of --as-of
+  --as-of <date>   As-of calendar date (default: today UTC)
+  --out <path>     Write handoff markdown to this path (numbered when chunked)
+  --chunk-size <n> Rules per handoff file when --out is set (default: 8)
+  --help           Show this message and exit 0
+`
 
 function splitOutPath(outPath) {
   const lastDot = outPath.lastIndexOf('.')
@@ -38,6 +26,24 @@ function splitOutPath(outPath) {
 function numberedOutPath(outPath, index) {
   const { base, ext } = splitOutPath(outPath)
   return base + '-' + index + ext
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&')
+}
+
+function deleteStaleNumberedSiblings(outPath) {
+  const { base, ext } = splitOutPath(outPath)
+  const dir = dirname(resolve(outPath))
+  const fileBase = basename(base)
+  const pattern = new RegExp('^' + escapeRegExp(fileBase + '-') + '\\d+' + escapeRegExp(ext) + '$')
+  for (const name of readdirSync(dir)) {
+    if (pattern.test(name)) {
+      const full = join(dir, name)
+      unlinkSync(full)
+      console.log('Deleted stale ' + full)
+    }
+  }
 }
 
 function chunkRuleIds(ruleIds, chunkSize) {
@@ -76,6 +82,7 @@ export function buildDispatchPrompt({ asOf, ruleIds, registry, manifestRules }) 
     '2. Update the **registry record first** (`quotedText`, `authority`, `verifiedOn`, `effectiveFrom`/`effectiveThrough`, `classification` as facts require — `verifiedOn` must be bumped even when nothing changed) — including ADDING authority entries when a statement makes a claim the current quotes do not cover (sufficiency, not just fidelity: see `DOCS/operations/authority-sufficiency.md`). Set `verifiedOn` to the UTC date (YYYY-MM-DD) you finished re-reading the authorities.',
     '3. Rewrite or confirm the discriminating fixture **from the authority** (never from code; fixtures name two candidate readings with different values). `fixtureFiles` below lists the files whose `describeRule(<id>)` blocks are this rule\'s discriminating fixtures — those blocks are the contract; other tests in the same files are ordinary coverage.',
     '4. Only then change implementation until the fixture passes.',
+    '5. When the reading or behavior changed, update the DOCS/domain ground truth in the same PR (domain-rules-reference.md section and any feature doc that states the rule), citing the record id per repo convention — the generated coverage artifacts do not repair prose.',
     '',
     '## Verification checklist',
     '',
@@ -87,7 +94,7 @@ export function buildDispatchPrompt({ asOf, ruleIds, registry, manifestRules }) 
     '- (network, manual; see `DOCS/operations/quote-fidelity.md`)',
     '- If any result moves: run `pnpm cases:diff`, review every delta, and add a `CHANGELOG.md` entry announcing the correction — corrections are announced, never silent.',
     '- `pnpm rules:coverage` and commit the refreshed `DOCS/operations/rule-coverage.md` and `rule-coverage.json` (`verifiedOn` changes them)',
-    '- Confirm no other open PR changes the registry file: for each PR in `gh pr list --state open --json number -q .[].number`, run `gh pr diff <n> --name-only` and require zero hits for `taxRuleRegistry.ts` before pushing.',
+    '- Confirm no other open PR changes the registry file: for each PR in `gh pr list --state open --limit 200 --json number -q .[].number`, run `gh pr diff <n> --name-only` and require zero hits for `taxRuleRegistry.ts` before pushing, excluding this branch\'s own PR.',
     '- One PR; review-bot findings fixed on the same branch',
     '',
   ]
@@ -95,9 +102,11 @@ export function buildDispatchPrompt({ asOf, ruleIds, registry, manifestRules }) 
   for (const id of ids) {
     const rule = registry[id]
     const manifest = manifestById.get(id)
-    if (!rule || !manifest) continue
+    if (!rule) throw new Error('Unknown rule id in registry: ' + id)
+    if (!manifest) throw new Error('Unknown rule id in manifest: ' + id)
 
     lines.push('## ' + id, '')
+    lines.push('**Title:** ' + rule.title, '')
     lines.push('**Statement:** ' + rule.statement, '')
     lines.push(
       '**Classification:** ' + rule.classification +
@@ -150,36 +159,43 @@ export function buildDispatchPrompt({ asOf, ruleIds, registry, manifestRules }) 
 }
 
 async function main() {
-  // pnpm forwards the `--` separator itself, so `pnpm rules:dispatch -- --rule x`
-  // reaches node with a literal `--` first; strip leading separators so the
-  // documented invocation parses the same as a direct node run.
-  // For machine-readable `rules:due --json` output without pnpm lifecycle banners,
-  // invoke from the repo root: `pnpm --silent rules:due -- --json`.
-  const args = process.argv.slice(2)
-  while (args[0] === '--') args.shift()
+  const args = stripLeadingSeparators(process.argv.slice(2))
   const { values } = parseArgs({
     args,
     options: {
-      rule: { type: 'string' },
+      rule: { type: 'string', multiple: true },
       due: { type: 'boolean', default: false },
       'as-of': { type: 'string' },
       out: { type: 'string' },
       'chunk-size': { type: 'string', default: '8' },
+      help: { type: 'boolean', default: false },
     },
     allowPositionals: false,
   })
 
+  if (values.help) {
+    console.log(HELP)
+    return
+  }
+
   const asOf = values['as-of'] ?? todayUtcIso()
-  if (values['as-of'] !== undefined) validateAsOf(asOf)
-  const ruleArg = values.rule
+  if (values['as-of'] !== undefined) {
+    try {
+      validateAsOf(asOf)
+    } catch (error) {
+      console.error(error instanceof Error ? error.message : error)
+      process.exit(2)
+    }
+  }
+  const ruleArgs = values.rule ?? []
   const useDue = values.due
   const chunkSize = Number(values['chunk-size'])
   if (!Number.isInteger(chunkSize) || chunkSize < 1) {
     console.error('Invalid --chunk-size: ' + values['chunk-size'] + ' (must be a positive integer)')
-    process.exit(1)
+    process.exit(2)
   }
 
-  if (!ruleArg && !useDue) {
+  if (ruleArgs.length === 0 && !useDue) {
     throw new Error('Specify --rule <id>[,<id>...] and/or --due')
   }
 
@@ -194,17 +210,17 @@ async function main() {
   ])
 
   let ruleIds = []
-  if (ruleArg) {
+  for (const ruleArg of ruleArgs) {
     const parsedRuleIds = ruleArg.split(',').map((id) => id.trim()).filter(Boolean)
     if (parsedRuleIds.length === 0) {
       console.error('No valid rule ids in --rule: ' + ruleArg)
-      process.exit(1)
+      process.exit(2)
     }
     ruleIds.push(...parsedRuleIds)
   }
   if (useDue) {
     const dueIds = taxRulesDueForVerification(asOf, DEFAULT_REVERIFICATION_INTERVAL_DAYS)
-    if (dueIds.length === 0 && !ruleArg) {
+    if (dueIds.length === 0 && ruleArgs.length === 0) {
       console.log('No rules due as of ' + asOf + '; nothing to dispatch.')
       return
     }
@@ -220,14 +236,12 @@ async function main() {
     }
   }
 
-  const quoteFidelityPath = join(repositoryDir, 'DOCS', 'operations', 'quote-fidelity-ledger.json')
-  const quoteFidelityLedger = existsSync(quoteFidelityPath) ? readFileSync(quoteFidelityPath, 'utf8') : null
   const report = buildCoverageReport({
     registry: TAX_RULE_REGISTRY,
     attestations: COVERAGE_ATTESTATIONS,
     baselineUnswept: BASELINE_UNSWEPT,
     testSources: testSourcesInGlobShape(),
-    quoteFidelityLedger,
+    quoteFidelityLedger: null,
     dueOnFor: taxRuleDueOn,
   })
 
@@ -238,7 +252,7 @@ async function main() {
       'Selected ' + ruleIds.length + ' rules exceeds chunk size ' + chunkSize +
         '; re-run with --out <path> to write numbered handoff files (e.g. handoff-1.md, handoff-2.md).',
     )
-    process.exit(1)
+    process.exit(2)
   }
 
   const normalize = (markdown) => markdown.replace(/\r\n/g, '\n')
@@ -258,6 +272,7 @@ async function main() {
     return
   }
 
+  deleteStaleNumberedSiblings(values.out)
   const written = []
   for (let i = 0; i < chunks.length; i++) {
     const outPath = numberedOutPath(values.out, i + 1)
@@ -275,7 +290,7 @@ async function main() {
 
 if (import.meta.main) {
   main().catch((error) => {
-    console.error(error instanceof Error ? error.stack : error)
-    process.exitCode = 1
+    console.error(error instanceof Error ? error.message : error)
+    process.exit(2)
   })
 }

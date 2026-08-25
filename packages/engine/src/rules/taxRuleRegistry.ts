@@ -8839,14 +8839,7 @@ export function taxRulesDueForVerification(
       throw new RangeError(`Re-verification interval for ${volatility} must be a non-negative whole number of days`)
     }
   }
-  return taxRuleIds.filter((ruleId) => {
-    // ruleId comes from taxRuleIds, which is derived from the registry keys,
-    // so the lookup cannot miss.
-    const rule = TAX_RULE_REGISTRY[ruleId]
-    const verified = Date.parse(`${rule.verifiedOn}T00:00:00Z`)
-    const ageDays = Math.floor((asOf - verified) / 86_400_000)
-    return ageDays >= maximumAgeDaysByVolatility[rule.volatility]
-  })
+  return taxRuleIds.filter((ruleId) => asOfIsoDate >= taxRuleDueOn(ruleId, maximumAgeDaysByVolatility))
 }
 
 /**
