@@ -11,16 +11,16 @@ The registry is the machine-checked chain from a rule to its implementation and 
 
 | Metric | Count |
 | --- | ---: |
-| Total rules | 234 |
+| Total rules | 240 |
 | Classification: approximated | 51 |
-| Classification: outOfScope | 10 |
-| Classification: settled | 169 |
+| Classification: outOfScope | 12 |
+| Classification: settled | 173 |
 | Classification: unsettled | 4 |
 | Volatility: annuallyIndexed | 37 |
 | Volatility: awaitingGuidance | 4 |
-| Volatility: staticStatute | 188 |
+| Volatility: staticStatute | 194 |
 | Volatility: sunsetting | 5 |
-| Federal jurisdiction | 177 |
+| Federal jurisdiction | 183 |
 | State jurisdiction total | 57 |
 
 | State jurisdiction | Count |
@@ -53,8 +53,8 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | Engine source files | 235 |
 | Swept | 100.0% |
 | Grandfathered unswept baseline | 0 |
-| partial | 68 |
-| registered | 42 |
+| partial | 66 |
+| registered | 44 |
 | rule-free | 125 |
 | unswept | 0 |
 
@@ -63,7 +63,7 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | Directory | Files | Partial | Registered | Rule-free | Unswept |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | (root) | 3 | 0 | 0 | 3 | 0 |
-| actions | 74 | 27 | 19 | 28 | 0 |
+| actions | 74 | 25 | 21 | 28 | 0 |
 | allocation | 1 | 0 | 0 | 1 | 0 |
 | decisions | 19 | 5 | 0 | 14 | 0 |
 | insights | 22 | 4 | 1 | 17 | 0 |
@@ -94,8 +94,6 @@ None.
 | --- | --- | --- |
 | actions/aggregateRothConversionOwnerAllocation.ts | 2026-08-24 | RMD-before-conversion ordering/snapshot; no record |
 | actions/annualOwnedNonRothIraPoolCapacity.ts | 2026-08-24 | QCD pool restricted to donor-owned non-Roth IRAs; no record |
-| actions/annualQcdActionExecutionEvidence.ts | 2026-08-24 | QCD direct-transfer penalty marked not applicable; no record |
-| actions/annualQcdDeductionTreatmentCoordinator.ts | 2026-08-24 | §408(d)(8)(E) excluded-QCD §170 deduction gate; no record |
 | actions/annualQcdDerivedTaxCharacter.ts | 2026-08-24 | SEP/SIMPLE and owned-source eligibility gates; no record; QCD taxable/excludable/basis partition; no record |
 | actions/annualQcdPhysicalExecution.ts | 2026-08-24 | QCD pool restricted to owned traditional IRAs, excluding inherited/Roth; no record |
 | actions/annualQcdResidualForm8606.ts | 2026-08-24 | Non-QCD QCD remainder/Form 8606 line-7 basis-return treatment; no record; residual line-7/line-8 pro-rata reconciliation; no record |
@@ -163,7 +161,7 @@ None.
 
 ## Re-verification due dates
 
-The 25 earliest due dates are shown below (234 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
+The 25 earliest due dates are shown below (240 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
 
 | Rule | Volatility | Verified on | Due on |
 | --- | --- | --- | --- |

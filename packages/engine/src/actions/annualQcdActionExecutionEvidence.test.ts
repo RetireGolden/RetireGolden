@@ -233,6 +233,126 @@ describe('publishAnnualQcdActionExecutionEvidence', () => {
       action.charitableDeductionTreatment.eligibleContributionAmount === 0)).toBe(true)
   })
 
+  describeRule('irc-408-d-8-B-ongoing-sep-simple-source-exclusion', {
+    readings: {
+      statuteRefusesAnOngoingSepSource: 0,
+      treatsAnOngoingSepIraAsARegularIra: 5_000,
+    },
+    accepted: 'statuteRefusesAnOngoingSepSource',
+  }, ({ accepted, readings }) => {
+    it('does not execute a QCD from an ongoing SEP IRA', () => {
+      const prerequisiteInput = fixture().inputs[0]!.physicalTransactionInput.qcdPrerequisiteInput
+      if (prerequisiteInput === undefined) throw new Error('missing fixture prerequisite input')
+      const basePlan = structuredClone(prerequisiteInput.plan)
+      const plan = {
+        ...basePlan,
+        retirementActionEligibilityFacts: {
+          ...basePlan.retirementActionEligibilityFacts!,
+          iraClassifications: basePlan.retirementActionEligibilityFacts!.iraClassifications.map(
+            (fact) =>
+              fact.sourceAccountId === ira1
+                ? { ...fact, subtype: 'sep' as const }
+                : fact),
+          sepSimpleActivities: [{
+            sourceAccountId: ira1,
+            actionTaxYear: year,
+            planYearEndDate: '2026-12-31',
+            employerContributionMadeForPlanYear: true,
+            evidenceId: 'ongoing-sep-2026',
+            provenance: { source: 'manual' as const },
+          }],
+        },
+      }
+      const result = evaluateAnnualQcdExecutionPrerequisites({ ...prerequisiteInput, plan })
+      expect(result.status).toBe('evaluated')
+      if (result.status !== 'evaluated') return
+      const record = result.publicationSource.records.find((candidate) => candidate.actionId === 'qcd-p1')!
+
+      expect(record.executedAmount).toBe(accepted)
+      expect(record.executedAmount).not.toBe(readings.treatsAnOngoingSepIraAsARegularIra)
+      expect(record.reasons.map((reason) => reason.code)).toContain('qcd-ongoing-sep-simple')
+    })
+  })
+
+  describeRule('irc-408-d-8-B-employer-plan-source-exclusion', {
+    readings: {
+      statuteRefusesAnEmployerPlanSource: 0,
+      treatsAnEmployerPlanAsAnIraSource: 5_000,
+    },
+    accepted: 'statuteRefusesAnEmployerPlanSource',
+  }, ({ accepted, readings }) => {
+    it('does not execute a QCD from an employer-plan account', () => {
+      const prerequisiteInput = fixture().inputs[0]!.physicalTransactionInput.qcdPrerequisiteInput
+      if (prerequisiteInput === undefined) throw new Error('missing fixture prerequisite input')
+      const basePlan = structuredClone(prerequisiteInput.plan)
+      const plan = {
+        ...basePlan,
+        accounts: basePlan.accounts.map((account) =>
+          account.id === ira1 && account.type === 'traditional'
+            ? { ...account, kind: 'employer' as const }
+            : account),
+      }
+      const result = evaluateAnnualQcdExecutionPrerequisites({ ...prerequisiteInput, plan })
+      expect(result.status).toBe('evaluated')
+      if (result.status !== 'evaluated') return
+      const record = result.publicationSource.records.find((candidate) => candidate.actionId === 'qcd-p1')!
+
+      expect(record.executedAmount).toBe(accepted)
+      expect(record.executedAmount).not.toBe(readings.treatsAnEmployerPlanAsAnIraSource)
+      expect(record.reasons.map((reason) => reason.code)).toContain('qcd-source-not-ira')
+    })
+  })
+
+  describeRule('irc-408-d-8-B-i-qualified-recipient', {
+    readings: {
+      statuteRefusesADonorAdvisedFundOrSupportingOrganization: 0,
+      treatsTheDisqualifiedRecipientAsEligible: 5_000,
+    },
+    accepted: 'statuteRefusesADonorAdvisedFundOrSupportingOrganization',
+  }, ({ accepted, readings }) => {
+    it('does not execute a QCD without the no-DAF/supporting-organization attestation', () => {
+      const prerequisiteInput = fixture().inputs[0]!.physicalTransactionInput.qcdPrerequisiteInput
+      if (prerequisiteInput === undefined) throw new Error('missing fixture prerequisite input')
+      const requests = prerequisiteInput.requests.map((request) =>
+        request.actionId === 'qcd-p1'
+          ? {
+              ...request,
+              charity: {
+                ...request.charity,
+                notDonorAdvisedFundOrSupportingOrganizationAttested: false,
+              },
+            }
+          : request)
+      const result = evaluateAnnualQcdExecutionPrerequisites({ ...prerequisiteInput, requests })
+      expect(result.status).toBe('evaluated')
+      if (result.status !== 'evaluated') return
+      const record = result.publicationSource.records.find((candidate) => candidate.actionId === 'qcd-p1')!
+
+      expect(record.executedAmount).toBe(accepted)
+      expect(record.executedAmount).not.toBe(readings.treatsTheDisqualifiedRecipientAsEligible)
+      expect(record.reasons.map((reason) => reason.code)).toContain('qcd-direct-charity-unconfirmed')
+    })
+  })
+
+  describeRule('irc-408-d-8-E-excluded-qcd-no-section-170-double-benefit', {
+    readings: {
+      statuteLeavesNoSection170EligibleAmount: 0,
+      claimsTheExcludedGiftAsAnAdditionalDeduction: 5_000,
+    },
+    accepted: 'statuteLeavesNoSection170EligibleAmount',
+  }, ({ accepted, readings }) => {
+    it('does not give a wholly excluded QCD a second section 170 benefit', () => {
+      const result = publishAnnualQcdActionExecutionEvidence({ ownerFinalizationInputs: fixture().inputs })
+      expect(result.status).toBe('annualQcdActionExecutionEvidencePublished')
+      if (result.status !== 'annualQcdActionExecutionEvidencePublished') return
+      const action = result.actions.find((candidate) => candidate.actionId === 'qcd-p1')!
+
+      expect(action.charitableDeductionEligibleAmount).toBe(accepted)
+      expect(action.charitableDeductionEligibleAmount)
+        .not.toBe(readings.claimsTheExcludedGiftAsAnAdditionalDeduction)
+    })
+  })
+
   // No authority resolves what "six calendar months after" means when the
   // target day does not exist, and the regulation that once defined attainment
   // was withdrawn in 2025. A 31 August birth is the widest case: clamping to

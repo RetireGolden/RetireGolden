@@ -415,6 +415,33 @@ const registry = {
     implementedBy: ['packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts'],
   },
 
+  'irc-408-d-8-E-excluded-qcd-no-section-170-double-benefit': {
+    title: 'An excluded QCD cannot also produce a section 170 deduction',
+    statement:
+      'A qualified charitable distribution excluded from gross income under section 408(d)(8)(A) is not taken into account in determining the charitable-contribution deduction under section 170. The engine therefore leaves the section 170 eligible amount at zero for a wholly excluded QCD; only a portion that remains taxable can proceed to the separate deduction treatment.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 408(d)(8)(E)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim',
+      quotedText:
+        'Qualified charitable distributions which are not includible in gross income pursuant to subparagraph (A) shall not be taken into account in determining the deduction under section 170.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-25',
+    implementedBy: [
+      'packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts',
+      'packages/engine/src/actions/annualQcdDerivedTaxCharacter.ts',
+      'packages/engine/src/actions/annualQcdDeductionTreatmentCoordinator.ts',
+    ],
+  },
+
   'irc-170-p-standard-deduction-carryover': {
     title: 'Carryover generated in a standard-deduction year',
     statement:
@@ -1003,6 +1030,145 @@ const registry = {
     ],
   },
 
+  'irc-408-d-8-B-ongoing-sep-simple-source-exclusion': {
+    title: 'An ongoing SEP or SIMPLE IRA is not a QCD source',
+    statement:
+      'A QCD is not available from an ongoing SEP IRA or ongoing SIMPLE IRA. The statutory parenthetical excludes "a plan described in subsection (k) or (p)" without a temporal qualifier; Notice 2007-7 Q&A-36 construes it as reaching only an ongoing plan, defined by an employer contribution for the plan year ending with or within the owner\'s taxable year. The engine follows the notice: it requires year-specific employer-contribution evidence for a SEP or SIMPLE source, refuses the source when the plan is ongoing, and fails closed when that activity is unknown.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 408(d)(8)(B)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim',
+      quotedText:
+        'For purposes of this paragraph, the term "qualified charitable distribution" means any distribution from an individual retirement plan (other than a plan described in subsection (k) or (p))-',
+    }, {
+      kind: 'irsNotice',
+      citation: 'IRS Notice 2007-7, Q&A-36',
+      url: 'https://www.irs.gov/pub/irs-drop/n-07-07.pdf',
+      quotedText:
+        'Generally, the exclusion for qualified charitable distributions is available for distributions from any type of IRA (including a Roth IRA described in § 408A and a deemed IRA described in § 408(q)) that is neither an ongoing SEP IRA described in § 408(k) nor an ongoing SIMPLE IRA described in § 408(p). For this purpose, a SEP IRA or a SIMPLE IRA is treated as ongoing if it is maintained under an employer arrangement under which an employer contribution is made for the plan year ending with or within the IRA owner’s taxable year in which the charitable contributions would be made.',
+    }, {
+      kind: 'irsPublication',
+      citation: 'IRS Publication 590-B (2025), Qualified charitable distributions (QCDs)',
+      url: 'https://www.irs.gov/publications/p590b',
+      quotedText:
+        'A QCD is generally a nontaxable distribution made directly by the trustee of your IRA (other than an ongoing SEP or SIMPLE IRA) to an organization eligible to receive tax-deductible contributions.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-25',
+    implementedBy: [
+      'packages/engine/src/strategies/accountEligibility.ts',
+      'packages/engine/src/actions/annualQcdExecutionPrerequisite.ts',
+    ],
+  },
+
+  'irc-408-d-8-B-employer-plan-source-exclusion': {
+    title: 'An employer-plan distribution is not a QCD source',
+    statement:
+      'A QCD is a distribution from an individual retirement plan, so a distribution from an employer plan is never a QCD. The engine refuses a named QCD whose source is an employer-plan account before any charitable exclusion is calculated.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 408(d)(8)(B)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim',
+      quotedText:
+        'For purposes of this paragraph, the term "qualified charitable distribution" means any distribution from an individual retirement plan (other than a plan described in subsection (k) or (p))-',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-25',
+    implementedBy: [
+      'packages/engine/src/strategies/accountEligibility.ts',
+      'packages/engine/src/actions/annualQcdExecutionPrerequisite.ts',
+    ],
+  },
+
+  'irc-408-d-8-B-i-qualified-recipient': {
+    title: 'A QCD recipient must be a qualified direct charity recipient',
+    statement:
+      'A direct QCD recipient must be an organization described in section 170(b)(1)(A), not a section 509(a)(3) supporting organization or a section 4966(d)(2) donor-advised fund. Section 170(b)(1)(A) reaches a private foundation only when it is one described in section 170(b)(1)(F). The engine requires direct-custodian, eligible-organization, and no-DAF/supporting-organization attestations and does not make an unconfirmed recipient actionable; the distinct split-interest election is separately out of scope.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 408(d)(8)(B)(i)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim',
+      quotedText:
+        'which is made directly by the trustee to an organization described in section 170(b)(1)(A) (other than any organization described in section 509(a)(3) or any fund or account described in section 4966(d)(2)), and',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 170(b)(1)(A)(vii)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim',
+      quotedText: '(vii) a private foundation described in subparagraph (F),',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-25',
+    implementedBy: [
+      'packages/engine/src/strategies/accountEligibility.ts',
+      'packages/engine/src/actions/annualQcdExecutionPrerequisite.ts',
+    ],
+  },
+
+  'irc-408-d-8-F-i-split-interest-direct-payment': {
+    title: 'A split-interest QCD must be paid directly to the entity',
+    statement:
+      'The one-time split-interest election applies only to an IRA distribution made directly by the trustee to the selected charitable remainder annuity trust, charitable remainder unitrust, or charitable gift annuity. Not modelled: the engine refuses every known split-interest destination, so it never produces a QCD or a tax result from an indirect or direct split-interest transfer.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 408(d)(8)(F)(i)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim',
+      quotedText:
+        'A taxpayer may for a taxable year elect under this subparagraph to treat as meeting the requirement of subparagraph (B)(i) any distribution from an individual retirement account which is made directly by the trustee to a split-interest entity, but only if-',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 408(d)(8)(F)(ii)(I)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim',
+      quotedText:
+        '(I) a charitable remainder annuity trust (as defined in section 664(d)(1)), but only if such trust is funded exclusively by qualified charitable distributions,',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 408(d)(8)(F)(ii)(II)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim',
+      quotedText:
+        '(II) a charitable remainder unitrust (as defined in section 664(d)(2)), but only if such unitrust is funded exclusively by qualified charitable distributions, or',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 408(d)(8)(F)(ii)(III)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim',
+      quotedText:
+        '(III) a charitable gift annuity (as defined in section 501(m)(5)), but only if such annuity is funded exclusively by qualified charitable distributions and commences fixed payments of 5 percent or greater not later than 1 year from the date of funding.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2023,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-25',
+    implementedBy: [
+      'packages/engine/src/strategies/accountEligibility.ts',
+      'packages/engine/src/actions/annualQcdExecutionPrerequisite.ts',
+    ],
+  },
+
   'irc-408-d-8-F-split-interest-sublimit': {
     title: 'One-time split-interest entity QCD sublimit',
     statement:
@@ -1023,13 +1189,52 @@ const registry = {
       citation: 'Instructions for Form 1040 (2025), line 4a/4b Exception 3',
       url: 'https://www.irs.gov/pub/irs-pdf/i1040gi.pdf',
       quotedText:
-        'Generally, your total QCDs for the year cannot be more than $108,000. This includes any amount (up to $54,000) of a one-time QCD to a split-interest entity (SIE).',
+        'Generally, your total QCDs for the year can’t be more than $108,000. This includes any amount (up to $54,000) of a one-time QCD to a split-interest entity (SIE).',
     }],
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
     effectiveThrough: 2026,
     verifiedOn: '2026-08-03',
     implementedBy: ['packages/engine/src/actions/annualQcdExecutionPrerequisite.ts'],
+  },
+
+  'irc-72-t-1-qcd-not-early-distribution-exception': {
+    title: 'A QCD does not create an under-59.5 penalty exception',
+    statement:
+      'Section 72(t) imposes the additional tax on an includible early distribution unless an enumerated exception applies; it does not independently except a QCD. A statutory QCD, including one under the split-interest election, must be made after the donor reaches age 70.5, so no accepted QCD input can be an under-59.5 distribution. The engine refuses a QCD before age 70.5 and calculates no section 72(t) result for that impossible input; its qcdDirectTransfer penalty-coverage marker is emitted only for an already-executed age-eligible QCD.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 72(t)(1)-(2)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim',
+      quotedText:
+        'If any taxpayer receives any amount from a qualified retirement plan (as defined in section 4974(c)), the taxpayer\'s tax under this chapter for the taxable year in which such amount is received shall be increased by an amount equal to 10 percent of the portion of such amount which is includible in gross income.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 72(t)(2)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim',
+      quotedText:
+        'Except as provided in paragraphs (3) and (4), paragraph (1) shall not apply to any of the following distributions:',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 408(d)(8)(B)(ii)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim',
+      quotedText:
+        'which is made on or after the date that the individual for whose benefit the plan is maintained has attained age 70½.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-25',
+    implementedBy: [
+      'packages/engine/src/strategies/accountEligibility.ts',
+      'packages/engine/src/actions/annualQcdExecutionPrerequisite.ts',
+      'packages/engine/src/actions/annualQcdActionExecutionEvidence.ts',
+    ],
   },
 
   // --- Registered 2026-08-05, with the first committed named QCD ----------
