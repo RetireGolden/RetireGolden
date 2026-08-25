@@ -896,7 +896,7 @@
   transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
 }
 
-.btn-ghost:hover {
+.btn-ghost:hover:not(:disabled) {
   color: var(--fg);
   background: color-mix(in srgb, var(--fg) 6%, transparent);
 }
@@ -906,13 +906,17 @@
   outline-offset: 1px;
 }
 
-/* Resting destructive color — same family as .btn-danger. A hover-only rule
-   made plan-card Delete identical to Duplicate at rest (#312). */
-.btn-ghost-danger {
+.btn-ghost:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Plan-card Delete only (#312). Form Remove/Discard stay muted at rest. */
+.plan-card-actions .btn-ghost.btn-ghost-danger {
   color: var(--bad);
 }
 
-.btn-ghost-danger:hover {
+.btn-ghost.btn-ghost-danger:hover:not(:disabled) {
   color: var(--bad);
   background: color-mix(in srgb, var(--bad) 10%, transparent);
 }

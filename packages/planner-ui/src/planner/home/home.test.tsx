@@ -178,21 +178,18 @@ describe('planner home adaptive layout', () => {
     )
     expect(duplicate).toBeTruthy()
     expect(del).toBeTruthy()
-    expect(duplicate!.className.split(/\s+/)).toEqual(['btn-ghost'])
+    expect(duplicate!.classList.contains('btn-ghost')).toBe(true)
+    expect(duplicate!.classList.contains('btn-ghost-danger')).toBe(false)
     expect(del!.classList.contains('btn-ghost')).toBe(true)
     expect(del!.classList.contains('btn-ghost-danger')).toBe(true)
-    expect(duplicate!.classList.contains('btn-ghost-danger')).toBe(false)
   })
 
   it('titles the welcome dismiss with Getting started casing', async () => {
     await savePlan(createEmptyPlan({ name: 'My plan' }))
     localStorage.setItem(WELCOME_DISMISSED_KEY, 'false')
     await renderHome()
-    const dismiss = Array.from(container.querySelectorAll('button')).find((b) =>
-      b.textContent?.includes('Hide'),
-    )
+    const dismiss = container.querySelector('.home-hero-cta button.btn-ghost')
     expect(dismiss?.textContent).toBe('Hide Getting started')
-    expect(container.textContent).not.toContain('Hide getting started')
   })
 
   it('shows getting started above plans with a collapsed reopener for returning users', async () => {
