@@ -166,6 +166,35 @@ describe('planner home adaptive layout', () => {
     expect(overview?.textContent).not.toMatch(/^\s*results/)
   })
 
+  it('marks plan-card Delete as ghost-danger and Duplicate as ghost', async () => {
+    await savePlan(createEmptyPlan({ name: 'Styled plan' }))
+    localStorage.setItem(WELCOME_DISMISSED_KEY, 'true')
+    await renderHome()
+    const duplicate = Array.from(container.querySelectorAll('.plan-card button')).find(
+      (b) => b.textContent === 'Duplicate',
+    )
+    const del = Array.from(container.querySelectorAll('.plan-card button')).find(
+      (b) => b.textContent === 'Delete',
+    )
+    expect(duplicate).toBeTruthy()
+    expect(del).toBeTruthy()
+    expect(duplicate!.className.split(/\s+/)).toEqual(['btn-ghost'])
+    expect(del!.classList.contains('btn-ghost')).toBe(true)
+    expect(del!.classList.contains('btn-ghost-danger')).toBe(true)
+    expect(duplicate!.classList.contains('btn-ghost-danger')).toBe(false)
+  })
+
+  it('titles the welcome dismiss with Getting started casing', async () => {
+    await savePlan(createEmptyPlan({ name: 'My plan' }))
+    localStorage.setItem(WELCOME_DISMISSED_KEY, 'false')
+    await renderHome()
+    const dismiss = Array.from(container.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('Hide'),
+    )
+    expect(dismiss?.textContent).toBe('Hide Getting started')
+    expect(container.textContent).not.toContain('Hide getting started')
+  })
+
   it('shows getting started above plans with a collapsed reopener for returning users', async () => {
     await savePlan(createEmptyPlan({ name: 'My plan' }))
     localStorage.setItem(WELCOME_DISMISSED_KEY, 'true')

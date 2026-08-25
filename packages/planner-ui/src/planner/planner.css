@@ -906,6 +906,12 @@
   outline-offset: 1px;
 }
 
+/* Resting destructive color — same family as .btn-danger. A hover-only rule
+   made plan-card Delete identical to Duplicate at rest (#312). */
+.btn-ghost-danger {
+  color: var(--bad);
+}
+
 .btn-ghost-danger:hover {
   color: var(--bad);
   background: color-mix(in srgb, var(--bad) 10%, transparent);
