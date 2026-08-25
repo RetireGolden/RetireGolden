@@ -78,9 +78,10 @@ export interface PlannerAppProps {
   readOnly?: boolean
   /**
    * Host-controlled emergency boundary for file-backed import surfaces. When
-   * false, the new-plan import route and existing-plan broker CSV refresh are
-   * replaced by an unavailable notice, while saved-plan reads, exports, and
-   * backup restore remain available. Defaults to true for existing hosts.
+   * false, the new-plan wizard, broker CSV refresh, mySSA XML import, and
+   * FedInvest CSV fallback are replaced by an unavailable notice, while
+   * manual entry, saved-plan reads, exports, and backup restore remain
+   * available. Defaults to true for existing hosts.
    */
   importEnabled?: boolean
 }

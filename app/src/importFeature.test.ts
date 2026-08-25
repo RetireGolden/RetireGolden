@@ -1,8 +1,14 @@
 import { describe, expect, it, vi } from 'vitest'
+import shippedConfigText from '../public/import-feature.json?raw'
 
 import { loadImportFeature, parseImportFeatureConfig } from './importFeature'
 
 describe('import feature bootstrap', () => {
+  it('ships the reviewed enabled one-key configuration', () => {
+    expect(shippedConfigText.trim()).toBe('{"enabled":true}')
+    expect(parseImportFeatureConfig(JSON.parse(shippedConfigText))).toBe(true)
+  })
+
   it('accepts only the exact enabled configuration', () => {
     expect(parseImportFeatureConfig({ enabled: true })).toBe(true)
     expect(parseImportFeatureConfig({ enabled: false })).toBe(false)
@@ -28,6 +34,7 @@ describe('import feature bootstrap', () => {
   it.each([
     ['disabled', new Response('{"enabled":false}', { status: 200 })],
     ['missing', new Response('missing', { status: 404 })],
+    ['unexpected success status', new Response('{"enabled":true}', { status: 201 })],
     ['malformed', new Response('<html>fallback</html>', { status: 200 })],
     ['oversized', new Response(JSON.stringify({ enabled: true, padding: 'x'.repeat(300) }), { status: 200 })],
   ])('fails closed for a %s response', async (_name, response) => {
@@ -38,6 +45,26 @@ describe('import feature bootstrap', () => {
     await expect(
       loadImportFeature(async () => {
         throw new Error('offline')
+      }),
+    ).resolves.toBe(false)
+  })
+
+  it('returns fail-closed at the deadline even when the fetcher ignores abort', async () => {
+    vi.useFakeTimers()
+    try {
+      const result = loadImportFeature(() => new Promise<Response>(() => undefined))
+      await vi.advanceTimersByTimeAsync(5_000)
+      await expect(result).resolves.toBe(false)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('treats a redirect refusal from fetch as fail-closed', async () => {
+    await expect(
+      loadImportFeature(async (_input, init) => {
+        expect(init.redirect).toBe('error')
+        throw new TypeError('redirect mode is error')
       }),
     ).resolves.toBe(false)
   })
@@ -65,7 +92,7 @@ describe('import feature bootstrap', () => {
   it('rejects a declared oversized response before reading its body', async () => {
     let bodyAccessed = false
     const response = {
-      ok: true,
+      status: 200,
       headers: new Headers({ 'Content-Length': '257' }),
       get body() {
         bodyAccessed = true

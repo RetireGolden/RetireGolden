@@ -223,17 +223,10 @@ function snapshotId(): string {
 
 export function UpdateBalancesPanel() {
   const importEnabled = useImportEnabled()
-  if (!importEnabled) {
-    return (
-      <div className="callout callout--info" role="status">
-        {IMPORT_UNAVAILABLE_MESSAGE}
-      </div>
-    )
-  }
-  return <EnabledUpdateBalancesPanel />
+  return <UpdateBalancesPanelBody importEnabled={importEnabled} />
 }
 
-function EnabledUpdateBalancesPanel() {
+function UpdateBalancesPanelBody({ importEnabled }: { importEnabled: boolean }) {
   const { plan, update } = usePlan()
   const protectedAccounts = useRefreshProtection()
   // The host has not resolved its protected set yet, so `protectedAccounts` is
@@ -876,12 +869,18 @@ function EnabledUpdateBalancesPanel() {
   return (
     <div className="card">
       <h2>Update balances from a broker CSV</h2>
-      <p className="card-hint">
-        Download the positions/holdings CSV from Schwab, Fidelity, or Vanguard and refresh your account
-        balances (and cost basis where the file has it) without retyping. Only balance and cost basis change.
-        Your return, yield, contribution, and beneficiary settings are left alone. The file is read on this
-        device only. To start a whole new plan from a file, use Import &amp; migrate on the home screen.
-      </p>
+      {importEnabled ? (
+        <p className="card-hint">
+          Download the positions/holdings CSV from Schwab, Fidelity, or Vanguard and refresh your account
+          balances (and cost basis where the file has it) without retyping. Only balance and cost basis change.
+          Your return, yield, contribution, and beneficiary settings are left alone. The file is read on this
+          device only. To start a whole new plan from a file, use Import &amp; migrate on the home screen.
+        </p>
+      ) : (
+        <div className="callout callout--info" role="status">
+          {IMPORT_UNAVAILABLE_MESSAGE}
+        </div>
+      )}
       {snapshots.length > 0 ? (
         <details className="refresh-history">
           <summary>Restore previous balances</summary>
@@ -906,6 +905,8 @@ function EnabledUpdateBalancesPanel() {
           {message}
         </div>
       ) : null}
+      {importEnabled ? (
+        <>
       {/* The protection-pending explanation. Named by its own class so it is
           addressable separately from the apply-status callout, and worded around
           its own cause so it can never be mistaken for the duplicate-collision
@@ -1091,6 +1092,8 @@ function EnabledUpdateBalancesPanel() {
           e.target.value = ''
         }}
       />
+        </>
+      ) : null}
     </div>
   )
 }

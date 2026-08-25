@@ -2,7 +2,7 @@ import { Link } from 'react-router'
 
 import { createEmptyPlan } from '@retiregolden/engine/model/plan'
 import { useWorkspaceReadOnly } from '../../data/workspaceReadOnly'
-import { useImportEnabled } from '../../import/importAvailability'
+import { IMPORT_UNAVAILABLE_MESSAGE, useImportEnabled } from '../../import/importAvailability'
 
 type GettingStartedPathsProps = {
   onCreatePlan: (plan: ReturnType<typeof createEmptyPlan>) => void
@@ -51,6 +51,11 @@ export function GettingStartedPaths({ onCreatePlan }: GettingStartedPathsProps) 
           </Link>
         )}
       </div>
+      {!readOnly && !importEnabled ? (
+        <p className="card-hint" role="status">
+          {IMPORT_UNAVAILABLE_MESSAGE} Building a plan and restoring a RetireGolden backup remain available.
+        </p>
+      ) : null}
     </section>
   )
 }

@@ -35,7 +35,7 @@ app/
 ├── eslint.config.js       flat config (the engine-purity rule lives in packages/engine/eslint.config.js)
 ├── index.html
 ├── scripts/               local Node/Vite-backed tooling (`cases.mjs`, `owl-parity.mjs`, sitemap generator, license notices)
-├── public/                staticwebapp.config.json (SPA fallback), PWA manifest/icons
+├── public/                staticwebapp.config.json (SPA fallback), import-feature.json (no-store file-import incident switch), PWA manifest/icons
 ├── e2e/                   Playwright browser specs
 └── src/                   host source (below)
 ```
@@ -44,9 +44,7 @@ app/
 
 - [`main.tsx`](../app/src/main.tsx) — React root; owns `BrowserRouter`, imports
   `@retiregolden/planner-ui/index.css`, resolves the fail-closed same-origin import switch through
-  `importFeature.ts`, and mounts `<PlannerApp importEnabled={...}/>`.
-- [`../app/public/import-feature.json`](../app/public/import-feature.json) — no-store static emergency
-  switch for the web host's new-plan and broker-refresh import surfaces; it is not PWA-precached.
+  `HostApp.tsx` / `importFeature.ts`, and mounts `<PlannerApp importEnabled={...}/>`.
 - `cases/` — the exact-ledger case runner, manifest diffing, Owl parity harness, and the standalone
   report regression test (`pnpm cases`, `pnpm cases:diff`, `pnpm owl-parity`).
 - Host-level guards: `staticwebapp.config.test.ts` (SWA routing config) and
@@ -109,7 +107,7 @@ test files.
 
 | Folder (`src/`) | What's here |
 |--------|-------------|
-| `data/` | Persistence: `planStoreContext.ts` + `PlanStoreProvider.tsx` (the host-implementable `PlanStore` seam and its store-generic `*Via` operations; demo records route to the browser store), `planStore.ts` (the IndexedDB implementation via `idb`, user vs demo filtering), `planOrigin.ts`, `planFormat.ts` (the v2 backup envelope — the stable `plan-format` subpath), `v2Backup.ts` (re-exports the envelope + storage-aware import normalization), `localStore.ts` (guarded localStorage + `STORAGE_KEYS`), `fedInvestClient.ts` (the opt-in FedInvest fetch + cache — the planner's only network touch) |
+| `data/` | Persistence: `planStoreContext.ts` + `PlanStoreProvider.tsx` (the host-implementable `PlanStore` seam and its store-generic `*Via` operations; demo records route to the browser store), `planStore.ts` (the IndexedDB implementation via `idb`, user vs demo filtering), `planOrigin.ts`, `planFormat.ts` (the v2 backup envelope — the stable `plan-format` subpath), `v2Backup.ts` (re-exports the envelope + storage-aware import normalization), `localStore.ts` (guarded localStorage + `STORAGE_KEYS`), `fedInvestClient.ts` (the opt-in FedInvest fetch + cache — the planner's only cross-origin network touch) |
 | `planner/` | The planner UI (see below) |
 | `report/` | Self-contained HTML report rendering and browser download helper |
 | `mc/` | Monte Carlo Web Worker: `monteCarlo.worker.ts`, `pool.ts`, `runRequest.ts`, `messages.ts` |
@@ -124,9 +122,10 @@ test files.
 | `learn/` | Learning Center: pages, `learningRegistry.ts`, `glossary.ts`, `components/`, 138 articles in `content/` |
 | `testSupport/` | `samplePlan.ts` (deprecated shim over the example library); shared fixtures moved to the engine package's `testing/` |
 
-`import/importAvailability.ts` and `ImportAvailabilityProvider.tsx` form the host-neutral import gate shared by the home card, direct `/import`
-route, and `UpdateBalancesPanel`. Hosts mounting route groups directly use `ImportAvailabilityProvider`;
-`PlannerApp` hosts use the `importEnabled` prop. Omitted configuration preserves normal import behavior.
+`import/importAvailability.ts` and `ImportAvailabilityProvider.tsx` form the host-neutral file-import gate
+shared by the home card, direct `/import` route, `UpdateBalancesPanel`, mySSA XML earnings import, and
+FedInvest CSV fallback. Hosts mounting route groups directly use `ImportAvailabilityProvider`; `PlannerApp`
+hosts use the `importEnabled` prop. Omitted configuration preserves normal import behavior.
 
 ### `packages/planner-ui/src/planner/` highlights
 

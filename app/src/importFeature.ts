@@ -53,21 +53,32 @@ async function readBoundedBody(response: Response): Promise<string | null> {
  */
 export async function loadImportFeature(fetcher: FetchLike = globalThis.fetch): Promise<boolean> {
   const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), CONFIG_TIMEOUT_MS)
+  let timeout: ReturnType<typeof setTimeout> | undefined
+  const deadline = new Promise<boolean>((resolve) => {
+    timeout = setTimeout(() => {
+      controller.abort()
+      resolve(false)
+    }, CONFIG_TIMEOUT_MS)
+  })
+  const request = (async () => {
+    try {
+      const response = await fetcher(IMPORT_FEATURE_PATH, {
+        cache: 'no-store',
+        headers: { Accept: 'application/json' },
+        redirect: 'error',
+        signal: controller.signal,
+      })
+      if (response.status !== 200) return false
+      const text = await readBoundedBody(response)
+      if (text === null) return false
+      return parseImportFeatureConfig(JSON.parse(text))
+    } catch {
+      return false
+    }
+  })()
   try {
-    const response = await fetcher(IMPORT_FEATURE_PATH, {
-      cache: 'no-store',
-      headers: { Accept: 'application/json' },
-      redirect: 'error',
-      signal: controller.signal,
-    })
-    if (!response.ok) return false
-    const text = await readBoundedBody(response)
-    if (text === null) return false
-    return parseImportFeatureConfig(JSON.parse(text))
-  } catch {
-    return false
+    return await Promise.race([request, deadline])
   } finally {
-    clearTimeout(timeout)
+    if (timeout !== undefined) clearTimeout(timeout)
   }
 }

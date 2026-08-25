@@ -60,6 +60,9 @@ export default defineConfig({
       workbox: {
         // Precache the built shell + assets so the app loads fully offline.
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        // The incident switch must always come from the network. Keep the
+        // exclusion explicit even if a future asset pattern starts matching JSON.
+        globIgnores: ['**/import-feature.json'],
         // SPA: serve index.html for client-routed navigations when offline.
         navigateFallback: '/index.html',
         // Heavyweight assets are deliberately runtime-cached instead of

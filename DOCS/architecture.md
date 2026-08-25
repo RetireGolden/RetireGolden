@@ -149,13 +149,14 @@ the IndexedDB store (no Redux/React Query — there is no server). The Learning 
 ([features/learning-center.md](features/learning-center.md)) is content authored as structured TypeScript,
 bundled for offline use with the PWA.
 
-The web host resolves `app/public/import-feature.json` before mounting and passes its exact boolean through
-the edition-neutral `PlannerApp.importEnabled` capability. Invalid, missing, oversized, or non-200 config
-disables both `/import` and the existing-plan broker CSV refresh before a file input is rendered. The config
-is deliberately excluded from the service-worker precache and served `no-store`, so a static redeploy can
-change it for the next online refresh/restart. It is not a remote kill switch for a tab that is already loaded
-or for an offline desktop package. Existing-plan reads, exports, and RetireGolden backup restore do not use
-this gate.
+The web host resolves `app/public/import-feature.json` before mounting and passes its bounded one-key
+`enabled` boolean through the edition-neutral `PlannerApp.importEnabled` capability. Invalid, missing,
+oversized, or non-200 config disables every file-backed import surface—the `/import` wizard, existing-plan
+broker CSV refresh, mySSA XML earnings import, and FedInvest CSV fallback—before its file input is rendered.
+The config is deliberately excluded from the service-worker precache and served `no-store`, so a static
+redeploy can change it for the next online refresh/restart. It is not a remote kill switch for a tab that is
+already loaded or for an offline desktop package. Manual entry, existing-plan reads, exports, and RetireGolden
+backup restore do not use this gate.
 
 ## Testing
 
