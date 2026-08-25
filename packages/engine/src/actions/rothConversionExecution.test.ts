@@ -1,6 +1,7 @@
 import { describe, expect, expectTypeOf, it } from 'vitest'
 
 import type { Plan } from '../model/plan.js'
+import { describeRule } from '../rules/describeRule.js'
 import {
   cashAccount,
   singlePersonPlan,
@@ -289,6 +290,15 @@ describe('executeRothConversions', () => {
 
     expect(reasonCodes).toContain('conversion-inherited-source')
     expect(reasonCodes).not.toContain('conversion-source-not-convertible')
+    expect(result.committed).toBe(false)
+    expect(result.evidence[0]).toMatchObject({
+      outcome: 'unsupported',
+      readiness: 'nonActionable',
+      executedAmount: 0,
+      destinationCreditAmount: 0,
+    })
+    expect(result.balances.every((balance) =>
+      balance.openingBalance === balance.closingBalance)).toBe(true)
     expect(() => publishAnnualRetirementActions({
       taxYear: year,
       requests: result.requests,
@@ -1041,6 +1051,36 @@ describe('executeRothConversions', () => {
         allocation.taxableConvertedAmount,
         allocation.nontaxableConvertedAmount,
       ])).toEqual([[6_000, 0], [4_000, 0]])
+    })
+
+    describeRule('irc-408A-d-3-A-i-zero-basis-conversion-includible', {
+      // Section 408A(d)(3)(A)(i) includes what the distribution would include
+      // outside a qualified rollover. With no section 408(d)(2) basis, the
+      // complete $10,000 gross is includible; treating conversion mechanics as
+      // a basis recovery instead would produce zero.
+      note: 'proven zero aggregated traditional-IRA basis',
+      readings: {
+        statuteWholeGrossIncludible: 10_000,
+        rejectedConversionAsBasisRecovery: 0,
+      },
+      accepted: 'statuteWholeGrossIncludible',
+    }, ({ accepted, readings }) => {
+      it('publishes the entire gross as taxable only when the basis numerator is proven zero', () => {
+        const result = executeRothConversions(withBasis(0))
+        const evidence = result.evidence[0]
+        if (evidence?.outcome !== 'executed' || evidence.readiness !== 'actionable') {
+          throw new Error('expected a committed, actionable zero-basis conversion')
+        }
+
+        expect(result.committed).toBe(true)
+        expect(evidence.executedAmount).toBe(accepted)
+        expect(evidence.taxableConvertedAmount).toBe(accepted)
+        expect(evidence.taxableConvertedAmount)
+          .not.toBe(readings.rejectedConversionAsBasisRecovery)
+        expect(evidence.nontaxableConvertedAmount).toBe(readings.rejectedConversionAsBasisRecovery)
+        expect(evidence.allocations.map((allocation) => allocation.taxableConvertedAmount))
+          .toEqual([6_000, 4_000])
+      })
     })
 
     it('commits a proven positive numerator without stating a character', () => {

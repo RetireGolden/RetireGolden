@@ -31,7 +31,13 @@ is satisfied *before* converting. Every interaction is surfaced explicitly: SS t
 lookback), ACA PTC, NIIT, the senior-deduction phase-out, the **widow's penalty** (the survivor files
 single, into tighter brackets), and reduced future RMDs. A **convert-vs-don't** comparison shows lifetime
 taxes and ending after-tax wealth side by side. The 5-year clocks for penalty-free withdrawal of converted
-principal are surfaced as warnings rather than hard-modeled.
+principal are surfaced as warnings rather than hard-modeled. Roth withdrawal character follows regular
+contributions, then conversion/rollover contributions first-in, first-out, and then earnings
+(`irc-408A-d-4-B-roth-distribution-ordering`).
+
+For a partial early withdrawal from a conversion layer with both taxable and nontaxable principal, the current
+engine prorates the taxable principal rather than consuming it first, which can understate the additional tax
+(`irc-408A-d-4-B-converted-layer-taxable-portion-first`).
 
 For a true multi-year co-optimization of conversions and withdrawals, see [optimizer.md](optimizer.md);
 the fill-to-target strategies here cover most of the practical value without a solver. They also double as
@@ -61,6 +67,9 @@ Roth-convertible owner assets. All of these movement rules — convertibility, R
 and the penalty rate — are answered by the shared account-eligibility service
 ([strategies/accountEligibility.ts](../../packages/engine/src/strategies/accountEligibility.ts)), so the ledger,
 the optimizer input builder, and the decision generators can never disagree.
+
+The named conversion path refuses inherited-IRA sources with unchanged balances
+(`irc-408-d-3-C-i-inherited-ira-rollover-bar`).
 
 An HSA left last for medical is qualified (tax- and penalty-free) only up to modeled medical costs when the
 account opts into the cap treatment, and an optional **taxable safety-net floor**

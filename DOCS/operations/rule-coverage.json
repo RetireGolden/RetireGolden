@@ -2,21 +2,21 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 1,
   "registry": {
-    "total": 240,
+    "total": 248,
     "byClassification": {
-      "approximated": 51,
-      "outOfScope": 12,
-      "settled": 173,
+      "approximated": 52,
+      "outOfScope": 14,
+      "settled": 178,
       "unsettled": 4
     },
     "byVolatility": {
       "annuallyIndexed": 37,
       "awaitingGuidance": 4,
-      "staticStatute": 194,
+      "staticStatute": 202,
       "sunsetting": 5
     },
     "byJurisdiction": {
-      "federal": 183,
+      "federal": 191,
       "states": {
         "AK": 1,
         "AR": 9,
@@ -77,8 +77,8 @@
     },
     {
       "path": "actions/annualQcdResidualForm8606.ts",
-      "sweptOn": "2026-08-24",
-      "note": "Non-QCD QCD remainder/Form 8606 line-7 basis-return treatment; no record; residual line-7/line-8 pro-rata reconciliation; no record"
+      "sweptOn": "2026-08-25",
+      "note": "Residual line-7/line-8 pro-rata reconciliation; no record"
     },
     {
       "path": "actions/annualRetirementPhysicalEventInventory.ts",
@@ -172,8 +172,8 @@
     },
     {
       "path": "actions/rothConversionExecution.ts",
-      "sweptOn": "2026-08-24",
-      "note": "RMD aggregation/order covered; zero-basis taxable vs positive-basis deferred character and direct conversion vehicle gates; no record"
+      "sweptOn": "2026-08-25",
+      "note": "Positive-basis deferred character and direct conversion vehicle gates; no record"
     },
     {
       "path": "actions/traditionalEmployerPlanPenaltyPrerequisite.ts",
@@ -934,6 +934,57 @@
       ],
       "fixtureFiles": [
         "packages/engine/src/tax/stateTax.rules.test.ts"
+      ]
+    },
+    {
+      "id": "form-1040-line-4b-and-form-8606-line-7-qcd-remainder",
+      "classification": "settled",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-25",
+      "dueOn": "2027-08-25",
+      "implementedBy": [
+        "packages/engine/src/actions/annualQcdResidualForm8606.ts",
+        "packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/actions/annualQcdResidualForm8606.test.ts"
+      ]
+    },
+    {
+      "id": "form-8606-line-4-post-year-contribution-exclusion",
+      "classification": "settled",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-25",
+      "dueOn": "2027-08-25",
+      "implementedBy": [
+        "packages/engine/src/actions/annualIraBasisAllocation.ts",
+        "packages/engine/src/actions/ownedNonRothIraWithdrawalCharacter.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/actions/ownedNonRothIraWithdrawalCharacter.test.ts"
+      ]
+    },
+    {
+      "id": "form-8606-lines-7-and-8-distinct-distribution-staging",
+      "classification": "settled",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-25",
+      "dueOn": "2027-08-25",
+      "implementedBy": [
+        "packages/engine/src/actions/annualIraBasisAllocation.ts",
+        "packages/engine/src/actions/ownedNonRothIraWithdrawalCharacter.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/actions/ownedNonRothIraWithdrawalCharacter.test.ts"
       ]
     },
     {
@@ -2104,6 +2155,21 @@
       ]
     },
     {
+      "id": "irc-408-d-3-C-i-inherited-ira-rollover-bar",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-25",
+      "dueOn": "2027-08-25",
+      "implementedBy": [
+        "packages/engine/src/actions/rothConversionExecution.ts",
+        "packages/engine/src/strategies/accountEligibility.ts"
+      ],
+      "fixtureFiles": []
+    },
+    {
       "id": "irc-408-d-3-C-ii-surviving-spouse-not-inherited",
       "classification": "settled",
       "jurisdiction": "federal",
@@ -2498,6 +2564,23 @@
       ]
     },
     {
+      "id": "irc-408A-d-3-A-i-zero-basis-conversion-includible",
+      "classification": "settled",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-25",
+      "dueOn": "2027-08-25",
+      "implementedBy": [
+        "packages/engine/src/actions/ownedNonRothIraWithdrawalCharacter.ts",
+        "packages/engine/src/actions/rothConversionExecution.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/actions/rothConversionExecution.test.ts"
+      ]
+    },
+    {
       "id": "irc-408A-d-3-B-conversion-destination-must-be-a-roth-ira",
       "classification": "settled",
       "jurisdiction": "federal",
@@ -2526,6 +2609,38 @@
       "dueOn": "2027-08-03",
       "implementedBy": [
         "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/strategies/rothBasis.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/strategies/rothBasis.test.ts"
+      ]
+    },
+    {
+      "id": "irc-408A-d-4-B-converted-layer-taxable-portion-first",
+      "classification": "approximated",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-25",
+      "dueOn": "2027-08-25",
+      "implementedBy": [
+        "packages/engine/src/strategies/rothBasis.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/strategies/rothBasis.test.ts"
+      ]
+    },
+    {
+      "id": "irc-408A-d-4-B-roth-distribution-ordering",
+      "classification": "settled",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-25",
+      "dueOn": "2027-08-25",
+      "implementedBy": [
         "packages/engine/src/strategies/rothBasis.ts"
       ],
       "fixtureFiles": [
@@ -3247,6 +3362,20 @@
       "fixtureFiles": [
         "packages/engine/src/params/params.test.ts"
       ]
+    },
+    {
+      "id": "irs-notice-2014-54-employer-plan-after-tax-rollover-allocation",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-25",
+      "dueOn": "2027-08-25",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts"
+      ],
+      "fixtureFiles": []
     },
     {
       "id": "mo-rsmo-143-121-capital-gain-deduction",

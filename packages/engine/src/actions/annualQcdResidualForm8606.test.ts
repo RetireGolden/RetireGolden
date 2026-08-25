@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { parsePlan } from '../model/plan.js'
+import { describeRule } from '../rules/describeRule.js'
 import { singlePersonPlan, traditionalAccount } from '../testing/planFixtures.js'
 import type { RetirementActionEligibilityRuntimeEvidence } from '../strategies/accountEligibility.js'
 import type { QualifiedCharitableDistributionRequest } from './contract.js'
@@ -162,6 +163,36 @@ function staged(input: StageAnnualQcdResidualForm8606Input) {
   if (result.status !== 'annualQcdResidualForm8606Staged') throw new Error(result.issues[0].detail)
   return result
 }
+
+// Independent worksheet from IRC 408(d)(8)(B), Form 1040 line 4b Exception 3,
+// and Form 8606 lines 7-8: a sole $10.00 IRA with $4.00 of basis has $6.00
+// otherwise includible. Of a $10.00 charitable distribution, $6.00 can be a
+// QCD and the $4.00 remainder is not a QCD. It is a distribution, not a Roth
+// conversion, so the Form 8606 totals are line 7 = $4.00 and line 8 = $0.00.
+describeRule('form-1040-line-4b-and-form-8606-line-7-qcd-remainder', {
+  note: 'non-QCD remainder enters line 7 and cannot create line 8',
+  readings: {
+    formInstructions: { line7GrossAmount: 400, line8GrossAmount: 0 },
+    rejectedTreatRemainderAsConversion: { line7GrossAmount: 0, line8GrossAmount: 400 },
+  },
+  accepted: 'formInstructions',
+}, ({ accepted, readings }) => {
+  it('rejoins the non-QCD remainder only with annual line-7 distributions', () => {
+    const pool = staged(fixture(undefined, { basis: 400 })).pools[0]!
+    const actual = {
+      line7GrossAmount: pool.line7AllocationEvidence.annualGrossAmount,
+      line8GrossAmount: pool.line8AllocationEvidence.annualGrossAmount,
+    }
+
+    expect(actual).toEqual(accepted)
+    expect(actual).not.toEqual(readings.rejectedTreatRemainderAsConversion)
+    expect(pool.qcdRemainderBindings[0]?.allocation).toMatchObject({
+      grossAmount: 400,
+      allocatedBasisAmount: 400,
+      taxableAmount: 0,
+    })
+  })
+})
 
 describe('stageAnnualQcdResidualForm8606', () => {
   it('keeps qualified QCD dollars out of residual line 7 and preserves base lines', () => {

@@ -161,6 +161,103 @@ describe('classifyOwnedNonRothIraAnnualWithdrawals', () => {
     })
   })
 
+  // Independent Form 8606 worksheet: $100.00 opening basis plus a $50.00
+  // contribution made in the following calendar year for this tax year. Line
+  // 4 removes that $50.00 from current-year distribution recovery, leaving a
+  // $100.00 numerator over a $200.00 denominator ($100.00 year-end value plus
+  // a $100.00 distribution), so the distribution returns $50.00 of basis.
+  // Leaving the following-year contribution in the numerator would return
+  // $75.00 instead.
+  describeRule('form-8606-line-4-post-year-contribution-exclusion', {
+    note: 'following-calendar-year contribution window',
+    readings: {
+      form8606Line4ExcludesContribution: 5_000,
+      rejectedCalendarYearInclusion: 7_500,
+    },
+    accepted: 'form8606Line4ExcludesContribution',
+  }, ({ accepted, readings }) => {
+    it('removes the line-4 amount before characterizing a positive distribution', () => {
+      const result = classifyOwnedNonRothIraAnnualWithdrawals(input({
+        poolMembers: [
+          { ...member('traditional', 'traditional'), yearEndApplicableBalanceAmount: asUsdCents(10_000) },
+          { ...member('sep', 'sep'), yearEndApplicableBalanceAmount: asUsdCents(0) },
+          { ...member('simple', 'simple'), yearEndApplicableBalanceAmount: asUsdCents(0) },
+        ],
+        completePoolEvidence: {
+          ...input().completePoolEvidence,
+          yearEndApplicablePoolBalanceAmount: asUsdCents(10_000),
+        },
+        annualFacts: {
+          openingBasisAmount: asUsdCents(10_000),
+          taxYearNondeductibleContributionAmount: asUsdCents(5_000),
+          postYearNondeductibleContributionExcludedAmount: asUsdCents(5_000),
+          yearEndApplicablePoolBalanceAmount: asUsdCents(10_000),
+          outstandingRolloverAmount: asUsdCents(0),
+          rolloverRepaymentAdjustmentAmount: asUsdCents(0),
+          form8606Line7DistributionAmount: asUsdCents(10_000),
+          form8606Line8NetConversionAmount: asUsdCents(0),
+        },
+        line7Distributions: [
+          activity('post-year-window', 'ira-traditional', 10_000),
+        ],
+        line8Conversions: [],
+      }))
+
+      expect(result.withdrawals[0]?.basisRecoveredAmount).toBe(accepted)
+      expect(result.withdrawals[0]?.basisRecoveredAmount)
+        .not.toBe(readings.rejectedCalendarYearInclusion)
+      expect(result.withdrawals[0]).toMatchObject({
+        executedAmount: 10_000,
+        ordinaryIncomeAmount: 5_000,
+      })
+    })
+  })
+
+  // Independent Form 8606 staging worksheet: a $100.00 ordinary distribution
+  // and a $50.00 Roth conversion are not interchangeable. Line 7 excludes
+  // the conversion, while line 8 carries its net amount.
+  describeRule('form-8606-lines-7-and-8-distinct-distribution-staging', {
+    note: 'ordinary distribution and Roth conversion use separate annual lines',
+    readings: {
+      form8606SeparateLines: { line7GrossAmount: 10_000, line8GrossAmount: 5_000 },
+      rejectedCombinedDistributionLine: { line7GrossAmount: 15_000, line8GrossAmount: 0 },
+    },
+    accepted: 'form8606SeparateLines',
+  }, ({ accepted, readings }) => {
+    it('preserves a conversion in line 8 rather than folding it into line 7', () => {
+      const result = classifyOwnedNonRothIraAnnualWithdrawals(input({
+        poolMembers: [
+          { ...member('traditional', 'traditional'), yearEndApplicableBalanceAmount: asUsdCents(10_000) },
+          { ...member('sep', 'sep'), yearEndApplicableBalanceAmount: asUsdCents(0) },
+          { ...member('simple', 'simple'), yearEndApplicableBalanceAmount: asUsdCents(0) },
+        ],
+        completePoolEvidence: {
+          ...input().completePoolEvidence,
+          yearEndApplicablePoolBalanceAmount: asUsdCents(10_000),
+        },
+        annualFacts: {
+          openingBasisAmount: asUsdCents(0),
+          taxYearNondeductibleContributionAmount: asUsdCents(0),
+          postYearNondeductibleContributionExcludedAmount: asUsdCents(0),
+          yearEndApplicablePoolBalanceAmount: asUsdCents(10_000),
+          outstandingRolloverAmount: asUsdCents(0),
+          rolloverRepaymentAdjustmentAmount: asUsdCents(0),
+          form8606Line7DistributionAmount: asUsdCents(10_000),
+          form8606Line8NetConversionAmount: asUsdCents(5_000),
+        },
+        line7Distributions: [activity('ordinary', 'ira-traditional', 10_000)],
+        line8Conversions: [activity('conversion', 'ira-traditional', 5_000, '2030-07-01')],
+      }))
+      const actual = {
+        line7GrossAmount: result.line7AllocationEvidence.annualGrossAmount,
+        line8GrossAmount: result.line8AllocationEvidence.annualGrossAmount,
+      }
+
+      expect(actual).toEqual(accepted)
+      expect(actual).not.toEqual(readings.rejectedCombinedDistributionLine)
+    })
+  })
+
   it('derives the complete Form 8606 numerator, line 6, and denominator', () => {
     const result = classifyOwnedNonRothIraAnnualWithdrawals(
       input({
