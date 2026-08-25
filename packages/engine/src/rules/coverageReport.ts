@@ -171,6 +171,16 @@ function quoteFidelitySummary(
     }
     counts[verdict] = count
   }
+  const verdictTotal = Object.values(counts).reduce((sum, count) => sum + count, 0)
+  if (verdictTotal !== parsed.entryCount) {
+    throw new Error(
+      'quote-fidelity verdict counts must sum to entryCount (' +
+        verdictTotal +
+        ' vs ' +
+        parsed.entryCount +
+        ')',
+    )
+  }
   return {
     generatedAt: parsed.generatedAt,
     counts: Object.fromEntries(Object.entries(counts).sort(([left], [right]) => compareStrings(left, right))),

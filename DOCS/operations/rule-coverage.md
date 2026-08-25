@@ -53,9 +53,9 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | Engine source files | 235 |
 | Swept | 100.0% |
 | Grandfathered unswept baseline | 0 |
-| partial | 66 |
+| partial | 68 |
 | registered | 42 |
-| rule-free | 127 |
+| rule-free | 125 |
 | unswept | 0 |
 
 ## Per-directory rollup
@@ -66,7 +66,7 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | actions | 74 | 27 | 19 | 28 | 0 |
 | allocation | 1 | 0 | 0 | 1 | 0 |
 | decisions | 19 | 5 | 0 | 14 | 0 |
-| insights | 22 | 2 | 1 | 19 | 0 |
+| insights | 22 | 4 | 1 | 17 | 0 |
 | internal | 9 | 2 | 2 | 5 | 0 |
 | ladder | 4 | 2 | 0 | 2 | 0 |
 | longevity | 2 | 1 | 0 | 1 | 0 |
@@ -120,10 +120,12 @@ None.
 | actions/rothConversionExecution.ts | 2026-08-24 | RMD aggregation/order covered; zero-basis taxable vs positive-basis deferred character and direct conversion vehicle gates; no record |
 | actions/traditionalEmployerPlanPenaltyPrerequisite.ts | 2026-08-24 | Rule of 55, employer-SEPP, permitted methods, public-safety and recapture covered; age-59½ threshold, 10% rate, disability waiver lack records |
 | decisions/decisionFixtures.ts | 2026-08-24 | RMD age 73 and Social Security claim-age fixtures; no record |
-| decisions/generators.ts | 2026-08-24 | Registry covers QLAC premium cap; residual bracket targets 10/12/22/24 and SS grid 62–70; no records |
+| decisions/generators.ts | 2026-08-24 | Registry covers QLAC premium cap; residual bracket targets 10/12/22/24 and SS grid 62–70; no records; QLAC start-age 85 ceiling (Treas. Reg. 1.401(a)(9)-6(q)(1)(ii)) hardcoded |
 | decisions/objectives.ts | 2026-08-24 | Age-73 pre-RMD bridge heuristic; no record |
 | decisions/pensionElection.ts | 2026-08-24 | Tax-free direct rollover into traditional IRA; no record |
 | decisions/rothConversionCandidateAdapter.ts | 2026-08-24 | Same-owner Roth destination/date gate; no record |
+| insights/detectors/hecmBufferCandidate.ts | 2026-08-24 | returns null under age 62 — the statutory HECM minimum age (12 U.S.C. 1715z-20(b)); no record names this file |
+| insights/detectors/missingDataBasis.ts | 2026-08-24 | independently classifies zero-basis primary-residence gain as fully covered by the pack §121 cap (tax vs timing-only copy); no record names this file |
 | insights/detectors/rothBridgeHeadroom.ts | 2026-08-24 | treats every 73+ person as post-RMD; applicable age is cohort-dependent (73 or 75, rmd/applicableAge) — detector should consume the registered helper; no record names this file |
 | insights/detectors/ssClaimMilestone.ts | 2026-08-24 | Re-derives SS entitlement/eligibility (former-spouse gates, family max, payable months) beyond registry gaps for maritalBenefits/nra |
 | internal/ownedNonRothIraAnnualAttemptSettlement.ts | 2026-08-24 | 408(d)(3)(A)(i) same-owner conversion identity; no record |
@@ -155,7 +157,7 @@ None.
 | strategies/optimizer.ts | 2026-08-24 | MILP prices brackets, IRMAA, ACA MAGI cap, RMD floors, §86 SS phase-in, LTCG; not registered here |
 | strategies/rothConversion.ts | 2026-08-24 | Bracket/IRMAA/ACA FPL/senior-deduction sizing via computeFederalTax; no record names this file |
 | tax/annualCharitableDeductionParameters.ts | 2026-08-24 | §170(b)(1)(I) 0.5% floor, §170(b)(1)(G) 60% limit, §68 thresholds/rate; only §170(p) cap record names this file |
-| tax/federalTax.ts | 2026-08-24 | §170(b)(1)(I)(ii) category waterfall not applied; OBBBA high-income SALT phase-out not modeled; no record naming this file |
+| tax/federalTax.ts | 2026-08-24 | implements §86 SS inclusion, NIIT, AMT screen, senior-deduction phase-out, LTCG stacking with records naming it, but §170(b)(1)(I)(ii) category waterfall is applied only in the ledger file its record names, and the OBBBA high-income SALT phase-out is unmodeled with no approximated/outOfScope record naming this file |
 | tax/medicare.ts | 2026-08-24 | Post-pack premium premiumScale (healthcare-inflation stand-in); no record naming this file |
 | tax/propertySale.ts | 2026-08-24 | Personal-use capital loss nondeductible (gain floored at zero); no record naming this file |
 

@@ -16,10 +16,11 @@ export interface CoverageAttestation {
  * - registered — every claim found in the file is represented by a rule.
  * - partial — the file was swept, but note names residual unregistered claims.
  * - rule-free — the file was swept and contains no claims requiring a rule.
- * - unswept — the file has not received a coverage sweep.
+ * - unswept — the file has not received a coverage sweep (retained for re-sweeps;
+ *   the 2026-08-24 baseline sweep closed the grandfather window).
  *
- * BASELINE_UNSWEPT is a ratchet: a file may leave it when attested, but a newly
- * added source file may never enter it.
+ * BASELINE_UNSWEPT is frozen empty: the baseline sweep is complete and no file
+ * may hold status unswept.
  */
 export const COVERAGE_ATTESTATIONS: Readonly<Record<string, CoverageAttestation>> = Object.freeze({
   'actions/aggregateRothConversionOwnerAllocation.ts': Object.freeze({ status: 'partial', sweptOn: '2026-08-24', note: 'RMD-before-conversion ordering/snapshot; no record' }),
@@ -100,7 +101,7 @@ export const COVERAGE_ATTESTATIONS: Readonly<Record<string, CoverageAttestation>
   'decisions/annuitization.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'decisions/decisionFixtures.ts': Object.freeze({ status: 'partial', sweptOn: '2026-08-24', note: 'RMD age 73 and Social Security claim-age fixtures; no record' }),
   'decisions/evaluateCandidate.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
-  'decisions/generators.ts': Object.freeze({ status: 'partial', sweptOn: '2026-08-24', note: 'Registry covers QLAC premium cap; residual bracket targets 10/12/22/24 and SS grid 62–70; no records' }),
+  'decisions/generators.ts': Object.freeze({ status: 'partial', sweptOn: '2026-08-24', note: 'Registry covers QLAC premium cap; residual bracket targets 10/12/22/24 and SS grid 62–70; no records; QLAC start-age 85 ceiling (Treas. Reg. 1.401(a)(9)-6(q)(1)(ii)) hardcoded' }),
   'decisions/index.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'decisions/insightsAdapter.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'decisions/objectives.ts': Object.freeze({ status: 'partial', sweptOn: '2026-08-24', note: 'Age-73 pre-RMD bridge heuristic; no record' }),
@@ -120,11 +121,11 @@ export const COVERAGE_ATTESTATIONS: Readonly<Record<string, CoverageAttestation>
   'insights/detectors/acaThresholdProximity.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'insights/detectors/annuitizationHeadroom.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'insights/detectors/assetLocation.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
-  'insights/detectors/hecmBufferCandidate.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
+  'insights/detectors/hecmBufferCandidate.ts': Object.freeze({ status: 'partial', sweptOn: '2026-08-24', note: 'returns null under age 62 — the statutory HECM minimum age (12 U.S.C. 1715z-20(b)); no record names this file' }),
   'insights/detectors/incomeFloorFunded.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'insights/detectors/irmaaTierEdge.ts': Object.freeze({ status: 'registered', sweptOn: '2026-08-24', note: null }),
   'insights/detectors/lawPackDrift.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
-  'insights/detectors/missingDataBasis.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
+  'insights/detectors/missingDataBasis.ts': Object.freeze({ status: 'partial', sweptOn: '2026-08-24', note: 'independently classifies zero-basis primary-residence gain as fully covered by the pack §121 cap (tax vs timing-only copy); no record names this file' }),
   'insights/detectors/pensionElectionPending.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'insights/detectors/qcdEfficiency.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'insights/detectors/rothBridgeHeadroom.ts': Object.freeze({ status: 'partial', sweptOn: '2026-08-24', note: 'treats every 73+ person as post-RMD; applicable age is cohort-dependent (73 or 75, rmd/applicableAge) — detector should consume the registered helper; no record names this file' }),
@@ -174,8 +175,8 @@ export const COVERAGE_ATTESTATIONS: Readonly<Record<string, CoverageAttestation>
   'params/provenance.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'params/state/data/year2026.ts': Object.freeze({ status: 'registered', sweptOn: '2026-08-24', note: null }),
   'params/state/index.ts': Object.freeze({ status: 'registered', sweptOn: '2026-08-24', note: null }),
-  'params/state/types.ts': Object.freeze({ status: 'registered', sweptOn: '2026-08-24', note: 'types only; named by records for shape definitions; named by records for the shapes they define' }),
-  'params/types.ts': Object.freeze({ status: 'registered', sweptOn: '2026-08-24', note: 'types only; named by records for shape definitions; named by records for the shapes they define' }),
+  'params/state/types.ts': Object.freeze({ status: 'registered', sweptOn: '2026-08-24', note: 'types only; named by records for the shapes they define' }),
+  'params/types.ts': Object.freeze({ status: 'registered', sweptOn: '2026-08-24', note: 'types only; named by records for the shapes they define' }),
   'projection/annualCashFlowCapture.ts': Object.freeze({ status: 'partial', sweptOn: '2026-08-24', note: 'Form 8606 basis, QCD exclusion, annuity and penalty character composition; no record' }),
   'projection/annualCashFlowIds.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'projection/annualCashFlowReconciliation.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
@@ -249,7 +250,7 @@ export const COVERAGE_ATTESTATIONS: Readonly<Record<string, CoverageAttestation>
   'tax/aca.ts': Object.freeze({ status: 'registered', sweptOn: '2026-08-24', note: null }),
   'tax/aggregateBasisSale.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'tax/annualCharitableDeductionParameters.ts': Object.freeze({ status: 'partial', sweptOn: '2026-08-24', note: '§170(b)(1)(I) 0.5% floor, §170(b)(1)(G) 60% limit, §68 thresholds/rate; only §170(p) cap record names this file' }),
-  'tax/federalTax.ts': Object.freeze({ status: 'partial', sweptOn: '2026-08-24', note: '§170(b)(1)(I)(ii) category waterfall not applied; OBBBA high-income SALT phase-out not modeled; no record naming this file' }),
+  'tax/federalTax.ts': Object.freeze({ status: 'partial', sweptOn: '2026-08-24', note: 'implements §86 SS inclusion, NIIT, AMT screen, senior-deduction phase-out, LTCG stacking with records naming it, but §170(b)(1)(I)(ii) category waterfall is applied only in the ledger file its record names, and the OBBBA high-income SALT phase-out is unmodeled with no approximated/outOfScope record naming this file' }),
   'tax/medicare.ts': Object.freeze({ status: 'partial', sweptOn: '2026-08-24', note: 'Post-pack premium premiumScale (healthcare-inflation stand-in); no record naming this file' }),
   'tax/propertySale.ts': Object.freeze({ status: 'partial', sweptOn: '2026-08-24', note: 'Personal-use capital loss nondeductible (gain floored at zero); no record naming this file' }),
   'tax/stateTax.ts': Object.freeze({ status: 'registered', sweptOn: '2026-08-24', note: null }),
@@ -259,7 +260,6 @@ export const COVERAGE_ATTESTATIONS: Readonly<Record<string, CoverageAttestation>
   'version.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
 })
 
-/** The frozen grandfather set for the unswept-to-attested ratchet. */
-export const BASELINE_UNSWEPT: readonly string[] = Object.freeze([
-])
+/** Grandfather window closed with the 2026-08-24 baseline sweep; must stay empty. */
+export const BASELINE_UNSWEPT: readonly string[] = Object.freeze([])
 

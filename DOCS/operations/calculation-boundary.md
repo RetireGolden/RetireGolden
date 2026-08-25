@@ -17,9 +17,12 @@ run in the normal test job:
 
 - `packages/planner-ui/src/engineRuleReferences.test.ts` and `app/src/engineRuleReferences.test.ts` —
   every backticked registry-rule-shaped token in consumer sources must exist in `taxRuleIds`, and no
-  import specifier may reach engine internals (`engine/src/`, `engine/dist/`, `params/data/`,
-  `params/state/data/`). The deep-import count is pinned at zero, which the sweep confirmed is the
-  current truth.
+  import specifier may reach engine internals: `engine/src/`, `engine/dist/`, `params/data/`,
+  `params/state/data/`, or any `@retiregolden/engine/…` path that is not a published package export
+  subpath (Vite aliases `@retiregolden/engine/*` onto `packages/engine/src/*`, so alias-reachable
+  internals are blocked by resolving specifiers against `packages/engine/package.json` exports).
+  RESTATED law — locally recomputed thresholds, rates, or eligibility predicates — is policed by
+  sweeps and spot-audits, not by these tests.
 
 The plan that created this page originally called for banning consumer imports of
 `@retiregolden/engine/params` outright. That ban would be wrong: twenty-plus modules legitimately
@@ -42,6 +45,7 @@ above) and locally *restated* law (inventoried below, caught by sweep + review r
 | `planner-ui/src/socialSecurity/ficaReturn.ts` | Local 6.2%/12.4% statements and self-employed doubling (rate input from pack) | **Source from packs** for the doubling; keep the lens clearly non-ledger |
 | `planner-ui/src/report/reportModel.ts` | Local Roth five-year presentation window and §1.408-8(c)(3) treat-as-own routing derived from engine evidence | **Verify-and-mark**: confirm it only re-labels engine-published evidence; any independent decision migrates |
 | `planner-ui/src/planner/SsAnalysisPage.tsx` | Survivor eligibility mirrors (`marriageYears >= 0.75`, `remarriedAtAge >= 60`) | **Consume engine predicates**: `maritalBenefits` owns these gates |
+| `planner-ui/src/planner/SocialSecuritySection.tsx` | Executable default `marriageYears: relationship === 'divorced' ? 10 : 1` bakes the SSA 10-year divorced-spouse duration rule into UI state | **Consume engine constant**: `DIVORCED_MIN_MARRIAGE_YEARS` from `@retiregolden/engine/socialSecurity/maritalBenefits` (already exported; `ssAnalysis.ts` imports it) |
 
 ### B. Statutory claim-age bounds mirrored as UI input constraints
 

@@ -79,19 +79,32 @@ describe('coverage attestations', () => {
     ).toEqual([])
   })
 
-  it('keeps unswept files to the frozen grandfather set', () => {
+  it('forbids unswept attestations after the baseline sweep', () => {
+    expect(BASELINE_UNSWEPT.length).toBe(0)
     const unswept = Object.entries(COVERAGE_ATTESTATIONS)
       .filter(([, attestation]) => attestation.status === 'unswept')
       .map(([path]) => path)
       .sort()
-    const baseline = [...BASELINE_UNSWEPT].sort()
-    const missingFromBaseline = differences(unswept, baseline)
-    const stillInBaseline = differences(baseline, unswept)
+    expect(unswept, 'attestations with status unswept: ' + (unswept.join(', ') || 'none')).toEqual([])
+  })
+
+  it('names every registered attestation in the registry implementedBy list', () => {
+    const registryNamedPaths = new Set<string>()
+    for (const rule of Object.values(TAX_RULE_REGISTRY)) {
+      for (const implementedBy of rule.implementedBy) {
+        registryNamedPaths.add(implementedBy.replace(/^packages\/engine\/src\//u, ''))
+      }
+    }
+    const REGISTERED_WITHOUT_REGISTRY_NAME = 'rules/taxRuleRegistry.ts'
+    const registeredButUnnamed = Object.entries(COVERAGE_ATTESTATIONS)
+      .filter(([path, attestation]) =>
+        attestation.status === 'registered' && path !== REGISTERED_WITHOUT_REGISTRY_NAME && !registryNamedPaths.has(path))
+      .map(([path]) => path)
+      .sort()
     expect(
-      { missingFromBaseline, stillInBaseline },
-      'unswept paths missing from baseline: ' + (missingFromBaseline.join(', ') || 'none') +
-        '; baseline paths no longer unswept: ' + (stillInBaseline.join(', ') || 'none'),
-    ).toEqual({ missingFromBaseline: [], stillInBaseline: [] })
+      registeredButUnnamed,
+      'registered paths not named by any registry record: ' + (registeredButUnnamed.join(', ') || 'none'),
+    ).toEqual([])
   })
 })
 

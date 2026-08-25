@@ -2,6 +2,10 @@
  * planner-ui composes and presents engine results; it must not restate law, so a
  * rule id it mentions must exist in the registry, and it may only consume the
  * engine through its public subpaths.
+ *
+ * This scan is DELIBERATELY STRICTER than taxRuleRegistry.conformance.test.ts:
+ * the engine suite admits backticked bare statute-section prefixes; consumers
+ * may cite only full registered rule ids.
  */
 
 import { describe, expect, it } from 'vitest'
@@ -14,7 +18,7 @@ const SELF = 'engineRuleReferences.test.ts'
 const registeredRuleIds = new Set<string>(taxRuleIds)
 const registryPrefixes = new Set(taxRuleIds.map((ruleId) => ruleId.split('-')[0]!))
 
-/** Same shape as taxRuleRegistry.conformance.test.ts — authority-anchored ids only. */
+/** Authority-anchored ids only — full registered rule ids, not bare statute prefixes. */
 const authorityShaped = /`([A-Za-z0-9]+(?:-[A-Za-z0-9]+){3,})`/gu
 /** "registered as `x`" — any kebab token after the phrase is a registry citation. */
 const citedAsRegistered =
@@ -25,6 +29,111 @@ const DEEP_IMPORT_PATTERNS: ReadonlyArray<{ pattern: RegExp, label: string }> = 
   { pattern: /engine\/params\/(?:data|state\/data)\//u, label: 'engine parameter data table' },
   { pattern: /\.\.\/.*(?:packages\/)?engine\/(?:src|dist)\//u, label: 'relative escape into engine internals' },
 ]
+
+/** packages/engine/package.json "exports" keys — do not read at runtime. */
+const ENGINE_PACKAGE_EXPORT_KEYS: readonly string[] = [
+  '.',
+  './actions',
+  './decisions',
+  './params',
+  './params/state',
+  './rules',
+  './schema',
+  './schema/plan.v1.json',
+  './schema/plan.v2.json',
+  './schema/plan.v3.json',
+  './schema/plan.v4.json',
+  './actions/*',
+  './actions/annualHsaOpeningAuthority',
+  './actions/annualHsaPenaltyEvaluation',
+  './actions/annualHsaPhysicalMovementCandidate',
+  './actions/annualHsaReimbursementLedger',
+  './actions/annualHsaTreatmentBindingCoordinator',
+  './actions/annualHsaWithdrawalCharacter',
+  './actions/annualIraBasisAllocation',
+  './actions/annualOwnedNonRothIraPoolCapacity',
+  './actions/annualQcdExecutionPrerequisite',
+  './actions/annualQcdPhysicalExecution',
+  './actions/annualQcdResidualForm8606',
+  './actions/annualQcdTaxCharacterPostPass',
+  './actions/annualRetirementActionMovementCoordinator',
+  './actions/annualRetirementActionPublication',
+  './actions/annualRetirementPhysicalEventInventory',
+  './actions/civilDate',
+  './actions/contract',
+  './actions/execution',
+  './actions/identity',
+  './actions/money',
+  './actions/ownedNonRothIraAnnualCandidateCoordinator',
+  './actions/ownedNonRothIraAnnualCandidateTransaction',
+  './actions/ownedNonRothIraAnnualFilingEvidence',
+  './actions/ownedNonRothIraAnnualFilingSourceResolver',
+  './actions/ownedNonRothIraAnnualFinalization',
+  './actions/ownedNonRothIraAnnualPlanCoordinator',
+  './actions/ownedNonRothIraAnnualPostCandidateEvidence',
+  './actions/ownedNonRothIraMovementCandidate',
+  './actions/ownedNonRothIraPenaltyPrerequisite',
+  './actions/ownedNonRothIraSeppAnnualReconciliation',
+  './actions/ownedNonRothIraSeppCurrentPaymentCandidate',
+  './actions/ownedNonRothIraWithdrawalCharacter',
+  './actions/planBalanceAdapter',
+  './actions/reasons',
+  './actions/retirementActionCandidateIdentityAllocator',
+  './actions/retirementActionManualReview',
+  './actions/rothConversionExecution',
+  './actions/taxableWithdrawalCharacter',
+  './actions/traditionalEmployerPlanPenaltyPrerequisite',
+  './allocation/*',
+  './decisions/*',
+  './insights/*',
+  './ladder/*',
+  './longevity/*',
+  './model/*',
+  './montecarlo/*',
+  './params/*',
+  './projection/internal/*',
+  './projection/*',
+  './rmd/*',
+  './scenarios/*',
+  './schema/*',
+  './socialSecurity/*',
+  './spending/*',
+  './strategies/*',
+  './tax/*',
+  './testing/*',
+  './version',
+  './*',
+  './package.json',
+]
+
+const NULL_EXPORT_WILDCARDS = new Set(['./actions/*', './projection/internal/*', './*'])
+
+function exportKeyMatchesSubpath(exportKey: string, subpath: string): boolean {
+  if (exportKey === '.') return subpath === ''
+  const keyPath = exportKey.slice(2)
+  if (exportKey.endsWith('/*')) {
+    const prefix = keyPath.slice(0, -2)
+    return subpath === prefix || subpath.startsWith(prefix + '/')
+  }
+  return subpath === keyPath
+}
+
+function isAllowedEngineExportSpecifier(specifier: string): boolean {
+  if (!specifier.startsWith('@retiregolden/engine')) return true
+  const subpath = specifier === '@retiregolden/engine' ? '' : specifier.slice('@retiregolden/engine/'.length)
+  if (NULL_EXPORT_WILDCARDS.size > 0) {
+    for (const blocked of NULL_EXPORT_WILDCARDS) {
+      if (!exportKeyMatchesSubpath(blocked, subpath)) continue
+      const rescued = ENGINE_PACKAGE_EXPORT_KEYS.some(
+        (key) => !NULL_EXPORT_WILDCARDS.has(key) && !key.endsWith('/*') && exportKeyMatchesSubpath(key, subpath),
+      )
+      if (!rescued) return false
+    }
+  }
+  return ENGINE_PACKAGE_EXPORT_KEYS.some(
+    (key) => !NULL_EXPORT_WILDCARDS.has(key) && exportKeyMatchesSubpath(key, subpath),
+  )
+}
 
 /** ES module specifiers only — import.meta.glob patterns are out of scope. */
 function moduleSpecifiers(source: string): string[] {
@@ -73,6 +182,9 @@ describe('engine consumer boundaries', () => {
       for (const specifier of moduleSpecifiers(source as string)) {
         for (const { pattern, label } of DEEP_IMPORT_PATTERNS) {
           if (pattern.test(specifier)) offenders.push(`${path}: ${specifier} (${label})`)
+        }
+        if (!isAllowedEngineExportSpecifier(specifier)) {
+          offenders.push(`${path}: ${specifier} (not a public @retiregolden/engine export subpath)`)
         }
       }
     }

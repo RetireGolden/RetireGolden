@@ -45,9 +45,9 @@
   "attestations": {
     "totalFiles": 235,
     "byStatus": {
-      "partial": 66,
+      "partial": 68,
       "registered": 42,
-      "rule-free": 127,
+      "rule-free": 125,
       "unswept": 0
     },
     "sweptPct": 100,
@@ -198,7 +198,7 @@
     {
       "path": "decisions/generators.ts",
       "sweptOn": "2026-08-24",
-      "note": "Registry covers QLAC premium cap; residual bracket targets 10/12/22/24 and SS grid 62–70; no records"
+      "note": "Registry covers QLAC premium cap; residual bracket targets 10/12/22/24 and SS grid 62–70; no records; QLAC start-age 85 ceiling (Treas. Reg. 1.401(a)(9)-6(q)(1)(ii)) hardcoded"
     },
     {
       "path": "decisions/objectives.ts",
@@ -214,6 +214,16 @@
       "path": "decisions/rothConversionCandidateAdapter.ts",
       "sweptOn": "2026-08-24",
       "note": "Same-owner Roth destination/date gate; no record"
+    },
+    {
+      "path": "insights/detectors/hecmBufferCandidate.ts",
+      "sweptOn": "2026-08-24",
+      "note": "returns null under age 62 — the statutory HECM minimum age (12 U.S.C. 1715z-20(b)); no record names this file"
+    },
+    {
+      "path": "insights/detectors/missingDataBasis.ts",
+      "sweptOn": "2026-08-24",
+      "note": "independently classifies zero-basis primary-residence gain as fully covered by the pack §121 cap (tax vs timing-only copy); no record names this file"
     },
     {
       "path": "insights/detectors/rothBridgeHeadroom.ts",
@@ -373,7 +383,7 @@
     {
       "path": "tax/federalTax.ts",
       "sweptOn": "2026-08-24",
-      "note": "§170(b)(1)(I)(ii) category waterfall not applied; OBBBA high-income SALT phase-out not modeled; no record naming this file"
+      "note": "implements §86 SS inclusion, NIIT, AMT screen, senior-deduction phase-out, LTCG stacking with records naming it, but §170(b)(1)(I)(ii) category waterfall is applied only in the ledger file its record names, and the OBBBA high-income SALT phase-out is unmodeled with no approximated/outOfScope record naming this file"
     },
     {
       "path": "tax/medicare.ts",
@@ -422,9 +432,9 @@
       "directory": "insights",
       "files": 22,
       "byStatus": {
-        "partial": 2,
+        "partial": 4,
         "registered": 1,
-        "rule-free": 19
+        "rule-free": 17
       }
     },
     {

@@ -7,6 +7,9 @@ import { buildCoverageReport } from './coverageReport.js'
 import {
   DEFAULT_REVERIFICATION_INTERVAL_DAYS,
   TAX_RULE_REGISTRY,
+  TAX_RULE_VOLATILITIES,
+  taxRuleIds,
+  taxRulesDueForVerification,
 } from './taxRuleRegistry.js'
 import committedJson from '../../../../DOCS/operations/rule-coverage.json?raw'
 import committedMarkdown from '../../../../DOCS/operations/rule-coverage.md?raw'
@@ -26,6 +29,16 @@ function normalizeNewlines(source: string): string {
   return source.replace(/\r\n/g, '\n')
 }
 
+function dateAfterDays(isoDate: string, days: number): string {
+  const date = new Date(isoDate + 'T00:00:00Z')
+  date.setUTCDate(date.getUTCDate() + days)
+  return date.toISOString().slice(0, 10)
+}
+
+function dayBefore(isoDate: string): string {
+  return dateAfterDays(isoDate, -1)
+}
+
 describe('rules coverage report artifacts', () => {
   it('matches the deterministic report builder', () => {
     const report = buildCoverageReport({
@@ -36,6 +49,11 @@ describe('rules coverage report artifacts', () => {
       intervals: DEFAULT_REVERIFICATION_INTERVAL_DAYS,
       quoteFidelityLedger,
     })
+    expect(report.manifest.registry.total).toBe(taxRuleIds.length)
+    const classificationTotal = Object.values(report.manifest.registry.byClassification)
+      .reduce((sum, count) => sum + count, 0)
+    expect(classificationTotal).toBe(report.manifest.registry.total)
+    expect(report.manifest.attestations.totalFiles).toBe(Object.keys(COVERAGE_ATTESTATIONS).length)
     expect(normalizeNewlines(committedMarkdown)).toBe(normalizeNewlines(report.markdown))
     expect(normalizeNewlines(committedJson)).toBe(normalizeNewlines(report.json))
   })
@@ -61,6 +79,17 @@ describe('rules coverage report artifacts', () => {
     expect([...fromScript.keys()].sort()).toEqual([...fromGlob.keys()].sort())
     for (const [key, source] of fromScript) {
       expect(fromGlob.get(key), key).toBe(source)
+    }
+  })
+
+  it('agrees taxRulesDueForVerification due dates with the report builder', () => {
+    for (const volatility of TAX_RULE_VOLATILITIES) {
+      const ruleId = taxRuleIds.find((candidate) => TAX_RULE_REGISTRY[candidate].volatility === volatility)
+      expect(ruleId, 'rule for volatility ' + volatility).toBeDefined()
+      const rule = TAX_RULE_REGISTRY[ruleId!]
+      const dueOn = dateAfterDays(rule.verifiedOn, DEFAULT_REVERIFICATION_INTERVAL_DAYS[volatility])
+      expect(taxRulesDueForVerification(dueOn)).toContain(ruleId)
+      expect(taxRulesDueForVerification(dayBefore(dueOn))).not.toContain(ruleId)
     }
   })
 })
