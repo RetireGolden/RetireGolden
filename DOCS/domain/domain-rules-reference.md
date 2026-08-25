@@ -227,11 +227,14 @@ Source: [IRS 2026 limits announcement](https://www.irs.gov/newsroom/401k-limit-i
   (`irc-408-d-8-B-ii-age-70-half`, `unsettled`: the six-calendar-months sentence survives only in a
   defined-benefit provision, and nothing at any level resolves a month-end or leap-day birth). The gift's
   scheduled date must fall in the action year and on or after that threshold. The source must be an owned,
-  non-inherited IRA carrying a recorded classification fact; employer plans and inherited IRAs are excluded
+  non-inherited IRA carrying a recorded classification fact; employer plans are excluded
+  (`irc-408-d-8-B-employer-plan-source-exclusion`), an ongoing SEP or SIMPLE IRA is refused
+  (`irc-408-d-8-B-ongoing-sep-simple-source-exclusion`), and inherited and Roth IRAs are excluded
   structurally (`irc-408-d-8-beneficiary-ira-source`, `irc-408-d-8-roth-ira-source`). The charity must be
   designated an eligible public charity with the direct-transfer, eligible-organization, and
-  not-a-DAF-or-supporting-organization attestations all true; a split-interest designation is refused on its own
-  reason (`irc-408-d-8-F-split-interest-sublimit`). The post-70½ deductible-contribution offset **is** applied on
+  not-a-DAF-or-supporting-organization attestations all true (`irc-408-d-8-B-i-qualified-recipient`); a
+  split-interest designation is refused on its own reason (`irc-408-d-8-F-split-interest-sublimit`,
+  `irc-408-d-8-F-i-split-interest-direct-payment`). The post-70½ deductible-contribution offset **is** applied on
   this arm, from persisted per-donor contribution evidence plus a lifetime running total the annual pass carries,
   and a donor whose history cannot be proved is failed closed rather than offset by an assumed zero. The annual
   exclusion limit must be a sourced figure for the action's own year: a gift past the parameter pack is refused
@@ -243,7 +246,10 @@ Source: [IRS 2026 limits announcement](https://www.irs.gov/newsroom/401k-limit-i
   field rather than left to be inferred, and registered `approximated` / `overstatesTax` with a `produced` fixture
   (`treas-reg-1-408-8-g-projection-named-qcd-beyond-rmd`); the aggregate arm does model the coordination, so the
   two arms answer the same household differently. And the executor refuses the whole batch whenever any gift
-  leaves a positive section 170 amount to deduct, so no named QCD produces a charitable deduction. The ordering
+  leaves a positive section 170 amount to deduct, so no named QCD produces a charitable deduction — a wholly
+  excluded gift leaves no §170 amount either (`irc-408-d-8-E-excluded-qcd-no-section-170-double-benefit`). An
+  accepted QCD is already age-70½-eligible, so it is never an under-59½ distribution and carries no freestanding
+  §72(t) exception (`irc-72-t-1-qcd-not-early-distribution-exception`). The ordering
   rule that makes an earlier cash distribution irrevocable is `treas-reg-1-408-8-b-3-rmd-first-dollars-out`.
 - **Inherited accounts.** When beneficiary facts classify a schedule, `projection/simulate.ts` executes
   `classifyInheritedRegime` / `inheritedRequirementForYear` (`strategies/inheritedIra.ts`) in the annual
