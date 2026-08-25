@@ -3150,7 +3150,7 @@ const registry = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The engine reads this exception off the inherited marker on the account rather than off the identity of the person receiving the distribution. Those are the same test only for so long as an account a surviving spouse has elected to treat as their own stops being marked inherited. That election is registered separately as irc-408-d-3-C-ii-surviving-spouse-not-inherited and treas-reg-1-408-8-c-3-spouse-treated-as-owner; once it is made the spouse takes distributions in their own right and 72(t) applies to them normally, so a plan that left the marker in place would waive a tax that is actually due.',
+      'The engine reads this exception off the inherited marker on the account rather than off the identity of the person receiving the distribution. Those are the same test only for so long as an account a surviving spouse has elected to treat as their own stops being marked inherited. That election is registered separately as irc-408-d-3-C-ii-surviving-spouse-not-inherited and treas-reg-1-408-8-c-3-spouse-treated-as-owner; once it is made the spouse takes distributions in their own right and 72(t) applies to them normally, so a plan that left the marker in place would waive a tax that is actually due. The exact-cent beneficiary path is stricter than the marker proxy: beneficiaryTraditionalIraDeathPenalty.ts requires recipient death-beneficiary evidence with a death date on or before evaluation and refuses once spousal owner treatment has begun, and beneficiaryTraditionalIraAnnualSimulatorDelta.ts propagates that zero only when the upstream module produced it.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',

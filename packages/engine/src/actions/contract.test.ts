@@ -6,6 +6,7 @@ import {
   ordinaryWithdrawalRequestSchema,
   parseActionExecutionDisposition,
   parseRetirementActionRequest,
+  persistedRetirementActionRequestSchema,
   personRetirementActionRequestBaseSchema,
   qualifiedCharitableDistributionRequestSchema,
   retirementActionRequestBaseSchema,
@@ -237,6 +238,16 @@ describe('retirement action request contracts', () => {
     expect(kindLiterals.every((kind) => !/nua|unrealized|employersecurit/i.test(kind))).toBe(
       true,
     )
+    // Plan.retirementActions parses a SEPARATE persisted union in plan.ts, so
+    // gate its kind literals too — a 'nua' arm added only there would let plan
+    // input express NUA while the request-union gate stayed green.
+    const persistedKindLiterals = persistedRetirementActionRequestSchema.options.map((option) =>
+      String(option.shape.kind.value),
+    )
+    expect(new Set(persistedKindLiterals)).toEqual(new Set(kindLiterals))
+    expect(
+      persistedKindLiterals.every((kind) => !/nua|unrealized|employersecurit/i.test(kind)),
+    ).toBe(true)
     expect(
       retirementActionRequestSchema.safeParse({
         ...requests[0],
