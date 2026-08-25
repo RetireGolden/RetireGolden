@@ -39,7 +39,9 @@ contributions, then conversion/rollover contributions first-in, first-out, and t
 
 For a partial early withdrawal from a conversion layer with both taxable and nontaxable principal, the current
 engine prorates the taxable principal rather than consuming it first, which can understate the additional tax
-(`irc-408A-d-4-B-converted-layer-taxable-portion-first`).
+(`irc-408A-d-4-B-converted-layer-taxable-portion-first`). Same-year conversions are likewise kept as one layer
+per named action in array order rather than aggregated taxable-portion-first, a second registered approximation
+that can understate the additional tax (`irc-408A-d-4-B-same-year-conversion-aggregation`).
 
 For a true multi-year co-optimization of conversions and withdrawals, see [optimizer.md](optimizer.md);
 the fill-to-target strategies here cover most of the practical value without a solver. They also double as

@@ -471,7 +471,10 @@ Source: [IRS 2026 limits announcement](https://www.irs.gov/newsroom/401k-limit-i
   contributions first-in, first-out, and finally earnings
   (`irc-408A-d-4-B-roth-distribution-ordering`). Within a partially withdrawn conversion layer, the
   current engine prorates taxable principal rather than consuming it first; that known approximation can
-  understate the additional tax (`irc-408A-d-4-B-converted-layer-taxable-portion-first`).
+  understate the additional tax (`irc-408A-d-4-B-converted-layer-taxable-portion-first`). Likewise the engine
+  keeps one layer per named conversion action in array order, so same-year conversions are not aggregated
+  taxable-portion-first; that second registered approximation can also understate the additional tax
+  (`irc-408A-d-4-B-same-year-conversion-aggregation`).
 - **SEPP (72(t)) divisors and scope.** Both supported methods — required-minimum-distribution and amortization —
   divide by the **IRS Single Life Table** carried in the parameter pack (Treas. Reg. 1.401(a)(9)-9(b) Table 1,
   unisex and fixed by regulation rather than indexed), which is why nothing in the SEPP path takes a sex; the
