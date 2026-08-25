@@ -48,7 +48,8 @@ async function readBoundedBody(response: Response): Promise<string | null> {
 }
 
 /**
- * Fetch the same-origin, no-cache emergency switch before mounting the app.
+ * Fetch the same-origin, no-cache emergency switch while the shell is mounted
+ * fail closed in its neutral pending state.
  * Missing, oversized, malformed, or non-200 responses fail closed.
  */
 export async function loadImportFeature(fetcher: FetchLike = globalThis.fetch): Promise<boolean> {

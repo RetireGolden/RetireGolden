@@ -84,6 +84,12 @@ export interface PlannerAppProps {
    * available. Defaults to true for existing hosts.
    */
   importEnabled?: boolean
+  /**
+   * Whether the host has finished resolving `importEnabled`. While false,
+   * file inputs stay unmounted but the UI reports a neutral availability
+   * check instead of an incident. Defaults to true for existing hosts.
+   */
+  importResolved?: boolean
 }
 
 export function App({
@@ -91,6 +97,7 @@ export function App({
   planStore,
   readOnly,
   importEnabled = true,
+  importResolved = true,
 }: PlannerAppProps = {}) {
   // An ambient <PlanStoreProvider> above the app must win over the built-in
   // default; with neither prop nor provider this resolves to the browser
@@ -160,7 +167,7 @@ export function App({
   }, [themeMode])
 
   return (
-    <ImportAvailabilityProvider enabled={importEnabled}>
+    <ImportAvailabilityProvider enabled={importEnabled} resolved={importResolved}>
       <PlanStoreProvider store={store} readOnly={readOnly}>
         <ReportBrandingContext.Provider value={reportBranding ?? null}>
           <div className={`app-shell planner-shell${isLanding ? ' app-shell--landing' : ''}`}>

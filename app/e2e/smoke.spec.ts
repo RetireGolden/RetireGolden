@@ -92,6 +92,8 @@ test.describe('Smoke', () => {
     await page.goto('/')
     await expect(page.getByRole('button', { name: 'Build your own plan' })).toBeVisible()
     await expect(page.getByText('Import from a file', { exact: true })).toHaveCount(0)
+    await expect(page.getByText('Checking whether file import is available', { exact: false })).toBeVisible()
+    await expect(page.getByText('File import is temporarily unavailable', { exact: false })).toHaveCount(0)
 
     releaseConfig()
     await expect(page.getByText('Import from a file', { exact: true })).toBeVisible()

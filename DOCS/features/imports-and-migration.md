@@ -12,9 +12,11 @@ Code: `packages/planner-ui/src/import/` (pure mappers + wizard UI), `packages/pl
 
 ## Web emergency-disable boundary
 
-The static web host resolves `/import-feature.json` with `cache: 'no-store'` before mounting the planner.
-Only a bounded JSON object whose sole key is `"enabled"` with value `true` enables file-backed import; a
-missing, malformed, oversized, non-200, extra-key, or explicit-false response fails closed. Disabling it
+The static web host mounts the planner shell immediately and resolves `/import-feature.json` with
+`cache: 'no-store'` in parallel. File inputs stay unmounted behind a neutral availability-check state until
+the result resolves. Only a bounded JSON object whose sole key is `"enabled"` with value `true` enables
+file-backed import; a missing, malformed, oversized, non-200, extra-key, or explicit-false response fails
+closed. Disabling it
 removes the home import card and file inputs from direct `/import`, existing-plan broker CSV refresh, mySSA
 XML earnings import, and the FedInvest CSV fallback. Each surface shows an unavailable notice. Building plans
 manually, entering earnings by hand, opening existing plans, exports, and RetireGolden backup restore stay
@@ -23,8 +25,8 @@ available.
 The file is not service-worker-precached and Static Web Apps serves it `no-store`, so redeploying the static
 document changes the boundary on the next online page refresh or restart. It cannot retract code from a tab
 that is already loaded, and it does not remotely disable import in an installed desktop that remains offline.
-The planner package remains host-neutral: `PlannerApp.importEnabled` and `ImportAvailabilityProvider` carry
-the generic boolean; the web host owns how that boolean is obtained.
+The planner package remains host-neutral: `PlannerApp.importEnabled`, `PlannerApp.importResolved`, and
+`ImportAvailabilityProvider` carry the generic state; the web host owns how it is obtained.
 
 ## The wizard (`/import`)
 

@@ -19,7 +19,11 @@ import {
   type FedInvestSnapshot,
 } from '@retiregolden/engine/ladder/fedInvest'
 import { fetchFedInvestTips, importFedInvestCsv, readFedInvestCache } from '../../data/fedInvestClient'
-import { IMPORT_UNAVAILABLE_MESSAGE, useImportEnabled } from '../../import/importAvailability'
+import {
+  IMPORT_PENDING_MESSAGE,
+  IMPORT_UNAVAILABLE_MESSAGE,
+  useImportAvailability,
+} from '../../import/importAvailability'
 import { LearnAboutScreen } from '../../learn/LearnAboutScreen'
 import { LearnLink } from '../../learn/LearnLink'
 import { LEARN } from '../learnLinks'
@@ -237,7 +241,7 @@ export function FundedRatioCard() {
 
 export function LivePricesCard() {
   const { plan } = usePlan()
-  const importEnabled = useImportEnabled()
+  const { enabled: importEnabled, resolved: importResolved } = useImportAvailability()
   const startYear = currentStartYear()
   // Cache-first with zero network: a previously fetched/imported day shows
   // immediately; the fetch button only appears for a fresh look.
@@ -362,9 +366,13 @@ export function LivePricesCard() {
                 />
               </label>
             </>
-          ) : (
+          ) : importResolved ? (
             <p className="card-hint" role="status">
               {IMPORT_UNAVAILABLE_MESSAGE}
+            </p>
+          ) : (
+            <p className="card-hint" role="status">
+              {IMPORT_PENDING_MESSAGE}
             </p>
           )}
         </>

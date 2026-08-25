@@ -31,14 +31,14 @@ afterEach(() => {
   container = null
 })
 
-function render(importEnabled = true) {
+function render(importEnabled = true, importResolved = true) {
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
   act(() => {
     root!.render(
       <MemoryRouter initialEntries={['/import']}>
-        <ImportAvailabilityProvider enabled={importEnabled}>
+        <ImportAvailabilityProvider enabled={importEnabled} resolved={importResolved}>
           <Routes>
             <Route path="/import" element={<ImportPage />} />
             <Route path="/plan/:planId/*" element={<div data-testid="plan-route" />} />
@@ -118,6 +118,14 @@ describe('ImportPage', () => {
   it('fails closed before exposing any import control when the host disables imports', () => {
     const el = render(false)
     expect(el.textContent).toContain('File import is temporarily unavailable')
+    expect(el.querySelector('input[type="file"]')).toBeNull()
+    expect(el.querySelectorAll('.home-path-card')).toHaveLength(0)
+  })
+
+  it('stays fail closed without announcing an incident while availability is pending', () => {
+    const el = render(false, false)
+    expect(el.textContent).toContain('Checking whether file import is available')
+    expect(el.textContent).not.toContain('File import is temporarily unavailable')
     expect(el.querySelector('input[type="file"]')).toBeNull()
     expect(el.querySelectorAll('.home-path-card')).toHaveLength(0)
   })

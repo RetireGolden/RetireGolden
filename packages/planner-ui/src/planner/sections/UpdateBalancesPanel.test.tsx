@@ -96,9 +96,9 @@ function providerTree(plan: Plan, panel: ReactNode, host: HostProtection = {}) {
   )
 }
 
-function panelTree(plan: Plan, host: HostProtection = {}, importEnabled = true) {
+function panelTree(plan: Plan, host: HostProtection = {}, importEnabled = true, importResolved = true) {
   return (
-    <ImportAvailabilityProvider enabled={importEnabled}>
+    <ImportAvailabilityProvider enabled={importEnabled} resolved={importResolved}>
       {providerTree(plan, <UpdateBalancesPanel />, host)}
     </ImportAvailabilityProvider>
   )
@@ -108,12 +108,12 @@ function enabledPanelTree(plan: Plan, host: HostProtection = {}) {
   return panelTree(plan, host, true)
 }
 
-function renderPanel(plan: Plan, host: HostProtection = {}, importEnabled = true) {
+function renderPanel(plan: Plan, host: HostProtection = {}, importEnabled = true, importResolved = true) {
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
   act(() => {
-    root!.render(panelTree(plan, host, importEnabled))
+    root!.render(panelTree(plan, host, importEnabled, importResolved))
   })
   return container
 }
@@ -270,6 +270,14 @@ describe('UpdateBalancesPanel', () => {
     expect(chooseButton(el)).toBeUndefined()
     expect(el.querySelector('.card')).not.toBeNull()
     expect(el.querySelector('h2')?.textContent).toContain('Update balances')
+  })
+
+  it('stays fail closed without announcing an incident while availability is pending', () => {
+    const el = renderPanel(planWithAccounts(), {}, false, false)
+    expect(el.textContent).toContain('Checking whether file import is available')
+    expect(el.textContent).not.toContain('File import is temporarily unavailable')
+    expect(el.querySelector('input[type="file"]')).toBeNull()
+    expect(chooseButton(el)).toBeUndefined()
   })
 
   it('keeps an existing refresh snapshot restorable when new file import is disabled', async () => {

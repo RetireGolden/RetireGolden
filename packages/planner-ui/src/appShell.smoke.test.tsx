@@ -150,7 +150,8 @@ describe('App shell smoke', () => {
     await act(async () => root.unmount())
   })
 
-  it('threads the host import boundary through the full app without hiding backup restore', () => {
+  it('threads the host import boundary through home, direct import, and plan accounts', async () => {
+    ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
     const html = renderToString(
       <MemoryRouter initialEntries={['/']}>
         <App importEnabled={false} />
@@ -158,7 +159,69 @@ describe('App shell smoke', () => {
     )
     expect(html).not.toContain('Import from a file')
     expect(html).toContain('Import previous backup')
-  })
+
+    const directImport = document.createElement('div')
+    document.body.appendChild(directImport)
+    const directImportRoot = createRoot(directImport)
+    await act(async () => {
+      directImportRoot.render(
+        <MemoryRouter initialEntries={['/import']}>
+          <App importEnabled={false} />
+        </MemoryRouter>,
+      )
+    })
+    for (let attempt = 0; attempt < 100 && !directImport.textContent?.includes('Import & migrate'); attempt++) {
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 10))
+      })
+    }
+    expect(directImport.textContent).toContain('File import is temporarily unavailable')
+    expect(directImport.querySelector('input[type="file"]')).toBeNull()
+
+    await act(async () => {
+      directImportRoot.render(
+        <MemoryRouter initialEntries={['/import']}>
+          <App importEnabled={false} importResolved={false} />
+        </MemoryRouter>,
+      )
+    })
+    expect(directImport.textContent).toContain('Checking whether file import is available')
+    expect(directImport.textContent).not.toContain('File import is temporarily unavailable')
+    expect(directImport.querySelector('input[type="file"]')).toBeNull()
+    await act(async () => directImportRoot.unmount())
+    directImport.remove()
+
+    const plan = createEmptyPlan({ name: 'Import boundary smoke' })
+    const smokeStore: PlanStore = {
+      listPlans: async () => [{ id: plan.id, name: plan.name, updatedAtIso: plan.updatedAtIso }],
+      loadPlan: async (id) => (id === plan.id ? plan : null),
+      savePlan: async () => undefined,
+      deletePlan: async () => undefined,
+    }
+    const accounts = document.createElement('div')
+    document.body.appendChild(accounts)
+    const accountsRoot = createRoot(accounts)
+    await act(async () => {
+      accountsRoot.render(
+        <MemoryRouter initialEntries={[`/plan/${plan.id}/accounts`]}>
+          <App importEnabled={false} planStore={smokeStore} />
+        </MemoryRouter>,
+      )
+    })
+    for (
+      let attempt = 0;
+      attempt < 500 && !accounts.textContent?.includes('Update balances from a broker CSV');
+      attempt++
+    ) {
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 10))
+      })
+    }
+    expect(accounts.textContent).toContain('File import is temporarily unavailable')
+    expect(accounts.querySelector('input[type="file"]')).toBeNull()
+    await act(async () => accountsRoot.unmount())
+    accounts.remove()
+  }, 15_000)
 
   it('renders the disclaimer page', () => {
     const html = renderToString(

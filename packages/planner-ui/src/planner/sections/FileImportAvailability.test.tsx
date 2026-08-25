@@ -32,7 +32,7 @@ afterEach(() => {
   container = null
 })
 
-function planTree(plan: Plan, child: ReactNode, importEnabled: boolean) {
+function planTree(plan: Plan, child: ReactNode, importEnabled: boolean, importResolved = true) {
   return (
     <MemoryRouter>
       <PlanCtx.Provider
@@ -44,7 +44,9 @@ function planTree(plan: Plan, child: ReactNode, importEnabled: boolean) {
           issues: [],
         }}
       >
-        <ImportAvailabilityProvider enabled={importEnabled}>{child}</ImportAvailabilityProvider>
+        <ImportAvailabilityProvider enabled={importEnabled} resolved={importResolved}>
+          {child}
+        </ImportAvailabilityProvider>
       </PlanCtx.Provider>
     </MemoryRouter>
   )
@@ -92,6 +94,11 @@ describe('host file-import availability', () => {
     const enabled = renderToString(planTree(socialSecurityPlan(), <SocialSecuritySection />, true))
     expect(enabled).toContain('Import mySSA statement')
     expect(enabled).toContain('type="file"')
+
+    const pending = renderToString(planTree(socialSecurityPlan(), <SocialSecuritySection />, false, false))
+    expect(pending).toContain('Checking whether file import is available')
+    expect(pending).not.toContain('File import is temporarily unavailable')
+    expect(pending).not.toContain('type="file"')
   })
 
   it('removes the FedInvest CSV chooser after a failed live fetch', async () => {
@@ -120,5 +127,12 @@ describe('host file-import availability', () => {
     })
     expect(container.textContent).toContain('Import securityprice.csv')
     expect(container.querySelector('input[type="file"]')).not.toBeNull()
+
+    await act(async () => {
+      root!.render(planTree(incomeFloorPlan(), <LivePricesCard />, false, false))
+    })
+    expect(container.textContent).toContain('Checking whether file import is available')
+    expect(container.textContent).not.toContain('File import is temporarily unavailable')
+    expect(container.querySelector('input[type="file"]')).toBeNull()
   })
 })

@@ -8,15 +8,20 @@ import { loadImportFeature } from './importFeature'
 const importFeature = loadImportFeature()
 
 export function HostApp() {
-  const [importEnabled, setImportEnabled] = useState(false)
+  const [importAvailability, setImportAvailability] = useState({ enabled: false, resolved: false })
   useEffect(() => {
     let mounted = true
     void importFeature.then((enabled) => {
-      if (mounted) setImportEnabled(enabled)
+      if (mounted) setImportAvailability({ enabled, resolved: true })
     })
     return () => {
       mounted = false
     }
   }, [])
-  return <PlannerApp importEnabled={importEnabled} />
+  return (
+    <PlannerApp
+      importEnabled={importAvailability.enabled}
+      importResolved={importAvailability.resolved}
+    />
+  )
 }

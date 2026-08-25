@@ -43,8 +43,9 @@ app/
 ## `app/src/` — what the host keeps
 
 - [`main.tsx`](../app/src/main.tsx) — React root; owns `BrowserRouter`, imports
-  `@retiregolden/planner-ui/index.css`, resolves the fail-closed same-origin import switch through
-  `HostApp.tsx` / `importFeature.ts`, and mounts `<PlannerApp importEnabled={...}/>`.
+  `@retiregolden/planner-ui/index.css`, mounts the shell immediately, resolves the fail-closed same-origin
+  import switch once through `HostApp.tsx` / `importFeature.ts`, and carries both enabled and resolved state
+  into `PlannerApp`.
 - `cases/` — the exact-ledger case runner, manifest diffing, Owl parity harness, and the standalone
   report regression test (`pnpm cases`, `pnpm cases:diff`, `pnpm owl-parity`).
 - Host-level guards: `staticwebapp.config.test.ts` (SWA routing config) and
@@ -125,7 +126,7 @@ test files.
 `import/importAvailability.ts` and `ImportAvailabilityProvider.tsx` form the host-neutral file-import gate
 shared by the home card, direct `/import` route, `UpdateBalancesPanel`, mySSA XML earnings import, and
 FedInvest CSV fallback. Hosts mounting route groups directly use `ImportAvailabilityProvider`; `PlannerApp`
-hosts use the `importEnabled` prop. Omitted configuration preserves normal import behavior.
+hosts use the `importEnabled` / `importResolved` props. Omitted configuration preserves normal import behavior.
 
 ### `packages/planner-ui/src/planner/` highlights
 

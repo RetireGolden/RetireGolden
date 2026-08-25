@@ -36,7 +36,11 @@ import { reviewToProvenance, type ImportReviewItem } from './reviewChecklist'
 import { ReviewChecklist } from './ReviewChecklistView'
 import { digestSource } from './sourceHash'
 import { seedPlanFromTenForty, type TenFortyInputs } from './tenForty'
-import { IMPORT_UNAVAILABLE_MESSAGE, useImportEnabled } from './importAvailability'
+import {
+  IMPORT_PENDING_MESSAGE,
+  IMPORT_UNAVAILABLE_MESSAGE,
+  useImportAvailability,
+} from './importAvailability'
 
 type SourceId = 'projectionlab' | 'broker' | 'generic' | 'tenforty'
 
@@ -96,13 +100,14 @@ const EMPTY_1040: TenFortyInputs = {
 }
 
 export function ImportPage() {
-  const importEnabled = useImportEnabled()
+  const { enabled: importEnabled, resolved: importResolved } = useImportAvailability()
   if (!importEnabled) {
     return (
       <div className="import-page">
         <h1>Import &amp; migrate</h1>
         <div className="callout callout--info" role="status">
-          {IMPORT_UNAVAILABLE_MESSAGE} Return to <Link to="/">your plans</Link>.
+          {importResolved ? IMPORT_UNAVAILABLE_MESSAGE : IMPORT_PENDING_MESSAGE} Return to{' '}
+          <Link to="/">your plans</Link>.
         </div>
       </div>
     )
