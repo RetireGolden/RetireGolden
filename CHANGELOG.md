@@ -5,6 +5,11 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 ## 2026-08
 
 **2026-08-25**
+- Disabled the production web import capability for the WS6 incident-switch
+  rehearsal. Browser file inputs remain unmounted while disabled; manual plan
+  entry, existing plans, exports, and RetireGolden backup recovery remain
+  available. A separate reviewed PR restores the capability after live
+  verification.
 - Added a fail-closed, no-store web incident switch for file-backed import.
   Missing, malformed, oversized, redirected, non-200, extra-key, or disabled
   config removes the new-plan wizard, broker CSV refresh, mySSA XML import,
