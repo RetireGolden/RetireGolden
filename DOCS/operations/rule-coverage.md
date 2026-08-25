@@ -12,8 +12,8 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | Metric | Count |
 | --- | ---: |
 | Total rules | 260 |
-| Classification: approximated | 53 |
-| Classification: outOfScope | 18 |
+| Classification: approximated | 54 |
+| Classification: outOfScope | 17 |
 | Classification: settled | 185 |
 | Classification: unsettled | 4 |
 | Volatility: annuallyIndexed | 37 |
@@ -150,7 +150,7 @@ None.
 | socialSecurity/maritalBenefits.ts | 2026-08-24 | Eligibility rules (10-yr divorce, 9-mo survivor marriage, age gates, remarriage forfeiture) have no records |
 | socialSecurity/nra.ts | 2026-08-24 | Survivor FRA schedule (65→66y8m) has no record naming this file |
 | socialSecurity/piaFromEarnings.ts | 2026-08-24 | AIME pipeline (age 22–61 window, 5 lowest dropped, top-35 years, AWI indexing) not separately registered |
-| strategies/accountEligibility.ts | 2026-08-24 | S2 treat-as-own election timing (death-year+1 boundary, SECURE 2020 gate) not registered to this file |
+| strategies/accountEligibility.ts | 2026-08-25 | SECURE 2020 gate portion of S2 treat-as-own election timing not registered to this file |
 | strategies/optimizer.ts | 2026-08-24 | MILP prices brackets, IRMAA, ACA MAGI cap, RMD floors, §86 SS phase-in, LTCG; not registered here |
 | strategies/rothConversion.ts | 2026-08-24 | Bracket/IRMAA/ACA FPL/senior-deduction sizing via computeFederalTax; no record names this file |
 | tax/annualCharitableDeductionParameters.ts | 2026-08-24 | §170(b)(1)(I) 0.5% floor, §170(b)(1)(G) 60% limit, §68 thresholds/rate; only §170(p) cap record names this file |

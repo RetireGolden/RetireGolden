@@ -13,6 +13,8 @@ import { asAccountId, asActionId, asAllocationId, asPersonId } from '../actions/
 import { asPositiveUsdCents, asUsdCents } from '../actions/money.js'
 import type { QualifiedCharitableDistributionRequest } from '../actions/contract.js'
 import { parsePlan, type Account, type Plan } from '../model/plan.js'
+import { packForYear } from '../params/index.js'
+import { describeRule } from '../rules/describeRule.js'
 import {
   cashAccount,
   singlePersonPlan,
@@ -806,6 +808,58 @@ describe('simulatePlan annual cash-flow transfers', () => {
     expectMoney(y2026.incomes.pension, 0)
     expectMoney(y2026.balances['ira-1'] ?? 0, 50_000)
     expect(y2026.cashFlow!.reconciliation.status).toBe('reconciled')
+  })
+
+  describeRule('irc-402-c-4-B-rmd-not-eligible-rollover-distribution', {
+    // Owner age 76 in 2026 (past RBD). Treating the lump-sum present value as
+    // the account balance, the §401(a)(9) portion is 237,000 ÷ ULT 23.7 = 10,000,
+    // which is not an eligible rollover distribution and would be paid to the
+    // owner as taxable pension income; only 227,000 could roll. The engine
+    // credits the full offer tax-free and pays nothing out. Taxable pension
+    // income is the discriminating observable — the year-end IRA balance also
+    // reflects unrelated same-year cash-flow withdrawals, so it is only
+    // bounded, not pinned.
+    readings: {
+      statuteRmdPortionPaidAsTaxablePensionIncome: 10_000,
+      engineRollsEntireOfferTaxFree: 0,
+    },
+    accepted: 'statuteRmdPortionPaidAsTaxablePensionIncome',
+    produced: 'engineRollsEntireOfferTaxFree',
+    note: 'pension lump-sum past RBD',
+  }, ({ accepted, produced }) => {
+    it('credits the entire pension lump-sum offer as a tax-free rollover past the RBD', () => {
+      const ultAge76 = packForYear(2026).pack.rmd.uniformLifetimeTable[76]
+      expect(ultAge76).toBe(23.7)
+      const offer = 237_000
+      expect(offer / ultAge76).toBeCloseTo(accepted, 10)
+
+      const plan = singlePersonPlan({ dob: '1950-06-15', planningAge: 90, retirementAge: null })
+      plan.accounts = [
+        cashAccount('cash-1', 0),
+        traditionalAccount('ira-1', 0, 'p1', 'ira'),
+        {
+          type: 'pension',
+          id: 'pen-1',
+          name: 'Pension',
+          ownerPersonId: 'p1',
+          annualReturnPct: null,
+          startAge: 65,
+          monthlyAmount: 2_000,
+          colaPct: 0,
+          survivorPct: 0,
+          lumpSumOffer: { amount: offer, electionYear: 2026 },
+          lumpSumElection: { rolloverAccountId: 'ira-1' },
+        },
+      ]
+      const y2026 = yearOf(run(plan, { horizonEndYear: 2026 }), START_YEAR)
+      expectMoney(y2026.incomes.pension, produced)
+      expect(y2026.incomes.pension).not.toBeCloseTo(accepted, 6)
+      // More than the eligible 227,000 reached the IRA: the ineligible RMD
+      // portion rolled rather than being paid out (net of unrelated same-year
+      // cash-flow withdrawals).
+      const rolled = y2026.balances['ira-1'] ?? 0
+      expect(rolled).toBeGreaterThan(offer - accepted)
+    })
   })
 
   it('pairs every published transfer debit with an equal credit', () => {

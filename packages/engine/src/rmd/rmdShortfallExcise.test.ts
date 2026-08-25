@@ -218,6 +218,15 @@ describeRule('treas-reg-54-4974-1-g-2-edb-ten-year-election-automatic-waiver', {
     ['a non-default life-expectancy amount', { defaultLifeExpectancyApplied: false }, {}],
     ['an affirmative life-expectancy election', { affirmativeLifeExpectancyElectionMade: true }, {}],
     ['an election after the ninth calendar year', { electionMadeOn: '2034-01-01' }, {}],
+    // Conservative reading of (g)(2): the regulation does not resolve whether a
+    // shortfall in the election year itself is waived; the engine denies it
+    // (taxYear >= electionYear), which can only raise the excise.
+    ['a shortfall in the election year itself', {}, {
+      obligationId: rmdShortfallObligationId(INHERITED_IRAS, 2033),
+      distributionCalendarYear: 2033,
+      taxYear: 2033,
+      taxImposedOn: '2033-12-31',
+    }],
     ['a final-sweep rather than annual life-expectancy requirement', {}, { requirementKind: 'inheritedFinalSweep' }],
     ['a Commissioner determination otherwise', { commissionerDeterminedOtherwise: true }, {}],
   ]
@@ -262,6 +271,9 @@ describeRule('treas-reg-54-4974-1-g-3-year-of-death-automatic-waiver', {
     ['a corrective distribution from another applicable plan', {
       correctiveDistribution: { amount: 2_000, receivedOn: '2027-12-31', sourceApplicablePlan: EMPLOYER_PLAN },
     }, {}],
+    ['a missing beneficiary return due date', {
+      beneficiaryReturnDueDateIncludingExtensions: '',
+    }, {}],
     ['a Commissioner determination otherwise', { commissionerDeterminedOtherwise: true }, {}],
   ]
   it.each(rejectedCases)('rejects %s', (_label, waiverOverrides, obligationOverrides) => {
@@ -275,6 +287,26 @@ describeRule('treas-reg-54-4974-1-g-3-year-of-death-automatic-waiver', {
     })
     expect(result.tax).toBe(readings.rejectedAutomaticWaiverWithoutOneCondition)
     expect(result.reason).toBe('default25Percent')
+  })
+
+  it('waives when the beneficiary filing deadline is later than December 31 of the following year', () => {
+    // Death year 2026 → following-year end is 2027-12-31. A 2028-10-15 filing
+    // deadline makes laterDate pick the filing date, so a 2028-06-01 correction
+    // still qualifies. An always-year-end+1 misreading would wrongly deny it.
+    const target = inheritedObligation({ requirementKind: 'inheritedYearOfDeath' })
+    const result = computeRmdShortfallExcise(target, {
+      obligationId: target.obligationId,
+      automaticWaiver: yearOfDeathWaiver({
+        beneficiaryReturnDueDateIncludingExtensions: '2028-10-15',
+        correctiveDistribution: {
+          amount: 2_000,
+          receivedOn: '2028-06-01',
+          sourceApplicablePlan: INHERITED_IRAS,
+        },
+      }),
+    })
+    expect(result.tax).toBe(accepted)
+    expect(result.reason).toBe('automaticYearOfDeathWaiver')
   })
 })
 

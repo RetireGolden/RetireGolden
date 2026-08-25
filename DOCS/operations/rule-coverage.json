@@ -4,8 +4,8 @@
   "registry": {
     "total": 260,
     "byClassification": {
-      "approximated": 53,
-      "outOfScope": 18,
+      "approximated": 54,
+      "outOfScope": 17,
       "settled": 185,
       "unsettled": 4
     },
@@ -347,8 +347,8 @@
     },
     {
       "path": "strategies/accountEligibility.ts",
-      "sweptOn": "2026-08-24",
-      "note": "S2 treat-as-own election timing (death-year+1 boundary, SECURE 2020 gate) not registered to this file"
+      "sweptOn": "2026-08-25",
+      "note": "SECURE 2020 gate portion of S2 treat-as-own election timing not registered to this file"
     },
     {
       "path": "strategies/optimizer.ts",
@@ -2018,7 +2018,7 @@
     },
     {
       "id": "irc-402-c-4-B-rmd-not-eligible-rollover-distribution",
-      "classification": "outOfScope",
+      "classification": "approximated",
       "jurisdiction": "federal",
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
@@ -2026,9 +2026,12 @@
       "verifiedOn": "2026-08-25",
       "dueOn": "2027-08-25",
       "implementedBy": [
-        "packages/engine/src/model/plan.ts"
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts"
       ],
-      "fixtureFiles": []
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.annualCashFlow.transfer.test.ts"
+      ]
     },
     {
       "id": "irc-402-g-1-elective-deferral-aggregate",

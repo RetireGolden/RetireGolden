@@ -268,9 +268,12 @@ Source: [IRS 2026 limits announcement](https://www.irs.gov/newsroom/401k-limit-i
   apply the greater-of-owner test when facts support it
   (`treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy`, settled for classified facts); EDB
   life-expectancy uses the beneficiary's expectancy (`irc-401-a-9-E-ii-eligible-designated-beneficiary`, settled
-  for classified facts). **Fail closed:** death before 2020, successor beneficiary, estate/trust/entity
+  for classified facts). **Fail closed:** death before 2020, successor beneficiary; pre-RBD
+  non-designated beneficiaries under the five-year rule
   (`irc-401-a-9-B-ii-non-designated-beneficiary-five-year-rule`,
-  `treas-reg-54-4974-1-c-five-year-deadline-rmd`), multiple beneficiaries without separate-account
+  `treas-reg-54-4974-1-c-five-year-deadline-rmd`); post-RBD estates, trusts, and other entity
+  classes under the same X3 refusal (including a see-through trust that would qualify under
+  Treas. Reg. 1.401(a)(9)-4(f)) without that five-year citation; multiple beneficiaries without separate-account
   facts (`treas-reg-1-401-a-9-8-a-1-ii-separate-account-deadline`), missing or contradictory facts, and a post-RBD ten-year
   election → typed refusal; classifier refusals other than X1 project on the labeled
   `legacy-planning-approximation` path with the refusal on the evidence row. Legacy two-field accounts (no
@@ -425,7 +428,7 @@ Source: [IRS 2026 limits announcement](https://www.irs.gov/newsroom/401k-limit-i
 
 ## 10. Roth conversion rules
 
-- Any amount, any year; taxed as ordinary income in the conversion year; **no 10% penalty on the conversion itself**; no earned-income or RMD-year ordering subtleties beyond: RMD must be satisfied **before** converting in an RMD year. A generic rollover action is not modeled; the RMD exclusion from eligible rollover distributions is registered out of scope (`irc-402-c-4-B-rmd-not-eligible-rollover-distribution`).
+- Any amount, any year; taxed as ordinary income in the conversion year; **no 10% penalty on the conversion itself**; no earned-income or RMD-year ordering subtleties beyond: RMD must be satisfied **before** converting in an RMD year. A generic rollover action is not modeled; the pension lump-sum path's missing §402(c)(4)(B) carve-out past the RBD is the registered approximated defect (`irc-402-c-4-B-rmd-not-eligible-rollover-distribution`).
 - **5-year rules:** each conversion has its own 5-year clock for penalty-free withdrawal of converted principal before 59½ (the "conversion ladder" for early retirees); separately, earnings require 59½ + 5-year account age. Recapture under §408A(d)(3)(F) is computed (with the age-60 proxy), and the taxable-portion-first gap inside a converted layer is the registered approximated divergence (`irc-408A-d-4-B-converted-layer-taxable-portion-first`).
 - **Pro-rata rule** for conversions and withdrawals from IRAs with nondeductible basis (Form 8606) — **implemented** (opt-in `nondeductibleBasis` per traditional IRA; see §16). Absent the field, plans behave as before (all pre-tax).
 - Conversion taxes best paid from taxable funds; paying from the conversion before 59½ incurs the 10% penalty on the tax portion.

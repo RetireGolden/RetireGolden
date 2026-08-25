@@ -496,9 +496,12 @@ rules and citations: [domain rules §16](../domain/domain-rules-reference.md#16-
   `spouse-remain-beneficiary`, `spouse-treat-as-own-transition` (death-year election:
   `treas-reg-1-408-8-c-3-spouse-as-own-death-year-rmd`), `spouse-ten-year-elected` (unsettled),
   `roth-ten-year-no-annual`, `roth-edb-life-expectancy`, plus `roth-taxability-evidence` on every Roth row.
-  **Fail closed:** death before 2020, successor beneficiary, estate/trust/entity
+  **Fail closed:** death before 2020, successor beneficiary; pre-RBD non-designated beneficiaries under
+  the five-year rule
   (`irc-401-a-9-B-ii-non-designated-beneficiary-five-year-rule`,
-  `treas-reg-54-4974-1-c-five-year-deadline-rmd`), multiple beneficiaries without
+  `treas-reg-54-4974-1-c-five-year-deadline-rmd`); post-RBD estates, trusts, and other entity classes under
+  the same X3 refusal (including a see-through trust that would qualify under Treas. Reg. 1.401(a)(9)-4(f))
+  without that five-year citation; multiple beneficiaries without
   separate-account facts (`treas-reg-1-401-a-9-8-a-1-ii-separate-account-deadline`), missing or contradictory facts, and a post-RBD ten-year election → typed refusal;
   classifier refusals other than X1 project on the labeled `legacy-planning-approximation` path with the refusal
   on the evidence row. Legacy two-field accounts (no beneficiary block) stay on that labeled path. No schema fact

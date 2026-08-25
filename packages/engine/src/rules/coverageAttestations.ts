@@ -240,7 +240,7 @@ export const COVERAGE_ATTESTATIONS: Readonly<Record<string, CoverageAttestation>
   'spending/guardrails.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'spending/layers.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'spending/shapePresets.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
-  'strategies/accountEligibility.ts': Object.freeze({ status: 'partial', sweptOn: '2026-08-24', note: 'S2 treat-as-own election timing (death-year+1 boundary, SECURE 2020 gate) not registered to this file' }),
+  'strategies/accountEligibility.ts': Object.freeze({ status: 'partial', sweptOn: '2026-08-25', note: 'SECURE 2020 gate portion of S2 treat-as-own election timing not registered to this file' }),
   'strategies/inheritedIra.ts': Object.freeze({ status: 'registered', sweptOn: '2026-08-24', note: null }),
   'strategies/iraBasis.ts': Object.freeze({ status: 'registered', sweptOn: '2026-08-24', note: null }),
   'strategies/optimizer.ts': Object.freeze({ status: 'partial', sweptOn: '2026-08-24', note: 'MILP prices brackets, IRMAA, ACA MAGI cap, RMD floors, §86 SS phase-in, LTCG; not registered here' }),
