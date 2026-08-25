@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, unlinkSync, writeFileSync } from 'node:fs'
+import { readdirSync, unlinkSync, writeFileSync } from 'node:fs'
 import { basename, dirname, join, resolve } from 'node:path'
 import { parseArgs } from 'node:util'
 import { testSourcesInGlobShape } from './rules-coverage.mjs'
@@ -28,17 +28,20 @@ function numberedOutPath(outPath, index) {
   return base + '-' + index + ext
 }
 
-function escapeRegExp(value) {
-  return value.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&')
+function isStaleNumberedSibling(name, fileBase, ext) {
+  const prefix = fileBase + '-'
+  if (!name.startsWith(prefix)) return false
+  if (ext !== '' && !name.endsWith(ext)) return false
+  const middle = ext !== '' ? name.slice(prefix.length, name.length - ext.length) : name.slice(prefix.length)
+  return /^\d+$/u.test(middle)
 }
 
 function deleteStaleNumberedSiblings(outPath) {
   const { base, ext } = splitOutPath(outPath)
   const dir = dirname(resolve(outPath))
   const fileBase = basename(base)
-  const pattern = new RegExp('^' + escapeRegExp(fileBase + '-') + '\\d+' + escapeRegExp(ext) + '$')
   for (const name of readdirSync(dir)) {
-    if (pattern.test(name)) {
+    if (isStaleNumberedSibling(name, fileBase, ext)) {
       const full = join(dir, name)
       unlinkSync(full)
       console.log('Deleted stale ' + full)
@@ -265,6 +268,7 @@ async function main() {
       manifestRules: report.manifest.rules,
     })
     if (values.out) {
+      deleteStaleNumberedSiblings(values.out)
       writeFileSync(values.out, normalize(markdown), 'utf8')
     } else {
       process.stdout.write(markdown)

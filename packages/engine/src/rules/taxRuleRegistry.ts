@@ -8828,8 +8828,9 @@ export function taxRulesDueForVerification(
   if (!/^\d{4}-\d{2}-\d{2}$/u.test(asOfIsoDate)) {
     throw new RangeError('As-of date must be an ISO calendar date')
   }
-  const asOf = Date.parse(`${asOfIsoDate}T00:00:00Z`)
-  if (Number.isNaN(asOf)) throw new RangeError('As-of date must be an ISO calendar date')
+  if (new Date(`${asOfIsoDate}T00:00:00Z`).toISOString().slice(0, 10) !== asOfIsoDate) {
+    throw new RangeError('As-of date must be an ISO calendar date')
+  }
   // A missing or non-finite interval would make every comparison false and
   // silently report the rule as never due, which is the one failure mode this
   // function must not have.
