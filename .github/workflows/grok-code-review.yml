@@ -20,7 +20,7 @@ permissions:
 
 jobs:
   review:
-    uses: RetireGolden/.github/.github/workflows/grok-code-review.yml@6de80588419f91e60cceb3382f34ac7ce3eb3c22
+    uses: RetireGolden/.github/.github/workflows/grok-code-review.yml@52c1aa6a41b5e17500cd1d0883474841c4a42da6
     with:
       pr_number: ${{ inputs.pr_number || github.event.inputs.pr_number || github.event.pull_request.number }}
     secrets:
