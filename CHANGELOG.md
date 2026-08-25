@@ -4,6 +4,14 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## 2026-08
 
+**2026-08-25**
+- Added a fail-closed, no-store web incident switch for file-backed import.
+  Missing, malformed, oversized, redirected, non-200, extra-key, or disabled
+  config removes the new-plan wizard, broker CSV refresh, mySSA XML import,
+  and FedInvest CSV fallback before their file inputs render. Manual entry,
+  existing-plan access, exports, and RetireGolden backup restore remain
+  available; the switch is explicitly excluded from PWA precaching.
+
 **2026-08-21**
 - Closed reverse-gap registry record `irc-4974-rmd-shortfall-excise-tax`.
   The annual ledger now charges 25% of each computed RMD shortfall on

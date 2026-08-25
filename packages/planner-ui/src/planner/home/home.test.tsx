@@ -19,6 +19,7 @@ import { getArticle } from '../../learn/learningRegistry'
 import { isPlanIncomplete } from '../planCompleteness'
 import { PlanStoreProvider } from '../../data/PlanStoreProvider'
 import type { PlanStore } from '../../data/planStoreContext'
+import { ImportAvailabilityProvider } from '../../import/ImportAvailabilityProvider'
 import { PlanPickerPage } from '../PlanPickerPage'
 import { PlanWorkspace } from '../PlanWorkspace'
 import { START_HERE_SLUGS } from './startHereSlugs'
@@ -78,15 +79,17 @@ describe('planner home adaptive layout', () => {
     vi.restoreAllMocks()
   })
 
-  async function renderHome(initialPath = '/') {
+  async function renderHome(initialPath = '/', importEnabled = true) {
     await act(async () => {
       root.render(
         <MemoryRouter initialEntries={[initialPath]}>
-          <Routes>
-            <Route path="/" element={<PlanPickerPage />} />
-            <Route path="/examples" element={<div data-testid="examples-page">Examples</div>} />
-            <Route path="/plan/:planId/*" element={<PlanWorkspace />} />
-          </Routes>
+          <ImportAvailabilityProvider enabled={importEnabled}>
+            <Routes>
+              <Route path="/" element={<PlanPickerPage />} />
+              <Route path="/examples" element={<div data-testid="examples-page">Examples</div>} />
+              <Route path="/plan/:planId/*" element={<PlanWorkspace />} />
+            </Routes>
+          </ImportAvailabilityProvider>
         </MemoryRouter>,
       )
     })
@@ -104,6 +107,13 @@ describe('planner home adaptive layout', () => {
     expect(container.querySelectorAll('h1')).toHaveLength(1)
     expect(container.querySelector('.home-getting-started-reopener')).toBeNull()
     expect(container.querySelector('#example-library-heading')).toBeNull()
+  })
+
+  it('hides only the import path when the host disables imports', async () => {
+    await renderHome('/', false)
+    expect(container.querySelectorAll('.home-path-card')).toHaveLength(3)
+    expect(container.textContent).not.toContain('Import from a file')
+    expect(container.textContent).toContain('Build your own plan')
   })
 
   it('does not write document.title — hosts mounting plannerHomeRoutes own the tab', async () => {

@@ -7,6 +7,7 @@ import { listPlansVia, usePlanStore, type PlanStore } from './data/planStoreCont
 import { PlanStoreProvider } from './data/PlanStoreProvider'
 import { ReportBrandingContext } from './report/brandingContext'
 import type { ReportBranding } from './report/reportHtml'
+import { ImportAvailabilityProvider } from './import/ImportAvailabilityProvider'
 import './planner/planner.css'
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
@@ -75,9 +76,29 @@ export interface PlannerAppProps {
    * exactly as before unless a host opts in.
    */
   readOnly?: boolean
+  /**
+   * Host-controlled emergency boundary for file-backed import surfaces. When
+   * false, the new-plan wizard, broker CSV refresh, mySSA XML import, and
+   * FedInvest CSV fallback are replaced by an unavailable notice, while
+   * manual entry, saved-plan reads, exports, and backup restore remain
+   * available. Defaults to true for existing hosts.
+   */
+  importEnabled?: boolean
+  /**
+   * Whether the host has finished resolving `importEnabled`. While false,
+   * file inputs stay unmounted but the UI reports a neutral availability
+   * check instead of an incident. Defaults to true for existing hosts.
+   */
+  importResolved?: boolean
 }
 
-export function App({ reportBranding, planStore, readOnly }: PlannerAppProps = {}) {
+export function App({
+  reportBranding,
+  planStore,
+  readOnly,
+  importEnabled = true,
+  importResolved = true,
+}: PlannerAppProps = {}) {
   // An ambient <PlanStoreProvider> above the app must win over the built-in
   // default; with neither prop nor provider this resolves to the browser
   // store (the context's default value).
@@ -146,69 +167,71 @@ export function App({ reportBranding, planStore, readOnly }: PlannerAppProps = {
   }, [themeMode])
 
   return (
-    <PlanStoreProvider store={store} readOnly={readOnly}>
-    <ReportBrandingContext.Provider value={reportBranding ?? null}>
-    <div className={`app-shell planner-shell${isLanding ? ' app-shell--landing' : ''}`}>
-      <a className="skip-link" href="#main-content">
-        Skip to content
-      </a>
-      <header className="app-header">
-        {/* Mark + real wordmark text. The lockup PNGs bake the tagline in at
-            ~5–6px, which is illegible; do not restore those as the header
-            identity. The existing tagline copy lives in the first-run hero. */}
-        <NavLink to="/" className="brand brand-logo-link" end aria-label="RetireGolden home">
-          <img className="brand-mark" src="/favicon.svg" alt="" />
-          <span className="brand-wordmark">RetireGolden</span>
-        </NavLink>
-        {/* No hamburger at any width (owner preference): on narrow screens the
-            nav shares the logo row and the theme switcher wraps below, keeping
-            visual order = DOM order = tab order. */}
-        <div className="header-menu" id="header-menu">
-          <nav className="nav" aria-label="Primary">
-            <NavLink to="/" className={navClass} end>
-              Planner
-            </NavLink>
-            <NavLink to="/examples" className={navClass}>
-              Examples
-            </NavLink>
-            <NavLink to="/learn" className={navClass}>
-              Learn
-            </NavLink>
-            <NavLink to="/disclaimer" className={navClass}>
-              Disclaimer
-            </NavLink>
-          </nav>
-          <div className="theme-switcher-cluster">
-            <span className="theme-switcher-label" id="theme-switcher-label">
-              Theme
-            </span>
-            <div className="theme-switcher" role="group" aria-labelledby="theme-switcher-label">
-              {THEME_MODES.map((mode) => (
-                <button
-                  key={mode}
-                  className="theme-switcher-button"
-                  type="button"
-                  aria-pressed={themeMode === mode}
-                  onClick={() => setThemeMode(mode)}
-                >
-                  {mode[0].toUpperCase() + mode.slice(1)}
-                </button>
-              ))}
-            </div>
+    <ImportAvailabilityProvider enabled={importEnabled} resolved={importResolved}>
+      <PlanStoreProvider store={store} readOnly={readOnly}>
+        <ReportBrandingContext.Provider value={reportBranding ?? null}>
+          <div className={`app-shell planner-shell${isLanding ? ' app-shell--landing' : ''}`}>
+            <a className="skip-link" href="#main-content">
+              Skip to content
+            </a>
+            <header className="app-header">
+              {/* Mark + real wordmark text. The lockup PNGs bake the tagline in at
+                  ~5–6px, which is illegible; do not restore those as the header
+                  identity. The existing tagline copy lives in the first-run hero. */}
+              <NavLink to="/" className="brand brand-logo-link" end aria-label="RetireGolden home">
+                <img className="brand-mark" src="/favicon.svg" alt="" />
+                <span className="brand-wordmark">RetireGolden</span>
+              </NavLink>
+              {/* No hamburger at any width (owner preference): on narrow screens the
+                  nav shares the logo row and the theme switcher wraps below, keeping
+                  visual order = DOM order = tab order. */}
+              <div className="header-menu" id="header-menu">
+                <nav className="nav" aria-label="Primary">
+                  <NavLink to="/" className={navClass} end>
+                    Planner
+                  </NavLink>
+                  <NavLink to="/examples" className={navClass}>
+                    Examples
+                  </NavLink>
+                  <NavLink to="/learn" className={navClass}>
+                    Learn
+                  </NavLink>
+                  <NavLink to="/disclaimer" className={navClass}>
+                    Disclaimer
+                  </NavLink>
+                </nav>
+                <div className="theme-switcher-cluster">
+                  <span className="theme-switcher-label" id="theme-switcher-label">
+                    Theme
+                  </span>
+                  <div className="theme-switcher" role="group" aria-labelledby="theme-switcher-label">
+                    {THEME_MODES.map((mode) => (
+                      <button
+                        key={mode}
+                        className="theme-switcher-button"
+                        type="button"
+                        aria-pressed={themeMode === mode}
+                        onClick={() => setThemeMode(mode)}
+                      >
+                        {mode[0].toUpperCase() + mode.slice(1)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </header>
+            <main className="app-main" id="main-content" tabIndex={-1}>
+              <RouteErrorBoundary>{routeTree}</RouteErrorBoundary>
+            </main>
+            <footer className="app-footer">
+              <span className="muted small">
+                Educational only. Not tax, legal, financial, or medical advice. All data stays on this device.{' '}
+                <NavLink to="/disclaimer">Full disclaimer</NavLink>
+              </span>
+            </footer>
           </div>
-        </div>
-      </header>
-      <main className="app-main" id="main-content" tabIndex={-1}>
-        <RouteErrorBoundary>{routeTree}</RouteErrorBoundary>
-      </main>
-      <footer className="app-footer">
-        <span className="muted small">
-          Educational only. Not tax, legal, financial, or medical advice. All data stays on this device.{' '}
-          <NavLink to="/disclaimer">Full disclaimer</NavLink>
-        </span>
-      </footer>
-    </div>
-    </ReportBrandingContext.Provider>
-    </PlanStoreProvider>
+        </ReportBrandingContext.Provider>
+      </PlanStoreProvider>
+    </ImportAvailabilityProvider>
   )
 }

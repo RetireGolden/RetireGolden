@@ -1148,7 +1148,7 @@ and absent means no behavior change (feature-off byte-identical, `cases:diff` cl
   on the TIPS curve (Pfau's household funded-ratio lens). Shown on Results and the Income floor page;
   `income-floor-funded` fires below ~90%, `ss-bridge-gap` previews a sized bridge as a scenario.
 - **FedInvest (opt-in only).** `engine/ladder/fedInvest.ts` fetches end-of-day TIPS prices
-  (`securityPriceDetail`, CSV) on an explicit click — the app's only network request, carrying only a date,
+  (`securityPriceDetail`, CSV) on an explicit click — the app's only cross-origin request, carrying only a date,
   cached per day. FedInvest sends no CORS headers, so the browser may block it; the UI then offers a
   zero-network import of the user-downloaded `securityprice.csv`. Prices are a per-$100-face reference
   (FedInvest omits the inflation index ratio) — the embedded curve remains the planning source of truth.

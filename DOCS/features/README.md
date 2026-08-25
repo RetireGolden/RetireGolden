@@ -111,7 +111,7 @@ income (NIIT included) but **state-exempt** (`TaxYearInput.usGovernmentInterest`
 maturing principal is a tax-free return; unmatured face rides in net worth. A **funded-ratio card**
 (Results + Income floor) discounts required-floor spending and guaranteed income from the same ledger
 years on the TIPS curve — Pfau's pension-accounting lens; `ss-bridge-gap` / `income-floor-funded`
-Insights detectors surface the levers. Opt-in FedInvest CUSIP prices (the app's only network request;
+Insights detectors surface the levers. Opt-in FedInvest CUSIP prices (the app's only cross-origin request;
 cache-first; zero-network CSV import fallback) sanity-check quotes. Simplifications documented in
 `engine/ladder/ladderMath.ts` (annual coupons, par rungs, planning-grade OID).
 

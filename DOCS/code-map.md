@@ -35,7 +35,7 @@ app/
 ├── eslint.config.js       flat config (the engine-purity rule lives in packages/engine/eslint.config.js)
 ├── index.html
 ├── scripts/               local Node/Vite-backed tooling (`cases.mjs`, `owl-parity.mjs`, sitemap generator, license notices)
-├── public/                staticwebapp.config.json (SPA fallback), PWA manifest/icons
+├── public/                staticwebapp.config.json (SPA fallback), import-feature.json (no-store file-import incident switch), PWA manifest/icons
 ├── e2e/                   Playwright browser specs
 └── src/                   host source (below)
 ```
@@ -43,8 +43,9 @@ app/
 ## `app/src/` — what the host keeps
 
 - [`main.tsx`](../app/src/main.tsx) — React root; owns `BrowserRouter`, imports
-  `@retiregolden/planner-ui/index.css`, and mounts `<PlannerApp/>`. Everything inside the router
-  lives in the planner-ui package.
+  `@retiregolden/planner-ui/index.css`, mounts the shell immediately, resolves the fail-closed same-origin
+  import switch once through `HostApp.tsx` / `importFeature.ts`, and carries both enabled and resolved state
+  into `PlannerApp`.
 - `cases/` — the exact-ledger case runner, manifest diffing, Owl parity harness, and the standalone
   report regression test (`pnpm cases`, `pnpm cases:diff`, `pnpm owl-parity`).
 - Host-level guards: `staticwebapp.config.test.ts` (SWA routing config) and
@@ -107,7 +108,7 @@ test files.
 
 | Folder (`src/`) | What's here |
 |--------|-------------|
-| `data/` | Persistence: `planStoreContext.ts` + `PlanStoreProvider.tsx` (the host-implementable `PlanStore` seam and its store-generic `*Via` operations; demo records route to the browser store), `planStore.ts` (the IndexedDB implementation via `idb`, user vs demo filtering), `planOrigin.ts`, `planFormat.ts` (the v2 backup envelope — the stable `plan-format` subpath), `v2Backup.ts` (re-exports the envelope + storage-aware import normalization), `localStore.ts` (guarded localStorage + `STORAGE_KEYS`), `fedInvestClient.ts` (the opt-in FedInvest fetch + cache — the planner's only network touch) |
+| `data/` | Persistence: `planStoreContext.ts` + `PlanStoreProvider.tsx` (the host-implementable `PlanStore` seam and its store-generic `*Via` operations; demo records route to the browser store), `planStore.ts` (the IndexedDB implementation via `idb`, user vs demo filtering), `planOrigin.ts`, `planFormat.ts` (the v2 backup envelope — the stable `plan-format` subpath), `v2Backup.ts` (re-exports the envelope + storage-aware import normalization), `localStore.ts` (guarded localStorage + `STORAGE_KEYS`), `fedInvestClient.ts` (the opt-in FedInvest fetch + cache — the planner's only cross-origin network touch) |
 | `planner/` | The planner UI (see below) |
 | `report/` | Self-contained HTML report rendering and browser download helper |
 | `mc/` | Monte Carlo Web Worker: `monteCarlo.worker.ts`, `pool.ts`, `runRequest.ts`, `messages.ts` |
@@ -121,6 +122,11 @@ test files.
 | `import/` | Import & migration wizard (`/import`): hardened CSV core (`csv.ts`), broker positions mappers (`brokerCsv.ts`), ProjectionLab JSON mapper (`projectionLab.ts`), generic/RPM column-mapping (`genericCsv.ts`), 1040 guided seed (`tenForty.ts`), shared review checklist (`reviewChecklist.ts` + `ReviewChecklistView.tsx`), the import-provenance contract + export envelope (`provenance.ts` — browser-free, the stable `import-provenance` subpath) and its source-hash helper (`sourceHash.ts` — Web Crypto, async, called at the UI boundary), the browser-free broker-refresh/reconciliation engine (`refresh.ts` — `classifyRefresh`/`buildRefreshDelta`/`applyRefresh`, the stable `import-refresh` subpath, consumed by `UpdateBalancesPanel.tsx`), the local PDF text extractor (`documentText.ts` — `extractDocumentText`, the stable `document-text` subpath; per-page text with 1-based page numbers as citations, `imageOnly` detection for scanned pages, a result union for every failure, exported caps, worker-free pdfjs behind an **optional** `pdfjs-dist` peer reached only by dynamic import — WS5 spike, deliberately NOT wired into the wizard) and its hand-emitted PDF fixtures (`pdfFixtures.ts` — the repo commits no binary fixtures, so test PDFs are built byte by byte, with multi-line and column layout so the corpus reproduces real spacing artifacts), plus the WS5 accuracy benchmark: `documentCorpus.ts` (eight synthetic documents whose field values and page numbers are declared by hand — the oracle, since the app is never its own) and `documentBenchmark.ts` (general field detectors, precision/recall **per field**, page-citation accuracy, and every miss split into "text present — selection gap" vs "text lost — extraction gap" — `pnpm --filter @retiregolden/planner-ui benchmark:documents`, findings in [features/document-parsing-spike.md](features/document-parsing-spike.md)). The three benchmark-only modules (`pdfFixtures.ts`, `documentCorpus.ts`, `documentBenchmark.ts`) are excluded from the published tarball by `files`, the way `report/goldens` is — only `documentText.ts` ships. The wizard itself (`ImportPage.tsx`) is untouched by WS5 and still offers no PDF upload. Alongside them, the migration-source identifier (`migrationSource.ts` — `identifyMigrationDocument` / `identifyMigrationExport` / `MIGRATION_ADAPTERS` / `buildMigrationReview`, the stable `migration-source` subpath) says WHICH incumbent tool a file came from and publishes what can and cannot be brought over, mapping no fields itself: ProjectionLab is identified structurally and mapped by `projectionLab.ts` unchanged, while RightCapital/eMoney/MoneyGuide are identified only — no substantiated export format exists for them, so the limitations are published instead of a guessed mapping. The report NAMES the pages worth reading and never carries their text: only bounded name excerpts and page numbers become review items, so a caller must keep the extracted `DocumentPage[]` itself (Pro does — WS5's reader emits the per-page notes separately). Name matching is word-bounded with verbatim excerpts, page citations ride as `none` locators (the union has no page kind), and a file naming two tools is reported ambiguous rather than guessed at. |
 | `learn/` | Learning Center: pages, `learningRegistry.ts`, `glossary.ts`, `components/`, 138 articles in `content/` |
 | `testSupport/` | `samplePlan.ts` (deprecated shim over the example library); shared fixtures moved to the engine package's `testing/` |
+
+`import/importAvailability.ts` and `ImportAvailabilityProvider.tsx` form the host-neutral file-import gate
+shared by the home card, direct `/import` route, `UpdateBalancesPanel`, mySSA XML earnings import, and
+FedInvest CSV fallback. Hosts mounting route groups directly use `ImportAvailabilityProvider`; `PlannerApp`
+hosts use the `importEnabled` / `importResolved` props. Omitted configuration preserves normal import behavior.
 
 ### `packages/planner-ui/src/planner/` highlights
 

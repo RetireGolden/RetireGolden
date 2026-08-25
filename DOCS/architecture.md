@@ -7,12 +7,13 @@ The current, ground-truth architecture of RetireGolden. For where specific code 
 
 A **single static single-page app** — Vite + React 19 + TypeScript (strict) + Vitest — that runs entirely
 in the browser and is hosted on Azure Static Web Apps. There is **no backend, no account, and no network
-call for user data**; everything computes client-side and persists in the browser. The app makes exactly
-**one outbound network request**, and only on an explicit click: the opt-in FedInvest TIPS price fetch
-(`engine/ladder/fedInvest.ts`, day-cached, zero-network CSV import fallback) — the CSP's `connect-src` is
-`'self'` plus `treasurydirect.gov` and nothing else, pinned by `staticwebapp.config.test.ts`. No user data
-ever leaves the browser. All app code lives under `app/` (it is *not* an npm-workspaces monorepo — see the
-note below).
+call for user data**; everything computes client-side and persists in the browser. At startup the web host
+fetches one tiny same-origin, no-store import-availability document; it contains no user data and fails
+closed. The app makes exactly **one cross-origin network request**, and only on an explicit click: the
+opt-in FedInvest TIPS price fetch (`engine/ladder/fedInvest.ts`, day-cached, zero-network CSV import fallback)
+— the CSP's `connect-src` is `'self'` plus `treasurydirect.gov` and nothing else, pinned by
+`staticwebapp.config.test.ts`. No user data ever leaves the browser. All app code lives under `app/` (it is
+*not* an npm-workspaces monorepo — see the note below).
 
 ```
 Browser
@@ -147,6 +148,17 @@ the entry sections, and the result/analysis/report pages. Charts use Recharts. S
 the IndexedDB store (no Redux/React Query — there is no server). The Learning Center
 ([features/learning-center.md](features/learning-center.md)) is content authored as structured TypeScript,
 bundled for offline use with the PWA.
+
+The web host mounts the recovery-capable shell immediately, starts `app/public/import-feature.json` once,
+and passes its pending/resolved state through the edition-neutral `PlannerApp.importEnabled` and
+`PlannerApp.importResolved` capabilities. File inputs remain unmounted while the request is pending, with
+neutral checking copy rather than an incident notice. Invalid, missing, oversized, or non-200 config then
+disables every file-backed import surface—the `/import` wizard, existing-plan broker CSV refresh, mySSA XML
+earnings import, and FedInvest CSV fallback—before its file input is rendered.
+The config is deliberately excluded from the service-worker precache and served `no-store`, so a static
+redeploy can change it for the next online refresh/restart. It is not a remote kill switch for a tab that is
+already loaded or for an offline desktop package. Manual entry, existing-plan reads, exports, and RetireGolden
+backup restore do not use this gate.
 
 ## Testing
 

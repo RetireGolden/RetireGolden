@@ -63,6 +63,12 @@ PR only while it carries the **`run-ci` label**:
   [`app/public/staticwebapp.config.json`](../../app/public/staticwebapp.config.json) (Vite copies it into
   `app/dist/`), which rewrites unknown paths to `/index.html`. A regression test guards it:
   [`app/src/staticwebapp.config.test.ts`](../../app/src/staticwebapp.config.test.ts).
+- `app/public/import-feature.json` is an intentionally non-precached, no-store production switch. Setting
+  its sole `enabled` value to `false` in a reviewed deploy disables the web new-plan wizard, broker CSV
+  refresh, mySSA XML import, and FedInvest CSV fallback on the next online refresh/restart; restoring `true`
+  re-enables them. Invalid or missing config fails closed. This does not affect a tab that is already loaded
+  or an offline desktop package. After either change, rehearse all four surfaces plus RetireGolden backup
+  restore in the deployed environment before closing the incident action.
 
 ## Secrets and environments
 

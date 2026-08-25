@@ -19,6 +19,11 @@ import {
   type FedInvestSnapshot,
 } from '@retiregolden/engine/ladder/fedInvest'
 import { fetchFedInvestTips, importFedInvestCsv, readFedInvestCache } from '../../data/fedInvestClient'
+import {
+  IMPORT_PENDING_MESSAGE,
+  IMPORT_UNAVAILABLE_MESSAGE,
+  useImportAvailability,
+} from '../../import/importAvailability'
 import { LearnAboutScreen } from '../../learn/LearnAboutScreen'
 import { LearnLink } from '../../learn/LearnLink'
 import { LEARN } from '../learnLinks'
@@ -234,8 +239,9 @@ export function FundedRatioCard() {
   )
 }
 
-function LivePricesCard() {
+export function LivePricesCard() {
   const { plan } = usePlan()
+  const { enabled: importEnabled, resolved: importResolved } = useImportAvailability()
   const startYear = currentStartYear()
   // Cache-first with zero network: a previously fetched/imported day shows
   // immediately; the fetch button only appears for a fresh look.
@@ -271,7 +277,7 @@ function LivePricesCard() {
       <p className="card-hint">
         Your plan always works offline on the embedded yield curve. If you want to sanity-check the quote against real
         securities, this button asks the U.S. Treasury's FedInvest service for the latest end-of-day TIPS prices. It is
-        the app's only network request, sends nothing but a date, and is cached on this device for the day.
+        the app's only cross-origin request, sends nothing but a date, and is cached on this device for the day.
       </p>
       {snapshot === null ? (
         <button type="button" className="btn btn-secondary" onClick={() => void load()} disabled={loading}>
@@ -325,38 +331,50 @@ function LivePricesCard() {
           <p className="card-hint" role="alert">
             {error} Your plan still works on the embedded curve.
           </p>
-          <p className="card-hint">
-            Treasury's service does not allow direct browser requests from other sites (CORS), so the fetch can be
-            blocked even when you are online. Zero-network alternative: download <code>securityprice.csv</code>{' '}
-            yourself from{' '}
-            <a href={FEDINVEST_PAGE_URL} target="_blank" rel="noreferrer">
-              FedInvest
-            </a>{' '}
-            (pick the latest date, CSV format) and import it here.
-          </p>
-          <label className="btn btn-secondary btn-small">
-            Import securityprice.csv
-            <input
-              type="file"
-              accept=".csv,text/csv"
-              style={{ display: 'none' }}
-              onChange={(e) => {
-                const file = e.target.files?.[0]
-                if (!file) return
-                void file.text().then(
-                  (text) => {
-                    try {
-                      setSnapshot(importFedInvestCsv(text))
-                      setError(null)
-                    } catch (err) {
-                      setError(err instanceof Error ? err.message : 'That file could not be read.')
-                    }
-                  },
-                  () => setError('That file could not be read.'),
-                )
-              }}
-            />
-          </label>
+          {importEnabled ? (
+            <>
+              <p className="card-hint">
+                Treasury's service does not allow direct browser requests from other sites (CORS), so the fetch can be
+                blocked even when you are online. Zero-network alternative: download <code>securityprice.csv</code>{' '}
+                yourself from{' '}
+                <a href={FEDINVEST_PAGE_URL} target="_blank" rel="noreferrer">
+                  FedInvest
+                </a>{' '}
+                (pick the latest date, CSV format) and import it here.
+              </p>
+              <label className="btn btn-secondary btn-small">
+                Import securityprice.csv
+                <input
+                  type="file"
+                  accept=".csv,text/csv"
+                  style={{ display: 'none' }}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (!file) return
+                    void file.text().then(
+                      (text) => {
+                        try {
+                          setSnapshot(importFedInvestCsv(text))
+                          setError(null)
+                        } catch (err) {
+                          setError(err instanceof Error ? err.message : 'That file could not be read.')
+                        }
+                      },
+                      () => setError('That file could not be read.'),
+                    )
+                  }}
+                />
+              </label>
+            </>
+          ) : importResolved ? (
+            <p className="card-hint" role="status">
+              {IMPORT_UNAVAILABLE_MESSAGE}
+            </p>
+          ) : (
+            <p className="card-hint" role="status">
+              {IMPORT_PENDING_MESSAGE}
+            </p>
+          )}
         </>
       ) : null}
     </div>

@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import swaConfig from '../public/staticwebapp.config.json'
+import viteConfigText from '../vite.config.ts?raw'
 
 describe('staticwebapp.config.json', () => {
+  it('explicitly excludes the incident switch from the PWA precache', () => {
+    expect(viteConfigText).toContain("globIgnores: ['**/import-feature.json']")
+  })
+
   it('defines production security headers', () => {
     const headers = swaConfig.globalHeaders ?? {}
     expect(headers['Strict-Transport-Security']).toMatch(/max-age=\d+/)
@@ -12,7 +17,7 @@ describe('staticwebapp.config.json', () => {
     expect(headers['Content-Security-Policy']).toContain("default-src 'self'")
     expect(headers['Content-Security-Policy']).toContain("worker-src 'self'")
     // The opt-in FedInvest TIPS price fetch (data/fedInvestClient.ts) is the
-    // app's only outbound request; connect-src stays 'self' plus that one host.
+    // app's only cross-origin request; connect-src stays 'self' plus that one host.
     expect(headers['Content-Security-Policy']).toContain("connect-src 'self' https://www.treasurydirect.gov")
     expect(headers['Content-Security-Policy']).toContain("frame-ancestors 'none'")
     // HiGHS-WASM (the optimizer solver) instantiates a WebAssembly module, which
@@ -27,12 +32,16 @@ describe('staticwebapp.config.json', () => {
     const assets = routes.find((r) => r.route === '/assets/*')
     const shell = routes.find((r) => r.route === '/index.html')
     const sw = routes.find((r) => r.route === '/sw.js')
+    const importFeature = routes.find((r) => r.route === '/import-feature.json')
     expect(headers['Cache-Control']).toContain('no-cache')
     expect(headers['Cache-Control']).toContain('no-transform')
     expect(shell?.headers?.['Cache-Control']).toContain('no-cache')
     expect(shell?.headers?.['Cache-Control']).toContain('no-transform')
     expect(assets?.headers?.['Cache-Control']).toContain('immutable')
     expect(sw?.headers?.['Cache-Control']).toContain('no-cache')
+    expect(importFeature?.headers?.['Cache-Control']).toContain('no-store')
+    expect(importFeature?.headers?.['Cache-Control']).toContain('no-transform')
+    expect(swaConfig.navigationFallback.exclude).toContain('/import-feature.json')
   })
 
   it('sets cache policies for static root assets and crawler files', () => {

@@ -55,6 +55,12 @@
       }
     },
     {
+      "route": "/import-feature.json",
+      "headers": {
+        "Cache-Control": "no-cache, no-store, must-revalidate, no-transform"
+      }
+    },
+    {
       "route": "/theme-bootstrap.js",
       "headers": {
         "Cache-Control": "no-cache, no-store, must-revalidate"
@@ -82,7 +88,8 @@
       "*.webmanifest",
       "/sw.js",
       "/robots.txt",
-      "/sitemap.xml"
+      "/sitemap.xml",
+      "/import-feature.json"
     ]
   },
   "globalHeaders": {

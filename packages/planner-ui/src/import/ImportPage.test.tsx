@@ -14,6 +14,7 @@ import { IDBFactory } from 'fake-indexeddb'
 import { _resetPlanStoreForTests, listUserPlanSummaries } from '../data/planStore'
 import { ImportPage } from './ImportPage'
 import { parseImportProvenance } from './provenance'
+import { ImportAvailabilityProvider } from './ImportAvailabilityProvider'
 
 let root: Root | null = null
 let container: HTMLDivElement | null = null
@@ -30,17 +31,19 @@ afterEach(() => {
   container = null
 })
 
-function render() {
+function render(importEnabled = true, importResolved = true) {
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
   act(() => {
     root!.render(
       <MemoryRouter initialEntries={['/import']}>
-        <Routes>
-          <Route path="/import" element={<ImportPage />} />
-          <Route path="/plan/:planId/*" element={<div data-testid="plan-route" />} />
-        </Routes>
+        <ImportAvailabilityProvider enabled={importEnabled} resolved={importResolved}>
+          <Routes>
+            <Route path="/import" element={<ImportPage />} />
+            <Route path="/plan/:planId/*" element={<div data-testid="plan-route" />} />
+          </Routes>
+        </ImportAvailabilityProvider>
       </MemoryRouter>,
     )
   })
@@ -112,6 +115,21 @@ async function chooseFile(el: HTMLElement, file: File, done: () => boolean, what
 }
 
 describe('ImportPage', () => {
+  it('fails closed before exposing any import control when the host disables imports', () => {
+    const el = render(false)
+    expect(el.textContent).toContain('File import is temporarily unavailable')
+    expect(el.querySelector('input[type="file"]')).toBeNull()
+    expect(el.querySelectorAll('.home-path-card')).toHaveLength(0)
+  })
+
+  it('stays fail closed without announcing an incident while availability is pending', () => {
+    const el = render(false, false)
+    expect(el.textContent).toContain('Checking whether file import is available')
+    expect(el.textContent).not.toContain('File import is temporarily unavailable')
+    expect(el.querySelector('input[type="file"]')).toBeNull()
+    expect(el.querySelectorAll('.home-path-card')).toHaveLength(0)
+  })
+
   it('offers all four guided sources', () => {
     const el = render()
     const cards = Array.from(el.querySelectorAll('.home-path-card')).map((c) => c.textContent ?? '')

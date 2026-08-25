@@ -125,6 +125,8 @@ The supported product API is:
 - the **root export** — `PlannerApp`, the plan-persistence seam
   (`PlanStore`, `PlanSummary`, `PlanStoreProvider`, `indexedDbPlanStore`),
   the read-only capability (`readOnly` prop + `useWorkspaceReadOnly`), the
+  file-import capability (`importEnabled` prop +
+  `ImportAvailabilityProvider` / `useImportEnabled`), the
   route groups (`plannerWorkspaceRoutes`, `plannerContentRoutes`,
   `plannerHomeRoutes`), `ReportBrandingProvider`,
   `PlannerEditionProvider` (with `usePlannerEdition` /
@@ -366,6 +368,29 @@ import { useWorkspaceReadOnly } from '@retiregolden/planner-ui'
 
 const readOnly = useWorkspaceReadOnly() // false unless a provider sets it
 ```
+
+### Host-controlled file-import availability
+
+Pass `importEnabled={false}` to `<PlannerApp/>` to remove every file-backed
+import input: the new-plan wizard, existing-plan broker CSV refresh, mySSA XML
+earnings import, and FedInvest CSV fallback. Manual entry, existing plans,
+exports, and RetireGolden backup restore stay available. The prop defaults to
+`true`, preserving existing hosts.
+
+Hosts composing route groups directly can wrap them instead:
+
+```tsx
+import { ImportAvailabilityProvider } from '@retiregolden/planner-ui'
+
+<ImportAvailabilityProvider enabled={fileImportAllowed}>
+  {/* planner route groups */}
+</ImportAvailabilityProvider>
+```
+
+`ImportAvailabilityContext` also defaults to `true`, so omitting both the prop
+and provider preserves normal import behavior. This is a generic rendering
+capability; the host decides how it obtains the boolean and explains why it is
+off.
 
 ### Route groups
 

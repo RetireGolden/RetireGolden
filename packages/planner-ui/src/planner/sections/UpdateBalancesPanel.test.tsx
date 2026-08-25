@@ -35,6 +35,7 @@ import {
   type RefreshProtectionValue,
 } from '../refreshProtectionContext'
 import { UpdateBalancesPanel } from './UpdateBalancesPanel'
+import { ImportAvailabilityProvider } from '../../import/ImportAvailabilityProvider'
 
 let root: Root | null = null
 let container: HTMLDivElement | null = null
@@ -95,12 +96,24 @@ function providerTree(plan: Plan, panel: ReactNode, host: HostProtection = {}) {
   )
 }
 
-function renderPanel(plan: Plan, host: HostProtection = {}) {
+function panelTree(plan: Plan, host: HostProtection = {}, importEnabled = true, importResolved = true) {
+  return (
+    <ImportAvailabilityProvider enabled={importEnabled} resolved={importResolved}>
+      {providerTree(plan, <UpdateBalancesPanel />, host)}
+    </ImportAvailabilityProvider>
+  )
+}
+
+function enabledPanelTree(plan: Plan, host: HostProtection = {}) {
+  return panelTree(plan, host, true)
+}
+
+function renderPanel(plan: Plan, host: HostProtection = {}, importEnabled = true, importResolved = true) {
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
   act(() => {
-    root!.render(providerTree(plan, <UpdateBalancesPanel />, host))
+    root!.render(panelTree(plan, host, importEnabled, importResolved))
   })
   return container
 }
@@ -244,7 +257,44 @@ function pendingExplanation(el: HTMLElement): string | null {
   return el.querySelector('.refresh-protection-pending')?.textContent ?? null
 }
 
+function accountBalance(plan: Plan, accountId: string): number | undefined {
+  const account = plan.accounts.find((candidate) => candidate.id === accountId)
+  return account && 'balance' in account ? account.balance : undefined
+}
+
 describe('UpdateBalancesPanel', () => {
+  it('fails closed before exposing the broker file input when the host disables imports', () => {
+    const el = renderPanel(planWithAccounts(), {}, false)
+    expect(el.textContent).toContain('File import is temporarily unavailable')
+    expect(el.querySelector('input[type="file"]')).toBeNull()
+    expect(chooseButton(el)).toBeUndefined()
+    expect(el.querySelector('.card')).not.toBeNull()
+    expect(el.querySelector('h2')?.textContent).toContain('Update balances')
+  })
+
+  it('stays fail closed without announcing an incident while availability is pending', () => {
+    const el = renderPanel(planWithAccounts(), {}, false, false)
+    expect(el.textContent).toContain('Checking whether file import is available')
+    expect(el.textContent).not.toContain('File import is temporarily unavailable')
+    expect(el.querySelector('input[type="file"]')).toBeNull()
+    expect(chooseButton(el)).toBeUndefined()
+  })
+
+  it('keeps an existing refresh snapshot restorable when new file import is disabled', async () => {
+    const plan = planWithAccounts()
+    const el = renderPanel(plan)
+    await chooseFile(el, TWO_ACCOUNT_CSV)
+    act(() => applyButton(el).click())
+    expect(accountBalance(plan, 'acct-brokerage')).toBe(55000)
+
+    act(() => root!.render(panelTree(plan, {}, false)))
+    expect(el.querySelector('input[type="file"]')).toBeNull()
+    expect(el.textContent).toContain('Restore previous balances')
+    const restore = Array.from(el.querySelectorAll('button')).find((button) => button.textContent === 'Restore')!
+    await act(async () => restore.click())
+    expect(accountBalance(plan, 'acct-brokerage')).toBe(1)
+  })
+
   it('shows the parser review checklist before Apply', async () => {
     const el = renderPanel(planWithAccounts())
     await chooseFile(el, TWO_ACCOUNT_CSV)
@@ -1033,7 +1083,7 @@ describe('UpdateBalancesPanel refresh protection', () => {
     const p2 = planWithAccounts()
     expect(p2.id).not.toBe(p1.id)
     act(() => {
-      root!.render(providerTree(p2, <UpdateBalancesPanel />, { protectedAccounts: protect(p2, { accountId: 'acct-brokerage' }) }))
+      root!.render(enabledPanelTree(p2, { protectedAccounts: protect(p2, { accountId: 'acct-brokerage' }) }))
     })
 
     // Back to the initial state: no parsed table.
@@ -1074,7 +1124,7 @@ describe('UpdateBalancesPanel refresh protection', () => {
     const p2 = planWithAccounts()
     expect(p2.id).not.toBe(p1.id)
     act(() => {
-      root!.render(providerTree(p2, <UpdateBalancesPanel />, { protectedAccounts: protect(p2, { accountId: 'acct-brokerage' }) }))
+      root!.render(enabledPanelTree(p2, { protectedAccounts: protect(p2, { accountId: 'acct-brokerage' }) }))
     })
 
     // Resolve the OLD read now, with a CSV that would otherwise build a table. Because
@@ -1118,7 +1168,7 @@ describe('UpdateBalancesPanel refresh protection', () => {
     // Plain re-render with the SAME plan id (no identity reset). This must not touch the
     // read epoch — a render-phase bump is exactly the removed bug.
     act(() => {
-      root!.render(providerTree(plan, <UpdateBalancesPanel />, { protectedAccounts: protect(plan, { accountId: 'acct-brokerage' }) }))
+      root!.render(enabledPanelTree(plan, { protectedAccounts: protect(plan, { accountId: 'acct-brokerage' }) }))
     })
 
     // Resolve: epoch unchanged and committed plan identity unchanged, so it lands.
@@ -1248,7 +1298,7 @@ describe('UpdateBalancesPanel protection pending', () => {
 
     act(() => {
       root!.render(
-        providerTree(plan, <UpdateBalancesPanel />, {
+        enabledPanelTree(plan, {
           protectedAccounts: protect(plan, { accountId: 'acct-brokerage' }),
           pending: true,
         }),
@@ -1275,7 +1325,7 @@ describe('UpdateBalancesPanel protection pending', () => {
 
     act(() => {
       root!.render(
-        providerTree(plan, <UpdateBalancesPanel />, {
+        enabledPanelTree(plan, {
           protectedAccounts: protect(plan, { accountId: 'acct-brokerage' }),
           pending: false,
         }),
@@ -1379,7 +1429,7 @@ describe('UpdateBalancesPanel protection pending', () => {
     // The host flips to pending mid-read.
     act(() => {
       root!.render(
-        providerTree(plan, <UpdateBalancesPanel />, {
+        enabledPanelTree(plan, {
           protectedAccounts: protect(plan, { accountId: 'acct-brokerage' }),
           pending: true,
         }),
@@ -1399,7 +1449,7 @@ describe('UpdateBalancesPanel protection pending', () => {
     // Not stuck: once the host resolves, a fresh read builds its table again.
     act(() => {
       root!.render(
-        providerTree(plan, <UpdateBalancesPanel />, {
+        enabledPanelTree(plan, {
           protectedAccounts: protect(plan, { accountId: 'acct-brokerage' }),
           pending: false,
         }),
@@ -1435,7 +1485,7 @@ describe('UpdateBalancesPanel protection pending', () => {
     for (const pending of [true, false]) {
       act(() => {
         root!.render(
-          providerTree(plan, <UpdateBalancesPanel />, {
+          enabledPanelTree(plan, {
             protectedAccounts: protect(plan, { accountId: 'acct-brokerage' }),
             pending,
           }),

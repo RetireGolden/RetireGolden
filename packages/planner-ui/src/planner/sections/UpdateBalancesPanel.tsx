@@ -78,6 +78,11 @@ import {
 import type { ImportReviewItem } from '../../import/reviewChecklist'
 import { ReviewChecklist } from '../../import/ReviewChecklistView'
 import { digestSource } from '../../import/sourceHash'
+import {
+  IMPORT_PENDING_MESSAGE,
+  IMPORT_UNAVAILABLE_MESSAGE,
+  useImportAvailability,
+} from '../../import/importAvailability'
 import { usePlan } from '../planContextCore'
 import {
   useRefreshProtection,
@@ -221,6 +226,17 @@ function snapshotId(): string {
 }
 
 export function UpdateBalancesPanel() {
+  const { enabled: importEnabled, resolved: importResolved } = useImportAvailability()
+  return <UpdateBalancesPanelBody importEnabled={importEnabled} importResolved={importResolved} />
+}
+
+function UpdateBalancesPanelBody({
+  importEnabled,
+  importResolved,
+}: {
+  importEnabled: boolean
+  importResolved: boolean
+}) {
   const { plan, update } = usePlan()
   const protectedAccounts = useRefreshProtection()
   // The host has not resolved its protected set yet, so `protectedAccounts` is
@@ -863,12 +879,22 @@ export function UpdateBalancesPanel() {
   return (
     <div className="card">
       <h2>Update balances from a broker CSV</h2>
-      <p className="card-hint">
-        Download the positions/holdings CSV from Schwab, Fidelity, or Vanguard and refresh your account
-        balances (and cost basis where the file has it) without retyping. Only balance and cost basis change.
-        Your return, yield, contribution, and beneficiary settings are left alone. The file is read on this
-        device only. To start a whole new plan from a file, use Import &amp; migrate on the home screen.
-      </p>
+      {importEnabled ? (
+        <p className="card-hint">
+          Download the positions/holdings CSV from Schwab, Fidelity, or Vanguard and refresh your account
+          balances (and cost basis where the file has it) without retyping. Only balance and cost basis change.
+          Your return, yield, contribution, and beneficiary settings are left alone. The file is read on this
+          device only. To start a whole new plan from a file, use Import &amp; migrate on the home screen.
+        </p>
+      ) : importResolved ? (
+        <div className="callout callout--info" role="status">
+          {IMPORT_UNAVAILABLE_MESSAGE}
+        </div>
+      ) : (
+        <div className="callout callout--info" role="status">
+          {IMPORT_PENDING_MESSAGE}
+        </div>
+      )}
       {snapshots.length > 0 ? (
         <details className="refresh-history">
           <summary>Restore previous balances</summary>
@@ -893,6 +919,8 @@ export function UpdateBalancesPanel() {
           {message}
         </div>
       ) : null}
+      {importEnabled ? (
+        <>
       {/* The protection-pending explanation. Named by its own class so it is
           addressable separately from the apply-status callout, and worded around
           its own cause so it can never be mistaken for the duplicate-collision
@@ -1078,6 +1106,8 @@ export function UpdateBalancesPanel() {
           e.target.value = ''
         }}
       />
+        </>
+      ) : null}
     </div>
   )
 }

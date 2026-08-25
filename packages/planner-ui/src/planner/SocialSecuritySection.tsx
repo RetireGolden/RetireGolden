@@ -19,6 +19,11 @@ import {
 import { effectiveBirthYear, fraForBirthYear } from '@retiregolden/engine/socialSecurity/nra'
 import type { PiaFromEarningsResult } from '@retiregolden/engine/socialSecurity/piaFromEarnings'
 import { parseSsaStatementXml } from '../socialSecurity/ssaStatementXml'
+import {
+  IMPORT_PENDING_MESSAGE,
+  IMPORT_UNAVAILABLE_MESSAGE,
+  useImportAvailability,
+} from '../import/importAvailability'
 import { usePlan } from './planContextCore'
 import { CheckboxField, DateField, NumberField, MoneyField, SelectField } from './fields'
 import { LearnAboutScreen } from '../learn/LearnAboutScreen'
@@ -235,6 +240,7 @@ function FormerSpousesEditor({
 
 function PersonSsCard({ person, personIndex }: { person: Person; personIndex: number }) {
   const { plan, update } = usePlan()
+  const { enabled: importEnabled, resolved: importResolved } = useImportAvailability()
   const stream = plan.incomes.find((s): s is SsStream => s.type === 'socialSecurity' && s.personId === person.id)
   const { y, m, d } = dobParts(person)
   const fra = fraForBirthYear(effectiveBirthYear(y, m, d))
@@ -421,12 +427,22 @@ function PersonSsCard({ person, personIndex }: { person: Person; personIndex: nu
             }
             placeholder={'1995 28500\n1996 31200\n…'}
           />
-          <div className="add-row">
-            <label className="btn btn-secondary btn-small" style={{ cursor: 'pointer' }}>
-              Import mySSA statement (XML)
-              <input type="file" accept=".xml,application/xml,text/xml" className="sr-only" onChange={handleXml} />
-            </label>
-          </div>
+          {importEnabled ? (
+            <div className="add-row">
+              <label className="btn btn-secondary btn-small" style={{ cursor: 'pointer' }}>
+                Import mySSA statement (XML)
+                <input type="file" accept=".xml,application/xml,text/xml" className="sr-only" onChange={handleXml} />
+              </label>
+            </div>
+          ) : importResolved ? (
+            <p className="card-hint" role="status">
+              {IMPORT_UNAVAILABLE_MESSAGE} You can still enter annual earnings above.
+            </p>
+          ) : (
+            <p className="card-hint" role="status">
+              {IMPORT_PENDING_MESSAGE}
+            </p>
+          )}
           {xmlNote ? (
             <p className={xmlNote.kind === 'error' ? 'error-text' : 'field-hint'} style={{ marginTop: '0.4rem' }}>
               {xmlNote.text}
