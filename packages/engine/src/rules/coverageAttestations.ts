@@ -202,7 +202,7 @@ export const COVERAGE_ATTESTATIONS: Readonly<Record<string, CoverageAttestation>
   'projection/simulate.ts': Object.freeze({ status: 'partial', sweptOn: '2026-08-24', note: 'QCD/RMD/annuity/contribution/QLAC covered; residual 59½/HSA/Roth-five-year/Rule-of-55 proxies, inherited-Roth post-flip, Medicare age-65, HSA family-limit, spousal/survivor SS/RIB-LIM' }),
   'projection/types.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'rmd/applicableAge.ts': Object.freeze({ status: 'partial', sweptOn: '2026-08-24', note: 'SECURE 2.0 applicable ages/RBD April-1; born-1959 dual-age contest; 70½ cohort & July-1949 cut; no records naming this file' }),
-  'rmd/jointLifeTable.ts': Object.freeze({ status: 'partial', sweptOn: '2026-08-24', note: '§1.401(a)(9)-9(d) Table 3 divisor literals; usage rule registered but no table-value record naming this file' }),
+  'rmd/jointLifeTable.ts': Object.freeze({ status: 'registered', sweptOn: '2026-08-25', note: null }),
   'rmd/rmd.ts': Object.freeze({ status: 'registered', sweptOn: '2026-08-24', note: null }),
   'rmd/rmdShortfallExcise.ts': Object.freeze({ status: 'registered', sweptOn: '2026-08-24', note: null }),
   'rules/coverageAttestations.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: 'registry/coverage tooling' }),

@@ -137,8 +137,8 @@ Source: [IRS 2026 limits announcement](https://www.irs.gov/newsroom/401k-limit-i
 
 - Start age: **73** for born 1951–1959; **75** for born 1960+ (i.e., from 2033).
 - Annual RMD = prior Dec 31 balance ÷ Uniform Lifetime Table divisor (Joint Life Table II when a sole-beneficiary spouse is >10 yrs younger).
-- Joint Life Table II is 26 CFR 1.401(a)(9)-9(d), Table 3. It includes spouse-beneficiary ages below 20; do not regenerate it from Pub 590-B displays that only show the age 20+ slice.
-- Applies to traditional IRA/401(k)/403(b); **Roth 401(k) exempt since 2024**; Roth IRA exempt.
+- Joint Life Table II is 26 CFR 1.401(a)(9)-9(d), Table 3. It includes spouse-beneficiary ages below 20; do not regenerate it from Pub 590-B displays that only show the age 20+ slice (`treas-reg-1-401-a-9-9-d-joint-life-table-divisor-literals`).
+- Applies to traditional IRA/401(k)/403(b); **Roth 401(k) exempt since 2024** (IRC §402A(d)(5); not yet registered — queued for a later registration slice); Roth IRA exempt (`irc-408A-c-4-roth-ira-no-lifetime-rmd`).
 - **IRC §4974 excise.** The default tax is **25% of the actual shortfall** —
   `max(0, required − distributed by the statutory deadline)` — and is charged to the payee on the year row's
   `penalties` channel, outside AGI/MAGI. It is not 25% of the whole required amount when part was paid. The rate
@@ -149,7 +149,9 @@ Source: [IRS 2026 limits announcement](https://www.irs.gov/newsroom/401k-limit-i
   reasonable-error waiver request does not erase the tax: only an explicit modeled grant does. The two automatic
   waiver fact patterns, for tax years beginning in 2025 or later, are the final regulation's EDB
   pre-RBD-death/life-expectancy-default-to-10-year election and the
-  beneficiary's timely correction of a decedent's year-of-death miss. Corrective distributions do not rewrite
+  beneficiary's timely correction of a decedent's year-of-death miss
+  (`treas-reg-54-4974-1-g-2-edb-ten-year-election-automatic-waiver`,
+  `treas-reg-54-4974-1-g-3-year-of-death-automatic-waiver`). Corrective distributions do not rewrite
   the prior shortfall and, fail-closed while proposed §1.401(a)(9)-5(g)(2)(iv) remains unfinalized, do not also
   satisfy the current-year RMD. The excise is a chapter 43 tax barred from deduction by §275(a)(6); it never enters
   AGI, §86 income, IRMAA MAGI, or ACA MAGI. A corrective distribution has its own ordinary-income treatment in the
@@ -162,7 +164,7 @@ Source: [IRS 2026 limits announcement](https://www.irs.gov/newsroom/401k-limit-i
   year has no §4974 tax in the attainment year because its deadline has not passed. If April 1 is missed, the
   excise is imposed in the RBD year on that deferred amount; that year's separate December 31 RMD can create a
   second shortfall. The tax year is therefore the year containing the due date, not always the year whose balance
-  and divisor produced the amount (Treas. Reg. §54.4974-1(f)).
+  and divisor produced the amount (`treas-reg-54-4974-1-f-first-year-rbd-excise-tax`).
 - **Aggregation and the unmet-amount sweep.** An IRA's RMD is calculated separately per account, but the sum may
   be taken from any one or more of the owner's IRAs — so an IRA too small to cover its own calculated amount
   leaves a shortfall the owner's other IRAs must still distribute rather than extinguishing it. The ledger sweeps
@@ -255,17 +257,21 @@ Source: [IRS 2026 limits announcement](https://www.irs.gov/newsroom/401k-limit-i
   `classifyInheritedRegime` / `inheritedRequirementForYear` (`strategies/inheritedIra.ts`) in the annual
   ledger with per-account `InheritedAccountYearEvidence` (regime key, matrix row, requirement kind, executed and
   voluntary amounts, limitations, disclosures, refusals, citations). Supported regime keys (matrix §3,
-  condensed): `ten-year-with-annual-rmds` (post-RBD designated individual), `ten-year-no-annual` (pre-RBD),
+  condensed): `ten-year-with-annual-rmds` (post-RBD designated individual; 2021–2024 notice relief ended before
+  2025: `irs-notice-2022-53-2023-54-2024-35-inherited-rmd-transition-relief`), `ten-year-no-annual` (pre-RBD),
   `edb-life-expectancy`, `edb-ten-year-elected` (unsettled — IRA-agreement election), `spouse-remain-beneficiary`,
-  `spouse-treat-as-own-transition`, `spouse-ten-year-elected` (unsettled), `roth-ten-year-no-annual`,
+  `spouse-treat-as-own-transition` (the death-year election retains the decedent RMD:
+  `treas-reg-1-408-8-c-3-spouse-as-own-death-year-rmd`), `spouse-ten-year-elected` (unsettled), `roth-ten-year-no-annual`,
   `roth-edb-life-expectancy`, plus `roth-taxability-evidence` attached to every Roth row. Divisor mechanics use
   the Single Life Table (Treas. Reg. 1.401(a)(9)-5(d)(3)(iii);
   `treas-reg-1-401-a-9-5-d-3-beneficiary-single-life-denominator`, settled for classified facts); post-RBD deaths
   apply the greater-of-owner test when facts support it
   (`treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy`, settled for classified facts); EDB
   life-expectancy uses the beneficiary's expectancy (`irc-401-a-9-E-ii-eligible-designated-beneficiary`, settled
-  for classified facts). **Fail closed:** death before 2020, successor beneficiary, estate/trust/entity,
-  multiple beneficiaries without separate-account facts, missing or contradictory facts, and a post-RBD ten-year
+  for classified facts). **Fail closed:** death before 2020, successor beneficiary, estate/trust/entity
+  (`irc-401-a-9-B-ii-non-designated-beneficiary-five-year-rule`,
+  `treas-reg-54-4974-1-c-five-year-deadline-rmd`), multiple beneficiaries without separate-account
+  facts (`treas-reg-1-401-a-9-8-a-1-ii-separate-account-deadline`), missing or contradictory facts, and a post-RBD ten-year
   election → typed refusal; classifier refusals other than X1 project on the labeled
   `legacy-planning-approximation` path with the refusal on the evidence row. Legacy two-field accounts (no
   beneficiary block) stay on that labeled path. No schema fact can assert SECURE 2.0 §327 spouse-as-employee
@@ -419,7 +425,7 @@ Source: [IRS 2026 limits announcement](https://www.irs.gov/newsroom/401k-limit-i
 
 ## 10. Roth conversion rules
 
-- Any amount, any year; taxed as ordinary income in the conversion year; **no 10% penalty on the conversion itself**; no earned-income or RMD-year ordering subtleties beyond: RMD must be satisfied **before** converting in an RMD year.
+- Any amount, any year; taxed as ordinary income in the conversion year; **no 10% penalty on the conversion itself**; no earned-income or RMD-year ordering subtleties beyond: RMD must be satisfied **before** converting in an RMD year. A generic rollover action is not modeled; the RMD exclusion from eligible rollover distributions is registered out of scope (`irc-402-c-4-B-rmd-not-eligible-rollover-distribution`).
 - **5-year rules:** each conversion has its own 5-year clock for penalty-free withdrawal of converted principal before 59½ (the "conversion ladder" for early retirees); separately, earnings require 59½ + 5-year account age. Recapture under §408A(d)(3)(F) is computed (with the age-60 proxy), and the taxable-portion-first gap inside a converted layer is the registered approximated divergence (`irc-408A-d-4-B-converted-layer-taxable-portion-first`).
 - **Pro-rata rule** for conversions and withdrawals from IRAs with nondeductible basis (Form 8606) — **implemented** (opt-in `nondeductibleBasis` per traditional IRA; see §16). Absent the field, plans behave as before (all pre-tax).
 - Conversion taxes best paid from taxable funds; paying from the conversion before 59½ incurs the 10% penalty on the tax portion.

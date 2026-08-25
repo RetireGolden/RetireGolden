@@ -4,6 +4,7 @@ import {
   computeRmdShortfallExcise,
   rmdCorrectionWindowEnd,
   rmdShortfallObligationId,
+  type RmdAutomaticWaiverEvidence,
   type RmdApplicablePlan,
   type RmdShortfallObligation,
   type RmdShortfallReliefElection,
@@ -18,6 +19,19 @@ const EMPLOYER_PLAN: RmdApplicablePlan = {
   kind: 'employerPlan',
   accountId: 'employer-plan',
 }
+
+const INHERITED_IRAS: RmdApplicablePlan = {
+  kind: 'inheritedIras',
+  payeePersonId: 'beneficiary',
+  decedentId: 'decedent',
+  iraType: 'traditional',
+}
+
+type EdbTenYearElectionWaiver = Extract<
+  RmdAutomaticWaiverEvidence,
+  { kind: 'edbTenYearElection' }
+>
+type YearOfDeathWaiver = Extract<RmdAutomaticWaiverEvidence, { kind: 'yearOfDeath' }>
 
 function obligation(
   overrides: Partial<RmdShortfallObligation> = {},
@@ -48,6 +62,48 @@ function corrected(
       returnReflectsReducedTax: true,
       ...overrides,
     },
+  }
+}
+
+function inheritedObligation(
+  overrides: Partial<RmdShortfallObligation> = {},
+): RmdShortfallObligation {
+  return obligation({
+    obligationId: rmdShortfallObligationId(INHERITED_IRAS, 2026),
+    applicablePlan: INHERITED_IRAS,
+    requirementKind: 'inheritedAnnualLifeExpectancy',
+    ...overrides,
+  })
+}
+
+function edbTenYearElectionWaiver(
+  overrides: Partial<EdbTenYearElectionWaiver> = {},
+): EdbTenYearElectionWaiver {
+  return {
+    kind: 'edbTenYearElection',
+    ownerDeathYear: 2024,
+    electionMadeOn: '2033-12-31',
+    ownerDiedBeforeRequiredBeginningDate: true,
+    eligibleDesignatedBeneficiary: true,
+    defaultLifeExpectancyApplied: true,
+    affirmativeLifeExpectancyElectionMade: false,
+    ...overrides,
+  }
+}
+
+function yearOfDeathWaiver(
+  overrides: Partial<YearOfDeathWaiver> = {},
+): YearOfDeathWaiver {
+  return {
+    kind: 'yearOfDeath',
+    ownerDeathYear: 2026,
+    beneficiaryReturnDueDateIncludingExtensions: '2027-10-15',
+    correctiveDistribution: {
+      amount: 2_000,
+      receivedOn: '2027-12-31',
+      sourceApplicablePlan: INHERITED_IRAS,
+    },
+    ...overrides,
   }
 }
 
@@ -135,6 +191,90 @@ describeRule('irc-4974-rmd-shortfall-excise-tax', {
     })
     expect(result.tax).toBe(0)
     expect(result.reason).toBe('discretionaryWaiverGranted')
+  })
+})
+
+describeRule('treas-reg-54-4974-1-g-2-edb-ten-year-election-automatic-waiver', {
+  readings: {
+    everyStatedConditionIsMet: 0,
+    rejectedAutomaticWaiverWithoutOneCondition: 500,
+  },
+  accepted: 'everyStatedConditionIsMet',
+  note: 'each independently modeled automatic-waiver condition',
+}, ({ accepted, readings }) => {
+  it('requires the EDB, default-life-expectancy, ninth-year-election, and Commissioner conditions', () => {
+    const target = inheritedObligation()
+    const valid = computeRmdShortfallExcise(target, {
+      obligationId: target.obligationId,
+      automaticWaiver: edbTenYearElectionWaiver(),
+    })
+    expect(valid.tax).toBe(accepted)
+    expect(valid.reason).toBe('automaticEdbTenYearElectionWaiver')
+  })
+
+  const rejectedCases: readonly [string, Partial<EdbTenYearElectionWaiver>, Partial<RmdShortfallObligation>][] = [
+    ['a death on or after the RBD', { ownerDiedBeforeRequiredBeginningDate: false }, {}],
+    ['a non-EDB payee', { eligibleDesignatedBeneficiary: false }, {}],
+    ['a non-default life-expectancy amount', { defaultLifeExpectancyApplied: false }, {}],
+    ['an affirmative life-expectancy election', { affirmativeLifeExpectancyElectionMade: true }, {}],
+    ['an election after the ninth calendar year', { electionMadeOn: '2034-01-01' }, {}],
+    ['a final-sweep rather than annual life-expectancy requirement', {}, { requirementKind: 'inheritedFinalSweep' }],
+    ['a Commissioner determination otherwise', { commissionerDeterminedOtherwise: true }, {}],
+  ]
+  it.each(rejectedCases)('rejects %s', (_label, waiverOverrides, obligationOverrides) => {
+    const candidate = inheritedObligation(obligationOverrides)
+    const result = computeRmdShortfallExcise(candidate, {
+      obligationId: candidate.obligationId,
+      automaticWaiver: edbTenYearElectionWaiver(waiverOverrides),
+    })
+    expect(result.tax).toBe(readings.rejectedAutomaticWaiverWithoutOneCondition)
+    expect(result.reason).toBe('default25Percent')
+  })
+})
+
+describeRule('treas-reg-54-4974-1-g-3-year-of-death-automatic-waiver', {
+  readings: {
+    everyStatedConditionIsMet: 0,
+    rejectedAutomaticWaiverWithoutOneCondition: 500,
+  },
+  accepted: 'everyStatedConditionIsMet',
+  note: 'same-year death, full correction, later-of deadline, and Commissioner conditions',
+}, ({ accepted, readings }) => {
+  it('requires each independently modeled year-of-death waiver condition', () => {
+    const target = inheritedObligation({ requirementKind: 'inheritedYearOfDeath' })
+    const valid = computeRmdShortfallExcise(target, {
+      obligationId: target.obligationId,
+      automaticWaiver: yearOfDeathWaiver(),
+    })
+    expect(valid.tax).toBe(accepted)
+    expect(valid.reason).toBe('automaticYearOfDeathWaiver')
+  })
+
+  const rejectedCases: readonly [string, Partial<YearOfDeathWaiver>, Partial<RmdShortfallObligation>][] = [
+    ['a requirement that is not for the year of death', {}, { requirementKind: 'inheritedAnnualLifeExpectancy' }],
+    ['a death in a different calendar year', { ownerDeathYear: 2025 }, {}],
+    ['a corrective distribution short of the full miss', {
+      correctiveDistribution: { amount: 1_999.99, receivedOn: '2027-12-31', sourceApplicablePlan: INHERITED_IRAS },
+    }, {}],
+    ['a corrective distribution after the later automatic deadline', {
+      correctiveDistribution: { amount: 2_000, receivedOn: '2028-01-01', sourceApplicablePlan: INHERITED_IRAS },
+    }, {}],
+    ['a corrective distribution from another applicable plan', {
+      correctiveDistribution: { amount: 2_000, receivedOn: '2027-12-31', sourceApplicablePlan: EMPLOYER_PLAN },
+    }, {}],
+    ['a Commissioner determination otherwise', { commissionerDeterminedOtherwise: true }, {}],
+  ]
+  it.each(rejectedCases)('rejects %s', (_label, waiverOverrides, obligationOverrides) => {
+    const candidate = inheritedObligation({
+      requirementKind: 'inheritedYearOfDeath',
+      ...obligationOverrides,
+    })
+    const result = computeRmdShortfallExcise(candidate, {
+      obligationId: candidate.obligationId,
+      automaticWaiver: yearOfDeathWaiver(waiverOverrides),
+    })
+    expect(result.tax).toBe(readings.rejectedAutomaticWaiverWithoutOneCondition)
+    expect(result.reason).toBe('default25Percent')
   })
 })
 

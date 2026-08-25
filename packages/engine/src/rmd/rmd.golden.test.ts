@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { expectMoney } from '../testing/money.js'
 import { packForYear } from '../params/index.js'
+import { describeRule } from '../rules/describeRule.js'
 import { requiredMinimumDistribution } from './rmd.js'
 import { jointLifeTableDivisor } from './jointLifeTable.js'
 
@@ -70,25 +71,43 @@ describe('RMD golden worksheets', () => {
     expect(muchYounger).toBeLessThan(uniform)
   })
 
-  it('uses IRS Table II for qualifying younger sole-beneficiary spouses', () => {
-    expect(jointLifeTableDivisor(75, 64)).toBe(25.3)
-    expectMoney(
-      requiredMinimumDistribution(pack, 1951, 75, 100_000, {
-        ownerSex: 'male',
-        spouse: { ageAttained: 64, sex: 'female' },
-      }),
-      100_000 / 25.3,
-    )
-  })
+  describeRule('treas-reg-1-401-a-9-9-d-joint-life-table-divisor-literals', {
+    // Treasury's own Table 3, not Pub. 590-B: row 75/column 64 is 25.3 and
+    // row 73/column 19 is 66.1. The rejected reading uses the adjacent
+    // published Uniform Lifetime divisors for the owner ages instead.
+    readings: {
+      regulationTableLiterals: { owner75Spouse64: 25.3, owner73Spouse19: 66.1 },
+      rejectedUniformLifetimeDivisors: { owner75Spouse64: 24.6, owner73Spouse19: 26.5 },
+    },
+    accepted: 'regulationTableLiterals',
+    note: 'Table 3 row and column literals',
+  }, ({ accepted, readings }) => {
+    it('uses the Treasury Table 3 literal for a qualifying younger spouse', () => {
+      expect(jointLifeTableDivisor(75, 64)).toBe(accepted.owner75Spouse64)
+      expect(jointLifeTableDivisor(75, 64)).not.toBe(
+        readings.rejectedUniformLifetimeDivisors.owner75Spouse64,
+      )
+      expectMoney(
+        requiredMinimumDistribution(pack, 1951, 75, 100_000, {
+          ownerSex: 'male',
+          spouse: { ageAttained: 64, sex: 'female' },
+        }),
+        100_000 / accepted.owner75Spouse64,
+      )
+    })
 
-  it('covers Joint Life Table II spouse ages below 20', () => {
-    expect(jointLifeTableDivisor(73, 19)).toBe(66.1)
-    expectMoney(
-      requiredMinimumDistribution(pack, 1953, 73, 100_000, {
-        ownerSex: 'male',
-        spouse: { ageAttained: 19, sex: 'female' },
-      }),
-      100_000 / 66.1,
-    )
+    it('uses the Treasury Table 3 literal below the Pub. 590-B age slice', () => {
+      expect(jointLifeTableDivisor(73, 19)).toBe(accepted.owner73Spouse19)
+      expect(jointLifeTableDivisor(73, 19)).not.toBe(
+        readings.rejectedUniformLifetimeDivisors.owner73Spouse19,
+      )
+      expectMoney(
+        requiredMinimumDistribution(pack, 1953, 73, 100_000, {
+          ownerSex: 'male',
+          spouse: { ageAttained: 19, sex: 'female' },
+        }),
+        100_000 / accepted.owner73Spouse19,
+      )
+    })
   })
 })

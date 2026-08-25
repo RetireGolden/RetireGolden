@@ -9309,6 +9309,377 @@ const registry = {
       'packages/engine/src/rmd/rmd.ts',
     ],
   },
+  'irs-notice-2022-53-2023-54-2024-35-inherited-rmd-transition-relief': {
+    title: 'Inherited-RMD transition relief ended after 2024',
+    statement:
+      'Notices 2022-53, 2023-54, and 2024-35 limited their non-enforcement relief to specified RMDs for 2021 through 2024. Notice 2024-35 announced that the final regulations apply for calendar years beginning on or after January 1, 2025, so the engine does not carry the transition relief into a 2025-or-later annual RMD inside a ten-year window.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'irsNotice',
+      citation: 'Notice 2022-53, section IV.B',
+      url: 'https://www.irs.gov/pub/irs-drop/n-22-53.pdf',
+      quotedText:
+        'To the extent a taxpayer did not take a specified RMD (as defined in Section IV.C of this notice), the IRS will not assert that an excise tax is due under section 4974.',
+    }, {
+      kind: 'irsNotice',
+      citation: 'Notice 2022-53, section IV.C',
+      url: 'https://www.irs.gov/pub/irs-drop/n-22-53.pdf',
+      quotedText:
+        'For purposes of this notice only, a specified RMD is any distribution that, under the interpretation included in the proposed regulations, would be required to be made pursuant to section 401(a)(9) in 2021 or 2022 under a defined contribution plan or IRA that is subject to the rules of 401(a)(9)(H) for the year in which the employee (or designated beneficiary) died',
+    }, {
+      kind: 'irsNotice',
+      citation: 'Notice 2023-54, section V.B',
+      url: 'https://www.irs.gov/pub/irs-drop/n-23-54.pdf',
+      quotedText:
+        'To the extent a taxpayer did not take a specified RMD (as defined in section V.C of this notice), the IRS will not assert that an excise tax is due under § 4974.',
+    }, {
+      kind: 'irsNotice',
+      citation: 'Notice 2023-54, section V.C',
+      url: 'https://www.irs.gov/pub/irs-drop/n-23-54.pdf',
+      quotedText:
+        'For purposes of this notice, a specified RMD is any distribution that, under the interpretation included in the proposed regulations, would be required to be made pursuant to § 401(a)(9) in 2023 under a defined contribution plan or IRA that is subject to the rules of § 401(a)(9)(H) for the year in which the employee (or designated beneficiary) died',
+    }, {
+      kind: 'irsNotice',
+      citation: 'Notice 2024-35, section IV.B',
+      url: 'https://www.irs.gov/pub/irs-drop/n-24-35.pdf',
+      quotedText:
+        'To the extent a taxpayer did not take a specified RMD (as defined in section IV.C of this notice), the IRS will not assert that an excise tax is due under § 4974.',
+    }, {
+      kind: 'irsNotice',
+      citation: 'Notice 2024-35, section III.C',
+      url: 'https://www.irs.gov/pub/irs-drop/n-24-35.pdf',
+      quotedText:
+        'For purposes of this notice, a specified RMD is any distribution that, under the interpretation included in the proposed regulations, would be required to be made pursuant to § 401(a)(9) in 2024 under a defined contribution plan or IRA that is subject to the rules of § 401(a)(9)(H) for the year in which the employee (or designated beneficiary) died',
+    }, {
+      kind: 'irsNotice',
+      citation: 'Notice 2024-35, section I',
+      url: 'https://www.irs.gov/pub/irs-drop/n-24-35.pdf',
+      quotedText:
+        'This notice provides guidance relating to certain specified required minimum distributions (RMDs) for 2024. In addition, this notice announces that the final regulations that the Department of the Treasury (Treasury Department) and the Internal Revenue Service (IRS) intend to issue related to RMDs will apply for purposes of determining RMDs for calendar years beginning on or after January 1, 2025.',
+    }],
+    // The relief has already ended; the record states a settled historical
+    // boundary rather than a window still waiting to close.
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-25',
+    implementedBy: [
+      'packages/engine/src/strategies/inheritedIra.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+  },
+
+  'irc-401-a-9-B-ii-non-designated-beneficiary-five-year-rule': {
+    title: 'Non-designated beneficiary uses the five-year rule before the RBD',
+    statement:
+      'A beneficiary that is not a designated beneficiary remains under the five-year rule when the employee dies before distributions begin: the entire interest must be distributed within five years. For an individual account, the §4974 required amount is the amount §1.401(a)(9)-5 requires for that calendar year. The engine refuses estate, non-qualifying-trust, and other non-individual beneficiary facts rather than calculating this unmodeled regime.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The plan schema records the non-individual category but has no facts to establish a qualifying trust or to calculate its separate five-year distribution schedule. The inherited classifier therefore emits its typed refusal; inheritedRegime.test.ts covers that refusal on the driven classification path.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 401(a)(9)(E)(i)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section401&num=0&edition=prelim',
+      quotedText:
+        'The term “designated beneficiary” means any individual designated as a beneficiary by the employee.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 401(a)(9)(H)(i)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section401&num=0&edition=prelim',
+      quotedText:
+        'In the case of a defined contribution plan, if an employee dies before the distribution of the employee’s entire interest- (i) In general.-Except in the case of a beneficiary who is not a designated beneficiary, subparagraph (B)(ii)- (I) shall be applied by substituting “10 years” for “5 years”, and (II) shall apply whether or not distributions of the employee’s interests have begun in accordance with subparagraph (A).',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 401(a)(9)(B)(ii)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section401&num=0&edition=prelim',
+      quotedText:
+        'A trust shall not constitute a qualified trust under this section unless the plan provides that, if an employee dies before the distribution of the employee’s interest has begun in accordance with subparagraph (A)(ii), the entire interest of the employee will be distributed within 5 years after the death of such employee.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 54.4974-1(c)(1)',
+      url: 'https://www.ecfr.gov/current/title-26/section-54.4974-1',
+      quotedText:
+        'Except as otherwise provided in this paragraph (c), if a payee’s interest under a qualified retirement plan or any eligible deferred compensation plan is in the form of an individual account (and distribution of that account is not being made under an annuity contract purchased in accordance with § 1.401(a)(9)-5(a)(5) and § 1.401(a)(9)-6(d)), the amount of the required minimum distribution for any calendar year for purposes of section 4974 is the amount required to be distributed to that payee for that calendar year determined in accordance with § 1.401(a)(9)-5 as provided in the following (whichever applies)—',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-25',
+    implementedBy: [
+      'packages/engine/src/strategies/inheritedIra.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+  },
+
+  'treas-reg-1-401-a-9-8-a-1-ii-separate-account-deadline': {
+    title: 'Separate-account treatment requires a timely separate account',
+    statement:
+      'Section 401(a)(9) applies separately to each beneficiary only when its interest is held in a separate account satisfying the regulatory requirements. If those separate accounts are not established by the end of the calendar year following death, later aggregate required distributions are determined without the separate-account rule. The engine refuses multiple-beneficiary facts without separate-account facts rather than infer that deadline was met.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The account model has no dated separate-account establishment fact. Its typed multiple-beneficiary refusal is already exercised in inheritedRegime.test.ts, so no numeric describeRule is lawful for this out-of-scope record.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.401(a)(9)-8(a)(1)(i)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-8',
+      quotedText:
+        'Except as otherwise provided in this paragraph (a)(1), for calendar years beginning after the calendar year in which the employee dies, section 401(a)(9) is applied separately with respect to the separate interests of each of the employee\'s beneficiaries under the plan provided that those interests are held in separate accounts that satisfy the separate accounting requirements of paragraphs (a)(2)(i) and (ii) of this section.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.401(a)(9)-8(a)(1)(ii)(A)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-8',
+      quotedText:
+        'If the separate accounts that satisfy the separate accounting requirements of paragraph (a)(2) of this section are not established until after the end of the calendar year following the calendar year of the employee\'s death, then for distribution calendar years after those requirements are satisfied— (A) The aggregate required distribution for a distribution calendar year is determined without regard to the separate account rule in paragraph (a)(1)(i) of this section;',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-25',
+    implementedBy: [
+      'packages/engine/src/strategies/inheritedIra.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+  },
+
+  'treas-reg-54-4974-1-c-five-year-deadline-rmd': {
+    title: 'Five-year deadline carries the remaining interest as its RMD',
+    statement:
+      'For an individual account, the §4974 required amount for a calendar year is the amount §1.401(a)(9)-5 requires. Because the five-year rule requires the entire interest to be distributed within five years after a pre-RBD death, the remaining interest is the required distribution in the fifth-anniversary calendar year. The engine does not calculate this non-designated-beneficiary regime and instead issues its typed refusal.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'This is the deadline-year limb of irc-401-a-9-B-ii-non-designated-beneficiary-five-year-rule. The same unmodeled trust and non-individual facts make a numeric five-year fixture unavailable; inheritedRegime.test.ts exercises the classification refusal instead.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'regulation',
+      citation: 'Treas. Reg. 54.4974-1(c)(1)',
+      url: 'https://www.ecfr.gov/current/title-26/section-54.4974-1',
+      quotedText:
+        'Except as otherwise provided in this paragraph (c), if a payee\'s interest under a qualified retirement plan or any eligible deferred compensation plan is in the form of an individual account (and distribution of that account is not being made under an annuity contract purchased in accordance with § 1.401(a)(9)-5(a)(5) and § 1.401(a)(9)-6(d)), the amount of the required minimum distribution for any calendar year for purposes of section 4974 is the amount required to be distributed to that payee for that calendar year determined in accordance with § 1.401(a)(9)-5 as provided in the following (whichever applies)—',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 54.4974-1(c)(2)',
+      url: 'https://www.ecfr.gov/current/title-26/section-54.4974-1',
+      quotedText:
+        'The required minimum distribution due in that fifth or tenth calendar year is the employee\'s entire interest in the plan.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 401(a)(9)(B)(ii)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section401&num=0&edition=prelim',
+      quotedText:
+        'A trust shall not constitute a qualified trust under this section unless the plan provides that, if an employee dies before the distribution of the employee\'s interest has begun in accordance with subparagraph (A)(ii), the entire interest of the employee will be distributed within 5 years after the death of such employee.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-25',
+    implementedBy: [
+      'packages/engine/src/strategies/inheritedIra.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+  },
+
+  'treas-reg-1-401-a-9-9-d-joint-life-table-divisor-literals': {
+    title: 'Joint and Last Survivor Table divisor literals',
+    statement:
+      'The Joint and Last Survivor Table supplies the literal divisor for a qualifying sole-beneficiary spouse. Its row for owner age 75 and spouse age 64 is 25.3; its row for owner age 73 and spouse age 19 is 66.1.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.401(a)(9)-9(d), Table 3',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-9',
+      quotedText:
+        'Table 3 to Paragraph (d) Ages 18 19 20 21 22 23 24 25 26 … 73 67.1 66.1 65.1 64.2 63.2 62.2 61.2 60.3 59.3',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.401(a)(9)-9(d), Table 3',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-9',
+      quotedText:
+        'Table 3 to Paragraph (d) Ages 63 64 65 66 67 68 69 70 71 … 75 26.1 25.3 24.6 24.0 23.3 22.7 22.1 21.5 20.9',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-25',
+    implementedBy: [
+      'packages/engine/src/rmd/rmd.ts',
+      'packages/engine/src/rmd/jointLifeTable.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+  },
+
+  'irc-408A-c-4-roth-ira-no-lifetime-rmd': {
+    title: 'Roth IRA owner has no lifetime RMD',
+    statement:
+      'Section 401(a)(9)(A) does not apply to a Roth IRA, so a living Roth IRA owner has no lifetime RMD or lifetime §4974 shortfall obligation.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 408A(c)(4)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408A&num=0&edition=prelim',
+      quotedText:
+        'Notwithstanding subsections (a)(6) and (b)(3) of section 408 (relating to required distributions), the following provisions shall not apply to any Roth IRA: (A) Section 401(a)(9)(A).',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-25',
+    implementedBy: ['packages/engine/src/projection/simulate.ts'],
+  },
+
+  'irc-402-c-4-B-rmd-not-eligible-rollover-distribution': {
+    title: 'Required distributions are not eligible rollover distributions',
+    statement:
+      'A distribution required under §401(a)(9) is excluded from the eligible-rollover-distribution definition. For an IRA, the regulation likewise treats the required-minimum-distribution portion as not eligible for rollover. RetireGolden has no generic rollover action; its only adjacent implemented path is a Roth conversion, whose RMD-first gate is registered separately as treas-reg-1-408A-4-a-6-rmd-precedes-conversion.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'A generic rollover would need a distinct transaction, source and destination eligibility facts. The conversion action is not treated as a substitute observable for an eligible-rollover-distribution determination, so this out-of-scope legal claim has no numeric fixture.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 402(c)(4)(B)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402&num=0&edition=prelim',
+      quotedText:
+        'any distribution to the extent such distribution is required under section 401(a)(9), and',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.408-8(b)(3)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.408-8',
+      quotedText:
+        'The portion of a distribution from an IRA that is a required minimum distribution and thus not eligible for rollover is determined in the same manner as provided in § 1.402(c)-2(f) and (j) for a distribution from a qualified plan.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-25',
+    implementedBy: ['packages/engine/src/model/plan.ts'],
+  },
+
+  'treas-reg-54-4974-1-f-first-year-rbd-excise-tax': {
+    title: 'Deferred first-year RMD shortfall is taxed in the RBD year',
+    statement:
+      'A first distribution-calendar-year RMD deferred to April 1 remains the preceding calendar year\'s RMD, but a shortfall is subject to §4974 in the calendar year containing the April 1 deadline. The separately due RMD for that RBD year remains its own required distribution.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'regulation',
+      citation: 'Treas. Reg. 54.4974-1(f)',
+      url: 'https://www.ecfr.gov/current/title-26/section-54.4974-1',
+      quotedText:
+        'If the amount not paid is an amount required to be paid by April 1 of a calendar year that includes the employee\'s required beginning date, the missed distribution is a required minimum distribution for the previous calendar year (that is, for the employee\'s or the individual\'s first distribution calendar year as determined in accordance with § 1.401(a)(9)-5(a)(2)(ii)). However, the excise tax under section 4974 is calculated with respect to the calendar year that includes the last day by which the amount is required to be distributed (that is, the calendar year that includes the employee\'s or individual\'s required beginning date) even though the preceding calendar year is the calendar year for which the amount is required to be distributed. There is also a required minimum distribution for the calendar year that includes the employee\'s or individual\'s required beginning date, and that distribution is also required to be made during the calendar year that includes the employee\'s or individual\'s required beginning date.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-25',
+    implementedBy: [
+      'packages/engine/src/rmd/rmdShortfallExcise.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+  },
+
+  'treas-reg-54-4974-1-g-2-edb-ten-year-election-automatic-waiver': {
+    title: 'EDB ten-year election automatic waiver has stated conditions',
+    statement:
+      'Unless the Commissioner determines otherwise, the automatic waiver applies only when the decedent died before the RBD; the payee is an individual eligible designated beneficiary whose annual amount used the default life-expectancy rule without an affirmative life-expectancy election; the payee missed that requirement; and the payee elects the ten-year rule by the end of the ninth calendar year after death.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'regulation',
+      citation: 'Treas. Reg. 54.4974-1(g)(2)',
+      url: 'https://www.ecfr.gov/current/title-26/section-54.4974-1',
+      quotedText:
+        'Unless the Commissioner determines otherwise, the tax under paragraph (a) of this section is waived automatically if— (i) The employee\'s or individual\'s death is before the employee\'s or individual\'s required beginning date; (ii) The payee is an individual— (A) Who is an eligible designated beneficiary (as defined in § 1.401(a)(9)-4(e)); (B) Whose required minimum distribution amount for a calendar year is determined under the life expectancy rule described in § 1.401(a)(9)-3(c)(4); and (C) Who did not make an affirmative election to have the life expectancy rule apply as described in § 1.401(a)(9)-3(c)(5)(iii); (iii) The payee fails to satisfy the minimum distribution requirement; and (iv) The payee elects the 10-year rule described in § 1.401(a)(9)-3(c)(3) by the end of the ninth calendar year following the calendar year of the employee\'s death.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-25',
+    implementedBy: [
+      'packages/engine/src/rmd/rmdShortfallExcise.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+  },
+
+  'treas-reg-54-4974-1-g-3-year-of-death-automatic-waiver': {
+    title: 'Year-of-death automatic waiver has stated conditions',
+    statement:
+      'Unless the Commissioner determines otherwise, the automatic year-of-death waiver applies only if an individual had a §1.401(a)(9)-3 or §1.401(a)(9)-5 distribution requirement, died in that same year without satisfying it, and the beneficiary takes the full corrective distribution by the stated later-of tax-filing or following-calendar-year deadline.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'regulation',
+      citation: 'Treas. Reg. 54.4974-1(g)(3)',
+      url: 'https://www.ecfr.gov/current/title-26/section-54.4974-1',
+      quotedText:
+        'Unless the Commissioner determines otherwise, the tax under paragraph (a) of this section is waived automatically if— (i) A distribution is required to be made to an individual under § 1.401(a)(9)-3 or § 1.401(a)(9)-5 in a calendar year; (ii) The individual who was required to take the distribution described in paragraph (g)(3)(i) of this section died in that calendar year without satisfying that distribution requirement; and (iii) The beneficiary of the individual described in paragraph (g)(3)(ii) of this section takes a corrective distribution in the amount needed to satisfy that distribution requirement no later than the tax filing deadline (including extensions thereof) for the taxable year of that beneficiary that begins with or within that calendar year (or, if later, the last day of the calendar year following that calendar year).',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-25',
+    implementedBy: [
+      'packages/engine/src/rmd/rmdShortfallExcise.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+  },
+
+  'treas-reg-1-408-8-c-3-spouse-as-own-death-year-rmd': {
+    title: 'Death-year spouse election retains the decedent’s unsatisfied RMD',
+    statement:
+      'After a spouse’s treat-as-own election, later RMDs use the spouse as owner. But when the election occurs in the calendar year of death, the spouse has no owner RMD for that year and instead must take the decedent’s unsatisfied year-of-death RMD.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.408-8(c)(3)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.408-8',
+      quotedText:
+        'Following an election described in paragraph (c)(1) of this section, the surviving spouse is considered the IRA owner for whose benefit the trust is maintained for all purposes under the Internal Revenue Code (including section 72(t)). Thus, for example, the required minimum distribution for the calendar year of the election and each subsequent calendar year is determined under section 401(a)(9)(A) with the spouse as IRA owner and not section 401(a)(9)(B) with the surviving spouse as the deceased IRA owner\'s beneficiary. However, if the election is made in the calendar year that includes the date of the IRA owner\'s death, the spouse is not required to take a required minimum distribution as the IRA owner for that calendar year. Instead, the spouse is required to take a required minimum distribution for that year, determined with respect to the deceased IRA owner under the rules of § 1.401(a)(9)-5(c), to the extent the distribution was not made to the IRA owner before death.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-25',
+    implementedBy: [
+      'packages/engine/src/strategies/accountEligibility.ts',
+      'packages/engine/src/strategies/inheritedIra.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+  },
 } as const satisfies Record<string, TaxRuleRecord>
 
 export const TAX_RULE_REGISTRY = Object.freeze(registry)

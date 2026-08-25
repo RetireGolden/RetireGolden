@@ -11,16 +11,16 @@ The registry is the machine-checked chain from a rule to its implementation and 
 
 | Metric | Count |
 | --- | ---: |
-| Total rules | 249 |
+| Total rules | 260 |
 | Classification: approximated | 53 |
-| Classification: outOfScope | 14 |
-| Classification: settled | 178 |
+| Classification: outOfScope | 18 |
+| Classification: settled | 185 |
 | Classification: unsettled | 4 |
 | Volatility: annuallyIndexed | 37 |
 | Volatility: awaitingGuidance | 4 |
-| Volatility: staticStatute | 203 |
+| Volatility: staticStatute | 214 |
 | Volatility: sunsetting | 5 |
-| Federal jurisdiction | 192 |
+| Federal jurisdiction | 203 |
 | State jurisdiction total | 57 |
 
 | State jurisdiction | Count |
@@ -53,8 +53,8 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | Engine source files | 235 |
 | Swept | 100.0% |
 | Grandfathered unswept baseline | 0 |
-| partial | 66 |
-| registered | 44 |
+| partial | 65 |
+| registered | 45 |
 | rule-free | 125 |
 | unswept | 0 |
 
@@ -74,7 +74,7 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | montecarlo | 11 | 1 | 0 | 10 | 0 |
 | params | 8 | 1 | 5 | 2 | 0 |
 | projection | 24 | 8 | 2 | 14 | 0 |
-| rmd | 4 | 2 | 2 | 0 | 0 |
+| rmd | 4 | 1 | 3 | 0 | 0 |
 | rules | 5 | 0 | 1 | 4 | 0 |
 | scenarios | 9 | 0 | 0 | 9 | 0 |
 | schema | 7 | 0 | 0 | 7 | 0 |
@@ -145,7 +145,6 @@ None.
 | projection/ownedNonRothIraAnnualObservation.ts | 2026-08-24 | April-15/weekend/Emancipation-Day filing deadline; no record |
 | projection/simulate.ts | 2026-08-24 | QCD/RMD/annuity/contribution/QLAC covered; residual 59½/HSA/Roth-five-year/Rule-of-55 proxies, inherited-Roth post-flip, Medicare age-65, HSA family-limit, spousal/survivor SS/RIB-LIM |
 | rmd/applicableAge.ts | 2026-08-24 | SECURE 2.0 applicable ages/RBD April-1; born-1959 dual-age contest; 70½ cohort & July-1949 cut; no records naming this file |
-| rmd/jointLifeTable.ts | 2026-08-24 | §1.401(a)(9)-9(d) Table 3 divisor literals; usage rule registered but no table-value record naming this file |
 | socialSecurity/claimFactor.ts | 2026-08-24 | worker claim-age window and factor composition rest on records naming benefitFactor.ts; no record names this file |
 | socialSecurity/disability.ts | 2026-08-24 | SGA amount registered; SSDI benefit=full PIA; FRA conversion window; annual SGA×12 suspension proxy not registered here |
 | socialSecurity/maritalBenefits.ts | 2026-08-24 | Eligibility rules (10-yr divorce, 9-mo survivor marriage, age gates, remarriage forfeiture) have no records |
@@ -161,7 +160,7 @@ None.
 
 ## Re-verification due dates
 
-The 25 earliest due dates are shown below (249 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
+The 25 earliest due dates are shown below (260 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
 
 | Rule | Volatility | Verified on | Due on |
 | --- | --- | --- | --- |
