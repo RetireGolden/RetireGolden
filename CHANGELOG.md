@@ -5,6 +5,10 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 ## 2026-08
 
 **2026-08-25**
+- Re-enabled the production web import capability after the WS6 incident-switch
+  rehearsal proved the deployed one-key switch removed every browser file-input
+  surface while preserving manual entry, existing-plan access, exports, and
+  RetireGolden backup recovery.
 - Disabled the production web import capability for the WS6 incident-switch
   rehearsal. Browser file inputs remain unmounted while disabled; manual plan
   entry, existing plans, exports, and RetireGolden backup recovery remain

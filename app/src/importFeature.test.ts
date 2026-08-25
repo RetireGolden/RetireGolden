@@ -4,9 +4,9 @@ import shippedConfigText from '../public/import-feature.json?raw'
 import { loadImportFeature, parseImportFeatureConfig } from './importFeature'
 
 describe('import feature bootstrap', () => {
-  it('ships the reviewed disabled one-key configuration', () => {
-    expect(shippedConfigText.trim()).toBe('{"enabled":false}')
-    expect(parseImportFeatureConfig(JSON.parse(shippedConfigText))).toBe(false)
+  it('ships the reviewed enabled one-key configuration', () => {
+    expect(shippedConfigText.trim()).toBe('{"enabled":true}')
+    expect(parseImportFeatureConfig(JSON.parse(shippedConfigText))).toBe(true)
   })
 
   it('accepts only the exact enabled configuration', () => {
