@@ -36,12 +36,19 @@ function isStaleNumberedSibling(name, fileBase, ext) {
   return /^\d+$/u.test(middle)
 }
 
-function deleteStaleNumberedSiblings(outPath) {
+/**
+ * Every --out invocation clears ALL prior outputs for that path — the
+ * unnumbered file and every numbered sibling — before writing, so a rerun
+ * that changes shape (fewer chunks, chunked to single, or nothing due at
+ * all) can never leave a stale handoff for an operator to pick up.
+ */
+function clearPriorOutputs(outPath) {
   const { base, ext } = splitOutPath(outPath)
   const dir = dirname(resolve(outPath))
   const fileBase = basename(base)
+  const unnumbered = basename(resolve(outPath))
   for (const name of readdirSync(dir)) {
-    if (isStaleNumberedSibling(name, fileBase, ext)) {
+    if (isStaleNumberedSibling(name, fileBase, ext) || name === unnumbered) {
       const full = join(dir, name)
       unlinkSync(full)
       console.log('Deleted stale ' + full)
@@ -224,6 +231,7 @@ async function main() {
   if (useDue) {
     const dueIds = taxRulesDueForVerification(asOf, DEFAULT_REVERIFICATION_INTERVAL_DAYS)
     if (dueIds.length === 0 && ruleArgs.length === 0) {
+      if (values.out) clearPriorOutputs(values.out)
       console.log('No rules due as of ' + asOf + '; nothing to dispatch.')
       return
     }
@@ -268,7 +276,7 @@ async function main() {
       manifestRules: report.manifest.rules,
     })
     if (values.out) {
-      deleteStaleNumberedSiblings(values.out)
+      clearPriorOutputs(values.out)
       writeFileSync(values.out, normalize(markdown), 'utf8')
     } else {
       process.stdout.write(markdown)
@@ -276,7 +284,7 @@ async function main() {
     return
   }
 
-  deleteStaleNumberedSiblings(values.out)
+  clearPriorOutputs(values.out)
   const written = []
   for (let i = 0; i < chunks.length; i++) {
     const outPath = numberedOutPath(values.out, i + 1)
