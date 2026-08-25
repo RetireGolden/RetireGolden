@@ -44,8 +44,8 @@ interface FixtureOptions { readonly scheduleConflict?: boolean; readonly p1Contr
   readonly p1SepOngoing?: boolean
   /** Make ira-p1 an employer-plan account rather than an IRA. */
   readonly p1EmployerPlan?: boolean
-  /** Override charity attestations on the p1 QCD only. */
-  readonly p1Charity?: Partial<typeof charity>
+  /** Override charity attestations or the designation kind on the p1 QCD only. */
+  readonly p1Charity?: Partial<Omit<QualifiedCharitableDistributionRequest['charity'], 'designationId'>>
 }
 function fixture(p1Opening = 10_000, options: FixtureOptions = {}): { inputs: FinalizeAnnualQcdUnifiedTransactionInput[]; requests: QualifiedCharitableDistributionRequest[] } {
   const p1Charity = { ...charity, ...options.p1Charity }
@@ -352,6 +352,24 @@ describe('publishAnnualQcdActionExecutionEvidence', () => {
       const { inputs } = fixture(10_000, {
         p1Charity: { notDonorAdvisedFundOrSupportingOrganizationAttested: false },
       })
+      const result = publishAnnualQcdActionExecutionEvidence({ ownerFinalizationInputs: inputs })
+      const executed = publishedExecutedAmount(result)
+      expect(executed).toBe(accepted)
+      expect(executed).not.toBe(readings.treatsTheDisqualifiedRecipientAsEligible)
+      expect(p1EligibilityReasonCodes(inputs)).toContain('qcd-direct-charity-unconfirmed')
+    })
+
+    it('refuses an explicitly designated donor-advised fund even with affirmative attestations', () => {
+      const { inputs } = fixture(10_000, { p1Charity: { designationKind: 'donorAdvisedFund' } })
+      const result = publishAnnualQcdActionExecutionEvidence({ ownerFinalizationInputs: inputs })
+      const executed = publishedExecutedAmount(result)
+      expect(executed).toBe(accepted)
+      expect(executed).not.toBe(readings.treatsTheDisqualifiedRecipientAsEligible)
+      expect(p1EligibilityReasonCodes(inputs)).toContain('qcd-direct-charity-unconfirmed')
+    })
+
+    it('refuses an explicitly designated supporting organization even with affirmative attestations', () => {
+      const { inputs } = fixture(10_000, { p1Charity: { designationKind: 'supportingOrganization' } })
       const result = publishAnnualQcdActionExecutionEvidence({ ownerFinalizationInputs: inputs })
       const executed = publishedExecutedAmount(result)
       expect(executed).toBe(accepted)

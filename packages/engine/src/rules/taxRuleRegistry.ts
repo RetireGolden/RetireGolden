@@ -1213,7 +1213,7 @@ const registry = {
   'irc-72-t-1-qcd-not-early-distribution-exception': {
     title: 'A QCD does not create an under-59.5 penalty exception',
     statement:
-      'Section 72(t)(1) increases tax by 10 percent of the includible portion of an early distribution from a qualified retirement plan. Section 408(d)(8)(B)(ii) requires that a qualified charitable distribution be made on or after the date the individual for whose benefit the plan is maintained has attained age 70½. The engine refuses any QCD before that threshold, so no accepted QCD input can be an under-59½ distribution, and its qcdDirectTransfer penalty-coverage marker is emitted only for an already-executed age-eligible QCD.',
+      'Section 72(t)(1) increases tax by 10 percent of the includible portion of an early distribution from a qualified retirement plan, and section 72(t)(2)(A)(i) excepts distributions made on or after the employee attains age 59½. Section 408(d)(8)(B)(ii) requires that a qualified charitable distribution be made on or after the date the individual for whose benefit the plan is maintained has attained age 70½. The engine refuses any QCD before that threshold, so every accepted QCD is past age 59½ and its includible portion falls within the 72(t)(2)(A)(i) exception; the qcdDirectTransfer penalty-coverage marker is emitted only for an already-executed age-eligible QCD.',
     classification: 'outOfScope',
     contraryReading: null,
     errorDirection: null,
@@ -1231,6 +1231,12 @@ const registry = {
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim',
       quotedText:
         'Except as provided in paragraphs (3) and (4), paragraph (1) shall not apply to any of the following distributions:',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 72(t)(2)(A)(i)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim',
+      quotedText:
+        'Distributions which are- (i) made on or after the date on which the employee attains age 59½,',
     }, {
       kind: 'statute',
       citation: 'IRC 408(d)(8)(B)(ii)',
