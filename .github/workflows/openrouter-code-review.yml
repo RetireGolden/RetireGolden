@@ -23,6 +23,7 @@ permissions:
 
 jobs:
   openrouter:
+    name: OpenRouter review
     if: github.event_name == 'workflow_dispatch' || !github.event.pull_request.draft
     uses: RetireGolden/.github/.github/workflows/openrouter-code-review.yml@79e5ec5dffdd6d8acf03ce1d92dd809e943aec70
     with:

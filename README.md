@@ -52,7 +52,7 @@ pnpm dev
 
 ## CI/CD
 
-Eight GitHub Actions workflows: the SWA pipeline and both security scans run on pushes and pull requests to `main`; Grok Build review and CLA enforcement run on PR activity; the Owl parity oracle and the engine and planner-ui npm releases are triggered manually (the engine release also fires on `engine-v*` tags). Full setup notes: [DOCS/operations/ci-cd-and-deploy.md](DOCS/operations/ci-cd-and-deploy.md).
+Nine GitHub Actions workflows: the SWA pipeline and both security scans run on pushes and pull requests to `main`; Grok Build review, the OpenRouter sibling review, and CLA enforcement run on PR activity; the Owl parity oracle and the engine and planner-ui npm releases are triggered manually (the engine release also fires on `engine-v*` tags). Full setup notes: [DOCS/operations/ci-cd-and-deploy.md](DOCS/operations/ci-cd-and-deploy.md).
 
 ### Azure Static Web Apps — build & deploy
 
@@ -103,6 +103,12 @@ Runs on pull-request activity. First-time contributors are asked to sign the [Co
 [`.github/workflows/grok-code-review.yml`](.github/workflows/grok-code-review.yml)
 
 Runs on pull-request open, sync, reopen, and ready-for-review (and manually from the Actions tab). Delegates to the org workflow in `RetireGolden/.github` to post an automated Grok Build review on the PR diff.
+
+### OpenRouter sibling review
+
+[`.github/workflows/openrouter-code-review.yml`](.github/workflows/openrouter-code-review.yml)
+
+Non-required bake-off sibling of Grok. Runs on pull-request open, sync, reopen, and ready-for-review (and manually from the Actions tab); skips drafts (intentional). Needs the org Actions secret `OPENROUTER_API_KEY`. Delegates to the org workflow in `RetireGolden/.github`. The caller has no concurrency group, so it cannot cancel Grok.
 
 ### Engine package release
 
