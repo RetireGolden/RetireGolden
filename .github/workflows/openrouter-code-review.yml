@@ -4,6 +4,14 @@
 # review / grok-first-pass-gate or cancel Grok jobs.
 #
 # Pass only OPENROUTER_API_KEY. Do not inherit.
+#
+# As of the .github#18 pin (action v1.2.0), synchronize runs a VERIFY
+# round that fails closed (red, zero token spend) until a first-pass has
+# seeded this PR's review loop. Seed with workflow_dispatch (pr_number),
+# or the PR's next reopen / ready_for_review. Still advisory — never a
+# required check. Per-PR concurrency lives in the org reusable's own
+# job-level groups; do not add a workflow-level group here (it could
+# cancel an in-progress first-pass).
 
 name: OpenRouter code review
 
@@ -25,7 +33,7 @@ jobs:
   openrouter:
     name: OpenRouter review
     if: github.event_name == 'workflow_dispatch' || !github.event.pull_request.draft
-    uses: RetireGolden/.github/.github/workflows/openrouter-code-review.yml@e437b2f4229bc528cc1228f3f349d6f5ed6752fe
+    uses: RetireGolden/.github/.github/workflows/openrouter-code-review.yml@e437b2f4229bc528cc1228f3f349d6f5ed6752fe # .github#18 (action v1.2.0 review loop)
     with:
       pr_number: ${{ inputs.pr_number || github.event.inputs.pr_number || github.event.pull_request.number }}
     secrets:
