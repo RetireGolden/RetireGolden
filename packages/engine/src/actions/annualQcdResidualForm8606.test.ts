@@ -165,10 +165,11 @@ function staged(input: StageAnnualQcdResidualForm8606Input) {
 }
 
 // Independent worksheet from IRC 408(d)(8)(B), Form 1040 line 4b Exception 3,
-// and Form 8606 lines 7-8: a sole $10.00 IRA with $4.00 of basis has $6.00
-// otherwise includible. Of a $10.00 charitable distribution, $6.00 can be a
-// QCD and the $4.00 remainder is not a QCD. It is a distribution, not a Roth
-// conversion, so the Form 8606 totals are line 7 = $4.00 and line 8 = $0.00.
+// and Form 8606 lines 7-8: the execution openingBalances default is a sole
+// $10.00 IRA (the Plan account is 1,000,000 cents) with $4.00 of basis and
+// $6.00 otherwise includible. Of a $10.00 charitable distribution, $6.00 can
+// be a QCD and the $4.00 remainder is not a QCD. It is a distribution, not a
+// Roth conversion, so the Form 8606 totals are line 7 = $4.00 and line 8 = $0.00.
 describeRule('form-1040-line-4b-and-form-8606-line-7-qcd-remainder', {
   note: 'non-QCD remainder enters line 7 and cannot create line 8',
   readings: {

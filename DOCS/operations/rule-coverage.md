@@ -11,16 +11,16 @@ The registry is the machine-checked chain from a rule to its implementation and 
 
 | Metric | Count |
 | --- | ---: |
-| Total rules | 248 |
-| Classification: approximated | 52 |
+| Total rules | 249 |
+| Classification: approximated | 53 |
 | Classification: outOfScope | 14 |
 | Classification: settled | 178 |
 | Classification: unsettled | 4 |
 | Volatility: annuallyIndexed | 37 |
 | Volatility: awaitingGuidance | 4 |
-| Volatility: staticStatute | 202 |
+| Volatility: staticStatute | 203 |
 | Volatility: sunsetting | 5 |
-| Federal jurisdiction | 191 |
+| Federal jurisdiction | 192 |
 | State jurisdiction total | 57 |
 
 | State jurisdiction | Count |
@@ -161,7 +161,7 @@ None.
 
 ## Re-verification due dates
 
-The 25 earliest due dates are shown below (248 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
+The 25 earliest due dates are shown below (249 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
 
 | Rule | Volatility | Verified on | Due on |
 | --- | --- | --- | --- |

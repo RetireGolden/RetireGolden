@@ -2,9 +2,9 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 1,
   "registry": {
-    "total": 248,
+    "total": 249,
     "byClassification": {
-      "approximated": 52,
+      "approximated": 53,
       "outOfScope": 14,
       "settled": 178,
       "unsettled": 4
@@ -12,11 +12,11 @@
     "byVolatility": {
       "annuallyIndexed": 37,
       "awaitingGuidance": 4,
-      "staticStatute": 202,
+      "staticStatute": 203,
       "sunsetting": 5
     },
     "byJurisdiction": {
-      "federal": 191,
+      "federal": 192,
       "states": {
         "AK": 1,
         "AR": 9,
@@ -963,7 +963,8 @@
       "verifiedOn": "2026-08-25",
       "dueOn": "2027-08-25",
       "implementedBy": [
-        "packages/engine/src/actions/annualIraBasisAllocation.ts",
+        "packages/engine/src/actions/ownedNonRothIraAnnualFilingEvidence.ts",
+        "packages/engine/src/actions/ownedNonRothIraAnnualPostCandidateEvidence.ts",
         "packages/engine/src/actions/ownedNonRothIraWithdrawalCharacter.ts"
       ],
       "fixtureFiles": [
@@ -980,11 +981,11 @@
       "verifiedOn": "2026-08-25",
       "dueOn": "2027-08-25",
       "implementedBy": [
-        "packages/engine/src/actions/annualIraBasisAllocation.ts",
-        "packages/engine/src/actions/ownedNonRothIraWithdrawalCharacter.ts"
+        "packages/engine/src/actions/annualRetirementPhysicalEventInventory.ts",
+        "packages/engine/src/actions/ownedNonRothIraAnnualPhysicalTransaction.ts"
       ],
       "fixtureFiles": [
-        "packages/engine/src/actions/ownedNonRothIraWithdrawalCharacter.test.ts"
+        "packages/engine/src/actions/ownedNonRothIraAnnualPhysicalTransaction.test.ts"
       ]
     },
     {
@@ -2641,6 +2642,23 @@
       "verifiedOn": "2026-08-25",
       "dueOn": "2027-08-25",
       "implementedBy": [
+        "packages/engine/src/strategies/rothBasis.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/strategies/rothBasis.test.ts"
+      ]
+    },
+    {
+      "id": "irc-408A-d-4-B-same-year-conversion-aggregation",
+      "classification": "approximated",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-25",
+      "dueOn": "2027-08-25",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/strategies/rothBasis.ts"
       ],
       "fixtureFiles": [

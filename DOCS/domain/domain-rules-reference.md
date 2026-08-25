@@ -420,7 +420,7 @@ Source: [IRS 2026 limits announcement](https://www.irs.gov/newsroom/401k-limit-i
 ## 10. Roth conversion rules
 
 - Any amount, any year; taxed as ordinary income in the conversion year; **no 10% penalty on the conversion itself**; no earned-income or RMD-year ordering subtleties beyond: RMD must be satisfied **before** converting in an RMD year.
-- **5-year rules** (surface as warnings v1): each conversion has its own 5-year clock for penalty-free withdrawal of converted principal before 59½ (the "conversion ladder" for early retirees); separately, earnings require 59½ + 5-year account age.
+- **5-year rules:** each conversion has its own 5-year clock for penalty-free withdrawal of converted principal before 59½ (the "conversion ladder" for early retirees); separately, earnings require 59½ + 5-year account age. Recapture under §408A(d)(3)(F) is computed (with the age-60 proxy), and the taxable-portion-first gap inside a converted layer is the registered approximated divergence (`irc-408A-d-4-B-converted-layer-taxable-portion-first`).
 - **Pro-rata rule** for conversions and withdrawals from IRAs with nondeductible basis (Form 8606) — **implemented** (opt-in `nondeductibleBasis` per traditional IRA; see §16). Absent the field, plans behave as before (all pre-tax).
 - Conversion taxes best paid from taxable funds; paying from the conversion before 59½ incurs the 10% penalty on the tax portion.
 - **Named conversion actions.** A `rothConversion` retirement action names its owner, its source accounts, and a
@@ -1017,11 +1017,11 @@ additive with a no-op default, so plans saved before it stay byte-identical.
   evidence chain can re-join every balance change. The legacy QCD path does the same for its beyond-RMD debits,
   which carry a `legacyQcd` occurrence and a `legacyQcdDistribution` debit application with a null Form 8606 line
   — 408(d)(8)(D) keeps a QCD out of the pro-rata computation entirely, so it never belongs to a basis allocation.
-  A non-QCD charitable remainder remains a line-7 distribution rather than a line-8 conversion
-  (`form-1040-line-4b-and-form-8606-line-7-qcd-remainder`).
   The named-QCD arm commits inside the projection too: `simulate.ts` calls the QCD execution prerequisite,
   physical staging and executor, which run the tax-character post-pass and owner-wide pool capacity behind
-  them. A fourth path moves dollars only as part of a pair: a conversion whose tax is funded by a named sibling
+  them. A non-QCD charitable remainder remains a line-7 distribution rather than a line-8 conversion
+  (`form-1040-line-4b-and-form-8606-line-7-qcd-remainder`).
+  A fourth path moves dollars only as part of a pair: a conversion whose tax is funded by a named sibling
   withdrawal executes as an atomic group or not at all (§10).
   The named-conversion and named-QCD **source** opening balances, the linked group's leg-fundability probe, and
   the legacy aggregate QCD drain each cross in through `planDollarsToFlooredLedgerCents` rather than the

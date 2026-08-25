@@ -275,14 +275,25 @@ describe('executeRothConversions', () => {
     expect(evidence.executedAmount).toBe(0)
   })
 
-  it('publishes only the canonical inherited-source classification', () => {
+  it('publishes only the canonical inherited-source classification for a nonspouse beneficiary', () => {
     const value = input()
     const source = (value.plan as Plan).accounts.find((account) =>
       account.id === 'traditional-a')
     if (source?.type !== 'traditional') throw new Error('fixture drift')
+    // Nonspouse beneficiary evidence: a bare inherited block would also match
+    // a blanket inherited!==undefined refusal, including a surviving spouse
+    // the statute exempts under 408(d)(3)(C)(ii).
     source.inherited = {
       ownerDeathYear: 2025,
       decedentHadStartedRmds: true,
+      beneficiary: {
+        beneficiaryClass: 'designated-individual',
+        edbCategory: 'none',
+        beneficiaryBirthYear: 1980,
+        soleBeneficiary: true,
+        election: 'none',
+        provenance: { source: 'manual', asOf: '2026-01-01' },
+      },
     }
 
     const result = executeRothConversions(value)
@@ -304,6 +315,41 @@ describe('executeRothConversions', () => {
       requests: result.requests,
       sources: [rothConversionPublicationSource(result)],
     })).not.toThrow()
+  })
+
+  it('refuses a not-yet-elected surviving-spouse inherited source the same way', () => {
+    // irc-408-d-3-C-ii-surviving-spouse-not-inherited: a surviving spouse is
+    // outside the inherited-IRA rollover bar once they elect (or are deemed
+    // to elect) to treat the IRA as their own. Until that election takes
+    // effect the plan still carries the inherited block, and
+    // accountEligibility refuses any inherited!==undefined source with
+    // conversion-inherited-source — acceptance routes through the spousal-
+    // election flow, not through this conversion executor admitting the
+    // account while it remains marked inherited.
+    const value = input()
+    const source = (value.plan as Plan).accounts.find((account) =>
+      account.id === 'traditional-a')
+    if (source?.type !== 'traditional') throw new Error('fixture drift')
+    source.inherited = {
+      ownerDeathYear: 2025,
+      decedentHadStartedRmds: true,
+      beneficiary: {
+        beneficiaryClass: 'designated-individual',
+        edbCategory: 'surviving-spouse',
+        beneficiaryBirthYear: 1960,
+        soleBeneficiary: true,
+        election: 'remain-beneficiary',
+        spouseUnlimitedWithdrawalRight: true,
+        provenance: { source: 'manual', asOf: '2026-01-01' },
+      },
+    }
+
+    const result = executeRothConversions(value)
+    const reasonCodes = result.evidence[0]!.reasons.map((reason) => reason.code)
+
+    expect(reasonCodes).toContain('conversion-inherited-source')
+    expect(result.committed).toBe(false)
+    expect(result.evidence[0]?.executedAmount).toBe(0)
   })
 
   it('rejects duplicate schedule identities before publishing evidence', () => {
@@ -1077,7 +1123,7 @@ describe('executeRothConversions', () => {
         expect(evidence.taxableConvertedAmount).toBe(accepted)
         expect(evidence.taxableConvertedAmount)
           .not.toBe(readings.rejectedConversionAsBasisRecovery)
-        expect(evidence.nontaxableConvertedAmount).toBe(readings.rejectedConversionAsBasisRecovery)
+        expect(evidence.nontaxableConvertedAmount).toBe(0)
         expect(evidence.allocations.map((allocation) => allocation.taxableConvertedAmount))
           .toEqual([6_000, 4_000])
       })

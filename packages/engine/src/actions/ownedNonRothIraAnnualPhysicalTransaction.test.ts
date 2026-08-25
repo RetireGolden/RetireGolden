@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import type { Plan } from '../model/plan.js'
+import { describeRule } from '../rules/describeRule.js'
 import {
   singlePersonPlan,
   traditionalAccount,
@@ -310,6 +311,53 @@ function issueKinds(
 }
 
 describe('preparePlanOwnedNonRothIraAnnualPhysicalTransaction', () => {
+  // Independent Form 8606 staging worksheet: a $100.00 ordinary distribution
+  // and a $50.00 Roth conversion are not interchangeable. The inventory
+  // assigns form8606Category from unclassified action kinds, and this
+  // producer stages those into separate line-7 and line-8 totals. Folding the
+  // conversion into line 7 would report {15000, 0} instead.
+  describeRule('form-8606-lines-7-and-8-distinct-distribution-staging', {
+    note: 'ordinary distribution and Roth conversion use separate annual lines',
+    readings: {
+      form8606SeparateLines: { line7GrossAmount: 10_000, line8GrossAmount: 5_000 },
+      rejectedCombinedDistributionLine: { line7GrossAmount: 15_000, line8GrossAmount: 0 },
+    },
+    accepted: 'form8606SeparateLines',
+  }, ({ accepted, readings }) => {
+    it('stages a conversion onto line 8 rather than folding it into line 7', () => {
+      const valuePlan = plan()
+      const withdrawal = valuePlan.strategies.retirementActions[0]
+      const conversion = valuePlan.strategies.retirementActions[1]
+      if (withdrawal?.kind !== 'ordinaryWithdrawal' || conversion?.kind !== 'rothConversion') {
+        throw new Error('fixture drift')
+      }
+      withdrawal.requestedAmount = asPositiveUsdCents(10_000)
+      withdrawal.allocations = [{
+        allocationId: asAllocationId('withdrawal-a'),
+        sourceAccountId: firstIraId,
+        requestedAmount: asPositiveUsdCents(10_000),
+      }]
+      conversion.requestedAmount = asPositiveUsdCents(5_000)
+      conversion.allocations = [{
+        allocationId: asAllocationId('conversion-a'),
+        sourceAccountId: firstIraId,
+        requestedAmount: asPositiveUsdCents(5_000),
+      }]
+
+      const result = prepared(input(valuePlan, [], {
+        'withdrawal-a': 10_000,
+        'conversion-a': 5_000,
+      }))
+      const actual = {
+        line7GrossAmount: result.line7GrossAmount,
+        line8GrossAmount: result.line8GrossAmount,
+      }
+
+      expect(actual).toEqual(accepted)
+      expect(actual).not.toEqual(readings.rejectedCombinedDistributionLine)
+    })
+  })
+
   it('rejoins same-owner withdrawals and conversions from actual staging facts', () => {
     const result = prepared()
 

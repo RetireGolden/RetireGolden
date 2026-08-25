@@ -930,7 +930,8 @@ const registry = {
     verifiedOn: '2026-08-25',
     implementedBy: [
       'packages/engine/src/actions/ownedNonRothIraWithdrawalCharacter.ts',
-      'packages/engine/src/actions/annualIraBasisAllocation.ts',
+      'packages/engine/src/actions/ownedNonRothIraAnnualFilingEvidence.ts',
+      'packages/engine/src/actions/ownedNonRothIraAnnualPostCandidateEvidence.ts',
     ],
   },
 
@@ -961,8 +962,8 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-25',
     implementedBy: [
-      'packages/engine/src/actions/ownedNonRothIraWithdrawalCharacter.ts',
-      'packages/engine/src/actions/annualIraBasisAllocation.ts',
+      'packages/engine/src/actions/ownedNonRothIraAnnualPhysicalTransaction.ts',
+      'packages/engine/src/actions/annualRetirementPhysicalEventInventory.ts',
     ],
   },
 
@@ -3276,7 +3277,7 @@ const registry = {
   'irc-408A-d-3-A-i-zero-basis-conversion-includible': {
     title: 'A zero-basis traditional-IRA conversion is wholly includible',
     statement:
-      'A Roth conversion includes in gross income what the distribution would have included absent the qualified rollover. With a proven zero annual traditional-IRA basis numerator, section 408(d)(2) returns no basis, so the conversion’s full gross is includible. A positive numerator does not block the conversion; its nontaxable portion remains the annual pro-rata calculation already recorded under irc-408-d-2-annual-pro-rata-basis.',
+      'A Roth conversion includes in gross income what the distribution would have included absent the qualified rollover. With a proven zero annual traditional-IRA basis numerator, section 408(d)(2) returns no basis, so the conversion’s full gross is includible.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -3319,13 +3320,13 @@ const registry = {
       citation: 'IRC 408A(d)(4)(B)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408A&num=0&edition=prelim',
       quotedText:
-        'For purposes of applying this section and section 72 to any distribution from a Roth IRA, such distribution shall be treated as made- (i) from contributions to the extent that the amount of such distribution, when added to all previous distributions from the Roth IRA, does not exceed the aggregate contributions to the Roth IRA; and (ii) from such contributions in the following order: (I) Contributions other than qualified rollover contributions to which paragraph (3) applies. (II) Qualified rollover contributions to which paragraph (3) applies on a first-in, first-out basis. Any distribution allocated to a qualified rollover contribution under clause (ii)(II) shall be allocated first to the portion of such contribution required to be included in gross income.',
+        'For purposes of applying this section and section 72 to any distribution from a Roth IRA, such distribution shall be treated as made- (i) from contributions to the extent that the amount of such distribution, when added to all previous distributions from the Roth IRA, does not exceed the aggregate contributions to the Roth IRA; and (ii) from such contributions in the following order: (I) Contributions other than qualified rollover contributions to which paragraph (3) applies. (II) Qualified rollover contributions to which paragraph (3) applies on a first-in, first-out basis.',
     }, {
       kind: 'irsPublication',
       citation: 'IRS Publication 590-B (2025), Ordering Rules for Distributions',
       url: 'https://www.irs.gov/publications/p590b',
       quotedText:
-        'Order the distributions as follows. Regular contributions. Conversion and rollover contributions, on a first-in, first-out basis (generally, total conversions and rollovers from the earliest year first). … Taxable portion (the amount required to be included in gross income because of the conversion or rollover) first. Nontaxable portion. Earnings on contributions.',
+        'Order the distributions as follows. Regular contributions. Conversion and rollover contributions, on a first-in, first-out basis (generally, total conversions and rollovers from the earliest year first). … Earnings on contributions.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -3342,7 +3343,7 @@ const registry = {
     contraryReading: null,
     errorDirection: 'understatesTax',
     conventionRationale:
-      'DEFECT — no behavior change in this registry slice. `splitRothWithdrawal` computes each partial taxable take as take × taxableAmount / layer.amount, so it leaves 2,400 taxable principal after a 4,000 withdrawal from the 10,000/4,000 layer. Section 408A(d)(4)(B) instead allocates that withdrawal entirely to the taxable portion first. This defers 240 of the 72(t) additional tax on the stated unseasoned, pre-59½ fixture; the fixture pins the current 160 produced value until a separately authorized implementation fix changes it.',
+      'DEFECT — no behavior change in this registry slice. `splitRothWithdrawal` computes each partial taxable take as take × taxableAmount / layer.amount, so it leaves 2,400 taxable principal after a 4,000 withdrawal from the 10,000/4,000 layer. Section 408A(d)(4)(B) instead allocates that withdrawal entirely to the taxable portion first. The 240 of additional tax that reading would have imposed is deferred only if the remaining taxable principal is tapped while still unseasoned and pre-59½; otherwise it is permanently omitted. The same pro-rata take lives in `applyConversionPrincipalDebt` and `assumedSeedConsequentialSpill` in this file — a fix must change those copies together. The fixture pins the current 160 produced value until a separately authorized implementation fix changes it.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -3368,6 +3369,39 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-25',
     implementedBy: ['packages/engine/src/strategies/rothBasis.ts'],
+  },
+
+  'irc-408A-d-4-B-same-year-conversion-aggregation': {
+    title: 'Same-year Roth conversions are ordered in aggregate, taxable portion first',
+    statement:
+      'Within a single conversion year, Publication 590-B orders that year’s conversions and rollovers in aggregate and allocates the year’s taxable portion before its nontaxable portion. The engine instead pushes one conversion layer per named action and consumes layers in array order, so a same-year nontaxable layer can be consumed before a same-year taxable layer and understate section 72(t) on an early withdrawal.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'understatesTax',
+    conventionRationale:
+      'DEFECT — no behavior change in this registry slice. Pub 590-B’s year-aggregate reading takes the year’s taxable conversion principal before any nontaxable principal from that year. The engine records one layer per named conversion action (projection/simulate.ts) and `splitRothWithdrawal` walks those layers in array order, so a nontaxable 2024 layer ahead of a taxable 2024 layer can be fully consumed first. On the fixture — two same-year $5,000 layers with the nontaxable one first, then a $5,000 draw at age 50 — year-aggregate taxable-first yields $500 of additional tax; array order yields $0. The per-contribution FIFO record cannot carry this gap because both layers share a year.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 408A(d)(4)(B)(ii)(II)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408A&num=0&edition=prelim',
+      quotedText:
+        '(II) Qualified rollover contributions to which paragraph (3) applies on a first-in, first-out basis. Any distribution allocated to a qualified rollover contribution under clause (ii)(II) shall be allocated first to the portion of such contribution required to be included in gross income.',
+    }, {
+      kind: 'irsPublication',
+      citation: 'IRS Publication 590-B (2025), Ordering Rules for Distributions',
+      url: 'https://www.irs.gov/publications/p590b',
+      quotedText:
+        'Order the distributions as follows. Regular contributions. Conversion and rollover contributions, on a first-in, first-out basis (generally, total conversions and rollovers from the earliest year first). … Taxable portion (the amount required to be included in gross income because of the conversion or rollover) first. Nontaxable portion. Earnings on contributions.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-25',
+    implementedBy: [
+      'packages/engine/src/strategies/rothBasis.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
   },
 
   'irc-1-j-2-progressive-ordinary-rate-schedule': {

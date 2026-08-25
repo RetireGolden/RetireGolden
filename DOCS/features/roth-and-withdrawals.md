@@ -30,8 +30,10 @@ the tax from taxable funds and warns if it would come from the conversion pre-59
 is satisfied *before* converting. Every interaction is surfaced explicitly: SS taxation, IRMAA (+2-year
 lookback), ACA PTC, NIIT, the senior-deduction phase-out, the **widow's penalty** (the survivor files
 single, into tighter brackets), and reduced future RMDs. A **convert-vs-don't** comparison shows lifetime
-taxes and ending after-tax wealth side by side. The 5-year clocks for penalty-free withdrawal of converted
-principal are surfaced as warnings rather than hard-modeled. Roth withdrawal character follows regular
+taxes and ending after-tax wealth side by side. Roth conversion recapture under §408A(d)(3)(F) is
+computed by `splitRothWithdrawal` (with the age-60 proxy for the qualified distribution age), and the
+taxable-portion-first gap inside a converted layer is the registered approximated divergence
+(`irc-408A-d-4-B-converted-layer-taxable-portion-first`). Roth withdrawal character follows regular
 contributions, then conversion/rollover contributions first-in, first-out, and then earnings
 (`irc-408A-d-4-B-roth-distribution-ordering`).
 
