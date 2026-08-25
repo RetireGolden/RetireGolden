@@ -62,17 +62,19 @@ test.describe('Smoke', () => {
     await expect(page.getByText(/Imported 1 plan/)).toBeVisible()
   })
 
-  test('shipped import capability enables file seeding and broker refresh', async ({ page }) => {
+  test('shipped import capability disables file seeding and broker refresh', async ({ page }) => {
     await page.goto('/')
-    await expect(page.getByText('Import from a file', { exact: true })).toBeVisible()
+    await expect(page.getByText('Import from a file', { exact: true })).toHaveCount(0)
+    await expect(page.getByText('Building a plan and restoring a RetireGolden backup remain available.')).toBeVisible()
 
     await page.goto('/import')
-    await page.getByRole('button', { name: /Broker CSV/ }).click()
-    await expect(page.locator('input[type="file"]')).toBeAttached()
+    await expect(page.getByText('File import is temporarily unavailable', { exact: false })).toBeVisible()
+    await expect(page.locator('input[type="file"]')).toHaveCount(0)
 
     await createPlanFromHome(page)
     await page.getByRole('link', { name: 'Accounts' }).click()
-    await expect(page.getByRole('button', { name: 'Choose broker CSV' })).toBeVisible()
+    await expect(page.getByText('File import is temporarily unavailable', { exact: false })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Choose broker CSV' })).toHaveCount(0)
   })
 
   test('mounts the recovery-capable shell fail-closed while the import switch is pending', async ({ page }) => {
