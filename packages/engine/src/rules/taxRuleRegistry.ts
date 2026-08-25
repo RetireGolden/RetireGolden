@@ -2088,6 +2088,64 @@ const registry = {
     implementedBy: ['packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts'],
   },
 
+  'irc-402-e-4-B-lump-sum-employer-securities-nua-exclusion': {
+    title: 'NUA in employer securities is excluded from gross income',
+    statement:
+      'For a lump sum distribution that includes employer-corporation securities, section 402(e)(4)(B) excludes the attributable net unrealized appreciation from gross income for purposes of section 72 unless the taxpayer elects otherwise. Because section 72(t)(1) reaches only the includible portion, excluded NUA is outside the additional-tax base. Not modelled: no plan input or retirement-action type can express employer securities, NUA, the required lump-sum facts, or the election, so the engine produces no NUA tax character or 72(t) result.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The plan model has only an employer-plan balance and after-tax employee basis; its withdrawal character is basis return or ordinary income. The action contract rejects a NUA action kind. The action-kind refusal is covered in actions/contract.test.ts. Notice 98-24\'s mechanics for the remaining distribution/basis portion of an early NUA lump sum are deliberately not claimed here: a verifiable copy of that notice was not available at registration, so that proposition awaits its own record.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 402(e)(4)(B)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402&num=0&edition=prelim',
+      quotedText:
+        'For purposes of subsection (a) and section 72, in the case of any lump sum distribution which includes securities of the employer corporation, there shall be excluded from gross income the net unrealized appreciation attributable to that part of the distribution which consists of securities of the employer corporation. In accordance with rules prescribed by the Secretary, a taxpayer may elect, on the return of tax on which a lump sum distribution is required to be included, not to have this subparagraph apply to such distribution.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 72(t)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim',
+      quotedText:
+        'If any taxpayer receives any amount from a qualified retirement plan (as defined in section 4974(c)), the taxpayer\'s tax under this chapter for the taxable year in which such amount is received shall be increased by an amount equal to 10 percent of the portion of such amount which is includible in gross income.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-25',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/actions/contract.ts',
+      'packages/engine/src/actions/traditionalEmployerPlanWithdrawalCharacter.ts',
+    ],
+  },
+
+  'irc-72-t-1-qualified-retirement-plan-scope': {
+    title: 'Section 72(t) does not reach non-retirement withdrawal sources',
+    statement:
+      'Section 72(t)(1) applies only when a taxpayer receives an amount from a qualified retirement plan, so cash, taxable-account, and equity-compensation ordinary withdrawals do not enter its additional-tax calculation. The executor instead emits typed notApplicable nonRetirementSource coverage with zero penalty exposure for those sources.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The executor represents the absence of the statutory predicate rather than computing a zero section 72(t) tax. Its one-cent cash fixture in actions/execution.test.ts makes both the notApplicable status and nonRetirementSource reason observable, while also proving that no penalty exposure enters the result.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 72(t)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim',
+      quotedText:
+        'If any taxpayer receives any amount from a qualified retirement plan (as defined in section 4974(c)), the taxpayer\'s tax under this chapter for the taxable year in which such amount is received shall be increased by an amount equal to 10 percent of the portion of such amount which is includible in gross income.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-25',
+    implementedBy: ['packages/engine/src/actions/execution.ts'],
+  },
+
   'usc-42-415-a-1-pia-bend-point-formula': {
     title: 'The PIA formula is marginal across two bend points',
     statement:
@@ -3105,7 +3163,11 @@ const registry = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
-    implementedBy: ['packages/engine/src/strategies/accountEligibility.ts'],
+    implementedBy: [
+      'packages/engine/src/strategies/accountEligibility.ts',
+      'packages/engine/src/actions/beneficiaryTraditionalIraDeathPenalty.ts',
+      'packages/engine/src/actions/beneficiaryTraditionalIraAnnualSimulatorDelta.ts',
+    ],
   },
 
   'irc-72-t-2-A-i-age-59-half-annual-proxy': {

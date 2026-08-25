@@ -8,6 +8,7 @@ import {
   parseRetirementActionRequest,
   personRetirementActionRequestBaseSchema,
   qualifiedCharitableDistributionRequestSchema,
+  retirementActionKinds,
   retirementActionRequestBaseSchema,
   retirementActionRequestSchema,
   rothConversionRequestSchema,
@@ -213,6 +214,20 @@ describe('retirement action request contracts', () => {
       provenance: migrationProvenance,
     },
   ] as const
+
+  it('refuses NUA as an unmodelled retirement action kind', () => {
+    // The enum-membership assert is the load-bearing gate: a future 'nua' arm
+    // with different required fields would still fail the shape parse below,
+    // so the parse alone could stay green while the outOfScope claim went
+    // false. Adding 'nua' to the action vocabulary must break this test.
+    expect(retirementActionKinds).not.toContain('nua')
+    expect(
+      retirementActionRequestSchema.safeParse({
+        ...requests[0],
+        kind: 'nua',
+      }).success,
+    ).toBe(false)
+  })
 
   it('round-trips all three current and all three legacy request arms', () => {
     for (const request of requests) {

@@ -492,7 +492,16 @@ Source: [IRS 2026 limits announcement](https://www.irs.gov/newsroom/401k-limit-i
   on an **employer plan** requires separation from service under 72(t)(3)(B) — the series must begin strictly
   after separation. The evidence layer requires an explicit separation date and refuses without one; the annual
   ledger proves it from the owner's plan retirement age, a year-granularity proxy recorded as `approximated`
-  (`irc-72-t-3-B-sepp-separation-annual-proxy`). IRAs are exempt from the test, as the statute provides.
+  (`irc-72-t-3-B-sepp-separation-annual-proxy`). IRAs are exempt from the test, as the statute provides. A
+  qualifying series must continue without a disqualifying modification through the later of five years from its
+  first payment or age 59½ under [IRC §72(t)(4)](https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim);
+  recapture after a modification remains out of scope
+  (`irc-72-t-4-sepp-modification-recapture`).
+- **Employer-plan NUA.** The Plan and retirement-action contracts carry no employer-security or
+  net-unrealized-appreciation fact, no NUA lump-sum qualification fact, and no NUA elect-out (the pension
+  lump-sum election and spousal elections are unrelated structures). They therefore cannot model the gross-income exclusion for NUA in
+  employer securities under [IRC §402(e)(4)(B)](https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402&num=0&edition=prelim),
+  or a resulting section 72(t) base (`irc-402-e-4-B-lump-sum-employer-securities-nua-exclusion`).
 - Research consensus: naive "taxable-then-deferred-then-Roth" is beaten by bracket-aware blends (fill low brackets from traditional every year); this motivates the bracket-targeted strategy and the LP optimizer (see [features/optimizer.md](../features/optimizer.md) and the Owl oracle).
 - The optimizer recommendation is **optimal on the exact ledger to tolerance** (2026-07-08): the MILP models the taxable-SS phase-in, IRMAA 2-year lookback, taxable-gain realization, and state brackets in-solve; an exact-ledger convergence loop re-linearizes around the incumbent; and the exact-ledger tournament (windowed bracket fills, top-two + MILP-winner local search) arbitrates and gates everything. The dev-only Owl parity harness (`pnpm owl-parity`) measures RetireGolden at-or-above Owl on every fixture.
 - **An aggregate schedule is still vetoed; a named one can be published.** A schedule carrying only a year and a
@@ -803,6 +812,11 @@ additive with a no-op default, so plans saved before it stay byte-identical.
   (`fullyTaxableCompensationAtExecution`), with no capital-gain character and no retirement additional tax.
   A later sale of already-taxed shares belongs in a taxable account instead. Exact-cent action proceeds,
   ordinary income, and balance movement each enter the annual ledger once.
+- **Non-retirement penalty scope.** Cash, taxable-source, and equity-compensation ordinary withdrawals publish
+  typed `notApplicable` / `nonRetirementSource` penalty coverage rather than a zero section 72(t) calculation,
+  because [IRC §72(t)(1)](https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim)
+  applies to an amount received from a qualified retirement plan
+  (`irc-72-t-1-qualified-retirement-plan-scope`).
 - **Individually owned taxable-source execution.** The public pure classifier binds an allocation to explicit
   1/1 beneficial-owner evidence and immutable caller-supplied tax-unit facts. It recovers aggregate basis with
   `planningAggregateBasisRatio`, bigint rational arithmetic, and exactly one `nearestCentHalfUp` rounding; the

@@ -196,6 +196,11 @@ This is still annual, planning-grade valuation: the account's current annual sta
 when the request has a civil execution date. Dated market valuation, tax lots, wash sales, joint attribution,
 and filed-return state tax-unit reconstruction are not modeled.
 
+Taxable ordinary withdrawals carry typed `notApplicable` / `nonRetirementSource` penalty coverage rather than
+a computed section 72(t) amount: that additional tax reaches an amount received from a qualified retirement plan
+([IRC §72(t)(1)](https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim);
+`irc-72-t-1-qualified-retirement-plan-scope`).
+
 ## Named Roth-conversion actions
 
 A `rothConversion` retirement action names an owner, its source accounts, and a destination Roth, and the annual
