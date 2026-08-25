@@ -30,7 +30,7 @@ export function WelcomeHero({
         </button>
         {showDismiss && onDismiss ? (
           <button type="button" className="btn btn-ghost btn-small" onClick={onDismiss}>
-            Hide getting started
+            Hide Getting started
           </button>
         ) : null}
       </div>
