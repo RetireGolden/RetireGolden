@@ -299,12 +299,17 @@ The donor's age-70½
 threshold is the exact civil date 846 calendar months from the birth date with a month-end clamp
 (`irc-408-d-8-B-ii-age-70-half`, registered `unsettled` — no provision addressed to 408(d)(8)(B)(ii) resolves a
 month-end or leap-day birth), and the gift's scheduled date must fall in the action year and on or after it. The
-source must resolve as an owned, non-inherited IRA with a recorded classification fact; an employer plan and an
-inherited IRA are both structurally excluded. The charity must be designated `eligiblePublicCharity` with the
-direct-transfer, eligible-organization, and not-a-DAF-or-supporting-organization attestations all true, or the
+source must resolve as an owned, non-inherited IRA with a recorded classification fact; an employer plan is
+refused (`irc-408-d-8-B-employer-plan-source-exclusion`), an ongoing SEP or SIMPLE IRA is refused
+(`irc-408-d-8-B-ongoing-sep-simple-source-exclusion`), and an inherited IRA is structurally excluded. The charity
+must be designated `eligiblePublicCharity` with the direct-transfer, eligible-organization, and
+not-a-DAF-or-supporting-organization attestations all true (`irc-408-d-8-B-i-qualified-recipient`), or the
 action is refused `qcd-direct-charity-unconfirmed`; a split-interest designation is separately refused
-`qcd-split-interest-unsupported`, and a missing whole-distribution-deductibility attestation
-`qcd-entire-distribution-deductibility-unconfirmed`.
+`qcd-split-interest-unsupported` (`irc-408-d-8-F-split-interest-sublimit`,
+`irc-408-d-8-F-i-split-interest-direct-payment`), and a missing whole-distribution-deductibility attestation
+`qcd-entire-distribution-deductibility-unconfirmed`. An accepted QCD is already age-70½-eligible, so it is never
+an under-59½ distribution and carries no freestanding §72(t) exception
+(`irc-72-t-1-qcd-not-early-distribution-exception`).
 
 The post-70½ deductible-contribution offset **is** applied on this arm, from
 `retirementActionEligibilityFacts.deductibleIraContributions` and a per-donor lifetime running total the annual
@@ -328,9 +333,10 @@ Two boundaries are worth reading before citing this arm:
   household differently.
 - **§170 deduction treatment is a refusal, not a calculation.** The tax-character post-pass classifies each gift's
   `charitableDeductionRequirement`, and the executor refuses the whole batch — `charitableDeductionUnsupported`,
-  surfaced as `qcd-nonqcd-deduction-unsupported` — whenever any gift leaves a positive §170 amount to deduct. The
-  §170 and §68 ledger modules that would compute one exist under `engine/actions/` and are reachable from nothing
-  in `projection/` or `tax/federalTax.ts`; the live behavior is what the registry records pin
+  surfaced as `qcd-nonqcd-deduction-unsupported` — whenever any gift leaves a positive §170 amount to deduct. A
+  wholly excluded QCD leaves no §170 amount either (`irc-408-d-8-E-excluded-qcd-no-section-170-double-benefit`).
+  The §170 and §68 ledger modules that would compute one exist under `engine/actions/` and are reachable from
+  nothing in `projection/` or `tax/federalTax.ts`; the live behavior is what the registry records pin
   (`irc-170-b-1-G-projection-cash-ceiling-not-applied` and
   `irc-170-p-projection-nonitemizer-deduction-not-allowed`, both `approximated`), not the shelved implementation.
 

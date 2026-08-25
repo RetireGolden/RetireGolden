@@ -37,15 +37,47 @@ interface FixtureOptions { readonly scheduleConflict?: boolean; readonly p1Contr
    * snapshot and AGI into a record whose deduction treatment is not applicable.
    * One test turns it on, to keep the tax-unit-backed authority chain covered.
    */
-  readonly itemizedTaxUnit?: boolean }
+  readonly itemizedTaxUnit?: boolean
+  /** Classify ira-p1 as a SEP/SIMPLE and attach year-specific activity evidence. */
+  readonly p1IraSubtype?: 'sep' | 'simple'
+  /** When `p1IraSubtype` is set, whether the plan year had an employer contribution. */
+  readonly p1SepOngoing?: boolean
+  /** Make ira-p1 an employer-plan account rather than an IRA. */
+  readonly p1EmployerPlan?: boolean
+  /** Override charity attestations on the p1 QCD only. */
+  readonly p1Charity?: Partial<typeof charity>
+}
 function fixture(p1Opening = 10_000, options: FixtureOptions = {}): { inputs: FinalizeAnnualQcdUnifiedTransactionInput[]; requests: QualifiedCharitableDistributionRequest[] } {
-  const requests = [qcd('qcd-p1', p1, ira1, options.p1Date ?? '2026-04-01', 10), qcd('qcd-p2', p2, ira2,
-    options.scheduleConflict ? '2026-04-01' : '2026-05-01', options.scheduleConflict ? 10 : 20)]
+  const p1Charity = { ...charity, ...options.p1Charity }
+  const requests = [
+    { ...qcd('qcd-p1', p1, ira1, options.p1Date ?? '2026-04-01', 10), charity: { ...p1Charity, designationId: 'charity-qcd-p1' } },
+    qcd('qcd-p2', p2, ira2, options.scheduleConflict ? '2026-04-01' : '2026-05-01', options.scheduleConflict ? 10 : 20),
+  ]
   const plan = couplePlan({ p1Dob: options.p1Dob ?? '1955-01-01', p2Dob: '1955-01-01', p1PlanningAge: 100, p2PlanningAge: 100 })
-  plan.id = asPlanId('joint-qcd-plan'); plan.accounts = [traditionalAccount(ira1, 100, p1), traditionalAccount(ira2, 100, p2)]
+  plan.id = asPlanId('joint-qcd-plan')
+  plan.accounts = [
+    traditionalAccount(ira1, 100, p1, options.p1EmployerPlan === true ? 'employer' : 'ira'),
+    traditionalAccount(ira2, 100, p2),
+  ]
   plan.strategies.retirementActions = requests
-  plan.retirementActionEligibilityFacts = { iraClassifications: [ira1, ira2].map((sourceAccountId, index) => ({ sourceAccountId,
-    subtype: 'traditional' as const, evidenceId: `classification-p${index + 1}`, provenance: { source: 'manual' as const } })), sepSimpleActivities: [],
+  const p1Subtype = options.p1IraSubtype ?? 'traditional'
+  plan.retirementActionEligibilityFacts = { iraClassifications: [
+    // Plan validation forbids classifying an employer-kind account as an IRA,
+    // so the employer-plan variant carries no classification row for ira1.
+    ...(options.p1EmployerPlan === true ? [] : [
+      p1Subtype === 'traditional'
+        ? { sourceAccountId: ira1, subtype: 'traditional' as const, evidenceId: 'classification-p1', provenance: { source: 'manual' as const } }
+        : { sourceAccountId: ira1, subtype: p1Subtype, evidenceId: 'classification-p1', provenance: { source: 'manual' as const } },
+    ]),
+    { sourceAccountId: ira2, subtype: 'traditional' as const, evidenceId: 'classification-p2', provenance: { source: 'manual' as const } },
+  ], sepSimpleActivities: p1Subtype === 'traditional' ? [] : [{
+    sourceAccountId: ira1,
+    actionTaxYear: year,
+    planYearEndDate: '2026-12-31',
+    employerContributionMadeForPlanYear: options.p1SepOngoing === true,
+    evidenceId: 'sep-activity-p1-2026',
+    provenance: { source: 'manual' as const },
+  }],
   deductibleIraContributions: [p1, p2].flatMap((donorPersonId, index) =>
     (donorPersonId === p1 && options.p1Dob !== undefined ? [year] : [2025, year]).map((taxYear) => ({ donorPersonId, taxYear,
     amountCents: asUsdCents(donorPersonId === p1 && taxYear === year ? options.p1Contribution ?? 0 : 0),
@@ -97,6 +129,21 @@ function fixture(p1Opening = 10_000, options: FixtureOptions = {}): { inputs: Fi
     qcdPrerequisiteInput: { taxYear: year, plan, requests, runtimeEvidence } } satisfies PreparePlanOwnedNonRothIraAnnualPhysicalTransactionInput,
     deductionTreatmentInput }))
   return { inputs, requests }
+}
+
+function publishedExecutedAmount(
+  result: ReturnType<typeof publishAnnualQcdActionExecutionEvidence>,
+  actionId = 'qcd-p1',
+): number {
+  if (result.status !== 'annualQcdActionExecutionEvidencePublished') return 0
+  return result.actions.find((action) => action.actionId === actionId)?.executedAmount ?? 0
+}
+
+function p1EligibilityReasonCodes(inputs: FinalizeAnnualQcdUnifiedTransactionInput[]): string[] {
+  const prerequisite = inputs[0]!.deductionTreatmentInput.postPassInput.physicalInput.prerequisite
+  if (prerequisite.status !== 'evaluated') return []
+  const record = prerequisite.publicationSource.records.find((entry) => entry.actionId === 'qcd-p1')
+  return record?.reasons.map((reason) => reason.code) ?? []
 }
 
 describe('publishAnnualQcdActionExecutionEvidence', () => {
@@ -235,42 +282,38 @@ describe('publishAnnualQcdActionExecutionEvidence', () => {
 
   describeRule('irc-408-d-8-B-ongoing-sep-simple-source-exclusion', {
     readings: {
-      statuteRefusesAnOngoingSepSource: 0,
+      noticeAllowsAnInactiveSep: 5_000,
+      literalBarsEverySepOrSimple: 0,
+    },
+    accepted: 'noticeAllowsAnInactiveSep',
+    note: 'inactive SEP',
+  }, ({ accepted, readings }) => {
+    it('executes a QCD from an inactive SEP IRA under Notice 2007-7', () => {
+      const result = publishAnnualQcdActionExecutionEvidence({
+        ownerFinalizationInputs: fixture(10_000, { p1IraSubtype: 'sep', p1SepOngoing: false }).inputs,
+      })
+      const executed = publishedExecutedAmount(result)
+      expect(result.status).toBe('annualQcdActionExecutionEvidencePublished')
+      expect(executed).toBe(accepted)
+      expect(executed).not.toBe(readings.literalBarsEverySepOrSimple)
+    })
+  })
+
+  describeRule('irc-408-d-8-B-ongoing-sep-simple-source-exclusion', {
+    readings: {
+      noticeRefusesAnOngoingSep: 0,
       treatsAnOngoingSepIraAsARegularIra: 5_000,
     },
-    accepted: 'statuteRefusesAnOngoingSepSource',
+    accepted: 'noticeRefusesAnOngoingSep',
+    note: 'ongoing SEP',
   }, ({ accepted, readings }) => {
     it('does not execute a QCD from an ongoing SEP IRA', () => {
-      const prerequisiteInput = fixture().inputs[0]!.physicalTransactionInput.qcdPrerequisiteInput
-      if (prerequisiteInput === undefined) throw new Error('missing fixture prerequisite input')
-      const basePlan = structuredClone(prerequisiteInput.plan)
-      const plan = {
-        ...basePlan,
-        retirementActionEligibilityFacts: {
-          ...basePlan.retirementActionEligibilityFacts!,
-          iraClassifications: basePlan.retirementActionEligibilityFacts!.iraClassifications.map(
-            (fact) =>
-              fact.sourceAccountId === ira1
-                ? { ...fact, subtype: 'sep' as const }
-                : fact),
-          sepSimpleActivities: [{
-            sourceAccountId: ira1,
-            actionTaxYear: year,
-            planYearEndDate: '2026-12-31',
-            employerContributionMadeForPlanYear: true,
-            evidenceId: 'ongoing-sep-2026',
-            provenance: { source: 'manual' as const },
-          }],
-        },
-      }
-      const result = evaluateAnnualQcdExecutionPrerequisites({ ...prerequisiteInput, plan })
-      expect(result.status).toBe('evaluated')
-      if (result.status !== 'evaluated') return
-      const record = result.publicationSource.records.find((candidate) => candidate.actionId === 'qcd-p1')!
-
-      expect(record.executedAmount).toBe(accepted)
-      expect(record.executedAmount).not.toBe(readings.treatsAnOngoingSepIraAsARegularIra)
-      expect(record.reasons.map((reason) => reason.code)).toContain('qcd-ongoing-sep-simple')
+      const { inputs } = fixture(10_000, { p1IraSubtype: 'sep', p1SepOngoing: true })
+      const result = publishAnnualQcdActionExecutionEvidence({ ownerFinalizationInputs: inputs })
+      const executed = publishedExecutedAmount(result)
+      expect(executed).toBe(accepted)
+      expect(executed).not.toBe(readings.treatsAnOngoingSepIraAsARegularIra)
+      expect(p1EligibilityReasonCodes(inputs)).toContain('qcd-ongoing-sep-simple')
     })
   })
 
@@ -281,25 +324,16 @@ describe('publishAnnualQcdActionExecutionEvidence', () => {
     },
     accepted: 'statuteRefusesAnEmployerPlanSource',
   }, ({ accepted, readings }) => {
-    it('does not execute a QCD from an employer-plan account', () => {
-      const prerequisiteInput = fixture().inputs[0]!.physicalTransactionInput.qcdPrerequisiteInput
-      if (prerequisiteInput === undefined) throw new Error('missing fixture prerequisite input')
-      const basePlan = structuredClone(prerequisiteInput.plan)
-      const plan = {
-        ...basePlan,
-        accounts: basePlan.accounts.map((account) =>
-          account.id === ira1 && account.type === 'traditional'
-            ? { ...account, kind: 'employer' as const }
-            : account),
-      }
-      const result = evaluateAnnualQcdExecutionPrerequisites({ ...prerequisiteInput, plan })
-      expect(result.status).toBe('evaluated')
-      if (result.status !== 'evaluated') return
-      const record = result.publicationSource.records.find((candidate) => candidate.actionId === 'qcd-p1')!
+    it('executes an IRA source and refuses an employer-plan source', () => {
+      const ira = publishAnnualQcdActionExecutionEvidence({ ownerFinalizationInputs: fixture().inputs })
+      expect(publishedExecutedAmount(ira)).toBe(readings.treatsAnEmployerPlanAsAnIraSource)
 
-      expect(record.executedAmount).toBe(accepted)
-      expect(record.executedAmount).not.toBe(readings.treatsAnEmployerPlanAsAnIraSource)
-      expect(record.reasons.map((reason) => reason.code)).toContain('qcd-source-not-ira')
+      const { inputs } = fixture(10_000, { p1EmployerPlan: true })
+      const result = publishAnnualQcdActionExecutionEvidence({ ownerFinalizationInputs: inputs })
+      const executed = publishedExecutedAmount(result)
+      expect(executed).toBe(accepted)
+      expect(executed).not.toBe(readings.treatsAnEmployerPlanAsAnIraSource)
+      expect(p1EligibilityReasonCodes(inputs)).toContain('qcd-source-not-ira')
     })
   })
 
@@ -309,47 +343,93 @@ describe('publishAnnualQcdActionExecutionEvidence', () => {
       treatsTheDisqualifiedRecipientAsEligible: 5_000,
     },
     accepted: 'statuteRefusesADonorAdvisedFundOrSupportingOrganization',
+    note: 'DAF / supporting organization',
   }, ({ accepted, readings }) => {
-    it('does not execute a QCD without the no-DAF/supporting-organization attestation', () => {
-      const prerequisiteInput = fixture().inputs[0]!.physicalTransactionInput.qcdPrerequisiteInput
-      if (prerequisiteInput === undefined) throw new Error('missing fixture prerequisite input')
-      const requests = prerequisiteInput.requests.map((request) =>
-        request.actionId === 'qcd-p1'
-          ? {
-              ...request,
-              charity: {
-                ...request.charity,
-                notDonorAdvisedFundOrSupportingOrganizationAttested: false,
-              },
-            }
-          : request)
-      const result = evaluateAnnualQcdExecutionPrerequisites({ ...prerequisiteInput, requests })
-      expect(result.status).toBe('evaluated')
-      if (result.status !== 'evaluated') return
-      const record = result.publicationSource.records.find((candidate) => candidate.actionId === 'qcd-p1')!
+    it('executes an attested public charity and refuses without the no-DAF attestation', () => {
+      const eligible = publishAnnualQcdActionExecutionEvidence({ ownerFinalizationInputs: fixture().inputs })
+      expect(publishedExecutedAmount(eligible)).toBe(readings.treatsTheDisqualifiedRecipientAsEligible)
 
-      expect(record.executedAmount).toBe(accepted)
-      expect(record.executedAmount).not.toBe(readings.treatsTheDisqualifiedRecipientAsEligible)
-      expect(record.reasons.map((reason) => reason.code)).toContain('qcd-direct-charity-unconfirmed')
+      const { inputs } = fixture(10_000, {
+        p1Charity: { notDonorAdvisedFundOrSupportingOrganizationAttested: false },
+      })
+      const result = publishAnnualQcdActionExecutionEvidence({ ownerFinalizationInputs: inputs })
+      const executed = publishedExecutedAmount(result)
+      expect(executed).toBe(accepted)
+      expect(executed).not.toBe(readings.treatsTheDisqualifiedRecipientAsEligible)
+      expect(p1EligibilityReasonCodes(inputs)).toContain('qcd-direct-charity-unconfirmed')
+    })
+  })
+
+  describeRule('irc-408-d-8-B-i-qualified-recipient', {
+    readings: {
+      statuteRequiresDirectCustodianTransfer: 0,
+      treatsAnIndirectTransferAsEligible: 5_000,
+    },
+    accepted: 'statuteRequiresDirectCustodianTransfer',
+    note: 'direct-from-custodian attestation',
+  }, ({ accepted, readings }) => {
+    it('refuses a QCD without the direct-from-custodian attestation', () => {
+      const eligible = publishAnnualQcdActionExecutionEvidence({ ownerFinalizationInputs: fixture().inputs })
+      expect(publishedExecutedAmount(eligible)).toBe(readings.treatsAnIndirectTransferAsEligible)
+
+      const { inputs } = fixture(10_000, { p1Charity: { directFromCustodianAttested: false } })
+      const result = publishAnnualQcdActionExecutionEvidence({ ownerFinalizationInputs: inputs })
+      const executed = publishedExecutedAmount(result)
+      expect(executed).toBe(accepted)
+      expect(executed).not.toBe(readings.treatsAnIndirectTransferAsEligible)
+      expect(p1EligibilityReasonCodes(inputs)).toContain('qcd-direct-charity-unconfirmed')
+    })
+  })
+
+  describeRule('irc-408-d-8-B-i-qualified-recipient', {
+    readings: {
+      statuteRequiresEligibleOrganizationAttestation: 0,
+      treatsAnUnattestedOrganizationAsEligible: 5_000,
+    },
+    accepted: 'statuteRequiresEligibleOrganizationAttestation',
+    note: 'eligible-organization attestation',
+  }, ({ accepted, readings }) => {
+    it('refuses a QCD without the eligible-organization attestation', () => {
+      const eligible = publishAnnualQcdActionExecutionEvidence({ ownerFinalizationInputs: fixture().inputs })
+      expect(publishedExecutedAmount(eligible)).toBe(readings.treatsAnUnattestedOrganizationAsEligible)
+
+      const { inputs } = fixture(10_000, { p1Charity: { eligibleOrganizationAttested: false } })
+      const result = publishAnnualQcdActionExecutionEvidence({ ownerFinalizationInputs: inputs })
+      const executed = publishedExecutedAmount(result)
+      expect(executed).toBe(accepted)
+      expect(executed).not.toBe(readings.treatsAnUnattestedOrganizationAsEligible)
+      expect(p1EligibilityReasonCodes(inputs)).toContain('qcd-direct-charity-unconfirmed')
     })
   })
 
   describeRule('irc-408-d-8-E-excluded-qcd-no-section-170-double-benefit', {
     readings: {
-      statuteLeavesNoSection170EligibleAmount: 0,
-      claimsTheExcludedGiftAsAnAdditionalDeduction: 5_000,
+      portionNotExcludedRemainsDeductible: 1_000,
+      noSection170ForAnyQcdRelatedAmount: 0,
     },
-    accepted: 'statuteLeavesNoSection170EligibleAmount',
+    accepted: 'portionNotExcludedRemainsDeductible',
   }, ({ accepted, readings }) => {
-    it('does not give a wholly excluded QCD a second section 170 benefit', () => {
-      const result = publishAnnualQcdActionExecutionEvidence({ ownerFinalizationInputs: fixture().inputs })
+    it('lets the non-excluded portion proceed to section 170 treatment', () => {
+      const result = publishAnnualQcdActionExecutionEvidence({
+        ownerFinalizationInputs: fixture(10_000, { p1Contribution: 1_000, itemizedTaxUnit: true }).inputs,
+      })
       expect(result.status).toBe('annualQcdActionExecutionEvidencePublished')
       if (result.status !== 'annualQcdActionExecutionEvidencePublished') return
       const action = result.actions.find((candidate) => candidate.actionId === 'qcd-p1')!
 
       expect(action.charitableDeductionEligibleAmount).toBe(accepted)
       expect(action.charitableDeductionEligibleAmount)
-        .not.toBe(readings.claimsTheExcludedGiftAsAnAdditionalDeduction)
+        .not.toBe(readings.noSection170ForAnyQcdRelatedAmount)
+    })
+
+    it('pins notApplicable treatment on a wholly excluded QCD', () => {
+      const result = publishAnnualQcdActionExecutionEvidence({ ownerFinalizationInputs: fixture().inputs })
+      expect(result.status).toBe('annualQcdActionExecutionEvidencePublished')
+      if (result.status !== 'annualQcdActionExecutionEvidencePublished') return
+      const action = result.actions.find((candidate) => candidate.actionId === 'qcd-p1')!
+
+      expect(action.charitableDeductionEligibleAmount).toBe(0)
+      expect(action.charitableDeductionTreatment.treatment).toBe('notApplicable')
     })
   })
 

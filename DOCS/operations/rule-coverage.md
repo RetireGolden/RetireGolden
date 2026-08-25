@@ -94,7 +94,7 @@ None.
 | --- | --- | --- |
 | actions/aggregateRothConversionOwnerAllocation.ts | 2026-08-24 | RMD-before-conversion ordering/snapshot; no record |
 | actions/annualOwnedNonRothIraPoolCapacity.ts | 2026-08-24 | QCD pool restricted to donor-owned non-Roth IRAs; no record |
-| actions/annualQcdDerivedTaxCharacter.ts | 2026-08-24 | SEP/SIMPLE and owned-source eligibility gates; no record; QCD taxable/excludable/basis partition; no record |
+| actions/annualQcdDerivedTaxCharacter.ts | 2026-08-25 | Owned-source eligibility gate; no record; QCD taxable/excludable/basis partition; no record |
 | actions/annualQcdPhysicalExecution.ts | 2026-08-24 | QCD pool restricted to owned traditional IRAs, excluding inherited/Roth; no record |
 | actions/annualQcdResidualForm8606.ts | 2026-08-24 | Non-QCD QCD remainder/Form 8606 line-7 basis-return treatment; no record; residual line-7/line-8 pro-rata reconciliation; no record |
 | actions/annualRetirementPhysicalEventInventory.ts | 2026-08-24 | Inherited-RMD regime; owner-RMD start age; spouse-as-own transition; annuity/Form 8606 treatment; direct-trustee QCD origin; no record |

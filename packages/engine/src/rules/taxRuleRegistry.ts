@@ -418,7 +418,7 @@ const registry = {
   'irc-408-d-8-E-excluded-qcd-no-section-170-double-benefit': {
     title: 'An excluded QCD cannot also produce a section 170 deduction',
     statement:
-      'A qualified charitable distribution excluded from gross income under section 408(d)(8)(A) is not taken into account in determining the charitable-contribution deduction under section 170. The engine therefore leaves the section 170 eligible amount at zero for a wholly excluded QCD; only a portion that remains taxable can proceed to the separate deduction treatment.',
+      'A qualified charitable distribution excluded from gross income under section 408(d)(8)(A) is not taken into account in determining the charitable-contribution deduction under section 170. The engine therefore leaves the section 170 eligible amount at zero for a wholly excluded QCD. The portion not excluded under 408(d)(8)(A) — the includible QCD slice and any non-QCD remainder — proceeds to ordinary section 170 treatment.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -1065,13 +1065,14 @@ const registry = {
     implementedBy: [
       'packages/engine/src/strategies/accountEligibility.ts',
       'packages/engine/src/actions/annualQcdExecutionPrerequisite.ts',
+      'packages/engine/src/actions/annualQcdDerivedTaxCharacter.ts',
     ],
   },
 
   'irc-408-d-8-B-employer-plan-source-exclusion': {
     title: 'An employer-plan distribution is not a QCD source',
     statement:
-      'A QCD is a distribution from an individual retirement plan, so a distribution from an employer plan is never a QCD. The engine refuses a named QCD whose source is an employer-plan account before any charitable exclusion is calculated.',
+      'A QCD is a distribution from an individual retirement plan as defined in section 7701(a)(37) — an individual retirement account described in section 408(a) or an individual retirement annuity described in section 408(b). An employer plan is neither, so a distribution from an employer-plan account is never a QCD. The engine refuses a named QCD whose source is an employer-plan account before any charitable exclusion is calculated.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -1083,6 +1084,12 @@ const registry = {
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim',
       quotedText:
         'For purposes of this paragraph, the term "qualified charitable distribution" means any distribution from an individual retirement plan (other than a plan described in subsection (k) or (p))-',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 7701(a)(37)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section7701&num=0&edition=prelim',
+      quotedText:
+        'The term "individual retirement plan" means- (A) an individual retirement account described in section 408(a), and (B) an individual retirement annuity described in section 408(b).',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -1091,13 +1098,14 @@ const registry = {
     implementedBy: [
       'packages/engine/src/strategies/accountEligibility.ts',
       'packages/engine/src/actions/annualQcdExecutionPrerequisite.ts',
+      'packages/engine/src/actions/annualQcdDerivedTaxCharacter.ts',
     ],
   },
 
   'irc-408-d-8-B-i-qualified-recipient': {
     title: 'A QCD recipient must be a qualified direct charity recipient',
     statement:
-      'A direct QCD recipient must be an organization described in section 170(b)(1)(A), not a section 509(a)(3) supporting organization or a section 4966(d)(2) donor-advised fund. Section 170(b)(1)(A) reaches a private foundation only when it is one described in section 170(b)(1)(F). The engine requires direct-custodian, eligible-organization, and no-DAF/supporting-organization attestations and does not make an unconfirmed recipient actionable; the distinct split-interest election is separately out of scope.',
+      'A direct QCD recipient must be an organization described in section 170(b)(1)(A), not a section 509(a)(3) supporting organization or a section 4966(d)(2) donor-advised fund. Section 170(b)(1)(A) reaches a private foundation only when it is one described in section 170(b)(1)(F). The engine requires direct-custodian, eligible-organization, and no-DAF/supporting-organization attestations and does not make an unconfirmed recipient actionable; the distinct split-interest election is separately out of scope. Not modelled: the engine\'s charity designations have no private-foundation kind and evaluateQcd accepts only an attested \'eligiblePublicCharity\', so an accurately described §170(b)(1)(F) private foundation — legally an eligible recipient — is unsupported and the QCD is refused (fails closed; conservative direction).',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -1111,9 +1119,10 @@ const registry = {
         'which is made directly by the trustee to an organization described in section 170(b)(1)(A) (other than any organization described in section 509(a)(3) or any fund or account described in section 4966(d)(2)), and',
     }, {
       kind: 'statute',
-      citation: 'IRC 170(b)(1)(A)(vii)',
+      citation: 'IRC 170(b)(1)(A)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim',
-      quotedText: '(vii) a private foundation described in subparagraph (F),',
+      quotedText:
+        'Any charitable contribution to- ... (vii) a private foundation described in subparagraph (F),',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -1160,7 +1169,7 @@ const registry = {
         '(III) a charitable gift annuity (as defined in section 501(m)(5)), but only if such annuity is funded exclusively by qualified charitable distributions and commences fixed payments of 5 percent or greater not later than 1 year from the date of funding.',
     }],
     volatility: 'staticStatute',
-    effectiveFrom: 2023,
+    effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-25',
     implementedBy: [
@@ -1195,13 +1204,16 @@ const registry = {
     effectiveFrom: 2026,
     effectiveThrough: 2026,
     verifiedOn: '2026-08-03',
-    implementedBy: ['packages/engine/src/actions/annualQcdExecutionPrerequisite.ts'],
+    implementedBy: [
+      'packages/engine/src/strategies/accountEligibility.ts',
+      'packages/engine/src/actions/annualQcdExecutionPrerequisite.ts',
+    ],
   },
 
   'irc-72-t-1-qcd-not-early-distribution-exception': {
     title: 'A QCD does not create an under-59.5 penalty exception',
     statement:
-      'Section 72(t) imposes the additional tax on an includible early distribution unless an enumerated exception applies; it does not independently except a QCD. A statutory QCD, including one under the split-interest election, must be made after the donor reaches age 70.5, so no accepted QCD input can be an under-59.5 distribution. The engine refuses a QCD before age 70.5 and calculates no section 72(t) result for that impossible input; its qcdDirectTransfer penalty-coverage marker is emitted only for an already-executed age-eligible QCD.',
+      'Section 72(t)(1) increases tax by 10 percent of the includible portion of an early distribution from a qualified retirement plan. Section 408(d)(8)(B)(ii) requires that a qualified charitable distribution be made on or after the date the individual for whose benefit the plan is maintained has attained age 70½. The engine refuses any QCD before that threshold, so no accepted QCD input can be an under-59½ distribution, and its qcdDirectTransfer penalty-coverage marker is emitted only for an already-executed age-eligible QCD.',
     classification: 'outOfScope',
     contraryReading: null,
     errorDirection: null,
@@ -1209,7 +1221,7 @@ const registry = {
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
-      citation: 'IRC 72(t)(1)-(2)',
+      citation: 'IRC 72(t)(1)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim',
       quotedText:
         'If any taxpayer receives any amount from a qualified retirement plan (as defined in section 4974(c)), the taxpayer\'s tax under this chapter for the taxable year in which such amount is received shall be increased by an amount equal to 10 percent of the portion of such amount which is includible in gross income.',
