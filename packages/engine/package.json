@@ -303,6 +303,7 @@
     "build": "tsc -b tsconfig.build.json",
     "generate:schema": "pnpm run build && node scripts/generate-schema.mjs",
     "generate:version": "node scripts/generate-version.mjs",
+    "rules:coverage": "node scripts/rules-coverage.mjs",
     "verify:quotes": "node scripts/verify-quotes.mjs",
     "lint": "eslint .",
     "test": "tsc -p tsconfig.json && vitest run",

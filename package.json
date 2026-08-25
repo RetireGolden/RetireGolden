@@ -28,6 +28,7 @@
     "cases": "pnpm --filter retiregolden-web cases",
     "cases:diff": "pnpm --filter retiregolden-web cases:diff",
     "owl-parity": "pnpm --filter retiregolden-web owl-parity",
+    "rules:coverage": "pnpm --filter @retiregolden/engine rules:coverage",
     "verify:quotes": "pnpm --filter @retiregolden/engine verify:quotes"
   }
 }
