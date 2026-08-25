@@ -56,7 +56,6 @@ function chunkRuleIds(ruleIds, chunkSize) {
 export function buildDispatchPrompt({ asOf, ruleIds, registry, manifestRules }) {
   const manifestById = new Map(manifestRules.map((rule) => [rule.id, rule]))
   const ids = [...ruleIds].sort()
-  const filterIds = ids.join(',')
 
   const lines = [
     '# Re-verification dispatch: ' + ids.join(', ') + ' (generated ' + asOf + ')',
@@ -81,8 +80,12 @@ export function buildDispatchPrompt({ asOf, ruleIds, registry, manifestRules }) 
     '## Verification checklist',
     '',
     '- `pnpm --filter @retiregolden/engine test`',
-    '- Quote-fidelity re-check: `pnpm verify:quotes -- --filter ' + filterIds + ' --refresh` (network, manual; see `DOCS/operations/quote-fidelity.md`)',
-    '- If any result moves: run `cases:diff`, review every delta, and add a `CHANGELOG.md` entry announcing the correction — corrections are announced, never silent.',
+    ...ids.map(
+      (id) =>
+        '- Quote-fidelity re-check for ' + id + ': `pnpm verify:quotes -- --filter ' + id + ' --refresh`',
+    ),
+    '- (network, manual; see `DOCS/operations/quote-fidelity.md`)',
+    '- If any result moves: run `pnpm cases:diff`, review every delta, and add a `CHANGELOG.md` entry announcing the correction — corrections are announced, never silent.',
     '- `pnpm rules:coverage` and commit the refreshed `DOCS/operations/rule-coverage.md` and `rule-coverage.json` (`verifiedOn` changes them)',
     '- Confirm no other open PR changes the registry file: for each PR in `gh pr list --state open --json number -q .[].number`, run `gh pr diff <n> --name-only` and require zero hits for `taxRuleRegistry.ts` before pushing.',
     '- One PR; review-bot findings fixed on the same branch',
@@ -150,6 +153,8 @@ async function main() {
   // pnpm forwards the `--` separator itself, so `pnpm rules:dispatch -- --rule x`
   // reaches node with a literal `--` first; strip leading separators so the
   // documented invocation parses the same as a direct node run.
+  // For machine-readable `rules:due --json` output without pnpm lifecycle banners,
+  // invoke from the repo root: `pnpm --silent rules:due -- --json`.
   const args = process.argv.slice(2)
   while (args[0] === '--') args.shift()
   const { values } = parseArgs({
@@ -190,7 +195,12 @@ async function main() {
 
   let ruleIds = []
   if (ruleArg) {
-    ruleIds.push(...ruleArg.split(',').map((id) => id.trim()).filter(Boolean))
+    const parsedRuleIds = ruleArg.split(',').map((id) => id.trim()).filter(Boolean)
+    if (parsedRuleIds.length === 0) {
+      console.error('No valid rule ids in --rule: ' + ruleArg)
+      process.exit(1)
+    }
+    ruleIds.push(...parsedRuleIds)
   }
   if (useDue) {
     const dueIds = taxRulesDueForVerification(asOf, DEFAULT_REVERIFICATION_INTERVAL_DAYS)

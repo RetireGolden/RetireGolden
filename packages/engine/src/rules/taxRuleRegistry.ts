@@ -8835,8 +8835,8 @@ export function taxRulesDueForVerification(
   // function must not have.
   for (const volatility of TAX_RULE_VOLATILITIES) {
     const interval = maximumAgeDaysByVolatility[volatility]
-    if (!Number.isFinite(interval) || interval < 0) {
-      throw new RangeError(`Re-verification interval for ${volatility} must be a non-negative number of days`)
+    if (!Number.isFinite(interval) || interval < 0 || !Number.isInteger(interval)) {
+      throw new RangeError(`Re-verification interval for ${volatility} must be a non-negative whole number of days`)
     }
   }
   return taxRuleIds.filter((ruleId) => {
