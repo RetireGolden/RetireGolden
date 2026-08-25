@@ -42,6 +42,8 @@ interface FixtureOptions { readonly scheduleConflict?: boolean; readonly p1Contr
   readonly p1IraSubtype?: 'sep' | 'simple'
   /** When `p1IraSubtype` is set, whether the plan year had an employer contribution. */
   readonly p1SepOngoing?: boolean
+  /** When `p1IraSubtype` is set, omit the year-specific activity evidence entirely. */
+  readonly p1SepActivityUnknown?: boolean
   /** Make ira-p1 an employer-plan account rather than an IRA. */
   readonly p1EmployerPlan?: boolean
   /** Override charity attestations or the designation kind on the p1 QCD only. */
@@ -70,7 +72,7 @@ function fixture(p1Opening = 10_000, options: FixtureOptions = {}): { inputs: Fi
         : { sourceAccountId: ira1, subtype: p1Subtype, evidenceId: 'classification-p1', provenance: { source: 'manual' as const } },
     ]),
     { sourceAccountId: ira2, subtype: 'traditional' as const, evidenceId: 'classification-p2', provenance: { source: 'manual' as const } },
-  ], sepSimpleActivities: p1Subtype === 'traditional' ? [] : [{
+  ], sepSimpleActivities: p1Subtype === 'traditional' || options.p1SepActivityUnknown === true ? [] : [{
     sourceAccountId: ira1,
     actionTaxYear: year,
     planYearEndDate: '2026-12-31',
@@ -131,12 +133,44 @@ function fixture(p1Opening = 10_000, options: FixtureOptions = {}): { inputs: Fi
   return { inputs, requests }
 }
 
+function publishedAction(
+  result: ReturnType<typeof publishAnnualQcdActionExecutionEvidence>,
+  actionId = 'qcd-p1',
+) {
+  // A blocked publication must never read as a statutory refusal: the negative
+  // fixtures assert on a published, present action with a refused disposition.
+  if (result.status !== 'annualQcdActionExecutionEvidencePublished') {
+    throw new Error(`publication did not publish: ${result.status}`)
+  }
+  const action = result.actions.find((candidate) => candidate.actionId === actionId)
+  if (action === undefined) throw new Error(`published result has no action ${actionId}`)
+  return action
+}
+
 function publishedExecutedAmount(
   result: ReturnType<typeof publishAnnualQcdActionExecutionEvidence>,
   actionId = 'qcd-p1',
 ): number {
-  if (result.status !== 'annualQcdActionExecutionEvidencePublished') return 0
-  return result.actions.find((action) => action.actionId === actionId)?.executedAmount ?? 0
+  return publishedAction(result, actionId).executedAmount
+}
+
+function refusedExecutedAmount(
+  result: ReturnType<typeof publishAnnualQcdActionExecutionEvidence>,
+  actionId = 'qcd-p1',
+): number {
+  // The executor fails the whole batch closed when any gift is ineligible: a
+  // statutory refusal surfaces as a blocked, uncommitted publication via the
+  // finalization-bridge invariant, and no money moves. The blocking issue does
+  // not name the action, so each negative test must also assert the action's
+  // own prerequisite reason code — the pair keeps an unrelated batch failure
+  // from reading as a statutory refusal.
+  void actionId
+  expect(result.status).toBe('annualQcdActionExecutionEvidenceBlocked')
+  if (result.status !== 'annualQcdActionExecutionEvidenceBlocked') throw new Error('unreachable')
+  expect(result.issues[0].kind).toBe('finalizationInvalid')
+  expect(result.committed).toBe(false)
+  expect(result.actions).toEqual([])
+  return 0
 }
 
 function p1EligibilityReasonCodes(inputs: FinalizeAnnualQcdUnifiedTransactionInput[]): string[] {
@@ -307,10 +341,17 @@ describe('publishAnnualQcdActionExecutionEvidence', () => {
     accepted: 'noticeRefusesAnOngoingSep',
     note: 'ongoing SEP',
   }, ({ accepted, readings }) => {
+    it('does not execute a QCD from a SEP IRA whose activity is unknown', () => {
+      const { inputs } = fixture(10_000, { p1IraSubtype: 'sep', p1SepActivityUnknown: true })
+      const result = publishAnnualQcdActionExecutionEvidence({ ownerFinalizationInputs: inputs })
+      expect(refusedExecutedAmount(result)).toBe(0)
+      expect(p1EligibilityReasonCodes(inputs)).toContain('qcd-sep-simple-activity-unknown')
+    })
+
     it('does not execute a QCD from an ongoing SEP IRA', () => {
       const { inputs } = fixture(10_000, { p1IraSubtype: 'sep', p1SepOngoing: true })
       const result = publishAnnualQcdActionExecutionEvidence({ ownerFinalizationInputs: inputs })
-      const executed = publishedExecutedAmount(result)
+      const executed = refusedExecutedAmount(result)
       expect(executed).toBe(accepted)
       expect(executed).not.toBe(readings.treatsAnOngoingSepIraAsARegularIra)
       expect(p1EligibilityReasonCodes(inputs)).toContain('qcd-ongoing-sep-simple')
@@ -330,7 +371,7 @@ describe('publishAnnualQcdActionExecutionEvidence', () => {
 
       const { inputs } = fixture(10_000, { p1EmployerPlan: true })
       const result = publishAnnualQcdActionExecutionEvidence({ ownerFinalizationInputs: inputs })
-      const executed = publishedExecutedAmount(result)
+      const executed = refusedExecutedAmount(result)
       expect(executed).toBe(accepted)
       expect(executed).not.toBe(readings.treatsAnEmployerPlanAsAnIraSource)
       expect(p1EligibilityReasonCodes(inputs)).toContain('qcd-source-not-ira')
@@ -353,7 +394,7 @@ describe('publishAnnualQcdActionExecutionEvidence', () => {
         p1Charity: { notDonorAdvisedFundOrSupportingOrganizationAttested: false },
       })
       const result = publishAnnualQcdActionExecutionEvidence({ ownerFinalizationInputs: inputs })
-      const executed = publishedExecutedAmount(result)
+      const executed = refusedExecutedAmount(result)
       expect(executed).toBe(accepted)
       expect(executed).not.toBe(readings.treatsTheDisqualifiedRecipientAsEligible)
       expect(p1EligibilityReasonCodes(inputs)).toContain('qcd-direct-charity-unconfirmed')
@@ -362,7 +403,7 @@ describe('publishAnnualQcdActionExecutionEvidence', () => {
     it('refuses an explicitly designated donor-advised fund even with affirmative attestations', () => {
       const { inputs } = fixture(10_000, { p1Charity: { designationKind: 'donorAdvisedFund' } })
       const result = publishAnnualQcdActionExecutionEvidence({ ownerFinalizationInputs: inputs })
-      const executed = publishedExecutedAmount(result)
+      const executed = refusedExecutedAmount(result)
       expect(executed).toBe(accepted)
       expect(executed).not.toBe(readings.treatsTheDisqualifiedRecipientAsEligible)
       expect(p1EligibilityReasonCodes(inputs)).toContain('qcd-direct-charity-unconfirmed')
@@ -371,7 +412,7 @@ describe('publishAnnualQcdActionExecutionEvidence', () => {
     it('refuses an explicitly designated supporting organization even with affirmative attestations', () => {
       const { inputs } = fixture(10_000, { p1Charity: { designationKind: 'supportingOrganization' } })
       const result = publishAnnualQcdActionExecutionEvidence({ ownerFinalizationInputs: inputs })
-      const executed = publishedExecutedAmount(result)
+      const executed = refusedExecutedAmount(result)
       expect(executed).toBe(accepted)
       expect(executed).not.toBe(readings.treatsTheDisqualifiedRecipientAsEligible)
       expect(p1EligibilityReasonCodes(inputs)).toContain('qcd-direct-charity-unconfirmed')
@@ -392,7 +433,7 @@ describe('publishAnnualQcdActionExecutionEvidence', () => {
 
       const { inputs } = fixture(10_000, { p1Charity: { directFromCustodianAttested: false } })
       const result = publishAnnualQcdActionExecutionEvidence({ ownerFinalizationInputs: inputs })
-      const executed = publishedExecutedAmount(result)
+      const executed = refusedExecutedAmount(result)
       expect(executed).toBe(accepted)
       expect(executed).not.toBe(readings.treatsAnIndirectTransferAsEligible)
       expect(p1EligibilityReasonCodes(inputs)).toContain('qcd-direct-charity-unconfirmed')
@@ -413,7 +454,7 @@ describe('publishAnnualQcdActionExecutionEvidence', () => {
 
       const { inputs } = fixture(10_000, { p1Charity: { eligibleOrganizationAttested: false } })
       const result = publishAnnualQcdActionExecutionEvidence({ ownerFinalizationInputs: inputs })
-      const executed = publishedExecutedAmount(result)
+      const executed = refusedExecutedAmount(result)
       expect(executed).toBe(accepted)
       expect(executed).not.toBe(readings.treatsAnUnattestedOrganizationAsEligible)
       expect(p1EligibilityReasonCodes(inputs)).toContain('qcd-direct-charity-unconfirmed')

@@ -430,6 +430,12 @@ const registry = {
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim',
       quotedText:
         'Qualified charitable distributions which are not includible in gross income pursuant to subparagraph (A) shall not be taken into account in determining the deduction under section 170.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 170(a)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim',
+      quotedText:
+        'There shall be allowed as a deduction any charitable contribution (as defined in subsection (c)) payment of which is made within the taxable year.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
