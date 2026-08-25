@@ -254,6 +254,43 @@ describe('beneficiary traditional IRA death penalty evidence', () => {
     })
   })
 
+  // IRC 72(t)(2)(A)(ii) zeroes the additional tax for a distribution made to a
+  // beneficiary on or after the employee's death. The contrary reading charges
+  // the ordinary 10% early-distribution rate on the same includible amount.
+  describeRule('irc-72-t-2-A-ii-death-beneficiary-exception', {
+    readings: {
+      deathBeneficiaryException: {
+        finalPenaltyAmount: 0,
+        treatment: 'deathBeneficiary',
+      },
+      earlyDistributionTenPercent: {
+        finalPenaltyAmount: 10,
+        treatment: 'earlyDistribution',
+      },
+    },
+    accepted: 'deathBeneficiaryException',
+    note: 'beneficiary traditional IRA death-penalty module',
+  }, ({ accepted, readings }) => {
+    it('publishes zero from the death path, not the 10 percent early rate', () => {
+      const input = validInput()
+      // Zero opening basis → the whole $1.00 execution is ordinary income, so
+      // the rejected 10% reading is an exact 10¢ rather than a rounded fraction.
+      input.characterizationInput = characterizationInput(100, 0, 0, 100)
+      const result = evaluateBeneficiaryTraditionalIraDeathPenalty(input)
+
+      expect(result.status).toBe('accepted')
+      if (result.status !== 'accepted' || result.penaltyEvidence === null) return
+      expect(result.penaltyEvidence.taxableAmountExposed).toBe(100)
+      expect(result.penaltyEvidence.acceptedEvidence.deathDate).toBe('2029-12-31')
+      expect(result.penaltyEvidence.finalPenaltyAmount).toBe(accepted.finalPenaltyAmount)
+      expect(result.penaltyEvidence.treatment).toBe(accepted.treatment)
+      expect(result.penaltyEvidence.finalPenaltyAmount)
+        .not.toBe(readings.earlyDistributionTenPercent.finalPenaltyAmount)
+      expect(result.penaltyEvidence.treatment)
+        .not.toBe(readings.earlyDistributionTenPercent.treatment)
+    })
+  })
+
   it('rebuilds character and emits exact death-beneficiary zero-penalty evidence', () => {
     const input = validInput()
     const before = structuredClone(input)

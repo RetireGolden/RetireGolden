@@ -495,13 +495,15 @@ Source: [IRS 2026 limits announcement](https://www.irs.gov/newsroom/401k-limit-i
   (`irc-72-t-3-B-sepp-separation-annual-proxy`). IRAs are exempt from the test, as the statute provides. A
   qualifying series must continue without a disqualifying modification through the later of five years from its
   first payment or age 59½ under [IRC §72(t)(4)](https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim);
-  recapture after a modification remains out of scope
-  (`irc-72-t-4-sepp-modification-recapture`).
+  that later-of window and the payment-date proof requirement are settled
+  (`irc-72-t-4-sepp-modification-proof-window`). Only the recapture tax after a modification remains out of
+  scope (`irc-72-t-4-sepp-modification-recapture`).
 - **Employer-plan NUA.** The Plan and retirement-action contracts carry no employer-security or
   net-unrealized-appreciation fact, no NUA lump-sum qualification fact, and no NUA elect-out (the pension
   lump-sum election and spousal elections are unrelated structures). They therefore cannot model the gross-income exclusion for NUA in
   employer securities under [IRC §402(e)(4)(B)](https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402&num=0&edition=prelim),
-  or a resulting section 72(t) base (`irc-402-e-4-B-lump-sum-employer-securities-nua-exclusion`).
+  or an NUA-adjusted section 72(t) base — a base from ordinary-income character still exists
+  (`irc-402-e-4-B-lump-sum-employer-securities-nua-exclusion`).
 - Research consensus: naive "taxable-then-deferred-then-Roth" is beaten by bracket-aware blends (fill low brackets from traditional every year); this motivates the bracket-targeted strategy and the LP optimizer (see [features/optimizer.md](../features/optimizer.md) and the Owl oracle).
 - The optimizer recommendation is **optimal on the exact ledger to tolerance** (2026-07-08): the MILP models the taxable-SS phase-in, IRMAA 2-year lookback, taxable-gain realization, and state brackets in-solve; an exact-ledger convergence loop re-linearizes around the incumbent; and the exact-ledger tournament (windowed bracket fills, top-two + MILP-winner local search) arbitrates and gates everything. The dev-only Owl parity harness (`pnpm owl-parity`) measures RetireGolden at-or-above Owl on every fixture.
 - **An aggregate schedule is still vetoed; a named one can be published.** A schedule carrying only a year and a

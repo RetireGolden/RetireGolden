@@ -2091,12 +2091,12 @@ const registry = {
   'irc-402-e-4-B-lump-sum-employer-securities-nua-exclusion': {
     title: 'NUA in employer securities is excluded from gross income',
     statement:
-      'For a lump sum distribution that includes employer-corporation securities, section 402(e)(4)(B) excludes the attributable net unrealized appreciation from gross income for purposes of section 72 unless the taxpayer elects otherwise. Because section 72(t)(1) reaches only the includible portion, excluded NUA is outside the additional-tax base. Not modelled: no plan input or retirement-action type can express employer securities, NUA, the required lump-sum facts, or the election, so the engine produces no NUA tax character or 72(t) result.',
+      'For a lump sum distribution that includes employer-corporation securities, section 402(e)(4)(B) excludes the attributable net unrealized appreciation from gross income for purposes of section 72 unless the taxpayer elects otherwise. Because section 72(t)(1) reaches only the includible portion, excluded NUA is outside the additional-tax base. Not modelled: no plan input or retirement-action type can express employer securities, NUA, an NUA lump-sum qualification fact, or an NUA elect-out, so employer-plan withdrawals still classify as basisReturn/ordinaryIncome and still run section 72(t) on the includible ordinary portion without any NUA adjustment — NUA facts simply cannot be expressed.',
     classification: 'outOfScope',
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The plan model has only an employer-plan balance and after-tax employee basis; its withdrawal character is basis return or ordinary income. The action contract rejects a NUA action kind. The action-kind refusal is covered in actions/contract.test.ts. Notice 98-24\'s mechanics for the remaining distribution/basis portion of an early NUA lump sum are deliberately not claimed here: a verifiable copy of that notice was not available at registration, so that proposition awaits its own record.',
+      'The plan model carries an employer-plan balance only: traditionalAccountSchema\'s nondeductibleBasis is IRA-only, and the schema comment says employer-plan after-tax money is not modeled. After-tax employee basis exists only as runtime classifier evidence (afterTaxEmployeeBasisBeforeDistribution) on traditionalEmployerPlanWithdrawalCharacter, whose withdrawal character is basis return or ordinary income. The action contract rejects a NUA action kind. The action-kind refusal is covered in actions/contract.test.ts. Notice 98-24\'s mechanics for the remaining distribution/basis portion of an early NUA lump sum are deliberately not claimed here: a verifiable copy of that notice was not available at registration, so that proposition awaits its own record.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -2138,6 +2138,12 @@ const registry = {
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim',
       quotedText:
         'If any taxpayer receives any amount from a qualified retirement plan (as defined in section 4974(c)), the taxpayer\'s tax under this chapter for the taxable year in which such amount is received shall be increased by an amount equal to 10 percent of the portion of such amount which is includible in gross income.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 4974(c)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section4974&num=0&edition=prelim',
+      quotedText:
+        'For purposes of this section, the term "qualified retirement plan" means- (1) a plan described in section 401(a) which includes a trust exempt from tax under section 501(a), (2) an annuity plan described in section 403(a), (3) an annuity contract described in section 403(b), (4) an individual retirement account described in section 408(a), or (5) an individual retirement annuity described in section 408(b). Such term includes any plan, contract, account, or annuity which, at any time, has been determined by the Secretary to be such a plan, contract, account, or annuity.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,

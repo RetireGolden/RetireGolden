@@ -8,7 +8,6 @@ import {
   parseRetirementActionRequest,
   personRetirementActionRequestBaseSchema,
   qualifiedCharitableDistributionRequestSchema,
-  retirementActionKinds,
   retirementActionRequestBaseSchema,
   retirementActionRequestSchema,
   rothConversionRequestSchema,
@@ -216,11 +215,28 @@ describe('retirement action request contracts', () => {
   ] as const
 
   it('refuses NUA as an unmodelled retirement action kind', () => {
-    // The enum-membership assert is the load-bearing gate: a future 'nua' arm
-    // with different required fields would still fail the shape parse below,
-    // so the parse alone could stay green while the outOfScope claim went
-    // false. Adding 'nua' to the action vocabulary must break this test.
-    expect(retirementActionKinds).not.toContain('nua')
+    // Gate the discriminated union itself: retirementActionKinds is a separate
+    // list and can drift from the union's kind literals. Introspecting options
+    // makes adding a 'nua' arm break even when the arm's other fields differ.
+    const kindLiterals = retirementActionRequestSchema.options.map((option) =>
+      String(option.shape.kind.value),
+    )
+    // Exact membership of the union (order-insensitive). The three current
+    // kinds named in the review plus the three legacyAggregate* arms that
+    // share this schema.
+    expect(new Set(kindLiterals)).toEqual(
+      new Set([
+        'ordinaryWithdrawal',
+        'rothConversion',
+        'qcd',
+        'legacyAggregateWithdrawal',
+        'legacyAggregateRothConversion',
+        'legacyAggregateQcd',
+      ]),
+    )
+    expect(kindLiterals.every((kind) => !/nua|unrealized|employersecurit/i.test(kind))).toBe(
+      true,
+    )
     expect(
       retirementActionRequestSchema.safeParse({
         ...requests[0],

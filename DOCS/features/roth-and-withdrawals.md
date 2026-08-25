@@ -117,8 +117,10 @@ on every arm. A withdrawal whose purpose is to fund a linked conversion's tax is
 moves as one leg of an atomic group, described in
 [taxes.md § Conversion-linked tax funding](taxes.md#conversion-linked-tax-funding).
 
-NUA is not an action kind or withdrawal character: the Plan has no employer-security, lump-sum, NUA, or election
-facts, so employer-plan withdrawals cannot be presented as the NUA exclusion in
+NUA is not an action kind or withdrawal character: the Plan and retirement-action contracts carry no
+employer-security or net-unrealized-appreciation fact, no NUA lump-sum qualification fact, and no NUA
+elect-out (the pension lump-sum election and spousal elections are unrelated structures), so employer-plan
+withdrawals cannot be presented as the NUA exclusion in
 [IRC §402(e)(4)(B)](https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402&num=0&edition=prelim)
 (`irc-402-e-4-B-lump-sum-employer-securities-nua-exclusion`).
 

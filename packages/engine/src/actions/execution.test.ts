@@ -445,9 +445,11 @@ describe('ordinary-withdrawal execution', () => {
       penalty: [],
       penaltyCoverage: [{
         sourceClass: 'equityCompensation',
+        applicability: 'notApplicable',
         reason: 'nonRetirementSource',
         executedAmount: 75,
         nonPenaltyRelevantCharacterAmount: 75,
+        coveredPenaltyExposureAmount: 0,
       }],
     })
     const accepted =
@@ -1387,7 +1389,13 @@ describe('ordinary-withdrawal execution', () => {
             amount: 3_000,
           },
         ],
-        penaltyCoverage: [{ sourceClass: 'taxable', executedAmount: 5_000 }],
+        penaltyCoverage: [{
+          sourceClass: 'taxable',
+          applicability: 'notApplicable',
+          reason: 'nonRetirementSource',
+          executedAmount: 5_000,
+          coveredPenaltyExposureAmount: 0,
+        }],
       })
       expect(result.balances).toMatchObject([
         { accountId: 'taxable', openingBalance: 10_000, closingBalance: 5_000 },
