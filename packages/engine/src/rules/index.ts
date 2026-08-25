@@ -17,6 +17,7 @@ export {
   taxRule,
   taxRuleIds,
   taxRulesDueForVerification,
+  taxRuleDueOn,
   DEFAULT_REVERIFICATION_INTERVAL_DAYS,
   type TaxRuleAuthority,
   type TaxRuleAuthorityKind,

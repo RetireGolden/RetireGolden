@@ -5,9 +5,9 @@ import {
 } from './coverageAttestations.js'
 import { buildCoverageReport } from './coverageReport.js'
 import {
-  DEFAULT_REVERIFICATION_INTERVAL_DAYS,
   TAX_RULE_REGISTRY,
   TAX_RULE_VOLATILITIES,
+  taxRuleDueOn,
   taxRuleIds,
   taxRulesDueForVerification,
 } from './taxRuleRegistry.js'
@@ -41,8 +41,8 @@ const report = buildCoverageReport({
   attestations: COVERAGE_ATTESTATIONS,
   baselineUnswept: BASELINE_UNSWEPT,
   testSources,
-  intervals: DEFAULT_REVERIFICATION_INTERVAL_DAYS,
   quoteFidelityLedger,
+  dueOnFor: taxRuleDueOn,
 })
 
 describe('rules coverage report artifacts', () => {

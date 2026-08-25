@@ -4,9 +4,9 @@ import type {
   COVERAGE_ATTESTATIONS,
 } from './coverageAttestations.js'
 import type {
-  DEFAULT_REVERIFICATION_INTERVAL_DAYS,
   TAX_RULE_REGISTRY,
   TaxRuleClassification,
+  TaxRuleId,
   TaxRuleJurisdiction,
   TaxRuleVolatility,
 } from './taxRuleRegistry.js'
@@ -17,9 +17,10 @@ export interface CoverageReportInput {
   readonly baselineUnswept: readonly string[]
   /** Test-source contents keyed by path, for the describeRule fixture scan. */
   readonly testSources: Readonly<Record<string, string>>
-  readonly intervals: typeof DEFAULT_REVERIFICATION_INTERVAL_DAYS
   /** Committed quote-fidelity ledger JSON text, or null when none exists yet. */
   readonly quoteFidelityLedger: string | null
+  /** Due-date derivation — inject taxRuleDueOn from the registry module; one home for the arithmetic. */
+  readonly dueOnFor: (ruleId: TaxRuleId) => string
 }
 
 interface CoverageRule {
@@ -92,12 +93,6 @@ function countBy(values: readonly string[]): Record<string, number> {
   const counts: Record<string, number> = {}
   for (const value of values) counts[value] = (counts[value] ?? 0) + 1
   return Object.fromEntries(Object.entries(counts).sort(([left], [right]) => compareStrings(left, right)))
-}
-
-function dateAfterDays(isoDate: string, days: number): string {
-  const date = new Date(isoDate + 'T00:00:00Z')
-  date.setUTCDate(date.getUTCDate() + days)
-  return date.toISOString().slice(0, 10)
 }
 
 function fixtureFilesByRule(testSources: Readonly<Record<string, string>>): ReadonlyMap<string, readonly string[]> {
@@ -266,7 +261,7 @@ function buildMarkdown(manifest: CoverageReportManifest): string {
     '## Re-verification due dates',
     '',
     'The 25 earliest due dates are shown below (' + manifest.rules.length +
-      ' rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; the planned rules:due runner (change-loop workstream) will flag overdue rules, and taxRulesDueForVerification() from @retiregolden/engine/rules answers the question programmatically today.',
+      ' rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due or upcoming, or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.',
     '',
     '| Rule | Volatility | Verified on | Due on |',
     '| --- | --- | --- | --- |',
@@ -305,7 +300,7 @@ export function buildCoverageReport(input: CoverageReportInput): CoverageReport 
       effectiveFrom: rule.effectiveFrom,
       effectiveThrough: rule.effectiveThrough,
       verifiedOn: rule.verifiedOn,
-      dueOn: dateAfterDays(rule.verifiedOn, input.intervals[rule.volatility]),
+      dueOn: input.dueOnFor(id as TaxRuleId),
       implementedBy: [...rule.implementedBy].sort(),
       fixtureFiles: fixtureFiles.get(id) ?? [],
     }))

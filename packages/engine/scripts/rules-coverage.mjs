@@ -32,7 +32,7 @@ async function loadModule(name) {
 
 async function main() {
   const [
-    { TAX_RULE_REGISTRY, DEFAULT_REVERIFICATION_INTERVAL_DAYS },
+    { TAX_RULE_REGISTRY, taxRuleDueOn },
     { COVERAGE_ATTESTATIONS, BASELINE_UNSWEPT },
     { buildCoverageReport },
   ] = await Promise.all([
@@ -47,8 +47,8 @@ async function main() {
     attestations: COVERAGE_ATTESTATIONS,
     baselineUnswept: BASELINE_UNSWEPT,
     testSources: testSourcesInGlobShape(),
-    intervals: DEFAULT_REVERIFICATION_INTERVAL_DAYS,
     quoteFidelityLedger,
+    dueOnFor: taxRuleDueOn,
   })
   const operationsDir = join(repositoryDir, 'DOCS', 'operations')
   writeFileSync(join(operationsDir, 'rule-coverage.md'), report.markdown.replace(/\r\n/g, '\n'), 'utf8')

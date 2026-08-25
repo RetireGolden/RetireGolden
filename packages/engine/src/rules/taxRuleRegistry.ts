@@ -8795,6 +8795,25 @@ export function taxRule(ruleId: TaxRuleId): Readonly<TaxRuleRecord> {
 }
 
 /**
+ * UTC calendar date on which a rule becomes due for re-verification:
+ * `verifiedOn` plus the interval for its volatility. A rule is due exactly when
+ * `asOfIsoDate >= taxRuleDueOn(ruleId)`, matching `taxRulesDueForVerification`.
+ */
+export function taxRuleDueOn(
+  ruleId: TaxRuleId,
+  intervals: Readonly<Record<TaxRuleVolatility, number>> = DEFAULT_REVERIFICATION_INTERVAL_DAYS,
+): string {
+  const rule = TAX_RULE_REGISTRY[ruleId]
+  const interval = intervals[rule.volatility]
+  if (!Number.isFinite(interval) || interval < 0) {
+    throw new RangeError(`Re-verification interval for ${rule.volatility} must be a non-negative number of days`)
+  }
+  const due = new Date(`${rule.verifiedOn}T00:00:00Z`)
+  due.setUTCDate(due.getUTCDate() + interval)
+  return due.toISOString().slice(0, 10)
+}
+
+/**
  * Rules due for re-verification, for the periodic research pass. `asOfIsoDate`
  * is supplied by the caller rather than read from the clock so the result is
  * deterministic and testable.
