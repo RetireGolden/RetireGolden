@@ -418,7 +418,7 @@ const registry = {
   'irc-408-d-8-E-excluded-qcd-no-section-170-double-benefit': {
     title: 'An excluded QCD cannot also produce a section 170 deduction',
     statement:
-      'A qualified charitable distribution excluded from gross income under section 408(d)(8)(A) is not taken into account in determining the charitable-contribution deduction under section 170. The engine therefore leaves the section 170 eligible amount at zero for a wholly excluded QCD. The portion not excluded under 408(d)(8)(A) — the includible QCD slice and any non-QCD remainder — proceeds to ordinary section 170 treatment.',
+      'A qualified charitable distribution excluded from gross income under section 408(d)(8)(A) is not taken into account in determining the charitable-contribution deduction under section 170. The engine therefore leaves the section 170 eligible amount at zero for a wholly excluded QCD. The portion not excluded under 408(d)(8)(A) — the includible QCD slice and any non-QCD remainder — is outside this bar; whether it is deductible is governed by section 170\'s own requirements, and the engine separately requires the entire-distribution-otherwise-deductible attestation before treating any of it as eligible.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -1105,7 +1105,7 @@ const registry = {
   'irc-408-d-8-B-i-qualified-recipient': {
     title: 'A QCD recipient must be a qualified direct charity recipient',
     statement:
-      'A direct QCD recipient must be an organization described in section 170(b)(1)(A), not a section 509(a)(3) supporting organization or a section 4966(d)(2) donor-advised fund. Section 170(b)(1)(A) reaches a private foundation only when it is one described in section 170(b)(1)(F). The engine requires direct-custodian, eligible-organization, and no-DAF/supporting-organization attestations and does not make an unconfirmed recipient actionable; the distinct split-interest election is separately out of scope. Not modelled: the engine\'s charity designations have no private-foundation kind and evaluateQcd accepts only an attested \'eligiblePublicCharity\', so an accurately described §170(b)(1)(F) private foundation — legally an eligible recipient — is unsupported and the QCD is refused (fails closed; conservative direction).',
+      'A direct QCD recipient must be an organization described in section 170(b)(1)(A), not a section 509(a)(3) supporting organization or a section 4966(d)(2) donor-advised fund. Section 170(b)(1)(A)(vii) includes a private foundation described in subparagraph (F). The engine requires direct-custodian, eligible-organization, and no-DAF/supporting-organization attestations and does not make an unconfirmed recipient actionable; the distinct split-interest election is separately out of scope. Not modelled: the engine\'s charity designations have no private-foundation kind and evaluateQcd accepts only an attested \'eligiblePublicCharity\', so an accurately described §170(b)(1)(F) private foundation — legally an eligible recipient — is unsupported and the QCD is refused (fails closed; conservative direction).',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -1137,7 +1137,7 @@ const registry = {
   'irc-408-d-8-F-i-split-interest-direct-payment': {
     title: 'A split-interest QCD must be paid directly to the entity',
     statement:
-      'The one-time split-interest election applies only to an IRA distribution made directly by the trustee to the selected charitable remainder annuity trust, charitable remainder unitrust, or charitable gift annuity. Not modelled: the engine refuses every known split-interest destination, so it never produces a QCD or a tax result from an indirect or direct split-interest transfer.',
+      'The split-interest election under section 408(d)(8)(F) applies only to an IRA distribution made directly by the trustee to the selected charitable remainder annuity trust, charitable remainder unitrust, or charitable gift annuity; its one-time character is registered on the sibling sublimit record. Not modelled: the engine refuses every known split-interest destination, so it never produces a QCD or a tax result from an indirect or direct split-interest transfer.',
     classification: 'outOfScope',
     contraryReading: null,
     errorDirection: null,
