@@ -1,0 +1,31 @@
+# Thin caller for the org OpenRouter PR review.
+# Implementation lives in RetireGolden/.github — do not copy it here.
+# Separate workflow from Grok code review so a failure here cannot red
+# review / grok-first-pass-gate or cancel Grok jobs.
+#
+# Pass only OPENROUTER_API_KEY. Do not inherit.
+
+name: OpenRouter code review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: PR number to review
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  openrouter:
+    if: github.event_name == 'workflow_dispatch' || !github.event.pull_request.draft
+    uses: RetireGolden/.github/.github/workflows/openrouter-code-review.yml@79e5ec5dffdd6d8acf03ce1d92dd809e943aec70
+    with:
+      pr_number: ${{ inputs.pr_number || github.event.inputs.pr_number || github.event.pull_request.number }}
+    secrets:
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
