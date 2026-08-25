@@ -36,6 +36,11 @@ export {
 // surfaces read-only; `useWorkspaceReadOnly()` reads it inside custom chrome.
 export { useWorkspaceReadOnly } from './data/workspaceReadOnly.ts'
 
+// Generic emergency boundary for file-backed imports. PlannerApp hosts can use
+// the prop; hosts composing route groups directly wrap them with this provider.
+export { ImportAvailabilityProvider } from './import/ImportAvailabilityProvider.tsx'
+export { useImportEnabled } from './import/importAvailability.ts'
+
 // Route-level exports: mount a subset of the planner under the host's own
 // router (react-router v7 route-object arrays). `<PlannerApp/>` remains the
 // batteries-included composition of all three groups plus the web chrome.

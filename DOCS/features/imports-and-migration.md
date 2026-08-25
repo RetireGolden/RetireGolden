@@ -10,6 +10,21 @@ browser, nothing transmitted. Portability **out** is the companion contract in
 Code: `packages/planner-ui/src/import/` (pure mappers + wizard UI), `packages/planner-ui/src/planner/sections/UpdateBalancesPanel.tsx`
 (account editor hook). Shipped by the `onboarding-import-and-migration` plan (private planning docs).
 
+## Web emergency-disable boundary
+
+The static web host resolves `/import-feature.json` with `cache: 'no-store'` before mounting the planner.
+Only the exact bounded document `{"enabled":true}` enables file-backed import; a missing, malformed,
+oversized, non-200, or explicit-false response fails closed. Disabling it removes the home import card,
+replaces direct `/import` navigation with an unavailable notice, and replaces the existing-plan broker CSV
+refresh before either surface renders a file input. Building plans manually, opening existing plans, exports,
+and RetireGolden backup restore stay available.
+
+The file is not service-worker-precached and Static Web Apps serves it `no-store`, so redeploying the static
+document changes the boundary on the next online page refresh or restart. It cannot retract code from a tab
+that is already loaded, and it does not remotely disable import in an installed desktop that remains offline.
+The planner package remains host-neutral: `PlannerApp.importEnabled` and `ImportAvailabilityProvider` carry
+the generic boolean; the web host owns how that boolean is obtained.
+
 ## The wizard (`/import`)
 
 Reached from the planner home's "Import from a file" getting-started card. Four guided paths, each

@@ -150,6 +150,16 @@ describe('App shell smoke', () => {
     await act(async () => root.unmount())
   })
 
+  it('threads the host import boundary through the full app without hiding backup restore', () => {
+    const html = renderToString(
+      <MemoryRouter initialEntries={['/']}>
+        <App importEnabled={false} />
+      </MemoryRouter>,
+    )
+    expect(html).not.toContain('Import from a file')
+    expect(html).toContain('Import previous backup')
+  })
+
   it('renders the disclaimer page', () => {
     const html = renderToString(
       <MemoryRouter initialEntries={['/disclaimer']}>

@@ -27,12 +27,16 @@ describe('staticwebapp.config.json', () => {
     const assets = routes.find((r) => r.route === '/assets/*')
     const shell = routes.find((r) => r.route === '/index.html')
     const sw = routes.find((r) => r.route === '/sw.js')
+    const importFeature = routes.find((r) => r.route === '/import-feature.json')
     expect(headers['Cache-Control']).toContain('no-cache')
     expect(headers['Cache-Control']).toContain('no-transform')
     expect(shell?.headers?.['Cache-Control']).toContain('no-cache')
     expect(shell?.headers?.['Cache-Control']).toContain('no-transform')
     expect(assets?.headers?.['Cache-Control']).toContain('immutable')
     expect(sw?.headers?.['Cache-Control']).toContain('no-cache')
+    expect(importFeature?.headers?.['Cache-Control']).toContain('no-store')
+    expect(importFeature?.headers?.['Cache-Control']).toContain('no-transform')
+    expect(swaConfig.navigationFallback.exclude).toContain('/import-feature.json')
   })
 
   it('sets cache policies for static root assets and crawler files', () => {

@@ -16,6 +16,33 @@ async function createPlanFromHome(page: Page) {
 }
 
 test.describe('Smoke', () => {
+  test('incident import switch disables file seeding and broker refresh without blocking recovery', async ({ page }) => {
+    await page.route('**/import-feature.json', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ enabled: false }),
+      })
+    })
+
+    await page.goto('/')
+    await expect(page.getByRole('button', { name: 'Build your own plan' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Import previous backup' })).toBeVisible()
+    await expect(page.getByText('Import from a file', { exact: true })).toHaveCount(0)
+
+    await page.goto('/import')
+    await expect(page.getByText('File import is temporarily unavailable', { exact: false })).toBeVisible()
+    await expect(page.locator('input[type="file"]')).toHaveCount(0)
+
+    await page.goto('/')
+    await page.getByRole('button', { name: 'Build your own plan' }).click()
+    await expect(page).toHaveURL(/\/plan\/[^/]+\/household$/)
+    await page.getByRole('link', { name: 'Accounts' }).click()
+    await expect(page).toHaveURL(/\/plan\/[^/]+\/accounts$/)
+    await expect(page.getByText('File import is temporarily unavailable', { exact: false })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Choose broker CSV' })).toHaveCount(0)
+  })
+
   test('created plan autosaves and survives a reload (IndexedDB)', async ({ page }) => {
     await createPlanFromHome(page)
 

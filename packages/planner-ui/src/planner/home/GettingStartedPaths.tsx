@@ -2,6 +2,7 @@ import { Link } from 'react-router'
 
 import { createEmptyPlan } from '@retiregolden/engine/model/plan'
 import { useWorkspaceReadOnly } from '../../data/workspaceReadOnly'
+import { useImportEnabled } from '../../import/importAvailability'
 
 type GettingStartedPathsProps = {
   onCreatePlan: (plan: ReturnType<typeof createEmptyPlan>) => void
@@ -9,6 +10,7 @@ type GettingStartedPathsProps = {
 
 export function GettingStartedPaths({ onCreatePlan }: GettingStartedPathsProps) {
   const readOnly = useWorkspaceReadOnly()
+  const importEnabled = useImportEnabled()
   return (
     <section className="home-paths" aria-labelledby="getting-started-paths-heading">
       <h2 id="getting-started-paths-heading">Getting started</h2>
@@ -28,25 +30,25 @@ export function GettingStartedPaths({ onCreatePlan }: GettingStartedPathsProps) 
         {/* Building and importing both create plans through the seam — hidden
             when read-only. Learn and Examples (read-only) stay. */}
         {readOnly ? null : (
-          <>
-            <button
-              type="button"
-              className="home-path-card plan-card"
-              onClick={() => void onCreatePlan(createEmptyPlan())}
-            >
-              <span className="home-path-card-title">Build your own plan</span>
-              <span className="home-path-card-desc">
-                Start from a blank slate and enter your household, accounts, and spending.
-              </span>
-            </button>
-            <Link to="/import" className="home-path-card plan-card">
-              <span className="home-path-card-title">Import from a file</span>
-              <span className="home-path-card-desc">
-                Seed a plan from a broker CSV, a ProjectionLab export, a spreadsheet, or last year&apos;s tax
-                return, parsed on this device, never uploaded.
-              </span>
-            </Link>
-          </>
+          <button
+            type="button"
+            className="home-path-card plan-card"
+            onClick={() => void onCreatePlan(createEmptyPlan())}
+          >
+            <span className="home-path-card-title">Build your own plan</span>
+            <span className="home-path-card-desc">
+              Start from a blank slate and enter your household, accounts, and spending.
+            </span>
+          </button>
+        )}
+        {readOnly || !importEnabled ? null : (
+          <Link to="/import" className="home-path-card plan-card">
+            <span className="home-path-card-title">Import from a file</span>
+            <span className="home-path-card-desc">
+              Seed a plan from a broker CSV, a ProjectionLab export, a spreadsheet, or last year&apos;s tax
+              return, parsed on this device, never uploaded.
+            </span>
+          </Link>
         )}
       </div>
     </section>

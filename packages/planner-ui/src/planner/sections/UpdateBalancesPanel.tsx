@@ -78,6 +78,7 @@ import {
 import type { ImportReviewItem } from '../../import/reviewChecklist'
 import { ReviewChecklist } from '../../import/ReviewChecklistView'
 import { digestSource } from '../../import/sourceHash'
+import { IMPORT_UNAVAILABLE_MESSAGE, useImportEnabled } from '../../import/importAvailability'
 import { usePlan } from '../planContextCore'
 import {
   useRefreshProtection,
@@ -221,6 +222,18 @@ function snapshotId(): string {
 }
 
 export function UpdateBalancesPanel() {
+  const importEnabled = useImportEnabled()
+  if (!importEnabled) {
+    return (
+      <div className="callout callout--info" role="status">
+        {IMPORT_UNAVAILABLE_MESSAGE}
+      </div>
+    )
+  }
+  return <EnabledUpdateBalancesPanel />
+}
+
+function EnabledUpdateBalancesPanel() {
   const { plan, update } = usePlan()
   const protectedAccounts = useRefreshProtection()
   // The host has not resolved its protected set yet, so `protectedAccounts` is

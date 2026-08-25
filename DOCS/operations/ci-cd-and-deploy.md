@@ -63,6 +63,10 @@ PR only while it carries the **`run-ci` label**:
   [`app/public/staticwebapp.config.json`](../../app/public/staticwebapp.config.json) (Vite copies it into
   `app/dist/`), which rewrites unknown paths to `/index.html`. A regression test guards it:
   [`app/src/staticwebapp.config.test.ts`](../../app/src/staticwebapp.config.test.ts).
+- `app/public/import-feature.json` is an intentionally non-precached, no-store production switch. Setting
+  its exact `enabled` value to `false` in a reviewed deploy disables both web import entry points on the next
+  online refresh/restart; restoring `true` re-enables them. Invalid or missing config fails closed. This does
+  not affect a tab that is already loaded or an offline desktop package.
 
 ## Secrets and environments
 

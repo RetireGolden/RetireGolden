@@ -35,6 +35,7 @@ import {
   type RefreshProtectionValue,
 } from '../refreshProtectionContext'
 import { UpdateBalancesPanel } from './UpdateBalancesPanel'
+import { ImportAvailabilityProvider } from '../../import/ImportAvailabilityProvider'
 
 let root: Root | null = null
 let container: HTMLDivElement | null = null
@@ -95,12 +96,28 @@ function providerTree(plan: Plan, panel: ReactNode, host: HostProtection = {}) {
   )
 }
 
-function renderPanel(plan: Plan, host: HostProtection = {}) {
+function enabledPanelTree(plan: Plan, host: HostProtection = {}) {
+  return (
+    <ImportAvailabilityProvider enabled>
+      {providerTree(plan, <UpdateBalancesPanel />, host)}
+    </ImportAvailabilityProvider>
+  )
+}
+
+function renderPanel(plan: Plan, host: HostProtection = {}, importEnabled = true) {
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
   act(() => {
-    root!.render(providerTree(plan, <UpdateBalancesPanel />, host))
+    root!.render(
+      importEnabled ? (
+        enabledPanelTree(plan, host)
+      ) : (
+        <ImportAvailabilityProvider enabled={false}>
+          {providerTree(plan, <UpdateBalancesPanel />, host)}
+        </ImportAvailabilityProvider>
+      ),
+    )
   })
   return container
 }
@@ -245,6 +262,13 @@ function pendingExplanation(el: HTMLElement): string | null {
 }
 
 describe('UpdateBalancesPanel', () => {
+  it('fails closed before exposing the broker file input when the host disables imports', () => {
+    const el = renderPanel(planWithAccounts(), {}, false)
+    expect(el.textContent).toContain('File import is temporarily unavailable')
+    expect(el.querySelector('input[type="file"]')).toBeNull()
+    expect(chooseButton(el)).toBeUndefined()
+  })
+
   it('shows the parser review checklist before Apply', async () => {
     const el = renderPanel(planWithAccounts())
     await chooseFile(el, TWO_ACCOUNT_CSV)
@@ -1033,7 +1057,7 @@ describe('UpdateBalancesPanel refresh protection', () => {
     const p2 = planWithAccounts()
     expect(p2.id).not.toBe(p1.id)
     act(() => {
-      root!.render(providerTree(p2, <UpdateBalancesPanel />, { protectedAccounts: protect(p2, { accountId: 'acct-brokerage' }) }))
+      root!.render(enabledPanelTree(p2, { protectedAccounts: protect(p2, { accountId: 'acct-brokerage' }) }))
     })
 
     // Back to the initial state: no parsed table.
@@ -1074,7 +1098,7 @@ describe('UpdateBalancesPanel refresh protection', () => {
     const p2 = planWithAccounts()
     expect(p2.id).not.toBe(p1.id)
     act(() => {
-      root!.render(providerTree(p2, <UpdateBalancesPanel />, { protectedAccounts: protect(p2, { accountId: 'acct-brokerage' }) }))
+      root!.render(enabledPanelTree(p2, { protectedAccounts: protect(p2, { accountId: 'acct-brokerage' }) }))
     })
 
     // Resolve the OLD read now, with a CSV that would otherwise build a table. Because
@@ -1118,7 +1142,7 @@ describe('UpdateBalancesPanel refresh protection', () => {
     // Plain re-render with the SAME plan id (no identity reset). This must not touch the
     // read epoch — a render-phase bump is exactly the removed bug.
     act(() => {
-      root!.render(providerTree(plan, <UpdateBalancesPanel />, { protectedAccounts: protect(plan, { accountId: 'acct-brokerage' }) }))
+      root!.render(enabledPanelTree(plan, { protectedAccounts: protect(plan, { accountId: 'acct-brokerage' }) }))
     })
 
     // Resolve: epoch unchanged and committed plan identity unchanged, so it lands.
