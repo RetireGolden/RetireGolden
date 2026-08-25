@@ -8805,8 +8805,8 @@ export function taxRuleDueOn(
 ): string {
   const rule = TAX_RULE_REGISTRY[ruleId]
   const interval = intervals[rule.volatility]
-  if (!Number.isFinite(interval) || interval < 0) {
-    throw new RangeError(`Re-verification interval for ${rule.volatility} must be a non-negative number of days`)
+  if (!Number.isFinite(interval) || interval < 0 || !Number.isInteger(interval)) {
+    throw new RangeError(`Re-verification interval for ${rule.volatility} must be a non-negative whole number of days`)
   }
   const due = new Date(`${rule.verifiedOn}T00:00:00Z`)
   due.setUTCDate(due.getUTCDate() + interval)

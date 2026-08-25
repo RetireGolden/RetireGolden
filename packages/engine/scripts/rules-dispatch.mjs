@@ -26,6 +26,29 @@ function validateAsOf(asOf) {
   }
 }
 
+function splitOutPath(outPath) {
+  const lastDot = outPath.lastIndexOf('.')
+  const lastSep = Math.max(outPath.lastIndexOf('/'), outPath.lastIndexOf('\\'))
+  if (lastDot > lastSep) {
+    return { base: outPath.slice(0, lastDot), ext: outPath.slice(lastDot) }
+  }
+  return { base: outPath, ext: '' }
+}
+
+function numberedOutPath(outPath, index) {
+  const { base, ext } = splitOutPath(outPath)
+  return base + '-' + index + ext
+}
+
+function chunkRuleIds(ruleIds, chunkSize) {
+  const sorted = [...ruleIds].sort()
+  const chunks = []
+  for (let i = 0; i < sorted.length; i += chunkSize) {
+    chunks.push(sorted.slice(i, i + chunkSize))
+  }
+  return chunks
+}
+
 /**
  * Self-contained markdown handoff prompt for a fresh agent session.
  * Kept pure so a future test can snapshot the template.
@@ -33,6 +56,7 @@ function validateAsOf(asOf) {
 export function buildDispatchPrompt({ asOf, ruleIds, registry, manifestRules }) {
   const manifestById = new Map(manifestRules.map((rule) => [rule.id, rule]))
   const ids = [...ruleIds].sort()
+  const filterIds = ids.join(',')
 
   const lines = [
     '# Re-verification dispatch: ' + ids.join(', ') + ' (generated ' + asOf + ')',
@@ -57,10 +81,10 @@ export function buildDispatchPrompt({ asOf, ruleIds, registry, manifestRules }) 
     '## Verification checklist',
     '',
     '- `pnpm --filter @retiregolden/engine test`',
-    '- Quote-fidelity re-check: `pnpm verify:quotes -- --filter <ids> --refresh` (network, manual; see `DOCS/operations/quote-fidelity.md`)',
+    '- Quote-fidelity re-check: `pnpm verify:quotes -- --filter ' + filterIds + ' --refresh` (network, manual; see `DOCS/operations/quote-fidelity.md`)',
     '- If any result moves: run `cases:diff`, review every delta, and add a `CHANGELOG.md` entry announcing the correction — corrections are announced, never silent.',
     '- `pnpm rules:coverage` and commit the refreshed `DOCS/operations/rule-coverage.md` and `rule-coverage.json` (`verifiedOn` changes them)',
-    '- Confirm no other open PR touches `taxRuleRegistry.ts` (`gh pr list --state open --search taxRuleRegistry`) before pushing.',
+    '- Confirm no other open PR changes the registry file: for each PR in `gh pr list --state open --json number -q .[].number`, run `gh pr diff <n> --name-only` and require zero hits for `taxRuleRegistry.ts` before pushing.',
     '- One PR; review-bot findings fixed on the same branch',
     '',
   ]
@@ -103,7 +127,19 @@ export function buildDispatchPrompt({ asOf, ruleIds, registry, manifestRules }) 
     for (const path of manifest.implementedBy) lines.push('- ' + path)
     lines.push('')
     lines.push('**Fixture files:**')
-    for (const path of manifest.fixtureFiles) lines.push('- ' + path)
+    if (manifest.fixtureFiles.length === 0) {
+      if (rule.classification === 'outOfScope') {
+        lines.push(
+          '- No discriminating fixtures: this rule is outOfScope and is enforced as a typed refusal — confirm the refusal behavior and its tests instead of a describeRule fixture.',
+        )
+      } else {
+        lines.push(
+          '- WARNING: conformance anomaly — `' + id + '` is not outOfScope but has empty fixtureFiles; investigate before proceeding.',
+        )
+      }
+    } else {
+      for (const path of manifest.fixtureFiles) lines.push('- ' + path)
+    }
     lines.push('')
   }
 
@@ -123,6 +159,7 @@ async function main() {
       due: { type: 'boolean', default: false },
       'as-of': { type: 'string' },
       out: { type: 'string' },
+      'chunk-size': { type: 'string', default: '8' },
     },
     allowPositionals: false,
   })
@@ -131,6 +168,11 @@ async function main() {
   if (values['as-of'] !== undefined) validateAsOf(asOf)
   const ruleArg = values.rule
   const useDue = values.due
+  const chunkSize = Number(values['chunk-size'])
+  if (!Number.isInteger(chunkSize) || chunkSize < 1) {
+    console.error('Invalid --chunk-size: ' + values['chunk-size'] + ' (must be a positive integer)')
+    process.exit(1)
+  }
 
   if (!ruleArg && !useDue) {
     throw new Error('Specify --rule <id>[,<id>...] and/or --due')
@@ -179,18 +221,46 @@ async function main() {
     dueOnFor: taxRuleDueOn,
   })
 
-  const markdown = buildDispatchPrompt({
-    asOf,
-    ruleIds,
-    registry: TAX_RULE_REGISTRY,
-    manifestRules: report.manifest.rules,
-  })
+  const chunks = chunkRuleIds(ruleIds, chunkSize)
 
-  if (values.out) {
-    writeFileSync(values.out, markdown.replace(/\r\n/g, '\n'), 'utf8')
-  } else {
-    process.stdout.write(markdown)
+  if (chunks.length > 1 && !values.out) {
+    console.error(
+      'Selected ' + ruleIds.length + ' rules exceeds chunk size ' + chunkSize +
+        '; re-run with --out <path> to write numbered handoff files (e.g. handoff-1.md, handoff-2.md).',
+    )
+    process.exit(1)
   }
+
+  const normalize = (markdown) => markdown.replace(/\r\n/g, '\n')
+
+  if (chunks.length === 1) {
+    const markdown = buildDispatchPrompt({
+      asOf,
+      ruleIds: chunks[0],
+      registry: TAX_RULE_REGISTRY,
+      manifestRules: report.manifest.rules,
+    })
+    if (values.out) {
+      writeFileSync(values.out, normalize(markdown), 'utf8')
+    } else {
+      process.stdout.write(markdown)
+    }
+    return
+  }
+
+  const written = []
+  for (let i = 0; i < chunks.length; i++) {
+    const outPath = numberedOutPath(values.out, i + 1)
+    const markdown = buildDispatchPrompt({
+      asOf,
+      ruleIds: chunks[i],
+      registry: TAX_RULE_REGISTRY,
+      manifestRules: report.manifest.rules,
+    })
+    writeFileSync(outPath, normalize(markdown), 'utf8')
+    written.push(outPath)
+  }
+  for (const path of written) console.log(path)
 }
 
 if (import.meta.main) {

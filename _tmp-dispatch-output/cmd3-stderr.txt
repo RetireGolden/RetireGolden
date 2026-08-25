@@ -1,0 +1,1 @@
+Selected 234 rules exceeds chunk size 8; re-run with --out <path> to write numbered handoff files (e.g. handoff-1.md, handoff-2.md).
