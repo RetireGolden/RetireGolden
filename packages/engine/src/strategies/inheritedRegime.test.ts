@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { describeRule } from '../rules/describeRule.js'
 import {
   inheritedAccountSchema,
   type InheritedAccount,
@@ -68,6 +69,42 @@ function requirement(
     priorYearEndBalance: 100_000,
   })
 }
+
+describeRule('irs-notice-2022-53-2023-54-2024-35-inherited-rmd-transition-relief', {
+  readings: {
+    noticesEndAfterTheirSpecified2024ReliefYear: {
+      waived2024: true,
+      waived2025: false,
+      required2025: true,
+    },
+    rejectedReliefContinuesInto2025: {
+      waived2024: true,
+      waived2025: true,
+      required2025: false,
+    },
+  },
+  accepted: 'noticesEndAfterTheirSpecified2024ReliefYear',
+  note: 'annual R1 amount after the 2024 relief year',
+}, ({ accepted, readings }) => {
+  it('stops marking a post-RBD ten-year annual amount as notice-waived in 2025', () => {
+    const account = inherited(2020, true, beneficiary({
+      ownerBirthYear: 1940,
+      beneficiaryBirthYear: 1952,
+      ownerYearOfDeathRmdSatisfied: true,
+    }))
+    const result = classification('traditional', account)
+    const in2024 = requirement(result, account, 2024)
+    const in2025 = requirement(result, account, 2025)
+    const observed = {
+      waived2024: in2024.noticeWaived === true,
+      waived2025: in2025.noticeWaived === true,
+      required2025: in2025.requiredAmount > 0,
+    }
+
+    expect(observed).toEqual(accepted)
+    expect(observed).not.toEqual(readings.rejectedReliefContinuesInto2025)
+  })
+})
 
 describe('WS3 fixture F1: R1 relief years and the 2022 reset', () => {
   it('uses the beneficiary fixed arm, publishes relief-year evidence, and sweeps in 2030', () => {

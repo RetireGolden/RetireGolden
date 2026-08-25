@@ -2,21 +2,21 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 1,
   "registry": {
-    "total": 249,
+    "total": 260,
     "byClassification": {
-      "approximated": 53,
-      "outOfScope": 14,
-      "settled": 178,
+      "approximated": 54,
+      "outOfScope": 17,
+      "settled": 185,
       "unsettled": 4
     },
     "byVolatility": {
       "annuallyIndexed": 37,
       "awaitingGuidance": 4,
-      "staticStatute": 203,
+      "staticStatute": 214,
       "sunsetting": 5
     },
     "byJurisdiction": {
-      "federal": 192,
+      "federal": 203,
       "states": {
         "AK": 1,
         "AR": 9,
@@ -45,8 +45,8 @@
   "attestations": {
     "totalFiles": 235,
     "byStatus": {
-      "partial": 66,
-      "registered": 44,
+      "partial": 65,
+      "registered": 45,
       "rule-free": 125,
       "unswept": 0
     },
@@ -321,11 +321,6 @@
       "note": "SECURE 2.0 applicable ages/RBD April-1; born-1959 dual-age contest; 70½ cohort & July-1949 cut; no records naming this file"
     },
     {
-      "path": "rmd/jointLifeTable.ts",
-      "sweptOn": "2026-08-24",
-      "note": "§1.401(a)(9)-9(d) Table 3 divisor literals; usage rule registered but no table-value record naming this file"
-    },
-    {
       "path": "socialSecurity/claimFactor.ts",
       "sweptOn": "2026-08-24",
       "note": "worker claim-age window and factor composition rest on records naming benefitFactor.ts; no record names this file"
@@ -352,8 +347,8 @@
     },
     {
       "path": "strategies/accountEligibility.ts",
-      "sweptOn": "2026-08-24",
-      "note": "S2 treat-as-own election timing (death-year+1 boundary, SECURE 2020 gate) not registered to this file"
+      "sweptOn": "2026-08-25",
+      "note": "SECURE 2020 gate portion of S2 treat-as-own election timing not registered to this file"
     },
     {
       "path": "strategies/optimizer.ts",
@@ -489,8 +484,8 @@
       "directory": "rmd",
       "files": 4,
       "byStatus": {
-        "partial": 2,
-        "registered": 2
+        "partial": 1,
+        "registered": 3
       }
     },
     {
@@ -1871,6 +1866,21 @@
       ]
     },
     {
+      "id": "irc-401-a-9-B-ii-non-designated-beneficiary-five-year-rule",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-25",
+      "dueOn": "2027-08-25",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/strategies/inheritedIra.ts"
+      ],
+      "fixtureFiles": []
+    },
+    {
       "id": "irc-401-a-9-C-i-II-still-working-exception",
       "classification": "approximated",
       "jurisdiction": "federal",
@@ -2004,6 +2014,23 @@
       ],
       "fixtureFiles": [
         "packages/engine/src/rules/approximations/employerPlanConversionSource.approximation.test.ts"
+      ]
+    },
+    {
+      "id": "irc-402-c-4-B-rmd-not-eligible-rollover-distribution",
+      "classification": "approximated",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-25",
+      "dueOn": "2027-08-25",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.annualCashFlow.transfer.test.ts"
       ]
     },
     {
@@ -2549,6 +2576,22 @@
       ]
     },
     {
+      "id": "irc-408A-c-4-roth-ira-no-lifetime-rmd",
+      "classification": "settled",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-25",
+      "dueOn": "2027-08-25",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/rmdShortfallExcise.test.ts"
+      ]
+    },
+    {
       "id": "irc-408A-d-2-roth-qualified-distribution",
       "classification": "approximated",
       "jurisdiction": "federal",
@@ -2819,7 +2862,6 @@
         "packages/engine/src/rmd/rmdShortfallExcise.ts"
       ],
       "fixtureFiles": [
-        "packages/engine/src/projection/rmdShortfallExcise.test.ts",
         "packages/engine/src/rmd/rmdShortfallExcise.test.ts",
         "packages/engine/src/rules/approximations/rmdAndInherited.approximation.test.ts"
       ]
@@ -3394,6 +3436,23 @@
         "packages/engine/src/model/plan.ts"
       ],
       "fixtureFiles": []
+    },
+    {
+      "id": "irs-notice-2022-53-2023-54-2024-35-inherited-rmd-transition-relief",
+      "classification": "settled",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-25",
+      "dueOn": "2027-08-25",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/strategies/inheritedIra.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/strategies/inheritedRegime.test.ts"
+      ]
     },
     {
       "id": "mo-rsmo-143-121-capital-gain-deduction",
@@ -4281,6 +4340,21 @@
       ]
     },
     {
+      "id": "treas-reg-1-401-a-9-8-a-1-ii-separate-account-deadline",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-25",
+      "dueOn": "2027-08-25",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/strategies/inheritedIra.ts"
+      ],
+      "fixtureFiles": []
+    },
+    {
       "id": "treas-reg-1-401-a-9-9-c-uniform-lifetime-table",
       "classification": "settled",
       "jurisdiction": "federal",
@@ -4296,6 +4370,24 @@
       ],
       "fixtureFiles": [
         "packages/engine/src/rmd/rmd.test.ts"
+      ]
+    },
+    {
+      "id": "treas-reg-1-401-a-9-9-d-joint-life-table-divisor-literals",
+      "classification": "settled",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-25",
+      "dueOn": "2027-08-25",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/rmd/jointLifeTable.ts",
+        "packages/engine/src/rmd/rmd.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rmd/rmd.golden.test.ts"
       ]
     },
     {
@@ -4345,6 +4437,24 @@
       ],
       "fixtureFiles": [
         "packages/engine/src/actions/beneficiarySpousalElectionStatus.test.ts"
+      ]
+    },
+    {
+      "id": "treas-reg-1-408-8-c-3-spouse-as-own-death-year-rmd",
+      "classification": "settled",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-25",
+      "dueOn": "2027-08-25",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/strategies/accountEligibility.ts",
+        "packages/engine/src/strategies/inheritedIra.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.inheritedRegimeExecution.test.ts"
       ]
     },
     {
@@ -4482,6 +4592,72 @@
       ],
       "fixtureFiles": [
         "packages/engine/src/rules/approximations/annuityAndProperty.approximation.test.ts"
+      ]
+    },
+    {
+      "id": "treas-reg-54-4974-1-c-five-year-deadline-rmd",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-25",
+      "dueOn": "2027-08-25",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/strategies/inheritedIra.ts"
+      ],
+      "fixtureFiles": []
+    },
+    {
+      "id": "treas-reg-54-4974-1-f-first-year-rbd-excise-tax",
+      "classification": "settled",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-25",
+      "dueOn": "2027-08-25",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/rmd/rmdShortfallExcise.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/rmdShortfallExcise.test.ts"
+      ]
+    },
+    {
+      "id": "treas-reg-54-4974-1-g-2-edb-ten-year-election-automatic-waiver",
+      "classification": "settled",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-25",
+      "dueOn": "2027-08-25",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/rmd/rmdShortfallExcise.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rmd/rmdShortfallExcise.test.ts"
+      ]
+    },
+    {
+      "id": "treas-reg-54-4974-1-g-3-year-of-death-automatic-waiver",
+      "classification": "settled",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-25",
+      "dueOn": "2027-08-25",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/rmd/rmdShortfallExcise.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rmd/rmdShortfallExcise.test.ts"
       ]
     },
     {

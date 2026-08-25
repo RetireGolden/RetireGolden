@@ -129,7 +129,7 @@ describe('§4974 integration in the annual ledger', () => {
   })
 })
 
-describeRule('irc-4974-rmd-shortfall-excise-tax', {
+describeRule('treas-reg-54-4974-1-f-first-year-rbd-excise-tax', {
   readings: {
     regulationTaxesNeitherAmountIn2026AndBothMissesIn2027: {
       tax2026: 0,
@@ -266,23 +266,33 @@ describe('applicable-plan boundaries and Roth scope', () => {
     expect(first.rmdShortfallExciseTax).toBe(0)
   })
 
-  it('never creates a lifetime §4974 obligation for a living Roth IRA owner', () => {
-    const plan = singlePersonPlan({ dob: OWNER_DOB, planningAge: 95 })
-    plan.accounts = [{
-      type: 'roth',
-      kind: 'ira',
-      id: 'roth',
-      name: 'Roth IRA',
-      ownerPersonId: 'p1',
-      annualReturnPct: 0,
-      balance: START_BALANCE,
-      annualContribution: 0,
-    }]
+  describeRule('irc-408A-c-4-roth-ira-no-lifetime-rmd', {
+    readings: {
+      statuteExemptsTheLivingRothIraOwner: 0,
+      rejectedUniformLifetimeRmdForTheRothIra: START_BALANCE / 26.5,
+    },
+    accepted: 'statuteExemptsTheLivingRothIraOwner',
+    note: 'living Roth IRA owner past the ordinary RMD age',
+  }, ({ accepted, readings }) => {
+    it('never creates a lifetime §4974 obligation for a living Roth IRA owner', () => {
+      const plan = singlePersonPlan({ dob: OWNER_DOB, planningAge: 95 })
+      plan.accounts = [{
+        type: 'roth',
+        kind: 'ira',
+        id: 'roth',
+        name: 'Roth IRA',
+        ownerPersonId: 'p1',
+        annualReturnPct: 0,
+        balance: START_BALANCE,
+        annualContribution: 0,
+      }]
 
-    const first = run(plan).years[0]!
-    expect(first.rmd).toBe(0)
-    expect(first.rmdShortfallExciseDetails).toEqual([])
-    expect(first.penalties).toBe(0)
+      const first = run(plan).years[0]!
+      expect(first.rmd).toBe(accepted)
+      expect(first.rmd).not.toBe(readings.rejectedUniformLifetimeRmdForTheRothIra)
+      expect(first.rmdShortfallExciseDetails).toEqual([])
+      expect(first.penalties).toBe(0)
+    })
   })
 
   it('taxes an inherited Roth residue in the emptying year and every later year', () => {

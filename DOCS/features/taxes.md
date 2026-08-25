@@ -66,9 +66,12 @@ State brackets are a separate question and are still held nominal (see `params/s
   miss comes from the same plan/aggregable IRA or 403(b) group and both the corrective distribution and Form 5329
   filing fall before the earliest statutory window endpoint. Requested or denied reasonable-error waivers stay at
   the otherwise-applicable rate; only a modeled grant or, for 2025-and-later tax years, one of the final
-  regulation's two automatic-waiver fact patterns reaches zero. An opt-in first-year deferral holds the
+  regulation's two automatic-waiver fact patterns reaches zero
+  (`treas-reg-54-4974-1-g-2-edb-ten-year-election-automatic-waiver`,
+  `treas-reg-54-4974-1-g-3-year-of-death-automatic-waiver`). An opt-in first-year deferral holds the
   attainment-year amount until April 1: no excise
-  is charged before that date, and a miss lands in the RBD year beside any separate current-year miss. Correction
+  is charged before that date, and a miss lands in the RBD year beside any separate current-year miss
+  (`treas-reg-54-4974-1-f-first-year-rbd-excise-tax`). Correction
   evidence prices the excise only; the corrective account movement and its income character remain separate ledger
   inputs. See [domain rules §6](../domain/domain-rules-reference.md#6-rmds-secure-20).
 - **QCD:** a modeled household QCD's qualified portion is excluded from ordinary income, and the gift counts toward an RMD when one is due. It
@@ -488,11 +491,18 @@ rules and citations: [domain rules §16](../domain/domain-rules-reference.md#16-
   ledger: forced year-of-death, annual, and final-sweep amounts; voluntary planner draws beyond the
   requirement; per-account `InheritedAccountYearEvidence` (regime, limitation, disclosure, refusal); and
   scenario-comparison inherited totals. Supported regime keys (matrix §3, condensed):
-  `ten-year-with-annual-rmds`, `ten-year-no-annual`, `edb-life-expectancy`, `edb-ten-year-elected` (unsettled),
-  `spouse-remain-beneficiary`, `spouse-treat-as-own-transition`, `spouse-ten-year-elected` (unsettled),
+  `ten-year-with-annual-rmds` (the 2021–2024 notice relief ends before 2025:
+  `irs-notice-2022-53-2023-54-2024-35-inherited-rmd-transition-relief`), `ten-year-no-annual`, `edb-life-expectancy`, `edb-ten-year-elected` (unsettled),
+  `spouse-remain-beneficiary`, `spouse-treat-as-own-transition` (death-year election:
+  `treas-reg-1-408-8-c-3-spouse-as-own-death-year-rmd`), `spouse-ten-year-elected` (unsettled),
   `roth-ten-year-no-annual`, `roth-edb-life-expectancy`, plus `roth-taxability-evidence` on every Roth row.
-  **Fail closed:** death before 2020, successor beneficiary, estate/trust/entity, multiple beneficiaries without
-  separate-account facts, missing or contradictory facts, and a post-RBD ten-year election → typed refusal;
+  **Fail closed:** death before 2020, successor beneficiary; pre-RBD non-designated beneficiaries under
+  the five-year rule
+  (`irc-401-a-9-B-ii-non-designated-beneficiary-five-year-rule`,
+  `treas-reg-54-4974-1-c-five-year-deadline-rmd`); post-RBD estates, trusts, and other entity classes under
+  the same X3 refusal (including a see-through trust that would qualify under Treas. Reg. 1.401(a)(9)-4(f))
+  without that five-year citation; multiple beneficiaries without
+  separate-account facts (`treas-reg-1-401-a-9-8-a-1-ii-separate-account-deadline`), missing or contradictory facts, and a post-RBD ten-year election → typed refusal;
   classifier refusals other than X1 project on the labeled `legacy-planning-approximation` path with the refusal
   on the evidence row. Legacy two-field accounts (no beneficiary block) stay on that labeled path. No schema fact
   can assert SECURE 2.0 §327 spouse-as-employee treatment; that posture is disclosed on spouse life-expectancy

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { createEmptyPlan, parsePlan, type Account, type Plan } from '../model/plan.js'
 import { packForYear } from '../params/index.js'
+import { describeRule } from '../rules/describeRule.js'
 import { createFlatTaxCalculator } from './flatTax.js'
 import { simulatePlan } from './simulate.js'
 import type { TaxYearInput } from './types.js'
@@ -226,42 +227,60 @@ describe('WS4 inherited-regime execution fixtures', () => {
     expect(evidence(result, 2028).requirementKind).toBe('none')
   })
 
-  it('E6b S2 same-year flip: keeps the decedent year-of-death RMD and suppresses owner RMD', () => {
-    // §1.408-8(c)(3): election year equals ownerDeathYear → spouse takes no
-    // owner RMD that year but must take the decedent's unsatisfied YOD RMD.
-    // Owner born 1945, dies 2026 post-RBD → death-year age 81 → ULT 19.4.
-    const ultAge81 = packForYear(2026).pack.rmd.uniformLifetimeTable[81]
-    expect(ultAge81).toBe(19.4)
-    const plan = planFor(1947)
-    inherited(plan, 'traditional', {
-      ownerDeathYear: 2026,
-      decedentHadStartedRmds: true,
-      beneficiary: facts({
-        beneficiaryBirthYear: 1947,
-        ownerBirthYear: 1945,
-        edbCategory: 'surviving-spouse',
-        election: 'treat-as-own',
-        spouseUnlimitedWithdrawalRight: true,
-        treatAsOwnElectionYear: 2026,
-        // ownerYearOfDeathRmdSatisfied omitted → unsatisfied.
-      }),
-    }, 300_000)
-    const result = run(plan, 2027)
-    const y2026 = year(result, 2026)
-    const e2026 = evidence(result, 2026)
-    expect(e2026.regime).toBe('spouse-treat-as-own-transition')
-    expect(e2026.matrixRow).toBe('S2')
-    expect(e2026.requirementKind).toBe('year-of-death-rmd')
-    expect(e2026.divisor).toBe(19.4)
-    expect(e2026.executedRequiredAmount).toBeCloseTo(300_000 / 19.4, 2)
-    expect(y2026.inheritedDistribution).toBeCloseTo(300_000 / 19.4, 2)
-    // No owner RMD aggregation for this account in the flip/death year.
-    expect(y2026.rmd).toBe(0)
-    // Following year: owner-side treatment (spouse age 80 in 2027 → ULT 20.2).
-    const y2027 = year(result, 2027)
-    expect(y2027.inheritedDistribution).toBe(0)
-    expect(evidence(result, 2027).requirementKind).toBe('none')
-    expect(y2027.rmd).toBeCloseTo(year(result, 2026).balances.inherited! / 20.2, 2)
+  describeRule('treas-reg-1-408-8-c-3-spouse-as-own-death-year-rmd', {
+    readings: {
+      regulationKeepsTheDecedentRmdAndSuppressesOwnerRmd: {
+        decedentRmd: 300_000 / 19.4,
+        ownerRmd: 0,
+      },
+      rejectedOwnerTreatmentForTheDeathYear: {
+        decedentRmd: 0,
+        // Spouse born 1947-06-15 is age 79 in the 2026 death year → ULT 21.1
+        // (20.2 is her age-80/2027 divisor and would not discriminate this reading).
+        ownerRmd: 300_000 / 21.1,
+      },
+    },
+    accepted: 'regulationKeepsTheDecedentRmdAndSuppressesOwnerRmd',
+    note: 'same-calendar-year treat-as-own election',
+  }, ({ accepted, readings }) => {
+    it('E6b S2 same-year flip: keeps the decedent year-of-death RMD and suppresses owner RMD', () => {
+      // §1.408-8(c)(3): election year equals ownerDeathYear → spouse takes no
+      // owner RMD that year but must take the decedent's unsatisfied YOD RMD.
+      // Owner born 1945, dies 2026 post-RBD → death-year age 81 → ULT 19.4.
+      const ultAge81 = packForYear(2026).pack.rmd.uniformLifetimeTable[81]
+      expect(ultAge81).toBe(19.4)
+      const plan = planFor(1947)
+      inherited(plan, 'traditional', {
+        ownerDeathYear: 2026,
+        decedentHadStartedRmds: true,
+        beneficiary: facts({
+          beneficiaryBirthYear: 1947,
+          ownerBirthYear: 1945,
+          edbCategory: 'surviving-spouse',
+          election: 'treat-as-own',
+          spouseUnlimitedWithdrawalRight: true,
+          treatAsOwnElectionYear: 2026,
+          // ownerYearOfDeathRmdSatisfied omitted → unsatisfied.
+        }),
+      }, 300_000)
+      const result = run(plan, 2027)
+      const y2026 = year(result, 2026)
+      const e2026 = evidence(result, 2026)
+      expect(e2026.regime).toBe('spouse-treat-as-own-transition')
+      expect(e2026.matrixRow).toBe('S2')
+      expect(e2026.requirementKind).toBe('year-of-death-rmd')
+      expect(e2026.divisor).toBe(19.4)
+      expect(e2026.executedRequiredAmount).toBeCloseTo(accepted.decedentRmd, 2)
+      expect(y2026.inheritedDistribution).toBeCloseTo(accepted.decedentRmd, 2)
+      // No owner RMD aggregation for this account in the flip/death year.
+      expect(y2026.rmd).toBe(accepted.ownerRmd)
+      expect(y2026.rmd).not.toBeCloseTo(readings.rejectedOwnerTreatmentForTheDeathYear.ownerRmd, 2)
+      // Following year: owner-side treatment (spouse age 80 in 2027 → ULT 20.2).
+      const y2027 = year(result, 2027)
+      expect(y2027.inheritedDistribution).toBe(0)
+      expect(evidence(result, 2027).requirementKind).toBe('none')
+      expect(y2027.rmd).toBeCloseTo(year(result, 2026).balances.inherited! / 20.2, 2)
+    })
   })
 
   it('S2 post-election: SEPP distributes from the flipped account', () => {
