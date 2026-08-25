@@ -415,6 +415,50 @@ const registry = {
     implementedBy: ['packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts'],
   },
 
+  'form-1040-line-4b-and-form-8606-line-7-qcd-remainder': {
+    title: 'A non-QCD charitable remainder does not create a line-8 conversion',
+    statement:
+      'When a charitable distribution exceeds the amount that can be a QCD because it would otherwise be includible, Form 1040 directs the part that is not a QCD to line 4b unless its Exception 2 applies. Form 8606 excludes QCDs from line 7 and asks for a net amount converted to a Roth IRA on line 8. A named QCD action with a non-QCD remainder but no Roth conversion therefore carries that remainder in the line-7 distribution total and produces zero line 8.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 408(d)(8)(B), flush text',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim',
+      quotedText:
+        'A distribution shall be treated as a qualified charitable distribution only to the extent that the distribution would be includible in gross income without regard to subparagraph (A).',
+    }, {
+      kind: 'formInstruction',
+      citation: 'Instructions for Form 1040 (2025), line 4a/4b Exception 3',
+      url: 'https://www.irs.gov/pub/irs-pdf/i1040gi.pdf',
+      quotedText:
+        'If only part of the distribution is a QCD, enter the part that is not a QCD on line 4b unless Exception 2 applies to that part.',
+    }, {
+      kind: 'formInstruction',
+      citation: 'Instructions for Form 8606 (2025), Line 7',
+      url: 'https://www.irs.gov/pub/irs-pdf/i8606.pdf',
+      quotedText:
+        'Don’t include any of the following on line 7 … Qualified charitable distributions (QCDs).',
+    }, {
+      kind: 'formInstruction',
+      citation: 'Instructions for Form 8606 (2025), Line 8',
+      url: 'https://www.irs.gov/pub/irs-pdf/i8606.pdf',
+      quotedText:
+        'If, in 2025, you converted any amounts from traditional IRAs to a Roth IRA, enter on line 8 the net amount you converted.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-25',
+    implementedBy: [
+      'packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts',
+      'packages/engine/src/actions/annualQcdResidualForm8606.ts',
+    ],
+  },
+
   'irc-408-d-8-E-excluded-qcd-no-section-170-double-benefit': {
     title: 'An excluded QCD cannot also produce a section 170 deduction',
     statement:
@@ -861,6 +905,65 @@ const registry = {
       'packages/engine/src/actions/ownedNonRothIraWithdrawalCharacter.ts',
       'packages/engine/src/actions/beneficiaryTraditionalIraWithdrawalCharacter.ts',
       'packages/engine/src/actions/annualIraBasisAllocation.ts',
+    ],
+  },
+
+  'form-8606-line-4-post-year-contribution-exclusion': {
+    title: 'A following-calendar-year contribution is excluded from the current distribution fraction',
+    statement:
+      'A nondeductible traditional-IRA contribution designated for a tax year but made in the following calendar year remains reportable as nondeductible, yet Form 8606 excludes it from the nontaxable part of distributions received in that tax year. The engine therefore carries the line-4 contribution-window amount separately and subtracts it from the current year’s basis numerator before it allocates basis to that year’s positive distributions and conversions.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'formInstruction',
+      citation: 'Instructions for Form 8606 (2025), Line 4',
+      url: 'https://www.irs.gov/pub/irs-pdf/i8606.pdf',
+      quotedText:
+        'Although the contributions to traditional IRAs for 2025 … can be treated as nondeductible, they aren’t included in figuring the nontaxable part of any distributions you received in 2025.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-25',
+    implementedBy: [
+      'packages/engine/src/actions/ownedNonRothIraWithdrawalCharacter.ts',
+      'packages/engine/src/actions/ownedNonRothIraAnnualFilingEvidence.ts',
+      'packages/engine/src/actions/ownedNonRothIraAnnualPostCandidateEvidence.ts',
+    ],
+  },
+
+  'form-8606-lines-7-and-8-distinct-distribution-staging': {
+    title: 'Form 8606 keeps ordinary distributions and Roth conversions in separate totals',
+    statement:
+      'Form 8606 excludes distributions converted to a Roth IRA from line 7 and directs the filer to enter the net converted amount on line 8. The engine therefore supplies line-7 distributions and line-8 conversions as separate annual totals before the common pro-rata allocation, rather than combining a conversion into ordinary distributions.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'formInstruction',
+      citation: 'Instructions for Form 8606 (2025), Line 7',
+      url: 'https://www.irs.gov/pub/irs-pdf/i8606.pdf',
+      quotedText:
+        'Don’t include any of the following on line 7 … Distributions that you converted to a Roth IRA.',
+    }, {
+      kind: 'formInstruction',
+      citation: 'Instructions for Form 8606 (2025), Line 8',
+      url: 'https://www.irs.gov/pub/irs-pdf/i8606.pdf',
+      quotedText:
+        'If, in 2025, you converted any amounts from traditional IRAs to a Roth IRA, enter on line 8 the net amount you converted.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-25',
+    implementedBy: [
+      'packages/engine/src/actions/ownedNonRothIraAnnualPhysicalTransaction.ts',
+      'packages/engine/src/actions/annualRetirementPhysicalEventInventory.ts',
     ],
   },
 
@@ -1347,6 +1450,44 @@ const registry = {
       // Where the consequence is published: `rmdSatisfiedAmount` with the typed
       // disclosure that says why it is zero.
       'packages/engine/src/actions/annualQcdExecution.ts',
+    ],
+  },
+
+  'irc-408-d-3-C-i-inherited-ira-rollover-bar': {
+    title: 'A nonspouse inherited IRA cannot be rolled over or converted',
+    statement:
+      'A nonspouse account acquired by reason of death is an inherited IRA. Section 408(d)(3) does not apply to an amount received from it, and a transfer from it is not excluded from gross income as a rollover. Because a Roth conversion from an IRA must be a qualified rollover contribution that meets section 408(d)(3), the engine has no conversion calculation for this source: it refuses the action with conversion-inherited-source, moves no dollars, and leaves both source and destination balances unchanged.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 408(d)(3)(C)(i)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim',
+      quotedText:
+        'In the case of an inherited individual retirement account or individual retirement annuity- (I) this paragraph shall not apply to any amount received by an individual from such an account or annuity (and no amount transferred from such account or annuity to another individual retirement account or annuity shall be excluded from gross income by reason of such transfer), and (II) such inherited account or annuity shall not be treated as an individual retirement account or annuity for purposes of determining whether any other amount is a rollover contribution.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 408(d)(3)(C)(ii)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim',
+      quotedText:
+        'An individual retirement account or individual retirement annuity shall be treated as inherited if- (I) the individual for whose benefit the account or annuity is maintained acquired such account by reason of the death of another individual, and (II) such individual was not the surviving spouse of such other individual.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 408A(e)(1), clause (B)(i)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408A&num=0&edition=prelim',
+      quotedText:
+        'The term "qualified rollover contribution" means a rollover contribution- (A) to a Roth IRA from another such account, (B) from an eligible retirement plan, but only if- (i) in the case of an individual retirement plan, such rollover contribution meets the requirements of section 408(d)(3),',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-25',
+    implementedBy: [
+      'packages/engine/src/strategies/accountEligibility.ts',
+      'packages/engine/src/actions/rothConversionExecution.ts',
     ],
   },
 
@@ -2450,6 +2591,35 @@ const registry = {
     ],
   },
 
+  'irs-notice-2014-54-employer-plan-after-tax-rollover-allocation': {
+    title: 'After-tax employer-plan rollover allocation to multiple destinations is not modeled',
+    statement:
+      'Notice 2014-54 treats same-time benefit disbursements from one employer plan to one recipient as a single distribution and assigns pretax dollars to direct rollovers before the recipient’s other destinations. The Plan cannot express one employer-plan disbursement split across multiple simultaneous destinations — its named conversion path is single-destination — so no engine input reaches this allocation and the engine produces no figure for it. Employer-plan after-tax basis elsewhere in the engine is governed by its own records, not this one.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'irsNotice',
+      citation: 'IRS Notice 2014-54, section III, first paragraph',
+      url: 'https://www.irs.gov/pub/irs-drop/n-14-54.pdf',
+      quotedText:
+        'For purposes of determining the portion of a disbursement of benefits from a plan to a participant, beneficiary, or alternate payee that is not includible in gross income under the rules of § 72, all disbursements of benefits from the plan to the recipient that are scheduled to be made at the same time (disregarding differences due to reasonable delays to facilitate plan administration) are treated as a single distribution without regard to whether the recipient has directed that the disbursements be made to a single destination or multiple destinations.',
+    }, {
+      kind: 'irsNotice',
+      citation: 'IRS Notice 2014-54, section III, second paragraph',
+      url: 'https://www.irs.gov/pub/irs-drop/n-14-54.pdf',
+      quotedText:
+        'If the pretax amount with respect to the aggregated disbursements that are treated as a single distribution is less than the amount of the distribution that is directly rolled over to one or more eligible retirement plans, the entire pretax amount is assigned to the amount of the distribution that is directly rolled over.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-25',
+    implementedBy: ['packages/engine/src/model/plan.ts'],
+  },
+
   'irc-164-b-7-salt-cap-schedule': {
     title: 'The SALT cap is a schedule and reverts to 10,000 in 2030',
     statement:
@@ -3104,6 +3274,136 @@ const registry = {
       'packages/engine/src/projection/simulate.ts',
     ],
   },
+  'irc-408A-d-3-A-i-zero-basis-conversion-includible': {
+    title: 'A zero-basis traditional-IRA conversion is wholly includible',
+    statement:
+      'A Roth conversion includes in gross income what the distribution would have included absent the qualified rollover. With a proven zero annual traditional-IRA basis numerator, section 408(d)(2) returns no basis, so the conversion’s full gross is includible.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 408A(d)(3)(A)(i)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408A&num=0&edition=prelim',
+      quotedText:
+        'Notwithstanding sections 402(c), 403(b)(8), 408(d)(3), and 457(e)(16), in the case of any distribution to which this paragraph applies- (i) there shall be included in gross income any amount which would be includible were it not part of a qualified rollover contribution,',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.408A-4, A-7(a)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.408A-4',
+      quotedText:
+        'Any amount that is converted to a Roth IRA is includible in gross income as a distribution according to the rules of section 408(d)(1) and (2) for the taxable year in which the amount is distributed or transferred from the traditional IRA. Thus, any portion of the distribution or transfer that is treated as a return of basis under section 408(d)(1) and (2) is not includible in gross income as a result of the conversion.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-25',
+    implementedBy: [
+      'packages/engine/src/actions/rothConversionExecution.ts',
+      'packages/engine/src/actions/ownedNonRothIraWithdrawalCharacter.ts',
+    ],
+  },
+
+  'irc-408A-d-4-B-roth-distribution-ordering': {
+    title: 'Roth withdrawals consume contributions, conversions, then earnings',
+    statement:
+      'For a nonqualified Roth distribution, regular contributions are consumed first, qualified rollover contributions are consumed next on a first-in, first-out basis, and earnings are reached last. The engine therefore spends direct contribution basis before conversion layers and conversion principal before earnings. The within-conversion allocation is registered separately because the engine currently does not consume its taxable portion first.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 408A(d)(4)(B)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408A&num=0&edition=prelim',
+      quotedText:
+        'For purposes of applying this section and section 72 to any distribution from a Roth IRA, such distribution shall be treated as made- (i) from contributions to the extent that the amount of such distribution, when added to all previous distributions from the Roth IRA, does not exceed the aggregate contributions to the Roth IRA; and (ii) from such contributions in the following order: (I) Contributions other than qualified rollover contributions to which paragraph (3) applies. (II) Qualified rollover contributions to which paragraph (3) applies on a first-in, first-out basis.',
+    }, {
+      kind: 'irsPublication',
+      citation: 'IRS Publication 590-B (2025), Ordering Rules for Distributions',
+      url: 'https://www.irs.gov/publications/p590b',
+      quotedText:
+        'Order the distributions as follows. Regular contributions. Conversion and rollover contributions, on a first-in, first-out basis (generally, total conversions and rollovers from the earliest year first). … Earnings on contributions.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-25',
+    implementedBy: ['packages/engine/src/strategies/rothBasis.ts'],
+  },
+
+  'irc-408A-d-4-B-converted-layer-taxable-portion-first': {
+    title: 'A converted Roth layer must consume its taxable portion first',
+    statement:
+      'Within a qualified rollover contribution, a Roth distribution must be allocated first to the portion included in gross income at conversion. For an unseasoned conversion, that portion is subject to section 72(t) as if currently includible, and section 72(t) imposes its additional tax on the includible portion. The engine instead prorates taxable principal across each partial withdrawal. Thus, from a 10,000 conversion with 4,000 taxable principal, a 4,000 early withdrawal produces 160 of additional tax rather than the statutory 400, understating tax.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'understatesTax',
+    conventionRationale:
+      'DEFECT — no behavior change in this registry slice. `splitRothWithdrawal` computes each partial taxable take as take × taxableAmount / layer.amount, so it leaves 2,400 taxable principal after a 4,000 withdrawal from the 10,000/4,000 layer. Section 408A(d)(4)(B) instead allocates that withdrawal entirely to the taxable portion first. The 240 of additional tax that reading would have imposed is deferred only if the remaining taxable principal is tapped while still unseasoned and pre-59½; otherwise it is permanently omitted. The same pro-rata take lives in `applyConversionPrincipalDebt` and `assumedSeedConsequentialSpill` in this file — a fix must change those copies together. The fixture pins the current 160 produced value until a separately authorized implementation fix changes it.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 408A(d)(4)(B)(ii)(II), final sentence',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408A&num=0&edition=prelim',
+      quotedText:
+        'Any distribution allocated to a qualified rollover contribution under clause (ii)(II) shall be allocated first to the portion of such contribution required to be included in gross income.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 408A(d)(3)(F)(i)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408A&num=0&edition=prelim',
+      quotedText:
+        'If- (I) any portion of a distribution from a Roth IRA is properly allocable to a qualified rollover contribution described in this paragraph; and (II) such distribution is made within the 5-taxable year period beginning with the taxable year in which such contribution was made, then section 72(t) shall be applied as if such portion were includible in gross income.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 72(t)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim',
+      quotedText:
+        'If any taxpayer receives any amount from a qualified retirement plan (as defined in section 4974(c)), the taxpayer\'s tax under this chapter for the taxable year in which such amount is received shall be increased by an amount equal to 10 percent of the portion of such amount which is includible in gross income.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-25',
+    implementedBy: ['packages/engine/src/strategies/rothBasis.ts'],
+  },
+
+  'irc-408A-d-4-B-same-year-conversion-aggregation': {
+    title: 'Same-year Roth conversions are ordered in aggregate, taxable portion first',
+    statement:
+      'Within a single conversion year, Publication 590-B orders that year’s conversions and rollovers in aggregate and allocates the year’s taxable portion before its nontaxable portion. The engine instead pushes one conversion layer per named action and consumes layers in array order, so a same-year nontaxable layer can be consumed before a same-year taxable layer and understate section 72(t) on an early withdrawal.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'understatesTax',
+    conventionRationale:
+      'DEFECT — no behavior change in this registry slice. Pub 590-B’s year-aggregate reading takes the year’s taxable conversion principal before any nontaxable principal from that year. The engine records one layer per named conversion action (projection/simulate.ts) and `splitRothWithdrawal` walks those layers in array order, so a nontaxable 2024 layer ahead of a taxable 2024 layer can be fully consumed first. On the fixture — two same-year $5,000 layers with the nontaxable one first, then a $5,000 draw at age 50 — year-aggregate taxable-first yields $500 of additional tax; array order yields $0. The per-contribution FIFO record cannot carry this gap because both layers share a year.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 408A(d)(4)(B)(ii)(II)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408A&num=0&edition=prelim',
+      quotedText:
+        '(II) Qualified rollover contributions to which paragraph (3) applies on a first-in, first-out basis. Any distribution allocated to a qualified rollover contribution under clause (ii)(II) shall be allocated first to the portion of such contribution required to be included in gross income.',
+    }, {
+      kind: 'irsPublication',
+      citation: 'IRS Publication 590-B (2025), Ordering Rules for Distributions',
+      url: 'https://www.irs.gov/publications/p590b',
+      quotedText:
+        'Order the distributions as follows. Regular contributions. Conversion and rollover contributions, on a first-in, first-out basis (generally, total conversions and rollovers from the earliest year first). … Taxable portion (the amount required to be included in gross income because of the conversion or rollover) first. Nontaxable portion. Earnings on contributions.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-25',
+    implementedBy: [
+      'packages/engine/src/strategies/rothBasis.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+  },
+
   'irc-1-j-2-progressive-ordinary-rate-schedule': {
     title: 'Ordinary rate schedule is marginal, and permanent after OBBBA',
     statement:

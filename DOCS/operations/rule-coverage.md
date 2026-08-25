@@ -11,16 +11,16 @@ The registry is the machine-checked chain from a rule to its implementation and 
 
 | Metric | Count |
 | --- | ---: |
-| Total rules | 240 |
-| Classification: approximated | 51 |
-| Classification: outOfScope | 12 |
-| Classification: settled | 173 |
+| Total rules | 249 |
+| Classification: approximated | 53 |
+| Classification: outOfScope | 14 |
+| Classification: settled | 178 |
 | Classification: unsettled | 4 |
 | Volatility: annuallyIndexed | 37 |
 | Volatility: awaitingGuidance | 4 |
-| Volatility: staticStatute | 194 |
+| Volatility: staticStatute | 203 |
 | Volatility: sunsetting | 5 |
-| Federal jurisdiction | 183 |
+| Federal jurisdiction | 192 |
 | State jurisdiction total | 57 |
 
 | State jurisdiction | Count |
@@ -96,7 +96,7 @@ None.
 | actions/annualOwnedNonRothIraPoolCapacity.ts | 2026-08-24 | QCD pool restricted to donor-owned non-Roth IRAs; no record |
 | actions/annualQcdDerivedTaxCharacter.ts | 2026-08-25 | Owned-source eligibility gate; no record; QCD taxable/excludable/basis partition; no record |
 | actions/annualQcdPhysicalExecution.ts | 2026-08-24 | QCD pool restricted to owned traditional IRAs, excluding inherited/Roth; no record |
-| actions/annualQcdResidualForm8606.ts | 2026-08-24 | Non-QCD QCD remainder/Form 8606 line-7 basis-return treatment; no record; residual line-7/line-8 pro-rata reconciliation; no record |
+| actions/annualQcdResidualForm8606.ts | 2026-08-25 | Residual line-7/line-8 pro-rata reconciliation; no record |
 | actions/annualRetirementPhysicalEventInventory.ts | 2026-08-24 | Inherited-RMD regime; owner-RMD start age; spouse-as-own transition; annuity/Form 8606 treatment; direct-trustee QCD origin; no record |
 | actions/beneficiaryTraditionalIraAnnualPlanApplication.ts | 2026-08-24 | Beneficiary-owned inherited traditional-IRA/death-year source gate; no record |
 | actions/beneficiaryTraditionalIraAnnualSimulatorDelta.ts | 2026-08-24 | Death-beneficiary 0% early-distribution penalty; no record |
@@ -115,7 +115,7 @@ None.
 | actions/ownedNonRothIraPenaltyPrerequisite.ts | 2026-08-24 | Age, 10%/25% rates, disability, SEPP, SIMPLE period, and scope covered; death exception rejected through owner-alive evidence; no record |
 | actions/retirementActionCandidateIdentityAllocator.ts | 2026-08-24 | Conversion source/destination vehicle restrictions and QCD source-IRA restrictions; no record |
 | actions/retirementActionManualReview.ts | 2026-08-24 | Replacement source-owner and Roth-destination eligibility checks; no record |
-| actions/rothConversionExecution.ts | 2026-08-24 | RMD aggregation/order covered; zero-basis taxable vs positive-basis deferred character and direct conversion vehicle gates; no record |
+| actions/rothConversionExecution.ts | 2026-08-25 | Positive-basis deferred character and direct conversion vehicle gates; no record |
 | actions/traditionalEmployerPlanPenaltyPrerequisite.ts | 2026-08-24 | Rule of 55, employer-SEPP, permitted methods, public-safety and recapture covered; age-59½ threshold, 10% rate, disability waiver lack records |
 | decisions/decisionFixtures.ts | 2026-08-24 | RMD age 73 and Social Security claim-age fixtures; no record |
 | decisions/generators.ts | 2026-08-24 | Registry covers QLAC premium cap; residual bracket targets 10/12/22/24 and SS grid 62–70; no records; QLAC start-age 85 ceiling (Treas. Reg. 1.401(a)(9)-6(q)(1)(ii)) hardcoded |
@@ -161,7 +161,7 @@ None.
 
 ## Re-verification due dates
 
-The 25 earliest due dates are shown below (240 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
+The 25 earliest due dates are shown below (249 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
 
 | Rule | Volatility | Verified on | Due on |
 | --- | --- | --- | --- |

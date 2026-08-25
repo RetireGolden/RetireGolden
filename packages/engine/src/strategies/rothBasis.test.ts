@@ -110,6 +110,167 @@ describe('splitRothWithdrawal — earnings', () => {
   })
 })
 
+describeRule('irc-408A-d-4-B-roth-distribution-ordering', {
+  // A $25,000 partial withdrawal against $20,000 of regular contributions and
+  // $45,000 of conversion principal. 408A(d)(4)(B)(i) allocates to
+  // contributions "to the extent thereof" before (ii) reaches qualified
+  // rollover contributions, so the withdrawal consumes all $20,000 of
+  // contributions and only $5,000 of conversion principal; the reverse
+  // ordering would take the whole amount from the conversion layers. (An
+  // earnings amount cannot separate these readings: any withdrawal large
+  // enough to reach earnings exhausts both pools under either order.)
+  note: 'regular contributions, conversion principal, then earnings',
+  readings: {
+    statuteContributionsBeforeConversions: { contributions: 20_000, conversions: 5_000 },
+    rejectedConversionsBeforeContributions: { contributions: 0, conversions: 25_000 },
+  },
+  accepted: 'statuteContributionsBeforeConversions',
+}, ({ accepted, readings }) => {
+  const orderedState = (): RothBasisState => ({
+    contributionBasis: 20_000,
+    conversionLayers: [
+      { year: 2020, amount: 30_000, taxableAmount: 30_000 },
+      { year: 2024, amount: 15_000, taxableAmount: 15_000 },
+    ],
+  })
+
+  it('consumes regular contributions before conversion principal', () => {
+    const split = splitRothWithdrawal(orderedState(), 25_000, 2026, 45)
+    const actual = { contributions: split.contributions, conversions: split.conversions }
+
+    expect(actual).toEqual(accepted)
+    expect(actual).not.toEqual(readings.rejectedConversionsBeforeContributions)
+    expect(split.earnings).toBe(0)
+  })
+})
+
+describeRule('irc-408A-d-4-B-roth-distribution-ordering', {
+  // A $70,000 draw against $20,000 of contributions and $45,000 of conversion
+  // principal reaches $5,000 of earnings only after both basis pools are
+  // exhausted. Treating everything past contributions as earnings would report
+  // $50,000 of earnings instead.
+  note: 'earnings reached last',
+  readings: {
+    exhaustBothPoolsThenEarnings: 5_000,
+    treatEverythingPastContributionsAsEarnings: 50_000,
+  },
+  accepted: 'exhaustBothPoolsThenEarnings',
+}, ({ accepted, readings }) => {
+  it('reaches earnings only after both basis pools are exhausted', () => {
+    const split = splitRothWithdrawal({
+      contributionBasis: 20_000,
+      conversionLayers: [
+        { year: 2020, amount: 30_000, taxableAmount: 30_000 },
+        { year: 2024, amount: 15_000, taxableAmount: 15_000 },
+      ],
+    }, 70_000, 2026, 45)
+
+    expect(split.earnings).toBe(accepted)
+    expect(split.earnings).not.toBe(readings.treatEverythingPastContributionsAsEarnings)
+    expect(split.contributions).toBe(20_000)
+    expect(split.conversions).toBe(45_000)
+    expect(split.taxableOrdinary).toBe(5_000)
+  })
+})
+
+describeRule('irc-408A-d-4-B-roth-distribution-ordering', {
+  // Clause (ii)(II) makes qualified rollover contributions FIFO. After a
+  // $5,000 draw from two $10,000 layers, oldest-first leaves $5,000 on the
+  // 2020 layer; newest-first would leave that layer untouched at $10,000.
+  // (Layer year alone cannot discriminate: an unconsumed 2020 layer keeps
+  // array position under either ordering.)
+  note: 'qualified rollover contribution layers are first-in, first-out',
+  readings: {
+    statuteOldestFirstRemaining2020Amount: 5_000,
+    rejectedNewestFirstRemaining2020Amount: 10_000,
+  },
+  accepted: 'statuteOldestFirstRemaining2020Amount',
+}, ({ accepted, readings }) => {
+  it('debits the oldest conversion layer before later conversion layers', () => {
+    const split = splitRothWithdrawal({
+      contributionBasis: 0,
+      conversionLayers: [
+        { year: 2020, amount: 10_000, taxableAmount: 10_000 },
+        { year: 2024, amount: 10_000, taxableAmount: 10_000 },
+      ],
+    }, 5_000, 2026, 50)
+    const layer2020 = split.next.conversionLayers.find((layer) => layer.year === 2020)
+    if (layer2020 === undefined) {
+      throw new Error('expected a remaining 2020 conversion layer')
+    }
+
+    expect(layer2020.amount).toBe(accepted)
+    expect(layer2020.amount).not.toBe(readings.rejectedNewestFirstRemaining2020Amount)
+    expect(layer2020).toEqual({
+      year: 2020,
+      amount: 5_000,
+      taxableAmount: 5_000,
+    })
+    expect(split.next.conversionLayers[1]).toEqual({
+      year: 2024,
+      amount: 10_000,
+      taxableAmount: 10_000,
+    })
+  })
+})
+
+describeRule('irc-408A-d-4-B-converted-layer-taxable-portion-first', {
+  // The last sentence of clause (ii)(II) allocates a distribution within a
+  // conversion layer to its $4,000 taxable portion before its $6,000
+  // nontaxable portion. After a $4,000 withdrawal, no taxable principal is
+  // left; the reverse ordering would leave the whole $4,000 taxable amount.
+  note: 'the taxable portion of a conversion layer precedes its nontaxable portion',
+  readings: {
+    statuteTaxablePortionFirst: 400,
+    engineProRataTaxablePortion: 160,
+  },
+  accepted: 'statuteTaxablePortionFirst',
+  produced: 'engineProRataTaxablePortion',
+}, ({ accepted, produced }) => {
+  it('prorates a conversion layer taxable portion across a partial withdrawal, diverging from the statute', () => {
+    const split = splitRothWithdrawal({
+      contributionBasis: 0,
+      conversionLayers: [{ year: 2024, amount: 10_000, taxableAmount: 4_000 }],
+    }, 4_000, 2026, 50)
+    const remainingLayer = split.next.conversionLayers[0]
+    if (remainingLayer === undefined) {
+      throw new Error('expected a partially remaining conversion layer')
+    }
+
+    expect(remainingLayer.amount).toBe(6_000)
+    expect(remainingLayer.taxableAmount).toBe(2_400)
+    expect(split.penalty).toBeCloseTo(produced, 6)
+    expect(split.penalty).not.toBeCloseTo(accepted, 6)
+  })
+})
+
+describeRule('irc-408A-d-4-B-same-year-conversion-aggregation', {
+  // Pub 590-B aggregates a year's conversions and takes the year's taxable
+  // portion first. The engine pushes one layer per named action and walks
+  // array order, so a same-year nontaxable layer ahead of a taxable one is
+  // consumed first and understates 72(t) on an early withdrawal.
+  note: 'same-year nontaxable layer ahead of taxable layer understates 72(t)',
+  readings: {
+    yearAggregateTaxableFirst: 500,
+    engineArrayOrderConsumesNontaxableFirst: 0,
+  },
+  accepted: 'yearAggregateTaxableFirst',
+  produced: 'engineArrayOrderConsumesNontaxableFirst',
+}, ({ accepted, produced }) => {
+  it('consumes a same-year nontaxable conversion layer before a later taxable one in array order', () => {
+    const split = splitRothWithdrawal({
+      contributionBasis: 0,
+      conversionLayers: [
+        { year: 2024, amount: 5_000, taxableAmount: 0 },
+        { year: 2024, amount: 5_000, taxableAmount: 5_000 },
+      ],
+    }, 5_000, 2026, 50)
+
+    expect(split.penalty).toBeCloseTo(produced, 6)
+    expect(split.penalty).not.toBeCloseTo(accepted, 6)
+  })
+})
+
 describeRule('irc-408A-d-3-F-roth-conversion-recapture', {
   // A $10,000 conversion of which only $4,000 was includible in gross income,
   // tapped in full two years later at age 50. 408A(d)(3)(F)(i) applies 72(t) to

@@ -78,7 +78,7 @@ State brackets are a separate question and are still held nominal (see `params/s
   every later RMD base. The qualified portion of the gift is deemed pre-tax under 408(d)(8)(D), so it returns no
   basis and leaves both the line-7 numerator and the line-9 denominator of the Form 8606 computation; the excess
   past the donor's aggregate includible amount is not qualified and stays on line 7 with its gross in the
-  denominator. The household number is charged to the donors whose IRAs fund it
+  denominator, rather than becoming a line-8 conversion. The household number is charged to the donors whose IRAs fund it
   before it is measured, each donor is then held to their own annual limit, and a couple with two eligible donors
   may exclude up to two of them. The post-70½ deductible-contribution offset in the second sentence of
   408(d)(8)(A) is applied on this arm as a lifetime running total (domain rules §6): only §219 for years
@@ -203,7 +203,8 @@ nonzero-basis owners move identical dollars
 
 Admission turns on the Form 8606 basis **numerator being known**, not on its being zero. Reading `zeroBasis` as the
 admission predicate would make admission depend on the settlement that admission governs, which is circular. At a
-proven-zero numerator the executor states the whole gross as taxable. At a positive one it commits the dollars and
+proven-zero numerator the executor states the whole gross as taxable
+(`irc-408A-d-3-A-i-zero-basis-conversion-includible`). At a positive one it commits the dollars and
 states **no** character — the taxable and nontaxable figures go null together, and half-stating the pair is
 rejected — and the annual settlement supplies the Form 8606 line-10 ratio back through the assumption vector the
 annual pass already iterates, so the year holds one answer to the owner's pro-rata question rather than a second
@@ -220,6 +221,9 @@ aggregate schedules convert an employer balance to a Roth IRA only when a §401(
 Plan facts (attained age 60 or attained age at or past `retirementAge`); otherwise the source is fail-closed
 (`irc-401-k-2-B-i-employer-plan-conversion-source-not-gated-by-distributability`). In-plan Roth of otherwise
 nondistributable amounts under §402A(c)(4)(E) is a different enacted act and is not modelled.
+
+The named-conversion path does not model employer-plan after-tax allocation across simultaneous rollover
+destinations (`irs-notice-2014-54-employer-plan-after-tax-rollover-allocation`).
 
 ## Conversion-linked tax funding
 
@@ -292,7 +296,9 @@ and the annual projection commits it: `simulate.ts` calls the execution prerequi
 executor in sequence, and the executor is the only QCD module in the tree that can report `committed: true`
 ([actions/annualQcdExecution.ts](../../packages/engine/src/actions/annualQcdExecution.ts)). Source opening
 balances cross into the action ledger through `planDollarsToFlooredLedgerCents`, so a movement can never be
-authorized against a rounded-up half cent the account does not hold.
+authorized against a rounded-up half cent the account does not hold. When a charitable distribution exceeds the
+amount that can be a QCD, the non-QCD remainder stays on Form 8606 line 7 and does not create a line-8 conversion
+(`form-1040-line-4b-and-form-8606-line-7-qcd-remainder`).
 
 Eligibility is per donor and exact, whereas the aggregate arm resolves the same donor's age at annual granularity.
 The donor's age-70½

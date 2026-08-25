@@ -1,6 +1,7 @@
 import { describe, expect, expectTypeOf, it } from 'vitest'
 
 import type { Plan } from '../model/plan.js'
+import { describeRule } from '../rules/describeRule.js'
 import {
   cashAccount,
   singlePersonPlan,
@@ -274,14 +275,25 @@ describe('executeRothConversions', () => {
     expect(evidence.executedAmount).toBe(0)
   })
 
-  it('publishes only the canonical inherited-source classification', () => {
+  it('publishes only the canonical inherited-source classification for a nonspouse beneficiary', () => {
     const value = input()
     const source = (value.plan as Plan).accounts.find((account) =>
       account.id === 'traditional-a')
     if (source?.type !== 'traditional') throw new Error('fixture drift')
+    // Nonspouse beneficiary evidence: a bare inherited block would also match
+    // a blanket inherited!==undefined refusal, including a surviving spouse
+    // the statute exempts under 408(d)(3)(C)(ii).
     source.inherited = {
       ownerDeathYear: 2025,
       decedentHadStartedRmds: true,
+      beneficiary: {
+        beneficiaryClass: 'designated-individual',
+        edbCategory: 'none',
+        beneficiaryBirthYear: 1980,
+        soleBeneficiary: true,
+        election: 'none',
+        provenance: { source: 'manual', asOf: '2026-01-01' },
+      },
     }
 
     const result = executeRothConversions(value)
@@ -289,11 +301,55 @@ describe('executeRothConversions', () => {
 
     expect(reasonCodes).toContain('conversion-inherited-source')
     expect(reasonCodes).not.toContain('conversion-source-not-convertible')
+    expect(result.committed).toBe(false)
+    expect(result.evidence[0]).toMatchObject({
+      outcome: 'unsupported',
+      readiness: 'nonActionable',
+      executedAmount: 0,
+      destinationCreditAmount: 0,
+    })
+    expect(result.balances.every((balance) =>
+      balance.openingBalance === balance.closingBalance)).toBe(true)
     expect(() => publishAnnualRetirementActions({
       taxYear: year,
       requests: result.requests,
       sources: [rothConversionPublicationSource(result)],
     })).not.toThrow()
+  })
+
+  it('refuses a not-yet-elected surviving-spouse inherited source the same way', () => {
+    // irc-408-d-3-C-ii-surviving-spouse-not-inherited: a surviving spouse is
+    // outside the inherited-IRA rollover bar once they elect (or are deemed
+    // to elect) to treat the IRA as their own. Until that election takes
+    // effect the plan still carries the inherited block, and
+    // accountEligibility refuses any inherited!==undefined source with
+    // conversion-inherited-source — acceptance routes through the spousal-
+    // election flow, not through this conversion executor admitting the
+    // account while it remains marked inherited.
+    const value = input()
+    const source = (value.plan as Plan).accounts.find((account) =>
+      account.id === 'traditional-a')
+    if (source?.type !== 'traditional') throw new Error('fixture drift')
+    source.inherited = {
+      ownerDeathYear: 2025,
+      decedentHadStartedRmds: true,
+      beneficiary: {
+        beneficiaryClass: 'designated-individual',
+        edbCategory: 'surviving-spouse',
+        beneficiaryBirthYear: 1960,
+        soleBeneficiary: true,
+        election: 'remain-beneficiary',
+        spouseUnlimitedWithdrawalRight: true,
+        provenance: { source: 'manual', asOf: '2026-01-01' },
+      },
+    }
+
+    const result = executeRothConversions(value)
+    const reasonCodes = result.evidence[0]!.reasons.map((reason) => reason.code)
+
+    expect(reasonCodes).toContain('conversion-inherited-source')
+    expect(result.committed).toBe(false)
+    expect(result.evidence[0]?.executedAmount).toBe(0)
   })
 
   it('rejects duplicate schedule identities before publishing evidence', () => {
@@ -1041,6 +1097,36 @@ describe('executeRothConversions', () => {
         allocation.taxableConvertedAmount,
         allocation.nontaxableConvertedAmount,
       ])).toEqual([[6_000, 0], [4_000, 0]])
+    })
+
+    describeRule('irc-408A-d-3-A-i-zero-basis-conversion-includible', {
+      // Section 408A(d)(3)(A)(i) includes what the distribution would include
+      // outside a qualified rollover. With no section 408(d)(2) basis, the
+      // complete $10,000 gross is includible; treating conversion mechanics as
+      // a basis recovery instead would produce zero.
+      note: 'proven zero aggregated traditional-IRA basis',
+      readings: {
+        statuteWholeGrossIncludible: 10_000,
+        rejectedConversionAsBasisRecovery: 0,
+      },
+      accepted: 'statuteWholeGrossIncludible',
+    }, ({ accepted, readings }) => {
+      it('publishes the entire gross as taxable only when the basis numerator is proven zero', () => {
+        const result = executeRothConversions(withBasis(0))
+        const evidence = result.evidence[0]
+        if (evidence?.outcome !== 'executed' || evidence.readiness !== 'actionable') {
+          throw new Error('expected a committed, actionable zero-basis conversion')
+        }
+
+        expect(result.committed).toBe(true)
+        expect(evidence.executedAmount).toBe(accepted)
+        expect(evidence.taxableConvertedAmount).toBe(accepted)
+        expect(evidence.taxableConvertedAmount)
+          .not.toBe(readings.rejectedConversionAsBasisRecovery)
+        expect(evidence.nontaxableConvertedAmount).toBe(0)
+        expect(evidence.allocations.map((allocation) => allocation.taxableConvertedAmount))
+          .toEqual([6_000, 4_000])
+      })
     })
 
     it('commits a proven positive numerator without stating a character', () => {

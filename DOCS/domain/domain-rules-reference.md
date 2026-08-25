@@ -420,7 +420,7 @@ Source: [IRS 2026 limits announcement](https://www.irs.gov/newsroom/401k-limit-i
 ## 10. Roth conversion rules
 
 - Any amount, any year; taxed as ordinary income in the conversion year; **no 10% penalty on the conversion itself**; no earned-income or RMD-year ordering subtleties beyond: RMD must be satisfied **before** converting in an RMD year.
-- **5-year rules** (surface as warnings v1): each conversion has its own 5-year clock for penalty-free withdrawal of converted principal before 59½ (the "conversion ladder" for early retirees); separately, earnings require 59½ + 5-year account age.
+- **5-year rules:** each conversion has its own 5-year clock for penalty-free withdrawal of converted principal before 59½ (the "conversion ladder" for early retirees); separately, earnings require 59½ + 5-year account age. Recapture under §408A(d)(3)(F) is computed (with the age-60 proxy), and the taxable-portion-first gap inside a converted layer is the registered approximated divergence (`irc-408A-d-4-B-converted-layer-taxable-portion-first`).
 - **Pro-rata rule** for conversions and withdrawals from IRAs with nondeductible basis (Form 8606) — **implemented** (opt-in `nondeductibleBasis` per traditional IRA; see §16). Absent the field, plans behave as before (all pre-tax).
 - Conversion taxes best paid from taxable funds; paying from the conversion before 59½ incurs the 10% penalty on the tax portion.
 - **Named conversion actions.** A `rothConversion` retirement action names its owner, its source accounts, and a
@@ -428,7 +428,7 @@ Source: [IRS 2026 limits announcement](https://www.irs.gov/newsroom/401k-limit-i
   conversion basis layer opened, for zero- and nonzero-basis owners alike. Admission turns on the Form 8606 basis
   **numerator being known**, not on its being zero — reading `zeroBasis` as the admission predicate made admission
   depend on the settlement admission governs, which is circular. At a proven-zero numerator the executor states the
-  whole gross as taxable; at a positive one it commits the dollars and states **no** character, and the annual
+  whole gross as taxable (`irc-408A-d-3-A-i-zero-basis-conversion-includible`); at a positive one it commits the dollars and states **no** character, and the annual
   settlement supplies the Form 8606 line-10 ratio back through the assumption vector, so the year holds one answer
   to the owner's pro-rata question instead of a second mid-year one. Under §408A(d)(3)(F)(ii) the layer's
   recapture amount is then the credited dollars net of that basis return (`irc-408A-d-3-F-roth-conversion-recapture`).
@@ -439,6 +439,8 @@ Source: [IRS 2026 limits announcement](https://www.irs.gov/newsroom/401k-limit-i
   or attained age at or past `retirementAge`); otherwise the source is fail-closed and the year names the refusal
   (`irc-401-k-2-B-i-employer-plan-conversion-source-not-gated-by-distributability`, `settled`). In-plan Roth of
   otherwise nondistributable amounts under §402A(c)(4)(E) is a different enacted act and is not modelled.
+  Employer-plan after-tax allocation across simultaneous rollover destinations is unmodelled
+  (`irs-notice-2014-54-employer-plan-after-tax-rollover-allocation`).
 - **Conversion-linked tax funding.** A named conversion may name a sibling ordinary withdrawal that pays its tax,
   and the annual projection moves both legs or neither: the disposition is `executedAsAtomicGroup` or
   `refusedPendingGroupExecution`. Sizing the funding takes three runs of the same annual pass — a T0
@@ -465,6 +467,14 @@ Source: [IRS 2026 limits announcement](https://www.irs.gov/newsroom/401k-limit-i
 - Default: cash buffer → taxable (basis-ratio gains) → traditional → Roth; HSA reserved for medical. RMDs always first.
 - HSA withdrawals are qualified (tax- and penalty-free) only up to modeled medical costs when the account opts into the cap treatment (§16); otherwise the legacy simplification (tax-free, 20% penalty pre-65) or the explicit "assume all qualified" mode applies.
 - Pre-59½ access ordering: taxable → Roth contributions/seasoned conversions → 72(t)/Rule of 55 (**implemented**) → penalized deferred as last resort. Account-movement eligibility (withdraw/convert/RMD/penalty) is centralized in `engine/strategies/accountEligibility.ts` (§16).
+- **Roth withdrawal ordering.** Roth withdrawals use regular contributions, then conversion/rollover
+  contributions first-in, first-out, and finally earnings
+  (`irc-408A-d-4-B-roth-distribution-ordering`). Within a partially withdrawn conversion layer, the
+  current engine prorates taxable principal rather than consuming it first; that known approximation can
+  understate the additional tax (`irc-408A-d-4-B-converted-layer-taxable-portion-first`). Likewise the engine
+  keeps one layer per named conversion action in array order, so same-year conversions are not aggregated
+  taxable-portion-first; that second registered approximation can also understate the additional tax
+  (`irc-408A-d-4-B-same-year-conversion-aggregation`).
 - **SEPP (72(t)) divisors and scope.** Both supported methods — required-minimum-distribution and amortization —
   divide by the **IRS Single Life Table** carried in the parameter pack (Treas. Reg. 1.401(a)(9)-9(b) Table 1,
   unisex and fixed by regulation rather than indexed), which is why nothing in the SEPP path takes a sex; the
@@ -774,7 +784,8 @@ additive with a no-op default, so plans saved before it stay byte-identical.
 - **Account eligibility service.** `engine/strategies/accountEligibility.ts` is the single source of truth for
   per-account movement rules: can it accept contributions, be converted to Roth, follow the owner's RMDs, be
   spent this year (equity-comp vesting), and what early-withdrawal penalty applies. The ledger, the optimizer
-  input builder, and the decision generators all consume it, so the inherited-IRA convertibility rule (and the
+  input builder, and the decision generators all consume it, so the inherited-IRA convertibility rule
+  (`irc-408-d-3-C-i-inherited-ira-rollover-bar`) (and the
   Rule-of-55 / pre-59½ penalty logic) lives in exactly one place.
 - **Explicit equity-compensation actions.** An individually owned equity-compensation ordinary withdrawal
   executes only when its persisted `final` status proves it already vested or its exact action date is on or
@@ -822,7 +833,8 @@ additive with a no-op default, so plans saved before it stay byte-identical.
   action-character substrate accepts exact-cent complete-pool evidence and complete annual Form 8606
   inputs, derives the capped line-5/line-9 ratio with bigint intermediates, and allocates each line's
   once-rounded basis total across positive actions in canonical date/sequence/action/allocation order.
-  Zero executions receive no ledger entry or character. Line 7 and line 8 remain distinct; if their
+  Zero executions receive no ledger entry or character. Line 7 and line 8 remain distinct
+  (`form-8606-lines-7-and-8-distinct-distribution-staging`); if their
   independently required rounding would recover more than the annual basis, classification fails closed
   instead of emitting contradictory evidence. The pure penalty-prerequisite boundary then considers only
   positive ordinary-income character, computes age 59½ as 714 calendar months with month-end clamping,
@@ -934,7 +946,9 @@ additive with a no-op default, so plans saved before it stay byte-identical.
   fail closed. A separately complete following-year nondeductible-contribution window supplies Form 8606
   lines 1 and 4 through an authoritative ordinary April 15-18 federal deadline (excluding disaster
   relief); records must be positive exact cents, while no activity uses the explicit-empty arm. This
-  leaves line 5 equal to the exact opening basis. Rollover
+  leaves line 5 equal to the exact opening basis; contributions in that following-calendar-year window do
+  not recover basis in the current distribution fraction
+  (`form-8606-line-4-post-year-contribution-exclusion`). Rollover
   line-6 adjustments and line 8 must be explicitly zero in this standalone slice, while line 7 comes only
   from positive actual staged gross. Bigint sums produce safe-cent lines 6 and 9. The immutable success
   contains only a classifier input and reconciliation evidence; it does not call the classifier, penalty
@@ -1008,7 +1022,9 @@ additive with a no-op default, so plans saved before it stay byte-identical.
   — 408(d)(8)(D) keeps a QCD out of the pro-rata computation entirely, so it never belongs to a basis allocation.
   The named-QCD arm commits inside the projection too: `simulate.ts` calls the QCD execution prerequisite,
   physical staging and executor, which run the tax-character post-pass and owner-wide pool capacity behind
-  them. A fourth path moves dollars only as part of a pair: a conversion whose tax is funded by a named sibling
+  them. A non-QCD charitable remainder remains a line-7 distribution rather than a line-8 conversion
+  (`form-1040-line-4b-and-form-8606-line-7-qcd-remainder`).
+  A fourth path moves dollars only as part of a pair: a conversion whose tax is funded by a named sibling
   withdrawal executes as an atomic group or not at all (§10).
   The named-conversion and named-QCD **source** opening balances, the linked group's leg-fundability probe, and
   the legacy aggregate QCD drain each cross in through `planDollarsToFlooredLedgerCents` rather than the

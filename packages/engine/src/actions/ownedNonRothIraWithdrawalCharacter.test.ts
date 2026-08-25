@@ -161,6 +161,67 @@ describe('classifyOwnedNonRothIraAnnualWithdrawals', () => {
     })
   })
 
+  // Independent Form 8606 worksheet: $10,000 opening basis plus $5,000 of
+  // tax-year nondeductible contributions of which $2,000 is made in the
+  // following calendar year. Line 4 removes that $2,000 from current-year
+  // distribution recovery, leaving a $13,000 numerator over a $20,000
+  // denominator ($10,000 year-end value plus a $10,000 distribution), so the
+  // distribution returns $6,500 of basis. Dropping every contribution from the
+  // numerator would return $5,000; including the whole $5,000 would return
+  // $7,500.
+  describeRule('form-8606-line-4-post-year-contribution-exclusion', {
+    note: 'following-calendar-year contribution window',
+    readings: {
+      form8606Line4ExcludesPostYearOnly: 6_500,
+      rejectedDropAllContributions: 5_000,
+    },
+    accepted: 'form8606Line4ExcludesPostYearOnly',
+  }, ({ accepted, readings }) => {
+    it('removes the line-4 amount before characterizing a positive distribution', () => {
+      const result = classifyOwnedNonRothIraAnnualWithdrawals(input({
+        poolMembers: [
+          { ...member('traditional', 'traditional'), yearEndApplicableBalanceAmount: asUsdCents(10_000) },
+          { ...member('sep', 'sep'), yearEndApplicableBalanceAmount: asUsdCents(0) },
+          { ...member('simple', 'simple'), yearEndApplicableBalanceAmount: asUsdCents(0) },
+        ],
+        completePoolEvidence: {
+          ...input().completePoolEvidence,
+          yearEndApplicablePoolBalanceAmount: asUsdCents(10_000),
+        },
+        annualFacts: {
+          openingBasisAmount: asUsdCents(10_000),
+          taxYearNondeductibleContributionAmount: asUsdCents(5_000),
+          postYearNondeductibleContributionExcludedAmount: asUsdCents(2_000),
+          yearEndApplicablePoolBalanceAmount: asUsdCents(10_000),
+          outstandingRolloverAmount: asUsdCents(0),
+          rolloverRepaymentAdjustmentAmount: asUsdCents(0),
+          form8606Line7DistributionAmount: asUsdCents(10_000),
+          form8606Line8NetConversionAmount: asUsdCents(0),
+        },
+        line7Distributions: [
+          activity('post-year-window', 'ira-traditional', 10_000),
+        ],
+        line8Conversions: [],
+      }))
+
+      expect(result.withdrawals[0]?.basisRecoveredAmount).toBe(accepted)
+      expect(result.withdrawals[0]?.basisRecoveredAmount)
+        .not.toBe(readings.rejectedDropAllContributions)
+      // Include-everything (opening + full $5,000 contributions) would recover
+      // $7,500; that reading is not among the registered pair but must not be
+      // produced either.
+      expect(result.withdrawals[0]?.basisRecoveredAmount).not.toBe(7_500)
+      expect(result.withdrawals[0]).toMatchObject({
+        executedAmount: 10_000,
+        ordinaryIncomeAmount: 3_500,
+      })
+    })
+  })
+
+  // Staging of line 7 vs line 8 is owned by the physical-transaction producer
+  // (see ownedNonRothIraAnnualPhysicalTransaction.test.ts). The classifier
+  // here only allocates from already-split inputs.
+
   it('derives the complete Form 8606 numerator, line 6, and denominator', () => {
     const result = classifyOwnedNonRothIraAnnualWithdrawals(
       input({
