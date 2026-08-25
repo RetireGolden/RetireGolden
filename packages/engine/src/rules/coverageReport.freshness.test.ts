@@ -29,26 +29,24 @@ function normalizeNewlines(source: string): string {
   return source.replace(/\r\n/g, '\n')
 }
 
-function dateAfterDays(isoDate: string, days: number): string {
+/** Shifts a probe date; the expected values themselves only ever come from the built manifest. */
+function dayBefore(isoDate: string): string {
   const date = new Date(isoDate + 'T00:00:00Z')
-  date.setUTCDate(date.getUTCDate() + days)
+  date.setUTCDate(date.getUTCDate() - 1)
   return date.toISOString().slice(0, 10)
 }
 
-function dayBefore(isoDate: string): string {
-  return dateAfterDays(isoDate, -1)
-}
+const report = buildCoverageReport({
+  registry: TAX_RULE_REGISTRY,
+  attestations: COVERAGE_ATTESTATIONS,
+  baselineUnswept: BASELINE_UNSWEPT,
+  testSources,
+  intervals: DEFAULT_REVERIFICATION_INTERVAL_DAYS,
+  quoteFidelityLedger,
+})
 
 describe('rules coverage report artifacts', () => {
   it('matches the deterministic report builder', () => {
-    const report = buildCoverageReport({
-      registry: TAX_RULE_REGISTRY,
-      attestations: COVERAGE_ATTESTATIONS,
-      baselineUnswept: BASELINE_UNSWEPT,
-      testSources,
-      intervals: DEFAULT_REVERIFICATION_INTERVAL_DAYS,
-      quoteFidelityLedger,
-    })
     expect(report.manifest.registry.total).toBe(taxRuleIds.length)
     const classificationTotal = Object.values(report.manifest.registry.byClassification)
       .reduce((sum, count) => sum + count, 0)
@@ -82,14 +80,17 @@ describe('rules coverage report artifacts', () => {
     }
   })
 
+  // The dueOn each row PUBLISHES is the value under test — read from the built
+  // manifest, never recomputed here, so a drifting builder formula fails instead
+  // of being mirrored by a local copy of the same arithmetic.
   it('agrees taxRulesDueForVerification due dates with the report builder', () => {
     for (const volatility of TAX_RULE_VOLATILITIES) {
-      const ruleId = taxRuleIds.find((candidate) => TAX_RULE_REGISTRY[candidate].volatility === volatility)
-      expect(ruleId, 'rule for volatility ' + volatility).toBeDefined()
-      const rule = TAX_RULE_REGISTRY[ruleId!]
-      const dueOn = dateAfterDays(rule.verifiedOn, DEFAULT_REVERIFICATION_INTERVAL_DAYS[volatility])
-      expect(taxRulesDueForVerification(dueOn)).toContain(ruleId)
-      expect(taxRulesDueForVerification(dayBefore(dueOn))).not.toContain(ruleId)
+      const manifestRule = report.manifest.rules.find(
+        (candidate) => TAX_RULE_REGISTRY[candidate.id as keyof typeof TAX_RULE_REGISTRY]?.volatility === volatility,
+      )
+      expect(manifestRule, 'manifest rule for volatility ' + volatility).toBeDefined()
+      expect(taxRulesDueForVerification(manifestRule!.dueOn)).toContain(manifestRule!.id)
+      expect(taxRulesDueForVerification(dayBefore(manifestRule!.dueOn))).not.toContain(manifestRule!.id)
     }
   })
 })
