@@ -11,16 +11,16 @@ The registry is the machine-checked chain from a rule to its implementation and 
 
 | Metric | Count |
 | --- | ---: |
-| Total rules | 265 |
-| Classification: approximated | 54 |
+| Total rules | 267 |
+| Classification: approximated | 56 |
 | Classification: outOfScope | 21 |
 | Classification: settled | 186 |
 | Classification: unsettled | 4 |
 | Volatility: annuallyIndexed | 37 |
 | Volatility: awaitingGuidance | 4 |
-| Volatility: staticStatute | 219 |
-| Volatility: sunsetting | 5 |
-| Federal jurisdiction | 208 |
+| Volatility: staticStatute | 220 |
+| Volatility: sunsetting | 6 |
+| Federal jurisdiction | 210 |
 | State jurisdiction total | 57 |
 
 | State jurisdiction | Count |
@@ -152,13 +152,13 @@ None.
 | strategies/optimizer.ts | 2026-08-24 | MILP prices brackets, IRMAA, ACA MAGI cap, RMD floors, §86 SS phase-in, LTCG; not registered here |
 | strategies/rothConversion.ts | 2026-08-24 | Bracket/IRMAA/ACA FPL/senior-deduction sizing via computeFederalTax; no record names this file |
 | tax/annualCharitableDeductionParameters.ts | 2026-08-24 | §170(b)(1)(I) 0.5% floor, §170(b)(1)(G) 60% limit, §68 thresholds/rate; only §170(p) cap record names this file |
-| tax/federalTax.ts | 2026-08-24 | implements §86 SS inclusion, NIIT, AMT screen, senior-deduction phase-out, LTCG stacking with records naming it, but §170(b)(1)(I)(ii) category waterfall is applied only in the ledger file its record names, and the OBBBA high-income SALT phase-out is unmodeled with no approximated/outOfScope record naming this file |
+| tax/federalTax.ts | 2026-08-26 | implements §86 SS inclusion, NIIT, AMT screen, senior-deduction phase-out, LTCG stacking with records naming it, but §170(b)(1)(I)(ii) category waterfall is applied only in the ledger file its record names |
 | tax/medicare.ts | 2026-08-24 | Post-pack premium premiumScale (healthcare-inflation stand-in); no record naming this file |
 | tax/propertySale.ts | 2026-08-24 | Personal-use capital loss nondeductible (gain floored at zero); no record naming this file |
 
 ## Re-verification due dates
 
-The 25 earliest due dates are shown below (265 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
+The 25 earliest due dates are shown below (267 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
 
 | Rule | Volatility | Verified on | Due on |
 | --- | --- | --- | --- |

@@ -34,8 +34,9 @@ exemption, phase-out threshold and 28%-rate threshold (55(d)(4)(B), 55(d)(3)(B))
 steps and the C-CPI-U basis are not reproduced — the same two approximations `limitScale` makes for the
 contribution limits. Figures with **no** indexing provision are deliberately left flat and creep by design:
 the §86 provisional-income tiers, the §1411 NIIT thresholds, the §121 exclusion, the §1211(b) $3,000 offset
-and the §151(d)(5)(C) senior deduction; the SALT cap follows its own §164(b)(7) schedule. The optimizer LP
-reads the same projected pack, so it prices conversions on the thresholds the exact ledger will apply.
+and the §151(d)(5)(C) senior deduction; the SALT cap follows its own §164(b)(7) schedule, but the high-MAGI
+phasedown is not modeled (`irc-164-b-7-B-magi-phasedown`). The optimizer LP reads the same projected pack, so it
+prices conversions on the thresholds the exact ledger will apply.
 State brackets are a separate question and are still held nominal (see `params/state/index.ts`).
 
 - **Ordinary income stack:** wages, interest, non-qualified dividends, traditional withdrawals/conversions,
@@ -50,10 +51,15 @@ State brackets are a separate question and are still held nominal (see `params/s
 - **Deductions:** standard deduction + age-65 additions + the **$6,000/person senior deduction
   (2025–2028)** — a major Roth-conversion interaction for 65+ planners; itemized as a
   simple user-entered total (SALT cap, mortgage interest, charitable) where it beats the standard.
+  Qualified mortgage-insurance premiums are omitted from that total even though the statute treats
+  them as qualified residence interest (`irc-163-h-3-E-i-pmi-qualified-residence-interest-restart`,
+  approximated / `overstatesTax`).
   IRC §151(d)(5)(C)(iii)(I) phases out the **per-person** $6,000 at 6% of MAGI over the threshold, so
   each qualifying person's share runs out separately and two people 65+ reach zero at the same MAGI as one.
-- **MAGI:** AGI plus foreign income excluded under §§911/931/933. Both the NIIT (§1411(d)) and the senior
-  deduction phase-out (§151(d)(5)(C)(iii)(II)) run off that figure rather than the AGI line.
+- **MAGI:** AGI plus foreign income excluded under §§911/931/933. The NIIT (§1411(d)), the senior
+  deduction phase-out (§151(d)(5)(C)(iii)(II)), and the high-MAGI SALT phasedown
+  (`irc-164-b-7-B-magi-phasedown`, not yet wired) all run off that same addback definition rather than
+  the AGI line.
 - **NIIT** 3.8% over $200k/$250k MAGI (unindexed). **Early-withdrawal penalty** 10% pre-59½, with the
   Rule-of-55 / 72(t) **SEPP** exceptions ([strategies/sepp.ts](../../packages/engine/src/strategies/sepp.ts)).
   Both SEPP methods — required-minimum-distribution and amortization — divide by the IRS **Single Life Table**

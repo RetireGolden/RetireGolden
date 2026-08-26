@@ -485,6 +485,181 @@ describe('SALT cap schedule', () => {
   })
 })
 
+describe('SALT high-MAGI phasedown approximation (2026)', () => {
+  // Observed produced pin (fixture run 2026-08-26; reconfirmed with AGI-above-
+  // threshold inputs): year2026's $40,400 pack value × 1.01^(2026 - 2026) =
+  // $40,400, and the itemized path adds $30,000 of mortgage interest, producing
+  // $70,400 exactly as derived. The engine ignores both MAGI and AGI phasedown.
+  const producedEngineItemizedTotal = 70_400
+
+  // Single filer, 2026: AGI $605,000 + $100,000 of section 911/931/933 excluded
+  // income = $705,000 MAGI. MAGI excess over $505,000 is $200,000 → $60,000
+  // reduction → $10,000 statutory floor. With $30,000 mortgage interest:
+  //   statute (MAGI):              $10,000 SALT + $30,000 interest = $40,000
+  //   wrong AGI-based phasedown:   AGI excess $100,000 → $30,000 reduction →
+  //                                $10,400 SALT + $30,000 interest = $40,400
+  //   engine:                      $40,400 SALT + $30,000 interest = $70,400
+  // AGI is below the $640,600 section 68 threshold, so no other itemized
+  // limitation obscures the gap; both readings still itemize.
+  describeRule('irc-164-b-7-B-magi-phasedown', {
+    readings: {
+      statuteAppliesTheTenThousandDollarFloor: 40_000,
+      agiBasedPhasedownInsteadOfMagi: 40_400,
+      statutoryThirtyPercentReduction: 55_400,
+      engineKeepsTheFullScheduledSaltCap: producedEngineItemizedTotal,
+    },
+    accepted: 'statuteAppliesTheTenThousandDollarFloor',
+    produced: 'engineKeepsTheFullScheduledSaltCap',
+    note: '2026 MAGI $705,000 reaches the $10,000 SALT floor; mid-phase locks 30%',
+  }, ({ accepted, produced, readings }) => {
+    const statutorySaltCap = 10_000
+    const mortgageInterest = 30_000
+
+    function highMagiItemizer(stateAndLocalTaxes: number) {
+      return input({
+        ordinaryIncome: 605_000,
+        foreignExclusionAddback: 100_000,
+        itemizedDeductions: { stateAndLocalTaxes, mortgageInterest, charitable: 0 },
+      })
+    }
+
+    // Mid-phase: MAGI $555,000 → excess $50,000 → 30% × $50,000 = $15,000
+    // reduction → cap $25,400 + $30,000 interest = $55,400.
+    function midPhaseItemizer(stateAndLocalTaxes: number) {
+      return input({
+        ordinaryIncome: 555_000,
+        foreignExclusionAddback: 0,
+        itemizedDeductions: { stateAndLocalTaxes, mortgageInterest, charitable: 0 },
+      })
+    }
+
+    it('keeps the full scheduled cap rather than applying the high-MAGI floor', () => {
+      const result = computeFederalTax(highMagiItemizer(100_000))
+      const pack = packForYear(2026).pack
+
+      expect(result.agi).toBe(605_000)
+      expect(result.magi).toBe(705_000)
+      expect(result.section68Limitation).toBe(0)
+      expect(result.itemized).toBe(true)
+      expect(saltCapForYear(pack, result.year)).toBe(40_400)
+      expect(result.deduction).toBe(produced)
+      expect(result.deduction).not.toBe(accepted)
+      // An AGI-based phasedown (excess $100,000 → reduction $30,000 → cap
+      // $10,400 → itemized $40,400) is a different wrong figure from the
+      // MAGI-based statutory floor; the engine matches neither.
+      expect(result.deduction).not.toBe(readings.agiBasedPhasedownInsteadOfMagi)
+    })
+
+    it('keeps the full scheduled cap mid-phase rather than the 30% reduction', () => {
+      const result = computeFederalTax(midPhaseItemizer(100_000))
+
+      expect(result.agi).toBe(555_000)
+      expect(result.magi).toBe(555_000)
+      expect(result.section68Limitation).toBe(0)
+      expect(result.itemized).toBe(true)
+      expect(result.deduction).toBe(produced)
+      expect(result.deduction).not.toBe(readings.statutoryThirtyPercentReduction)
+    })
+
+    it('understates tax compared with the itemized return using the statutory floor', () => {
+      const engine = computeFederalTax(highMagiItemizer(100_000))
+      const statutory = computeFederalTax(highMagiItemizer(statutorySaltCap))
+
+      expect(statutory.deduction).toBe(accepted)
+      expect(statutory.deduction).toBe(statutorySaltCap + mortgageInterest)
+      expect(engine.alternativeMinimumTax).toBe(0)
+      expect(statutory.alternativeMinimumTax).toBe(0)
+      // errorDirection: 'understatesTax'.
+      expect(engine.totalTax).toBeLessThan(statutory.totalTax)
+    })
+  })
+})
+
+describe('qualified mortgage-insurance premium approximation (2026)', () => {
+  // Mirrors irc-213-a-medical-expense-deduction: statute treats a hypothesized
+  // premium as qualified residence interest → higher itemized total; the engine
+  // has no PMI input → produced total without it.
+  //
+  // Single filer, AGI $80,000 (below the $100,000 phaseout), $30,000 SALT (under
+  // the $40,400 2026 cap), $20,000 mortgage interest, $5,000 qualifying PMI:
+  //   statute: $30,000 + $20,000 + $5,000 = $55,000
+  //   engine:  $30,000 + $20,000           = $50,000
+  // Observed produced pin: $50,000.
+  const producedEngineItemizedTotal = 50_000
+
+  describeRule('irc-163-h-3-E-i-pmi-qualified-residence-interest-restart', {
+    readings: { statuteTreatsPremiumAsInterest: 55_000, engineOmitsPmiEntirely: producedEngineItemizedTotal },
+    accepted: 'statuteTreatsPremiumAsInterest',
+    produced: 'engineOmitsPmiEntirely',
+    note: 'qualifying PMI omitted from itemized total for a household already itemizing',
+  }, ({ accepted, produced }) => {
+    const pmiPremiums = 5_000
+    const grossIncome = 80_000
+    const otherItemized = { stateAndLocalTaxes: 30_000, mortgageInterest: 20_000, charitable: 0 }
+    const asMortgageInterest = (
+      items: { stateAndLocalTaxes: number, mortgageInterest: number, charitable: number },
+      premium: number,
+    ) => ({ ...items, mortgageInterest: items.mortgageInterest + premium })
+    const withExtraFacts = (
+      items: typeof otherItemized,
+      facts: Readonly<Record<string, number>>,
+    ) => ({ ...items, ...facts }) as typeof otherItemized
+
+    it('omits qualifying PMI from the itemized total', () => {
+      const detail = computeFederalTax(input({
+        ordinaryIncome: grossIncome,
+        itemizedDeductions: otherItemized,
+      }))
+
+      expect(detail.agi).toBe(grossIncome)
+      expect(detail.itemized).toBe(true)
+      expect(detail.section68Limitation).toBe(0)
+      expect(detail.deduction).toBe(produced)
+      expect(detail.deduction).not.toBe(accepted)
+    })
+
+    it('ignores PMI however it is supplied under plausible field names', () => {
+      const supplied = computeFederalTax(input({
+        ordinaryIncome: grossIncome,
+        itemizedDeductions: withExtraFacts(otherItemized, {
+          mortgageInsurancePremiums: pmiPremiums,
+          qualifiedMortgageInsurancePremiums: pmiPremiums,
+          pmi: pmiPremiums,
+          privateMortgageInsurance: pmiPremiums,
+        }),
+      }))
+
+      expect(supplied.deduction).toBe(produced)
+    })
+
+    it('reaches the statutory deduction only when the premium is smuggled in as mortgage interest', () => {
+      const statutory = computeFederalTax(input({
+        ordinaryIncome: grossIncome,
+        itemizedDeductions: asMortgageInterest(otherItemized, pmiPremiums),
+      }))
+
+      expect(statutory.deduction).toBe(accepted)
+      expect(accepted - produced).toBe(pmiPremiums)
+    })
+
+    it('overstates tax, by the deduction it cannot see at the marginal rate', () => {
+      const engine = computeFederalTax(input({
+        ordinaryIncome: grossIncome,
+        itemizedDeductions: otherItemized,
+      }))
+      const statutory = computeFederalTax(input({
+        ordinaryIncome: grossIncome,
+        itemizedDeductions: asMortgageInterest(otherItemized, pmiPremiums),
+      }))
+
+      expect(engine.alternativeMinimumTax).toBe(0)
+      expect(statutory.alternativeMinimumTax).toBe(0)
+      // errorDirection: 'overstatesTax'.
+      expect(engine.totalTax).toBeGreaterThan(statutory.totalTax)
+    })
+  })
+})
+
 describe('age-based deductions', () => {
   // IRC 63(f)(1) grants the additional amount separately for the taxpayer under
   // (A) and for a qualifying spouse under (B). On a joint return with two

@@ -250,7 +250,7 @@ export const COVERAGE_ATTESTATIONS: Readonly<Record<string, CoverageAttestation>
   'tax/aca.ts': Object.freeze({ status: 'registered', sweptOn: '2026-08-24', note: null }),
   'tax/aggregateBasisSale.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'tax/annualCharitableDeductionParameters.ts': Object.freeze({ status: 'partial', sweptOn: '2026-08-24', note: '§170(b)(1)(I) 0.5% floor, §170(b)(1)(G) 60% limit, §68 thresholds/rate; only §170(p) cap record names this file' }),
-  'tax/federalTax.ts': Object.freeze({ status: 'partial', sweptOn: '2026-08-24', note: 'implements §86 SS inclusion, NIIT, AMT screen, senior-deduction phase-out, LTCG stacking with records naming it, but §170(b)(1)(I)(ii) category waterfall is applied only in the ledger file its record names, and the OBBBA high-income SALT phase-out is unmodeled with no approximated/outOfScope record naming this file' }),
+  'tax/federalTax.ts': Object.freeze({ status: 'partial', sweptOn: '2026-08-26', note: 'implements §86 SS inclusion, NIIT, AMT screen, senior-deduction phase-out, LTCG stacking with records naming it, but §170(b)(1)(I)(ii) category waterfall is applied only in the ledger file its record names' }),
   'tax/medicare.ts': Object.freeze({ status: 'partial', sweptOn: '2026-08-24', note: 'Post-pack premium premiumScale (healthcare-inflation stand-in); no record naming this file' }),
   'tax/propertySale.ts': Object.freeze({ status: 'partial', sweptOn: '2026-08-24', note: 'Personal-use capital loss nondeductible (gain floored at zero); no record naming this file' }),
   'tax/stateTax.ts': Object.freeze({ status: 'registered', sweptOn: '2026-08-24', note: null }),
