@@ -1820,3 +1820,46 @@ describeRule('irc-83-a-equity-compensation-execution-character', {
     expect(character.amount).not.toBe(accepted)
   })
 })
+
+// Zero-basis cliff vesting $100 in the execution year; only $75 is executed.
+// Section 83(a) includes the excess of FMV over amount paid when the property
+// first becomes transferable / free of substantial risk of forfeiture — the
+// full vested $100 — while the executor reports ordinary income only on the
+// executed $75.
+// Observed produced pin (fixture run 2026-08-26): executor reports ordinary
+// income only on the executed $75 of a same-year $100 cliff vest.
+const producedSection83PartialCliffOrdinary = 75
+
+describeRule('irc-83-a-equity-compensation-execution-character', {
+  readings: {
+    statuteIncludesFullVestedValueAtCliff: 100,
+    engineReportsOrdinaryOnlyOnExecutedAmount: producedSection83PartialCliffOrdinary,
+  },
+  accepted: 'statuteIncludesFullVestedValueAtCliff',
+  produced: 'engineReportsOrdinaryOnlyOnExecutedAmount',
+  note: 'partial-execution cliff vest',
+}, ({ accepted, produced }) => {
+  it('reports ordinary income only on the executed part of a same-year cliff vest', () => {
+    const request = withdrawal({
+      actionId: 'section-83-partial-cliff',
+      sequence: 1,
+      executionDate: '2030-06-15',
+      allocations: [allocation('partial-cliff-allocation', 'equity', 75)],
+    })
+    const result = run(
+      planWith(equityComp('equity', {
+        vestingMode: 'cliff',
+        vestDate: '2030-06-15',
+      })),
+      [request],
+      balances([['equity', 100]]),
+    )
+    const evidence = result.evidence[0]!
+    if (evidence.readiness !== 'actionable') throw new Error('expected actionable equity execution')
+    const character = evidence.taxCharacter[0]
+    if (character?.kind !== 'ordinaryIncome') throw new Error('expected ordinary-income character')
+
+    expect(character.amount).toBe(produced)
+    expect(character.amount).not.toBe(accepted)
+  })
+})

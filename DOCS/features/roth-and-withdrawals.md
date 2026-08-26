@@ -97,7 +97,7 @@ principal. Equity compensation currently uses the explicit planning boundary
 `fullyTaxableCompensationAtExecution`, so the executor classifies the complete executed amount as ordinary income.
 That is an approximation, not a claim that §83 always recognizes compensation at execution: the model has no
 transfer date, §83(b) election, amount paid, grant type, or post-vesting holding-period facts
-(`irc-83-a-equity-compensation-execution-character`, approximated / overstates tax). A `final` equity-comp account
+(`irc-83-a-equity-compensation-execution-character`, approximated / both directions). A `final` equity-comp account
 supplies explicit already-vested evidence without inventing a historical vest date; a cliff account requires an
 exact execution date on or after its recorded vest date.
 

@@ -2,21 +2,21 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 1,
   "registry": {
-    "total": 288,
+    "total": 289,
     "byClassification": {
-      "approximated": 61,
+      "approximated": 62,
       "outOfScope": 35,
       "settled": 188,
       "unsettled": 4
     },
     "byVolatility": {
-      "annuallyIndexed": 43,
+      "annuallyIndexed": 44,
       "awaitingGuidance": 10,
       "staticStatute": 229,
       "sunsetting": 6
     },
     "byJurisdiction": {
-      "federal": 231,
+      "federal": 232,
       "states": {
         "AK": 1,
         "AR": 9,
@@ -1939,7 +1939,7 @@
     },
     {
       "id": "irc-401-a-17-plan-compensation-cap",
-      "classification": "outOfScope",
+      "classification": "approximated",
       "jurisdiction": "federal",
       "volatility": "annuallyIndexed",
       "effectiveFrom": 2026,
@@ -1950,7 +1950,9 @@
         "packages/engine/src/model/plan.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
-      "fixtureFiles": []
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/simulateContributionsAndQcd.approximation.test.ts"
+      ]
     },
     {
       "id": "irc-401-a-9-B-ii-non-designated-beneficiary-five-year-rule",
@@ -2786,6 +2788,21 @@
       "fixtureFiles": []
     },
     {
+      "id": "irc-408-p-2-E-i-II-simple-enhanced-elective-deferral-election",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2026-12-24",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "fixtureFiles": []
+    },
+    {
       "id": "irc-408A-c-2-roth-shares-the-section-219-ceiling",
       "classification": "settled",
       "jurisdiction": "federal",
@@ -3138,7 +3155,7 @@
       ]
     },
     {
-      "id": "irc-457-b-3-governmental-final-three-year-catch-up",
+      "id": "irc-457-b-3-final-three-year-catch-up",
       "classification": "outOfScope",
       "jurisdiction": "federal",
       "volatility": "annuallyIndexed",
@@ -3376,7 +3393,7 @@
       "classification": "outOfScope",
       "jurisdiction": "federal",
       "volatility": "awaitingGuidance",
-      "effectiveFrom": 2026,
+      "effectiveFrom": 2027,
       "effectiveThrough": null,
       "verifiedOn": "2026-08-26",
       "dueOn": "2026-11-24",
@@ -3391,7 +3408,7 @@
       "classification": "outOfScope",
       "jurisdiction": "federal",
       "volatility": "awaitingGuidance",
-      "effectiveFrom": 2026,
+      "effectiveFrom": 2027,
       "effectiveThrough": null,
       "verifiedOn": "2026-08-26",
       "dueOn": "2026-11-24",

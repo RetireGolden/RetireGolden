@@ -166,9 +166,10 @@ FICA wages that **exceed** $150k (2026+; user-entered on the employer account). 
 (`contributionPhaseSchema`: per-phase amount with optional `fromAge`/`toAge` window and annual `escalationPct`
 for salary-growth ramps), so an early-career accumulator's rising savings are modeled honestly.
 
-The annual ceilings are not a plan-document compliance engine: SIMPLE 401(k) status, qualified-plan compensation,
-vesting, the 403(b) 15-year catch-up, and the governmental 457(b) final-three-year catch-up are absent rather than
-inferred. A traditional IRA deposit is modeled as pre-tax even though §219(g)'s workplace-plan deduction phase-out
+The annual ceilings are not a plan-document compliance engine: SIMPLE 401(k) status, vesting, the 403(b) 15-year
+catch-up, and the 457(b) final-three-year catch-up are absent rather than inferred. Qualified-plan compensation
+and catch-up permission are approximated ceilings rather than refusals. A traditional IRA deposit is modeled as
+pre-tax even though §219(g)'s workplace-plan deduction phase-out
 is not calculated, and neither IRA/Roth nor HSA excess-contribution excise is priced. See domain rules §5 for the
 registered boundaries and authorities.
 

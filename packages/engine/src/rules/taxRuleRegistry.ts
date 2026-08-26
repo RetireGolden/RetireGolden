@@ -9997,12 +9997,12 @@ const registry = {
   'irc-401-k-11-simple-401-k-elective-deferral-limit': {
     title: 'SIMPLE 401(k) elective deferrals use the separate SIMPLE limit',
     statement:
-      'A SIMPLE 401(k) participant election may not exceed the section 408(p)(2)(A)(ii) amount, which Notice 2025-67 sets at 17,000 dollars for 2026, rather than the general 24,500-dollar section 402(g)(1) limit. Not modelled: an employer account can be labelled only 401k, 403b, or 457b; it cannot establish that a 401(k) is a SIMPLE 401(k), so the projection cannot select the separate limit.',
+      'A SIMPLE 401(k) participant election may not exceed the section 408(p)(2)(A)(ii) amount. Notice 2025-67 sets the generally applicable section 408(p)(2)(E)(i)(III) amount at 17,000 dollars for 2026, rather than the general 24,500-dollar section 402(g)(1) limit; a section 408(p)(2)(E)(i)(II) election that permits the enhanced adjusted-dollar amount is a separate claim registered at irc-408-p-2-E-i-II-simple-enhanced-elective-deferral-election. Not modelled: an employer account can be labelled only 401k, 403b, or 457b; it cannot establish that a 401(k) is a SIMPLE 401(k), so the projection cannot select the separate limit.',
     classification: 'outOfScope',
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The generic 402(g) aggregate record is deliberately not extended to call a 401(k) SIMPLE: that plan-document status is absent. model/plan.test.ts gates the employer-plan-type membership, and actions/contract.test.ts gates the absence of a plan-term correction/action arm.',
+      'The generic 402(g) aggregate record is deliberately not extended to call a 401(k) SIMPLE: that plan-document status is absent. model/plan.test.ts gates the employer-plan-type membership, and actions/contract.test.ts gates the absence of a plan-term correction/action arm. The enhanced-limit election under 408(p)(2)(E)(i)(II) is not carried here — one claim per record.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -10027,15 +10027,60 @@ const registry = {
     ],
   },
 
-  'irc-401-a-17-plan-compensation-cap': {
-    title: 'Qualified-plan compensation taken into account is capped',
+  'irc-408-p-2-E-i-II-simple-enhanced-elective-deferral-election': {
+    title: 'A SIMPLE plan may elect the enhanced elective-deferral dollar amount',
     statement:
-      'For a qualified trust, section 401(a)(17) limits the annual compensation of an employee taken into account under the plan; Notice 2025-67 sets that indexed limit at 360,000 dollars for 2026. Section 415(c) separately caps a modeled defined-contribution annual addition at the lesser of the section 415(c) dollar limit and compensation, but the Plan has no plan-defined compensation amount or qualified-plan terms from which to determine what the employer actually takes into account under 401(a)(17).',
+      'Section 408(p)(2)(E)(i)(II) lets an eligible employer that is not described in subclause (I) elect the adjusted dollar amount — 110 percent of the section 408(p)(2)(E)(i)(III) amount in effect for calendar year 2024, as further indexed — and section 401(k)(11)(B)(i)(I) applies that election to a SIMPLE 401(k). Notice 2025-67 distinguishes that enhanced limb from the generally applicable section 408(p)(2)(E)(i)(III) amount. Not modelled: the Plan has no SIMPLE status, employer-size fact, or 408(p)(2)(E)(i)(II) election, so the projection cannot select the enhanced limit.',
     classification: 'outOfScope',
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The projection uses household wage income as a 415(c) compensation proxy and applies simple match percentages to it. It does not carry a plan-defined section 401(a)(17) compensation base, exclusions, or qualification terms. model/plan.test.ts gates that absence; this is not an assertion that the wage proxy establishes the plan term.',
+      'Separated from irc-401-k-11-simple-401-k-elective-deferral-limit so each record carries one claim: that record is the generally applicable (i)(III) amount; this one is the election limb. model/plan.test.ts gates employer-plan-type membership against a simple401k arm, and actions/contract.test.ts gates the absence of a plan-term election/action.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 401(k)(11)(B)(i)(I)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section401&num=0&edition=prelim',
+      quotedText:
+        'an employee may elect to have the employer make elective contributions for the year on behalf of the employee to a trust under the plan in an amount which is expressed as a percentage of compensation of the employee but which in no event exceeds the amount in effect under section 408(p)(2)(A)(ii) (after the application of any election under section 408(p)(2)(E)(i)(II)),',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 408(p)(2)(E)(i)(II)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim',
+      quotedText:
+        'the adjusted dollar amount in the case of an eligible employer described in clause (iii) which is not described in subclause (I) and which elects, at such time and in such manner as prescribed by the Secretary, the application of this subclause for the year, and',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 408(p)(2)(E)(ii)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim',
+      quotedText:
+        'For purposes of clause (i), the adjusted dollar amount is an amount equal to 110 percent of the dollar amount in effect under clause (i)(III) for calendar year 2024.',
+    }, {
+      kind: 'irsNotice',
+      citation: 'Notice 2025-67, SIMPLE retirement account and SIMPLE 401(k) limitation',
+      url: 'https://www.irs.gov/pub/irs-drop/n-25-67.pdf',
+      quotedText:
+        'The limitation under section 408(p)(2)(E)(i)(III) that generally applies to salary reduction contributions under a SIMPLE retirement account or elective contributions under a SIMPLE 401(k) plan is increased from $16,500 to $17,000.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-26',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+  },
+
+  'irc-401-a-17-plan-compensation-cap': {
+    title: 'Qualified-plan compensation taken into account is capped',
+    statement:
+      'For a qualified trust, section 401(a)(17) limits the annual compensation of an employee taken into account under the plan; Notice 2025-67 sets that indexed limit at 360,000 dollars for 2026. The projection instead applies a simple employer-match percentage to uncapped household wages, so a 500,000-dollar wage year with a 100-percent-of-deferral match capped at 6 percent of pay and a 24,500-dollar elective receives a 24,500-dollar match rather than the 21,600-dollar match that 6 percent of the 360,000-dollar compensation cap would allow. Section 415(c) does not repair the overstatement when the combined annual additions remain under the 415(c) dollar limit. The Plan has no plan-defined compensation amount or qualified-plan terms from which to determine what the employer actually takes into account under 401(a)(17).',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'understatesTax',
+    conventionRationale:
+      'DEFECT — no behavior change in this registration slice. The match dollars are not current-year taxable income; they inflate tax-deferred balances and therefore defer and understate future tax while overstating resources. That is the same resource-inflating / future-tax-understating shape as irc-414-v-1-plan-permitted-catch-up and irc-408A-c-3-roth-contribution-agi-phase-out, which also use understatesTax when the engine admits more tax-advantaged contribution than the authority allows. The fixture pins employerMatch at the uncapped 24,500 against the statute\'s 21,600 until a separately authorized implementation fix changes it. model/plan.test.ts still gates the absent plan-defined compensation field.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -10343,15 +10388,15 @@ const registry = {
     ],
   },
 
-  'irc-457-b-3-governmental-final-three-year-catch-up': {
-    title: 'Governmental 457(b) has a separate final-three-taxable-year catch-up',
+  'irc-457-b-3-final-three-year-catch-up': {
+    title: 'An eligible 457(b) plan may provide a final-three-taxable-year catch-up',
     statement:
-      'A governmental eligible employer is a State, political subdivision, agency, or instrumentality. Its eligible 457(b) plan may provide a special ceiling for one or more of the participant\'s last three taxable years before normal retirement age: the lesser of twice the ordinary ceiling or the current ordinary ceiling plus unused earlier ceiling. Not modelled: an employerPlanType of 457b does not establish a governmental sponsor, normal retirement age under the plan, plan provision, or prior unused ceiling, so the projection cannot apply the special catch-up.',
+      'Section 457(b)(3) lets an eligible deferred compensation plan provide a special ceiling for one or more of the participant\'s last three taxable years before normal retirement age: the lesser of twice the ordinary ceiling or the current ordinary ceiling plus unused earlier ceiling. Eligible employers include both a State, political subdivision, agency, or instrumentality under section 457(e)(1)(A) and any other organization (other than a governmental unit) exempt from tax under the subtitle under section 457(e)(1)(B). Not modelled: an employerPlanType of 457b does not establish eligible-employer status, normal retirement age under the plan, plan provision, or prior unused ceiling, so the projection cannot apply the special catch-up.',
     classification: 'outOfScope',
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The generic employer-deferral allocator treats 457b only as a plan class and has no final-three-year state. model/plan.test.ts gates the missing sponsor, normal-retirement-age, and unused-deferral fields; actions/contract.test.ts gates the absence of an attested special-catch-up action.',
+      'The generic employer-deferral allocator treats 457b only as a plan class and has no final-three-year state. model/plan.test.ts gates the missing sponsor, normal-retirement-age, and unused-deferral fields; actions/contract.test.ts gates the absence of an attested special-catch-up action. The id drops "governmental" because section 457(b)(3) is not limited to governmental sponsors.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -10359,6 +10404,12 @@ const registry = {
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section457&num=0&edition=prelim',
       quotedText:
         'a State, political subdivision of a State, and any agency or instrumentality of a State or political subdivision of a State, and',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 457(e)(1)(B)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section457&num=0&edition=prelim',
+      quotedText:
+        'any other organization (other than a governmental unit) exempt from tax under this subtitle.',
     }, {
       kind: 'statute',
       citation: 'IRC 457(b)(3)',
@@ -10379,12 +10430,12 @@ const registry = {
   'irc-83-a-equity-compensation-execution-character': {
     title: 'Equity-compensation execution is not universally ordinary income at execution',
     statement:
-      'Section 61 includes compensation for services in gross income, but for property transferred for services section 83(a) includes the excess value in the first taxable year when the rights become transferable or no longer carry a substantial risk of forfeiture. The named ordinary-withdrawal executor instead classifies every available equity-compensation execution as its full amount of ordinary income at execution, without a transfer date, section 83(b) election, amount paid, grant type, or post-vesting basis/holding-period facts. For already vested property, that convention can charge section 83 compensation after the statutory inclusion year and overstates tax.',
+      'Section 61 includes compensation for services in gross income, but for property transferred for services section 83(a) includes the excess value in the first taxable year when the rights become transferable or no longer carry a substantial risk of forfeiture. The named ordinary-withdrawal executor instead classifies every available equity-compensation execution as its full amount of ordinary income at execution, without a transfer date, section 83(b) election, amount paid, grant type, or post-vesting basis/holding-period facts. For already vested property, that convention can charge section 83 compensation after the statutory inclusion year and overstates tax. For a zero-basis cliff account that vests in the execution year, section 83(a) includes the full vested value even when only part is executed, so classifying only the executed amount understates tax in that year.',
     classification: 'approximated',
     contraryReading: null,
-    errorDirection: 'overstatesTax',
+    errorDirection: 'bothDirections',
     conventionRationale:
-      'DEFECT — no behavior change in this registration slice. actions/execution.ts emits fullyTaxableCompensationAtExecution with ordinaryIncomeAmount equal to the whole executed amount. The fixture drives that named execution path with its own alreadyVested evidence and derives a zero section 83(a) compensation amount in the later execution year; the observed output classifies the whole 75-dollar execution as ordinary income, pinned until a separately authorized implementation fix changes it.',
+      'DEFECT — no behavior change in this registration slice. actions/execution.ts emits fullyTaxableCompensationAtExecution with ordinaryIncomeAmount equal to the whole executed amount. One fixture drives the alreadyVested path and derives a zero section 83(a) compensation amount in the later execution year while the engine classifies the whole 75-dollar execution as ordinary income (overstates tax). A second fixture drives a zero-basis cliff vesting 100 dollars in the execution year with only 75 executed: section 83(a) includes the full 100 of vested value, but the executor reports ordinary income only on the executed 75 (understates tax). Both signs are pinned until a separately authorized implementation fix changes them.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -10626,7 +10677,7 @@ const registry = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'This is deliberately registered ahead of the first statutory tax year rather than projected as a 2026 credit. The plan model has no Saver\'s Match eligibility, qualifying-contribution, match-payment, or match-account fields, and the action contract has no claim or deposit kind. Those schema and action-vocabulary refusals are covered in model/plan.test.ts and actions/contract.test.ts.',
+      'This is deliberately registered ahead of the first statutory tax year rather than projected as a 2026 credit. The plan model has no Saver\'s Match eligibility, qualifying-contribution, match-payment, or match-account fields, and the action contract has no claim or deposit kind. Those schema and action-vocabulary refusals are covered in model/plan.test.ts and actions/contract.test.ts. effectiveFrom is 2027 because the enacting applicability is taxable years beginning after December 31, 2026 — the rule cannot govern a 2026 pack year.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -10648,7 +10699,7 @@ const registry = {
         'For taxable years beginning after December 31, 2026, section 6433 of the Code allows certain low- and moderate-income individuals who make qualified retirement savings contributions to receive matching contributions of up to $1,000 (Saver\u2019s Match contributions) paid by the Secretary of the Treasury or the Secretary\u2019s delegate (Secretary) to applicable retirement savings vehicles.',
     }],
     volatility: 'awaitingGuidance',
-    effectiveFrom: 2026,
+    effectiveFrom: 2027,
     effectiveThrough: null,
     verifiedOn: '2026-08-26',
     implementedBy: [
@@ -10665,7 +10716,7 @@ const registry = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The recovery rule depends on a section 6433(a)(2) contribution history, end-of-year Saver\'s Match balance, and the specified-early-distribution classification. None is expressible on an account or a retirement action. The missing Saver\'s Match schema and action vocabulary are refused by the additive gates in model/plan.test.ts and actions/contract.test.ts.',
+      'The recovery rule depends on a section 6433(a)(2) contribution history, end-of-year Saver\'s Match balance, and the specified-early-distribution classification. None is expressible on an account or a retirement action. The missing Saver\'s Match schema and action vocabulary are refused by the additive gates in model/plan.test.ts and actions/contract.test.ts. effectiveFrom is 2027 because the enacting applicability is taxable years beginning after December 31, 2026 — the rule cannot govern a 2026 pack year.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -10681,7 +10732,7 @@ const registry = {
         'For taxable years beginning after December 31, 2026, section 6433 of the Code allows certain low- and moderate-income individuals who make qualified retirement savings contributions to receive matching contributions of up to $1,000 (Saver\u2019s Match contributions) paid by the Secretary of the Treasury or the Secretary\u2019s delegate (Secretary) to applicable retirement savings vehicles.',
     }],
     volatility: 'awaitingGuidance',
-    effectiveFrom: 2026,
+    effectiveFrom: 2027,
     effectiveThrough: null,
     verifiedOn: '2026-08-26',
     implementedBy: [

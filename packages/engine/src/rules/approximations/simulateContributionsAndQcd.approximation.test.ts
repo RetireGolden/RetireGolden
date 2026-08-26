@@ -117,6 +117,46 @@ function year2026(plan: Plan, taxCalculator = noTax) {
   return result.years.find((y) => y.year === 2026)!
 }
 
+// IRC 401(a)(17) / Notice 2025-67: 2026 compensation taken into account is
+// capped at 360,000. A 100%-of-deferral match capped at 6% of pay on 500,000
+// of wages with a 24,500 elective yields match of 24,500 on uncapped wages
+// (min(24,500, 0.06 × 500,000)), but only 21,600 once wages are capped at
+// 360,000 (0.06 × 360,000). Section 415(c) does not repair it: 24,500 + 24,500
+// stays under the 72,000 annual-additions limit.
+// Observed produced pin (fixture run 2026-08-26): employerMatch stays at the
+// uncapped 24,500 figure.
+const producedUncapped401a17Match = 24_500
+
+describeRule('irc-401-a-17-plan-compensation-cap', {
+  readings: {
+    matchOnCappedCompensation: 21_600,
+    matchOnUncappedWages: producedUncapped401a17Match,
+  },
+  accepted: 'matchOnCappedCompensation',
+  produced: 'matchOnUncappedWages',
+  note: 'uncapped wages inflate the 6%-of-pay match',
+}, ({ accepted, produced }) => {
+  it('computes employer match from uncapped wages above the 401(a)(17) cap', () => {
+    const plan = soloPlan('1990-06-15', 70)
+    plan.incomes = [wages(500_000)]
+    const employer = employerTraditional(0, 24_500)
+    if (employer.type !== 'traditional') throw new Error('expected traditional')
+    plan.accounts = [
+      cash(0),
+      { ...employer, employerMatch: { matchPct: 100, capPctOfPay: 6 } },
+    ]
+
+    const year = year2026(plan)
+    expect(year.employerMatch).toBeCloseTo(produced, 6)
+    expect(year.employerMatch).not.toBeCloseTo(accepted, 6)
+    // 415(c) does not repair the overstatement: combined additions stay under
+    // the pack's 72,000 dollar annual-additions limit.
+    expect(year.contributions + year.employerMatch).toBeLessThan(
+      pack2026.contributionLimits.section415cLimit,
+    )
+  })
+})
+
 // Deliberately below the 219(b)(1) dollar limit, so nothing in either fixture
 // below turns on the limit itself: the whole requested amount is allowable on
 // the accepted reading, and the readings differ only over the gap being pinned.

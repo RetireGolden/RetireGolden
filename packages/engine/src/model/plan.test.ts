@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { asUsdCents } from '../actions/money.js'
 import {
   createEmptyPlan,
+  accountUnionSchema,
   equityCompAccountSchema,
   hsaAccountSchema,
   parsePlan,
@@ -516,10 +517,10 @@ describe('parsePlan', () => {
 describe('unmodelled employer-plan and HSA legal facts', () => {
   it('does not add plan-term or Medicare-entitlement fields merely by accepting an account', () => {
     // Refusal coverage for the out-of-scope SIMPLE 401(k), 401(a)(17),
-    // catch-up-permission, 411 vesting, 402(g)(7), and governmental 457(b)(3)
+    // catch-up-permission, 411 vesting, 402(g)(7), and 457(b)(3)
     // records. The schema
     // deliberately has an employer-plan CLASS but none of these legal facts.
-    for (const fact of [
+    const planTermFacts = [
       'simple401k',
       'section401a17Compensation',
       'vestingSchedule',
@@ -531,9 +532,26 @@ describe('unmodelled employer-plan and HSA legal facts', () => {
       'governmental457bSponsor',
       'normalRetirementAgeUnderPlan',
       'priorUnused457bCeiling',
-    ]) {
+    ] as const
+    for (const fact of planTermFacts) {
       expect(fact in traditionalAccountSchema.shape).toBe(false)
+      // Roth employer accounts share the same plan-term vocabulary gap.
+      expect(fact in rothAccountSchema.shape).toBe(false)
     }
+
+    // Exact employerPlanType enum membership: adding 'simple401k' (or any
+    // other label) must break this gate, not merely a field-name absence.
+    const employerPlanTypeField = traditionalAccountSchema.shape.employerPlanType as {
+      options?: readonly string[]
+      unwrap?: () => { options: readonly string[] }
+      def?: { type?: string; innerType?: { options?: readonly string[] } }
+    }
+    const employerPlanTypeOptions =
+      employerPlanTypeField.options
+      ?? employerPlanTypeField.unwrap?.().options
+      ?? employerPlanTypeField.def?.innerType?.options
+    expect(employerPlanTypeOptions).toBeDefined()
+    expect(new Set(employerPlanTypeOptions)).toEqual(new Set(['401k', '403b', '457b']))
 
     // The Medicare Part A entitlement/backdating and month-by-month HSA
     // coverage facts are similarly absent; age-based healthcare pricing is not
@@ -560,6 +578,30 @@ describe('unmodelled employer-plan and HSA legal facts', () => {
   })
 
   it('does not admit PLESA or Saver\'s Match account facts', () => {
+    // Bind the account discriminated union's type literals themselves, not
+    // only field-name absence: a future type:'plesa' arm would otherwise slip
+    // through the field gate below. Mirror actions/contract.test.ts.
+    const accountTypeLiterals = accountUnionSchema.options.map((option) =>
+      String(option.shape.type.value),
+    )
+    expect(new Set(accountTypeLiterals)).toEqual(
+      new Set([
+        'taxable',
+        'equityComp',
+        'traditional',
+        'roth',
+        'hsa',
+        'cash',
+        'pension',
+        'annuity',
+        'property',
+        'debt',
+      ]),
+    )
+    expect(
+      accountTypeLiterals.every((type) => !/plesa|emergency.?savings/i.test(type)),
+    ).toBe(true)
+
     // A generic traditional or Roth account is not a pension-linked emergency
     // savings account. Keep the two separate-account vocabulary gates here so
     // no ordinary account field can quietly stand in for the PLESA facts.

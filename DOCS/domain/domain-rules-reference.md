@@ -145,12 +145,17 @@ Maximum 85% of benefits taxable; thresholds are **statutorily unindexed** (more 
   (`irc-4973-a-b-f-ira-and-roth-excess-contribution-excise`, approximated / understates tax).
 
 - **Plan-document contribution terms are not inferred.** A generic `401k` account does not establish a SIMPLE
-  401(k), whether the plan permits an age-50 or super catch-up, a section 401(a)(17) compensation definition, a section 411 vesting schedule, the 403(b) 15-year
-  catch-up and its ordering, or a governmental 457(b) final-three-year catch-up. Those are refusals rather than
-  annual-limit estimates (`irc-401-k-11-simple-401-k-elective-deferral-limit`, `irc-401-a-17-plan-compensation-cap`,
+  401(k), a section 401(a)(17) compensation definition, a section 411 vesting schedule, the 403(b) 15-year
+  catch-up and its ordering, or a 457(b) final-three-year catch-up. The SIMPLE status, vesting, 403(b) 15-year,
+  and 457(b)(3) catch-up are refusals (`irc-401-k-11-simple-401-k-elective-deferral-limit`,
+  `irc-408-p-2-E-i-II-simple-enhanced-elective-deferral-election`,
   `irc-411-a-2-vesting-schedule-maximums`, `irc-402-g-7-403b-15-year-catch-up`,
   `irc-414-v-7-402-g-7-403b-15-year-catch-up-exclusion`, and
-  `irc-457-b-3-governmental-final-three-year-catch-up`). The plan also cannot execute an actual excess-elective-
+  `irc-457-b-3-final-three-year-catch-up`). The compensation-cap gap is approximated: the projection can return
+  an employer-match figure computed from uncapped wages
+  (`irc-401-a-17-plan-compensation-cap`). Catch-up permission, including the ages-60-through-63 amount, is
+  likewise approximated — the engine returns a ceiling even though the plan term is absent
+  (`irc-414-v-1-plan-permitted-catch-up`). The plan also cannot execute an actual excess-elective-
   deferral correction and its March/April notices, distribution date, or allocable income
   (`irc-402-g-2-excess-elective-deferral-correction`).
 
@@ -870,7 +875,7 @@ additive with a no-op default, so plans saved before it stay byte-identical.
   (`fullyTaxableCompensationAtExecution`) and applies no retirement additional tax. That character is a
   disclosed §83 timing approximation: grant transfer date, §83(b) election, amount paid, grant type, and
   post-vesting holding-period facts are absent, so the engine cannot call it the actual tax character of a
-  later sale (`irc-83-a-equity-compensation-execution-character`, approximated / overstates tax). Exact-cent
+  later sale (`irc-83-a-equity-compensation-execution-character`, approximated / both directions). Exact-cent
   action proceeds, ordinary-income output, and balance movement each enter the annual ledger once.
 - **Non-retirement penalty scope.** Cash, taxable-source, and equity-compensation ordinary withdrawals publish
   typed `notApplicable` / `nonRetirementSource` penalty coverage rather than a zero section 72(t) calculation,
