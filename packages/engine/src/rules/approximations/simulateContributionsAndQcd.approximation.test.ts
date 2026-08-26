@@ -187,9 +187,10 @@ describeRule('irc-4973-a-b-f-ira-and-roth-excess-contribution-excise', {
 }, ({ accepted, produced }) => {
   it('does not price the excise on a Roth contribution above a zero phase-out limit', () => {
     const plan = soloPlan('1966-06-15', 67) // 60 in 2026
-    // Notice 2025-67's single active-participant range ends at $91,000; this
-    // $400,000 wage amount is also far above the Roth phase-out fixture's
-    // zero-limit scenario. The contribution is $100 solely to isolate 6%.
+    // The operative fact is the Roth phase-out: $400,000 of wages zeroes the
+    // 408A(c)(3) contribution limit (the companion irc-408A-c-3 fixture pins
+    // that), so the whole $100 deposit is a 4973(f) excess. The contribution
+    // is $100 solely to isolate the 6% excise.
     plan.accounts = [cash(0), rothIra(0, EXCESS_ROTH_CONTRIBUTION)]
     plan.incomes = [wages(400_000)]
 
