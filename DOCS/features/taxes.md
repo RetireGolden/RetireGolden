@@ -235,6 +235,12 @@ nondistributable amounts under §402A(c)(4)(E) is a different enacted act and is
 The named-conversion path does not model employer-plan after-tax allocation across simultaneous rollover
 destinations (`irs-notice-2014-54-employer-plan-after-tax-rollover-allocation`).
 
+It also cannot represent an optional in-plan Roth transfer of an otherwise nondistributable amount:
+the Plan has no same-plan identity, plan-feature, or carried distribution-restriction facts
+(`irc-402A-c-4-E-in-plan-roth-transfer-not-modeled`). Employer-plan employee-contribution/basis and
+plan-permission facts for a mega-backdoor Roth path are likewise outside the accepted Plan and action
+vocabulary (`irc-401-m-employee-contribution-mega-backdoor-roth-not-modeled`).
+
 ## Conversion-linked tax funding
 
 A named conversion may declare `taxFunding: { kind: 'linkedWithdrawal' }` naming a sibling ordinary-withdrawal

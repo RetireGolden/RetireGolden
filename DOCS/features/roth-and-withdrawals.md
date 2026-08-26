@@ -75,6 +75,13 @@ the optimizer input builder, and the decision generators can never disagree.
 The named conversion path refuses inherited-IRA sources with unchanged balances
 (`irc-408-d-3-C-i-inherited-ira-rollover-bar`).
 
+An in-plan Roth transfer of an otherwise nondistributable employer-plan amount is a different,
+plan-optional action from a Roth-IRA conversion. RetireGolden cannot represent the sponsoring
+plan's feature, same-plan identity, or the transferred amount's retained distribution restriction
+(`irc-402A-c-4-E-in-plan-roth-transfer-not-modeled`). It likewise does not represent the
+employer-plan employee-contribution/basis and plan-permission facts of a commonly called
+mega-backdoor Roth path (`irc-401-m-employee-contribution-mega-backdoor-roth-not-modeled`).
+
 An HSA left last for medical is qualified (tax- and penalty-free) only up to modeled medical costs when the
 account opts into the cap treatment, and an optional **taxable safety-net floor**
 (`strategies.taxableSafetyNetFloor`) keeps a minimum cash/taxable reserve intact — spending funds from other

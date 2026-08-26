@@ -295,6 +295,35 @@ describe('applicable-plan boundaries and Roth scope', () => {
     })
   })
 
+  describeRule('irc-402A-d-5-designated-roth-account-no-lifetime-rmd', {
+    readings: {
+      statuteExemptsTheLivingDesignatedRothOwner: 0,
+      rejectedUniformLifetimeRmdForTheDesignatedRothAccount: START_BALANCE / 26.5,
+    },
+    accepted: 'statuteExemptsTheLivingDesignatedRothOwner',
+    note: 'living designated Roth employer-account owner past the ordinary RMD age',
+  }, ({ accepted, readings }) => {
+    it('never creates a lifetime §4974 obligation for a living designated Roth account owner', () => {
+      const plan = singlePersonPlan({ dob: OWNER_DOB, planningAge: 95 })
+      plan.accounts = [{
+        type: 'roth',
+        kind: 'employer',
+        id: 'roth-401k',
+        name: 'Designated Roth 401(k)',
+        ownerPersonId: 'p1',
+        annualReturnPct: 0,
+        balance: START_BALANCE,
+        annualContribution: 0,
+      }]
+
+      const first = run(plan).years[0]!
+      expect(first.rmd).toBe(accepted)
+      expect(first.rmd).not.toBe(readings.rejectedUniformLifetimeRmdForTheDesignatedRothAccount)
+      expect(first.rmdShortfallExciseDetails).toEqual([])
+      expect(first.penalties).toBe(0)
+    })
+  })
+
   it('taxes an inherited Roth residue in the emptying year and every later year', () => {
     const plan = singlePersonPlan({ dob: '1980-06-15', planningAge: 60 })
     plan.household.people[0]!.id = 'beneficiary'

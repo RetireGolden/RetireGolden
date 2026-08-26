@@ -6181,6 +6181,11 @@ const registry = {
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408A&num=0&edition=prelim',
       quotedText:
         'The term "qualified rollover contribution" means a rollover contribution- ... (B) from an eligible retirement plan, but only if- ... (ii) in the case of any eligible retirement plan (as defined in section 402(c)(8)(B) other than clauses (i) and (ii) thereof), such rollover contribution meets the requirements of section 402(c), 403(b)(8), or 457(e)(16), as applicable',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 402(c)(4)(C)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402&num=0&edition=prelim',
+      quotedText: 'any distribution which is made upon hardship of the employee.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -9612,6 +9617,118 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-25',
     implementedBy: ['packages/engine/src/projection/simulate.ts'],
+  },
+
+  'irc-402A-c-4-E-in-plan-roth-transfer-not-modeled': {
+    title: 'Optional in-plan transfer of otherwise nondistributable amounts is not modeled',
+    statement:
+      'Section 402A(c)(4)(E) permits, but does not require, an applicable retirement plan with a qualified Roth contribution program to let an individual elect a transfer of an amount not otherwise distributable under the plan to that individual\'s designated Roth account. The transfer is treated as a distribution to which section 402A(c)(4) applies and as contributed in a qualified rollover contribution. Notice 2013-74 confirms that the transferred amount and its applicable earnings retain the distribution restrictions that applied before the in-plan Roth rollover. The Plan cannot express the plan\'s optional feature, the source amount\'s pre-transfer distribution restriction, or an identity linking the employer traditional and designated Roth accounts to one plan, and the retirement-action contract has no in-plan-Roth-transfer vocabulary. No accepted engine input therefore reaches this rule.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'This is a schema boundary, not a conversion result. traditionalAccountSchema and rothAccountSchema record only an employer account kind and an optional plan class; neither records a particular employer-plan identity, an in-plan-Roth feature election, or the restriction carried by a transferred amount. retirementActionRequestSchema and the separately persisted request union have no in-plan transfer arm. The vocabulary gates are asserted in model/plan.test.ts and actions/contract.test.ts; named Roth conversions separately refuse an employer designated Roth destination in actions/rothConversionExecution.test.ts.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 402A(c)(4)(E)(i)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402A&num=0&edition=prelim',
+      quotedText:
+        'the plan may allow an individual to elect to have the plan transfer any amount not otherwise distributable under the plan to a designated Roth account maintained for the benefit of the individual,',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 402A(c)(4)(E)(ii)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402A&num=0&edition=prelim',
+      quotedText:
+        'such transfer shall be treated as a distribution to which this paragraph applies which was contributed in a qualified rollover contribution (within the meaning of section 408A(e)) to such account, and',
+    }, {
+      kind: 'irsNotice',
+      citation: 'IRS Notice 2013-74, Q&A-3',
+      url: 'https://www.irs.gov/pub/irs-drop/n-13-74.pdf',
+      quotedText:
+        'Yes. If an amount is rolled over to a designated Roth account pursuant to § 402A(c)(4)(E), then, notwithstanding Revenue Ruling 2004-12, the amount rolled over and applicable earnings remain subject to the distribution restrictions that were applicable to the amount before the in-plan Roth rollover.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-26',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/actions/contract.ts',
+      'packages/engine/src/strategies/accountEligibility.ts',
+    ],
+  },
+
+  'irc-401-m-employee-contribution-mega-backdoor-roth-not-modeled': {
+    title: 'Employer-plan employee-contribution mega-backdoor Roth path is not modeled',
+    statement:
+      'Section 401(m) separately recognizes employee contributions and matching contributions. A Roth path from an employer plan needs an eligible rollover distribution that is transferred to an eligible retirement plan, or the separate optional in-plan transfer section 402A(c)(4)(E) permits. The Plan has no employer-plan employee-contribution or after-tax-basis field, no plan-feature or distribution-eligibility facts for that source, and no retirement-action vocabulary for a connected employer-plan-to-Roth movement. A commonly called mega-backdoor Roth fact pattern therefore cannot be expressed or priced by the engine.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The IRA-only nondeductibleBasis field is intentionally not an employer-plan after-tax contribution record: model/plan.ts rejects it on an employer traditional account. The employer-account schemas retain neither a separate employee-contribution/basis pool nor the plan permission and distribution facts that select a route. model/plan.test.ts pins that schema vocabulary, and actions/contract.test.ts pins the absence of a corresponding action from both request unions. The existing Notice 2014-54 record remains narrower: it covers allocation of an already-expressible simultaneous employer-plan disbursement to multiple destinations, not the absent source and feature facts here.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 401(m)(3)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section401&num=0&edition=prelim',
+      quotedText:
+        'the sum of the matching contributions and employee contributions paid under the plan on behalf of each such employee for such plan year, to',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 402(c)(1)(A)-(B)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402&num=0&edition=prelim',
+      quotedText:
+        'If- (A) any portion of the balance to the credit of an employee in a qualified trust is paid to the employee in an eligible rollover distribution, (B) the distributee transfers any portion of the property received in such distribution to an eligible retirement plan,',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 402A(c)(4)(E)(i)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402A&num=0&edition=prelim',
+      quotedText:
+        'the plan may allow an individual to elect to have the plan transfer any amount not otherwise distributable under the plan to a designated Roth account maintained for the benefit of the individual,',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-26',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/actions/contract.ts',
+      'packages/engine/src/strategies/accountEligibility.ts',
+    ],
+  },
+
+  'irc-402A-d-5-designated-roth-account-no-lifetime-rmd': {
+    title: 'Designated Roth employer account has no lifetime RMD after 2023',
+    statement:
+      'For taxable years beginning after December 31, 2023, section 401(a)(9)(A) does not apply to a designated Roth account. A living owner therefore has no lifetime RMD or lifetime section 4974 shortfall obligation for a Roth employer account. The projection reaches that result because its owner-RMD gate admits traditional accounts only, never a Roth account of either kind.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 402A(d)(5)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402A&num=0&edition=prelim',
+      quotedText:
+        'Notwithstanding sections 403(b)(10) and 457(d)(2), the following provisions shall not apply to any designated Roth account: (A) Section 401(a)(9)(A).',
+    }, {
+      kind: 'statute',
+      citation: 'SECURE 2.0 Act § 325(b)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402A&num=0&edition=prelim',
+      quotedText:
+        'Except as provided in paragraph (2), the amendment made by this section [amending this section] shall apply to taxable years beginning after December 31, 2023.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-26',
+    implementedBy: [
+      'packages/engine/src/strategies/accountEligibility.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
   },
 
   'irc-402-c-4-B-rmd-not-eligible-rollover-distribution': {
