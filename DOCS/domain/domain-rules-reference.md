@@ -447,7 +447,12 @@ Source: [IRS 2026 limits announcement](https://www.irs.gov/newsroom/401k-limit-i
   employer balance to a Roth IRA only when a §401(k)(2)(B)(i) event is provable from Plan facts (attained age 60,
   or attained age at or past `retirementAge`); otherwise the source is fail-closed and the year names the refusal
   (`irc-401-k-2-B-i-employer-plan-conversion-source-not-gated-by-distributability`, `settled`). In-plan Roth of
-  otherwise nondistributable amounts under §402A(c)(4)(E) is a different enacted act and is not modelled.
+  otherwise nondistributable amounts under §402A(c)(4)(E) is a different enacted act and is not modelled — the
+  transferred amounts would keep their distribution restrictions under Notice 2013-74
+  (`irc-402A-c-4-E-in-plan-roth-transfer-not-modeled`). Mega-backdoor Roth — plan-permitted after-tax employee
+  contributions under §401(m) converted through §402A(c)(4) — is likewise unrepresentable: the Plan carries no
+  employer-plan after-tax contribution basis and no in-plan conversion path
+  (`irc-401-m-employee-contribution-mega-backdoor-roth-not-modeled`).
   Employer-plan after-tax allocation across simultaneous rollover destinations is unmodelled
   (`irs-notice-2014-54-employer-plan-after-tax-rollover-allocation`).
 - **Conversion-linked tax funding.** A named conversion may name a sibling ordinary withdrawal that pays its tax,
