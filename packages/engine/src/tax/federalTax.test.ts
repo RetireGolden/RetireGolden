@@ -485,6 +485,65 @@ describe('SALT cap schedule', () => {
   })
 })
 
+describe('SALT high-MAGI phasedown approximation (2026)', () => {
+  // Observed produced pin (fixture run 2026-08-26): year2026's $40,400 pack
+  // value × 1.01^(2026 - 2026) = $40,400, and the itemized path adds $30,000
+  // of mortgage interest, producing $70,400 exactly as derived.
+  const producedEngineItemizedTotal = 70_400
+
+  // Single filer, 2026: $505,000 AGI + $200,000 of section 911/931/933
+  // excluded income = $705,000 MAGI. The $200,000 MAGI excess over $505,000
+  // reduces the $40,400 applicable limitation by $60,000 (30% × $200,000),
+  // so the $10,000 statutory floor controls. With $30,000 mortgage interest:
+  //   statute: $10,000 SALT + $30,000 interest = $40,000 itemized
+  //   engine:  $40,400 SALT + $30,000 interest = $70,400 itemized
+  // AGI is below the $640,600 section 68 threshold, so no other itemized
+  // limitation obscures the $30,400 gap; both readings still itemize.
+  describeRule('irc-164-b-7-B-magi-phasedown', {
+    readings: {
+      statuteAppliesTheTenThousandDollarFloor: 40_000,
+      engineKeepsTheFullScheduledSaltCap: producedEngineItemizedTotal,
+    },
+    accepted: 'statuteAppliesTheTenThousandDollarFloor',
+    produced: 'engineKeepsTheFullScheduledSaltCap',
+    note: '2026 MAGI $705,000 reaches the $10,000 SALT floor',
+  }, ({ accepted, produced }) => {
+    const statutorySaltCap = 10_000
+    const mortgageInterest = 30_000
+
+    function highMagiItemizer(stateAndLocalTaxes: number) {
+      return input({
+        ordinaryIncome: 505_000,
+        foreignExclusionAddback: 200_000,
+        itemizedDeductions: { stateAndLocalTaxes, mortgageInterest, charitable: 0 },
+      })
+    }
+
+    it('keeps the full scheduled cap rather than applying the high-MAGI floor', () => {
+      const result = computeFederalTax(highMagiItemizer(100_000))
+      const pack = packForYear(2026).pack
+
+      expect(result.agi).toBe(505_000)
+      expect(result.magi).toBe(705_000)
+      expect(result.section68Limitation).toBe(0)
+      expect(result.itemized).toBe(true)
+      expect(saltCapForYear(pack, result.year)).toBe(40_400)
+      expect(result.deduction).toBe(produced)
+      expect(result.deduction).not.toBe(accepted)
+    })
+
+    it('understates tax compared with the itemized return using the statutory floor', () => {
+      const engine = computeFederalTax(highMagiItemizer(100_000))
+      const statutory = computeFederalTax(highMagiItemizer(statutorySaltCap))
+
+      expect(statutory.deduction).toBe(accepted)
+      expect(statutory.deduction).toBe(statutorySaltCap + mortgageInterest)
+      // errorDirection: 'understatesTax'.
+      expect(engine.totalTax).toBeLessThan(statutory.totalTax)
+    })
+  })
+})
+
 describe('age-based deductions', () => {
   // IRC 63(f)(1) grants the additional amount separately for the taxpayer under
   // (A) and for a qualifying spouse under (B). On a joint return with two

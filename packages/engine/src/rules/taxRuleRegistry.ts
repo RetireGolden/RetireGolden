@@ -2692,7 +2692,7 @@ const registry = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The cap is halved for a married individual filing separately, which the projection cannot express because it collapses every filing status to single or married-filing-jointly. The high-income phase-out that OBBBA also added is not modelled either, so the cap here binds later than it would for a taxpayer above that threshold.',
+      'The cap is halved for a married individual filing separately, which the projection cannot express because it collapses every filing status to single or married-filing-jointly. The high-income phase-out that OBBBA also added is not modelled either — that gap is registered separately as irc-164-b-7-B-magi-phasedown — so the cap here binds later than it would for a taxpayer above that threshold.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -2716,6 +2716,61 @@ const registry = {
       'packages/engine/src/params/data/year2026.ts',
     ],
   },
+
+  'irc-164-b-7-B-magi-phasedown': {
+    title: 'High MAGI phases the SALT limitation down to no less than $10,000',
+    statement:
+      'For 2026, the applicable limitation amount starts at $40,400, then is reduced by 30 percent of MAGI above $505,000, but not below $10,000. The engine instead uses the scheduled $40,400 cap without this MAGI phasedown, so a high-MAGI taxpayer can deduct too much SALT and the engine understates tax.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'understatesTax',
+    conventionRationale:
+      'DEFECT — no behavior change in this registry slice. A research bot\'s 2026-08-26 change alert surfaced the OBBBA MAGI phasedown, and review verified that `saltCapForYear(pack, year)` takes only a pack and year while `itemizedTotal` applies that result without the phasedown. The calculator does compute MAGI for other rules, but neither function carries it into the SALT limitation. The fixture pins the current full-cap result until a separately authorized implementation fix changes it.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 164(b)(6)(B)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section164&num=0&edition=prelim',
+      quotedText:
+        'the aggregate amount of taxes taken into account under paragraphs (1), (2), and (3) of subsection (a) and paragraph (5) of this subsection for any taxable year shall not exceed the applicable limitation amount (half the applicable limitation amount in the case of a married individual filing a separate return).',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 164(b)(7)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section164&num=0&edition=prelim',
+      quotedText:
+        'For purposes of paragraph (6), the term "applicable limitation amount" means- … (ii) in the case of any taxable year beginning in calendar year 2026, $40,400,',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 164(b)(7)(B)(i)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section164&num=0&edition=prelim',
+      quotedText:
+        'Except as provided in clause (iii), in the case of any taxable year beginning before January 1, 2030, the applicable limitation amount shall be reduced by 30 percent of the excess (if any) of the taxpayer\'s modified adjusted gross income over the threshold amount (half the threshold amount in the case of a married individual filing a separate return).',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 164(b)(7)(B)(ii)(II)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section164&num=0&edition=prelim',
+      quotedText:
+        'in the case of any taxable year beginning in calendar year 2026, $505,000, and',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 164(b)(7)(B)(iii)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section164&num=0&edition=prelim',
+      quotedText:
+        'The reduction under clause (i) shall not result in the applicable limitation amount being less than $10,000.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 164(b)(7)(B)(iv)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section164&num=0&edition=prelim',
+      quotedText:
+        'For purposes of this paragraph, the term "modified adjusted gross income" means adjusted gross income increased by any amount excluded from gross income under section 911, 931, or 933.',
+    }],
+    volatility: 'sunsetting',
+    effectiveFrom: 2025,
+    effectiveThrough: 2029,
+    verifiedOn: '2026-08-26',
+    implementedBy: ['packages/engine/src/tax/federalTax.ts'],
+  },
+
   'irc-63-c-2-joint-standard-deduction-doubles': {
     title: 'The joint standard deduction is 200 percent of the unmarried one',
     statement:
@@ -3877,6 +3932,62 @@ const registry = {
     verifiedOn: '2026-08-03',
     implementedBy: ['packages/engine/src/tax/federalTax.ts'],
   },
+
+  'irc-163-h-3-E-i-pmi-qualified-residence-interest-restart': {
+    title: 'Qualified mortgage-insurance premiums again count as qualified residence interest',
+    statement:
+      'For taxable years beginning after 2025, a taxpayer\'s qualified mortgage-insurance premiums connected with acquisition indebtedness on the taxpayer\'s qualified residence are treated as qualified residence interest, subject to the 10-percent-per-$1,000 AGI phaseout above $100,000 and the pre-2007-contract exclusion. OBBBA disables the prior termination. Out of scope: no accepted RetireGolden input identifies qualified mortgage-insurance premiums or their qualifying facts; a caller-supplied `mortgageInterest` amount is not a calculation of this rule.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 163(h)(3)(E)(i)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section163&num=0&edition=prelim',
+      quotedText:
+        'Premiums paid or accrued for qualified mortgage insurance by a taxpayer during the taxable year in connection with acquisition indebtedness with respect to a qualified residence of the taxpayer shall be treated for purposes of this section as interest which is qualified residence interest.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 163(h)(3)(E)(ii)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section163&num=0&edition=prelim',
+      quotedText:
+        'The amount otherwise treated as interest under clause (i) shall be reduced (but not below zero) by 10 percent of such amount for each $1,000 ($500 in the case of a married individual filing a separate return) (or fraction thereof) that the taxpayer\'s adjusted gross income for the taxable year exceeds $100,000 ($50,000 in the case of a married individual filing a separate return).',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 163(h)(3)(E)(iii)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section163&num=0&edition=prelim',
+      quotedText:
+        'Clause (i) shall not apply with respect to any mortgage insurance contracts issued before January 1, 2007.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 163(h)(3)(E)(iv)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section163&num=0&edition=prelim',
+      quotedText:
+        'Clause (i) shall not apply to amounts- (I) paid or accrued after December 31, 2021, or (II) properly allocable to any period after such date.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 163(h)(3)(F)(i)(III)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section163&num=0&edition=prelim',
+      quotedText: 'Clause (iv) of subparagraph (E) shall not apply.',
+    }, {
+      kind: 'legislativeHistory',
+      citation: 'P.L. 119-21 section 70108(b)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section163&num=0&edition=prelim',
+      quotedText:
+        'The amendments made by this section [amending this section] shall apply to taxable years beginning after December 31, 2025.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-26',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/tax/federalTax.ts',
+    ],
+  },
+
   'treas-reg-1-408-8-b-2-prior-december-31-balance': {
     title: 'RMD numerator is the prior December 31 balance',
     statement:

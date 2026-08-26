@@ -2,21 +2,21 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 1,
   "registry": {
-    "total": 265,
+    "total": 267,
     "byClassification": {
-      "approximated": 54,
-      "outOfScope": 21,
+      "approximated": 55,
+      "outOfScope": 22,
       "settled": 186,
       "unsettled": 4
     },
     "byVolatility": {
       "annuallyIndexed": 37,
       "awaitingGuidance": 4,
-      "staticStatute": 219,
-      "sunsetting": 5
+      "staticStatute": 220,
+      "sunsetting": 6
     },
     "byJurisdiction": {
-      "federal": 208,
+      "federal": 210,
       "states": {
         "AK": 1,
         "AR": 9,
@@ -357,8 +357,8 @@
     },
     {
       "path": "tax/federalTax.ts",
-      "sweptOn": "2026-08-24",
-      "note": "implements §86 SS inclusion, NIIT, AMT screen, senior-deduction phase-out, LTCG stacking with records naming it, but §170(b)(1)(I)(ii) category waterfall is applied only in the ledger file its record names, and the OBBBA high-income SALT phase-out is unmodeled with no approximated/outOfScope record naming this file"
+      "sweptOn": "2026-08-26",
+      "note": "implements §86 SS inclusion, NIIT, AMT screen, senior-deduction phase-out, LTCG stacking with records naming it, but §170(b)(1)(I)(ii) category waterfall is applied only in the ledger file its record names"
     },
     {
       "path": "tax/medicare.ts",
@@ -1368,6 +1368,21 @@
       ]
     },
     {
+      "id": "irc-163-h-3-E-i-pmi-qualified-residence-interest-restart",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2027-08-26",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/tax/federalTax.ts"
+      ],
+      "fixtureFiles": []
+    },
+    {
       "id": "irc-163-h-3-F-acquisition-indebtedness-limit",
       "classification": "approximated",
       "jurisdiction": "federal",
@@ -1381,6 +1396,22 @@
       ],
       "fixtureFiles": [
         "packages/engine/src/rules/approximations/federalTaxAndRothBasis.approximation.test.ts"
+      ]
+    },
+    {
+      "id": "irc-164-b-7-B-magi-phasedown",
+      "classification": "approximated",
+      "jurisdiction": "federal",
+      "volatility": "sunsetting",
+      "effectiveFrom": 2025,
+      "effectiveThrough": 2029,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2027-01-23",
+      "implementedBy": [
+        "packages/engine/src/tax/federalTax.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/federalTax.test.ts"
       ]
     },
     {

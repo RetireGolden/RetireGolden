@@ -59,7 +59,9 @@ Seven rates: 10/12/22/24/32/35/37%. 2026 thresholds (taxable income):
   thresholds, the §121 exclusion, the §1211(b) $3,000 ordinary offset, and the senior deduction with its MAGI
   threshold (`irc-151-d-5-C-senior-deduction-not-indexed`). The SALT cap follows its own schedule instead
   (`irc-164-b-7-salt-cap-schedule`): $40,000 for 2025, the pack figure compounding at 1%/yr through 2029, then
-  reverting to $10,000 from 2030.
+  reverting to $10,000 from 2030. The high-MAGI SALT phasedown is not modeled
+  (`irc-164-b-7-B-magi-phasedown`), and qualified mortgage-insurance premiums have no separate itemized input
+  (`irc-163-h-3-E-i-pmi-qualified-residence-interest-restart`).
 - Sources: [Tax Foundation 2026 brackets](https://taxfoundation.org/data/all/federal/2026-tax-brackets/), [IRS 2026 inflation adjustments](https://www.irs.gov/newsroom/irs-releases-tax-inflation-adjustments-for-tax-year-2026-including-amendments-from-the-one-big-beautiful-bill), [IRS Rev. Proc. 2025-32](https://www.irs.gov/pub/irs-drop/rp-25-32.pdf), [IRS final return / qualifying surviving spouse](https://www.irs.gov/newsroom/filing-a-final-federal-tax-return-for-someone-who-has-died), [Bipartisan Policy Center 2026 explainer](https://bipartisanpolicy.org/explainer/2026-federal-income-tax-brackets-and-interactive-calculator/).
 
 ## 2. Long-term capital gains and NIIT (2026)
