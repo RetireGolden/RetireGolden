@@ -2753,7 +2753,7 @@ const registry = {
         'For purposes of this subparagraph, the term "threshold amount" means-',
     }, {
       kind: 'statute',
-      citation: 'IRC 164(b)(7)(B)(ii)(II)',
+      citation: 'IRC 164(b)(7)(B)(ii)(II)-(III)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section164&num=0&edition=prelim',
       quotedText:
         '(II) in the case of any taxable year beginning in calendar year 2026, $505,000, and (III) in the case of any taxable year beginning after calendar year 2026, 101 percent of the dollar amount in effect under this subparagraph for taxable years beginning in the preceding calendar year.',
