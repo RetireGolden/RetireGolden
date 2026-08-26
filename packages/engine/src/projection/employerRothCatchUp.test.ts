@@ -265,6 +265,62 @@ describeRule('irc-414-v-7-A-high-earner-roth-catch-up-mandate', {
   })
 })
 
+// IRC 414(v)(1) says a plan *permits* catch-up deferrals; it does not make
+// them mandatory plan terms. Notice 2025-67 supplies the 2026 employer-plan
+// super catch-up of 11,250. Hand worksheet: 24,500 + 11,250 = 35,750 if the
+// plan permits it, but an age-62 plan without that optional feature permits
+// only the 24,500 base. The current model has no plan-term gate and produces
+// the former amount.
+describeRule('irc-414-v-1-plan-permitted-catch-up', {
+  readings: {
+    planDoesNotPermitCatchUp: BASE_402G,
+    engineTreatsCatchUpAsAvailable: BASE_402G + SUPER_CATCH_UP,
+  },
+  accepted: 'planDoesNotPermitCatchUp',
+  produced: 'engineTreatsCatchUpAsAvailable',
+  note: 'a missing plan term makes the optional age-62 catch-up automatic',
+}, ({ accepted, produced, readings }) => {
+  it('accepts the super catch-up even though the plan-permission fact is absent', () => {
+    const plan = soloPlan('1964-01-01')
+    plan.incomes = [wages(200_000)]
+    plan.accounts = [
+      cash(),
+      employer('traditional', BASE_402G + SUPER_CATCH_UP, 0, 'trad'),
+    ]
+
+    const year = year2026(plan)
+    expect(year.balances.trad).toBeCloseTo(produced, 6)
+    expect(year.balances.trad).not.toBeCloseTo(accepted, 6)
+    expect(year.balances.trad).toBeCloseTo(readings.engineTreatsCatchUpAsAvailable, 6)
+  })
+})
+
+// IRC 219(b)(5) supplies the IRA age-50 addition. Notice 2025-67 publishes
+// 7,500 + 1,100 = 8,600 for a 2026 age-62 IRA owner. The rejected reading
+// would add the employer-plan 11,250 super catch-up instead: 7,500 + 11,250
+// = 18,750. This worksheet uses the notice's published numbers, not a formula.
+describeRule('irc-219-b-5-B-ira-catch-up-excludes-employer-plan-super-catch-up', {
+  readings: {
+    iraAge50CatchUpOnly: IRA + IRA_CATCH_UP,
+    giveIraEmployerPlanSuperCatchUp: IRA + SUPER_CATCH_UP,
+  },
+  accepted: 'iraAge50CatchUpOnly',
+  note: 'an age-62 IRA has the IRA catch-up, not the employer-plan amount',
+}, ({ accepted, readings }) => {
+  it('does not apply the employer-plan super catch-up to an IRA', () => {
+    const plan = soloPlan('1964-01-01')
+    plan.incomes = [wages(200_000)]
+    plan.accounts = [cash(), traditionalIra(IRA + IRA_CATCH_UP)]
+
+    const year = year2026(plan)
+    expect(year.balances[plan.accounts[1]!.id]).toBeCloseTo(accepted, 6)
+    expect(year.balances[plan.accounts[1]!.id]).not.toBeCloseTo(
+      readings.giveIraEmployerPlanSuperCatchUp,
+      6,
+    )
+  })
+})
+
 // T.D. 10033 preamble: a participant with no FICA wages from the
 // sponsoring employer for the preceding year (new hire; partner with
 // only self-employment income) is not subject. Zero is not an exceed.

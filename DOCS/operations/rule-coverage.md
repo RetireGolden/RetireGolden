@@ -11,16 +11,16 @@ The registry is the machine-checked chain from a rule to its implementation and 
 
 | Metric | Count |
 | --- | ---: |
-| Total rules | 267 |
-| Classification: approximated | 56 |
-| Classification: outOfScope | 21 |
-| Classification: settled | 186 |
+| Total rules | 289 |
+| Classification: approximated | 62 |
+| Classification: outOfScope | 35 |
+| Classification: settled | 188 |
 | Classification: unsettled | 4 |
-| Volatility: annuallyIndexed | 37 |
-| Volatility: awaitingGuidance | 4 |
-| Volatility: staticStatute | 220 |
+| Volatility: annuallyIndexed | 44 |
+| Volatility: awaitingGuidance | 10 |
+| Volatility: staticStatute | 229 |
 | Volatility: sunsetting | 6 |
-| Federal jurisdiction | 210 |
+| Federal jurisdiction | 232 |
 | State jurisdiction total | 57 |
 
 | State jurisdiction | Count |
@@ -158,7 +158,7 @@ None.
 
 ## Re-verification due dates
 
-The 25 earliest due dates are shown below (267 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
+The 25 earliest due dates are shown below (289 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
 
 | Rule | Volatility | Verified on | Due on |
 | --- | --- | --- | --- |
@@ -166,6 +166,12 @@ The 25 earliest due dates are shown below (267 rules total). Comparing dueOn to 
 | treas-reg-1-401-a-9-2-b-2-v-applicable-age-1959 | awaitingGuidance | 2026-08-03 | 2026-11-01 |
 | irc-170-p-standard-deduction-carryover | awaitingGuidance | 2026-08-04 | 2026-11-02 |
 | irc-408-d-8-B-ii-age-70-half | awaitingGuidance | 2026-08-05 | 2026-11-03 |
+| irc-402A-e-1-A-plesa-optional-designated-roth-subaccount | awaitingGuidance | 2026-08-26 | 2026-11-24 |
+| irc-402A-e-3-A-plesa-participant-contribution-cap | awaitingGuidance | 2026-08-26 | 2026-11-24 |
+| irc-402A-e-7-B-i-plesa-distribution-qualified-roth-treatment | awaitingGuidance | 2026-08-26 | 2026-11-24 |
+| irc-6433-a-1-savers-match-qualified-retirement-savings-contributions | awaitingGuidance | 2026-08-26 | 2026-11-24 |
+| irc-6433-f-6-savers-match-early-distribution-recovery-tax | awaitingGuidance | 2026-08-26 | 2026-11-24 |
+| irc-72-t-2-J-plesa-withdrawal-early-distribution-exception | awaitingGuidance | 2026-08-26 | 2026-11-24 |
 | irc-408-d-8-A-annual-qcd-limit | annuallyIndexed | 2026-08-02 | 2026-11-30 |
 | cfr-20-404-1574-b-2-sga-non-blind-monthly-amount | annuallyIndexed | 2026-08-03 | 2026-12-01 |
 | irc-1-h-capital-gain-stacked-on-ordinary | annuallyIndexed | 2026-08-03 | 2026-12-01 |
@@ -181,12 +187,6 @@ The 25 earliest due dates are shown below (267 rules total). Comparing dueOn to 
 | treas-reg-1-401-a-9-6-q-2-qlac-premium-dollar-limit | annuallyIndexed | 2026-08-03 | 2026-12-01 |
 | usc-42-1395r-a-3-part-b-standard-premium | annuallyIndexed | 2026-08-03 | 2026-12-01 |
 | usc-42-1395r-i-5-C-top-irmaa-threshold-frozen | annuallyIndexed | 2026-08-03 | 2026-12-01 |
-| usc-42-403-f-8-earnings-test-exempt-amounts | annuallyIndexed | 2026-08-03 | 2026-12-01 |
-| usc-42-430-b-contribution-and-benefit-base | annuallyIndexed | 2026-08-03 | 2026-12-01 |
-| irc-223-b-2-7-projection-coverage-proration-and-medicare | annuallyIndexed | 2026-08-04 | 2026-12-02 |
-| irc-414-v-2-E-super-catch-up-window | annuallyIndexed | 2026-08-04 | 2026-12-02 |
-| irc-415-c-1-annual-additions-lesser-of | annuallyIndexed | 2026-08-04 | 2026-12-02 |
-| irc-55-a-amt-is-the-excess-over-regular-tax | annuallyIndexed | 2026-08-04 | 2026-12-02 |
 
 ## Quote fidelity
 

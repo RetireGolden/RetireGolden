@@ -1238,7 +1238,9 @@ export const debtSchema = z.object({
   payoffYear: calendarYear.nullable().optional(),
 })
 
-const accountUnionSchema = z.discriminatedUnion('type', [
+/** Discriminated union of account arms before plan-level refinements. Exported so
+ *  vocabulary gates can introspect the exact `type` membership. */
+export const accountUnionSchema = z.discriminatedUnion('type', [
   taxableAccountSchema,
   equityCompAccountSchema,
   traditionalAccountSchema,

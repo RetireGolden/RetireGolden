@@ -535,3 +535,36 @@ describeRule('irc-223-b-2-7-projection-coverage-proration-and-medicare', {
     expect(year.contributions).not.toBeCloseTo(accepted, 6)
   })
 })
+
+const HSA_EXCESS_CONTRIBUTION = 1_000
+const STATUTORY_HSA_EXCISE = HSA_EXCESS_CONTRIBUTION * 0.06
+// Observed produced pin (fixture run 2026-08-26): the projection imposes no
+// section 4973 HSA excise; penalties stay 0.
+const producedHsaExciseNone = 0
+
+describeRule('irc-4973-a-g-hsa-excess-contribution-excise', {
+  readings: {
+    // The authority fact is that this taxpayer was Medicare-entitled before
+    // 2026, so 223(b)(7) permits no 2026 HSA contribution. At a $1,000
+    // year-end HSA value, Form 5329 Part VII line 49 gives min(1000, 1000)
+    // × 0.06 = $60.
+    statuteSixPercentExcise: STATUTORY_HSA_EXCISE,
+    engineOmitsTheExcise: producedHsaExciseNone,
+  },
+  accepted: 'statuteSixPercentExcise',
+  produced: 'engineOmitsTheExcise',
+  note: 'Medicare-entitled HSA excess',
+}, ({ accepted, produced }) => {
+  it('does not add the section 4973 HSA excise to YearResult.penalties', () => {
+    const plan = workingSeptuagenarian()
+    plan.accounts = [cash(0), hsa(0, HSA_EXCESS_CONTRIBUTION)]
+    plan.incomes = [wages(120_000)]
+
+    const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
+    const year = result.years.find((candidate) => candidate.year === 2026)!
+
+    expect(year.contributions).toBeCloseTo(HSA_EXCESS_CONTRIBUTION, 6)
+    expect(year.penalties).toBeCloseTo(produced, 6)
+    expect(year.penalties).not.toBeCloseTo(accepted, 6)
+  })
+})
