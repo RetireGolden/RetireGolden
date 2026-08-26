@@ -14,6 +14,7 @@ const testIds = (): string => `approx-sim-${++counter}`
 const fixedNow = (): Date => new Date('2026-06-11T00:00:00.000Z')
 
 const noTax = createFlatTaxCalculator(0)
+const fullFlatTax = createFlatTaxCalculator(100)
 const pack2026 = packForYear(2026).pack
 
 /** One person, flat dollars: every figure below is the statutory one, unindexed. */
@@ -52,6 +53,20 @@ function traditionalIra(balance: number, contribution = 0, owner = 'p1'): Accoun
     ownerPersonId: owner,
     annualReturnPct: null,
     kind: 'ira',
+    balance,
+    annualContribution: contribution,
+  }
+}
+
+function employerTraditional(balance: number, contribution = 0): Account {
+  return {
+    type: 'traditional',
+    id: testIds(),
+    name: 'Employer plan',
+    ownerPersonId: 'p1',
+    annualReturnPct: null,
+    kind: 'employer',
+    employerPlanType: '401k',
     balance,
     annualContribution: contribution,
   }
@@ -97,8 +112,8 @@ function validate(plan: Plan): Plan {
   return parsed.plan
 }
 
-function year2026(plan: Plan) {
-  const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
+function year2026(plan: Plan, taxCalculator = noTax) {
+  const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator })
   return result.years.find((y) => y.year === 2026)!
 }
 
@@ -145,6 +160,104 @@ describeRule('irc-408A-c-3-roth-contribution-agi-phase-out', {
     plan.incomes = [wages(40_000)]
 
     expect(year2026(plan).contributions).toBeCloseTo(REQUESTED_IRA_CONTRIBUTION, 6)
+  })
+})
+
+// --------------------------------------------------------------------------
+// Excess IRA/Roth excise and traditional-IRA deduction phase-out
+// --------------------------------------------------------------------------
+
+const EXCESS_ROTH_CONTRIBUTION = 100
+const STATUTORY_ROTH_EXCISE = EXCESS_ROTH_CONTRIBUTION * 0.06
+// Observed produced pin (fixture run 2026-08-26): the projection imposes no
+// section 4973 IRA/Roth excise; penalties stay 0.
+const producedIraRothExciseNone = 0
+
+describeRule('irc-4973-a-b-f-ira-and-roth-excess-contribution-excise', {
+  readings: {
+    // 4973(a) and Form 5329 Part IV line 25: a $100 excess, with a year-end
+    // Roth value of at least $100, has a $6 excise: min($100, $100) × 0.06.
+    statuteSixPercentExcise: STATUTORY_ROTH_EXCISE,
+    engineOmitsTheExcise:
+      producedIraRothExciseNone,
+  },
+  accepted: 'statuteSixPercentExcise',
+  produced: 'engineOmitsTheExcise',
+  note: 'Roth excess-contribution excise',
+}, ({ accepted, produced }) => {
+  it('does not price the excise on a Roth contribution above a zero phase-out limit', () => {
+    const plan = soloPlan('1966-06-15', 67) // 60 in 2026
+    // Notice 2025-67's single active-participant range ends at $91,000; this
+    // $400,000 wage amount is also far above the Roth phase-out fixture's
+    // zero-limit scenario. The contribution is $100 solely to isolate 6%.
+    plan.accounts = [cash(0), rothIra(0, EXCESS_ROTH_CONTRIBUTION)]
+    plan.incomes = [wages(400_000)]
+
+    const year = year2026(plan)
+
+    expect(year.contributions).toBeCloseTo(EXCESS_ROTH_CONTRIBUTION, 6)
+    expect(year.penalties).toBeCloseTo(produced, 6)
+    expect(year.penalties).not.toBeCloseTo(accepted, 6)
+  })
+})
+
+const TRADITIONAL_IRA_CONTRIBUTION = 100
+const EMPLOYER_DEFERRAL_PROVING_ACTIVE_PARTICIPATION = 1
+const STATUTORY_TAX_AFTER_EMPLOYER_DEFERRAL =
+  100_000 - EMPLOYER_DEFERRAL_PROVING_ACTIVE_PARTICIPATION
+// Observed produced pin (fixture run 2026-08-26): the engine deducts the $100
+// traditional-IRA deposit despite the phaseout: 100,000 - 1 - 100 = 99,899.
+const producedTaxWithIraDeposit = 99_899
+
+describeRule('irc-219-g-traditional-ira-deduction-phaseout', {
+  readings: {
+    // A $100,000 single taxpayer is above Notice 2025-67's $81,000–$91,000
+    // active-participant band. The $1 employer deferral is allowed, but the
+    // $100 traditional-IRA deposit is nondeductible: $100,000 − $1 = $99,999.
+    statuteAllowsOnlyTheEmployerDeferral: STATUTORY_TAX_AFTER_EMPLOYER_DEFERRAL,
+    engineDeductsTheTraditionalIraDeposit:
+      producedTaxWithIraDeposit,
+  },
+  accepted: 'statuteAllowsOnlyTheEmployerDeferral',
+  produced: 'engineDeductsTheTraditionalIraDeposit',
+  note: 'active-participant deduction phase-out',
+}, ({ accepted, produced }) => {
+  it('deducts a traditional-IRA contribution after the active-participant phase-out ends', () => {
+    const plan = soloPlan('1966-06-15', 67) // 60 in 2026
+    plan.accounts = [
+      cash(0),
+      employerTraditional(0, EMPLOYER_DEFERRAL_PROVING_ACTIVE_PARTICIPATION),
+      traditionalIra(0, TRADITIONAL_IRA_CONTRIBUTION),
+    ]
+    plan.incomes = [wages(100_000)]
+
+    const year = year2026(plan, fullFlatTax)
+
+    expect(year.tax).toBeCloseTo(produced, 6)
+    expect(year.tax).not.toBeCloseTo(accepted, 6)
+  })
+})
+
+describeRule('pl-116-94-div-o-title-I-sec-107-traditional-ira-age-cap-repeal', {
+  readings: {
+    // P.L. 116-94 §107 repealed 219(d)(1). The requested $100 is below both
+    // wages and the annual ceiling, so an 80-year-old's contribution remains
+    // $100; the superseded age ceiling would have produced zero.
+    repealAllowsTheContribution: 100,
+    repealedAgeCeilingBlocksIt: 0,
+  },
+  accepted: 'repealAllowsTheContribution',
+  note: 'age 80 still has compensation',
+}, ({ accepted, readings }) => {
+  it('allows an otherwise eligible traditional-IRA contribution after age 70.5', () => {
+    const plan = soloPlan('1946-06-15', null) // 80 in 2026
+    plan.accounts = [cash(0), traditionalIra(0, accepted)]
+    plan.incomes = [wages(100)]
+
+    const year = year2026(plan)
+
+    expect(year.contributions).toBeCloseTo(accepted, 6)
+    expect(year.contributions).not.toBeCloseTo(readings.repealedAgeCeilingBlocksIt, 6)
   })
 })
 

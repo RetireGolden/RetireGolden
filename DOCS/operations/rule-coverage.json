@@ -2,21 +2,21 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 1,
   "registry": {
-    "total": 267,
+    "total": 288,
     "byClassification": {
-      "approximated": 56,
-      "outOfScope": 21,
-      "settled": 186,
+      "approximated": 61,
+      "outOfScope": 35,
+      "settled": 188,
       "unsettled": 4
     },
     "byVolatility": {
-      "annuallyIndexed": 37,
-      "awaitingGuidance": 4,
-      "staticStatute": 220,
+      "annuallyIndexed": 43,
+      "awaitingGuidance": 10,
+      "staticStatute": 229,
       "sunsetting": 6
     },
     "byJurisdiction": {
-      "federal": 210,
+      "federal": 231,
       "states": {
         "AK": 1,
         "AR": 9,
@@ -1612,6 +1612,23 @@
       ]
     },
     {
+      "id": "irc-219-b-5-B-ira-catch-up-excludes-employer-plan-super-catch-up",
+      "classification": "settled",
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2026-12-24",
+      "implementedBy": [
+        "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/employerRothCatchUp.test.ts"
+      ]
+    },
+    {
       "id": "irc-219-b-5-C-iii-ira-catch-up-indexed",
       "classification": "settled",
       "jurisdiction": "federal",
@@ -1678,6 +1695,23 @@
       ]
     },
     {
+      "id": "irc-219-g-traditional-ira-deduction-phaseout",
+      "classification": "approximated",
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2026-12-24",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/simulateContributionsAndQcd.approximation.test.ts"
+      ]
+    },
+    {
       "id": "irc-223-b-2-7-projection-coverage-proration-and-medicare",
       "classification": "approximated",
       "jurisdiction": "federal",
@@ -1725,6 +1759,21 @@
       "fixtureFiles": [
         "packages/engine/src/projection/simulate.test.ts"
       ]
+    },
+    {
+      "id": "irc-223-b-7-medicare-part-a-retroactive-entitlement",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2027-08-26",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "fixtureFiles": []
     },
     {
       "id": "irc-223-d-2-A-expense-reimbursable-once",
@@ -1889,6 +1938,21 @@
       ]
     },
     {
+      "id": "irc-401-a-17-plan-compensation-cap",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2026-12-24",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "fixtureFiles": []
+    },
+    {
       "id": "irc-401-a-9-B-ii-non-designated-beneficiary-five-year-rule",
       "classification": "outOfScope",
       "jurisdiction": "federal",
@@ -2022,6 +2086,21 @@
       ]
     },
     {
+      "id": "irc-401-k-11-simple-401-k-elective-deferral-limit",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2026-12-24",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "fixtureFiles": []
+    },
+    {
       "id": "irc-401-k-2-B-i-employer-plan-conversion-source-not-gated-by-distributability",
       "classification": "settled",
       "jurisdiction": "federal",
@@ -2106,6 +2185,36 @@
       ]
     },
     {
+      "id": "irc-402-g-2-excess-elective-deferral-correction",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2027-08-26",
+      "implementedBy": [
+        "packages/engine/src/actions/contract.ts",
+        "packages/engine/src/model/plan.ts"
+      ],
+      "fixtureFiles": []
+    },
+    {
+      "id": "irc-402-g-7-403b-15-year-catch-up",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2027-08-26",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "fixtureFiles": []
+    },
+    {
       "id": "irc-402A-c-4-E-in-plan-roth-transfer-not-modeled",
       "classification": "outOfScope",
       "jurisdiction": "federal",
@@ -2137,6 +2246,51 @@
       "fixtureFiles": [
         "packages/engine/src/projection/rmdShortfallExcise.test.ts"
       ]
+    },
+    {
+      "id": "irc-402A-e-1-A-plesa-optional-designated-roth-subaccount",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "awaitingGuidance",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2026-11-24",
+      "implementedBy": [
+        "packages/engine/src/actions/contract.ts",
+        "packages/engine/src/model/plan.ts"
+      ],
+      "fixtureFiles": []
+    },
+    {
+      "id": "irc-402A-e-3-A-plesa-participant-contribution-cap",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "awaitingGuidance",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2026-11-24",
+      "implementedBy": [
+        "packages/engine/src/actions/contract.ts",
+        "packages/engine/src/model/plan.ts"
+      ],
+      "fixtureFiles": []
+    },
+    {
+      "id": "irc-402A-e-7-B-i-plesa-distribution-qualified-roth-treatment",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "awaitingGuidance",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2026-11-24",
+      "implementedBy": [
+        "packages/engine/src/actions/contract.ts",
+        "packages/engine/src/model/plan.ts"
+      ],
+      "fixtureFiles": []
     },
     {
       "id": "irc-408-d-1-ira-annuity-premium-is-not-a-distribution",
@@ -2797,6 +2951,38 @@
       ]
     },
     {
+      "id": "irc-411-a-2-vesting-schedule-maximums",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2027-08-26",
+      "implementedBy": [
+        "packages/engine/src/actions/contract.ts",
+        "packages/engine/src/model/plan.ts"
+      ],
+      "fixtureFiles": []
+    },
+    {
+      "id": "irc-414-v-1-plan-permitted-catch-up",
+      "classification": "approximated",
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2026-12-24",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/employerRothCatchUp.test.ts"
+      ]
+    },
+    {
       "id": "irc-414-v-2-A-catch-up-limited-to-compensation-excess",
       "classification": "settled",
       "jurisdiction": "federal",
@@ -2846,6 +3032,21 @@
       "fixtureFiles": [
         "packages/engine/src/projection/employerRothCatchUp.test.ts"
       ]
+    },
+    {
+      "id": "irc-414-v-7-402-g-7-403b-15-year-catch-up-exclusion",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2027-08-26",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "fixtureFiles": []
     },
     {
       "id": "irc-414-v-7-A-high-earner-roth-catch-up-mandate",
@@ -2934,6 +3135,55 @@
       ],
       "fixtureFiles": [
         "packages/engine/src/params/params.test.ts"
+      ]
+    },
+    {
+      "id": "irc-457-b-3-governmental-final-three-year-catch-up",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2026-12-24",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "fixtureFiles": []
+    },
+    {
+      "id": "irc-4973-a-b-f-ira-and-roth-excess-contribution-excise",
+      "classification": "approximated",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2027-08-26",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/simulateContributionsAndQcd.approximation.test.ts"
+      ]
+    },
+    {
+      "id": "irc-4973-a-g-hsa-excess-contribution-excise",
+      "classification": "approximated",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2027-08-26",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/hsaLimitAndQcdOffset.approximation.test.ts"
       ]
     },
     {
@@ -3120,6 +3370,36 @@
       "fixtureFiles": [
         "packages/engine/src/tax/federalTax.test.ts"
       ]
+    },
+    {
+      "id": "irc-6433-a-1-savers-match-qualified-retirement-savings-contributions",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "awaitingGuidance",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2026-11-24",
+      "implementedBy": [
+        "packages/engine/src/actions/contract.ts",
+        "packages/engine/src/model/plan.ts"
+      ],
+      "fixtureFiles": []
+    },
+    {
+      "id": "irc-6433-f-6-savers-match-early-distribution-recovery-tax",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "awaitingGuidance",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2026-11-24",
+      "implementedBy": [
+        "packages/engine/src/actions/contract.ts",
+        "packages/engine/src/model/plan.ts"
+      ],
+      "fixtureFiles": []
     },
     {
       "id": "irc-67-h-miscellaneous-itemized-permanently-disallowed",
@@ -3383,6 +3663,21 @@
       ]
     },
     {
+      "id": "irc-72-t-2-J-plesa-withdrawal-early-distribution-exception",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "awaitingGuidance",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2026-11-24",
+      "implementedBy": [
+        "packages/engine/src/actions/contract.ts",
+        "packages/engine/src/model/plan.ts"
+      ],
+      "fixtureFiles": []
+    },
+    {
       "id": "irc-72-t-3-B-sepp-separation",
       "classification": "settled",
       "jurisdiction": "federal",
@@ -3477,6 +3772,23 @@
       ],
       "fixtureFiles": [
         "packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.test.ts"
+      ]
+    },
+    {
+      "id": "irc-83-a-equity-compensation-execution-character",
+      "classification": "approximated",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2027-08-26",
+      "implementedBy": [
+        "packages/engine/src/actions/execution.ts",
+        "packages/engine/src/model/plan.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/actions/execution.test.ts"
       ]
     },
     {
@@ -4167,6 +4479,23 @@
       ],
       "fixtureFiles": [
         "packages/engine/src/rules/approximations/stateTax.approximation.test.ts"
+      ]
+    },
+    {
+      "id": "pl-116-94-div-o-title-I-sec-107-traditional-ira-age-cap-repeal",
+      "classification": "settled",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2027-08-26",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/simulateContributionsAndQcd.approximation.test.ts"
       ]
     },
     {

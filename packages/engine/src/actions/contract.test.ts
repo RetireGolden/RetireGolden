@@ -274,6 +274,58 @@ describe('retirement action request contracts', () => {
     expect(persistedKinds.some(isUnmodeledEmployerRothPath)).toBe(false)
   })
 
+  it('has no action arm for excess-deferral corrections or unrepresented plan terms', () => {
+    // Covers the 402(g)(2) correction and the SIMPLE 401(k), 411 vesting,
+    // 403(b) 15-year, and 457(b)(3) plan-term refusals. Both unions matter:
+    // Plan.retirementActions uses the persisted union, not this request union.
+    const requestKinds = retirementActionRequestSchema.options.map((option) =>
+      String(option.shape.kind.value),
+    )
+    const persistedKinds = persistedRetirementActionRequestSchema.options.map((option) =>
+      String(option.shape.kind.value),
+    )
+    const unmodelledKind = /excess.*deferral|deferral.*correction|vesting|403b.*catch.?up|457.*catch.?up|simple401k/i
+
+    expect(requestKinds.every((kind) => !unmodelledKind.test(kind))).toBe(true)
+    expect(persistedKinds.every((kind) => !unmodelledKind.test(kind))).toBe(true)
+    expect(new Set(persistedKinds)).toEqual(new Set(requestKinds))
+    expect(
+      retirementActionRequestSchema.safeParse({
+        ...requests[0],
+        kind: 'excessElectiveDeferralCorrection',
+      }).success,
+    ).toBe(false)
+  })
+
+  it("has no PLESA or Saver's Match action arm", () => {
+    // PLESA withdrawals and Saver's Match claims, deposits, recoveries, and
+    // repayments require their own legal facts. Neither current action union
+    // may gain a look-alike arm that treats an ordinary withdrawal as one.
+    const requestKinds = retirementActionRequestSchema.options.map((option) =>
+      String(option.shape.kind.value),
+    )
+    const persistedKinds = persistedRetirementActionRequestSchema.options.map((option) =>
+      String(option.shape.kind.value),
+    )
+    const unmodelledKind = /plesa|pension.*emergency|emergency.*savings|savers?.*match|match.*recovery/i
+
+    expect(requestKinds.every((kind) => !unmodelledKind.test(kind))).toBe(true)
+    expect(persistedKinds.every((kind) => !unmodelledKind.test(kind))).toBe(true)
+    expect(new Set(persistedKinds)).toEqual(new Set(requestKinds))
+    expect(
+      retirementActionRequestSchema.safeParse({
+        ...requests[0],
+        kind: 'plesaWithdrawal',
+      }).success,
+    ).toBe(false)
+    expect(
+      retirementActionRequestSchema.safeParse({
+        ...requests[0],
+        kind: 'saversMatchClaim',
+      }).success,
+    ).toBe(false)
+  })
+
   it('round-trips all three current and all three legacy request arms', () => {
     for (const request of requests) {
       expect(parseRetirementActionRequest(JSON.parse(JSON.stringify(request)))).toEqual({

@@ -41,6 +41,7 @@ import {
   type ResolvedIndividuallyOwnedSourceAllocationExecutionEvidence,
   type TaxableAccountOpeningSnapshot,
 } from './execution.js'
+import { describeRule } from '../rules/describeRule.js'
 
 function cash(id: string, ownerPersonId: string | null = 'p1'): Account {
   return {
@@ -1776,5 +1777,46 @@ describe('ordinary-withdrawal execution', () => {
       expect(Object.isFrozen(result.taxableBases[1]?.ownership)).toBe(true)
       expect(Object.isFrozen(result.taxableBases[1]?.taxUnit)).toBe(true)
     })
+  })
+})
+
+// Observed produced pin (fixture run 2026-08-26): the executor classifies the
+// whole $75 execution as ordinary income.
+const producedSection83OrdinaryAtExecution = 75
+
+describeRule('irc-83-a-equity-compensation-execution-character', {
+  readings: {
+    // Section 83(a) includes compensation at the earlier transferability/no-
+    // forfeiture year. This final account has the executor's own alreadyVested
+    // evidence before its 2030 execution, so its section 83 compensation at
+    // execution is $0. The $75 sale may have other character, but it is not a
+    // fresh section 83(a) compensation inclusion.
+    statuteHasNoNewSection83CompensationAtExecution: 0,
+    engineClassifiesTheWholeExecutionAsOrdinary:
+      producedSection83OrdinaryAtExecution,
+  },
+  accepted: 'statuteHasNoNewSection83CompensationAtExecution',
+  produced: 'engineClassifiesTheWholeExecutionAsOrdinary',
+  note: 'already-vested equity execution',
+}, ({ accepted, produced }) => {
+  it('classifies an already-vested equity execution as ordinary income anyway', () => {
+    const request = withdrawal({
+      actionId: 'section-83-timing',
+      sequence: 1,
+      executionDate: '2030-06-15',
+      allocations: [allocation('section-83-allocation', 'equity', 75)],
+    })
+    const result = run(
+      planWith(equityComp('equity')),
+      [request],
+      balances([['equity', 100]]),
+    )
+    const evidence = result.evidence[0]!
+    if (evidence.readiness !== 'actionable') throw new Error('expected actionable equity execution')
+    const character = evidence.taxCharacter[0]
+    if (character?.kind !== 'ordinaryIncome') throw new Error('expected ordinary-income character')
+
+    expect(character.amount).toBe(produced)
+    expect(character.amount).not.toBe(accepted)
   })
 })

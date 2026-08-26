@@ -56,6 +56,9 @@ State brackets are a separate question and are still held nominal (see `params/s
   approximated / `overstatesTax`).
   IRC §151(d)(5)(C)(iii)(I) phases out the **per-person** $6,000 at 6% of MAGI over the threshold, so
   each qualifying person's share runs out separately and two people 65+ reach zero at the same MAGI as one.
+  Traditional-IRA deposits are currently treated as pre-tax without the §219(g) active-participant deduction
+  phase-out; they may therefore understate tax at high income. The SECURE Act age-cap repeal is honored, but
+  IRA/Roth excess-contribution excise is not priced (domain rules §5).
 - **MAGI:** AGI plus foreign income excluded under §§911/931/933. The NIIT (§1411(d)), the senior
   deduction phase-out (§151(d)(5)(C)(iii)(II)), and the high-MAGI SALT phasedown
   (`irc-164-b-7-B-magi-phasedown`, not yet wired) all run off that same addback definition rather than
@@ -539,7 +542,9 @@ rules and citations: [domain rules §16](../domain/domain-rules-reference.md#16-
   household's modeled medical costs (`capByMedicalExpenses`), assume every withdrawal qualifies
   (`assumeAllQualified`), or keep the legacy behavior; `reimburseLater` accumulates unreimbursed out-of-pocket
   medical costs as a carryover future withdrawals can draw tax-free. A non-spouse HSA `beneficiary` makes the
-  ending balance taxable to the heir in the after-tax estate.
+  ending balance taxable to the heir in the after-tax estate. It does not establish HDHP coverage, Medicare Part A
+  enrollment, or retroactive entitlement; those facts can make a contribution excess, and the §4973 6% excise on
+  that excess is not included in `YearResult.penalties` (domain rules §5).
 - **Nondeductible IRA basis.** `nondeductibleBasis` (Form 8606) makes withdrawals and conversions part
   tax-free basis, pro-rata across the owner's aggregated IRAs. The actions package also exposes a pure
   annual exact-cent substrate for owned traditional/SEP/SIMPLE IRAs: it requires a prevalidated complete

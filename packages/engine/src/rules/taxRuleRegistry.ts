@@ -9993,6 +9993,786 @@ const registry = {
       'packages/engine/src/projection/simulate.ts',
     ],
   },
+
+  'irc-401-k-11-simple-401-k-elective-deferral-limit': {
+    title: 'SIMPLE 401(k) elective deferrals use the separate SIMPLE limit',
+    statement:
+      'A SIMPLE 401(k) participant election may not exceed the section 408(p)(2)(A)(ii) amount, which Notice 2025-67 sets at 17,000 dollars for 2026, rather than the general 24,500-dollar section 402(g)(1) limit. Not modelled: an employer account can be labelled only 401k, 403b, or 457b; it cannot establish that a 401(k) is a SIMPLE 401(k), so the projection cannot select the separate limit.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The generic 402(g) aggregate record is deliberately not extended to call a 401(k) SIMPLE: that plan-document status is absent. model/plan.test.ts gates the employer-plan-type membership, and actions/contract.test.ts gates the absence of a plan-term correction/action arm.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 401(k)(11)(B)(i)(I)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section401&num=0&edition=prelim',
+      quotedText:
+        'an employee may elect to have the employer make elective contributions for the year on behalf of the employee to a trust under the plan in an amount which is expressed as a percentage of compensation of the employee but which in no event exceeds the amount in effect under section 408(p)(2)(A)(ii) (after the application of any election under section 408(p)(2)(E)(i)(II)),',
+    }, {
+      kind: 'irsNotice',
+      citation: 'Notice 2025-67, SIMPLE retirement account and SIMPLE 401(k) limitation',
+      url: 'https://www.irs.gov/pub/irs-drop/n-25-67.pdf',
+      quotedText:
+        'The limitation under section 408(p)(2)(E)(i)(III) that generally applies to salary reduction contributions under a SIMPLE retirement account or elective contributions under a SIMPLE 401(k) plan is increased from $16,500 to $17,000.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-26',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+  },
+
+  'irc-401-a-17-plan-compensation-cap': {
+    title: 'Qualified-plan compensation taken into account is capped',
+    statement:
+      'For a qualified trust, section 401(a)(17) limits the annual compensation of an employee taken into account under the plan; Notice 2025-67 sets that indexed limit at 360,000 dollars for 2026. Section 415(c) separately caps a modeled defined-contribution annual addition at the lesser of the section 415(c) dollar limit and compensation, but the Plan has no plan-defined compensation amount or qualified-plan terms from which to determine what the employer actually takes into account under 401(a)(17).',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The projection uses household wage income as a 415(c) compensation proxy and applies simple match percentages to it. It does not carry a plan-defined section 401(a)(17) compensation base, exclusions, or qualification terms. model/plan.test.ts gates that absence; this is not an assertion that the wage proxy establishes the plan term.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 401(a)(17)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section401&num=0&edition=prelim',
+      quotedText:
+        'A trust shall not constitute a qualified trust under this section unless, under the plan of which such trust is a part, the annual compensation of each employee taken into account under the plan for any year does not exceed $200,000.',
+    }, {
+      kind: 'irsNotice',
+      citation: 'Notice 2025-67, annual compensation limitation',
+      url: 'https://www.irs.gov/pub/irs-drop/n-25-67.pdf',
+      quotedText:
+        'The annual compensation limitation under sections 401(a)(17), 404(l), 408(k)(3)(C), and 408(k)(6)(D)(ii) is increased from $350,000 to $360,000.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-26',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+  },
+
+  'irc-402-g-2-excess-elective-deferral-correction': {
+    title: 'A timely excess-elective-deferral distribution avoids taxing the deferral twice',
+    statement:
+      'After an excess elective deferral is included in gross income under section 402(g)(1), the individual may allocate and notify plans by March 1 and each plan may distribute the allocated deferral and allocable income by April 15. The deferral distribution itself is not again included in gross income, while its income is income in the distribution year and bears no section 72(t) tax. Not modelled: the Plan has no original payroll deferral, plan allocation or notice, corrective-distribution date, or allocable-income fact, and no retirement-action arm can execute that correction.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The contribution allocator prevents modeled requests from exceeding its aggregate ceiling; it is not a record of an actual excess or a corrective distribution. actions/contract.test.ts gates the request and persisted action unions against a correction kind, while model/plan.test.ts gates the missing correction facts.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 402(g)(2)(A)(i)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402&num=0&edition=prelim',
+      quotedText:
+        'not later than the 1st March 1 following the close of the taxable year, the individual may allocate the amount of such excess deferrals among the plans under which the deferrals were made and may notify each such plan of the portion allocated to it, and',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 402(g)(2)(A)(ii)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402&num=0&edition=prelim',
+      quotedText:
+        'not later than the 1st April 15 following the close of the taxable year, each such plan may distribute to the individual the amount allocated to it under clause (i) (and any income allocable to such amount through the end of such taxable year).',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 402(g)(2)(C)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402&num=0&edition=prelim',
+      quotedText:
+        'except as provided in clause (ii), such distribution shall not be included in gross income, and',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 402(g)(2)(C)(ii)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402&num=0&edition=prelim',
+      quotedText:
+        'any income on the excess deferral shall, for purposes of this chapter, be treated as earned and received in the taxable year in which such income is distributed.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 402(g)(2)(C)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402&num=0&edition=prelim',
+      quotedText: 'No tax shall be imposed under section 72(t) on any distribution described in the preceding sentence.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-26',
+    implementedBy: [
+      'packages/engine/src/actions/contract.ts',
+      'packages/engine/src/model/plan.ts',
+    ],
+  },
+
+  'irc-4973-a-b-f-ira-and-roth-excess-contribution-excise': {
+    title: 'Uncorrected IRA and Roth IRA excess contributions incur the section 4973 excise',
+    statement:
+      'Section 4973(a) imposes a 6-percent excise on excess contributions at year end. For a traditional IRA, section 4973(b) uses amounts contributed above the section 219 deduction amount computed without regard to section 219(g); for a Roth IRA, section 4973(f) uses contributions above the amount allowable under 408A(c)(2) and (c)(3). Form 5329 carries prior-year excess forward and prices 6 percent of the lesser of the excess and the December 31 value. The engine lets a high-income Roth IRA contribution land but does not price this section 4973 excise, understating tax. A contribution distributed in a distribution to which 408(d)(4) applies is treated as not contributed, but the conditions and deadline for that correction are not registered here because a primary-source copy of 408(d)(4) and 408A(d)(6) was not supplied.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'understatesTax',
+    conventionRationale:
+      'DEFECT — no behavior change in this registration slice. projection/simulate.ts has a Roth contribution path and a penalties total, but no section 4973 IRA/Roth excess-contribution term. The companion fixture uses a 100-dollar Roth contribution at income already above the 2026 Roth phase-out and derives 6 dollars as 100 × 0.06; the observed produced value is 0 — no excise term exists, so penalties stay untouched — pinned until a separately authorized implementation fix changes it.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 4973(a)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section4973&num=0&edition=prelim',
+      quotedText:
+        'there is imposed for each taxable year a tax in an amount equal to 6 percent of the amount of the excess contributions to such individual\'s accounts or annuities (determined as of the close of the taxable year). The amount of such tax for any taxable year shall not exceed 6 percent of the value of the account or annuity (determined as of the close of the taxable year).',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 4973(b)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section4973&num=0&edition=prelim',
+      quotedText:
+        '(1) the excess (if any) of- (A) the amount contributed for the taxable year to the accounts or for the annuities (other than a contribution to a Roth IRA or a rollover contribution described in section 402(c), 403(a)(4), 403(b)(8), 408(d)(3), or 457(e)(16)), over (B) the amount allowable as a deduction under section 219 for such contributions, and (2) the amount determined under this subsection for the preceding taxable year reduced by the sum of-',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 4973(f)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section4973&num=0&edition=prelim',
+      quotedText:
+        '(1) the excess (if any) of- (A) the amount contributed for the taxable year to Roth IRAs (other than a qualified rollover contribution described in section 408A(e)), over (B) the amount allowable as a contribution under sections 408A(c)(2) and (c)(3), and (2) the amount determined under this subsection for the preceding taxable year, reduced by the sum of-',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 4973(b)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section4973&num=0&edition=prelim',
+      quotedText:
+        'For purposes of paragraphs (1)(B) and (2)(C), the amount allowable as a deduction under section 219 shall be computed without regard to section 219(g).',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 4973(f)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section4973&num=0&edition=prelim',
+      quotedText:
+        'For purposes of this subsection, any contribution which is distributed from a Roth IRA in a distribution described in section 408(d)(4) shall be treated as an amount not contributed.',
+    }, {
+      kind: 'formInstruction',
+      citation: '2025 Form 5329, Part IV, line 25',
+      url: 'https://www.irs.gov/pub/irs-pdf/f5329.pdf',
+      quotedText:
+        'Additional tax. Enter 6% (0.06) of the smaller of line 24 or the value of your Roth IRAs on December 31, 2025 (including 2025 contributions made in 2026). Include this amount on Schedule 2 (Form 1040), line 8',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-26',
+    implementedBy: [
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/model/plan.ts',
+    ],
+  },
+
+  'irc-411-a-2-vesting-schedule-maximums': {
+    title: 'Employer contributions are subject to section 411 vesting maxima',
+    statement:
+      'A defined-contribution plan must provide either 100-percent vesting after three years of service or a nonforfeitable percentage under the two-to-six-year schedule for benefits derived from employer contributions. Not modelled: the Plan records an employer-plan balance and a simple current match formula, not a plan document, service history, contribution-source vesting ledger, or a vesting election, so it cannot determine a vested balance or test a plan schedule.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'A projected account balance is not evidence that each underlying employer contribution is vested. model/plan.test.ts gates the absence of vesting schedule and service fields, and actions/contract.test.ts gates the absence of a vesting action or certification.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 411(a)(2)(B)(ii)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section411&num=0&edition=prelim',
+      quotedText:
+        'A plan satisfies the requirements of this clause if an employee who has completed at least 3 years of service has a nonforfeitable right to 100 percent of the employee\'s accrued benefit derived from employer contributions.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 411(a)(2)(B)(iii)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section411&num=0&edition=prelim',
+      quotedText:
+        'A plan satisfies the requirements of this clause if an employee has a nonforfeitable right to a percentage of the employee\'s accrued benefit derived from employer contributions determined under the following table:',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-26',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/actions/contract.ts',
+    ],
+  },
+
+  'irc-402-g-7-403b-15-year-catch-up': {
+    title: 'The special 403(b) 15-year catch-up has independent eligibility and caps',
+    statement:
+      'For a qualified employee of a qualified organization, section 402(g)(7) increases the 402(g)(1) limit by the least of 3,000 dollars, the remaining 15,000-dollar cumulative amount, or the service-based amount. The regulation requires a qualifying employee to have at least 15 years of service and treats a contribution eligible for both this special catch-up and an age-50 catch-up first as the special catch-up. Not modelled: the Plan has no qualified-organization status, plan-document election, years-of-service record, prior special-catch-up history, or ordering election.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'employerPlanType: 403b is an RMD-aggregation label only; it does not establish any of the section 402(g)(7) predicates. model/plan.test.ts gates those absent membership fields and actions/contract.test.ts gates the absence of a catch-up certification/action.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 402(g)(7)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402&num=0&edition=prelim',
+      quotedText:
+        'In the case of a qualified employee of a qualified organization, with respect to employer contributions described in paragraph (3)(C) made by such organization, the limitation of paragraph (1) for any taxable year shall be increased by whichever of the following is the least:',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 402(g)(7)(A)(i)-(iii)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402&num=0&edition=prelim',
+      quotedText:
+        '$3,000, … $15,000 reduced by the sum of- … the excess of $5,000 multiplied by the number of years of service of the employee with the qualified organization over the employer contributions described in paragraph (3) made by the organization on behalf of such employee for prior taxable years (determined in the manner prescribed by the Secretary).',
+    }, {
+      kind: 'regulation',
+      citation: '26 CFR 1.403(b)-4(c)(3)(iii)-(iv)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.403(b)-4',
+      quotedText:
+        'qualified employee means an employee who has completed at least 15 years of service … any catch-up amount contributed by an employee who is eligible for both an age 50 catch-up and a special section 403(b) catch-up is treated first as an amount contributed as a special section 403(b) catch-up to the extent a special section 403(b) catch-up is permitted, and then as an amount contributed as an age 50 catch-up',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-26',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+  },
+
+  'irc-414-v-7-402-g-7-403b-15-year-catch-up-exclusion': {
+    title: 'The 403(b) 15-year catch-up is not the 414(v)(1) Roth-mandated catch-up',
+    statement:
+      'Section 414(v)(7)(A) limits its Roth condition to the additional elective deferrals under section 414(v)(1), while section 402(g)(7) independently increases the section 402(g)(1) limitation for a qualified 403(b) employee. The special 403(b) 15-year catch-up is therefore not made a designated-Roth contribution solely by the section 414(v)(7) high-earner rule. Not modelled: the Plan cannot establish that a contribution is a qualified 402(g)(7) amount, so it cannot label or act on this exclusion.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'This is not a duplicate of irc-414-v-7-A-high-earner-roth-catch-up-mandate: that record covers the 414(v)(1) catch-up, including SIMPLE IRA and Roth-program limbs. The missing 402(g)(7) membership facts are gated in model/plan.test.ts.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 414(v)(7)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section414&num=0&edition=prelim',
+      quotedText:
+        'Except as provided in subparagraph (C), in the case of an eligible participant whose wages (as defined in section 3121(a)) for the preceding calendar year from the employer sponsoring the plan exceed $145,000, paragraph (1) shall apply only if any additional elective deferrals are designated Roth contributions (as defined in section 402A(c)(1)) made pursuant to an employee election.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 402(g)(7)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402&num=0&edition=prelim',
+      quotedText:
+        'In the case of a qualified employee of a qualified organization, with respect to employer contributions described in paragraph (3)(C) made by such organization, the limitation of paragraph (1) for any taxable year shall be increased by whichever of the following is the least:',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-26',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+  },
+
+  'irc-219-g-traditional-ira-deduction-phaseout': {
+    title: 'Traditional-IRA deductions phase out for workplace-plan participants',
+    statement:
+      'When an individual or spouse is an active participant in a listed workplace plan, section 219(g) reduces the traditional-IRA deduction limit by a MAGI ratio, with a 10,000-dollar single and 20,000-dollar joint band. Notice 2025-67 sets the 2026 active-participant phase-out ranges at 81,000 to 91,000 dollars for a single or head-of-household filer and 129,000 to 149,000 dollars for a joint filer; it sets the nonparticipant-with-active-spouse range at 242,000 to 252,000 dollars. The engine treats every allowed traditional IRA deposit as pre-tax and does not apply this deduction phase-out, understating tax for a participant above the applicable range.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'understatesTax',
+    conventionRationale:
+      'DEFECT — no behavior change in this registration slice. The Plan can carry a traditional IRA, wages, filing status, and an employer account, but has no active-participant fact or section 219(g) MAGI calculation. projection/simulate.ts nevertheless adds an allowed traditional IRA deposit to preTaxContributions. The fixture supplies a one-dollar employer deferral to establish actual participation, uses 100,000 dollars of wages, and derives the accepted 99,999-dollar 100-percent-flat-tax base by allowing the employer deferral but no 100-dollar IRA deduction; the observed engine output is 99,899 — the deposit is deducted despite the phaseout — pinned until a separately authorized implementation fix changes it.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 219(g)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section219&num=0&edition=prelim',
+      quotedText:
+        'If (for any part of any plan year ending with or within a taxable year) an individual or the individual\'s spouse is an active participant, each of the dollar limitations contained in subsections (b)(1)(A) and (c)(1)(A) for such taxable year shall be reduced (but not below zero) by the amount determined under paragraph (2).',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 219(g)(2)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section219&num=0&edition=prelim',
+      quotedText:
+        'The amount determined under this paragraph with respect to any dollar limitation shall be the amount which bears the same ratio to such limitation as- … the excess of- … the taxpayer\'s adjusted gross income for such taxable year, over … the applicable dollar amount, bears to … $10,000 ($20,000 in the case of a joint return).',
+    }, {
+      kind: 'irsNotice',
+      citation: 'Notice 2025-67, traditional IRA deduction phase-out ranges',
+      url: 'https://www.irs.gov/pub/irs-drop/n-25-67.pdf',
+      quotedText:
+        'the deduction for taxpayers making contributions to a traditional IRA is phased out for single individuals and heads of household who are active participants in a qualified plan (or another retirement plan specified in section 219(g)(5)) and have adjusted gross incomes (as defined in section 219(g)(3)(A)) between $81,000 and $91,000, increased from between $79,000 and $89,000. For married couples filing jointly, if the spouse who makes the IRA contribution is an active participant, the income phase-out range is between $129,000 and $149,000, increased from between $126,000 and $146,000. For an IRA contributor who is not an active participant and is married to someone who is an active participant, the deduction is phased out if the couple\'s income is between $242,000 and $252,000, increased from between $236,000 and $246,000.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-26',
+    implementedBy: [
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/model/plan.ts',
+    ],
+  },
+
+  'pl-116-94-div-o-title-I-sec-107-traditional-ira-age-cap-repeal': {
+    title: 'Traditional IRA contributions have no maximum contribution age',
+    statement:
+      'Public Law 116-94 repealed section 219(d)(1), removing the traditional-IRA contribution age ceiling. An otherwise eligible individual may contribute after age 70.5; the ordinary section 219 dollar, compensation, and deduction limitations still apply.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'legislativeHistory',
+      citation: 'P.L. 116-94, division O, title I, section 107(a)',
+      url: 'https://www.govinfo.gov/content/pkg/PLAW-116publ94/pdf/PLAW-116publ94.pdf',
+      quotedText:
+        'Paragraph (1) of section 219(d) of the Internal Revenue Code of 1986 is repealed.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 219(d)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section219&num=0&edition=prelim',
+      quotedText:
+        '[(1) Repealed. Pub. L. 116–94, div. O, title I, §107(a), Dec. 20, 2019, 133 Stat. 3148 ]',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-26',
+    implementedBy: [
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/model/plan.ts',
+    ],
+  },
+
+  'irc-457-b-3-governmental-final-three-year-catch-up': {
+    title: 'Governmental 457(b) has a separate final-three-taxable-year catch-up',
+    statement:
+      'A governmental eligible employer is a State, political subdivision, agency, or instrumentality. Its eligible 457(b) plan may provide a special ceiling for one or more of the participant\'s last three taxable years before normal retirement age: the lesser of twice the ordinary ceiling or the current ordinary ceiling plus unused earlier ceiling. Not modelled: an employerPlanType of 457b does not establish a governmental sponsor, normal retirement age under the plan, plan provision, or prior unused ceiling, so the projection cannot apply the special catch-up.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The generic employer-deferral allocator treats 457b only as a plan class and has no final-three-year state. model/plan.test.ts gates the missing sponsor, normal-retirement-age, and unused-deferral fields; actions/contract.test.ts gates the absence of an attested special-catch-up action.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 457(e)(1)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section457&num=0&edition=prelim',
+      quotedText:
+        'a State, political subdivision of a State, and any agency or instrumentality of a State or political subdivision of a State, and',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 457(b)(3)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section457&num=0&edition=prelim',
+      quotedText:
+        'which may provide that, for 1 or more of the participant\'s last 3 taxable years ending before he attains normal retirement age under the plan, the ceiling set forth in paragraph (2) shall be the lesser of- … twice the dollar amount in effect under subsection (b)(2)(A), or … the sum of- … the plan ceiling established for purposes of paragraph (2) for the taxable year (determined without regard to this paragraph), plus … so much of the plan ceiling established for purposes of paragraph (2) for taxable years before the taxable year as has not previously been used under paragraph (2) or this paragraph,',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-26',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+  },
+
+  'irc-83-a-equity-compensation-execution-character': {
+    title: 'Equity-compensation execution is not universally ordinary income at execution',
+    statement:
+      'Section 61 includes compensation for services in gross income, but for property transferred for services section 83(a) includes the excess value in the first taxable year when the rights become transferable or no longer carry a substantial risk of forfeiture. The named ordinary-withdrawal executor instead classifies every available equity-compensation execution as its full amount of ordinary income at execution, without a transfer date, section 83(b) election, amount paid, grant type, or post-vesting basis/holding-period facts. For already vested property, that convention can charge section 83 compensation after the statutory inclusion year and overstates tax.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'overstatesTax',
+    conventionRationale:
+      'DEFECT — no behavior change in this registration slice. actions/execution.ts emits fullyTaxableCompensationAtExecution with ordinaryIncomeAmount equal to the whole executed amount. The fixture drives that named execution path with its own alreadyVested evidence and derives a zero section 83(a) compensation amount in the later execution year; the observed output classifies the whole 75-dollar execution as ordinary income, pinned until a separately authorized implementation fix changes it.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 61(a)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section61&num=0&edition=prelim',
+      quotedText: 'Compensation for services, including fees, commissions, fringe benefits, and similar items;',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 83(a)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section83&num=0&edition=prelim',
+      quotedText:
+        'the fair market value of such property (determined without regard to any restriction other than a restriction which by its terms will never lapse) at the first time the rights of the person having the beneficial interest in such property are transferable or are not subject to a substantial risk of forfeiture, whichever occurs earlier, over … the amount (if any) paid for such property, … shall be included in the gross income of the person who performed such services in the first taxable year in which the rights of the person having the beneficial interest in such property are transferable or are not subject to a substantial risk of forfeiture, whichever is applicable.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-26',
+    implementedBy: [
+      'packages/engine/src/actions/execution.ts',
+      'packages/engine/src/model/plan.ts',
+    ],
+  },
+
+  'irc-223-b-7-medicare-part-a-retroactive-entitlement': {
+    title: 'Retroactive Medicare enrollment can make HSA contributions excess',
+    statement:
+      'Section 223(b)(7) reduces the HSA limitation to zero from the first month an individual is entitled to title XVIII benefits. Publication 969 says that rule applies to retroactive Medicare coverage, so a delayed enrollment that is backdated makes contributions during the retroactive period excess. Not modelled: the Plan has no Medicare Part A enrollment, entitlement start date, retroactive period, or HSA-coverage-by-month fact; the projection uses age 65 only to price healthcare premiums and does not feed Medicare entitlement into HSA eligibility.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'This is narrower than, and not a duplicate of, irc-223-b-2-7-projection-coverage-proration-and-medicare: that approximated record documents the annual HSA coverage shortcut. The Part A entitlement/backdating fact itself is absent and cannot be inferred from age. model/plan.test.ts gates those missing HSA fields.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 223(b)(7)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section223&num=0&edition=prelim',
+      quotedText:
+        'The limitation under this subsection for any month with respect to an individual shall be zero for the first month such individual is entitled to benefits under title XVIII of the Social Security Act and for each month thereafter.',
+    }, {
+      kind: 'irsPublication',
+      citation: 'IRS Publication 969, Enrolled in Medicare',
+      url: 'https://www.irs.gov/publications/p969',
+      quotedText:
+        'Beginning with the first month you are enrolled in Medicare, your contribution limit is zero. This rule applies to periods of retroactive Medicare coverage. So if you delayed applying for Medicare and later your enrollment is backdated, any contributions to your HSA made during the period of retroactive coverage are considered excess.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-26',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+  },
+
+  'irc-4973-a-g-hsa-excess-contribution-excise': {
+    title: 'Uncorrected HSA excess contributions incur the section 4973 excise',
+    statement:
+      'Section 4973(a) imposes a 6-percent year-end excise on excess contributions, and section 4973(g) defines an HSA excess as a contributed amount neither excludable from gross income nor deductible under section 223. Form 5329 Part VII prices 6 percent of the lesser of the HSA excess and the December 31 HSA value; Publication 969 says the excise applies for each tax year the excess remains. The engine calculates HSA contribution caps but does not include a section 4973 HSA excess excise in YearResult.penalties, understating tax when an excess occurs.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'understatesTax',
+    conventionRationale:
+      'DEFECT — no behavior change in this registration slice. The penalties sum in projection/simulate.ts includes early-withdrawal, Roth, HSA withdrawal, and RMD-shortfall terms but no 4973 HSA contribution term. The fixture posits a 1,000-dollar HSA contribution made while entitled to Medicare, derives 60 dollars as 1,000 × 0.06 with a year-end value of at least 1,000, and the observed engine penalty is 0 — no 4973 HSA term exists — pinned until a separately authorized implementation fix changes it.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 4973(a)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section4973&num=0&edition=prelim',
+      quotedText:
+        'there is imposed for each taxable year a tax in an amount equal to 6 percent of the amount of the excess contributions to such individual\'s accounts or annuities (determined as of the close of the taxable year). The amount of such tax for any taxable year shall not exceed 6 percent of the value of the account or annuity (determined as of the close of the taxable year).',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 4973(g)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section4973&num=0&edition=prelim',
+      quotedText:
+        'the aggregate amount contributed for the taxable year to the accounts (other than a rollover contribution described in section 220(f)(5) or 223(f)(5)) which is neither excludable from gross income under section 106(d) nor allowable as a deduction under section 223 for such year, and',
+    }, {
+      kind: 'formInstruction',
+      citation: '2025 Form 5329, Part VII, line 49',
+      url: 'https://www.irs.gov/pub/irs-pdf/f5329.pdf',
+      quotedText:
+        'Additional tax. Enter 6% (0.06) of the smaller of line 48 or the value of your HSAs on December 31, 2025 (including 2025 contributions made in 2026). Include this amount on Schedule 2 (Form 1040), line 8',
+    }, {
+      kind: 'irsPublication',
+      citation: 'IRS Publication 969, Excess contributions',
+      url: 'https://www.irs.gov/publications/p969',
+      quotedText:
+        'Generally, you must pay a 6% excise tax on excess contributions. See Form 5329, Additional Taxes on Qualified Plans (Including IRAs) and Other Tax-Favored Accounts, to figure the excise tax. The excise tax applies to each tax year the excess contribution remains in the account.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-26',
+    implementedBy: [
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/model/plan.ts',
+    ],
+  },
+
+  'irc-402A-e-1-A-plesa-optional-designated-roth-subaccount': {
+    title: 'A PLESA is an optional designated-Roth subaccount of an employer plan',
+    statement:
+      'An applicable retirement plan may include a pension-linked emergency savings account (PLESA), which section 402A(e) generally treats as a designated Roth account. RetireGolden does not model a PLESA subaccount, its separate contribution and earnings records, or a plan feature election, so no accepted plan input reaches this rule.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'This is a schema refusal, not a zero-dollar result: traditionalAccountSchema and rothAccountSchema have no PLESA subaccount, separate earnings, or plan-feature fields, and the retirement-action unions have no PLESA arm. The absent account vocabulary is pinned in model/plan.test.ts and the absent action vocabulary in actions/contract.test.ts. The enacting provision is SECURE 2.0 section 127(e)(1), not section 115.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 402A(e)(1)(A)(i)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402A&num=0&edition=prelim',
+      quotedText:
+        'An applicable retirement plan- (A) may- (i) include a pension-linked emergency savings account established pursuant to section 801 of the Employee Retirement Income Security Act of 1974, which, except as otherwise provided in this subsection, shall be treated for purposes of this title as a designated Roth account, and',
+    }, {
+      kind: 'legislativeHistory',
+      citation: 'P.L. 117-328, division T, title I, section 127(e)(1)',
+      url: 'https://www.govinfo.gov/content/pkg/PLAW-117publ328/pdf/PLAW-117publ328.pdf',
+      quotedText:
+        'Section 402A is amended by redesignating subsection (e) as subsection (f) and by inserting after subsection (d) the following new subsection: "(e) PENSION-LINKED EMERGENCY SAVINGS ACCOUNTS.--"',
+    }],
+    volatility: 'awaitingGuidance',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-26',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/actions/contract.ts',
+    ],
+  },
+
+  'irc-402A-e-3-A-plesa-participant-contribution-cap': {
+    title: 'PLESA participant contributions stop at the indexed or sponsor-set lower cap',
+    statement:
+      'No contribution may be accepted to a PLESA if participant contributions would exceed the lesser of the indexed 2,500-dollar amount or the lower amount selected by the plan sponsor. RetireGolden cannot accept a PLESA contribution, balance, or sponsor cap, so it produces no cap result.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The cap turns on a PLESA-only participant-contribution balance and a sponsor-selected lower cap. Neither field exists on traditionalAccountSchema or rothAccountSchema, and there is no PLESA contribution action; model/plan.test.ts and actions/contract.test.ts explicitly gate those vocabulary surfaces. Notice 2024-22 confirms that the lower sponsor amount is an independent statutory limb, not an inferred account limit.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 402A(e)(3)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402A&num=0&edition=prelim',
+      quotedText:
+        'Subject to subparagraph (B), no contribution shall be accepted to a pension-linked emergency savings account to the extent such contribution would cause the portion of the account balance attributable to participant contributions to exceed the lesser of- (i) $2,500; or (ii) an amount determined by the plan sponsor of the pension-linked emergency savings account. In the case of contributions made in taxable years beginning after December 31, 2024, the Secretary shall adjust the amount under clause (i) at the same time and in the same manner as the adjustment made under section 415(d), except that the base period shall be the calendar quarter beginning July 1, 2023. Any increase under the preceding sentence which is not a multiple of $100 shall be rounded to the next lowest multiple of $100.',
+    }, {
+      kind: 'irsNotice',
+      citation: 'IRS Notice 2024-22, section II.B',
+      url: 'https://www.irs.gov/pub/irs-drop/n-24-22.pdf',
+      quotedText:
+        'Subject to certain excess contribution rules, section 402A(e)(3)(A) provides that no contribution shall be accepted to a PLESA to the extent such contribution would cause the portion of the account balance attributable to participant contributions to exceed the lesser of (i) $2,500 or (ii) an amount determined by the plan sponsor of the PLESA.',
+    }],
+    volatility: 'awaitingGuidance',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-26',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/actions/contract.ts',
+    ],
+  },
+
+  'irc-72-t-2-J-plesa-withdrawal-early-distribution-exception': {
+    title: 'A PLESA withdrawal is excepted from the section 72(t) additional tax',
+    statement:
+      'Section 72(t)(2)(J) excepts a distribution from a PLESA made under section 402A(e) from the early-distribution additional tax, subject to section 72(t)(3) and (4). RetireGolden has neither a PLESA account nor a PLESA withdrawal action, so it cannot determine or price that exception.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The necessary distribution source and its section 402A(e) status cannot be represented. The absent PLESA account surface is tested in model/plan.test.ts; the absent withdrawal-action surface is tested in actions/contract.test.ts. This avoids treating an ordinary employer-plan withdrawal as proof of the PLESA exception.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 72(t)(2)(J)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim',
+      quotedText:
+        'Distributions from a pension-linked emergency savings account pursuant to section 402A(e).',
+    }, {
+      kind: 'irsNotice',
+      citation: 'IRS Notice 2024-22, section II.C',
+      url: 'https://www.irs.gov/pub/irs-drop/n-24-22.pdf',
+      quotedText:
+        'Section 72(t)(2)(J) provides that, except as provided in … section 72(t)(3) and (4), the ten-percent additional tax on early distributions from qualified retirement plans under section 72(t)(1) does not apply to distributions from a PLESA pursuant to section 402A(e).',
+    }],
+    volatility: 'awaitingGuidance',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-26',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/actions/contract.ts',
+    ],
+  },
+
+  'irc-402A-e-7-B-i-plesa-distribution-qualified-roth-treatment': {
+    title: 'A PLESA distribution receives designated-Roth qualified-distribution treatment',
+    statement:
+      'A PLESA distribution made under section 402A(e)(7)(A) is treated as a qualified distribution for section 402A(d), whose qualified designated-Roth distributions are not includible in gross income. RetireGolden has no PLESA earnings ledger or distribution path, so it cannot apply that treatment.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'This rule requires the PLESA source, separately allocated earnings, and a PLESA withdrawal. The plan schema has none of those fields, and the action contract has no PLESA distribution kind; their absences are the schema and vocabulary gates in model/plan.test.ts and actions/contract.test.ts.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 402A(e)(7)(B)(i)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402A&num=0&edition=prelim',
+      quotedText:
+        'Any distribution from a pension-linked emergency savings account in accordance with subparagraph (A)- (i) shall be treated as a qualified distribution for purposes of subsection (d), and',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 402A(d)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402A&num=0&edition=prelim',
+      quotedText:
+        'Any qualified distribution from a designated Roth account shall not be includible in gross income.',
+    }],
+    volatility: 'awaitingGuidance',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-26',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/actions/contract.ts',
+    ],
+  },
+
+  'irc-6433-a-1-savers-match-qualified-retirement-savings-contributions': {
+    title: 'Saver\'s Match is a post-2026 contribution for eligible savers',
+    statement:
+      'For taxable years beginning after December 31, 2026, an eligible individual who makes qualified retirement savings contributions receives the section 6433 matching contribution, paid to an applicable retirement savings vehicle. RetireGolden models neither Saver\'s Match eligibility, qualifying contributions, matching contribution, nor the receiving account treatment, so it produces no Saver\'s Match result.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'This is deliberately registered ahead of the first statutory tax year rather than projected as a 2026 credit. The plan model has no Saver\'s Match eligibility, qualifying-contribution, match-payment, or match-account fields, and the action contract has no claim or deposit kind. Those schema and action-vocabulary refusals are covered in model/plan.test.ts and actions/contract.test.ts.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 6433(a)(1)-(2)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section6433&num=0&edition=prelim',
+      quotedText:
+        'Any eligible individual who makes qualified retirement savings contributions for the taxable year shall be allowed a matching contribution for such taxable year in an amount equal to the applicable percentage of so much of the qualified retirement savings contributions made by such eligible individual for the taxable year as does not exceed $2,000.',
+    }, {
+      kind: 'legislativeHistory',
+      citation: 'P.L. 117-328, division T, title I, section 103(a), (f)',
+      url: 'https://www.govinfo.gov/content/pkg/PLAW-117publ328/pdf/PLAW-117publ328.pdf',
+      quotedText:
+        'SEC. 103. SAVER\'S MATCH. (a) IN GENERAL.--Subchapter B of chapter 65 is amended by adding at the end the following new section: "SEC. 6433. SAVER\'S MATCH." ... The amendments made by this section shall apply to taxable years beginning after December 31, 2026.',
+    }, {
+      kind: 'irsNotice',
+      citation: 'IRS Notice 2026-48, section I',
+      url: 'https://www.irs.gov/pub/irs-drop/n-26-48.pdf',
+      quotedText:
+        'For taxable years beginning after December 31, 2026, section 6433 of the Code allows certain low- and moderate-income individuals who make qualified retirement savings contributions to receive matching contributions of up to $1,000 (Saver\u2019s Match contributions) paid by the Secretary of the Treasury or the Secretary\u2019s delegate (Secretary) to applicable retirement savings vehicles.',
+    }],
+    volatility: 'awaitingGuidance',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-26',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/actions/contract.ts',
+    ],
+  },
+
+  'irc-6433-f-6-savers-match-early-distribution-recovery-tax': {
+    title: 'Certain early Saver\'s Match distributions create a recovery tax',
+    statement:
+      'When Saver\'s Match contributions exceed the end-of-year balance after a specified early distribution, section 6433(f)(6) increases chapter 1 tax by that excess, reduced by any overlapping section 72(t)(1) increase. RetireGolden has no Saver\'s Match contribution or recovery-distribution facts, so it cannot calculate this recovery tax.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The recovery rule depends on a section 6433(a)(2) contribution history, end-of-year Saver\'s Match balance, and the specified-early-distribution classification. None is expressible on an account or a retirement action. The missing Saver\'s Match schema and action vocabulary are refused by the additive gates in model/plan.test.ts and actions/contract.test.ts.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 6433(f)(6)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section6433&num=0&edition=prelim',
+      quotedText:
+        'In the case of an applicable retirement savings vehicle to which contributions have been made under subsection (a)(2), and from which a specified early distribution has been made during the taxable year, if the aggregate amount of such contributions exceeds the account balance of such savings vehicle at the end of the such taxable year, the tax imposed by chapter 1 shall be increased by an amount equal to such excess (reduced by the amount by which the tax under such chapter was increased under section 72(t)(1) with respect to such distribution).',
+    }, {
+      kind: 'irsNotice',
+      citation: 'IRS Notice 2026-48, section I',
+      url: 'https://www.irs.gov/pub/irs-drop/n-26-48.pdf',
+      quotedText:
+        'For taxable years beginning after December 31, 2026, section 6433 of the Code allows certain low- and moderate-income individuals who make qualified retirement savings contributions to receive matching contributions of up to $1,000 (Saver\u2019s Match contributions) paid by the Secretary of the Treasury or the Secretary\u2019s delegate (Secretary) to applicable retirement savings vehicles.',
+    }],
+    volatility: 'awaitingGuidance',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-26',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/actions/contract.ts',
+    ],
+  },
+
+  'irc-414-v-1-plan-permitted-catch-up': {
+    title: 'An employer plan may permit, but need not offer, a catch-up contribution',
+    statement:
+      'Section 414(v)(1) says an applicable employer plan is not disqualified merely because it permits an eligible participant to make additional elective deferrals; the plan term therefore controls whether a catch-up, including the ages-60-through-63 amount, is available. RetireGolden has no plan-term input and applies the catch-up to every employer account at the eligible age, so it can admit a pre-tax catch-up an actual plan does not permit.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'understatesTax',
+    conventionRationale:
+      'The input model identifies an account as kind employer but has no plan-permits-catch-up fact. simulate.ts consequently assigns employerCatchUpForAge to every employer account at the eligible age. The fixture in employerRothCatchUp.test.ts uses an age-62 participant who requests 24,500 plus 11,250: a plan without the optional feature allows only 24,500, but the engine accepts 35,750 as a pre-tax contribution and understates tax. The published 11,250 figure used by that fixture is Notice 2025-67\'s 2026 figure, not a reconstruction of SECURE 2.0\'s formula.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 414(v)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section414&num=0&edition=prelim',
+      quotedText:
+        'An applicable employer plan shall not be treated as failing to meet any requirement of this title solely because the plan permits an eligible participant to make additional elective deferrals in any plan year.',
+    }, {
+      kind: 'legislativeHistory',
+      citation: 'P.L. 117-328, division T, title I, section 109(a)(1)',
+      url: 'https://www.govinfo.gov/content/pkg/PLAW-117publ328/pdf/PLAW-117publ328.pdf',
+      quotedText:
+        'Section 414(v)(2)(B)(i) is amended by inserting the following before the period: \u2018\u2018(the adjusted dollar amount, in the case of an eligible participant who would attain age 60 but would not attain age 64 before the close of the taxable year)\u2019\u2019',
+    }, {
+      kind: 'irsNotice',
+      citation: 'IRS Notice 2025-67',
+      url: 'https://www.irs.gov/pub/irs-drop/n-25-67.pdf',
+      quotedText:
+        'The limitation under section 414(v)(2)(E)(i) for catch-up contributions to an applicable employer plan other than a plan described in section 401(k)(11) or section 408(p) that applies for individuals who attain … age 60, 61, 62, or 63 in 2026 remains $11,250.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-26',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+  },
+
+  'irc-219-b-5-B-ira-catch-up-excludes-employer-plan-super-catch-up': {
+    title: 'An IRA receives its section 219 age-50 catch-up, not the employer-plan super catch-up',
+    statement:
+      'The ages-60-through-63 adjusted amount is a section 414(v) limit for applicable employer plans, while section 219(b)(5) supplies the age-50 catch-up for an IRA. RetireGolden gives an account whose kind is ira only the pack\'s IRA catch-up and never applies the employer-plan super catch-up to it.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'simulate.ts separates employer accounts, which call employerCatchUpForAge, from traditional and Roth IRA accounts, which add only contributionLimits.iraCatchUp50 at age 50 or later. The fixture in employerRothCatchUp.test.ts discriminates the published 2026 7,500 plus 1,100 IRA total from the employer-plan 7,500 plus 11,250 reading for an age-62 owner. The 11,250 comparison value comes from Notice 2025-67; it is not calculated from the statutory formula.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 219(b)(5)(B)(i)-(ii)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section219&num=0&edition=prelim',
+      quotedText:
+        'In the case of an individual who has attained the age of 50 before the close of the taxable year, the deductible amount for such taxable year shall be increased by the applicable amount. … For purposes of clause (i), the applicable amount is $1,000.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 414(v)(6)(A)(i)-(iv)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section414&num=0&edition=prelim',
+      quotedText:
+        'The term "applicable employer plan" means- (i) an employees\' trust described in section 401(a) which is exempt from tax under section 501(a), (ii) a plan under which amounts are contributed by an individual\'s employer for an annuity contract described in section 403(b), (iii) an eligible deferred compensation plan under section 457 of an eligible employer described in section 457(e)(1)(A), and (iv) an arrangement meeting the requirements of section 408(k) or (p).',
+    }, {
+      kind: 'irsNotice',
+      citation: 'IRS Notice 2025-67, IRA catch-up limit',
+      url: 'https://www.irs.gov/pub/irs-drop/n-25-67.pdf',
+      quotedText:
+        'The deductible amount pursuant to section 219(b)(5)(B)(ii) for individuals who have attained age 50 before the close of the taxable year is increased from $1,000 to $1,100.',
+    }, {
+      kind: 'irsNotice',
+      citation: 'IRS Notice 2025-67, ages 60-63 catch-up limit',
+      url: 'https://www.irs.gov/pub/irs-drop/n-25-67.pdf',
+      quotedText:
+        'The limitation under section 414(v)(2)(E)(i) for catch-up contributions to an applicable employer plan other than a plan described in section 401(k)(11) or section 408(p) that applies for individuals who attain … age 60, 61, 62, or 63 in 2026 remains $11,250.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-26',
+    implementedBy: [
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/params/data/year2026.ts',
+    ],
+  },
 } as const satisfies Record<string, TaxRuleRecord>
 
 export const TAX_RULE_REGISTRY = Object.freeze(registry)

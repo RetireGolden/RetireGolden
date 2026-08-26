@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest'
 import { asUsdCents } from '../actions/money.js'
 import {
   createEmptyPlan,
+  equityCompAccountSchema,
+  hsaAccountSchema,
   parsePlan,
   rothAccountSchema,
   stateForYear,
@@ -507,6 +509,84 @@ describe('parsePlan', () => {
     if (!result.ok) {
       expect(result.issues.length).toBeGreaterThan(0)
       expect(result.issues.every((i) => i.includes(':'))).toBe(true)
+    }
+  })
+})
+
+describe('unmodelled employer-plan and HSA legal facts', () => {
+  it('does not add plan-term or Medicare-entitlement fields merely by accepting an account', () => {
+    // Refusal coverage for the out-of-scope SIMPLE 401(k), 401(a)(17),
+    // catch-up-permission, 411 vesting, 402(g)(7), and governmental 457(b)(3)
+    // records. The schema
+    // deliberately has an employer-plan CLASS but none of these legal facts.
+    for (const fact of [
+      'simple401k',
+      'section401a17Compensation',
+      'vestingSchedule',
+      'yearsOfService',
+      'qualifiedOrganization',
+      'planPermitsCatchUp',
+      'planPermits403b15YearCatchUp',
+      'prior403bSpecialCatchUp',
+      'governmental457bSponsor',
+      'normalRetirementAgeUnderPlan',
+      'priorUnused457bCeiling',
+    ]) {
+      expect(fact in traditionalAccountSchema.shape).toBe(false)
+    }
+
+    // The Medicare Part A entitlement/backdating and month-by-month HSA
+    // coverage facts are similarly absent; age-based healthcare pricing is not
+    // evidence of any of them.
+    for (const fact of [
+      'medicarePartAEntitlementStartDate',
+      'medicarePartARetroactiveCoverageStartDate',
+      'hsaEligibilityMonths',
+      'hsaCoverageByMonth',
+    ]) {
+      expect(fact in hsaAccountSchema.shape).toBe(false)
+    }
+
+    // An aggregate value/basis plus availability date cannot establish the
+    // section 83 timing or character facts for an equity-comp grant.
+    for (const fact of [
+      'section83TransferDate',
+      'section83bElection',
+      'section83AmountPaid',
+      'equityGrantType',
+    ]) {
+      expect(fact in equityCompAccountSchema.shape).toBe(false)
+    }
+  })
+
+  it('does not admit PLESA or Saver\'s Match account facts', () => {
+    // A generic traditional or Roth account is not a pension-linked emergency
+    // savings account. Keep the two separate-account vocabulary gates here so
+    // no ordinary account field can quietly stand in for the PLESA facts.
+    for (const fact of [
+      'pensionLinkedEmergencySavingsAccount',
+      'plesa',
+      'plesaParticipantContributionBalance',
+      'plesaPlanSponsorCap',
+      'plesaEarnings',
+      'plesaWithdrawal',
+    ]) {
+      expect(fact in traditionalAccountSchema.shape).toBe(false)
+      expect(fact in rothAccountSchema.shape).toBe(false)
+    }
+
+    // Saver's Match needs eligibility, qualified-contribution, contribution,
+    // recovery-distribution, and repayment facts. The engine does not use a
+    // generic account balance as a proxy for any of those statutory facts.
+    for (const fact of [
+      'saversMatchEligibility',
+      'saversMatchQualifiedContribution',
+      'saversMatchContribution',
+      'saversMatchRecoveryDistribution',
+      'saversMatchRepayment',
+    ]) {
+      expect(fact in traditionalAccountSchema.shape).toBe(false)
+      expect(fact in rothAccountSchema.shape).toBe(false)
     }
   })
 })

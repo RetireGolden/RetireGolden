@@ -82,13 +82,13 @@ published HUD PLF pack, line and loan balance compounding, **coordinated** (draw
 | Taxable brokerage | Cost basis (single aggregate basis ratio, not per-lot); dividends/interest taxed annually (qualified vs ordinary); withdrawals realize gains via basis ratio; step-up at death |
 | Traditional IRA / 401(k) / 403(b) | Pre-tax; RMDs per owner age (§7); early-withdrawal penalty pre-59½ (Rule of 55 / 72(t) modeled as SEPP); source of Roth conversions |
 | Roth IRA / Roth 401(k) | Tax-free growth; no RMDs (Roth 401(k) RMD-free since 2024); 5-year/ordering rules surfaced as warnings |
-| HSA | Pre-65 qualified-expense withdrawals tax-free; post-65 non-medical taxed as ordinary (no penalty) |
+| HSA | Pre-65 qualified-expense withdrawals tax-free; post-65 non-medical taxed as ordinary (no penalty). HSA coverage and Medicare Part A entitlement/backdating are not plan inputs, and the §4973 excess-contribution excise is not modeled (domain rules §5). |
 | Cash / savings | Interest taxed as ordinary; spending buffer |
 | Pension (DB) | Start age, monthly amount, COLA yes/no/fixed %, survivor %; optional **lump-sum offer + election** (commutes to a tax-free traditional rollover — §19) |
 | Annuity (SPIA-style) | Payout, start, COLA, taxable %; **payout forms** (life-only / period certain / joint & survivor — §19); optional mid-plan **purchase** (SPIA/QLAC) funded from another account, taxed by exclusion ratio (non-qualified) or fully (qualified) — §17; ladders of dated purchases |
 | Home / real estate | Net-worth line; optional planned sale year (§121 exclusion); rental as income stream; optional **HECM line of credit** buffer on a primary residence (§19, non-recourse) |
 | Debts / mortgage | Amortizing payment to payoff year; affects expenses, not investable assets |
-| Equity comp (RSU/ESPP) | Brokerage-like holding (value + basis) with a vesting/availability date so locked funds aren't counted until vested |
+| Equity comp (RSU/ESPP) | Brokerage-like holding (value + basis) with a vesting/availability date so locked funds aren't counted until vested. Named execution's full-ordinary-income character is a disclosed §83 timing approximation, not grant-tax treatment (see [Roth and withdrawals](roth-and-withdrawals.md#identity-bearing-ordinary-withdrawals)). |
 
 ## 3. Income streams
 
@@ -165,6 +165,12 @@ age-50 catch-ups, the age 60–63 super catch-up, and the Roth catch-up mandate 
 FICA wages that **exceed** $150k (2026+; user-entered on the employer account). Employer match (simple % formulas). Contributions support **time-aware phases**
 (`contributionPhaseSchema`: per-phase amount with optional `fromAge`/`toAge` window and annual `escalationPct`
 for salary-growth ramps), so an early-career accumulator's rising savings are modeled honestly.
+
+The annual ceilings are not a plan-document compliance engine: SIMPLE 401(k) status, qualified-plan compensation,
+vesting, the 403(b) 15-year catch-up, and the governmental 457(b) final-three-year catch-up are absent rather than
+inferred. A traditional IRA deposit is modeled as pre-tax even though §219(g)'s workplace-plan deduction phase-out
+is not calculated, and neither IRA/Roth nor HSA excess-contribution excise is priced. See domain rules §5 for the
+registered boundaries and authorities.
 
 For accumulators and the FIRE movement the projection also derives **financial-independence metrics** on the
 Results and Report pages (`ProjectionSummary` in

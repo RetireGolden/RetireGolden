@@ -93,10 +93,13 @@ account types first, and fill-to-target conversions are trimmed so their tax bil
 `strategies.retirementActions` can name a person, stable source account, exact-cent allocation, year,
 optional execution date, and same-day sequence. The annual ledger currently executes individually owned
 cash and vested equity-compensation sources in one deterministic chronological stream. Cash produces cash
-principal; equity compensation uses the explicit planning boundary
-`fullyTaxableCompensationAtExecution`, so the complete executed amount is ordinary income and never a
-capital gain. A `final` equity-comp account supplies explicit already-vested evidence without inventing a
-historical vest date; a cliff account requires an exact execution date on or after its recorded vest date.
+principal. Equity compensation currently uses the explicit planning boundary
+`fullyTaxableCompensationAtExecution`, so the executor classifies the complete executed amount as ordinary income.
+That is an approximation, not a claim that §83 always recognizes compensation at execution: the model has no
+transfer date, §83(b) election, amount paid, grant type, or post-vesting holding-period facts
+(`irc-83-a-equity-compensation-execution-character`, approximated / overstates tax). A `final` equity-comp account
+supplies explicit already-vested evidence without inventing a historical vest date; a cliff account requires an
+exact execution date on or after its recorded vest date.
 
 The public pure taxable-source classifier and executor support one individually owned brokerage
 allocation. The classifier snapshots explicit 1/1 beneficial ownership and caller-supplied immutable tax-unit evidence,
