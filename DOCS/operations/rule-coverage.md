@@ -12,8 +12,8 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | Metric | Count |
 | --- | ---: |
 | Total rules | 267 |
-| Classification: approximated | 55 |
-| Classification: outOfScope | 22 |
+| Classification: approximated | 56 |
+| Classification: outOfScope | 21 |
 | Classification: settled | 186 |
 | Classification: unsettled | 4 |
 | Volatility: annuallyIndexed | 37 |

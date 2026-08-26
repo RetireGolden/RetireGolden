@@ -2720,7 +2720,7 @@ const registry = {
   'irc-164-b-7-B-magi-phasedown': {
     title: 'High MAGI phases the SALT limitation down to no less than $10,000',
     statement:
-      'For 2026, the applicable limitation amount starts at $40,400, then is reduced by 30 percent of MAGI above $505,000, but not below $10,000. The engine instead uses the scheduled $40,400 cap without this MAGI phasedown, so a high-MAGI taxpayer can deduct too much SALT and the engine understates tax.',
+      'For taxable years beginning before January 1, 2030, the applicable limitation amount is reduced by 30 percent of MAGI above the threshold amount, but not below $10,000. For the 2026 modeled year the scheduled limitation is $40,400 and the threshold amount is $505,000; that $505,000 figure is not doubled on a joint return — single and MFJ share it — and a married individual filing separately uses half the threshold amount. The engine instead uses the scheduled $40,400 cap without this MAGI phasedown, so a high-MAGI taxpayer can deduct too much SALT and the engine understates tax.',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'understatesTax',
@@ -2747,10 +2747,16 @@ const registry = {
         'Except as provided in clause (iii), in the case of any taxable year beginning before January 1, 2030, the applicable limitation amount shall be reduced by 30 percent of the excess (if any) of the taxpayer\'s modified adjusted gross income over the threshold amount (half the threshold amount in the case of a married individual filing a separate return).',
     }, {
       kind: 'statute',
+      citation: 'IRC 164(b)(7)(B)(ii)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section164&num=0&edition=prelim',
+      quotedText:
+        'For purposes of this subparagraph, the term "threshold amount" means-',
+    }, {
+      kind: 'statute',
       citation: 'IRC 164(b)(7)(B)(ii)(II)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section164&num=0&edition=prelim',
       quotedText:
-        'in the case of any taxable year beginning in calendar year 2026, $505,000, and',
+        '(II) in the case of any taxable year beginning in calendar year 2026, $505,000, and (III) in the case of any taxable year beginning after calendar year 2026, 101 percent of the dollar amount in effect under this subparagraph for taxable years beginning in the preceding calendar year.',
     }, {
       kind: 'statute',
       citation: 'IRC 164(b)(7)(B)(iii)',
@@ -2765,7 +2771,7 @@ const registry = {
         'For purposes of this paragraph, the term "modified adjusted gross income" means adjusted gross income increased by any amount excluded from gross income under section 911, 931, or 933.',
     }],
     volatility: 'sunsetting',
-    effectiveFrom: 2025,
+    effectiveFrom: 2026,
     effectiveThrough: 2029,
     verifiedOn: '2026-08-26',
     implementedBy: ['packages/engine/src/tax/federalTax.ts'],
@@ -3936,11 +3942,12 @@ const registry = {
   'irc-163-h-3-E-i-pmi-qualified-residence-interest-restart': {
     title: 'Qualified mortgage-insurance premiums again count as qualified residence interest',
     statement:
-      'For taxable years beginning after 2025, a taxpayer\'s qualified mortgage-insurance premiums connected with acquisition indebtedness on the taxpayer\'s qualified residence are treated as qualified residence interest, subject to the 10-percent-per-$1,000 AGI phaseout above $100,000 and the pre-2007-contract exclusion. OBBBA disables the prior termination. Out of scope: no accepted RetireGolden input identifies qualified mortgage-insurance premiums or their qualifying facts; a caller-supplied `mortgageInterest` amount is not a calculation of this rule.',
-    classification: 'outOfScope',
+      'For taxable years beginning after 2025, a taxpayer\'s qualified mortgage-insurance premiums connected with acquisition indebtedness on the taxpayer\'s qualified residence are treated as qualified residence interest, subject to the 10-percent-per-$1,000 AGI phaseout above $100,000 and the pre-2007-contract exclusion. OBBBA disables the prior termination. Not modelled: the engine builds its itemized total from state and local taxes, mortgage interest, and charitable gifts alone and has no mortgage-insurance-premium input, so a household with qualifying premiums has its itemized total understated by the includible premium amount and its tax overstated.',
+    classification: 'approximated',
     contraryReading: null,
-    errorDirection: null,
-    conventionRationale: null,
+    errorDirection: 'overstatesTax',
+    conventionRationale:
+      'What this is NOT is a typed refusal — `itemizedTotal` still emits a dollar figure that simply omits PMI, which is why this is approximated rather than outOfScope, the same shape as the medical-expense and §170(p) projection records. The fixture pins the produced total without the hypothesized premium until a separately authorized input and implementation fix closes the gap.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -3972,8 +3979,8 @@ const registry = {
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section163&num=0&edition=prelim',
       quotedText: 'Clause (iv) of subparagraph (E) shall not apply.',
     }, {
-      kind: 'legislativeHistory',
-      citation: 'P.L. 119-21 section 70108(b)',
+      kind: 'statute',
+      citation: 'IRC 163, Editorial Notes, Effective Date of 2025 Amendment (P.L. 119-21 § 70108(b))',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section163&num=0&edition=prelim',
       quotedText:
         'The amendments made by this section [amending this section] shall apply to taxable years beginning after December 31, 2025.',

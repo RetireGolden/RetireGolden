@@ -50,12 +50,16 @@ State brackets are a separate question and are still held nominal (see `params/s
   surfaced as a gain-harvesting opportunity.
 - **Deductions:** standard deduction + age-65 additions + the **$6,000/person senior deduction
   (2025–2028)** — a major Roth-conversion interaction for 65+ planners; itemized as a
-  simple user-entered total (SALT cap, mortgage interest, charitable) where it beats the standard. Qualified
-  mortgage-insurance premiums have no separate itemized input (`irc-163-h-3-E-i-pmi-qualified-residence-interest-restart`).
+  simple user-entered total (SALT cap, mortgage interest, charitable) where it beats the standard.
+  Qualified mortgage-insurance premiums are omitted from that total even though the statute treats
+  them as qualified residence interest (`irc-163-h-3-E-i-pmi-qualified-residence-interest-restart`,
+  approximated / `overstatesTax`).
   IRC §151(d)(5)(C)(iii)(I) phases out the **per-person** $6,000 at 6% of MAGI over the threshold, so
   each qualifying person's share runs out separately and two people 65+ reach zero at the same MAGI as one.
-- **MAGI:** AGI plus foreign income excluded under §§911/931/933. Both the NIIT (§1411(d)) and the senior
-  deduction phase-out (§151(d)(5)(C)(iii)(II)) run off that figure rather than the AGI line.
+- **MAGI:** AGI plus foreign income excluded under §§911/931/933. The NIIT (§1411(d)), the senior
+  deduction phase-out (§151(d)(5)(C)(iii)(II)), and the high-MAGI SALT phasedown
+  (`irc-164-b-7-B-magi-phasedown`, not yet wired) all run off that same addback definition rather than
+  the AGI line.
 - **NIIT** 3.8% over $200k/$250k MAGI (unindexed). **Early-withdrawal penalty** 10% pre-59½, with the
   Rule-of-55 / 72(t) **SEPP** exceptions ([strategies/sepp.ts](../../packages/engine/src/strategies/sepp.ts)).
   Both SEPP methods — required-minimum-distribution and amortization — divide by the IRS **Single Life Table**

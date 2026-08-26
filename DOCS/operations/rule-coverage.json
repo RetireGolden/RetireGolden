@@ -4,8 +4,8 @@
   "registry": {
     "total": 267,
     "byClassification": {
-      "approximated": 55,
-      "outOfScope": 22,
+      "approximated": 56,
+      "outOfScope": 21,
       "settled": 186,
       "unsettled": 4
     },
@@ -1369,7 +1369,7 @@
     },
     {
       "id": "irc-163-h-3-E-i-pmi-qualified-residence-interest-restart",
-      "classification": "outOfScope",
+      "classification": "approximated",
       "jurisdiction": "federal",
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
@@ -1380,7 +1380,9 @@
         "packages/engine/src/model/plan.ts",
         "packages/engine/src/tax/federalTax.ts"
       ],
-      "fixtureFiles": []
+      "fixtureFiles": [
+        "packages/engine/src/tax/federalTax.test.ts"
+      ]
     },
     {
       "id": "irc-163-h-3-F-acquisition-indebtedness-limit",
@@ -1403,7 +1405,7 @@
       "classification": "approximated",
       "jurisdiction": "federal",
       "volatility": "sunsetting",
-      "effectiveFrom": 2025,
+      "effectiveFrom": 2026,
       "effectiveThrough": 2029,
       "verifiedOn": "2026-08-26",
       "dueOn": "2027-01-23",
