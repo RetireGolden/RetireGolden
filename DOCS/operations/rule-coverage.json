@@ -2,21 +2,21 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 1,
   "registry": {
-    "total": 262,
+    "total": 265,
     "byClassification": {
       "approximated": 54,
-      "outOfScope": 19,
-      "settled": 185,
+      "outOfScope": 21,
+      "settled": 186,
       "unsettled": 4
     },
     "byVolatility": {
       "annuallyIndexed": 37,
       "awaitingGuidance": 4,
-      "staticStatute": 216,
+      "staticStatute": 219,
       "sunsetting": 5
     },
     "byJurisdiction": {
-      "federal": 205,
+      "federal": 208,
       "states": {
         "AK": 1,
         "AR": 9,
@@ -2007,6 +2007,22 @@
       ]
     },
     {
+      "id": "irc-401-m-employee-contribution-mega-backdoor-roth-not-modeled",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2027-08-26",
+      "implementedBy": [
+        "packages/engine/src/actions/contract.ts",
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/strategies/accountEligibility.ts"
+      ],
+      "fixtureFiles": []
+    },
+    {
       "id": "irc-402-c-4-B-rmd-not-eligible-rollover-distribution",
       "classification": "approximated",
       "jurisdiction": "federal",
@@ -2054,6 +2070,39 @@
       ],
       "fixtureFiles": [
         "packages/engine/src/projection/simulate.test.ts"
+      ]
+    },
+    {
+      "id": "irc-402A-c-4-E-in-plan-roth-transfer-not-modeled",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2027-08-26",
+      "implementedBy": [
+        "packages/engine/src/actions/contract.ts",
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/strategies/accountEligibility.ts"
+      ],
+      "fixtureFiles": []
+    },
+    {
+      "id": "irc-402A-d-5-designated-roth-account-no-lifetime-rmd",
+      "classification": "settled",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2027-08-26",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/strategies/accountEligibility.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/rmdShortfallExcise.test.ts"
       ]
     },
     {

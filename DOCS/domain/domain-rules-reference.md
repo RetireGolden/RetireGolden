@@ -138,7 +138,7 @@ Source: [IRS 2026 limits announcement](https://www.irs.gov/newsroom/401k-limit-i
 - Start age: **73** for born 1951–1959; **75** for born 1960+ (i.e., from 2033).
 - Annual RMD = prior Dec 31 balance ÷ Uniform Lifetime Table divisor (Joint Life Table II when a sole-beneficiary spouse is >10 yrs younger).
 - Joint Life Table II is 26 CFR 1.401(a)(9)-9(d), Table 3. It includes spouse-beneficiary ages below 20; do not regenerate it from Pub 590-B displays that only show the age 20+ slice (`treas-reg-1-401-a-9-9-d-joint-life-table-divisor-literals`).
-- Applies to traditional IRA/401(k)/403(b); **Roth 401(k) exempt since 2024** (IRC §402A(d)(5); not yet registered — queued for a later registration slice); Roth IRA exempt (`irc-408A-c-4-roth-ira-no-lifetime-rmd`).
+- Applies to traditional IRA/401(k)/403(b); **Roth 401(k) exempt since 2024** (IRC §402A(d)(5); `irc-402A-d-5-designated-roth-account-no-lifetime-rmd`); Roth IRA exempt (`irc-408A-c-4-roth-ira-no-lifetime-rmd`).
 - **IRC §4974 excise.** The default tax is **25% of the actual shortfall** —
   `max(0, required − distributed by the statutory deadline)` — and is charged to the payee on the year row's
   `penalties` channel, outside AGI/MAGI. It is not 25% of the whole required amount when part was paid. The rate
@@ -447,7 +447,12 @@ Source: [IRS 2026 limits announcement](https://www.irs.gov/newsroom/401k-limit-i
   employer balance to a Roth IRA only when a §401(k)(2)(B)(i) event is provable from Plan facts (attained age 60,
   or attained age at or past `retirementAge`); otherwise the source is fail-closed and the year names the refusal
   (`irc-401-k-2-B-i-employer-plan-conversion-source-not-gated-by-distributability`, `settled`). In-plan Roth of
-  otherwise nondistributable amounts under §402A(c)(4)(E) is a different enacted act and is not modelled.
+  otherwise nondistributable amounts under §402A(c)(4)(E) is a different enacted act and is not modelled — the
+  transferred amounts would keep their distribution restrictions under Notice 2013-74
+  (`irc-402A-c-4-E-in-plan-roth-transfer-not-modeled`). Mega-backdoor Roth — plan-permitted after-tax employee
+  contributions under §401(m) converted through §402A(c)(4) — is likewise unrepresentable: the Plan carries no
+  employer-plan after-tax contribution basis and no in-plan conversion path
+  (`irc-401-m-employee-contribution-mega-backdoor-roth-not-modeled`).
   Employer-plan after-tax allocation across simultaneous rollover destinations is unmodelled
   (`irs-notice-2014-54-employer-plan-after-tax-rollover-allocation`).
 - **Conversion-linked tax funding.** A named conversion may name a sibling ordinary withdrawal that pays its tax,

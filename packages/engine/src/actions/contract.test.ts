@@ -256,6 +256,24 @@ describe('retirement action request contracts', () => {
     ).toBe(false)
   })
 
+  it('does not give in-plan or mega-backdoor Roth movements an action-kind vocabulary', () => {
+    // The request and persisted unions are separate schemas. Gate both lists,
+    // rather than one speculative object shape, so a later arm cannot make an
+    // employer-plan in-plan transfer or employee-after-tax mega-backdoor path
+    // expressible without revisiting its statutory scope record.
+    const requestKinds = retirementActionRequestSchema.options.map((option) =>
+      String(option.shape.kind.value),
+    )
+    const persistedKinds = persistedRetirementActionRequestSchema.options.map((option) =>
+      String(option.shape.kind.value),
+    )
+    const isUnmodeledEmployerRothPath = (kind: string): boolean =>
+      /in.?plan.*roth|designated.*roth|mega.*backdoor|after.?tax.*roth/iu.test(kind)
+
+    expect(requestKinds.some(isUnmodeledEmployerRothPath)).toBe(false)
+    expect(persistedKinds.some(isUnmodeledEmployerRothPath)).toBe(false)
+  })
+
   it('round-trips all three current and all three legacy request arms', () => {
     for (const request of requests) {
       expect(parseRetirementActionRequest(JSON.parse(JSON.stringify(request)))).toEqual({

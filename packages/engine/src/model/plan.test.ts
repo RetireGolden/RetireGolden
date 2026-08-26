@@ -4,8 +4,10 @@ import { asUsdCents } from '../actions/money.js'
 import {
   createEmptyPlan,
   parsePlan,
+  rothAccountSchema,
   stateForYear,
   stateResidencySegmentsForYear,
+  traditionalAccountSchema,
   type InheritedAccount,
   type Plan,
 } from './plan.js'
@@ -435,6 +437,26 @@ describe('parsePlan', () => {
       inherited: { ownerDeathYear: 2024, decedentHadStartedRmds: false },
     } as Plan['accounts'][number]
     expect(parsePlan(inheritedBasis).ok).toBe(false)
+  })
+
+  it('does not expose employer-plan vocabulary for in-plan Roth transfers or employee after-tax basis', () => {
+    // Bind the schema vocabulary itself, not one made-up object shape. Both
+    // retirement schemas need the same-plan link, plan feature, retained
+    // distribution restriction, and employer-plan employee-basis facts before
+    // an in-plan or mega-backdoor Roth movement could be represented.
+    const traditionalFields = new Set(Object.keys(traditionalAccountSchema.shape))
+    const rothFields = new Set(Object.keys(rothAccountSchema.shape))
+    const absentFromBoth = [
+      'employerPlanId',
+      'inPlanRothTransferAllowed',
+      'sourceDistributionRestriction',
+    ]
+
+    for (const field of absentFromBoth) {
+      expect(traditionalFields.has(field)).toBe(false)
+      expect(rothFields.has(field)).toBe(false)
+    }
+    expect(traditionalFields.has('afterTaxEmployeeContributionBasis')).toBe(false)
   })
 
   it('requires the cap treatment when HSA reimburse-later is enabled', () => {
