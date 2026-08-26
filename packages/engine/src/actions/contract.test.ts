@@ -6,6 +6,7 @@ import {
   ordinaryWithdrawalRequestSchema,
   parseActionExecutionDisposition,
   parseRetirementActionRequest,
+  persistedRetirementActionRequestSchema,
   personRetirementActionRequestBaseSchema,
   qualifiedCharitableDistributionRequestSchema,
   retirementActionRequestBaseSchema,
@@ -213,6 +214,47 @@ describe('retirement action request contracts', () => {
       provenance: migrationProvenance,
     },
   ] as const
+
+  it('refuses NUA as an unmodelled retirement action kind', () => {
+    // Gate the discriminated union itself: retirementActionKinds is a separate
+    // list and can drift from the union's kind literals. Introspecting options
+    // makes adding a 'nua' arm break even when the arm's other fields differ.
+    const kindLiterals = retirementActionRequestSchema.options.map((option) =>
+      String(option.shape.kind.value),
+    )
+    // Exact membership of the union (order-insensitive). The three current
+    // kinds named in the review plus the three legacyAggregate* arms that
+    // share this schema.
+    expect(new Set(kindLiterals)).toEqual(
+      new Set([
+        'ordinaryWithdrawal',
+        'rothConversion',
+        'qcd',
+        'legacyAggregateWithdrawal',
+        'legacyAggregateRothConversion',
+        'legacyAggregateQcd',
+      ]),
+    )
+    expect(kindLiterals.every((kind) => !/nua|unrealized|employersecurit/i.test(kind))).toBe(
+      true,
+    )
+    // Plan.retirementActions parses a SEPARATE persisted union in plan.ts, so
+    // gate its kind literals too — a 'nua' arm added only there would let plan
+    // input express NUA while the request-union gate stayed green.
+    const persistedKindLiterals = persistedRetirementActionRequestSchema.options.map((option) =>
+      String(option.shape.kind.value),
+    )
+    expect(new Set(persistedKindLiterals)).toEqual(new Set(kindLiterals))
+    expect(
+      persistedKindLiterals.every((kind) => !/nua|unrealized|employersecurit/i.test(kind)),
+    ).toBe(true)
+    expect(
+      retirementActionRequestSchema.safeParse({
+        ...requests[0],
+        kind: 'nua',
+      }).success,
+    ).toBe(false)
+  })
 
   it('round-trips all three current and all three legacy request arms', () => {
     for (const request of requests) {

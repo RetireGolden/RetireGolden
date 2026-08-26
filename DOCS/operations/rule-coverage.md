@@ -11,16 +11,16 @@ The registry is the machine-checked chain from a rule to its implementation and 
 
 | Metric | Count |
 | --- | ---: |
-| Total rules | 260 |
+| Total rules | 262 |
 | Classification: approximated | 54 |
-| Classification: outOfScope | 17 |
+| Classification: outOfScope | 19 |
 | Classification: settled | 185 |
 | Classification: unsettled | 4 |
 | Volatility: annuallyIndexed | 37 |
 | Volatility: awaitingGuidance | 4 |
-| Volatility: staticStatute | 214 |
+| Volatility: staticStatute | 216 |
 | Volatility: sunsetting | 5 |
-| Federal jurisdiction | 203 |
+| Federal jurisdiction | 205 |
 | State jurisdiction total | 57 |
 
 | State jurisdiction | Count |
@@ -53,9 +53,9 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | Engine source files | 235 |
 | Swept | 100.0% |
 | Grandfathered unswept baseline | 0 |
-| partial | 65 |
-| registered | 45 |
-| rule-free | 125 |
+| partial | 63 |
+| registered | 48 |
+| rule-free | 124 |
 | unswept | 0 |
 
 ## Per-directory rollup
@@ -63,7 +63,7 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | Directory | Files | Partial | Registered | Rule-free | Unswept |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | (root) | 3 | 0 | 0 | 3 | 0 |
-| actions | 74 | 25 | 21 | 28 | 0 |
+| actions | 74 | 23 | 24 | 27 | 0 |
 | allocation | 1 | 0 | 0 | 1 | 0 |
 | decisions | 19 | 5 | 0 | 14 | 0 |
 | insights | 22 | 4 | 1 | 17 | 0 |
@@ -99,12 +99,10 @@ None.
 | actions/annualQcdResidualForm8606.ts | 2026-08-25 | Residual line-7/line-8 pro-rata reconciliation; no record |
 | actions/annualRetirementPhysicalEventInventory.ts | 2026-08-24 | Inherited-RMD regime; owner-RMD start age; spouse-as-own transition; annuity/Form 8606 treatment; direct-trustee QCD origin; no record |
 | actions/beneficiaryTraditionalIraAnnualPlanApplication.ts | 2026-08-24 | Beneficiary-owned inherited traditional-IRA/death-year source gate; no record |
-| actions/beneficiaryTraditionalIraAnnualSimulatorDelta.ts | 2026-08-24 | Death-beneficiary 0% early-distribution penalty; no record |
-| actions/beneficiaryTraditionalIraDeathPenalty.ts | 2026-08-24 | Death-beneficiary 0% early-distribution penalty; no record |
 | actions/beneficiaryTraditionalIraResidualRmdActionIdentity.ts | 2026-08-24 | Residual-RMD source restricted to beneficiary-owned inherited traditional IRA; no record |
 | actions/beneficiaryTraditionalIraResidualRmdAnnualRefinalization.ts | 2026-08-24 | Form 8606 line-7/line-8 residual rebuild and forced-zero line 8; no record |
 | actions/beneficiaryTraditionalIraWithdrawalCharacter.ts | 2026-08-24 | Inherited-IRA line-8 conversion/spousal-conversion refusal; no record |
-| actions/execution.ts | 2026-08-24 | Equity compensation fully ordinary-income at execution; non-retirement penalty marked inapplicable; no record |
+| actions/execution.ts | 2026-08-25 | Equity compensation fully ordinary-income at execution; no record |
 | actions/ownedNonRothIraAnnualCandidateTransaction.ts | 2026-08-24 | Owned traditional/SEP/SIMPLE IRA source scope and line-7 movement staging; no record |
 | actions/ownedNonRothIraAnnualFilingEvidence.ts | 2026-08-24 | Prior-year contribution window covered; owner-wide non-inherited IRA pool and January-1 opening-basis requirement; no record |
 | actions/ownedNonRothIraAnnualFilingSourceResolver.ts | 2026-08-24 | Filing source restricted to owned non-inherited traditional IRA pool; no record |
@@ -160,7 +158,7 @@ None.
 
 ## Re-verification due dates
 
-The 25 earliest due dates are shown below (260 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
+The 25 earliest due dates are shown below (262 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
 
 | Rule | Volatility | Verified on | Due on |
 | --- | --- | --- | --- |

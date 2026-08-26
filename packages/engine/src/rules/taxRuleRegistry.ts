@@ -2088,6 +2088,70 @@ const registry = {
     implementedBy: ['packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts'],
   },
 
+  'irc-402-e-4-B-lump-sum-employer-securities-nua-exclusion': {
+    title: 'NUA in employer securities is excluded from gross income',
+    statement:
+      'For a lump sum distribution that includes employer-corporation securities, section 402(e)(4)(B) excludes the attributable net unrealized appreciation from gross income for purposes of section 72 unless the taxpayer elects otherwise. Because section 72(t)(1) reaches only the includible portion, excluded NUA is outside the additional-tax base. Not modelled: no plan input or retirement-action type can express employer securities, NUA, an NUA lump-sum qualification fact, or an NUA elect-out, so employer-plan withdrawals still classify as basisReturn/ordinaryIncome and still run section 72(t) on the includible ordinary portion without any NUA adjustment — NUA facts simply cannot be expressed.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The plan model carries an employer-plan balance only: traditionalAccountSchema\'s nondeductibleBasis is IRA-only, and the schema comment says employer-plan after-tax money is not modeled. After-tax employee basis exists only as runtime classifier evidence (afterTaxEmployeeBasisBeforeDistribution) on traditionalEmployerPlanWithdrawalCharacter, whose withdrawal character is basis return or ordinary income. The action contract rejects a NUA action kind. The action-kind refusal is covered in actions/contract.test.ts. Notice 98-24\'s mechanics for the remaining distribution/basis portion of an early NUA lump sum are deliberately not claimed here: a verifiable copy of that notice was not available at registration, so that proposition awaits its own record.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 402(e)(4)(B)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402&num=0&edition=prelim',
+      quotedText:
+        'For purposes of subsection (a) and section 72, in the case of any lump sum distribution which includes securities of the employer corporation, there shall be excluded from gross income the net unrealized appreciation attributable to that part of the distribution which consists of securities of the employer corporation. In accordance with rules prescribed by the Secretary, a taxpayer may elect, on the return of tax on which a lump sum distribution is required to be included, not to have this subparagraph apply to such distribution.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 72(t)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim',
+      quotedText:
+        'If any taxpayer receives any amount from a qualified retirement plan (as defined in section 4974(c)), the taxpayer\'s tax under this chapter for the taxable year in which such amount is received shall be increased by an amount equal to 10 percent of the portion of such amount which is includible in gross income.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-25',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/actions/contract.ts',
+      'packages/engine/src/actions/traditionalEmployerPlanWithdrawalCharacter.ts',
+    ],
+  },
+
+  'irc-72-t-1-qualified-retirement-plan-scope': {
+    title: 'Section 72(t) does not reach non-retirement withdrawal sources',
+    statement:
+      'Section 72(t)(1) applies only when a taxpayer receives an amount from a qualified retirement plan, so cash, taxable-account, and equity-compensation ordinary withdrawals do not enter its additional-tax calculation. The executor instead emits typed notApplicable nonRetirementSource coverage with zero penalty exposure for those sources.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The executor represents the absence of the statutory predicate rather than computing a zero section 72(t) tax. Its one-cent cash fixture in actions/execution.test.ts makes both the notApplicable status and nonRetirementSource reason observable, while also proving that no penalty exposure enters the result.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 72(t)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim',
+      quotedText:
+        'If any taxpayer receives any amount from a qualified retirement plan (as defined in section 4974(c)), the taxpayer\'s tax under this chapter for the taxable year in which such amount is received shall be increased by an amount equal to 10 percent of the portion of such amount which is includible in gross income.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 4974(c)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section4974&num=0&edition=prelim',
+      quotedText:
+        'For purposes of this section, the term "qualified retirement plan" means- (1) a plan described in section 401(a) which includes a trust exempt from tax under section 501(a), (2) an annuity plan described in section 403(a), (3) an annuity contract described in section 403(b), (4) an individual retirement account described in section 408(a), or (5) an individual retirement annuity described in section 408(b). Such term includes any plan, contract, account, or annuity which, at any time, has been determined by the Secretary to be such a plan, contract, account, or annuity.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-25',
+    implementedBy: ['packages/engine/src/actions/execution.ts'],
+  },
+
   'usc-42-415-a-1-pia-bend-point-formula': {
     title: 'The PIA formula is marginal across two bend points',
     statement:
@@ -3086,7 +3150,7 @@ const registry = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The engine reads this exception off the inherited marker on the account rather than off the identity of the person receiving the distribution. Those are the same test only for so long as an account a surviving spouse has elected to treat as their own stops being marked inherited. That election is registered separately as irc-408-d-3-C-ii-surviving-spouse-not-inherited and treas-reg-1-408-8-c-3-spouse-treated-as-owner; once it is made the spouse takes distributions in their own right and 72(t) applies to them normally, so a plan that left the marker in place would waive a tax that is actually due.',
+      'The engine reads this exception off the inherited marker on the account rather than off the identity of the person receiving the distribution. Those are the same test only for so long as an account a surviving spouse has elected to treat as their own stops being marked inherited. That election is registered separately as irc-408-d-3-C-ii-surviving-spouse-not-inherited and treas-reg-1-408-8-c-3-spouse-treated-as-owner; once it is made the spouse takes distributions in their own right and 72(t) applies to them normally, so a plan that left the marker in place would waive a tax that is actually due. The exact-cent beneficiary path is stricter than the marker proxy: beneficiaryTraditionalIraDeathPenalty.ts requires recipient death-beneficiary evidence with a death date on or before evaluation and refuses once spousal owner treatment has begun, and beneficiaryTraditionalIraAnnualSimulatorDelta.ts propagates that zero only when the upstream module produced it.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -3105,7 +3169,11 @@ const registry = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
-    implementedBy: ['packages/engine/src/strategies/accountEligibility.ts'],
+    implementedBy: [
+      'packages/engine/src/strategies/accountEligibility.ts',
+      'packages/engine/src/actions/beneficiaryTraditionalIraDeathPenalty.ts',
+      'packages/engine/src/actions/beneficiaryTraditionalIraAnnualSimulatorDelta.ts',
+    ],
   },
 
   'irc-72-t-2-A-i-age-59-half-annual-proxy': {

@@ -2,21 +2,21 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 1,
   "registry": {
-    "total": 260,
+    "total": 262,
     "byClassification": {
       "approximated": 54,
-      "outOfScope": 17,
+      "outOfScope": 19,
       "settled": 185,
       "unsettled": 4
     },
     "byVolatility": {
       "annuallyIndexed": 37,
       "awaitingGuidance": 4,
-      "staticStatute": 214,
+      "staticStatute": 216,
       "sunsetting": 5
     },
     "byJurisdiction": {
-      "federal": 203,
+      "federal": 205,
       "states": {
         "AK": 1,
         "AR": 9,
@@ -45,9 +45,9 @@
   "attestations": {
     "totalFiles": 235,
     "byStatus": {
-      "partial": 65,
-      "registered": 45,
-      "rule-free": 125,
+      "partial": 63,
+      "registered": 48,
+      "rule-free": 124,
       "unswept": 0
     },
     "sweptPct": 100,
@@ -91,16 +91,6 @@
       "note": "Beneficiary-owned inherited traditional-IRA/death-year source gate; no record"
     },
     {
-      "path": "actions/beneficiaryTraditionalIraAnnualSimulatorDelta.ts",
-      "sweptOn": "2026-08-24",
-      "note": "Death-beneficiary 0% early-distribution penalty; no record"
-    },
-    {
-      "path": "actions/beneficiaryTraditionalIraDeathPenalty.ts",
-      "sweptOn": "2026-08-24",
-      "note": "Death-beneficiary 0% early-distribution penalty; no record"
-    },
-    {
       "path": "actions/beneficiaryTraditionalIraResidualRmdActionIdentity.ts",
       "sweptOn": "2026-08-24",
       "note": "Residual-RMD source restricted to beneficiary-owned inherited traditional IRA; no record"
@@ -117,8 +107,8 @@
     },
     {
       "path": "actions/execution.ts",
-      "sweptOn": "2026-08-24",
-      "note": "Equity compensation fully ordinary-income at execution; non-retirement penalty marked inapplicable; no record"
+      "sweptOn": "2026-08-25",
+      "note": "Equity compensation fully ordinary-income at execution; no record"
     },
     {
       "path": "actions/ownedNonRothIraAnnualCandidateTransaction.ts",
@@ -393,9 +383,9 @@
       "directory": "actions",
       "files": 74,
       "byStatus": {
-        "partial": 25,
-        "registered": 21,
-        "rule-free": 28
+        "partial": 23,
+        "registered": 24,
+        "rule-free": 27
       }
     },
     {
@@ -2034,6 +2024,22 @@
       ]
     },
     {
+      "id": "irc-402-e-4-B-lump-sum-employer-securities-nua-exclusion",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-25",
+      "dueOn": "2027-08-25",
+      "implementedBy": [
+        "packages/engine/src/actions/contract.ts",
+        "packages/engine/src/actions/traditionalEmployerPlanWithdrawalCharacter.ts",
+        "packages/engine/src/model/plan.ts"
+      ],
+      "fixtureFiles": []
+    },
+    {
       "id": "irc-402-g-1-elective-deferral-aggregate",
       "classification": "settled",
       "jurisdiction": "federal",
@@ -3151,6 +3157,20 @@
       "fixtureFiles": []
     },
     {
+      "id": "irc-72-t-1-qualified-retirement-plan-scope",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-25",
+      "dueOn": "2027-08-25",
+      "implementedBy": [
+        "packages/engine/src/actions/execution.ts"
+      ],
+      "fixtureFiles": []
+    },
+    {
       "id": "irc-72-t-10-public-safety-early-age",
       "classification": "outOfScope",
       "jurisdiction": "federal",
@@ -3206,9 +3226,12 @@
       "verifiedOn": "2026-08-03",
       "dueOn": "2027-08-03",
       "implementedBy": [
+        "packages/engine/src/actions/beneficiaryTraditionalIraAnnualSimulatorDelta.ts",
+        "packages/engine/src/actions/beneficiaryTraditionalIraDeathPenalty.ts",
         "packages/engine/src/strategies/accountEligibility.ts"
       ],
       "fixtureFiles": [
+        "packages/engine/src/actions/beneficiaryTraditionalIraDeathPenalty.test.ts",
         "packages/engine/src/strategies/accountEligibility.test.ts"
       ]
     },
