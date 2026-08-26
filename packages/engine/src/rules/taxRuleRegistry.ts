@@ -6183,9 +6183,10 @@ const registry = {
         'The term "qualified rollover contribution" means a rollover contribution- ... (B) from an eligible retirement plan, but only if- ... (ii) in the case of any eligible retirement plan (as defined in section 402(c)(8)(B) other than clauses (i) and (ii) thereof), such rollover contribution meets the requirements of section 402(c), 403(b)(8), or 457(e)(16), as applicable',
     }, {
       kind: 'statute',
-      citation: 'IRC 402(c)(4)(C)',
+      citation: 'IRC 402(c)(4), lead-in and (C)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402&num=0&edition=prelim',
-      quotedText: 'any distribution which is made upon hardship of the employee.',
+      quotedText:
+        'For purposes of this subsection, the term "eligible rollover distribution" means any distribution to an employee of all or any portion of the balance to the credit of the employee in a qualified trust; except that such term shall not include- … (C) any distribution which is made upon hardship of the employee.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -9716,7 +9717,7 @@ const registry = {
         'Notwithstanding sections 403(b)(10) and 457(d)(2), the following provisions shall not apply to any designated Roth account: (A) Section 401(a)(9)(A).',
     }, {
       kind: 'statute',
-      citation: 'SECURE 2.0 Act § 325(b)(1)',
+      citation: 'IRC 402A, Editorial Notes, Effective Date of 2022 Amendment (SECURE 2.0 Act § 325(b)(1))',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402A&num=0&edition=prelim',
       quotedText:
         'Except as provided in paragraph (2), the amendment made by this section [amending this section] shall apply to taxable years beginning after December 31, 2023.',
