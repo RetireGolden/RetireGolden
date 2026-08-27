@@ -673,10 +673,10 @@
   color: var(--muted);
   min-width: 0;
   overflow-wrap: break-word;
-  /* Lifetime Tax's "nominal $ · federal + state + penalties" is wider than
-     a 10rem auto-fit column. nowrap used to paint into Roth Converted
-     (`penaltiesending Roth $0`). Contain the caption only — not the cell —
-     so focus rings and large values stay visible. */
+  /* Caption overflow used to paint into the next KPI (Lifetime Tax's old
+     "… + penalties" into Roth Converted). Contain the caption only — not
+     the cell — so focus rings and large values stay visible. The workspace
+     Lifetime tax sub-line is now the shorter one-line chrome (#318). */
   overflow: hidden;
 }
 
