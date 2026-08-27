@@ -71,9 +71,9 @@ Benefits-only analysis separately illustrates survivor switching
   withheld for a working survivor and credited back through the same ARF path. The former-spouse survivor path
   takes the deceased ex's claim age as a user input.
 - **Divorced-spousal** (10-year marriage, currently unmarried, ex eligible at 62+ — the ex need not have
-filed), **survivor benefits for already-widowed single users**, remarriage-before/after-60 rules, and
-a benefits-only **survivor↔personal switching** illustration (claim one benefit early, switch to the other
-later). The whole-plan ledger has one stream `claimAge`, so it does not price that separate-date sequence.
+  filed), **survivor benefits for already-widowed single users**, remarriage-before/after-60 rules, and
+  a benefits-only **survivor↔personal switching** illustration (claim one benefit early, switch to the other
+  later). The whole-plan ledger has one stream `claimAge`, so it does not price that separate-date sequence.
   Survivors are exempt from deemed filing, so the switch is legally available; its absence from the Plan is
   registered as out of scope (`usc-42-402-r-survivor-deemed-filing-exemption`).
 - Ex/deceased-spouse PIA is a simple user estimate (those earnings records are impractical to reconstruct).

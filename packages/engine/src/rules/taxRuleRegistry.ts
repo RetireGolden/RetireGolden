@@ -2349,7 +2349,7 @@ const registry = {
   'usc-42-402-r-1-2-deemed-filing-old-age-and-spousal': {
     title: 'Current eligible old-age and current-spouse benefits are deemed filed together',
     statement:
-      'For a current deemed-filing claim, when an individual is eligible for a wife’s or husband’s insurance benefit and entitled to an old-age insurance benefit for a month, section 402(r) deems an application for the spouse benefit; it reciprocally deems an old-age application when the individual is entitled to the spouse benefit, subject to the provision’s stated exceptions. The engine represents a current-spouse claimant with one `claimAge` on their Social Security stream and pays the higher of own and spousal amounts at that age, rather than allowing a restricted current-spouse-only claim that leaves the own old-age benefit unclaimed.',
+      'For a current deemed-filing claim, when an individual is eligible for a wife’s or husband’s insurance benefit and entitled to an old-age insurance benefit for a month, section 402(r) deems an application for the spouse benefit; it reciprocally deems an old-age application when the individual is entitled to the spouse benefit, subject to the provision’s stated exceptions. The post-2015 regime applies to individuals who attain age 62 in any calendar year after 2015, so every not-yet-claimed cohort in a 2026-or-later projection is inside it and no grandfathered restricted application survives. The engine represents a current-spouse claimant with one `claimAge` on their Social Security stream and pays the higher of own and spousal amounts at that age, rather than allowing a restricted current-spouse-only claim that leaves the own old-age benefit unclaimed.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -2379,6 +2379,12 @@ const registry = {
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
       quotedText:
         'For purposes of this subsection, an individual shall be deemed eligible for a benefit for a month if, upon filing application therefor in such month, he would be entitled to such benefit for such month.',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 402, Editorial Notes, Effective Date of 2015 Amendment (BBA 2015 § 831(a)(3))',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
+      quotedText:
+        'The amendments made by this subsection [amending this section] shall apply with respect to individuals who attain age 62 in any calendar year after 2015.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -2393,7 +2399,7 @@ const registry = {
   'pl-118-273-sec-2-3-wep-gpo-repeal': {
     title: 'WEP and GPO are repealed for title II monthly benefits after December 2023',
     statement:
-      'Public Law 118-273 repealed the Government Pension Offset by striking section 202(k)(5) and repealed the Windfall Elimination Provisions by striking section 215(a)(7), (d)(3), and (f)(9). Its applicability rule makes those amendments apply to monthly insurance benefits payable under title II for months after December 2023 and directs the Commissioner to adjust primary insurance amounts for the section 3 amendments. The engine has no WEP or GPO adjustment path, which is correct for its forward projections from the current 2026 parameter-pack year. A pre-2024 payable month would have required those adjustments, but neither that month nor the WEP/GPO facts can be expressed by an accepted Plan, so the engine produces no figure from this repealed rule rather than an approximation.',
+      'Public Law 118-273 repealed the Government Pension Offset by striking section 202(k)(5) and repealed the Windfall Elimination Provisions by striking section 215(a)(7), (d)(3), and (f)(9). Its applicability rule makes those amendments apply to monthly insurance benefits payable under title II for months after December 2023. The engine has no WEP or GPO adjustment path, which is correct for its forward projections from the current 2026 parameter-pack year. A pre-2024 payable month would have required those adjustments, but neither that month nor the WEP/GPO facts can be expressed by an accepted Plan, so the engine produces no figure from this repealed rule rather than an approximation.',
     classification: 'outOfScope',
     contraryReading: null,
     errorDirection: null,
