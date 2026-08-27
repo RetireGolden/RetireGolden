@@ -1780,12 +1780,12 @@ const registry = {
   'irc-1212-b-capital-loss-carryforward': {
     title: 'Individual capital-loss carryforwards continue into succeeding tax years',
     statement:
-      'After the section 1211(b) ordinary-income allowance is taken, a noncorporate taxpayer’s remaining net capital loss becomes a short-term or long-term capital loss in the succeeding taxable year. The projection keeps the unabsorbed balance in a single carryforward pool and applies it again in later years until gains and the annual ordinary-income allowance exhaust it; it does not impose a fixed expiration year.',
+      'After the section 1211(b) ordinary-income allowance is taken, a noncorporate taxpayer\'s remaining net capital loss is a capital loss in the succeeding taxable year. The projection keeps the unabsorbed balance in a single carryforward pool and applies it again in later years until gains and the annual ordinary-income allowance exhaust it; it does not impose a fixed expiration year.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'Section 1212(b) preserves the loss character, but the plan stores one combined pool rather than separate short- and long-term carryovers. That missing character is already registered with the account-level lot and holding-period approximation. The section 1212(b)(2) adjusted-taxable-income calculation for a section 1211 deduction that cannot reduce income in a zero-income year is outside this record’s succeeding-year carryforward claim and fixture. The describeRule fixture chains the pure federalTax.ts function across two years; the year-to-year pool threading that simulate.ts performs is exercised by that file’s own multi-year projection tests.',
+      'The plan stores one combined pool rather than separate short- and long-term carryovers. That missing character is already registered with the account-level lot and holding-period approximation (treas-reg-1-1012-1-c-lot-basis-and-holding-period). The section 1212(b)(2) adjusted-taxable-income limit on how much of a section 1211(b) allowance burns the carryforward pool in a zero-income year is registered separately. The describeRule fixture drives the pool through simulatePlan so the year-to-year threading in simulate.ts is inside the rule\'s coverage.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -1804,15 +1804,45 @@ const registry = {
     ],
   },
 
+  'irc-1212-b-2-zero-income-section-1211-allowance-preserves-carryforward': {
+    title: 'A section 1211(b) allowance cannot burn the carryforward pool without adjusted taxable income',
+    statement:
+      'For purposes of measuring the excess that becomes next year\'s capital loss under section 1212(b)(1), section 1212(b)(2)(A) treats as a short-term capital gain only the lesser of the section 1211(b) amount allowed for the year or the year\'s adjusted taxable income, and (B) defines that adjusted taxable income so a year with no taxable income to offset preserves the unused loss in the carryforward pool rather than consuming it.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'overstatesTax',
+    conventionRationale:
+      'applyCapitalLossCarryforward burns up to the annual ordinary-income allowance from the pool whenever a loss remains, even when ordinary income is zero and there is no taxable income for a section 1211(b) deduction to offset. A smaller remaining pool overstates tax when a later year\'s gains would otherwise have been absorbed. The companion fixture pins a zero-income year\'s remaining pool against statutory preservation.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 1212(b)(2)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1212&num=0&edition=prelim',
+      quotedText:
+        'For purposes of determining the excess referred to in subparagraph (A) or (B) of paragraph (1), there shall be treated as a short-term capital gain in the taxable year an amount equal to the lesser of- (i) the amount allowed for the taxable year under paragraph (1) or (2) of section 1211(b), or (ii) the adjusted taxable income for such taxable year.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 1212(b)(2)(B)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1212&num=0&edition=prelim',
+      quotedText:
+        'For purposes of subparagraph (A), the term "adjusted taxable income" means taxable income increased by the sum of- (i) the amount allowed for the taxable year under paragraph (1) or (2) of section 1211(b), and (ii) the deduction allowed for such year under section 151 or any deduction in lieu thereof. ... For purposes of the preceding sentence, any excess of the deductions allowed for the taxable year over the gross income for such year shall be taken into account as negative taxable income.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: ['packages/engine/src/tax/federalTax.ts'],
+  },
+
   'irc-1-h-1-0-15-20-preferential-rate-schedule': {
     title: 'The modeled net-capital-gain schedule has 0, 15, and 20 percent layers',
     statement:
-      'For the adjusted net capital gain the engine models, section 1(h)(1) applies a zero-percent layer, then a 15-percent layer, then a 20-percent layer. The current dollar breakpoints are annual parameter data, while the rates and the order of the layers are statutory; this record does not reach the separately registered 25-percent unrecaptured-section-1250 or 28-percent collectibles layers.',
+      'For the adjusted net capital gain the engine models, section 1(h)(1) applies a zero-percent layer, then a 15-percent layer, then a 20-percent layer. Section 1(j)(5)(B) supplies the maximum zero rate amount and maximum 15-percent rate amount that override the statute\'s 25-percent and 39.6-percent boundary references; the 2026 pack stores those indexed dollars. The rates and the order of the layers are statutory; this record does not reach the separately registered 25-percent unrecaptured-section-1250 or 28-percent collectibles layers.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The quoted 1(h)(1) text still keys its layer boundaries to income taxed below 25 and 39.6 percent; section 1(j)(5)(B) overrides those references with the maximum zero rate amount and maximum 15-percent rate amount, which are the indexed dollar breakpoints the parameter pack stores and the engine reads. The rates and layer order come from the quoted text; the boundary dollars come from the override.',
+      'The quoted 1(h)(1) text still keys its layer boundaries to income taxed below 25 and 39.6 percent; section 1(j)(5)(B) overrides those references with the maximum zero rate amount and maximum 15-percent rate amount, which are the indexed dollar breakpoints the parameter pack stores and the engine reads. The rates and layer order come from the quoted text; the boundary dollars come from the override and the Rev. Proc. 2025-32 2026 amounts. The companion fixture locks the rates and layer order against the 2026 pack only.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -1820,6 +1850,18 @@ const registry = {
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1&num=0&edition=prelim',
       quotedText:
         'If a taxpayer has a net capital gain for any taxable year, the tax imposed by this section for such taxable year shall not exceed the sum of- (A) a tax computed at the rates and in the same manner as if this subsection had not been enacted on the greater of- (i) taxable income reduced by the net capital gain; or (ii) the lesser of- (I) the amount of taxable income taxed at a rate below 25 percent; or (II) taxable income reduced by the adjusted net capital gain; (B) 0 percent of so much of the adjusted net capital gain (or, if less, taxable income) as does not exceed the excess (if any) of- (i) the amount of taxable income which would (without regard to this paragraph) be taxed at a rate below 25 percent, over (ii) the taxable income reduced by the adjusted net capital gain; (C) 15 percent of the lesser of- (i) so much of the adjusted net capital gain (or, if less, taxable income) as exceeds the amount on which a tax is determined under subparagraph (B), or (ii) the excess of- (I) the amount of taxable income which would (without regard to this paragraph) be taxed at a rate below 39.6 percent, over (II) the sum of the amounts on which a tax is determined under subparagraphs (A) and (B), (D) 20 percent of the adjusted net capital gain (or, if less, taxable income) in excess of the sum of the amounts on which tax is determined under subparagraphs (B) and (C),',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 1(j)(5)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1&num=0&edition=prelim',
+      quotedText:
+        'Section 1(h)(1) shall be applied- (i) by substituting "below the maximum zero rate amount" for "which would (without regard to this paragraph) be taxed at a rate below 25 percent" in subparagraph (B)(i), and (ii) by substituting "below the maximum 15-percent rate amount" for "which would (without regard to this paragraph) be taxed at a rate below 39.6 percent" in subparagraph (C)(ii)(I).',
+    }, {
+      kind: 'irsNotice',
+      citation: 'Rev. Proc. 2025-32, section 4.03',
+      url: 'https://www.irs.gov/pub/irs-drop/rp-25-32.pdf',
+      quotedText:
+        'Maximum Capital Gains Rate (§ 1(h), § 1(j)(5)). For taxable years beginning in 2026, the maximum zero rate amounts and maximum 15 percent rate amounts under § 1(j)(5)(B), as adjusted for inflation, are as follows: ... All Other Individuals $49,450 ... $545,500',
     }],
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
@@ -1834,12 +1876,12 @@ const registry = {
   'irc-1-h-optimizer-flat-fifteen-percent-preferential-rate': {
     title: 'The optimizer linearizes all taxable-bucket gain at 15 percent',
     statement:
-      'The optimizer prices every taxable-bucket gain at one 15-percent federal preferential rate, rather than the statutory 0/15/20-percent layers. That can overstate the taxpayer’s exposure when the marginal gain is in the zero-percent layer and understate it when the marginal gain is in the 20-percent layer; the exact ledger later re-prices a proposed schedule, but the linearized solve itself remains directional only by scenario.',
+      'The optimizer prices every taxable-bucket gain at one 15-percent federal preferential rate, rather than the statutory 0/15/20-percent layers. That can overstate the taxpayer\'s exposure when the marginal gain is in the zero-percent layer and understate it when the marginal gain is in the 20-percent layer; the exact ledger later re-prices a proposed schedule, but the linearized solve itself remains directional only by scenario.',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'bothDirections',
     conventionRationale:
-      'A single rate makes the optimizer’s taxable-bucket objective linear. Its 15-percent value is a chosen planning approximation, not a statutory rate that applies uniformly to a taxpayer’s gains.',
+      'A single rate makes the optimizer\'s taxable-bucket objective linear. Its 15-percent value is a chosen planning approximation, not a statutory rate that applies uniformly to a taxpayer\'s gains. The companion fixtures pin marginal rates in the same unit: the statutory marginal rate derived from the exact tax delta on the plan the optimizer sees, against the optimizer\'s flat 0.15.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -1858,11 +1900,12 @@ const registry = {
   'irc-1091-a-wash-sale-thirty-day-window': {
     title: 'Wash-sale losses are disallowed for substantially identical securities acquired in the 61-day window',
     statement:
-      'A claimed stock-or-security loss is disallowed when the taxpayer acquires substantially identical stock or securities, or enters a contract or option to acquire them, from 30 days before through 30 days after the sale or disposition, subject to the dealer exception. Not modelled: the plan has an aggregate taxable-account balance and cost basis, but no security or lot identity, acquisition or disposition date, replacement purchase, contract or option, substantially-identical determination, or dealer-status fact.',
-    classification: 'outOfScope',
+      'A claimed stock-or-security loss is disallowed when the taxpayer acquires substantially identical stock or securities, or enters a contract or option to acquire them, from 30 days before through 30 days after the sale or disposition, subject to the dealer exception. The engine nevertheless emits a realized loss on a taxable-account sale and deducts it through the capital-loss path; nothing fails closed. A wash-sale reality would disallow that deduction, understating tax in the sale year, while replacement-basis effects under section 1091(d) can flip later years — the same both-directions pattern as the account-level lot and holding-period approximation.',
+    classification: 'approximated',
     contraryReading: null,
-    errorDirection: null,
-    conventionRationale: null,
+    errorDirection: 'bothDirections',
+    conventionRationale:
+      'Approximated rather than out of scope because the engine emits a realized gain or loss for every taxable sale and deducts net losses through applyCapitalLossCarryforward; nothing here fails closed. The plan has an aggregate taxable-account balance and cost basis but no security or lot identity, acquisition or disposition date, replacement purchase, contract or option, substantially-identical determination, or dealer-status fact, so a wash-sale cannot be identified and every realized loss is allowed. Understating tax in the sale year and over- or under-stating it later through missing replacement-basis adjustments is why the direction cannot be narrowed — the same rationale shape as treas-reg-1-1012-1-c-lot-basis-and-holding-period.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -1875,25 +1918,35 @@ const registry = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-27',
-    implementedBy: ['packages/engine/src/model/plan.ts'],
+    implementedBy: [
+      'packages/engine/src/tax/federalTax.ts',
+      'packages/engine/src/actions/taxableWithdrawalCharacter.ts',
+      'packages/engine/src/model/plan.ts',
+    ],
   },
 
   'rev-rul-2008-5-ira-wash-sale-permanent-loss-disallowance': {
     title: 'An IRA repurchase disallows the wash-sale loss without an IRA basis adjustment',
     statement:
-      'When an individual sells stock at a loss and causes that individual’s traditional or Roth IRA to buy substantially identical stock within the section 1091 window, the loss is disallowed and the IRA’s basis is not increased. The loss therefore has no replacement-basis adjustment inside the IRA. Not modelled: the plan has no security or lot identities, trade dates, taxable-to-IRA ownership linkage, or IRA purchase event to reach this ruling.',
+      'When an individual sells stock at a loss and causes that individual\'s traditional or Roth IRA to buy substantially identical stock within the section 1091 window, the loss is disallowed and the IRA\'s basis is not increased. The loss therefore has no replacement-basis adjustment inside the IRA. Not modelled: the plan has no security or lot identities, trade dates, taxable-to-IRA ownership linkage, or IRA purchase event to reach this ruling.',
     classification: 'outOfScope',
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'TaxRuleAuthorityKind has no revenue-ruling member. This is recorded as irsPublication, the closest existing kind for a formal ruling published by the IRS, rather than irsNotice because a revenue ruling is not an IRS Notice.',
+      'TaxRuleAuthorityKind has no revenue-ruling member. This is recorded as irsNotice, the closest existing kind for IRB guidance — a revenue ruling is IRB guidance; a publication is not.',
     jurisdiction: 'federal',
     authority: [{
-      kind: 'irsPublication',
-      citation: 'Rev. Rul. 2008-5',
+      kind: 'irsNotice',
+      citation: 'Rev. Rul. 2008-5, FACTS',
       url: 'https://www.irs.gov/pub/irs-drop/rr-08-05.pdf',
       quotedText:
-        "The loss on the Sale of stock is disallowed under § 1091. A's basis in the individual retirement account or Roth IRA is not increased by virtue of § 1091(d).",
+        'A, an individual, owns 100 shares of X Company stock with a basis of $1,000. On December 20, 2007, A sells the 100 shares of X Company stock for $600 (the “Sale”). On December 21, 2007, A causes an individual retirement account (within the meaning of § 408) or a Roth IRA (within the meaning of § 408A), established for the exclusive benefit of A or A’s beneficiaries, to purchase 100 shares of X Company stock for its then fair market value (the “Purchase”).',
+    }, {
+      kind: 'irsNotice',
+      citation: 'Rev. Rul. 2008-5, HOLDING',
+      url: 'https://www.irs.gov/pub/irs-drop/rr-08-05.pdf',
+      quotedText:
+        'The loss on the Sale of stock is disallowed under § 1091. A’s basis in the individual retirement account or Roth IRA is not increased by virtue of § 1091(d).',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -1905,11 +1958,12 @@ const registry = {
   'irc-1014-a-1-basis-at-death-fair-market-value': {
     title: 'Inherited property generally takes date-of-death fair-market-value basis',
     statement:
-      'Subject to the section 1014 exceptions and any alternate-valuation election, property acquired from a decedent generally takes the property’s fair market value at the decedent’s date of death as its basis. Not modelled: the taxable-account and property inputs have a cost basis but no inherited-property marker, decedent death date, date-of-death fair market value, estate-tax valuation, or alternate-valuation election.',
-    classification: 'outOfScope',
+      'Subject to the section 1014 exceptions and any alternate-valuation election, property acquired from a decedent generally takes the property\'s fair market value at the decedent\'s date of death as its basis, so heirs are not taxed on embedded gain at death. The estate/legacy metric in compare.ts keeps taxable balances whole and charges heirs nothing on that embedded gain (an implicit full step-up), while simulate.ts never writes date-of-death fair market value onto costBasis, so a post-death sale in the surviving path keeps the original basis and can tax the same embedded gain.',
+    classification: 'approximated',
     contraryReading: null,
-    errorDirection: null,
-    conventionRationale: null,
+    errorDirection: 'bothDirections',
+    conventionRationale:
+      'Approximated rather than out of scope because both surfaces produce figures the rule touches. compare.ts\'s after-tax estate treats taxable (and equity-comp) balances as stepped-up and untaxed to heirs, while simulate.ts leaves costBasis unchanged through a death year, so the surviving path can realize the pre-death embedded gain. One half understates heir tax relative to a no-step-up reading; the other overstates tax on a post-death sale relative to a consistent step-up. The companion fixture discriminates those readings through simulatePlan and summarizeProjection.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -1928,18 +1982,22 @@ const registry = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-27',
-    implementedBy: ['packages/engine/src/model/plan.ts'],
+    implementedBy: [
+      'packages/engine/src/projection/compare.ts',
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/model/plan.ts',
+    ],
   },
 
   'irc-1400z-2-qof-deferral-and-ten-year-basis-election': {
     title: 'Qualified opportunity fund investment defers eligible gain and can receive a ten-year basis election',
     statement:
-      'A taxpayer may elect to exclude eligible gain from a sale or exchange to the amount invested in a qualified opportunity fund within 180 days, but no new election may be made for a sale or exchange after December 31, 2026; deferred gain is included at the earlier disposition or December 31, 2026. A qualifying investment held at least 10 years can elect fair-market-value basis at its sale or exchange. Not modelled: the plan has no qualified-opportunity-fund account or election, eligible-sale or unrelated-person facts, investment amount or date, deferred-gain basis, or ten-year holding-period fact.',
+      'For elections on sales or exchanges on or before December 31, 2026 (the legacy limb), a taxpayer may elect to exclude eligible gain to the amount invested in a qualified opportunity fund within 180 days, no new election may be made after that date, and deferred gain is included at the earlier of disposition or December 31, 2026. Pub. L. 119-21 (OBBBA sec. 70421) amended section 1400Z-2 for amounts invested after December 31, 2026 into a permanent regime: the new-election cutoff is removed, deferred gain is included at the earlier of disposition or five years after the QOF investment, and a qualifying investment held at least 10 years can still elect fair-market-value basis (with the amended (c) limbs). Not modelled: the plan has no qualified-opportunity-fund account or election, eligible-sale or unrelated-person facts, investment amount or date, deferred-gain basis, or ten-year holding-period fact.',
     classification: 'outOfScope',
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The record stays open (effectiveThrough null) because only the new-election window dies on December 31, 2026: the subsection (c) fair-market-value basis election persists for investments already made, so the rule keeps operating for existing holders. volatility sunsetting surfaces the quoted election cutoff before it bites.',
+      'One record keeps both limbs quote-carried from the staged compiled text. The body still prints the pre-2027 December 31, 2026 election and inclusion cutoffs; the Amendment of Section note carries the Pub. L. 119-21 post-2026 permanent text (rolling five-year deferral, election without a new-sale cutoff, qualified rural opportunity fund). volatility is staticStatute because the program is permanent after the amending act — sunsetting would fit only a legacy-only record — and the legacy cutoff stays in the statement rather than effectiveThrough, which moots a dueOn-after-cutoff alarm for a still-open permanent regime.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -1949,24 +2007,30 @@ const registry = {
         'In the case of gain from the sale to, or exchange with, an unrelated person of any property held by the taxpayer, at the election of the taxpayer- (A) gross income for the taxable year shall not include so much of such gain as does not exceed the aggregate amount invested by the taxpayer in a qualified opportunity fund during the 180-day period beginning on the date of such sale or exchange,',
     }, {
       kind: 'statute',
-      citation: 'IRC 1400Z-2(a)(2)',
+      citation: 'IRC 1400Z-2(a)(2) (legacy pre-2027 elections)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1400Z-2&num=0&edition=prelim',
       quotedText:
         'No election may be made under paragraph (1)- (A) with respect to a sale or exchange if an election previously made with respect to such sale or exchange is in effect, or (B) with respect to any sale or exchange after December 31, 2026.',
     }, {
       kind: 'statute',
-      citation: 'IRC 1400Z-2(b)(1)',
+      citation: 'IRC 1400Z-2(b)(1) (legacy pre-2027 elections)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1400Z-2&num=0&edition=prelim',
       quotedText:
         'Gain to which subsection (a)(1)(B) applies shall be included in income in the taxable year which includes the earlier of- (A) the date on which such investment is sold or exchanged, or (B) December 31, 2026.',
     }, {
       kind: 'statute',
-      citation: 'IRC 1400Z-2(c)',
+      citation: '26 U.S.C. 1400Z-2, Editorial Notes, Amendments (Pub. L. 119-21, § 70421 - post-2026 (b)(1))',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1400Z-2&num=0&edition=prelim',
+      quotedText:
+        '"(1) Year of inclusion "Gain to which subsection (a)(1)(B) applies shall be included in gross income in the taxable year which includes the earlier of- "(A) the date on which such investment is sold or exchanged, or "(B) the date which is 5 years after the date the investment in the qualified opportunity fund was made.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 1400Z-2(c) (legacy / continuing ten-year election)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1400Z-2&num=0&edition=prelim',
       quotedText:
         'In the case of any investment held by the taxpayer for at least 10 years and with respect to which the taxpayer makes an election under this clause, the basis of such property shall be equal to the fair market value of such investment on the date that the investment is sold or exchanged.',
     }],
-    volatility: 'sunsetting',
+    volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-27',

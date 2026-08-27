@@ -2,21 +2,21 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 1,
   "registry": {
-    "total": 325,
+    "total": 326,
     "byClassification": {
-      "approximated": 76,
-      "outOfScope": 49,
+      "approximated": 79,
+      "outOfScope": 47,
       "settled": 196,
       "unsettled": 4
     },
     "byVolatility": {
       "annuallyIndexed": 48,
       "awaitingGuidance": 10,
-      "staticStatute": 260,
-      "sunsetting": 7
+      "staticStatute": 262,
+      "sunsetting": 6
     },
     "byJurisdiction": {
-      "federal": 268,
+      "federal": 269,
       "states": {
         "AK": 1,
         "AR": 9,
@@ -272,8 +272,8 @@
     },
     {
       "path": "projection/compare.ts",
-      "sweptOn": "2026-08-24",
-      "note": "after-tax estate haircuts: Form 8606 basis exclusion, taxable step-up, spousal rollover, HSA non-spouse income (IRC 223(f)(8)(B)) — no records name this file"
+      "sweptOn": "2026-08-27",
+      "note": "after-tax estate haircuts incl. taxable step-up registered (irc-1014-a-1-basis-at-death-fair-market-value); Form 8606 basis exclusion, spousal rollover, HSA non-spouse income remain"
     },
     {
       "path": "projection/flatTax.ts",
@@ -1353,7 +1353,7 @@
     },
     {
       "id": "irc-1014-a-1-basis-at-death-fair-market-value",
-      "classification": "outOfScope",
+      "classification": "approximated",
       "jurisdiction": "federal",
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
@@ -1361,13 +1361,17 @@
       "verifiedOn": "2026-08-27",
       "dueOn": "2027-08-27",
       "implementedBy": [
-        "packages/engine/src/model/plan.ts"
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/compare.ts",
+        "packages/engine/src/projection/simulate.ts"
       ],
-      "fixtureFiles": []
+      "fixtureFiles": [
+        "packages/engine/src/tax/federalTax.test.ts"
+      ]
     },
     {
       "id": "irc-1091-a-wash-sale-thirty-day-window",
-      "classification": "outOfScope",
+      "classification": "approximated",
       "jurisdiction": "federal",
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
@@ -1375,9 +1379,13 @@
       "verifiedOn": "2026-08-27",
       "dueOn": "2027-08-27",
       "implementedBy": [
-        "packages/engine/src/model/plan.ts"
+        "packages/engine/src/actions/taxableWithdrawalCharacter.ts",
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/tax/federalTax.ts"
       ],
-      "fixtureFiles": []
+      "fixtureFiles": [
+        "packages/engine/src/tax/federalTax.test.ts"
+      ]
     },
     {
       "id": "irc-121-a-b-principal-residence-eligibility-tests",
@@ -1431,6 +1439,22 @@
       ]
     },
     {
+      "id": "irc-1212-b-2-zero-income-section-1211-allowance-preserves-carryforward",
+      "classification": "approximated",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/tax/federalTax.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/federalTax.test.ts"
+      ]
+    },
+    {
       "id": "irc-1212-b-capital-loss-carryforward",
       "classification": "settled",
       "jurisdiction": "federal",
@@ -1451,11 +1475,11 @@
       "id": "irc-1400z-2-qof-deferral-and-ten-year-basis-election",
       "classification": "outOfScope",
       "jurisdiction": "federal",
-      "volatility": "sunsetting",
+      "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
       "verifiedOn": "2026-08-27",
-      "dueOn": "2027-01-24",
+      "dueOn": "2027-08-27",
       "implementedBy": [
         "packages/engine/src/model/plan.ts"
       ],

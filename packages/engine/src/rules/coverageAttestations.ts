@@ -186,7 +186,7 @@ export const COVERAGE_ATTESTATIONS: Readonly<Record<string, CoverageAttestation>
   'projection/annualRetirementRuntimeJournal.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'projection/annuityForms.ts': Object.freeze({ status: 'registered', sweptOn: '2026-08-24', note: null }),
   'projection/beneficiaryTraditionalIraAnnualPassConsumer.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
-  'projection/compare.ts': Object.freeze({ status: 'partial', sweptOn: '2026-08-24', note: 'after-tax estate haircuts: Form 8606 basis exclusion, taxable step-up, spousal rollover, HSA non-spouse income (IRC 223(f)(8)(B)) — no records name this file' }),
+  'projection/compare.ts': Object.freeze({ status: 'partial', sweptOn: '2026-08-27', note: 'after-tax estate haircuts incl. taxable step-up registered (irc-1014-a-1-basis-at-death-fair-market-value); Form 8606 basis exclusion, spousal rollover, HSA non-spouse income remain' }),
   'projection/employerRothCatchUp.ts': Object.freeze({ status: 'registered', sweptOn: '2026-08-24', note: null }),
   'projection/flatTax.ts': Object.freeze({ status: 'partial', sweptOn: '2026-08-24', note: 'Statutory 85% Social Security inclusion; no record' }),
   'projection/internal/legacyAggregateDecisionCalculation.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),

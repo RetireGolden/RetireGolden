@@ -11,16 +11,16 @@ The registry is the machine-checked chain from a rule to its implementation and 
 
 | Metric | Count |
 | --- | ---: |
-| Total rules | 325 |
-| Classification: approximated | 76 |
-| Classification: outOfScope | 49 |
+| Total rules | 326 |
+| Classification: approximated | 79 |
+| Classification: outOfScope | 47 |
 | Classification: settled | 196 |
 | Classification: unsettled | 4 |
 | Volatility: annuallyIndexed | 48 |
 | Volatility: awaitingGuidance | 10 |
-| Volatility: staticStatute | 260 |
-| Volatility: sunsetting | 7 |
-| Federal jurisdiction | 268 |
+| Volatility: staticStatute | 262 |
+| Volatility: sunsetting | 6 |
+| Federal jurisdiction | 269 |
 | State jurisdiction total | 57 |
 
 | State jurisdiction | Count |
@@ -135,7 +135,7 @@ None.
 | montecarlo/mortality.ts | 2026-08-24 | SSA 2022 period-table q(x) derivation for stochastic longevity MC; separate from treas-reg annuitization record |
 | params/index.ts | 2026-08-24 | Trustees default SS haircut (2034, 17%); indexFederalTaxPack uses plan inflation not C-CPI-U; convention only in records naming federalTax.ts |
 | projection/annualCashFlowCapture.ts | 2026-08-24 | Form 8606 basis, QCD exclusion, annuity and penalty character composition; no record |
-| projection/compare.ts | 2026-08-24 | after-tax estate haircuts: Form 8606 basis exclusion, taxable step-up, spousal rollover, HSA non-spouse income (IRC 223(f)(8)(B)) — no records name this file |
+| projection/compare.ts | 2026-08-27 | after-tax estate haircuts incl. taxable step-up registered (irc-1014-a-1-basis-at-death-fair-market-value); Form 8606 basis exclusion, spousal rollover, HSA non-spouse income remain |
 | projection/flatTax.ts | 2026-08-24 | Statutory 85% Social Security inclusion; no record |
 | projection/optimizePlan.ts | 2026-08-27 | Flat 15% LTCG LP rate registered (irc-1-h-optimizer-flat-fifteen-percent-preferential-rate); other optimizer linearizations remain unregistered |
 | projection/optimizerAggregateConversionPromotion.ts | 2026-08-24 | §408A-4 A-6(b) RMD-first, 401(k)(2)(B)(i) distributability, and same-owner Roth destination; no records |
@@ -156,7 +156,7 @@ None.
 
 ## Re-verification due dates
 
-The 25 earliest due dates are shown below (325 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
+The 25 earliest due dates are shown below (326 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
 
 | Rule | Volatility | Verified on | Due on |
 | --- | --- | --- | --- |

@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest'
 
 import { describeRule } from '../rules/describeRule.js'
 
-import { createEmptyPlan, type Plan } from '../model/plan.js'
+import { createEmptyPlan, parsePlan, type Plan } from '../model/plan.js'
 import { EARLIEST_PACK_YEAR, LATEST_PACK_YEAR, packForYear } from '../params/index.js'
+import { summarizeProjection } from '../projection/compare.js'
 import { buildOptimizerInput } from '../projection/optimizePlan.js'
+import { simulatePlan } from '../projection/simulate.js'
 import type { TaxCalculator, TaxYearInput } from '../projection/types.js'
 import {
   applyCapitalLossCarryforward,
@@ -14,6 +16,12 @@ import {
   saltCapForYear,
   taxableSocialSecurity,
 } from './federalTax.js'
+
+function validatePlan(plan: Plan): Plan {
+  const parsed = parsePlan(plan)
+  if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+  return parsed.plan
+}
 
 function input(partial: Partial<TaxYearInput>): TaxYearInput {
   return {
@@ -282,21 +290,111 @@ describe('section 1211 capital loss limitation', () => {
 
 describe('section 1212 capital-loss carryforward', () => {
   // IRC 1212(b)(1) makes the unabsorbed loss a loss in the succeeding year.
-  // For a $10,000 loss, the section 1211 allowance leaves $7,000 after year
-  // one. In year two, $7,000 of that pool absorbs $10,000 of gain, leaving
-  // $3,000 preferential gain. At this income, that is $450 of capital-gains
-  // tax; the rejected reading forfeits the pool and taxes all $10,000, $1,500.
+  // Opening pool $10,000: year one burns the $3,000 section 1211 allowance
+  // against ordinary income (remaining $7,000). Year two's $10,000 gain absorbs
+  // that pool, leaving $3,000 preferential gain. At this income that is $450 of
+  // capital-gains tax; the rejected reading forfeits the pool and taxes all
+  // $10,000, $1,500. Year three still has a live pool path (remaining $0 after
+  // year two) so the no-expiration claim is not a single-year accident.
+  // Fixture locks against the 2026 pack via createFederalTaxCalculator.
+  function carryforwardSimulatePlan(): Plan {
+    const plan = createEmptyPlan({
+      newId: () => 'carryforward-1212-fixture',
+      now: () => new Date('2026-01-01T00:00:00.000Z'),
+    })
+    plan.household.people[0] = {
+      id: 'p1',
+      name: 'Pat',
+      dob: '1962-06-15',
+      sex: 'average',
+      retirementAge: 64,
+      longevity: { planningAge: 90, source: 'manual' },
+    }
+    plan.household.capitalLossCarryforward = 10_000
+    plan.assumptions.inflationPct = 0
+    plan.assumptions.defaultReturnPct = 0
+    plan.expenses.baseAnnual = 40_000
+    plan.incomes = [
+      {
+        type: 'recurring',
+        id: 'pension',
+        label: 'Pension',
+        annualAmount: 120_000,
+        startYear: 2026,
+        endYear: null,
+        inflationAdjusted: false,
+        taxTreatment: 'ordinary',
+      },
+      {
+        type: 'oneTime',
+        id: 'gain-2027',
+        label: 'Stock sale 2027',
+        year: 2027,
+        amount: 10_000,
+        taxTreatment: 'capitalGain',
+      },
+      {
+        type: 'oneTime',
+        id: 'gain-2028',
+        label: 'Stock sale 2028',
+        year: 2028,
+        amount: 1_000,
+        taxTreatment: 'capitalGain',
+      },
+    ]
+    plan.accounts = [{
+      type: 'cash',
+      id: 'cash',
+      name: 'Cash',
+      ownerPersonId: null,
+      annualReturnPct: 0,
+      balance: 500_000,
+      annualContribution: 0,
+    }]
+    return plan
+  }
+
   describeRule('irc-1212-b-capital-loss-carryforward', {
     readings: { carriesIntoTheSucceedingYear: 450, expiresAfterFirstAllowance: 1_500 },
     accepted: 'carriesIntoTheSucceedingYear',
   }, ({ accepted, readings }) => {
-    it('uses an unabsorbed loss to reduce the succeeding year’s capital-gains tax', () => {
-      const first = applyCapitalLossCarryforward(0, 80_000, -10_000, 3_000)
-      const second = applyCapitalLossCarryforward(first.remaining, 100_000, 10_000, 3_000)
-      const tax = computeFederalTax(input({ ordinaryIncome: 100_000, capitalGains: second.netCapitalGain }))
+    it('threads the unabsorbed pool through simulatePlan into year-two capital-gains tax', () => {
+      const result = simulatePlan(validatePlan(carryforwardSimulatePlan()), {
+        startYear: 2026,
+        horizonEndYear: 2028,
+        taxCalculator: createFederalTaxCalculator(),
+      })
+      const y2026 = result.years.find((y) => y.year === 2026)!
+      const y2027 = result.years.find((y) => y.year === 2027)!
+      const y2028 = result.years.find((y) => y.year === 2028)!
 
-      expect(tax.capitalGainsTax).toBe(accepted)
-      expect(tax.capitalGainsTax).not.toBe(readings.expiresAfterFirstAllowance)
+      expect(y2026.capitalLossCarryforwardRemaining).toBe(7_000)
+      expect(y2027.advisoryFederalTax!.detail.capitalGainsTax).toBe(accepted)
+      expect(y2027.advisoryFederalTax!.detail.capitalGainsTax).not.toBe(readings.expiresAfterFirstAllowance)
+      expect(y2027.capitalLossCarryforwardRemaining).toBe(0)
+      // Year three still projects with the exhausted pool — no fixed expiration year.
+      expect(y2028.capitalLossCarryforwardRemaining).toBe(0)
+      expect(y2028.advisoryFederalTax!.detail.capitalGainsTax).toBeGreaterThan(0)
+    })
+  })
+})
+
+describe('section 1212(b)(2) zero-income allowance preservation', () => {
+  // With ordinary income 0 and a $10,000 opening pool, section 1212(b)(2) treats
+  // as short-term capital gain only the lesser of the section 1211(b) allowance
+  // or adjusted taxable income — so the pool stays $10,000. The engine burns
+  // $3,000 anyway, leaving $7,000.
+  describeRule('irc-1212-b-2-zero-income-section-1211-allowance-preserves-carryforward', {
+    readings: { statutePreservesPool: 10_000, engineBurnsThreeThousand: 7_000 },
+    accepted: 'statutePreservesPool',
+    produced: 'engineBurnsThreeThousand',
+  }, ({ accepted, produced }) => {
+    it('burns the annual allowance from the pool even when ordinary income is zero', () => {
+      const result = applyCapitalLossCarryforward(10_000, 0, 0, 3_000)
+
+      expect(result.usedAgainstOrdinary).toBe(3_000)
+      expect(result.remaining).toBe(produced)
+      expect(result.remaining).not.toBe(accepted)
     })
   })
 })
@@ -370,13 +468,14 @@ describe('capital gains stacking', () => {
     })
   })
 
-  // Single filer, 2026. $16,100 of ordinary income exactly absorbs the
+  // Single filer, 2026 pack only. $16,100 of ordinary income exactly absorbs the
   // standard deduction, so $600,000 of modeled preferential gain fills the
   // $0 layer to $49,450, the $15 layer from $49,450 through $545,500, and then
   // the $20 layer. The statutory result is
   //   ($545,500 - $49,450) x 0.15 + ($600,000 - $545,500) x 0.20 = $85,307.50.
   // The rejected reading leaves the top layer at 15 percent, producing
   //   ($600,000 - $49,450) x 0.15 = $82,582.50.
+  // This fixture locks the rates and layer order against the 2026 pack only.
   describeRule('irc-1-h-1-0-15-20-preferential-rate-schedule', {
     readings: { statutoryZeroFifteenTwentyLayers: 85_307.5, flatFifteenAboveZeroLayer: 82_582.5 },
     accepted: 'statutoryZeroFifteenTwentyLayers',
@@ -447,26 +546,210 @@ describe('capital gains stacking', () => {
 })
 
 describe('optimizer flat preferential-rate approximation', () => {
-  // A single filer with $16,100 of ordinary income has no ordinary taxable
-  // income after the 2026 standard deduction. One additional dollar of modeled
-  // preferential gain is therefore in the statutory zero-percent layer. The
-  // optimizer nevertheless supplies its single taxable-bucket rate. The
-  // rejected reading is that fixed rate; it awaits orchestrator observation.
+  // Both readings are marginal RATES. The statutory side is the exact-tax delta
+  // on the same plan facts the optimizer sees (with vs without one more dollar
+  // of modeled preferential gain). The produced side is buildOptimizerInput's
+  // flat taxable-bucket rate.
   describeRule('irc-1-h-optimizer-flat-fifteen-percent-preferential-rate', {
-    readings: { statutoryZeroPercentMarginalRate: 0, optimizerFlatRate: 0.15 },
-    accepted: 'statutoryZeroPercentMarginalRate',
+    readings: { statutoryZeroLayerMarginal: 0, optimizerFlatRate: 0.15 },
+    accepted: 'statutoryZeroLayerMarginal',
     produced: 'optimizerFlatRate',
+    note: 'zero-percent layer dollar',
   }, ({ accepted, produced }) => {
-    it('does not price a zero-rate gain at the statutory marginal rate inside the linearized solve', () => {
-      const exact = computeFederalTax(input({ ordinaryIncome: 16_100, capitalGains: 1 }))
-      const optimizerInput = buildOptimizerInput(optimizerZeroRateFixturePlan(), {
+    it('prices a zero-layer marginal dollar at 15 percent inside the linearized solve', () => {
+      const plan = optimizerZeroRateFixturePlan()
+      const wages = 16_100
+      const withoutGain = computeFederalTax(input({ ordinaryIncome: wages, capitalGains: 0 }))
+      const withGain = computeFederalTax(input({ ordinaryIncome: wages, capitalGains: 1 }))
+      const statutoryMarginal = withGain.capitalGainsTax - withoutGain.capitalGainsTax
+      const optimizerInput = buildOptimizerInput(plan, {
         startYear: 2026,
         taxCalculator: createFederalTaxCalculator(),
       })
 
-      expect(exact.capitalGainsTax).toBe(accepted)
+      expect(statutoryMarginal).toBe(accepted)
       expect(optimizerInput.ltcgRate).toBe(produced)
       expect(optimizerInput.ltcgRate).not.toBe(accepted)
+      expect(plan.accounts[0]).toMatchObject({ balance: 1, costBasis: 0 })
+      expect(plan.incomes[0]).toMatchObject({ annualGross: wages })
+    })
+  })
+
+  // Gain far above the 2026 single maximum 15-percent rate amount ($545,500)
+  // so the statutory marginal dollar is in the 20-percent layer.
+  function optimizerTwentyPercentFixturePlan(): Plan {
+    const plan = createEmptyPlan({
+      newId: () => 'optimizer-flat-ltcg-20pct-fixture',
+      now: () => new Date('2026-01-01T00:00:00.000Z'),
+    })
+    plan.assumptions.inflationPct = 0
+    plan.assumptions.defaultReturnPct = 0
+    plan.expenses.baseAnnual = 0
+    plan.incomes = [{
+      type: 'wages',
+      id: 'optimizer-flat-ltcg-20-wages',
+      personId: plan.household.people[0]!.id,
+      annualGross: 16_100,
+      endAge: null,
+      realGrowthPct: 0,
+    }]
+    plan.accounts = [{
+      type: 'taxable',
+      id: 'optimizer-flat-ltcg-20-taxable',
+      name: 'Taxable brokerage',
+      ownerPersonId: null,
+      annualReturnPct: null,
+      balance: 600_000,
+      costBasis: 0,
+      annualContribution: 0,
+    }]
+    return plan
+  }
+
+  describeRule('irc-1-h-optimizer-flat-fifteen-percent-preferential-rate', {
+    readings: { statutoryTwentyLayerMarginal: 0.20, optimizerFlatRate: 0.15 },
+    accepted: 'statutoryTwentyLayerMarginal',
+    produced: 'optimizerFlatRate',
+    note: 'twenty-percent layer dollar',
+  }, ({ accepted, produced }) => {
+    it('prices a twenty-percent-layer marginal dollar at 15 percent inside the linearized solve', () => {
+      const plan = optimizerTwentyPercentFixturePlan()
+      const wages = 16_100
+      const baseGain = 600_000
+      const withoutExtra = computeFederalTax(input({ ordinaryIncome: wages, capitalGains: baseGain }))
+      const withExtra = computeFederalTax(input({ ordinaryIncome: wages, capitalGains: baseGain + 1 }))
+      const statutoryMarginal = withExtra.capitalGainsTax - withoutExtra.capitalGainsTax
+      const optimizerInput = buildOptimizerInput(plan, {
+        startYear: 2026,
+        taxCalculator: createFederalTaxCalculator(),
+      })
+
+      expect(statutoryMarginal).toBeCloseTo(accepted, 10)
+      expect(optimizerInput.ltcgRate).toBe(produced)
+      expect(optimizerInput.ltcgRate).not.toBe(accepted)
+    })
+  })
+})
+
+describe('wash-sale disallowance approximation', () => {
+  // A $10,000 taxable-sale loss with ordinary income: statute under a wash sale
+  // allows $0 of that loss against ordinary income; the engine deducts the
+  // section 1211(b) $3,000 allowance.
+  describeRule('irc-1091-a-wash-sale-thirty-day-window', {
+    readings: { washSaleDisallowsDeduction: 0, engineDeductsLoss: 3_000 },
+    accepted: 'washSaleDisallowsDeduction',
+    produced: 'engineDeductsLoss',
+  }, ({ accepted, produced }) => {
+    it('deducts a realized taxable-sale loss the wash-sale rule would disallow', () => {
+      const result = applyCapitalLossCarryforward(0, 80_000, -10_000, 3_000)
+
+      expect(result.usedAgainstOrdinary).toBe(produced)
+      expect(result.usedAgainstOrdinary).not.toBe(accepted)
+      expect(result.remaining).toBe(7_000)
+    })
+  })
+})
+
+describe('basis at death approximation', () => {
+  // Couple (both 60 in 2026, pre-Medicare so no premium drain): p2 dies in 2026.
+  // Taxable $100,000 / basis $40,000 (embedded $60,000).
+  // Statute steps basis to FMV, so a post-death sale realizes $0 embedded-gain tax.
+  // simulate.ts never writes FMV onto costBasis, so the surviving path realizes
+  // the original $60,000 embedded gain. compare.ts's estate metric separately
+  // charges heirs $0 on that taxable balance (implicit step-up) — asserted here
+  // as the other half of bothDirections, not as the produced pin.
+  const EMBEDDED_GAIN = 60_000
+  const TAXABLE_BALANCE = 100_000
+  const TAXABLE_BASIS = 40_000
+
+  function basisAtDeathPlan(): Plan {
+    const plan = createEmptyPlan({
+      newId: () => 'basis-at-death-fixture',
+      now: () => new Date('2026-01-01T00:00:00.000Z'),
+    })
+    plan.household.filingStatus = 'marriedFilingJointly'
+    plan.household.people = [
+      {
+        id: 'p1',
+        name: 'Pat',
+        dob: '1966-06-15',
+        sex: 'average',
+        retirementAge: null,
+        longevity: { planningAge: 90, source: 'manual' },
+      },
+      {
+        id: 'p2',
+        name: 'Sam',
+        dob: '1966-06-15',
+        sex: 'average',
+        retirementAge: null,
+        longevity: { planningAge: 60, source: 'manual' },
+      },
+    ]
+    plan.assumptions.inflationPct = 0
+    plan.assumptions.defaultReturnPct = 0
+    plan.assumptions.heirTaxRatePct = 25
+    // No recurring spend in the death year (taxable stays whole for the estate
+    // metric). A 2027 one-time goal forces a full post-death taxable sale.
+    plan.expenses.baseAnnual = 0
+    plan.expenses.oneTimeGoals = [{
+      id: 'post-death-draw',
+      label: 'Post-death draw',
+      year: 2027,
+      amount: TAXABLE_BALANCE,
+    }]
+    plan.incomes = []
+    plan.accounts = [
+      {
+        type: 'taxable',
+        id: 'brokerage',
+        name: 'Brokerage',
+        ownerPersonId: null,
+        annualReturnPct: null,
+        balance: TAXABLE_BALANCE,
+        costBasis: TAXABLE_BASIS,
+        interestYieldPct: 0,
+        dividendYieldPct: 0,
+        qualifiedRatio: 0,
+        reinvestDividends: true,
+        annualContribution: 0,
+        estateBeneficiary: { destination: 'nonSpouse', charityPct: 0 },
+      },
+    ]
+    return plan
+  }
+
+  describeRule('irc-1014-a-1-basis-at-death-fair-market-value', {
+    readings: {
+      steppedUpZeroPostDeathSaleGain: 0,
+      // Observed: the 2027 sale realizes the full original embedded gain.
+      originalBasisPostDeathSaleGain: EMBEDDED_GAIN,
+    },
+    accepted: 'steppedUpZeroPostDeathSaleGain',
+    produced: 'originalBasisPostDeathSaleGain',
+  }, ({ accepted, produced }) => {
+    it('keeps original basis on a post-death taxable sale while the estate metric assumes step-up', () => {
+      const plan = validatePlan(basisAtDeathPlan())
+      const opts = {
+        startYear: 2026,
+        taxCalculator: createFederalTaxCalculator(),
+        deathAgeByPersonId: { p2: 60 },
+      }
+
+      // Death-year ending balances still hold the taxable account — compare.ts
+      // charges heirs nothing on its embedded gain (implicit full step-up).
+      const throughDeath = simulatePlan(plan, { ...opts, horizonEndYear: 2026 })
+      const deathSummary = summarizeProjection(plan, throughDeath)
+      const taxableRow = deathSummary.estateBreakdown.find((row) => row.accountId === 'brokerage')
+      expect(taxableRow!.grossBalance).toBe(TAXABLE_BALANCE)
+      expect(taxableRow!.heirTax).toBe(0)
+      expect(taxableRow!.heirTax).not.toBe(EMBEDDED_GAIN * 0.25)
+
+      // Survivor year must sell the taxable account; basis was never stepped up.
+      const throughSurvivor = simulatePlan(plan, { ...opts, horizonEndYear: 2027 })
+      const postDeath = throughSurvivor.years.find((y) => y.year === 2027)!
+      expect(postDeath.realizedGains).toBe(produced)
+      expect(postDeath.realizedGains).not.toBe(accepted)
     })
   })
 })
