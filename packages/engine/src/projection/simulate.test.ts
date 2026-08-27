@@ -11,6 +11,7 @@ import {
   type Plan,
 } from '../model/plan.js'
 import { computePiaFromEarnings, isPiaFromEarningsError } from '../socialSecurity/piaFromEarnings.js'
+import { AWI_BY_YEAR } from '../socialSecurity/ssaWageData.js'
 import { combineTaxCalculators, computeFederalTax, createFederalTaxCalculator } from '../tax/federalTax.js'
 import { createStateTaxCalculator } from '../tax/stateTax.js'
 import { createFlatTaxCalculator } from './flatTax.js'
@@ -78,6 +79,14 @@ function validate(plan: Plan): Plan {
   const r = parsePlan(plan)
   if (!r.ok) throw new Error(r.issues.join('; '))
   return r.plan
+}
+
+function socialSecurityIncomeIn(result: ReturnType<typeof simulatePlan>, year: number): number {
+  const projectedYear = result.years.find((candidate) => candidate.year === year)
+  if (projectedYear === undefined) throw new Error(`expected projection year ${year}`)
+  const income = projectedYear.incomes.socialSecurity
+  if (!Number.isFinite(income)) throw new Error(`expected finite Social Security income for ${year}`)
+  return income
 }
 
 function currentYearAca(
@@ -502,6 +511,213 @@ describe('social security', () => {
     expect(result.years.find((y) => y.year === 2028)!.incomes.socialSecurity).toBeCloseTo(16_800, 6)
     // 67+: claim credited 62 -> 64 (24 months), 36 months early -> 0.80 × PIA.
     expect(result.years.find((y) => y.year === 2031)!.incomes.socialSecurity).toBeCloseTo(19_200, 6)
+  })
+
+  function partialDeductionArfIncomeAfterFra(): number {
+    const plan = basePlan()
+    plan.household.people[0]! = { ...plan.household.people[0]!, dob: '1964-06-15', retirementAge: 67 }
+    plan.incomes = [
+      // 28,480 - 24,480 = 4,000; the annual test withholds 2,000 dollars in
+      // each below-FRA year the wages run (2026 through 2030).
+      wages(28_480),
+      { type: 'socialSecurity', id: testIds(), personId: 'p1', piaMonthly: 2_000, earnings: null, claimAge: { years: 62, months: 0 } },
+    ]
+    plan.accounts = [cash(2_000_000)]
+    const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
+    // 2032 is the first full calendar year after the June-2031 FRA, so the
+    // observable carries the ARF-adjusted rate without FRA-year proration.
+    return socialSecurityIncomeIn(result, 2032)
+  }
+
+  // Each of the five below-FRA working years (2026-2030) carries a
+  // 2,000-dollar annual deduction, charged 1,400 dollars to the first payable
+  // month and 600 to the second. POMS credits both the full and the partial
+  // work-deduction month — ten crediting months in all: the 60 reduction
+  // months from a 62y0m claim shrink to 50, the reduction is
+  // 36 x 5/9% + 14 x 5/12% = 25.8333%, and a post-FRA year pays
+  // 24,000 x 0.7416667 = 17,800. The engine's annual ratio proxy instead
+  // rounds (2,000 / benefit) x payable months to one crediting month per year.
+  describeRule('poms-rs-00615-482-arf-crediting-months', {
+    readings: {
+      pomsCreditsFullAndPartialWorkDeductionMonths: 17_800,
+      annualRatioRoundsToOneCreditingMonthPerYear: 17_300,
+    },
+    accepted: 'pomsCreditsFullAndPartialWorkDeductionMonths',
+    produced: 'annualRatioRoundsToOneCreditingMonthPerYear',
+  }, ({ accepted, produced }) => {
+    it('credits every full or partial work-deduction month under the ARF rule', () => {
+      const postFraIncome = partialDeductionArfIncomeAfterFra()
+      expect(postFraIncome).toBeCloseTo(produced, 6)
+      expect(postFraIncome).not.toBeCloseTo(accepted, 6)
+    })
+  })
+
+  // This independently pins the statute's charging order that supplies the
+  // full/partial deduction months used by the preceding ARF fixture.
+  describeRule('usc-42-403-f-1-earnings-test-month-charging', {
+    readings: {
+      firstThenSucceedingMonthCharging: 17_800,
+      annualFractionRoundedToOneMonthPerYear: 17_300,
+    },
+    accepted: 'firstThenSucceedingMonthCharging',
+    produced: 'annualFractionRoundedToOneMonthPerYear',
+  }, ({ accepted, produced }) => {
+    it('does not collapse a partial second charged month into one annual fraction', () => {
+      const postFraIncome = partialDeductionArfIncomeAfterFra()
+      expect(postFraIncome).toBeCloseTo(produced, 6)
+      expect(postFraIncome).not.toBeCloseTo(accepted, 6)
+    })
+  })
+
+  function graceYearAnnualIncome(retirementAge: number): number {
+    const plan = basePlan()
+    plan.household.people[0]! = { ...plan.household.people[0]!, dob: '1964-06-15', retirementAge }
+    plan.incomes = [
+      wages(60_000),
+      { type: 'socialSecurity', id: testIds(), personId: 'p1', piaMonthly: 2_000, earnings: null, claimAge: { years: 62, months: 0 } },
+    ]
+    plan.accounts = [cash(2_000_000)]
+    const result = simulatePlan(validate(plan), {
+      startYear: 2026,
+      horizonEndYear: 2026,
+      taxCalculator: noTax,
+    })
+    return socialSecurityIncomeIn(result, 2026)
+  }
+
+  // These are two explicitly labelled monthly-rule limbs, not one annual
+  // fixture. Both records carry the same accepted annual wage amount because
+  // the Plan cannot say how it was distributed within 2026:
+  //
+  // - sixNonServiceMonthsAfterJune: 60,000 was earned January-June and the
+  //   claimant neither worked nor rendered substantial service July-December;
+  //   six × (2,000 × 70%) = 8,400 of monthly-test benefits are payable.
+  // - serviceInAllTwelveMonths: the same annual wages are earned while service
+  //   continues through December, so there is no non-service-month payment.
+  //
+  // The annual projection has no service-month fact, applies its annual
+  // withholding in both limbs, and must therefore be observed separately from
+  // this authority-side paired monthly calculation.
+  describeRule('cfr-20-404-447-grace-year-monthly-earnings-test', {
+    readings: {
+      monthlyTestDistinguishesServiceMonths: {
+        sixNonServiceMonthsAfterJune: 8_400,
+        serviceInAllTwelveMonths: 0,
+      },
+      annualProjectionIgnoresServiceMonthDistribution: {
+        // The annual test withholds the whole partial-year benefit in both
+        // limbs: (60,000 - 24,480) / 2 exceeds the year-one benefit.
+        sixNonServiceMonthsAfterJune: 0,
+        serviceInAllTwelveMonths: 0,
+      },
+    },
+    accepted: 'monthlyTestDistinguishesServiceMonths',
+    produced: 'annualProjectionIgnoresServiceMonthDistribution',
+  }, ({ accepted, produced }) => {
+    it('cannot preserve a grace-year non-service-month benefit from annual wages alone', () => {
+      const annualProjection = {
+        sixNonServiceMonthsAfterJune: graceYearAnnualIncome(62.5),
+        serviceInAllTwelveMonths: graceYearAnnualIncome(63),
+      }
+
+      expect(annualProjection).toEqual(produced)
+      expect(annualProjection).not.toEqual(accepted)
+    })
+  })
+
+  it('does not accept a Social Security application withdrawal, repayment, or replacement claim', () => {
+    // The SS stream itself has a single scalar claimAge rather than the facts
+    // that section 404.640 joins together.
+    const fields = Object.keys(socialSecurityIncomeSchema.shape)
+    expect(fields.filter((name) => name === 'claimAge')).toHaveLength(1)
+    for (const absent of [
+      'firstEntitlementMonth',
+      'withdrawalRequestMonth',
+      'withdrawalApproval',
+      'repaymentAmount',
+      'priorWithdrawal',
+      'replacementClaimAge',
+    ] as const) {
+      expect(absent in socialSecurityIncomeSchema.shape).toBe(false)
+    }
+
+    // model/plan.ts also rejects an attempt to place the missing transition in
+    // retirementActions: there is no Social Security withdrawal action kind.
+    const plan = basePlan()
+    plan.strategies.retirementActions = [{
+      actionId: testIds(),
+      kind: 'socialSecurityApplicationWithdrawal',
+      personId: 'p1',
+      requestYear: 2026,
+      repaymentAmount: 1,
+    }] as never
+    const parsed = parsePlan(plan)
+    if (parsed.ok) throw new Error('expected an unsupported Social Security withdrawal action to be rejected')
+    expect(parsed.ok).toBe(false)
+  })
+
+  // Ten AWI-level covered years (2013-2022): each indexes to floor(AWI_2022) =
+  // 63,795, giving ≥40 quarters (fully insured) with hand-derivable AIME.
+  function insuredAwiEarningsBeforeClaim(): { year: number; amount: number }[] {
+    return Array.from({ length: 10 }, (_, index) => {
+      const year = 2013 + index
+      const amount = AWI_BY_YEAR[year]
+      if (amount === undefined) throw new Error(`expected published AWI for ${year}`)
+      return { year, amount }
+    })
+  }
+
+  function postFraRecomputationIncome(): number {
+    const plan = basePlan()
+    plan.household.people[0]! = { ...plan.household.people[0]!, dob: '1962-06-15', retirementAge: 70 }
+    plan.incomes = [
+      // This 2030 wage is covered post-FRA work after the 2029 claim, not
+      // an earnings-history input. The annual projection should recompute it
+      // for January 2031, but the engine resolves PIA before this pass starts.
+      wages(10_000),
+      {
+        type: 'socialSecurity',
+        id: testIds(),
+        personId: 'p1',
+        piaMonthly: null,
+        earnings: insuredAwiEarningsBeforeClaim(),
+        claimAge: { years: 67, months: 0 },
+      },
+    ]
+    plan.accounts = [cash(2_000_000)]
+    const result = simulatePlan(validate(plan), {
+      startYear: 2030,
+      horizonEndYear: 2031,
+      taxCalculator: noTax,
+    })
+    return socialSecurityIncomeIn(result, 2031)
+  }
+
+  // Worker born 1962-06-15 (eligibility 2024, indexing year 2022, FRA claim
+  // 2029). Ten AWI-level years 2013-2022 end before the claim and supply ≥40
+  // quarters. Each indexes to 63,795; after the five-year dropout the top-35
+  // sum is 637,950 and AIME is floor(637,950 / 420) = 1,518. 2024 bend points
+  // are 1,174 / 7,078, so second-band PIA is floorToDime(0.9×1,174 +
+  // 0.32×(1,518−1,174)) = 1,166.60 and the FRA baseline year pays 13,999.20.
+  // The 10,000-dollar 2030 entitlement-year wage replaces a zero in the
+  // top-35 (post-age-60 years are not indexed): sum 647,950, AIME 1,542,
+  // PIA floorToDime(0.9×1,174 + 0.32×(1,542−1,174)) = 1,174.30 (delta 7.70
+  // ≥ $1). January 2031 therefore pays 13,999.20 + 7.70×12 = 14,091.60.
+  // The engine resolves PIA once pre-loop and ignores the post-claim wage, so
+  // it observably pays the baseline 13,999.20.
+  describeRule('usc-42-415-f-2-post-entitlement-pia-recomputation', {
+    readings: {
+      mandatoryHigherPiaFromPostFraEntitlementYearWages: 14_091.6,
+      piaResolvedOnceBeforeProjection: 13_999.2,
+    },
+    accepted: 'mandatoryHigherPiaFromPostFraEntitlementYearWages',
+    produced: 'piaResolvedOnceBeforeProjection',
+  }, ({ accepted, produced }) => {
+    it('does not recompute a higher PIA from post-FRA covered wages', () => {
+      const recomputedYearIncome = postFraRecomputationIncome()
+      expect(recomputedYearIncome).toBeCloseTo(produced, 6)
+      expect(recomputedYearIncome).not.toBeCloseTo(accepted, 6)
+    })
   })
 
   // In the survivor year p1's own benefit is 12,000 and the deceased worker's

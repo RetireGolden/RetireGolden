@@ -2,21 +2,21 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 1,
   "registry": {
-    "total": 301,
+    "total": 306,
     "byClassification": {
-      "approximated": 64,
-      "outOfScope": 40,
+      "approximated": 68,
+      "outOfScope": 41,
       "settled": 193,
       "unsettled": 4
     },
     "byVolatility": {
       "annuallyIndexed": 44,
       "awaitingGuidance": 10,
-      "staticStatute": 241,
+      "staticStatute": 246,
       "sunsetting": 6
     },
     "byJurisdiction": {
-      "federal": 244,
+      "federal": 249,
       "states": {
         "AK": 1,
         "AR": 9,
@@ -914,6 +914,37 @@
       "fixtureFiles": [
         "packages/engine/src/socialSecurity/benefitFactor.test.ts"
       ]
+    },
+    {
+      "id": "cfr-20-404-447-grace-year-monthly-earnings-test",
+      "classification": "approximated",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.test.ts"
+      ]
+    },
+    {
+      "id": "cfr-20-404-640-application-withdrawal-repayment",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts"
+      ],
+      "fixtureFiles": []
     },
     {
       "id": "fl-const-7-5-a-income-tax-prohibited",
@@ -4557,6 +4588,23 @@
       ]
     },
     {
+      "id": "poms-rs-00615-482-arf-crediting-months",
+      "classification": "approximated",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/socialSecurity/claimFactor.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.test.ts"
+      ]
+    },
+    {
       "id": "rev-proc-2025-25-aca-applicable-percentage-2026",
       "classification": "settled",
       "jurisdiction": "federal",
@@ -5429,6 +5477,22 @@
       ]
     },
     {
+      "id": "usc-42-403-f-1-earnings-test-month-charging",
+      "classification": "approximated",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.test.ts"
+      ]
+    },
+    {
       "id": "usc-42-403-f-3-retirement-earnings-test",
       "classification": "settled",
       "jurisdiction": "federal",
@@ -5477,6 +5541,23 @@
       ],
       "fixtureFiles": [
         "packages/engine/src/socialSecurity/piaFromEarnings.test.ts"
+      ]
+    },
+    {
+      "id": "usc-42-415-f-2-post-entitlement-pia-recomputation",
+      "classification": "approximated",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/socialSecurity/piaFromEarnings.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.test.ts"
       ]
     },
     {
