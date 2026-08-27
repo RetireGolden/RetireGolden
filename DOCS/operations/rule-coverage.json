@@ -2,21 +2,21 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 1,
   "registry": {
-    "total": 289,
+    "total": 292,
     "byClassification": {
       "approximated": 62,
-      "outOfScope": 35,
-      "settled": 188,
+      "outOfScope": 37,
+      "settled": 189,
       "unsettled": 4
     },
     "byVolatility": {
       "annuallyIndexed": 44,
       "awaitingGuidance": 10,
-      "staticStatute": 229,
+      "staticStatute": 232,
       "sunsetting": 6
     },
     "byJurisdiction": {
-      "federal": 232,
+      "federal": 235,
       "states": {
         "AK": 1,
         "AR": 9,
@@ -4516,6 +4516,30 @@
       ]
     },
     {
+      "id": "pl-118-273-sec-2-3-wep-gpo-repeal",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2027-08-26",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/socialSecurity/benefitFactor.ts",
+        "packages/engine/src/socialSecurity/claimFactor.ts",
+        "packages/engine/src/socialSecurity/disability.ts",
+        "packages/engine/src/socialSecurity/familyMaximum.ts",
+        "packages/engine/src/socialSecurity/maritalBenefits.ts",
+        "packages/engine/src/socialSecurity/nra.ts",
+        "packages/engine/src/socialSecurity/piaFromEarnings.ts",
+        "packages/engine/src/socialSecurity/ssaWageData.ts",
+        "packages/engine/src/socialSecurity/survivorBenefit.ts"
+      ],
+      "fixtureFiles": []
+    },
+    {
       "id": "rev-proc-2025-25-aca-applicable-percentage-2026",
       "classification": "settled",
       "jurisdiction": "federal",
@@ -5247,6 +5271,39 @@
       "fixtureFiles": [
         "packages/engine/src/socialSecurity/survivorBenefit.test.ts"
       ]
+    },
+    {
+      "id": "usc-42-402-r-1-2-deemed-filing-old-age-and-spousal",
+      "classification": "settled",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2027-08-26",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/socialSecurity/claimFactor.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.test.ts"
+      ]
+    },
+    {
+      "id": "usc-42-402-r-survivor-deemed-filing-exemption",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2027-08-26",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/socialSecurity/maritalBenefits.ts"
+      ],
+      "fixtureFiles": []
     },
     {
       "id": "usc-42-403-a-2-family-maximum-formula",

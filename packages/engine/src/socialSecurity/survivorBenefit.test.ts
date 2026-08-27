@@ -52,6 +52,29 @@ describe('widow benefit base', () => {
       expect(monthly).not.toBeCloseTo(readings.halfAsForALivingWorkerSpouse, 6)
     })
   })
+
+  // The (e)(2)(C) limb of the same record is deliberately a second,
+  // discriminating fixture: it decides whether the deceased's delayed credits
+  // remain in the survivor base, rather than re-testing the whole-PIA limb
+  // above. The survivor is past survivor FRA, so no survivor reduction is
+  // involved: 2,000 x 1.24 = 2,480, versus a flat-PIA reading of 2,000.
+  describeRule('usc-42-402-e-2-widow-full-pia', {
+    note: 'deceased delayed retirement credits',
+    readings: { deceasedDelayedCreditsIncluded: 2_480, flatPrimaryInsuranceAmount: 2_000 },
+    accepted: 'deceasedDelayedCreditsIncluded',
+  }, ({ accepted, readings }) => {
+    it('carries the deceased worker’s delayed credits into the unreduced survivor amount', () => {
+      const monthly = survivorBenefitMonthly({
+        deceasedPiaMonthly: 2_000,
+        deceasedActualMonthly: 2_480,
+        survivorClaimAge: { years: 67, months: 0 },
+        survivorFraMonths: SURVIVOR_FRA_1962PLUS,
+      })
+
+      expect(monthly).toBeCloseTo(accepted, 6)
+      expect(monthly).not.toBeCloseTo(readings.flatPrimaryInsuranceAmount, 6)
+    })
+  })
 })
 
 describe('survivorReductionFactor', () => {

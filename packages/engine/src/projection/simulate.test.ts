@@ -186,6 +186,48 @@ describe('horizon and wages', () => {
 })
 
 describe('social security', () => {
+  // Section 402(r) does not permit a person who is eligible for both own and
+  // current-spouse benefits to elect the smaller spouse amount while holding
+  // the own old-age benefit back. At 62, the claimant's own reduced amount is
+  // larger than the reduced spouse amount:
+  //
+  //   own PIA 2,000 x 70% retirement factor x 12 = 16,800
+  //   spouse  PIA 3,000 x 50% x 65% spousal factor x 12 = 11,700
+  //
+  // The second reading is the forbidden restricted-application result. Both
+  // workers have claimed, so worker-filing eligibility and the family maximum
+  // are not the question this fixture answers.
+  describeRule('usc-42-402-r-1-2-deemed-filing-old-age-and-spousal', {
+    readings: {
+      deemedFiledOwnBenefitWins: 16_800,
+      restrictedCurrentSpouseOnlyClaim: 11_700,
+    },
+    accepted: 'deemedFiledOwnBenefitWins',
+  }, ({ accepted, readings }) => {
+    it('uses the one claim age to pay the higher own benefit rather than a restricted spouse-only amount', () => {
+      const plan = basePlan()
+      plan.household.filingStatus = 'marriedFilingJointly'
+      plan.household.people = [
+        { id: 'p1', name: 'Lower', dob: '1964-06-15', sex: 'average', retirementAge: null, longevity: { planningAge: 90, source: 'manual' } },
+        { id: 'p2', name: 'Higher', dob: '1964-06-15', sex: 'average', retirementAge: null, longevity: { planningAge: 90, source: 'manual' } },
+      ]
+      const lowerStreamId = testIds()
+      plan.incomes = [
+        { type: 'socialSecurity', id: lowerStreamId, personId: 'p1', piaMonthly: 2_000, earnings: null, claimAge: { years: 62, months: 0 } },
+        { type: 'socialSecurity', id: testIds(), personId: 'p2', piaMonthly: 3_000, earnings: null, claimAge: { years: 62, months: 0 } },
+      ]
+      plan.accounts = [cash(2_000_000)]
+
+      const year = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax }).years[0]!
+      const lower = year.socialSecurityStreams?.find((stream) => stream.streamId === lowerStreamId)
+      if (lower === undefined) throw new Error('expected lower current-spouse Social Security stream')
+
+      expect(lower.source).toBe('own-retirement')
+      expect(lower.annualAmount).toBeCloseTo(accepted, 6)
+      expect(lower.annualAmount).not.toBeCloseTo(readings.restrictedCurrentSpouseOnlyClaim, 6)
+    })
+  })
+
   it('starts at the claim-age year with the claiming factor applied', () => {
     const plan = basePlan()
     plan.incomes = [
