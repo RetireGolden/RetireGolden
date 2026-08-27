@@ -2,21 +2,21 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 1,
   "registry": {
-    "total": 326,
+    "total": 343,
     "byClassification": {
-      "approximated": 79,
-      "outOfScope": 47,
-      "settled": 196,
+      "approximated": 80,
+      "outOfScope": 55,
+      "settled": 204,
       "unsettled": 4
     },
     "byVolatility": {
-      "annuallyIndexed": 48,
+      "annuallyIndexed": 50,
       "awaitingGuidance": 10,
-      "staticStatute": 262,
+      "staticStatute": 277,
       "sunsetting": 6
     },
     "byJurisdiction": {
-      "federal": 269,
+      "federal": 286,
       "states": {
         "AK": 1,
         "AR": 9,
@@ -46,8 +46,8 @@
     "totalFiles": 235,
     "byStatus": {
       "partial": 61,
-      "registered": 50,
-      "rule-free": 124,
+      "registered": 51,
+      "rule-free": 123,
       "unswept": 0
     },
     "sweptPct": 100,
@@ -374,8 +374,8 @@
       "files": 74,
       "byStatus": {
         "partial": 23,
-        "registered": 24,
-        "rule-free": 27
+        "registered": 25,
+        "rule-free": 26
       }
     },
     {
@@ -1370,6 +1370,23 @@
       ]
     },
     {
+      "id": "irc-103-a-state-local-bond-interest-exclusion",
+      "classification": "settled",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/tax/federalTax.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/federalTax.test.ts"
+      ]
+    },
+    {
       "id": "irc-1091-a-wash-sale-thirty-day-window",
       "classification": "approximated",
       "jurisdiction": "federal",
@@ -1587,6 +1604,21 @@
       ]
     },
     {
+      "id": "irc-162-l-1-self-employed-health-insurance-not-modeled",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "fixtureFiles": []
+    },
+    {
       "id": "irc-163-h-3-E-i-pmi-qualified-residence-interest-restart",
       "classification": "approximated",
       "jurisdiction": "federal",
@@ -1651,6 +1683,20 @@
       "fixtureFiles": [
         "packages/engine/src/tax/federalTax.test.ts"
       ]
+    },
+    {
+      "id": "irc-170-b-1-C-capital-gain-property-ceiling-not-modeled",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts"
+      ],
+      "fixtureFiles": []
     },
     {
       "id": "irc-170-b-1-G-cash-percentage-ceiling",
@@ -1799,20 +1845,51 @@
       ]
     },
     {
+      "id": "irc-199A-a-qualified-business-income-deduction-not-modeled",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/tax/federalTax.ts"
+      ],
+      "fixtureFiles": []
+    },
+    {
       "id": "irc-213-a-medical-expense-deduction",
       "classification": "approximated",
       "jurisdiction": "federal",
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-03",
-      "dueOn": "2027-08-03",
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
       "implementedBy": [
+        "packages/engine/src/model/plan.ts",
         "packages/engine/src/tax/federalTax.ts"
       ],
       "fixtureFiles": [
         "packages/engine/src/rules/approximations/federalTaxAndRothBasis.approximation.test.ts"
       ]
+    },
+    {
+      "id": "irc-213-d-10-eligible-ltc-premium-caps-2026",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": 2026,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2026-12-25",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/tax/federalTax.ts"
+      ],
+      "fixtureFiles": []
     },
     {
       "id": "irc-219-b-1-ira-limit-lesser-of-compensation",
@@ -1931,6 +2008,22 @@
       ]
     },
     {
+      "id": "irc-223-a-hsa-contribution-deduction-reduces-agi",
+      "classification": "settled",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.test.ts"
+      ]
+    },
+    {
       "id": "irc-223-b-2-7-projection-coverage-proration-and-medicare",
       "classification": "approximated",
       "jurisdiction": "federal",
@@ -1944,6 +2037,23 @@
       ],
       "fixtureFiles": [
         "packages/engine/src/rules/approximations/hsaLimitAndQcdOffset.approximation.test.ts"
+      ]
+    },
+    {
+      "id": "irc-223-b-2-hsa-base-limits-2026",
+      "classification": "settled",
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": 2026,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2026-12-25",
+      "implementedBy": [
+        "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.test.ts"
       ]
     },
     {
@@ -2107,6 +2217,22 @@
       ]
     },
     {
+      "id": "irc-275-a-6-chapter-43-excise-taxes-nondeductible",
+      "classification": "settled",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.test.ts"
+      ]
+    },
+    {
       "id": "irc-3101-a-oasdi-employee-tax-rate",
       "classification": "settled",
       "jurisdiction": "federal",
@@ -2206,14 +2332,30 @@
       ]
     },
     {
-      "id": "irc-401-a-9-C-i-first-year-april-1-deferral",
+      "id": "irc-401-a-9-C-i-elected-deferral-ignores-attainment-year-distributions",
       "classification": "approximated",
       "jurisdiction": "federal",
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-03",
-      "dueOn": "2027-08-03",
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/rmdAndInherited.approximation.test.ts"
+      ]
+    },
+    {
+      "id": "irc-401-a-9-C-i-first-year-april-1-deferral",
+      "classification": "settled",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
       "implementedBy": [
         "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/rmd/rmd.ts"
@@ -2356,6 +2498,22 @@
       "fixtureFiles": []
     },
     {
+      "id": "irc-402-a-employer-plan-distribution-receipt-year-taxability",
+      "classification": "settled",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.test.ts"
+      ]
+    },
+    {
       "id": "irc-402-c-4-B-rmd-not-eligible-rollover-distribution",
       "classification": "approximated",
       "jurisdiction": "federal",
@@ -2379,8 +2537,8 @@
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-25",
-      "dueOn": "2027-08-25",
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
       "implementedBy": [
         "packages/engine/src/actions/contract.ts",
         "packages/engine/src/actions/traditionalEmployerPlanWithdrawalCharacter.ts",
@@ -2509,6 +2667,20 @@
       "dueOn": "2026-11-24",
       "implementedBy": [
         "packages/engine/src/actions/contract.ts",
+        "packages/engine/src/model/plan.ts"
+      ],
+      "fixtureFiles": []
+    },
+    {
+      "id": "irc-404-a-3-a-employer-deduction-limit",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
         "packages/engine/src/model/plan.ts"
       ],
       "fixtureFiles": []
@@ -2937,10 +3109,11 @@
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-25",
-      "dueOn": "2027-08-25",
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
       "implementedBy": [
         "packages/engine/src/actions/annualQcdExecutionPrerequisite.ts",
+        "packages/engine/src/actions/annualRetirementActionPublication.ts",
         "packages/engine/src/strategies/accountEligibility.ts"
       ],
       "fixtureFiles": []
@@ -3389,6 +3562,20 @@
       "fixtureFiles": []
     },
     {
+      "id": "irc-4966-d-donor-advised-fund-vehicle-not-modeled",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts"
+      ],
+      "fixtureFiles": []
+    },
+    {
       "id": "irc-4973-a-b-f-ira-and-roth-excess-contribution-excise",
       "classification": "approximated",
       "jurisdiction": "federal",
@@ -3633,6 +3820,20 @@
       "dueOn": "2026-11-24",
       "implementedBy": [
         "packages/engine/src/actions/contract.ts",
+        "packages/engine/src/model/plan.ts"
+      ],
+      "fixtureFiles": []
+    },
+    {
+      "id": "irc-664-charitable-remainder-trust-payout-and-character-mechanics-not-modeled",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
         "packages/engine/src/model/plan.ts"
       ],
       "fixtureFiles": []
@@ -4009,6 +4210,20 @@
       "fixtureFiles": [
         "packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.test.ts"
       ]
+    },
+    {
+      "id": "irc-7520-and-2522-split-interest-valuation-not-modeled",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts"
+      ],
+      "fixtureFiles": []
     },
     {
       "id": "irc-83-a-equity-compensation-execution-character",
@@ -5457,6 +5672,54 @@
       ],
       "fixtureFiles": [
         "packages/engine/src/params/params.test.ts"
+      ]
+    },
+    {
+      "id": "usc-42-1395r-i-4-a-i-irmaa-magi-foreign-exclusion-addback",
+      "classification": "approximated",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.test.ts"
+      ]
+    },
+    {
+      "id": "usc-42-1395r-i-4-a-magi-agi-plus-tax-exempt-interest",
+      "classification": "settled",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.test.ts"
+      ]
+    },
+    {
+      "id": "usc-42-1395r-i-4-b-two-year-magi-lookback",
+      "classification": "settled",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.test.ts"
       ]
     },
     {

@@ -2266,6 +2266,136 @@ describe('contributions', () => {
       expect(result.years[0]!.contributions).not.toBeCloseTo(readings.oneLimitPerPlan, 6)
     })
   })
+
+  // IRC 223(b)(2) supplies the self-only and family coverage tiers, while
+  // Rev. Proc. 2025-19 publishes the 2026 adjusted annual limits. The plan has
+  // no HDHP coverage election; irc-223-b-2-7 approximates household size as
+  // family coverage, so the observed 8,750 is pack.contributionLimits.hsaFamily
+  // under that substitution rather than a coverage-type election. The old
+  // statutory base amounts ($2,250/$4,500) are the rejected reading; using
+  // them would understate both a solo HSA and the total family contribution.
+  describeRule('irc-223-b-2-hsa-base-limits-2026', {
+    readings: {
+      revProc2026: {
+        selfOnly: 4_400,
+        family: year2026.contributionLimits.hsaFamily,
+      },
+      unadjustedStatutoryAmounts: { selfOnly: 2_250, family: 4_500 },
+    },
+    accepted: 'revProc2026',
+  }, ({ accepted, readings }) => {
+    it('reads the 2026 self-only and family limits from the parameter pack', () => {
+      const selfOnly = basePlan()
+      selfOnly.household.people[0]! = {
+        ...selfOnly.household.people[0]!,
+        dob: '1986-06-15', // age 40: no catch-up
+        retirementAge: 70,
+      }
+      selfOnly.incomes = [wages(100_000)]
+      selfOnly.accounts = [
+        cash(1_000_000),
+        {
+          id: testIds(), name: 'HSA', type: 'hsa', ownerPersonId: 'p1',
+          balance: 0, annualReturnPct: 0, annualContribution: 50_000,
+        } as never,
+      ]
+      const selfYear = simulatePlan(validate(selfOnly), {
+        startYear: 2026, horizonEndYear: 2026, taxCalculator: noTax,
+      }).years[0]!
+
+      const family = basePlan()
+      family.household.filingStatus = 'marriedFilingJointly'
+      family.household.people[0]! = {
+        ...family.household.people[0]!,
+        dob: '1986-06-15',
+        retirementAge: 70,
+      }
+      family.household.people.push({
+        id: 'p2', name: 'Sam', dob: '1986-06-15', sex: 'average',
+        retirementAge: 70, longevity: { planningAge: 90, source: 'manual' },
+      })
+      family.incomes = [wages(100_000, 'p1'), wages(100_000, 'p2')]
+      family.accounts = [
+        cash(1_000_000),
+        {
+          id: 'hsa-p1', name: 'HSA Pat', type: 'hsa', ownerPersonId: 'p1',
+          balance: 0, annualReturnPct: 0, annualContribution: 50_000,
+        } as never,
+        {
+          id: 'hsa-p2', name: 'HSA Sam', type: 'hsa', ownerPersonId: 'p2',
+          balance: 0, annualReturnPct: 0, annualContribution: 50_000,
+        } as never,
+      ]
+      const familyYear = simulatePlan(validate(family), {
+        startYear: 2026, horizonEndYear: 2026, taxCalculator: noTax,
+      }).years[0]!
+
+      const observed = {
+        selfOnly: selfYear.balances[selfOnly.accounts[1]!.id]!,
+        family: familyYear.contributions,
+      }
+      expect(observed).toEqual(accepted)
+      expect(observed).not.toEqual(readings.unadjustedStatutoryAmounts)
+      expect(familyYear.balances['hsa-p1']).toBeCloseTo(4_375, 6)
+      expect(familyYear.balances['hsa-p2']).toBeCloseTo(4_375, 6)
+    })
+  })
+
+  // IRC 223(a) makes an allowed HSA payment an above-the-line deduction. The
+  // rejected reading leaves the deposit in AGI; a $4,400 contribution against
+  // $100,000 of wages therefore gives federal AGI/MAGI 95,600 rather than
+  // 100,000. currentYearAca also pins ACA householdMagi falling by the same
+  // $4,400.
+  describeRule('irc-223-a-hsa-contribution-deduction-reduces-agi', {
+    readings: {
+      aboveTheLineDeduction: { agi: 95_600, magi: 95_600, householdMagi: 95_600 },
+      contributionNotDeducted: { agi: 100_000, magi: 100_000, householdMagi: 100_000 },
+    },
+    accepted: 'aboveTheLineDeduction',
+  }, ({ accepted, readings }) => {
+    it('reduces realized MAGI and ACA household MAGI by the allowed HSA contribution', () => {
+      const withHsa = basePlan()
+      withHsa.household.people[0]! = {
+        ...withHsa.household.people[0]!,
+        dob: '1986-06-15', // age 40: self-only base applies, no catch-up
+        retirementAge: 70,
+      }
+      withHsa.incomes = [wages(100_000)]
+      withHsa.accounts = [
+        cash(1_000_000),
+        {
+          id: testIds(), name: 'HSA', type: 'hsa', ownerPersonId: 'p1',
+          balance: 0, annualReturnPct: 0, annualContribution: 4_400,
+        } as never,
+      ]
+      currentYearAca(withHsa)
+      const withoutHsa = structuredClone(withHsa)
+      withoutHsa.accounts = [cash(1_000_000)]
+      currentYearAca(withoutHsa)
+
+      const withYear = simulatePlan(validate(withHsa), {
+        startYear: 2026, horizonEndYear: 2026, taxCalculator: createFederalTaxCalculator(),
+      }).years[0]!
+      const withoutYear = simulatePlan(validate(withoutHsa), {
+        startYear: 2026, horizonEndYear: 2026, taxCalculator: createFederalTaxCalculator(),
+      }).years[0]!
+      const observed = {
+        agi: withYear.advisoryFederalTax!.detail.agi,
+        magi: withYear.magi,
+        householdMagi: withYear.aca!.householdMagi!,
+      }
+
+      expect(observed).toEqual(accepted)
+      expect(observed).not.toEqual(readings.contributionNotDeducted)
+      expect({
+        agi: withoutYear.advisoryFederalTax!.detail.agi,
+        magi: withoutYear.magi,
+        householdMagi: withoutYear.aca!.householdMagi!,
+      }).toEqual(readings.contributionNotDeducted)
+      expect(withoutYear.magi - withYear.magi).toBe(4_400)
+      expect(withoutYear.aca!.householdMagi! - withYear.aca!.householdMagi!).toBe(4_400)
+    })
+  })
 })
 
 describe('growth, pensions, property, debt', () => {
@@ -2360,6 +2490,61 @@ describe('RMDs', () => {
 
     const y2027 = result.years.find((y) => y.year === 2027)! // age 74, divisor 25.5
     expect(y2027.rmd).toBeCloseTo(255_000 / 25.5, 6) // exactly 10,000 again
+  })
+
+  // IRC 402(a): the 2026 amount is not actually distributed until the April
+  // 1, 2027 deadline. The 2027 RMD is separately due by December 31, so the
+  // receipt-year ordinary-income worksheet is 265,000 / 26.5 + 265,000 / 25.5.
+  describeRule('irc-402-a-employer-plan-distribution-receipt-year-taxability', {
+    readings: {
+      receiptYearIncludesTheDeferredAndCurrentRmd: {
+        magi2026: 0,
+        magi2027: 265_000 / 26.5 + 265_000 / 25.5,
+      },
+      rejectedDistributionCalendarYearIncludesTheFirstRmd: {
+        magi2026: 265_000 / 26.5,
+        magi2027: 265_000 / 25.5,
+      },
+    },
+    accepted: 'receiptYearIncludesTheDeferredAndCurrentRmd',
+    note: 'April 1 first-RMD deferral receipt-year income',
+  }, ({ accepted, readings }) => {
+    it('books the deferred employer-plan RMD as ordinary income in the following receipt year', () => {
+      const plan = rmdPlan()
+      const cashAccount = plan.accounts[0]!
+      const employerPlan = plan.accounts[1]!
+      if (cashAccount.type !== 'cash' ||
+          employerPlan.type !== 'traditional' ||
+          employerPlan.kind !== 'employer') {
+        throw new Error('expected cash and employer-plan RMD fixture accounts')
+      }
+      // Keep Medicare spending from producing an unrelated traditional draw.
+      cashAccount.balance = 1_000_000
+      const result = simulatePlan(validate(plan), {
+        startYear: 2026,
+        horizonEndYear: 2027,
+        taxCalculator: noTax,
+        rmdFirstYearDeferrals: [{
+          distributionCalendarYear: 2026,
+          applicablePlan: { kind: 'employerPlan', accountId: employerPlan.id },
+        }],
+      })
+      const y2026 = result.years.find((year) => year.year === 2026)!
+      const y2027 = result.years.find((year) => year.year === 2027)!
+
+      expect(y2026.rmd).toBe(0)
+      expect(y2026.magi).toBeCloseTo(accepted.magi2026, 8)
+      expect(y2026.magi).not.toBeCloseTo(
+        readings.rejectedDistributionCalendarYearIncludesTheFirstRmd.magi2026,
+        8,
+      )
+      expect(y2027.rmd).toBeCloseTo(accepted.magi2027, 8)
+      expect(y2027.magi).toBeCloseTo(accepted.magi2027, 8)
+      expect(y2027.magi).not.toBeCloseTo(
+        readings.rejectedDistributionCalendarYearIncludesTheFirstRmd.magi2027,
+        8,
+      )
+    })
   })
 
   // Treas. Reg. 1.408-8(e)(1)(i) calculates the RMD separately for each IRA
@@ -2762,6 +2947,82 @@ describe('federal tax integration', () => {
 })
 
 describe('healthcare and penalties', () => {
+  // Independent worksheet: first-year RMD = 500,000 / 26.5; the qualified
+  // annuity leaves 8,000 timely distributed, so the §4974 excise is
+  // (500,000 / 26.5 - 8,000) × 25%. IRC 275(a)(6) leaves federal AGI at
+  // 8,000; deducting the chapter 43 tax would instead reduce it by that excise.
+  // Taxable income is zero after the standard and age/senior deductions — still
+  // not 8,000 minus the excise.
+  describeRule('irc-275-a-6-chapter-43-excise-taxes-nondeductible', {
+    readings: {
+      chapter43ExciseDoesNotReduceFederalBase: {
+        agi: 8_000,
+        taxableIncome: 0,
+        magi: 8_000,
+      },
+      rejectedExciseDeductionReducesFederalBase: {
+        agi: 8_000 - (500_000 / 26.5 - 8_000) * 0.25,
+        taxableIncome: 0,
+        magi: 8_000 - (500_000 / 26.5 - 8_000) * 0.25,
+      },
+    },
+    accepted: 'chapter43ExciseDoesNotReduceFederalBase',
+    note: 'RMD-shortfall excise remains outside AGI, taxable income, and MAGI',
+  }, ({ accepted, readings }) => {
+    it('keeps a chapter 43 RMD-shortfall excise out of the income-tax base', () => {
+      const plan = basePlan()
+      plan.household.people[0]!.dob = '1953-06-15'
+      plan.household.people[0]!.retirementAge = null
+      const sourceEmployerPlan = traditional(500_000)
+      plan.accounts = [
+        cash(1_000_000),
+        sourceEmployerPlan,
+        {
+          type: 'annuity',
+          id: testIds(),
+          name: 'Qualified annuity',
+          ownerPersonId: 'p1',
+          annualReturnPct: 0,
+          startAge: 74,
+          monthlyAmount: 0,
+          colaPct: 0,
+          taxablePct: 100,
+          purchase: {
+            year: 2026,
+            premium: 492_000,
+            fundingAccountId: sourceEmployerPlan.id,
+            taxQualification: 'qualified',
+          },
+        },
+      ]
+
+      const year = simulatePlan(validate(plan), {
+        startYear: 2026,
+        horizonEndYear: 2026,
+        taxCalculator: createFederalTaxCalculator(),
+      }).years[0]!
+      const excise = (500_000 / 26.5 - 8_000) * 0.25
+      const observed = {
+        agi: year.advisoryFederalTax!.detail.agi,
+        taxableIncome: year.advisoryFederalTax!.detail.taxableIncome,
+        magi: year.magi,
+      }
+
+      expect(year.rmd).toBeCloseTo(8_000, 8)
+      expect(year.rmdShortfallExciseTax).toBeCloseTo(excise, 8)
+      expect(year.penalties).toBeCloseTo(excise, 8)
+      expect(observed).toEqual(accepted)
+      expect(observed.agi).not.toBeCloseTo(
+        readings.rejectedExciseDeductionReducesFederalBase.agi,
+        8,
+      )
+      expect(observed.magi).not.toBeCloseTo(
+        readings.rejectedExciseDeductionReducesFederalBase.magi,
+        8,
+      )
+    })
+  })
+
   it('fails closed for future years without sourced tax-year parameters', () => {
     const plan = basePlan()
     plan.household.people[0]!.dob = '1964-06-15'
@@ -3686,23 +3947,42 @@ describe('healthcare and penalties', () => {
     expect(result.years.find((y) => y.year === 2026)!.expenses.healthcare).toBeCloseTo(202.9 * 12, 4)
   })
 
-  it('raises Medicare premiums two years after an income spike (IRMAA lookback)', () => {
-    const plan = basePlan()
-    plan.household.people[0]!.dob = '1960-06-15' // 66 in 2026, on Medicare
-    plan.household.people[0]!.retirementAge = null
-    plan.incomes = [
-      { type: 'oneTime', id: testIds(), label: 'Windfall', year: 2027, amount: 300_000, taxTreatment: 'ordinary' },
-    ]
-    plan.accounts = [cash(3_000_000)]
-    const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
+  // 42 U.S.C. 1395r(i)(4)(B)(i) selects the last taxable year beginning in
+  // the SECOND calendar year preceding the premium year. The tempting
+  // same-year reading would price the 2027 windfall in 2027 and leave 2029 at
+  // the standard tier; the statute requires the opposite timing.
+  describeRule('usc-42-1395r-i-4-b-two-year-magi-lookback', {
+    readings: {
+      secondPrecedingYear: { spikeYearTier: 0, twoYearsLaterTier: 4 },
+      sameYearIncome: { spikeYearTier: 4, twoYearsLaterTier: 0 },
+    },
+    accepted: 'secondPrecedingYear',
+  }, ({ accepted, readings }) => {
+    it('raises Medicare premiums two years after an income spike', () => {
+      const plan = basePlan()
+      plan.household.people[0]!.dob = '1960-06-15' // 66 in 2026, on Medicare
+      plan.household.people[0]!.retirementAge = null
+      plan.incomes = [
+        { type: 'oneTime', id: testIds(), label: 'Windfall', year: 2027, amount: 300_000, taxTreatment: 'ordinary' },
+      ]
+      plan.accounts = [cash(3_000_000)]
+      const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
 
-    expect(result.years.find((y) => y.year === 2027)!.magi).toBeGreaterThanOrEqual(300_000)
-    const baselineYear = result.years.find((y) => y.year === 2028)! // looks back at 2026 MAGI ≈ 0
-    const spikeYear = result.years.find((y) => y.year === 2029)! // looks back at 2027 MAGI = 300k
-    const healthInfl = (y: number) => Math.pow(1.03, y - 2026) // inflation 0 + 3% healthcare extra
-    expect(baselineYear.expenses.healthcare).toBeCloseTo(202.9 * 12 * healthInfl(2028), 4)
-    // 300k (vs thresholds unscaled at 0% inflation) -> tier 4 = 3.2× Part B + $83.30/mo Part D.
-    expect(spikeYear.expenses.healthcare).toBeCloseTo((202.9 * 3.2 + 83.3) * 12 * healthInfl(2029), 4)
+      expect(result.years.find((y) => y.year === 2027)!.magi).toBeGreaterThanOrEqual(300_000)
+      const baselineYear = result.years.find((y) => y.year === 2028)! // looks back at 2026 MAGI ≈ 0
+      const spikeYear = result.years.find((y) => y.year === 2027)!
+      const twoYearsLater = result.years.find((y) => y.year === 2029)! // looks back at 2027 MAGI = 300k
+      const observed = {
+        spikeYearTier: spikeYear.irmaaTier,
+        twoYearsLaterTier: twoYearsLater.irmaaTier,
+      }
+      expect(observed).toEqual(accepted)
+      expect(observed).not.toEqual(readings.sameYearIncome)
+      const healthInfl = (y: number) => Math.pow(1.03, y - 2026) // inflation 0 + 3% healthcare extra
+      expect(baselineYear.expenses.healthcare).toBeCloseTo(202.9 * 12 * healthInfl(2028), 4)
+      // 300k (vs thresholds unscaled at 0% inflation) -> tier 4 = 3.2× Part B + $83.30/mo Part D.
+      expect(twoYearsLater.expenses.healthcare).toBeCloseTo((202.9 * 3.2 + 83.3) * 12 * healthInfl(2029), 4)
+    })
   })
 
   it('uses distinct historical MAGI tax years for the first two IRMAA lookbacks', () => {
@@ -3725,41 +4005,112 @@ describe('healthcare and penalties', () => {
     expect(y2027.expenses.healthcare).toBeGreaterThan(y2026.expenses.healthcare)
   })
 
-  it('carries known tax-exempt interest into later IRMAA MAGI without taxing it as ordinary income', () => {
-    const withInterest = basePlan()
-    withInterest.household.people[0]!.dob = '1961-06-15'
-    withInterest.household.people[0]!.retirementAge = null
-    currentYearAca(withInterest, { coveredMonths: 5 })
-    withInterest.expenses.healthcare.acaYears![0]!.taxExemptInterest = {
-      state: 'known',
-      amount: 5_000,
-    }
-    withInterest.incomes = [
-      { type: 'oneTime', id: testIds(), label: 'Income', year: 2026, amount: 105_000, taxTreatment: 'ordinary' },
-    ]
-    withInterest.accounts = [cash(500_000)]
-    const withoutInterest = structuredClone(withInterest)
-    withoutInterest.expenses.healthcare.acaYears![0]!.taxExemptInterest = {
-      state: 'notApplicable',
-      amount: null,
-    }
+  // 42 U.S.C. 1395r(i)(4)(A)(ii) adds interest exempt from tax to AGI for
+  // IRMAA MAGI. The rejected AGI-only reading leaves this $5,000 municipal
+  // interest out of the lookback and misses the first surcharge tier.
+  describeRule('usc-42-1395r-i-4-a-magi-agi-plus-tax-exempt-interest', {
+    readings: {
+      agiPlusTaxExemptInterest: { withInterestTier: 1, withoutInterestTier: 0, magiDelta: 5_000 },
+      agiOnly: { withInterestTier: 0, withoutInterestTier: 0, magiDelta: 0 },
+    },
+    accepted: 'agiPlusTaxExemptInterest',
+  }, ({ accepted, readings }) => {
+    it('carries known tax-exempt interest into later IRMAA MAGI without taxing it as ordinary income', () => {
+      const withInterest = basePlan()
+      withInterest.household.people[0]!.dob = '1961-06-15'
+      withInterest.household.people[0]!.retirementAge = null
+      currentYearAca(withInterest, { coveredMonths: 5 })
+      withInterest.expenses.healthcare.acaYears![0]!.taxExemptInterest = {
+        state: 'known',
+        amount: 5_000,
+      }
+      withInterest.incomes = [
+        { type: 'oneTime', id: testIds(), label: 'Income', year: 2026, amount: 105_000, taxTreatment: 'ordinary' },
+      ]
+      withInterest.accounts = [cash(500_000)]
+      const withoutInterest = structuredClone(withInterest)
+      withoutInterest.expenses.healthcare.acaYears![0]!.taxExemptInterest = {
+        state: 'notApplicable',
+        amount: null,
+      }
 
-    const withResult = simulatePlan(validate(withInterest), {
-      startYear: 2026,
-      horizonEndYear: 2028,
-      taxCalculator: createFederalTaxCalculator(),
+      const withResult = simulatePlan(validate(withInterest), {
+        startYear: 2026,
+        horizonEndYear: 2028,
+        taxCalculator: createFederalTaxCalculator(),
+      })
+      const withoutResult = simulatePlan(validate(withoutInterest), {
+        startYear: 2026,
+        horizonEndYear: 2028,
+        taxCalculator: createFederalTaxCalculator(),
+      })
+      expect(withResult.years[0]!.aca?.magiComponents.federalAgi).toBe(
+        withoutResult.years[0]!.aca?.magiComponents.federalAgi,
+      )
+      expect(withResult.years[0]!.magi - withoutResult.years[0]!.magi).toBe(5_000)
+      const observed = {
+        withInterestTier: withResult.years[2]!.irmaaTier,
+        withoutInterestTier: withoutResult.years[2]!.irmaaTier,
+        magiDelta: withResult.years[0]!.magi - withoutResult.years[0]!.magi,
+      }
+      expect(observed).toEqual(accepted)
+      expect(observed).not.toEqual(readings.agiOnly)
     })
-    const withoutResult = simulatePlan(validate(withoutInterest), {
-      startYear: 2026,
-      horizonEndYear: 2028,
-      taxCalculator: createFederalTaxCalculator(),
+  })
+
+  // 42 U.S.C. 1395r(i)(4)(A)(i) requires IRMAA MAGI without regard to
+  // sections 135, 911, 931, and 933. The engine already adds the foreign-
+  // exclusion amount into ACA household MAGI; the IRMAA magiHistory feed
+  // does not. No Social Security in this fixture, so the §86 provisional-
+  // income path cannot move IRMAA MAGI indirectly through taxable benefits.
+  //
+  // Pins are input-sized deltas (FOREIGN), not engine-derived absolutes.
+  describeRule('usc-42-1395r-i-4-a-i-irmaa-magi-foreign-exclusion-addback', {
+    readings: {
+      statuteAddsForeignExclusionToIrmaaMagi: { acaMagiDelta: 20_000, irmaaMagiDelta: 20_000 },
+      engineAddsForeignExclusionToAcaOnly: { acaMagiDelta: 20_000, irmaaMagiDelta: 0 },
+    },
+    accepted: 'statuteAddsForeignExclusionToIrmaaMagi',
+    produced: 'engineAddsForeignExclusionToAcaOnly',
+    note: 'foreign-exclusion addback raises ACA MAGI but not IRMAA magiHistory',
+  }, ({ accepted, produced }) => {
+    it('raises ACA household MAGI by the known foreign-exclusion addback without moving IRMAA MAGI history', () => {
+      const FOREIGN = 20_000
+      const withAddback = basePlan()
+      withAddback.expenses.baseAnnual = 0
+      currentYearAca(withAddback)
+      withAddback.expenses.healthcare.acaYears![0]!.foreignExclusionAddback = {
+        state: 'known',
+        amount: FOREIGN,
+      }
+      withAddback.accounts = [cash(500_000)]
+      const withoutAddback = structuredClone(withAddback)
+      withoutAddback.expenses.healthcare.acaYears![0]!.foreignExclusionAddback = {
+        state: 'notApplicable',
+        amount: null,
+      }
+
+      const withResult = simulatePlan(validate(withAddback), {
+        startYear: 2026,
+        horizonEndYear: 2026,
+        taxCalculator: createFederalTaxCalculator(),
+      })
+      const withoutResult = simulatePlan(validate(withoutAddback), {
+        startYear: 2026,
+        horizonEndYear: 2026,
+        taxCalculator: createFederalTaxCalculator(),
+      })
+      const withYear = withResult.years[0]!
+      const withoutYear = withoutResult.years[0]!
+      expect(withYear.aca?.magiComponents.foreignExclusionAddback).toBe(FOREIGN)
+      expect(withoutYear.aca?.magiComponents.foreignExclusionAddback).toBe(0)
+      const observed = {
+        acaMagiDelta: (withYear.aca?.householdMagi ?? 0) - (withoutYear.aca?.householdMagi ?? 0),
+        irmaaMagiDelta: withYear.magi - withoutYear.magi,
+      }
+      expect(observed).toEqual(produced)
+      expect(observed).not.toEqual(accepted)
     })
-    expect(withResult.years[0]!.aca?.magiComponents.federalAgi).toBe(
-      withoutResult.years[0]!.aca?.magiComponents.federalAgi,
-    )
-    expect(withResult.years[0]!.magi - withoutResult.years[0]!.magi).toBe(5_000)
-    expect(withResult.years[2]!.irmaaTier).toBe(1)
-    expect(withoutResult.years[2]!.irmaaTier).toBe(0)
   })
 
   it('grosses up the 10% early-withdrawal penalty on pre-59½ traditional draws', () => {

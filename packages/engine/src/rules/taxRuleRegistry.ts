@@ -555,6 +555,46 @@ const registry = {
     verifiedOn: '2026-08-02',
     implementedBy: ['packages/engine/src/params/data/year2026.ts'],
   },
+
+  'irc-223-b-2-hsa-base-limits-2026': {
+    title: 'The 2026 HSA base limits are 4,400 self-only and 8,750 family',
+    statement:
+      'For calendar year 2026, the annual HSA contribution limitation is 4,400 dollars for self-only coverage and 8,750 dollars for family coverage. These are the subsection (b)(2) base limits before any age-55 catch-up, married-spouse division, or monthly eligibility proration.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'Section 223(b)(2) supplies the self-only and family coverage categories, while Rev. Proc. 2025-19 publishes the inflation-adjusted 2026 dollar amounts. The projection reads those values from the versioned parameter pack; the age-55 catch-up and the monthly/Medicare limits are separate records.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 223(b)(2)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section223&num=0&edition=prelim',
+      quotedText:
+        '(A) in the case of an eligible individual who has self-only coverage under a high deductible health plan as of the first day of such month, $2,250.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 223(b)(2)(B)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section223&num=0&edition=prelim',
+      quotedText:
+        '(B) in the case of an eligible individual who has family coverage under a high deductible health plan as of the first day of such month, $4,500.',
+    }, {
+      kind: 'irsNotice',
+      citation: 'Rev. Proc. 2025-19, section 2.01(1)',
+      url: 'https://www.irs.gov/pub/irs-drop/rp-25-19.pdf',
+      quotedText:
+        'For calendar year 2026, the annual limitation on deductions under \u00a7 223(b)(2)(A) for an individual with self-only coverage \u2026 is $4,400. For calendar year 2026, the annual limitation on deductions under \u00a7 223(b)(2)(B) for an individual with family coverage \u2026 is $8,750.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: 2026,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/params/data/year2026.ts',
+    ],
+  },
+
   'irc-223-b-5-hsa-family-limit-divided-between-spouses': {
     title: 'Spouses share one family HSA limit but keep whole catch-ups',
     statement:
@@ -750,6 +790,29 @@ const registry = {
       'packages/engine/src/actions/annualSection68ItemizedDeduction.ts',
       'packages/engine/src/tax/federalTax.ts',
     ],
+  },
+
+  'irc-170-b-1-C-capital-gain-property-ceiling-not-modeled': {
+    title: 'The 30 percent capital-gain-property ceiling is not an input or calculation surface',
+    statement:
+      'Section 170(b)(1)(C) limits certain capital-gain-property contributions to 30 percent of contribution base and orders them after other charitable contributions. The Plan carries one undifferentiated nonnegative charitable amount, not the contributed property\'s gain character, the section 170(b)(1)(A) recipient status, subsection (e)(1)(B) treatment, contribution ordering, or any carryforward. No accepted Plan fact identifies a contribution to which 170(b)(1)(C) applies, so the engine produces no capital-gain-property ceiling figure; a user-entered charitable amount is not such a claim.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 170(b)(1)(C)(i)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim',
+      quotedText:
+        'In the case of charitable contributions described in subparagraph (A) of capital gain property to which subsection (e)(1)(B) does not apply, the total amount of contributions of such property which may be taken into account under subsection (a) for any taxable year shall not exceed 30 percent of the taxpayer\'s contribution base for such year. For purposes of this subsection, contributions of capital gain property to which this subparagraph applies shall be taken into account after all other charitable contributions (other than charitable contributions to which subparagraph (D) applies).',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: ['packages/engine/src/model/plan.ts'],
   },
 
   'irc-170-b-1-G-cash-percentage-ceiling': {
@@ -1249,9 +1312,9 @@ const registry = {
   },
 
   'irc-408-d-8-F-i-split-interest-direct-payment': {
-    title: 'A split-interest QCD must be paid directly to the entity',
+    title: 'A split-interest QCD must be paid directly to the entity and carry a nonassignable income interest',
     statement:
-      'The split-interest election under section 408(d)(8)(F) applies only to an IRA distribution made directly by the trustee to the selected charitable remainder annuity trust, charitable remainder unitrust, or charitable gift annuity; its one-time character is registered on the sibling sublimit record. Not modelled: the engine refuses every known split-interest destination, so it never produces a QCD or a tax result from an indirect or direct split-interest transfer.',
+      'The split-interest election under section 408(d)(8)(F) applies only to an IRA distribution made directly by the trustee to the selected charitable remainder annuity trust, charitable remainder unitrust, or charitable gift annuity, and requires the income interest in that entity to be nonassignable; its one-time character is registered on the sibling sublimit record. Not modelled: the engine refuses every known split-interest destination, so it never produces a QCD or a tax result from an indirect or direct split-interest transfer or from an assignable income interest.',
     classification: 'outOfScope',
     contraryReading: null,
     errorDirection: null,
@@ -1281,15 +1344,117 @@ const registry = {
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim',
       quotedText:
         '(III) a charitable gift annuity (as defined in section 501(m)(5)), but only if such annuity is funded exclusively by qualified charitable distributions and commences fixed payments of 5 percent or greater not later than 1 year from the date of funding.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 408(d)(8)(F)(iv)(II)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim',
+      quotedText:
+        '(II) the income interest in the split-interest entity is nonassignable.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-25',
+    verifiedOn: '2026-08-27',
     implementedBy: [
       'packages/engine/src/strategies/accountEligibility.ts',
       'packages/engine/src/actions/annualQcdExecutionPrerequisite.ts',
+      'packages/engine/src/actions/annualRetirementActionPublication.ts',
     ],
+  },
+
+  'irc-664-charitable-remainder-trust-payout-and-character-mechanics-not-modeled': {
+    title: 'Charitable remainder trust payout, remainder, and distribution-character mechanics are not modelled',
+    statement:
+      'Section 664 applies to charitable remainder annuity trusts and unitrusts, exempts those trusts from income tax under section 664(c)(1) except for the unrelated-business taxable income excise under section 664(c)(2), and defines their required payout and charitable-remainder conditions. RetireGolden has no charitable-remainder trust entity; no initial or annual trust property value, payout rate or amount, annuitant or life/term, remainder recipient, trust income-category or corpus balance, basis, or trustee distribution. It therefore produces neither a section 664 qualification, exemption, payout, or remainder-value figure nor a section 664(b) beneficiary income-character result. A split-interest QCD is refused before settlement instead of supplying any of those trust facts.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The 5-to-50-percent payout bounds, the 10-percent remainder tests, the four-tier distribution ordering, and the CRAT probability-of-exhaustion question all share this absent CRT entity and payout surface. The supplied text of Treas. Reg. 1.664-2 contains no probability-of-exhaustion language to quote, so that practical test is not separately registered on this source set.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 664(a)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section664&num=0&edition=prelim',
+      quotedText:
+        'Notwithstanding any other provision of this subchapter, the provisions of this section shall, in accordance with regulations prescribed by the Secretary, apply in the case of a charitable remainder annuity trust and a charitable remainder unitrust.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 664(c)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section664&num=0&edition=prelim',
+      quotedText:
+        'A charitable remainder annuity trust and a charitable remainder unitrust shall, for any taxable year, not be subject to any tax imposed by this subtitle.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 664(c)(2)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section664&num=0&edition=prelim',
+      quotedText:
+        'In the case of a charitable remainder annuity trust or a charitable remainder unitrust which has unrelated business taxable income (within the meaning of section 512, determined as if part III of subchapter F applied to such trust) for a taxable year, there is hereby imposed on such trust or unitrust an excise tax equal to the amount of such unrelated business taxable income.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 664(d)(1)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section664&num=0&edition=prelim',
+      quotedText:
+        '(A) from which a sum certain (which is not less than 5 percent nor more than 50 percent of the initial net fair market value of all property placed in trust) is to be paid, not less often than annually, to one or more persons (at least one of which is not an organization described in section 170(c) and, in the case of individuals, only to an individual who is living at the time of the creation of the trust) for a term of years (not in excess of 20 years) or for the life or lives of such individual or individuals,',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 664(d)(1)(D)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section664&num=0&edition=prelim',
+      quotedText:
+        '(D) the value (determined under section 7520) of such remainder interest is at least 10 percent of the initial net fair market value of all property placed in the trust.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 664(d)(2)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section664&num=0&edition=prelim',
+      quotedText:
+        '(A) from which a fixed percentage (which is not less than 5 percent nor more than 50 percent) of the net fair market value of its assets, valued annually, is to be paid, not less often than annually, to one or more persons (at least one of which is not an organization described in section 170(c) and, in the case of individuals, only to an individual who is living at the time of the creation of the trust) for a term of years (not in excess of 20 years) or for the life or lives of such individual or individuals,',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 664(d)(2)(D)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section664&num=0&edition=prelim',
+      quotedText:
+        '(D) with respect to each contribution of property to the trust, the value (determined under section 7520) of such remainder interest in such property is at least 10 percent of the net fair market value of such property as of the date such property is contributed to the trust.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 664(b)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section664&num=0&edition=prelim',
+      quotedText:
+        'Amounts distributed by a charitable remainder annuity trust or by a charitable remainder unitrust shall be considered as having the following characteristics in the hands of a beneficiary to whom is paid the annuity described in subsection (d)(1)(A) or the payment described in subsection (d)(2)(A): (1) First, as amounts of income (other than gains, and amounts treated as gains, from the sale or other disposition of capital assets) includible in gross income to the extent of such income of the trust for the year and such undistributed income of the trust for prior years; (2) Second, as a capital gain to the extent of the capital gain of the trust for the year and the undistributed capital gain of the trust for prior years; (3) Third, as other income to the extent of such income of the trust for the year and such undistributed income of the trust for prior years; and (4) Fourth, as a distribution of trust corpus.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: ['packages/engine/src/model/plan.ts'],
+  },
+
+  'irc-7520-and-2522-split-interest-valuation-not-modeled': {
+    title: 'Section 7520 and section 2522 split-interest valuation are not modelled',
+    statement:
+      'Section 7520 values annuity, life-or-term, remainder, and reversionary interests under prescribed tables and a valuation-month interest rate. Section 2522 allows the gift-tax charitable deduction for a retained-property transfer only subject to its stated conditions, including charitable-remainder, pooled-income, guaranteed-annuity, and fixed-percentage forms. RetireGolden has no transfer or valuation date, applicable section 7520 rate, trust property value, payout terms, measuring lives or term, prescribed-table factors, retained interest, gift, or gift-tax calculation, so it produces no section 7520 or section 2522 split-interest valuation or deduction figure.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 7520(a)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section7520&num=0&edition=prelim',
+      quotedText:
+        'For purposes of this title, the value of any annuity, any interest for life or a term of years, or any remainder or reversionary interest shall be determined- (1) under tables prescribed by the Secretary, and (2) by using an interest rate (rounded to the nearest 2/10ths of 1 percent) equal to 120 percent of the Federal midterm rate in effect under section 1274(d)(1) for the month in which the valuation date falls.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 2522(c)(2)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section2522&num=0&edition=prelim',
+      quotedText:
+        'Where a donor transfers an interest in property (other than an interest described in section 170(f)(3)(B)) to a person, or for a use, described in subsection (a) or (b) and an interest in the same property is retained by the donor, or is transferred or has been transferred (for less than an adequate and full consideration in money or money\'s worth) from the donor to a person, or for a use, not described in subsection (a) or (b), no deduction shall be allowed under this section for the interest which is, or has been transferred to the person, or for the use, described in subsection (a) or (b), unless- (A) in the case of a remainder interest, such interest is in a trust which is a charitable remainder annuity trust or a charitable remainder unitrust (described in section 664) or a pooled income fund (described in section 642(c)(5)), or (B) in the case of any other interest, such interest is in the form of a guaranteed annuity or is a fixed percentage distributed yearly of the fair market value of the property (to be determined yearly).',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: ['packages/engine/src/model/plan.ts'],
   },
 
   'irc-408-d-8-F-split-interest-sublimit': {
@@ -1748,6 +1913,32 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-07',
     implementedBy: ['packages/engine/src/tax/federalTax.ts'],
+  },
+
+  'irc-103-a-state-local-bond-interest-exclusion': {
+    title: 'State and local bond interest is excluded from gross income',
+    statement:
+      'Except for the section 103(b) exceptions, interest on a State or local bond is excluded from gross income under IRC 103(a). The engine keeps municipal-bond interest in its separate tax-exempt stream, so the interest itself never enters federal ordinary income, AGI, or federal taxable income by direct inclusion. Municipal-bond interest can still raise AGI indirectly through section 86: it increases provisional income and can enlarge the taxable Social Security inclusion that does enter AGI.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 103(a)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section103&num=0&edition=prelim',
+      quotedText:
+        'Except as provided in subsection (b), gross income does not include interest on any State or local bond.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/tax/federalTax.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
   },
 
   'irc-1211-b-capital-loss-ordinary-offset': {
@@ -2360,14 +2551,14 @@ const registry = {
   },
 
   'irc-402-e-4-B-lump-sum-employer-securities-nua-exclusion': {
-    title: 'NUA in employer securities is excluded from gross income',
+    title: 'NUA in employer securities: distribution exclusion and sale treatment',
     statement:
-      'For a lump sum distribution that includes employer-corporation securities, section 402(e)(4)(B) excludes the attributable net unrealized appreciation from gross income for purposes of section 72 unless the taxpayer elects otherwise. Because section 72(t)(1) reaches only the includible portion, excluded NUA is outside the additional-tax base. Not modelled: no plan input or retirement-action type can express employer securities, NUA, an NUA lump-sum qualification fact, or an NUA elect-out, so employer-plan withdrawals still classify as basisReturn/ordinaryIncome and still run section 72(t) on the includible ordinary portion without any NUA adjustment — NUA facts simply cannot be expressed.',
+      'For a lump sum distribution that includes employer-corporation securities, section 402(e)(4)(B) excludes the attributable net unrealized appreciation from gross income for purposes of section 72 unless the taxpayer elects otherwise. Because section 72(t)(1) reaches only the includible portion, excluded NUA is outside the additional-tax base. Current sale treatment of that excluded NUA is long-term capital gain without regard to the qualified plan’s holding period; post-distribution appreciation uses the distributee’s actual holding period. Notice 98-24 remains historical authority for that without-regard-to-plan-holding principle, but its “more than 18 months” language is the notice’s 1998-era long-term threshold under TRA 1997, not the 2026 more-than-one-year long-term rule. Not modelled: no plan input or retirement-action type can express employer securities, NUA, the qualified-lump-sum fact, an NUA elect-out, the distribution date, or a later securities sale, so employer-plan withdrawals still classify as basisReturn/ordinaryIncome and still run section 72(t) on the includible ordinary portion without any NUA adjustment.',
     classification: 'outOfScope',
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The plan model carries an employer-plan balance only: traditionalAccountSchema\'s nondeductibleBasis is IRA-only, and the schema comment says employer-plan after-tax money is not modeled. After-tax employee basis exists only as runtime classifier evidence (afterTaxEmployeeBasisBeforeDistribution) on traditionalEmployerPlanWithdrawalCharacter, whose withdrawal character is basis return or ordinary income. The action contract rejects a NUA action kind. The action-kind refusal is covered in actions/contract.test.ts. Notice 98-24\'s mechanics for the remaining distribution/basis portion of an early NUA lump sum are deliberately not claimed here: a verifiable copy of that notice was not available at registration, so that proposition awaits its own record.',
+      'The plan model carries an employer-plan balance only: traditionalAccountSchema\'s nondeductibleBasis is IRA-only, and the schema comment says employer-plan after-tax money is not modeled. After-tax employee basis exists only as runtime classifier evidence (afterTaxEmployeeBasisBeforeDistribution) on traditionalEmployerPlanWithdrawalCharacter, whose withdrawal character is basis return or ordinary income. The action contract rejects a NUA action kind. The action-kind refusal is covered in actions/contract.test.ts. Notice 98-24 now extends this record because its sale-side holding-period treatment is inseparable from the excluded NUA whose amount the Plan cannot state; it does not warrant a computed result or a separate record when the engine has neither the NUA/security facts nor the later sale facts.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -2381,16 +2572,87 @@ const registry = {
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim',
       quotedText:
         'If any taxpayer receives any amount from a qualified retirement plan (as defined in section 4974(c)), the taxpayer\'s tax under this chapter for the taxable year in which such amount is received shall be increased by an amount equal to 10 percent of the portion of such amount which is includible in gross income.',
+    }, {
+      kind: 'irsNotice',
+      citation: 'IRS Notice 98-24, 1998-17 I.R.B.',
+      url: 'https://www.irs.gov/pub/irs-irbs/irb98-17.pdf',
+      quotedText:
+        'Under this notice, the amount of net unrealized appreciation which is not included in the basis of the securities in the hands of the distributee at the time of distribution is considered a gain from the sale or exchange of a capital asset held for more than 18 months to the extent that such appreciation is realized in a subsequent taxable transaction. Accordingly, for a sale or other disposition of employer securities that occurs after May 6, 1997, the actual period that an employer security was held by a qualified plan need not be calculated in order to determine whether, with respect to the net unrealized appreciation, the disposition qualifies for the rate for capital assets held for more than 18 months. However, with respect to any further appreciation in the employer securities after distribution from the plan, the actual holding period in the hands of the distributee determines the capital gains rate that applies.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-25',
+    verifiedOn: '2026-08-27',
     implementedBy: [
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/actions/contract.ts',
       'packages/engine/src/actions/traditionalEmployerPlanWithdrawalCharacter.ts',
     ],
+  },
+
+  'irc-402-a-employer-plan-distribution-receipt-year-taxability': {
+    title: 'Employer-plan distributions are taxable in the year received',
+    statement:
+      'An amount actually distributed from an exempt section 401(a) employees\' trust is taxable under section 72 in the distributee\'s taxable year in which distributed. An elected first distribution-calendar-year RMD held until April 1 enters the engine\'s ordinary-income recognition in the following receipt year, alongside that year\'s separately required RMD, rather than in the earlier distribution calendar year.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 402(a)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402&num=0&edition=prelim',
+      quotedText:
+        'Except as otherwise provided in this section, any amount actually distributed to any distributee by any employees\' trust described in section 401(a) which is exempt from tax under section 501(a) shall be taxable to the distributee, in the taxable year of the distributee in which distributed, under section 72 (relating to annuities).',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: ['packages/engine/src/projection/simulate.ts'],
+  },
+
+  'irc-404-a-3-a-employer-deduction-limit': {
+    title: 'Employer plan-contribution deduction is a sponsor-side limit',
+    statement:
+      'Section 404(a) supplies the employer\'s deduction gate for contributions to or under a retirement plan. For a stock-bonus or profit-sharing trust, the amount deductible in the payment year is no more than the greater of 25 percent of compensation paid or accrued to plan beneficiaries or the required section 401(k)(11) contribution. Not modelled: the Plan is a participant/household projection, not the sponsor\'s return; it has no sponsor taxpayer, employer deduction or carryover ledger, employer taxable-income surface, trust-exemption fact, or contribution-payment facts. An employer match is therefore only a participant account in-flow, not a conclusion about what the sponsor may deduct.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'IRC 404(a)\'s general deduction gate and 404(a)(3)(A)(i)\'s amount limit both address the same absent employer-return surface, so they are deliberately one record rather than two non-dispositive fragments. Household wages and a configured employer match are participant-side facts the Plan does carry; they neither identify the sponsor nor make a sponsor deduction calculation reachable.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 404(a)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section404&num=0&edition=prelim',
+      quotedText:
+        'If contributions are paid by an employer to or under a stock bonus, pension, profit-sharing, or annuity plan, or if compensation is paid or accrued on account of any employee under a plan deferring the receipt of such compensation, such contributions or compensation shall not be deductible under this chapter; but, if they would otherwise be deductible, they shall be deductible under this section, subject, however, to the following limitations as to the amounts deductible in any year:',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 404(a)(3)(A)(i)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section404&num=0&edition=prelim',
+      quotedText:
+        'In the taxable year when paid, if the contributions are paid into a stock bonus or profit-sharing trust, and if such taxable year ends within or with a taxable year of the trust with respect to which the trust is exempt under section 501(a), in an amount not in excess of the greater of- (I) 25 percent of the compensation otherwise paid or accrued during the taxable year to the beneficiaries under the stock bonus or profit-sharing plan, or (II) the amount such employer is required to contribute to such trust under section 401(k)(11) for such year.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 404(a)(3)(A)(i)(I)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section404&num=0&edition=prelim',
+      quotedText:
+        '(I) 25 percent of the compensation otherwise paid or accrued during the taxable year to the beneficiaries under the stock bonus or profit-sharing plan, or',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 404(a)(3)(A)(i)(II)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section404&num=0&edition=prelim',
+      quotedText:
+        '(II) the amount such employer is required to contribute to such trust under section 401(k)(11) for such year.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: ['packages/engine/src/model/plan.ts'],
   },
 
   'irc-72-t-1-qualified-retirement-plan-scope': {
@@ -3806,6 +4068,83 @@ const registry = {
     ],
   },
 
+  'usc-42-1395r-i-4-b-two-year-magi-lookback': {
+    title: 'IRMAA uses modified AGI from the second preceding tax year',
+    statement:
+      'For an individual’s premiums in a month of a calendar year, subject to clause (ii) and subparagraph (C), IRMAA uses modified adjusted gross income from the last taxable year beginning in the second calendar year preceding the year involved. Under that default lookback an income spike therefore changes the premium two years later, not in the spike year itself.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The quoted text is expressly subject to clause (ii) and subparagraph (C). The engine’s opt-in SSA-44 path (`expenses.healthcare.ssa44`) can select the more-recent year−1 MAGI after a qualifying event, but that (C) exception surface is a queued residual with no registry record of its own rather than a claim settled here.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 1395r(i)(4)(B)(i)',
+      url: 'https://www.law.cornell.edu/uscode/text/42/1395r',
+      quotedText:
+        'In applying this subsection for an individual’s premiums in a month in a year, subject to clause (ii) and subparagraph (C), the individual’s modified adjusted gross income shall be such income determined for the individual’s last taxable year beginning in the second calendar year preceding the year involved.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: ['packages/engine/src/projection/simulate.ts'],
+  },
+
+  'usc-42-1395r-i-4-a-magi-agi-plus-tax-exempt-interest': {
+    title: 'IRMAA MAGI tax-exempt-interest addback',
+    statement:
+      'For IRMAA, modified adjusted gross income means adjusted gross income as defined in section 62, increased by interest received or accrued during the taxable year that is exempt from tax. Municipal-bond interest can therefore raise the IRMAA income figure without entering federal AGI. The independent (A)(i) without-regard addback for sections 135, 911, 931, and 933 is registered separately at usc-42-1395r-i-4-a-i-irmaa-magi-foreign-exclusion-addback.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 1395r(i)(4)(A)',
+      url: 'https://www.law.cornell.edu/uscode/text/42/1395r',
+      quotedText:
+        'For purposes of this subsection, the term “modified adjusted gross income” means adjusted gross income (as defined in section 62 of the Internal Revenue Code of 1986)—',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 1395r(i)(4)(A)(ii)',
+      url: 'https://www.law.cornell.edu/uscode/text/42/1395r',
+      quotedText:
+        'increased by the amount of interest received or accrued during the taxable year which is exempt from tax under such Code.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: ['packages/engine/src/projection/simulate.ts'],
+  },
+
+  'usc-42-1395r-i-4-a-i-irmaa-magi-foreign-exclusion-addback': {
+    title: 'IRMAA MAGI without-regard addback is omitted from the lookback feed',
+    statement:
+      'Clause (A)(i) requires IRMAA modified adjusted gross income to be determined without regard to sections 135, 911, 931, and 933, so amounts excluded under those sections are added back for the IRMAA income figure. Not modelled in the IRMAA feed: simulate.ts writes magiHistory from the AGI-path income plus tax-exempt interest only, while the same year’s foreign-exclusion addback that raises ACA household MAGI and section 86 provisional income never enters that history. Omitting the addback understates IRMAA MAGI and therefore understates the Medicare premium surcharge relative to the statute.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'understatesTax',
+    conventionRationale:
+      'Matches the shipped usc-42-1395r-* premium-direction pattern: understatesTax names fisc exposure that includes the Medicare premium surcharge (the type’s fisc referent already spans that channel; the statement’s premium understatement is the same sign).',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 1395r(i)(4)(A)(i)',
+      url: 'https://www.law.cornell.edu/uscode/text/42/1395r',
+      quotedText:
+        'determined without regard to sections 135, 911, 931, and 933 of such Code, and',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: ['packages/engine/src/projection/simulate.ts'],
+  },
+
   'irc-36B-c-1-A-applicable-taxpayer-range': {
     title: 'The premium credit band includes both 100 and 400 percent',
     statement:
@@ -3886,6 +4225,38 @@ const registry = {
     implementedBy: [
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/params/data/year2026.ts',
+    ],
+  },
+
+  'irc-223-a-hsa-contribution-deduction-reduces-agi': {
+    title: 'Allowed HSA contributions reduce adjusted gross income',
+    statement:
+      'For an eligible individual, cash paid by or on behalf of that individual to the individual’s HSA is allowed as a deduction for the taxable year, subject to the section 223(b) limits. The engine subtracts allowed HSA deposits from ordinary income before computing federal AGI, so the deduction also lowers the MAGI figures subsequently used for ACA and IRMAA.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The plan model has one HSA contribution stream and does not carry a separate employer-salary-reduction fact under section 106(d); the contribution allocator therefore applies the section 223(a) above-the-line treatment to the modeled HSA deposit. The contribution cap and the catch-up are registered separately. After this subtraction, simulate.ts writes the realized MAGI history that supplies the IRMAA lookback and passes the same reduced federal AGI into ACA MAGI assembly; the independent MAGI add-back composition is registered at irc-36B-d-2-B-aca-household-magi-composition and usc-42-1395r-i-4-a-magi-agi-plus-tax-exempt-interest.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 223(a)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section223&num=0&edition=prelim',
+      quotedText:
+        'In the case of an individual who is an eligible individual for any month during the taxable year, there shall be allowed as a deduction for the taxable year an amount equal to the aggregate amount paid in cash during such taxable year by or on behalf of such individual to a health savings account of such individual.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 62(a), (a)(19)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section62&num=0&edition=prelim',
+      quotedText:
+        'For purposes of this subtitle, the term "adjusted gross income" means, in the case of an individual, gross income minus the following deductions: … (19) Health savings accounts The deduction allowed by section 223.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/projection/simulate.ts',
     ],
   },
 
@@ -5280,12 +5651,12 @@ const registry = {
   'irc-213-a-medical-expense-deduction': {
     title: 'Medical expense deduction above 7.5 percent of AGI',
     statement:
-      'Unreimbursed expenses for medical care of the taxpayer, a spouse, or a dependent are deductible to the extent they exceed 7.5 percent of adjusted gross income, and they are not a miscellaneous itemized deduction, so 67(h) does not disallow them. Not modelled: the engine builds its itemized total from state and local taxes, mortgage interest, and charitable gifts alone and has no medical input, so a household with large unreimbursed medical costs has its itemized total understated by the full deductible amount and its tax overstated, which for a retiree in long-term care can be tens of thousands of dollars of deduction at a marginal rate of 22 to 32 percent.',
+      'Unreimbursed expenses for medical care of the taxpayer, a spouse, or a dependent are deductible to the extent they exceed 7.5 percent of adjusted gross income, and they are not a miscellaneous itemized deduction, so 67(h) does not disallow them. Amounts paid for medicine or a drug are taken into account under 213(a) only if the medicine or drug is a prescribed drug or insulin; medical care does not include cosmetic surgery or similar procedures except to ameliorate a congenital abnormality, a personal injury from accident or trauma, or disfiguring disease; and only eligible long-term care premiums, limited by the attained-age table in 213(d)(10) as restated each year, are taken into account as medical care. Not modelled: TaxYearInput and itemizedTotal have no medical field, so none of those limbs has a figure to apply to. Plan healthcare premiums, net care costs, and kind-ltc insurance premiums are spending, not itemized medical, and never enter the deduction. A household with large unreimbursed qualifying medical costs has its itemized total understated by the full deductible amount and its tax overstated, which for a retiree in long-term care can be tens of thousands of dollars of deduction at a marginal rate of 22 to 32 percent.',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'overstatesTax',
     conventionRationale:
-      'This is the highest-value omission in the itemized set for this engine audience, because the deduction is largest exactly when income is drawn down to pay care costs. It also interacts with the itemize election: a year of heavy medical spending can flip a household from the standard deduction to itemizing, which the engine cannot see, so the error is not confined to households that already itemize.',
+      'This is the highest-value omission in the itemized set for this engine audience, because the deduction is largest exactly when income is drawn down to pay care costs. It also interacts with the itemize election: a year of heavy medical spending can flip a household from the standard deduction to itemizing, which the engine cannot see, so the error is not confined to households that already itemize. IRC 213(b), 213(d)(9), and 213(d)(10) are folded onto this record as input-granularity, not separate approximations: there is no drug, cosmetic, or LTC-premium tax input on which those filters could run. Omitting the whole deduction overstates tax whenever any qualifying medical remains after those filters; the filters never reverse the sign, because they only reduce the statutory deduction toward the engine\'s zero. The produced pin is the existing describeRule fixture (statute 124,000 versus engineOmitsMedicalEntirely 59,000). The annually restated 2026 attained-age caps live on the companion record irc-213-d-10-eligible-ltc-premium-caps-2026.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -5298,12 +5669,156 @@ const registry = {
       citation: 'IRC 67(b)(5)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section67&num=0&edition=prelim',
       quotedText: 'the deduction under section 213 (relating to medical, dental, etc., expenses),',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 213(b)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section213&num=0&edition=prelim',
+      quotedText:
+        'An amount paid during the taxable year for medicine or a drug shall be taken into account under subsection (a) only if such medicine or drug is a prescribed drug or is insulin.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 213(d)(9)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section213&num=0&edition=prelim',
+      quotedText:
+        'The term "medical care" does not include cosmetic surgery or other similar procedures, unless the surgery or procedure is necessary to ameliorate a deformity arising from, or directly related to, a congenital abnormality, a personal injury resulting from an accident or trauma, or disfiguring disease.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 213(d)(1), flush',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section213&num=0&edition=prelim',
+      quotedText:
+        'In the case of a qualified long-term care insurance contract (as defined in section 7702B(b)), only eligible long-term care premiums (as defined in paragraph (10)) shall be taken into account under subparagraph (D).',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 213(d)(10)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section213&num=0&edition=prelim',
+      quotedText:
+        'For purposes of this section, the term "eligible long-term care premiums" means the amount paid during a taxable year for any qualified long-term care insurance contract (as defined in section 7702B(b)) covering an individual, to the extent such amount does not exceed the limitation determined under the following table: In the case of an individual with an attained age before the close of the taxable year of: The limitation is:',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 213(d)(10)(B)(i)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section213&num=0&edition=prelim',
+      quotedText:
+        'In the case of any taxable year beginning in a calendar year after 1997, each dollar amount contained in subparagraph (A) shall be increased by the medical care cost adjustment of such amount for such calendar year. If any increase determined under the preceding sentence is not a multiple of $10, such increase shall be rounded to the nearest multiple of $10.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
-    implementedBy: ['packages/engine/src/tax/federalTax.ts'],
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/tax/federalTax.ts',
+      'packages/engine/src/model/plan.ts',
+    ],
+  },
+
+  'irc-213-d-10-eligible-ltc-premium-caps-2026': {
+    title: '2026 eligible long-term care premium attained-age caps',
+    statement:
+      'For taxable years beginning in 2026, Rev. Proc. 2025-32 section 4.27 restates the section 213(d)(10) attained-age limitations on eligible long-term care premiums includible as medical care. The engine has no LTC-premium tax input, so those caps never run; they remain disclosed here on the annually indexed cadence.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The 2026 attained-age caps ($500 / $930 / $1,860 / $4,960 / $6,200) are read from the revenue procedure’s table rather than rewritten into quotedText. The quotation carries the introducing sentence; the table rows are not linearized into prose. Companion to irc-213-a-medical-expense-deduction, which folds the missing medical-input filter without publishing these dollars on a staticStatute record.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'irsNotice',
+      citation: 'Rev. Proc. 2025-32, section 4.27',
+      url: 'https://www.irs.gov/pub/irs-drop/rp-25-32.pdf',
+      quotedText:
+        'For taxable years beginning in 2026, the limitations under § 213(d)(10), regarding eligible long-term care premiums includible in the term "medical care" are as follows:',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: 2026,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/tax/federalTax.ts',
+      'packages/engine/src/model/plan.ts',
+    ],
+  },
+
+  // --- Registered 2026-08-27: WS4c Cluster 4 (162(l), 199A) -----------------
+
+  'irc-162-l-1-self-employed-health-insurance-not-modeled': {
+    title: 'Self-employed health insurance is not an above-the-line deduction surface',
+    statement:
+      'A taxpayer who is an employee within the meaning of section 401(c)(1) may deduct amounts paid during the year for insurance that constitutes medical care for the taxpayer, a spouse, dependents, and children who have not attained age 27, limited to earned income from the trade or business with respect to which the coverage is established. Not modelled: the income model has wages, Social Security, and unlabeled recurring or one-time streams, but no self-employment, 401(c)(1) employee, or earned-income-from-a-trade-or-business fact, and federal tax has no above-the-line self-employed health-insurance line. The ACA year-contract assertion selfEmployedHealthInsuranceDeduction is a typed refusal for premium-tax-credit MAGI (notApplicable or unsupported); unsupported fails that credit closed and never computes a 162(l) figure. No accepted input reaches this deduction.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 162(l)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section162&num=0&edition=prelim',
+      quotedText:
+        'In the case of a taxpayer who is an employee within the meaning of section 401(c)(1), there shall be allowed as a deduction under this section an amount equal to the amount paid during the taxable year for insurance which constitutes medical care for- (A) the taxpayer, (B) the taxpayer\'s spouse, (C) the taxpayer\'s dependents, and (D) any child (as defined in section 152(f)(1)) of the taxpayer who as of the end of the taxable year has not attained age 27.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 162(l)(2)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section162&num=0&edition=prelim',
+      quotedText:
+        'No deduction shall be allowed under paragraph (1) to the extent that the amount of such deduction exceeds the taxpayer\'s earned income (within the meaning of section 401(c)) derived by the taxpayer from the trade or business with respect to which the plan providing the medical care coverage is established.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+  },
+
+  'irc-199A-a-qualified-business-income-deduction-not-modeled': {
+    title: 'The section 199A qualified business income deduction is not a modeled surface',
+    statement:
+      'A taxpayer other than a corporation is allowed a deduction equal to the lesser of the combined qualified business income amount or 20 percent of taxable income reduced by net capital gain, with taxable income for that limitation computed without regard to section 68 and without regard to the section 199A deduction itself. Not modelled: the Plan has no qualified trade or business, qualified business income, W-2 wages allocable to QBI, unadjusted basis of qualified property, specified-service, REIT-dividend, or publicly-traded-partnership-income fact. Recurring and one-time ordinary streams are unlabeled dollars, and wages are Form W-2 compensation, not pass-through QBI. federalTax.ts therefore subtracts a genuine zero for QBI when assembling the section 68 base. The subsection (i) $400 minimum for an applicable taxpayer with at least $1,000 of QBI is folded here: it turns on the same absent qualified-trade-or-business facts. No accepted input reaches this deduction.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 199A(a)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section199A&num=0&edition=prelim',
+      quotedText:
+        'In the case of a taxpayer other than a corporation, except as provided in subsection (i), there shall be allowed as a deduction for any taxable year an amount equal to the lesser of- (1) the combined qualified business income amount of the taxpayer, or (2) an amount equal to 20 percent of the excess (if any) of- (A) the taxable income of the taxpayer for the taxable year, over (B) the net capital gain (as defined in section 1(h)) of the taxpayer for such taxable year.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 199A(b)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section199A&num=0&edition=prelim',
+      quotedText:
+        'The term "combined qualified business income amount" means, with respect to any taxable year, an amount equal to- (A) the sum of the amounts determined under paragraph (2) for each qualified trade or business carried on by the taxpayer, plus (B) 20 percent of the aggregate amount of the qualified REIT dividends and qualified publicly traded partnership income of the taxpayer for the taxable year.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 199A(e)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section199A&num=0&edition=prelim',
+      quotedText:
+        'Except as otherwise provided in subsection (g)(2)(B), taxable income shall be computed without regard to section 68 and without regard to any deduction allowable under this section.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 199A(i)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section199A&num=0&edition=prelim',
+      quotedText:
+        'In the case of an applicable taxpayer for any taxable year, the deduction allowed under subsection (a) for the taxable year shall be equal to the greater of- (A) the amount of such deduction determined without regard to this subsection, or (B) $400.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 199A(i)(2)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section199A&num=0&edition=prelim',
+      quotedText:
+        'The term "applicable taxpayer" means, with respect to any taxable year, a taxpayer whose aggregate qualified business income with respect to all active qualified trades or businesses of the taxpayer for such taxable year is at least $1,000.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/tax/federalTax.ts',
+    ],
   },
   'irc-163-h-3-F-acquisition-indebtedness-limit': {
     title: 'Mortgage interest is limited to $750,000 of acquisition debt',
@@ -5742,11 +6257,12 @@ const registry = {
   'irc-401-a-9-C-i-first-year-april-1-deferral': {
     title: 'Deferral of the first required minimum distribution to April 1',
     statement:
-      'The distribution for the first distribution calendar year may be paid as late as April 1 of the following year, in which case two required minimum distributions are taxed in that following year. Not modelled: the engine recognises the first-year amount entirely in the attainment year and offers no deferral election. For a taxpayer who defers, the error runs one way — attainment-year ordinary income is overstated by the whole first-year amount and the following year is understated by the same amount, which suppresses a real one-year spike in the bracket, in the capital-gain stacking threshold, and in the income used two years later for the Medicare premium adjustment.',
-    classification: 'approximated',
+      'The distribution for the first distribution calendar year may be paid as late as April 1 of the following year. The engine offers an opt-in `rmdFirstYearDeferrals` election. This record settles only the pinned paths: (1) the default books the first-year amount (distribution and ordinary-income recognition) entirely in the attainment year; (2) when the election is set for that distribution calendar year and applicable plan and the taxpayer takes no IRA distribution or QCD in the attainment year, the amount is held until the following year and booked there beside that year’s separately required RMD. When an elected deferral coincides with an attainment-year IRA distribution or QCD, the engine’s handling is registered separately at irc-401-a-9-C-i-elected-deferral-ignores-attainment-year-distributions. Receipt-year income recognition for a clean elected deferral is registered at irc-402-a-employer-plan-distribution-receipt-year-taxability.',
+    classification: 'settled',
     contraryReading: null,
-    errorDirection: 'bothDirections',
-    conventionRationale: null,
+    errorDirection: null,
+    conventionRationale:
+      'Paying in the attainment year is always permitted under Treas. Reg. 1.401(a)(9)-5(a)(3); the remaining engineering choice is only the default when no election is supplied. The engine defaults to attainment-year booking and requires an explicit opt-in for the April 1 path rather than inventing a household preference. The settled claim stops at the default and the clean elected path; an intervening attainment-year distribution is not part of either fixture.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -5764,9 +6280,45 @@ const registry = {
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-08-27',
     implementedBy: [
       'packages/engine/src/rmd/rmd.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+  },
+  'irc-401-a-9-C-i-elected-deferral-ignores-attainment-year-distributions': {
+    title: 'Elected first-year deferral ignores attainment-year IRA distributions',
+    statement:
+      'Amounts distributed from an IRA during the first distribution calendar year count toward that year’s required minimum. The year-crediting machinery is carried by treas-reg-1-401-a-9-5-a-2-first-distribution-calendar-year (which year the first required amount belongs to) and treas-reg-1-408-8-b-3-rmd-first-dollars-out (distributions, including a QCD, satisfy the year total in the order they occur); the staged source corpus for this slice does not include Treas. Reg. 1.401(a)(9)-5, so the limbs below reuse spans already quoted on those sibling records and on irc-401-a-9-C-i-first-year-april-1-deferral. Not modelled under an elected `rmdFirstYearDeferrals` path: simulate.ts stores the full calculated first-year RMD at the deferral branch and continues, so an attainment-year IRA withdrawal or QCD does not reduce the deferred obligation; the following receipt year then withdraws that full amount again beside the separately required second-year RMD. Double-counting the deferred amount overstates receipt-year ordinary income and tax. The second-year required amount is still computed on the reduced prior year-end balance, so the overstatement is the re-booked first-year dollars rather than a funding-channel flip. The default attainment-year path and the clean elected path with no intervening attainment-year distribution remain under irc-401-a-9-C-i-first-year-april-1-deferral.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'overstatesTax',
+    conventionRationale: null,
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 401(a)(9)(C)(i)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/401',
+      quotedText:
+        'The term “required beginning date” means April 1 of the calendar year following the later of— (I) the calendar year in which the employee attains the applicable age, or (II) the calendar year in which the employee retires.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.401(a)(9)-5(a)(3)',
+      url: 'https://www.law.cornell.edu/cfr/text/26/1.401(a)(9)-5',
+      quotedText:
+        'The distribution required for the employee\'s first distribution calendar year (as described in paragraph (a)(2)(ii) of this section) may be made on or before April 1 of the following calendar year.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.408-8(b)(3)',
+      url: 'https://www.law.cornell.edu/cfr/text/26/1.408-8',
+      quotedText:
+        'any amount distributed during a calendar year from an IRA of that IRA owner is treated as a required minimum distribution under section 401(a)(9) to the extent that the total required minimum distribution for the year under section 401(a)(9) from all of that IRA owner\'s IRAs has not been satisfied (either by a distribution from the IRA or, as permitted under paragraph (e) of this section, from another IRA).',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
       'packages/engine/src/projection/simulate.ts',
     ],
   },
@@ -5952,6 +6504,34 @@ const registry = {
       'packages/engine/src/projection/simulate.ts',
     ],
   },
+  'irc-275-a-6-chapter-43-excise-taxes-nondeductible': {
+    title: 'Chapter 43 excise taxes are not deductible',
+    statement:
+      'Section 275(a)(6) disallows a deduction for taxes imposed by chapter 43. The RMD-shortfall excise under section 4974 therefore remains outside AGI, MAGI, taxable income, and deductions: the annual ledger adds it after the federal-income-tax calculation in the penalties channel and only then funds that cash cost.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 275(a)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section275&num=0&edition=prelim',
+      quotedText: 'No deduction shall be allowed for the following taxes:',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 275(a)(6)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section275&num=0&edition=prelim',
+      quotedText:
+        '(6) Taxes imposed by chapters 37, 41, 42, 43, 44, 45, 46, 50A, and 54.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: ['packages/engine/src/projection/simulate.ts'],
+  },
+
   'irc-4974-rmd-shortfall-excise-tax': {
     title: 'Excise tax on a required minimum distribution shortfall',
     statement:
@@ -7825,6 +8405,66 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-04',
     implementedBy: ['packages/engine/src/tax/federalTax.ts'],
+  },
+
+  // --- Registered 2026-08-27: WS4c Cluster 4 (DAF vehicle) -------------------
+  //
+  // Cluster 3 owns the engine-behavior classification of the 170(b)(1)(C)
+  // 30 percent capital-gain-property ceiling. A gift of appreciated property
+  // to a DAF has no distinct percentage surface once the DAF vehicle itself
+  // is absent, so that limb is not minted here.
+
+  'irc-4966-d-donor-advised-fund-vehicle-not-modeled': {
+    title: 'A donor advised fund is not a modeled contribution vehicle',
+    statement:
+      'A donor advised fund is a separately identified fund owned and controlled by a sponsoring organization, with respect to which the donor has only advisory privileges; a section 170 deduction for a contribution to it is allowed only under the section 170(f)(18) conditions, including the sponsoring organization\'s acknowledgment of exclusive legal control over the assets contributed. Not modelled: the Plan has no donor-advised-fund account, contribution event, grant schedule, advisory-privilege, sponsoring-organization, or exclusive-legal-control fact, so no accepted input reaches this rule. Generic itemized charitable and QCD fields are not a DAF. The 4966 taxable-distribution excise and the 4967 more-than-incidental-benefit excise turn on the same absent vehicle and are folded here rather than given records of their own. A named QCD whose charity is designated a donor-advised fund is a different surface, already refused at irc-408-d-8-B-i-qualified-recipient.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 4966(d)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section4966&num=0&edition=prelim',
+      quotedText:
+        'The term "sponsoring organization" means any organization which- (A) is described in section 170(c) (other than in paragraph (1) thereof, and without regard to paragraph (2)(A) thereof), (B) is not a private foundation (as defined in section 509(a)), and (C) maintains 1 or more donor advised funds.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 4966(d)(2)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section4966&num=0&edition=prelim',
+      quotedText:
+        'Except as provided in subparagraph (B) or (C), the term "donor advised fund" means a fund or account- (i) which is separately identified by reference to contributions of a donor or donors, (ii) which is owned and controlled by a sponsoring organization, and (iii) with respect to which a donor (or any person appointed or designated by such donor) has, or reasonably expects to have, advisory privileges with respect to the distribution or investment of amounts held in such fund or account by reason of the donor\'s status as a donor.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 170(f)(18)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim',
+      quotedText:
+        'A deduction otherwise allowed under subsection (a) for any contribution to a donor advised fund (as defined in section 4966(d)(2)) shall only be allowed if-',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 170(f)(18)(B)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim',
+      quotedText:
+        'the taxpayer obtains a contemporaneous written acknowledgment (determined under rules similar to the rules of paragraph (8)(C)) from the sponsoring organization (as so defined) of such donor advised fund that such organization has exclusive legal control over the assets contributed.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 4966(a)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section4966&num=0&edition=prelim',
+      quotedText:
+        'There is hereby imposed on each taxable distribution a tax equal to 20 percent of the amount thereof. The tax imposed by this paragraph shall be paid by the sponsoring organization with respect to the donor advised fund.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 4967(a)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section4967&num=0&edition=prelim',
+      quotedText:
+        'There is hereby imposed on the advice of any person described in subsection (d) to have a sponsoring organization make a distribution from a donor advised fund which results in such person or any other person described in subsection (d) receiving, directly or indirectly, a more than incidental benefit as a result of such distribution, a tax equal to 125 percent of such benefit. The tax imposed by this paragraph shall be paid by any person described in subsection (d) who advises as to the distribution or who receives such a benefit as a result of the distribution.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: ['packages/engine/src/model/plan.ts'],
   },
 
   // ---------------------------------------------------------------------------
@@ -12220,7 +12860,28 @@ const registry = {
       'packages/engine/src/params/data/year2026.ts',
     ],
   },
-} as const satisfies Record<string, TaxRuleRecord>
+// `satisfies` without `as const`: keys and the union-typed fields
+// (classification, kind, volatility) stay literal for describeRule's
+// conditional typing, while the prose strings widen to `string` - past ~330
+// records the fully-literal type exceeds the compiler's
+// declaration-serialization limit (TS7056) under the build config.
+} satisfies Record<string, TaxRuleRecord>
+
+// Compile-time proof that `satisfies` (without `as const`) keeps the
+// union-typed fields literal: contextual typing against a union of literals
+// blocks widening, so classification stays 'approximated' (not string) and
+// describeRule's produced-pin conditionals keep working. If a future edit
+// reintroduces widening, these lines fail to compile before any fixture does.
+type _ApproximatedStaysLiteral =
+  (typeof registry)['poms-rs-00615-320-rib-lim-after-survivor-reduction']['classification'] extends 'approximated'
+    ? true
+    : never
+type _SettledStaysLiteral =
+  (typeof registry)['irc-1211-b-capital-loss-ordinary-offset']['classification'] extends 'settled'
+    ? true
+    : never
+const _classificationLiteralGuards: [_ApproximatedStaysLiteral, _SettledStaysLiteral] = [true, true]
+void _classificationLiteralGuards
 
 export const TAX_RULE_REGISTRY = Object.freeze(registry)
 
