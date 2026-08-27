@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 
 import { describeRule } from '../rules/describeRule.js'
 
+import { createEmptyPlan, type Plan } from '../model/plan.js'
 import { EARLIEST_PACK_YEAR, LATEST_PACK_YEAR, packForYear } from '../params/index.js'
+import { buildOptimizerInput } from '../projection/optimizePlan.js'
 import type { TaxCalculator, TaxYearInput } from '../projection/types.js'
 import {
   applyCapitalLossCarryforward,
@@ -23,6 +25,35 @@ function input(partial: Partial<TaxYearInput>): TaxYearInput {
     peopleAged65Plus: 0,
     ...partial,
   }
+}
+
+function optimizerZeroRateFixturePlan(): Plan {
+  const plan = createEmptyPlan({
+    newId: () => 'optimizer-flat-ltcg-fixture',
+    now: () => new Date('2026-01-01T00:00:00.000Z'),
+  })
+  plan.assumptions.inflationPct = 0
+  plan.assumptions.defaultReturnPct = 0
+  plan.expenses.baseAnnual = 0
+  plan.incomes = [{
+    type: 'wages',
+    id: 'optimizer-flat-ltcg-wages',
+    personId: plan.household.people[0]!.id,
+    annualGross: 16_100,
+    endAge: null,
+    realGrowthPct: 0,
+  }]
+  plan.accounts = [{
+    type: 'taxable',
+    id: 'optimizer-flat-ltcg-taxable',
+    name: 'Taxable brokerage',
+    ownerPersonId: null,
+    annualReturnPct: null,
+    balance: 1,
+    costBasis: 0,
+    annualContribution: 0,
+  }]
+  return plan
 }
 
 describe('ordinary brackets and standard deduction (2026)', () => {
@@ -249,6 +280,27 @@ describe('section 1211 capital loss limitation', () => {
   })
 })
 
+describe('section 1212 capital-loss carryforward', () => {
+  // IRC 1212(b)(1) makes the unabsorbed loss a loss in the succeeding year.
+  // For a $10,000 loss, the section 1211 allowance leaves $7,000 after year
+  // one. In year two, $7,000 of that pool absorbs $10,000 of gain, leaving
+  // $3,000 preferential gain. At this income, that is $450 of capital-gains
+  // tax; the rejected reading forfeits the pool and taxes all $10,000, $1,500.
+  describeRule('irc-1212-b-capital-loss-carryforward', {
+    readings: { carriesIntoTheSucceedingYear: 450, expiresAfterFirstAllowance: 1_500 },
+    accepted: 'carriesIntoTheSucceedingYear',
+  }, ({ accepted, readings }) => {
+    it('uses an unabsorbed loss to reduce the succeeding year’s capital-gains tax', () => {
+      const first = applyCapitalLossCarryforward(0, 80_000, -10_000, 3_000)
+      const second = applyCapitalLossCarryforward(first.remaining, 100_000, 10_000, 3_000)
+      const tax = computeFederalTax(input({ ordinaryIncome: 100_000, capitalGains: second.netCapitalGain }))
+
+      expect(tax.capitalGainsTax).toBe(accepted)
+      expect(tax.capitalGainsTax).not.toBe(readings.expiresAfterFirstAllowance)
+    })
+  })
+})
+
 describe('section 55 alternative minimum tax', () => {
   // IRC 55(a) imposes the AMT as the EXCESS of the tentative minimum tax over
   // the regular tax. Treating the tentative amount as the tax owed is the
@@ -318,6 +370,25 @@ describe('capital gains stacking', () => {
     })
   })
 
+  // Single filer, 2026. $16,100 of ordinary income exactly absorbs the
+  // standard deduction, so $600,000 of modeled preferential gain fills the
+  // $0 layer to $49,450, the $15 layer from $49,450 through $545,500, and then
+  // the $20 layer. The statutory result is
+  //   ($545,500 - $49,450) x 0.15 + ($600,000 - $545,500) x 0.20 = $85,307.50.
+  // The rejected reading leaves the top layer at 15 percent, producing
+  //   ($600,000 - $49,450) x 0.15 = $82,582.50.
+  describeRule('irc-1-h-1-0-15-20-preferential-rate-schedule', {
+    readings: { statutoryZeroFifteenTwentyLayers: 85_307.5, flatFifteenAboveZeroLayer: 82_582.5 },
+    accepted: 'statutoryZeroFifteenTwentyLayers',
+  }, ({ accepted, readings }) => {
+    it('moves modeled preferential gain into the 20 percent layer above the second breakpoint', () => {
+      const result = computeFederalTax(input({ ordinaryIncome: 16_100, capitalGains: 600_000 }))
+
+      expect(result.capitalGainsTax).toBeCloseTo(accepted, 6)
+      expect(result.capitalGainsTax).not.toBeCloseTo(readings.flatFifteenAboveZeroLayer, 6)
+    })
+  })
+
   it('keeps gains in the 0% bracket when ordinary income is low (MFJ)', () => {
     const d = computeFederalTax(
       input({ filingStatus: 'marriedFilingJointly', ordinaryIncome: 50_000, capitalGains: 80_000 }),
@@ -372,6 +443,31 @@ describe('capital gains stacking', () => {
     )
     expect(d.magi).toBe(300_000)
     expect(d.niit).toBeCloseTo(65_000 * 0.038, 6)
+  })
+})
+
+describe('optimizer flat preferential-rate approximation', () => {
+  // A single filer with $16,100 of ordinary income has no ordinary taxable
+  // income after the 2026 standard deduction. One additional dollar of modeled
+  // preferential gain is therefore in the statutory zero-percent layer. The
+  // optimizer nevertheless supplies its single taxable-bucket rate. The
+  // rejected reading is that fixed rate; it awaits orchestrator observation.
+  describeRule('irc-1-h-optimizer-flat-fifteen-percent-preferential-rate', {
+    readings: { statutoryZeroPercentMarginalRate: 0, optimizerFlatRate: 0.15 },
+    accepted: 'statutoryZeroPercentMarginalRate',
+    produced: 'optimizerFlatRate',
+  }, ({ accepted, produced }) => {
+    it('does not price a zero-rate gain at the statutory marginal rate inside the linearized solve', () => {
+      const exact = computeFederalTax(input({ ordinaryIncome: 16_100, capitalGains: 1 }))
+      const optimizerInput = buildOptimizerInput(optimizerZeroRateFixturePlan(), {
+        startYear: 2026,
+        taxCalculator: createFederalTaxCalculator(),
+      })
+
+      expect(exact.capitalGainsTax).toBe(accepted)
+      expect(optimizerInput.ltcgRate).toBe(produced)
+      expect(optimizerInput.ltcgRate).not.toBe(accepted)
+    })
   })
 })
 

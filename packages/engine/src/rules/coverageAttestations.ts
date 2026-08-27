@@ -191,7 +191,7 @@ export const COVERAGE_ATTESTATIONS: Readonly<Record<string, CoverageAttestation>
   'projection/flatTax.ts': Object.freeze({ status: 'partial', sweptOn: '2026-08-24', note: 'Statutory 85% Social Security inclusion; no record' }),
   'projection/internal/legacyAggregateDecisionCalculation.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'projection/moneyTolerance.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: 'half-cent funding fixed-point tolerance; numerical guard, not statute' }),
-  'projection/optimizePlan.ts': Object.freeze({ status: 'partial', sweptOn: '2026-08-24', note: 'Hard-coded 15% preferential LTCG LP rate; no record' }),
+  'projection/optimizePlan.ts': Object.freeze({ status: 'partial', sweptOn: '2026-08-27', note: 'Flat 15% LTCG LP rate registered (irc-1-h-optimizer-flat-fifteen-percent-preferential-rate); other optimizer linearizations remain unregistered' }),
   'projection/optimizerAggregateConversionPromotion.ts': Object.freeze({ status: 'partial', sweptOn: '2026-08-24', note: '§408A-4 A-6(b) RMD-first, 401(k)(2)(B)(i) distributability, and same-owner Roth destination; no records' }),
   'projection/optimizerAggregateConversionPromotionRun.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'projection/optimizerAllocatedCandidateComparison.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),

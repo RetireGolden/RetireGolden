@@ -11,16 +11,16 @@ The registry is the machine-checked chain from a rule to its implementation and 
 
 | Metric | Count |
 | --- | ---: |
-| Total rules | 318 |
-| Classification: approximated | 75 |
-| Classification: outOfScope | 45 |
-| Classification: settled | 194 |
+| Total rules | 325 |
+| Classification: approximated | 76 |
+| Classification: outOfScope | 49 |
+| Classification: settled | 196 |
 | Classification: unsettled | 4 |
-| Volatility: annuallyIndexed | 47 |
+| Volatility: annuallyIndexed | 48 |
 | Volatility: awaitingGuidance | 10 |
-| Volatility: staticStatute | 255 |
-| Volatility: sunsetting | 6 |
-| Federal jurisdiction | 261 |
+| Volatility: staticStatute | 260 |
+| Volatility: sunsetting | 7 |
+| Federal jurisdiction | 268 |
 | State jurisdiction total | 57 |
 
 | State jurisdiction | Count |
@@ -137,7 +137,7 @@ None.
 | projection/annualCashFlowCapture.ts | 2026-08-24 | Form 8606 basis, QCD exclusion, annuity and penalty character composition; no record |
 | projection/compare.ts | 2026-08-24 | after-tax estate haircuts: Form 8606 basis exclusion, taxable step-up, spousal rollover, HSA non-spouse income (IRC 223(f)(8)(B)) — no records name this file |
 | projection/flatTax.ts | 2026-08-24 | Statutory 85% Social Security inclusion; no record |
-| projection/optimizePlan.ts | 2026-08-24 | Hard-coded 15% preferential LTCG LP rate; no record |
+| projection/optimizePlan.ts | 2026-08-27 | Flat 15% LTCG LP rate registered (irc-1-h-optimizer-flat-fifteen-percent-preferential-rate); other optimizer linearizations remain unregistered |
 | projection/optimizerAggregateConversionPromotion.ts | 2026-08-24 | §408A-4 A-6(b) RMD-first, 401(k)(2)(B)(i) distributability, and same-owner Roth destination; no records |
 | projection/ownedIraAnnualPhysicalTransactionInputs.ts | 2026-08-24 | Form 8606 line-7/8 and QCD staging semantics; no record |
 | projection/ownedNonRothIraAnnualObservation.ts | 2026-08-24 | April-15/weekend/Emancipation-Day filing deadline; no record |
@@ -156,7 +156,7 @@ None.
 
 ## Re-verification due dates
 
-The 25 earliest due dates are shown below (318 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
+The 25 earliest due dates are shown below (325 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
 
 | Rule | Volatility | Verified on | Due on |
 | --- | --- | --- | --- |
