@@ -2033,6 +2033,114 @@ function bandedTax(bands: readonly (readonly [number, number, number])[], taxabl
   )
 }
 
+const KY_RATE = 0.035
+const KY_DEDUCTION = 3_360
+const kyTax = (taxable: number) => Math.max(0, taxable) * KY_RATE
+const KY_CAP = 31_110
+const KY_SS_OTHER = 90_000
+const KY_SS = 40_000
+const KY_SS_FEDERALLY_TAXABLE = 0.85 * KY_SS
+
+describeRule('ky-krs-141-retirement-and-social-security', {
+  readings: {
+    socialSecurityExcluded: kyTax(KY_SS_OTHER - KY_DEDUCTION),
+    federallyTaxableShareLeftInTheBase:
+      kyTax(KY_SS_OTHER + KY_SS_FEDERALLY_TAXABLE - KY_DEDUCTION),
+  },
+  accepted: 'socialSecurityExcluded',
+  note: 'Social Security limb',
+}, ({ accepted, readings }) => {
+  const scenario = input({
+    state: 'KY',
+    ordinaryIncome: KY_SS_OTHER,
+    ssBenefits: KY_SS,
+    agesAlive: [70],
+  })
+
+  it('keeps Social Security out of Kentucky adjusted gross income', () => {
+    expect(computeStateTax(pack('KY'), scenario)).toBeCloseTo(accepted, 6)
+    expect(computeStateTaxableIncome(pack('KY'), scenario))
+      .toBeCloseTo(KY_SS_OTHER - KY_DEDUCTION, 6)
+  })
+
+  it('would pull the federally taxable share in if Kentucky taxed it', () => {
+    const taxing = { ...pack('KY'), taxesSocialSecurity: true }
+    expect(computeStateTax(taxing, scenario))
+      .toBeCloseTo(readings.federallyTaxableShareLeftInTheBase, 6)
+  })
+})
+
+const KY_PRIVATE = 50_000
+
+describeRule('ky-krs-141-retirement-and-social-security', {
+  readings: {
+    // KRS 141.019(1)(g) reaches IRAs and private employer plans up to $31,110.
+    thirtyOneThousandOneHundredTenOfPrivateDistributions:
+      kyTax(KY_PRIVATE - KY_CAP - KY_DEDUCTION),
+    // Shopping-list reading: only certain public-pension relief, so a private
+    // IRA distribution stays in the base in full.
+    shoppingListLeavesPrivateRetirementInTheBase: kyTax(KY_PRIVATE - KY_DEDUCTION),
+  },
+  accepted: 'thirtyOneThousandOneHundredTenOfPrivateDistributions',
+  note: 'retirement-distribution limb',
+}, ({ accepted, readings }) => {
+  const scenario = input({
+    state: 'KY',
+    ordinaryIncome: KY_PRIVATE,
+    privateRetirementIncome: KY_PRIVATE,
+    agesAlive: [50],
+  })
+
+  it('excludes $31,110 of a private IRA distribution with no age gate', () => {
+    expect(computeStateTax(pack('KY'), scenario)).toBeCloseTo(accepted, 6)
+    expect(computeStateTaxableIncome(pack('KY'), scenario))
+      .toBeCloseTo(KY_PRIVATE - KY_CAP - KY_DEDUCTION, 6)
+  })
+
+  it('would charge more if private retirement were left in the base', () => {
+    const noPrivateCap = {
+      ...pack('KY'),
+      retirementPrivate: { kind: 'none' as const },
+    }
+    expect(computeStateTax(noPrivateCap, scenario))
+      .toBeCloseTo(readings.shoppingListLeavesPrivateRetirementInTheBase, 6)
+    expect(computeStateTax(noPrivateCap, scenario)).toBeGreaterThan(accepted)
+  })
+})
+
+describeRule('ky-krs-141-retirement-and-social-security', {
+  readings: {
+    threeAndOneHalfPercentOfNetIncome: kyTax(50_000 - KY_DEDUCTION),
+    // Pre-2026 rate still printed in KRS 141.020(2)(e).
+    formerFourPercentRate: (50_000 - KY_DEDUCTION) * 0.04,
+  },
+  accepted: 'threeAndOneHalfPercentOfNetIncome',
+  note: 'flat-rate limb',
+}, ({ accepted, readings }) => {
+  const scenario = input({
+    state: 'KY',
+    ordinaryIncome: 50_000,
+    agesAlive: [45],
+  })
+
+  it('taxes net income at three and one-half percent for 2026', () => {
+    expect(computeStateTax(pack('KY'), scenario)).toBeCloseTo(accepted, 6)
+  })
+
+  it('would charge more at the former four percent rate', () => {
+    const formerRate = {
+      ...pack('KY'),
+      brackets: {
+        single: [{ lowerBound: 0, ratePct: 4 }],
+        marriedFilingJointly: [{ lowerBound: 0, ratePct: 4 }],
+      },
+    }
+    expect(computeStateTax(formerRate, scenario))
+      .toBeCloseTo(readings.formerFourPercentRate, 6)
+    expect(computeStateTax(formerRate, scenario)).toBeGreaterThan(accepted)
+  })
+})
+
 const LA_RATE = 0.03
 const LA_DEDUCTION = 12_500
 const laTax = (taxable: number) => Math.max(0, taxable) * LA_RATE
@@ -2764,7 +2872,7 @@ describe('Wisconsin covered retirement limbs', () => {
       'AK', 'SD', 'TN', 'WY', 'AR', 'AZ', 'IN', 'MS',
       'CA', 'CO', 'CT', 'DC', 'DE', 'GA', 'HI', 'ID', 'KS',
       'NM', 'NC', 'OH', 'OK', 'OR', 'RI', 'UT', 'VT', 'VA', 'WA', 'WI',
-      'LA', 'MD', 'MA', 'MI', 'MN', 'MT', 'NE', 'NH', 'NJ',
+      'KY', 'LA', 'MD', 'MA', 'MI', 'MN', 'MT', 'NE', 'NH', 'NJ',
     ]) {
       expect(stateParamsFor(code, TAX_YEAR), code).toBeDefined()
     }

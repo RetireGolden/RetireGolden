@@ -11443,13 +11443,13 @@ const registry = {
       citation: 'D.C. Code 47-1803.02(a)(2)(L)',
       url: 'https://code.dccouncil.gov/us/dc/council/code/sections/47-1803.02',
       quotedText:
-        'The following items shall be excluded in the computation of District gross income: ... Social security and tier 1 railroad retirement benefits subject to taxation under \\u00a7 86 of the Internal Revenue Code of 1986.',
+        'The following items shall be excluded in the computation of District gross income: ... Social security and tier 1 railroad retirement benefits subject to taxation under \u00a7\u200286 of the Internal Revenue Code of 1986.',
     }, {
       kind: 'statute',
       citation: 'D.C. Code 47-1803.03(c)',
       url: 'https://code.dccouncil.gov/us/dc/council/code/sections/47-1803.03',
       quotedText:
-        'Every individual who claims the standard deduction on his or her federal income tax return shall claim the applicable standard deduction specified in \\u00a7 47-1801.04(26).',
+        'Every individual who claims the standard deduction on his or her federal income tax return shall claim the applicable standard deduction specified in \u00a7 47-1801.04(26).',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -11654,7 +11654,7 @@ const registry = {
   'ks-stat-79-32-117-public-pension-exclusion': {
     title: 'Kansas exempts listed public retirement plans, not every public pension',
     statement:
-      'Kansas lists particular public retirement benefits for subtraction — including federal civil-service and armed-forces retirement, KPERS, police and fire, teachers, highway patrol, judges, specified municipal systems and named university plans. Approximated: the pack represents every `publicPensionIncome` dollar as `{ kind: \'full\' }`, but its input carries no pension-system identity with which to distinguish a listed plan from an unlisted municipal or other public pension. An unlisted public pension is consequently removed and the engine understates the taxpayer’s tax exposure; the pin fixture uses that source-rejected unlisted-pension limb.',
+      'Kansas subtracts only particular public retirement benefits named in K.S.A. 79-32,117(c) — federal civil-service and armed-forces retirement, city pensions under K.S.A. 13-14,106, board-of-public-utilities pensions, Washburn University retirement benefits, and the Overland Park police and fire plans. Approximated: the pack represents every `publicPensionIncome` dollar as `{ kind: \'full\' }`, but its input carries no pension-system identity with which to distinguish a listed plan from an unlisted municipal or other public pension. An unlisted public pension is consequently removed and the engine understates the taxpayer’s tax exposure; the pin fixture uses that source-rejected unlisted-pension limb.',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'understatesTax',
@@ -11667,11 +11667,29 @@ const registry = {
       quotedText:
         'Amounts received as annuities under the federal civil service retirement system from the civil service retirement and disability fund and other amounts received as retirement benefits in whatever form which were earned for being employed by the federal government or for service in the armed forces of the United States.',
     }, {
-      kind: 'stateAgencyPublication',
-      citation: 'Kansas Department of Revenue, 2025 Kansas Income Tax Booklet, Schedule S line A14',
-      url: 'https://www.ksrevenue.gov/incomebook25.html',
+      kind: 'statute',
+      citation: 'K.S.A. 79-32,117(c)(ix)',
+      url: 'https://www.ksrevisor.gov/statutes/chapters/ch79/079_032_0117.html',
       quotedText:
-        'Retirement benefits specifically exempt from Kansas Income Tax. If you are receiving retirement benefits/pay, report on this line benefits exempt from Kansas income tax (do not include Social Security benefits). … Enter total amount of benefits received from the following plans that was included in your federal AGI.',
+        'Amounts received by retired employees of a city and by retired employees of any board of such city as retirement allowances pursuant to K.S.A. 13-14,106, and amendments thereto, or pursuant to any charter ordinance exempting a city from the provisions of K.S.A. 13-14,106, and amendments thereto.',
+    }, {
+      kind: 'statute',
+      citation: 'K.S.A. 79-32,117(c)(xii)',
+      url: 'https://www.ksrevisor.gov/statutes/chapters/ch79/079_032_0117.html',
+      quotedText:
+        'For taxable years beginning after December 31, 1989, amounts received by retired employees of a board of public utilities as pension and retirement benefits pursuant to K.S.A. 13-1246, 13-1246a and 13-1249, and amendments thereto.',
+    }, {
+      kind: 'statute',
+      citation: 'K.S.A. 79-32,117(c)(xix)',
+      url: 'https://www.ksrevisor.gov/statutes/chapters/ch79/079_032_0117.html',
+      quotedText:
+        'Amounts received by retired employees of Washburn university as retirement and pension benefits under the university\'s retirement plan.',
+    }, {
+      kind: 'statute',
+      citation: 'K.S.A. 79-32,117(c)(xxiii)',
+      url: 'https://www.ksrevisor.gov/statutes/chapters/ch79/079_032_0117.html',
+      quotedText:
+        'For all taxable years beginning after December 31, 2012, amounts received under either the Overland Park, Kansas police department retirement plan or the Overland Park, Kansas fire department retirement plan, both as established by the city of Overland Park, pursuant to the city\'s home rule authority.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -13812,14 +13830,60 @@ const registry = {
       'packages/engine/src/projection/simulate.ts',
     ],
   },
+
   // ---------------------------------------------------------------------------
   // WS4d Batch B — KY, LA, MD, MA, MI, MN, MT, NE, NH, NJ. 2026-08-27.
   //
-  // KY is not in this block: the staged KY fetch is a chapter table of
-  // contents with no operative KRS 141.019 / 141.020 text. BLOCKED-SOURCE, not
-  // a silent omission. NH was blocked on the first pass (DOR Access Denied);
-  // the RSA Chapter 77 repeal page is now in the staged set and is registered.
+  // KY was BLOCKED-SOURCE on the first pass (chapter TOC only). The section
+  // PDFs for KRS 141.019 and 141.020 are now staged and registered. NH was
+  // blocked on the first pass (DOR Access Denied); the RSA Chapter 77 repeal
+  // page is now in the staged set and is registered. KRS 141.0215 (post-1997
+  // government-retirement inclusion fraction) is staged but not a pack limb.
   // ---------------------------------------------------------------------------
+
+  'ky-krs-141-retirement-and-social-security': {
+    title: 'Kentucky excludes Social Security and up to $31,110 of retirement distributions at a flat 3.5%',
+    statement:
+      'Kentucky adjusted gross income excludes Social Security and railroad retirement benefits subject to federal income tax, and for taxable years beginning on or after January 1, 2018 excludes up to thirty-one thousand one hundred ten dollars of total distributions from pension plans, annuity contracts, profit-sharing plans, retirement plans, or employee savings plans — a ceiling that reaches IRAs and both public and private employer plans, with no age gate. That is what `taxesSocialSecurity: false` and the shared `{ kind: \'capped\', capPerPerson: 31110 }` pack fields encode, and it is why a shopping-list reading that still describes only certain public-pension relief is rejected. For taxable years beginning on or after January 1, 2026 the tax is three and one-half percent of net income, which is the pack\'s flat 3.5% bracket.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:KY',
+    authority: [{
+      kind: 'statute',
+      citation: 'KRS 141.019(1)(e)',
+      url: 'https://apps.legislature.ky.gov/law/statutes/statute.aspx?id=57914',
+      quotedText:
+        'Exclude Social Security and railroad retirement benefits subject to federal income tax;',
+    }, {
+      kind: 'statute',
+      citation: 'KRS 141.019(1)(g)1.b.',
+      url: 'https://apps.legislature.ky.gov/law/statutes/statute.aspx?id=57914',
+      quotedText:
+        'For taxable years beginning on or after January 1, 2018, exclude up to thirty-one thousand one hundred ten dollars ($31,110) of total distributions from pension plans, annuity contracts, profit-sharing plans, retirement plans, or employee savings plans.',
+    }, {
+      kind: 'statute',
+      citation: 'KRS 141.019(1)(g)2.c.',
+      url: 'https://apps.legislature.ky.gov/law/statutes/statute.aspx?id=57914',
+      quotedText:
+        '"Pension plans, profit-sharing plans, retirement plans, or employee savings plans" means any trust or other entity created or organized under a written retirement plan and forming part of a stock bonus, pension, or profit-sharing plan of a public or private employer for the exclusive benefit of employees or their beneficiaries and includes plans qualified or unqualified under Section 401 of the Internal Revenue Code and individual retirement accounts as defined in Section 408 of the Internal Revenue Code;',
+    }, {
+      kind: 'statute',
+      citation: 'KRS 141.020(2)(f)',
+      url: 'https://apps.legislature.ky.gov/law/statutes/statute.aspx?id=56339',
+      quotedText:
+        'For taxable years beginning on or after January 1, 2026, the tax shall be three and one-half percent (3.5%) of net income.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+    ],
+  },
 
   'la-rs-47-44-1-retirement-exemption': {
     title: 'Louisiana exempts $12,000 of retirement income from age 65',
@@ -14465,38 +14529,6 @@ const registry = {
     ],
   },
 
-  'ut-code-59-10-114-social-security-tax-credit': {
-    title: 'Utah taxes Social Security but offers a separate Social Security benefits credit',
-    statement:
-      'Utah publishes a single 4.5% individual income-tax rate. Its Tax Commission TC-40A instructions provide a Social Security Benefits Credit for taxable Social Security included in adjusted gross income: the worksheet multiplies that benefit by 4.5%, then reduces the result by 2.5% of the worksheet\'s income-over-threshold amount above $54,000 for a single filer, $90,000 for a joint filer or qualifying widow(er), and the corresponding $45,000 married-separate threshold. The pack includes the federally taxable Social Security share but models no credit, so it overstates tax on a qualifying return; Utah\'s separate retirement and military credits are also outside this state-tax base model.',
-    classification: 'approximated',
-    contraryReading: null,
-    errorDirection: 'overstatesTax',
-    conventionRationale: null,
-    jurisdiction: 'state:UT',
-    authority: [{
-      kind: 'stateAgencyPublication',
-      citation: 'Utah State Tax Commission, 2025 TC-40A Supplemental Schedule Instructions, Social Security Benefits Credit (UCA §59-10-1042)',
-      url: 'https://incometax.utah.gov/tc-40a/',
-      quotedText:
-        '(AH) Social Security Benefits Credit (UCA §59-10-1042) You may qualify for this credit if you (or your spouse, if filing jointly) received taxable Social Security retirement, disability or survivor benefits. Complete the Social Security Credit Worksheet, below, to calculate this credit. You may only claim this credit for Social Security benefits included in adjusted gross income on this return. You may not claim this credit if you (or your spouse, if filing jointly) claim the Retirement Credit (code 18). Social Security Credit Worksheet Calculation Steps Amount For yourself (and/or your spouse), enter the amount from federal form 1040 or 1040-SR, line 6b; or 1040-NR, Schedule NEC, line 8 1 _________ Did you report Native American Income (code 77) or Railroad Retirement Income (code 78) as a subtraction from income on TC-40, Schedule A, Part 2? If yes, enter any Social Security benefit included in those amounts. If no, enter “0” 2 _________ Line 1 minus line 2 3 _________ Multiply line 3 by 0.045 4 _________ Enter the amount from TC-40, line 9 (Utah taxable income/loss) 5 _________ Enter municipal bond interest from TC-40, Schedule A, Part 1, code 57 6 _________ Line 5 minus line 6 7 _________ Enter tax exempt interest from federal form 1040, 1040-SR or 1040-NR, line 2a 8 _________ Add lines 7 and 8 9 _________ Enter: a. Married filing separately: $45,000 b. Married filing federal return 1040-NR: $45,000 c. Married filing joint: $90,000 d. Single: $54,000 e. Qualifying surviving spouse or head of household: $90,000 10 _________ Line 9 minus line 10 (not less than zero) 11 _________ Multiply line 11 by 0.025 12 _________ Social Security Benefits Credit: Line 4 minus line 12 (not less than zero) 13 _________ If claiming this credit, enter the total amount on TC-40A, Part 3, using code AH. Note: You may not carry forward or back any credit that is more than your tax liability.',
-    }, {
-      kind: 'stateAgencyPublication',
-      citation: 'Utah State Tax Commission, Tax Rates (2025)',
-      url: 'https://incometax.utah.gov/file-pay/tax-rates/',
-      quotedText:
-        'Multiply line 9 by 4.5 percent (.045). If the result is zero or less, enter “0.” Utah has a single tax rate for all income levels, as follows: Date Range Tax Rate January 1, 2025 – current 4.5% or .045',
-    }],
-    volatility: 'staticStatute',
-    effectiveFrom: 2026,
-    effectiveThrough: null,
-    verifiedOn: '2026-08-27',
-    implementedBy: [
-      'packages/engine/src/params/state/data/year2026.ts',
-      'packages/engine/src/tax/stateTax.ts',
-    ],
-  },
-
   'or-stat-316-054-social-security-exclusion': {
     title: 'Oregon subtracts federally taxable Social Security from federal taxable income',
     statement:
@@ -14568,6 +14600,38 @@ const registry = {
       url: 'https://webserver.rilegislature.gov/Statutes/TITLE44/44-30/44-II/44-30-12.htm',
       quotedText:
         '(B) For a married individual filing jointly or individual filing qualifying widow(er) who has attained the age used for calculating full or unreduced Social Security retirement benefits whose joint federal adjusted gross income for such taxable year is less than the amount used for the modification contained in subsection (c)(8)(i)(B) of this section an amount not to exceed $15,000 for tax years beginning on or after January 1, 2017, until the tax year beginning January 1, 2022, and an amount not to exceed twenty thousand dollars ($20,000) for tax years beginning on or after January 1, 2023, until the tax year beginning January 1, 2024, and an amount not to exceed fifty thousand dollars ($50,000) for tax years beginning on or after January 1, 2025, of taxable pension and/or annuity income includible in federal adjusted gross income.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  'ut-code-59-10-114-social-security-tax-credit': {
+    title: 'Utah taxes Social Security but offers a separate Social Security benefits credit',
+    statement:
+      'Utah publishes a single 4.5% individual income-tax rate. Its Tax Commission TC-40A instructions provide a Social Security Benefits Credit for taxable Social Security included in adjusted gross income: the worksheet multiplies that benefit by 4.5%, then reduces the result by 2.5% of the worksheet\'s income-over-threshold amount above $54,000 for a single filer, $90,000 for a joint filer or qualifying widow(er), and the corresponding $45,000 married-separate threshold. The pack includes the federally taxable Social Security share but models no credit, so it overstates tax on a qualifying return; Utah\'s separate retirement and military credits are also outside this state-tax base model.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'overstatesTax',
+    conventionRationale: null,
+    jurisdiction: 'state:UT',
+    authority: [{
+      kind: 'stateAgencyPublication',
+      citation: 'Utah State Tax Commission, 2025 TC-40A Supplemental Schedule Instructions, Social Security Benefits Credit (UCA §59-10-1042)',
+      url: 'https://incometax.utah.gov/tc-40a/',
+      quotedText:
+        '(AH) Social Security Benefits Credit (UCA §59-10-1042) You may qualify for this credit if you (or your spouse, if filing jointly) received taxable Social Security retirement, disability or survivor benefits. Complete the Social Security Credit Worksheet, below, to calculate this credit. You may only claim this credit for Social Security benefits included in adjusted gross income on this return. You may not claim this credit if you (or your spouse, if filing jointly) claim the Retirement Credit (code 18). Social Security Credit Worksheet Calculation Steps Amount For yourself (and/or your spouse), enter the amount from federal form 1040 or 1040-SR, line 6b; or 1040-NR, Schedule NEC, line 8 1 _________ Did you report Native American Income (code 77) or Railroad Retirement Income (code 78) as a subtraction from income on TC-40, Schedule A, Part 2? If yes, enter any Social Security benefit included in those amounts. If no, enter “0” 2 _________ Line 1 minus line 2 3 _________ Multiply line 3 by 0.045 4 _________ Enter the amount from TC-40, line 9 (Utah taxable income/loss) 5 _________ Enter municipal bond interest from TC-40, Schedule A, Part 1, code 57 6 _________ Line 5 minus line 6 7 _________ Enter tax exempt interest from federal form 1040, 1040-SR or 1040-NR, line 2a 8 _________ Add lines 7 and 8 9 _________ Enter: a. Married filing separately: $45,000 b. Married filing federal return 1040-NR: $45,000 c. Married filing joint: $90,000 d. Single: $54,000 e. Qualifying surviving spouse or head of household: $90,000 10 _________ Line 9 minus line 10 (not less than zero) 11 _________ Multiply line 11 by 0.025 12 _________ Social Security Benefits Credit: Line 4 minus line 12 (not less than zero) 13 _________ If claiming this credit, enter the total amount on TC-40A, Part 3, using code AH. Note: You may not carry forward or back any credit that is more than your tax liability.',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'Utah State Tax Commission, Tax Rates (2025)',
+      url: 'https://incometax.utah.gov/file-pay/tax-rates/',
+      quotedText:
+        'Multiply line 9 by 4.5 percent (.045). If the result is zero or less, enter “0.” Utah has a single tax rate for all income levels, as follows: Date Range Tax Rate January 1, 2025 – current 4.5% or .045',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,

@@ -2,17 +2,17 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 1,
   "registry": {
-    "total": 395,
+    "total": 396,
     "byClassification": {
       "approximated": 100,
       "outOfScope": 69,
-      "settled": 222,
+      "settled": 223,
       "unsettled": 4
     },
     "byVolatility": {
       "annuallyIndexed": 57,
       "awaitingGuidance": 10,
-      "staticStatute": 322,
+      "staticStatute": 323,
       "sunsetting": 6
     },
     "byJurisdiction": {
@@ -34,6 +34,7 @@
         "IL": 1,
         "IN": 7,
         "KS": 2,
+        "KY": 1,
         "LA": 2,
         "MA": 2,
         "MD": 2,
@@ -68,7 +69,7 @@
         "WV": 1,
         "WY": 1
       },
-      "stateTotal": 93
+      "stateTotal": 94
     }
   },
   "attestations": {
@@ -4682,6 +4683,23 @@
       "id": "ks-stat-79-32-117-social-security-exclusion",
       "classification": "settled",
       "jurisdiction": "state:KS",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ]
+    },
+    {
+      "id": "ky-krs-141-retirement-and-social-security",
+      "classification": "settled",
+      "jurisdiction": "state:KY",
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,

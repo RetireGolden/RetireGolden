@@ -250,7 +250,6 @@ const STATE_PRIMARY_PUBLISHERS: Readonly<Partial<Record<UsStateCode, readonly st
   ],
   KS: [
     'ksrevisor.gov', // Kansas Revisor of Statutes, Kansas Statutes Annotated
-    'ksrevenue.gov', // Kansas Department of Revenue, individual-income-tax instructions
   ],
   NM: [
     // Verified 2026-08-27 against the staged Batch C fetches. New Mexico
@@ -312,6 +311,14 @@ const STATE_PRIMARY_PUBLISHERS: Readonly<Partial<Record<UsStateCode, readonly st
   WI: [
     // Verified 2026-08-27 against the staged Schedule SB and rates page.
     'revenue.wi.gov', // Wisconsin Department of Revenue forms and instructions
+  ],
+  KY: [
+    // Verified 2026-08-27 from the staged KRS section PDFs. Kentucky serves
+    // each section as a PDF at `statute.aspx?id=…` on this apps subdomain —
+    // the chapter TOC page is only catchlines. The subdomain is listed
+    // deliberately: this table strips only a leading `www.`, so the apex
+    // `legislature.ky.gov` would admit nothing that was checked.
+    'apps.legislature.ky.gov', // Kentucky Legislative Research Commission, KRS
   ],
   // Verified 2026-08-27 from the staged WS4d-B fetches. Bare `legis.la.gov`:
   // every usable Law.aspx URL carries `www.legis.la.gov`, and
