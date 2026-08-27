@@ -4525,17 +4525,7 @@
       "verifiedOn": "2026-08-26",
       "dueOn": "2027-08-26",
       "implementedBy": [
-        "packages/engine/src/model/plan.ts",
-        "packages/engine/src/projection/simulate.ts",
-        "packages/engine/src/socialSecurity/benefitFactor.ts",
-        "packages/engine/src/socialSecurity/claimFactor.ts",
-        "packages/engine/src/socialSecurity/disability.ts",
-        "packages/engine/src/socialSecurity/familyMaximum.ts",
-        "packages/engine/src/socialSecurity/maritalBenefits.ts",
-        "packages/engine/src/socialSecurity/nra.ts",
-        "packages/engine/src/socialSecurity/piaFromEarnings.ts",
-        "packages/engine/src/socialSecurity/ssaWageData.ts",
-        "packages/engine/src/socialSecurity/survivorBenefit.ts"
+        "packages/engine/src/model/plan.ts"
       ],
       "fixtureFiles": []
     },
@@ -5282,8 +5272,8 @@
       "verifiedOn": "2026-08-26",
       "dueOn": "2027-08-26",
       "implementedBy": [
-        "packages/engine/src/projection/simulate.ts",
-        "packages/engine/src/socialSecurity/claimFactor.ts"
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts"
       ],
       "fixtureFiles": [
         "packages/engine/src/projection/simulate.test.ts"
@@ -5300,8 +5290,7 @@
       "dueOn": "2027-08-26",
       "implementedBy": [
         "packages/engine/src/model/plan.ts",
-        "packages/engine/src/projection/simulate.ts",
-        "packages/engine/src/socialSecurity/maritalBenefits.ts"
+        "packages/engine/src/projection/simulate.ts"
       ],
       "fixtureFiles": []
     },

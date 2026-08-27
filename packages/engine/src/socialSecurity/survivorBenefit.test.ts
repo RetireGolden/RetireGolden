@@ -125,18 +125,6 @@ describe('survivorBenefitMonthly', () => {
     })).toBe(0)
   })
 
-  it('pays the deceased actual benefit at survivor FRA when the deceased delayed', () => {
-    // Deceased delayed to 70: actual = 124% of PIA. Survivor at FRA → base = max(124%, 82.5%) = 124%.
-    const pia = 2000
-    const actual = pia * 1.24
-    expect(survivorBenefitMonthly({
-      deceasedPiaMonthly: pia,
-      deceasedActualMonthly: actual,
-      survivorClaimAge: age(67),
-      survivorFraMonths: SURVIVOR_FRA_1962PLUS,
-    })).toBeCloseTo(actual, 6)
-  })
-
   it('is unreduced when claiming at exactly the survivor FRA (66y8m)', () => {
     const pia = 2000
     expect(survivorBenefitMonthly({

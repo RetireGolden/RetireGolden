@@ -2357,12 +2357,6 @@ const registry = {
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
-      citation: '42 U.S.C. 402(r)',
-      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
-      quotedText:
-        'Presumed filing of application by individuals eligible for old-age insurance benefits and for wife\'s or husband\'s insurance benefits',
-    }, {
-      kind: 'statute',
       citation: '42 U.S.C. 402(r)(1)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
       quotedText:
@@ -2391,35 +2385,35 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-26',
     implementedBy: [
+      'packages/engine/src/model/plan.ts',
       'packages/engine/src/projection/simulate.ts',
-      'packages/engine/src/socialSecurity/claimFactor.ts',
     ],
   },
 
   'pl-118-273-sec-2-3-wep-gpo-repeal': {
     title: 'WEP and GPO are repealed for title II monthly benefits after December 2023',
     statement:
-      'Public Law 118-273 repealed the Government Pension Offset by striking section 202(k)(5) and repealed the Windfall Elimination Provisions by striking section 215(a)(7), (d)(3), and (f)(9). Its applicability rule makes those amendments apply to monthly insurance benefits payable under title II for months after December 2023. The engine has no WEP or GPO adjustment path, which is correct for its forward projections from the current 2026 parameter-pack year. A pre-2024 payable month would have required those adjustments, but neither that month nor the WEP/GPO facts can be expressed by an accepted Plan, so the engine produces no figure from this repealed rule rather than an approximation.',
+      'Public Law 118-273 repealed the Government Pension Offset by striking section 202(k)(5) and repealed the Windfall Elimination Provisions by striking section 215(a)(7), (d)(3), and (f)(9). Its applicability rule makes those amendments apply to monthly insurance benefits payable under title II for months after December 2023. The Plan has no non-covered-pension fact, WEP/GPO flag, or covered-service fact that would trigger those adjustments, so no accepted input reaches the repealed rule for any projection year and the engine produces no figure from it rather than an approximation.',
     classification: 'outOfScope',
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The Plan has no WEP/GPO flag, non-covered-pension fact, or covered-service fact. The sweep found no WEP or GPO adjustment in socialSecurity/benefitFactor.ts, socialSecurity/claimFactor.ts, socialSecurity/disability.ts, socialSecurity/familyMaximum.ts, socialSecurity/maritalBenefits.ts, socialSecurity/nra.ts, socialSecurity/piaFromEarnings.ts, socialSecurity/ssaWageData.ts, socialSecurity/survivorBenefit.ts, or projection/simulate.ts. That absence would have diverged for a pre-2024 monthly benefit, but the forward projection begins at the current pack year, after the Act applies; it is correct for every monthly benefit the product projects.',
+      'Absence-record surface is model/plan.ts: the Plan has no WEP/GPO flag, non-covered-pension fact, or covered-service fact. A code sweep found no WEP or GPO adjustment in socialSecurity/benefitFactor.ts, socialSecurity/claimFactor.ts, socialSecurity/disability.ts, socialSecurity/familyMaximum.ts, socialSecurity/maritalBenefits.ts, socialSecurity/nra.ts, socialSecurity/piaFromEarnings.ts, socialSecurity/ssaWageData.ts, socialSecurity/survivorBenefit.ts, or projection/simulate.ts — consistent with those trigger facts being unrepresentable for any startYear.',
     jurisdiction: 'federal',
     authority: [{
-      kind: 'legislativeHistory',
+      kind: 'statute',
       citation: 'P.L. 118-273, § 2(a)',
       url: 'https://www.govinfo.gov/content/pkg/PLAW-118publ273/pdf/PLAW-118publ273.pdf',
       quotedText:
         'Section 202(k) of the Social Security Act (42 U.S.C. 402(k)) is amended by striking paragraph (5).',
     }, {
-      kind: 'legislativeHistory',
+      kind: 'statute',
       citation: 'P.L. 118-273, § 3(a)',
       url: 'https://www.govinfo.gov/content/pkg/PLAW-118publ273/pdf/PLAW-118publ273.pdf',
       quotedText:
         'Section 215 of the Social Security Act (42 U.S.C. 415) is amended-- (1) in subsection (a), by striking paragraph (7); (2) in subsection (d), by striking paragraph (3); and (3) in subsection (f), by striking paragraph (9).',
     }, {
-      kind: 'legislativeHistory',
+      kind: 'statute',
       citation: 'P.L. 118-273, § 4',
       url: 'https://www.govinfo.gov/content/pkg/PLAW-118publ273/pdf/PLAW-118publ273.pdf',
       quotedText:
@@ -2429,37 +2423,31 @@ const registry = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-26',
-    implementedBy: [
-      'packages/engine/src/model/plan.ts',
-      'packages/engine/src/projection/simulate.ts',
-      'packages/engine/src/socialSecurity/benefitFactor.ts',
-      'packages/engine/src/socialSecurity/claimFactor.ts',
-      'packages/engine/src/socialSecurity/disability.ts',
-      'packages/engine/src/socialSecurity/familyMaximum.ts',
-      'packages/engine/src/socialSecurity/maritalBenefits.ts',
-      'packages/engine/src/socialSecurity/nra.ts',
-      'packages/engine/src/socialSecurity/piaFromEarnings.ts',
-      'packages/engine/src/socialSecurity/ssaWageData.ts',
-      'packages/engine/src/socialSecurity/survivorBenefit.ts',
-    ],
+    implementedBy: ['packages/engine/src/model/plan.ts'],
   },
 
   'usc-42-402-r-survivor-deemed-filing-exemption': {
     title: 'Survivor benefits are exempt from deemed filing, but a whole-plan survivor/own switch is not representable',
     statement:
-      'Section 402(r) addresses only old-age and wife’s or husband’s insurance benefits, not survivor benefits. SSA confirms that deemed filing does not apply to survivor benefits: a widow(er) entitled to survivor benefits is not deemed to file for retirement insurance benefits and may restrict the widow(er) application while delaying retirement insurance benefits. A survivor↔own claim-age sequence is therefore legally available, but the Plan has only one `claimAge` on each Social Security stream and no separate survivor claim age. The whole-plan ledger consequently cannot price the sequence and produces no figure from it.',
+      'Section 402(r) addresses only old-age and wife’s or husband’s insurance benefits, not survivor benefits. SSA confirms that deemed filing does not apply to survivor benefits: a widow(er) entitled to survivor benefits is not deemed to file for retirement insurance benefits and may restrict the widow(er) application while delaying retirement insurance benefits. A survivor↔own claim-age sequence is therefore legally available, but the Plan has only one `claimAge` on each Social Security stream (clamped to ages 62–70) and no separate survivor claim age, so a survivor-only claim at 60 is independently unrepresentable. The whole-plan ledger consequently cannot price the sequence and produces no figure from it.',
     classification: 'outOfScope',
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'model/plan.ts defines a Social Security stream with one `claimAge`. maritalBenefits.ts can accept a separate caller-supplied survivor age, but simulate.ts derives both the own and survivor ages from that same stream field, so no accepted Plan can supply the two claim dates a switch requires. packages/engine/src/projection/simulate.test.ts already pins the shared single-claim-age behavior in the §402(r) fixture, “uses the one claim age to pay the higher own benefit rather than a restricted spouse-only amount.” The separate planner-ui survivorSwitching view illustrates two dates but does not make them ledger inputs.',
+      'model/plan.ts defines a Social Security stream with one `claimAge` whose years are schema-clamped to 62–70. simulate.ts derives both the own and survivor ages from that same stream field, so no accepted Plan can supply the two claim dates a switch requires (including a survivor-only claim at 60). The separate planner-ui survivorSwitching view illustrates two dates but does not make them ledger inputs.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
-      citation: '42 U.S.C. 402(r)',
+      citation: '42 U.S.C. 402(r)(1)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
       quotedText:
-        'Presumed filing of application by individuals eligible for old-age insurance benefits and for wife\'s or husband\'s insurance benefits',
+        'If an individual is eligible for a wife\'s or husband\'s insurance benefit (except in the case of eligibility pursuant to clause (ii) of subsection (b)(1)(B) or subsection (c)(1)(B), as appropriate), in any month for which the individual is entitled to an old-age insurance benefit, such individual shall be deemed to have filed an application for wife\'s or husband\'s insurance benefits for such month.',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 402(r)(2)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
+      quotedText:
+        'If an individual is eligible (but for subsection (k)(4)) for an old-age insurance benefit in any month for which the individual is entitled to a wife\'s or husband\'s insurance benefit (except in the case of entitlement pursuant to clause (ii) of subsection (b)(1)(B) or subsection (c)(1)(B), as appropriate), such individual shall be deemed to have filed an application for old-age insurance benefits-',
     }, {
       kind: 'agencyGuidance',
       citation: 'SSA POMS GN 00204.035, § B',
@@ -2474,7 +2462,6 @@ const registry = {
     implementedBy: [
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/projection/simulate.ts',
-      'packages/engine/src/socialSecurity/maritalBenefits.ts',
     ],
   },
 

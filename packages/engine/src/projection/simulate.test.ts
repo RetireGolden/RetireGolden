@@ -2,7 +2,14 @@ import { describe, expect, it } from 'vitest'
 
 import { describeRule } from '../rules/describeRule.js'
 
-import { createEmptyPlan, parsePlan, type Account, type IncomeStream, type Plan } from '../model/plan.js'
+import {
+  createEmptyPlan,
+  parsePlan,
+  socialSecurityIncomeSchema,
+  type Account,
+  type IncomeStream,
+  type Plan,
+} from '../model/plan.js'
 import { computePiaFromEarnings, isPiaFromEarningsError } from '../socialSecurity/piaFromEarnings.js'
 import { combineTaxCalculators, computeFederalTax, createFederalTaxCalculator } from '../tax/federalTax.js'
 import { createStateTaxCalculator } from '../tax/stateTax.js'
@@ -186,25 +193,27 @@ describe('horizon and wages', () => {
 })
 
 describe('social security', () => {
-  // Section 402(r) does not permit a person who is eligible for both own and
-  // current-spouse benefits to elect the smaller spouse amount while holding
-  // the own old-age benefit back. At 62, the claimant's own reduced amount is
-  // larger than the reduced spouse amount:
+  // Section 402(r)(2) bites when a claimant seeks spouse-only at claim age: they
+  // are deemed to file for their own old-age benefit too. At 62 the two year-one
+  // annual figures discriminate that direction:
   //
-  //   own PIA 2,000 x 70% retirement factor x 12 = 16,800
-  //   spouse  PIA 3,000 x 50% x 65% spousal factor x 12 = 11,700
+  //   own PIA 2,000 × 70% retirement factor × 12 = 16,800  (deemed own filed)
+  //   spouse PIA 3,000 × 50% × 65% spousal factor × 12 = 11,700
   //
-  // The second reading is the forbidden restricted-application result. Both
-  // workers have claimed, so worker-filing eligibility and the family maximum
-  // are not the question this fixture answers.
+  // Rejected restricted-spousal reading: pay only the spousal amount (11,700)
+  // and leave own unclaimed. Deemed reading: own is also filed, so the year-one
+  // benefit is 16,800 (own exceeds spouse). Both workers have claimed, so
+  // worker-filing eligibility and the family maximum are not this fixture's
+  // question. A max(own, spouse) path with own already above spouse would not
+  // discriminate spouse-deeming under (r)(1); this fixture targets (r)(2).
   describeRule('usc-42-402-r-1-2-deemed-filing-old-age-and-spousal', {
     readings: {
-      deemedFiledOwnBenefitWins: 16_800,
-      restrictedCurrentSpouseOnlyClaim: 11_700,
+      deemedOwnAlsoFiled: 16_800,
+      restrictedSpouseOnlyLeavesOwnUnclaimed: 11_700,
     },
-    accepted: 'deemedFiledOwnBenefitWins',
+    accepted: 'deemedOwnAlsoFiled',
   }, ({ accepted, readings }) => {
-    it('uses the one claim age to pay the higher own benefit rather than a restricted spouse-only amount', () => {
+    it('deems own filed so year-one benefit is the own amount, not restricted spouse-only', () => {
       const plan = basePlan()
       plan.household.filingStatus = 'marriedFilingJointly'
       plan.household.people = [
@@ -224,7 +233,25 @@ describe('social security', () => {
 
       expect(lower.source).toBe('own-retirement')
       expect(lower.annualAmount).toBeCloseTo(accepted, 6)
-      expect(lower.annualAmount).not.toBeCloseTo(readings.restrictedCurrentSpouseOnlyClaim, 6)
+      expect(lower.annualAmount).not.toBeCloseTo(readings.restrictedSpouseOnlyLeavesOwnUnclaimed, 6)
+    })
+
+    it('exposes exactly one claimAge and no restricted-application vocabulary on the SS stream', () => {
+      // Bind the schema vocabulary itself (plan.test.ts gate pattern): a
+      // restricted spouse-only application cannot be expressed because the
+      // stream carries one claimAge and none of the restricted-claim fields.
+      const fields = Object.keys(socialSecurityIncomeSchema.shape)
+      expect(fields.filter((name) => name === 'claimAge')).toHaveLength(1)
+      expect('claimAge' in socialSecurityIncomeSchema.shape).toBe(true)
+      for (const absent of [
+        'restrictedApplication',
+        'restrictedSpouseClaim',
+        'spouseOnlyClaim',
+        'ownClaimAge',
+        'survivorClaimAge',
+      ] as const) {
+        expect(absent in socialSecurityIncomeSchema.shape).toBe(false)
+      }
     })
   })
 

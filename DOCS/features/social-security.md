@@ -57,10 +57,10 @@ Benefits-only analysis separately illustrates survivor switching
 - **Spousal top-up** while both are alive and claiming: the lower earner receives
   `max(own, 0.5 × spousePIA × spousal factor)`. The current-spouse auxiliary is capped to the room left
   under the worker's SSA retirement/survivor family maximum (PIA-based formula with official family-maximum
-  bend points in `ssaWageData.ts`); this is the post-2015 deemed-filing shape in
+  bend points in `ssaWageData.ts`). The plan offers one claim age rather than a restricted
+  current-spouse-only claim — the post-2015 deemed-filing shape in
   [42 U.S.C. §402(r)](https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim)
-  (`usc-42-402-r-1-2-deemed-filing-old-age-and-spousal`), so the plan offers one claim age rather than a
-  restricted current-spouse-only claim. No child/dependent auxiliaries are modeled.
+  (`usc-42-402-r-1-2-deemed-filing-old-age-and-spousal`). No child/dependent auxiliaries are modeled.
 - **Survivor step-up** after the first death: the survivor keeps the larger of their own benefit and the
   deceased's benefit, computed with full precision — the **survivor base is the deceased's actual
   (claim-age-adjusted) benefit** (including delayed credits if the deceased delayed), **RIB-LIM** caps it at
