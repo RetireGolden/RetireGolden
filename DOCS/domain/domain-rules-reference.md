@@ -378,10 +378,6 @@ Sources: [Notice 2025-67](https://www.irs.gov/pub/irs-drop/n-25-67.pdf),
   it). Events only register when they happen — a person who dies before their retirement age has no
   work-stoppage event. The form itself is the user's task (model the effect, never the filing).
 - Sources: [CMS 2026 Medicare Parts B premiums and deductibles](https://www.cms.gov/newsroom/fact-sheets/2026-medicare-parts-b-premiums-deductibles), [Medicare.gov 2026 costs](https://www.medicare.gov/basics/costs/medicare-costs), [The Finance Buff IRMAA brackets](https://thefinancebuff.com/medicare-irmaa-income-brackets.html), [SSA: request to lower IRMAA](https://www.ssa.gov/medicare/lower-irmaa), [Form SSA-44](https://www.ssa.gov/forms/ssa-44.pdf).
-- **Part B late-enrollment penalty** (`usc-42-1395r-b-part-b-late-enrollment-penalty`, outOfScope): the 10%-per-12-month uncovered-period premium increase is not modeled; the engine prices only the standard Part B premium scaled by IRMAA from age 65.
-- **Enrollment periods** (`usc-42-1395p-enrollment-periods`, outOfScope): initial, general, and special Part B enrollment windows are not modeled; Medicare months derive from attained age only.
-- **Part D IRA cost-sharing** (`usc-42-1395w-113-b-pl-117-169-part-d-penalty-and-cost-sharing`, outOfScope): Part D late-enrollment penalty, annual out-of-pocket threshold, and insulin copayment ceiling are not modeled.
-- **IRMAA redetermination evidence** (`cfr-20-418-1205-1230-irmaa-life-change-redetermination`, outOfScope): the regulation's life-changing-event evidence and redetermination request mechanics are not modeled beyond the planning-grade SSA-44 election surface.
 
 ## 8. ACA premium tax credit (pre-65 retirees)
 
@@ -1277,12 +1273,6 @@ and absent means no behavior change (feature-off byte-identical, `cases:diff` cl
 
 **Documented simplifications:** annual coupons (real TIPS pay semiannually); no CUSIP lot rounding in core
 mode; par-rung pricing on the par curve; planning-grade OID; taxable-side ladders only.
-
-**Registered gaps (savings bonds, 529-to-Roth, gift/estate, TIPS OID/premium):**
-- **529-to-Roth rollover** (`irc-529-c-3-E-529-to-roth-rollover-not-modeled`, outOfScope): the 15-year / $35,000 529(c)(3)(E) trustee-to-trustee path is not modeled.
-- **Gift and estate transfer tax** (`irc-2503-b-annual-gift-exclusion-not-modeled`, `irc-2010-c-3-basic-exclusion-amount-not-modeled`, `irc-2010-c-5-dsue-portability-election-not-modeled`, outOfScope): chapter 12 gift tax and chapter 11 estate-tax exclusion/portability mechanics are not computed.
-- **Savings bonds** (`cfr-31-363-52-savings-bond-annual-purchase-limit`, `irc-454-savings-bond-interest-deferral`, `irc-135-education-savings-bond-interest-exclusion`, outOfScope): book-entry purchase limits, section 454 deferral/default inclusion, and section 135 education exclusion are not modeled.
-- **TIPS OID and premium** (`treas-reg-1-1275-7-d-4-positive-inflation-adjustment-oid`, settled; `treas-reg-1-1275-7-f-1-deflation-adjustment-income`, approximated / overstatesTax; `treas-reg-1-1275-7-f-2-deflation-basis-decrease-not-modeled`, `treas-reg-1-1275-7-f-3-tips-acquisition-premium`, `irc-171-tips-bond-premium-amortization`, outOfScope): positive inflation accretion is OID; deflation income clamp, basis decrease, acquisition premium, and bond premium amortization gaps are registered separately.
 
 **Code:** math in [engine/ladder/](../../packages/engine/src/ladder/); schema in
 [engine/model/plan.ts](../../packages/engine/src/model/plan.ts) (`tipsLadderSchema`, `incomeFloorSchema`); ledger

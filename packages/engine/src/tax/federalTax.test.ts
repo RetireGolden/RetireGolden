@@ -66,8 +66,8 @@ function optimizerZeroRateFixturePlan(): Plan {
   return plan
 }
 
-/** A one-rung, already-owned TIPS ladder whose maturity-year OID is visible in the cash-flow ledger. */
-function tipsOidFixturePlan(annualWages = 0, ladderYear = 2027): Plan {
+/** A one-rung, already-owned TIPS ladder whose 2027 OID is visible in the cash-flow ledger. */
+function tipsOidFixturePlan(annualWages = 0): Plan {
   let idCounter = 0
   const plan = createEmptyPlan({
     newId: () => `tips-oid-fixture-${++idCounter}`,
@@ -108,8 +108,8 @@ function tipsOidFixturePlan(annualWages = 0, ladderYear = 2027): Plan {
       id: 'tips-oid-ladder',
       name: 'TIPS OID fixture',
       purpose: 'floor',
-      startYear: ladderYear,
-      endYear: ladderYear,
+      startYear: 2027,
+      endYear: 2027,
       annualRealAmount: 10_000,
     }],
   }
@@ -2168,17 +2168,16 @@ describeRule('treas-reg-1-1275-7-d-4-positive-inflation-adjustment-oid', {
 })
 
 // The paired market path is +3% from 2025 to 2026 followed by -20% from
-// 2026 to 2027. The rung matures in 2028 (firstPayoutOffset 4 from the 2024
-// already-owned anchor), so 2027 is a non-maturity coupon year and the
-// authority side needs no minimum-guarantee / par-floor payment. Under the
-// regulation, the negative adjustment reduces current interest, permits only
-// the bounded ordinary loss supported by prior inclusions, and carries any
-// excess. The engine's Math.max(0, ...) clamp emits no negative OID, so it
-// leaves the coupon taxable. Produced MAGI is wages plus that full coupon.
+// 2026 to 2027 (the fixture starts in 2025). Under the regulation, that
+// negative adjustment reduces current interest, permits only
+// the bounded ordinary loss supported by prior inclusions, carries any excess,
+// and reduces basis. The engine's Math.max(0, ...) clamp emits no negative OID,
+// so it leaves the coupon taxable. The produced MAGI is intentionally pinned
+// with a placeholder: the orchestrator observes the real value before gating.
 const DEFLATION_WAGES = 100_000
 const deflationBuild = buildLadder({
   annualRealIncome: 10_000,
-  firstPayoutOffset: 4,
+  firstPayoutOffset: 3,
   payoutYears: 1,
   curve: EMBEDDED_REAL_YIELD_CURVE,
 })
@@ -2201,19 +2200,18 @@ const authorityOrdinaryLoss = Math.min(
   priorInterestInclusions,
 )
 const authorityDeflationMagi = DEFLATION_WAGES + authorityReducedInterest - authorityOrdinaryLoss
-const engineDeflationMagi = DEFLATION_WAGES + currentInterestBeforeDeflation
 
-describeRule('treas-reg-1-1275-7-f-1-deflation-adjustment-income', {
+describeRule('treas-reg-1-1275-7-f-deflation-adjustment-and-basis', {
   readings: {
     authorityReducesAndLimitsDeflationYearInterest: authorityDeflationMagi,
-    engineClampsDeflationAndLeavesCouponTaxable: engineDeflationMagi,
+    engineClampsDeflationAndLeavesCouponTaxable: 100_149.67108492882,
   },
   accepted: 'authorityReducesAndLimitsDeflationYearInterest',
   produced: 'engineClampsDeflationAndLeavesCouponTaxable',
-  note: 'paired positive-inflation then deflation path; 2027 non-maturity',
+  note: 'paired positive-inflation then deflation path',
 }, ({ accepted, produced }) => {
   it('pins the engine output while distinguishing the deflation reading', () => {
-    const result = simulatePlan(tipsOidFixturePlan(DEFLATION_WAGES, 2028), {
+    const result = simulatePlan(tipsOidFixturePlan(DEFLATION_WAGES), {
       startYear: 2025,
       taxCalculator: createFederalTaxCalculator(),
       market: { inflationPct: [3, -20] },

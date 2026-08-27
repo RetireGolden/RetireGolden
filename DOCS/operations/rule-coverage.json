@@ -2,44 +2,73 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 1,
   "registry": {
-    "total": 360,
+    "total": 395,
     "byClassification": {
-      "approximated": 81,
-      "outOfScope": 70,
-      "settled": 205,
+      "approximated": 100,
+      "outOfScope": 69,
+      "settled": 222,
       "unsettled": 4
     },
     "byVolatility": {
-      "annuallyIndexed": 53,
+      "annuallyIndexed": 57,
       "awaitingGuidance": 10,
-      "staticStatute": 291,
+      "staticStatute": 322,
       "sunsetting": 6
     },
     "byJurisdiction": {
-      "federal": 303,
+      "federal": 302,
       "states": {
         "AK": 1,
         "AR": 9,
         "AZ": 8,
+        "CA": 1,
+        "CO": 2,
+        "CT": 1,
+        "DC": 1,
+        "DE": 1,
         "FL": 1,
+        "GA": 1,
+        "HI": 1,
         "IA": 1,
+        "ID": 1,
         "IL": 1,
         "IN": 7,
+        "KS": 2,
+        "LA": 2,
+        "MA": 2,
+        "MD": 2,
         "ME": 1,
+        "MI": 2,
+        "MN": 1,
         "MO": 1,
         "MS": 7,
+        "MT": 1,
+        "NC": 1,
         "ND": 8,
+        "NE": 2,
+        "NH": 1,
+        "NJ": 1,
+        "NM": 1,
         "NV": 1,
         "NY": 1,
+        "OH": 1,
+        "OK": 1,
+        "OR": 1,
         "PA": 2,
+        "RI": 1,
         "SC": 1,
         "SD": 1,
         "TN": 2,
         "TX": 2,
+        "UT": 1,
+        "VA": 1,
+        "VT": 1,
+        "WA": 1,
+        "WI": 1,
         "WV": 1,
         "WY": 1
       },
-      "stateTotal": 57
+      "stateTotal": 93
     }
   },
   "attestations": {
@@ -233,7 +262,7 @@
     {
       "path": "ladder/ladderMath.ts",
       "sweptOn": "2026-08-27",
-      "note": "TIPS OID/deflation and §171 premium absence registered (treas-reg-1-1275-7-f-1-deflation-adjustment-income, treas-reg-1-1275-7-f-2-deflation-basis-decrease-not-modeled, treas-reg-1-1275-7-f-3-tips-acquisition-premium, irc-171-tips-bond-premium-amortization); statutory 0.125% min coupon and par-yield pricing conventions remain"
+      "note": "TIPS OID/deflation and §171 premium absence registered (treas-reg-1-1275-7-*, irc-171-tips-*); statutory 0.125% min coupon and par-yield pricing conventions remain"
     },
     {
       "path": "longevity/ssaPeriod2022.ts",
@@ -845,6 +874,23 @@
       ]
     },
     {
+      "id": "ca-rtc-17087-social-security-exclusion",
+      "classification": "settled",
+      "jurisdiction": "state:CA",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ]
+    },
+    {
       "id": "cfr-20-404-1574-b-2-sga-non-blind-monthly-amount",
       "classification": "settled",
       "jurisdiction": "federal",
@@ -1024,7 +1070,22 @@
       "fixtureFiles": []
     },
     {
-      "id": "cfr-31-363-52-savings-bond-annual-purchase-limit",
+      "id": "cfr-31-360-44-savings-bond-early-redemption-forfeiture",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "fixtureFiles": []
+    },
+    {
+      "id": "cfr-31-363-11-savings-bond-purchase-limits",
       "classification": "outOfScope",
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -1036,6 +1097,95 @@
         "packages/engine/src/model/plan.ts"
       ],
       "fixtureFiles": []
+    },
+    {
+      "id": "co-crs-39-22-104-federal-base-and-pension-cap",
+      "classification": "approximated",
+      "jurisdiction": "state:CO",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/params/state/types.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ]
+    },
+    {
+      "id": "co-crs-39-22-104-social-security-inclusion",
+      "classification": "approximated",
+      "jurisdiction": "state:CO",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/params/state/types.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ]
+    },
+    {
+      "id": "ct-cgs-12-701-20-b-social-security-retirement",
+      "classification": "approximated",
+      "jurisdiction": "state:CT",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/params/state/types.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ]
+    },
+    {
+      "id": "dc-code-47-1803-03-federal-standard-and-ss",
+      "classification": "settled",
+      "jurisdiction": "state:DC",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/params/state/index.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ]
+    },
+    {
+      "id": "de-code-30-1106-social-security-retirement-subtractions",
+      "classification": "settled",
+      "jurisdiction": "state:DE",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ]
     },
     {
       "id": "fl-const-7-5-a-income-tax-prohibited",
@@ -1104,6 +1254,42 @@
       ],
       "fixtureFiles": [
         "packages/engine/src/actions/ownedNonRothIraAnnualPhysicalTransaction.test.ts"
+      ]
+    },
+    {
+      "id": "ga-code-48-7-27-retirement-and-social-security-exclusion",
+      "classification": "approximated",
+      "jurisdiction": "state:GA",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/params/state/types.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ]
+    },
+    {
+      "id": "hi-hrs-235-7-pension-and-social-security",
+      "classification": "approximated",
+      "jurisdiction": "state:HI",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/params/state/types.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
       ]
     },
     {
@@ -1227,6 +1413,23 @@
       ],
       "fixtureFiles": [
         "packages/engine/src/rules/approximations/stateTax.approximation.test.ts"
+      ]
+    },
+    {
+      "id": "id-code-63-3022-federal-standard-and-ss",
+      "classification": "settled",
+      "jurisdiction": "state:ID",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
       ]
     },
     {
@@ -1890,7 +2093,7 @@
       ]
     },
     {
-      "id": "irc-171-tips-bond-premium-amortization",
+      "id": "irc-171-tips-acquisition-premium-amortization",
       "classification": "outOfScope",
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -4458,6 +4661,194 @@
       ]
     },
     {
+      "id": "ks-stat-79-32-117-public-pension-exclusion",
+      "classification": "approximated",
+      "jurisdiction": "state:KS",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/params/state/types.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ]
+    },
+    {
+      "id": "ks-stat-79-32-117-social-security-exclusion",
+      "classification": "settled",
+      "jurisdiction": "state:KS",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ]
+    },
+    {
+      "id": "la-rs-47-44-1-retirement-exemption",
+      "classification": "settled",
+      "jurisdiction": "state:LA",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2026-12-25",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ]
+    },
+    {
+      "id": "la-rs-47-44-2-social-security-federal-retirement",
+      "classification": "settled",
+      "jurisdiction": "state:LA",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ]
+    },
+    {
+      "id": "ma-gen-laws-ch62-s2-public-pension-exclusion",
+      "classification": "settled",
+      "jurisdiction": "state:MA",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ]
+    },
+    {
+      "id": "ma-gen-laws-ch62-s2-social-security",
+      "classification": "settled",
+      "jurisdiction": "state:MA",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ]
+    },
+    {
+      "id": "md-tax-10-207-social-security-exclusion",
+      "classification": "settled",
+      "jurisdiction": "state:MD",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ]
+    },
+    {
+      "id": "md-tax-10-209-pension-exclusion",
+      "classification": "approximated",
+      "jurisdiction": "state:MD",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2026-12-25",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/stateTax.approximation.test.ts"
+      ]
+    },
+    {
+      "id": "mi-mcl-206-30-f-iii-social-security",
+      "classification": "settled",
+      "jurisdiction": "state:MI",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ]
+    },
+    {
+      "id": "mi-mcl-206-30-retirement-and-ss",
+      "classification": "approximated",
+      "jurisdiction": "state:MI",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2026-12-25",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/stateTax.approximation.test.ts"
+      ]
+    },
+    {
+      "id": "mn-stat-290-0132-subd-26-social-security-inclusion",
+      "classification": "approximated",
+      "jurisdiction": "state:MN",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2026-12-25",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/stateTax.approximation.test.ts"
+      ]
+    },
+    {
       "id": "mo-rsmo-143-121-capital-gain-deduction",
       "classification": "settled",
       "jurisdiction": "state:MO",
@@ -4615,6 +5006,41 @@
       ]
     },
     {
+      "id": "mt-mca-15-30-2110-federal-agi-social-security",
+      "classification": "settled",
+      "jurisdiction": "state:MT",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/params/state/index.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ]
+    },
+    {
+      "id": "ncgs-105-153-5-social-security-exclusion",
+      "classification": "settled",
+      "jurisdiction": "state:NC",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ]
+    },
+    {
       "id": "ndcc-57-38-30-3-1-g-commissioner-indexed-rate-schedule",
       "classification": "settled",
       "jurisdiction": "state:ND",
@@ -4744,6 +5170,92 @@
       "effectiveThrough": null,
       "verifiedOn": "2026-08-04",
       "dueOn": "2027-08-04",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/params/state/index.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ]
+    },
+    {
+      "id": "ne-stat-77-2716-public-pension-exemption",
+      "classification": "approximated",
+      "jurisdiction": "state:NE",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2024,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/stateTax.approximation.test.ts"
+      ]
+    },
+    {
+      "id": "ne-stat-77-2716-social-security-subtraction",
+      "classification": "settled",
+      "jurisdiction": "state:NE",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2024,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ]
+    },
+    {
+      "id": "nh-rsa-77-taxation-of-incomes-repealed",
+      "classification": "settled",
+      "jurisdiction": "state:NH",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2025,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ]
+    },
+    {
+      "id": "nj-stat-54a-6-10-retirement-income-exclusion",
+      "classification": "approximated",
+      "jurisdiction": "state:NJ",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2021,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/stateTax.approximation.test.ts"
+      ]
+    },
+    {
+      "id": "nm-stat-7-2-5-14-social-security-and-federal-standard",
+      "classification": "approximated",
+      "jurisdiction": "state:NM",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
       "implementedBy": [
         "packages/engine/src/params/state/data/year2026.ts",
         "packages/engine/src/params/state/index.ts",
@@ -5034,6 +5546,57 @@
       ]
     },
     {
+      "id": "oh-rev-code-5747-01-social-security-and-public-pension",
+      "classification": "approximated",
+      "jurisdiction": "state:OH",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ]
+    },
+    {
+      "id": "ok-stat-68-2358-retirement-and-social-security",
+      "classification": "approximated",
+      "jurisdiction": "state:OK",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ]
+    },
+    {
+      "id": "or-stat-316-054-social-security-exclusion",
+      "classification": "settled",
+      "jurisdiction": "state:OR",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ]
+    },
+    {
       "id": "pa-pit-no-capital-loss-carryforward",
       "classification": "settled",
       "jurisdiction": "state:PA",
@@ -5163,6 +5726,23 @@
       "fixtureFiles": []
     },
     {
+      "id": "ri-gen-laws-44-30-12-social-security-and-pension-modification",
+      "classification": "approximated",
+      "jurisdiction": "state:RI",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ]
+    },
+    {
       "id": "sc-code-12-6-1170-retirement-income-deduction",
       "classification": "approximated",
       "jurisdiction": "state:SC",
@@ -5264,7 +5844,7 @@
       ]
     },
     {
-      "id": "treas-reg-1-1275-7-f-1-deflation-adjustment-income",
+      "id": "treas-reg-1-1275-7-f-deflation-adjustment-and-basis",
       "classification": "approximated",
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -5280,38 +5860,6 @@
       "fixtureFiles": [
         "packages/engine/src/tax/federalTax.test.ts"
       ]
-    },
-    {
-      "id": "treas-reg-1-1275-7-f-2-deflation-basis-decrease-not-modeled",
-      "classification": "outOfScope",
-      "jurisdiction": "federal",
-      "volatility": "staticStatute",
-      "effectiveFrom": 2026,
-      "effectiveThrough": null,
-      "verifiedOn": "2026-08-27",
-      "dueOn": "2027-08-27",
-      "implementedBy": [
-        "packages/engine/src/ladder/ladderMath.ts",
-        "packages/engine/src/model/plan.ts",
-        "packages/engine/src/projection/simulate.ts"
-      ],
-      "fixtureFiles": []
-    },
-    {
-      "id": "treas-reg-1-1275-7-f-3-tips-acquisition-premium",
-      "classification": "outOfScope",
-      "jurisdiction": "federal",
-      "volatility": "staticStatute",
-      "effectiveFrom": 2026,
-      "effectiveThrough": null,
-      "verifiedOn": "2026-08-27",
-      "dueOn": "2027-08-27",
-      "implementedBy": [
-        "packages/engine/src/ladder/ladderMath.ts",
-        "packages/engine/src/model/plan.ts",
-        "packages/engine/src/projection/simulate.ts"
-      ],
-      "fixtureFiles": []
     },
     {
       "id": "treas-reg-1-401-a-9-2-b-2-v-applicable-age-1959",
@@ -6455,6 +7003,93 @@
       ],
       "fixtureFiles": [
         "packages/engine/src/params/params.test.ts"
+      ]
+    },
+    {
+      "id": "ut-code-59-10-114-social-security-tax-credit",
+      "classification": "approximated",
+      "jurisdiction": "state:UT",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ]
+    },
+    {
+      "id": "va-code-58-1-322-03-age-deduction-and-social-security",
+      "classification": "approximated",
+      "jurisdiction": "state:VA",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ]
+    },
+    {
+      "id": "vt-stat-32-5830e-social-security-inclusion",
+      "classification": "approximated",
+      "jurisdiction": "state:VT",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ]
+    },
+    {
+      "id": "wa-dor-no-broad-individual-income-tax",
+      "classification": "settled",
+      "jurisdiction": "state:WA",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/params/types.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ]
+    },
+    {
+      "id": "wi-stat-71-05-retirement-income-subtraction",
+      "classification": "approximated",
+      "jurisdiction": "state:WI",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
       ]
     },
     {

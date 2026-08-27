@@ -4092,28 +4092,16 @@ const registry = {
         'For purposes of this subsection, the term "uncovered month" means, with respect to a part D eligible individual, any month beginning after the end of the initial enrollment period under section 1395w-101(b)(2) of this title unless the individual can demonstrate that the individual had creditable prescription drug coverage (as defined in paragraph (4)) for any portion of such month.',
     }, {
       kind: 'statute',
-      citation: 'P.L. 117-169, section 11201(a)(1)(A)',
-      url: 'https://www.govinfo.gov/content/pkg/PLAW-117publ169/pdf/PLAW-117publ169.pdf',
-      quotedText:
-        'for a year preceding 2025 and for costs above the annual deductible specified in paragraph (1) and up to the annual out-of-pocket threshold specified in paragraph (4)(B) for 2025 and each subsequent year',
-    }, {
-      kind: 'statute',
       citation: 'P.L. 117-169, section 11201(a)(3)(B)(i)(III)',
       url: 'https://www.govinfo.gov/content/pkg/PLAW-117publ169/pdf/PLAW-117publ169.pdf',
       quotedText:
-        '``(VII) for 2025, is equal to $2,000; or ``(VIII) for a subsequent year, is equal to the amount specified in this subparagraph for the previous year, increased by the annual percentage increase described in paragraph (6) for the year involved.\'\'',
+        '``(VII) for 2025, is equal to $2,000; or ``(VIII) for a subsequent year, is equal to the amount specified in this subparagraph for the previous year, increased by the annual percentage increase described in paragraph (6) for the year involved.\'\';',
     }, {
       kind: 'statute',
-      citation: 'P.L. 117-169, section 11406(a), adding 1860D-2(b)(9)(B)(ii)',
+      citation: 'P.L. 117-169, section 11406(a)',
       url: 'https://www.govinfo.gov/content/pkg/PLAW-117publ169/pdf/PLAW-117publ169.pdf',
       quotedText:
-        'For a plan year beginning on or after January 1, 2025, the coverage provides benefits for any covered insulin product, prior to an individual reaching the out-of-pocket threshold under paragraph (4), with cost-sharing for a month\'s supply that does not exceed the applicable copayment amount.',
-    }, {
-      kind: 'statute',
-      citation: 'P.L. 117-169, section 11406(a), adding 1860D-2(b)(9)(D)',
-      url: 'https://www.govinfo.gov/content/pkg/PLAW-117publ169/pdf/PLAW-117publ169.pdf',
-      quotedText:
-        'the term \'applicable copayment amount\' means, with respect to a covered insulin product under a prescription drug plan or an MA\u2013PD plan dispensed\u2014 ``(i) during plan years 2023, 2024, and 2025, $35; and ``(ii) during plan year 2026 and each subsequent plan year, the lesser of\u2014 ``(I) $35; ``(II) an amount equal to 25 percent of the maximum fair price established for the covered insulin product in accordance with part E of title XI; or ``(III) an amount equal to 25 percent of the negotiated price of the covered insulin product under the prescription drug plan or MA\u2013PD plan.',
+        '``(ii) during plan year 2026 and each subsequent plan year, the lesser of-- ``(I) $35; ``(II) an amount equal to 25 percent of the maximum fair price established for the covered insulin product in accordance with part E of title XI; or ``(III) an amount equal to 25 percent of the negotiated price of the covered insulin product under the prescription drug plan or ... plan.\'\'',
     }],
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
@@ -4141,7 +4129,7 @@ const registry = {
       citation: '42 U.S.C. 1395r(b)',
       url: 'https://www.law.cornell.edu/uscode/text/42/1395r',
       quotedText:
-        'In the case of an individual whose coverage period began pursuant to an enrollment after his initial enrollment period (determined pursuant to subsection (c) or (d) of section 1395p of this title) and not pursuant to a special enrollment period under subsection (i)(4), (l), or (m) of section 1395p of this title, the monthly premium determined under subsection (a) (without regard to any adjustment under subsection (i)) shall be increased by 10 percent of the monthly premium so determined for each full 12 months (in the same continuous period of eligibility) in which he could have been but was not enrolled.',
+        'the monthly premium determined under subsection (a) (without regard to any adjustment under subsection (i)) shall be increased by 10 percent of the monthly premium so determined for each full 12 months (in the same continuous period of eligibility) in which he could have been but was not enrolled.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -4179,10 +4167,10 @@ const registry = {
         'There shall be a general enrollment period during the period beginning on January 1 and ending on March 31 of each year.',
     }, {
       kind: 'statute',
-      citation: '42 U.S.C. 1395p(i)(3)(A)',
+      citation: '42 U.S.C. 1395p(i)(1)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section1395p&num=0&edition=prelim',
       quotedText:
-        'The special enrollment period referred to in the first sentences of paragraphs (1) and (2) is the period including each month during any part of which the individual is enrolled in a group health plan described in section 1395y(b)(1)(A)(v) of this title by reason of current employment status ending with the last day of the eighth consecutive month in which the individual is at no time so enrolled.',
+        'there shall be a special enrollment period described in paragraph (3).',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -4195,14 +4183,14 @@ const registry = {
   },
 
   'cfr-20-418-1205-1230-irmaa-life-change-redetermination': {
-    title: 'IRMAA life-changing-event evidence and redetermination request is not modeled',
+    title: 'IRMAA life-changing-event evidence and appeal workflow is not modeled',
     statement:
-      'The regulation recognizes a spouse\'s death, marriage, divorce or annulment, work stoppage or reduction, loss of qualifying income-producing property, an employer pension cessation/termination/reorganization, and an employer settlement as major life-changing events. It makes an initial determination based on a more recent tax year effective when modified adjusted gross income is significantly reduced as a result of one of those events; POMS lists eight leaves by naming work reduction and work stoppage separately. The staged regulation and POMS index do not define “significantly reduced” as a named IRMAA-tier crossing, so the registry does not assert that extra condition. The engine already has a planning-grade SSA-44 election surface — healthcareConfigSchema.ssa44 (survivorYears / retirementYears) and simulate.ts\'s min(year-2, year-1) lookback for the two premium years after a qualifying event, named on usc-42-1395r-i-4-b-two-year-magi-lookback. What this record registers as absent is only the 20 CFR 418.1205 / 418.1230 evidence-and-redetermination-request surface: the full qualifying-event category set, documentation, and a redetermination request that SSA adjudicates under 418.1230(a).',
+      'The regulation recognizes a spouse\'s death, marriage, divorce or annulment, work stoppage or reduction, loss of qualifying income-producing property, an employer pension cessation/termination/reorganization, and an employer settlement as major life-changing events. It makes an initial determination based on a more recent tax year effective when modified adjusted gross income is significantly reduced as a result of one of those events; POMS lists eight leaves by naming work reduction and work stoppage separately. The staged regulation and POMS index do not define “significantly reduced” as a named IRMAA-tier crossing, so the registry does not assert that extra condition. The engine already has a planning-grade SSA-44 election surface — healthcareConfigSchema.ssa44 (survivorYears / retirementYears) and simulate.ts\'s min(year-2, year-1) lookback for the two premium years after a qualifying event, named on usc-42-1395r-i-4-b-two-year-magi-lookback. What this record registers as absent is only the 20 CFR 418.1205 / 418.1230 evidence-and-appeal workflow: the full qualifying-event category set, documentation, and a redetermination request that SSA adjudicates.',
     classification: 'outOfScope',
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'Keep outOfScope because the remaining claim is genuinely an absent administrative redetermination-request surface, not a mispriced MAGI. The planning toggles and min lookback are accepted Plan/simulate behavior already disclosed on the sibling lookback record; model/plan.ts and simulate.ts still have no fields or results for event-category evidence, supporting documentation, or a filed redetermination request under 418.1230. This record deliberately does not re-settle the SSA-44 lookback math.',
+      'Keep outOfScope because the remaining claim is genuinely an absent administrative workflow, not a mispriced MAGI. The planning toggles and min lookback are accepted Plan/simulate behavior already disclosed on the sibling lookback record; model/plan.ts and simulate.ts still have no fields or results for event-category evidence, supporting documentation, a filed redetermination request, or an SSA appeal outcome. This record deliberately does not re-settle the SSA-44 lookback math.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'regulation',
@@ -11345,6 +11333,357 @@ const registry = {
     ],
   },
 
+  // ---------------------------------------------------------------------------
+  // WS4d Batch A — 2026-08-27.
+  //
+  // These records deliberately cover only the parts of the Batch A packs whose
+  // staged primary texts carry operative language. Alabama remains blocked:
+  // both staged DOR pages are script payloads with no operative retirement or
+  // Social Security statement. The CA, CO, DC, and GA records below use the
+  // refreshed sources; they are not reconstructed from the old matrix.
+  // ---------------------------------------------------------------------------
+
+  'ca-rtc-17087-social-security-exclusion': {
+    title: 'California does not apply IRC 86 to Social Security or Tier 1 Railroad benefits',
+    statement:
+      'California says IRC section 86 does not apply, so federally taxable Social Security and Tier 1 Railroad benefits are not part of the California base. The pack\'s `taxesSocialSecurity: false` omits precisely that federal inclusion. This source does not decide California\'s treatment of pension or IRA income, so the separate `{ kind: \'none\' }` data choice is deliberately not claimed by this record.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:CA',
+    authority: [{
+      kind: 'statute',
+      citation: 'Cal. Rev. & Tax. Code 17087(a)',
+      url: 'https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=RTC&sectionNum=17087.',
+      quotedText:
+        'Section 86 of the Internal Revenue Code, relating to Social Security and Tier 1 Railroad Retirement Benefits, shall not apply.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+    ],
+  },
+
+  'co-crs-39-22-104-federal-base-and-pension-cap': {
+    title: 'Colorado starts from federal taxable income but has a $20,000 pension-and-annuity tier at ages 55-64',
+    statement:
+      'Colorado taxes federal taxable income, modified by section 39-22-104(4). That is why the pack carries the federal standard-deduction figure and conforms it as the federal figure moves. The same subsection, however, permits a $20,000 per-person subtraction for pensions and annuities from age 55 through 64, and expressly includes non-premature IRA distributions. Approximated: the pack has only its $24,000 age-65 cap, so it removes none of a source-covered age-60 IRA or pension distribution. The resulting base is $20,000 too high before the federal deduction, overstating Colorado tax for that limb.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'overstatesTax',
+    conventionRationale: null,
+    jurisdiction: 'state:CO',
+    authority: [{
+      kind: 'statute',
+      citation: 'Colo. Rev. Stat. 39-22-104(1.7)(c), (2)',
+      url: 'https://olls.info/crs/crs2026-title-39.htm',
+      quotedText:
+        'Except as otherwise provided in section 39-22-627, subject to subsection (2) of this section, with respect to taxable years commencing on or after January 1, 2022, a tax of four and forty one-hundredths percent is imposed on the federal taxable income, as determined pursuant to section 63 of the internal revenue code, of every individual, estate, and trust. (2) Prior to the application of the rate of tax prescribed in subsection (1), (1.5), or (1.7) of this section, the federal taxable income shall be modified as provided in subsections (3) and (4) of this section.',
+    }, {
+      kind: 'statute',
+      citation: 'Colo. Rev. Stat. 39-22-104(4)(f)(III)(A), (D)',
+      url: 'https://olls.info/crs/crs2026-title-39.htm',
+      quotedText:
+        'Amounts subtracted under this subsection (4)(f) are capped at twenty thousand dollars per tax year for any individual who is fifty-five years of age or older but less than sixty-five years of age at the close of the taxable year. ... "Pensions and annuities" includes distributions from individual retirement arrangements and self-employed retirement accounts to the extent that such distributions are not deemed to be premature distributions for federal income tax purposes, amounts received from fully matured privately purchased annuities, social security benefits, and amounts paid from any such sources by reason of permanent disability or death of the person entitled to receive the benefits.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/params/state/types.ts',
+    ],
+  },
+
+  'co-crs-39-22-104-social-security-inclusion': {
+    title: 'Colorado fully subtracts federally taxable Social Security at age 65 and older',
+    statement:
+      'For a taxpayer age 65 or older, Colorado first considers federally taxable Social Security against the ordinary $24,000 pension-and-annuity cap and raises that cap to the full federally taxable benefit if necessary. The source therefore removes all of that federal share before Colorado tax. Approximated: `taxesSocialSecurity: true` leaves the share in the pack base at every age, so it overstates tax for this age-65 source-covered limb. The same statutory mechanism is income-tested for taxpayers 55-64; the engine has no field for that income test, so this record pins the unconditional 65-plus limb only.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'overstatesTax',
+    conventionRationale: null,
+    jurisdiction: 'state:CO',
+    authority: [{
+      kind: 'statute',
+      citation: 'Colo. Rev. Stat. 39-22-104(4)(f)(III)(B)',
+      url: 'https://olls.info/crs/crs2026-title-39.htm',
+      quotedText:
+        'For income tax years commencing on or after January 1, 2022, the cap set forth in this subsection (4)(f)(III)(B) is calculated by first considering the total amount of social security benefits a taxpayer received that were included in federal taxable income at the close of the taxable year. If the total amount of such social security benefits exceeds the cap set forth in this subsection (4)(f)(III)(B), then the cap is increased to an amount equal to the total amount of such social security benefits.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/params/state/types.ts',
+    ],
+  },
+
+  'dc-code-47-1803-03-federal-standard-and-ss': {
+    title: 'The District excludes federally taxable Social Security and follows the federal standard-deduction choice',
+    statement:
+      'D.C. separately excludes Social Security and Tier 1 Railroad benefits that were taxable under IRC section 86, exactly the federal share omitted by the pack\'s `taxesSocialSecurity: false`. It also requires a federal standard-deduction claimant to take the applicable District standard deduction, whose amount is specified in a separate definition. The staged sections establish the Social Security subtraction and the linked filing choice; they do not restate that definition section\'s dollar amount, so this record makes no independent claim about the amount or its future indexation.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:DC',
+    authority: [{
+      kind: 'statute',
+      citation: 'D.C. Code 47-1803.02(a)(2)(L)',
+      url: 'https://code.dccouncil.gov/us/dc/council/code/sections/47-1803.02',
+      quotedText:
+        'The following items shall be excluded in the computation of District gross income: ... Social security and tier 1 railroad retirement benefits subject to taxation under \\u00a7 86 of the Internal Revenue Code of 1986.',
+    }, {
+      kind: 'statute',
+      citation: 'D.C. Code 47-1803.03(c)',
+      url: 'https://code.dccouncil.gov/us/dc/council/code/sections/47-1803.03',
+      quotedText:
+        'Every individual who claims the standard deduction on his or her federal income tax return shall claim the applicable standard deduction specified in \\u00a7 47-1801.04(26).',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/params/state/index.ts',
+    ],
+  },
+
+  'ga-code-48-7-27-retirement-and-social-security-exclusion': {
+    title: 'Georgia has a $35,000 retirement-income tier at ages 62-64 and separately subtracts taxable Social Security',
+    statement:
+      'Georgia DOR\'s filing instructions make taxable Social Security a subtraction and direct retirees to the official IT-511 worksheet. That worksheet allows $35,000 at ages 62-64 and $65,000 at age 65 or older. Approximated: the pack preserves the age-65 $65,000 cap and separately excludes federally taxable Social Security, but has no $35,000 62-64 tier. It therefore leaves that source-covered retirement income in the base and overstates tax for the 62-64 limb. The DOR page also says retirement income reaches investment sources and up to $5,000 of earned income; the two retirement buckets cannot represent that broader base, so the record does not pretend that the age-65 bucket alone exhausts Georgia\'s exclusion.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'overstatesTax',
+    conventionRationale:
+      'Georgia\'s official Code host is script-rendered and did not yield quote-verifiable operative text. The Department of Revenue is deliberately admitted as the state\'s own publisher because its retirement page supplies the operative filing instruction and points taxpayers to its own IT-511 booklet and worksheet, which supplies the two dollar amounts. This is the same primary-agency-publication boundary used where a usable code text is unavailable, not a secondary summary substituted for one.',
+    jurisdiction: 'state:GA',
+    authority: [{
+      kind: 'stateAgencyPublication',
+      citation: 'Georgia Department of Revenue, Retirement Income Exclusion',
+      url: 'https://dor.georgia.gov/retirement-income-exclusion',
+      quotedText:
+        'Taxpayers who are 62 or older, or permanently and totally disabled regardless of age, may be eligible for a retirement income adjustment on their Georgia tax return.',
+    }, {
+      kind: 'formInstruction',
+      citation: 'Georgia Department of Revenue, 2025 Form 500 Schedule 1, Retirement Income Exclusion worksheet',
+      url: 'https://dor.georgia.gov/document/document/2025-it-511-individual-income-tax-booklet/download',
+      quotedText:
+        '*If age 62-64 or less than age 62 and permanently disabled enter $35,000, or if age 65 or older enter $65,000.',
+    }, {
+      kind: 'formInstruction',
+      citation: 'Georgia Department of Revenue, 2025 Form 500 Schedule 1, line 8',
+      url: 'https://dor.georgia.gov/document/document/2025-it-511-individual-income-tax-booklet/download',
+      quotedText:
+        'SUBTRACTION from INCOME (See IT-511 Tax Booklet) ... Social Security Benefits (Taxable portion from Federal return)',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/params/state/types.ts',
+    ],
+  },
+
+  'ct-cgs-12-701-20-b-social-security-retirement': {
+    title: 'Connecticut’s Social Security and pension subtractions are income-tested',
+    statement:
+      'Connecticut subtracts all federally taxable Social Security for a single filer with federal adjusted gross income below $75,000, but reduces the subtraction above that threshold. Its pension and annuity schedule likewise allows 100 percent below $75,000 and zero at $100,000 and over for a single filer. Approximated in both directions: the pack always taxes federally taxable Social Security, overstating tax for the low-income limb, while its unconditional `{ kind: \'full\' }` retirement exclusion removes a high-income pension that the schedule taxes, understating tax. The engine has no state AGI-band or retirement-subtraction-percentage field, so it cannot select either schedule from an accepted input.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'bothDirections',
+    conventionRationale: null,
+    jurisdiction: 'state:CT',
+    authority: [{
+      kind: 'statute',
+      citation: 'Conn. Gen. Stat. 12-701(a)(20)(B)(x)(III)',
+      url: 'https://www.cga.ct.gov/current/pub/chap_229.htm',
+      quotedText:
+        'For the taxable year commencing January 1, 2019, and each taxable year thereafter, … an amount equal to the Social Security benefits includable for federal income tax purposes; and',
+    }, {
+      kind: 'statute',
+      citation: 'Conn. Gen. Stat. 12-701(a)(20)(B)(xxi), table 32',
+      url: 'https://www.cga.ct.gov/current/pub/chap_229.htm',
+      quotedText:
+        'To the extent properly includable in gross income for federal income tax purposes, … any pension or annuity income for the taxable year commencing on or after January 1, 2024, and each taxable year thereafter, in accordance with the following schedule, for a person who files a return under the federal income tax as an unmarried individual whose federal adjusted gross income for such taxable year is less than one hundred thousand dollars … Federal Adjusted Gross Income Deduction … $100,000 and over 0.0%',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/params/state/types.ts',
+    ],
+  },
+
+  'de-code-30-1106-social-security-retirement-subtractions': {
+    title: 'Delaware subtracts federally taxable Social Security and up to $12,500 of retirement income at age 60',
+    statement:
+      'Delaware subtracts Social Security included in federal adjusted gross income and permits a single $12,500 retirement-income subtraction for a person age 60 or older. The statute’s shared per-person ceiling reaches pensions from employers and eligible retirement income, and the pack therefore applies its capped rule once to combined private and public retirement income through `retirementRuleShared`, rather than once per bucket. Its separate `taxesSocialSecurity: false` removes exactly the federally included benefit amount.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:DE',
+    authority: [{
+      kind: 'statute',
+      citation: 'Del. Code tit. 30, 1106(b)(3)(b)(2)',
+      url: 'https://delcode.delaware.gov/title30/c011/sc02/index.html',
+      quotedText:
+        'For persons age 60 or older, amounts received, not to exceed $12,500, as pensions from employers, the United States, this State, or any subdivision of this State, or as eligible retirement income.',
+    }, {
+      kind: 'statute',
+      citation: 'Del. Code tit. 30, 1106(b)(4)',
+      url: 'https://delcode.delaware.gov/title30/c011/sc02/index.html',
+      quotedText:
+        'Social Security benefits paid by the United States and all payments received under the Railroad Retirement Act of 1974 [45 U.S.C. §§ 231-231[v]] to the extent included in federal adjusted gross income;',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+    ],
+  },
+
+  'hi-hrs-235-7-pension-and-social-security': {
+    title: 'Hawaii excludes every pension for past services, not only public pensions',
+    statement:
+      'Hawaii excludes public-retirement-system benefits and any compensation received as a pension for past services from gross, adjusted gross, and taxable income. The public-pension override correctly makes the public bucket full, but the `privateRetirementIncome` bucket combines private pensions with IRAs and other distributions, so the pack gives it `{ kind: \'none\' }`. A private pension is therefore taxed even though the statute excludes it. The output overstates tax for that source-covered limb; treating the entire bucket as exempt would instead overreach to private IRA distributions, which the staged text does not establish. No staged source here states the separate `taxesSocialSecurity: false` behavior, so that limb is intentionally not claimed by this record.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'overstatesTax',
+    conventionRationale: null,
+    jurisdiction: 'state:HI',
+    authority: [{
+      kind: 'statute',
+      citation: 'Haw. Rev. Stat. 235-7(a)(2)',
+      url: 'https://files.hawaii.gov/tax/legal/hrs/hrs_235.pdf',
+      quotedText:
+        'Rights, benefits, and other income exempted from taxation by section 88-91, having to do with the state retirement system, and the rights, benefits, and other income, comparable to the rights, benefits, and other income exempted by section 88-91, under any other public retirement system;',
+    }, {
+      kind: 'statute',
+      citation: 'Haw. Rev. Stat. 235-7(a)(3)',
+      url: 'https://files.hawaii.gov/tax/legal/hrs/hrs_235.pdf',
+      quotedText: 'Any compensation received in the form of a pension for past services;',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/params/state/types.ts',
+    ],
+  },
+
+  'id-code-63-3022-federal-standard-and-ss': {
+    title: 'Idaho subtracts the federally included Social Security and Railroad amount',
+    statement:
+      'Idaho deducts every amount that IRC 86 included in gross income for Social Security and Railroad benefits. The state’s `taxesSocialSecurity: false` setting therefore removes the same federally taxable share before Idaho brackets apply. The staged section does not define Idaho taxable income or the standard-deduction reference, so this record deliberately registers only the Social Security behavior despite its planned umbrella id.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:ID',
+    authority: [{
+      kind: 'statute',
+      citation: 'Idaho Code 63-3022(l)',
+      url: 'https://legislature.idaho.gov/statutesrules/idstat/title63/t63ch30/sect63-3022/',
+      quotedText:
+        'Deduct any amounts included in gross income under the provisions of section 86 of the Internal Revenue Code relating to certain social security and railroad benefits.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+    ],
+  },
+
+  'ks-stat-79-32-117-social-security-exclusion': {
+    title: 'Kansas subtracts all federally taxable Social Security from 2024',
+    statement:
+      'For taxable years beginning after 2023, Kansas subtracts every Social Security benefit included in federal adjusted gross income, with no AGI threshold. That is exactly the federally taxable Social Security share that the state calculator removes when the pack sets `taxesSocialSecurity: false`.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:KS',
+    authority: [{
+      kind: 'statute',
+      citation: 'K.S.A. 79-32,117(c)(xviii)(B)',
+      url: 'https://www.ksrevisor.gov/statutes/chapters/ch79/079_032_0117.html',
+      quotedText:
+        'For all taxable years beginning after December 31, 2023, amounts received as benefits under the federal social security act that are included in federal adjusted gross income of a taxpayer.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+    ],
+  },
+
+  'ks-stat-79-32-117-public-pension-exclusion': {
+    title: 'Kansas exempts listed public retirement plans, not every public pension',
+    statement:
+      'Kansas lists particular public retirement benefits for subtraction — including federal civil-service and armed-forces retirement, KPERS, police and fire, teachers, highway patrol, judges, specified municipal systems and named university plans. Approximated: the pack represents every `publicPensionIncome` dollar as `{ kind: \'full\' }`, but its input carries no pension-system identity with which to distinguish a listed plan from an unlisted municipal or other public pension. An unlisted public pension is consequently removed and the engine understates the taxpayer’s tax exposure; the pin fixture uses that source-rejected unlisted-pension limb.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'understatesTax',
+    conventionRationale: null,
+    jurisdiction: 'state:KS',
+    authority: [{
+      kind: 'statute',
+      citation: 'K.S.A. 79-32,117(c)(vii)',
+      url: 'https://www.ksrevisor.gov/statutes/chapters/ch79/079_032_0117.html',
+      quotedText:
+        'Amounts received as annuities under the federal civil service retirement system from the civil service retirement and disability fund and other amounts received as retirement benefits in whatever form which were earned for being employed by the federal government or for service in the armed forces of the United States.',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'Kansas Department of Revenue, 2025 Kansas Income Tax Booklet, Schedule S line A14',
+      url: 'https://www.ksrevenue.gov/incomebook25.html',
+      quotedText:
+        'Retirement benefits specifically exempt from Kansas Income Tax. If you are receiving retirement benefits/pay, report on this line benefits exempt from Kansas income tax (do not include Social Security benefits). … Enter total amount of benefits received from the following plans that was included in your federal AGI.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/params/state/types.ts',
+    ],
+  },
+
   'irc-408-d-2-C-projection-pro-rata-measurement-instant': {
     title: 'The instant the Form 8606 pro-rata denominator is measured',
     statement:
@@ -13239,22 +13578,22 @@ const registry = {
     ],
   },
 
-  'cfr-31-363-52-savings-bond-annual-purchase-limit': {
-    title: 'Series EE/I book-entry annual purchase principal limit is not modeled',
+  'cfr-31-363-11-savings-bond-purchase-limits': {
+    title: 'Series I savings-bond purchase limits require a TreasuryDirect owner and purchase channel',
     statement:
-      'Book-entry Series EE and Series I savings-bond purchases are subject to a $10,000 annual principal limit per series for an individual owner. RetireGolden has no savings-bond account or annual purchase ledger, so no accepted plan input reaches a purchase-cap result.',
+      'Series I savings-bond purchases are subject to annual electronic and paper limits for an individual owner. RetireGolden has no savings-bond account, TreasuryDirect owner or SSN, electronic-versus-paper purchase channel, or annual savings-bond purchase ledger, so no accepted plan input reaches a purchase-cap result.',
     classification: 'outOfScope',
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The absence surface is model/plan.ts: taxableAccountSchema carries an aggregate brokerage balance, cost basis, and generic annual contribution, but no savings-bond instrument, TreasuryDirect owner, or annual bond-purchase history. The generic contribution field cannot be treated as a book-entry savings-bond purchase without inventing the instrument and owner facts on which the annual limit turns.',
+      'The absence surface is model/plan.ts: taxableAccountSchema carries an aggregate brokerage balance, cost basis, and generic annual contribution, but no savings-bond instrument, TreasuryDirect owner, SSN, purchase channel, or annual bond-purchase history. The staged 31 CFR 363.11 text confirms the TreasuryDirect account and SSN gate but does not state a numeric annual cap. The generic contribution field cannot be treated as an I-Bond purchase without inventing the instrument and owner facts on which the annual limit turns.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'regulation',
-      citation: '31 CFR 363.52',
-      url: 'https://www.ecfr.gov/current/title-31/section-363.52',
+      citation: '31 CFR 363.11',
+      url: 'https://www.ecfr.gov/current/title-31/section-363.11',
       quotedText:
-        'The principal amount of book-entry savings bonds that you may acquire in any calendar year is limited to $10,000 for Series EE savings bonds and $10,000 for Series I savings bonds.',
+        'Only an individual or an entity is eligible to open a TreasuryDirect account. In order to open a TreasuryDirect account, an individual or entity account manager must have a valid social security number (SSN), be 18 years of age or over, and be legally competent.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -13264,9 +13603,9 @@ const registry = {
   },
 
   'irc-454-savings-bond-interest-deferral': {
-    title: 'Savings-bond interest is deferred until redemption, maturity, or disposition unless elected',
+    title: 'Savings-bond interest is generally deferred until redemption, maturity, or disposition',
     statement:
-      'IRC 454(a) permits a cash-method holder of a discount savings obligation to elect current inclusion of the increase in redemption price, but absent that election section 454(c) includes the increase in redemption value (to the extent not previously includible) in gross income in the taxable year of final redemption or final maturity, whichever is earlier. RetireGolden has no savings-bond instrument, redemption or maturity date, or section 454 election and therefore produces no savings-bond deferral or default-inclusion result.',
+      'IRC 454 permits a cash-method holder of a discount savings obligation to defer the increase in redemption price until the obligation is redeemed, reaches final maturity, or is otherwise disposed of unless the holder elects current inclusion. RetireGolden has no savings-bond instrument or section 454 election and therefore produces no savings-bond deferral result.',
     classification: 'outOfScope',
     contraryReading: null,
     errorDirection: null,
@@ -13279,12 +13618,33 @@ const registry = {
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section454&num=0&edition=prelim',
       quotedText:
         'If, in the case of a taxpayer owning any non-interest-bearing obligation issued at a discount and redeemable for fixed amounts increasing at stated intervals or owning an obligation described in paragraph (2) of subsection (c), the increase in the redemption price of such obligation occurring in the taxable year does not (under the method of accounting used in computing his taxable income) constitute income to him in such year, such taxpayer may, at his election made in his return for any taxable year, treat such increase as income received in such taxable year.',
-    }, {
-      kind: 'statute',
-      citation: 'IRC 454(c)',
-      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section454&num=0&edition=prelim',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+  },
+
+  'cfr-31-360-44-savings-bond-early-redemption-forfeiture': {
+    title: 'Early Series I redemption requires a redemption event and its applicable interest forfeiture',
+    statement:
+      'A Series I bond redeemed before five years forfeits the most recent three months of interest. RetireGolden has no savings-bond issue date, redemption event, holding-period clock, or interest-forfeiture field, so it produces no early-redemption result.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The absence surface is model/plan.ts and projection/simulate.ts: no accepted account or income type stores a Series I issue date, redemption date, accrued interest, or the pre-five-year forfeiture. The staged 31 CFR 360.44 text supplies the surrender-request procedure, but the engine has no redemption-request path on which that procedure or the three-month forfeiture could operate.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'regulation',
+      citation: '31 CFR 360.44',
+      url: 'https://www.ecfr.gov/current/title-31/section-360.44',
       quotedText:
-        'the increase in redemption value (to the extent not previously includible in gross income) in excess of the amount paid for such series E bond shall be includible in gross income in the taxable year in which the obligation is finally redeemed or in the taxable year of final maturity, whichever is earlier.',
+        'An owner or coowner, who has surrendered a bond to a Federal Reserve Bank or Branch or to the Bureau of the Fiscal Service or to an authorized paying agent with an appropriate request for payment, may withdraw the request if notice of intent to withdraw is received by the same agency prior to payment.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -13312,18 +13672,6 @@ const registry = {
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section135&num=0&edition=prelim',
       quotedText:
         'In the case of an individual who pays qualified higher education expenses during the taxable year, no amount shall be includible in gross income by reason of the redemption during such year of any qualified United States savings bond.',
-    }, {
-      kind: 'statute',
-      citation: 'IRC 135(b)(1)(A)',
-      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section135&num=0&edition=prelim',
-      quotedText:
-        '(A) In general If- (i) the aggregate proceeds of qualified United States savings bonds redeemed by the taxpayer during the taxable year exceed (ii) the qualified higher education expenses paid by the taxpayer during such taxable year, the amount excludable from gross income under subsection (a) shall not exceed the applicable fraction of the amount excludable from gross income under subsection (a) without regard to this subsection.',
-    }, {
-      kind: 'statute',
-      citation: 'IRC 135(b)(1)(B)',
-      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section135&num=0&edition=prelim',
-      quotedText:
-        '(B) Applicable fraction For purposes of subparagraph (A), the term "applicable fraction" means the fraction the numerator of which is the amount described in subparagraph (A)(ii) and the denominator of which is the amount described in subparagraph (A)(i).',
     }, {
       kind: 'statute',
       citation: 'IRC 135(b)(2)(A)',
@@ -13385,15 +13733,15 @@ const registry = {
     ],
   },
 
-  'treas-reg-1-1275-7-f-1-deflation-adjustment-income': {
-    title: 'TIPS deflation adjustments reduce interest with an ordinary-loss carry limit',
+  'treas-reg-1-1275-7-f-deflation-adjustment-and-basis': {
+    title: 'TIPS deflation adjustments reduce interest and basis, with an ordinary-loss carry limit',
     statement:
-      'A negative TIPS inflation adjustment is a deflation adjustment that first reduces the holder\'s interest otherwise includible, allows an ordinary loss only to the extent of prior net interest inclusions, and carries any excess forward. The engine clamps ladder accretion at zero and emits neither the interest reduction nor the ordinary-loss carry, so a deflation year overstates tax on the income leg.',
+      'A negative TIPS inflation adjustment is a deflation adjustment that first reduces the holder\'s interest otherwise includible, allows an ordinary loss only to the extent of prior net interest inclusions, carries any excess forward, and decreases adjusted basis when taken into account. The engine clamps ladder accretion at zero and emits neither the reduction nor the basis decrease.',
     classification: 'approximated',
     contraryReading: null,
-    errorDirection: 'overstatesTax',
+    errorDirection: 'bothDirections',
     conventionRationale:
-      'DEFECT — no behavior change in this registration slice. projection/simulate.ts computes `accretion` as `outstandingFace * Math.max(0, inflFactor - prevInflFactor)`, so a deflation year contributes no negative adjustment, no ordinary-loss carry, and no interest reduction. A paired market path with prior positive inflation followed by deflation drives the gap: the authority reduces current interest (and may permit a bounded ordinary loss), while the engine still reports the coupon as taxable ordinary income. The fixture adds 100,000 of ordinary wages so the tax line remains above zero and pins the produced annual MAGI. The basis decrease under (f)(2) is registered separately at treas-reg-1-1275-7-f-2-deflation-basis-decrease-not-modeled.',
+      'DEFECT — no behavior change in this registration slice. projection/simulate.ts computes `accretion` as `outstandingFace * Math.max(0, inflFactor - prevInflFactor)`, so a deflation year contributes no negative adjustment, no ordinary-loss carry, and no basis decrease. A paired market path with prior positive inflation followed by deflation drives the gap: the authority reduces current interest (and may permit a bounded ordinary loss), while the engine still reports the coupon as taxable ordinary income. The fixture adds 100,000 of ordinary wages so the tax line remains above zero and pins the produced annual MAGI at 100,149.67. The income-year exposure overstates tax; the omitted (f)(2) basis decrease leaves basis too high and can understate later gain tax when that basis is recovered, so the direction is both.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'regulation',
@@ -13401,29 +13749,7 @@ const registry = {
       url: 'https://www.ecfr.gov/current/title-26/section-1.1275-7',
       quotedText:
         'A deflation adjustment reduces the amount of interest otherwise includible in income by a holder with respect to the debt instrument for the taxable year. For purposes of this paragraph (f)(1)(i), interest includes OID, qualified stated interest, and market discount. If the amount of the deflation adjustment exceeds the interest otherwise includible in income by the holder with respect to the debt instrument for the taxable year, the excess is treated as an ordinary loss by the holder for the taxable year. However, the amount treated as an ordinary loss is limited to the amount by which the holder\'s total interest inclusions on the debt instrument in prior taxable years exceed the total amount treated by the holder as an ordinary loss on the debt instrument in prior taxable years. If the deflation adjustment exceeds the interest otherwise includible in income by the holder with respect to the debt instrument for the taxable year and the amount treated as an ordinary loss for the taxable year, this excess is carried forward to reduce the amount of interest otherwise includible in income by the holder with respect to the debt instrument for subsequent taxable years.',
-    }],
-    volatility: 'staticStatute',
-    effectiveFrom: 2026,
-    effectiveThrough: null,
-    verifiedOn: '2026-08-27',
-    implementedBy: [
-      'packages/engine/src/ladder/ladderMath.ts',
-      'packages/engine/src/projection/simulate.ts',
-      'packages/engine/src/model/plan.ts',
-    ],
-  },
-
-  'treas-reg-1-1275-7-f-2-deflation-basis-decrease-not-modeled': {
-    title: 'TIPS deflation basis decrease is not modeled',
-    statement:
-      'A holder\'s adjusted basis in an inflation-indexed debt instrument is decreased by the amount of any deflation adjustment taken into account to reduce interest otherwise includible in income or treated as an ordinary loss. The engine does not track per-rung holder basis or apply deflation basis decreases.',
-    classification: 'outOfScope',
-    contraryReading: null,
-    errorDirection: null,
-    conventionRationale:
-      'The absence surface is ladder/ladderMath.ts and projection/simulate.ts: ladder accretion is clamped at zero and no holder-basis ledger records deflation adjustments taken into account under (f)(1). Omitting the (f)(2) basis decrease leaves basis too high and can understate later gain tax when that basis is recovered, but that limb is separate from the income-year clamp registered at treas-reg-1-1275-7-f-1-deflation-adjustment-income.',
-    jurisdiction: 'federal',
-    authority: [{
+    }, {
       kind: 'regulation',
       citation: 'Treas. Reg. 1.1275-7(f)(2)',
       url: 'https://www.ecfr.gov/current/title-26/section-1.1275-7',
@@ -13441,43 +13767,15 @@ const registry = {
     ],
   },
 
-  'treas-reg-1-1275-7-f-3-tips-acquisition-premium': {
-    title: 'TIPS acquisition premium reduces OID under acquisition-premium rules',
+  'irc-171-tips-acquisition-premium-amortization': {
+    title: 'TIPS acquisition premium requires bond-level amortization against interest or OID',
     statement:
-      'Acquisition premium on an inflation-indexed debt instrument reduces OID under the acquisition-premium rules, with the premium measured by reference to adjusted issue price on the acquisition date and taken into account over the remaining term as if there were no further inflation or deflation. The engine has no acquisition-premium or OID-offset facts.',
+      'A holder of a taxable inflation-indexed bond may amortize acquisition premium against qualified stated interest and OID under section 171 and the section 1.171-2 yield-and-accrual rules. RetireGolden has no bond issue price, principal, acquisition date, holder basis, call or maturity schedule, or premium election, so no accepted input reaches a premium-amortization result.',
     classification: 'outOfScope',
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The absence surface is model/plan.ts, ladder/ladderMath.ts, and projection/simulate.ts. tipsLadderSchema stores only target real income, payout years, and an optional aggregate purchase transfer; ladderMath.ts retains synthetic rung cost but no holder basis, issue price, or acquisition-premium ledger, and simulate.ts carries no premium balance to offset OID. Bond premium amortization under section 171 is registered separately at irc-171-tips-bond-premium-amortization.',
-    jurisdiction: 'federal',
-    authority: [{
-      kind: 'regulation',
-      citation: 'Treas. Reg. 1.1275-7(f)(3)',
-      url: 'https://www.ecfr.gov/current/title-26/section-1.1275-7',
-      quotedText:
-        'A holder determines the amount of acquisition premium or market discount on an inflation-indexed debt instrument by reference to the adjusted issue price of the instrument on the date the holder acquires the instrument. ... Any premium or market discount is taken into account over the remaining term of the debt instrument as if there were no further inflation or deflation.',
-    }],
-    volatility: 'staticStatute',
-    effectiveFrom: 2026,
-    effectiveThrough: null,
-    verifiedOn: '2026-08-27',
-    implementedBy: [
-      'packages/engine/src/model/plan.ts',
-      'packages/engine/src/ladder/ladderMath.ts',
-      'packages/engine/src/projection/simulate.ts',
-    ],
-  },
-
-  'irc-171-tips-bond-premium-amortization': {
-    title: 'TIPS bond premium amortization requires bond-level facts',
-    statement:
-      'Section 171 bond premium amortization offsets qualified stated interest and OID for a taxable inflation-indexed bond. RetireGolden has no bond issue price, principal, acquisition date, holder basis, call or maturity schedule, or premium election, so no accepted input reaches a bond-premium amortization result.',
-    classification: 'outOfScope',
-    contraryReading: null,
-    errorDirection: null,
-    conventionRationale:
-      'The absence surface is model/plan.ts, ladder/ladderMath.ts, and projection/simulate.ts. tipsLadderSchema stores only target real income, payout years, and an optional aggregate purchase transfer; ladderMath.ts retains synthetic rung cost but no holder basis or issue-price ledger, and simulate.ts carries no premium balance to offset coupon or OID. A taxable account costBasis is an aggregate brokerage basis and cannot identify a TIPS rung or a section 171 election, so it is not an accepted premium fact. Acquisition premium on TIPS is registered separately at treas-reg-1-1275-7-f-3-tips-acquisition-premium.',
+      'The absence surface is model/plan.ts, ladder/ladderMath.ts, and projection/simulate.ts. tipsLadderSchema stores only target real income, payout years, and an optional aggregate purchase transfer; ladderMath.ts retains synthetic rung cost but no holder basis or issue-price ledger, and simulate.ts carries no premium balance to offset coupon or OID. A taxable account costBasis is an aggregate brokerage basis and cannot identify a TIPS rung or a section 171 election, so it is not an accepted premium fact.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -13502,7 +13800,7 @@ const registry = {
       citation: 'Treas. Reg. 1.1275-7(f)(3)',
       url: 'https://www.ecfr.gov/current/title-26/section-1.1275-7',
       quotedText:
-        'A holder determines the amount of bond premium on an inflation-indexed debt instrument by assuming that the amount payable at maturity on the instrument is equal to the instrument\'s inflation-adjusted principal amount for the day the holder acquires the instrument. ... See section 171 for additional rules relating to the amortization of bond premium and sections 1276 through 1278 for additional rules relating to market discount.',
+        'A holder determines the amount of acquisition premium or market discount on an inflation-indexed debt instrument by reference to the adjusted issue price of the instrument on the date the holder acquires the instrument. A holder determines the amount of bond premium on an inflation-indexed debt instrument by assuming that the amount payable at maturity on the instrument is equal to the instrument\'s inflation-adjusted principal amount for the day the holder acquires the instrument. Any premium or market discount is taken into account over the remaining term of the debt instrument as if there were no further inflation or deflation. See section 171 for additional rules relating to the amortization of bond premium and sections 1276 through 1278 for additional rules relating to market discount.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -13514,6 +13812,963 @@ const registry = {
       'packages/engine/src/projection/simulate.ts',
     ],
   },
+  // ---------------------------------------------------------------------------
+  // WS4d Batch B — KY, LA, MD, MA, MI, MN, MT, NE, NH, NJ. 2026-08-27.
+  //
+  // KY is not in this block: the staged KY fetch is a chapter table of
+  // contents with no operative KRS 141.019 / 141.020 text. BLOCKED-SOURCE, not
+  // a silent omission. NH was blocked on the first pass (DOR Access Denied);
+  // the RSA Chapter 77 repeal page is now in the staged set and is registered.
+  // ---------------------------------------------------------------------------
+
+  'la-rs-47-44-1-retirement-exemption': {
+    title: 'Louisiana exempts $12,000 of retirement income from age 65',
+    statement:
+      'Louisiana exempts twelve thousand dollars of annual retirement income — pension and annuity income included in tax-table income — received by an individual sixty-five years of age or older. That is the amount the pack encodes as `{ kind: \'capped\', capPerPerson: 12000, minAge: 65 }`, and it is why a reading that still used the former six-thousand-dollar figure is rejected. The same subsection requires the amount to be adjusted annually beginning January 1, 2026 by the CPI-U increase for the previous calendar year, which is why this record is annually indexed rather than static. The separate six-thousand-dollar disability exemption in subsection B is not modelled.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:LA',
+    authority: [{
+      kind: 'statute',
+      citation: 'La. R.S. 47:44.1(A)',
+      url: 'https://www.legis.la.gov/legis/Law.aspx?d=102133',
+      quotedText:
+        'Twelve thousand dollars of annual retirement income which is received by an individual sixty-five years of age or older shall be exempt from state income taxation. "Annual retirement income" is defined as pension and annuity income which is included in "tax table income" as defined in R.S. 47:293.  This Section shall not affect the status of any income which is exempt from state income taxation by law.  The amount of the exemption provided for in this Subsection shall be adjusted annually beginning January 1, 2026, by an amount calculated by multiplying the amount of the prior year\'s exemption by the percentage increase in the Consumer Price Index United States city average for all urban consumers (CPI-U),  as reported by the United States Department of Labor, Bureau of Labor Statistics, or its successor, for the previous calendar year.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+    ],
+  },
+
+  'la-rs-47-44-2-social-security-federal-retirement': {
+    title: 'Louisiana exempts Social Security, federal retirement, and railroad retirement',
+    statement:
+      'Louisiana exempts any benefit received under Chapter 7 of Title 42 of the United States Code, any income received under a retirement system for retirees of the United States Government, and any income received under the Railroad Retirement Act of 1974. That is what `taxesSocialSecurity: false` encodes, and it is the United States Government retirement the pack\'s public-pension `{ kind: \'full\' }` override carries.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:LA',
+    authority: [{
+      kind: 'statute',
+      citation: 'La. R.S. 47:44.2',
+      url: 'https://www.legis.la.gov/legis/Law.aspx?d=102134',
+      quotedText:
+        'Any benefit received by an individual pursuant to the provisions of Chapter 7 of Title 42 of the United States Code (42 U.S.C. 301 et seq.), and any income received by an individual pursuant to a retirement system for retirees of the United States Government or pursuant to the Railroad Retirement Act of 1974 (45 U.S.C. 231 et seq.) shall be exempt from the state income tax.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+    ],
+  },
+
+  'md-tax-10-207-social-security-exclusion': {
+    title: 'Maryland subtracts Social Security and railroad-retirement payments',
+    statement:
+      'Maryland adjusted gross income subtracts a payment received under Title II of the Social Security Act or as a benefit under the Railroad Retirement Act, to the extent the payment was included in federal adjusted gross income. That is what `taxesSocialSecurity: false` encodes: no federally taxable Social Security survives into the Maryland base. The $41,200 pension exclusion the pack also carries is not in this section — §10-207(mm) points at §10-209 for "employee retirement system" — and is registered separately at md-tax-10-209-pension-exclusion.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:MD',
+    authority: [{
+      kind: 'statute',
+      citation: 'Md. Tax-General 10-207(a)',
+      url: 'https://mgaleg.maryland.gov/2026RS/Statute_Web/gtg/10-207.pdf',
+      quotedText:
+        'To the extent included in federal adjusted gross income, the amounts under this section are subtracted from the federal adjusted gross income of a resident to determine Maryland adjusted gross income.',
+    }, {
+      kind: 'statute',
+      citation: 'Md. Tax-General 10-207(j)',
+      url: 'https://mgaleg.maryland.gov/2026RS/Statute_Web/gtg/10-207.pdf',
+      quotedText:
+        'The subtraction under subsection (a) of this section includes a payment received: (1) under Title II of the Social Security Act; or (2) as a benefit under the Railroad Retirement Act.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+    ],
+  },
+
+  'md-tax-10-209-pension-exclusion': {
+    title: 'Maryland’s pension subtraction is not a flat $41,200 of all retirement',
+    statement:
+      'Maryland subtracts the lesser of (1) annuity, pension or endowment income from an "employee retirement system" included in federal AGI and (2) the Comptroller’s maximum annual Social Security benefit for an individual who retired at 65 in the prior calendar year, reduced by Social Security and railroad-retirement payments received. An employee retirement system is a §401(a), §403 or §457(b) employer plan; it does not include an IRA, a Roth IRA, a rollover IRA, a SEP or a §457(f) plan. The age gate is 65, or total disability, or a 55-year-old retired forest, park or wildlife ranger. Approximated: the pack encodes `{ kind: \'capped\', capPerPerson: 41200, minAge: 65 }` on the shared retirement buckets, so an IRA distribution of a 65-year-old is excluded up to $41,200 the statute withholds, and a Social Security recipient keeps the full cap the statute reduces dollar-for-dollar. Both of those flatter the taxpayer. The other way: a disabled resident or a 55-year-old ranger who is not 65 is granted nothing, and the Comptroller’s unpublished 2026 maximum may sit above or below the pack’s $41,200 — that figure is not in §10-209, and neither is the shopping-list $30,000. Social Security itself is a different section and is registered separately at md-tax-10-207-social-security-exclusion.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'bothDirections',
+    conventionRationale: null,
+    jurisdiction: 'state:MD',
+    authority: [{
+      kind: 'statute',
+      citation: 'Md. Tax-General 10-209(a)(1)',
+      url: 'https://mgaleg.maryland.gov/mgawebsite/Laws/StatuteText?article=gtg&section=10-209&enactments=false',
+      quotedText:
+        '“employee retirement system” means a plan: (i) established and maintained by an employer for the benefit of its employees; and (ii) qualified under § 401(a), § 403, or § 457(b) of the Internal Revenue Code',
+    }, {
+      kind: 'statute',
+      citation: 'Md. Tax-General 10-209(a)(2)(i)',
+      url: 'https://mgaleg.maryland.gov/mgawebsite/Laws/StatuteText?article=gtg&section=10-209&enactments=false',
+      quotedText:
+        '“employee retirement system” does not include: (i) an individual retirement account or annuity under § 408 of the Internal Revenue Code;',
+    }, {
+      kind: 'statute',
+      citation: 'Md. Tax-General 10-209(b)',
+      url: 'https://mgaleg.maryland.gov/mgawebsite/Laws/StatuteText?article=gtg&section=10-209&enactments=false',
+      quotedText:
+        'Subject to subsections (d) and (e) of this section, to determine Maryland adjusted gross income, if, on the last day of the taxable year, a resident is at least 65 years old or is totally disabled or the resident’s spouse is totally disabled, or the resident is 55 years old and is a retired forest ranger, park ranger, or wildlife ranger of the United States, the State, or a political subdivision of the State, an amount is subtracted from federal adjusted gross income equal to the lesser of:',
+    }, {
+      kind: 'statute',
+      citation: 'Md. Tax-General 10-209(b)(1)–(2)',
+      url: 'https://mgaleg.maryland.gov/mgawebsite/Laws/StatuteText?article=gtg&section=10-209&enactments=false',
+      quotedText:
+        '(1) the cumulative or total annuity, pension, or endowment income from an employee retirement system included in federal adjusted gross income; or (2) the maximum annual benefit under the Social Security Act computed under subsection (c) of this section, less any payment received as old age, survivors, or disability benefits under the Social Security Act, the Railroad Retirement Act, or both.',
+    }, {
+      kind: 'statute',
+      citation: 'Md. Tax-General 10-209(c)',
+      url: 'https://mgaleg.maryland.gov/mgawebsite/Laws/StatuteText?article=gtg&section=10-209&enactments=false',
+      quotedText:
+        'the Comptroller: (1) shall determine the maximum annual benefit under the Social Security Act allowed for an individual who retired at age 65 for the prior calendar year; and (2) may allow the subtraction to the nearest $100.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+    ],
+  },
+
+  'ma-gen-laws-ch62-s2-public-pension-exclusion': {
+    title: 'Massachusetts deducts contributory public and uniformed-services retirement',
+    statement:
+      'Massachusetts gross income deducts income from any contributory annuity, pension, endowment or retirement fund of the United States government, the commonwealth, or any political subdivision thereof to which the employee has contributed, and United States government retirement pay for a retired member of the Uniformed Services. That is the pack\'s public-pension `{ kind: \'full\' }` override. Private IRA, 401(k) and similar distributions are not in this subparagraph — they are taxed as Massachusetts gross income except to the extent previously subjected to Massachusetts tax — which is why the private bucket is `{ kind: \'none\' }`.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:MA',
+    authority: [{
+      kind: 'statute',
+      citation: 'Mass. Gen. Laws ch. 62, §2(a)(2)',
+      url: 'https://malegislature.gov/Laws/GeneralLaws/PartI/TitleIX/Chapter62/Section2',
+      quotedText:
+        'The items to be deducted therefrom are:--',
+    }, {
+      kind: 'statute',
+      citation: 'Mass. Gen. Laws ch. 62, §2(a)(2)(E)',
+      url: 'https://malegislature.gov/Laws/GeneralLaws/PartI/TitleIX/Chapter62/Section2',
+      quotedText:
+        'Income from any contributory annuity, pension, endowment or retirement fund of the United States government or the commonwealth or any political subdivision thereof including the optional retirement system established by section forty of chapter fifteen A, to which the employee has contributed, or any income received from the United States government as retirement pay for a retired member of the Uniformed Services of the United States, as defined in 10 U.S.C. section 1072, regardless of whether the retiree contributed to the retirement system, or any income received from the United States government as survivorship benefits under 10 U.S.C. sections 1431 to 1460, inclusive.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+    ],
+  },
+
+  'ma-gen-laws-ch62-s2-social-security': {
+    title: 'Massachusetts deducts Social Security included in federal gross income',
+    statement:
+      'Massachusetts gross income deducts Social Security benefits included in federal gross income under IRC section 86. That is what `taxesSocialSecurity: false` encodes: the federally taxable share is subtracted back out and never reaches the Massachusetts base.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:MA',
+    authority: [{
+      kind: 'statute',
+      citation: 'Mass. Gen. Laws ch. 62, §2(a)(2)(H)',
+      url: 'https://malegislature.gov/Laws/GeneralLaws/PartI/TitleIX/Chapter62/Section2',
+      quotedText:
+        'Social security benefits included in federal gross income under section eighty-six of the Code.',
+    }, {
+      kind: 'statute',
+      citation: 'Mass. Gen. Laws ch. 62, §2(a)(2)',
+      url: 'https://malegislature.gov/Laws/GeneralLaws/PartI/TitleIX/Chapter62/Section2',
+      quotedText:
+        'The items to be deducted therefrom are:--',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+    ],
+  },
+
+  'mi-mcl-206-30-f-iii-social-security': {
+    title: 'Michigan deducts Social Security benefits included in AGI',
+    statement:
+      'Michigan taxable income deducts Social Security benefits as defined in IRC section 86, to the extent included in adjusted gross income. That is what `taxesSocialSecurity: false` encodes. The (9)/(10)/(11) limitations that restrict the other (1)(f) retirement deductions do not, for 2026, condition this Social Security deduction: the 2026–2028 sentence of (9)(e) withholds the personal exemption from a person who takes the unrestricted $20,000 deduction, and does not mention (1)(f)(iii).',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:MI',
+    authority: [{
+      kind: 'statute',
+      citation: 'Mich. Comp. Laws 206.30(1)(f)',
+      url: 'https://www.legislature.mi.gov/mileg.aspx?objectName=mcl-206-30&page=getObject',
+      quotedText:
+        'Deduct the following to the extent included in adjusted gross income subject to the limitations and restrictions set forth in subsection (9), (10), or (11), as applicable:',
+    }, {
+      kind: 'statute',
+      citation: 'Mich. Comp. Laws 206.30(1)(f)(iii)',
+      url: 'https://www.legislature.mi.gov/mileg.aspx?objectName=mcl-206-30&page=getObject',
+      quotedText:
+        'Social Security benefits as defined in section 86 of the internal revenue code.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+    ],
+  },
+
+  'mi-mcl-206-30-retirement-and-ss': {
+    title: 'Michigan\'s 2026 retirement deduction is not a flat per-person cap',
+    statement:
+      'For 2026 a Michigan taxpayer may deduct retirement or pension benefits as provided in MCL 206.30(1)(f), except that public-system amounts under (1)(f)(i) and (ii) combined are capped at the same CPI-adjusted maximum (1)(f)(iv) allows for other retirement or pension benefits paid for life to a senior citizen. That (iv) maximum started at $42,240 single / $84,480 joint in 2007 and is indexed. The pack flattens this into `{ kind: \'capped\', capPerPerson: 49423 }` with no senior-citizen test, no public/private split, and no birth-year election between subsections (9) and (10). Approximated: a senior citizen whose (iv) maximum has indexed past $49,423 is under-excluded, and a non-senior whose (1)(f)(iv) deduction is not available at all is over-excluded. Social Security is a different (1)(f) limb and is registered separately at mi-mcl-206-30-f-iii-social-security.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'bothDirections',
+    conventionRationale: null,
+    jurisdiction: 'state:MI',
+    authority: [{
+      kind: 'statute',
+      citation: 'Mich. Comp. Laws 206.30(10)(d)',
+      url: 'https://www.legislature.mi.gov/mileg.aspx?objectName=mcl-206-30&page=getObject',
+      quotedText:
+        'For the 2026 tax year and each tax year after 2026, a taxpayer may deduct retirement or pension benefits as provided under subsection (1)(f), except that the amounts deductible under subsection (1)(f)(i) and (ii) combined are subject to the same maximum amounts allowed under subsection (1)(f)(iv) for a single return and a joint return for that same tax year.',
+    }, {
+      kind: 'statute',
+      citation: 'Mich. Comp. Laws 206.30(1)(f)(iv)',
+      url: 'https://www.legislature.mi.gov/mileg.aspx?objectName=mcl-206-30&page=getObject',
+      quotedText:
+        'Beginning on and after January 1, 2007, retirement or pension benefits not deductible under subparagraph (i) or subdivision (e) from any other retirement or pension system or benefits from a retirement annuity policy in which payments are made for life to a senior citizen, to a maximum of $42,240.00 for a single return and $84,480.00 for a joint return. The maximum amounts allowed under this subparagraph shall be reduced by the amount of the deduction for retirement or pension benefits claimed under subparagraph (i) or subdivision (e) and by the amount of a deduction claimed under subdivision (p). For the 2008 tax year and each tax year after 2008, the maximum amounts allowed under this subparagraph shall be adjusted by the percentage increase in the United States Consumer Price Index for the immediately preceding calendar year.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+    ],
+  },
+
+  'mn-stat-290-0132-subd-26-social-security-inclusion': {
+    title: 'Minnesota subtracts federally taxable Social Security on an income-tested schedule the pack omits',
+    statement:
+      'Minnesota allows a subtraction equal to the greater of a simplified subtraction of taxable Social Security benefits, reduced 10 percent for each $4,000 of AGI (or fraction thereof) over $78,000 single / $100,000 joint, or an alternate subtraction capped at a much smaller indexed maximum. Approximated: the pack encodes `taxesSocialSecurity: true` and subtracts nothing, so a Minnesota retiree who still has subtraction room is charged tax on federally taxable benefits the statute takes out. The gap closes at high AGI, where the simplified subtraction phases to zero; below that line the engine overstates Minnesota tax. Private retirement remains `{ kind: \'none\' }`, which this record does not re-open: subdivision 34\'s qualified-public-pension subtraction is a different provision and is not modelled.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'overstatesTax',
+    conventionRationale: null,
+    jurisdiction: 'state:MN',
+    authority: [{
+      kind: 'statute',
+      citation: 'Minn. Stat. 290.0132, subd. 26(a)',
+      url: 'https://www.revisor.mn.gov/statutes/cite/290.0132',
+      quotedText:
+        'A taxpayer is allowed a subtraction equal to the greater of the simplified subtraction allowed under paragraph (b) or the alternate subtraction determined under paragraph (e).',
+    }, {
+      kind: 'statute',
+      citation: 'Minn. Stat. 290.0132, subd. 26(b)',
+      url: 'https://www.revisor.mn.gov/statutes/cite/290.0132',
+      quotedText:
+        'A taxpayer\'s simplified subtraction equals the amount of taxable social security benefits, as reduced under paragraphs (c) and (d).',
+    }, {
+      kind: 'statute',
+      citation: 'Minn. Stat. 290.0132, subd. 26(c)',
+      url: 'https://www.revisor.mn.gov/statutes/cite/290.0132',
+      quotedText:
+        'For a taxpayer other than a married taxpayer filing a separate return with adjusted gross income above the phaseout threshold, the simplified subtraction is reduced by ten percent for each $4,000 of adjusted gross income, or fraction thereof, in excess of the phaseout threshold.',
+    }, {
+      kind: 'statute',
+      citation: 'Minn. Stat. 290.0132, subd. 26(c)(1)–(2)',
+      url: 'https://www.revisor.mn.gov/statutes/cite/290.0132',
+      quotedText:
+        '(1) $100,000 for a married taxpayer filing a joint return or surviving spouse; (2) $78,000 for a single or head of household taxpayer; and',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+    ],
+  },
+
+  'mt-mca-15-30-2110-federal-agi-social-security': {
+    title: 'Montana starts from federal AGI, so federally taxable Social Security is in the base',
+    statement:
+      'Montana adjusted gross income is the taxpayer\'s federal adjusted gross income, and married taxpayers who must include part of their Social Security benefits in federal AGI are told how to split that federal base on separate Montana returns — which is only intelligible if the federally taxable share is in Montana AGI. The pack encodes that as `taxesSocialSecurity: true`. The 2026 department notice also states that changes to the federal standard deduction affect Montana taxable income, which is why the pack is tagged `standardDeductionConformity: \'federal\'`. The 2013 compilation of this section still prints a $3,600 pension exclusion the 2026 pack does not carry; that compilation is not authority for 2026 pension treatment and this record does not adopt it.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:MT',
+    authority: [{
+      kind: 'statute',
+      citation: 'Mont. Code Ann. 15-30-2110(1) (2013 compilation)',
+      url: 'https://archive.legmt.gov/bills/2013/mca/15/30/15-30-2110.htm',
+      quotedText:
+        'Subject to subsection (13), adjusted gross income is the taxpayer\'s federal adjusted gross income as defined in section 62 of the Internal Revenue Code, 26 U.S.C. 62, and in addition includes the following:',
+    }, {
+      kind: 'statute',
+      citation: 'Mont. Code Ann. 15-30-2110(5) (2013 compilation)',
+      url: 'https://archive.legmt.gov/bills/2013/mca/15/30/15-30-2110.htm',
+      quotedText:
+        'Married taxpayers filing a joint federal return who are required to include part of their social security benefits or part of their tier 1 railroad retirement benefits in federal adjusted gross income may split the federal base used in calculation of federal taxable social security benefits or federal taxable tier 1 railroad retirement benefits when they file separate Montana income tax returns. The federal base must be split equally on the Montana return.',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'Montana Department of Revenue, Updated Montana Wage Withholding Tables and MW-4 Now Available (2026)',
+      url: 'https://revenue.mt.gov/news/recent-news/2026-withholding-updates',
+      quotedText:
+        'Additionally, recent federal legislation changed the standard deductions amounts which affect Montana taxable income. The withholding tax tables were updated to also reflect these changes.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/params/state/index.ts',
+    ],
+  },
+
+  'ne-stat-77-2716-social-security-subtraction': {
+    title: 'Nebraska subtracts 100% of federally included Social Security from 2024',
+    statement:
+      'From taxable years beginning on or after January 1, 2024 Nebraska reduces federal adjusted gross income by one hundred percent of the Social Security benefits that are received and included in federal adjusted gross income. That is what `taxesSocialSecurity: false` encodes, and it is why a reading that still taxed 85 percent of the benefit is rejected.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:NE',
+    authority: [{
+      kind: 'statute',
+      citation: 'Neb. Rev. Stat. 77-2716(14)(a)',
+      url: 'https://www.nebraskalegislature.gov/laws/statutes.php?statute=77-2716',
+      quotedText:
+        'For taxable years beginning or deemed to begin on or after January 1, 2021, under the Internal Revenue Code of 1986, as amended, federal adjusted gross income shall be reduced by a percentage of the social security benefits that are received and included in federal adjusted gross income. The pertinent percentage shall be:',
+    }, {
+      kind: 'statute',
+      citation: 'Neb. Rev. Stat. 77-2716(14)(a)(iv)',
+      url: 'https://www.nebraskalegislature.gov/laws/statutes.php?statute=77-2716',
+      quotedText:
+        'One hundred percent for taxable years beginning or deemed to begin on or after January 1, 2024, under the Internal Revenue Code of 1986, as amended.',
+    }, {
+      kind: 'statute',
+      citation: 'Neb. Rev. Stat. 77-2716(14)(b)',
+      url: 'https://www.nebraskalegislature.gov/laws/statutes.php?statute=77-2716',
+      quotedText:
+        'For purposes of this subsection, social security benefits means benefits received under the federal Social Security Act.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2024,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+    ],
+  },
+
+  'ne-stat-77-2716-public-pension-exemption': {
+    title: 'Nebraska\'s public-pension override is military and CSRS, not every public pension',
+    statement:
+      'Nebraska subtracts one hundred percent of military retirement benefit income from 2022 and, from 2024, amounts received as annuities under the Civil Service Retirement System earned for federal employment. The pack encodes the public bucket as `{ kind: \'full\' }`, a single flag, so a Nebraska Public Employees Retirement System or school-retirement annuity is excluded in full the same way a military pension is. Approximated: the engine understates tax on every public pension the two subsections do not name. Private retirement stays `{ kind: \'none\' }`, which matches the absence of a general private-pension subtraction in this section.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'understatesTax',
+    conventionRationale: null,
+    jurisdiction: 'state:NE',
+    authority: [{
+      kind: 'statute',
+      citation: 'Neb. Rev. Stat. 77-2716(15)(b)',
+      url: 'https://www.nebraskalegislature.gov/laws/statutes.php?statute=77-2716',
+      quotedText:
+        'For taxable years beginning or deemed to begin on or after January 1, 2022, under the Internal Revenue Code of 1986, as amended, an individual may exclude one hundred percent of the military retirement benefit income received by such individual to the extent included in federal adjusted gross income.',
+    }, {
+      kind: 'statute',
+      citation: 'Neb. Rev. Stat. 77-2716(15)(c)',
+      url: 'https://www.nebraskalegislature.gov/laws/statutes.php?statute=77-2716',
+      quotedText:
+        'For purposes of this subsection, military retirement benefit means retirement benefits that are periodic payments attributable to service in the uniformed services of the United States for personal services performed by an individual prior to his or her retirement.',
+    }, {
+      kind: 'statute',
+      citation: 'Neb. Rev. Stat. 77-2716(20)',
+      url: 'https://www.nebraskalegislature.gov/laws/statutes.php?statute=77-2716',
+      quotedText:
+        'For taxable years beginning or deemed to begin on or after January 1, 2024, under the Internal Revenue Code of 1986, as amended, an individual may reduce his or her federal adjusted gross income by the amounts received as annuities under the Civil Service Retirement System which were earned for being employed by the federal government, to the extent such amounts are included in federal adjusted gross income.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2024,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+    ],
+  },
+
+  'nh-rsa-77-taxation-of-incomes-repealed': {
+    title: 'New Hampshire’s Taxation of Incomes chapter is gone from 2025',
+    statement:
+      'RSA Chapter 77, titled Taxation of Incomes, is repealed in its entirety. The General Court’s own chapter page states the whole chapter was repealed, and the compiler’s note names the act and the date: repealed by 2021, 91:189, II, effective January 1, 2025. From that date New Hampshire levies no individual income tax, which is what the pack’s `hasIncomeTax: false` encodes for 2026 — no wage, capital gain, Social Security benefit, pension, or IRA or 401(k) distribution reaches a New Hampshire rate, because there is no Chapter 77 left to impose one. The date is 2025 and not 2021: the 2021 session law that repealed the chapter set the effective date at January 1, 2025. This negative is statutory. Nothing in the staged source is a constitutional bar, so a later session can put a tax back, and this record belongs on the annual re-verification list for that reason rather than out of routine.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:NH',
+    authority: [{
+      // Markup-stripped text of the chapter heading on the official RSA
+      // repeal page. &#150; is quoted as U+0096, which is what the numeric
+      // reference names, rather than rewritten as U+2013 (the glyph a
+      // browser's Windows-1252 substitution would show). 49 characters.
+      kind: 'statute',
+      citation: 'N.H. Rev. Stat. Ann. ch. 77 (repealed), chapter heading',
+      url: 'https://www.gencourt.state.nh.us/rsa/html/V/77/77-mrg.htm',
+      quotedText: 'Chapter 77 Repealed \u0096 Entire Chapter was repealed',
+    }, {
+      // Markup-stripped compiler’s note on the same page. 50 characters.
+      kind: 'statute',
+      citation: 'N.H. Rev. Stat. Ann. ch. 77 (repealed), compiler’s note',
+      url: 'https://www.gencourt.state.nh.us/rsa/html/V/77/77-mrg.htm',
+      quotedText: '[Repealed by 2021, 91:189, II, eff. Jan. 1, 2025.]',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2025,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+    ],
+  },
+
+  'nj-stat-54a-6-10-retirement-income-exclusion': {
+    title: 'New Jersey\'s pension exclusion is age-62, per-return, and AGI-capped; the pack is a flat $50,000',
+    statement:
+      'From 2021 New Jersey excludes pension, disability, or retirement-plan payments received by a person 62 or older, but only if gross income for the year is not more than $150,000, and the dollar ceiling for a taxpayer at or below $100,000 of gross income is $100,000 joint / $75,000 single / $50,000 married-filing-separately. Between $100,000 and $150,000 the exclusion is a percentage of the payments rather than those ceilings. Approximated: the pack encodes `{ kind: \'capped\', capPerPerson: 50000, minAge: 62 }` with no AGI test, so a household over $150,000 is given a $50,000 subtraction the statute withholds (understating tax) and a single filer under $100,000 is given $50,000 rather than $75,000 (overstating tax). Social Security is not in this section and is not registered from the staged sources.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'bothDirections',
+    conventionRationale: null,
+    jurisdiction: 'state:NJ',
+    authority: [{
+      kind: 'statute',
+      citation: 'N.J.S.A. 54A:6-10(b)(1), as amended by P.L.2021, c.129',
+      url: 'https://pub.njleg.gov/bills/2020/AL21/129_.HTM',
+      quotedText:
+        'for taxable years beginning on or after January 1, 2020, of up to $100,000 for a married couple filing jointly, $50,000 for a married person filing separately, or $75,000 for an individual filing as a single taxpayer or an individual determining tax pursuant to subsection a. of N.J.S.54A:2-1;',
+    }, {
+      kind: 'statute',
+      citation: 'N.J.S.A. 54A:6-10(b)(1), as amended by P.L.2021, c.129 (age and qualifying payments)',
+      url: 'https://pub.njleg.gov/bills/2020/AL21/129_.HTM',
+      quotedText:
+        'which are received as an annuity, endowment or life insurance contract, or payments of any such amounts which are received as pension, disability, or retirement benefits, under any public or private plan, whether the consideration therefor is contributed by the employee or employer or both, by any person who is 62 years of age or older or who, by virtue of disability, is or would be eligible to receive payments under the federal Social Security Act.',
+    }, {
+      kind: 'statute',
+      citation: 'N.J.S.A. 54A:6-10(b)(2), as amended by P.L.2021, c.129',
+      url: 'https://pub.njleg.gov/bills/2020/AL21/129_.HTM',
+      quotedText:
+        'For taxable years beginning on or after January 1, 2021, the exclusion provided by this subsection shall only be allowed if the taxpayer has gross income for the taxable year of not more than $150,000.',
+    }, {
+      kind: 'statute',
+      citation: 'N.J.S.A. 54A:6-10(b)(1), as amended by P.L.2021, c.129 (phase-down)',
+      url: 'https://pub.njleg.gov/bills/2020/AL21/129_.HTM',
+      quotedText:
+        'for taxable years beginning on or after January 1, 2021, for a taxpayer with gross income in excess of $100,000, but not more than $125,000, 50 percent of payments for a married couple filing jointly, 25 percent of payments for a married couple filing separately, or 37.5 percent of payments for an individual filing as a single taxpayer or individual determining tax pursuant to subsection a. of N.J.S.54A:2-1;',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2021,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+    ],
+  },
+
+  // Batch C state records — verified against the staged sources on 2026-08-27.
+  'nm-stat-7-2-5-14-social-security-and-federal-standard': {
+    title: 'New Mexico applies an income-tested Social Security exemption',
+    statement:
+      'New Mexico does not exempt every dollar of Social Security. The Taxation and Revenue Department describes the exemption as beginning in 2022 but limits it by filing status and income: a single filer must be below $100,000, a joint filer, surviving spouse, or head of household below $150,000, and a married-separate filer below $75,000. The pack\'s `taxesSocialSecurity: false` is therefore a conservative boolean for low-income retirees but understates a high-income retiree\'s New Mexico tax. This record registers that source-backed Social Security limb. The federal-standard-deduction component remains covered by the federal conformity record `irc-63-c-7-B-ii-conformed-state-deduction-tracks-federal`; the staged New Mexico statutes index did not expose operative NMSA §7-2-5.14 text, so no separate New Mexico deduction reading is asserted here.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'understatesTax',
+    conventionRationale: null,
+    jurisdiction: 'state:NM',
+    authority: [{
+      kind: 'stateAgencyPublication',
+      citation: 'New Mexico Taxation and Revenue Department, Social Security Income Tax Exemption',
+      url: 'https://www.tax.newmexico.gov/social-security-income-tax-exemption/',
+      quotedText:
+        'Beginning with tax year 2022, most seniors will be exempt from paying taxes on their Social Security benefits when they file their New Mexico Personal Income Tax returns. Tax relief from the new Social Security exemption is expected to total $84.1 million in the first year. The exemption is available to single taxpayers with less than $100,000 in income, to married couples filing jointly, surviving spouses and heads of household with under $150,000 in income, and to married couples filing separately with under $75,000 in income.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/params/state/index.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  'ncgs-105-153-5-social-security-exclusion': {
+    title: 'North Carolina subtracts Title II Social Security benefits',
+    statement:
+      'North Carolina\'s other-deductions subdivision lists both benefits received under Title II of the Social Security Act and amounts received from retirement annuities or pensions paid under the Railroad Retirement Act of 1937. The pack\'s `taxesSocialSecurity: false` implements the Title II Social Security limb; Railroad Retirement has no separate input field, and this record does not extend the quoted provision to North Carolina\'s separate retirement-income rules.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:NC',
+    authority: [{
+      kind: 'statute',
+      citation: 'N.C. Gen. Stat. §105-153.5(b)(3)',
+      url: 'https://www.ncleg.gov/EnactedLegislation/Statutes/HTML/BySection/Chapter_105/GS_105-153.5.html',
+      quotedText:
+        '(b) Other Deductions. - In calculating North Carolina taxable income, a taxpayer may deduct from the taxpayer\'s adjusted gross income any of the following items that are included in the taxpayer\'s adjusted gross income: ... (3) Benefits received under Title II of the Social Security Act and amounts received from retirement annuities or pensions paid under the provisions of the Railroad Retirement Act of 1937.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  'oh-rev-code-5747-01-social-security-and-public-pension': {
+    title: 'Ohio subtracts Social Security and uniformed-services retirement, but uses a separate retirement-income credit',
+    statement:
+      'Ohio expressly deducts Title II Social Security benefits and tier 1 railroad retirement from Ohio adjusted gross income. Its separate retirement deduction reaches retired personnel pay for uniformed service (and only the attributable uniformed-service portion of a related federal civil-service annuity), while section 5747.055 supplies a capped retirement-income credit for returns with modified AGI below $100,000. The pack instead gives every public-pension dollar a full exclusion and carries no credit, so it understates tax for non-uniformed public pensions but overstates tax when a taxpayer qualifies for the omitted credit; those are the two approximation directions this record pins.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'bothDirections',
+    conventionRationale: null,
+    jurisdiction: 'state:OH',
+    // BLOCKED-SOURCE: the planned Ohio DOR credit page was unavailable in the
+    // re-fetch; ORC §5747.055 carries the operative credit schedule instead.
+    authority: [{
+      kind: 'statute',
+      citation: 'Ohio Rev. Code §5747.01(A)(5)',
+      url: 'https://codes.ohio.gov/ohio-revised-code/section-5747.01',
+      quotedText:
+        '(5) Deduct the following, to the extent not otherwise deducted or excluded in computing federal or Ohio adjusted gross income: (a) Benefits under Title II of the Social Security Act and tier 1 railroad retirement; (b) Railroad retirement benefits, other than tier 1 railroad retirement benefits, to the extent such amounts are exempt from state taxation under federal law.',
+    }, {
+      kind: 'statute',
+      citation: 'Ohio Rev. Code §5747.01(A)(23)',
+      url: 'https://codes.ohio.gov/ohio-revised-code/section-5747.01',
+      quotedText:
+        '(23) Deduct, to the extent not otherwise deducted or excluded in computing federal or Ohio adjusted gross income for the taxable year, amounts received by the taxpayer as retired personnel pay for service in the uniformed services or reserve components thereof, or the national guard, or received by the surviving spouse or former spouse of such a taxpayer under the survivor benefit plan on account of such a taxpayer\'s death. If the taxpayer receives income on account of retirement paid under the federal civil service retirement system or federal employees retirement system, or under any successor retirement program enacted by the congress of the United States that is established and maintained for retired employees of the United States government, and such retirement income is based, in whole or in part, on credit for the taxpayer\'s uniformed service, the deduction allowed under this division shall include only that portion of such retirement income that is attributable to the taxpayer\'s uniformed service, to the extent that portion of such retirement income is otherwise included in federal adjusted gross income and is not otherwise deducted under this section. Any amount deducted under division (A)(23) of this section is not included in a taxpayer\'s adjusted gross income for the purposes of section 5747.055 of the Revised Code. No amount may be deducted under division (A)(23) of this section on the basis of which a credit was claimed under section 5747.055 of the Revised Code.',
+    }, {
+      kind: 'statute',
+      citation: 'Ohio Rev. Code §5747.055(B)',
+      url: 'https://codes.ohio.gov/ohio-revised-code/section-5747.055',
+      quotedText:
+        '(B) A credit shall be allowed against a taxpayer\'s aggregate tax liability under section 5747.02 of the Revised Code for taxpayers who received retirement income during the taxable year and whose modified adjusted gross income for the taxable year, less applicable exemptions under section 5747.025 of the Revised Code, as shown on an individual or joint annual return is less than one hundred thousand dollars. Only one such credit shall be allowed for each return, and the amount of the credit shall be computed in accordance with the following schedule: AMOUNT OF RETIREMENT INCOME RECEIVED DURING THE TAXABLE YEAR CREDIT FOR THE TAXABLE YEAR $500 or less $ 0 Over $500 but not more than $1,500 $ 25 Over $1,500 but not more than $3,000 $ 50 Over $3,000 but not more than $5,000 $ 80 Over $5,000 but not more than $8,000 $ 130 Over $8,000 $ 200',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  'ok-stat-68-2358-retirement-and-social-security': {
+    title: 'Oklahoma subtracts Social Security and caps ordinary retirement exclusions at $10,000 per person',
+    statement:
+      'The Oklahoma Tax Commission\'s Form 511 packet directs a resident to subtract Social Security benefits included in federal AGI and permits each individual to exclude up to $10,000 of qualifying retirement benefits. The packet separately makes military and CSRS retirement fully excludable; the pack carries the common $10,000 cap and Social Security subtraction but cannot distinguish those special categories, so it overstates Oklahoma tax for an eligible military or CSRS retiree. The rate and standard-deduction figures in the pack are not re-asserted by this retirement record.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'overstatesTax',
+    conventionRationale: null,
+    jurisdiction: 'state:OK',
+    authority: [{
+      kind: 'formInstruction',
+      citation: '2025 Oklahoma Form 511 packet, Schedule 511-A line 2',
+      url: 'https://oklahoma.gov/content/dam/ok/en/tax/documents/forms/individuals/current/511-Pkt.pdf',
+      quotedText:
+        'Social Security benefits that are included in the Federal AGI shall be subtracted. Provide a copy of your federal return.',
+    }, {
+      kind: 'formInstruction',
+      citation: '2025 Oklahoma Form 511 packet, Schedule 511-A line 4',
+      url: 'https://oklahoma.gov/content/dam/ok/en/tax/documents/forms/individuals/current/511-Pkt.pdf',
+      quotedText:
+        'Each individual may exclude 100% of retirement benefits from any component of the Armed Forces of the United States.',
+    }, {
+      kind: 'formInstruction',
+      citation: '2025 Oklahoma Form 511 packet, Schedule 511-A line 5',
+      url: 'https://oklahoma.gov/content/dam/ok/en/tax/documents/forms/individuals/current/511-Pkt.pdf',
+      quotedText:
+        'Each individual may exclude their retirement benefits up to $10,000, but not to exceed the amount included in the Federal AGI. (To be eligible, you must have retirement income in your name.) The retirement benefits must be received from the following:',
+    }, {
+      kind: 'formInstruction',
+      citation: '2025 Oklahoma Form 511 packet, Schedule 511-A line 6',
+      url: 'https://oklahoma.gov/content/dam/ok/en/tax/documents/forms/individuals/current/511-Pkt.pdf',
+      quotedText:
+        'Each individual may exclude their retirement benefits up to $10,000, but not to exceed the amount included in the Federal AGI. For any individual who claims the exclusions for government retirees on Schedule 511-A, line 5, the amount of the exclusion on this line cannot exceed $10,000 minus the amounts already claimed on Schedule 511-A, line 5 (if less than zero, enter "0"). If the maximum $10,000 is claimed on Schedule 511-A, line 5, no additional amount is allowed on Schedule 511-A, line 6.',
+    }, {
+      kind: 'formInstruction',
+      citation: '2025 Oklahoma Form 511 packet, Schedule 511-A line 3',
+      url: 'https://oklahoma.gov/content/dam/ok/en/tax/documents/forms/individuals/current/511-Pkt.pdf',
+      quotedText:
+        'Each individual may exclude 100% of their retirement benefits received from the Federal Civil Service Retirement System (CSRS), including survivor benefits, paid in lieu of Social Security to the extent such benefits are included in the Federal AGI.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  'ut-code-59-10-114-social-security-tax-credit': {
+    title: 'Utah taxes Social Security but offers a separate Social Security benefits credit',
+    statement:
+      'Utah publishes a single 4.5% individual income-tax rate. Its Tax Commission TC-40A instructions provide a Social Security Benefits Credit for taxable Social Security included in adjusted gross income: the worksheet multiplies that benefit by 4.5%, then reduces the result by 2.5% of the worksheet\'s income-over-threshold amount above $54,000 for a single filer, $90,000 for a joint filer or qualifying widow(er), and the corresponding $45,000 married-separate threshold. The pack includes the federally taxable Social Security share but models no credit, so it overstates tax on a qualifying return; Utah\'s separate retirement and military credits are also outside this state-tax base model.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'overstatesTax',
+    conventionRationale: null,
+    jurisdiction: 'state:UT',
+    authority: [{
+      kind: 'stateAgencyPublication',
+      citation: 'Utah State Tax Commission, 2025 TC-40A Supplemental Schedule Instructions, Social Security Benefits Credit (UCA §59-10-1042)',
+      url: 'https://incometax.utah.gov/tc-40a/',
+      quotedText:
+        '(AH) Social Security Benefits Credit (UCA §59-10-1042) You may qualify for this credit if you (or your spouse, if filing jointly) received taxable Social Security retirement, disability or survivor benefits. Complete the Social Security Credit Worksheet, below, to calculate this credit. You may only claim this credit for Social Security benefits included in adjusted gross income on this return. You may not claim this credit if you (or your spouse, if filing jointly) claim the Retirement Credit (code 18). Social Security Credit Worksheet Calculation Steps Amount For yourself (and/or your spouse), enter the amount from federal form 1040 or 1040-SR, line 6b; or 1040-NR, Schedule NEC, line 8 1 _________ Did you report Native American Income (code 77) or Railroad Retirement Income (code 78) as a subtraction from income on TC-40, Schedule A, Part 2? If yes, enter any Social Security benefit included in those amounts. If no, enter “0” 2 _________ Line 1 minus line 2 3 _________ Multiply line 3 by 0.045 4 _________ Enter the amount from TC-40, line 9 (Utah taxable income/loss) 5 _________ Enter municipal bond interest from TC-40, Schedule A, Part 1, code 57 6 _________ Line 5 minus line 6 7 _________ Enter tax exempt interest from federal form 1040, 1040-SR or 1040-NR, line 2a 8 _________ Add lines 7 and 8 9 _________ Enter: a. Married filing separately: $45,000 b. Married filing federal return 1040-NR: $45,000 c. Married filing joint: $90,000 d. Single: $54,000 e. Qualifying surviving spouse or head of household: $90,000 10 _________ Line 9 minus line 10 (not less than zero) 11 _________ Multiply line 11 by 0.025 12 _________ Social Security Benefits Credit: Line 4 minus line 12 (not less than zero) 13 _________ If claiming this credit, enter the total amount on TC-40A, Part 3, using code AH. Note: You may not carry forward or back any credit that is more than your tax liability.',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'Utah State Tax Commission, Tax Rates (2025)',
+      url: 'https://incometax.utah.gov/file-pay/tax-rates/',
+      quotedText:
+        'Multiply line 9 by 4.5 percent (.045). If the result is zero or less, enter “0.” Utah has a single tax rate for all income levels, as follows: Date Range Tax Rate January 1, 2025 – current 4.5% or .045',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  'or-stat-316-054-social-security-exclusion': {
+    title: 'Oregon subtracts federally taxable Social Security from federal taxable income',
+    statement:
+      'Oregon starts its resident income-tax base with federal taxable income and then subtracts every Social Security benefit included in federal gross income under Internal Revenue Code section 86. The pack\'s `taxesSocialSecurity: false` expresses that full subtraction; Oregon has no separate retirement exclusion in this record, so private and public retirement distributions remain in the ordinary base.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:OR',
+    authority: [{
+      kind: 'statute',
+      citation: 'Or. Rev. Stat. §316.054',
+      url: 'https://www.oregonlegislature.gov/bills_laws/ors/ors316.html',
+      quotedText:
+        '316.054 Social Security benefits to be subtracted from federal taxable income. In addition to the other modifications to federal taxable income contained in this chapter, there shall be subtracted from federal taxable income the amount of any Social Security benefits, as defined in section 86 of the Internal Revenue Code (Title II Social Security or tier 1 railroad retirement benefits) included in gross income for federal income tax purposes under section 86 of the Internal Revenue Code.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  'ri-gen-laws-44-30-12-social-security-and-pension-modification': {
+    title: 'Rhode Island limits Social Security and pension modifications by age, AGI, and year',
+    statement:
+      'Rhode Island allows an age-qualified Social Security modification only below its federal-AGI thresholds: the statute starts at $80,000 for an unmarried, head-of-household, or married-separate filer and $100,000 for a joint filer or qualifying widow(er), then requires annual inflation adjustment. It also allows a pension or annuity modification subject to the same AGI test, with a statutory ceiling of $50,000 beginning in tax years after 2025. The pack instead taxes the federally taxable Social Security share for everyone and applies a $20,000 age-67 retirement cap without the AGI test. Those omissions can move taxpayer exposure in both directions: the blanket Social Security inclusion overstates tax below the threshold, while applying a retirement cap above the threshold understates tax; the $20,000 ceiling also overstates tax for eligible pensions now reaching $50,000.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'bothDirections',
+    conventionRationale: null,
+    jurisdiction: 'state:RI',
+    authority: [{
+      kind: 'statute',
+      citation: 'R.I. Gen. Laws §44-30-1(a)',
+      url: 'https://webserver.rilegislature.gov/Statutes/TITLE44/44-30/44-I/44-30-1.htm',
+      quotedText:
+        'A Rhode Island personal income tax determined in accordance with the rates set forth in § 44-30-2 is imposed for each taxable year (which shall be the same as the taxable year for federal income tax purposes) on the Rhode Island income of every individual, estate, and trust.',
+    }, {
+      kind: 'statute',
+      citation: 'R.I. Gen. Laws §44-30-12(c)(8)(i)',
+      url: 'https://webserver.rilegislature.gov/Statutes/TITLE44/44-30/44-II/44-30-12.htm',
+      quotedText:
+        '(8) Modification for taxable Social Security income. (i) For tax years beginning on or after January 1, 2016: (A) For a person who has attained the age used for calculating full or unreduced Social Security retirement benefits who files a return as an unmarried individual, head of household, or married filing separate whose federal adjusted gross income for the taxable year is less than eighty thousand dollars ($80,000); or (B) A married individual filing jointly or individual filing qualifying widow(er) who has attained the age used for calculating full or unreduced Social Security retirement benefits whose joint federal adjusted gross income for the taxable year is less than one hundred thousand dollars ($100,000), an amount equal to the Social Security benefits includible in federal adjusted gross income.',
+    }, {
+      kind: 'statute',
+      citation: 'R.I. Gen. Laws §44-30-12(c)(8)(ii)',
+      url: 'https://webserver.rilegislature.gov/Statutes/TITLE44/44-30/44-II/44-30-12.htm',
+      quotedText:
+        '(ii) Adjustment for inflation. The dollar amount contained in subsections (c)(8)(i)(A) and (c)(8)(i)(B) of this section shall be increased annually by an amount equal to:',
+    }, {
+      kind: 'statute',
+      citation: 'R.I. Gen. Laws §44-30-12(c)(9)(i)',
+      url: 'https://webserver.rilegislature.gov/Statutes/TITLE44/44-30/44-II/44-30-12.htm',
+      quotedText:
+        '(9) Modification of taxable retirement income from certain pension plans or annuities. (i) For tax years beginning on or after January 1, 2017, until the tax year beginning January 1, 2022, a modification shall be allowed for up to fifteen thousand dollars ($15,000), and for tax years beginning on or after January 1, 2023, until the tax year beginning January 1, 2024, a modification shall be allowed for up to twenty thousand dollars ($20,000), and for tax years beginning on or after January 1, 2025, a modification shall be allowed for up to fifty thousand dollars ($50,000), of taxable pension and/or annuity income that is included in federal adjusted gross income for the taxable year:',
+    }, {
+      kind: 'statute',
+      citation: 'R.I. Gen. Laws §44-30-12(c)(9)(i)(A)',
+      url: 'https://webserver.rilegislature.gov/Statutes/TITLE44/44-30/44-II/44-30-12.htm',
+      quotedText:
+        '(A) For a person who has attained the age used for calculating full or unreduced Social Security retirement benefits who files a return as an unmarried individual, head of household, or married filing separate whose federal adjusted gross income for such taxable year is less than the amount used for the modification contained in subsection (c)(8)(i)(A) of this section an amount not to exceed $15,000 for tax years beginning on or after January 1, 2017, until the tax year beginning January 1, 2022, and an amount not to exceed twenty thousand dollars ($20,000) for tax years beginning on or after January 1, 2023, until the tax year beginning January 1, 2024, and an amount not to exceed fifty thousand dollars ($50,000) for tax years beginning on or after January 1, 2025, of taxable pension and/or annuity income includible in federal adjusted gross income; or',
+    }, {
+      kind: 'statute',
+      citation: 'R.I. Gen. Laws §44-30-12(c)(9)(i)(B)',
+      url: 'https://webserver.rilegislature.gov/Statutes/TITLE44/44-30/44-II/44-30-12.htm',
+      quotedText:
+        '(B) For a married individual filing jointly or individual filing qualifying widow(er) who has attained the age used for calculating full or unreduced Social Security retirement benefits whose joint federal adjusted gross income for such taxable year is less than the amount used for the modification contained in subsection (c)(8)(i)(B) of this section an amount not to exceed $15,000 for tax years beginning on or after January 1, 2017, until the tax year beginning January 1, 2022, and an amount not to exceed twenty thousand dollars ($20,000) for tax years beginning on or after January 1, 2023, until the tax year beginning January 1, 2024, and an amount not to exceed fifty thousand dollars ($50,000) for tax years beginning on or after January 1, 2025, of taxable pension and/or annuity income includible in federal adjusted gross income.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  'vt-stat-32-5830e-social-security-inclusion': {
+    title: 'Vermont excludes federally taxable Social Security only below AGI thresholds',
+    statement:
+      'Vermont taxable income starts with federal adjusted gross income and decreases by the portion of federally taxable Social Security that section 5830e requires to be excluded. For a single, separate, head-of-household, or surviving-spouse return, all federally taxable benefits are excluded at or below $55,000 of federal AGI, reduced proportionally through $65,000, and none is excluded at or above $65,000; joint thresholds are $70,000 and $80,000. The pack\'s `taxesSocialSecurity: true` omits that low- and middle-income subtraction and therefore overstates tax for eligible retirees.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'overstatesTax',
+    conventionRationale: null,
+    jurisdiction: 'state:VT',
+    authority: [{
+      kind: 'statute',
+      citation: '32 V.S.A. §5830e(a)(1)(A)',
+      url: 'https://legislature.vermont.gov/statutes/section/32/151/05830e',
+      quotedText:
+        '(A) If the federal adjusted gross income of the taxpayer is less than or equal to $55,000.00, all federally taxable benefits received under the federal Social Security Act shall be excluded.',
+    }, {
+      kind: 'statute',
+      citation: '32 V.S.A. §5830e(a)(1)',
+      url: 'https://legislature.vermont.gov/statutes/section/32/151/05830e',
+      quotedText:
+        '(1) For taxpayers whose filing status is single, married filing separately, head of household, or surviving spouse:',
+    }, {
+      kind: 'statute',
+      citation: '32 V.S.A. §5830e(a)(1)(B)',
+      url: 'https://legislature.vermont.gov/statutes/section/32/151/05830e',
+      quotedText:
+        '(B) If the federal adjusted gross income of the taxpayer is greater than $55,000.00 but less than $65,000.00, the percentage of federally taxable benefits received under the Social Security Act to be excluded shall be proportional to the amount of the taxpayer’s federal adjusted gross income over $55,000.00, determined by:',
+    }, {
+      kind: 'statute',
+      citation: '32 V.S.A. §5830e(a)(1)(C)',
+      url: 'https://legislature.vermont.gov/statutes/section/32/151/05830e',
+      quotedText:
+        '(C) If the federal adjusted gross income of the taxpayer is equal to or greater than $65,000.00, no amount of the federally taxable benefits received under the Social Security Act shall be excluded under this section.',
+    }, {
+      kind: 'statute',
+      citation: '32 V.S.A. §5830e(a)(2)(A)',
+      url: 'https://legislature.vermont.gov/statutes/section/32/151/05830e',
+      quotedText:
+        '(A) If the federal adjusted gross income of the taxpayer is less than or equal to $70,000.00, all federally taxable benefits received under the Social Security Act shall be excluded.',
+    }, {
+      kind: 'statute',
+      citation: '32 V.S.A. §5830e(a)(2)',
+      url: 'https://legislature.vermont.gov/statutes/section/32/151/05830e',
+      quotedText:
+        '(2) For taxpayers whose filing status is married filing jointly:',
+    }, {
+      kind: 'statute',
+      citation: '32 V.S.A. §5830e(a)(2)(B)',
+      url: 'https://legislature.vermont.gov/statutes/section/32/151/05830e',
+      quotedText:
+        '(B) If the federal adjusted gross income of the taxpayer is greater than $70,000.00 but less than $80,000.00, the percentage of federally taxable benefits received under the Social Security Act to be excluded shall be proportional to the amount of the taxpayer’s federal adjusted gross income over $70,000.00, determined by:',
+    }, {
+      kind: 'statute',
+      citation: '32 V.S.A. §5830e(a)(2)(C)',
+      url: 'https://legislature.vermont.gov/statutes/section/32/151/05830e',
+      quotedText:
+        '(C) If the federal adjusted gross income of the taxpayer is equal to or greater than $80,000.00, no amount of the federally taxable benefits received under the Social Security Act shall be excluded under this section.',
+    }, {
+      kind: 'statute',
+      citation: '32 V.S.A. §5811(21)(B)(iv)',
+      url: 'https://legislature.vermont.gov/statutes/section/32/151/05811',
+      quotedText:
+        '(iv) the portion of certain retirement income and federally taxable benefits received under the federal Social Security Act that is required to be excluded under section 5830e of this chapter;',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'Vermont Department of Taxes, Social Security Exemption',
+      url: 'https://tax.vermont.gov/individuals/income-tax-returns/social-security-exemption',
+      quotedText:
+        'Vermont’s personal income tax exemption of Social Security benefits reduces tax liabilities mainly for lower- and middle-income Vermonters who are retired or disabled. It does this by excluding from taxable income all or part of taxable Social Security benefits reported on the federal Form 1040, U.S. Individual Income Tax Return, which are included in federal AGI.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  'va-code-58-1-322-03-age-deduction-and-social-security': {
+    title: 'Virginia phases the age-65 deduction out against adjusted federal AGI',
+    statement:
+      'Virginia grants an age-65 deduction of $12,000, but reduces it dollar-for-dollar when adjusted federal AGI exceeds $50,000 for a single taxpayer or $75,000 for a married taxpayer, with a combined-AGI rule for married-separate returns. The statute defines adjusted federal AGI by subtracting Title II Social Security benefits and other benefits taxable solely under Internal Revenue Code section 86. The pack maps the $12,000 amount to a retirement-income cap and does not carry the phase-out or the wage-only age deduction, so exposure can run in both directions: high-income retirees receive a deduction the statute has phased away, while low-income age-65 filers with no modeled retirement distribution receive none.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'bothDirections',
+    conventionRationale: null,
+    jurisdiction: 'state:VA',
+    authority: [{
+      kind: 'statute',
+      citation: 'Va. Code §58.1-322.03(5)',
+      url: 'https://law.lis.virginia.gov/vacode/title58.1/chapter3/section58.1-322.03/',
+      quotedText:
+        '5. a. A deduction in the amount of $ 12,000 for individuals born on or before January 1, 1939. b. A deduction in the amount of $ 12,000 for individuals born after January 1, 1939, who have attained the age of 65. This deduction shall be reduced by $ 1 for every $ 1 that the taxpayer\'s adjusted federal adjusted gross income exceeds $ 50,000 for single taxpayers or $ 75,000 for married taxpayers. For married taxpayers filing separately, the deduction shall be reduced by $ 1 for every $ 1 that the total combined adjusted federal adjusted gross income of both spouses exceeds $ 75,000. For the purposes of this subdivision, "adjusted federal adjusted gross income" means federal adjusted gross income minus any benefits received under Title II of the Social Security Act and other benefits subject to federal income taxation solely pursuant to § 86 of the Internal Revenue Code, as amended.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  'wa-dor-no-broad-individual-income-tax': {
+    title: 'Washington has no broad individual income-tax figure in this pack; its capital-gains levy is separate',
+    statement:
+      'Washington\'s staged Department of Revenue page describes a separate capital-gains excise tax on individuals, and RCW 82.87.040 imposes that levy only on sales or exchanges of long-term capital assets. The pack therefore keeps `hasIncomeTax: false`, so the ordinary-income state-tax path returns zero and `capitalGainsAsOrdinary: true` is inert. The long-term capital-gains excise is out of scope: `model/plan.ts` and `params/types.ts` do not carry the holding-period, Washington allocation, adjusted-capital-gain, exemption, deduction, or $1,000,000 tier facts needed to produce that separate figure.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:WA',
+    authority: [{
+      kind: 'stateAgencyPublication',
+      citation: 'Washington Department of Revenue, Capital gains tax',
+      url: 'https://dor.wa.gov/taxes-rates/other-taxes/capital-gains-tax',
+      quotedText:
+        'The 2021 Washington State Legislature passed ESSB 5096 ( RCW 82.87 ) which created a 7% tax on the sale or exchange of long-term capital assets such as stocks, bonds, business interests, or other investments and tangible assets. This tax only applies to individuals.',
+    }, {
+      kind: 'statute',
+      citation: 'Wash. Rev. Code §82.87.040(1)',
+      url: 'https://app.leg.wa.gov/RCW/default.aspx?cite=82.87.040',
+      quotedText:
+        '(1)(a) Beginning January 1, 2022, an excise tax is imposed on the sale or exchange of long-term capital assets. Only individuals are subject to payment of the tax, which equals seven percent multiplied by an individual\'s Washington capital gains. (b) Beginning January 1, 2025, an additional excise tax is imposed on the sale or exchange of long-term capital assets, which equals 2.90 percent multiplied by the portion of an individual\'s Washington capital gains exceeding $1,000,000.',
+    }, {
+      kind: 'statute',
+      citation: 'Wash. Rev. Code §82.87.050(3)',
+      url: 'https://app.leg.wa.gov/RCW/default.aspx?cite=82.87.050',
+      quotedText:
+        '(3) Assets held under a retirement savings account under Title 26 U.S.C. Sec. 401(k) of the internal revenue code, a tax-sheltered annuity or custodial account described in Title 26 U.S.C. Sec. 403(b) of the internal revenue code, a deferred compensation plan under Title 26 U.S.C. Sec. 457(b) of the internal revenue code, an individual retirement account or individual retirement annuity described in Title 26 U.S.C. Sec. 408 of the internal revenue code, a Roth individual retirement account described in Title 26 U.S.C. Sec. 408A of the internal revenue code, an employee defined contribution program, an employee defined benefit plan, or a similar retirement savings vehicle, whether foreign or domestic, that penalizes withdrawals until the legal or beneficial owner reaches a certain age;',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/params/types.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  'wi-stat-71-05-retirement-income-subtraction': {
+    title: 'Wisconsin excludes Social Security and allows a $24,000 age-67 retirement subtraction, but also excludes 30% of qualifying long-term gain',
+    statement:
+      'Wisconsin Department of Revenue instructions say Social Security benefits are not taxable and permit a subtraction of the amount taxable on federal Form 1040 or 1040-SR. They also permit an age-67 taxpayer to subtract up to $24,000 of federally taxable qualified-plan or IRA retirement income, which is the cap the pack carries. The same Schedule SB instructions describe a 30% long-term capital-gain exclusion (60% for farm assets), which the pack\'s `capitalGainsAsOrdinary: true` omits; that omitted preference overstates Wisconsin tax on qualifying long-term gains. The Social Security and $24,000 retirement limbs are COVERED by the shipped pack; this umbrella record is approximated only for the unrepresented gain subtraction.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'overstatesTax',
+    conventionRationale: null,
+    jurisdiction: 'state:WI',
+    authority: [{
+      kind: 'formInstruction',
+      citation: '2025 Wisconsin Schedule SB Instructions, Line 4',
+      url: 'https://www.revenue.wi.gov/TaxForms2025/2025-ScheduleSB-Inst.pdf',
+      quotedText:
+        'Social security benefits are not taxable for Wisconsin. You may subtract any social security benefits that were taxable on your federal Form 1040 or 1040-SR. Fill in on line 4 the amount from line 6b of federal Form 1040 or 1040-SR.',
+    }, {
+      kind: 'formInstruction',
+      citation: '2025 Wisconsin Schedule SB Instructions, Line 16',
+      url: 'https://www.revenue.wi.gov/TaxForms2025/2025-ScheduleSB-Inst.pdf',
+      quotedText:
+        'If you (or your spouse if married and filing a joint return) were at least 67 years old as of December 31, 2025, you may subtract retirement income from a qualified retirement plan or individual retirement account (IRA) that is federally taxable and has not been removed from Wisconsin income on lines 12 through 15 of this schedule. Individuals may subtract up to $24,000 of retirement income received.',
+    }, {
+      kind: 'formInstruction',
+      citation: '2025 Wisconsin Schedule SB Instructions, Line 5',
+      url: 'https://www.revenue.wi.gov/TaxForms2025/2025-ScheduleSB-Inst.pdf',
+      quotedText:
+        'For example, after completing Schedule WD, you may be able to include an amount as a subtraction on line 5 because you qualify for the 30% long-term capital gain exclusion (60% in the case of farm assets).',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'Wisconsin Department of Revenue, Individual income tax rates',
+      url: 'https://www.revenue.wi.gov/Pages/FAQS/pcs-taxrates.aspx',
+      quotedText:
+        'Wisconsin individual income tax rates vary from 3.50% to 7.65%, depending upon marital status and income.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
 // `satisfies` without `as const`: keys and the union-typed fields
 // (classification, kind, volatility) stay literal for describeRule's
 // conditional typing, while the prose strings widen to `string` - past ~330
