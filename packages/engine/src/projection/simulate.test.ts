@@ -2,7 +2,14 @@ import { describe, expect, it } from 'vitest'
 
 import { describeRule } from '../rules/describeRule.js'
 
-import { createEmptyPlan, parsePlan, type Account, type IncomeStream, type Plan } from '../model/plan.js'
+import {
+  createEmptyPlan,
+  parsePlan,
+  socialSecurityIncomeSchema,
+  type Account,
+  type IncomeStream,
+  type Plan,
+} from '../model/plan.js'
 import { computePiaFromEarnings, isPiaFromEarningsError } from '../socialSecurity/piaFromEarnings.js'
 import { combineTaxCalculators, computeFederalTax, createFederalTaxCalculator } from '../tax/federalTax.js'
 import { createStateTaxCalculator } from '../tax/stateTax.js'
@@ -186,6 +193,68 @@ describe('horizon and wages', () => {
 })
 
 describe('social security', () => {
+  // Section 402(r)(2) bites when a claimant seeks spouse-only at claim age: they
+  // are deemed to file for their own old-age benefit too. At 62 the two year-one
+  // annual figures discriminate that direction:
+  //
+  //   own PIA 2,000 × 70% retirement factor × 12 = 16,800  (deemed own filed)
+  //   spouse PIA 3,000 × 50% × 65% spousal factor × 12 = 11,700
+  //
+  // Rejected restricted-spousal reading: pay only the spousal amount (11,700)
+  // and leave own unclaimed. Deemed reading: own is also filed, so the year-one
+  // benefit is 16,800 (own exceeds spouse). Both workers have claimed, so
+  // worker-filing eligibility and the family maximum are not this fixture's
+  // question. A max(own, spouse) path with own already above spouse would not
+  // discriminate spouse-deeming under (r)(1); this fixture targets (r)(2).
+  describeRule('usc-42-402-r-1-2-deemed-filing-old-age-and-spousal', {
+    readings: {
+      deemedOwnAlsoFiled: 16_800,
+      restrictedSpouseOnlyLeavesOwnUnclaimed: 11_700,
+    },
+    accepted: 'deemedOwnAlsoFiled',
+  }, ({ accepted, readings }) => {
+    it('deems own filed so year-one benefit is the own amount, not restricted spouse-only', () => {
+      const plan = basePlan()
+      plan.household.filingStatus = 'marriedFilingJointly'
+      plan.household.people = [
+        { id: 'p1', name: 'Lower', dob: '1964-06-15', sex: 'average', retirementAge: null, longevity: { planningAge: 90, source: 'manual' } },
+        { id: 'p2', name: 'Higher', dob: '1964-06-15', sex: 'average', retirementAge: null, longevity: { planningAge: 90, source: 'manual' } },
+      ]
+      const lowerStreamId = testIds()
+      plan.incomes = [
+        { type: 'socialSecurity', id: lowerStreamId, personId: 'p1', piaMonthly: 2_000, earnings: null, claimAge: { years: 62, months: 0 } },
+        { type: 'socialSecurity', id: testIds(), personId: 'p2', piaMonthly: 3_000, earnings: null, claimAge: { years: 62, months: 0 } },
+      ]
+      plan.accounts = [cash(2_000_000)]
+
+      const year = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax }).years[0]!
+      const lower = year.socialSecurityStreams?.find((stream) => stream.streamId === lowerStreamId)
+      if (lower === undefined) throw new Error('expected lower current-spouse Social Security stream')
+
+      expect(lower.source).toBe('own-retirement')
+      expect(lower.annualAmount).toBeCloseTo(accepted, 6)
+      expect(lower.annualAmount).not.toBeCloseTo(readings.restrictedSpouseOnlyLeavesOwnUnclaimed, 6)
+    })
+
+    it('exposes exactly one claimAge and no restricted-application vocabulary on the SS stream', () => {
+      // Bind the schema vocabulary itself (plan.test.ts gate pattern): a
+      // restricted spouse-only application cannot be expressed because the
+      // stream carries one claimAge and none of the restricted-claim fields.
+      const fields = Object.keys(socialSecurityIncomeSchema.shape)
+      expect(fields.filter((name) => name === 'claimAge')).toHaveLength(1)
+      expect('claimAge' in socialSecurityIncomeSchema.shape).toBe(true)
+      for (const absent of [
+        'restrictedApplication',
+        'restrictedSpouseClaim',
+        'spouseOnlyClaim',
+        'ownClaimAge',
+        'survivorClaimAge',
+      ] as const) {
+        expect(absent in socialSecurityIncomeSchema.shape).toBe(false)
+      }
+    })
+  })
+
   it('starts at the claim-age year with the claiming factor applied', () => {
     const plan = basePlan()
     plan.incomes = [

@@ -49,14 +49,18 @@ with the Jan-1 rule ([nra.ts](../../packages/engine/src/socialSecurity/nra.ts)).
 
 ## The benefit menu
 
-Beyond personal retirement benefits, the household ledger models the full eligibility menu
+Beyond personal retirement benefits, the household ledger models the core marital benefit menu; the
+Benefits-only analysis separately illustrates survivor switching
 ([maritalBenefits.ts](../../packages/engine/src/socialSecurity/maritalBenefits.ts),
 [survivorSwitching.ts](../../packages/planner-ui/src/socialSecurity/survivorSwitching.ts)):
 
 - **Spousal top-up** while both are alive and claiming: the lower earner receives
   `max(own, 0.5 × spousePIA × spousal factor)`. The current-spouse auxiliary is capped to the room left
   under the worker's SSA retirement/survivor family maximum (PIA-based formula with official family-maximum
-  bend points in `ssaWageData.ts`); no child/dependent auxiliaries are modeled.
+  bend points in `ssaWageData.ts`). The plan offers one claim age rather than a restricted
+  current-spouse-only claim — the post-2015 deemed-filing shape in
+  [42 U.S.C. §402(r)](https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim)
+  (`usc-42-402-r-1-2-deemed-filing-old-age-and-spousal`). No child/dependent auxiliaries are modeled.
 - **Survivor step-up** after the first death: the survivor keeps the larger of their own benefit and the
   deceased's benefit, computed with full precision — the **survivor base is the deceased's actual
   (claim-age-adjusted) benefit** (including delayed credits if the deceased delayed), **RIB-LIM** caps it at
@@ -68,7 +72,10 @@ Beyond personal retirement benefits, the household ledger models the full eligib
   takes the deceased ex's claim age as a user input.
 - **Divorced-spousal** (10-year marriage, currently unmarried, ex eligible at 62+ — the ex need not have
   filed), **survivor benefits for already-widowed single users**, remarriage-before/after-60 rules, and
-  **survivor↔personal switching** strategies (claim one benefit early, switch to the other later).
+  a benefits-only **survivor↔personal switching** illustration (claim one benefit early, switch to the other
+  later). The whole-plan ledger has one stream `claimAge`, so it does not price that separate-date sequence.
+  Survivors are exempt from deemed filing, so the switch is legally available; its absence from the Plan is
+  registered as out of scope (`usc-42-402-r-survivor-deemed-filing-exemption`).
 - Ex/deceased-spouse PIA is a simple user estimate (those earnings records are impractical to reconstruct).
 
 ## Program parameters
@@ -78,8 +85,9 @@ before FRA (own, spousal, former-spouse, and survivor benefits withheld over the
 credit** — withheld months are credited back at FRA by recomputing the relevant retirement/spousal/survivor
 factor as if claimed that many months later (SSA's adjustment of the reduction factor), on an annual
 approximation — and an optional **trust-fund haircut** toggle (~17%
-benefit reduction from ~2034 per the 2026 Trustees Report, user-adjustable year and %). **WEP/GPO are not modeled** — repealed by the
-Social Security Fairness Act (January 2025). Benefit taxation (provisional-income 0/50/85% tiers) lives in
+benefit reduction from ~2034 per the 2026 Trustees Report, user-adjustable year and %). **WEP/GPO are not modeled.**
+The Social Security Fairness Act repeal makes that absence correct for benefits payable in the planner's
+2026+ projection horizon (`pl-118-273-sec-2-3-wep-gpo-repeal`). Benefit taxation (provisional-income 0/50/85% tiers) lives in
 the [tax engine](taxes.md).
 
 ## Whole-plan claiming analysis

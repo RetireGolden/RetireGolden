@@ -62,7 +62,10 @@ const FEDERAL_PRIMARY_PUBLISHERS: readonly string[] = [
   'govinfo.gov', // GPO official compilations
   'irs.gov', // Revenue procedures, notices, publications
   'ecfr.gov', // Electronic CFR
-  'ssa.gov', // POMS and the Social Security Act
+  'ssa.gov', // The Social Security Act and ssa.gov publications
+  // POMS is served only from this subdomain, so it is listed deliberately per
+  // the subdomain rule above rather than folded into the bare host.
+  'secure.ssa.gov', // POMS
   'jct.gov', // Joint Committee on Taxation
 ]
 
@@ -795,6 +798,7 @@ describe('tax rule registry conformance', () => {
       authority: [
         { citation: 'IRC 1', kind: 'statute' },
         { citation: '26 CFR 1.401-1', kind: 'regulation' },
+        { citation: 'SSA POMS GN 00204.035', kind: 'agencyGuidance' },
         { citation: 'IRS Publication 590-B', kind: 'irsPublication' },
         { citation: '2025 Form 1040 instructions', kind: 'formInstruction' },
         { citation: 'IRS Notice 2025-1', kind: 'irsNotice' },

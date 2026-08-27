@@ -43,10 +43,15 @@
  * `formInstruction` to cover a department topic page, which is not a form and
  * carries no instruction. Both would have laundered a state agency's statement
  * into a kind that says "the IRS published this".
+ *
+ * `agencyGuidance` names an agency's published manual or interpretive guidance,
+ * such as SSA's POMS. It is neither a regulation nor legislative history, and
+ * must not be relabeled as either merely because a rule also rests on statute.
  */
 export type TaxRuleAuthorityKind =
   | 'statute'
   | 'regulation'
+  | 'agencyGuidance'
   | 'irsPublication'
   | 'formInstruction'
   | 'irsNotice'
@@ -2339,6 +2344,125 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
     implementedBy: ['packages/engine/src/socialSecurity/claimFactor.ts'],
+  },
+
+  'usc-42-402-r-1-2-deemed-filing-old-age-and-spousal': {
+    title: 'Current eligible old-age and current-spouse benefits are deemed filed together',
+    statement:
+      'For a current deemed-filing claim, when an individual is eligible for a wife’s or husband’s insurance benefit and entitled to an old-age insurance benefit for a month, section 402(r) deems an application for the spouse benefit; it reciprocally deems an old-age application when the individual is entitled to the spouse benefit, subject to the provision’s stated exceptions. The post-2015 regime applies to individuals who attain age 62 in any calendar year after 2015, so every not-yet-claimed cohort in a 2026-or-later projection is inside it and no grandfathered restricted application survives. The engine represents a current-spouse claimant with one `claimAge` on their Social Security stream and pays the higher of own and spousal amounts at that age, rather than allowing a restricted current-spouse-only claim that leaves the own old-age benefit unclaimed.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 402(r)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
+      quotedText:
+        'If an individual is eligible for a wife\'s or husband\'s insurance benefit (except in the case of eligibility pursuant to clause (ii) of subsection (b)(1)(B) or subsection (c)(1)(B), as appropriate), in any month for which the individual is entitled to an old-age insurance benefit, such individual shall be deemed to have filed an application for wife\'s or husband\'s insurance benefits for such month.',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 402(r)(2)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
+      quotedText:
+        'If an individual is eligible (but for subsection (k)(4)) for an old-age insurance benefit in any month for which the individual is entitled to a wife\'s or husband\'s insurance benefit (except in the case of entitlement pursuant to clause (ii) of subsection (b)(1)(B) or subsection (c)(1)(B), as appropriate), such individual shall be deemed to have filed an application for old-age insurance benefits- (A) for such month, or (B) if such individual is also entitled to a disability insurance benefit for such month, in the first subsequent month for which such individual is not entitled to a disability insurance benefit.',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 402(r)(3)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
+      quotedText:
+        'For purposes of this subsection, an individual shall be deemed eligible for a benefit for a month if, upon filing application therefor in such month, he would be entitled to such benefit for such month.',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 402, Editorial Notes, Effective Date of 2015 Amendment (BBA 2015 § 831(a)(3))',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
+      quotedText:
+        'The amendments made by this subsection [amending this section] shall apply with respect to individuals who attain age 62 in any calendar year after 2015.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-26',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+  },
+
+  'pl-118-273-sec-2-3-wep-gpo-repeal': {
+    title: 'WEP and GPO are repealed for title II monthly benefits after December 2023',
+    statement:
+      'Public Law 118-273 repealed the Government Pension Offset by striking section 202(k)(5) and repealed the Windfall Elimination Provisions by striking section 215(a)(7), (d)(3), and (f)(9). Its applicability rule makes those amendments apply to monthly insurance benefits payable under title II for months after December 2023. The Plan has no non-covered-pension fact, WEP/GPO flag, or covered-service fact that would trigger those adjustments, so no accepted input reaches the repealed rule for any projection year and the engine produces no figure from it rather than an approximation.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'Absence-record surface is model/plan.ts: the Plan has no WEP/GPO flag, non-covered-pension fact, or covered-service fact. A code sweep found no WEP or GPO adjustment in socialSecurity/benefitFactor.ts, socialSecurity/claimFactor.ts, socialSecurity/disability.ts, socialSecurity/familyMaximum.ts, socialSecurity/maritalBenefits.ts, socialSecurity/nra.ts, socialSecurity/piaFromEarnings.ts, socialSecurity/ssaWageData.ts, socialSecurity/survivorBenefit.ts, or projection/simulate.ts — consistent with those trigger facts being unrepresentable for any startYear.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'P.L. 118-273, § 2(a)',
+      url: 'https://www.govinfo.gov/content/pkg/PLAW-118publ273/pdf/PLAW-118publ273.pdf',
+      quotedText:
+        'Section 202(k) of the Social Security Act (42 U.S.C. 402(k)) is amended by striking paragraph (5).',
+    }, {
+      kind: 'statute',
+      citation: 'P.L. 118-273, § 3(a)',
+      url: 'https://www.govinfo.gov/content/pkg/PLAW-118publ273/pdf/PLAW-118publ273.pdf',
+      quotedText:
+        'Section 215 of the Social Security Act (42 U.S.C. 415) is amended-- (1) in subsection (a), by striking paragraph (7); (2) in subsection (d), by striking paragraph (3); and (3) in subsection (f), by striking paragraph (9).',
+    }, {
+      kind: 'statute',
+      citation: 'P.L. 118-273, § 4',
+      url: 'https://www.govinfo.gov/content/pkg/PLAW-118publ273/pdf/PLAW-118publ273.pdf',
+      quotedText:
+        'The amendments made by this Act shall apply with respect to monthly insurance benefits payable under title II of the Social Security Act for months after December 2023.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-26',
+    implementedBy: ['packages/engine/src/model/plan.ts'],
+  },
+
+  'usc-42-402-r-survivor-deemed-filing-exemption': {
+    title: 'Survivor benefits are exempt from deemed filing, but a whole-plan survivor/own switch is not representable',
+    statement:
+      'Section 402(r) addresses only old-age and wife’s or husband’s insurance benefits, not survivor benefits. SSA confirms that deemed filing does not apply to survivor benefits: a widow(er) entitled to survivor benefits is not deemed to file for retirement insurance benefits and may restrict the widow(er) application while delaying retirement insurance benefits. A survivor↔own claim-age sequence is therefore legally available, but the Plan has only one `claimAge` on each Social Security stream (clamped to ages 62–70) and no separate survivor claim age, so a survivor-only claim at 60 is independently unrepresentable. The whole-plan ledger consequently cannot price the sequence and produces no figure from it.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'model/plan.ts defines a Social Security stream with one `claimAge` whose years are schema-clamped to 62–70. simulate.ts derives both the own and survivor ages from that same stream field, so no accepted Plan can supply the two claim dates a switch requires (including a survivor-only claim at 60). The separate planner-ui survivorSwitching view illustrates two dates but does not make them ledger inputs.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 402(r)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
+      quotedText:
+        'If an individual is eligible for a wife\'s or husband\'s insurance benefit (except in the case of eligibility pursuant to clause (ii) of subsection (b)(1)(B) or subsection (c)(1)(B), as appropriate), in any month for which the individual is entitled to an old-age insurance benefit, such individual shall be deemed to have filed an application for wife\'s or husband\'s insurance benefits for such month.',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 402(r)(2)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
+      quotedText:
+        'If an individual is eligible (but for subsection (k)(4)) for an old-age insurance benefit in any month for which the individual is entitled to a wife\'s or husband\'s insurance benefit (except in the case of entitlement pursuant to clause (ii) of subsection (b)(1)(B) or subsection (c)(1)(B), as appropriate), such individual shall be deemed to have filed an application for old-age insurance benefits-',
+    }, {
+      kind: 'agencyGuidance',
+      citation: 'SSA POMS GN 00204.035, § B',
+      url: 'https://secure.ssa.gov/poms.nsf/lnx/0200204035',
+      quotedText:
+        'Deemed filing does not apply to survivor benefits. For example, when a claimant becomes entitled to widow(er)s benefits (WIB), they are not deemed to file for RIB. The claimant may restrict the WIB application and delay filing for RIB.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-26',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
   },
 
   'usc-42-402-e-2-widow-full-pia': {
