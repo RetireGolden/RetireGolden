@@ -2,9 +2,9 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 1,
   "registry": {
-    "total": 342,
+    "total": 343,
     "byClassification": {
-      "approximated": 79,
+      "approximated": 80,
       "outOfScope": 55,
       "settled": 204,
       "unsettled": 4
@@ -12,11 +12,11 @@
     "byVolatility": {
       "annuallyIndexed": 50,
       "awaitingGuidance": 10,
-      "staticStatute": 276,
+      "staticStatute": 277,
       "sunsetting": 6
     },
     "byJurisdiction": {
-      "federal": 285,
+      "federal": 286,
       "states": {
         "AK": 1,
         "AR": 9,
@@ -2326,6 +2326,22 @@
       "implementedBy": [
         "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/strategies/accountEligibility.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/rmdAndInherited.approximation.test.ts"
+      ]
+    },
+    {
+      "id": "irc-401-a-9-C-i-elected-deferral-ignores-attainment-year-distributions",
+      "classification": "approximated",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts"
       ],
       "fixtureFiles": [
         "packages/engine/src/rules/approximations/rmdAndInherited.approximation.test.ts"

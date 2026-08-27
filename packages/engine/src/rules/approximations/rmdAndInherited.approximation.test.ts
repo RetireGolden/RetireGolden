@@ -2,9 +2,10 @@
  * Pins the remaining `approximated` registry records that govern required
  * minimum distributions and inherited traditional accounts, plus settled
  * fixtures that share this file (the §4974 reclassification and the first-year
- * April 1 deferral default plus the elected owned-IRA April 1 limb; the
- * employer-plan elected receipt-year companion lives under
- * irc-402-a-employer-plan-distribution-receipt-year-taxability).
+ * April 1 deferral default plus the clean elected owned-IRA April 1 limb; the
+ * intervening-distribution elected-deferral approximation is the sibling
+ * describeRule below; the employer-plan elected receipt-year companion lives
+ * under irc-402-a-employer-plan-distribution-receipt-year-taxability).
  *
  * An approximated record is a claim about a figure this engine knowingly gets
  * wrong. Nothing watched those claims until now, and two of them rotted into
@@ -57,12 +58,14 @@ const FIRST_YEAR_AMOUNT = START_BALANCE / UNIFORM_LIFETIME_AT_73
 
 /**
  * The amount for the attainment year is settled and correct (see
- * treas-reg-1-401-a-9-5-a-3-first-distribution-calendar-year). The engine now
+ * treas-reg-1-401-a-9-5-a-2-first-distribution-calendar-year). The engine now
  * offers an opt-in `rmdFirstYearDeferrals` election; this fixture pins the
  * DEFAULT path, which books the first-year amount in the attainment year.
  * Elected April 1 receipt-year income recognition for an employer plan is
  * covered by irc-402-a-employer-plan-distribution-receipt-year-taxability; the
- * elected IRA limb is pinned in the sibling describeRule below.
+ * clean elected IRA limb (no intervening attainment-year distribution) is
+ * pinned in the sibling describeRule below; an elected deferral with an
+ * intervening attainment-year IRA draw is the approximated sibling after that.
  */
 describeRule('irc-401-a-9-C-i-first-year-april-1-deferral', {
   readings: {
@@ -101,10 +104,10 @@ const UNIFORM_LIFETIME_AT_74 = 25.5
 const SECOND_YEAR_AMOUNT = START_BALANCE / UNIFORM_LIFETIME_AT_74
 
 /**
- * Opt-in April 1 election on an owned IRA: 2026 books nothing; 2027 carries
- * both the deferred first-year amount and the separately required second-year
- * amount (Dec 31 2026 balance still START_BALANCE under zero return / zero
- * spending).
+ * Clean opt-in April 1 election on an owned IRA with no attainment-year IRA
+ * distribution or QCD: 2026 books nothing; 2027 carries both the deferred
+ * first-year amount and the separately required second-year amount (Dec 31
+ * 2026 balance still START_BALANCE under zero return / zero spending).
  */
 describeRule('irc-401-a-9-C-i-first-year-april-1-deferral', {
   readings: {
@@ -122,7 +125,7 @@ describeRule('irc-401-a-9-C-i-first-year-april-1-deferral', {
     },
   },
   accepted: 'electedDefersIraToReceiptYear',
-  note: 'elected owned-IRA April 1 deferral',
+  note: 'clean elected owned-IRA April 1 deferral',
 }, ({ accepted, readings }) => {
   it('holds the owned-IRA first-year amount until the following receipt year when elected', () => {
     const plan = singlePersonPlan({ dob: OWNER_DOB, planningAge: OWNER_PLANNING_AGE })
@@ -158,6 +161,95 @@ describeRule('irc-401-a-9-C-i-first-year-april-1-deferral', {
     expect(observed.magi2027).toBeCloseTo(accepted.magi2027, 8)
     expect(observed.rmd2027).not.toBeCloseTo(
       readings.rejectedBooksIraInAttainmentYear.rmd2027,
+      8,
+    )
+  })
+})
+
+/**
+ * Elected deferral plus an attainment-year IRA draw: need-based spending with
+ * no cash forces INTERVENING dollars out of the IRA in 2026. Under
+ * Treas. Reg. 1.408-8(b)(3) that draw credits the first distribution calendar
+ * year's required minimum, so only FIRST_YEAR_AMOUNT − INTERVENING should
+ * remain deferred into 2027 beside the second-year amount on the reduced
+ * Dec 31 2026 balance. The engine stores the full calculated first-year RMD at
+ * the deferral branch and never reduces it, so 2027 withdraws the full amount
+ * again (double-counted INTERVENING of deferred income).
+ *
+ * Observed live (37,988.12844987051 in 2027). Derivation from simulate.ts: rmd2026 stays 0 under the
+ * deferral continue; magi2026 is the need-based IRA income INTERVENING;
+ * rmd2027 / magi2027 are FIRST_YEAR_AMOUNT + (START_BALANCE − INTERVENING) /
+ * 25.5; the double-counted overstatement versus statute is INTERVENING.
+ */
+const INTERVENING_BASE_SPEND = 10_000
+// Observed: the need-based 2026 draw is the 10,000 base spending plus the
+// 2,434.80 Part B premium (202.90 x 12) the plan also pays from the IRA.
+const INTERVENING_IRA_INCOME = 12_434.8
+const SECOND_YEAR_AFTER_INTERVENING =
+  (START_BALANCE - INTERVENING_IRA_INCOME) / UNIFORM_LIFETIME_AT_74
+const STATUTE_RECEIPT_YEAR_RMD =
+  (FIRST_YEAR_AMOUNT - INTERVENING_IRA_INCOME) + SECOND_YEAR_AFTER_INTERVENING
+/** Replace after observation; see derivation in the block comment above. */
+
+describeRule('irc-401-a-9-C-i-elected-deferral-ignores-attainment-year-distributions', {
+  readings: {
+    statuteCreditsInterveningAgainstDeferredObligation: {
+      rmd2026: 0,
+      magi2026: INTERVENING_IRA_INCOME,
+      rmd2027: STATUTE_RECEIPT_YEAR_RMD,
+      magi2027: STATUTE_RECEIPT_YEAR_RMD,
+      doubleCountedDeferredIncome: 0,
+    },
+    engineDefersFullCalculatedAmount: {
+      rmd2026: 0,
+      magi2026: INTERVENING_IRA_INCOME,
+      // Observed: the full first-year amount again, undiminished by the draw.
+      rmd2027: FIRST_YEAR_AMOUNT + SECOND_YEAR_AFTER_INTERVENING,
+      magi2027: FIRST_YEAR_AMOUNT + SECOND_YEAR_AFTER_INTERVENING,
+      doubleCountedDeferredIncome: INTERVENING_IRA_INCOME,
+    },
+  },
+  accepted: 'statuteCreditsInterveningAgainstDeferredObligation',
+  produced: 'engineDefersFullCalculatedAmount',
+  note: 'elected deferral with attainment-year IRA income',
+}, ({ accepted, produced }) => {
+  it('defers the full first-year amount even after an attainment-year IRA draw', () => {
+    const plan = singlePersonPlan({ dob: OWNER_DOB, planningAge: OWNER_PLANNING_AGE })
+    plan.accounts = [
+      cashAccount('cash', 0),
+      traditionalAccount('ira', START_BALANCE),
+    ]
+    plan.expenses.baseAnnual = INTERVENING_BASE_SPEND
+    const result = simulatePlan(validatePlan(plan), {
+      startYear: 2026,
+      horizonEndYear: 2027,
+      taxCalculator: noTax,
+      rmdFirstYearDeferrals: [{
+        distributionCalendarYear: 2026,
+        applicablePlan: { kind: 'ownedTraditionalIras', payeePersonId: 'p1' },
+      }],
+    })
+    const y2026 = result.years.find((year) => year.year === 2026)!
+    const y2027 = result.years.find((year) => year.year === 2027)!
+    const observed = {
+      rmd2026: y2026.rmd,
+      magi2026: y2026.magi,
+      rmd2027: y2027.rmd,
+      magi2027: y2027.magi,
+      doubleCountedDeferredIncome: y2027.rmd - accepted.rmd2027,
+    }
+
+    expect(observed.rmd2026).toBe(produced.rmd2026)
+    expect(observed.magi2026).toBeCloseTo(produced.magi2026, 8)
+    expect(observed.rmd2027).toBeCloseTo(produced.rmd2027, 8)
+    expect(observed.magi2027).toBeCloseTo(produced.magi2027, 8)
+    expect(observed.doubleCountedDeferredIncome).toBeCloseTo(
+      produced.doubleCountedDeferredIncome,
+      8,
+    )
+    expect(observed.rmd2027).not.toBeCloseTo(accepted.rmd2027, 8)
+    expect(observed.doubleCountedDeferredIncome).not.toBeCloseTo(
+      accepted.doubleCountedDeferredIncome,
       8,
     )
   })

@@ -4244,6 +4244,12 @@ const registry = {
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section223&num=0&edition=prelim',
       quotedText:
         'In the case of an individual who is an eligible individual for any month during the taxable year, there shall be allowed as a deduction for the taxable year an amount equal to the aggregate amount paid in cash during such taxable year by or on behalf of such individual to a health savings account of such individual.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 62(a), (a)(19)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section62&num=0&edition=prelim',
+      quotedText:
+        'For purposes of this subtitle, the term "adjusted gross income" means, in the case of an individual, gross income minus the following deductions: … (19) Health savings accounts The deduction allowed by section 223.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -6251,12 +6257,12 @@ const registry = {
   'irc-401-a-9-C-i-first-year-april-1-deferral': {
     title: 'Deferral of the first required minimum distribution to April 1',
     statement:
-      'The distribution for the first distribution calendar year may be paid as late as April 1 of the following year. The engine offers an opt-in `rmdFirstYearDeferrals` election: the default books the first-year amount (distribution and ordinary-income recognition) entirely in the attainment year; when the election is set for that distribution calendar year and applicable plan, the amount is held until the following year and booked there beside that year’s separately required RMD. Receipt-year income recognition for an elected deferral is registered at irc-402-a-employer-plan-distribution-receipt-year-taxability.',
+      'The distribution for the first distribution calendar year may be paid as late as April 1 of the following year. The engine offers an opt-in `rmdFirstYearDeferrals` election. This record settles only the pinned paths: (1) the default books the first-year amount (distribution and ordinary-income recognition) entirely in the attainment year; (2) when the election is set for that distribution calendar year and applicable plan and the taxpayer takes no IRA distribution or QCD in the attainment year, the amount is held until the following year and booked there beside that year’s separately required RMD. When an elected deferral coincides with an attainment-year IRA distribution or QCD, the engine’s handling is registered separately at irc-401-a-9-C-i-elected-deferral-ignores-attainment-year-distributions. Receipt-year income recognition for a clean elected deferral is registered at irc-402-a-employer-plan-distribution-receipt-year-taxability.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'Paying in the attainment year is always permitted under Treas. Reg. 1.401(a)(9)-5(a)(3); the remaining engineering choice is only the default when no election is supplied. The engine defaults to attainment-year booking and requires an explicit opt-in for the April 1 path rather than inventing a household preference.',
+      'Paying in the attainment year is always permitted under Treas. Reg. 1.401(a)(9)-5(a)(3); the remaining engineering choice is only the default when no election is supplied. The engine defaults to attainment-year booking and requires an explicit opt-in for the April 1 path rather than inventing a household preference. The settled claim stops at the default and the clean elected path; an intervening attainment-year distribution is not part of either fixture.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -6277,6 +6283,42 @@ const registry = {
     verifiedOn: '2026-08-27',
     implementedBy: [
       'packages/engine/src/rmd/rmd.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+  },
+  'irc-401-a-9-C-i-elected-deferral-ignores-attainment-year-distributions': {
+    title: 'Elected first-year deferral ignores attainment-year IRA distributions',
+    statement:
+      'Amounts distributed from an IRA during the first distribution calendar year count toward that year’s required minimum. The year-crediting machinery is carried by treas-reg-1-401-a-9-5-a-2-first-distribution-calendar-year (which year the first required amount belongs to) and treas-reg-1-408-8-b-3-rmd-first-dollars-out (distributions, including a QCD, satisfy the year total in the order they occur); the staged source corpus for this slice does not include Treas. Reg. 1.401(a)(9)-5, so the limbs below reuse spans already quoted on those sibling records and on irc-401-a-9-C-i-first-year-april-1-deferral. Not modelled under an elected `rmdFirstYearDeferrals` path: simulate.ts stores the full calculated first-year RMD at the deferral branch and continues, so an attainment-year IRA withdrawal or QCD does not reduce the deferred obligation; the following receipt year then withdraws that full amount again beside the separately required second-year RMD. Double-counting the deferred amount overstates receipt-year ordinary income and tax. The second-year required amount is still computed on the reduced prior year-end balance, so the overstatement is the re-booked first-year dollars rather than a funding-channel flip. The default attainment-year path and the clean elected path with no intervening attainment-year distribution remain under irc-401-a-9-C-i-first-year-april-1-deferral.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'overstatesTax',
+    conventionRationale: null,
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 401(a)(9)(C)(i)',
+      url: 'https://www.law.cornell.edu/uscode/text/26/401',
+      quotedText:
+        'The term “required beginning date” means April 1 of the calendar year following the later of— (I) the calendar year in which the employee attains the applicable age, or (II) the calendar year in which the employee retires.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.401(a)(9)-5(a)(3)',
+      url: 'https://www.law.cornell.edu/cfr/text/26/1.401(a)(9)-5',
+      quotedText:
+        'The distribution required for the employee\'s first distribution calendar year (as described in paragraph (a)(2)(ii) of this section) may be made on or before April 1 of the following calendar year.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.408-8(b)(3)',
+      url: 'https://www.law.cornell.edu/cfr/text/26/1.408-8',
+      quotedText:
+        'any amount distributed during a calendar year from an IRA of that IRA owner is treated as a required minimum distribution under section 401(a)(9) to the extent that the total required minimum distribution for the year under section 401(a)(9) from all of that IRA owner\'s IRAs has not been satisfied (either by a distribution from the IRA or, as permitted under paragraph (e) of this section, from another IRA).',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
       'packages/engine/src/projection/simulate.ts',
     ],
   },
