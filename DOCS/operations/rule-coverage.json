@@ -2,21 +2,21 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 1,
   "registry": {
-    "total": 318,
+    "total": 326,
     "byClassification": {
-      "approximated": 75,
-      "outOfScope": 45,
-      "settled": 194,
+      "approximated": 79,
+      "outOfScope": 47,
+      "settled": 196,
       "unsettled": 4
     },
     "byVolatility": {
-      "annuallyIndexed": 47,
+      "annuallyIndexed": 48,
       "awaitingGuidance": 10,
-      "staticStatute": 255,
+      "staticStatute": 262,
       "sunsetting": 6
     },
     "byJurisdiction": {
-      "federal": 261,
+      "federal": 269,
       "states": {
         "AK": 1,
         "AR": 9,
@@ -272,8 +272,8 @@
     },
     {
       "path": "projection/compare.ts",
-      "sweptOn": "2026-08-24",
-      "note": "after-tax estate haircuts: Form 8606 basis exclusion, taxable step-up, spousal rollover, HSA non-spouse income (IRC 223(f)(8)(B)) — no records name this file"
+      "sweptOn": "2026-08-27",
+      "note": "after-tax estate haircuts incl. taxable step-up registered (irc-1014-a-1-basis-at-death-fair-market-value); Form 8606 basis exclusion, spousal rollover, HSA non-spouse income remain"
     },
     {
       "path": "projection/flatTax.ts",
@@ -282,8 +282,8 @@
     },
     {
       "path": "projection/optimizePlan.ts",
-      "sweptOn": "2026-08-24",
-      "note": "Hard-coded 15% preferential LTCG LP rate; no record"
+      "sweptOn": "2026-08-27",
+      "note": "Flat 15% LTCG LP rate registered (irc-1-h-optimizer-flat-fifteen-percent-preferential-rate); other optimizer linearizations remain unregistered"
     },
     {
       "path": "projection/optimizerAggregateConversionPromotion.ts",
@@ -1234,6 +1234,23 @@
       ]
     },
     {
+      "id": "irc-1-h-1-0-15-20-preferential-rate-schedule",
+      "classification": "settled",
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2026-12-25",
+      "implementedBy": [
+        "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/tax/federalTax.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/federalTax.test.ts"
+      ]
+    },
+    {
       "id": "irc-1-h-1-E-unrecaptured-section-1250-gain",
       "classification": "approximated",
       "jurisdiction": "federal",
@@ -1284,6 +1301,22 @@
       ]
     },
     {
+      "id": "irc-1-h-optimizer-flat-fifteen-percent-preferential-rate",
+      "classification": "approximated",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/projection/optimizePlan.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/federalTax.test.ts"
+      ]
+    },
+    {
       "id": "irc-1-j-2-progressive-ordinary-rate-schedule",
       "classification": "settled",
       "jurisdiction": "federal",
@@ -1311,6 +1344,42 @@
       "dueOn": "2026-12-01",
       "implementedBy": [
         "packages/engine/src/params/index.ts",
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/tax/federalTax.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/federalTax.test.ts"
+      ]
+    },
+    {
+      "id": "irc-1014-a-1-basis-at-death-fair-market-value",
+      "classification": "approximated",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/compare.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/federalTax.test.ts"
+      ]
+    },
+    {
+      "id": "irc-1091-a-wash-sale-thirty-day-window",
+      "classification": "approximated",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
         "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/tax/federalTax.ts"
       ],
@@ -1368,6 +1437,53 @@
       "fixtureFiles": [
         "packages/engine/src/tax/federalTax.test.ts"
       ]
+    },
+    {
+      "id": "irc-1212-b-2-zero-income-section-1211-allowance-preserves-carryforward",
+      "classification": "approximated",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/tax/federalTax.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/federalTax.test.ts"
+      ]
+    },
+    {
+      "id": "irc-1212-b-capital-loss-carryforward",
+      "classification": "settled",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/tax/federalTax.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/federalTax.test.ts"
+      ]
+    },
+    {
+      "id": "irc-1400z-2-qof-deferral-and-ten-year-basis-election",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts"
+      ],
+      "fixtureFiles": []
     },
     {
       "id": "irc-1411-a-net-investment-income-tax",
@@ -4681,6 +4797,20 @@
       "fixtureFiles": [
         "packages/engine/src/tax/aca.test.ts"
       ]
+    },
+    {
+      "id": "rev-rul-2008-5-ira-wash-sale-permanent-loss-disallowance",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts"
+      ],
+      "fixtureFiles": []
     },
     {
       "id": "sc-code-12-6-1170-retirement-income-deduction",
