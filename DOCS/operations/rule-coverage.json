@@ -2,21 +2,21 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 1,
   "registry": {
-    "total": 292,
+    "total": 301,
     "byClassification": {
-      "approximated": 62,
-      "outOfScope": 37,
-      "settled": 189,
+      "approximated": 64,
+      "outOfScope": 40,
+      "settled": 193,
       "unsettled": 4
     },
     "byVolatility": {
       "annuallyIndexed": 44,
       "awaitingGuidance": 10,
-      "staticStatute": 232,
+      "staticStatute": 241,
       "sunsetting": 6
     },
     "byJurisdiction": {
-      "federal": 235,
+      "federal": 244,
       "states": {
         "AK": 1,
         "AR": 9,
@@ -886,6 +886,22 @@
       ],
       "fixtureFiles": [
         "packages/engine/src/socialSecurity/benefitFactor.test.ts"
+      ]
+    },
+    {
+      "id": "cfr-20-404-338-survivor-deceased-drc-pass-through",
+      "classification": "settled",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2027-08-26",
+      "implementedBy": [
+        "packages/engine/src/socialSecurity/survivorBenefit.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/socialSecurity/survivorBenefit.test.ts"
       ]
     },
     {
@@ -4530,6 +4546,22 @@
       "fixtureFiles": []
     },
     {
+      "id": "poms-rs-00615-320-rib-lim-after-survivor-reduction",
+      "classification": "approximated",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2027-08-26",
+      "implementedBy": [
+        "packages/engine/src/socialSecurity/survivorBenefit.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/socialSecurity/survivorBenefit.test.ts"
+      ]
+    },
+    {
       "id": "rev-proc-2025-25-aca-applicable-percentage-2026",
       "classification": "settled",
       "jurisdiction": "federal",
@@ -5247,14 +5279,104 @@
       ]
     },
     {
+      "id": "usc-42-402-d-2-child-survivor-benefit",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2027-08-26",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts"
+      ],
+      "fixtureFiles": []
+    },
+    {
+      "id": "usc-42-402-e-1-a-current-survivor-remarriage-before-60",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2027-08-26",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts"
+      ],
+      "fixtureFiles": []
+    },
+    {
+      "id": "usc-42-402-e-2-a-survivor-own-delay-no-drc",
+      "classification": "settled",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2027-08-26",
+      "implementedBy": [
+        "packages/engine/src/socialSecurity/survivorBenefit.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/socialSecurity/survivorBenefit.test.ts"
+      ]
+    },
+    {
       "id": "usc-42-402-e-2-widow-full-pia",
       "classification": "settled",
       "jurisdiction": "federal",
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-04",
-      "dueOn": "2027-08-04",
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2027-08-26",
+      "implementedBy": [
+        "packages/engine/src/socialSecurity/survivorBenefit.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/socialSecurity/survivorBenefit.test.ts"
+      ]
+    },
+    {
+      "id": "usc-42-402-i-lump-sum-death-payment",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2027-08-26",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts"
+      ],
+      "fixtureFiles": []
+    },
+    {
+      "id": "usc-42-402-k-3-a-survivor-own-dual-entitlement-offset",
+      "classification": "settled",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2027-08-26",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.test.ts"
+      ]
+    },
+    {
+      "id": "usc-42-402-q-1-widow-survivor-early-reduction-schedule",
+      "classification": "settled",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2027-08-26",
       "implementedBy": [
         "packages/engine/src/socialSecurity/survivorBenefit.ts"
       ],
@@ -5376,6 +5498,22 @@
       ],
       "fixtureFiles": [
         "packages/engine/src/socialSecurity/nra.test.ts"
+      ]
+    },
+    {
+      "id": "usc-42-416-l-survivor-fra-age-60-attainment-cohorts",
+      "classification": "approximated",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2027-08-26",
+      "implementedBy": [
+        "packages/engine/src/socialSecurity/nra.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/socialSecurity/survivorBenefit.test.ts"
       ]
     },
     {

@@ -63,16 +63,22 @@ Benefits-only analysis separately illustrates survivor switching
   (`usc-42-402-r-1-2-deemed-filing-old-age-and-spousal`). No child/dependent auxiliaries are modeled.
 - **Survivor step-up** after the first death: the survivor keeps the larger of their own benefit and the
   deceased's benefit, computed with full precision — the **survivor base is the deceased's actual
-  (claim-age-adjusted) benefit** (including delayed credits if the deceased delayed), **RIB-LIM** caps it at
-  `max(deceased's actual benefit, 82.5% × deceased's PIA)` when the deceased claimed early, and an
+  (claim-age-adjusted) benefit** (including delayed credits if the deceased delayed), **RIB-LIM** currently
+  sets the base at `max(deceased's actual benefit, 82.5% × deceased's PIA)` when the deceased claimed early,
+  then applies the survivor reduction. POMS applies that limit after the survivor reduction, so the ordering
+  gap is disclosed as an approximation (`poms-rs-00615-320-rib-lim-after-survivor-reduction`). An
   **early-claim widow(er) reduction** (up to 28.5% at age 60, linear to the survivor's FRA) applies when the
-  survivor claims before their **survivor FRA** (a separate, earlier schedule than retirement FRA — 66y8m for
-  those born 1960+). Current-spouse survivor benefits are built before the earnings-test pass, so they can be
+  survivor claims before their **survivor FRA**. The code keeps a separate survivor-FRA schedule, but currently
+  caps it at 66y8m for effective birth year 1960+; the age-60-attainment statute instead reaches 66y10m for
+  1961 and 67 for 1962+, so that cohort error is disclosed as an approximation
+  (`usc-42-416-l-survivor-fra-age-60-attainment-cohorts`). Current-spouse survivor benefits are built before the earnings-test pass, so they can be
   withheld for a working survivor and credited back through the same ARF path. The former-spouse survivor path
   takes the deceased ex's claim age as a user input.
 - **Divorced-spousal** (10-year marriage, currently unmarried, ex eligible at 62+ — the ex need not have
-  filed), **survivor benefits for already-widowed single users**, remarriage-before/after-60 rules, and
-  a benefits-only **survivor↔personal switching** illustration (claim one benefit early, switch to the other
+  filed), **survivor benefits for already-widowed single users**, and their remarriage-before/after-60
+  rules through that former-spouse input. A current spouse's later remarriage after the worker dies has no
+  Plan input and is out of scope (`usc-42-402-e-1-a-current-survivor-remarriage-before-60`). A benefits-only
+  **survivor↔personal switching** illustration (claim one benefit early, switch to the other
   later). The whole-plan ledger has one stream `claimAge`, so it does not price that separate-date sequence.
   Survivors are exempt from deemed filing, so the switch is legally available; its absence from the Plan is
   registered as out of scope (`usc-42-402-r-survivor-deemed-filing-exemption`).
@@ -156,8 +162,8 @@ auxiliary/family benefits are not modeled. Cited in [domain rules §4](../domain
   simplifications.
 - Deemed-filing nuances are simplified; the family maximum is modeled for the current-spouse auxiliary only
   because child/dependent auxiliaries are not yet modeled.
-- Survivor-benefit **documented simplifications** (the early-claim reduction, RIB-LIM, and the deceased's
-  claim-age-adjusted base are all modeled; what remains simplified): the 2-years-since-divorce
+- Survivor-benefit **documented simplifications** (the early-claim reduction, RIB-LIM — subject to the ordering
+  approximation noted above — and the deceased's claim-age-adjusted base are all modeled; what remains simplified): the 2-years-since-divorce
   "independently entitled" rule for divorced-spousal on a living ex; separate survivor-vs-own claim ages for a
   current spouse (the step-up uses the survivor's own claim age); the disabled-widow(er) age-50 entry point.
 
