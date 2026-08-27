@@ -33,7 +33,7 @@ jobs:
   openrouter:
     name: OpenRouter review
     if: github.event_name == 'workflow_dispatch' || !github.event.pull_request.draft
-    uses: RetireGolden/.github/.github/workflows/openrouter-code-review.yml@264457ca1e8d8f7e3b1972d62fbee783fb3885ec # .github#19 (v1.2.0 + follow-up gating)
+    uses: RetireGolden/.github/.github/workflows/openrouter-code-review.yml@f21acbbfaa8fdb6b5ee72b01c8a835398dbc097d # .github#20 (action v1.2.1 recall fixes)
     with:
       pr_number: ${{ inputs.pr_number || github.event.inputs.pr_number || github.event.pull_request.number }}
     secrets:
