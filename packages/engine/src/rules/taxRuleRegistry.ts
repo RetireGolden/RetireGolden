@@ -2848,7 +2848,7 @@ const registry = {
   'poms-rs-00615-482-arf-crediting-months': {
     title: 'ARF credits every full or partial work-deduction month',
     statement:
-      'simulate.ts does credit earnings-test withholding back at full retirement age by moving the retirement claim age later and reusing claimFactor.ts. POMS RS 00615.482, however, credits a month with either a full or a partial work deduction. The engine derives one rounded count from annual withholding dollars divided by annual benefit dollars. The annualized count credits at most as many months as the monthly deduction record, so the post-ARF benefit can only be understated or exact; whether that understates or overstates tax depends on how the spending shortfall is funded, since a traditional-account withdrawal replacing at-most-85-percent-taxable benefit dollars is fully taxable.',
+      'simulate.ts does credit earnings-test withholding back at full retirement age by moving the retirement claim age later and reusing claimFactor.ts. POMS RS 00615.482, however, credits a month with either a full or a partial work deduction. The engine derives one rounded count from annual withholding dollars divided by annual benefit dollars. The annualized count can fall short of or exceed the deduction-month record depending on how withholding lands across the year — for example when the annual test withholds the whole year the engine credits all payable months while POMS credits only work-deduction months (six work months, full withholding: engine +12, POMS +6, benefit overstated). Whether that understates or overstates tax depends on how the spending shortfall is funded, since a traditional-account withdrawal replacing at-most-85-percent-taxable benefit dollars is fully taxable.',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'bothDirections',
@@ -2872,7 +2872,7 @@ const registry = {
       citation: 'SSA POMS RS 00615.482, § C.1',
       url: 'https://secure.ssa.gov/poms.nsf/lnx/0300615482',
       quotedText:
-        'Grant crediting months in RIB cases for months of: • full or partial work deduction; or',
+        'Grant crediting months in RIB cases for months of: • full or partial work deduction; or • simultaneous RIB-Disability Insurance Benefit (DIB) entitlement.',
     }, {
       kind: 'agencyGuidance',
       citation: 'SSA POMS RS 00615.482, § C.1 note',
@@ -2893,12 +2893,12 @@ const registry = {
   'usc-42-403-f-1-earnings-test-month-charging': {
     title: 'Excess earnings are charged to calendar months, not annual benefit fractions',
     statement:
-      'Section 403(f)(1) first charges excess earnings to the first month\'s benefits and then to succeeding months. simulate.ts instead computes a single annual withholding amount and converts its annual-benefit ratio into a rounded number of withheld months. Its annualized proxy can disagree with the statutory charging sequence and feed the ARF credit count; the resulting post-ARF benefit can only be understated or exact, while whether that understates or overstates tax depends on how the spending shortfall is funded, since a traditional-account withdrawal replacing at-most-85-percent-taxable benefit dollars is fully taxable.',
+      'Section 403(f)(1) first charges excess earnings to the first month\'s benefits and then to succeeding months. simulate.ts instead computes a single annual withholding amount and converts its annual-benefit ratio into a rounded number of withheld months. Its annualized proxy can disagree with the statutory charging sequence and feed the ARF credit count; the annualized count can fall short of or exceed the deduction-month record depending on how withholding lands across the year, while whether that understates or overstates tax depends on how the spending shortfall is funded, since a traditional-account withdrawal replacing at-most-85-percent-taxable benefit dollars is fully taxable.',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'bothDirections',
     conventionRationale:
-      'The annual earnings amount itself is implemented by the existing `usc-42-403-f-3-retirement-earnings-test` record. This distinct convention record covers its missing month-charging unit: simulate.ts neither carries an ordered sequence of monthly entitlements nor consumes excess earnings against that sequence. In the companion fixture each below-FRA working year\'s 2,000 dollars of excess earnings must charge a 1,400-dollar first month and a 600-dollar second month, two partial-or-full deduction months per year; the annual ratio rounds to one per year, and the observed post-FRA benefit is 17,300 dollars against the statute-derived 17,800. This record and `poms-rs-00615-482-arf-crediting-months` share a single engine observable (the annualized month count feeds the ARF), so their fixtures intentionally pin the same produced figure from distinct legal limbs.',
+      'The annual earnings amount itself is implemented by the existing `usc-42-403-f-3-retirement-earnings-test` record. This distinct convention record covers its missing month-charging unit: simulate.ts neither carries an ordered sequence of monthly entitlements nor consumes excess earnings against that sequence. In the companion fixture each below-FRA working year\'s 2,000 dollars of excess earnings must charge a 1,400-dollar first month and a 600-dollar second month, two partial-or-full deduction months per year; the annual ratio rounds to one per year, and the observed post-FRA benefit is 17,300 dollars against the statute-derived 17,800. This record and `poms-rs-00615-482-arf-crediting-months` share a single engine observable (the annualized month count feeds the ARF), so their fixtures intentionally pin the same produced figure from distinct legal limbs. A charging-only implementation could not be verified apart from the ARF credit with this observable — reclassifying either record requires a distinct charging observable (ordered months or unequal monthly entitlements).',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -2914,22 +2914,28 @@ const registry = {
     implementedBy: ['packages/engine/src/projection/simulate.ts'],
   },
 
-  'cfr-20-404-447-grace-year-monthly-earnings-test': {
+  'cfr-20-404-435-grace-year-monthly-earnings-test': {
     title: 'The grace-year monthly earnings test preserves non-service-month benefits',
     statement:
-      'The first grace year can pay a full benefit for a non-service month even when annual earnings are substantial. The Plan accepts one annual wage amount and optional annual stop age, but no month-by-month wages, self-employment service, grace-year, or non-service-month facts; simulate.ts consequently applies only its annual earnings-test pass. Because a first-retirement-year claimant with a partial-year retirement still reaches that pass and receives an annual projected figure, this is an approximation rather than an out-of-scope rule. In an affected grace year the engine pays less benefit than the monthly test; whether that understates or overstates the resulting tax depends on how the spending shortfall is funded, since a traditional-account withdrawal replacing at-most-85-percent-taxable benefit dollars is fully taxable.',
+      'The first grace year can pay a full benefit for a non-service month even when annual earnings are substantial. The Plan accepts one annual wage amount and optional annual stop age, but no month-by-month wages, self-employment service, grace-year, or non-service-month facts; simulate.ts consequently applies only its annual earnings-test pass. Because a first-retirement-year claimant still reaches that pass and receives an annual projected figure, this is an approximation rather than an out-of-scope rule. In an affected grace year the engine pays less benefit than the monthly test; whether that understates or overstates the resulting tax depends on how the spending shortfall is funded, since a traditional-account withdrawal replacing at-most-85-percent-taxable benefit dollars is fully taxable.',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'bothDirections',
     conventionRationale:
-      'The accepted Plan surface is model/plan.ts: `wagesIncomeSchema` has `annualGross` and `endAge`, while a Social Security stream has one `claimAge`; neither carries service by calendar month, monthly wages, a grace-year designation, or non-service months. simulate.ts applies its annual earnings test to the emitted annual wage amount even where a fractional retirement age leaves a legal monthly distribution unresolved. The companion paired-limb fixture deliberately gives the engine the same 60,000-dollar annual wage total for (1) six July-through-December non-service months and (2) service in all twelve months. The monthly rule pays 8,400 dollars only in the first limb; the annual proxy observably pays zero in both, because the annual test withholds the entire partial-year benefit.',
+      'The accepted Plan surface is model/plan.ts: `wagesIncomeSchema` has `annualGross` and `endAge`, while a Social Security stream has one `claimAge`; neither carries service by calendar month, monthly wages, a grace-year designation, or non-service months. simulate.ts applies its annual earnings test to the emitted annual wage amount. The companion fixture gives the engine one 60,000-dollar annual wage total and stands that single observed annual figure against both authority limbs: (1) six July-through-December non-service months and (2) service in all twelve months. The monthly rule pays 8,400 dollars only in the first limb; the annual proxy observably pays zero for both, because the Plan carries no service-month fact and the annual test withholds the entire year\'s benefit. That collapse of one engine input against both limbs is the approximation.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'regulation',
-      citation: '20 CFR 404.447(a)(1)',
-      url: 'https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-E/section-404.447',
+      citation: '20 CFR 404.435(a), (a)(7)',
+      url: 'https://www.ecfr.gov/current/title-20/section-404.435',
       quotedText:
-        'Where the individual establishes that the time devoted to his trades and businesses during a calendar month was not more than 45 hours, the individual\'s services in that month are not considered substantial unless other factors (see paragraphs (b), (c), and (d) of this section) make such a finding unreasonable.',
+        'We will not reduce your benefits on account of excess earnings for any month in which you, the beneficiary— ... (7) Had a non-service month in your grace year (see paragraph (b) of this section). A non-service month is any month in which you, while entitled to retirement or survivors benefits: (i) Do not work in self-employment (see paragraphs (c) and (d) of this section); (ii) Do not perform services for wages greater than the monthly exempt amount set for that month (see paragraph (e) of this section and § 404.430); and (iii) Do not work in non-covered remunerative activity on 7 or more days in a month while outside the United States. A non-service month occurs even if there are no excess earnings in the year.',
+    }, {
+      kind: 'regulation',
+      citation: '20 CFR 404.435(b)(1)',
+      url: 'https://www.ecfr.gov/current/title-20/section-404.435',
+      quotedText:
+        'A beneficiary\'s initial grace year is the first taxable year in which the beneficiary has a non-service month (see paragraph (a)(7) of this section) in or after the month in which the beneficiary is entitled to a retirement, auxiliary, or survivor\'s benefit.',
     }, {
       kind: 'agencyGuidance',
       citation: 'SSA POMS RS 02501.030, § A',
@@ -2983,13 +2989,13 @@ const registry = {
         'If we approve a request to withdraw an application, the application will be considered as though it was never filed. If we disapprove a request for withdrawal, the application is treated as though the request was never filed.',
     }, {
       kind: 'agencyGuidance',
-      citation: 'SSA POMS GN 00206.005, § A',
+      citation: 'SSA POMS GN 00206.005, § A first bullet (12-month RIB filing)',
       url: 'https://secure.ssa.gov/poms.nsf/lnx/0200206005',
       quotedText:
         'The NH receiving Retirement Insurance Benefits (RIB) must submit the withdrawal request within 12 months of the first month of entitlement;',
     }, {
       kind: 'agencyGuidance',
-      citation: 'SSA POMS GN 00206.005, § A',
+      citation: 'SSA POMS GN 00206.005, § A second bullet (repayment)',
       url: 'https://secure.ssa.gov/poms.nsf/lnx/0200206005',
       quotedText:
         'The beneficiary who requests a WD of their benefit application must repay all benefits he or she received, before we approve the withdrawal request. This includes Medicare payments (i.e., Hospital Insurance (HI) expenses paid by CMS, and Supplementary Medical Insurance (SMI) premiums withheld by SSA) and voluntary tax withholding (VTW) for closed tax years.',
@@ -3009,20 +3015,38 @@ const registry = {
     contraryReading: null,
     errorDirection: 'bothDirections',
     conventionRationale:
-      'simulate.ts has a real PIA-from-earnings path, so this is not an absence record: before projecting any year it resolves each Social Security stream\'s PIA once from `socialSecurityIncomeSchema.earnings` and optional pre-retirement `earningsProjection`. Later `wagesIncomeSchema` income is not appended to that history or recomputed. The companion fixture gives a fully insured worker ten AWI-level covered years (2013-2022), claims at 2029 FRA, and supplies 10,000 dollars of covered wages in 2030. The authority-side recomputation replaces a zero in the top-35 set: indexed earnings rise by 10,000, AIME from 1,518 to 1,542, and 2024 second-band PIA from 1,166.60 to 1,174.30 (delta 7.70, above the one-dollar threshold), so 2031 pays 14,091.60; the engine observably leaves the initially resolved 1,166.60 PIA in force and pays 13,999.20.',
+      'simulate.ts has a real PIA-from-earnings path, so this is not an absence record: before projecting any year it resolves each Social Security stream\'s PIA once from `socialSecurityIncomeSchema.earnings` and optional pre-retirement `earningsProjection`. Later `wagesIncomeSchema` income is not appended to that history or recomputed. Closing 415(f)(2) also requires widening the base-year window in piaFromEarnings.ts (`computePiaFromEarnings` clamps `lastBaseYear` to eligibility-1), which is why that file stays in implementedBy. The companion fixture gives a fully insured worker ten AWI-level covered years (2013-2022), claims at 2029 FRA, and supplies 10,000 dollars of covered wages in 2030. The authority-side recomputation replaces a zero in the top-35 set: indexed earnings rise by 10,000, AIME from 1,518 to 1,542, and 2024 second-band PIA from 1,166.60 to 1,174.30 (delta 7.70, above the one-dollar threshold), so 2031 pays 14,091.60; the engine observably leaves the initially resolved 1,166.60 PIA in force and pays 13,999.20.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
-      citation: '42 U.S.C. 415(a)(1)(A)(i)',
+      citation: '42 U.S.C. 415(a)(1)(A)(ii)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim',
       quotedText:
-        '90 percent of the individual\'s average indexed monthly earnings (determined under subsection (b)) to the extent that such earnings do not exceed the amount established for purposes of this clause by subparagraph (B),',
+        '32 percent of the individual\'s average indexed monthly earnings to the extent that such earnings exceed the amount established for purposes of clause (i) but do not exceed the amount established for purposes of this clause by subparagraph (B), and',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 415(a)(1)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim',
+      quotedText:
+        'rounded, if not a multiple of $0.10, to the next lower multiple of $0.10, and thereafter increased as provided in subsection (i).',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 415(b)(2)(A)(i)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim',
+      quotedText:
+        'The number of an individual\'s benefit computation years equals the number of elapsed years reduced- (i) in the case of an individual who is entitled to old-age insurance benefits (except as provided in the second sentence of this subparagraph), or who has died, by 5 years, and',
     }, {
       kind: 'statute',
       citation: '42 U.S.C. 415(b)(2)(B)(i)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim',
       quotedText:
         'the term "benefit computation years" means those computation base years, equal in number to the number determined under subparagraph (A), for which the total of such individual\'s wages and self-employment income, after adjustment under paragraph (3), is the largest;',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 415(b)(2)(B)(ii)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim',
+      quotedText:
+        'the term "computation base years" means the calendar years after 1950 and before- (I) in the case of an individual entitled to old-age insurance benefits, the year in which occurred (whether by reason of section 402(j)(1) of this title or otherwise) the first month of that entitlement; or (II) in the case of an individual who has died (without having become entitled to old-age insurance benefits), the year succeeding the year of his death; except that such term excludes any calendar year entirely included in a period of disability; and',
     }, {
       kind: 'statute',
       citation: '42 U.S.C. 415(f)(2)(A)',

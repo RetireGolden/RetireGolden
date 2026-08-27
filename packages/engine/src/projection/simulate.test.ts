@@ -545,7 +545,7 @@ describe('social security', () => {
     accepted: 'pomsCreditsFullAndPartialWorkDeductionMonths',
     produced: 'annualRatioRoundsToOneCreditingMonthPerYear',
   }, ({ accepted, produced }) => {
-    it('credits every full or partial work-deduction month under the ARF rule', () => {
+    it('rounds annual withholding to one ARF crediting month per year', () => {
       const postFraIncome = partialDeductionArfIncomeAfterFra()
       expect(postFraIncome).toBeCloseTo(produced, 6)
       expect(postFraIncome).not.toBeCloseTo(accepted, 6)
@@ -561,17 +561,22 @@ describe('social security', () => {
     },
     accepted: 'firstThenSucceedingMonthCharging',
     produced: 'annualFractionRoundedToOneMonthPerYear',
+    note: 'shares the ARF observable',
   }, ({ accepted, produced }) => {
-    it('does not collapse a partial second charged month into one annual fraction', () => {
+    it('collapses the charging sequence into the annual ratio', () => {
       const postFraIncome = partialDeductionArfIncomeAfterFra()
       expect(postFraIncome).toBeCloseTo(produced, 6)
       expect(postFraIncome).not.toBeCloseTo(accepted, 6)
     })
   })
 
-  function graceYearAnnualIncome(retirementAge: number): number {
+  // One engine input: the Plan carries no service-month fact, so a single
+  // annual wage projection stands against both authority limbs below. That
+  // collapse is the approximation — not a birthday-relative stop encoded by
+  // a fractional retirementAge.
+  function graceYearAnnualIncome(): number {
     const plan = basePlan()
-    plan.household.people[0]! = { ...plan.household.people[0]!, dob: '1964-06-15', retirementAge }
+    plan.household.people[0]! = { ...plan.household.people[0]!, dob: '1964-06-15', retirementAge: 67 }
     plan.incomes = [
       wages(60_000),
       { type: 'socialSecurity', id: testIds(), personId: 'p1', piaMonthly: 2_000, earnings: null, claimAge: { years: 62, months: 0 } },
@@ -585,9 +590,8 @@ describe('social security', () => {
     return socialSecurityIncomeIn(result, 2026)
   }
 
-  // These are two explicitly labelled monthly-rule limbs, not one annual
-  // fixture. Both records carry the same accepted annual wage amount because
-  // the Plan cannot say how it was distributed within 2026:
+  // Authority-side paired monthly limbs (same 60,000 annual wages; the Plan
+  // cannot say how they were distributed within 2026):
   //
   // - sixNonServiceMonthsAfterJune: 60,000 was earned January-June and the
   //   claimant neither worked nor rendered substantial service July-December;
@@ -595,18 +599,16 @@ describe('social security', () => {
   // - serviceInAllTwelveMonths: the same annual wages are earned while service
   //   continues through December, so there is no non-service-month payment.
   //
-  // The annual projection has no service-month fact, applies its annual
-  // withholding in both limbs, and must therefore be observed separately from
-  // this authority-side paired monthly calculation.
-  describeRule('cfr-20-404-447-grace-year-monthly-earnings-test', {
+  // produced applies the single observed annual figure to both limbs because
+  // the annual test withholds the whole year: (60,000 - 24,480) / 2 exceeds
+  // the year-one benefit.
+  describeRule('cfr-20-404-435-grace-year-monthly-earnings-test', {
     readings: {
       monthlyTestDistinguishesServiceMonths: {
         sixNonServiceMonthsAfterJune: 8_400,
         serviceInAllTwelveMonths: 0,
       },
       annualProjectionIgnoresServiceMonthDistribution: {
-        // The annual test withholds the whole partial-year benefit in both
-        // limbs: (60,000 - 24,480) / 2 exceeds the year-one benefit.
         sixNonServiceMonthsAfterJune: 0,
         serviceInAllTwelveMonths: 0,
       },
@@ -615,9 +617,10 @@ describe('social security', () => {
     produced: 'annualProjectionIgnoresServiceMonthDistribution',
   }, ({ accepted, produced }) => {
     it('cannot preserve a grace-year non-service-month benefit from annual wages alone', () => {
+      const observed = graceYearAnnualIncome()
       const annualProjection = {
-        sixNonServiceMonthsAfterJune: graceYearAnnualIncome(62.5),
-        serviceInAllTwelveMonths: graceYearAnnualIncome(63),
+        sixNonServiceMonthsAfterJune: observed,
+        serviceInAllTwelveMonths: observed,
       }
 
       expect(annualProjection).toEqual(produced)
@@ -654,6 +657,13 @@ describe('social security', () => {
     const parsed = parsePlan(plan)
     if (parsed.ok) throw new Error('expected an unsupported Social Security withdrawal action to be rejected')
     expect(parsed.ok).toBe(false)
+    expect(
+      parsed.issues.some(
+        (issue) =>
+          issue.includes('retirementActions')
+          || issue.includes('socialSecurityApplicationWithdrawal'),
+      ),
+    ).toBe(true)
   })
 
   // Ten AWI-level covered years (2013-2022): each indexes to floor(AWI_2022) =
