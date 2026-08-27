@@ -2,21 +2,21 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 1,
   "registry": {
-    "total": 359,
+    "total": 360,
     "byClassification": {
       "approximated": 81,
-      "outOfScope": 69,
+      "outOfScope": 70,
       "settled": 205,
       "unsettled": 4
     },
     "byVolatility": {
       "annuallyIndexed": 53,
       "awaitingGuidance": 10,
-      "staticStatute": 290,
+      "staticStatute": 291,
       "sunsetting": 6
     },
     "byJurisdiction": {
-      "federal": 302,
+      "federal": 303,
       "states": {
         "AK": 1,
         "AR": 9,
@@ -233,7 +233,7 @@
     {
       "path": "ladder/ladderMath.ts",
       "sweptOn": "2026-08-27",
-      "note": "TIPS OID/deflation and §171 premium absence registered (treas-reg-1-1275-7-*, irc-171-tips-*); statutory 0.125% min coupon and par-yield pricing conventions remain"
+      "note": "TIPS OID/deflation and §171 premium absence registered (treas-reg-1-1275-7-f-1-deflation-adjustment-income, treas-reg-1-1275-7-f-2-deflation-basis-decrease-not-modeled, treas-reg-1-1275-7-f-3-tips-acquisition-premium, irc-171-tips-bond-premium-amortization); statutory 0.125% min coupon and par-yield pricing conventions remain"
     },
     {
       "path": "longevity/ssaPeriod2022.ts",
@@ -1024,22 +1024,7 @@
       "fixtureFiles": []
     },
     {
-      "id": "cfr-31-360-44-savings-bond-early-redemption-forfeiture",
-      "classification": "outOfScope",
-      "jurisdiction": "federal",
-      "volatility": "staticStatute",
-      "effectiveFrom": 2026,
-      "effectiveThrough": null,
-      "verifiedOn": "2026-08-27",
-      "dueOn": "2027-08-27",
-      "implementedBy": [
-        "packages/engine/src/model/plan.ts",
-        "packages/engine/src/projection/simulate.ts"
-      ],
-      "fixtureFiles": []
-    },
-    {
-      "id": "cfr-31-363-11-savings-bond-purchase-limits",
+      "id": "cfr-31-363-52-savings-bond-annual-purchase-limit",
       "classification": "outOfScope",
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -1905,7 +1890,7 @@
       ]
     },
     {
-      "id": "irc-171-tips-acquisition-premium-amortization",
+      "id": "irc-171-tips-bond-premium-amortization",
       "classification": "outOfScope",
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -5279,7 +5264,7 @@
       ]
     },
     {
-      "id": "treas-reg-1-1275-7-f-deflation-adjustment-and-basis",
+      "id": "treas-reg-1-1275-7-f-1-deflation-adjustment-income",
       "classification": "approximated",
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -5295,6 +5280,38 @@
       "fixtureFiles": [
         "packages/engine/src/tax/federalTax.test.ts"
       ]
+    },
+    {
+      "id": "treas-reg-1-1275-7-f-2-deflation-basis-decrease-not-modeled",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/ladder/ladderMath.ts",
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "fixtureFiles": []
+    },
+    {
+      "id": "treas-reg-1-1275-7-f-3-tips-acquisition-premium",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/ladder/ladderMath.ts",
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "fixtureFiles": []
     },
     {
       "id": "treas-reg-1-401-a-9-2-b-2-v-applicable-age-1959",

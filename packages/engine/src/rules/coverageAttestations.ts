@@ -152,7 +152,7 @@ export const COVERAGE_ATTESTATIONS: Readonly<Record<string, CoverageAttestation>
   'ladder/bridge.ts': Object.freeze({ status: 'partial', sweptOn: '2026-08-24', note: 'Bridge cannot start before SS age 62; uses claimFactor/PIA sizing without naming record' }),
   'ladder/fedInvest.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'ladder/fundedRatio.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
-  'ladder/ladderMath.ts': Object.freeze({ status: 'partial', sweptOn: '2026-08-27', note: 'TIPS OID/deflation and §171 premium absence registered (treas-reg-1-1275-7-*, irc-171-tips-*); statutory 0.125% min coupon and par-yield pricing conventions remain' }),
+  'ladder/ladderMath.ts': Object.freeze({ status: 'partial', sweptOn: '2026-08-27', note: 'TIPS OID/deflation and §171 premium absence registered (treas-reg-1-1275-7-f-1-deflation-adjustment-income, treas-reg-1-1275-7-f-2-deflation-basis-decrease-not-modeled, treas-reg-1-1275-7-f-3-tips-acquisition-premium, irc-171-tips-bond-premium-amortization); statutory 0.125% min coupon and par-yield pricing conventions remain' }),
   'longevity/ssaPeriod2022.ts': Object.freeze({ status: 'partial', sweptOn: '2026-08-24', note: 'SSA 2022 period table provenance/vintage unregistered; statutory-use records name consumers' }),
   'longevity/types.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'model/migrations.ts': Object.freeze({ status: 'partial', sweptOn: '2026-08-24', note: 'Lump-sum election load repairs; inherited qualified-annuity premium retarget/stand-down beyond annuity-start ceiling records' }),

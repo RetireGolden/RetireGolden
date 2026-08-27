@@ -4092,16 +4092,28 @@ const registry = {
         'For purposes of this subsection, the term "uncovered month" means, with respect to a part D eligible individual, any month beginning after the end of the initial enrollment period under section 1395w-101(b)(2) of this title unless the individual can demonstrate that the individual had creditable prescription drug coverage (as defined in paragraph (4)) for any portion of such month.',
     }, {
       kind: 'statute',
+      citation: 'P.L. 117-169, section 11201(a)(1)(A)',
+      url: 'https://www.govinfo.gov/content/pkg/PLAW-117publ169/pdf/PLAW-117publ169.pdf',
+      quotedText:
+        'for a year preceding 2025 and for costs above the annual deductible specified in paragraph (1) and up to the annual out-of-pocket threshold specified in paragraph (4)(B) for 2025 and each subsequent year',
+    }, {
+      kind: 'statute',
       citation: 'P.L. 117-169, section 11201(a)(3)(B)(i)(III)',
       url: 'https://www.govinfo.gov/content/pkg/PLAW-117publ169/pdf/PLAW-117publ169.pdf',
       quotedText:
-        '``(VII) for 2025, is equal to $2,000; or ``(VIII) for a subsequent year, is equal to the amount specified in this subparagraph for the previous year, increased by the annual percentage increase described in paragraph (6) for the year involved.\'\';',
+        '``(VII) for 2025, is equal to $2,000; or ``(VIII) for a subsequent year, is equal to the amount specified in this subparagraph for the previous year, increased by the annual percentage increase described in paragraph (6) for the year involved.\'\'',
     }, {
       kind: 'statute',
-      citation: 'P.L. 117-169, section 11406(a)',
+      citation: 'P.L. 117-169, section 11406(a), adding 1860D-2(b)(9)(B)(ii)',
       url: 'https://www.govinfo.gov/content/pkg/PLAW-117publ169/pdf/PLAW-117publ169.pdf',
       quotedText:
-        '``(ii) during plan year 2026 and each subsequent plan year, the lesser of-- ``(I) $35; ``(II) an amount equal to 25 percent of the maximum fair price established for the covered insulin product in accordance with part E of title XI; or ``(III) an amount equal to 25 percent of the negotiated price of the covered insulin product under the prescription drug plan or ... plan.\'\'',
+        'For a plan year beginning on or after January 1, 2025, the coverage provides benefits for any covered insulin product, prior to an individual reaching the out-of-pocket threshold under paragraph (4), with cost-sharing for a month\'s supply that does not exceed the applicable copayment amount.',
+    }, {
+      kind: 'statute',
+      citation: 'P.L. 117-169, section 11406(a), adding 1860D-2(b)(9)(D)',
+      url: 'https://www.govinfo.gov/content/pkg/PLAW-117publ169/pdf/PLAW-117publ169.pdf',
+      quotedText:
+        'the term \'applicable copayment amount\' means, with respect to a covered insulin product under a prescription drug plan or an MA\u2013PD plan dispensed\u2014 ``(i) during plan years 2023, 2024, and 2025, $35; and ``(ii) during plan year 2026 and each subsequent plan year, the lesser of\u2014 ``(I) $35; ``(II) an amount equal to 25 percent of the maximum fair price established for the covered insulin product in accordance with part E of title XI; or ``(III) an amount equal to 25 percent of the negotiated price of the covered insulin product under the prescription drug plan or MA\u2013PD plan.',
     }],
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
@@ -4129,7 +4141,7 @@ const registry = {
       citation: '42 U.S.C. 1395r(b)',
       url: 'https://www.law.cornell.edu/uscode/text/42/1395r',
       quotedText:
-        'the monthly premium determined under subsection (a) (without regard to any adjustment under subsection (i)) shall be increased by 10 percent of the monthly premium so determined for each full 12 months (in the same continuous period of eligibility) in which he could have been but was not enrolled.',
+        'In the case of an individual whose coverage period began pursuant to an enrollment after his initial enrollment period (determined pursuant to subsection (c) or (d) of section 1395p of this title) and not pursuant to a special enrollment period under subsection (i)(4), (l), or (m) of section 1395p of this title, the monthly premium determined under subsection (a) (without regard to any adjustment under subsection (i)) shall be increased by 10 percent of the monthly premium so determined for each full 12 months (in the same continuous period of eligibility) in which he could have been but was not enrolled.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -4167,10 +4179,10 @@ const registry = {
         'There shall be a general enrollment period during the period beginning on January 1 and ending on March 31 of each year.',
     }, {
       kind: 'statute',
-      citation: '42 U.S.C. 1395p(i)(1)',
+      citation: '42 U.S.C. 1395p(i)(3)(A)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section1395p&num=0&edition=prelim',
       quotedText:
-        'there shall be a special enrollment period described in paragraph (3).',
+        'The special enrollment period referred to in the first sentences of paragraphs (1) and (2) is the period including each month during any part of which the individual is enrolled in a group health plan described in section 1395y(b)(1)(A)(v) of this title by reason of current employment status ending with the last day of the eighth consecutive month in which the individual is at no time so enrolled.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -4183,14 +4195,14 @@ const registry = {
   },
 
   'cfr-20-418-1205-1230-irmaa-life-change-redetermination': {
-    title: 'IRMAA life-changing-event evidence and appeal workflow is not modeled',
+    title: 'IRMAA life-changing-event evidence and redetermination request is not modeled',
     statement:
-      'The regulation recognizes a spouse\'s death, marriage, divorce or annulment, work stoppage or reduction, loss of qualifying income-producing property, an employer pension cessation/termination/reorganization, and an employer settlement as major life-changing events. It makes an initial determination based on a more recent tax year effective when modified adjusted gross income is significantly reduced as a result of one of those events; POMS lists eight leaves by naming work reduction and work stoppage separately. The staged regulation and POMS index do not define “significantly reduced” as a named IRMAA-tier crossing, so the registry does not assert that extra condition. The engine already has a planning-grade SSA-44 election surface — healthcareConfigSchema.ssa44 (survivorYears / retirementYears) and simulate.ts\'s min(year-2, year-1) lookback for the two premium years after a qualifying event, named on usc-42-1395r-i-4-b-two-year-magi-lookback. What this record registers as absent is only the 20 CFR 418.1205 / 418.1230 evidence-and-appeal workflow: the full qualifying-event category set, documentation, and a redetermination request that SSA adjudicates.',
+      'The regulation recognizes a spouse\'s death, marriage, divorce or annulment, work stoppage or reduction, loss of qualifying income-producing property, an employer pension cessation/termination/reorganization, and an employer settlement as major life-changing events. It makes an initial determination based on a more recent tax year effective when modified adjusted gross income is significantly reduced as a result of one of those events; POMS lists eight leaves by naming work reduction and work stoppage separately. The staged regulation and POMS index do not define “significantly reduced” as a named IRMAA-tier crossing, so the registry does not assert that extra condition. The engine already has a planning-grade SSA-44 election surface — healthcareConfigSchema.ssa44 (survivorYears / retirementYears) and simulate.ts\'s min(year-2, year-1) lookback for the two premium years after a qualifying event, named on usc-42-1395r-i-4-b-two-year-magi-lookback. What this record registers as absent is only the 20 CFR 418.1205 / 418.1230 evidence-and-redetermination-request surface: the full qualifying-event category set, documentation, and a redetermination request that SSA adjudicates under 418.1230(a).',
     classification: 'outOfScope',
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'Keep outOfScope because the remaining claim is genuinely an absent administrative workflow, not a mispriced MAGI. The planning toggles and min lookback are accepted Plan/simulate behavior already disclosed on the sibling lookback record; model/plan.ts and simulate.ts still have no fields or results for event-category evidence, supporting documentation, a filed redetermination request, or an SSA appeal outcome. This record deliberately does not re-settle the SSA-44 lookback math.',
+      'Keep outOfScope because the remaining claim is genuinely an absent administrative redetermination-request surface, not a mispriced MAGI. The planning toggles and min lookback are accepted Plan/simulate behavior already disclosed on the sibling lookback record; model/plan.ts and simulate.ts still have no fields or results for event-category evidence, supporting documentation, or a filed redetermination request under 418.1230. This record deliberately does not re-settle the SSA-44 lookback math.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'regulation',
@@ -13227,22 +13239,22 @@ const registry = {
     ],
   },
 
-  'cfr-31-363-11-savings-bond-purchase-limits': {
-    title: 'Series I savings-bond purchase limits require a TreasuryDirect owner and purchase channel',
+  'cfr-31-363-52-savings-bond-annual-purchase-limit': {
+    title: 'Series EE/I book-entry annual purchase principal limit is not modeled',
     statement:
-      'Series I savings-bond purchases are subject to annual electronic and paper limits for an individual owner. RetireGolden has no savings-bond account, TreasuryDirect owner or SSN, electronic-versus-paper purchase channel, or annual savings-bond purchase ledger, so no accepted plan input reaches a purchase-cap result.',
+      'Book-entry Series EE and Series I savings-bond purchases are subject to a $10,000 annual principal limit per series for an individual owner. RetireGolden has no savings-bond account or annual purchase ledger, so no accepted plan input reaches a purchase-cap result.',
     classification: 'outOfScope',
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The absence surface is model/plan.ts: taxableAccountSchema carries an aggregate brokerage balance, cost basis, and generic annual contribution, but no savings-bond instrument, TreasuryDirect owner, SSN, purchase channel, or annual bond-purchase history. The staged 31 CFR 363.11 text confirms the TreasuryDirect account and SSN gate but does not state a numeric annual cap. The generic contribution field cannot be treated as an I-Bond purchase without inventing the instrument and owner facts on which the annual limit turns.',
+      'The absence surface is model/plan.ts: taxableAccountSchema carries an aggregate brokerage balance, cost basis, and generic annual contribution, but no savings-bond instrument, TreasuryDirect owner, or annual bond-purchase history. The generic contribution field cannot be treated as a book-entry savings-bond purchase without inventing the instrument and owner facts on which the annual limit turns.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'regulation',
-      citation: '31 CFR 363.11',
-      url: 'https://www.ecfr.gov/current/title-31/section-363.11',
+      citation: '31 CFR 363.52',
+      url: 'https://www.ecfr.gov/current/title-31/section-363.52',
       quotedText:
-        'Only an individual or an entity is eligible to open a TreasuryDirect account. In order to open a TreasuryDirect account, an individual or entity account manager must have a valid social security number (SSN), be 18 years of age or over, and be legally competent.',
+        'The principal amount of book-entry savings bonds that you may acquire in any calendar year is limited to $10,000 for Series EE savings bonds and $10,000 for Series I savings bonds.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -13252,9 +13264,9 @@ const registry = {
   },
 
   'irc-454-savings-bond-interest-deferral': {
-    title: 'Savings-bond interest is generally deferred until redemption, maturity, or disposition',
+    title: 'Savings-bond interest is deferred until redemption, maturity, or disposition unless elected',
     statement:
-      'IRC 454 permits a cash-method holder of a discount savings obligation to defer the increase in redemption price until the obligation is redeemed, reaches final maturity, or is otherwise disposed of unless the holder elects current inclusion. RetireGolden has no savings-bond instrument or section 454 election and therefore produces no savings-bond deferral result.',
+      'IRC 454(a) permits a cash-method holder of a discount savings obligation to elect current inclusion of the increase in redemption price, but absent that election section 454(c) includes the increase in redemption value (to the extent not previously includible) in gross income in the taxable year of final redemption or final maturity, whichever is earlier. RetireGolden has no savings-bond instrument, redemption or maturity date, or section 454 election and therefore produces no savings-bond deferral or default-inclusion result.',
     classification: 'outOfScope',
     contraryReading: null,
     errorDirection: null,
@@ -13267,33 +13279,12 @@ const registry = {
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section454&num=0&edition=prelim',
       quotedText:
         'If, in the case of a taxpayer owning any non-interest-bearing obligation issued at a discount and redeemable for fixed amounts increasing at stated intervals or owning an obligation described in paragraph (2) of subsection (c), the increase in the redemption price of such obligation occurring in the taxable year does not (under the method of accounting used in computing his taxable income) constitute income to him in such year, such taxpayer may, at his election made in his return for any taxable year, treat such increase as income received in such taxable year.',
-    }],
-    volatility: 'staticStatute',
-    effectiveFrom: 2026,
-    effectiveThrough: null,
-    verifiedOn: '2026-08-27',
-    implementedBy: [
-      'packages/engine/src/model/plan.ts',
-      'packages/engine/src/projection/simulate.ts',
-    ],
-  },
-
-  'cfr-31-360-44-savings-bond-early-redemption-forfeiture': {
-    title: 'Early Series I redemption requires a redemption event and its applicable interest forfeiture',
-    statement:
-      'A Series I bond redeemed before five years forfeits the most recent three months of interest. RetireGolden has no savings-bond issue date, redemption event, holding-period clock, or interest-forfeiture field, so it produces no early-redemption result.',
-    classification: 'outOfScope',
-    contraryReading: null,
-    errorDirection: null,
-    conventionRationale:
-      'The absence surface is model/plan.ts and projection/simulate.ts: no accepted account or income type stores a Series I issue date, redemption date, accrued interest, or the pre-five-year forfeiture. The staged 31 CFR 360.44 text supplies the surrender-request procedure, but the engine has no redemption-request path on which that procedure or the three-month forfeiture could operate.',
-    jurisdiction: 'federal',
-    authority: [{
-      kind: 'regulation',
-      citation: '31 CFR 360.44',
-      url: 'https://www.ecfr.gov/current/title-31/section-360.44',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 454(c)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section454&num=0&edition=prelim',
       quotedText:
-        'An owner or coowner, who has surrendered a bond to a Federal Reserve Bank or Branch or to the Bureau of the Fiscal Service or to an authorized paying agent with an appropriate request for payment, may withdraw the request if notice of intent to withdraw is received by the same agency prior to payment.',
+        'the increase in redemption value (to the extent not previously includible in gross income) in excess of the amount paid for such series E bond shall be includible in gross income in the taxable year in which the obligation is finally redeemed or in the taxable year of final maturity, whichever is earlier.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -13321,6 +13312,18 @@ const registry = {
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section135&num=0&edition=prelim',
       quotedText:
         'In the case of an individual who pays qualified higher education expenses during the taxable year, no amount shall be includible in gross income by reason of the redemption during such year of any qualified United States savings bond.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 135(b)(1)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section135&num=0&edition=prelim',
+      quotedText:
+        '(A) In general If- (i) the aggregate proceeds of qualified United States savings bonds redeemed by the taxpayer during the taxable year exceed (ii) the qualified higher education expenses paid by the taxpayer during such taxable year, the amount excludable from gross income under subsection (a) shall not exceed the applicable fraction of the amount excludable from gross income under subsection (a) without regard to this subsection.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 135(b)(1)(B)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section135&num=0&edition=prelim',
+      quotedText:
+        '(B) Applicable fraction For purposes of subparagraph (A), the term "applicable fraction" means the fraction the numerator of which is the amount described in subparagraph (A)(ii) and the denominator of which is the amount described in subparagraph (A)(i).',
     }, {
       kind: 'statute',
       citation: 'IRC 135(b)(2)(A)',
@@ -13382,15 +13385,15 @@ const registry = {
     ],
   },
 
-  'treas-reg-1-1275-7-f-deflation-adjustment-and-basis': {
-    title: 'TIPS deflation adjustments reduce interest and basis, with an ordinary-loss carry limit',
+  'treas-reg-1-1275-7-f-1-deflation-adjustment-income': {
+    title: 'TIPS deflation adjustments reduce interest with an ordinary-loss carry limit',
     statement:
-      'A negative TIPS inflation adjustment is a deflation adjustment that first reduces the holder\'s interest otherwise includible, allows an ordinary loss only to the extent of prior net interest inclusions, carries any excess forward, and decreases adjusted basis when taken into account. The engine clamps ladder accretion at zero and emits neither the reduction nor the basis decrease.',
+      'A negative TIPS inflation adjustment is a deflation adjustment that first reduces the holder\'s interest otherwise includible, allows an ordinary loss only to the extent of prior net interest inclusions, and carries any excess forward. The engine clamps ladder accretion at zero and emits neither the interest reduction nor the ordinary-loss carry, so a deflation year overstates tax on the income leg.',
     classification: 'approximated',
     contraryReading: null,
-    errorDirection: 'bothDirections',
+    errorDirection: 'overstatesTax',
     conventionRationale:
-      'DEFECT — no behavior change in this registration slice. projection/simulate.ts computes `accretion` as `outstandingFace * Math.max(0, inflFactor - prevInflFactor)`, so a deflation year contributes no negative adjustment, no ordinary-loss carry, and no basis decrease. A paired market path with prior positive inflation followed by deflation drives the gap: the authority reduces current interest (and may permit a bounded ordinary loss), while the engine still reports the coupon as taxable ordinary income. The fixture adds 100,000 of ordinary wages so the tax line remains above zero and pins the produced annual MAGI at 100,149.67. The income-year exposure overstates tax; the omitted (f)(2) basis decrease leaves basis too high and can understate later gain tax when that basis is recovered, so the direction is both.',
+      'DEFECT — no behavior change in this registration slice. projection/simulate.ts computes `accretion` as `outstandingFace * Math.max(0, inflFactor - prevInflFactor)`, so a deflation year contributes no negative adjustment, no ordinary-loss carry, and no interest reduction. A paired market path with prior positive inflation followed by deflation drives the gap: the authority reduces current interest (and may permit a bounded ordinary loss), while the engine still reports the coupon as taxable ordinary income. The fixture adds 100,000 of ordinary wages so the tax line remains above zero and pins the produced annual MAGI. The basis decrease under (f)(2) is registered separately at treas-reg-1-1275-7-f-2-deflation-basis-decrease-not-modeled.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'regulation',
@@ -13398,7 +13401,29 @@ const registry = {
       url: 'https://www.ecfr.gov/current/title-26/section-1.1275-7',
       quotedText:
         'A deflation adjustment reduces the amount of interest otherwise includible in income by a holder with respect to the debt instrument for the taxable year. For purposes of this paragraph (f)(1)(i), interest includes OID, qualified stated interest, and market discount. If the amount of the deflation adjustment exceeds the interest otherwise includible in income by the holder with respect to the debt instrument for the taxable year, the excess is treated as an ordinary loss by the holder for the taxable year. However, the amount treated as an ordinary loss is limited to the amount by which the holder\'s total interest inclusions on the debt instrument in prior taxable years exceed the total amount treated by the holder as an ordinary loss on the debt instrument in prior taxable years. If the deflation adjustment exceeds the interest otherwise includible in income by the holder with respect to the debt instrument for the taxable year and the amount treated as an ordinary loss for the taxable year, this excess is carried forward to reduce the amount of interest otherwise includible in income by the holder with respect to the debt instrument for subsequent taxable years.',
-    }, {
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/ladder/ladderMath.ts',
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/model/plan.ts',
+    ],
+  },
+
+  'treas-reg-1-1275-7-f-2-deflation-basis-decrease-not-modeled': {
+    title: 'TIPS deflation basis decrease is not modeled',
+    statement:
+      'A holder\'s adjusted basis in an inflation-indexed debt instrument is decreased by the amount of any deflation adjustment taken into account to reduce interest otherwise includible in income or treated as an ordinary loss. The engine does not track per-rung holder basis or apply deflation basis decreases.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The absence surface is ladder/ladderMath.ts and projection/simulate.ts: ladder accretion is clamped at zero and no holder-basis ledger records deflation adjustments taken into account under (f)(1). Omitting the (f)(2) basis decrease leaves basis too high and can understate later gain tax when that basis is recovered, but that limb is separate from the income-year clamp registered at treas-reg-1-1275-7-f-1-deflation-adjustment-income.',
+    jurisdiction: 'federal',
+    authority: [{
       kind: 'regulation',
       citation: 'Treas. Reg. 1.1275-7(f)(2)',
       url: 'https://www.ecfr.gov/current/title-26/section-1.1275-7',
@@ -13416,15 +13441,43 @@ const registry = {
     ],
   },
 
-  'irc-171-tips-acquisition-premium-amortization': {
-    title: 'TIPS acquisition premium requires bond-level amortization against interest or OID',
+  'treas-reg-1-1275-7-f-3-tips-acquisition-premium': {
+    title: 'TIPS acquisition premium reduces OID under acquisition-premium rules',
     statement:
-      'A holder of a taxable inflation-indexed bond may amortize acquisition premium against qualified stated interest and OID under section 171 and the section 1.171-2 yield-and-accrual rules. RetireGolden has no bond issue price, principal, acquisition date, holder basis, call or maturity schedule, or premium election, so no accepted input reaches a premium-amortization result.',
+      'Acquisition premium on an inflation-indexed debt instrument reduces OID under the acquisition-premium rules, with the premium measured by reference to adjusted issue price on the acquisition date and taken into account over the remaining term as if there were no further inflation or deflation. The engine has no acquisition-premium or OID-offset facts.',
     classification: 'outOfScope',
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The absence surface is model/plan.ts, ladder/ladderMath.ts, and projection/simulate.ts. tipsLadderSchema stores only target real income, payout years, and an optional aggregate purchase transfer; ladderMath.ts retains synthetic rung cost but no holder basis or issue-price ledger, and simulate.ts carries no premium balance to offset coupon or OID. A taxable account costBasis is an aggregate brokerage basis and cannot identify a TIPS rung or a section 171 election, so it is not an accepted premium fact.',
+      'The absence surface is model/plan.ts, ladder/ladderMath.ts, and projection/simulate.ts. tipsLadderSchema stores only target real income, payout years, and an optional aggregate purchase transfer; ladderMath.ts retains synthetic rung cost but no holder basis, issue price, or acquisition-premium ledger, and simulate.ts carries no premium balance to offset OID. Bond premium amortization under section 171 is registered separately at irc-171-tips-bond-premium-amortization.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.1275-7(f)(3)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.1275-7',
+      quotedText:
+        'A holder determines the amount of acquisition premium or market discount on an inflation-indexed debt instrument by reference to the adjusted issue price of the instrument on the date the holder acquires the instrument. ... Any premium or market discount is taken into account over the remaining term of the debt instrument as if there were no further inflation or deflation.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/ladder/ladderMath.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+  },
+
+  'irc-171-tips-bond-premium-amortization': {
+    title: 'TIPS bond premium amortization requires bond-level facts',
+    statement:
+      'Section 171 bond premium amortization offsets qualified stated interest and OID for a taxable inflation-indexed bond. RetireGolden has no bond issue price, principal, acquisition date, holder basis, call or maturity schedule, or premium election, so no accepted input reaches a bond-premium amortization result.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The absence surface is model/plan.ts, ladder/ladderMath.ts, and projection/simulate.ts. tipsLadderSchema stores only target real income, payout years, and an optional aggregate purchase transfer; ladderMath.ts retains synthetic rung cost but no holder basis or issue-price ledger, and simulate.ts carries no premium balance to offset coupon or OID. A taxable account costBasis is an aggregate brokerage basis and cannot identify a TIPS rung or a section 171 election, so it is not an accepted premium fact. Acquisition premium on TIPS is registered separately at treas-reg-1-1275-7-f-3-tips-acquisition-premium.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -13449,7 +13502,7 @@ const registry = {
       citation: 'Treas. Reg. 1.1275-7(f)(3)',
       url: 'https://www.ecfr.gov/current/title-26/section-1.1275-7',
       quotedText:
-        'A holder determines the amount of acquisition premium or market discount on an inflation-indexed debt instrument by reference to the adjusted issue price of the instrument on the date the holder acquires the instrument. A holder determines the amount of bond premium on an inflation-indexed debt instrument by assuming that the amount payable at maturity on the instrument is equal to the instrument\'s inflation-adjusted principal amount for the day the holder acquires the instrument. Any premium or market discount is taken into account over the remaining term of the debt instrument as if there were no further inflation or deflation. See section 171 for additional rules relating to the amortization of bond premium and sections 1276 through 1278 for additional rules relating to market discount.',
+        'A holder determines the amount of bond premium on an inflation-indexed debt instrument by assuming that the amount payable at maturity on the instrument is equal to the instrument\'s inflation-adjusted principal amount for the day the holder acquires the instrument. ... See section 171 for additional rules relating to the amortization of bond premium and sections 1276 through 1278 for additional rules relating to market discount.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
