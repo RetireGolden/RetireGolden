@@ -11383,7 +11383,7 @@ const registry = {
       citation: 'Colo. Rev. Stat. 39-22-104(1.7)(c), (2)',
       url: 'https://olls.info/crs/crs2026-title-39.htm',
       quotedText:
-        'Except as otherwise provided in section 39-22-627, subject to subsection (2) of this section, with respect to taxable years commencing on or after January 1, 2022, a tax of four and forty one-hundredths percent is imposed on the federal taxable income, as determined pursuant to section 63 of the internal revenue code, of every individual, estate, and trust. (2) Prior to the application of the rate of tax prescribed in subsection (1), (1.5), or (1.7) of this section, the federal taxable income shall be modified as provided in subsections (3) and (4) of this section.',
+        'Except as otherwise provided in section 39-22-627, subject to subsection (2) of this section, with respect to taxable years commencing on or after January 1, 2022, a tax of four and forty one-hundredths percent is imposed on the federal taxable income, as determined pursuant to section 63 of the internal revenue code, of every individual, estate, and trust. … Prior to the application of the rate of tax prescribed in subsection (1), (1.5), or (1.7) of this section, the federal taxable income shall be modified as provided in subsections (3) and (4) of this section.',
     }, {
       kind: 'statute',
       citation: 'Colo. Rev. Stat. 39-22-104(4)(f)(III)(A), (D)',
@@ -14355,7 +14355,7 @@ const registry = {
       citation: 'N.J.S.A. 54A:6-10(b)(1), as amended by P.L.2021, c.129',
       url: 'https://pub.njleg.gov/bills/2020/AL21/129_.HTM',
       quotedText:
-        'for taxable years beginning on or after January 1, 2020, of up to $100,000 for a married couple filing jointly, $50,000 for a married person filing separately, or $75,000 for an individual filing as a single taxpayer or an individual determining tax pursuant to subsection a. of N.J.S.54A:2-1;',
+        'for taxable years beginning on or after January 1, 2020, … of up to $100,000 for a married couple filing jointly, $50,000 for a married person filing separately, or $75,000 for an individual filing as a single taxpayer or an individual determining tax pursuant to subsection a. of N.J.S.54A:2-1;',
     }, {
       kind: 'statute',
       citation: 'N.J.S.A. 54A:6-10(b)(1), as amended by P.L.2021, c.129 (age and qualifying payments)',
