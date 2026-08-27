@@ -2,21 +2,21 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 1,
   "registry": {
-    "total": 357,
+    "total": 359,
     "byClassification": {
       "approximated": 81,
-      "outOfScope": 67,
+      "outOfScope": 69,
       "settled": 205,
       "unsettled": 4
     },
     "byVolatility": {
       "annuallyIndexed": 53,
       "awaitingGuidance": 10,
-      "staticStatute": 288,
+      "staticStatute": 290,
       "sunsetting": 6
     },
     "byJurisdiction": {
-      "federal": 300,
+      "federal": 302,
       "states": {
         "AK": 1,
         "AR": 9,
@@ -232,8 +232,8 @@
     },
     {
       "path": "ladder/ladderMath.ts",
-      "sweptOn": "2026-08-24",
-      "note": "Statutory TIPS min coupon 0.125%; par-yield ladder pricing conventions; no naming record"
+      "sweptOn": "2026-08-27",
+      "note": "TIPS OID/deflation and §171 premium absence registered (treas-reg-1-1275-7-*, irc-171-tips-*); statutory 0.125% min coupon and par-yield pricing conventions remain"
     },
     {
       "path": "longevity/ssaPeriod2022.ts",
@@ -352,8 +352,8 @@
     },
     {
       "path": "tax/medicare.ts",
-      "sweptOn": "2026-08-24",
-      "note": "Post-pack premium premiumScale (healthcare-inflation stand-in); no record naming this file"
+      "sweptOn": "2026-08-27",
+      "note": "Part B/IRMAA premium path and Part B late-enrollment absence registered (usc-42-1395r-*, cfr-20-418-1205-1230-*); post-pack premiumScale (healthcare-inflation stand-in) remains"
     },
     {
       "path": "tax/propertySale.ts",
@@ -1018,6 +1018,7 @@
       "dueOn": "2027-08-27",
       "implementedBy": [
         "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/tax/medicare.ts"
       ],
       "fixtureFiles": []
@@ -5841,6 +5842,21 @@
       ]
     },
     {
+      "id": "usc-42-1395p-enrollment-periods",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "fixtureFiles": []
+    },
+    {
       "id": "usc-42-1395r-a-3-part-b-standard-premium",
       "classification": "settled",
       "jurisdiction": "federal",
@@ -5857,6 +5873,23 @@
       "fixtureFiles": [
         "packages/engine/src/params/params.test.ts"
       ]
+    },
+    {
+      "id": "usc-42-1395r-b-part-b-late-enrollment-penalty",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/tax/medicare.ts"
+      ],
+      "fixtureFiles": []
     },
     {
       "id": "usc-42-1395r-i-4-a-i-irmaa-magi-foreign-exclusion-addback",

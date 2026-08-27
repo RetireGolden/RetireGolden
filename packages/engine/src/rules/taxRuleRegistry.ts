@@ -4101,7 +4101,7 @@ const registry = {
       citation: 'P.L. 117-169, section 11406(a)',
       url: 'https://www.govinfo.gov/content/pkg/PLAW-117publ169/pdf/PLAW-117publ169.pdf',
       quotedText:
-        '``(ii) during plan year 2026 and each subsequent plan year, the lesser of-- ``(I) $35; ``(II) an amount equal to 25 percent of the maximum fair price established for the covered insulin product in accordance with part E of title XI; or ``(III) an amount equal to 25 percent of the negotiated price of the covered insulin product under the prescription drug plan or MA�PD plan.\'\'',
+        '``(ii) during plan year 2026 and each subsequent plan year, the lesser of-- ``(I) $35; ``(II) an amount equal to 25 percent of the maximum fair price established for the covered insulin product in accordance with part E of title XI; or ``(III) an amount equal to 25 percent of the negotiated price of the covered insulin product under the prescription drug plan or ... plan.\'\'',
     }],
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
@@ -4114,15 +4114,83 @@ const registry = {
     ],
   },
 
-  'cfr-20-418-1205-1230-irmaa-life-change-redetermination': {
-    title: 'IRMAA life-changing-event redeterminations are not modeled',
+  'usc-42-1395r-b-part-b-late-enrollment-penalty': {
+    title: 'Part B late-enrollment premium increase is not modeled',
     statement:
-      'The regulation recognizes a spouse\'s death, marriage, divorce or annulment, work stoppage or reduction, loss of qualifying income-producing property, an employer pension cessation/termination/reorganization, and an employer settlement as major life-changing events. It makes an initial determination based on a more recent tax year effective when modified adjusted gross income is significantly reduced as a result of one of those events; POMS lists eight leaves by naming work reduction and work stoppage separately. The staged regulation and POMS index do not define “significantly reduced” as a named IRMAA-tier crossing, so the registry does not assert that extra condition. The engine prices the ordinary two-year-lookback tier but has no input or workflow for a life-changing event, more-recent return, evidence, or SSA redetermination.',
+      'When Part B coverage begins from an enrollment after the initial enrollment period and not from a qualifying special enrollment period, the monthly premium under subsection (a) (without IRMAA) is increased by 10 percent of that premium for each full 12 months in the same continuous period of eligibility in which the individual could have been but was not enrolled. The Plan and the Medicare premium path have no delayed-enrollment, uncovered-month, continuous-period, or late-enrollment-increase input, and medicare.ts / the parameter pack emit only the standard Part B premium scaled by IRMAA, so the engine produces no Part B late-enrollment penalty.',
     classification: 'outOfScope',
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The Medicare helper accepts a supplied two-years-prior MAGI and filing status only. recentAnnualMagi is a single planning assumption, not an SSA-44 event, event date, affected spouse, more-recent tax-year MAGI, evidence record, or redetermination request; the Plan also has no acceptance or timing result for an appeal. This record deliberately does not duplicate C5\'s in-flight lookback or MAGI-composition records: it covers only the absent life-change and administrative-redetermination workflow.',
+      'Absence surface is model/plan.ts, tax/medicare.ts, and the pack Medicare table: simulate.ts starts Part B months from attained age 65 with no enrollment-election fact, and medicareAnnualPremiumPerPerson multiplies the pack standard premium by the IRMAA applicable-percentage scale only. A late-enrollee history is not expressible, so there is no mispriced penalty figure to approximate — only the absent increase.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 1395r(b)',
+      url: 'https://www.law.cornell.edu/uscode/text/42/1395r',
+      quotedText:
+        'the monthly premium determined under subsection (a) (without regard to any adjustment under subsection (i)) shall be increased by 10 percent of the monthly premium so determined for each full 12 months (in the same continuous period of eligibility) in which he could have been but was not enrolled.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/tax/medicare.ts',
+      'packages/engine/src/params/data/year2026.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+  },
+
+  'usc-42-1395p-enrollment-periods': {
+    title: 'Part B initial, general, and special enrollment periods are not modeled',
+    statement:
+      'Section 1395p fixes the initial enrollment period as the seven months centered on first eligibility, a general enrollment period from January 1 through March 31 each year, and special enrollment periods when group-health or other qualifying coverage ends. The Plan carries no enrollment-month, enrollment-period, deemed-enrollment, or coverage-period facts, so the engine produces no enrollment-timing result from those rules.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'Absence surface is model/plan.ts and projection/simulate.ts: healthcareConfigSchema and person demographics have no IEP/GEP/SEP election or enrollment month, and simulate.ts derives Medicare months solely from attained age 65 (and birth month in the attainment year). This record is the enrollment-period umbrella; the separate Part B late-enrollment premium increase is registered at usc-42-1395r-b-part-b-late-enrollment-penalty.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 1395p(d)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section1395p&num=0&edition=prelim',
+      quotedText:
+        'In the case of an individual who first satisfies paragraph (1) or (2) of section 1395o(a) of this title on or after March 1, 1966, his initial enrollment period shall begin on the first day of the third month before the month in which he first satisfies such paragraphs and shall end seven months later.',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 1395p(e)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section1395p&num=0&edition=prelim',
+      quotedText:
+        'There shall be a general enrollment period during the period beginning on January 1 and ending on March 31 of each year.',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 1395p(i)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section1395p&num=0&edition=prelim',
+      quotedText:
+        'there shall be a special enrollment period described in paragraph (3).',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+  },
+
+  'cfr-20-418-1205-1230-irmaa-life-change-redetermination': {
+    title: 'IRMAA life-changing-event evidence and appeal workflow is not modeled',
+    statement:
+      'The regulation recognizes a spouse\'s death, marriage, divorce or annulment, work stoppage or reduction, loss of qualifying income-producing property, an employer pension cessation/termination/reorganization, and an employer settlement as major life-changing events. It makes an initial determination based on a more recent tax year effective when modified adjusted gross income is significantly reduced as a result of one of those events; POMS lists eight leaves by naming work reduction and work stoppage separately. The staged regulation and POMS index do not define “significantly reduced” as a named IRMAA-tier crossing, so the registry does not assert that extra condition. The engine already has a planning-grade SSA-44 election surface — healthcareConfigSchema.ssa44 (survivorYears / retirementYears) and simulate.ts\'s min(year-2, year-1) lookback for the two premium years after a qualifying event, named on usc-42-1395r-i-4-b-two-year-magi-lookback. What this record registers as absent is only the 20 CFR 418.1205 / 418.1230 evidence-and-appeal workflow: the full qualifying-event category set, documentation, and a redetermination request that SSA adjudicates.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'Keep outOfScope because the remaining claim is genuinely an absent administrative workflow, not a mispriced MAGI. The planning toggles and min lookback are accepted Plan/simulate behavior already disclosed on the sibling lookback record; model/plan.ts and simulate.ts still have no fields or results for event-category evidence, supporting documentation, a filed redetermination request, or an SSA appeal outcome. This record deliberately does not re-settle the SSA-44 lookback math.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'regulation',
@@ -4150,6 +4218,7 @@ const registry = {
     implementedBy: [
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/tax/medicare.ts',
+      'packages/engine/src/projection/simulate.ts',
     ],
   },
 
@@ -12903,7 +12972,7 @@ const registry = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'This is a schema boundary, not a Roth-contribution result. accountUnionSchema\'s closed type set is taxable, equityComp, traditional, roth, hsa, cash, pension, annuity, property, and debt; there is no 529 or qualified-tuition-program member, which model/plan.test.ts already pins. retirementActionRequestSchema has ordinary-withdrawal, Roth-conversion, and QCD arms only, so a 529-to-Roth rollover cannot be expressed as an action. The 15-year account-age test, the 5-year contribution seasoning, the annual 408A(c)(2) room, and the $35,000 lifetime cap share that one absence surface and are folded here rather than registered separately. The annual Roth IRA ceiling for ordinary Roth contributions remains the settled irc-408A-c-2-roth-shares-the-section-219-ceiling record; this record is only the 529(c)(3)(E) path. effectiveFrom is floored at 2026; the enacting applicability is distributions after December 31, 2023.',
+      'This is a schema boundary, not a Roth-contribution result. accountUnionSchema\'s closed type set is taxable, equityComp, traditional, roth, hsa, cash, pension, annuity, property, and debt; there is no 529 or qualified-tuition-program member, which model/plan.test.ts already pins. retirementActionRequestSchema carries ordinary-withdrawal, Roth-conversion, QCD, and legacy aggregate arms, none of which carries a 529 source or rollover fact, so a 529-to-Roth rollover cannot be expressed as an action. The 15-year account-age test, the 5-year contribution seasoning, the annual 408A(c)(2) room, and the $35,000 lifetime cap share that one absence surface and are folded here rather than registered separately. The annual Roth IRA ceiling for ordinary Roth contributions remains the settled irc-408A-c-2-roth-shares-the-section-219-ceiling record; this record is only the 529(c)(3)(E) path. effectiveFrom is floored at 2026; the enacting applicability is distributions after December 31, 2023.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -12982,7 +13051,7 @@ const registry = {
   'irc-2010-c-3-basic-exclusion-amount-not-modeled': {
     title: 'The 2026 basic exclusion amount is a chapter 11 credit base, not an income-tax deduction',
     statement:
-      'Section 2010(a) allows a credit against the section 2001 estate tax equal to the tentative tax on the applicable exclusion amount. For decedents dying and gifts made after December 31, 2025, the basic exclusion amount under section 2010(c)(3)(A) is $15,000,000; that dollar amount is increased for inflation only for decedents dying in a calendar year after 2026. The applicable exclusion amount is the sum of that basic exclusion and, for a surviving spouse, any deceased spousal unused exclusion. The engine computes no estate tax. The Plan and parameter pack have no basic-exclusion or taxable-estate facts, so no accepted input produces an estate-tax exclusion result. This amount is not the section 151 senior deduction.',
+      'Section 2010(a) allows a credit against the section 2001 estate tax equal to the tentative tax on the applicable exclusion amount. For decedents dying and gifts made after December 31, 2025, the basic exclusion amount under section 2010(c)(3)(A) is $15,000,000; that dollar amount is increased for inflation only for decedents dying in a calendar year after 2026. The applicable exclusion amount is the sum of that basic exclusion and, for a surviving spouse, any deceased spousal unused exclusion. The engine computes no estate tax. The Plan and parameter pack have no basic-exclusion or taxable-estate facts, so no accepted input produces an estate-tax exclusion result.',
     classification: 'outOfScope',
     contraryReading: null,
     errorDirection: null,
@@ -12995,6 +13064,12 @@ const registry = {
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section2010&num=0&edition=prelim',
       quotedText:
         'A credit of the applicable credit amount shall be allowed to the estate of every decedent against the tax imposed by section 2001.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 2010(c)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section2010&num=0&edition=prelim',
+      quotedText:
+        'For purposes of this section, the applicable credit amount is the amount of the tentative tax which would be determined under section 2001(c) if the amount with respect to which such tentative tax is to be computed were equal to the applicable exclusion amount.',
     }, {
       kind: 'statute',
       citation: 'IRC 2010(c)(2)',
@@ -13313,9 +13388,9 @@ const registry = {
       'A negative TIPS inflation adjustment is a deflation adjustment that first reduces the holder\'s interest otherwise includible, allows an ordinary loss only to the extent of prior net interest inclusions, carries any excess forward, and decreases adjusted basis when taken into account. The engine clamps ladder accretion at zero and emits neither the reduction nor the basis decrease.',
     classification: 'approximated',
     contraryReading: null,
-    errorDirection: 'overstatesTax',
+    errorDirection: 'bothDirections',
     conventionRationale:
-      'DEFECT — no behavior change in this registration slice. projection/simulate.ts computes `accretion` as `outstandingFace * Math.max(0, inflFactor - prevInflFactor)`, so a deflation year contributes no negative adjustment, no ordinary-loss carry, and no basis decrease. A paired market path with prior positive inflation followed by deflation drives the gap: the authority reduces current interest (and may permit a bounded ordinary loss), while the engine still reports the coupon as taxable ordinary income. The fixture adds 100,000 of ordinary wages so the tax line remains above zero; the taxpayer exposure therefore runs one way — tax is overstated — and the fixture pins the produced annual MAGI at PRODUCED_TBD until a separately authorized implementation fix changes it.',
+      'DEFECT — no behavior change in this registration slice. projection/simulate.ts computes `accretion` as `outstandingFace * Math.max(0, inflFactor - prevInflFactor)`, so a deflation year contributes no negative adjustment, no ordinary-loss carry, and no basis decrease. A paired market path with prior positive inflation followed by deflation drives the gap: the authority reduces current interest (and may permit a bounded ordinary loss), while the engine still reports the coupon as taxable ordinary income. The fixture adds 100,000 of ordinary wages so the tax line remains above zero and pins the produced annual MAGI at 100,149.67. The income-year exposure overstates tax; the omitted (f)(2) basis decrease leaves basis too high and can understate later gain tax when that basis is recovered, so the direction is both.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'regulation',
