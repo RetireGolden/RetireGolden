@@ -1408,7 +1408,8 @@ through the §86(b)(2)(B) add-back and each program MAGI only through that progr
   `usc-42-1395r-i-4-a-i-irmaa-magi-foreign-exclusion-addback`.
 
 The machine-readable half of this matrix lives in the rule registry:
-`irc-36B-d-2-B-aca-household-magi-composition`, `irc-1411-tax-exempt-interest-outside-both-niit-legs`, and
+`irc-103-a-state-local-bond-interest-exclusion`, `irc-36B-d-2-B-aca-household-magi-composition`,
+`irc-1411-tax-exempt-interest-outside-both-niit-legs`, and
 `irc-57-a-5-private-activity-bond-interest-amt-preference` (added with this section), alongside the existing
 `irc-86-b-2-provisional-income-modified-agi` and `irc-1411-d-modified-agi-foreign-exclusion-addback` records.
 The IRMAA tax-exempt limb is `usc-42-1395r-i-4-a-magi-agi-plus-tax-exempt-interest`; the (A)(i) gap is the

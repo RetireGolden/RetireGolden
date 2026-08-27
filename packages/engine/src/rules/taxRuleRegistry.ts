@@ -792,7 +792,7 @@ const registry = {
     ],
   },
 
-  'irc-170-b-1-C-capital-gain-property-ceiling-not-modelled': {
+  'irc-170-b-1-C-capital-gain-property-ceiling-not-modeled': {
     title: 'The 30 percent capital-gain-property ceiling is not an input or calculation surface',
     statement:
       'Section 170(b)(1)(C) limits certain capital-gain-property contributions to 30 percent of contribution base and orders them after other charitable contributions. The Plan carries one undifferentiated nonnegative charitable amount, not the contributed property\'s gain character, the section 170(b)(1)(A) recipient status, subsection (e)(1)(B) treatment, contribution ordering, or any carryforward. No accepted Plan fact identifies a contribution to which 170(b)(1)(C) applies, so the engine produces no capital-gain-property ceiling figure; a user-entered charitable amount is not such a claim.',
@@ -1346,10 +1346,10 @@ const registry = {
         '(III) a charitable gift annuity (as defined in section 501(m)(5)), but only if such annuity is funded exclusively by qualified charitable distributions and commences fixed payments of 5 percent or greater not later than 1 year from the date of funding.',
     }, {
       kind: 'statute',
-      citation: 'P.L. 117-328, division T, section 307(a)',
-      url: 'https://www.govinfo.gov/content/pkg/PLAW-117publ328/pdf/PLAW-117publ328.pdf',
+      citation: 'IRC 408(d)(8)(F)(iv)(II)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim',
       quotedText:
-        '``(II) the income interest in the split-interest entity is nonassignable.',
+        '(II) the income interest in the split-interest entity is nonassignable.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -1362,10 +1362,10 @@ const registry = {
     ],
   },
 
-  'irc-664-charitable-remainder-trust-payout-and-character-mechanics-not-modelled': {
+  'irc-664-charitable-remainder-trust-payout-and-character-mechanics-not-modeled': {
     title: 'Charitable remainder trust payout, remainder, and distribution-character mechanics are not modelled',
     statement:
-      'Section 664 applies to charitable remainder annuity trusts and unitrusts, exempts those trusts from income tax, and defines their required payout and charitable-remainder conditions. RetireGolden has no charitable-remainder trust entity; no initial or annual trust property value, payout rate or amount, annuitant or life/term, remainder recipient, trust income-category or corpus balance, basis, or trustee distribution. It therefore produces neither a section 664 qualification, exemption, payout, or remainder-value figure nor a section 664(b) beneficiary income-character result. A split-interest QCD is refused before settlement instead of supplying any of those trust facts.',
+      'Section 664 applies to charitable remainder annuity trusts and unitrusts, exempts those trusts from income tax under section 664(c)(1) except for the unrelated-business taxable income excise under section 664(c)(2), and defines their required payout and charitable-remainder conditions. RetireGolden has no charitable-remainder trust entity; no initial or annual trust property value, payout rate or amount, annuitant or life/term, remainder recipient, trust income-category or corpus balance, basis, or trustee distribution. It therefore produces neither a section 664 qualification, exemption, payout, or remainder-value figure nor a section 664(b) beneficiary income-character result. A split-interest QCD is refused before settlement instead of supplying any of those trust facts.',
     classification: 'outOfScope',
     contraryReading: null,
     errorDirection: null,
@@ -1384,6 +1384,12 @@ const registry = {
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section664&num=0&edition=prelim',
       quotedText:
         'A charitable remainder annuity trust and a charitable remainder unitrust shall, for any taxable year, not be subject to any tax imposed by this subtitle.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 664(c)(2)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section664&num=0&edition=prelim',
+      quotedText:
+        'In the case of a charitable remainder annuity trust or a charitable remainder unitrust which has unrelated business taxable income (within the meaning of section 512, determined as if part III of subchapter F applied to such trust) for a taxable year, there is hereby imposed on such trust or unitrust an excise tax equal to the amount of such unrelated business taxable income.',
     }, {
       kind: 'statute',
       citation: 'IRC 664(d)(1)(A)',
@@ -1422,7 +1428,7 @@ const registry = {
     implementedBy: ['packages/engine/src/model/plan.ts'],
   },
 
-  'irc-7520-and-2522-split-interest-valuation-not-modelled': {
+  'irc-7520-and-2522-split-interest-valuation-not-modeled': {
     title: 'Section 7520 and section 2522 split-interest valuation are not modelled',
     statement:
       'Section 7520 values annuity, life-or-term, remainder, and reversionary interests under prescribed tables and a valuation-month interest rate. Section 2522 allows the gift-tax charitable deduction for a retained-property transfer only subject to its stated conditions, including charitable-remainder, pooled-income, guaranteed-annuity, and fixed-percentage forms. RetireGolden has no transfer or valuation date, applicable section 7520 rate, trust property value, payout terms, measuring lives or term, prescribed-table factors, retained interest, gift, or gift-tax calculation, so it produces no section 7520 or section 2522 split-interest valuation or deduction figure.',
@@ -1912,7 +1918,7 @@ const registry = {
   'irc-103-a-state-local-bond-interest-exclusion': {
     title: 'State and local bond interest is excluded from gross income',
     statement:
-      'Except for the section 103(b) private-activity-bond exceptions, interest on a State or local bond is excluded from gross income under IRC 103(a). The engine keeps municipal-bond interest in its separate tax-exempt stream, so it does not enter federal ordinary income, AGI, or federal taxable income.',
+      'Except for the section 103(b) exceptions, interest on a State or local bond is excluded from gross income under IRC 103(a). The engine keeps municipal-bond interest in its separate tax-exempt stream, so the interest itself never enters federal ordinary income, AGI, or federal taxable income by direct inclusion. Municipal-bond interest can still raise AGI indirectly through section 86: it increases provisional income and can enlarge the taxable Social Security inclusion that does enter AGI.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -2547,7 +2553,7 @@ const registry = {
   'irc-402-e-4-B-lump-sum-employer-securities-nua-exclusion': {
     title: 'NUA in employer securities: distribution exclusion and sale treatment',
     statement:
-      'For a lump sum distribution that includes employer-corporation securities, section 402(e)(4)(B) excludes the attributable net unrealized appreciation from gross income for purposes of section 72 unless the taxpayer elects otherwise. Because section 72(t)(1) reaches only the includible portion, excluded NUA is outside the additional-tax base. Notice 98-24 provides that the NUA portion is treated as gain from a capital asset held for more than 18 months regardless of the qualified plan’s holding period, while post-distribution appreciation uses the actual holding period in the distributee’s hands. Not modelled: no plan input or retirement-action type can express employer securities, NUA, the qualified-lump-sum fact, an NUA elect-out, the distribution date, or a later securities sale, so employer-plan withdrawals still classify as basisReturn/ordinaryIncome and still run section 72(t) on the includible ordinary portion without any NUA adjustment.',
+      'For a lump sum distribution that includes employer-corporation securities, section 402(e)(4)(B) excludes the attributable net unrealized appreciation from gross income for purposes of section 72 unless the taxpayer elects otherwise. Because section 72(t)(1) reaches only the includible portion, excluded NUA is outside the additional-tax base. Current sale treatment of that excluded NUA is long-term capital gain without regard to the qualified plan’s holding period; post-distribution appreciation uses the distributee’s actual holding period. Notice 98-24 remains historical authority for that without-regard-to-plan-holding principle, but its “more than 18 months” language is the notice’s 1998-era long-term threshold under TRA 1997, not the 2026 more-than-one-year long-term rule. Not modelled: no plan input or retirement-action type can express employer securities, NUA, the qualified-lump-sum fact, an NUA elect-out, the distribution date, or a later securities sale, so employer-plan withdrawals still classify as basisReturn/ordinaryIncome and still run section 72(t) on the includible ordinary portion without any NUA adjustment.',
     classification: 'outOfScope',
     contraryReading: null,
     errorDirection: null,
@@ -2628,13 +2634,19 @@ const registry = {
       citation: 'IRC 404(a)(3)(A)(i)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section404&num=0&edition=prelim',
       quotedText:
-        'In the taxable year when paid, if the contributions are paid into a stock bonus or profit-sharing trust, and if such taxable year ends within or with a taxable year of the trust with respect to which the trust is exempt under section 501(a), in an amount not in excess of the greater of-',
+        'In the taxable year when paid, if the contributions are paid into a stock bonus or profit-sharing trust, and if such taxable year ends within or with a taxable year of the trust with respect to which the trust is exempt under section 501(a), in an amount not in excess of the greater of- (I) 25 percent of the compensation otherwise paid or accrued during the taxable year to the beneficiaries under the stock bonus or profit-sharing plan, or (II) the amount such employer is required to contribute to such trust under section 401(k)(11) for such year.',
     }, {
       kind: 'statute',
       citation: 'IRC 404(a)(3)(A)(i)(I)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section404&num=0&edition=prelim',
       quotedText:
         '(I) 25 percent of the compensation otherwise paid or accrued during the taxable year to the beneficiaries under the stock bonus or profit-sharing plan, or',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 404(a)(3)(A)(i)(II)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section404&num=0&edition=prelim',
+      quotedText:
+        '(II) the amount such employer is required to contribute to such trust under section 401(k)(11) for such year.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -4081,7 +4093,7 @@ const registry = {
   },
 
   'usc-42-1395r-i-4-a-magi-agi-plus-tax-exempt-interest': {
-    title: 'IRMAA MAGI is AGI plus tax-exempt interest',
+    title: 'IRMAA MAGI tax-exempt-interest addback',
     statement:
       'For IRMAA, modified adjusted gross income means adjusted gross income as defined in section 62, increased by interest received or accrued during the taxable year that is exempt from tax. Municipal-bond interest can therefore raise the IRMAA income figure without entering federal AGI. The independent (A)(i) without-regard addback for sections 135, 911, 931, and 933 is registered separately at usc-42-1395r-i-4-a-i-irmaa-magi-foreign-exclusion-addback.',
     classification: 'settled',
@@ -4116,7 +4128,8 @@ const registry = {
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'understatesTax',
-    conventionRationale: null,
+    conventionRationale:
+      'Matches the shipped usc-42-1395r-* premium-direction pattern: understatesTax names fisc exposure that includes the Medicare premium surcharge (the type’s fisc referent already spans that channel; the statement’s premium understatement is the same sign).',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -5637,7 +5650,7 @@ const registry = {
     contraryReading: null,
     errorDirection: 'overstatesTax',
     conventionRationale:
-      'This is the highest-value omission in the itemized set for this engine audience, because the deduction is largest exactly when income is drawn down to pay care costs. It also interacts with the itemize election: a year of heavy medical spending can flip a household from the standard deduction to itemizing, which the engine cannot see, so the error is not confined to households that already itemize. IRC 213(b), 213(d)(9), and 213(d)(10) plus Rev. Proc. 2025-32 section 4.27 are folded onto this record as input-granularity, not separate approximations: there is no drug, cosmetic, or LTC-premium tax input on which those filters could run. Omitting the whole deduction overstates tax whenever any qualifying medical remains after those filters; the filters never reverse the sign, because they only reduce the statutory deduction toward the engine\'s zero. The produced pin is the existing describeRule fixture (statute 124,000 versus engineOmitsMedicalEntirely 59,000). Rev. Proc. 2025-32 section 4.27 restates the 2026 attained-age caps as a table (40 or less $500; more than 40 but not more than 50 $930; more than 50 but not more than 60 $1,860; more than 60 but not more than 70 $4,960; more than 70 $6,200). Those figures are not rewritten into quotedText because the revenue procedure presents them as a table; the quotation is the introducing sentence only.',
+      'This is the highest-value omission in the itemized set for this engine audience, because the deduction is largest exactly when income is drawn down to pay care costs. It also interacts with the itemize election: a year of heavy medical spending can flip a household from the standard deduction to itemizing, which the engine cannot see, so the error is not confined to households that already itemize. IRC 213(b), 213(d)(9), and 213(d)(10) are folded onto this record as input-granularity, not separate approximations: there is no drug, cosmetic, or LTC-premium tax input on which those filters could run. Omitting the whole deduction overstates tax whenever any qualifying medical remains after those filters; the filters never reverse the sign, because they only reduce the statutory deduction toward the engine\'s zero. The produced pin is the existing describeRule fixture (statute 124,000 versus engineOmitsMedicalEntirely 59,000). The annually restated 2026 attained-age caps live on the companion record irc-213-d-10-eligible-ltc-premium-caps-2026.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -5673,23 +5686,44 @@ const registry = {
       citation: 'IRC 213(d)(10)(A)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section213&num=0&edition=prelim',
       quotedText:
-        'For purposes of this section, the term "eligible long-term care premiums" means the amount paid during a taxable year for any qualified long-term care insurance contract (as defined in section 7702B(b)) covering an individual, to the extent such amount does not exceed the limitation determined under the following table: In the case of an individual with an attained age before the close of the taxable year of: The limitation is: 40 or less $ 200 More than 40 but not more than 50 375 More than 50 but not more than 60 750 More than 60 but not more than 70 2,000 More than 70 2,500.',
+        'For purposes of this section, the term "eligible long-term care premiums" means the amount paid during a taxable year for any qualified long-term care insurance contract (as defined in section 7702B(b)) covering an individual, to the extent such amount does not exceed the limitation determined under the following table: In the case of an individual with an attained age before the close of the taxable year of: The limitation is:',
     }, {
       kind: 'statute',
       citation: 'IRC 213(d)(10)(B)(i)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section213&num=0&edition=prelim',
       quotedText:
         'In the case of any taxable year beginning in a calendar year after 1997, each dollar amount contained in subparagraph (A) shall be increased by the medical care cost adjustment of such amount for such calendar year. If any increase determined under the preceding sentence is not a multiple of $10, such increase shall be rounded to the nearest multiple of $10.',
-    }, {
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/tax/federalTax.ts',
+      'packages/engine/src/model/plan.ts',
+    ],
+  },
+
+  'irc-213-d-10-eligible-ltc-premium-caps-2026': {
+    title: '2026 eligible long-term care premium attained-age caps',
+    statement:
+      'For taxable years beginning in 2026, Rev. Proc. 2025-32 section 4.27 restates the section 213(d)(10) attained-age limitations on eligible long-term care premiums includible as medical care. The engine has no LTC-premium tax input, so those caps never run; they remain disclosed here on the annually indexed cadence.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The 2026 attained-age caps ($500 / $930 / $1,860 / $4,960 / $6,200) are read from the revenue procedure’s table rather than rewritten into quotedText. The quotation carries the introducing sentence; the table rows are not linearized into prose. Companion to irc-213-a-medical-expense-deduction, which folds the missing medical-input filter without publishing these dollars on a staticStatute record.',
+    jurisdiction: 'federal',
+    authority: [{
       kind: 'irsNotice',
       citation: 'Rev. Proc. 2025-32, section 4.27',
       url: 'https://www.irs.gov/pub/irs-drop/rp-25-32.pdf',
       quotedText:
         'For taxable years beginning in 2026, the limitations under § 213(d)(10), regarding eligible long-term care premiums includible in the term "medical care" are as follows:',
     }],
-    volatility: 'staticStatute',
+    volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
-    effectiveThrough: null,
+    effectiveThrough: 2026,
     verifiedOn: '2026-08-27',
     implementedBy: [
       'packages/engine/src/tax/federalTax.ts',
@@ -5725,7 +5759,10 @@ const registry = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-27',
-    implementedBy: ['packages/engine/src/model/plan.ts'],
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
   },
 
   'irc-199A-a-qualified-business-income-deduction-not-modeled': {
@@ -5755,6 +5792,18 @@ const registry = {
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section199A&num=0&edition=prelim',
       quotedText:
         'Except as otherwise provided in subsection (g)(2)(B), taxable income shall be computed without regard to section 68 and without regard to any deduction allowable under this section.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 199A(i)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section199A&num=0&edition=prelim',
+      quotedText:
+        'In the case of an applicable taxpayer for any taxable year, the deduction allowed under subsection (a) for the taxable year shall be equal to the greater of- (A) the amount of such deduction determined without regard to this subsection, or (B) $400.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 199A(i)(2)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section199A&num=0&edition=prelim',
+      quotedText:
+        'The term "applicable taxpayer" means, with respect to any taxable year, a taxpayer whose aggregate qualified business income with respect to all active qualified trades or businesses of the taxpayer for such taxable year is at least $1,000.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,

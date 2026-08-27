@@ -113,7 +113,7 @@ State brackets are a separate question and are still held nominal (see `params/s
   adds the excess over regular tax when AMT binds. This is a conversion-risk screen, not a Form 6251
   substitute.
 - **IRMAA:** Medicare Part B/D surcharges from **MAGI two years prior** by default (a conversion at 63+ hits
-  Medicare pricing), subject to the statute’s clause (ii) and subparagraph (C) exceptions; the brackets are
+  Medicare pricing), subject to the statute’s 42 U.S.C. 1395r(i)(4)(B)(ii) and (4)(C) exceptions; the brackets are
   cliffs, so bracket-edge warnings show "$1 over costs $X/yr"
   ([medicare.ts](../../packages/engine/src/tax/medicare.ts)). The **top** tier ($500k/$750k) is frozen through
   premium year 2027 and then resumes indexing off an August 2026 base; the four tiers beneath it index without

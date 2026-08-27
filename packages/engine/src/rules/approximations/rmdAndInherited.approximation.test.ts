@@ -2,7 +2,8 @@
  * Pins the remaining `approximated` registry records that govern required
  * minimum distributions and inherited traditional accounts, plus settled
  * fixtures that share this file (the §4974 reclassification and the first-year
- * April 1 deferral default, whose elected receipt-year companion lives under
+ * April 1 deferral default plus the elected owned-IRA April 1 limb; the
+ * employer-plan elected receipt-year companion lives under
  * irc-402-a-employer-plan-distribution-receipt-year-taxability).
  *
  * An approximated record is a claim about a figure this engine knowingly gets
@@ -25,6 +26,7 @@ import { describeRule } from '../describeRule.js'
 
 import { packForYear } from '../../params/index.js'
 import { createFlatTaxCalculator } from '../../projection/flatTax.js'
+import { simulatePlan } from '../../projection/simulate.js'
 import { inheritedForcedAmount } from '../../strategies/inheritedIra.js'
 import { requiredMinimumDistribution } from '../../rmd/rmd.js'
 import type { Account, Plan } from '../../model/plan.js'
@@ -33,6 +35,7 @@ import {
   runPlan,
   singlePersonPlan,
   traditionalAccount,
+  validatePlan,
 } from '../../testing/planFixtures.js'
 
 const { pack } = packForYear(2026)
@@ -57,8 +60,9 @@ const FIRST_YEAR_AMOUNT = START_BALANCE / UNIFORM_LIFETIME_AT_73
  * treas-reg-1-401-a-9-5-a-3-first-distribution-calendar-year). The engine now
  * offers an opt-in `rmdFirstYearDeferrals` election; this fixture pins the
  * DEFAULT path, which books the first-year amount in the attainment year.
- * Elected April 1 receipt-year income recognition is covered by
- * irc-402-a-employer-plan-distribution-receipt-year-taxability.
+ * Elected April 1 receipt-year income recognition for an employer plan is
+ * covered by irc-402-a-employer-plan-distribution-receipt-year-taxability; the
+ * elected IRA limb is pinned in the sibling describeRule below.
  */
 describeRule('irc-401-a-9-C-i-first-year-april-1-deferral', {
   readings: {
@@ -90,6 +94,72 @@ describeRule('irc-401-a-9-C-i-first-year-april-1-deferral', {
     // Under an elected deferral the 2027 row would carry the 2026 amount as
     // well; the default does not invent that spike.
     expect(followingYear.rmd).toBeLessThan(attainmentYear.rmd * 1.5)
+  })
+})
+
+const UNIFORM_LIFETIME_AT_74 = 25.5
+const SECOND_YEAR_AMOUNT = START_BALANCE / UNIFORM_LIFETIME_AT_74
+
+/**
+ * Opt-in April 1 election on an owned IRA: 2026 books nothing; 2027 carries
+ * both the deferred first-year amount and the separately required second-year
+ * amount (Dec 31 2026 balance still START_BALANCE under zero return / zero
+ * spending).
+ */
+describeRule('irc-401-a-9-C-i-first-year-april-1-deferral', {
+  readings: {
+    electedDefersIraToReceiptYear: {
+      rmd2026: 0,
+      magi2026: 0,
+      rmd2027: FIRST_YEAR_AMOUNT + SECOND_YEAR_AMOUNT,
+      magi2027: FIRST_YEAR_AMOUNT + SECOND_YEAR_AMOUNT,
+    },
+    rejectedBooksIraInAttainmentYear: {
+      rmd2026: FIRST_YEAR_AMOUNT,
+      magi2026: FIRST_YEAR_AMOUNT,
+      rmd2027: SECOND_YEAR_AMOUNT,
+      magi2027: SECOND_YEAR_AMOUNT,
+    },
+  },
+  accepted: 'electedDefersIraToReceiptYear',
+  note: 'elected owned-IRA April 1 deferral',
+}, ({ accepted, readings }) => {
+  it('holds the owned-IRA first-year amount until the following receipt year when elected', () => {
+    const plan = singlePersonPlan({ dob: OWNER_DOB, planningAge: OWNER_PLANNING_AGE })
+    plan.accounts = [
+      cashAccount('cash', 1_000_000),
+      traditionalAccount('ira', START_BALANCE),
+    ]
+    const result = simulatePlan(validatePlan(plan), {
+      startYear: 2026,
+      horizonEndYear: 2027,
+      taxCalculator: noTax,
+      rmdFirstYearDeferrals: [{
+        distributionCalendarYear: 2026,
+        applicablePlan: { kind: 'ownedTraditionalIras', payeePersonId: 'p1' },
+      }],
+    })
+    const y2026 = result.years.find((year) => year.year === 2026)!
+    const y2027 = result.years.find((year) => year.year === 2027)!
+    const observed = {
+      rmd2026: y2026.rmd,
+      magi2026: y2026.magi,
+      rmd2027: y2027.rmd,
+      magi2027: y2027.magi,
+    }
+
+    expect(observed.rmd2026).toBe(accepted.rmd2026)
+    expect(observed.magi2026).toBeCloseTo(accepted.magi2026, 8)
+    expect(observed.rmd2026).not.toBeCloseTo(
+      readings.rejectedBooksIraInAttainmentYear.rmd2026,
+      8,
+    )
+    expect(observed.rmd2027).toBeCloseTo(accepted.rmd2027, 8)
+    expect(observed.magi2027).toBeCloseTo(accepted.magi2027, 8)
+    expect(observed.rmd2027).not.toBeCloseTo(
+      readings.rejectedBooksIraInAttainmentYear.rmd2027,
+      8,
+    )
   })
 })
 

@@ -2268,12 +2268,18 @@ describe('contributions', () => {
   })
 
   // IRC 223(b)(2) supplies the self-only and family coverage tiers, while
-  // Rev. Proc. 2025-19 publishes the 2026 adjusted annual limits. The old
+  // Rev. Proc. 2025-19 publishes the 2026 adjusted annual limits. The plan has
+  // no HDHP coverage election; irc-223-b-2-7 approximates household size as
+  // family coverage, so the observed 8,750 is pack.contributionLimits.hsaFamily
+  // under that substitution rather than a coverage-type election. The old
   // statutory base amounts ($2,250/$4,500) are the rejected reading; using
   // them would understate both a solo HSA and the total family contribution.
   describeRule('irc-223-b-2-hsa-base-limits-2026', {
     readings: {
-      revProc2026: { selfOnly: 4_400, family: 8_750 },
+      revProc2026: {
+        selfOnly: 4_400,
+        family: year2026.contributionLimits.hsaFamily,
+      },
       unadjustedStatutoryAmounts: { selfOnly: 2_250, family: 4_500 },
     },
     accepted: 'revProc2026',
@@ -2338,15 +2344,16 @@ describe('contributions', () => {
   // IRC 223(a) makes an allowed HSA payment an above-the-line deduction. The
   // rejected reading leaves the deposit in AGI; a $4,400 contribution against
   // $100,000 of wages therefore gives federal AGI/MAGI 95,600 rather than
-  // 100,000.
+  // 100,000. currentYearAca also pins ACA householdMagi falling by the same
+  // $4,400.
   describeRule('irc-223-a-hsa-contribution-deduction-reduces-agi', {
     readings: {
-      aboveTheLineDeduction: { agi: 95_600, magi: 95_600 },
-      contributionNotDeducted: { agi: 100_000, magi: 100_000 },
+      aboveTheLineDeduction: { agi: 95_600, magi: 95_600, householdMagi: 95_600 },
+      contributionNotDeducted: { agi: 100_000, magi: 100_000, householdMagi: 100_000 },
     },
     accepted: 'aboveTheLineDeduction',
   }, ({ accepted, readings }) => {
-    it('reduces realized MAGI by the allowed HSA contribution', () => {
+    it('reduces realized MAGI and ACA household MAGI by the allowed HSA contribution', () => {
       const withHsa = basePlan()
       withHsa.household.people[0]! = {
         ...withHsa.household.people[0]!,
@@ -2361,8 +2368,10 @@ describe('contributions', () => {
           balance: 0, annualReturnPct: 0, annualContribution: 4_400,
         } as never,
       ]
+      currentYearAca(withHsa)
       const withoutHsa = structuredClone(withHsa)
       withoutHsa.accounts = [cash(1_000_000)]
+      currentYearAca(withoutHsa)
 
       const withYear = simulatePlan(validate(withHsa), {
         startYear: 2026, horizonEndYear: 2026, taxCalculator: createFederalTaxCalculator(),
@@ -2373,6 +2382,7 @@ describe('contributions', () => {
       const observed = {
         agi: withYear.advisoryFederalTax!.detail.agi,
         magi: withYear.magi,
+        householdMagi: withYear.aca!.householdMagi!,
       }
 
       expect(observed).toEqual(accepted)
@@ -2380,8 +2390,10 @@ describe('contributions', () => {
       expect({
         agi: withoutYear.advisoryFederalTax!.detail.agi,
         magi: withoutYear.magi,
+        householdMagi: withoutYear.aca!.householdMagi!,
       }).toEqual(readings.contributionNotDeducted)
       expect(withoutYear.magi - withYear.magi).toBe(4_400)
+      expect(withoutYear.aca!.householdMagi! - withYear.aca!.householdMagi!).toBe(4_400)
     })
   })
 })
@@ -2937,16 +2949,25 @@ describe('federal tax integration', () => {
 describe('healthcare and penalties', () => {
   // Independent worksheet: first-year RMD = 500,000 / 26.5; the qualified
   // annuity leaves 8,000 timely distributed, so the §4974 excise is
-  // (500,000 / 26.5 - 8,000) × 25%. IRC 275(a)(6) leaves the correct MAGI at
+  // (500,000 / 26.5 - 8,000) × 25%. IRC 275(a)(6) leaves federal AGI at
   // 8,000; deducting the chapter 43 tax would instead reduce it by that excise.
+  // Taxable income is zero after the standard and age/senior deductions — still
+  // not 8,000 minus the excise.
   describeRule('irc-275-a-6-chapter-43-excise-taxes-nondeductible', {
     readings: {
-      chapter43ExciseDoesNotReduceMagi: 8_000,
-      rejectedExciseDeductionReducesMagi:
-        8_000 - (500_000 / 26.5 - 8_000) * 0.25,
+      chapter43ExciseDoesNotReduceFederalBase: {
+        agi: 8_000,
+        taxableIncome: 0,
+        magi: 8_000,
+      },
+      rejectedExciseDeductionReducesFederalBase: {
+        agi: 8_000 - (500_000 / 26.5 - 8_000) * 0.25,
+        taxableIncome: 0,
+        magi: 8_000 - (500_000 / 26.5 - 8_000) * 0.25,
+      },
     },
-    accepted: 'chapter43ExciseDoesNotReduceMagi',
-    note: 'RMD-shortfall excise remains outside AGI and MAGI',
+    accepted: 'chapter43ExciseDoesNotReduceFederalBase',
+    note: 'RMD-shortfall excise remains outside AGI, taxable income, and MAGI',
   }, ({ accepted, readings }) => {
     it('keeps a chapter 43 RMD-shortfall excise out of the income-tax base', () => {
       const plan = basePlan()
@@ -2978,16 +2999,25 @@ describe('healthcare and penalties', () => {
       const year = simulatePlan(validate(plan), {
         startYear: 2026,
         horizonEndYear: 2026,
-        taxCalculator: noTax,
+        taxCalculator: createFederalTaxCalculator(),
       }).years[0]!
       const excise = (500_000 / 26.5 - 8_000) * 0.25
+      const observed = {
+        agi: year.advisoryFederalTax!.detail.agi,
+        taxableIncome: year.advisoryFederalTax!.detail.taxableIncome,
+        magi: year.magi,
+      }
 
       expect(year.rmd).toBeCloseTo(8_000, 8)
       expect(year.rmdShortfallExciseTax).toBeCloseTo(excise, 8)
       expect(year.penalties).toBeCloseTo(excise, 8)
-      expect(year.magi).toBeCloseTo(accepted, 8)
-      expect(year.magi).not.toBeCloseTo(
-        readings.rejectedExciseDeductionReducesMagi,
+      expect(observed).toEqual(accepted)
+      expect(observed.agi).not.toBeCloseTo(
+        readings.rejectedExciseDeductionReducesFederalBase.agi,
+        8,
+      )
+      expect(observed.magi).not.toBeCloseTo(
+        readings.rejectedExciseDeductionReducesFederalBase.magi,
         8,
       )
     })

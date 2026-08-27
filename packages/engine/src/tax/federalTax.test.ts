@@ -267,9 +267,11 @@ describe('modified adjusted gross income', () => {
 })
 
 describe('IRC 103 municipal-bond interest exclusion', () => {
-  // IRC 103(a) excludes state and local bond interest from gross income. The
-  // rejected reading treats the same $50,000 as ordinary interest, raising
-  // AGI and taxable income by the amount the statute excludes.
+  // IRC 103(a) excludes state and local bond interest from gross income by
+  // direct inclusion. Munis can still raise AGI only through section 86
+  // taxable Social Security. The rejected reading treats the same $50,000 as
+  // ordinary interest, raising AGI and taxable income by the amount the
+  // statute excludes.
   describeRule('irc-103-a-state-local-bond-interest-exclusion', {
     readings: {
       excludedFromGrossIncome: { agi: 190_000, taxableIncome: 173_900 },
@@ -277,7 +279,7 @@ describe('IRC 103 municipal-bond interest exclusion', () => {
     },
     accepted: 'excludedFromGrossIncome',
   }, ({ accepted, readings }) => {
-    it('keeps municipal-bond interest out of federal AGI and taxable income', () => {
+    it('keeps municipal-bond interest out of federal AGI and taxable income by direct inclusion', () => {
       const result = computeFederalTax(input({
         ordinaryIncome: 190_000,
         taxExemptInterest: 50_000,
@@ -286,6 +288,38 @@ describe('IRC 103 municipal-bond interest exclusion', () => {
 
       expect(observed).toEqual(accepted)
       expect(observed).not.toEqual(readings.includedInGrossIncome)
+    })
+
+    // Section 86 path: munis raise provisional income and therefore the
+    // taxable-SS inclusion that enters AGI, without the interest itself
+    // entering AGI. Single, $24,000 of benefits and $20,000 of munis:
+    //   with munis: taxable SS $3,500 → AGI $3,500
+    //   without munis: taxable SS $0 → AGI $0
+    //   if munis were ordinary income: AGI would include the $20,000
+    it('raises AGI only by the taxable-Social-Security increment when munis enter provisional income', () => {
+      const withMunis = computeFederalTax(input({
+        ssBenefits: 24_000,
+        taxExemptInterest: 20_000,
+      }))
+      const withoutMunis = computeFederalTax(input({
+        ssBenefits: 24_000,
+      }))
+      const asOrdinaryInterest = computeFederalTax(input({
+        ordinaryIncome: 20_000,
+        ssBenefits: 24_000,
+      }))
+
+      expect(withMunis.taxableSocialSecurity).toBeCloseTo(3_500, 6)
+      expect(withoutMunis.taxableSocialSecurity).toBe(0)
+      expect(withMunis.agi).toBeCloseTo(3_500, 6)
+      expect(withoutMunis.agi).toBe(0)
+      // AGI moved only by the taxable-SS increment, not by the $20,000 itself.
+      expect(withMunis.agi - withoutMunis.agi).toBeCloseTo(
+        withMunis.taxableSocialSecurity - withoutMunis.taxableSocialSecurity,
+        6,
+      )
+      expect(withMunis.agi).toBeLessThan(asOrdinaryInterest.agi)
+      expect(asOrdinaryInterest.agi).toBeGreaterThan(20_000)
     })
   })
 })
