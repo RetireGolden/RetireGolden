@@ -12867,6 +12867,22 @@ const registry = {
 // declaration-serialization limit (TS7056) under the build config.
 } satisfies Record<string, TaxRuleRecord>
 
+// Compile-time proof that `satisfies` (without `as const`) keeps the
+// union-typed fields literal: contextual typing against a union of literals
+// blocks widening, so classification stays 'approximated' (not string) and
+// describeRule's produced-pin conditionals keep working. If a future edit
+// reintroduces widening, these lines fail to compile before any fixture does.
+type _ApproximatedStaysLiteral =
+  (typeof registry)['poms-rs-00615-320-rib-lim-after-survivor-reduction']['classification'] extends 'approximated'
+    ? true
+    : never
+type _SettledStaysLiteral =
+  (typeof registry)['irc-1211-b-capital-loss-ordinary-offset']['classification'] extends 'settled'
+    ? true
+    : never
+const _classificationLiteralGuards: [_ApproximatedStaysLiteral, _SettledStaysLiteral] = [true, true]
+void _classificationLiteralGuards
+
 export const TAX_RULE_REGISTRY = Object.freeze(registry)
 
 export type TaxRuleId = keyof typeof TAX_RULE_REGISTRY
