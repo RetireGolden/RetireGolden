@@ -1379,8 +1379,8 @@
       "verifiedOn": "2026-08-27",
       "dueOn": "2027-08-27",
       "implementedBy": [
-        "packages/engine/src/actions/taxableWithdrawalCharacter.ts",
         "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/tax/federalTax.ts"
       ],
       "fixtureFiles": [

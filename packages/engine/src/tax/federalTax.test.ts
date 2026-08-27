@@ -615,7 +615,11 @@ describe('optimizer flat preferential-rate approximation', () => {
     it('prices a twenty-percent-layer marginal dollar at 15 percent inside the linearized solve', () => {
       const plan = optimizerTwentyPercentFixturePlan()
       const wages = 16_100
-      const baseGain = 600_000
+      expect(plan.accounts[0]).toMatchObject({ balance: 600_000, costBasis: 0 })
+      expect(plan.incomes[0]).toMatchObject({ annualGross: wages })
+      const taxable = plan.accounts[0]!
+      if (taxable.type !== 'taxable') throw new Error('expected taxable account')
+      const baseGain = taxable.balance - taxable.costBasis
       const withoutExtra = computeFederalTax(input({ ordinaryIncome: wages, capitalGains: baseGain }))
       const withExtra = computeFederalTax(input({ ordinaryIncome: wages, capitalGains: baseGain + 1 }))
       const statutoryMarginal = withExtra.capitalGainsTax - withoutExtra.capitalGainsTax
@@ -632,20 +636,107 @@ describe('optimizer flat preferential-rate approximation', () => {
 })
 
 describe('wash-sale disallowance approximation', () => {
-  // A $10,000 taxable-sale loss with ordinary income: statute under a wash sale
-  // allows $0 of that loss against ordinary income; the engine deducts the
-  // section 1211(b) $3,000 allowance.
-  describeRule('irc-1091-a-wash-sale-thirty-day-window', {
-    readings: { washSaleDisallowsDeduction: 0, engineDeductsLoss: 3_000 },
-    accepted: 'washSaleDisallowsDeduction',
-    produced: 'engineDeductsLoss',
-  }, ({ accepted, produced }) => {
-    it('deducts a realized taxable-sale loss the wash-sale rule would disallow', () => {
-      const result = applyCapitalLossCarryforward(0, 80_000, -10_000, 3_000)
+  // One engine input: taxable $40,000 / basis $50,000 (embedded $10,000 loss),
+  // sold in full in year one. Wages ($80,000) absorb the section 1211(b) $3,000
+  // ordinary offset; the one-time goal is wages + balance so the wage stream
+  // cannot fund the spend alone and the taxable account must be sold in full.
+  // Pre-Medicare (age 60) so no premium drain. The Plan cannot express a
+  // replacement purchase inside the 61-day window — that collapse is the
+  // approximation.
+  //
+  // Authority-side paired limbs (same sale; the Plan cannot say whether a
+  // substantially identical replacement was bought):
+  //
+  // - replacementInsideSixtyOneDayWindow: §1091(a) disallows the loss → $0
+  //   deductible against ordinary income.
+  // - noReplacementPurchase: the loss is allowed → $3,000 section 1211(b)
+  //   ordinary offset.
+  //
+  // produced applies the single observed ordinary-offset figure to both limbs.
+  const WASH_SALE_BALANCE = 40_000
+  const WASH_SALE_BASIS = 50_000
+  const WASH_SALE_LOSS = WASH_SALE_BALANCE - WASH_SALE_BASIS
+  const WASH_SALE_WAGES = 80_000
 
-      expect(result.usedAgainstOrdinary).toBe(produced)
-      expect(result.usedAgainstOrdinary).not.toBe(accepted)
-      expect(result.remaining).toBe(7_000)
+  function washSaleSimulatePlan(): Plan {
+    const plan = createEmptyPlan({
+      newId: () => 'wash-sale-1091-fixture',
+      now: () => new Date('2026-01-01T00:00:00.000Z'),
+    })
+    plan.household.people[0] = {
+      id: 'p1',
+      name: 'Pat',
+      dob: '1966-06-15',
+      sex: 'average',
+      retirementAge: null,
+      longevity: { planningAge: 90, source: 'manual' },
+    }
+    plan.assumptions.inflationPct = 0
+    plan.assumptions.defaultReturnPct = 0
+    plan.expenses.baseAnnual = 0
+    plan.expenses.oneTimeGoals = [{
+      id: 'force-full-sale',
+      label: 'Force full taxable sale',
+      year: 2026,
+      amount: WASH_SALE_WAGES + WASH_SALE_BALANCE,
+    }]
+    plan.incomes = [{
+      type: 'wages',
+      id: 'wash-sale-wages',
+      personId: 'p1',
+      annualGross: WASH_SALE_WAGES,
+      endAge: null,
+      realGrowthPct: 0,
+    }]
+    plan.accounts = [{
+      type: 'taxable',
+      id: 'brokerage',
+      name: 'Brokerage',
+      ownerPersonId: null,
+      annualReturnPct: null,
+      balance: WASH_SALE_BALANCE,
+      costBasis: WASH_SALE_BASIS,
+      interestYieldPct: 0,
+      dividendYieldPct: 0,
+      qualifiedRatio: 0,
+      reinvestDividends: true,
+      annualContribution: 0,
+    }]
+    return plan
+  }
+
+  describeRule('irc-1091-a-wash-sale-thirty-day-window', {
+    readings: {
+      washSaleDeductionDependsOnReplacement: {
+        replacementInsideSixtyOneDayWindow: 0,
+        noReplacementPurchase: 3_000,
+      },
+      engineDeductsWithoutReplacementFact: {
+        replacementInsideSixtyOneDayWindow: 3_000,
+        noReplacementPurchase: 3_000,
+      },
+    },
+    accepted: 'washSaleDeductionDependsOnReplacement',
+    produced: 'engineDeductsWithoutReplacementFact',
+  }, ({ accepted, produced }) => {
+    it('deducts a realized taxable-sale loss without a replacement-purchase fact', () => {
+      const plan = validatePlan(washSaleSimulatePlan())
+      const result = simulatePlan(plan, {
+        startYear: 2026,
+        horizonEndYear: 2026,
+        taxCalculator: createFederalTaxCalculator(),
+      })
+      const year = result.years.find((y) => y.year === 2026)!
+      expect(year.realizedGains).toBe(WASH_SALE_LOSS)
+
+      const observed = year.capitalLossUsedAgainstOrdinary
+      const engineProjection = {
+        replacementInsideSixtyOneDayWindow: observed,
+        noReplacementPurchase: observed,
+      }
+
+      expect(engineProjection).toEqual(produced)
+      expect(engineProjection).not.toEqual(accepted)
     })
   })
 })

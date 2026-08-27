@@ -1905,7 +1905,7 @@ const registry = {
     contraryReading: null,
     errorDirection: 'bothDirections',
     conventionRationale:
-      'Approximated rather than out of scope because the engine emits a realized gain or loss for every taxable sale and deducts net losses through applyCapitalLossCarryforward; nothing here fails closed. The plan has an aggregate taxable-account balance and cost basis but no security or lot identity, acquisition or disposition date, replacement purchase, contract or option, substantially-identical determination, or dealer-status fact, so a wash-sale cannot be identified and every realized loss is allowed. Understating tax in the sale year and over- or under-stating it later through missing replacement-basis adjustments is why the direction cannot be narrowed — the same rationale shape as treas-reg-1-1012-1-c-lot-basis-and-holding-period.',
+      'Approximated rather than out of scope because the engine emits a realized gain or loss for every taxable sale and deducts net losses through the capital-loss path in simulate.ts; nothing here fails closed. The accepted Plan surface is model/plan.ts: a taxable account carries aggregate balance and cost basis, but no security or lot identity, acquisition or disposition date, replacement purchase, contract or option, substantially-identical determination, or dealer-status fact, so a wash-sale cannot be identified and every realized loss is allowed. The companion fixture drives one taxable account (basis above balance) through simulatePlan with a year-one one-time goal forcing its full sale and wages high enough to absorb the section 1211(b) ordinary offset, then stands that single observed ordinary-offset figure against both authority limbs: (1) replacement inside the 61-day window (deduction disallowed → $0) and (2) no replacement purchase (loss allowed → $3,000). The Plan cannot express a replacement purchase, so the annual projection observably deducts $3,000 under both limbs — that collapse is the approximation. Understating tax in the sale year and over- or under-stating it later through missing replacement-basis adjustments is why the direction cannot be narrowed — the same rationale shape as treas-reg-1-1012-1-c-lot-basis-and-holding-period.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -1919,8 +1919,8 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-27',
     implementedBy: [
+      'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/tax/federalTax.ts',
-      'packages/engine/src/actions/taxableWithdrawalCharacter.ts',
       'packages/engine/src/model/plan.ts',
     ],
   },
@@ -1992,12 +1992,12 @@ const registry = {
   'irc-1400z-2-qof-deferral-and-ten-year-basis-election': {
     title: 'Qualified opportunity fund investment defers eligible gain and can receive a ten-year basis election',
     statement:
-      'For elections on sales or exchanges on or before December 31, 2026 (the legacy limb), a taxpayer may elect to exclude eligible gain to the amount invested in a qualified opportunity fund within 180 days, no new election may be made after that date, and deferred gain is included at the earlier of disposition or December 31, 2026. Pub. L. 119-21 (OBBBA sec. 70421) amended section 1400Z-2 for amounts invested after December 31, 2026 into a permanent regime: the new-election cutoff is removed, deferred gain is included at the earlier of disposition or five years after the QOF investment, and a qualifying investment held at least 10 years can still elect fair-market-value basis (with the amended (c) limbs). Not modelled: the plan has no qualified-opportunity-fund account or election, eligible-sale or unrelated-person facts, investment amount or date, deferred-gain basis, or ten-year holding-period fact.',
+      'For elections on sales or exchanges on or before December 31, 2026 (the legacy limb), a taxpayer may elect to exclude eligible gain to the amount invested in a qualified opportunity fund within 180 days, no new election may be made after that date, and deferred gain is included at the earlier of disposition or December 31, 2026. Pub. L. 119-21 (OBBBA sec. 70421) amended section 1400Z-2 for amounts invested after December 31, 2026 into a permanent regime: the amended (a)(2) carries no December 31, 2026 bar (only the prior-election-in-effect limit), deferred gain is included at the earlier of disposition or five years after the QOF investment, and a qualifying investment held at least 10 years can still elect fair-market-value basis (with the amended (c) limbs). Not modelled: the plan has no qualified-opportunity-fund account or election, eligible-sale or unrelated-person facts, investment amount or date, deferred-gain basis, or ten-year holding-period fact.',
     classification: 'outOfScope',
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'One record keeps both limbs quote-carried from the staged compiled text. The body still prints the pre-2027 December 31, 2026 election and inclusion cutoffs; the Amendment of Section note carries the Pub. L. 119-21 post-2026 permanent text (rolling five-year deferral, election without a new-sale cutoff, qualified rural opportunity fund). volatility is staticStatute because the program is permanent after the amending act — sunsetting would fit only a legacy-only record — and the legacy cutoff stays in the statement rather than effectiveThrough, which moots a dueOn-after-cutoff alarm for a still-open permanent regime.',
+      'One record keeps both limbs quote-carried from the staged compiled text. The body still prints the pre-2027 December 31, 2026 election and inclusion cutoffs; the Amendment of Section note carries the Pub. L. 119-21 post-2026 permanent text (rolling five-year deferral, amended (a)(2) without a new-sale cutoff, qualified rural opportunity fund). volatility is staticStatute because the program is permanent after the amending act — sunsetting would fit only a legacy-only record — and the legacy cutoff stays in the statement rather than effectiveThrough, which moots a dueOn-after-cutoff alarm for a still-open permanent regime.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -2018,11 +2018,17 @@ const registry = {
       quotedText:
         'Gain to which subsection (a)(1)(B) applies shall be included in income in the taxable year which includes the earlier of- (A) the date on which such investment is sold or exchanged, or (B) December 31, 2026.',
     }, {
-      kind: 'statute',
-      citation: '26 U.S.C. 1400Z-2, Editorial Notes, Amendments (Pub. L. 119-21, § 70421 - post-2026 (b)(1))',
+      kind: 'legislativeHistory',
+      citation: 'Amendment note to IRC 1400Z-2, P.L. 119-21 sec. 70421 - post-2026 (a)(2)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1400Z-2&num=0&edition=prelim',
       quotedText:
-        '"(1) Year of inclusion "Gain to which subsection (a)(1)(B) applies shall be included in gross income in the taxable year which includes the earlier of- "(A) the date on which such investment is sold or exchanged, or "(B) the date which is 5 years after the date the investment in the qualified opportunity fund was made.',
+        '"No election may be made under paragraph (1) with respect to a sale or exchange if an election previously made with respect to such sale or exchange is in effect."',
+    }, {
+      kind: 'legislativeHistory',
+      citation: 'Amendment note to IRC 1400Z-2, P.L. 119-21 sec. 70421 - post-2026 (b)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1400Z-2&num=0&edition=prelim',
+      quotedText:
+        '"Gain to which subsection (a)(1)(B) applies shall be included in gross income in the taxable year which includes the earlier of- "(A) the date on which such investment is sold or exchanged, or "(B) the date which is 5 years after the date the investment in the qualified opportunity fund was made.',
     }, {
       kind: 'statute',
       citation: 'IRC 1400Z-2(c) (legacy / continuing ten-year election)',
