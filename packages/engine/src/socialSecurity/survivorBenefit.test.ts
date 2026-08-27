@@ -97,13 +97,35 @@ describeRule('usc-42-402-q-1-widow-survivor-early-reduction-schedule', {
   })
 })
 
+describeRule('usc-42-402-q-1-widow-survivor-early-reduction-schedule', {
+  // Claim 63 against FRA 792 months: months early = 36. Statutory reduction is
+  // 19/40 of 1 percent x 36 months = 14.25 percent → 2,000 x .8575 = 1,715.
+  // The rejected flat-maximum reading applies the full 28.5 percent whenever
+  // the claim is early and pays 2,000 x .715 = 1,430.
+  note: 'midpoint claim at 63',
+  readings: { statutoryLinearMidpoint: 1_715, flatMaximumWheneverEarly: 1_430 },
+  accepted: 'statutoryLinearMidpoint',
+}, ({ accepted, readings }) => {
+  it('prorates the widow reduction linearly at a midpoint before survivor FRA', () => {
+    const monthly = survivorBenefitMonthly({
+      deceasedPiaMonthly: 2_000,
+      deceasedActualMonthly: 2_000,
+      survivorClaimAge: age(63),
+      survivorFraMonths: SURVIVOR_FRA_1951TO56,
+    })
+
+    expect(monthly).toBeCloseTo(accepted, 6)
+    expect(monthly).not.toBeCloseTo(readings.flatMaximumWheneverEarly, 6)
+  })
+})
+
 describeRule('poms-rs-00615-320-rib-lim-after-survivor-reduction', {
   // POMS applies the limit only after the ordinary widow amount has been
   // reduced for age. At 63 with survivor FRA 66, the ordinary amount is
   // 2,000 x .8575 = 1,715, which exceeds both 1,400 and 82.5 percent of PIA
   // (1,650), so the statutory limit is 1,650. The rejected engine ordering
   // chooses 1,650 first and then applies the .8575 age factor. Its observed
-  // observed amount is 1,650 x .8575 = 1,414.875.
+  // amount is 1,650 x .8575 = 1,414.875.
   readings: {
     pomsLimitAfterSurvivorReduction: 1_650,
     engineReducesTheLimitAgain: 1_414.875,
@@ -128,24 +150,39 @@ describeRule('usc-42-416-l-survivor-fra-age-60-attainment-cohorts', {
   // A 1962 survivor attains the section 416(l)(2) early-retirement age of 60
   // in 2022, so section 416(l)(1)(E) yields 67 years = 804 months. The
   // rejected engine schedule observably returns 66y8m = 800 months.
-  readings: { statutory1962SurvivorFraMonths: 804, engineCappedAtSixtySixEight: 800 },
+  // A 1961 survivor attains 60 in 2021, so 416(l)(1)(D) + (l)(3)(B):
+  // 2/12 × 60 months = 10 → statutory 66y10m = 802 months. The engine table
+  // still caps at 66y8m = 800, so a blanket-67 repair cannot go green while
+  // 1961 stays wrong.
+  readings: {
+    statutory1962SurvivorFraMonths: 804,
+    statutory1961SurvivorFraMonths: 802,
+    engineCappedAtSixtySixEight: 800,
+  },
   accepted: 'statutory1962SurvivorFraMonths',
   produced: 'engineCappedAtSixtySixEight',
-}, ({ accepted, produced }) => {
+}, ({ accepted, produced, readings }) => {
   it('pins the separate survivor-FRA table for the 1962 age-60 cohort', () => {
     const months = fraTotalMonths(survivorFraForBirthYear(1962))
 
     expect(months).toBe(produced)
     expect(months).not.toBe(accepted)
   })
+
+  it('pins the 1961 age-60 cohort at the engine’s 66y8m cap, not statutory 66y10m', () => {
+    const months = fraTotalMonths(survivorFraForBirthYear(1961))
+
+    expect(months).toBe(produced)
+    expect(months).not.toBe(readings.statutory1961SurvivorFraMonths)
+  })
 })
 
 describeRule('usc-42-402-e-2-a-survivor-own-delay-no-drc', {
   // The deceased has no delayed credits in either reading. At survivor FRA or
   // later, the statute leaves the survivor rate at the 2,000-dollar base; the
-  // rejected retirement-benefit reading adds 36 months of 2/3-percent credits
-  // through age 70, producing 2,000 x 1.24 = 2,480.
-  readings: { survivorStopsAtTheBaseAtFra: 2_000, survivorEarnsOwnDrcsToSeventy: 2_480 },
+  // rejected retirement-benefit reading adds 48 months of 2/3-percent credits
+  // from FRA 66y0m through age 70, producing 2,000 x 1.32 = 2,640.
+  readings: { survivorStopsAtTheBaseAtFra: 2_000, survivorEarnsOwnDrcsToSeventy: 2_640 },
   accepted: 'survivorStopsAtTheBaseAtFra',
 }, ({ accepted, readings }) => {
   it('does not add credits when the survivor waits from FRA to 70', () => {

@@ -2481,12 +2481,6 @@ const registry = {
       url: 'https://www.law.cornell.edu/uscode/text/42/402',
       quotedText:
         'such widow\u2019s insurance benefit for each month shall be equal to the primary insurance amount (as determined for purposes of this subsection after application of subparagraphs (B) and (C)) of such deceased individual.',
-    }, {
-      kind: 'statute',
-      citation: '42 U.S.C. 402(e)(2)(C)',
-      url: 'https://www.law.cornell.edu/uscode/text/42/402',
-      quotedText:
-        'If such deceased individual was (or upon application would have been) entitled to an old-age insurance benefit which was increased (or subject to being increased) on account of delayed retirement under the provisions of subsection (w), then, for purposes of this subsection, such individual\u2019s primary insurance amount, if less than the old-age insurance benefit (increased, where applicable, under paragraph (5) or (6) of section 415(f) of this title and under section 415(i) of this title as if such individual were still alive in the case of an individual who has died) which he was receiving (or would upon application have received) for the month prior to the month in which he died, shall be deemed to be equal to such old-age insurance benefit, and (notwithstanding the provisions of paragraph (3) of such subsection (w)) the number of increment months shall include any month in the months of the calendar year in which he died, prior to the month in which he died, which satisfy the conditions in paragraph (2) of such subsection (w).',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -2558,14 +2552,20 @@ const registry = {
   'poms-rs-00615-320-rib-lim-after-survivor-reduction': {
     title: 'RIB-LIM is tested after the widow(er) age reduction',
     statement:
-      'survivorBenefit.ts first chooses the greater of the deceased’s actual reduced benefit and 82.5 percent of the PIA, then applies the survivor’s age-reduction factor. POMS RS 00615.320 instead tests RIB-LIM when the widow(er) benefit after reduction for age is greater than both limits, at which point the payable amount is the greater limit. When both the deceased and survivor claimed early and the limit binds, the engine consequently understates the survivor benefit and the tax that follows from it.',
+      'survivorBenefit.ts first chooses the greater of the deceased’s actual reduced benefit and 82.5 percent of the PIA, then applies the survivor’s age-reduction factor. POMS RS 00615.320 instead tests RIB-LIM when the widow(er) benefit after reduction for age is greater than both limits, at which point the payable amount is the greater limit. When both the deceased and survivor claimed early and the limit binds, the engine consequently understates the survivor benefit. The benefit error moves taxable Social Security income directly (at most 85 percent taxable), but when spending is instead funded from a traditional account the engine replaces each missing benefit dollar with a fully taxable withdrawal dollar, so the sign of the tax error depends on how the shortfall is funded.',
     classification: 'approximated',
     contraryReading: null,
-    errorDirection: 'understatesTax',
+    errorDirection: 'bothDirections',
     conventionRationale:
-      'DEFECT — no behavior change in this registry slice. The code evaluates `max(deceasedActualMonthly, 0.825 × deceasedPiaMonthly)` before `survivorReductionFactor`, while POMS evaluates the widow(er) benefit after the age reduction before imposing the larger RIB-LIM amount. The companion fixture sets a 2,000-dollar PIA, a 1,400-dollar deceased reduced benefit, and a survivor claim at 63 against a 66-year survivor FRA: the authority-derived amount is 1,650 dollars because the unreduced-widow amount after age reduction exceeds both limits, while the engine reduces that 1,650-dollar limit again. The observed engine amount is 1,414.875 - the 1,650-dollar limit reduced again by the .8575 age factor - pinned in the companion fixture.',
+      'DEFECT — no behavior change in this registry slice. The code evaluates `max(deceasedActualMonthly, 0.825 × deceasedPiaMonthly)` before `survivorReductionFactor`, while POMS evaluates the widow(er) benefit after the age reduction before imposing the larger RIB-LIM amount. The companion fixture sets a 2,000-dollar PIA, a 1,400-dollar deceased reduced benefit, and a survivor claim at 63 against a 66-year survivor FRA: the authority-derived amount is 1,650 dollars because the widow(er) amount after reduction for age (2,000 x .8575 = 1,715) exceeds both limits, while the engine reduces that 1,650-dollar limit again. The observed engine amount is 1,414.875 - the 1,650-dollar limit reduced again by the .8575 age factor - pinned in the companion fixture.',
     jurisdiction: 'federal',
     authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 402(e)(2)(D)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
+      quotedText:
+        'If the deceased individual (on the basis of whose wages and self-employment income a widow or surviving divorced wife is entitled to widow\'s insurance benefits under this subsection) was, at any time, entitled to an old-age insurance benefit which was reduced by reason of the application of subsection (q), the widow\'s insurance benefit of such widow or surviving divorced wife for any month shall, if the amount of the widow\'s insurance benefit of such widow or surviving divorced wife (as determined under subparagraph (A) and after application of subsection (q)) is greater than-',
+    }, {
       kind: 'regulation',
       citation: '20 CFR 404.338(c)',
       url: 'https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR219bf3e41a78e9f/section-404.338',
@@ -2604,12 +2604,12 @@ const registry = {
   'usc-42-402-i-lump-sum-death-payment': {
     title: 'The $255 Social Security lump-sum death payment is outside the Plan',
     statement:
-      'The engine emits no Social Security lump-sum death payment. Section 402(i) and 20 CFR 404.390 permit a payment of up to $255 only for a fully or currently insured deceased worker and condition the normal widow(er) payment on living in the same household at death, with alternative payees and application rules if that condition is absent. No accepted Plan input supplies insured status, same-household-at-death facts, an application, or the statutory alternative payee facts, so no accepted Plan reaches this rule.',
+      'The engine emits no Social Security lump-sum death payment. Section 402(i) and 20 CFR 404.390 permit a payment of up to $255 only for a fully or currently insured deceased worker and condition the normal widow(er) payment on living in the same household at death, with alternative payees and application rules if that condition is absent. A married couple where one dies is expressible as a same-household fact, but no accepted Plan input supplies fully or currently insured status as such, an application within two years, or the statutory alternative payee facts, and the engine has no death-payment surface, so no accepted Plan reaches this rule.',
     classification: 'outOfScope',
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'Absence-record surface is model/plan.ts: people, Social Security streams, and their PIA/earnings facts do not carry fully/currently-insured status, a same-household-at-death determination, a lump-sum application, or an alternative payee. simulate.ts consequently has no Social Security death-payment pass. A projection death is not itself an entitlement determination, so inventing a 255-dollar receipt from longevity would be an approximation rather than a valid input path.',
+      'The engine has no death-payment surface at all — no simulate.ts pass emits a lump sum and no accepted input feeds one — and the further statutory facts (fully or currently insured status as such, the application within two years, alternative payees) have no Plan fields. A married couple where one dies is expressible, so outOfScope does not rest on unrepresentable household facts. A one-time $255 payment is an absence, not an approximation, because the engine emits no figure the rule could correct.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -2716,10 +2716,10 @@ const registry = {
   'usc-42-416-l-survivor-fra-age-60-attainment-cohorts': {
     title: 'Survivor FRA follows age-60 attainment cohorts, reaching 67 for 1962+',
     statement:
-      'nra.ts correctly keeps a survivor FRA separate from retirement FRA, but it stops at 66 years and 8 months for every effective birth year from 1960 onward. Section 416(l) keys retirement age to the calendar year the claimant attains early retirement age, and sets that early age at 60 for survivor benefits: the statutory schedule is 66 years and 10 months for a 1961 cohort and 67 for a 1962-and-later cohort. The engine consequently makes a 1962-and-later survivor unreduced up to four months too early and can overstate Social Security income and tax.',
+      'nra.ts correctly keeps a survivor FRA separate from retirement FRA, but it stops at 66 years and 8 months for every effective birth year from 1960 onward. Section 416(l) keys retirement age to the calendar year the claimant attains early retirement age, and sets that early age at 60 for survivor benefits: the statutory schedule is 66 years and 10 months for a 1961 cohort and 67 for a 1962-and-later cohort. The engine consequently makes a 1962-and-later survivor unreduced up to four months too early. The benefit error moves taxable Social Security income directly (at most 85 percent taxable), but when spending is instead funded from a traditional account the engine replaces each missing benefit dollar with a fully taxable withdrawal dollar, so the sign of the tax error depends on how the shortfall is funded (and symmetrically for the too-early-unreduced FRA case).',
     classification: 'approximated',
     contraryReading: null,
-    errorDirection: 'overstatesTax',
+    errorDirection: 'bothDirections',
     conventionRationale:
       'DEFECT — no behavior change in this registry slice. survivorFraForBirthYear returns 66y8m for 1960 and every later effective birth year. For an effective 1962 birth, age 60 is attained in 2022, so section 416(l)(1)(E) supplies age 67; the companion fixture pins the statute-derived 804 months against the observed engine value of 800 months.',
     jurisdiction: 'federal',
@@ -2796,6 +2796,12 @@ const registry = {
       'The general DRC-accrual rule is registered at cfr-20-404-313-delayed-retirement-credit. This narrower record covers its survivor consequence and is tested without a survivor reduction so the fixture isolates whether the deceased worker’s actual increased amount survives into the base.',
     jurisdiction: 'federal',
     authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 402(e)(2)(C)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
+      quotedText:
+        'If such deceased individual was (or upon application would have been) entitled to an old-age insurance benefit which was increased (or subject to being increased) on account of delayed retirement under the provisions of subsection (w), then, for purposes of this subsection, such individual\'s primary insurance amount, if less than the old-age insurance benefit (increased, where applicable, under paragraph (5) or (6) of section 415(f) of this title and under section 415(i) of this title as if such individual were still alive in the case of an individual who has died) which he was receiving (or would upon application have received) for the month prior to the month in which he died, shall be deemed to be equal to such old-age insurance benefit, and (notwithstanding the provisions of paragraph (3) of such subsection (w)) the number of increment months shall include any month in the months of the calendar year in which he died, prior to the month in which he died, which satisfy the conditions in paragraph (2) of such subsection (w).',
+    }, {
       kind: 'regulation',
       citation: '20 CFR 404.338(b)',
       url: 'https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR219bf3e41a78e9f/section-404.338',

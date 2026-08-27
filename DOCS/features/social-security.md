@@ -60,7 +60,8 @@ Benefits-only analysis separately illustrates survivor switching
   bend points in `ssaWageData.ts`). The plan offers one claim age rather than a restricted
   current-spouse-only claim — the post-2015 deemed-filing shape in
   [42 U.S.C. §402(r)](https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim)
-  (`usc-42-402-r-1-2-deemed-filing-old-age-and-spousal`). No child/dependent auxiliaries are modeled.
+  (`usc-42-402-r-1-2-deemed-filing-old-age-and-spousal`). No child/dependent auxiliaries are modeled
+  (`usc-42-402-d-2-child-survivor-benefit`).
 - **Survivor step-up** after the first death: the survivor keeps the larger of their own benefit and the
   deceased's benefit, computed with full precision — the **survivor base is the deceased's actual
   (claim-age-adjusted) benefit** (including delayed credits if the deceased delayed), **RIB-LIM** currently
@@ -71,7 +72,8 @@ Benefits-only analysis separately illustrates survivor switching
   survivor claims before their **survivor FRA**. The code keeps a separate survivor-FRA schedule, but currently
   caps it at 66y8m for effective birth year 1960+; the age-60-attainment statute instead reaches 66y10m for
   1961 and 67 for 1962+, so that cohort error is disclosed as an approximation
-  (`usc-42-416-l-survivor-fra-age-60-attainment-cohorts`). Current-spouse survivor benefits are built before the earnings-test pass, so they can be
+  (`usc-42-416-l-survivor-fra-age-60-attainment-cohorts`). The $255 lump-sum death payment is absent
+  (`usc-42-402-i-lump-sum-death-payment`). Current-spouse survivor benefits are built before the earnings-test pass, so they can be
   withheld for a working survivor and credited back through the same ARF path. The former-spouse survivor path
   takes the deceased ex's claim age as a user input.
 - **Divorced-spousal** (10-year marriage, currently unmarried, ex eligible at 62+ — the ex need not have

@@ -53,8 +53,8 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | Engine source files | 235 |
 | Swept | 100.0% |
 | Grandfathered unswept baseline | 0 |
-| partial | 63 |
-| registered | 48 |
+| partial | 62 |
+| registered | 49 |
 | rule-free | 124 |
 | unswept | 0 |
 
@@ -78,7 +78,7 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | rules | 5 | 0 | 1 | 4 | 0 |
 | scenarios | 9 | 0 | 0 | 9 | 0 |
 | schema | 7 | 0 | 0 | 7 | 0 |
-| socialSecurity | 9 | 5 | 4 | 0 | 0 |
+| socialSecurity | 9 | 4 | 5 | 0 | 0 |
 | spending | 5 | 0 | 0 | 5 | 0 |
 | strategies | 7 | 3 | 4 | 0 | 0 |
 | tax | 7 | 4 | 2 | 1 | 0 |
@@ -141,12 +141,11 @@ None.
 | projection/optimizerAggregateConversionPromotion.ts | 2026-08-24 | §408A-4 A-6(b) RMD-first, 401(k)(2)(B)(i) distributability, and same-owner Roth destination; no records |
 | projection/ownedIraAnnualPhysicalTransactionInputs.ts | 2026-08-24 | Form 8606 line-7/8 and QCD staging semantics; no record |
 | projection/ownedNonRothIraAnnualObservation.ts | 2026-08-24 | April-15/weekend/Emancipation-Day filing deadline; no record |
-| projection/simulate.ts | 2026-08-24 | QCD/RMD/annuity/contribution/QLAC covered; residual 59½/HSA/Roth-five-year/Rule-of-55 proxies, inherited-Roth post-flip, Medicare age-65, HSA family-limit, spousal/survivor SS/RIB-LIM |
+| projection/simulate.ts | 2026-08-26 | QCD/RMD/annuity/contribution/QLAC covered; residual 59½/HSA/Roth-five-year/Rule-of-55 proxies, inherited-Roth post-flip, Medicare age-65, HSA family-limit, spousal/survivor SS |
 | rmd/applicableAge.ts | 2026-08-24 | SECURE 2.0 applicable ages/RBD April-1; born-1959 dual-age contest; 70½ cohort & July-1949 cut; no records naming this file |
 | socialSecurity/claimFactor.ts | 2026-08-24 | worker claim-age window and factor composition rest on records naming benefitFactor.ts; no record names this file |
 | socialSecurity/disability.ts | 2026-08-24 | SGA amount registered; SSDI benefit=full PIA; FRA conversion window; annual SGA×12 suspension proxy not registered here |
 | socialSecurity/maritalBenefits.ts | 2026-08-24 | Eligibility rules (10-yr divorce, 9-mo survivor marriage, age gates, remarriage forfeiture) have no records |
-| socialSecurity/nra.ts | 2026-08-24 | Survivor FRA schedule (65→66y8m) has no record naming this file |
 | socialSecurity/piaFromEarnings.ts | 2026-08-24 | AIME pipeline (age 22–61 window, 5 lowest dropped, top-35 years, AWI indexing) not separately registered |
 | strategies/accountEligibility.ts | 2026-08-25 | SECURE 2020 gate portion of S2 treat-as-own election timing not registered to this file |
 | strategies/optimizer.ts | 2026-08-24 | MILP prices brackets, IRMAA, ACA MAGI cap, RMD floors, §86 SS phase-in, LTCG; not registered here |

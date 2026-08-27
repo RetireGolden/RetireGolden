@@ -45,8 +45,8 @@
   "attestations": {
     "totalFiles": 235,
     "byStatus": {
-      "partial": 63,
-      "registered": 48,
+      "partial": 62,
+      "registered": 49,
       "rule-free": 124,
       "unswept": 0
     },
@@ -302,8 +302,8 @@
     },
     {
       "path": "projection/simulate.ts",
-      "sweptOn": "2026-08-24",
-      "note": "QCD/RMD/annuity/contribution/QLAC covered; residual 59½/HSA/Roth-five-year/Rule-of-55 proxies, inherited-Roth post-flip, Medicare age-65, HSA family-limit, spousal/survivor SS/RIB-LIM"
+      "sweptOn": "2026-08-26",
+      "note": "QCD/RMD/annuity/contribution/QLAC covered; residual 59½/HSA/Roth-five-year/Rule-of-55 proxies, inherited-Roth post-flip, Medicare age-65, HSA family-limit, spousal/survivor SS"
     },
     {
       "path": "rmd/applicableAge.ts",
@@ -324,11 +324,6 @@
       "path": "socialSecurity/maritalBenefits.ts",
       "sweptOn": "2026-08-24",
       "note": "Eligibility rules (10-yr divorce, 9-mo survivor marriage, age gates, remarriage forfeiture) have no records"
-    },
-    {
-      "path": "socialSecurity/nra.ts",
-      "sweptOn": "2026-08-24",
-      "note": "Survivor FRA schedule (65→66y8m) has no record naming this file"
     },
     {
       "path": "socialSecurity/piaFromEarnings.ts",
@@ -504,8 +499,8 @@
       "directory": "socialSecurity",
       "files": 9,
       "byStatus": {
-        "partial": 5,
-        "registered": 4
+        "partial": 4,
+        "registered": 5
       }
     },
     {
