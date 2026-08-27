@@ -2,21 +2,21 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 1,
   "registry": {
-    "total": 343,
+    "total": 360,
     "byClassification": {
-      "approximated": 80,
-      "outOfScope": 55,
-      "settled": 204,
+      "approximated": 81,
+      "outOfScope": 70,
+      "settled": 205,
       "unsettled": 4
     },
     "byVolatility": {
-      "annuallyIndexed": 50,
+      "annuallyIndexed": 53,
       "awaitingGuidance": 10,
-      "staticStatute": 277,
+      "staticStatute": 291,
       "sunsetting": 6
     },
     "byJurisdiction": {
-      "federal": 286,
+      "federal": 303,
       "states": {
         "AK": 1,
         "AR": 9,
@@ -232,8 +232,8 @@
     },
     {
       "path": "ladder/ladderMath.ts",
-      "sweptOn": "2026-08-24",
-      "note": "Statutory TIPS min coupon 0.125%; par-yield ladder pricing conventions; no naming record"
+      "sweptOn": "2026-08-27",
+      "note": "TIPS OID/deflation and §171 premium absence registered (treas-reg-1-1275-7-f-1-deflation-adjustment-income, treas-reg-1-1275-7-f-2-deflation-basis-decrease-not-modeled, treas-reg-1-1275-7-f-3-tips-acquisition-premium, irc-171-tips-bond-premium-amortization); statutory 0.125% min coupon and par-yield pricing conventions remain"
     },
     {
       "path": "longevity/ssaPeriod2022.ts",
@@ -352,8 +352,8 @@
     },
     {
       "path": "tax/medicare.ts",
-      "sweptOn": "2026-08-24",
-      "note": "Post-pack premium premiumScale (healthcare-inflation stand-in); no record naming this file"
+      "sweptOn": "2026-08-27",
+      "note": "Part B/IRMAA premium path and Part B late-enrollment absence registered (usc-42-1395r-*, cfr-20-418-1205-1230-*); post-pack premiumScale (healthcare-inflation stand-in) remains"
     },
     {
       "path": "tax/propertySale.ts",
@@ -1008,6 +1008,36 @@
       "fixtureFiles": []
     },
     {
+      "id": "cfr-20-418-1205-1230-irmaa-life-change-redetermination",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/tax/medicare.ts"
+      ],
+      "fixtureFiles": []
+    },
+    {
+      "id": "cfr-31-363-52-savings-bond-annual-purchase-limit",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts"
+      ],
+      "fixtureFiles": []
+    },
+    {
       "id": "fl-const-7-5-a-income-tax-prohibited",
       "classification": "settled",
       "jurisdiction": "state:FL",
@@ -1489,6 +1519,21 @@
       ]
     },
     {
+      "id": "irc-135-education-savings-bond-interest-exclusion",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/tax/federalTax.ts"
+      ],
+      "fixtureFiles": []
+    },
+    {
       "id": "irc-1400z-2-qof-deferral-and-ten-year-basis-election",
       "classification": "outOfScope",
       "jurisdiction": "federal",
@@ -1845,6 +1890,22 @@
       ]
     },
     {
+      "id": "irc-171-tips-bond-premium-amortization",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/ladder/ladderMath.ts",
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "fixtureFiles": []
+    },
+    {
       "id": "irc-199A-a-qualified-business-income-deduction-not-modeled",
       "classification": "outOfScope",
       "jurisdiction": "federal",
@@ -1856,6 +1917,35 @@
       "implementedBy": [
         "packages/engine/src/model/plan.ts",
         "packages/engine/src/tax/federalTax.ts"
+      ],
+      "fixtureFiles": []
+    },
+    {
+      "id": "irc-2010-c-3-basic-exclusion-amount-not-modeled",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2026-12-25",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/params/types.ts"
+      ],
+      "fixtureFiles": []
+    },
+    {
+      "id": "irc-2010-c-5-dsue-portability-election-not-modeled",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts"
       ],
       "fixtureFiles": []
     },
@@ -2215,6 +2305,21 @@
       "fixtureFiles": [
         "packages/engine/src/actions/annualHsaPenaltyEvaluation.test.ts"
       ]
+    },
+    {
+      "id": "irc-2503-b-annual-gift-exclusion-not-modeled",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2026-12-25",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/params/types.ts"
+      ],
+      "fixtureFiles": []
     },
     {
       "id": "irc-275-a-6-chapter-43-excise-taxes-nondeductible",
@@ -3547,6 +3652,21 @@
       ]
     },
     {
+      "id": "irc-454-savings-bond-interest-deferral",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "fixtureFiles": []
+    },
+    {
       "id": "irc-457-b-3-final-three-year-catch-up",
       "classification": "outOfScope",
       "jurisdiction": "federal",
@@ -3626,6 +3746,21 @@
         "packages/engine/src/rmd/rmdShortfallExcise.test.ts",
         "packages/engine/src/rules/approximations/rmdAndInherited.approximation.test.ts"
       ]
+    },
+    {
+      "id": "irc-529-c-3-E-529-to-roth-rollover-not-modeled",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/actions/contract.ts",
+        "packages/engine/src/model/plan.ts"
+      ],
+      "fixtureFiles": []
     },
     {
       "id": "irc-55-a-amt-is-the-excess-over-regular-tax",
@@ -5112,6 +5247,73 @@
       ]
     },
     {
+      "id": "treas-reg-1-1275-7-d-4-positive-inflation-adjustment-oid",
+      "classification": "settled",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/ladder/ladderMath.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/federalTax.test.ts"
+      ]
+    },
+    {
+      "id": "treas-reg-1-1275-7-f-1-deflation-adjustment-income",
+      "classification": "approximated",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/ladder/ladderMath.ts",
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/federalTax.test.ts"
+      ]
+    },
+    {
+      "id": "treas-reg-1-1275-7-f-2-deflation-basis-decrease-not-modeled",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/ladder/ladderMath.ts",
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "fixtureFiles": []
+    },
+    {
+      "id": "treas-reg-1-1275-7-f-3-tips-acquisition-premium",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/ladder/ladderMath.ts",
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "fixtureFiles": []
+    },
+    {
       "id": "treas-reg-1-401-a-9-2-b-2-v-applicable-age-1959",
       "classification": "unsettled",
       "jurisdiction": "federal",
@@ -5657,6 +5859,21 @@
       ]
     },
     {
+      "id": "usc-42-1395p-enrollment-periods",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "fixtureFiles": []
+    },
+    {
       "id": "usc-42-1395r-a-3-part-b-standard-premium",
       "classification": "settled",
       "jurisdiction": "federal",
@@ -5673,6 +5890,23 @@
       "fixtureFiles": [
         "packages/engine/src/params/params.test.ts"
       ]
+    },
+    {
+      "id": "usc-42-1395r-b-part-b-late-enrollment-penalty",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/tax/medicare.ts"
+      ],
+      "fixtureFiles": []
     },
     {
       "id": "usc-42-1395r-i-4-a-i-irmaa-magi-foreign-exclusion-addback",
@@ -5758,6 +5992,22 @@
       "fixtureFiles": [
         "packages/engine/src/tax/medicare.test.ts"
       ]
+    },
+    {
+      "id": "usc-42-1395w-113-b-pl-117-169-part-d-penalty-and-cost-sharing",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2026-12-25",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/params/types.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "fixtureFiles": []
     },
     {
       "id": "usc-42-402-b-2-spousal-half-of-pia",
@@ -6174,6 +6424,21 @@
       "fixtureFiles": [
         "packages/engine/src/projection/simulate.test.ts"
       ]
+    },
+    {
+      "id": "usc-42-426-b-disability-trial-work-medicare-continuation",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/socialSecurity/disability.ts"
+      ],
+      "fixtureFiles": []
     },
     {
       "id": "usc-42-430-b-contribution-and-benefit-base",

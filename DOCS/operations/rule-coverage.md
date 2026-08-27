@@ -11,16 +11,16 @@ The registry is the machine-checked chain from a rule to its implementation and 
 
 | Metric | Count |
 | --- | ---: |
-| Total rules | 343 |
-| Classification: approximated | 80 |
-| Classification: outOfScope | 55 |
-| Classification: settled | 204 |
+| Total rules | 360 |
+| Classification: approximated | 81 |
+| Classification: outOfScope | 70 |
+| Classification: settled | 205 |
 | Classification: unsettled | 4 |
-| Volatility: annuallyIndexed | 50 |
+| Volatility: annuallyIndexed | 53 |
 | Volatility: awaitingGuidance | 10 |
-| Volatility: staticStatute | 277 |
+| Volatility: staticStatute | 291 |
 | Volatility: sunsetting | 6 |
-| Federal jurisdiction | 286 |
+| Federal jurisdiction | 303 |
 | State jurisdiction total | 57 |
 
 | State jurisdiction | Count |
@@ -127,7 +127,7 @@ None.
 | internal/ownedNonRothIraAnnualAttemptSettlement.ts | 2026-08-24 | 408(d)(3)(A)(i) same-owner conversion identity; no record |
 | internal/ownedNonRothIraRuntimeSourceSeries.ts | 2026-08-24 | Records cover QCD and annuity aggregation; residual 408(d)(3)(A)(i) same-owner conversion, 408(d)(3)(C) inherited-rollover bar, and RMD-before-conversion ordering |
 | ladder/bridge.ts | 2026-08-24 | Bridge cannot start before SS age 62; uses claimFactor/PIA sizing without naming record |
-| ladder/ladderMath.ts | 2026-08-24 | Statutory TIPS min coupon 0.125%; par-yield ladder pricing conventions; no naming record |
+| ladder/ladderMath.ts | 2026-08-27 | TIPS OID/deflation and §171 premium absence registered (treas-reg-1-1275-7-f-1-deflation-adjustment-income, treas-reg-1-1275-7-f-2-deflation-basis-decrease-not-modeled, treas-reg-1-1275-7-f-3-tips-acquisition-premium, irc-171-tips-bond-premium-amortization); statutory 0.125% min coupon and par-yield pricing conventions remain |
 | longevity/ssaPeriod2022.ts | 2026-08-24 | SSA 2022 period table provenance/vintage unregistered; statutory-use records name consumers |
 | model/migrations.ts | 2026-08-24 | Lump-sum election load repairs; inherited qualified-annuity premium retarget/stand-down beyond annuity-start ceiling records |
 | model/plan.ts | 2026-08-24 | Inherited IRA regime parse rules; spouse J&S RMD gate; 403(b) aggregation; SEPP schema; Roth inherited rules; HSA/stateMove/retirement-action eligibility gates |
@@ -151,12 +151,12 @@ None.
 | strategies/rothConversion.ts | 2026-08-24 | Bracket/IRMAA/ACA FPL/senior-deduction sizing via computeFederalTax; no record names this file |
 | tax/annualCharitableDeductionParameters.ts | 2026-08-24 | §170(b)(1)(I) 0.5% floor, §170(b)(1)(G) 60% limit, §68 thresholds/rate; only §170(p) cap record names this file |
 | tax/federalTax.ts | 2026-08-26 | implements §86 SS inclusion, NIIT, AMT screen, senior-deduction phase-out, LTCG stacking with records naming it, but §170(b)(1)(I)(ii) category waterfall is applied only in the ledger file its record names |
-| tax/medicare.ts | 2026-08-24 | Post-pack premium premiumScale (healthcare-inflation stand-in); no record naming this file |
+| tax/medicare.ts | 2026-08-27 | Part B/IRMAA premium path and Part B late-enrollment absence registered (usc-42-1395r-*, cfr-20-418-1205-1230-*); post-pack premiumScale (healthcare-inflation stand-in) remains |
 | tax/propertySale.ts | 2026-08-24 | Personal-use capital loss nondeductible (gain floored at zero); no record naming this file |
 
 ## Re-verification due dates
 
-The 25 earliest due dates are shown below (343 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
+The 25 earliest due dates are shown below (360 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
 
 | Rule | Volatility | Verified on | Due on |
 | --- | --- | --- | --- |
