@@ -27,7 +27,7 @@ async function waitFor(predicate: () => boolean) {
 }
 
 describe('PlanWorkspace Lifetime tax KPI caption (#318)', () => {
-  it('keeps the title and uses the one-line workspace sub-line without + penalties', async () => {
+  it('keeps the Lifetime tax title and the shortened workspace kpi-sub without + penalties', async () => {
     const sample = createSamplePlan()
     const saved = await savePlan(sample)
     if (!saved.ok) throw new Error('seed save failed')

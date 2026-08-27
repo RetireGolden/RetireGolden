@@ -675,8 +675,8 @@
   overflow-wrap: break-word;
   /* Caption overflow used to paint into the next KPI (Lifetime Tax's old
      "… + penalties" into Roth Converted). Contain the caption only — not
-     the cell — so focus rings and large values stay visible. The workspace
-     Lifetime tax sub-line is now the shorter one-line chrome (#318). */
+     the cell — so focus rings and large values stay visible. #318 shortened
+     the workspace Lifetime tax copy; this rule still only contains overflow. */
   overflow: hidden;
 }
 

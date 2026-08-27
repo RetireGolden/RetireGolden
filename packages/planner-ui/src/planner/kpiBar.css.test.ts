@@ -6,8 +6,8 @@
  * overflow containment painted that line into Roth Converted, so the
  * next cell read `penaltiesending Roth $0`. Containment lives on
  * `.kpi-sub` so focus rings and large headline values stay visible.
- * The workspace caption itself is now the shorter one-line chrome (#318);
- * this file still guards the #287 containment, not that copy.
+ * #318 shortened the workspace Lifetime tax copy. This file still guards
+ * the #287 containment, not that copy.
  */
 
 import { describe, expect, it } from 'vitest'
