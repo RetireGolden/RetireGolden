@@ -2845,6 +2845,255 @@ const registry = {
     implementedBy: ['packages/engine/src/projection/simulate.ts'],
   },
 
+  'poms-rs-00615-482-arf-crediting-months': {
+    title: 'ARF credits every full or partial work-deduction month',
+    statement:
+      'simulate.ts does credit earnings-test withholding back at full retirement age by moving the retirement claim age later and reusing claimFactor.ts. POMS RS 00615.482, however, credits a month with either a full or a partial work deduction. The engine derives one rounded count from annual withholding dollars divided by annual benefit dollars. The annualized count can fall short of or exceed the deduction-month record depending on how withholding lands across the year — for example when the annual test withholds the whole year the engine credits all payable months while POMS credits only work-deduction months (six work months, full withholding: engine +12, POMS +6, benefit overstated). Whether that understates or overstates tax depends on how the spending shortfall is funded, since a traditional-account withdrawal replacing at-most-85-percent-taxable benefit dollars is fully taxable.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'bothDirections',
+    conventionRationale:
+      'The annualized convention is explicit in simulate.ts: after applying one annual earnings-test amount, it calculates `Math.round((withheld / benefit) * payableMonths)` and caps that integer to the year\'s payable months. That is not a record of the calendar months carrying a full or partial work deduction. The companion fixture withholds 2,000 dollars in each of the five below-FRA working years: the statute charges 1,400 dollars to the first month and 600 to the next, so POMS credits two months per year, ten in all, and a post-FRA year pays 17,800 dollars. The engine\'s annual ratio rounds to one credited month per year, five in all, and observably pays 17,300.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 403(f)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section403&num=0&edition=prelim',
+      quotedText:
+        'There shall be charged to the first month of such taxable year an amount of his excess earnings equal to the sum of the payments to which he and all other persons (excluding divorced spouses referred to in subsection (b)(2)) are entitled for such month under section 402 of this title on the basis of his wages and self-employment income (or the total of his excess earnings if such excess earnings are less than such sum), and the balance, if any, of such excess earnings shall be charged to each succeeding month in such year to the extent, in the case of each such month, of the sum of the payments to which such individual and all such other persons are entitled for such month under section 402 of this title on the basis of his wages and self-employment income, until the total of such excess has been so charged.',
+    }, {
+      kind: 'regulation',
+      citation: '20 CFR 404.415(a)',
+      url: 'https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-E/section-404.415',
+      quotedText:
+        'Under the annual earnings test, we will reduce your monthly benefits (except disability insurance benefits based on the beneficiary\'s disability) by the amount of your excess earnings (as described in § 404.434), for each month in a taxable year (calendar year or fiscal year) in which you are under full retirement age (as defined in § 404.409(a)).',
+    }, {
+      kind: 'agencyGuidance',
+      citation: 'SSA POMS RS 00615.482, § C.1',
+      url: 'https://secure.ssa.gov/poms.nsf/lnx/0300615482',
+      quotedText:
+        'Grant crediting months in RIB cases for months of: • full or partial work deduction; or • simultaneous RIB-Disability Insurance Benefit (DIB) entitlement.',
+    }, {
+      kind: 'agencyGuidance',
+      citation: 'SSA POMS RS 00615.482, § C.1 note',
+      url: 'https://secure.ssa.gov/poms.nsf/lnx/0300615482',
+      quotedText:
+        'Proration of work deductions has no effect on the adjustment of the reduction factor, as stated under RS 02501.120B.3.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/socialSecurity/claimFactor.ts',
+    ],
+  },
+
+  'usc-42-403-f-1-earnings-test-month-charging': {
+    title: 'Excess earnings are charged to calendar months, not annual benefit fractions',
+    statement:
+      'Section 403(f)(1) first charges excess earnings to the first month\'s benefits and then to succeeding months. simulate.ts instead computes a single annual withholding amount and converts its annual-benefit ratio into a rounded number of withheld months. Its annualized proxy can disagree with the statutory charging sequence and feed the ARF credit count; the annualized count can fall short of or exceed the deduction-month record depending on how withholding lands across the year, while whether that understates or overstates tax depends on how the spending shortfall is funded, since a traditional-account withdrawal replacing at-most-85-percent-taxable benefit dollars is fully taxable.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'bothDirections',
+    conventionRationale:
+      'The annual earnings amount itself is implemented by the existing `usc-42-403-f-3-retirement-earnings-test` record. This distinct convention record covers its missing month-charging unit: simulate.ts neither carries an ordered sequence of monthly entitlements nor consumes excess earnings against that sequence. In the companion fixture each below-FRA working year\'s 2,000 dollars of excess earnings must charge a 1,400-dollar first month and a 600-dollar second month, two partial-or-full deduction months per year; the annual ratio rounds to one per year, and the observed post-FRA benefit is 17,300 dollars against the statute-derived 17,800. This record and `poms-rs-00615-482-arf-crediting-months` share a single engine observable (the annualized month count feeds the ARF), so their fixtures intentionally pin the same produced figure from distinct legal limbs. A charging-only implementation could not be verified apart from the ARF credit with this observable — reclassifying either record requires a distinct charging observable (ordered months or unequal monthly entitlements).',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 403(f)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section403&num=0&edition=prelim',
+      quotedText:
+        'There shall be charged to the first month of such taxable year an amount of his excess earnings equal to the sum of the payments to which he and all other persons (excluding divorced spouses referred to in subsection (b)(2)) are entitled for such month under section 402 of this title on the basis of his wages and self-employment income (or the total of his excess earnings if such excess earnings are less than such sum), and the balance, if any, of such excess earnings shall be charged to each succeeding month in such year to the extent, in the case of each such month, of the sum of the payments to which such individual and all such other persons are entitled for such month under section 402 of this title on the basis of his wages and self-employment income, until the total of such excess has been so charged.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: ['packages/engine/src/projection/simulate.ts'],
+  },
+
+  'cfr-20-404-435-grace-year-monthly-earnings-test': {
+    title: 'The grace-year monthly earnings test preserves non-service-month benefits',
+    statement:
+      'The first grace year can pay a full benefit for a non-service month even when annual earnings are substantial. The Plan accepts one annual wage amount and optional annual stop age, but no month-by-month wages, self-employment service, grace-year, or non-service-month facts; simulate.ts consequently applies only its annual earnings-test pass. Because a first-retirement-year claimant still reaches that pass and receives an annual projected figure, this is an approximation rather than an out-of-scope rule. In an affected grace year the engine pays less benefit than the monthly test; whether that understates or overstates the resulting tax depends on how the spending shortfall is funded, since a traditional-account withdrawal replacing at-most-85-percent-taxable benefit dollars is fully taxable.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'bothDirections',
+    conventionRationale:
+      'The accepted Plan surface is model/plan.ts: `wagesIncomeSchema` has `annualGross` and `endAge`, while a Social Security stream has one `claimAge`; neither carries service by calendar month, monthly wages, a grace-year designation, or non-service months. simulate.ts applies its annual earnings test to the emitted annual wage amount. The companion fixture gives the engine one 60,000-dollar annual wage total and stands that single observed annual figure against both authority limbs: (1) six July-through-December non-service months and (2) service in all twelve months. The monthly rule pays 8,400 dollars only in the first limb; the annual proxy observably pays zero for both, because the Plan carries no service-month fact and the annual test withholds the entire year\'s benefit. That collapse of one engine input against both limbs is the approximation.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'regulation',
+      citation: '20 CFR 404.435(a), (a)(7)',
+      url: 'https://www.ecfr.gov/current/title-20/section-404.435',
+      quotedText:
+        'We will not reduce your benefits on account of excess earnings for any month in which you, the beneficiary— ... (7) Had a non-service month in your grace year (see paragraph (b) of this section). A non-service month is any month in which you, while entitled to retirement or survivors benefits: (i) Do not work in self-employment (see paragraphs (c) and (d) of this section); (ii) Do not perform services for wages greater than the monthly exempt amount set for that month (see paragraph (e) of this section and § 404.430); and (iii) Do not work in non-covered remunerative activity on 7 or more days in a month while outside the United States. A non-service month occurs even if there are no excess earnings in the year.',
+    }, {
+      kind: 'regulation',
+      citation: '20 CFR 404.435(b)(1)',
+      url: 'https://www.ecfr.gov/current/title-20/section-404.435',
+      quotedText:
+        'A beneficiary\'s initial grace year is the first taxable year in which the beneficiary has a non-service month (see paragraph (a)(7) of this section) in or after the month in which the beneficiary is entitled to a retirement, auxiliary, or survivor\'s benefit.',
+    }, {
+      kind: 'agencyGuidance',
+      citation: 'SSA POMS RS 02501.030, § A',
+      url: 'https://secure.ssa.gov/poms.nsf/lnx/0302501030',
+      quotedText:
+        'The MET allows payment of benefits to a beneficiary even if they have substantial earnings prior to the month of entitlement (MOE). It allows a beneficiary who returns to substantial work later in that year to keep the benefits paid during those months when they were not working.',
+    }, {
+      kind: 'agencyGuidance',
+      citation: 'SSA POMS RS 02501.030, § C',
+      url: 'https://secure.ssa.gov/poms.nsf/lnx/0302501030',
+      quotedText:
+        'A NSM is any month of entitlement, before FRA, that an entitled beneficiary neither earns wages of more than the monthly exempt amount nor performs substantial services in self-employment.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+  },
+
+  'cfr-20-404-640-application-withdrawal-repayment': {
+    title: 'Withdrawal of a benefit application with repayment is outside the Plan',
+    statement:
+      'A timely approved withdrawal with repayment treats the benefit application as never filed. The Plan represents one claim age per Social Security stream and has no application, withdrawal request, approval, repayment, claim reset, or replacement-claim action. No accepted Plan can therefore trigger this rule; changing a scalar claim age is not evidence that an already-filed application was withdrawn and repaid.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'Absence-record surface is model/plan.ts: `socialSecurityIncomeSchema` stores a single `claimAge` alongside PIA and earnings inputs, with no first-entitlement month, written withdrawal request, approval/consent status, repayment amount, prior withdrawal, claim reset, or replacement-claim date. Its `strategiesSchema.retirementActions` accepts no Social Security application-withdrawal or repayment action. No accepted Plan can supply the conjunctive trigger facts without inventing them.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'regulation',
+      citation: '20 CFR 404.640(b)(3)',
+      url: 'https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-G/subject-group-ECFR25e4230c435dfbf/section-404.640',
+      quotedText:
+        'All benefits already paid based on the application being withdrawn are repaid or we are satisfied that they will be repaid.',
+    }, {
+      kind: 'regulation',
+      citation: '20 CFR 404.640(b)(4)(i)',
+      url: 'https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-G/subject-group-ECFR25e4230c435dfbf/section-404.640',
+      quotedText:
+        'The request for withdrawal is filed within 12 months of the first month of entitlement; and',
+    }, {
+      kind: 'regulation',
+      citation: '20 CFR 404.640(d)',
+      url: 'https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-G/subject-group-ECFR25e4230c435dfbf/section-404.640',
+      quotedText:
+        'If we approve a request to withdraw an application, the application will be considered as though it was never filed. If we disapprove a request for withdrawal, the application is treated as though the request was never filed.',
+    }, {
+      kind: 'agencyGuidance',
+      citation: 'SSA POMS GN 00206.005, § A first bullet (12-month RIB filing)',
+      url: 'https://secure.ssa.gov/poms.nsf/lnx/0200206005',
+      quotedText:
+        'The NH receiving Retirement Insurance Benefits (RIB) must submit the withdrawal request within 12 months of the first month of entitlement;',
+    }, {
+      kind: 'agencyGuidance',
+      citation: 'SSA POMS GN 00206.005, § A second bullet (repayment)',
+      url: 'https://secure.ssa.gov/poms.nsf/lnx/0200206005',
+      quotedText:
+        'The beneficiary who requests a WD of their benefit application must repay all benefits he or she received, before we approve the withdrawal request. This includes Medicare payments (i.e., Hospital Insurance (HI) expenses paid by CMS, and Supplementary Medical Insurance (SMI) premiums withheld by SSA) and voluntary tax withholding (VTW) for closed tax years.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: ['packages/engine/src/model/plan.ts'],
+  },
+
+  'usc-42-415-f-2-post-entitlement-pia-recomputation': {
+    title: 'Post-entitlement covered earnings can recompute a higher PIA',
+    statement:
+      'Covered earnings in a year for any part of which a worker is entitled to old-age benefits can require a PIA recomputation, effective the following January when it raises the PIA by at least one dollar. Higher post-entitlement earnings can enter the computation base and replace lower indexed years. simulate.ts resolves earnings-derived PIA once before the projection loop and never feeds projected wage income back into piaFromEarnings.ts, so it omits an otherwise higher benefit; whether that understates or overstates tax depends on how the spending shortfall is funded, since a traditional-account withdrawal replacing at-most-85-percent-taxable benefit dollars is fully taxable.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'bothDirections',
+    conventionRationale:
+      'simulate.ts has a real PIA-from-earnings path, so this is not an absence record: before projecting any year it resolves each Social Security stream\'s PIA once from `socialSecurityIncomeSchema.earnings` and optional pre-retirement `earningsProjection`. Later `wagesIncomeSchema` income is not appended to that history or recomputed. Closing 415(f)(2) also requires widening the base-year window in piaFromEarnings.ts (`computePiaFromEarnings` clamps `lastBaseYear` to eligibility-1), which is why that file stays in implementedBy. The companion fixture gives a fully insured worker ten AWI-level covered years (2013-2022), claims at 2029 FRA, and supplies 10,000 dollars of covered wages in 2030. The authority-side recomputation replaces a zero in the top-35 set: indexed earnings rise by 10,000, AIME from 1,518 to 1,542, and 2024 second-band PIA from 1,166.60 to 1,174.30 (delta 7.70, above the one-dollar threshold), so 2031 pays 14,091.60; the engine observably leaves the initially resolved 1,166.60 PIA in force and pays 13,999.20.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 415(a)(1)(A)(ii)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim',
+      quotedText:
+        '32 percent of the individual\'s average indexed monthly earnings to the extent that such earnings exceed the amount established for purposes of clause (i) but do not exceed the amount established for purposes of this clause by subparagraph (B), and',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 415(a)(1)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim',
+      quotedText:
+        'rounded, if not a multiple of $0.10, to the next lower multiple of $0.10, and thereafter increased as provided in subsection (i).',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 415(b)(2)(A)(i)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim',
+      quotedText:
+        'The number of an individual\'s benefit computation years equals the number of elapsed years reduced- (i) in the case of an individual who is entitled to old-age insurance benefits (except as provided in the second sentence of this subparagraph), or who has died, by 5 years, and',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 415(b)(2)(B)(i)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim',
+      quotedText:
+        'the term "benefit computation years" means those computation base years, equal in number to the number determined under subparagraph (A), for which the total of such individual\'s wages and self-employment income, after adjustment under paragraph (3), is the largest;',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 415(b)(2)(B)(ii)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim',
+      quotedText:
+        'the term "computation base years" means the calendar years after 1950 and before- (I) in the case of an individual entitled to old-age insurance benefits, the year in which occurred (whether by reason of section 402(j)(1) of this title or otherwise) the first month of that entitlement; or (II) in the case of an individual who has died (without having become entitled to old-age insurance benefits), the year succeeding the year of his death; except that such term excludes any calendar year entirely included in a period of disability; and',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 415(f)(2)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim',
+      quotedText:
+        'If an individual has wages or self-employment income for a year after 1978 for any part of which he is entitled to old-age or disability insurance benefits, the Commissioner of Social Security shall, at such time or times and within such period as the Commissioner may by regulation prescribe, recompute the individual\'s primary insurance amount for that year.',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 415(f)(2)(C)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim',
+      quotedText:
+        'A recomputation of any individual\'s primary insurance amount under this paragraph shall be made as provided in subsection (a)(1) as though the year with respect to which it is made is the last year of the period specified in subsection (b)(2)(B)(ii); and subsection (b)(3)(A) shall apply with respect to any such recomputation as it applied in the computation of such individual\'s primary insurance amount prior to the application of this subsection.',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 415(f)(2)(D)(i)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim',
+      quotedText:
+        'in the case of an individual who did not die in that year, for monthly benefits beginning with benefits for January of the following year; or',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 415(f)(4)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim',
+      quotedText:
+        'A recomputation shall be effective under this subsection only if it increases the primary insurance amount by at least $1.',
+    }, {
+      kind: 'regulation',
+      citation: '20 CFR 404.211(b)(2)',
+      url: 'https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-C/subject-group-ECFR7fa0e3667334188/section-404.211',
+      quotedText:
+        'The year you become entitled to benefits and following years may be used as computation base years in a recomputation if their use would result in a higher primary insurance amount.',
+    }, {
+      kind: 'regulation',
+      citation: '20 CFR 404.211(e)(2)',
+      url: 'https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-C/subject-group-ECFR7fa0e3667334188/section-404.211',
+      quotedText:
+        'For benefit computation years, we use the years with the highest amounts of earnings after indexing. They may include earnings from years that were not indexed, and must include years of no earnings if you do not have sufficient years with earnings.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/socialSecurity/piaFromEarnings.ts',
+    ],
+  },
+
   'usc-42-1395r-i-irmaa-applicable-percentage': {
     title: 'IRMAA raises the beneficiary share of cost from 25 percent',
     statement:
