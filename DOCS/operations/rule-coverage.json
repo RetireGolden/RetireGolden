@@ -2,21 +2,21 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 1,
   "registry": {
-    "total": 306,
+    "total": 318,
     "byClassification": {
-      "approximated": 68,
-      "outOfScope": 41,
-      "settled": 193,
+      "approximated": 75,
+      "outOfScope": 45,
+      "settled": 194,
       "unsettled": 4
     },
     "byVolatility": {
-      "annuallyIndexed": 44,
+      "annuallyIndexed": 47,
       "awaitingGuidance": 10,
-      "staticStatute": 246,
+      "staticStatute": 255,
       "sunsetting": 6
     },
     "byJurisdiction": {
-      "federal": 249,
+      "federal": 261,
       "states": {
         "AK": 1,
         "AR": 9,
@@ -45,8 +45,8 @@
   "attestations": {
     "totalFiles": 235,
     "byStatus": {
-      "partial": 62,
-      "registered": 49,
+      "partial": 61,
+      "registered": 50,
       "rule-free": 124,
       "unswept": 0
     },
@@ -316,19 +316,14 @@
       "note": "worker claim-age window and factor composition rest on records naming benefitFactor.ts; no record names this file"
     },
     {
-      "path": "socialSecurity/disability.ts",
-      "sweptOn": "2026-08-24",
-      "note": "SGA amount registered; SSDI benefit=full PIA; FRA conversion window; annual SGA×12 suspension proxy not registered here"
-    },
-    {
       "path": "socialSecurity/maritalBenefits.ts",
       "sweptOn": "2026-08-24",
       "note": "Eligibility rules (10-yr divorce, 9-mo survivor marriage, age gates, remarriage forfeiture) have no records"
     },
     {
       "path": "socialSecurity/piaFromEarnings.ts",
-      "sweptOn": "2026-08-24",
-      "note": "AIME pipeline (age 22–61 window, 5 lowest dropped, top-35 years, AWI indexing) not separately registered"
+      "sweptOn": "2026-08-27",
+      "note": "AIME pipeline (age 22–61 window, 5 lowest dropped, top-35 years, AWI indexing) not separately registered; the disability-freeze exclusion and post-entitlement recomputation base window ARE registered as approximations"
     },
     {
       "path": "strategies/accountEligibility.ts",
@@ -499,8 +494,8 @@
       "directory": "socialSecurity",
       "files": 9,
       "byStatus": {
-        "partial": 4,
-        "registered": 5
+        "partial": 3,
+        "registered": 6
       }
     },
     {
@@ -866,6 +861,72 @@
       "fixtureFiles": [
         "packages/engine/src/params/params.test.ts"
       ]
+    },
+    {
+      "id": "cfr-20-404-1584-blind-sga-monthly-amount",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2026-12-25",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/params/types.ts"
+      ],
+      "fixtureFiles": []
+    },
+    {
+      "id": "cfr-20-404-1592-trial-work-period",
+      "classification": "approximated",
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2026-12-25",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/socialSecurity/disability.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.test.ts"
+      ]
+    },
+    {
+      "id": "cfr-20-404-1592a-extended-period-of-eligibility",
+      "classification": "approximated",
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2026-12-25",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/socialSecurity/disability.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.test.ts"
+      ]
+    },
+    {
+      "id": "cfr-20-404-1592b-expedited-reinstatement",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts"
+      ],
+      "fixtureFiles": []
     },
     {
       "id": "cfr-20-404-313-delayed-retirement-credit",
@@ -5322,6 +5383,23 @@
       ]
     },
     {
+      "id": "usc-42-402-c-2-ssdi-spouse-auxiliary",
+      "classification": "approximated",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/socialSecurity/familyMaximum.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.test.ts"
+      ]
+    },
+    {
       "id": "usc-42-402-d-2-child-survivor-benefit",
       "classification": "outOfScope",
       "jurisdiction": "federal",
@@ -5336,6 +5414,20 @@
       "fixtureFiles": []
     },
     {
+      "id": "usc-42-402-d-2-ssdi-child-auxiliary",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts"
+      ],
+      "fixtureFiles": []
+    },
+    {
       "id": "usc-42-402-e-1-a-current-survivor-remarriage-before-60",
       "classification": "outOfScope",
       "jurisdiction": "federal",
@@ -5344,6 +5436,20 @@
       "effectiveThrough": null,
       "verifiedOn": "2026-08-26",
       "dueOn": "2027-08-26",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts"
+      ],
+      "fixtureFiles": []
+    },
+    {
+      "id": "usc-42-402-e-1-b-ii-cfr-20-404-335-disabled-widow-age-50-prescribed-period",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
       "implementedBy": [
         "packages/engine/src/model/plan.ts"
       ],
@@ -5477,6 +5583,23 @@
       ]
     },
     {
+      "id": "usc-42-403-a-6-ssdi-family-maximum",
+      "classification": "approximated",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/socialSecurity/familyMaximum.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.test.ts"
+      ]
+    },
+    {
       "id": "usc-42-403-f-1-earnings-test-month-charging",
       "classification": "approximated",
       "jurisdiction": "federal",
@@ -5544,6 +5667,23 @@
       ]
     },
     {
+      "id": "usc-42-415-b-2-b-disability-freeze-aime-exclusion",
+      "classification": "approximated",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/socialSecurity/piaFromEarnings.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/socialSecurity/disability.test.ts"
+      ]
+    },
+    {
       "id": "usc-42-415-f-2-post-entitlement-pia-recomputation",
       "classification": "approximated",
       "jurisdiction": "federal",
@@ -5590,6 +5730,56 @@
       ],
       "fixtureFiles": [
         "packages/engine/src/socialSecurity/survivorBenefit.test.ts"
+      ]
+    },
+    {
+      "id": "usc-42-423-a-2-402-q-retirement-claim-before-disability-onset",
+      "classification": "approximated",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.test.ts"
+      ]
+    },
+    {
+      "id": "usc-42-423-a-2-cfr-20-404-317-ssdi-full-pia-fra-conversion",
+      "classification": "settled",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/socialSecurity/disability.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.test.ts"
+      ]
+    },
+    {
+      "id": "usc-42-423-c-2-ssdi-five-month-waiting-period",
+      "classification": "approximated",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/socialSecurity/disability.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.test.ts"
       ]
     },
     {

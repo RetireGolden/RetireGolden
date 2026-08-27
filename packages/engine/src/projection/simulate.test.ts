@@ -4,12 +4,14 @@ import { describeRule } from '../rules/describeRule.js'
 
 import {
   createEmptyPlan,
+  formerSpouseSchema,
   parsePlan,
   socialSecurityIncomeSchema,
   type Account,
   type IncomeStream,
   type Plan,
 } from '../model/plan.js'
+import { year2026 } from '../params/data/year2026.js'
 import { computePiaFromEarnings, isPiaFromEarningsError } from '../socialSecurity/piaFromEarnings.js'
 import { AWI_BY_YEAR } from '../socialSecurity/ssaWageData.js'
 import { combineTaxCalculators, computeFederalTax, createFederalTaxCalculator } from '../tax/federalTax.js'
@@ -202,6 +204,364 @@ describe('horizon and wages', () => {
 })
 
 describe('social security', () => {
+  // Section 423(a)(2) starts this worker at their full PIA, not the 70-percent
+  // retirement factor that would attach to an ordinary age-62 claim. The same
+  // PIA carries through the FRA source conversion and the first post-FRA year
+  // (no DRC): the worker is 60 in 2026, reaches FRA 67 in 2033, and is 68 in 2034.
+  describeRule('usc-42-423-a-2-cfr-20-404-317-ssdi-full-pia-fra-conversion', {
+    readings: {
+      fullPiaThroughFirstPostFraYear: { beforeFra: 24_000, atFra: 24_000, firstPostFraYear: 24_000 },
+      earlyRetirementFactorThroughFirstPostFraYear: { beforeFra: 16_800, atFra: 16_800, firstPostFraYear: 16_800 },
+    },
+    accepted: 'fullPiaThroughFirstPostFraYear',
+    note: 'integer FRA 67 cohort',
+  }, ({ accepted, readings }) => {
+    it('pays the full PIA during SSDI, at FRA, and in the first post-FRA year', () => {
+      const plan = basePlan()
+      plan.incomes = [{
+        type: 'socialSecurity', id: testIds(), personId: 'p1', piaMonthly: 2_000, earnings: null,
+        disability: { onsetAge: 58 }, claimAge: { years: 62, months: 0 },
+      }]
+      plan.accounts = [cash(2_000_000)]
+
+      const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
+      const observed = {
+        beforeFra: socialSecurityIncomeIn(result, 2026),
+        atFra: socialSecurityIncomeIn(result, 2033),
+        firstPostFraYear: socialSecurityIncomeIn(result, 2034),
+      }
+
+      expect(observed).toEqual(accepted)
+      expect(observed).not.toEqual(readings.earlyRetirementFactorThroughFirstPostFraYear)
+    })
+  })
+
+  // Born 1959 → FRA 66y10m. simulate.ts gates the SSDI branch with fra.years
+  // only (66), ignoring extraMonths. Observe the unreduced-amount path around
+  // that gate; if the cohort misbehaves, stop and print rather than pin settled.
+  describeRule('usc-42-423-a-2-cfr-20-404-317-ssdi-full-pia-fra-conversion', {
+    readings: {
+      fullPiaAroundNonIntegerFra: { beforeFraYears: 24_000, atFraYears: 24_000, afterFraYears: 24_000 },
+      earlyRetirementAroundNonIntegerFra: { beforeFraYears: 16_800, atFraYears: 16_800, afterFraYears: 16_800 },
+    },
+    accepted: 'fullPiaAroundNonIntegerFra',
+    note: '1959 FRA 66y10m cohort',
+  }, ({ accepted, readings }) => {
+    it('observes the unreduced PIA for a 66y10m FRA cohort around fra.years', () => {
+      const plan = basePlan()
+      plan.household.people[0] = {
+        id: 'p1', name: 'Pat', dob: '1959-06-15', sex: 'average',
+        retirementAge: null, longevity: { planningAge: 90, source: 'manual' },
+      }
+      plan.incomes = [{
+        type: 'socialSecurity', id: testIds(), personId: 'p1', piaMonthly: 2_000, earnings: null,
+        disability: { onsetAge: 58 }, claimAge: { years: 62, months: 0 },
+      }]
+      plan.accounts = [cash(2_000_000)]
+
+      // Age 65 in 2024, age 66 (fra.years) in 2025, age 67 in 2026.
+      const result = simulatePlan(validate(plan), { startYear: 2024, taxCalculator: noTax })
+      const observed = {
+        beforeFraYears: socialSecurityIncomeIn(result, 2024),
+        atFraYears: socialSecurityIncomeIn(result, 2025),
+        afterFraYears: socialSecurityIncomeIn(result, 2026),
+      }
+
+      // If this cohort misbehaves under the fra.years-only gate, print and stop
+      // rather than pinning a settled identity that is not true.
+      if (
+        observed.beforeFraYears !== 24_000 ||
+        observed.atFraYears !== 24_000 ||
+        observed.afterFraYears !== 24_000
+      ) {
+        throw new Error(`1959 FRA 66y10m cohort misbehaved: ${JSON.stringify(observed)}`)
+      }
+
+      expect(observed).toEqual(accepted)
+      expect(observed).not.toEqual(readings.earlyRetirementAroundNonIntegerFra)
+    })
+  })
+
+  // January-equivalent onset: waiting period Jan–May; first month after waiting
+  // period is June, so statute pays at most Jun–Dec = 7 months in the onset year.
+  describeRule('usc-42-423-c-2-ssdi-five-month-waiting-period', {
+    readings: {
+      sevenPostWaitingMonthsInOnsetYear: 14_000,
+      fullAnnualFromOnsetAge: 24_000,
+    },
+    accepted: 'sevenPostWaitingMonthsInOnsetYear',
+    produced: 'fullAnnualFromOnsetAge',
+  }, ({ accepted, produced }) => {
+    it('pays a full onset-year SSDI benefit where the waiting period leaves at most seven months', () => {
+      const plan = basePlan()
+      // Age 58 in 2026 → January-equivalent onset in the start year.
+      plan.household.people[0] = {
+        id: 'p1', name: 'Pat', dob: '1968-06-15', sex: 'average',
+        retirementAge: null, longevity: { planningAge: 90, source: 'manual' },
+      }
+      plan.incomes = [{
+        type: 'socialSecurity', id: testIds(), personId: 'p1', piaMonthly: 2_000, earnings: null,
+        disability: { onsetAge: 58 }, claimAge: { years: 62, months: 0 },
+      }]
+      plan.accounts = [cash(2_000_000)]
+
+      const observed = socialSecurityIncomeIn(
+        simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax }),
+        2026,
+      )
+
+      expect(observed).toBeCloseTo(produced, 6)
+      expect(observed).not.toBeCloseTo(accepted, 6)
+    })
+  })
+
+  // claimAge 62 precedes disability.onsetAge 65: engine suppresses pre-onset
+  // reduced retirement and pays full PIA from onset (ignoring 402(q) carry-in).
+  describeRule('usc-42-423-a-2-402-q-retirement-claim-before-disability-onset', {
+    readings: {
+      reducedRetirementThenQ2ReducedDib: { preOnsetYear: 16_800, postOnsetYear: 19_200 },
+      suppressesPreOnsetAndPaysFullPiaFromOnset: { preOnsetYear: 0, postOnsetYear: 24_000 },
+    },
+    accepted: 'reducedRetirementThenQ2ReducedDib',
+    produced: 'suppressesPreOnsetAndPaysFullPiaFromOnset',
+  }, ({ accepted, produced }) => {
+    it('pays nothing before onset and the full PIA afterward when claimAge precedes onsetAge', () => {
+      const plan = basePlan()
+      // Age 62 in 2026, onset at 65 → 2029; FRA 67 in 2031.
+      plan.household.people[0] = {
+        id: 'p1', name: 'Pat', dob: '1964-06-15', sex: 'average',
+        retirementAge: null, longevity: { planningAge: 90, source: 'manual' },
+      }
+      plan.incomes = [{
+        type: 'socialSecurity', id: testIds(), personId: 'p1', piaMonthly: 2_000, earnings: null,
+        disability: { onsetAge: 65 }, claimAge: { years: 62, months: 0 },
+      }]
+      plan.accounts = [cash(2_000_000)]
+
+      const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
+      const observed = {
+        preOnsetYear: socialSecurityIncomeIn(result, 2026),
+        postOnsetYear: socialSecurityIncomeIn(result, 2029),
+      }
+
+      expect(observed).toEqual(produced)
+      expect(observed).not.toEqual(accepted)
+    })
+  })
+
+  // Section 403(a)(6) gives the DI household a maximum of
+  // min(max(85% x 500 AIME, 100% x 450 PIA), 150% x 450 PIA) = 450/month.
+  // A worker PIA of 450 plus a spouse auxiliary of 225 therefore caps at
+  // 450/month = 5,400/year. The retirement/survivor first tier instead lets
+  // the 675/month sum through: the household observably receives 8,100/year.
+  describeRule('usc-42-403-a-6-ssdi-family-maximum', {
+    readings: {
+      disabilityAimeMaximum: 5_400,
+      retirementSurvivorMaximum: 8_100,
+    },
+    accepted: 'disabilityAimeMaximum',
+    produced: 'retirementSurvivorMaximum',
+  }, ({ accepted, produced }) => {
+    it('uses the retirement/survivor maximum for an SSDI worker and spouse', () => {
+      const plan = basePlan()
+      plan.household.filingStatus = 'marriedFilingJointly'
+      plan.household.people = [
+        { id: 'p1', name: 'Disabled worker', dob: '1964-06-15', sex: 'average', retirementAge: null, longevity: { planningAge: 90, source: 'manual' } },
+        { id: 'p2', name: 'Spouse', dob: '1959-06-15', sex: 'average', retirementAge: null, longevity: { planningAge: 90, source: 'manual' } },
+      ]
+      plan.incomes = [
+        {
+          type: 'socialSecurity', id: testIds(), personId: 'p1', piaMonthly: 450, earnings: null,
+          disability: { onsetAge: 58 }, claimAge: { years: 62, months: 0 },
+        },
+        { type: 'socialSecurity', id: testIds(), personId: 'p2', piaMonthly: 0, earnings: null, claimAge: { years: 67, months: 0 } },
+      ]
+      plan.accounts = [cash(2_000_000)]
+
+      const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
+      const observed = socialSecurityIncomeIn(result, 2026)
+
+      expect(observed).toBeCloseTo(produced, 6)
+      expect(observed).not.toBeCloseTo(accepted, 6)
+    })
+  })
+
+  // A 58-year-old worker is already entitled to SSDI. Section 402(c)(1) makes
+  // the 67-year-old spouse eligible on that record, yielding the worker's
+  // 24,000 plus a 12,000 one-half-PIA auxiliary. The generic top-up incorrectly
+  // waits for the worker stream's ordinary claimAge of 62.
+  describeRule('usc-42-402-c-2-ssdi-spouse-auxiliary', {
+    readings: {
+      ssdiWorkerAndEligibleSpouse: 36_000,
+      waitsForWorkerRetirementClaimAge: 24_000,
+    },
+    accepted: 'ssdiWorkerAndEligibleSpouse',
+    produced: 'waitsForWorkerRetirementClaimAge',
+    note: 'claimAge gate',
+  }, ({ accepted, produced }) => {
+    it('does not start the SSDI spouse auxiliary before the worker reaches claimAge', () => {
+      const plan = basePlan()
+      plan.household.filingStatus = 'marriedFilingJointly'
+      plan.household.people = [
+        { id: 'p1', name: 'Disabled worker', dob: '1968-06-15', sex: 'average', retirementAge: null, longevity: { planningAge: 90, source: 'manual' } },
+        { id: 'p2', name: 'Eligible spouse', dob: '1959-06-15', sex: 'average', retirementAge: null, longevity: { planningAge: 90, source: 'manual' } },
+      ]
+      plan.incomes = [
+        {
+          type: 'socialSecurity', id: testIds(), personId: 'p1', piaMonthly: 2_000, earnings: null,
+          disability: { onsetAge: 58 }, claimAge: { years: 62, months: 0 },
+        },
+        { type: 'socialSecurity', id: testIds(), personId: 'p2', piaMonthly: 0, earnings: null, claimAge: { years: 67, months: 0 } },
+      ]
+      plan.accounts = [cash(2_000_000)]
+
+      const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
+      const observed = socialSecurityIncomeIn(result, 2026)
+
+      expect(observed).toBeCloseTo(produced, 6)
+      expect(observed).not.toBeCloseTo(accepted, 6)
+    })
+  })
+
+  // Section 425(a): worker SSDI suspension suspends auxiliaries on that record.
+  // Worker at claimAge 62 with wages above SGAx12; spouse at FRA is otherwise
+  // eligible. Authority-side household is 0; engine zeros only the worker.
+  describeRule('usc-42-402-c-2-ssdi-spouse-auxiliary', {
+    readings: {
+      householdSuspendedUnder425a: 0,
+      // Worker zeroed by SGA; spouse half-PIA still paid (12,000).
+      workerZeroedSpouseStillPaid: 12_000,
+    },
+    accepted: 'householdSuspendedUnder425a',
+    produced: 'workerZeroedSpouseStillPaid',
+    note: '425(a) suspension limb',
+  }, ({ accepted, produced }) => {
+    it('zeros only the SSDI worker when wages exceed annual SGA, leaving the spouse paid', () => {
+      const plan = basePlan()
+      plan.household.filingStatus = 'marriedFilingJointly'
+      plan.household.people = [
+        { id: 'p1', name: 'Disabled worker', dob: '1964-06-15', sex: 'average', retirementAge: null, longevity: { planningAge: 90, source: 'manual' } },
+        { id: 'p2', name: 'Eligible spouse', dob: '1959-06-15', sex: 'average', retirementAge: null, longevity: { planningAge: 90, source: 'manual' } },
+      ]
+      plan.incomes = [
+        wages(20_281),
+        {
+          type: 'socialSecurity', id: testIds(), personId: 'p1', piaMonthly: 2_000, earnings: null,
+          disability: { onsetAge: 58 }, claimAge: { years: 62, months: 0 },
+        },
+        { type: 'socialSecurity', id: testIds(), personId: 'p2', piaMonthly: 0, earnings: null, claimAge: { years: 67, months: 0 } },
+      ]
+      plan.accounts = [cash(2_000_000)]
+
+      const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
+      const observed = socialSecurityIncomeIn(result, 2026)
+      expect(observed).toBeCloseTo(produced, 6)
+      expect(observed).not.toBeCloseTo(accepted, 6)
+    })
+  })
+
+  function annualSgaWorkIncentivePlan(): Plan {
+    const plan = basePlan()
+    plan.incomes = [
+      wages(20_281),
+      {
+        type: 'socialSecurity', id: testIds(), personId: 'p1', piaMonthly: 2_000, earnings: null,
+        disability: { onsetAge: 58 }, claimAge: { years: 62, months: 0 },
+      },
+    ]
+    plan.accounts = [cash(2_000_000)]
+    return plan
+  }
+
+  // Authority-side paired monthly limbs (same 20,281 annual wages): a first
+  // January service month and a ninth December service month are both still
+  // protected trial-work months, so the whole 2,000 × 12 benefit remains payable.
+  describeRule('cfr-20-404-1592-trial-work-period', {
+    readings: {
+      protectedTrialWorkMonthsKeepFullBenefit: {
+        firstServiceMonthJanuary: 24_000,
+        ninthServiceMonthDecember: 24_000,
+      },
+      annualSgaSuspendsWholeBenefit: {
+        firstServiceMonthJanuary: 0,
+        ninthServiceMonthDecember: 0,
+      },
+    },
+    accepted: 'protectedTrialWorkMonthsKeepFullBenefit',
+    produced: 'annualSgaSuspendsWholeBenefit',
+  }, ({ accepted, produced }) => {
+    it('cannot distinguish protected first and ninth trial-work months from annual SGA', () => {
+      const observed = socialSecurityIncomeIn(
+        simulatePlan(validate(annualSgaWorkIncentivePlan()), { startYear: 2026, taxCalculator: noTax }),
+        2026,
+      )
+      const annualProjection = {
+        firstServiceMonthJanuary: observed,
+        ninthServiceMonthDecember: observed,
+      }
+
+      expect(annualProjection).toEqual(produced)
+      expect(annualProjection).not.toEqual(accepted)
+    })
+  })
+
+  // Same annual wages after trial work: January-only SGA keeps 12 months payable
+  // under the grace/restart rule; every-month SGA pays only three grace months.
+  describeRule('cfr-20-404-1592a-extended-period-of-eligibility', {
+    readings: {
+      monthlyEpeGraceAndRestart: {
+        januaryOnlySga: 24_000,
+        everyMonthSga: 6_000,
+      },
+      annualSgaSuspendsWholeBenefit: {
+        januaryOnlySga: 0,
+        everyMonthSga: 0,
+      },
+    },
+    accepted: 'monthlyEpeGraceAndRestart',
+    produced: 'annualSgaSuspendsWholeBenefit',
+  }, ({ accepted, produced }) => {
+    it('cannot distinguish January-only EPE from every-month SGA on annual wages', () => {
+      const observed = socialSecurityIncomeIn(
+        simulatePlan(validate(annualSgaWorkIncentivePlan()), { startYear: 2026, taxCalculator: noTax }),
+        2026,
+      )
+      const annualProjection = {
+        januaryOnlySga: observed,
+        everyMonthSga: observed,
+      }
+
+      expect(annualProjection).toEqual(produced)
+      expect(annualProjection).not.toEqual(accepted)
+    })
+  })
+
+  it('has no accepted DWB age-50, blind-SGA, or EXR state surface', () => {
+    const streamFields = Object.keys(socialSecurityIncomeSchema.shape)
+    expect(socialSecurityIncomeSchema.shape.claimAge.safeParse({ years: 50, months: 0 }).success).toBe(false)
+    for (const absent of [
+      'disabledWidowClaim',
+      'disabledWidowDetermination',
+      'blind',
+      'blindnessDetermination',
+      'priorDisabilityTermination',
+      'expeditedReinstatementRequest',
+      'currentImpairmentRelation',
+    ] as const) {
+      expect(streamFields.includes(absent)).toBe(false)
+    }
+    // Records name formerSpouseSchema (no death-date/prescribed-period anchor)
+    // and the pack (no sgaMonthlyBlind), not trial-work/EPE counters.
+    const formerFields = Object.keys(formerSpouseSchema.shape)
+    expect(formerFields.includes('deathDate')).toBe(false)
+    expect(formerFields.includes('prescribedPeriodStart')).toBe(false)
+    expect(formerFields.includes('prescribedPeriodEnd')).toBe(false)
+
+    const packSs = Object.keys(year2026.socialSecurity)
+    expect(packSs.includes('sgaMonthlyNonBlind')).toBe(true)
+    expect(packSs.includes('sgaMonthlyBlind')).toBe(false)
+  })
+
   // Section 402(r)(2) bites when a claimant seeks spouse-only at claim age: they
   // are deemed to file for their own old-age benefit too. At 62 the two year-one
   // annual figures discriminate that direction:

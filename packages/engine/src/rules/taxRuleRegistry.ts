@@ -3094,6 +3094,419 @@ const registry = {
     ],
   },
 
+  'usc-42-402-e-1-b-ii-cfr-20-404-335-disabled-widow-age-50-prescribed-period': {
+    title: 'A disabled widow(er) may qualify at 50 only with timely statutory disability',
+    statement:
+      'A widow(er) may be entitled from age 50 rather than age 60 only while disabled and only when the disability began within the prescribed seven-year period. The Plan cannot make that claim: its Social Security stream has a single retirement `claimAge` clamped to 62–70, a worker-SSDI `disability.onsetAge` that is not linked to a deceased-worker record, and no DWB disability determination, death/last-entitlement date, prescribed-period, waiting-period, SSI, or application facts. No accepted Plan therefore reaches the disabled-widow(er) branch or produces a DWB amount.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'This folds the age-50 and seven-year limbs into one record. Section 402(e)(1)(B)(ii) makes the age exception conditional on disability beginning before paragraph (4)\'s period ends, and 20 CFR 404.335(c)(1) supplies the seven-year timing test. A separate record would name the same missing DWB claim surface and would not identify an independent implemented calculation. The generic survivor path and the generic worker-SSDI onset field do not make a DWB claim: formerSpouseSchema has no death date or prescribed-period anchor, and the disability object has only an onset age.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 402(e)(1)(B)(ii)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
+      quotedText:
+        'has attained age 50 but has not attained age 60 and is under a disability (as defined in section 423(d) of this title) which began before the end of the period specified in paragraph (4),',
+    }, {
+      kind: 'regulation',
+      citation: '20 CFR 404.335(c), (c)(1)',
+      url: 'https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR219bf3e41a78e9f/section-404.335',
+      quotedText:
+        "You are at least 60 years old; or you are at least 50 years old and have a disability as defined in § 404.1505 and you meet all of the conditions in paragraphs (c)(1) through (4) of this section: (1) Your disability started not later than 7 years after the insured died or 7 years after you were last entitled to mother's or father's benefits or to widow's or widower's benefits based upon a disability, whichever occurred last.",
+    }, {
+      kind: 'agencyGuidance',
+      citation: 'SSA POMS DI 10110.001, § A',
+      url: 'https://secure.ssa.gov/poms.nsf/lnx/0410110001',
+      quotedText:
+        'To be eligible for DWB benefits, a widow(er) must have attained age 50, but not attained age 60.',
+    }, {
+      kind: 'agencyGuidance',
+      citation: 'SSA POMS DI 10110.001, § D',
+      url: 'https://secure.ssa.gov/poms.nsf/lnx/0410110001',
+      quotedText:
+        'To qualify for disability benefits, a widow(er) (including certain surviving divorced spouses) must be found disabled before the end of a certain prescribed period as defined in the law.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: ['packages/engine/src/model/plan.ts'],
+  },
+
+  'usc-42-403-a-6-ssdi-family-maximum': {
+    title: 'The SSDI family maximum is AIME-based, not the retirement/survivor bend-point formula',
+    statement:
+      'For a worker entitled to disability insurance benefits, the family maximum is the smaller of 85 percent of AIME (but no less than 100 percent of PIA) and 150 percent of PIA. The engine instead applies the retirement/survivor marginal bend-point formula whenever its generic current-spouse path calls `capAuxiliaryForFamilyMaximum`, including when the worker is receiving SSDI. That produces a family-benefit figure for an expressible SSDI household but can be materially different from the disability maximum; for example, an AIME of 500 and PIA of 450 gives a statutory maximum of 450 a month (5,400 a year), while the retirement first tier gives 675, and the companion household observably receives 8,100 a year.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'bothDirections',
+    conventionRationale:
+      'Section 403(a)(6)\'s 85/100/150 percentages are the controlling disability-family formula. POMS RS 00615.736 is omitted here because it instructs the ordinary PIA bend-point maximum for people who become disabled — the exact retirement/survivor reading this record rejects. The sign is not one-sided in taxpayer-tax terms: a too-large or too-small Social Security amount changes taxable benefits, and a spending shortfall can instead be funded with withdrawals whose tax character depends on the account used.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 403(a)(6)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section403&num=0&edition=prelim',
+      quotedText:
+        "Notwithstanding any of the preceding provisions of this subsection other than paragraphs (3)(A), (3)(C), (3)(D), (4), and (5) (but subject to section 415(i)(2)(A)(ii) of this title), the total monthly benefits to which beneficiaries may be entitled under sections 402 and 423 of this title for any month on the basis of the wages and self-employment income of an individual entitled to disability insurance benefits shall be reduced (before the application of section 424a of this title) to the smaller of- (A) 85 percent of such individual's average indexed monthly earnings (or 100 percent of his primary insurance amount, if larger), or (B) 150 percent of such individual's primary insurance amount.",
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/socialSecurity/familyMaximum.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+  },
+
+  'usc-42-402-c-2-ssdi-spouse-auxiliary': {
+    title: 'An SSDI spouse auxiliary is one-half PIA before the disability-family reduction',
+    statement:
+      'A qualifying husband on a living disabled worker\'s record has a one-half-PIA auxiliary amount before the family maximum reduces it. The generic current-spouse code does compute a 50-percent PIA top-up, but it applies a retirement `claimAge` gate to the disabled worker and uses the retirement/survivor family maximum. Thus an expressible 58-year-old SSDI worker with a 67-year-old spouse receives no auxiliary until the worker\'s irrelevant retirement claim age. The engine returns a benefit figure, so this is an approximation rather than a refused auxiliary rule.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'bothDirections',
+    conventionRationale:
+      'The disability limb of section 402(c)(1) quoted on this record lets a husband qualify on a worker entitled to disability insurance benefits without waiting for that worker to claim old-age benefits. simulate.ts nevertheless calculates `higherPayableMonths` from the worker stream\'s 62–70 `claimAge`, even though the SSDI branch disregards it for the worker payment. Section 425(a) also makes the worker\'s disability-benefit suspension suspend auxiliaries on that wage record, while the generic post-top-up SGA pass zeros only the worker. Benefit errors can affect taxable Social Security or trigger a taxable, tax-free, or gain-bearing replacement withdrawal, so the taxpayer-tax sign varies.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 402(c)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
+      quotedText:
+        "in the case of a husband or divorced husband (as so defined) of- (I) an individual entitled to old-age insurance benefits, if such husband or divorced husband has not attained retirement age (as defined in section 416(l) of this title), or (II) an individual entitled to disability insurance benefits, the first month throughout which he is such a husband or divorced husband and meets the criteria specified in subparagraphs (B), (C), and (D) (if in such month he meets the criterion specified in subparagraph (A)), whichever is earlier, and ending with the month preceding the month in which any of the following occurs:",
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 402(c)(2)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
+      quotedText:
+        "Except as provided in subsection (q), such husband's insurance benefit for each month shall be equal to one-half of the primary insurance amount of his wife (or, in the case of a divorced husband, his former wife) for such month.",
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 425(a)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section425&num=0&edition=prelim',
+      quotedText:
+        'Whenever the benefits of an individual entitled to a disability insurance benefit are suspended for any month, the benefits of any individual entitled thereto under subsection (b), (c), or (d) of section 402 of this title, on the basis of the wages and self-employment income of such individual, shall be suspended for such month.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/socialSecurity/familyMaximum.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+  },
+
+  'usc-42-402-d-2-ssdi-child-auxiliary': {
+    title: 'Living-child SSDI auxiliary benefits are outside the Plan',
+    statement:
+      'The engine does not create a child SSDI auxiliary. A living disabled worker\'s eligible child receives one-half of the worker\'s primary insurance amount under section 402(d)(2), and section 403(a) can reduce benefits on that worker\'s record to the family maximum; the Plan has no child person, dependency, age/student/disability eligibility, or child Social Security stream through which either amount can be reached.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'Absence-record surface is model/plan.ts: `household.hasQualifyingDependent` is a tax-filing boolean, not a child identity, dependency, age, student, disability, or Social Security-benefit record. familyMaximum.ts therefore caps only a modeled current-spouse auxiliary and has no child allocation to price. No accepted Plan supplies the trigger facts for a living-child SSDI auxiliary.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 402(d)(2)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
+      quotedText:
+        "Such child's insurance benefit for each month shall, if the individual on the basis of whose wages and self-employment income the child is entitled to such benefit has not died prior to the end of such month, be equal to one-half of the primary insurance amount of such individual for such month.",
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: ['packages/engine/src/model/plan.ts'],
+  },
+
+  'cfr-20-404-1584-blind-sga-monthly-amount': {
+    title: 'Blind SGA is a separate wage-indexed monthly amount',
+    statement:
+      'For 2026, the statutorily blind SGA amount is 2,830 dollars per month, distinct from the 1,690-dollar non-blind amount in the parameter pack. The regulation supplies a separate blindness rule whose post-1995 increases depend on the national average wage index. The Plan has no statutory-blindness fact and the parameter pack has only `sgaMonthlyNonBlind`, so no accepted input can select the blind amount or route it to the SSDI gate; the engine does not produce a blind-SGA figure.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'This follows the authority shape of cfr-20-404-1574-b-2-sga-non-blind-monthly-amount: the current-year amount is a wage-indexed determination, not an OACT table lookup. The staged eCFR text establishes that blindness has a distinct guideline and wage-indexing method. The implementation surface is absent in both model/plan.ts and params/types.ts/year2026.ts: there is no blindness input, `sgaMonthlyBlind`, or branch selecting one.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'regulation',
+      citation: '20 CFR 404.1584(d)(3)',
+      url: 'https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-P/subject-group-ECFR3694c7fc1368ec8/section-404.1584',
+      quotedText:
+        'For taxable years beginning 1978, if you are blind, the law provides different earnings guidelines for determining if your earnings from your work activities are substantial gainful activity. Ordinarily, we consider your work to be substantial gainful activity, if your average monthly earnings are more than those shown in Table I. For years after 1977 and before 1996, increases in the substantial gainful activity guideline were linked to increases in the monthly exempt amount under the retirement earnings test for individuals aged 65 to 69. Beginning with 1996, increases in the substantial gainful activity amount have depended only on increases in the national average wage index.',
+    }, {
+      kind: 'regulation',
+      citation: 'SSA, Cost-of-Living Increase and Other Determinations for 2026, 90 FR 49047 (Nov. 3, 2025)',
+      url: 'https://www.govinfo.gov/content/pkg/FR-2025-11-03/html/2025-19763.htm',
+      quotedText:
+        'Because $2,830 exceeds the current amount of $2,700, the monthly SGA amount for statutorily blind individuals is $2,830 for 2026.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/params/types.ts',
+      'packages/engine/src/params/data/year2026.ts',
+    ],
+  },
+
+  'cfr-20-404-1592-trial-work-period': {
+    title: 'The nine-service-month trial work period preserves SSDI',
+    statement:
+      'During one trial work period, a disabled beneficiary may perform services in as many as nine nonconsecutive months without those services showing that disability ended. The annual engine instead suspends every pre-FRA SSDI benefit when annual wages exceed twelve non-blind SGA months, with no service-month count, trial-work start, application, entitlement, self-employment-hours, or monthly wage facts. A working-SSDI Plan is expressible and returns zero benefits where a first qualifying service month is still protected, so the annual output is an approximation.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'bothDirections',
+    conventionRationale:
+      'The companion fixture assigns the same 20,281-dollar 2026 total either to a first January service month or to a ninth December service month after entitlement, leaving the other eleven months at zero in each case. Both are still protected trial-work months, so the authority-side annual benefit remains 24,000 dollars on a 2,000-dollar PIA. The annual Plan makes those distinct monthly cases identical and simulate.ts treats both as annual SGA, returning a suspended annual benefit. The opposite monthly concentration can make an annual total look harmless while an SGA month is payable differently, and replacement-spending taxation depends on its funding source; neither tax direction is one-sided.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'regulation',
+      citation: '20 CFR 404.1592(a)',
+      url: 'https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-P/subject-group-ECFR47cbdc321ec526a/section-404.1592',
+      quotedText:
+        'The trial work period is a period during which you may test your ability to work and still be considered disabled. It begins and ends as described in paragraph (e) of this section. During this period, you may perform services (see paragraph (b) of this section) in as many as 9 months, but these months do not have to be consecutive. We will not consider those services as showing that your disability has ended until you have performed services in at least 9 months.',
+    }, {
+      kind: 'regulation',
+      citation: '20 CFR 404.1592(b)',
+      url: 'https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-P/subject-group-ECFR47cbdc321ec526a/section-404.1592',
+      quotedText:
+        'When used in this section, services means any activity (whether legal or illegal), even though it is not substantial gainful activity, which is done in employment or self-employment for pay or profit, or is the kind normally done for pay or profit.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/socialSecurity/disability.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+  },
+
+  'cfr-20-404-1592a-extended-period-of-eligibility': {
+    title: 'The 36-month extended period of eligibility tests SGA by month',
+    statement:
+      'After nine months of trial work, the extended period of eligibility can run for 36 months. The first post-trial-work SGA month and the next two months remain payable, later payments stop only for months with SGA, and benefits restart in a non-SGA month without a new application. The engine has no trial-work completion or reentitlement state and compares only annual wages to annualized SGA, so it returns an annual SSDI amount that can disagree with the required monthly sequence for an otherwise expressible working-SSDI Plan.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'bothDirections',
+    conventionRationale:
+      'The companion fixtures use the same expressible 20,281-dollar annual wage total after trial work has ended. When it is earned in January alone, January and the next two months are payable under the grace rule and payment restarts from April, for a 24,000-dollar annual benefit on a 2,000-dollar PIA. When it is spread at more than monthly SGA across all twelve months, only the three grace months are payable, for 6,000 dollars. simulate.ts cannot distinguish the two monthly histories and produces its whole-year SGA suspension for both. The taxpayer-tax direction changes with the monthly pattern and with the account used to fill any spending shortfall.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'regulation',
+      citation: '20 CFR 404.1592a(a)(2)(i)',
+      url: 'https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-P/subject-group-ECFR47cbdc321ec526a/section-404.1592a',
+      quotedText:
+        'If we determine under paragraph (a)(1) of this section that your disability ceased during the reentitlement period because you perform substantial gainful activity, you will be paid benefits for the first month after the trial work period in which you do substantial gainful activity (i.e., the month your disability ceased) and the two succeeding months, whether or not you do substantial gainful activity in those succeeding months. After those three months, we will stop your benefits for any month in which you do substantial gainful activity.',
+    }, {
+      kind: 'regulation',
+      citation: '20 CFR 404.1592a(a)(2)(i)',
+      url: 'https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-P/subject-group-ECFR47cbdc321ec526a/section-404.1592a',
+      quotedText:
+        'If your benefits are stopped because you do substantial gainful activity, they may be started again without a new application and a new determination of disability if you stop doing substantial gainful activity in a month during the reentitlement period. In determining whether you do substantial gainful activity in a month for purposes of stopping or starting benefits during the reentitlement period, we will consider only your work in, or earnings for, that month.',
+    }, {
+      kind: 'regulation',
+      citation: '20 CFR 404.1592a(b)(2)(ii)',
+      url: 'https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-P/subject-group-ECFR47cbdc321ec526a/section-404.1592a',
+      quotedText:
+        'The last day of the 36th month following the end of your trial work period if you were entitled to benefits after December 1987 or if the 15-month period described in paragraph (b)(2)(i) of this section had not ended as of January 1988.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/socialSecurity/disability.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+  },
+
+  'cfr-20-404-1592b-expedited-reinstatement': {
+    title: 'Expedited reinstatement is available within 60 months of work termination',
+    statement:
+      'A former disability beneficiary whose entitlement terminated because of work may request reinstatement if substantial gainful activity stops within 60 months, the current impairment is the same as or related to the prior impairment, and the person is disabled. The Plan has no prior termination, termination date, request, current/prior-impairment relationship, or reinstatement state, so no accepted input reaches expedited reinstatement and the engine produces no EXR figure.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'A `disability.onsetAge` is a prospective worker-SSDI switch, not a terminated-entitlement history or a medical finding. Treating a new onset age as a reinstatement would invent all of the facts that distinguish EXR from a new application. The annual SGA suspension is not EXR workflow and must not be presented as one.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'regulation',
+      citation: '20 CFR 404.1592b',
+      url: 'https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-P/subject-group-ECFR47cbdc321ec526a/section-404.1592b',
+      quotedText:
+        'The expedited reinstatement provision provides you another option for regaining entitlement to benefits when we previously terminated your entitlement to disability benefits due to your work activity. The expedited reinstatement provision provides you the option of requesting that your prior entitlement to disability benefits be reinstated, rather than filing a new application for a new period of entitlement.',
+    }, {
+      kind: 'regulation',
+      citation: '20 CFR 404.1592b',
+      url: 'https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-P/subject-group-ECFR47cbdc321ec526a/section-404.1592b',
+      quotedText:
+        'Since January 1, 2001, you can request to be reinstated to benefits if you stop doing substantial gainful activity within 60 months of your prior termination. You must not be able to do substantial gainful activity because of your medical condition. Your current impairment must be the same as or related to your prior impairment and you must be disabled.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: ['packages/engine/src/model/plan.ts'],
+  },
+
+  'usc-42-415-b-2-b-disability-freeze-aime-exclusion': {
+    title: 'A disability freeze excludes disability years from AIME computation',
+    statement:
+      'Benefit-computation and elapsed-year definitions exclude calendar years entirely or partly within a period of disability, so disability zeros do not remain in the AIME divisor. The Plan\'s Social Security stream already carries `disability.onsetAge`, but piaFromEarnings.ts builds the ordinary age-22-through-61 base window, removes only five low years, and never reads that onset when computing AIME, and simulate.ts resolves earnings-derived PIA through that same helper before the projection loop. The engine therefore returns an AIME (and the SSDI benefit derived from it) for an expressible earnings-and-onset input that is lower than the disability-freeze reading when disability years contain zero earnings.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'bothDirections',
+    conventionRationale:
+      'The fixture uses a 1964 worker with 33 pre-disability earnings years indexed to 69,846 dollars each and seven wholly disabled zero-earnings years from 2019 through 2025, with `disability.onsetAge` 55 (2019 onset). The statutory reading excludes the seven disability years, then applies the ordinary five-year dropout to 33 elapsed years: 28 × 69,846 ÷ (28 × 12), floored, equals an AIME of 5,820. The code has the onset fact but no exclusion pass; it carries two of the seven zeros after its five-year dropout and observably returns an AIME of 5,487 (33 × 69,846 ÷ 420, floored). The simulate-level companion observes the benefit paid from that unfrozen AIME against the freeze-side benefit. A lower or higher Social Security benefit can alter taxable benefits or the tax character of replacement withdrawals, so the taxpayer-tax sign varies.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 415(b)(2)(B)(ii)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim',
+      quotedText:
+        'the term "computation base years" means the calendar years after 1950 and before- (I) in the case of an individual entitled to old-age insurance benefits, the year in which occurred (whether by reason of section 402(j)(1) of this title or otherwise) the first month of that entitlement; or (II) in the case of an individual who has died (without having become entitled to old-age insurance benefits), the year succeeding the year of his death; except that such term excludes any calendar year entirely included in a period of disability; and',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 415(b)(2)(B)(iii)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim',
+      quotedText:
+        'the term "number of elapsed years" means (except as otherwise provided by section 104(j)(2) of the Social Security Amendments of 1972) the number of calendar years after 1950 (or, if later, the year in which the individual attained age 21) and before the year in which the individual died, or, if it occurred earlier (but after 1960), the year in which he attained age 62; except that such term excludes any calendar year any part of which is included in a period of disability.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/socialSecurity/piaFromEarnings.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+  },
+
+  'usc-42-423-c-2-ssdi-five-month-waiting-period': {
+    title: 'SSDI begins only after a five-month waiting period',
+    statement:
+      'Disability insurance benefits begin with the first month after a five consecutive calendar-month waiting period throughout which the worker has been under a disability. The Plan\'s integer-year `disability.onsetAge` is modeled as a January-equivalent onset, so the statutory waiting period is January through May and at most seven post-waiting months are payable in the onset year. disability.ts and simulate.ts instead pay the full annual SSDI amount from the onset year with no waiting-period proration.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'bothDirections',
+    conventionRationale:
+      'DEFECT — no behavior change in this registry slice. For a January-equivalent onset and a 2,000-dollar PIA, section 423 pays at most seven months (14,000) in the onset year while the engine observably pays twelve (24,000). Extra early benefit raises taxable Social Security income; when spending is instead funded from a traditional account the missing-benefit case replaces each dollar with a fully taxable withdrawal, so the taxpayer-tax sign flips with the funding channel.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 423(c)(2)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section423&num=0&edition=prelim',
+      quotedText:
+        'The term "waiting period" means, in the case of any application for disability insurance benefits, the earliest period of five consecutive calendar months- (A) throughout which the individual with respect to whom such application is filed has been under a disability, and',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 423(a)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section423&num=0&edition=prelim',
+      quotedText:
+        'shall be entitled to a disability insurance benefit (i) for each month beginning with the first month after his waiting period (as defined in subsection (c)(2)) in which he becomes so entitled to such insurance benefits,',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/socialSecurity/disability.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+  },
+
+  'usc-42-423-a-2-402-q-retirement-claim-before-disability-onset': {
+    title: 'A reduced retirement claim before later disability onset carries into DIB',
+    statement:
+      'When a worker claims reduced old-age benefits at 62 and later becomes entitled to disability insurance benefits before FRA, section 423(a)(2)\'s 402(q) exception and section 402(q)(2) keep a reduction on the disability benefit, and the reduced retirement benefit remains payable until disability onset. simulate.ts enters the SSDI branch whenever `disability.onsetAge` is set below FRA years and `continue`s past the retirement-claim path, so it pays nothing before onset and the full unreduced PIA from onset.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'bothDirections',
+    conventionRationale:
+      'DEFECT — no behavior change in this registry slice. For claimAge 62, onsetAge 65, FRA 67, and a 2,000-dollar PIA, the authority-side amounts are 16,800 before onset (70 percent retirement factor) and 19,200 from onset (402(q)(2) treats retirement age as attained in the first DIB month, so a 36-month reduction period yields an 80 percent factor). The engine observably pays 0 before onset and 24,000 from onset. Extra or missing benefit changes taxable Social Security income, and a spending shortfall can be funded from accounts whose tax character differs, so the taxpayer-tax sign is not one-sided.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 423(a)(2)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section423&num=0&edition=prelim',
+      quotedText:
+        "Except as provided in section 402(q) of this title and section 415(b)(2)(A)(ii) of this title, such individual's disability insurance benefit for any month shall be equal to his primary insurance amount for such month determined under section 415 of this title",
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 402(q)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
+      quotedText:
+        'Subject to paragraph (9), if the first month for which an individual is entitled to an old-age, wife\'s, husband\'s, widow\'s, or widower\'s insurance benefit is a month before the month in which such individual attains retirement age, the amount of such benefit for such month and for any subsequent month shall, subject to the succeeding paragraphs of this subsection, be reduced by-',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 402(q)(2)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
+      quotedText:
+        'If an individual is entitled to a disability insurance benefit for a month after a month for which such individual was entitled to an old-age insurance benefit, such disability insurance benefit for each month shall be reduced by the amount such old-age insurance benefit would be reduced under paragraphs (1) and (4) for such month had such individual attained retirement age (as defined in section 416(l) of this title) in the first month for which he most recently became entitled to a disability insurance benefit.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/projection/simulate.ts',
+    ],
+  },
+
+  'usc-42-423-a-2-cfr-20-404-317-ssdi-full-pia-fra-conversion': {
+    title: 'SSDI pays the full PIA until retirement age, then the PIA continues as retirement',
+    statement:
+      'The monthly SSDI benefit equals the worker\'s PIA, not an early-retirement-reduced amount. Disability entitlement ends before the month retirement age is attained; the engine changes the published source from SSDI to own retirement at FRA but preserves the same PIA amount and does not award delayed credits. That is the correct payable-dollar continuation for the modeled worker-only SSDI path when onset is already active and the five-month waiting period is ignored. This record is limited to that unreduced-amount identity: the five-month waiting period is registered separately at usc-42-423-c-2-ssdi-five-month-waiting-period; the Subpart C eligibility-year computation, which treats the worker as attaining 62 at the start of the waiting period where piaFromEarnings.ts uses the ordinary age-62 year, is unmodeled and deliberately unregistered here pending its own record; and a retirement claim that precedes a later pre-FRA disability onset is registered at usc-42-423-a-2-402-q-retirement-claim-before-disability-onset. Workers\'-compensation and public-disability offsets remain unmodeled and unregistered.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The stream\'s `claimAge` is deliberately ignored while its disability onset is active before FRA, so importing the ordinary age-62 factor would give the wrong amount. At FRA the code stays on the SSDI branch and only relabels the published source to own retirement at the same full PIA, rather than treating the change as a new claim or a DRC opportunity. The companion fixture extends the observed object through the first post-FRA year so the no-DRC continuation is pinned, and adds a 1959-born (FRA 66y10m) cohort observation for the fra.years-only gate.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 423(a)(2)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section423&num=0&edition=prelim',
+      quotedText:
+        "Except as provided in section 402(q) of this title and section 415(b)(2)(A)(ii) of this title, such individual's disability insurance benefit for any month shall be equal to his primary insurance amount for such month determined under section 415 of this title",
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 423(a)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section423&num=0&edition=prelim',
+      quotedText:
+        'ending with the month preceding whichever of the following months is the earliest: the month in which he dies, the month in which he attains retirement age (as defined in section 416(l) of this title), or, subject to subsection (e), the termination month.',
+    }, {
+      kind: 'regulation',
+      citation: '20 CFR 404.317',
+      url: 'https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR545f4aa361a6356/section-404.317',
+      quotedText:
+        'Your monthly benefit is equal to the primary insurance amount (PIA). This amount is computed under the rules in subpart C of this part as if it was an old-age benefit',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/socialSecurity/disability.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+  },
+
   'usc-42-1395r-i-irmaa-applicable-percentage': {
     title: 'IRMAA raises the beneficiary share of cost from 25 percent',
     statement:
