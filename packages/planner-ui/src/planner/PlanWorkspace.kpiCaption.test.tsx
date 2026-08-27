@@ -26,8 +26,19 @@ async function waitFor(predicate: () => boolean) {
   throw new Error('Timed out waiting for expected render')
 }
 
+/** Honest workspace chrome for lifetimeTaxesAndPenalties (tax + penalties). */
+const LIFETIME_TAX_KPI_SUB = 'nominal $ · tax + penalties'
+
+/**
+ * Character budget calibrated to the 10rem auto-fit minimum, not a jsdom
+ * line-box measurement. At `.kpi-sub` 0.78rem, Chromium system-ui measured
+ * this 27-character string at 153px; 10rem is 160px. The old 39-character
+ * `nominal $ · federal + state + penalties` measured 219px and wrapped.
+ */
+const LIFETIME_TAX_KPI_SUB_MAX_CHARS = 27
+
 describe('PlanWorkspace Lifetime tax KPI caption (#318)', () => {
-  it('keeps the Lifetime tax title and the shortened workspace kpi-sub without + penalties', async () => {
+  it('keeps the Lifetime tax title and the honest shortened workspace kpi-sub', async () => {
     const sample = createSamplePlan()
     const saved = await savePlan(sample)
     if (!saved.ok) throw new Error('seed save failed')
@@ -60,9 +71,10 @@ describe('PlanWorkspace Lifetime tax KPI caption (#318)', () => {
     )
     if (!lifetime) throw new Error('Lifetime tax KPI not rendered')
 
+    const sub = lifetime.querySelector('.kpi-sub')?.textContent ?? ''
     expect(lifetime.querySelector('.kpi-label')?.textContent).toBe('Lifetime tax')
-    expect(lifetime.querySelector('.kpi-sub')?.textContent).toBe('nominal $ · federal + state')
-    expect(lifetime.querySelector('.kpi-sub')?.textContent).not.toMatch(/\+ penalties/)
+    expect(sub).toBe(LIFETIME_TAX_KPI_SUB)
+    expect(sub.length).toBeLessThanOrEqual(LIFETIME_TAX_KPI_SUB_MAX_CHARS)
 
     await act(async () => root.unmount())
     container.remove()
