@@ -12860,7 +12860,12 @@ const registry = {
       'packages/engine/src/params/data/year2026.ts',
     ],
   },
-} as const satisfies Record<string, TaxRuleRecord>
+// `satisfies` without `as const`: keys and the union-typed fields
+// (classification, kind, volatility) stay literal for describeRule's
+// conditional typing, while the prose strings widen to `string` - past ~330
+// records the fully-literal type exceeds the compiler's
+// declaration-serialization limit (TS7056) under the build config.
+} satisfies Record<string, TaxRuleRecord>
 
 export const TAX_RULE_REGISTRY = Object.freeze(registry)
 
