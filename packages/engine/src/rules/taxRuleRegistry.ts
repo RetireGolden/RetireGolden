@@ -3445,7 +3445,7 @@ const registry = {
       citation: '42 U.S.C. 423(a)(2)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section423&num=0&edition=prelim',
       quotedText:
-        "Except as provided in section 402(q) of this title and section 415(b)(2)(A)(ii) of this title, such individual's disability insurance benefit for any month shall be equal to his primary insurance amount for such month determined under section 415 of this title as though he had attained age 62 in-",
+        "Except as provided in section 402(q) of this title and section 415(b)(2)(A)(ii) of this title, such individual's disability insurance benefit for any month shall be equal to his primary insurance amount for such month determined under section 415 of this title",
     }, {
       kind: 'statute',
       citation: '42 U.S.C. 402(q)(1)',
@@ -3471,7 +3471,7 @@ const registry = {
   'usc-42-423-a-2-cfr-20-404-317-ssdi-full-pia-fra-conversion': {
     title: 'SSDI pays the full PIA until retirement age, then the PIA continues as retirement',
     statement:
-      'The monthly SSDI benefit equals the worker\'s PIA, not an early-retirement-reduced amount. Disability entitlement ends before the month retirement age is attained; the engine changes the published source from SSDI to own retirement at FRA but preserves the same PIA amount and does not award delayed credits. That is the correct payable-dollar continuation for the modeled worker-only SSDI path when onset is already active and the five-month waiting period is ignored. This record is limited to that unreduced-amount identity: the five-month waiting period and PIA-eligibility-year computation are registered separately at usc-42-423-c-2-ssdi-five-month-waiting-period, and a retirement claim that precedes a later pre-FRA disability onset is registered at usc-42-423-a-2-402-q-retirement-claim-before-disability-onset. Workers\'-compensation and public-disability offsets remain unmodeled and unregistered.',
+      'The monthly SSDI benefit equals the worker\'s PIA, not an early-retirement-reduced amount. Disability entitlement ends before the month retirement age is attained; the engine changes the published source from SSDI to own retirement at FRA but preserves the same PIA amount and does not award delayed credits. That is the correct payable-dollar continuation for the modeled worker-only SSDI path when onset is already active and the five-month waiting period is ignored. This record is limited to that unreduced-amount identity: the five-month waiting period is registered separately at usc-42-423-c-2-ssdi-five-month-waiting-period; the Subpart C eligibility-year computation, which treats the worker as attaining 62 at the start of the waiting period where piaFromEarnings.ts uses the ordinary age-62 year, is unmodeled and deliberately unregistered here pending its own record; and a retirement claim that precedes a later pre-FRA disability onset is registered at usc-42-423-a-2-402-q-retirement-claim-before-disability-onset. Workers\'-compensation and public-disability offsets remain unmodeled and unregistered.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -3483,7 +3483,7 @@ const registry = {
       citation: '42 U.S.C. 423(a)(2)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section423&num=0&edition=prelim',
       quotedText:
-        "Except as provided in section 402(q) of this title and section 415(b)(2)(A)(ii) of this title, such individual's disability insurance benefit for any month shall be equal to his primary insurance amount for such month determined under section 415 of this title as though he had attained age 62 in-",
+        "Except as provided in section 402(q) of this title and section 415(b)(2)(A)(ii) of this title, such individual's disability insurance benefit for any month shall be equal to his primary insurance amount for such month determined under section 415 of this title",
     }, {
       kind: 'statute',
       citation: '42 U.S.C. 423(a)(1)',
@@ -3495,7 +3495,7 @@ const registry = {
       citation: '20 CFR 404.317',
       url: 'https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR545f4aa361a6356/section-404.317',
       quotedText:
-        'Your monthly benefit is equal to the primary insurance amount (PIA). This amount is computed under the rules in subpart C of this part as if it was an old-age benefit, and as if you were 62 years of age at the beginning of the 5-month waiting period mentioned in § 404.315(a).',
+        'Your monthly benefit is equal to the primary insurance amount (PIA). This amount is computed under the rules in subpart C of this part as if it was an old-age benefit',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
