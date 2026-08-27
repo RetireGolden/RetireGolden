@@ -154,14 +154,21 @@ approximation), **converts to the retirement benefit at FRA at the same dollar a
 PIA persists, with no delayed-retirement credits), and is taxed under the same provisional-income tiers as
 retirement benefits. An off-by-default `disability` input on the SS stream drives the pure
 `socialSecurity/disability.ts` helper + `simulate` Pass 3 wiring; SGA lives in the parameter pack. Documented
-simplifications: the disability freeze (AIME exclusion), trial-work period, the 24-month Medicare wait, and
-auxiliary/family benefits are not modeled. Cited in [domain rules §4](../domain/domain-rules-reference.md).
+simplifications / registered gaps: the disability freeze (AIME exclusion; onset exists but is ignored —
+`usc-42-415-b-2-b-disability-freeze-aime-exclusion`), the five-month waiting period
+(`usc-42-423-c-2-ssdi-five-month-waiting-period`), trial-work / EPE annual approximations
+(`cfr-20-404-1592-trial-work-period`, `cfr-20-404-1592a-extended-period-of-eligibility`), the 24-month
+Medicare wait (note-only), and living-child auxiliaries (`usc-42-402-d-2-ssdi-child-auxiliary`). The
+current-spouse auxiliary and family maximum on an SSDI worker are produced by the generic paths with
+registered approximations (`usc-42-402-c-2-ssdi-spouse-auxiliary`, `usc-42-403-a-6-ssdi-family-maximum`).
+Cited in [domain rules §4](../domain/domain-rules-reference.md).
 
 ## Documented simplifications / deferred
 
 - **Disability (SSDI)** is modeled (worker's own SSDI + FRA conversion; see above). The disability freeze,
-  trial-work period, 24-month Medicare wait, and auxiliary/family-maximum on SSDI are documented
-  simplifications.
+  five-month waiting period, trial-work / EPE, and 24-month Medicare wait are registered approximations or
+  note-only absences; living-child auxiliaries remain out of scope. Spouse auxiliary and family maximum on
+  SSDI are produced via the generic retirement/survivor paths with the named approximation records above.
 - Deemed-filing nuances are simplified; the family maximum is modeled for the current-spouse auxiliary only
   because child/dependent auxiliaries are not yet modeled.
 - Survivor-benefit **documented simplifications** (the early-claim reduction, RIB-LIM — subject to the ordering

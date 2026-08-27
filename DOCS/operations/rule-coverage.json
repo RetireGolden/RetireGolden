@@ -2,21 +2,21 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 1,
   "registry": {
-    "total": 315,
+    "total": 318,
     "byClassification": {
-      "approximated": 73,
-      "outOfScope": 44,
+      "approximated": 75,
+      "outOfScope": 45,
       "settled": 194,
       "unsettled": 4
     },
     "byVolatility": {
-      "annuallyIndexed": 48,
+      "annuallyIndexed": 47,
       "awaitingGuidance": 10,
-      "staticStatute": 251,
+      "staticStatute": 255,
       "sunsetting": 6
     },
     "byJurisdiction": {
-      "federal": 258,
+      "federal": 261,
       "states": {
         "AK": 1,
         "AR": 9,
@@ -872,7 +872,9 @@
       "verifiedOn": "2026-08-27",
       "dueOn": "2026-12-25",
       "implementedBy": [
-        "packages/engine/src/model/plan.ts"
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/params/types.ts"
       ],
       "fixtureFiles": []
     },
@@ -5381,7 +5383,7 @@
       ]
     },
     {
-      "id": "usc-42-402-c-2-d-2-ssdi-auxiliary-half-pia",
+      "id": "usc-42-402-c-2-ssdi-spouse-auxiliary",
       "classification": "approximated",
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -5390,7 +5392,6 @@
       "verifiedOn": "2026-08-27",
       "dueOn": "2027-08-27",
       "implementedBy": [
-        "packages/engine/src/model/plan.ts",
         "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/socialSecurity/familyMaximum.ts"
       ],
@@ -5407,6 +5408,20 @@
       "effectiveThrough": null,
       "verifiedOn": "2026-08-26",
       "dueOn": "2027-08-26",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts"
+      ],
+      "fixtureFiles": []
+    },
+    {
+      "id": "usc-42-402-d-2-ssdi-child-auxiliary",
+      "classification": "outOfScope",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
       "implementedBy": [
         "packages/engine/src/model/plan.ts"
       ],
@@ -5571,11 +5586,11 @@
       "id": "usc-42-403-a-6-ssdi-family-maximum",
       "classification": "approximated",
       "jurisdiction": "federal",
-      "volatility": "annuallyIndexed",
+      "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
       "verifiedOn": "2026-08-27",
-      "dueOn": "2026-12-25",
+      "dueOn": "2027-08-27",
       "implementedBy": [
         "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/socialSecurity/familyMaximum.ts"
@@ -5661,7 +5676,7 @@
       "verifiedOn": "2026-08-27",
       "dueOn": "2027-08-27",
       "implementedBy": [
-        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/socialSecurity/piaFromEarnings.ts"
       ],
       "fixtureFiles": [
@@ -5718,8 +5733,41 @@
       ]
     },
     {
+      "id": "usc-42-423-a-2-402-q-retirement-claim-before-disability-onset",
+      "classification": "approximated",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.test.ts"
+      ]
+    },
+    {
       "id": "usc-42-423-a-2-cfr-20-404-317-ssdi-full-pia-fra-conversion",
       "classification": "settled",
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/socialSecurity/disability.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.test.ts"
+      ]
+    },
+    {
+      "id": "usc-42-423-c-2-ssdi-five-month-waiting-period",
+      "classification": "approximated",
       "jurisdiction": "federal",
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
