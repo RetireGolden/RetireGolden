@@ -3,7 +3,8 @@ import { describe, expect, it } from 'vitest'
 import { describeRule } from '../rules/describeRule.js'
 
 import { createEmptyPlan, parsePlan, type Plan } from '../model/plan.js'
-import { EARLIEST_PACK_YEAR, LATEST_PACK_YEAR, packForYear } from '../params/index.js'
+import { EARLIEST_PACK_YEAR, EMBEDDED_REAL_YIELD_CURVE, LATEST_PACK_YEAR, packForYear } from '../params/index.js'
+import { buildLadder } from '../ladder/ladderMath.js'
 import { summarizeProjection } from '../projection/compare.js'
 import { buildOptimizerInput } from '../projection/optimizePlan.js'
 import { simulatePlan } from '../projection/simulate.js'
@@ -16,6 +17,7 @@ import {
   saltCapForYear,
   taxableSocialSecurity,
 } from './federalTax.js'
+
 
 function validatePlan(plan: Plan): Plan {
   const parsed = parsePlan(plan)
@@ -62,6 +64,56 @@ function optimizerZeroRateFixturePlan(): Plan {
     annualContribution: 0,
   }]
   return plan
+}
+
+/** A one-rung, already-owned TIPS ladder whose 2027 OID is visible in the cash-flow ledger. */
+function tipsOidFixturePlan(annualWages = 0): Plan {
+  let idCounter = 0
+  const plan = createEmptyPlan({
+    newId: () => `tips-oid-fixture-${++idCounter}`,
+    now: () => new Date('2026-01-01T00:00:00.000Z'),
+  })
+  plan.assumptions.inflationPct = 3
+  plan.assumptions.defaultReturnPct = 0
+  plan.assumptions.healthcareExtraInflationPct = 0
+  plan.expenses.baseAnnual = 0
+  plan.expenses.healthcare = {
+    pre65MonthlyPremiumPerPerson: 0,
+    applyAcaCredit: false,
+    medicareExtrasMonthlyPerPerson: 0,
+  }
+  plan.accounts = [{
+    type: 'cash',
+    id: 'tips-oid-cash',
+    name: 'Cash',
+    ownerPersonId: null,
+    annualReturnPct: null,
+    balance: 50_000,
+    annualContribution: 0,
+  }]
+  if (annualWages > 0) {
+    plan.incomes = [{
+      type: 'recurring',
+      id: 'tips-oid-wages',
+      label: 'Ordinary wages',
+      annualAmount: annualWages,
+      startYear: null,
+      endYear: null,
+      inflationAdjusted: false,
+      taxTreatment: 'ordinary',
+    }]
+  }
+  plan.incomeFloor = {
+    ladders: [{
+      id: 'tips-oid-ladder',
+      name: 'TIPS OID fixture',
+      purpose: 'floor',
+      startYear: 2027,
+      endYear: 2027,
+      annualRealAmount: 10_000,
+    }],
+  }
+  return validatePlan(plan)
 }
 
 describe('ordinary brackets and standard deduction (2026)', () => {
@@ -2068,5 +2120,107 @@ describe('indexed federal figures in a stand-in year', () => {
 
     expect(d.niit).toBeCloseTo(3_800, 6)
     expect(d.niit).not.toBeCloseTo(7_600, 6)
+  })
+})
+
+// The one-rung ladder is already owned at the 2026 projection boundary and
+// matures in 2027. Its real face is solved by the same curve used by the
+// projection; the 3% 2027 index move therefore gives a positive OID amount of
+// face × (1.03 - 1), which must be reported as a standalone tax character.
+const positiveOidBuild = buildLadder({
+  annualRealIncome: 10_000,
+  firstPayoutOffset: 2,
+  payoutYears: 1,
+  curve: EMBEDDED_REAL_YIELD_CURVE,
+})
+const positiveOidAmount = positiveOidBuild.rungs[0]!.face * (1.03 - 1)
+
+describeRule('treas-reg-1-1275-7-d-4-positive-inflation-adjustment-oid', {
+  readings: {
+    positiveInflationAdjustmentIsOid: positiveOidAmount,
+    positiveInflationAdjustmentIsTaxFreePrincipal: 0,
+  },
+  accepted: 'positiveInflationAdjustmentIsOid',
+  note: '2027 positive indexation is a phantom OID character',
+}, ({ accepted, readings }) => {
+  it('records positive inflation accretion as OID in the cash-flow ledger', () => {
+    const result = simulatePlan(tipsOidFixturePlan(), {
+      startYear: 2026,
+      taxCalculator: createFederalTaxCalculator(),
+      horizonEndYear: 2027,
+      captureAnnualCashFlow: true,
+    })
+    const year = result.years.find((item) => item.year === 2027)!
+    const oid = year.cashFlow?.taxCharacterMetadata.find(
+      (entry) => entry.taxCharacter.kind === 'tipsPhantomOidIncome',
+    )
+
+    expect(oid).toBeDefined()
+    expect(oid!.taxCharacter.amountPlanDollars).toBeCloseTo(accepted, 6)
+    expect(oid!.taxCharacter.amountPlanDollars).not.toBeCloseTo(
+      readings.positiveInflationAdjustmentIsTaxFreePrincipal,
+      6,
+    )
+    const coupon = positiveOidBuild.rungs[0]!.face *
+      (positiveOidBuild.rungs[0]!.couponRatePct / 100) * 1.03
+    expect(year.magi).toBeCloseTo(accepted + coupon, 6)
+  })
+})
+
+// The paired market path is +3% from 2025 to 2026 followed by -20% from
+// 2026 to 2027 (the fixture starts in 2025). Under the regulation, that
+// negative adjustment reduces current interest, permits only
+// the bounded ordinary loss supported by prior inclusions, carries any excess,
+// and reduces basis. The engine's Math.max(0, ...) clamp emits no negative OID,
+// so it leaves the coupon taxable. The produced MAGI is intentionally pinned
+// with a placeholder: the orchestrator observes the real value before gating.
+const DEFLATION_WAGES = 100_000
+const deflationBuild = buildLadder({
+  annualRealIncome: 10_000,
+  firstPayoutOffset: 3,
+  payoutYears: 1,
+  curve: EMBEDDED_REAL_YIELD_CURVE,
+})
+const deflationFace = deflationBuild.rungs[0]!.face
+const deflationCouponRate = deflationBuild.rungs[0]!.couponRatePct / 100
+const factor2026 = 1.03
+const factor2027 = 1.03 * 0.8
+// Prior inclusions are the 2025 coupon plus the 2026 coupon and positive OID.
+// In 2027 the regulation first reduces the coupon by the deflation magnitude;
+// any remaining excess is an ordinary loss limited by those prior inclusions.
+const priorInterestInclusions =
+  deflationFace * deflationCouponRate +
+  deflationFace * deflationCouponRate * factor2026 +
+  deflationFace * (factor2026 - 1)
+const currentInterestBeforeDeflation = deflationFace * deflationCouponRate * factor2027
+const deflationMagnitude = deflationFace * (factor2026 - factor2027)
+const authorityReducedInterest = Math.max(0, currentInterestBeforeDeflation - deflationMagnitude)
+const authorityOrdinaryLoss = Math.min(
+  Math.max(0, deflationMagnitude - currentInterestBeforeDeflation),
+  priorInterestInclusions,
+)
+const authorityDeflationMagi = DEFLATION_WAGES + authorityReducedInterest - authorityOrdinaryLoss
+
+describeRule('treas-reg-1-1275-7-f-deflation-adjustment-and-basis', {
+  readings: {
+    authorityReducesAndLimitsDeflationYearInterest: authorityDeflationMagi,
+    engineClampsDeflationAndLeavesCouponTaxable: 100_149.67108492882,
+  },
+  accepted: 'authorityReducesAndLimitsDeflationYearInterest',
+  produced: 'engineClampsDeflationAndLeavesCouponTaxable',
+  note: 'paired positive-inflation then deflation path',
+}, ({ accepted, produced }) => {
+  it('pins the engine output while distinguishing the deflation reading', () => {
+    const result = simulatePlan(tipsOidFixturePlan(DEFLATION_WAGES), {
+      startYear: 2025,
+      taxCalculator: createFederalTaxCalculator(),
+      market: { inflationPct: [3, -20] },
+      horizonEndYear: 2027,
+    })
+    const year = result.years.find((item) => item.year === 2027)!
+
+    expect(year.tax).toBeGreaterThan(0)
+    expect(year.magi).toBe(produced)
+    expect(year.magi).not.toBe(accepted)
   })
 })

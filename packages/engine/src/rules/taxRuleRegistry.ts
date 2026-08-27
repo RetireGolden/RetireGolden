@@ -4035,6 +4035,124 @@ const registry = {
     ],
   },
 
+  'usc-42-426-b-disability-trial-work-medicare-continuation': {
+    title: 'Disabled-worker Medicare continuation after trial work is not modeled',
+    statement:
+      'For a disabled worker whose trial-work period has ended and whose entitlement later terminates, section 426(b) deems the worker still entitled for qualifying consecutive months, capped at 78 months; it also substitutes 15 months for the 36-month termination rule when fixing that end point. The staged statute does not state the queue row\'s standalone 93-month continuation, so the registry does not assert that number. The Plan has only an integer SSDI onset age: it cannot represent trial-work timing, termination, continuing impairment, the substantial-gainful-activity counterfactual, or a Medicare Part A entitlement interval, and the engine produces no coverage result from those facts.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'This is an input and result boundary. socialSecurityIncomeSchema carries only disability.onsetAge, and disability.ts/simulate.ts use it to price an annual SSDI stream; neither accepts a trial-work ending date, subsequent termination, continuing impairment, counterfactual inability to engage in substantial gainful activity, or Part A coverage. A generic healthcare expense cannot turn those absent facts into an entitlement interval. The 78-month cap and the substituted 15-month rule are quoted exactly; no CMS guidance establishing the queue\'s 93-month formulation was staged.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 426(b)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section426&num=0&edition=prelim',
+      quotedText:
+        'For purposes of this subsection, an individual who has had a period of trial work which ended as provided in section 422(c)(4)(A) of this title, and whose entitlement to benefits or status as a qualified railroad retirement beneficiary as described in paragraph (2) has subsequently terminated, shall be deemed to be entitled to such benefits or to occupy such status (notwithstanding the termination of such entitlement or status) for the period of consecutive months throughout all of which the physical or mental impairment, on which such entitlement or status was based, continues, and throughout all of which such individual would have been entitled to monthly insurance benefits under this subchapter or as a qualified railroad retirement beneficiary had such individual been unable to engage in substantial gainful activity, but not in excess of 78 such months.',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 426(b)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section426&num=0&edition=prelim',
+      quotedText:
+        'In determining when an individual\'s entitlement or status terminates for purposes of the preceding sentence, the term "36 months" in the second sentence of section 423(a)(1) of this title, in section 402(d)(1)(G)(i) of this title, in the last sentence of section 402(e)(1) of this title, and in the last sentence of section 402(f)(1) of this title shall be applied as though it read "15 months".',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/socialSecurity/disability.ts',
+    ],
+  },
+
+  'usc-42-1395w-113-b-pl-117-169-part-d-penalty-and-cost-sharing': {
+    title: 'Part D late-enrollment and drug-cost rules are not modeled',
+    statement:
+      'The Part D late-enrollment penalty is the greater of an actuarially sound amount for each uncovered month or 1 percent of the base beneficiary premium for each such month; an uncovered month depends on the timing of enrollment and creditable coverage. The Inflation Reduction Act sets the annual out-of-pocket threshold at $2,000 for 2025 and then increases it annually, but the staged enactment contains no published 2026 annual percentage, so this record does not assert the queue row\'s $2,100 figure. For 2026 and later, the insulin-product copayment ceiling is the lesser of $35, 25 percent of the maximum fair price, or 25 percent of the negotiated price. The Plan has no Part D enrollment, creditable-coverage history, base-premium, drug-claim, product, negotiated-price, maximum-fair-price, or cost-sharing inputs, so it produces none of these rule-derived figures.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'healthcareConfigSchema admits a generic medicareExtrasMonthlyPerPerson amount, but it is a user-entered aggregate expense rather than a Part D result. model/plan.ts and params/types.ts have no accepted fields for uncovered months, a national base beneficiary premium, a PDP or MA-PD plan, drug claims, a covered insulin product, negotiated or maximum-fair prices, or incurred cost sharing; simulate.ts consequently cannot derive a late penalty, annual threshold, or product-level copayment. The annual-index formula cannot by itself establish the 2026 dollar amount without the missing annual percentage determination, while the 2026 insulin ceiling is fully stated in the enacted text.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 1395w-113(b)(3)(A)-(B)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section1395w-113&num=0&edition=prelim',
+      quotedText:
+        'The amount determined under this paragraph for a part D eligible individual for a continuous period of eligibility is the greater of- (i) an amount that the Secretary determines is actuarially sound for each uncovered month (as defined in subparagraph (B)) in the same continuous period of eligibility; or (ii) 1 percent of the base beneficiary premium (computed under paragraph (2) or (8) of subsection (a) (as applicable)) for each such uncovered month in such period.',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 1395w-113(b)(3)(B)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section1395w-113&num=0&edition=prelim',
+      quotedText:
+        'For purposes of this subsection, the term "uncovered month" means, with respect to a part D eligible individual, any month beginning after the end of the initial enrollment period under section 1395w-101(b)(2) of this title unless the individual can demonstrate that the individual had creditable prescription drug coverage (as defined in paragraph (4)) for any portion of such month.',
+    }, {
+      kind: 'statute',
+      citation: 'P.L. 117-169, section 11201(a)(3)(B)(i)(III)',
+      url: 'https://www.govinfo.gov/content/pkg/PLAW-117publ169/pdf/PLAW-117publ169.pdf',
+      quotedText:
+        '``(VII) for 2025, is equal to $2,000; or ``(VIII) for a subsequent year, is equal to the amount specified in this subparagraph for the previous year, increased by the annual percentage increase described in paragraph (6) for the year involved.\'\';',
+    }, {
+      kind: 'statute',
+      citation: 'P.L. 117-169, section 11406(a)',
+      url: 'https://www.govinfo.gov/content/pkg/PLAW-117publ169/pdf/PLAW-117publ169.pdf',
+      quotedText:
+        '``(ii) during plan year 2026 and each subsequent plan year, the lesser of-- ``(I) $35; ``(II) an amount equal to 25 percent of the maximum fair price established for the covered insulin product in accordance with part E of title XI; or ``(III) an amount equal to 25 percent of the negotiated price of the covered insulin product under the prescription drug plan or MA�PD plan.\'\'',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/params/types.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+  },
+
+  'cfr-20-418-1205-1230-irmaa-life-change-redetermination': {
+    title: 'IRMAA life-changing-event redeterminations are not modeled',
+    statement:
+      'The regulation recognizes a spouse\'s death, marriage, divorce or annulment, work stoppage or reduction, loss of qualifying income-producing property, an employer pension cessation/termination/reorganization, and an employer settlement as major life-changing events. It makes an initial determination based on a more recent tax year effective when modified adjusted gross income is significantly reduced as a result of one of those events; POMS lists eight leaves by naming work reduction and work stoppage separately. The staged regulation and POMS index do not define “significantly reduced” as a named IRMAA-tier crossing, so the registry does not assert that extra condition. The engine prices the ordinary two-year-lookback tier but has no input or workflow for a life-changing event, more-recent return, evidence, or SSA redetermination.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The Medicare helper accepts a supplied two-years-prior MAGI and filing status only. recentAnnualMagi is a single planning assumption, not an SSA-44 event, event date, affected spouse, more-recent tax-year MAGI, evidence record, or redetermination request; the Plan also has no acceptance or timing result for an appeal. This record deliberately does not duplicate C5\'s in-flight lookback or MAGI-composition records: it covers only the absent life-change and administrative-redetermination workflow.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'regulation',
+      citation: '20 CFR 418.1205',
+      url: 'https://www.ecfr.gov/current/title-20/section-418.1205',
+      quotedText:
+        'For the purposes of this subpart, we will consider the following to be major life-changing events: (a) Your spouse dies; (b) You marry; (c) Your marriage ends through divorce or annulment; (d) You or your spouse stop working or reduce the hours you work; (e) You or your spouse experiences a loss of income-producing property, provided the loss is not at the direction of you or your spouse (e.g., due to the sale or transfer of the property) and is not a result of the ordinary risk of investment. Examples of the type of property loss include, but are not limited to: Loss of real property within a Presidentially or Gubernatorially-declared disaster area, destruction of livestock or crops by natural disaster or disease, loss from real property due to arson, or loss of investment property as a result of fraud or theft due to a criminal act by a third party; (f) You or your spouse experiences a scheduled cessation, termination, or reorganization of an employer\'s pension plan; (g) You or your spouse receives a settlement from an employer or former employer because of the employer\'s closure, bankruptcy, or reorganization.',
+    }, {
+      kind: 'regulation',
+      citation: '20 CFR 418.1230(a)',
+      url: 'https://www.ecfr.gov/current/title-20/section-418.1230',
+      quotedText:
+        'Subject to paragraph (b) of this section, when your modified adjusted gross income for the more recent tax year is significantly reduced as a result of a major life-changing event, our initial determination is generally effective on January 1 of the year in which you make your request. If your first month of enrollment or reenrollment in Medicare Part B is after January of the year for which you make your request, our initial determination is effective on the first day of your Medicare Part B enrollment or reenrollment.',
+    }, {
+      kind: 'agencyGuidance',
+      citation: 'POMS HI 01120.000, New Initial Determinations Using Beneficiary Information, table of contents',
+      url: 'https://secure.ssa.gov/poms.nsf/lnx/0601120000',
+      quotedText:
+        'HI 01120.010 Life Changing Event (LCE) – Death of Spouse TN 3 02-09 HI 01120.015 Life Changing Event (LCE) – Marriage TN 3 02-09 HI 01120.020 Life Changing Event (LCE) – Divorce or Annulment TN 3 02-09 HI 01120.025 Life Changing Event (LCE) – Work Reduction TN 16 10-23 HI 01120.030 Life Changing Event (LCE) – Work Stoppage TN 25 01-25 HI 01120.035 Life Changing Event (LCE) – Loss of Income-Producing Property TN 24 06-24 HI 01120.040 Life Changing Event (LCE) – Reduction or Loss of Pension Income TN 21 06-24 HI 01120.043 Life Changing Event (LCE) – Employer Settlement Payment TN 23 06-24',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/tax/medicare.ts',
+    ],
+  },
+
   'usc-42-1395r-i-irmaa-applicable-percentage': {
     title: 'IRMAA raises the beneficiary share of cost from 25 percent',
     statement:
@@ -12777,6 +12895,179 @@ const registry = {
     ],
   },
 
+  'irc-529-c-3-E-529-to-roth-rollover-not-modeled': {
+    title: 'A long-term 529-to-Roth rollover is not modeled',
+    statement:
+      'A distribution from a qualified tuition program of a designated beneficiary that has been maintained for the 15-year period ending on the distribution date is not includible under section 529(c)(3)(A) to the extent it is paid in a direct trustee-to-trustee transfer to a Roth IRA of that beneficiary, does not exceed contributions (and earnings) made before the 5-year period ending on that date, does not exceed the beneficiary\'s remaining section 408A(c)(2) Roth contribution room for the year, and does not cause lifetime such distributions for that beneficiary to exceed $35,000. The Plan has no qualified-tuition-program account type, no 15-year account-age or lifetime 529-to-Roth tally, and no retirement-action vocabulary for a 529-to-Roth transfer, so no accepted input reaches this rule.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'This is a schema boundary, not a Roth-contribution result. accountUnionSchema\'s closed type set is taxable, equityComp, traditional, roth, hsa, cash, pension, annuity, property, and debt; there is no 529 or qualified-tuition-program member, which model/plan.test.ts already pins. retirementActionRequestSchema has ordinary-withdrawal, Roth-conversion, and QCD arms only, so a 529-to-Roth rollover cannot be expressed as an action. The 15-year account-age test, the 5-year contribution seasoning, the annual 408A(c)(2) room, and the $35,000 lifetime cap share that one absence surface and are folded here rather than registered separately. The annual Roth IRA ceiling for ordinary Roth contributions remains the settled irc-408A-c-2-roth-shares-the-section-219-ceiling record; this record is only the 529(c)(3)(E) path. effectiveFrom is floored at 2026; the enacting applicability is distributions after December 31, 2023.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 529(c)(3)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section529&num=0&edition=prelim',
+      quotedText:
+        'Any distribution under a qualified tuition program shall be includible in the gross income of the distributee in the manner as provided under section 72 to the extent not excluded from gross income under any other provision of this chapter.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 529(c)(3)(E)(i)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section529&num=0&edition=prelim',
+      quotedText:
+        'In the case of a distribution from a qualified tuition program of a designated beneficiary which has been maintained for the 15-year period ending on the date of such distribution, subparagraph (A) shall not apply to so much the portion of such distribution which- (I) does not exceed the aggregate amount contributed to the program (and earnings attributable thereto) before the 5-year period ending on the date of the distribution, and (II) is paid in a direct trustee-to-trustee transfer to a Roth IRA maintained for the benefit of such designated beneficiary.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 529(c)(3)(E)(ii)(I)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section529&num=0&edition=prelim',
+      quotedText:
+        'Clause (i) shall only apply to so much of any distribution as does not exceed the amount applicable to the designated beneficiary under section 408A(c)(2) for the taxable year (reduced by the amount of aggregate contributions made during the taxable year to all individual retirement plans maintained for the benefit of the designated beneficiary).',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 529(c)(3)(E)(ii)(II)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section529&num=0&edition=prelim',
+      quotedText:
+        'This subparagraph shall not apply to any distribution described in clause (i) to the extent that the aggregate amount of such distributions with respect to the designated beneficiary for such taxable year and all prior taxable years exceeds $35,000.',
+    }, {
+      kind: 'statute',
+      citation: 'P.L. 117-328, division T, title I, section 126(d)',
+      url: 'https://www.govinfo.gov/content/pkg/PLAW-117publ328/pdf/PLAW-117publ328.pdf',
+      quotedText:
+        '(d) EFFECTIVE DATE.--The amendments made by this section shall apply with respect to distributions after December 31, 2023.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/actions/contract.ts',
+    ],
+  },
+
+  'irc-2503-b-annual-gift-exclusion-not-modeled': {
+    title: 'The annual gift-tax exclusion is a transfer-tax rule the engine does not compute',
+    statement:
+      'Section 2503(b) excludes the first $10,000 of present-interest gifts to each donee from the donor\'s total gifts for the calendar year, and that dollar amount is increased for inflation for gifts made after 1998, rounded down to the next lowest multiple of $1,000. The engine computes no gift tax under chapter 12. The Plan has no taxable-gifts, donee, or annual-exclusion facts, and the parameter pack has no gift-tax exclusion figure, so no accepted input produces an annual-exclusion or gift-tax result.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'This is a transfer-tax absence, not an income-tax approximation. tax/federalTax.ts computes chapter 1 income tax only. projection/compare.ts\'s heirTax is an assumed heir income-tax haircut on inherited pre-tax balances, not a chapter 12 gift tax. model/plan.ts has no gift, donee, or annual-exclusion field, and params/types.ts\'s federalTax pack has no gift-exclusion amount. The staged 2503 text still carries the statutory $10,000 base plus the 2503(b)(2) COLA; it does not publish a 2026 indexed dollar, so this record does not invent one. The 15-year / $35,000 529-to-Roth mechanics are a different Code section and live at irc-529-c-3-E-529-to-roth-rollover-not-modeled.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 2503(b)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section2503&num=0&edition=prelim',
+      quotedText:
+        'In the case of gifts (other than gifts of future interests in property) made to any person by the donor during the calendar year, the first $10,000 of such gifts to such person shall not, for purposes of subsection (a), be included in the total amount of gifts made during such year. Where there has been a transfer to any person of a present interest in property, the possibility that such interest may be diminished by the exercise of a power shall be disregarded in applying this subsection, if no part of such interest will at any time pass to any other person.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 2503(b)(2)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section2503&num=0&edition=prelim',
+      quotedText:
+        'In the case of gifts made in a calendar year after 1998, the $10,000 amount contained in paragraph (1) shall be increased by an amount equal to- (A) $10,000, multiplied by (B) the cost-of-living adjustment determined under section 1(f)(3) for such calendar year by substituting "calendar year 1997" for "calendar year 2016" in subparagraph (A)(ii) thereof. If any amount as adjusted under the preceding sentence is not a multiple of $1,000, such amount shall be rounded to the next lowest multiple of $1,000.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/params/types.ts',
+    ],
+  },
+
+  'irc-2010-c-3-basic-exclusion-amount-not-modeled': {
+    title: 'The 2026 basic exclusion amount is a chapter 11 credit base, not an income-tax deduction',
+    statement:
+      'Section 2010(a) allows a credit against the section 2001 estate tax equal to the tentative tax on the applicable exclusion amount. For decedents dying and gifts made after December 31, 2025, the basic exclusion amount under section 2010(c)(3)(A) is $15,000,000; that dollar amount is increased for inflation only for decedents dying in a calendar year after 2026. The applicable exclusion amount is the sum of that basic exclusion and, for a surviving spouse, any deceased spousal unused exclusion. The engine computes no estate tax. The Plan and parameter pack have no basic-exclusion or taxable-estate facts, so no accepted input produces an estate-tax exclusion result. This amount is not the section 151 senior deduction.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'Transfer-tax computation, not income tax. tax/federalTax.ts returns chapter 1 income tax and never reads a basic exclusion amount. projection/compare.ts\'s heirTax and endingAfterTaxEstate discount inherited pre-tax balances at assumptions.heirTaxRatePct; that is an income-tax-basis estate metric, not the section 2001 tax or the section 2010 credit. The $15,000,000 figure is quote-carried from 2010(c)(3)(A); indexing does not begin until a decedent dying after 2026, so 2026 is the unindexed statutory year. Do not treat this record as the same tax base as irc-151-d-5-C-senior-deduction-not-indexed: that deduction is a chapter 1 subtraction of 6,000 dollars per qualified individual, and this credit is a chapter 11 exclusion. Portability of unused exclusion is a separate election and is registered at irc-2010-c-5-dsue-portability-election-not-modeled.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 2010(a)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section2010&num=0&edition=prelim',
+      quotedText:
+        'A credit of the applicable credit amount shall be allowed to the estate of every decedent against the tax imposed by section 2001.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 2010(c)(2)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section2010&num=0&edition=prelim',
+      quotedText:
+        'For purposes of this subsection, the applicable exclusion amount is the sum of- (A) the basic exclusion amount, and (B) in the case of a surviving spouse, the deceased spousal unused exclusion amount.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 2010(c)(3)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section2010&num=0&edition=prelim',
+      quotedText:
+        'For purposes of this subsection, the basic exclusion amount is $15,000,000.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 2010(c)(3)(B)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section2010&num=0&edition=prelim',
+      quotedText:
+        'In the case of any decedent dying in a calendar year after 2026, the dollar amount in subparagraph (A) shall be increased by an amount equal to- (i) such dollar amount, multiplied by (ii) the cost-of-living adjustment determined under section 1(f)(3) for such calendar year by substituting "calendar year 2025" for "calendar year 2016" in subparagraph (A)(ii) thereof. If any amount as adjusted under the preceding sentence is not a multiple of $10,000, such amount shall be rounded to the nearest multiple of $10,000.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 2010, Editorial Notes, Effective Date of 2025 Amendment',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section2010&num=0&edition=prelim',
+      quotedText:
+        'The amendments made by this section [amending this section] shall apply to estates of decedents dying and gifts made after December 31, 2025.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/params/types.ts',
+    ],
+  },
+
+  'irc-2010-c-5-dsue-portability-election-not-modeled': {
+    title: 'Deceased-spousal unused exclusion requires a timely estate-tax-return election',
+    statement:
+      'A surviving spouse may take a deceased spousal unused exclusion amount into account only if the executor of the deceased spouse\'s estate files an estate tax return on which that amount is computed and elects on that return that it may be so taken into account. The election is irrevocable and may not be made on a return filed after the time prescribed by law, including extensions. Treas. Reg. 20.2010-2(a) requires the election on a timely filed Form 706. The Plan has no estate-tax-return, Form 706, DSUE, or portability-election facts, and the engine computes no chapter 11 tax, so no accepted input reaches this rule.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The statute and the regulation share one absence surface: model/plan.ts has no Form 706, DSUE amount, or portability-election field, and neither tax/federalTax.ts nor projection/compare.ts computes estate tax. compare.ts\'s heirTax remains an assumed heir income-tax haircut, which is not a portable unused exclusion and does not become one when a spouse dies in the projection. The timely-filing mechanics of Treas. Reg. 20.2010-2(a) and (a)(1) are folded here rather than split from 2010(c)(5)(A). The $15,000,000 basic exclusion itself is irc-2010-c-3-basic-exclusion-amount-not-modeled.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 2010(c)(5)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section2010&num=0&edition=prelim',
+      quotedText:
+        'A deceased spousal unused exclusion amount may not be taken into account by a surviving spouse under paragraph (2) unless the executor of the estate of the deceased spouse files an estate tax return on which such amount is computed and makes an election on such return that such amount may be so taken into account. Such election, once made, shall be irrevocable. No election may be made under this subparagraph if such return is filed after the time prescribed by law (including extensions) for filing such return.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 20.2010-2(a)',
+      url: 'https://www.ecfr.gov/current/title-26/section-20.2010-2',
+      quotedText:
+        'To allow a decedent\'s surviving spouse to take into account that decedent\'s deceased spousal unused exclusion (DSUE) amount, the executor of the decedent\'s estate must elect portability of the DSUE amount on a timely filed Form 706, \u201cUnited States Estate (and Generation-Skipping Transfer) Tax Return\u201d (estate tax return). This election is referred to in this section and in \u00a7 20.2010-3 as the portability election.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 20.2010-2(a)(1)',
+      url: 'https://www.ecfr.gov/current/title-26/section-20.2010-2',
+      quotedText:
+        'An estate that elects portability will be considered, for purposes of subtitle B and subtitle F of the Internal Revenue Code (Code), to be required to file a return under section 6018(a). Accordingly, the due date of an estate tax return required to elect portability is nine months after the decedent\'s date of death or the last day of the period covered by an extension (if an extension of time for filing has been obtained).',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+    ],
+  },
+
   'irc-414-v-1-plan-permitted-catch-up': {
     title: 'An employer plan may permit, but need not offer, a catch-up contribution',
     statement:
@@ -12858,6 +13149,241 @@ const registry = {
     implementedBy: [
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/params/data/year2026.ts',
+    ],
+  },
+
+  'cfr-31-363-11-savings-bond-purchase-limits': {
+    title: 'Series I savings-bond purchase limits require a TreasuryDirect owner and purchase channel',
+    statement:
+      'Series I savings-bond purchases are subject to annual electronic and paper limits for an individual owner. RetireGolden has no savings-bond account, TreasuryDirect owner or SSN, electronic-versus-paper purchase channel, or annual savings-bond purchase ledger, so no accepted plan input reaches a purchase-cap result.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The absence surface is model/plan.ts: taxableAccountSchema carries an aggregate brokerage balance, cost basis, and generic annual contribution, but no savings-bond instrument, TreasuryDirect owner, SSN, purchase channel, or annual bond-purchase history. The staged 31 CFR 363.11 text confirms the TreasuryDirect account and SSN gate but does not state a numeric annual cap. The generic contribution field cannot be treated as an I-Bond purchase without inventing the instrument and owner facts on which the annual limit turns.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'regulation',
+      citation: '31 CFR 363.11',
+      url: 'https://www.ecfr.gov/current/title-31/section-363.11',
+      quotedText:
+        'Only an individual or an entity is eligible to open a TreasuryDirect account. In order to open a TreasuryDirect account, an individual or entity account manager must have a valid social security number (SSN), be 18 years of age or over, and be legally competent.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: ['packages/engine/src/model/plan.ts'],
+  },
+
+  'irc-454-savings-bond-interest-deferral': {
+    title: 'Savings-bond interest is generally deferred until redemption, maturity, or disposition',
+    statement:
+      'IRC 454 permits a cash-method holder of a discount savings obligation to defer the increase in redemption price until the obligation is redeemed, reaches final maturity, or is otherwise disposed of unless the holder elects current inclusion. RetireGolden has no savings-bond instrument or section 454 election and therefore produces no savings-bond deferral result.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The absence surface spans model/plan.ts and projection/simulate.ts. taxableAccountSchema.interestYieldPct is a generic current-year yield and simulate.ts immediately adds that yield to ordinary income; neither surface identifies a savings bond, redemption or maturity date, accounting method, or the section 454 election that would select current inclusion. Treating generic interest as a savings bond would conflate an ordinary brokerage yield with a deferred savings-bond obligation.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 454(a)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section454&num=0&edition=prelim',
+      quotedText:
+        'If, in the case of a taxpayer owning any non-interest-bearing obligation issued at a discount and redeemable for fixed amounts increasing at stated intervals or owning an obligation described in paragraph (2) of subsection (c), the increase in the redemption price of such obligation occurring in the taxable year does not (under the method of accounting used in computing his taxable income) constitute income to him in such year, such taxpayer may, at his election made in his return for any taxable year, treat such increase as income received in such taxable year.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+  },
+
+  'cfr-31-360-44-savings-bond-early-redemption-forfeiture': {
+    title: 'Early Series I redemption requires a redemption event and its applicable interest forfeiture',
+    statement:
+      'A Series I bond redeemed before five years forfeits the most recent three months of interest. RetireGolden has no savings-bond issue date, redemption event, holding-period clock, or interest-forfeiture field, so it produces no early-redemption result.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The absence surface is model/plan.ts and projection/simulate.ts: no accepted account or income type stores a Series I issue date, redemption date, accrued interest, or the pre-five-year forfeiture. The staged 31 CFR 360.44 text supplies the surrender-request procedure, but the engine has no redemption-request path on which that procedure or the three-month forfeiture could operate.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'regulation',
+      citation: '31 CFR 360.44',
+      url: 'https://www.ecfr.gov/current/title-31/section-360.44',
+      quotedText:
+        'An owner or coowner, who has surrendered a bond to a Federal Reserve Bank or Branch or to the Bureau of the Fiscal Service or to an authorized paying agent with an appropriate request for payment, may withdraw the request if notice of intent to withdraw is received by the same agency prior to payment.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+  },
+
+  'irc-135-education-savings-bond-interest-exclusion': {
+    title: 'Education savings-bond interest exclusion is limited by qualified expenses and modified AGI',
+    statement:
+      'IRC 135 excludes interest on a qualified United States savings bond redeemed to pay qualified higher-education expenses, subject to the redemption-proceeds expense ratio and the modified-AGI phaseout. RetireGolden has no savings-bond redemption, qualified education-expense, dependent, or section 135 exclusion input, so it produces no education-bond exclusion amount.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The absence surface is model/plan.ts and tax/federalTax.ts: the Plan has no qualified savings-bond redemption or education-expense vocabulary, and the federal calculator has no section 135 exclusion line. Generic taxable interest and one-time income cannot be relabeled as bond interest used for a qualifying student without inventing the required redemption, expense, and MAGI facts.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 135(a)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section135&num=0&edition=prelim',
+      quotedText:
+        'In the case of an individual who pays qualified higher education expenses during the taxable year, no amount shall be includible in gross income by reason of the redemption during such year of any qualified United States savings bond.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 135(b)(2)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section135&num=0&edition=prelim',
+      quotedText:
+        'If the modified adjusted gross income of the taxpayer for the taxable year exceeds $40,000 ($60,000 in the case of a joint return), the amount which would (but for this paragraph) be excludable from gross income under subsection (a) shall be reduced (but not below zero) by the amount which bears the same ratio to the amount which would be so excludable as such excess bears to $15,000 ($30,000 in the case of a joint return).',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/tax/federalTax.ts',
+    ],
+  },
+
+  'treas-reg-1-1275-7-d-4-positive-inflation-adjustment-oid': {
+    title: 'A positive TIPS inflation adjustment is annual OID',
+    statement:
+      'For a TIPS inflation-indexed debt instrument accounted for under the coupon-bond method, an inflation adjustment is taken into account for every taxable year the instrument is outstanding, and a positive inflation adjustment is OID. The TIPS ladder ledger records that positive accretion as ordinary U.S.-government interest alongside the coupon.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.1275-7(a)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.1275-7',
+      quotedText:
+        'This section provides rules for the Federal income tax treatment of an inflation-indexed debt instrument. If a debt instrument is an inflation-indexed debt instrument, one of two methods will apply to the instrument: the coupon bond method (as described in paragraph (d) of this section) or the discount bond method (as described in paragraph (e) of this section). Both methods determine the amount of OID that is taken into account each year by a holder or an issuer of an inflation-indexed debt instrument.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.1275-7(b)(1)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.1275-7',
+      quotedText:
+        'Except as provided in paragraph (b)(2) of this section, this section applies to an inflation-indexed debt instrument as defined in paragraph (c)(1) of this section. For example, this section applies to Treasury Inflation-Protected Securities (TIPS).',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.1275-7(d)(4)(i)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.1275-7',
+      quotedText:
+        'Under the coupon bond method, an inflation adjustment is taken into account for each taxable year in which the debt instrument is outstanding.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.1275-7(d)(4)(iii)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.1275-7',
+      quotedText:
+        'Positive inflation adjustments. A positive inflation adjustment is OID.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/ladder/ladderMath.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+  },
+
+  'treas-reg-1-1275-7-f-deflation-adjustment-and-basis': {
+    title: 'TIPS deflation adjustments reduce interest and basis, with an ordinary-loss carry limit',
+    statement:
+      'A negative TIPS inflation adjustment is a deflation adjustment that first reduces the holder\'s interest otherwise includible, allows an ordinary loss only to the extent of prior net interest inclusions, carries any excess forward, and decreases adjusted basis when taken into account. The engine clamps ladder accretion at zero and emits neither the reduction nor the basis decrease.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'overstatesTax',
+    conventionRationale:
+      'DEFECT — no behavior change in this registration slice. projection/simulate.ts computes `accretion` as `outstandingFace * Math.max(0, inflFactor - prevInflFactor)`, so a deflation year contributes no negative adjustment, no ordinary-loss carry, and no basis decrease. A paired market path with prior positive inflation followed by deflation drives the gap: the authority reduces current interest (and may permit a bounded ordinary loss), while the engine still reports the coupon as taxable ordinary income. The fixture adds 100,000 of ordinary wages so the tax line remains above zero; the taxpayer exposure therefore runs one way — tax is overstated — and the fixture pins the produced annual MAGI at PRODUCED_TBD until a separately authorized implementation fix changes it.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.1275-7(f)(1)(i)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.1275-7',
+      quotedText:
+        'A deflation adjustment reduces the amount of interest otherwise includible in income by a holder with respect to the debt instrument for the taxable year. For purposes of this paragraph (f)(1)(i), interest includes OID, qualified stated interest, and market discount. If the amount of the deflation adjustment exceeds the interest otherwise includible in income by the holder with respect to the debt instrument for the taxable year, the excess is treated as an ordinary loss by the holder for the taxable year. However, the amount treated as an ordinary loss is limited to the amount by which the holder\'s total interest inclusions on the debt instrument in prior taxable years exceed the total amount treated by the holder as an ordinary loss on the debt instrument in prior taxable years. If the deflation adjustment exceeds the interest otherwise includible in income by the holder with respect to the debt instrument for the taxable year and the amount treated as an ordinary loss for the taxable year, this excess is carried forward to reduce the amount of interest otherwise includible in income by the holder with respect to the debt instrument for subsequent taxable years.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.1275-7(f)(2)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.1275-7',
+      quotedText:
+        'A holder\'s adjusted basis in an inflation-indexed debt instrument is determined under § 1.1272-1(g). However, a holder\'s adjusted basis in the debt instrument is decreased by the amount of any deflation adjustment the holder takes into account to reduce the amount of interest otherwise includible in income or treats as an ordinary loss with respect to the instrument during the taxable year. The decrease occurs when the deflation adjustment is taken into account under paragraph (f)(1) of this section.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/ladder/ladderMath.ts',
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/model/plan.ts',
+    ],
+  },
+
+  'irc-171-tips-acquisition-premium-amortization': {
+    title: 'TIPS acquisition premium requires bond-level amortization against interest or OID',
+    statement:
+      'A holder of a taxable inflation-indexed bond may amortize acquisition premium against qualified stated interest and OID under section 171 and the section 1.171-2 yield-and-accrual rules. RetireGolden has no bond issue price, principal, acquisition date, holder basis, call or maturity schedule, or premium election, so no accepted input reaches a premium-amortization result.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The absence surface is model/plan.ts, ladder/ladderMath.ts, and projection/simulate.ts. tipsLadderSchema stores only target real income, payout years, and an optional aggregate purchase transfer; ladderMath.ts retains synthetic rung cost but no holder basis or issue-price ledger, and simulate.ts carries no premium balance to offset coupon or OID. A taxable account costBasis is an aggregate brokerage basis and cannot identify a TIPS rung or a section 171 election, so it is not an accepted premium fact.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 171(a)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section171&num=0&edition=prelim',
+      quotedText:
+        'In the case of a bond (other than a bond the interest on which is excludable from gross income), the amount of the amortizable bond premium for the taxable year shall be allowed as a deduction.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.171-2(a)(1)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.171-2',
+      quotedText:
+        'A holder amortizes bond premium by offsetting the qualified stated interest allocable to an accrual period with the bond premium allocable to the accrual period. This offset occurs when the holder takes the qualified stated interest into account under the holder\'s regular method of accounting.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.171-2(a)(3)(iii)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.171-2',
+      quotedText:
+        'The bond premium allocable to an accrual period is the excess of the qualified stated interest allocable to the accrual period over the product of the holder\'s adjusted acquisition price (as defined in paragraph (b) of this section) at the beginning of the accrual period and the holder\'s yield.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.1275-7(f)(3)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.1275-7',
+      quotedText:
+        'A holder determines the amount of acquisition premium or market discount on an inflation-indexed debt instrument by reference to the adjusted issue price of the instrument on the date the holder acquires the instrument. A holder determines the amount of bond premium on an inflation-indexed debt instrument by assuming that the amount payable at maturity on the instrument is equal to the instrument\'s inflation-adjusted principal amount for the day the holder acquires the instrument. Any premium or market discount is taken into account over the remaining term of the debt instrument as if there were no further inflation or deflation. See section 171 for additional rules relating to the amortization of bond premium and sections 1276 through 1278 for additional rules relating to market discount.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/ladder/ladderMath.ts',
+      'packages/engine/src/projection/simulate.ts',
     ],
   },
 // `satisfies` without `as const`: keys and the union-typed fields
