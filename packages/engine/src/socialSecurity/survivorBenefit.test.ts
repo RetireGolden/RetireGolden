@@ -98,15 +98,18 @@ describeRule('usc-42-402-q-1-widow-survivor-early-reduction-schedule', {
 })
 
 describeRule('usc-42-402-q-1-widow-survivor-early-reduction-schedule', {
-  // Claim 63 against FRA 792 months: months early = 36. Statutory reduction is
-  // 19/40 of 1 percent x 36 months = 14.25 percent → 2,000 x .8575 = 1,715.
-  // The rejected flat-maximum reading applies the full 28.5 percent whenever
-  // the claim is early and pays 2,000 x .715 = 1,430.
+  // Claim 63 against FRA 792 months: months early = 36. The accepted reading
+  // is the POMS varying fraction — the 28.5 percent maximum spread over the
+  // 72-month period, 28.5% x 36/72 = 14.25 percent → 2,000 x .8575 = 1,715.
+  // The rejected reading applies 402(q)(1)(A)'s literal 19/40 of 1 percent per
+  // month, 0.475% x 36 = 17.1 percent → 2,000 x .829 = 1,658 — rejected on the
+  // quoted POMS RS 00615.301 B.1.b authority that the maximum stays 28.5
+  // percent and the monthly fraction varies with the period instead.
   note: 'midpoint claim at 63',
-  readings: { statutoryLinearMidpoint: 1_715, flatMaximumWheneverEarly: 1_430 },
-  accepted: 'statutoryLinearMidpoint',
+  readings: { pomsVaryingFractionMidpoint: 1_715, literalNineteenFortiethsPerMonth: 1_658 },
+  accepted: 'pomsVaryingFractionMidpoint',
 }, ({ accepted, readings }) => {
-  it('prorates the widow reduction linearly at a midpoint before survivor FRA', () => {
+  it('prorates the widow reduction by the varying fraction at a midpoint before survivor FRA', () => {
     const monthly = survivorBenefitMonthly({
       deceasedPiaMonthly: 2_000,
       deceasedActualMonthly: 2_000,
@@ -115,7 +118,7 @@ describeRule('usc-42-402-q-1-widow-survivor-early-reduction-schedule', {
     })
 
     expect(monthly).toBeCloseTo(accepted, 6)
-    expect(monthly).not.toBeCloseTo(readings.flatMaximumWheneverEarly, 6)
+    expect(monthly).not.toBeCloseTo(readings.literalNineteenFortiethsPerMonth, 6)
   })
 })
 
