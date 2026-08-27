@@ -2,17 +2,17 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 1,
   "registry": {
-    "total": 397,
+    "total": 399,
     "byClassification": {
-      "approximated": 100,
-      "outOfScope": 70,
-      "settled": 223,
+      "approximated": 103,
+      "outOfScope": 71,
+      "settled": 221,
       "unsettled": 4
     },
     "byVolatility": {
       "annuallyIndexed": 57,
       "awaitingGuidance": 10,
-      "staticStatute": 324,
+      "staticStatute": 326,
       "sunsetting": 6
     },
     "byJurisdiction": {
@@ -64,12 +64,12 @@
         "UT": 1,
         "VA": 1,
         "VT": 1,
-        "WA": 1,
-        "WI": 1,
+        "WA": 2,
+        "WI": 2,
         "WV": 1,
         "WY": 1
       },
-      "stateTotal": 94
+      "stateTotal": 96
     }
   },
   "attestations": {
@@ -4700,7 +4700,7 @@
     },
     {
       "id": "la-rs-47-44-1-retirement-exemption",
-      "classification": "settled",
+      "classification": "approximated",
       "jurisdiction": "state:LA",
       "volatility": "annuallyIndexed",
       "effectiveFrom": 2026,
@@ -4712,7 +4712,7 @@
         "packages/engine/src/tax/stateTax.ts"
       ],
       "fixtureFiles": [
-        "packages/engine/src/tax/stateTax.rules.test.ts"
+        "packages/engine/src/rules/approximations/stateTax.approximation.test.ts"
       ]
     },
     {
@@ -4734,7 +4734,7 @@
     },
     {
       "id": "ma-gen-laws-ch62-s2-public-pension-exclusion",
-      "classification": "settled",
+      "classification": "approximated",
       "jurisdiction": "state:MA",
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
@@ -4746,7 +4746,7 @@
         "packages/engine/src/tax/stateTax.ts"
       ],
       "fixtureFiles": [
-        "packages/engine/src/tax/stateTax.rules.test.ts"
+        "packages/engine/src/rules/approximations/stateTax.approximation.test.ts"
       ]
     },
     {
@@ -7101,9 +7101,41 @@
       "verifiedOn": "2026-08-27",
       "dueOn": "2027-08-27",
       "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ]
+    },
+    {
+      "id": "wa-rcw-82-87-capital-gains-excise",
+      "classification": "outOfScope",
+      "jurisdiction": "state:WA",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
         "packages/engine/src/model/plan.ts",
         "packages/engine/src/params/state/data/year2026.ts",
         "packages/engine/src/params/types.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "fixtureFiles": []
+    },
+    {
+      "id": "wi-schedule-sb-line-5-long-term-capital-gain-exclusion",
+      "classification": "approximated",
+      "jurisdiction": "state:WI",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
         "packages/engine/src/tax/stateTax.ts"
       ],
       "fixtureFiles": [

@@ -11,17 +11,17 @@ The registry is the machine-checked chain from a rule to its implementation and 
 
 | Metric | Count |
 | --- | ---: |
-| Total rules | 397 |
-| Classification: approximated | 100 |
-| Classification: outOfScope | 70 |
-| Classification: settled | 223 |
+| Total rules | 399 |
+| Classification: approximated | 103 |
+| Classification: outOfScope | 71 |
+| Classification: settled | 221 |
 | Classification: unsettled | 4 |
 | Volatility: annuallyIndexed | 57 |
 | Volatility: awaitingGuidance | 10 |
-| Volatility: staticStatute | 324 |
+| Volatility: staticStatute | 326 |
 | Volatility: sunsetting | 6 |
 | Federal jurisdiction | 303 |
-| State jurisdiction total | 94 |
+| State jurisdiction total | 96 |
 
 | State jurisdiction | Count |
 | --- | ---: |
@@ -71,8 +71,8 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | UT | 1 |
 | VA | 1 |
 | VT | 1 |
-| WA | 1 |
-| WI | 1 |
+| WA | 2 |
+| WI | 2 |
 | WV | 1 |
 | WY | 1 |
 
@@ -186,7 +186,7 @@ None.
 
 ## Re-verification due dates
 
-The 25 earliest due dates are shown below (397 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
+The 25 earliest due dates are shown below (399 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
 
 | Rule | Volatility | Verified on | Due on |
 | --- | --- | --- | --- |

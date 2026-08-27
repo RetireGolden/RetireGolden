@@ -13939,12 +13939,12 @@ const registry = {
   },
 
   'la-rs-47-44-1-retirement-exemption': {
-    title: 'Louisiana exempts $12,000 of retirement income from age 65',
+    title: 'Louisiana exempts retirement income from age 65, CPI-U indexed from 2026; the pack holds $12,000 flat',
     statement:
-      'Louisiana exempts twelve thousand dollars of annual retirement income — pension and annuity income included in tax-table income — received by an individual sixty-five years of age or older. That is the amount the pack encodes as `{ kind: \'capped\', capPerPerson: 12000, minAge: 65 }`, and it is why a reading that still used the former six-thousand-dollar figure is rejected. The same subsection requires the amount to be adjusted annually beginning January 1, 2026 by the CPI-U increase for the previous calendar year, which is why this record is annually indexed rather than static. The separate six-thousand-dollar disability exemption in subsection B is not modelled.',
-    classification: 'settled',
+      'Louisiana exempts annual retirement income — pension and annuity income included in tax-table income — received by an individual sixty-five years of age or older. The statute states a twelve-thousand-dollar starting amount and requires that amount to be adjusted annually beginning January 1, 2026 by multiplying the prior year\'s exemption by the percentage increase in the CPI-U for the previous calendar year. Approximated: the pack encodes `{ kind: \'capped\', capPerPerson: 12000, minAge: 65 }` as a held-forward unindexed figure, so once the first CPI-U adjustment applies the engine understates the exemption and overstates Louisiana tax. The staged text states the indexing method but does not publish the 2026 indexed dollar, so the accepted reading is that method (first adjustment beginning January 1, 2026) rather than a derived amount. The separate six-thousand-dollar disability exemption in subsection B is not modelled.',
+    classification: 'approximated',
     contraryReading: null,
-    errorDirection: null,
+    errorDirection: 'overstatesTax',
     conventionRationale: null,
     jurisdiction: 'state:LA',
     authority: [{
@@ -14073,12 +14073,12 @@ const registry = {
   },
 
   'ma-gen-laws-ch62-s2-public-pension-exclusion': {
-    title: 'Massachusetts deducts contributory public and uniformed-services retirement',
+    title: 'Massachusetts deducts contributory public and uniformed-services retirement, not every public pension',
     statement:
-      'Massachusetts gross income deducts income from any contributory annuity, pension, endowment or retirement fund of the United States government, the commonwealth, or any political subdivision thereof to which the employee has contributed, and United States government retirement pay for a retired member of the Uniformed Services. That is the pack\'s public-pension `{ kind: \'full\' }` override. Private IRA, 401(k) and similar distributions are not in this subparagraph — they are taxed as Massachusetts gross income except to the extent previously subjected to Massachusetts tax — which is why the private bucket is `{ kind: \'none\' }`.',
-    classification: 'settled',
+      'Massachusetts gross income deducts income from any contributory annuity, pension, endowment or retirement fund of the United States government, the commonwealth, or any political subdivision thereof to which the employee has contributed, and United States government retirement pay for a retired member of the Uniformed Services. Approximated: the pack encodes the public bucket as `{ kind: \'full\' }`, but `publicPensionIncome` carries no contributory or system identity, so a noncontributory public pension the statute leaves in the base is removed the same way a contributory Commonwealth or Uniformed-Services annuity is. The engine understates tax on every public-pension dollar the subparagraph does not reach. Private IRA, 401(k) and similar distributions stay `{ kind: \'none\' }`, which matches the absence of those sources from this subparagraph.',
+    classification: 'approximated',
     contraryReading: null,
-    errorDirection: null,
+    errorDirection: 'understatesTax',
     conventionRationale: null,
     jurisdiction: 'state:MA',
     authority: [{
@@ -14251,7 +14251,8 @@ const registry = {
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
-    conventionRationale: null,
+    conventionRationale:
+      'Queued residual (BLOCKED-SOURCE): research at DOCS/domain/state-tax-research/MT.md lines 39-54 names an income-tested Social Security subtraction that would reduce Montana tax for lower-income retirees while the pack leaves the federally taxable share in. Neither staged primary for this record — the 2013 MCA compilation at archive.legmt.gov nor the 2026 revenue.mt.gov withholding notice — carries the operative subtraction text, so no separate approximated record is registered from those files and the research doc is not quoted as authority.',
     jurisdiction: 'state:MT',
     authority: [{
       kind: 'statute',
@@ -14803,9 +14804,9 @@ const registry = {
   },
 
   'wa-dor-no-broad-individual-income-tax': {
-    title: 'Washington has no broad individual income-tax figure in this pack; its capital-gains levy is separate',
+    title: 'Washington has no broad individual income-tax figure in this pack',
     statement:
-      'Washington\'s staged Department of Revenue page describes a separate capital-gains excise tax on individuals, and RCW 82.87.040 imposes that levy only on sales or exchanges of long-term capital assets. The pack therefore keeps `hasIncomeTax: false`, so the ordinary-income state-tax path returns zero and `capitalGainsAsOrdinary: true` is inert. The long-term capital-gains excise is out of scope: `model/plan.ts` and `params/types.ts` do not carry the holding-period, Washington allocation, adjusted-capital-gain, exemption, deduction, or $1,000,000 tier facts needed to produce that separate figure.',
+      'Washington\'s staged Department of Revenue page describes a capital-gains excise that applies only to individuals and only on sales or exchanges of long-term capital assets under RCW 82.87, not a broad tax on wages, pensions, IRA distributions, or Social Security. The pack therefore keeps `hasIncomeTax: false`, so the ordinary-income state-tax path returns zero and `capitalGainsAsOrdinary: true` is inert on that path. The separate capital-gains excise levy itself is registered at `wa-rcw-82-87-capital-gains-excise` and is not settled by this record.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -14823,12 +14824,44 @@ const registry = {
       url: 'https://app.leg.wa.gov/RCW/default.aspx?cite=82.87.040',
       quotedText:
         '(1)(a) Beginning January 1, 2022, an excise tax is imposed on the sale or exchange of long-term capital assets. Only individuals are subject to payment of the tax, which equals seven percent multiplied by an individual\'s Washington capital gains. (b) Beginning January 1, 2025, an additional excise tax is imposed on the sale or exchange of long-term capital assets, which equals 2.90 percent multiplied by the portion of an individual\'s Washington capital gains exceeding $1,000,000.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  'wa-rcw-82-87-capital-gains-excise': {
+    title: 'Washington’s long-term capital-gains excise is absent from the state-tax surface',
+    statement:
+      'RCW 82.87.040 imposes a separate excise on an individual’s Washington capital gains from sales or exchanges of long-term capital assets, with a further tier above $1,000,000, and RCW 82.87.050 excepts retirement-savings vehicles. Typed absence: `model/plan.ts` and `params/types.ts` do not carry the holding-period, Washington allocation, adjusted-capital-gain, exemption, deduction, or $1,000,000 tier facts needed to price that levy, and `tax/stateTax.ts` has no refusal naming the missing excise — with `hasIncomeTax: false` a capital-gain input emits zero state tax and continues, so the ordinary path never surfaces the levy.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:WA',
+    authority: [{
+      kind: 'statute',
+      citation: 'Wash. Rev. Code §82.87.040(1)',
+      url: 'https://app.leg.wa.gov/RCW/default.aspx?cite=82.87.040',
+      quotedText:
+        '(1)(a) Beginning January 1, 2022, an excise tax is imposed on the sale or exchange of long-term capital assets. Only individuals are subject to payment of the tax, which equals seven percent multiplied by an individual\'s Washington capital gains. (b) Beginning January 1, 2025, an additional excise tax is imposed on the sale or exchange of long-term capital assets, which equals 2.90 percent multiplied by the portion of an individual\'s Washington capital gains exceeding $1,000,000.',
     }, {
       kind: 'statute',
       citation: 'Wash. Rev. Code §82.87.050(3)',
       url: 'https://app.leg.wa.gov/RCW/default.aspx?cite=82.87.050',
       quotedText:
         '(3) Assets held under a retirement savings account under Title 26 U.S.C. Sec. 401(k) of the internal revenue code, a tax-sheltered annuity or custodial account described in Title 26 U.S.C. Sec. 403(b) of the internal revenue code, a deferred compensation plan under Title 26 U.S.C. Sec. 457(b) of the internal revenue code, an individual retirement account or individual retirement annuity described in Title 26 U.S.C. Sec. 408 of the internal revenue code, a Roth individual retirement account described in Title 26 U.S.C. Sec. 408A of the internal revenue code, an employee defined contribution program, an employee defined benefit plan, or a similar retirement savings vehicle, whether foreign or domestic, that penalizes withdrawals until the legal or beneficial owner reaches a certain age;',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'Washington Department of Revenue, Capital gains tax',
+      url: 'https://dor.wa.gov/taxes-rates/other-taxes/capital-gains-tax',
+      quotedText:
+        'The 2021 Washington State Legislature passed ESSB 5096 ( RCW 82.87 ) which created a 7% tax on the sale or exchange of long-term capital assets such as stocks, bonds, business interests, or other investments and tangible assets. This tax only applies to individuals.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -14843,13 +14876,14 @@ const registry = {
   },
 
   'wi-stat-71-05-retirement-income-subtraction': {
-    title: 'Wisconsin excludes Social Security and allows a $24,000 age-67 retirement subtraction, but also excludes 30% of qualifying long-term gain',
+    title: 'Wisconsin’s $24,000 age-67 retirement subtraction is per-recipient and credits-restricted; the pack caps pooled income and skips the election',
     statement:
-      'Wisconsin Department of Revenue instructions say Social Security benefits are not taxable and permit a subtraction of the amount taxable on federal Form 1040 or 1040-SR. They also permit an age-67 taxpayer to subtract up to $24,000 of federally taxable qualified-plan or IRA retirement income, which is the cap the pack carries. The same Schedule SB instructions describe a 30% long-term capital-gain exclusion (60% for farm assets), which the pack\'s `capitalGainsAsOrdinary: true` omits; that omitted preference overstates Wisconsin tax on qualifying long-term gains. The Social Security and $24,000 retirement limbs are COVERED by the shipped pack; this umbrella record is approximated only for the unrepresented gain subtraction.',
+      'The 2025 Schedule SB instructions let an individual aged 67 or older subtract up to $24,000 of federally taxable qualified-plan or IRA retirement income the individual received, and a joint couple who are both 67 subtract up to $48,000 regardless of which spouse received it, with no federal AGI ceiling; claiming forfeits every Schedule CR credit and the credits on Form 1 lines 13 through 20 and 30 through 35 for the year, and the separate income-restricted Line 17 allows up to $5,000 at age 65 or older only when federal AGI is under $15,000 single / $30,000 joint. Approximated: the pack encodes `{ kind: \'capped\', capPerPerson: 24000, minAge: 67 }` — min(household retirement income, $24,000 × members 67 or older) — with no per-spouse attribution, no credit forfeiture, and no Line 17 limb. A both-67 couple matches the pooled $48,000 rule exactly, but a mixed-age couple has the $24,000 cap run against pooled income, sheltering dollars the under-67 spouse received that the instructions withhold and understating Wisconsin tax, while the unmodeled credit forfeiture and the unmodeled Line 17 subtraction run the other way — the engine models no Wisconsin nonrefundable credits and grants a 65- or 66-year-old nothing — overstating tax for those households. Social Security remains excluded by the pack\'s `taxesSocialSecurity: false`, matching the Schedule SB Line 4 limb. The separate 30% long-term capital-gain exclusion is registered at `wi-schedule-sb-line-5-long-term-capital-gain-exclusion`.',
     classification: 'approximated',
     contraryReading: null,
-    errorDirection: 'overstatesTax',
-    conventionRationale: null,
+    errorDirection: 'bothDirections',
+    conventionRationale:
+      'The sign depends on household facts: which spouse received the retirement dollars decides the attribution limb (understates), while forgone credits and the Line 17 cohort decide the election limbs (overstate).',
     jurisdiction: 'state:WI',
     authority: [{
       kind: 'formInstruction',
@@ -14864,6 +14898,44 @@ const registry = {
       quotedText:
         'If you (or your spouse if married and filing a joint return) were at least 67 years old as of December 31, 2025, you may subtract retirement income from a qualified retirement plan or individual retirement account (IRA) that is federally taxable and has not been removed from Wisconsin income on lines 12 through 15 of this schedule. Individuals may subtract up to $24,000 of retirement income received.',
     }, {
+      kind: 'formInstruction',
+      citation: '2025 Wisconsin Schedule SB Instructions, Line 16 (joint pooled cap)',
+      url: 'https://www.revenue.wi.gov/TaxForms2025/2025-ScheduleSB-Inst.pdf',
+      quotedText:
+        'A married couple who file a joint return and are both as least 67 years old as of December 31, 2025, may subtract up to $48,000 of retirement income, regardless of how much retirement income each spouse received.',
+    }, {
+      kind: 'formInstruction',
+      citation: '2025 Wisconsin Schedule SB Instructions, Line 16 (credit forfeiture)',
+      url: 'https://www.revenue.wi.gov/TaxForms2025/2025-ScheduleSB-Inst.pdf',
+      quotedText:
+        'if you claim this subtraction, you may not claim any tax credit on Schedule CR and on lines 13 through 20 and 30 through 35 of the Form 1.',
+    }, {
+      kind: 'formInstruction',
+      citation: '2025 Wisconsin Schedule SB Instructions, Line 17',
+      url: 'https://www.revenue.wi.gov/TaxForms2025/2025-ScheduleSB-Inst.pdf',
+      quotedText:
+        'You may subtract up to $5,000 of certain retirement income if: … Your federal adjusted gross income (line 3 of Form 1) is less than $15,000 ($30,000 if married filing a joint return).',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  'wi-schedule-sb-line-5-long-term-capital-gain-exclusion': {
+    title: 'Wisconsin excludes 30% of qualifying long-term capital gain; the pack taxes the whole gain as ordinary',
+    statement:
+      'Wisconsin Schedule SB instructions describe a 30% long-term capital-gain exclusion (60% for farm assets). Approximated: the pack\'s `capitalGainsAsOrdinary: true` omits that preference, so qualifying long-term gains enter the Wisconsin base in full and the engine overstates tax on those gains. The Social Security and age-67 retirement limbs are registered separately at `wi-stat-71-05-retirement-income-subtraction`.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'overstatesTax',
+    conventionRationale: null,
+    jurisdiction: 'state:WI',
+    authority: [{
       kind: 'formInstruction',
       citation: '2025 Wisconsin Schedule SB Instructions, Line 5',
       url: 'https://www.revenue.wi.gov/TaxForms2025/2025-ScheduleSB-Inst.pdf',

@@ -81,7 +81,7 @@ import { describeRule } from '../describeRule.js'
 import { stateParamsFor } from '../../params/state/index.js'
 import type { StateTaxParams } from '../../params/state/types.js'
 import type { TaxYearInput } from '../../projection/types.js'
-import { computeStateTax, computeStateTaxDetail } from '../../tax/stateTax.js'
+import { computeStateTax, computeStateTaxDetail, computeStateTaxableIncome } from '../../tax/stateTax.js'
 
 const TAX_YEAR = 2026
 
@@ -1195,5 +1195,120 @@ describeRule('md-tax-10-209-pension-exclusion', {
       agesAlive: [64],
     })
     expect(computeStateTax(pack('MD'), tooYoung)).toBeCloseTo(accepted, 6)
+  })
+})
+
+// ─── WS4d PR #334 round-1 approximation pins ────────────────────────────────
+//
+// Closed-form pack math. PRODUCED_TBD is the orchestrator sentinel when a pin
+// cannot be derived; each of these could.
+
+const MA_RATE = 0.05
+const maTax = (taxable: number) => Math.max(0, taxable) * MA_RATE
+const MA_PUBLIC = 80_000
+
+describeRule('ma-gen-laws-ch62-s2-public-pension-exclusion', {
+  readings: {
+    // A noncontributory public pension that is neither Uniformed-Services
+    // retirement pay nor a contributory government fund stays in the base.
+    noncontributoryPublicPensionRemainsTaxable: maTax(MA_PUBLIC),
+    // Pack `{ kind: 'full' }` cannot see contributory identity, so every
+    // publicPensionIncome dollar is exempted.
+    everyPublicPensionExempt: 0,
+  },
+  accepted: 'noncontributoryPublicPensionRemainsTaxable',
+  produced: 'everyPublicPensionExempt',
+}, ({ accepted, produced }) => {
+  const scenario = input({
+    state: 'MA',
+    ordinaryIncome: MA_PUBLIC,
+    publicPensionIncome: MA_PUBLIC,
+    agesAlive: [70],
+  })
+
+  it('exempts a noncontributory public pension the statute leaves in', () => {
+    expect(computeStateTax(pack('MA'), scenario)).toBe(produced)
+    expect(computeStateTax(pack('MA'), scenario)).toBeLessThan(accepted)
+    // Derivation: produced = 0; accepted = 80,000 × 5% = 4,000.
+    expect(produced).not.toBe(PRODUCED_TBD)
+    expect(produced).toBe(0)
+    expect(accepted).toBe(4_000)
+  })
+
+  it('taxes a private IRA of the same amount, which is the other bucket', () => {
+    const privateIra = input({
+      state: 'MA',
+      ordinaryIncome: MA_PUBLIC,
+      privateRetirementIncome: MA_PUBLIC,
+      agesAlive: [70],
+    })
+    expect(computeStateTax(pack('MA'), privateIra)).toBeCloseTo(accepted, 6)
+  })
+
+  it('reaches the statute once the public override is dropped', () => {
+    const noOverride = {
+      ...pack('MA'),
+      retirementPublic: { kind: 'none' as const },
+    }
+    expect(computeStateTax(noOverride, scenario)).toBeCloseTo(accepted, 6)
+  })
+})
+
+const LA_RATE = 0.03
+const LA_DEDUCTION = 12_500
+const laTax = (taxable: number) => Math.max(0, taxable) * LA_RATE
+const LA_RETIREMENT = 40_000
+const LA_PACK_EXEMPTION = 12_000
+
+describeRule('la-rs-47-44-1-retirement-exemption', {
+  readings: {
+    // Accepted reading is the indexing method itself: prior-year exemption ×
+    // (1 + CPI-U increase for the previous calendar year), first adjustment
+    // beginning January 1, 2026. The staged text does not publish the 2026
+    // indexed dollar, so the accepted side is that method note rather than a
+    // derived amount.
+    cpiUIndexedFromPriorYearExemption:
+      'priorYearExemption × (1 + CPI-U % increase for previous calendar year); first adjustment begins January 1, 2026; 2026 indexed dollar not in staged text',
+    // Pack holds the unindexed $12,000 starting amount.
+    heldForwardUnindexedTwelveThousand:
+      laTax(LA_RETIREMENT - LA_PACK_EXEMPTION - LA_DEDUCTION),
+  },
+  accepted: 'cpiUIndexedFromPriorYearExemption',
+  produced: 'heldForwardUnindexedTwelveThousand',
+}, ({ accepted, produced, readings }) => {
+  // `produced`/`accepted` are the readings union (string | number) because the
+  // accepted side is the CPI-U method note; pin dollars through the numeric
+  // reading key so toBeCloseTo stays typed.
+  const heldForward = readings.heldForwardUnindexedTwelveThousand
+
+  const scenario = input({
+    state: 'LA',
+    ordinaryIncome: LA_RETIREMENT,
+    privateRetirementIncome: LA_RETIREMENT,
+    agesAlive: [65],
+  })
+
+  it('pins the held-forward unindexed $12,000 against the CPI-U indexing method', () => {
+    expect(computeStateTax(pack('LA'), scenario)).toBeCloseTo(heldForward, 6)
+    expect(computeStateTaxableIncome(pack('LA'), scenario))
+      .toBeCloseTo(LA_RETIREMENT - LA_PACK_EXEMPTION - LA_DEDUCTION, 6)
+    expect(produced).toBe(heldForward)
+    expect(produced).not.toBe(PRODUCED_TBD)
+    // Derivation: (40,000 − 12,000 − 12,500) × 3% = 465.
+    expect(heldForward).toBeCloseTo(465, 6)
+    expect(produced).not.toBe(accepted)
+    expect(typeof accepted).toBe('string')
+  })
+
+  it('withholds the exemption at 64, which is the age the statute names', () => {
+    const tooYoung = input({
+      state: 'LA',
+      ordinaryIncome: LA_RETIREMENT,
+      privateRetirementIncome: LA_RETIREMENT,
+      agesAlive: [64],
+    })
+    expect(computeStateTax(pack('LA'), tooYoung))
+      .toBeCloseTo(laTax(LA_RETIREMENT - LA_DEDUCTION), 6)
+    expect(computeStateTax(pack('LA'), tooYoung)).toBeGreaterThan(heldForward)
   })
 })

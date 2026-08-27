@@ -2145,54 +2145,6 @@ const LA_RATE = 0.03
 const LA_DEDUCTION = 12_500
 const laTax = (taxable: number) => Math.max(0, taxable) * LA_RATE
 
-const LA_RETIREMENT = 40_000
-const LA_EXEMPTION = 12_000
-
-describeRule('la-rs-47-44-1-retirement-exemption', {
-  readings: {
-    twelveThousandFromAgeSixtyFive: laTax(LA_RETIREMENT - LA_EXEMPTION - LA_DEDUCTION),
-    // The shopping-list figure the plan flagged. R.S. 47:44.1(A) is twelve
-    // thousand, not six; six thousand is subsection B's disability exemption.
-    formerSixThousandDollarFigure: laTax(LA_RETIREMENT - 6_000 - LA_DEDUCTION),
-  },
-  accepted: 'twelveThousandFromAgeSixtyFive',
-}, ({ accepted, readings }) => {
-  const scenario = input({
-    state: 'LA',
-    ordinaryIncome: LA_RETIREMENT,
-    privateRetirementIncome: LA_RETIREMENT,
-    agesAlive: [65],
-  })
-
-  it('exempts $12,000 of a 65-year-old Louisianian’s pension', () => {
-    expect(computeStateTax(pack('LA'), scenario)).toBeCloseTo(accepted, 6)
-    expect(computeStateTaxableIncome(pack('LA'), scenario))
-      .toBeCloseTo(LA_RETIREMENT - LA_EXEMPTION - LA_DEDUCTION, 6)
-  })
-
-  it('would charge more on the $6,000 figure the shopping list still carries', () => {
-    const sixThousand = {
-      ...pack('LA'),
-      retirementPrivate: { kind: 'capped' as const, capPerPerson: 6_000, minAge: 65 },
-    }
-    expect(computeStateTax(sixThousand, scenario))
-      .toBeCloseTo(readings.formerSixThousandDollarFigure, 6)
-    expect(computeStateTax(sixThousand, scenario)).toBeGreaterThan(accepted)
-  })
-
-  it('withholds the exemption at 64, which is the age the statute names', () => {
-    const tooYoung = input({
-      state: 'LA',
-      ordinaryIncome: LA_RETIREMENT,
-      privateRetirementIncome: LA_RETIREMENT,
-      agesAlive: [64],
-    })
-    expect(computeStateTax(pack('LA'), tooYoung))
-      .toBeCloseTo(laTax(LA_RETIREMENT - LA_DEDUCTION), 6)
-    expect(computeStateTax(pack('LA'), tooYoung)).toBeGreaterThan(accepted)
-  })
-})
-
 const LA_SS_OTHER = 90_000
 const LA_SS = 40_000
 const LA_SS_FEDERALLY_TAXABLE = 0.85 * LA_SS
@@ -2276,46 +2228,6 @@ describeRule('md-tax-10-207-social-security-exclusion', {
 
 const MA_RATE = 0.05
 const maTax = (taxable: number) => Math.max(0, taxable) * MA_RATE
-const MA_PUBLIC = 80_000
-
-describeRule('ma-gen-laws-ch62-s2-public-pension-exclusion', {
-  readings: {
-    contributoryPublicPensionDeducted: 0,
-    publicPensionTaxedLikePrivate: maTax(MA_PUBLIC),
-  },
-  accepted: 'contributoryPublicPensionDeducted',
-}, ({ accepted, readings }) => {
-  const scenario = input({
-    state: 'MA',
-    ordinaryIncome: MA_PUBLIC,
-    publicPensionIncome: MA_PUBLIC,
-    agesAlive: [70],
-  })
-
-  it('deducts a Commonwealth contributory pension in full', () => {
-    expect(computeStateTax(pack('MA'), scenario)).toBe(accepted)
-  })
-
-  it('taxes a private IRA distribution of the same amount', () => {
-    const privateIra = input({
-      state: 'MA',
-      ordinaryIncome: MA_PUBLIC,
-      privateRetirementIncome: MA_PUBLIC,
-      agesAlive: [70],
-    })
-    expect(computeStateTax(pack('MA'), privateIra))
-      .toBeCloseTo(readings.publicPensionTaxedLikePrivate, 6)
-  })
-
-  it('would tax the public pension if the override were dropped', () => {
-    const noOverride = {
-      ...pack('MA'),
-      retirementPublic: { kind: 'none' as const },
-    }
-    expect(computeStateTax(noOverride, scenario))
-      .toBeCloseTo(readings.publicPensionTaxedLikePrivate, 6)
-  })
-})
 
 const MA_SS_OTHER = 70_000
 const MA_SS = 40_000
@@ -2795,8 +2707,9 @@ describeRule('wa-dor-no-broad-individual-income-tax', {
   readings: {
     noBroadIndividualIncomeTaxFigure: 0,
     // A hypothetical broad 5% levy on the $100,000 ordinary base would be
-    // 5,000; the staged RCW instead describes a separate long-term-gain
-    // excise that this input model cannot price.
+    // 5,000; the competing reading is a broad income tax Washington does not
+    // impose. The separate capital-gains excise is registered at
+    // wa-rcw-82-87-capital-gains-excise.
     applyingAnOrdinaryFivePercentRate: 5_000,
   },
   accepted: 'noBroadIndividualIncomeTaxFigure',
@@ -2827,7 +2740,7 @@ describeRule('wa-dor-no-broad-individual-income-tax', {
   })
 })
 
-describeRule('wi-stat-71-05-retirement-income-subtraction', {
+describeRule('wi-schedule-sb-line-5-long-term-capital-gain-exclusion', {
   readings: {
     sourceSubtractsThirtyPercentOfTheLongTermGain: 40_000 + 70_000 - 13_560,
     packTaxesTheWholeGainAsOrdinaryIncome: 126_440,
@@ -2848,19 +2761,62 @@ describeRule('wi-stat-71-05-retirement-income-subtraction', {
   })
 })
 
-describe('Wisconsin covered retirement limbs', () => {
-  it('keeps the source-matching Social Security and $24,000 age-67 subtraction', () => {
-    const scenario = input({
+describeRule('wi-stat-71-05-retirement-income-subtraction', {
+  readings: {
+    // Line 16 subtracts only retirement income the 67-or-older individual
+    // received. With the couple's $30,000 of IRA income received entirely by
+    // the 60-year-old spouse, no dollar qualifies (84,000 - 25,110 = 58,890).
+    perRecipientAttributionWithholdsTheSubtraction: 84_000 - 25_110,
+    // Pack min(household retirement income, $24,000 × members 67+) has no
+    // attribution, so the 67-year-old's presence shelters the other spouse's
+    // dollars (84,000 - 24,000 - 25,110 = 34,890).
+    packCapsPooledHouseholdIncome: 84_000 - 24_000 - 25_110,
+  },
+  accepted: 'perRecipientAttributionWithholdsTheSubtraction',
+  produced: 'packCapsPooledHouseholdIncome',
+  note: 'age-67 retirement attribution and election limbs',
+}, ({ accepted, produced }) => {
+  const mixedAgeCouple = input({
+    state: 'WI',
+    filingStatus: 'marriedFilingJointly',
+    ordinaryIncome: 84_000,
+    ssBenefits: 40_000,
+    privateRetirementIncome: 30_000,
+    agesAlive: [67, 60],
+  })
+
+  it('shelters retirement dollars received by the under-67 spouse', () => {
+    const taxable = computeStateTaxableIncome(pack('WI'), mixedAgeCouple)
+    expect(taxable).toBe(produced)
+    expect(taxable).toBeLessThan(accepted)
+    // Social Security stays out on both sides; only attribution differs.
+    expect(produced).toBe(34_890)
+    expect(accepted).toBe(58_890)
+  })
+
+  it('matches the pooled $48,000 cap when both spouses are 67', () => {
+    const bothSixtySeven = input({
       state: 'WI',
+      filingStatus: 'marriedFilingJointly',
       ordinaryIncome: 84_000,
-      ssBenefits: 40_000,
-      privateRetirementIncome: 24_000,
-      agesAlive: [67],
+      privateRetirementIncome: 48_000,
+      agesAlive: [67, 68],
     })
-    // The federally taxable Social Security is excluded and the $24,000
-    // qualified-plan subtraction is applied once; only the ordinary remainder
-    // and Wisconsin's standard deduction reach the state base.
-    expect(computeStateTaxableIncome(pack('WI'), scenario)).toBe(84_000 - 24_000 - 13_560)
+    // 'regardless of how much retirement income each spouse received' — the
+    // pooled min(income, 24,000 × 2) is exact for a both-67 couple.
+    expect(computeStateTaxableIncome(pack('WI'), bothSixtySeven)).toBe(84_000 - 48_000 - 25_110)
+  })
+
+  it('grants a 65-year-old nothing where Line 17 would allow $5,000', () => {
+    const lowAgiSixtyFive = input({
+      state: 'WI',
+      ordinaryIncome: 14_000,
+      privateRetirementIncome: 14_000,
+      agesAlive: [65],
+    })
+    // Line 17 (AGI under $15,000 single) would leave
+    // max(0, 14,000 - 5,000 - 13,560) = 0; the pack's minAge-67 cap leaves 440.
+    expect(computeStateTaxableIncome(pack('WI'), lowAgiSixtyFive)).toBe(14_000 - 13_560)
   })
 })
 
