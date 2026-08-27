@@ -11,16 +11,16 @@ The registry is the machine-checked chain from a rule to its implementation and 
 
 | Metric | Count |
 | --- | ---: |
-| Total rules | 326 |
+| Total rules | 341 |
 | Classification: approximated | 79 |
-| Classification: outOfScope | 47 |
-| Classification: settled | 196 |
+| Classification: outOfScope | 54 |
+| Classification: settled | 204 |
 | Classification: unsettled | 4 |
-| Volatility: annuallyIndexed | 48 |
+| Volatility: annuallyIndexed | 49 |
 | Volatility: awaitingGuidance | 10 |
-| Volatility: staticStatute | 262 |
+| Volatility: staticStatute | 276 |
 | Volatility: sunsetting | 6 |
-| Federal jurisdiction | 269 |
+| Federal jurisdiction | 284 |
 | State jurisdiction total | 57 |
 
 | State jurisdiction | Count |
@@ -54,8 +54,8 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | Swept | 100.0% |
 | Grandfathered unswept baseline | 0 |
 | partial | 61 |
-| registered | 50 |
-| rule-free | 124 |
+| registered | 51 |
+| rule-free | 123 |
 | unswept | 0 |
 
 ## Per-directory rollup
@@ -63,7 +63,7 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | Directory | Files | Partial | Registered | Rule-free | Unswept |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | (root) | 3 | 0 | 0 | 3 | 0 |
-| actions | 74 | 23 | 24 | 27 | 0 |
+| actions | 74 | 23 | 25 | 26 | 0 |
 | allocation | 1 | 0 | 0 | 1 | 0 |
 | decisions | 19 | 5 | 0 | 14 | 0 |
 | insights | 22 | 4 | 1 | 17 | 0 |
@@ -156,7 +156,7 @@ None.
 
 ## Re-verification due dates
 
-The 25 earliest due dates are shown below (326 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
+The 25 earliest due dates are shown below (341 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
 
 | Rule | Volatility | Verified on | Due on |
 | --- | --- | --- | --- |

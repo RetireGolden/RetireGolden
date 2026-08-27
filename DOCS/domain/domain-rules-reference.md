@@ -1379,7 +1379,7 @@ through the §86(b)(2)(B) add-back and each program MAGI only through that progr
 | Federal AGI / ordinary taxable income | Excluded | IRC 103(a) | [federalTax.ts](../../packages/engine/src/tax/federalTax.ts) (enters only via taxable SS) |
 | §86 provisional income (taxable SS) | Included | IRC 86(b)(2)(B) | `taxableSocialSecurity` in [federalTax.ts](../../packages/engine/src/tax/federalTax.ts) |
 | ACA household MAGI (§36B PTC) | Included | IRC 36B(d)(2)(B)(ii) | `buildAcaHouseholdMagi` in [aca.ts](../../packages/engine/src/tax/aca.ts) |
-| Medicare IRMAA MAGI | Included | 42 U.S.C. 1395r(i)(4)(A)(ii) | realized-MAGI history in [simulate.ts](../../packages/engine/src/projection/simulate.ts) |
+| Medicare IRMAA MAGI | Included (tax-exempt interest); foreign-exclusion addback omitted from lookback feed | 42 U.S.C. 1395r(i)(4)(A)(ii) settled; (A)(i) approximated | realized-MAGI history in [simulate.ts](../../packages/engine/src/projection/simulate.ts) |
 | NIIT net investment income | Excluded | IRC 1411(c)(1)(A)(i) — never gross income | NII assembly in [federalTax.ts](../../packages/engine/src/tax/federalTax.ts) |
 | NIIT MAGI (threshold leg) | Excluded | IRC 1411(d) — only the §911 add-back | federal MAGI in [federalTax.ts](../../packages/engine/src/tax/federalTax.ts) |
 | Senior-deduction MAGI phase-out | Excluded | IRC 151(d)(5)(C)(iii)(II) — only §911/931/933 add-backs | same federal MAGI in [federalTax.ts](../../packages/engine/src/tax/federalTax.ts) |
@@ -1402,11 +1402,14 @@ through the §86(b)(2)(B) add-back and each program MAGI only through that progr
   unknown contracts are satisfied by plan-derived amounts only when generation is positive and are
   evidence-marked `tax-exempt-interest-plan-derived`; a notApplicable contract contradicted by generation is
   used-and-flagged `tax-exempt-interest-contract-contradicted`.
+- **IRMAA (A)(i) without-regard addback is not in the lookback feed.** ACA household MAGI and §86 provisional
+  income already add the plan’s foreign-exclusion amount; `magiHistory` that supplies IRMAA does not.
+  Understates IRMAA MAGI / premiums — registry record
+  `usc-42-1395r-i-4-a-i-irmaa-magi-foreign-exclusion-addback`.
 
 The machine-readable half of this matrix lives in the rule registry:
 `irc-36B-d-2-B-aca-household-magi-composition`, `irc-1411-tax-exempt-interest-outside-both-niit-legs`, and
 `irc-57-a-5-private-activity-bond-interest-amt-preference` (added with this section), alongside the existing
 `irc-86-b-2-provisional-income-modified-agi` and `irc-1411-d-modified-agi-foreign-exclusion-addback` records.
-The IRMAA records (`usc-42-1395r-i-irmaa-applicable-percentage` and companions) carry the tier schedule and
-two-year lookback rather than the MAGI composition; the IRMAA row above cites its composition statute
-directly.
+The IRMAA tax-exempt limb is `usc-42-1395r-i-4-a-magi-agi-plus-tax-exempt-interest`; the (A)(i) gap is the
+approximated companion above. Other IRMAA records carry the tier schedule and two-year lookback.

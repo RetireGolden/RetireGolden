@@ -46,7 +46,7 @@ export const COVERAGE_ATTESTATIONS: Readonly<Record<string, CoverageAttestation>
   'actions/annualQcdTaxCharacterPostPass.ts': Object.freeze({ status: 'registered', sweptOn: '2026-08-24', note: null }),
   'actions/annualQcdUnifiedTransactionFinalization.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'actions/annualRetirementActionMovementCoordinator.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
-  'actions/annualRetirementActionPublication.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
+  'actions/annualRetirementActionPublication.ts': Object.freeze({ status: 'registered', sweptOn: '2026-08-27', note: null }),
   'actions/annualRetirementPhysicalEventInventory.ts': Object.freeze({ status: 'partial', sweptOn: '2026-08-24', note: 'Inherited-RMD regime; owner-RMD start age; spouse-as-own transition; annuity/Form 8606 treatment; direct-trustee QCD origin; no record' }),
   'actions/annualSection68ItemizedDeduction.ts': Object.freeze({ status: 'registered', sweptOn: '2026-08-24', note: null }),
   'actions/beneficiarySpousalElectionStatus.ts': Object.freeze({ status: 'registered', sweptOn: '2026-08-24', note: null }),

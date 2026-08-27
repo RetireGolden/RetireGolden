@@ -266,6 +266,30 @@ describe('modified adjusted gross income', () => {
   })
 })
 
+describe('IRC 103 municipal-bond interest exclusion', () => {
+  // IRC 103(a) excludes state and local bond interest from gross income. The
+  // rejected reading treats the same $50,000 as ordinary interest, raising
+  // AGI and taxable income by the amount the statute excludes.
+  describeRule('irc-103-a-state-local-bond-interest-exclusion', {
+    readings: {
+      excludedFromGrossIncome: { agi: 190_000, taxableIncome: 173_900 },
+      includedInGrossIncome: { agi: 240_000, taxableIncome: 223_900 },
+    },
+    accepted: 'excludedFromGrossIncome',
+  }, ({ accepted, readings }) => {
+    it('keeps municipal-bond interest out of federal AGI and taxable income', () => {
+      const result = computeFederalTax(input({
+        ordinaryIncome: 190_000,
+        taxExemptInterest: 50_000,
+      }))
+      const observed = { agi: result.agi, taxableIncome: result.taxableIncome }
+
+      expect(observed).toEqual(accepted)
+      expect(observed).not.toEqual(readings.includedInGrossIncome)
+    })
+  })
+})
+
 describe('section 1211 capital loss limitation', () => {
   // IRC 1211(b) allows a net capital loss against ordinary income only up to
   // the lower of 3,000 dollars or the excess of losses over gains. The rest is

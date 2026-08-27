@@ -1,15 +1,16 @@
 /**
  * Pins the remaining `approximated` registry records that govern required
- * minimum distributions and inherited traditional accounts, plus the settled
- * §4974 fixture whose former zero-penalty reading this file exposed.
+ * minimum distributions and inherited traditional accounts, plus settled
+ * fixtures that share this file (the §4974 reclassification and the first-year
+ * April 1 deferral default, whose elected receipt-year companion lives under
+ * irc-402-a-employer-plan-distribution-receipt-year-taxability).
  *
  * An approximated record is a claim about a figure this engine knowingly gets
  * wrong. Nothing watched those claims until now, and two of them rotted into
  * describing gaps that had already been closed. Each approximation fixture
  * below therefore names the reading the authority supports and the different
- * reading the engine returns. The §4974 fixture now asserts the accepted
- * reading directly, preserving its original discriminating input after the
- * registry record's reclassification.
+ * reading the engine returns. Settled fixtures in this file assert the accepted
+ * reading directly.
  *
  * Every fixture calls the real engine entry point named in the record's
  * `implementedBy`, at the narrowest level that exhibits the gap. Where the
@@ -53,44 +54,41 @@ const FIRST_YEAR_AMOUNT = START_BALANCE / UNIFORM_LIFETIME_AT_73
 
 /**
  * The amount for the attainment year is settled and correct (see
- * treas-reg-1-401-a-9-5-a-3-first-distribution-calendar-year); what is
- * approximated is the CALENDAR YEAR the income lands in when the payment is
- * deferred to April 1. Only a projection year row can show that, so this
- * fixture runs the simulator rather than calling `requiredMinimumDistribution`,
- * whose signature carries no election to defer.
+ * treas-reg-1-401-a-9-5-a-3-first-distribution-calendar-year). The engine now
+ * offers an opt-in `rmdFirstYearDeferrals` election; this fixture pins the
+ * DEFAULT path, which books the first-year amount in the attainment year.
+ * Elected April 1 receipt-year income recognition is covered by
+ * irc-402-a-employer-plan-distribution-receipt-year-taxability.
  */
 describeRule('irc-401-a-9-C-i-first-year-april-1-deferral', {
   readings: {
-    // A taxpayer who defers the first payment to April 1 of 2027 recognises
-    // nothing from it in 2026; both distributions are taxed in 2027.
-    statuteUnderTheApril1Deferral: 0,
-    engineRecognisesTheWholeFirstYearAmountInTheAttainmentYear: FIRST_YEAR_AMOUNT,
+    defaultBooksInAttainmentYear: FIRST_YEAR_AMOUNT,
+    rejectedLeavesAttainmentYearEmpty: 0,
   },
-  accepted: 'statuteUnderTheApril1Deferral',
-  produced: 'engineRecognisesTheWholeFirstYearAmountInTheAttainmentYear',
-  note: 'the calendar year the first distribution is taxed in',
-}, ({ accepted, produced }) => {
+  accepted: 'defaultBooksInAttainmentYear',
+  note: 'default books attainment-year without election',
+}, ({ accepted, readings }) => {
   function ownedIraPlan(): Plan {
     const plan = singlePersonPlan({ dob: OWNER_DOB, planningAge: OWNER_PLANNING_AGE })
     plan.accounts = [traditionalAccount('ira', START_BALANCE)]
     return plan
   }
 
-  it('recognises the first-year amount in the attainment year, offering no deferral', () => {
+  it('books the first-year amount in the attainment year when no deferral is elected', () => {
     const years = runPlan(ownedIraPlan(), noTax).years
     const attainmentYear = years[0]!
     expect(attainmentYear.year).toBe(2026)
-    expect(attainmentYear.rmd).toBeCloseTo(produced, 6)
-    expect(attainmentYear.rmd).not.toBeCloseTo(accepted, 6)
+    expect(attainmentYear.rmd).toBeCloseTo(accepted, 6)
+    expect(attainmentYear.rmd).not.toBeCloseTo(readings.rejectedLeavesAttainmentYearEmpty, 6)
   })
 
-  it('leaves the following year carrying one distribution rather than two', () => {
+  it('leaves the following year carrying one distribution rather than two under the default', () => {
     const years = runPlan(ownedIraPlan(), noTax).years
     const attainmentYear = years[0]!
     const followingYear = years[1]!
     expect(followingYear.year).toBe(2027)
-    // Under the deferral the 2027 row would carry the 2026 amount as well, so
-    // it would be roughly double. It is not: the spike is not modelled.
+    // Under an elected deferral the 2027 row would carry the 2026 amount as
+    // well; the default does not invent that spike.
     expect(followingYear.rmd).toBeLessThan(attainmentYear.rmd * 1.5)
   })
 })

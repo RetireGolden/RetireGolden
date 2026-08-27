@@ -53,7 +53,14 @@ State brackets are a separate question and are still held nominal (see `params/s
   simple user-entered total (SALT cap, mortgage interest, charitable) where it beats the standard.
   Qualified mortgage-insurance premiums are omitted from that total even though the statute treats
   them as qualified residence interest (`irc-163-h-3-E-i-pmi-qualified-residence-interest-restart`,
-  approximated / `overstatesTax`).
+  approximated / `overstatesTax`). Unreimbursed medical expenses are omitted from that total
+  (`irc-213-a-medical-expense-deduction`, approximated / `overstatesTax`); the prescribed-drug,
+  cosmetic-surgery, and LTC-premium-age-cap limbs share that missing medical input rather than
+  distinct tax figures. The section 199A qualified-business-income deduction and the section 162(l)
+  self-employed health-insurance deduction are out of scope
+  (`irc-199A-a-qualified-business-income-deduction-not-modeled`,
+  `irc-162-l-1-self-employed-health-insurance-not-modeled`): the Plan has no pass-through or
+  self-employment facts.
   IRC §151(d)(5)(C)(iii)(I) phases out the **per-person** $6,000 at 6% of MAGI over the threshold, so
   each qualifying person's share runs out separately and two people 65+ reach zero at the same MAGI as one.
   Traditional-IRA deposits are currently treated as pre-tax without the §219(g) active-participant deduction
@@ -105,11 +112,14 @@ State brackets are a separate question and are still held nominal (see `params/s
   exemption phase-out, and tentative minimum tax, preserving LTCG/qualified-dividend preferential rates, then
   adds the excess over regular tax when AMT binds. This is a conversion-risk screen, not a Form 6251
   substitute.
-- **IRMAA:** Medicare Part B/D surcharges from **MAGI two years prior** (a conversion at 63+ hits Medicare
-  pricing); the brackets are cliffs, so bracket-edge warnings show "$1 over costs $X/yr"
+- **IRMAA:** Medicare Part B/D surcharges from **MAGI two years prior** by default (a conversion at 63+ hits
+  Medicare pricing), subject to the statute’s clause (ii) and subparagraph (C) exceptions; the brackets are
+  cliffs, so bracket-edge warnings show "$1 over costs $X/yr"
   ([medicare.ts](../../packages/engine/src/tax/medicare.ts)). The **top** tier ($500k/$750k) is frozen through
   premium year 2027 and then resumes indexing off an August 2026 base; the four tiers beneath it index without
-  interruption (domain rules §7).
+  interruption (domain rules §7). Realized IRMAA MAGI history adds tax-exempt interest to AGI; the (A)(i)
+  foreign-exclusion addback that already raises ACA MAGI is not yet written into that lookback feed
+  (`usc-42-1395r-i-4-a-i-irmaa-magi-foreign-exclusion-addback`).
 - **SSA-44 redetermination (opt-in, `expenses.healthcare.ssa44`):** after a qualifying life-changing event —
   a couple's first death, and optionally each person's retirement year — the two following premium years
   price IRMAA on **min(lookback MAGI, prior-year MAGI)**, the planning-grade stand-in for the current-year
@@ -704,8 +714,9 @@ need.
 - Capital-loss: single pool, opening balance only, no wash-sale / section 1256 / section 1212-worksheet preservation;
   state conformity is modeled only for the encoded high-impact cases, not every per-state worksheet nuance.
 - **Charitable and NUA scope:** generic itemized-charitable, QCD, and charitable-estate fields do not model a
-  donor-advised fund. There is no DAF contribution/bunching/grant workflow and no appreciated-property
-  transfer or DAF-specific deduction treatment. A named QCD whose charity is designated a donor-advised fund,
+  donor-advised fund (`irc-4966-d-donor-advised-fund-vehicle-not-modeled`). There is no DAF
+  contribution/bunching/grant workflow and no appreciated-property transfer or DAF-specific deduction
+  treatment. A named QCD whose charity is designated a donor-advised fund,
   supporting organization, or split-interest entity is refused by name rather than modeled.
   Net unrealized appreciation (NUA) is also absent: equity-comp aggregate basis is not a qualified-plan
   employer-stock NUA election. Neither DAF nor NUA may be presented as a modeled opportunity or action.
