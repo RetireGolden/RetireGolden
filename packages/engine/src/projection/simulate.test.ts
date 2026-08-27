@@ -504,28 +504,70 @@ describe('social security', () => {
     expect(result.years.find((y) => y.year === 2031)!.incomes.socialSecurity).toBeCloseTo(19_200, 6)
   })
 
-  it('steps the survivor up to the deceased spouse’s larger benefit', () => {
-    const plan = basePlan()
-    plan.household.filingStatus = 'marriedFilingJointly'
-    plan.household.people = [
-      { id: 'p1', name: 'Low', dob: '1962-06-15', sex: 'average', retirementAge: null, longevity: { planningAge: 95, source: 'manual' } },
-      { id: 'p2', name: 'High', dob: '1960-06-15', sex: 'average', retirementAge: null, longevity: { planningAge: 75, source: 'manual' } },
-    ]
-    plan.incomes = [
-      { type: 'socialSecurity', id: testIds(), personId: 'p1', piaMonthly: 1_000, earnings: null, claimAge: { years: 67, months: 0 } },
-      { type: 'socialSecurity', id: testIds(), personId: 'p2', piaMonthly: 3_000, earnings: null, claimAge: { years: 67, months: 0 } },
-    ]
-    plan.accounts = [cash(5_000_000)]
-    const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
+  // In the survivor year p1's own benefit is 12,000 and the deceased worker's
+  // survivor amount is 36,000. Section 402(k)(3)(A)'s offset leaves 36,000;
+  // the rejected reading pays the two full amounts, 48,000. A second limb swaps
+  // the PIAs so own is 36,000 and the deceased's survivor amount is 12,000: the
+  // offset leaves own 36,000, not the sum 48,000 and not the smaller survivor
+  // amount alone.
+  describeRule('usc-42-402-k-3-a-survivor-own-dual-entitlement-offset', {
+    readings: {
+      statutoryHigherBenefitOnly: 36_000,
+      bothOwnAndSurvivorPaid: 48_000,
+      smallerSurvivorAlone: 12_000,
+    },
+    accepted: 'statutoryHigherBenefitOnly',
+  }, ({ accepted, readings }) => {
+    it('steps the survivor up to the deceased spouse’s larger benefit without adding both', () => {
+      const plan = basePlan()
+      plan.household.filingStatus = 'marriedFilingJointly'
+      plan.household.people = [
+        { id: 'p1', name: 'Low', dob: '1962-06-15', sex: 'average', retirementAge: null, longevity: { planningAge: 95, source: 'manual' } },
+        { id: 'p2', name: 'High', dob: '1960-06-15', sex: 'average', retirementAge: null, longevity: { planningAge: 75, source: 'manual' } },
+      ]
+      plan.incomes = [
+        { type: 'socialSecurity', id: testIds(), personId: 'p1', piaMonthly: 1_000, earnings: null, claimAge: { years: 67, months: 0 } },
+        { type: 'socialSecurity', id: testIds(), personId: 'p2', piaMonthly: 3_000, earnings: null, claimAge: { years: 67, months: 0 } },
+      ]
+      plan.accounts = [cash(5_000_000)]
+      const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
 
-    // Both claimed at FRA (factor 1), COLA 0. Low earner's own is 12,000 but the
-    // spousal top-up lifts it to 50% of the high PIA = 18,000; high earner 36,000.
-    const bothAlive = result.years.find((y) => y.year === 2035)! // p2's last year (75)
-    expect(bothAlive.incomes.socialSecurity).toBeCloseTo(54_000, 6)
+      // Both claimed at FRA (factor 1), COLA 0. Low earner's own is 12,000 but the
+      // spousal top-up lifts it to 50% of the high PIA = 18,000; high earner 36,000.
+      const bothAlive = result.years.find((y) => y.year === 2035)
+      if (bothAlive === undefined) throw new Error('expected deceased worker’s last alive year')
+      expect(bothAlive.incomes.socialSecurity).toBeCloseTo(54_000, 6)
 
-    // p2 dies after 2035: p1 steps up to p2's 36,000 (survivor supersedes spousal).
-    const survivorYear = result.years.find((y) => y.year === 2036)!
-    expect(survivorYear.incomes.socialSecurity).toBeCloseTo(36_000, 6)
+      // p2 dies after 2035: p1 steps up to p2's 36,000 (survivor supersedes spousal).
+      const survivorYear = result.years.find((y) => y.year === 2036)
+      if (survivorYear === undefined) throw new Error('expected survivor year after p2’s death')
+      expect(survivorYear.incomes.socialSecurity).toBeCloseTo(accepted, 6)
+      expect(survivorYear.incomes.socialSecurity).not.toBeCloseTo(readings.bothOwnAndSurvivorPaid, 6)
+    })
+
+    it('keeps the survivor’s own larger benefit when the deceased’s amount is smaller', () => {
+      // Own PIA 3,000 → 36,000/yr; deceased PIA 1,000 → 12,000/yr survivor amount.
+      // Section 402(k)(3)(A) leaves 36,000; rejected readings pay 48,000 (sum) or
+      // 12,000 (survivor alone).
+      const plan = basePlan()
+      plan.household.filingStatus = 'marriedFilingJointly'
+      plan.household.people = [
+        { id: 'p1', name: 'High', dob: '1962-06-15', sex: 'average', retirementAge: null, longevity: { planningAge: 95, source: 'manual' } },
+        { id: 'p2', name: 'Low', dob: '1960-06-15', sex: 'average', retirementAge: null, longevity: { planningAge: 75, source: 'manual' } },
+      ]
+      plan.incomes = [
+        { type: 'socialSecurity', id: testIds(), personId: 'p1', piaMonthly: 3_000, earnings: null, claimAge: { years: 67, months: 0 } },
+        { type: 'socialSecurity', id: testIds(), personId: 'p2', piaMonthly: 1_000, earnings: null, claimAge: { years: 67, months: 0 } },
+      ]
+      plan.accounts = [cash(5_000_000)]
+      const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
+
+      const survivorYear = result.years.find((y) => y.year === 2036)
+      if (survivorYear === undefined) throw new Error('expected survivor year after p2’s death')
+      expect(survivorYear.incomes.socialSecurity).toBeCloseTo(accepted, 6)
+      expect(survivorYear.incomes.socialSecurity).not.toBeCloseTo(readings.bothOwnAndSurvivorPaid, 6)
+      expect(survivorYear.incomes.socialSecurity).not.toBeCloseTo(readings.smallerSurvivorAlone, 6)
+    })
   })
 
   it('floors the survivor step-up at 82.5% of PIA (RIB-LIM) when the deceased claimed early', () => {

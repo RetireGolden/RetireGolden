@@ -2468,12 +2468,12 @@ const registry = {
   'usc-42-402-e-2-widow-full-pia': {
     title: 'A widow benefit is the whole PIA, not half of it',
     statement:
-      'The widow or widower insurance benefit is equal to the primary insurance amount of the deceased individual, that amount being the one determined after the subsection\u2019s own subparagraphs (B) and (C) have been applied. It is not the one-half fraction that applies to a spouse of a living worker, so the amount payable roughly doubles at the moment the relationship changes from spousal to survivor. The whole primary insurance amount is a floor on the survivor base rather than a ceiling on it: subparagraph (C) deems that amount to equal the delayed-retirement-increased old-age benefit the deceased was receiving where that benefit is larger, so a deceased who claimed late raises the survivor above the bare figure.',
+      'The widow or widower insurance benefit is equal to the primary insurance amount of the deceased individual, that amount being the one determined after the subsection\u2019s own subparagraphs (B) and (C) have been applied. It is not the one-half fraction that applies to a spouse of a living worker, so the amount payable roughly doubles at the moment the relationship changes from spousal to survivor. The whole primary insurance amount is a floor on the survivor base rather than a ceiling on it: subparagraph (C) can deem it up to the deceased’s delayed-retirement-increased benefit, a limb registered and fixture-pinned separately at cfr-20-404-338-survivor-deceased-drc-pass-through.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The engine computes the survivor base as the greater of what the deceased actually received and 82.5 percent of their primary insurance amount, then applies the survivor\u2019s own early-claim reduction to that base. Both halves of that maximum are statutory rather than invented: the first is the subparagraph (C) deeming, which carries the deceased\u2019s delayed retirement credits through, and the second is the widow limit of subparagraph (D), which binds only where the deceased had claimed early and been reduced under subsection (q). The ordering is the convention. Subparagraph (D) is drafted as a ceiling tested after the survivor\u2019s own subsection (q) reduction has been applied, whereas the engine takes the maximum first and reduces afterwards. The two agree wherever the survivor is unreduced; where the deceased and the survivor both claimed early the engine is the more conservative of the two.',
+      'This record covers the whole-PIA limb only: its fixture holds the deceased at FRA so the whole-versus-half readings discriminate without delayed credits in play. The subparagraph (C) deeming that carries the deceased\u2019s delayed credits into the survivor base is fixture-pinned at cfr-20-404-338-survivor-deceased-drc-pass-through. The early-deceased RIB-LIM amount and its ordering relative to the survivor\u2019s own age reduction are registered separately at poms-rs-00615-320-rib-lim-after-survivor-reduction.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -2481,24 +2481,368 @@ const registry = {
       url: 'https://www.law.cornell.edu/uscode/text/42/402',
       quotedText:
         'such widow\u2019s insurance benefit for each month shall be equal to the primary insurance amount (as determined for purposes of this subsection after application of subparagraphs (B) and (C)) of such deceased individual.',
-    }, {
-      kind: 'statute',
-      citation: '42 U.S.C. 402(e)(2)(C)',
-      url: 'https://www.law.cornell.edu/uscode/text/42/402',
-      quotedText:
-        'If such deceased individual was (or upon application would have been) entitled to an old-age insurance benefit which was increased (or subject to being increased) on account of delayed retirement under the provisions of subsection (w), then, for purposes of this subsection, such individual\u2019s primary insurance amount, if less than the old-age insurance benefit (increased, where applicable, under paragraph (5) or (6) of section 415(f) of this title and under section 415(i) of this title as if such individual were still alive in the case of an individual who has died) which he was receiving (or would upon application have received) for the month prior to the month in which he died, shall be deemed to be equal to such old-age insurance benefit, and (notwithstanding the provisions of paragraph (3) of such subsection (w)) the number of increment months shall include any month in the months of the calendar year in which he died, prior to the month in which he died, which satisfy the conditions in paragraph (2) of such subsection (w).',
-    }, {
-      kind: 'statute',
-      citation: '42 U.S.C. 402(e)(2)(D)',
-      url: 'https://www.law.cornell.edu/uscode/text/42/402',
-      quotedText:
-        'If the deceased individual ... was, at any time, entitled to an old-age insurance benefit which was reduced by reason of the application of subsection (q), the widow\u2019s insurance benefit of such widow or surviving divorced wife for any month shall, if the amount of the widow\u2019s insurance benefit of such widow or surviving divorced wife (as determined under subparagraph (A) and after application of subsection (q)) is greater than\u2014(i) the amount of the old-age insurance benefit to which such deceased individual would have been entitled (after application of subsection (q)) for such month if such individual were still living ..., and (ii) 82\u00bd percent of the primary insurance amount (as determined without regard to subparagraph (C)) of such deceased individual; be reduced to the amount referred to in clause (i), or (if greater) the amount referred to in clause (ii).',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-04',
+    verifiedOn: '2026-08-26',
     implementedBy: ['packages/engine/src/socialSecurity/survivorBenefit.ts'],
+  },
+
+  'usc-42-402-q-1-widow-survivor-early-reduction-schedule': {
+    title: 'A survivor claim at 60 starts at 71.5 percent and rises to the survivor FRA amount',
+    statement:
+      'survivorBenefit.ts applies a 71.5 percent factor at age 60 and raises it linearly by month to 100 percent at the supplied survivor full retirement age. Section 402 permits widow(er) entitlement from age 60, measures the reduction period from the later of entitlement or age 60 through the month before retirement age, and reduces the benefit for that period; POMS confirms that the maximum reduction remains 28.5 percent as the survivor FRA changes. The helper therefore pays 71.5–100 percent of its deceased-benefit base by claim age, conditional on the separately registered survivor-FRA schedule.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'This record is confined to the reduction curve after a survivor FRA has been supplied. The nra.ts age-60-cohort error for 1961-and-later survivors is recorded separately at usc-42-416-l-survivor-fra-age-60-attainment-cohorts; it is not a competing reading of this helper’s month interpolation.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 402(e)(1)(B)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
+      quotedText:
+        '(B)(i) has attained age 60, or (ii) has attained age 50 but has not attained age 60 and is under a disability',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 402(q)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
+      quotedText:
+        'if the first month for which an individual is entitled to an old-age, wife\'s, husband\'s, widow\'s, or widower\'s insurance benefit is a month before the month in which such individual attains retirement age, the amount of such benefit for such month and for any subsequent month shall, subject to the succeeding paragraphs of this subsection, be reduced by-',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 402(q)(1)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
+      quotedText:
+        '19/40 of 1 percent of such amount if such benefit is a widow\'s or widower\'s insurance benefit, multiplied by',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 402(q)(1)(B)(i)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
+      quotedText:
+        'the number of months in the reduction period for such benefit (determined under paragraph (6)), if such benefit is for a month before the month in which such individual attains retirement age, or',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 402(q)(6)(A)(iii)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
+      quotedText:
+        'in the case of a widow\'s or widower\'s insurance benefit, with the first day of the first month for which such individual is entitled to such benefit or the first day of the month in which such individual attains age 60, whichever is the later, and',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 402(q)(6)(B)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
+      quotedText:
+        'ending with the last day of the month before the month in which such individual attains retirement age.',
+    }, {
+      kind: 'agencyGuidance',
+      citation: 'SSA POMS RS 00615.301, § B.1.b',
+      url: 'https://secure.ssa.gov/poms.nsf/lnx/0300615301',
+      quotedText:
+        'For people born after 1/1/40, FRA is gradually increased to age 67. However, the maximum reduction is still set at 28.5%. This causes the fractions involved in widow(er) reduction to vary depending on the date of birth.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-26',
+    implementedBy: ['packages/engine/src/socialSecurity/survivorBenefit.ts'],
+  },
+
+  'poms-rs-00615-320-rib-lim-after-survivor-reduction': {
+    title: 'RIB-LIM is tested after the widow(er) age reduction',
+    statement:
+      'survivorBenefit.ts first chooses the greater of the deceased’s actual reduced benefit and 82.5 percent of the PIA, then applies the survivor’s age-reduction factor. POMS RS 00615.320 instead tests RIB-LIM when the widow(er) benefit after reduction for age is greater than both limits, at which point the payable amount is the greater limit. When both the deceased and survivor claimed early and the limit binds, the engine consequently understates the survivor benefit. The benefit error moves taxable Social Security income directly (at most 85 percent taxable), but when spending is instead funded from a traditional account the engine replaces each missing benefit dollar with a fully taxable withdrawal dollar, so the sign of the tax error depends on how the shortfall is funded.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'bothDirections',
+    conventionRationale:
+      'DEFECT — no behavior change in this registry slice. The code evaluates `max(deceasedActualMonthly, 0.825 × deceasedPiaMonthly)` before `survivorReductionFactor`, while POMS evaluates the widow(er) benefit after the age reduction before imposing the larger RIB-LIM amount. The companion fixture sets a 2,000-dollar PIA, a 1,400-dollar deceased reduced benefit, and a survivor claim at 63 against a 66-year survivor FRA: the authority-derived amount is 1,650 dollars because the widow(er) amount after reduction for age (2,000 x .8575 = 1,715) exceeds both limits, while the engine reduces that 1,650-dollar limit again. The observed engine amount is 1,414.875 - the 1,650-dollar limit reduced again by the .8575 age factor - pinned in the companion fixture.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 402(e)(2)(D)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
+      quotedText:
+        'If the deceased individual (on the basis of whose wages and self-employment income a widow or surviving divorced wife is entitled to widow\'s insurance benefits under this subsection) was, at any time, entitled to an old-age insurance benefit which was reduced by reason of the application of subsection (q), the widow\'s insurance benefit of such widow or surviving divorced wife for any month shall, if the amount of the widow\'s insurance benefit of such widow or surviving divorced wife (as determined under subparagraph (A) and after application of subsection (q)) is greater than-',
+    }, {
+      kind: 'regulation',
+      citation: '20 CFR 404.338(c)',
+      url: 'https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR219bf3e41a78e9f/section-404.338',
+      quotedText:
+        'Your monthly benefit will be reduced if the insured person chooses to receive old-age benefits before reaching full retirement age. If so, your benefit will be reduced to the amount the insured person would be receiving if alive, or 82 1⁄2 percent of his or her primary insurance amount, whichever is larger.',
+    }, {
+      kind: 'agencyGuidance',
+      citation: 'SSA POMS RS 00615.320, § A.2',
+      url: 'https://secure.ssa.gov/poms.nsf/lnx/0300615320',
+      quotedText: 'A widow(er)\'s benefit is limited to the larger of:',
+    }, {
+      kind: 'agencyGuidance',
+      citation: 'SSA POMS RS 00615.320, § A.2',
+      url: 'https://secure.ssa.gov/poms.nsf/lnx/0300615320',
+      quotedText: '82 1/2 percent of the NH\'s death PIA, or',
+    }, {
+      kind: 'agencyGuidance',
+      citation: 'SSA POMS RS 00615.320, § A.2',
+      url: 'https://secure.ssa.gov/poms.nsf/lnx/0300615320',
+      quotedText:
+        'the reduced RIB or DIB amount to which the NH would have been entitled if they had lived (RIB LIM).',
+    }, {
+      kind: 'agencyGuidance',
+      citation: 'SSA POMS RS 00615.320, § A.3',
+      url: 'https://secure.ssa.gov/poms.nsf/lnx/0300615320',
+      quotedText:
+        'The RIB LIM will apply when the WIB after adjustment for the family maximum and reduction for age is more than BOTH 82 1/2 percent of the NH\'s death PIA and the RIB or DIB if they were alive.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-26',
+    implementedBy: ['packages/engine/src/socialSecurity/survivorBenefit.ts'],
+  },
+
+  'usc-42-402-i-lump-sum-death-payment': {
+    title: 'The $255 Social Security lump-sum death payment is outside the Plan',
+    statement:
+      'The engine emits no Social Security lump-sum death payment. Section 402(i) and 20 CFR 404.390 permit a payment of up to $255 only for a fully or currently insured deceased worker and condition the normal widow(er) payment on living in the same household at death, with alternative payees and application rules if that condition is absent. A married couple where one dies is expressible as a same-household fact, but no accepted Plan input supplies fully or currently insured status as such, an application within two years, or the statutory alternative payee facts, and the engine has no death-payment surface, so no accepted Plan reaches this rule.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The engine has no death-payment surface at all — no simulate.ts pass emits a lump sum and no accepted input feeds one — and the further statutory facts (fully or currently insured status as such, the application within two years, alternative payees) have no Plan fields. A married couple where one dies is expressible, so outOfScope does not rest on unrepresentable household facts. A one-time $255 payment is an absence, not an approximation, because the engine emits no figure the rule could correct.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 402(i)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
+      quotedText:
+        'Upon the death, after August 1950, of an individual who died a fully or currently insured individual, an amount equal to three times such individual\'s primary insurance amount (as determined without regard to the amendments made by section 2201 of the Omnibus Budget Reconciliation Act of 1981, relating to the repeal of the minimum benefit provisions), or an amount equal to $255, whichever is the smaller, shall be paid in a lump sum to the person, if any, determined by the Commissioner of Social Security to be the widow or widower of the deceased and to have been living in the same household with the deceased at the time of death.',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 402(i)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
+      quotedText:
+        'No payment shall be made to any person under this subsection unless application therefor shall have been filed, by or on behalf of such person (whether or not legally competent), prior to the expiration of two years after the date of death of such insured individual, or unless such person was entitled to wife\'s or husband\'s insurance benefits, on the basis of the wages and self-employment income of such insured individual, for the month preceding the month in which such individual died.',
+    }, {
+      kind: 'regulation',
+      citation: '20 CFR 404.390',
+      url: 'https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR1c2245c503cd9d5/section-404.390',
+      quotedText:
+        'If a person is fully or currently insured when he or she dies, a lump-sum death payment of $255 may be paid to the widow or widower of the deceased if he or she was living in the same household with the deceased at the time of his or her death. If the insured is not survived by a widow(er) who meets this requirement, all or part of the $255 payment may be made to someone else as described in § 404.392.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-26',
+    implementedBy: ['packages/engine/src/model/plan.ts'],
+  },
+
+  'usc-42-402-e-1-a-current-survivor-remarriage-before-60': {
+    title: 'A current-spouse survivor’s later remarriage is outside the Plan',
+    statement:
+      'The current-couple survivor step-up has no accepted fact for a survivor’s remarriage after the worker dies, so it cannot apply the rule that remarriage before 60 ends widow(er) eligibility while remarriage after 60 is disregarded. The narrower former-spouse path does carry `remarriedAtAge` and rejects a deceased former-spouse survivor claim below 60; this out-of-scope record is limited to the unrepresentable current-spouse transition.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'Absence-record surface is model/plan.ts: a Social Security stream for a current household spouse has no post-death remarriage age, date, or status. formerSpouseSchema has `remarriedAtAge` only for an already-deceased former spouse, which is why maritalBenefits.ts can model that separate input path but cannot supply the missing future fact for the current-couple survivor pass. No accepted Plan can therefore trigger the current-spouse rule without inventing a remarriage.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 402(e)(1)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
+      quotedText:
+        'of an individual who died a fully insured individual, if such widow or such surviving divorced wife- (A) is not married,',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 402(e)(3)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
+      quotedText:
+        'a widow or surviving divorced wife marries after attaining age 60 (or after attaining age 50 if she was entitled before such marriage occurred to benefits based on disability under this subsection), or',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 402(e)(3)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
+      quotedText: 'such marriage shall be deemed not to have occurred.',
+    }, {
+      kind: 'regulation',
+      citation: '20 CFR 404.336(e)',
+      url: 'https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR219bf3e41a78e9f/section-404.336',
+      quotedText:
+        'You are unmarried, unless for benefits for months after 1983 you meet one of the conditions in paragraphs (e)(1) through (3) of this section:',
+    }, {
+      kind: 'regulation',
+      citation: '20 CFR 404.336(e)(1)',
+      url: 'https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR219bf3e41a78e9f/section-404.336',
+      quotedText: 'You remarried after you became 60 years old.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-26',
+    implementedBy: ['packages/engine/src/model/plan.ts'],
+  },
+
+  'usc-42-402-d-2-child-survivor-benefit': {
+    title: 'Child survivor benefits are outside the Plan',
+    statement:
+      'The engine does not create a child survivor benefit. A deceased worker’s eligible child receives three-fourths of the worker’s primary insurance amount under section 402(d)(2), and section 403(a) can reduce benefits on that worker’s record to the family maximum; the Plan has no child person, dependency, age/student/disability eligibility, or child Social Security stream through which either amount can be reached.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'Absence-record surface is model/plan.ts: `household.hasQualifyingDependent` is a tax-filing boolean, not a child identity, dependency, age, student, disability, or Social Security-benefit record. familyMaximum.ts therefore caps only a modeled current-spouse auxiliary and has no child allocation to price. No accepted Plan supplies the trigger facts for a child survivor benefit.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 402(d)(2)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
+      quotedText:
+        'Such child\'s insurance benefit for each month shall, if the individual on the basis of whose wages and self-employment income the child is entitled to such benefit has not died prior to the end of such month, be equal to one-half of the primary insurance amount of such individual for such month. Such child\'s insurance benefit for each month shall, if such individual has died in or prior to such month, be equal to three-fourths of the primary insurance amount of such individual.',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 403(a)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section403&num=0&edition=prelim',
+      quotedText:
+        'the total monthly benefits to which beneficiaries may be entitled under section 402 or 423 of this title for a month on the basis of the wages and self-employment income of such individual shall, except as provided by paragraphs (3) and (6) (but prior to any increases resulting from the application of paragraph (2)(A)(ii)(III) of section 415(i) of this title), be reduced as necessary so as not to exceed-',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-26',
+    implementedBy: ['packages/engine/src/model/plan.ts'],
+  },
+
+  'usc-42-416-l-survivor-fra-age-60-attainment-cohorts': {
+    title: 'Survivor FRA follows age-60 attainment cohorts, reaching 67 for 1962+',
+    statement:
+      'nra.ts correctly keeps a survivor FRA separate from retirement FRA, but it stops at 66 years and 8 months for every effective birth year from 1960 onward. Section 416(l) keys retirement age to the calendar year the claimant attains early retirement age, and sets that early age at 60 for survivor benefits: the statutory schedule is 66 years and 10 months for a 1961 cohort and 67 for a 1962-and-later cohort. The engine consequently makes a 1962-and-later survivor unreduced up to four months too early. The benefit error moves taxable Social Security income directly (at most 85 percent taxable), but when spending is instead funded from a traditional account the engine replaces each missing benefit dollar with a fully taxable withdrawal dollar, so the sign of the tax error depends on how the shortfall is funded (and symmetrically for the too-early-unreduced FRA case).',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'bothDirections',
+    conventionRationale:
+      'DEFECT — no behavior change in this registry slice. survivorFraForBirthYear returns 66y8m for 1960 and every later effective birth year. For an effective 1962 birth, age 60 is attained in 2022, so section 416(l)(1)(E) supplies age 67; the companion fixture pins the statute-derived 804 months against the observed engine value of 800 months.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 416(l)(1)(D)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section416&num=0&edition=prelim',
+      quotedText:
+        'with respect to an individual who attains early retirement age after December 31, 2016, and before January 1, 2022, 66 years of age plus the number of months in the age increase factor (as determined under paragraph (3)) for the calendar year in which such individual attains early retirement age; and',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 416(l)(1)(E)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section416&num=0&edition=prelim',
+      quotedText:
+        'with respect to an individual who attains early retirement age after December 31, 2021, 67 years of age.',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 416(l)(2)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section416&num=0&edition=prelim',
+      quotedText:
+        'The term "early retirement age" means age 62 in the case of an old-age, wife\'s, or husband\'s insurance benefit, and age 60 in the case of a widow\'s or widower\'s insurance benefit.',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 416(l)(3)(B)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section416&num=0&edition=prelim',
+      quotedText:
+        'With respect to an individual who attains early retirement age in the 5-year period consisting of the calendar years 2017 through 2021, the age increase factor shall be equal to two-twelfths of the number of months in the period beginning with January 2017 and ending with December of the year in which the individual attains early retirement age.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-26',
+    implementedBy: ['packages/engine/src/socialSecurity/nra.ts'],
+  },
+
+  'usc-42-402-e-2-a-survivor-own-delay-no-drc': {
+    title: 'A survivor’s own delay past survivor FRA earns no delayed-retirement credits',
+    statement:
+      'survivorBenefit.ts stops the survivor age-reduction factor at 100 percent at survivor FRA and does not add a delayed-retirement-credit factor when the survivor waits longer. Section 402(e)(2)(A) fixes the widow(er) amount at the deceased worker’s PIA as adjusted under that subsection, while the DRC regulation defines credits as an increase to an old-age benefit. The survivor’s own delay after survivor FRA therefore does not increase the survivor amount.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'This rule is intentionally distinct from the deceased worker’s DRC pass-through. The survivor amount is not a retirement claim by the survivor, so the helper permits the deceased’s already-earned credits in the base but does not manufacture new credits from the survivor’s post-FRA delay.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 402(e)(2)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
+      quotedText:
+        'Except as provided in subsection (q) and subparagraph (D) of this paragraph, such widow\'s insurance benefit for each month shall be equal to the primary insurance amount (as determined for purposes of this subsection after application of subparagraphs (B) and (C)) of such deceased individual.',
+    }, {
+      kind: 'regulation',
+      citation: '20 CFR 404.313(a)',
+      url: 'https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR545f4aa361a6356/section-404.313',
+      quotedText:
+        'Delayed retirement credits (DRCs) are credits we use to increase the amount of your old-age benefit amount.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-26',
+    implementedBy: ['packages/engine/src/socialSecurity/survivorBenefit.ts'],
+  },
+
+  'cfr-20-404-338-survivor-deceased-drc-pass-through': {
+    title: 'The deceased worker’s delayed-retirement credits pass through to the survivor base',
+    statement:
+      'survivorBenefit.ts accepts the deceased worker’s actual claim-age-adjusted amount as the survivor base and preserves it when it exceeds 82.5 percent of PIA. Section 404.338 expressly permits an increased survivor monthly amount where the insured person delayed filing and earned delayed-retirement credits. The engine therefore carries a deceased worker’s earned DRCs into the survivor base; it does not grant DRCs for the survivor’s own delay.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The general DRC-accrual rule is registered at cfr-20-404-313-delayed-retirement-credit. This narrower record covers its survivor consequence and is tested without a survivor reduction so the fixture isolates whether the deceased worker’s actual increased amount survives into the base.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 402(e)(2)(C)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
+      quotedText:
+        'If such deceased individual was (or upon application would have been) entitled to an old-age insurance benefit which was increased (or subject to being increased) on account of delayed retirement under the provisions of subsection (w), then, for purposes of this subsection, such individual\'s primary insurance amount, if less than the old-age insurance benefit (increased, where applicable, under paragraph (5) or (6) of section 415(f) of this title and under section 415(i) of this title as if such individual were still alive in the case of an individual who has died) which he was receiving (or would upon application have received) for the month prior to the month in which he died, shall be deemed to be equal to such old-age insurance benefit, and (notwithstanding the provisions of paragraph (3) of such subsection (w)) the number of increment months shall include any month in the months of the calendar year in which he died, prior to the month in which he died, which satisfy the conditions in paragraph (2) of such subsection (w).',
+    }, {
+      kind: 'regulation',
+      citation: '20 CFR 404.338(b)',
+      url: 'https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR219bf3e41a78e9f/section-404.338',
+      quotedText:
+        'We may increase your monthly benefit amount if the insured person delays filing for benefits or requests voluntary suspension of benefits, and thereby earns delayed retirement credit (see § 404.313), and/or works before the year 2000 after reaching full retirement age (as defined in § 404.409(a)). The amount of your monthly benefit may change as explained in § 404.304.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-26',
+    implementedBy: ['packages/engine/src/socialSecurity/survivorBenefit.ts'],
+  },
+
+  'usc-42-402-k-3-a-survivor-own-dual-entitlement-offset': {
+    title: 'Own retirement and survivor benefits combine to the higher amount, not both full amounts',
+    statement:
+      'simulate.ts pays a survivor the larger of their own retirement benefit and the survivor amount, not their sum. Section 402(k)(3)(A) reaches the same payable total by reducing the other monthly benefit, but not below zero, by the old-age benefit; POMS describes a widow(er) technically entitled on both records as paid at the higher rate. The engine’s max representation is therefore the benefit-total equivalent of the statutory offset.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The ledger publishes one Social Security amount rather than separate technical-entitlement components. That representation is valid for this rule because the statutory offset leaves the total equal to the larger amount; it must not be read as allowing both unreduced full benefits.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 402(k)(3)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
+      quotedText:
+        'If an individual is entitled to an old-age or disability insurance benefit for any month and to any other monthly insurance benefit for such month, such other insurance benefit for such month, after any reduction under subsection (q), subsection (e)(2) or (f)(2), and any reduction under section 403(a) of this title, shall be reduced, but not below zero, by an amount equal to such old-age or disability insurance benefit (after reduction under such subsection (q)).',
+    }, {
+      kind: 'agencyGuidance',
+      citation: 'SSA POMS RS 00615.301, § A.1',
+      url: 'https://secure.ssa.gov/poms.nsf/lnx/0300615301',
+      quotedText:
+        'If the widow(er) files on both records and does not restrict their application, they will be technically entitled on both but paid the higher rate. Months of technical entitlement for which no payment was made cannot be eliminated from the widow(er)\'s RF at FRA.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-26',
+    implementedBy: ['packages/engine/src/projection/simulate.ts'],
   },
 
   'usc-42-1395r-i-irmaa-applicable-percentage': {
