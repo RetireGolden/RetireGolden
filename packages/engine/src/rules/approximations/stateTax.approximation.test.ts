@@ -81,7 +81,7 @@ import { describeRule } from '../describeRule.js'
 import { stateParamsFor } from '../../params/state/index.js'
 import type { StateTaxParams } from '../../params/state/types.js'
 import type { TaxYearInput } from '../../projection/types.js'
-import { computeStateTax, computeStateTaxDetail } from '../../tax/stateTax.js'
+import { computeStateTax, computeStateTaxDetail, computeStateTaxableIncome } from '../../tax/stateTax.js'
 
 const TAX_YEAR = 2026
 
@@ -921,5 +921,394 @@ describeRule('ms-combined-return-runs-the-schedule-per-spouse', {
       },
     }
     expect(computeStateTax(doubled, scenario)).toBeCloseTo(accepted, 6)
+  })
+})
+
+// ─── WS4d Batch B approximated fixtures ─────────────────────────────────────
+//
+// Closed-form pack math, the same construction as the PA / NY / SC pins above.
+// The engine was not run. Each `produced` value is the figure
+// `computeStateTax` must return given the shipped pack and the scenario;
+// PRODUCED_TBD is the slot the orchestrator overwrites if a pin cannot be
+// derived from the calculator's published formula. All five of these could.
+
+const PRODUCED_TBD = -1
+
+const MI_RATE = 0.0425
+const miTax = (taxable: number) => Math.max(0, taxable) * MI_RATE
+const MI_PRIVATE = 80_000
+const MI_PACK_CAP = 49_423
+
+describeRule('mi-mcl-206-30-retirement-and-ss', {
+  readings: {
+    // (1)(f)(iv) is "payments are made for life to a senior citizen". Fifty
+    // is not a senior citizen, so the statute allows no private-pension
+    // deduction at all.
+    noDeductionUntilSeniorCitizen: miTax(MI_PRIVATE),
+    // Pack `{ kind: 'capped', capPerPerson: 49423 }` has no minAge and no
+    // senior-citizen test, so the cap is granted at any age.
+    flatFortyNineThousandCapAtAnyAge: miTax(MI_PRIVATE - MI_PACK_CAP),
+  },
+  accepted: 'noDeductionUntilSeniorCitizen',
+  produced: 'flatFortyNineThousandCapAtAnyAge',
+}, ({ accepted, produced }) => {
+  const scenario = input({
+    state: 'MI',
+    ordinaryIncome: MI_PRIVATE,
+    privateRetirementIncome: MI_PRIVATE,
+    agesAlive: [50],
+  })
+
+  it('grants a 50-year-old the $49,423 cap a senior-citizen deduction does not', () => {
+    expect(computeStateTax(pack('MI'), scenario)).toBeCloseTo(produced, 6)
+    expect(computeStateTax(pack('MI'), scenario)).toBeLessThan(accepted)
+    // Derivation the orchestrator observes: (80000 - 49423) × 4.25% = 1300.5225.
+    expect(produced).not.toBe(PRODUCED_TBD)
+  })
+
+  it('reaches the statute once the cap is withheld from a non-senior', () => {
+    const noCap = {
+      ...pack('MI'),
+      retirementPrivate: { kind: 'none' as const },
+    }
+    expect(computeStateTax(noCap, scenario)).toBeCloseTo(accepted, 6)
+  })
+})
+
+const mnSingleTax = (taxable: number) => bandedTax(
+  [
+    [0, 31_690, 5.35], [31_690, 104_090, 6.8],
+    [104_090, 193_240, 7.85], [193_240, Infinity, 9.85],
+  ],
+  taxable,
+)
+const MN_DEDUCTION = 14_575
+const MN_ORDINARY = 50_000
+const MN_SS = 40_000
+const MN_SS_FEDERALLY_TAXABLE = 0.85 * MN_SS
+// FAGI = 50,000 + 34,000 = 84,000. Phaseout threshold $78,000. Excess $6,000
+// is two $4,000 steps counting the fraction, so the simplified subtraction
+// shrinks 20%: 34,000 × 0.80 = 27,200.
+const MN_SIMPLIFIED_SUBTRACTION = MN_SS_FEDERALLY_TAXABLE * 0.8
+
+describeRule('mn-stat-290-0132-subd-26-social-security-inclusion', {
+  readings: {
+    simplifiedSubtractionAtThisAgi:
+      mnSingleTax(MN_ORDINARY + MN_SS_FEDERALLY_TAXABLE - MN_SIMPLIFIED_SUBTRACTION - MN_DEDUCTION),
+    federallyTaxableShareLeftInTheBase:
+      mnSingleTax(MN_ORDINARY + MN_SS_FEDERALLY_TAXABLE - MN_DEDUCTION),
+  },
+  accepted: 'simplifiedSubtractionAtThisAgi',
+  produced: 'federallyTaxableShareLeftInTheBase',
+}, ({ accepted, produced }) => {
+  const scenario = input({
+    state: 'MN',
+    ordinaryIncome: MN_ORDINARY,
+    ssBenefits: MN_SS,
+    agesAlive: [70],
+  })
+
+  it('leaves the whole federally taxable share in, with no subdivision-26 subtraction', () => {
+    expect(computeStateTax(pack('MN'), scenario)).toBeCloseTo(produced, 6)
+    expect(computeStateTaxDetail(pack('MN'), scenario).taxableIncome)
+      .toBeCloseTo(MN_ORDINARY + MN_SS_FEDERALLY_TAXABLE - MN_DEDUCTION, 6)
+    expect(computeStateTax(pack('MN'), scenario)).toBeGreaterThan(accepted)
+    expect(produced).not.toBe(PRODUCED_TBD)
+  })
+
+  it('reaches the statute once the simplified subtraction is taken off the base', () => {
+    // No pack field for an income-tested SS subtraction. The accepted figure
+    // is priced by handing the calculator the post-subtraction ordinary, which
+    // is what the missing field would compute internally.
+    const preSubtracted = input({
+      state: 'MN',
+      ordinaryIncome: MN_ORDINARY + MN_SS_FEDERALLY_TAXABLE - MN_SIMPLIFIED_SUBTRACTION,
+      ssBenefits: 0,
+      agesAlive: [70],
+    })
+    const noSsFlag = { ...pack('MN'), taxesSocialSecurity: false }
+    expect(computeStateTax(noSsFlag, preSubtracted)).toBeCloseTo(accepted, 6)
+  })
+})
+
+const neSingleTax = (taxable: number) => bandedTax(
+  [[0, 4130, 2.46], [4130, 24_760, 3.51], [24_760, Infinity, 4.55]],
+  taxable,
+)
+const NE_DEDUCTION = 8850
+const NE_PUBLIC = 50_000
+
+describeRule('ne-stat-77-2716-public-pension-exemption', {
+  readings: {
+    // A Nebraska school-retirement annuity is neither military retirement
+    // under (15)(b) nor a CSRS annuity under (20), so it stays in the base.
+    closedListLeavesSchoolRetirementInTheBase: neSingleTax(NE_PUBLIC - NE_DEDUCTION),
+    everyPublicPensionExempt: 0,
+  },
+  accepted: 'closedListLeavesSchoolRetirementInTheBase',
+  produced: 'everyPublicPensionExempt',
+}, ({ accepted, produced }) => {
+  const scenario = input({
+    state: 'NE',
+    ordinaryIncome: NE_PUBLIC,
+    publicPensionIncome: NE_PUBLIC,
+    agesAlive: [70],
+  })
+
+  it('exempts a school-retirement annuity the closed list does not name', () => {
+    expect(computeStateTax(pack('NE'), scenario)).toBe(produced)
+    expect(computeStateTax(pack('NE'), scenario)).toBeLessThan(accepted)
+    expect(produced).not.toBe(PRODUCED_TBD)
+  })
+
+  it('taxes a private IRA of the same amount, which is the other bucket', () => {
+    const privateIra = input({
+      state: 'NE',
+      ordinaryIncome: NE_PUBLIC,
+      privateRetirementIncome: NE_PUBLIC,
+      agesAlive: [70],
+    })
+    expect(computeStateTax(pack('NE'), privateIra)).toBeCloseTo(accepted, 6)
+  })
+
+  it('reaches the statute once the public override is dropped', () => {
+    const noOverride = {
+      ...pack('NE'),
+      retirementPublic: { kind: 'none' as const },
+    }
+    expect(computeStateTax(noOverride, scenario)).toBeCloseTo(accepted, 6)
+  })
+})
+
+const njSingleTax = (taxable: number) => bandedTax(
+  [
+    [0, 20_000, 1.4], [20_000, 35_000, 1.75], [35_000, 40_000, 3.5],
+    [40_000, 75_000, 5.525], [75_000, 500_000, 6.37],
+  ],
+  taxable,
+)
+const NJ_HIGH_AGI = 200_000
+const NJ_PENSION = 80_000
+const NJ_PACK_CAP = 50_000
+const NJ_SINGLE_STATUTE_CAP = 75_000
+
+describeRule('nj-stat-54a-6-10-retirement-income-exclusion', {
+  readings: {
+    // $200,000 of gross income is over the $150,000 ceiling, so the exclusion
+    // is $0 even though the filer is 62 and the payments are pension.
+    agiCeilingWithholdsTheExclusion: njSingleTax(NJ_HIGH_AGI),
+    fiftyThousandGrantedRegardlessOfAgi: njSingleTax(NJ_HIGH_AGI - NJ_PACK_CAP),
+  },
+  accepted: 'agiCeilingWithholdsTheExclusion',
+  produced: 'fiftyThousandGrantedRegardlessOfAgi',
+}, ({ accepted, produced }) => {
+  const scenario = input({
+    state: 'NJ',
+    ordinaryIncome: NJ_HIGH_AGI,
+    privateRetirementIncome: NJ_PENSION,
+    agesAlive: [62],
+  })
+
+  it('grants a $50,000 subtraction to a household over the $150,000 AGI ceiling', () => {
+    expect(computeStateTax(pack('NJ'), scenario)).toBeCloseTo(produced, 6)
+    expect(computeStateTax(pack('NJ'), scenario)).toBeLessThan(accepted)
+    expect(produced).not.toBe(PRODUCED_TBD)
+  })
+
+  it('reaches the statute once the cap is withheld', () => {
+    const noCap = {
+      ...pack('NJ'),
+      retirementPrivate: { kind: 'none' as const },
+    }
+    expect(computeStateTax(noCap, scenario)).toBeCloseTo(accepted, 6)
+  })
+
+  it('under-excludes a single filer below $100,000 of income, in the other direction', () => {
+    // bothDirections is not a hedge. Below the AGI ceiling a single filer is
+    // allowed $75,000; the pack's per-person $50,000 leaves $25,000 in the
+    // base the statute takes out.
+    const underTheCeiling = input({
+      state: 'NJ',
+      ordinaryIncome: 80_000,
+      privateRetirementIncome: 80_000,
+      agesAlive: [62],
+    })
+    const packTax = computeStateTax(pack('NJ'), underTheCeiling)
+    const statuteTax = njSingleTax(80_000 - NJ_SINGLE_STATUTE_CAP)
+    expect(packTax).toBeCloseTo(njSingleTax(80_000 - NJ_PACK_CAP), 6)
+    expect(packTax).toBeGreaterThan(statuteTax)
+  })
+})
+
+const mdSingleTax = (taxable: number) => bandedTax(
+  [
+    [0, 1000, 2], [1000, 2000, 3], [2000, 3000, 4], [3000, 100_000, 4.75],
+    [100_000, 125_000, 5], [125_000, 150_000, 5.25], [150_000, 250_000, 5.5],
+  ],
+  taxable,
+)
+const MD_DEDUCTION = 3350
+const MD_IRA = 80_000
+const MD_PACK_CAP = 41_200
+
+describeRule('md-tax-10-209-pension-exclusion', {
+  readings: {
+    // §10-209(a)(2)(i): an IRA is not an "employee retirement system", so a
+    // 65-year-old's IRA distribution stays in Maryland AGI in full.
+    iraStaysInTheBase: mdSingleTax(MD_IRA - MD_DEDUCTION),
+    // Pack `{ kind: 'capped', capPerPerson: 41200, minAge: 65 }` cannot see
+    // IRA versus 401(k), so the cap is granted on the IRA too.
+    fortyOneThousandTwoHundredGrantedOnAnIra: mdSingleTax(MD_IRA - MD_PACK_CAP - MD_DEDUCTION),
+  },
+  accepted: 'iraStaysInTheBase',
+  produced: 'fortyOneThousandTwoHundredGrantedOnAnIra',
+}, ({ accepted, produced }) => {
+  const scenario = input({
+    state: 'MD',
+    ordinaryIncome: MD_IRA,
+    privateRetirementIncome: MD_IRA,
+    agesAlive: [65],
+  })
+
+  it('grants a 65-year-old $41,200 of IRA exclusion the statute withholds', () => {
+    expect(computeStateTax(pack('MD'), scenario)).toBeCloseTo(produced, 6)
+    expect(computeStateTax(pack('MD'), scenario)).toBeLessThan(accepted)
+    // Derivation the orchestrator observes:
+    // produced taxable 80,000 − 41,200 − 3,350 = 35,450 → 1,631.375
+    // accepted taxable 80,000 − 3,350 = 76,650 → 3,588.375
+    expect(produced).not.toBe(PRODUCED_TBD)
+  })
+
+  it('reaches the statute once the cap is withheld from the IRA', () => {
+    const noCap = {
+      ...pack('MD'),
+      retirementPrivate: { kind: 'none' as const },
+    }
+    expect(computeStateTax(noCap, scenario)).toBeCloseTo(accepted, 6)
+  })
+
+  it('also withholds the cap at 64, which is the age the statute names', () => {
+    const tooYoung = input({
+      state: 'MD',
+      ordinaryIncome: MD_IRA,
+      privateRetirementIncome: MD_IRA,
+      agesAlive: [64],
+    })
+    expect(computeStateTax(pack('MD'), tooYoung)).toBeCloseTo(accepted, 6)
+  })
+})
+
+// ─── WS4d PR #334 round-1 approximation pins ────────────────────────────────
+//
+// Closed-form pack math. PRODUCED_TBD is the orchestrator sentinel when a pin
+// cannot be derived; each of these could.
+
+const MA_RATE = 0.05
+const maTax = (taxable: number) => Math.max(0, taxable) * MA_RATE
+const MA_PUBLIC = 80_000
+
+describeRule('ma-gen-laws-ch62-s2-public-pension-exclusion', {
+  readings: {
+    // A noncontributory public pension that is neither Uniformed-Services
+    // retirement pay nor a contributory government fund stays in the base.
+    noncontributoryPublicPensionRemainsTaxable: maTax(MA_PUBLIC),
+    // Pack `{ kind: 'full' }` cannot see contributory identity, so every
+    // publicPensionIncome dollar is exempted.
+    everyPublicPensionExempt: 0,
+  },
+  accepted: 'noncontributoryPublicPensionRemainsTaxable',
+  produced: 'everyPublicPensionExempt',
+}, ({ accepted, produced }) => {
+  const scenario = input({
+    state: 'MA',
+    ordinaryIncome: MA_PUBLIC,
+    publicPensionIncome: MA_PUBLIC,
+    agesAlive: [70],
+  })
+
+  it('exempts a noncontributory public pension the statute leaves in', () => {
+    expect(computeStateTax(pack('MA'), scenario)).toBe(produced)
+    expect(computeStateTax(pack('MA'), scenario)).toBeLessThan(accepted)
+    // Derivation: produced = 0; accepted = 80,000 × 5% = 4,000.
+    expect(produced).not.toBe(PRODUCED_TBD)
+    expect(produced).toBe(0)
+    expect(accepted).toBe(4_000)
+  })
+
+  it('taxes a private IRA of the same amount, which is the other bucket', () => {
+    const privateIra = input({
+      state: 'MA',
+      ordinaryIncome: MA_PUBLIC,
+      privateRetirementIncome: MA_PUBLIC,
+      agesAlive: [70],
+    })
+    expect(computeStateTax(pack('MA'), privateIra)).toBeCloseTo(accepted, 6)
+  })
+
+  it('reaches the statute once the public override is dropped', () => {
+    const noOverride = {
+      ...pack('MA'),
+      retirementPublic: { kind: 'none' as const },
+    }
+    expect(computeStateTax(noOverride, scenario)).toBeCloseTo(accepted, 6)
+  })
+})
+
+const LA_RATE = 0.03
+const LA_DEDUCTION = 12_500
+const laTax = (taxable: number) => Math.max(0, taxable) * LA_RATE
+const LA_RETIREMENT = 40_000
+const LA_PACK_EXEMPTION = 12_000
+
+describeRule('la-rs-47-44-1-retirement-exemption', {
+  readings: {
+    // Accepted reading is the indexing method itself: prior-year exemption ×
+    // (1 + CPI-U increase for the previous calendar year), first adjustment
+    // beginning January 1, 2026. The staged text does not publish the 2026
+    // indexed dollar, so the accepted side is that method note rather than a
+    // derived amount.
+    cpiUIndexedFromPriorYearExemption:
+      'priorYearExemption × (1 + CPI-U % increase for previous calendar year); first adjustment begins January 1, 2026; 2026 indexed dollar not in staged text',
+    // Pack holds the unindexed $12,000 starting amount.
+    heldForwardUnindexedTwelveThousand:
+      laTax(LA_RETIREMENT - LA_PACK_EXEMPTION - LA_DEDUCTION),
+  },
+  accepted: 'cpiUIndexedFromPriorYearExemption',
+  produced: 'heldForwardUnindexedTwelveThousand',
+}, ({ accepted, produced, readings }) => {
+  // `produced`/`accepted` are the readings union (string | number) because the
+  // accepted side is the CPI-U method note; pin dollars through the numeric
+  // reading key so toBeCloseTo stays typed.
+  const heldForward = readings.heldForwardUnindexedTwelveThousand
+
+  const scenario = input({
+    state: 'LA',
+    ordinaryIncome: LA_RETIREMENT,
+    privateRetirementIncome: LA_RETIREMENT,
+    agesAlive: [65],
+  })
+
+  it('pins the held-forward unindexed $12,000 against the CPI-U indexing method', () => {
+    expect(computeStateTax(pack('LA'), scenario)).toBeCloseTo(heldForward, 6)
+    expect(computeStateTaxableIncome(pack('LA'), scenario))
+      .toBeCloseTo(LA_RETIREMENT - LA_PACK_EXEMPTION - LA_DEDUCTION, 6)
+    expect(produced).toBe(heldForward)
+    expect(produced).not.toBe(PRODUCED_TBD)
+    // Derivation: (40,000 − 12,000 − 12,500) × 3% = 465.
+    expect(heldForward).toBeCloseTo(465, 6)
+    expect(produced).not.toBe(accepted)
+    expect(typeof accepted).toBe('string')
+  })
+
+  it('withholds the exemption at 64, which is the age the statute names', () => {
+    const tooYoung = input({
+      state: 'LA',
+      ordinaryIncome: LA_RETIREMENT,
+      privateRetirementIncome: LA_RETIREMENT,
+      agesAlive: [64],
+    })
+    expect(computeStateTax(pack('LA'), tooYoung))
+      .toBeCloseTo(laTax(LA_RETIREMENT - LA_DEDUCTION), 6)
+    expect(computeStateTax(pack('LA'), tooYoung)).toBeGreaterThan(heldForward)
   })
 })

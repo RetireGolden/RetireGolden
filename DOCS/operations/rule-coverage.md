@@ -11,38 +11,68 @@ The registry is the machine-checked chain from a rule to its implementation and 
 
 | Metric | Count |
 | --- | ---: |
-| Total rules | 360 |
-| Classification: approximated | 81 |
-| Classification: outOfScope | 70 |
-| Classification: settled | 205 |
+| Total rules | 399 |
+| Classification: approximated | 103 |
+| Classification: outOfScope | 71 |
+| Classification: settled | 221 |
 | Classification: unsettled | 4 |
-| Volatility: annuallyIndexed | 53 |
+| Volatility: annuallyIndexed | 57 |
 | Volatility: awaitingGuidance | 10 |
-| Volatility: staticStatute | 291 |
+| Volatility: staticStatute | 326 |
 | Volatility: sunsetting | 6 |
 | Federal jurisdiction | 303 |
-| State jurisdiction total | 57 |
+| State jurisdiction total | 96 |
 
 | State jurisdiction | Count |
 | --- | ---: |
 | AK | 1 |
 | AR | 9 |
 | AZ | 8 |
+| CA | 1 |
+| CO | 2 |
+| CT | 1 |
+| DC | 1 |
+| DE | 1 |
 | FL | 1 |
+| GA | 1 |
+| HI | 1 |
 | IA | 1 |
+| ID | 1 |
 | IL | 1 |
 | IN | 7 |
+| KS | 2 |
+| KY | 1 |
+| LA | 2 |
+| MA | 2 |
+| MD | 2 |
 | ME | 1 |
+| MI | 2 |
+| MN | 1 |
 | MO | 1 |
 | MS | 7 |
+| MT | 1 |
+| NC | 1 |
 | ND | 8 |
+| NE | 2 |
+| NH | 1 |
+| NJ | 1 |
+| NM | 1 |
 | NV | 1 |
 | NY | 1 |
+| OH | 1 |
+| OK | 1 |
+| OR | 1 |
 | PA | 2 |
+| RI | 1 |
 | SC | 1 |
 | SD | 1 |
 | TN | 2 |
 | TX | 2 |
+| UT | 1 |
+| VA | 1 |
+| VT | 1 |
+| WA | 2 |
+| WI | 2 |
 | WV | 1 |
 | WY | 1 |
 
@@ -156,7 +186,7 @@ None.
 
 ## Re-verification due dates
 
-The 25 earliest due dates are shown below (360 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
+The 25 earliest due dates are shown below (399 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
 
 | Rule | Volatility | Verified on | Due on |
 | --- | --- | --- | --- |

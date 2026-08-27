@@ -171,6 +171,21 @@ const STATE_PRIMARY_PUBLISHERS: Readonly<Partial<Record<UsStateCode, readonly st
     'azleg.gov', // Arizona Legislature, Arizona Revised Statutes
     'azdor.gov', // Arizona Department of Revenue: forms and instructions
   ],
+  CA: [
+    'leginfo.legislature.ca.gov', // California Legislative Information, Revenue and Taxation Code
+  ],
+  CO: [
+    'olls.info', // Colorado Office of Legislative Legal Services, Colorado Revised Statutes
+  ],
+  CT: [
+    'cga.ct.gov', // Connecticut General Assembly, General Statutes
+  ],
+  DE: [
+    'delcode.delaware.gov', // Delaware Code Online, Title 30
+  ],
+  DC: [
+    'code.dccouncil.gov', // Council of the District of Columbia, Code of the District of Columbia
+  ],
   FL: [
     'flsenate.gov', // Florida Senate: the Constitution and the Florida Statutes
     // Office of Economic and Demographic Research — the Legislature's own
@@ -178,8 +193,23 @@ const STATE_PRIMARY_PUBLISHERS: Readonly<Partial<Record<UsStateCode, readonly st
     // host rather than a state portal: `edr.state.fl.us` names one office.
     'edr.state.fl.us',
   ],
+  GA: [
+    // Georgia's Code host renders its provisions client-side, so it cannot
+    // provide a quote-verifiable statute. The Department of Revenue's own
+    // retirement-exclusion page and IT-511 booklet instead supply the
+    // operative filing instruction and worksheet the records quote. This is a
+    // deliberate agency-publication admission, not a shortcut around a usable
+    // code publisher; it follows the SD/TN/WY no-verifiable-code precedent.
+    'dor.georgia.gov', // Georgia Department of Revenue
+  ],
+  HI: [
+    'files.hawaii.gov', // Hawaii Department of Taxation, HRS compilation
+  ],
   IA: [
     'legis.iowa.gov', // Iowa Legislature, Iowa Code
+  ],
+  ID: [
+    'legislature.idaho.gov', // Idaho Legislature, Idaho Code
   ],
   IL: [
     'ilga.gov', // Illinois General Assembly, Illinois Compiled Statutes
@@ -217,6 +247,135 @@ const STATE_PRIMARY_PUBLISHERS: Readonly<Partial<Record<UsStateCode, readonly st
     // for. What this cannot do is narrow to `/dor/files/`: the table holds
     // hosts, not paths. That cost is real and is stated rather than glossed.
     'in.gov', // Indiana DOR departmental notices and information bulletins
+  ],
+  KS: [
+    'ksrevisor.gov', // Kansas Revisor of Statutes, Kansas Statutes Annotated
+  ],
+  NM: [
+    // Verified 2026-08-27 against the staged Batch C fetches. New Mexico
+    // Taxation and Revenue Department: the Social Security
+    // exemption page is the operative state publication staged for this
+    // record; the statutes index itself is only an index/shell.
+    'tax.newmexico.gov',
+  ],
+  NC: [
+    // Verified 2026-08-27 against the staged North Carolina General Statute.
+    'ncleg.gov', // North Carolina General Assembly
+  ],
+  OH: [
+    // Verified 2026-08-27 against the staged Ohio Revised Code sections.
+    'codes.ohio.gov', // Ohio Revised Code
+  ],
+  OK: [
+    // Verified 2026-08-27 against the staged Oklahoma Tax Commission Form
+    // 511 packet. BLOCKED-SOURCE: the Oklahoma Legislature Title 68 page
+    // carries an ASP.NET/navigation shell but no quotable statute text, so the
+    // Tax Commission's official packet is the deliberately admitted primary
+    // publisher for this record.
+    'oklahoma.gov',
+  ],
+  OR: [
+    // Verified 2026-08-27 against the staged ORS fetch; the OR-17 PDF is
+    // corroborating material but is not cited from the broad oregon.gov host.
+    'oregonlegislature.gov', // Oregon Revised Statutes
+  ],
+  RI: [
+    // Verified 2026-08-27 against the staged Rhode Island statutes.
+    // Rhode Island publishes the statutes from this webserver subdomain; the
+    // host is listed exactly because only a leading `www.` is normalized.
+    'webserver.rilegislature.gov',
+  ],
+  UT: [
+    // Verified 2026-08-27 against the staged Utah State Tax Commission pages.
+    // BLOCKED-SOURCE: le.utah.gov's xcode pages carry a script-rendered
+    // heading/navigation shell but no operative section text; the Commission's
+    // own incometax.utah.gov publication carries the operative instructions.
+    // BLOCKED-SOURCE: the staged incometax.utah.gov Social Security-credit URL
+    // is a 404 page; the TC-40A page is the operative credit source.
+    'incometax.utah.gov',
+  ],
+  VA: [
+    // Verified 2026-08-27 against the staged Virginia Code page.
+    'law.lis.virginia.gov', // Virginia Code, Legislative Information System
+  ],
+  VT: [
+    // Verified 2026-08-27 against the staged Vermont statutes and DOR page.
+    'legislature.vermont.gov', // Vermont Statutes Online
+    'tax.vermont.gov', // Vermont Department of Taxes guidance
+  ],
+  WA: [
+    // Verified 2026-08-27 against the staged DOR and RCW pages.
+    'dor.wa.gov', // Washington Department of Revenue
+    'app.leg.wa.gov', // Revised Code of Washington
+  ],
+  WI: [
+    // Verified 2026-08-27 against the staged Schedule SB and rates page.
+    'revenue.wi.gov', // Wisconsin Department of Revenue forms and instructions
+  ],
+  KY: [
+    // Verified 2026-08-27 from the staged KRS section PDFs. Kentucky serves
+    // each section as a PDF at `statute.aspx?id=…` on this apps subdomain —
+    // the chapter TOC page is only catchlines. The subdomain is listed
+    // deliberately: this table strips only a leading `www.`, so the apex
+    // `legislature.ky.gov` would admit nothing that was checked.
+    'apps.legislature.ky.gov', // Kentucky Legislative Research Commission, KRS
+  ],
+  // Verified 2026-08-27 from the staged WS4d-B fetches. Bare `legis.la.gov`:
+  // every usable Law.aspx URL carries `www.legis.la.gov`, and
+  // `hostAndPublisherOf` strips a leading `www.` before comparing.
+  LA: [
+    'legis.la.gov', // Louisiana State Legislature, Louisiana Revised Statutes
+  ],
+  // Verified 2026-08-27 from the staged WS4d-B fetches.
+  MA: [
+    'malegislature.gov', // General Court of the Commonwealth, General Laws
+  ],
+  MD: [
+    // The 2026 compilation of Tax-General §10-207 is served as a PDF from
+    // this host (SS record). The HTML StatuteText page for §10-209 is the
+    // source the pension-cap record quotes; same publisher.
+    'mgaleg.maryland.gov', // Maryland General Assembly, Maryland Code
+  ],
+  MI: [
+    // Bare `legislature.mi.gov`: usable MCL URLs carry `www.legislature.mi.gov`.
+    'legislature.mi.gov', // Michigan Legislature, Michigan Compiled Laws
+  ],
+  MN: [
+    'revisor.mn.gov', // Office of the Revisor of Statutes, Minnesota Statutes
+  ],
+  MT: [
+    // Verified 2026-08-27. `archive.legmt.gov` is the 2013 MCA compilation the
+    // staged fetch actually served for §15-30-2110; the current Code is not
+    // in the staged set. `revenue.mt.gov` is the department's 2026 withholding
+    // notice, admitted because that notice is the source for the federal
+    // standard-deduction effect on Montana taxable income. The `archive.`
+    // subdomain is listed deliberately: this table strips only a leading
+    // `www.`, so the apex would admit nothing that was checked.
+    'archive.legmt.gov', // Montana Legislative Services, archived Montana Code Annotated
+    'revenue.mt.gov', // Montana Department of Revenue
+  ],
+  NE: [
+    // Verified 2026-08-27. Bare `nebraskalegislature.gov`: usable statute
+    // URLs carry `www.nebraskalegislature.gov`.
+    'nebraskalegislature.gov', // Nebraska Legislature, Nebraska Revised Statutes
+  ],
+  NH: [
+    // Verified 2026-08-27 from the staged RSA Chapter 77 repeal page. The
+    // General Court's RSA publisher is admitted deliberately: the claim is
+    // that the Taxation of Incomes chapter is gone, and this host is the
+    // one that prints the repeal. `revenue.nh.gov` was the plan's DOR
+    // host; the staged DOR fetch was Access Denied, so it is not listed.
+    // The `www.` alias is folded by `hostAndPublisherOf`; the subdomain
+    // is not.
+    'gencourt.state.nh.us', // New Hampshire General Court, Revised Statutes Annotated
+  ],
+  NJ: [
+    // Verified 2026-08-27. P.L.2021, c.129 is served from this host as the
+    // enrolled act that reprints N.J.S.A. 54A:6-10 in full. `nj.gov` is NOT
+    // listed: it is the whole executive branch, the shape refused for
+    // `pa.gov`. The Treasury topic page restates the same exclusion; the
+    // enrolled act is the operative language and has a narrower publisher.
+    'pub.njleg.gov', // New Jersey Legislature, public laws
   ],
   ME: [
     'legislature.maine.gov', // Office of the Revisor of Statutes, Maine Revised Statutes
