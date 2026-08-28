@@ -95,3 +95,30 @@ describe('rules coverage report artifacts', () => {
   })
 })
 
+
+// The report builder's identity check (id · citation · url) cannot see a
+// quotedText edit hiding behind an unchanged citation and URL, and it stays
+// crypto-free for browser bundling. This node-side test closes that last gap:
+// every ledger verdict must carry the hash of the exact quote it judged.
+describe('quote-fidelity ledger hash binding', () => {
+  it('binds every ledger verdict to the registry quote it judged', async () => {
+    if (quoteFidelityLedger === null) return
+    const { createHash } = await import('node:crypto')
+    const hash = (text: string): string =>
+      createHash('sha256').update(text, 'utf8').digest('hex').slice(0, 16)
+
+    const expected: string[] = []
+    for (const [id, rule] of Object.entries(TAX_RULE_REGISTRY)) {
+      for (const authority of rule.authority) {
+        expected.push(`${id} ${authority.citation} ${authority.url} ${hash(authority.quotedText)}`)
+      }
+    }
+    const parsed = JSON.parse(quoteFidelityLedger) as {
+      results: { id: string; citation: string; url: string; quoteSha256: string }[]
+    }
+    const found = parsed.results.map(
+      (result) => `${result.id} ${result.citation} ${result.url} ${result.quoteSha256}`,
+    )
+    expect(found.sort()).toEqual(expected.sort())
+  })
+})

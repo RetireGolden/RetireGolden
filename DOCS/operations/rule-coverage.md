@@ -218,7 +218,7 @@ The 25 earliest due dates are shown below (399 rules total). Comparing dueOn to 
 
 ## Quote fidelity
 
-Committed ledger generated at 2026-08-28T00:54:14.237Z.
+Committed ledger generated at 2026-08-28T01:06:04.327Z.
 
 | Verdict | Count |
 | --- | ---: |
