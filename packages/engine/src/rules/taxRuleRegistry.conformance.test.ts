@@ -53,33 +53,53 @@ function declaredSymbolsOf(globKey: string, source: string): ReadonlySet<string>
   const record = (name: ts.Node | undefined): void => {
     if (name !== undefined && ts.isIdentifier(name)) names.add(name.text)
   }
-  const visit = (node: ts.Node): void => {
-    if (
-      ts.isFunctionDeclaration(node) ||
-      ts.isClassDeclaration(node) ||
-      ts.isInterfaceDeclaration(node) ||
-      ts.isTypeAliasDeclaration(node) ||
-      ts.isEnumDeclaration(node)
-    ) {
-      record(node.name)
-    } else if (ts.isVariableDeclaration(node) || ts.isBindingElement(node)) {
-      record(node.name)
-    } else if (
-      ts.isPropertyAssignment(node) ||
-      ts.isPropertySignature(node) ||
-      ts.isPropertyDeclaration(node) ||
-      ts.isMethodDeclaration(node) ||
-      ts.isMethodSignature(node) ||
-      ts.isShorthandPropertyAssignment(node) ||
-      ts.isGetAccessorDeclaration(node)
-    ) {
-      record(node.name)
-    } else if (ts.isExportSpecifier(node)) {
-      record(node.name)
-    }
-    ts.forEachChild(node, visit)
+  // Members one level under a module-scope declaration are publishable
+  // (class methods, interface properties, a pack object's top entries);
+  // anything deeper is a local, and a local is not a calculator method.
+  const recordMembers = (node: ts.Node): void => {
+    ts.forEachChild(node, (child) => {
+      if (
+        ts.isPropertyAssignment(child) ||
+        ts.isPropertySignature(child) ||
+        ts.isPropertyDeclaration(child) ||
+        ts.isMethodDeclaration(child) ||
+        ts.isMethodSignature(child) ||
+        ts.isShorthandPropertyAssignment(child) ||
+        ts.isGetAccessorDeclaration(child)
+      ) {
+        record(child.name)
+        // A data pack's leaf fields are publishable facts, so property
+        // structure recurses; function bodies never do - a local inside a
+        // calculator stays a local.
+        if (ts.isPropertyAssignment(child) && child.initializer !== undefined) recordMembers(child.initializer)
+        if (ts.isPropertySignature(child) && child.type !== undefined) recordMembers(child.type)
+      }
+      if (ts.isObjectLiteralExpression(child) || ts.isTypeLiteralNode(child) || ts.isArrayLiteralExpression(child)) recordMembers(child)
+    })
   }
-  visit(file)
+  for (const statement of file.statements) {
+    if (
+      ts.isFunctionDeclaration(statement) ||
+      ts.isClassDeclaration(statement) ||
+      ts.isInterfaceDeclaration(statement) ||
+      ts.isTypeAliasDeclaration(statement) ||
+      ts.isEnumDeclaration(statement)
+    ) {
+      record(statement.name)
+      recordMembers(statement)
+      continue
+    }
+    if (ts.isVariableStatement(statement)) {
+      for (const declaration of statement.declarationList.declarations) {
+        record(declaration.name)
+        if (declaration.initializer !== undefined) recordMembers(declaration.initializer)
+      }
+      continue
+    }
+    if (ts.isExportDeclaration(statement) && statement.exportClause !== undefined && ts.isNamedExports(statement.exportClause)) {
+      for (const specifier of statement.exportClause.elements) record(specifier.name)
+    }
+  }
   declaredSymbolCache.set(globKey, names)
   return names
 }
@@ -868,25 +888,37 @@ describe('tax rule registry conformance', () => {
   it('resolves every implementedByFunctions entry to a listed file and a live symbol', () => {
     // The transparency page renders these as the chain's deepest level; an
     // entry naming a renamed or deleted function must fail here, not rot
-    // publicly. Symbol presence accepts declarations, const/class bindings,
-    // object methods, and property keys.
+    // publicly. Violations accumulate so one failure cannot mask the rest.
+    const violations: string[] = []
     for (const [ruleId, rule] of Object.entries(TAX_RULE_REGISTRY)) {
-      const entries = (rule as { implementedByFunctions?: readonly string[] }).implementedByFunctions ?? []
+      const entries = rule.implementedByFunctions
+      const pinnedPaths = new Set(entries.map((entry) => entry.split('#')[0]))
+      for (const path of rule.implementedBy) {
+        if (!pinnedPaths.has(path)) violations.push(`${ruleId}: ${path} is on the trail but carries no function pin`)
+      }
       for (const entry of entries) {
         const parts = entry.split('#')
-        expect(parts.length, `${ruleId}: ${entry} must be <path>#<symbol>`).toBe(2)
+        if (parts.length !== 2 || parts[1]!.length === 0) {
+          violations.push(`${ruleId}: ${entry} must be <path>#<symbol>`)
+          continue
+        }
         const [path, symbol] = parts as [string, string]
-        expect(symbol.length, `${ruleId}: ${entry}`).toBeGreaterThan(0)
-        expect(rule.implementedBy, `${ruleId}: ${entry} path must be in implementedBy`).toContain(path)
+        if (!rule.implementedBy.includes(path)) {
+          violations.push(`${ruleId}: ${entry} path must be in implementedBy`)
+          continue
+        }
         const globKey = path.replace(/^packages\/engine\/src\//u, '../')
         const source = engineSources[globKey] as string | undefined
-        expect(source, `${ruleId}: ${path} not found among engine sources`).toBeDefined()
-        expect(
-          declaredSymbolsOf(globKey, source!).has(symbol),
-          `${ruleId}: ${symbol} is not a declared symbol in ${path}`,
-        ).toBe(true)
+        if (source === undefined) {
+          violations.push(`${ruleId}: ${path} not found among engine sources`)
+          continue
+        }
+        if (!declaredSymbolsOf(globKey, source).has(symbol)) {
+          violations.push(`${ruleId}: ${symbol} is not a module-scope symbol in ${path}`)
+        }
       }
     }
+    expect(violations).toEqual([])
   })
 
   it('rejects a fixture claiming a rule that is not registered', () => {
