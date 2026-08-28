@@ -1114,8 +1114,7 @@
           "testTitles": [
             "implements the encoded $6,000 convention and discriminates the competing readings",
             "reaches the no-exclusion reading once the cap is withheld",
-            "reaches the research 2026 reading under a doubled cap",
-            "models every state these records describe"
+            "reaches the research 2026 reading under a doubled cap"
           ]
         }
       ],
@@ -1982,8 +1981,7 @@
           "path": "packages/engine/src/projection/simulate.test.ts",
           "line": 510,
           "testTitles": [
-            "cannot distinguish January-only EPE from every-month SGA on annual wages",
-            "has no accepted DWB age-50, blind-SGA, or EXR state surface"
+            "cannot distinguish January-only EPE from every-month SGA on annual wages"
           ]
         }
       ],
@@ -2050,12 +2048,7 @@
           "path": "packages/engine/src/socialSecurity/benefitFactor.test.ts",
           "line": 52,
           "testTitles": [
-            "stops crediting at age seventy however long the delay",
-            "adds 24% at 36 months for max DRC to 70 from FRA 67",
-            "claim 62 vs FRA 67 → 70% PIA",
-            "claim 70 vs FRA 67 → 124% PIA",
-            "claim 66 vs FRA 66 → 100% PIA",
-            "claim 62 vs FRA 66 → 75% PIA"
+            "stops crediting at age seventy however long the delay"
           ]
         }
       ],
@@ -2132,9 +2125,7 @@
           "path": "packages/engine/src/socialSecurity/benefitFactor.test.ts",
           "line": 19,
           "testTitles": [
-            "slows the reduction after the thirty-sixth month",
-            "matches 30% reduction at 60 months early (FRA 67 vs claim 62)",
-            "matches 25% reduction at 48 months early (FRA 66 vs claim 62)"
+            "slows the reduction after the thirty-sixth month"
           ]
         }
       ],
@@ -2171,8 +2162,7 @@
           "path": "packages/engine/src/projection/simulate.test.ts",
           "line": 965,
           "testTitles": [
-            "cannot preserve a grace-year non-service-month benefit from annual wages alone",
-            "does not accept a Social Security application withdrawal, repayment, or replacement claim"
+            "cannot preserve a grace-year non-service-month benefit from annual wages alone"
           ]
         }
       ],
@@ -2610,15 +2600,7 @@
           "path": "packages/engine/src/actions/annualQcdResidualForm8606.test.ts",
           "line": 173,
           "testTitles": [
-            "rejoins the non-QCD remainder only with annual line-7 distributions",
-            "keeps qualified QCD dollars out of residual line 7 and preserves base lines",
-            "rebuilds both residual Form 8606 lines with the same adjusted annual ratio",
-            "rejoins only non-QCD remainder and binds it as exact basis return",
-            "allocates multiple remainders in canonical schedule order",
-            "uses the literal zero-denominator arm for zero physical movement",
-            "fails closed when a physical QCD leaks into base Form 8606 input",
-            "fails closed when the exact-year post-pass is unavailable",
-            "is deterministic, recursively frozen, and does not mutate input"
+            "rejoins the non-QCD remainder only with annual line-7 distributions"
           ]
         }
       ],
@@ -2671,17 +2653,7 @@
           "path": "packages/engine/src/actions/ownedNonRothIraWithdrawalCharacter.test.ts",
           "line": 172,
           "testTitles": [
-            "removes the line-4 amount before characterizing a positive distribution",
-            "derives the complete Form 8606 numerator, line 6, and denominator",
-            "caps the basis numerator at the denominator",
-            "preserves unused basis in the zero-denominator no-character arm",
-            "fails closed when independent line rounding would recover basis twice",
-            "range-checks the adjusted line-6 result after bigint subtraction",
-            "omits zero line-7 activity and emits only positive character segments",
-            "canonicalizes pool and activity input order with stable evidence IDs",
-            "binds every character to the shared basis and line-7 evidence",
-            "changes evidence identity when a complete annual fact changes",
-            "deep-freezes detached annual evidence and character"
+            "removes the line-4 amount before characterizing a positive distribution"
           ]
         }
       ],
@@ -2718,30 +2690,7 @@
           "path": "packages/engine/src/actions/ownedNonRothIraAnnualPhysicalTransaction.test.ts",
           "line": 319,
           "testTitles": [
-            "stages a conversion onto line 8 rather than folding it into line 7",
-            "rejoins same-owner withdrawals and conversions from actual staging facts",
-            "preserves zero conversion lineage without creating an allocator entry",
-            "publishes transitions for every pool sibling, including unchanged accounts",
-            "retains every application in an all-zero Plan batch",
-            "is invariant to opening-balance and application input permutations",
-            "derives runtime line-7 allocator identities and requires exact runtime gross",
-            "preserves one runtime authority across multiple source allocations",
-            "keeps runtime allocator identities stable across unrelated inventory lineage",
-            "blocks a legacy runtime conversion whose inventory has no destination",
-            "passes an invalid cross-owner conversion destination through inventory validation",
-            "requires the QCD stage",
-            "settles owned-IRA contribution inflows without creating allocator entries",
-            "settles a SEP/SIMPLE employer contribution through the same inflow boundary",
-            "weaves contribution inflows and debits in canonical inventory chronology",
-            "rejects a contribution event smuggled into line-7/line-8 applications",
-            "rejects malformed and colliding settled contribution evidence",
-            "rejects caller attempts to substitute inventory-derived identity or scope",
-            "requires exact complete opening balances including unchanged siblings",
-            "rejects unsafe cents, cross-role evidence IDs, and derived ID collisions",
-            "fails closed on hostile getters",
-            "fails closed on hostile settled contribution getters",
-            "fails closed on hostile settled contribution application fields",
-            "returns detached immutable evidence without mutating inputs"
+            "stages a conversion onto line 8 rather than folding it into line 7"
           ]
         }
       ],
@@ -3344,13 +3293,7 @@
           "path": "packages/engine/src/tax/federalTax.test.ts",
           "line": 589,
           "testTitles": [
-            "moves modeled preferential gain into the 20 percent layer above the second breakpoint",
-            "keeps gains in the 0% bracket when ordinary income is low (MFJ)",
-            "taxes only the portion stacked above the 0% threshold at 15%",
-            "stacks qualified dividends at preferential rates while including them in AGI",
-            "does not let capital losses offset qualified dividends",
-            "applies NIIT over the MAGI threshold",
-            "includes taxable interest and dividends in NIIT investment income"
+            "moves modeled preferential gain into the 20 percent layer above the second breakpoint"
           ]
         }
       ],
@@ -3499,8 +3442,7 @@
           "path": "packages/engine/src/tax/federalTax.test.ts",
           "line": 1978,
           "testTitles": [
-            "starts the 15% layer at the breakpoint prescribed for that year",
-            "projects the AMT exemption and its phase-out threshold together"
+            "starts the 15% layer at the breakpoint prescribed for that year"
           ]
         }
       ],
@@ -3865,12 +3807,7 @@
           "path": "packages/engine/src/tax/propertySale.test.ts",
           "line": 21,
           "testTitles": [
-            "carves recapture out before applying the exclusion cap",
-            "taxes only the gain above basis, net of selling costs",
-            "applies the §121 exclusion to a primary residence and taxes only the excess",
-            "fully excludes a primary-residence gain under the cap",
-            "recaptures depreciation as ordinary income, never shielded by §121",
-            "treats a sale at a loss as zero gain (personal-use loss nondeductible)"
+            "carves recapture out before applying the exclusion cap"
           ]
         }
       ],
@@ -4300,40 +4237,7 @@
           "testTitles": [
             "puts the two readings 100,000 dollars apart for a couple",
             "skips a couple already past the per-individual exhaustion point",
-            "claws back 6% for each qualified individual, not 6% for the return",
-            "debits every bucket the executor touched and credits the cash it delivered",
-            "emits the identical LP when no action committed anything",
-            "materializes the taxable bucket when only committed movement touches it",
-            "carries the committed debit through the solve rather than optimizing it away",
-            "debits the bucket the strategy gave from, with no cash credit",
-            "credits the cash a 72(t) series delivered, unlike a gift",
-            "sums with committed action movement rather than replacing it",
-            "emits the identical LP when no strategy moved anything",
-            "materializes the taxable bucket when only strategy movement touches it",
-            "raises the bracket floor by the committed amount and nothing else",
-            "flows into every side channel the ordinary base already feeds",
-            "emits the identical LP at zero, absent, or negative",
-            "takes the forced-distribution exclusion back off the same constant",
-            "nets the two terms against each other on the one constant",
-            "emits the identical LP for an exclusion at zero, absent, or negative",
-            "is not a variable the solver can convert instead of",
-            "drives each premium year off year (t−2) MAGI and omits the first two years",
-            "shifts an SSA-44 premium year onto year (t−1) MAGI",
-            "prices the SSA-44 estimate-year conversion into the premium (the solve sees the relief)",
-            "IRMAA binary discriminates on exempt interest",
-            "folds lookback-source exempt interest into the premium-year IRMAA constant",
-            "emits a byte-identical LP when exempt interest is zero or absent",
-            "drains traditional when the terminal haircut exceeds every bracket",
-            "converts nothing when there is no haircut to arbitrage",
-            "forces at least the RMD floor out of traditional",
-            "can fund spending from inherited traditional assets without conversions",
-            "keeps income under the first IRMAA tier when income is modest",
-            "intentionally crosses an IRMAA tier when the terminal haircut dominates the surcharge",
-            "reports infeasible when required spending cannot be funded by any bucket",
-            "treats scheduled contribution inflows as bucket assets, not vanished cash",
-            "reports timeout without inventing conversions when the solver has no incumbent",
-            "does at least as well with conversions allowed as when they are forbidden",
-            "treats `optimized` identically to `manual`"
+            "claws back 6% for each qualified individual, not 6% for the return"
           ]
         },
         {
@@ -4341,14 +4245,7 @@
           "line": 1286,
           "testTitles": [
             "reduces each qualified individual amount, not the combined total",
-            "exhausts two shares at the same modified AGI as one share",
-            "drops the senior deduction after its statutory last year",
-            "federal calculator matches the detailed computation",
-            "combined calculator sums its parts",
-            "uses the standard deduction when itemized is smaller",
-            "uses itemized when it beats the standard deduction",
-            "caps the SALT component at the pack saltCap",
-            "adds the OBBBA senior deduction on top of itemized"
+            "exhausts two shares at the same modified AGI as one share"
           ]
         }
       ],
@@ -4395,12 +4292,7 @@
           "path": "packages/engine/src/tax/federalTax.test.ts",
           "line": 2022,
           "testTitles": [
-            "holds the amount and the phase-out threshold flat in a projected year",
-            "leaves the section 86 provisional-income thresholds where Congress left them",
-            "leaves the section 1411 NIIT thresholds where Congress left them",
-            "leaves the SALT cap on its statutory schedule rather than an index",
-            "carries the indexed figures DOWN when the plan assumes deflation",
-            "does not drag the unindexed figures down with a deflating scale either"
+            "holds the amount and the phase-out threshold flat in a projected year"
           ]
         }
       ],
@@ -4894,17 +4786,7 @@
           "path": "packages/engine/src/actions/annualQcdItemizedSection170Ledger.test.ts",
           "line": 244,
           "testTitles": [
-            "leaves the cash category unreduced once earlier categories consume the floor",
-            "applies the 0.5% floor to the contribution otherwise allowable after the percentage ceiling",
-            "rounds the half-cent floor once, upward, against the post-ceiling allowable amount",
-            "permanently disallows the floor amount in a year with no percentage-limit excess",
-            "rejects denying the floor carryforward in a year that does have a percentage-limit excess",
-            "requires floor carryforward eligibility to agree across a joint tax unit",
-            "shares floor and cash-cap state across joint spouses in canonical chronology",
-            "owns only the supplied tax-unit action subset",
-            "emits a literal zero treatment while preserving the authoritative source run",
-            "binds run and tax-input identities deterministically and freezes the result",
-            "fails closed on hostile input without publishing partial ledgers"
+            "leaves the cash category unreduced once earlier categories consume the floor"
           ]
         }
       ],
@@ -5078,14 +4960,7 @@
           "line": 207,
           "testTitles": [
             "carries the excess over the ceiling from a standard-deduction year",
-            "carries nothing below the ceiling, which is what the shorthand describes",
-            "carries forward contributions beyond exhausted 60% capacity",
-            "turns a zero contribution base into zero cash capacity",
-            "permanently loses the excess over the cap when the gift is below the ceiling",
-            "orders same-day actions by sequence and rejects duplicate authored positions",
-            "emits literal not-applicable zeros when the QCD exclusion leaves no contribution",
-            "binds selected deduction, run, and tax-input identities and freezes evidence",
-            "rejects hostile input before publishing partial ledgers"
+            "carries nothing below the ceiling, which is what the shorthand describes"
           ]
         }
       ],
@@ -5694,12 +5569,7 @@
           "path": "packages/engine/src/projection/simulate.test.ts",
           "line": 2349,
           "testTitles": [
-            "reduces realized MAGI and ACA household MAGI by the allowed HSA contribution",
-            "applies per-account and default growth after flows",
-            "pays pension survivor percentage after the owner dies",
-            "sells property in the planned year and deposits proceeds",
-            "amortizes debt and counts payments as expenses until payoff",
-            "forces distributions from the prior-year balance and reinvests the excess"
+            "reduces realized MAGI and ACA household MAGI by the allowed HSA contribution"
           ]
         }
       ],
@@ -6098,13 +5968,7 @@
           "path": "packages/engine/src/actions/annualHsaPenaltyEvaluation.test.ts",
           "line": 315,
           "testTitles": [
-            "keeps the distribution in income while waiving the additional tax",
-            "preserves a known-false future qualification date and applies the fixed rate",
-            "needs no age or disability inventory for fully qualified or zero execution",
-            "reuses shared age and fixed-rate authority across same-owner same-date segments",
-            "rejects caller-supplied age, rate, or character authority at the exact boundary",
-            "does not invoke accessors and freezes a detached result without mutating input",
-            "changes derived lineage when authoritative exception facts change"
+            "keeps the distribution in income while waiving the additional tax"
           ]
         }
       ],
@@ -6194,9 +6058,7 @@
           "path": "packages/engine/src/actions/annualHsaPenaltyEvaluation.test.ts",
           "line": 243,
           "testTitles": [
-            "still taxes a distribution taken on the 65th birthday itself",
-            "clamps a leap-day birth to February 28 at age 65",
-            "uses dated positive disability only as a zero-penalty exception"
+            "still taxes a distribution taken on the 65th birthday itself"
           ]
         }
       ],
@@ -6274,40 +6136,7 @@
           "path": "packages/engine/src/projection/simulate.test.ts",
           "line": 2956,
           "testTitles": [
-            "keeps a chapter 43 RMD-shortfall excise out of the income-tax base",
-            "fails closed for future years without sourced tax-year parameters",
-            "fails closed before reconciling ACA with an adaptive spending policy",
-            "keeps an explicit fixed-target spending policy actionable with complete ACA evidence",
-            "keeps valid pre-Medicare enrollment months actionable in the age-65 transition year",
-            "fails closed when age-65 enrollment reaches the first Medicare month",
-            "fails closed for Marketplace enrollment in any fully post-65 month",
-            "checks Medicare overlap against the covered spouse rather than the primary age",
-            "preserves known gross premiums when same-year contracts conflict",
-            "treats benchmark-only months as unsupported and excludes them from coverage evidence",
-            "fails closed when a primary or spouse in the tax family is not alive in the modeled year",
-            "requires explicit dependent tax-family evidence in a qualifying-surviving-spouse ACA year",
-            "requires the ACA tax family to include every living modeled person whose income is aggregated",
-            "fails closed when the annual primary does not exist in the modeled household",
-            "excludes ordinary Marketplace premiums from the HSA qualified-expense cap",
-            "excludes Marketplace premiums from the HSA cap when ACA credit modeling is disabled",
-            "uses the default healthcare spread of inflation plus 3 percentage points",
-            "applies the ACA credit against current-year household MAGI before 65",
-            "subtracts the household ACA expected contribution once for a couple both under 65",
-            "charges the full premium over the 400% FPL cliff, with a warning",
-            "funds a same-year conversion cliff loss and feeds the induced withdrawal back into ACA MAGI",
-            "uses current-year realized gains in the reconciled ACA cliff state",
-            "records ACA addbacks without taxing them as ordinary income",
-            "preserves signed federal AGI until ACA household addbacks are assembled",
-            "uses known ACA non-taxable addbacks when floor-trimming a conversion tax torpedo",
-            "separates required-filer dependent MAGI from covered members and months",
-            "fails closed when a dependent id overlaps a modeled household person",
-            "funds gross premium and emits typed evidence when material ACA facts are unknown",
-            "fails closed when a credit-enabled legacy plan lacks the per-year contract",
-            "treats below-100% FPL exception pathways as typed unsupported",
-            "preserves byte-identical ledgers when ACA credit is disabled or no premium exists",
-            "prorates ACA and Medicare by birth month in the year a person turns 65",
-            "prorates the ACA expected contribution to covered months in the transition year",
-            "keeps a January-born 65th year entirely on Medicare"
+            "keeps a chapter 43 RMD-shortfall excise out of the income-tax base"
           ]
         }
       ],
@@ -6386,19 +6215,7 @@
           "path": "packages/engine/src/tax/aca.test.ts",
           "line": 64,
           "testTitles": [
-            "keeps a household at exactly 400 percent inside the band",
-            "forfeits the entire credit $1 over the 400% cliff",
-            "scales the poverty line for household size and future years",
-            "never credits below zero when income covers the premium",
-            "matches the annual calculation for twelve equal covered months",
-            "charges only the covered months share of the expected contribution",
-            "earns no credit in uncovered months even when the contribution is small",
-            "forfeits everything over the cliff",
-            "pins every 2026 applicable-percentage boundary just below, at, and above",
-            "uses the separate SLCSP while capping allowable PTC at enrollment premium",
-            "excludes SLCSP amounts from months without enrollment",
-            "uses the separate 2025 HHS poverty tables for Alaska and Hawaii",
-            "resolves every regional poverty guideline from the versioned parameter pack"
+            "keeps a household at exactly 400 percent inside the band"
           ]
         }
       ],
@@ -6434,10 +6251,7 @@
           "path": "packages/engine/src/tax/aca.test.ts",
           "line": 210,
           "testTitles": [
-            "adds tax-exempt interest to household MAGI alongside the other add-backs",
-            "builds household MAGI from AGI, addbacks, and required-filer dependents",
-            "preserves signed federal AGI until applying the final household-income floor",
-            "fails closed when a required ACA-MAGI fact is unknown"
+            "adds tax-exempt interest to household MAGI alongside the other add-backs"
           ]
         }
       ],
@@ -6695,12 +6509,7 @@
           "path": "packages/engine/src/params/params.test.ts",
           "line": 103,
           "testTitles": [
-            "sends the first post-window cohort straight to 75",
-            "maps cohorts to 72/73/75",
-            "returns the standard premium below the first tier",
-            "applies tier multiples above thresholds (statutory share of cost)",
-            "treats tier thresholds as cliffs",
-            "adds the 65+ amounts per qualifying person"
+            "sends the first post-window cohort straight to 75"
           ]
         }
       ],
@@ -7078,8 +6887,7 @@
           "path": "packages/engine/src/projection/simulate.annualCashFlow.transfer.test.ts",
           "line": 813,
           "testTitles": [
-            "credits the entire pension lump-sum offer as a tax-free rollover past the RBD",
-            "pairs every published transfer debit with an equal credit"
+            "credits the entire pension lump-sum offer as a tax-free rollover past the RBD"
           ]
         }
       ],
@@ -7323,10 +7131,7 @@
           "path": "packages/engine/src/projection/rmdShortfallExcise.test.ts",
           "line": 298,
           "testTitles": [
-            "never creates a lifetime §4974 obligation for a living designated Roth account owner",
-            "taxes an inherited Roth residue in the emptying year and every later year",
-            "keeps traditional and Roth inherited IRAs from the same decedent in separate §4974 pools",
-            "keeps inherited employer plans particular to each account even for one decedent"
+            "never creates a lifetime §4974 obligation for a living designated Roth account owner"
           ]
         }
       ],
@@ -7698,9 +7503,7 @@
           "line": 986,
           "testTitles": [
             "withholds the growth the premium would have earned in the account",
-            "errs the other way in a loss year, and not at all in a flat one",
-            "moves the pro-rata fraction with the year’s return",
-            "settles a gift year at the statutory denominator and moves with the return"
+            "errs the other way in a loss year, and not at all in a flat one"
           ]
         }
       ],
@@ -7752,9 +7555,7 @@
           "testTitles": [
             "prices a gain year off a denominator that never saw the gain",
             "returns the same income at a 0 percent and a negative return",
-            "settles one order of magnitude below the exact-cent ceiling",
-            "measures an annuity year at the close of the year like every other",
-            "moves the annuity year’s income with the return"
+            "settles one order of magnitude below the exact-cent ceiling"
           ]
         }
       ],
@@ -8097,11 +7898,7 @@
           "path": "packages/engine/src/actions/annualQcdTaxCharacterPostPass.test.ts",
           "line": 259,
           "testTitles": [
-            "nets the prior reductions off the aggregate deductions",
-            "applies the exact-year personal limit per donor",
-            "draws the QCD from pre-tax dollars first and leaves basis for the remainder",
-            "discloses when a partly-excludable QCD rests on the unsettled basis reading",
-            "does not disclose an unsettled basis reading when the QCD is fully excluded"
+            "nets the prior reductions off the aggregate deductions"
           ]
         }
       ],
@@ -8151,9 +7948,7 @@
           "path": "packages/engine/src/rules/approximations/simulateContributionsAndQcd.approximation.test.ts",
           "line": 437,
           "testTitles": [
-            "funds a household gift only from the eligible donor",
-            "publishes the same denominator to the cent when nothing is gifted",
-            "varies by at most one cent when a gift is routed out of the requirement"
+            "funds a household gift only from the eligible donor"
           ]
         }
       ],
@@ -8271,17 +8066,7 @@
           "testTitles": [
             "subtracts the deduction offset after the annual limit has bound",
             "floors the reduction at zero rather than going negative",
-            "reproduces the contract's fully-taxable worked example",
-            "produces the exact three-way partition",
-            "exhausts one donor pool in canonical schedule order",
-            "keeps spouse capacity, personal limits, and offsets separate",
-            "does not let RMD remaining cap QCD character",
-            "does not consume annual state for a zero physical movement",
-            "fails closed for a future-year stand-in parameter pack",
-            "rejects an incomplete Plan QCD batch",
-            "rejects forged physical prerequisite evidence atomically",
-            "rejects donor offset chronology that reuses an earlier offset",
-            "names consumed-past-total as contributionOffsetInvalid, not a zero remainder"
+            "reproduces the contract's fully-taxable worked example"
           ]
         }
       ],
@@ -8596,10 +8381,7 @@
           "path": "packages/engine/src/projection/simulate.qcdAggregateIncludible.test.ts",
           "line": 292,
           "testTitles": [
-            "qualifies only the pre-tax pool and turns the rest of the year into basis",
-            "leaves a no-basis household on the same figures the pre-fix ledger produced",
-            "leaves a basis-holding household with no gift exactly where it was",
-            "reconciles the LP ordinary-income reconstruction to the exact ledger"
+            "qualifies only the pre-tax pool and turns the rest of the year into basis"
           ]
         }
       ],
@@ -9121,22 +8903,7 @@
           "path": "packages/engine/src/actions/rothConversionExecution.test.ts",
           "line": 1102,
           "testTitles": [
-            "publishes the entire gross as taxable only when the basis numerator is proven zero",
-            "commits a proven positive numerator without stating a character",
-            "carries the two arms the contract names and nothing produces yet",
-            "publishes one reason set per funding disposition and no two alike",
-            "emits the withholding refusal exactly once and without identifiers",
-            "answers an external-cash amount that outruns the conversion",
-            "keeps both sides of a linked withdrawal blocked on the missing group executor",
-            "assesses one group per conversion however often the request arrives",
-            "refuses a withdrawal whose conversion only the caller can see",
-            "takes the conversion side from the verdict, not from the funding kind",
-            "refuses a supplied verdict that contradicts the Plan it can read",
-            "refuses a verdict answering for one of two conversions naming a withdrawal",
-            "publishes the pair only while both sides honour the one verdict",
-            "still holds the linkage assertions the paired refusal rests on",
-            "moves nothing under any funding disposition",
-            "fails closed when hostile getters throw during input inspection"
+            "publishes the entire gross as taxable only when the basis numerator is proven zero"
           ]
         }
       ],
@@ -9274,19 +9041,7 @@
           "testTitles": [
             "recaptures only so much of the conversion as was includible at the time",
             "applies 72(t) without taxing the conversion principal a second time",
-            "runs the five-taxable-year period from the year of that conversion",
-            "keeps original object identity for untouched tails after debt is exhausted",
-            "sums seasoned and wholly nontaxable unseasoned layers when they lead the queue",
-            "stops at the first unseasoned taxable layer (deeper free layers are not free cover)",
-            "includes unseasoned taxable layers once the owner is qualified (age 60+)",
-            "bounds spill by the partial taxable remainder, then absorbs free layers behind it",
-            "reports zero spill when the live draw already exhausted the taxable blocker",
-            "prorates consequential spill on a mixed unseasoned layer ($100 seed / $10 taxable)",
-            "prorates on a partially-consumed mixed residual (remaining balances)",
-            "tracks $100 seed into a pure $100 taxable layer as conversion principal debt",
-            "reports zero earningsSpill when the owner is age-qualified (mirror splitRothWithdrawal)",
-            "dual ordered walks silence the $50-seed/$25-seasoned free-prefix-on-CF-head false positive",
-            "pins character-wise gaps both ways (CF-more and live-more unseasoned)"
+            "runs the five-taxable-year period from the year of that conversion"
           ]
         }
       ],
@@ -9777,19 +9532,14 @@
           "path": "packages/engine/src/projection/employerRothCatchUp.test.ts",
           "line": 407,
           "testTitles": [
-            "does not recharacterize an IRA catch-up when the employer wage test is met",
-            "raises MAGI by the catch-up when the wage test forces designated Roth",
-            "keeps MAGI at the pre-tax-catch-up figure when FICA is exactly 150,000",
-            "does not change regular elective-deferral character below the 402(g) base",
-            "still warns when the high earner has no Roth feature and catch-up is refused"
+            "does not recharacterize an IRA catch-up when the employer wage test is met"
           ]
         },
         {
           "path": "packages/engine/src/projection/employerRothCatchUp.test.ts",
           "line": 569,
           "testTitles": [
-            "applies the source match formula to the redirected catch-up",
-            "adds redirected catch-up to the source and removes it from the Roth sibling"
+            "applies the source match formula to the redirected catch-up"
           ]
         }
       ],
@@ -10607,24 +10357,7 @@
           "line": 1391,
           "testTitles": [
             "adds the senior deduction back on a return that itemizes",
-            "adds it back on a return that takes the standard deduction too",
-            "is zero when tentative minimum tax does not exceed regular tax",
-            "adds only the tentative-minimum-tax excess over regular income tax",
-            "preserves preferential rates for LTCG and qualified dividends in tentative minimum tax",
-            "treats qualifying surviving spouse as the joint AMT and regular-tax table",
-            "reports room up to the 15% threshold when taxable income is low (no SS)",
-            "is zero once taxable income is above the 15% threshold",
-            "shrinks as realized gains fill the 0% bracket (no SS)",
-            "accounts for Social Security phase-in (less than the naive estimate)",
-            "absorbs realized gains first, then deducts $3k as a net loss, carrying the rest",
-            "still deducts $3k in a year with no realized gains",
-            "only offsets the gains it can when the pool is smaller than the gains",
-            "a large gain can consume the whole pool, leaving nothing to deduct",
-            "deducts the full $3k even when other income is below $3k (the loss is a capital line, not an ordinary offset)",
-            "depletes over multiple years until exhausted",
-            "is a no-op when the pool is zero",
-            "reduces taxable Social Security even with little other income (bot-flagged case)",
-            "floors AGI/MAGI at zero when a net capital loss exceeds other income"
+            "adds it back on a return that takes the standard deduction too"
           ]
         }
       ],
@@ -10803,17 +10536,7 @@
           "line": 389,
           "testTitles": [
             "measures nominal income against the federal deduction prescribed for that year",
-            "leaves a published year exactly as published",
-            "agrees with the federal engine on the deduction, which is the whole point",
-            "carries the conformed deduction DOWN when the plan assumes deflation",
-            "leaves a state that publishes its own deduction where its legislature left it",
-            "does not sweep the state retirement-exclusion cap along with the deduction",
-            "taxes a 65-year-old single filer less than the same filer at 64",
-            "gives the joint addition once per person who has reached 65, not once per return",
-            "travels with the conformed deduction into a stand-in year",
-            "gives a part-year resident a prorated addition, not a full one",
-            "gives nothing to a state that publishes its own deduction",
-            "agrees with the federal engine on the whole IRC 63(c)(1) deduction"
+            "leaves a published year exactly as published"
           ]
         }
       ],
@@ -10870,8 +10593,7 @@
           "path": "packages/engine/src/tax/federalTax.test.ts",
           "line": 1251,
           "testTitles": [
-            "takes the addition once for each person who has attained 65",
-            "adds 65+ amounts and the OBBBA senior deduction (MFJ, both 65+)"
+            "takes the addition once for each person who has attained 65"
           ]
         }
       ],
@@ -11090,13 +10812,7 @@
           "path": "packages/engine/src/actions/annualSection68ItemizedDeduction.test.ts",
           "line": 39,
           "testTitles": [
-            "reduces by the exact rational rather than the published 5.4 percent",
-            "applies the exact 2/37 limitation once over the smaller statutory base",
-            "uses exact bigint remainder comparison at the half-up boundary",
-            "clamps AGI after subtracting QBI and Schedule 1-A deductions",
-            "builds a canonical contiguous action-delta chain without mutating input",
-            "makes empty-ledger endpoints identical and identities run-specific",
-            "fails closed on hostile objects before reading reusable evidence"
+            "reduces by the exact rational rather than the published 5.4 percent"
           ]
         },
         {
@@ -11286,20 +11002,7 @@
           "path": "packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.test.ts",
           "line": 1269,
           "testTitles": [
-            "charges the additional tax on the taxable half of a basis-bearing distribution",
-            "publishes a fixed age/death/SEPP/disability/other rejection tuple before applying the penalty",
-            "rejects bare notQualified SEPP status and non-null election/schedule bindings",
-            "requires owner-alive evidence to reuse the exact distribution-date evidence binding",
-            "fails closed on contradictory positive/rejected disability evidence",
-            "accepts a future qualification date as explicit not-qualified-on-distribution evidence",
-            "fails closed on duplicates, foreign extras, and cross-kind evidence-ID reuse",
-            "rounds a same-rate owner/year bucket once and deterministically allocates its cents",
-            "keeps every same-rate sibling unresolved when one could still join the final bucket",
-            "finalizes complete 10% and 25% buckets independently",
-            "keeps a maximum-safe aggregate exposure in bigint through bucket allocation",
-            "binds material member exposure into bucket and member evidence IDs",
-            "binds every completed member exception decision into the shared bucket and all final IDs",
-            "is permutation-invariant, detached, and deeply freezes final negative evidence"
+            "charges the additional tax on the taxable half of a basis-bearing distribution"
           ]
         }
       ],
@@ -11435,10 +11138,7 @@
           "path": "packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.test.ts",
           "line": 420,
           "testTitles": [
-            "accepts a distribution taken exactly on the 59.5 threshold",
-            "uses exactly 714 calendar months and accepts equality",
-            "uses civil leap/month-end clamping without JavaScript Date rollover",
-            "cannot substitute a date across the age-59½ boundary"
+            "accepts a distribution taken exactly on the 59.5 threshold"
           ]
         }
       ],
@@ -11536,17 +11236,7 @@
           "path": "packages/engine/src/actions/beneficiaryTraditionalIraDeathPenalty.test.ts",
           "line": 260,
           "testTitles": [
-            "publishes zero from the death path, not the 10 percent early rate",
-            "rebuilds character and emits exact death-beneficiary zero-penalty evidence",
-            "preserves literal-zero treatment for an empty zero-execution pool",
-            "fails closed when death occurs after the exact evaluation date",
-            "requires every death fact identity and inheritance binding to match",
-            "fails closed when the rebuilt annual character evidence is incomplete",
-            "rejects cross-role duplicate evidence IDs before publishing treatment",
-            "fails closed for unsafe identity values without throwing",
-            "rejects extra fields, inherited prototypes, accessors, and hostile proxies",
-            "fails closed before invoking hostile or stateful characterization getters",
-            "canonicalizes account order without changing death penalty identity"
+            "publishes zero from the death path, not the 10 percent early rate"
           ]
         },
         {
@@ -11595,12 +11285,7 @@
           "path": "packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.test.ts",
           "line": 498,
           "testTitles": [
-            "keeps the distribution in income while waiving the additional tax",
-            "qualifies disability effective before or exactly on the distribution date",
-            "keeps an under-age distribution unresolved when disability evidence is absent",
-            "does not require SIMPLE participation or construct a rate for qualified disability",
-            "qualifies only the matching date and retains a rate candidate for another date",
-            "applies one dated disability event across split same-date allocations"
+            "keeps the distribution in income while waiving the additional tax"
           ]
         }
       ],
@@ -11684,22 +11369,7 @@
           "path": "packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.test.ts",
           "line": 245,
           "testTitles": [
-            "accepts separation before the birthday in the qualifying year",
-            "rejects reused separation and disability IDs before Rule of 55 acceptance",
-            "does not qualify otherwise-identical prior-year separation",
-            "requires separation to occur on or before the distribution",
-            "uses only the exact taxable treatment and rounds a 10% half-cent up",
-            "preserves rejected disability identity when separation evidence is missing",
-            "rejects a zero-character classification borrowed from another action",
-            "accepts a dated disability that qualified by the distribution date",
-            "requires disability as-of status to be a literal boolean",
-            "rejects an evaluation date before participant birth",
-            "fails closed when disability status is missing after Rule of 55 rejection",
-            "rejects a future date serialized as currently qualified disability",
-            "rejects disability qualification evidence dated before participant birth",
-            "refuses a first SEPP payment with nonzero opening schedule totals",
-            "binds unsupported evidence ID to the provisional SEPP assessment ID",
-            "binds the SEPP assessment to exact coverage and character evidence IDs"
+            "accepts separation before the birthday in the qualifying year"
           ]
         }
       ],
@@ -11830,40 +11500,7 @@
           "path": "packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.test.ts",
           "line": 578,
           "testTitles": [
-            "does not qualify a SEPP election that starts before separation",
-            "rejects collisions among immutable SEPP election, distribution, and state IDs",
-            "fails closed when SEPP status is absent",
-            "fails closed without an explicit negative other-exception attestation",
-            "preserves a positive unmodeled other-exception claim as unsupported",
-            "rejects a blank positive other-exception claim",
-            "rejects taxable treatment not equal to exact ordinary-income character",
-            "fails closed when legacy zero-character evidence omits action identity",
-            "rejects character evidence borrowed from another action",
-            "canonicalizes character evidence IDs independent of equivalent segment order",
-            "rejects separation evidence from another sponsoring plan",
-            "rejects a separation date that disagrees with accepted source availability",
-            "rejects authoritative separation evidence dated before participant birth",
-            "distinguishes arrays from objects in structural evidence identities",
-            "tags null-like and non-finite metadata distinctly in structural evidence identities",
-            "fails closed on cyclic evidence metadata without recursing indefinitely",
-            "rejects custom enumerable array properties before deriving evidence identity",
-            "rejects non-enumerable array behavior without invoking it",
-            "rejects inherited sparse-array behavior without invoking it",
-            "rejects hidden and symbol-keyed object state",
-            "rejects accessor-backed metadata without invoking the getter",
-            "rejects accessor-backed outer and basis fields before invoking either getter",
-            "rejects shared metadata references while accepting duplicated plain values",
-            "clones nested attestation metadata before freezing returned evidence",
-            "clones nested disability metadata before freezing returned evidence",
-            "rechecks persisted character account-balance bounds",
-            "binds authoritative source-availability facts into character coverage identity",
-            "binds validated account-balance facts into character coverage identity",
-            "rejects accepted source availability dated before participant birth",
-            "rejects authority evidence IDs reused across negative facts",
-            "rejects current-payment SEPP authority IDs reused across negative facts",
-            "rejects reused negative IDs before missing-attestation unsupported return",
-            "rejects reused negative IDs before provisional-SEPP unsupported return",
-            "returns stable deeply frozen structural evidence"
+            "does not qualify a SEPP election that starts before separation"
           ]
         }
       ],
@@ -12053,25 +11690,7 @@
           "line": 645,
           "testTitles": [
             "lets a 72(t)(2) exception zero the tax inside the two-year window",
-            "applies 25 percent only where no exception reaches the distribution",
-            "uses 25% strictly before the SIMPLE two-year end and 10% at/after it",
-            "cannot substitute a date across the SIMPLE two-year boundary",
-            "rejects an undated annual line-7 allocation",
-            "applies month-end clamp to the SIMPLE 24-month boundary",
-            "exposes only ordinary income and explicitly excludes basis return",
-            "rounds exact rational candidates to cents half up, including below ties",
-            "keeps large products in bigint through quantization",
-            "emits final zero penalty after 59½ with exact exposure coverage",
-            "emits coverage but no penalty record or candidate for zero ordinary income",
-            "rejects malformed, foreign, late, duplicate, and irrelevant disability evidence",
-            "rejects missing, duplicate, foreign, and malformed SIMPLE evidence",
-            "rejects missing, duplicated, malformed, or foreign character segments",
-            "rejects synchronized erasure of nonzero line-7 activity",
-            "rejects synchronized taxable-to-basis reclassification",
-            "rejects a synchronized residual-basis shift between allocations",
-            "allows one action date evidence ID across split IRA allocations",
-            "rejects distribution-date evidence ID reuse across actions",
-            "is deterministic, detached from inputs, and deeply frozen"
+            "applies 25 percent only where no exception reaches the distribution"
           ]
         }
       ],
@@ -12192,13 +11811,7 @@
           "path": "packages/engine/src/tax/federalTax.test.ts",
           "line": 156,
           "testTitles": [
-            "carries the capped tier-one amount into the 85 percent band",
-            "is zero below the first threshold",
-            "phases in at 50% between thresholds",
-            "caps at 85% of benefits above the second threshold",
-            "flows into AGI in the full computation",
-            "includes a foreign exclusion in provisional income without taxing the exclusion itself",
-            "preserves signed pre-floor AGI without changing ordinary tax behavior"
+            "carries the capped tier-one amount into the 85 percent band"
           ]
         }
       ],
@@ -12350,28 +11963,7 @@
           "path": "packages/engine/src/strategies/inheritedRegime.test.ts",
           "line": 73,
           "testTitles": [
-            "stops marking a post-RBD ten-year annual amount as notice-waived in 2025",
-            "uses the beneficiary fixed arm, publishes relief-year evidence, and sweeps in 2030",
-            "uses Uniform Lifetime for year zero and the owner fixed arm afterward",
-            "uses the Joint and Last Survivor Table for a sole spouse more than 10 years younger",
-            "uses Uniform Lifetime without a gap limitation when owner born December 31 and gap is exactly 10 birth years",
-            "returns none for a 2020 death year — calendar-year-2020 RMDs were waived entirely",
-            "keeps the pre-2022-tables limitation for a 2021 death year",
-            "redetermines the spouse arm rather than subtracting one from its prior value",
-            "defers to the year the owner would have attained 75",
-            "returns plain none (no pre-2022 limitation) during deferral for a 2020 death",
-            "settles S1 without §327 disclosure when commencement is 2022",
-            "settles Roth K2 without §327 disclosure when commencement is 2022",
-            "F5 classifies R2 and carries no annual or year-zero amount",
-            "F6 keeps a minor child on annual RMDs through the tail",
-            "F7 classifies Roth K1 and attaches the K3 evidence disclosure",
-            "F8 defers Roth spouse K2 distributions until 2031",
-            "settles the RBD-year tie-break but refuses ambiguous spouse deferrals",
-            "fails closed in X1 through X5 precedence cases",
-            "classifies every parser-accepted product combination exactly once",
-            "F12 sweeps an exhausted fixed expectancy before a minor-child deadline could apply",
-            "F12 divisor boundary sweep without a notice waiver",
-            "F13 computes Uniform Lifetime catch-up from the first applicable year"
+            "stops marking a post-RBD ten-year annual amount as notice-waived in 2025"
           ]
         }
       ],
@@ -14384,22 +13976,7 @@
           "path": "packages/engine/src/projection/earlyAccess.test.ts",
           "line": 167,
           "testTitles": [
-            "repeats the first distribution year’s payment unchanged",
-            "pays nothing from an employer plan while the participant is still working",
-            "pays from an employer plan once the series begins in a separated year",
-            "pays from an employer plan the participant left before electing",
-            "pays nothing from an employer plan when the plan states no retirement age",
-            "still pays from an IRA during employment, because 72(t)(3)(B) does not reach IRAs",
-            "pays wages through the year attained 57 and stops in the year attained 58",
-            "refuses an employer-plan series begun in the last year wages are paid",
-            "accepts an employer-plan series begun in the first year wages stop",
-            "waives the Rule of 55 from the same attained age the comparison first passes",
-            "forces a penalty-free single-life RMD in the window when the decedent had started",
-            "forces no annual distribution when the decedent had not started RMDs",
-            "empties the account by the 10th year after death (2032)",
-            "does not penalize need-based withdrawals from an inherited account pre-59½",
-            "produces the same projection for a traditional inherited account with or without beneficiary facts",
-            "parses and simulates an inherited Roth with complete beneficiary facts"
+            "repeats the first distribution year’s payment unchanged"
           ]
         },
         {
@@ -15303,11 +14880,7 @@
           "path": "packages/engine/src/tax/aca.test.ts",
           "line": 23,
           "testTitles": [
-            "steps to the 133 band at exactly 133 percent of the poverty line",
-            "has the sourced step at exactly 133% FPL",
-            "interpolates within bands",
-            "is flat at the cap from 300–400%",
-            "computes the credit as premium minus expected contribution"
+            "steps to the 133 band at exactly 133 percent of the poverty line"
           ]
         }
       ],
@@ -16021,8 +15594,7 @@
           "testTitles": [
             "reduces the initial expectancy by one a year rather than re-reading the table",
             "reads the table once, at the age reached in the year after death",
-            "does not turn on the age the beneficiary happens to be now",
-            "takes the beneficiary expectancy whether or not it is the greater one"
+            "does not turn on the age the beneficiary happens to be now"
           ]
         }
       ],
@@ -16074,13 +15646,7 @@
           "path": "packages/engine/src/rmd/rmd.test.ts",
           "line": 16,
           "testTitles": [
-            "keeps a spouse exactly ten years younger on the Uniform Lifetime Table",
-            "starts at 73 for the 1951–1959 cohort",
-            "starts at 75 for the 1960+ cohort",
-            "uses the floor divisor beyond the table end",
-            "is zero for an empty account",
-            "uses the joint-life divisor (smaller RMD) when the spouse is >10 yrs younger",
-            "keeps the uniform divisor when the age gap is 10 years or less"
+            "keeps a spouse exactly ten years younger on the Uniform Lifetime Table"
           ]
         }
       ],
@@ -16475,20 +16041,7 @@
           "path": "packages/engine/src/actions/annualQcdPhysicalExecution.test.ts",
           "line": 289,
           "testTitles": [
-            "caps RMD satisfaction at the exact opening RMD remaining",
-            "still stages the distribution when no RMD remains",
-            "applies actions in canonical chronology against sequential balance and RMD state",
-            "is invariant to detached snapshot ordering and preserves unrelated balances",
-            "rejects a valid RMD pool that is unrelated to every request in the batch",
-            "reserves every RMD-pool source account against pool and evidence identities",
-            "reserves unrelated authoritative Plan entity IDs against RMD evidence",
-            "rejects a Plan identity that collides with derived prerequisite evidence",
-            "blocks malformed RMD arithmetic and missing upstream identity atomically",
-            "rejects an RMD identity collision with prerequisite evidence",
-            "does not republish unknown fields from an untrusted RMD snapshot",
-            "blocks missing or duplicate opening balances atomically",
-            "blocks a same-slot annual schedule collision before any physical staging",
-            "rejects relabeled prerequisite facts and hostile non-cent snapshots"
+            "caps RMD satisfaction at the exact opening RMD remaining"
           ]
         }
       ],
@@ -16537,11 +16090,7 @@
             "begins owner treatment when a post-death-year amount goes undistributed",
             "does not read the year of death as a trigger year",
             "treats a non-rollover contribution as a trigger",
-            "refuses an unobserved year rather than assuming it was satisfied",
-            "fixes the effective year at the earliest trigger",
-            "refuses a non-spouse who claims an affirmative election",
-            "refuses a tax year that precedes the year of death",
-            "derives a stable evidence id that separates the trigger"
+            "refuses an unobserved year rather than assuming it was satisfied"
           ]
         }
       ],
@@ -16579,17 +16128,7 @@
           "path": "packages/engine/src/projection/simulate.inheritedRegimeExecution.test.ts",
           "line": 230,
           "testTitles": [
-            "E6b S2 same-year flip: keeps the decedent year-of-death RMD and suppresses owner RMD",
-            "S2 post-election: SEPP distributes from the flipped account",
-            "blocks scheduled contributions to an inherited Roth",
-            "E7: falls back to the legacy schedule for an estate and labels the refusal",
-            "E8: keeps voluntary inherited-traditional draws out of the forced-only distribution total",
-            "E9: preserves the two-field legacy amounts at three annual Single Life walk-back points",
-            "E10: enters owner RMD rules at the S2 identity flip after a synthetic refusal",
-            "E11 K1: voluntary inherited Roth draws stay outside the beneficiary owned-Roth ordering pool",
-            "P5: emits successor-scope evidence and stops forcing after the beneficiary dies",
-            "P6: marks the R1 relief-year amount notice-waived for non-execution",
-            "P7: stamps pre-horizon year-of-death RMD limitation on the legacy refusal path"
+            "E6b S2 same-year flip: keeps the decedent year-of-death RMD and suppresses owner RMD"
           ]
         }
       ],
@@ -16670,22 +16209,7 @@
           "line": 2571,
           "testTitles": [
             "takes an emptied IRA share from the owner other IRAs, not from the employer plan",
-            "never reaches into the other spouse IRAs to cover a shortfall",
-            "does not force distributions before the start age (born 1960 -> 75)",
-            "uses the joint-life divisor only when the spouse is flagged sole beneficiary",
-            "skips one-time goals once everyone has died on an extended horizon",
-            "treats RMD income as taxable ordinary income",
-            "routes QCD dollars out of the IRA RMD, untaxed",
-            "refuses to route QCD dollars out of an employer-plan RMD",
-            "keeps taxable-exhausted traditional funding self-consistent after the quick tax loop would miss it",
-            "uses the fallback with the production federal calculator for a high traditional draw",
-            "warns and keeps the closest ledger when a discontinuous calculator has no fixed point",
-            "falls back to gross premium with typed diagnostics when the ACA fixed point cannot converge",
-            "funds gross premium when subsidized and cliff fixed points both exist",
-            "probes and funds the gross basin when the first accepted root is subsidized",
-            "fully solves the tax-bearing subsidized basin before accepting a gross cliff root",
-            "self-consistently grosses up traditional withdrawals under real brackets",
-            "keeps low-income retirees with SS at zero federal tax"
+            "never reaches into the other spouse IRAs to cover a shortfall"
           ]
         }
       ],
@@ -16731,12 +16255,7 @@
           "path": "packages/engine/src/actions/beneficiaryTraditionalIraResidualRmdAllocation.test.ts",
           "line": 127,
           "testTitles": [
-            "splits the residual by balance rather than by account order",
-            "counts identity actions first and allocates the residual proportionately to account balances",
-            "is invariant to source array order, including structural evidence IDs",
-            "emits no residual allocation when explicit actions already satisfy the requirement",
-            "preserves a visible unallocated remainder when the pool lacks capacity",
-            "returns detached, immutable evidence"
+            "splits the residual by balance rather than by account order"
           ]
         }
       ],
@@ -16861,10 +16380,7 @@
           "line": 2308,
           "testTitles": [
             "bars the conversion when every aggregated IRA was emptied before the sum came out",
-            "clears the conversion when the sweep took the whole sum from another owned IRA",
-            "clears the reserve for an owner with no aggregated IRA RMD due",
-            "never counts an employer plan or an inherited IRA toward the owner IRA sum",
-            "publishes a cleared-reserve conversion without moving a dollar"
+            "clears the conversion when the sweep took the whole sum from another owned IRA"
           ]
         },
         {
@@ -17043,10 +16559,7 @@
           "path": "packages/engine/src/projection/rmdShortfallExcise.test.ts",
           "line": 132,
           "testTitles": [
-            "books a missed deferred first amount in the RBD year beside the separate current RMD",
-            "refuses a deferral whose distribution year predates the projection horizon",
-            "does not cure an employer-plan shortfall from an IRA",
-            "sweeps an explicit 403(b) shortfall across the owner’s other 403(b)"
+            "books a missed deferred first amount in the RBD year beside the separate current RMD"
           ]
         }
       ],
@@ -17121,16 +16634,7 @@
           "line": 244,
           "testTitles": [
             "requires each independently modeled year-of-death waiver condition",
-            "waives when the beneficiary filing deadline is later than December 31 of the following year",
-            "uses the former 50 percent default and rejects the modern 10 percent path before 2023",
-            "waives an EDB default-to-life-expectancy miss after a timely 10-year election",
-            "does not apply the EDB election waiver after an owner dies on or after the RBD",
-            "does not back-port the final-regulation automatic waivers before 2025",
-            "waives a year-of-death miss corrected by the later automatic deadline",
-            "allows inherited-IRA correction only from the same beneficiary/decedent group",
-            "keeps an unidentified inherited IRA distinct from an explicit lookalike decedent id",
-            "aggregates 403(b) correction sources per payee but not across payees",
-            "ignores a waiver whose obligation id does not match the computed obligation"
+            "waives when the beneficiary filing deadline is later than December 31 of the following year"
           ]
         }
       ],
@@ -17252,25 +16756,7 @@
           "path": "packages/engine/src/tax/stateTax.test.ts",
           "line": 109,
           "testTitles": [
-            "keeps federal obligation interest out of the state base",
-            "exempts U.S. government interest (TIPS/Treasury) from the state base",
-            "the flat effective-rate override also honors the U.S. government interest exemption",
-            "a state that taxes Social Security adds the federally taxable amount (MN)",
-            "threads foreign-exclusion provisional income into a state federal-SS base",
-            "taxes capital gains as ordinary income in CA, MN, and NJ spot fixtures",
-            "supports partial capital-gain inclusion for preferential state rules",
-            "MO fully exempts individual capital gains (HB 594, from TY2025)",
-            "does not let a federal capital-loss carryforward erase PA current-year gains",
-            "keeps PA current-year-only treatment floored when the raw result is a loss",
-            "resolves the state from each input and handles a mid-plan move",
-            "prorates income, deductions, and brackets across a July CA-to-NV move year",
-            "apportions the full-year taxable Social Security amount across a split year (MN)",
-            "unmodeled state codes contribute zero (fallback to override handled upstream)",
-            "the flat override takes precedence over modeled packs",
-            "adds local tax on state taxable income when modeled state packs are active",
-            "no override and no state → zero",
-            "charges nothing local in Wyoming or Tennessee",
-            "charges the same rate in a state that does levy an income tax"
+            "keeps federal obligation interest out of the state base"
           ]
         }
       ],
@@ -17415,56 +16901,7 @@
           "path": "packages/engine/src/projection/simulate.test.ts",
           "line": 4068,
           "testTitles": [
-            "raises ACA household MAGI by the known foreign-exclusion addback without moving IRMAA MAGI history",
-            "grosses up the 10% early-withdrawal penalty on pre-59½ traditional draws",
-            "executes manual conversions: balances move, income is taxed, no penalty",
-            "skips conversions with a warning when no Roth account exists",
-            "fills to the top of the 12% bracket under the federal engine",
-            "fills to the ACA cliff for a pre-65 retiree",
-            "warns when spending withdrawals push income past the conversion target",
-            "proportional draws pro-rata across cash, taxable, and traditional",
-            "proportional drains the whole pool and reports the shortfall when insufficient",
-            "bracket-targeted fills traditional to the bracket top, remainder from taxable",
-            "bracket-targeted uses available equity compensation before returning to traditional",
-            "bracket-targeted leaves traditional for last once the bracket is full",
-            "bracket-targeted caps traditional lower when exempt interest raises taxable Social Security",
-            "produces identical results on repeated runs",
-            "taxes annual qualified dividends and makes same-return taxable growth more conservative",
-            "adds reinvested dividends to basis before future taxable withdrawals",
-            "generates tax-exempt yield as cash excluded from taxable yield and ordinary income",
-            "raises taxable Social Security through the section 86 cascade without entering ordinary income",
-            "lets a known ACA contract override generated tax-exempt interest for characterization only",
-            "upgrades an unknown ACA tax-exempt contract when the plan attests a yield field",
-            "preserves byte-identical ledgers when the yield field is absent",
-            "does not change NIIT, AMT, or senior-deduction tax when only tax-exempt interest is present",
-            "charges state tax in a taxing state and none in a no-tax state",
-            "switches state rules at a relocation year",
-            "warns when the residence state is not modeled and there is no override",
-            "does not warn about an unmodeled state when a flat override is set",
-            "honors the flat override regardless of modeled state",
-            "adds the optional local income tax rate through the standard tax stack",
-            "keeps the death year joint, then uses single without the QSS opt-in",
-            "uses qualifying surviving spouse for the two years after death when opted in",
-            "parses a plan with no stateMoves and defaults to an empty list",
-            "never converts an inherited account (it follows the 10-year rule)",
-            "sizes fill-to-target conversions against itemized deductions when larger",
-            "does not over-trim a fill-to-target conversion when surplus inflows can pay its tax (PR #144)",
-            "absorbs realized gains and trims ordinary income, cutting year-one tax and MAGI",
-            "depletes the remaining pool by $3k/yr against ordinary income",
-            "is inert when there is no carryforward (regression)",
-            "adds a current taxable-sale loss to the pool exactly once",
-            "caps a current loss once for conversion-floor probes and final tax",
-            "defaults to 100% — absent field changes nothing in survivor years",
-            "scales base + phase spending in survivor years only",
-            "leaves one-time goals unscaled in survivor years",
-            "never applies to single households",
-            "prices the two survivor years on the lower recent MAGI when opted in",
-            "never raises a premium: the redetermination takes the lower of lookback and recent MAGI",
-            "is unchanged with the field absent or fully off (feature-off regression)",
-            "treats each retirement year as a qualifying event only when opted in",
-            "ignores a retirement the person does not live to reach (no phantom window)",
-            "prices QSS survivor years on the single IRMAA table (POMS HI 01101.020)",
-            "flags the redetermination years in the optimizer probe"
+            "raises ACA household MAGI by the known foreign-exclusion addback without moving IRMAA MAGI history"
           ]
         }
       ],
@@ -17541,8 +16978,7 @@
           "path": "packages/engine/src/projection/simulate.test.ts",
           "line": 3954,
           "testTitles": [
-            "raises Medicare premiums two years after an income spike",
-            "uses distinct historical MAGI tax years for the first two IRMAA lookbacks"
+            "raises Medicare premiums two years after an income spike"
           ]
         }
       ],
@@ -17635,13 +17071,7 @@
           "path": "packages/engine/src/tax/medicare.test.ts",
           "line": 25,
           "testTitles": [
-            "scales the standard premium by the applicable percentage over 25",
-            "charges the standard premium at or below the first threshold",
-            "jumps to tier 1 a dollar over (cliff), with Part D surcharge",
-            "charges the verified Part D surcharge on middle tiers",
-            "flags unverified Part D surcharges when a future pack has a null surcharge",
-            "uses MFJ thresholds and tops out at 3.4×",
-            "scales thresholds and premiums independently for future years"
+            "scales the standard premium by the applicable percentage over 25"
           ]
         }
       ],
@@ -17735,12 +17165,7 @@
           "path": "packages/engine/src/socialSecurity/claimFactor.test.ts",
           "line": 19,
           "testTitles": [
-            "stops growing at full retirement age",
-            "is 1 at FRA, reduced before, credited after",
-            "is 1 at FRA and never earns delayed credits",
-            "reduces early claims on the steeper spousal schedule (25/36%/mo)",
-            "is steeper than the retirement reduction for the same early claim",
-            "rejects out-of-range claim ages"
+            "stops growing at full retirement age"
           ]
         }
       ],
@@ -17974,20 +17399,7 @@
           "path": "packages/engine/src/socialSecurity/survivorBenefit.test.ts",
           "line": 183,
           "testTitles": [
-            "does not add credits when the survivor waits from FRA to 70",
-            "is 1.0 at/after the survivor FRA",
-            "is 1.0 at the current engine-table survivor FRA in months (66y8m for born 1962+)",
-            "is reduced just below the survivor FRA (66y7m when FRA is 66y8m)",
-            "applies the full 28.5% reduction at the earliest age (60)",
-            "clamps below 60 to the same floor",
-            "reduces linearly at a midpoint between 60 and FRA",
-            "uses the current engine survivor FRA, not the retirement FRA",
-            "returns 0 when the deceased had no PIA",
-            "is unreduced when claiming at exactly the survivor FRA (66y8m)",
-            "floors the survivor at 82.5% of PIA (RIB-LIM) when the deceased claimed early",
-            "applies the widow reduction on top of the RIB-LIM floor",
-            "at survivor FRA: deceased claimed at FRA → 100% of PIA",
-            "is monotonic in the deceased PIA"
+            "does not add credits when the survivor waits from FRA to 70"
           ]
         }
       ],
@@ -18096,41 +17508,7 @@
           "line": 1099,
           "testTitles": [
             "steps the survivor up to the deceased spouse’s larger benefit without adding both",
-            "keeps the survivor’s own larger benefit when the deceased’s amount is smaller",
-            "floors the survivor step-up at 82.5% of PIA (RIB-LIM) when the deceased claimed early",
-            "reduces the survivor step-up for an early-claim widow before survivor FRA",
-            "survivor step-up: deceased claimed at FRA ⇒ 100% of PIA at the survivor FRA",
-            "SSDI pays the full PIA (no early reduction) before 62 and converts at FRA",
-            "SSDI is suspended when wages exceed Substantial Gainful Activity (SGA)",
-            "SSDI is off by default: a normal plan pays no SSDI anywhere (feature-off regression)",
-            "SSDI onset at/after FRA is ignored — falls through to normal retirement",
-            "tops the lower earner up to the spousal benefit while both are alive",
-            "does not pay spousal before the higher earner has claimed",
-            "prorates former-spouse marital benefits by the claim month in the first year",
-            "withholds current-spouse spousal benefits before FRA and credits them at FRA",
-            "caps current-spouse spousal benefits with the worker family maximum",
-            "prorates current-spouse spousal benefits by both claim months",
-            "withholds current-spouse survivor benefits before FRA and credits them at survivor FRA",
-            "applies the trust-fund haircut from its start year",
-            "warns and skips when neither PIA nor earnings are provided",
-            "derives PIA from an earnings history (AIME → bend points)",
-            "drains cash before taxable before traditional before roth",
-            "keeps cliff-vesting equity compensation out of withdrawals until the vest year",
-            "treats final equity compensation as taxable brokerage for gains",
-            "realizes gains via the basis ratio on taxable withdrawals",
-            "realizes a signed loss and exhausts basis on a full taxable withdrawal",
-            "records the first shortfall year as depletion",
-            "applies spending phases on the primary age axis",
-            "inflates base spending and goals",
-            "grosses up traditional withdrawals to cover the tax on them",
-            "taxes wages and invests the after-tax surplus",
-            "caps employer-plan contributions, with the 60–63 super catch-up",
-            "stops contributions when wages stop",
-            "treats traditional contributions as pre-tax",
-            "uses scheduled contributions with age windows and escalation for non-employer accounts without wages",
-            "keeps scheduled employer-plan contributions wage-gated",
-            "adds employer match without using the employee elective-deferral limit",
-            "caps employer match by the section 415(c) total-additions limit"
+            "keeps the survivor’s own larger benefit when the deceased’s amount is smaller"
           ]
         }
       ],
@@ -18246,12 +17624,7 @@
           "line": 578,
           "testTitles": [
             "deems own filed so year-one benefit is the own amount, not restricted spouse-only",
-            "exposes exactly one claimAge and no restricted-application vocabulary on the SS stream",
-            "starts at the claim-age year with the claiming factor applied",
-            "reduces early claims and prorates the first calendar year by claim months",
-            "pays a divorced-spousal benefit when it beats the own benefit (single, 10-yr marriage)",
-            "does not pay divorced-spousal under a 10-year marriage",
-            "pays survivor on a deceased former spouse but forfeits it after remarriage before 60"
+            "exposes exactly one claimAge and no restricted-application vocabulary on the SS stream"
           ]
         }
       ],
@@ -18340,11 +17713,7 @@
           "path": "packages/engine/src/socialSecurity/familyMaximum.test.ts",
           "line": 24,
           "testTitles": [
-            "applies each rate only to the PIA inside its own band",
-            "matches the SSA 2026 retirement/survivor family maximum worksheet",
-            "uses the Jan 1 birth-year rule for eligibility",
-            "caps the current-spouse auxiliary to the room left by the worker benefit",
-            "leaves an auxiliary unchanged when the worker record has enough room"
+            "applies each rate only to the PIA inside its own band"
           ]
         }
       ],
@@ -18454,12 +17823,7 @@
           "path": "packages/engine/src/projection/simulate.test.ts",
           "line": 741,
           "testTitles": [
-            "withholds half the excess for a beneficiary under FRA all year",
-            "withholds benefits under the earnings test while working before FRA",
-            "credits withheld earnings-test months back at full retirement age",
-            "applies the earnings test to a marital-history benefit (not just own)",
-            "credits a mid-year first claim only for its payable months",
-            "credits only the months actually withheld (partial)"
+            "withholds half the excess for a beneficiary under FRA all year"
           ]
         }
       ],
@@ -18544,27 +17908,7 @@
           "path": "packages/engine/src/socialSecurity/piaFromEarnings.test.ts",
           "line": 27,
           "testTitles": [
-            "applies each rate only to the earnings inside its own band",
-            "matches SSA bend formula for 2015 (published bend points)",
-            "rounds down to the next lower dime",
-            "clamps lastEarningsYear into the AIME base window",
-            "returns null when nothing is stored",
-            "defaults throughAge to the retirement age",
-            "honors an explicit throughAge override",
-            "returns null when neither throughAge nor retirement age is available",
-            "uses Jan 1 deemed birth year for eligibility",
-            "parses year and amount with spaces or commas",
-            "returns eligibility_before_1979 for very early birth years",
-            "errors when last earnings year is outside the base period",
-            "fixture: single high year in last base year (unindexed) for 2015 eligibility",
-            "fixture: single indexed year 2012 for 2015 eligibility",
-            "fixture: 2020 eligibility PIA matches bend formula for AIME 3000",
-            "zero-fill: sparse earnings still produce AIME under full divisor when window is long",
-            "projection fills future base years and raises PIA versus treating them as zero",
-            "different retirement ages from the same history produce different PIAs",
-            "caps projected future earnings at the taxable maximum (latest wage base stand-in)",
-            "assumed earnings default to the most recent reported year",
-            "uses latest published AWI and bend points when eligibility is far in the future (young workers)"
+            "applies each rate only to the earnings inside its own band"
           ]
         }
       ],
@@ -18736,13 +18080,7 @@
           "path": "packages/engine/src/socialSecurity/nra.test.ts",
           "line": 16,
           "testTitles": [
-            "sends a January 1 birth to the prior cohort",
-            "returns 67 for 1960+ cohorts",
-            "returns 66 for 1943–1954",
-            "returns gradual FRA for 1955–1959",
-            "returns 65+ for 1938–1942",
-            "Jan 1 uses prior year for FRA lookup",
-            "matches month counts for NRA math"
+            "sends a January 1 birth to the prior cohort"
           ]
         }
       ],

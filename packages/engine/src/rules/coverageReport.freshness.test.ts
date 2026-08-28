@@ -146,6 +146,26 @@ describe('quote-fidelity ledger hash binding', () => {
   })
 })
 
+function syntheticRule(title: string) {
+  return {
+    title,
+    statement: 'Synthetic statement for scan-contract tests.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'federal',
+    authority: [
+      { kind: 'statute', citation: 'Fix. Code 1', url: 'https://example.gov/1', quotedText: 'synthetic quoted text' },
+    ],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-27',
+    implementedBy: ['packages/engine/src/rules/coverageReport.ts'],
+  }
+}
+
 // The manifest projection is a public contract for the transparency page on
 // retiregolden.org.
 // Mirror-the-builder freshness checks cannot catch a wrong projection (both
@@ -196,6 +216,49 @@ describe('manifest rule projection contract', () => {
     const source = testSources[globKey!] as string
     for (const title of sample!.fixtures[0]!.testTitles) {
       expect(source, `${sample!.id}: ${title}`).toContain(title)
+    }
+  })
+
+  it('never attributes sibling it() titles that follow a describeRule call', () => {
+    // Two describeRule calls with a plain describe between them: the sibling
+    // suite's title must land on neither rule. This is the leak class the
+    // sequential-slice scan shipped with, pinned so it cannot return.
+    const syntheticSource = [
+      // 'describe' + 'Rule' is split so the conformance suite's raw-text scan
+      // does not read these synthetic ids as claimed fixtures.
+      "describe" + "Rule('fixture-alpha', { readings: { a: 1, b: 2 }, accepted: 'a' }, ({ accepted }) => {",
+      "  it('alpha discriminates', () => { expect(1).toBe(accepted) })",
+      '})',
+      '',
+      "describe('unrelated neighborhood', () => {",
+      "  it('beta belongs to nobody', () => { expect(true).toBe(true) })",
+      '})',
+      '',
+      "describe" + "Rule('fixture-beta', { readings: { a: 1, b: 2 }, accepted: 'a' }, ({ accepted }) => {",
+      "  it('gamma discriminates', () => { expect(1).toBe(accepted) })",
+      '})',
+      '',
+    ].join('\n')
+    const syntheticRegistry = {
+      'fixture-alpha': syntheticRule('Alpha'),
+      'fixture-beta': syntheticRule('Beta'),
+    } as unknown as typeof TAX_RULE_REGISTRY
+    const syntheticReport = buildCoverageReport({
+      registry: syntheticRegistry,
+      attestations: COVERAGE_ATTESTATIONS,
+      baselineUnswept: BASELINE_UNSWEPT,
+      testSources: { './synthetic.test.ts': syntheticSource },
+      quoteFidelityLedger: null,
+      dueOnFor: () => '2027-01-01',
+    })
+    const alpha = syntheticReport.manifest.rules.find((rule) => rule.id === 'fixture-alpha')
+    const beta = syntheticReport.manifest.rules.find((rule) => rule.id === 'fixture-beta')
+    expect(alpha!.fixtures[0]!.testTitles).toEqual(['alpha discriminates'])
+    expect(beta!.fixtures[0]!.testTitles).toEqual(['gamma discriminates'])
+    for (const rule of [alpha!, beta!]) {
+      for (const fixture of rule.fixtures) {
+        expect(fixture.testTitles, rule.id).not.toContain('beta belongs to nobody')
+      }
     }
   })
 

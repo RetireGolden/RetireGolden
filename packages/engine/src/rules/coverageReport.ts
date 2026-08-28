@@ -124,6 +124,73 @@ function countBy(values: readonly string[]): Record<string, number> {
   return Object.fromEntries(Object.entries(counts).sort(([left], [right]) => compareStrings(left, right)))
 }
 
+/**
+ * Index just past the closing parenthesis of the describeRule(...) call that
+ * starts at `start`. Walks characters with a paren counter, skipping string
+ * and template literals (including ${} nesting) and both comment forms, so a
+ * brace or quote inside a test title cannot derail the extent.
+ */
+function describeRuleCallEnd(source: string, start: number): number {
+  const open = source.indexOf('(', start)
+  if (open === -1) return source.length
+  let depth = 0
+  let index = open
+  while (index < source.length) {
+    const char = source[index]!
+    const next = source[index + 1]
+    if (char === '/' && next === '/') {
+      const eol = source.indexOf('\n', index)
+      index = eol === -1 ? source.length : eol + 1
+      continue
+    }
+    if (char === '/' && next === '*') {
+      const close = source.indexOf('*/', index + 2)
+      index = close === -1 ? source.length : close + 2
+      continue
+    }
+    if (char === "'" || char === '"') {
+      index += 1
+      while (index < source.length && source[index] !== char) {
+        index += source[index] === '\\' ? 2 : 1
+      }
+      index += 1
+      continue
+    }
+    if (char === '`') {
+      index += 1
+      let templateDepth = 0
+      while (index < source.length) {
+        const c = source[index]!
+        if (c === '\\') {
+          index += 2
+          continue
+        }
+        if (c === '$' && source[index + 1] === '{') {
+          templateDepth += 1
+          index += 2
+          continue
+        }
+        if (c === '}' && templateDepth > 0) {
+          templateDepth -= 1
+          index += 1
+          continue
+        }
+        if (c === '`' && templateDepth === 0) break
+        index += 1
+      }
+      index += 1
+      continue
+    }
+    if (char === '(') depth += 1
+    if (char === ')') {
+      depth -= 1
+      if (depth === 0) return index + 1
+    }
+    index += 1
+  }
+  return source.length
+}
+
 interface FixtureDetail {
   readonly path: string
   readonly line: number
@@ -143,11 +210,10 @@ function fixtureDetailsByRule(testSources: Readonly<Record<string, string>>): Re
       const match = calls[index]!
       const ruleId = match[1]!
       const start = match.index ?? 0
-      // describeRule blocks are sequential in every fixture file, so the
-      // block's it() titles are the ones between this call and the next (or
-      // end of file). A balanced-brace parse would be sturdier; this scan is
-      // validated by the freshness suite against the live sources.
-      const end = index + 1 < calls.length ? (calls[index + 1]!.index ?? source.length) : source.length
+      // The block is the describeRule CALL's balanced extent, not a slice to
+      // the next call: it() titles that follow the callback's close in the
+      // same file belong to sibling suites, never to this rule.
+      const end = describeRuleCallEnd(source, start)
       const block = source.slice(start, end)
       const testTitles = [...block.matchAll(/\bit\(\s*'((?:[^'\\]|\\.)*)'/gu)].map((title) =>
         title[1]!.replace(/\\'/gu, "'"),
