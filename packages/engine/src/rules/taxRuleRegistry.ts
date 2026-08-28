@@ -234,6 +234,15 @@ export interface TaxRuleRecord {
   readonly verifiedOn: string
   /** Engine sources implementing it, repo-relative. */
   readonly implementedBy: readonly [string, ...string[]]
+  /**
+   * The operative functions inside `implementedBy`, as `<repo-relative
+   * path>#<symbol>` entries whose path half must appear in `implementedBy`
+   * and whose symbol must exist in that file. Required and non-empty: the
+   * backfill covered every record, and this stays a ratchet - conformance
+   * fails the build when a symbol disappears from its file, so the public
+   * transparency page can never name a function that no longer exists.
+   */
+  readonly implementedByFunctions: readonly [string, ...string[]]
 }
 
 const registry = {
@@ -267,6 +276,10 @@ const registry = {
       'packages/engine/src/tax/federalTax.ts',
       'packages/engine/src/actions/annualQcdItemizedSection170Ledger.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/annualQcdItemizedSection170Ledger.ts#stageAnnualQcdItemizedSection170Ledger',
+      'packages/engine/src/tax/federalTax.ts#charitableAfterFloor',
+    ],
   },
 
   'irc-170-b-1-I-floor-ordering': {
@@ -296,6 +309,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-02',
     implementedBy: ['packages/engine/src/actions/annualQcdItemizedSection170Ledger.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/actions/annualQcdItemizedSection170Ledger.ts#stageAnnualQcdItemizedSection170Ledger',
+    ],
   },
 
   'irc-170-d-1-C-floor-carryforward-gate': {
@@ -325,6 +341,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-02',
     implementedBy: ['packages/engine/src/actions/annualQcdItemizedSection170Ledger.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/actions/annualQcdItemizedSection170Ledger.ts#stageAnnualQcdItemizedSection170Ledger',
+    ],
   },
 
   'irc-170-b-1-I-ii-category-waterfall': {
@@ -348,6 +367,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-02',
     implementedBy: ['packages/engine/src/actions/annualQcdItemizedSection170Ledger.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/actions/annualQcdItemizedSection170Ledger.ts#stageAnnualQcdItemizedSection170Ledger',
+    ],
   },
 
   'irc-408-d-8-D-qcd-taxable-first': {
@@ -388,6 +410,10 @@ const registry = {
       // never enters the annual denominator and no basis is allocated to it.
       'packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts#stageAnnualQcdTaxCharacterPostPass',
+      'packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts#validateOwnedNonRothIraRuntimeSourceSeries',
+    ],
   },
 
   'irc-408-d-8-includible-qcd-basis': {
@@ -418,6 +444,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-02',
     implementedBy: ['packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts#stageAnnualQcdTaxCharacterPostPass',
+    ],
   },
 
   'form-1040-line-4b-and-form-8606-line-7-qcd-remainder': {
@@ -462,6 +491,10 @@ const registry = {
       'packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts',
       'packages/engine/src/actions/annualQcdResidualForm8606.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/annualQcdResidualForm8606.ts#stageAnnualQcdResidualForm8606',
+      'packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts#stageAnnualQcdTaxCharacterPostPass',
+    ],
   },
 
   'irc-408-d-8-E-excluded-qcd-no-section-170-double-benefit': {
@@ -494,6 +527,11 @@ const registry = {
       'packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts',
       'packages/engine/src/actions/annualQcdDerivedTaxCharacter.ts',
       'packages/engine/src/actions/annualQcdDeductionTreatmentCoordinator.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/annualQcdDeductionTreatmentCoordinator.ts#coordinateAnnualQcdDeductionTreatment',
+      'packages/engine/src/actions/annualQcdDerivedTaxCharacter.ts#finalizeAnnualQcdDerivedTaxCharacter',
+      'packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts#stageAnnualQcdTaxCharacterPostPass',
     ],
   },
 
@@ -531,6 +569,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-04',
     implementedBy: ['packages/engine/src/actions/annualQcdStandardSection170pLedger.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/actions/annualQcdStandardSection170pLedger.ts#stageAnnualQcdStandardSection170pLedger',
+    ],
   },
 
   'irc-408-d-8-A-annual-qcd-limit': {
@@ -554,6 +595,9 @@ const registry = {
     effectiveThrough: 2026,
     verifiedOn: '2026-08-02',
     implementedBy: ['packages/engine/src/params/data/year2026.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/params/data/year2026.ts#year2026',
+    ],
   },
 
   'irc-223-b-2-hsa-base-limits-2026': {
@@ -593,6 +637,10 @@ const registry = {
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/params/data/year2026.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/data/year2026.ts#year2026',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+    ],
   },
 
   'irc-223-b-5-hsa-family-limit-divided-between-spouses': {
@@ -623,6 +671,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
     implementedBy: ['packages/engine/src/projection/simulate.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+    ],
   },
 
   // --- Registered 2026-08-03 from the WS1 rule-matrix audit ---------------
@@ -667,6 +718,12 @@ const registry = {
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/strategies/accountEligibility.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/annualQcdActionExecutionEvidence.ts#publishAnnualQcdActionExecutionEvidence',
+      'packages/engine/src/actions/annualQcdExecutionPrerequisite.ts#evaluateAnnualQcdExecutionPrerequisites',
+      'packages/engine/src/model/plan.ts#personSchema',
+      'packages/engine/src/strategies/accountEligibility.ts#evaluateQcd',
+    ],
   },
 
   'irc-72-t-2-A-v-rule-of-55': {
@@ -702,6 +759,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-28',
     implementedBy: ['packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.ts#evaluateTraditionalEmployerPlanPenaltyPrerequisite',
+    ],
   },
 
   'irc-72-t-6-simple-two-year-rate': {
@@ -731,6 +791,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-04',
     implementedBy: ['packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts#evaluateOwnedNonRothIraPenaltyPrerequisites',
+    ],
   },
 
   'irc-72-t-3-B-sepp-separation': {
@@ -754,6 +817,10 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-04',
     implementedBy: ['packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.ts#evaluateTraditionalEmployerPlanPenaltyPrerequisite',
+      'packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.ts#seppSeriesBeginsAfterSeparation',
+    ],
   },
 
   // --- Registered 2026-08-03 from the second research batch ---------------
@@ -789,6 +856,10 @@ const registry = {
       'packages/engine/src/actions/annualSection68ItemizedDeduction.ts',
       'packages/engine/src/tax/federalTax.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/annualSection68ItemizedDeduction.ts#buildAnnualSection68ItemizedDeductionEvidence',
+      'packages/engine/src/tax/federalTax.ts#section68Reduction',
+    ],
   },
 
   'irc-170-b-1-C-capital-gain-property-ceiling-not-modeled': {
@@ -812,6 +883,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-27',
     implementedBy: ['packages/engine/src/model/plan.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#itemizedDeductionsSchema',
+    ],
   },
 
   'irc-170-b-1-G-cash-percentage-ceiling': {
@@ -842,6 +916,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-04',
     implementedBy: ['packages/engine/src/actions/annualQcdItemizedSection170Ledger.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/actions/annualQcdItemizedSection170Ledger.ts#stageAnnualQcdItemizedSection170Ledger',
+    ],
   },
 
   'irc-72-t-2-A-i-age-59-half': {
@@ -870,7 +947,14 @@ const registry = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-28',
-    implementedBy: ['packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts'],
+    implementedBy: [
+      'packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts',
+      'packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts#evaluateOwnedNonRothIraPenaltyPrerequisites',
+      'packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.ts#evaluateTraditionalEmployerPlanPenaltyPrerequisite',
+    ],
   },
 
   'irc-223-f-4-hsa-age-65-boundary': {
@@ -905,6 +989,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
     implementedBy: ['packages/engine/src/actions/annualHsaPenaltyEvaluation.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/actions/annualHsaPenaltyEvaluation.ts#evaluateAnnualHsaPenalty',
+    ],
   },
 
   'irc-223-f-1-hsa-qualified-medical-exclusion': {
@@ -934,6 +1021,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-04',
     implementedBy: ['packages/engine/src/actions/annualHsaPenaltyEvaluation.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/actions/annualHsaPenaltyEvaluation.ts#evaluateAnnualHsaPenalty',
+    ],
   },
   'irc-408-d-2-annual-pro-rata-basis': {
     title: 'Annual pro-rata basis recovery across all owned non-Roth IRAs',
@@ -973,6 +1063,11 @@ const registry = {
       'packages/engine/src/actions/beneficiaryTraditionalIraWithdrawalCharacter.ts',
       'packages/engine/src/actions/annualIraBasisAllocation.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/annualIraBasisAllocation.ts#allocateAnnualIraBasis',
+      'packages/engine/src/actions/beneficiaryTraditionalIraWithdrawalCharacter.ts#classifyBeneficiaryTraditionalIraWithdrawal',
+      'packages/engine/src/actions/ownedNonRothIraWithdrawalCharacter.ts#classifyOwnedNonRothIraAnnualWithdrawals',
+    ],
   },
 
   'form-8606-line-4-post-year-contribution-exclusion': {
@@ -999,6 +1094,11 @@ const registry = {
       'packages/engine/src/actions/ownedNonRothIraWithdrawalCharacter.ts',
       'packages/engine/src/actions/ownedNonRothIraAnnualFilingEvidence.ts',
       'packages/engine/src/actions/ownedNonRothIraAnnualPostCandidateEvidence.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/ownedNonRothIraAnnualFilingEvidence.ts#buildPlanOwnedNonRothIraAnnualFilingEvidence',
+      'packages/engine/src/actions/ownedNonRothIraAnnualPostCandidateEvidence.ts#buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput',
+      'packages/engine/src/actions/ownedNonRothIraWithdrawalCharacter.ts#classifyOwnedNonRothIraAnnualWithdrawals',
     ],
   },
 
@@ -1031,6 +1131,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/actions/ownedNonRothIraAnnualPhysicalTransaction.ts',
       'packages/engine/src/actions/annualRetirementPhysicalEventInventory.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/annualRetirementPhysicalEventInventory.ts#buildAnnualRetirementPhysicalEventInventory',
+      'packages/engine/src/actions/ownedNonRothIraAnnualPhysicalTransaction.ts#preparePlanOwnedNonRothIraAnnualPhysicalTransaction',
     ],
   },
 
@@ -1068,6 +1172,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-04',
     implementedBy: ['packages/engine/src/actions/annualQcdPhysicalExecution.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/actions/annualQcdPhysicalExecution.ts#stageAnnualQcdPhysicalExecution',
+    ],
   },
 
   // --- Deliberately not modelled; the engine must fail closed -------------
@@ -1093,6 +1200,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
     implementedBy: ['packages/engine/src/actions/annualHsaPenaltyEvaluation.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/actions/annualHsaPenaltyEvaluation.ts#evaluateAnnualHsaPenalty',
+    ],
   },
 
   'irc-72-t-10-public-safety-early-age': {
@@ -1116,6 +1226,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-28',
     implementedBy: ['packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.ts#evaluateTraditionalEmployerPlanPenaltyPrerequisite',
+    ],
   },
 
   'irc-72-t-4-sepp-modification-recapture': {
@@ -1139,6 +1252,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-04',
     implementedBy: ['packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.ts#evaluateTraditionalEmployerPlanPenaltyPrerequisite',
+    ],
   },
 
   'irc-408-d-8-beneficiary-ira-source': {
@@ -1174,6 +1290,12 @@ const registry = {
       // only with an owned, non-inherited IRA, so an inherited source cannot
       // reach the owned pool's basis history however the request was authored.
       'packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts',
+      'packages/engine/src/strategies/accountEligibility.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/annualQcdExecutionPrerequisite.ts#evaluateAnnualQcdExecutionPrerequisites',
+      'packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts#validateOwnedNonRothIraRuntimeSourceSeries',
+      'packages/engine/src/strategies/accountEligibility.ts#evaluateQcd',
     ],
   },
 
@@ -1203,6 +1325,12 @@ const registry = {
       // switch admits a named gift only from a traditional owned IRA, so a
       // Roth source is refused before any question of tax character arises.
       'packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts',
+      'packages/engine/src/strategies/accountEligibility.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/annualQcdExecutionPrerequisite.ts#evaluateAnnualQcdExecutionPrerequisites',
+      'packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts#validateOwnedNonRothIraRuntimeSourceSeries',
+      'packages/engine/src/strategies/accountEligibility.ts#evaluateQcd',
     ],
   },
 
@@ -1243,6 +1371,11 @@ const registry = {
       'packages/engine/src/actions/annualQcdExecutionPrerequisite.ts',
       'packages/engine/src/actions/annualQcdDerivedTaxCharacter.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/annualQcdDerivedTaxCharacter.ts#finalizeAnnualQcdDerivedTaxCharacter',
+      'packages/engine/src/actions/annualQcdExecutionPrerequisite.ts#evaluateAnnualQcdExecutionPrerequisites',
+      'packages/engine/src/strategies/accountEligibility.ts#evaluateQcd',
+    ],
   },
 
   'irc-408-d-8-B-employer-plan-source-exclusion': {
@@ -1276,6 +1409,11 @@ const registry = {
       'packages/engine/src/actions/annualQcdExecutionPrerequisite.ts',
       'packages/engine/src/actions/annualQcdDerivedTaxCharacter.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/annualQcdDerivedTaxCharacter.ts#finalizeAnnualQcdDerivedTaxCharacter',
+      'packages/engine/src/actions/annualQcdExecutionPrerequisite.ts#evaluateAnnualQcdExecutionPrerequisites',
+      'packages/engine/src/strategies/accountEligibility.ts#evaluateQcd',
+    ],
   },
 
   'irc-408-d-8-B-i-qualified-recipient': {
@@ -1307,6 +1445,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/strategies/accountEligibility.ts',
       'packages/engine/src/actions/annualQcdExecutionPrerequisite.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/annualQcdExecutionPrerequisite.ts#evaluateAnnualQcdExecutionPrerequisites',
+      'packages/engine/src/strategies/accountEligibility.ts#evaluateQcd',
     ],
   },
 
@@ -1358,6 +1500,11 @@ const registry = {
       'packages/engine/src/strategies/accountEligibility.ts',
       'packages/engine/src/actions/annualQcdExecutionPrerequisite.ts',
       'packages/engine/src/actions/annualRetirementActionPublication.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/annualQcdExecutionPrerequisite.ts#evaluateAnnualQcdExecutionPrerequisites',
+      'packages/engine/src/actions/annualRetirementActionPublication.ts#publishAnnualRetirementActions',
+      'packages/engine/src/strategies/accountEligibility.ts#evaluateQcd',
     ],
   },
 
@@ -1425,6 +1572,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-27',
     implementedBy: ['packages/engine/src/model/plan.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#planSchema',
+    ],
   },
 
   'irc-7520-and-2522-split-interest-valuation-not-modeled': {
@@ -1454,6 +1604,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-27',
     implementedBy: ['packages/engine/src/model/plan.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#planSchema',
+    ],
   },
 
   'irc-408-d-8-F-split-interest-sublimit': {
@@ -1485,6 +1638,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/strategies/accountEligibility.ts',
       'packages/engine/src/actions/annualQcdExecutionPrerequisite.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/annualQcdExecutionPrerequisite.ts#evaluateAnnualQcdExecutionPrerequisites',
+      'packages/engine/src/strategies/accountEligibility.ts#evaluateQcd',
     ],
   },
 
@@ -1531,6 +1688,11 @@ const registry = {
       'packages/engine/src/actions/annualQcdExecutionPrerequisite.ts',
       'packages/engine/src/actions/annualQcdActionExecutionEvidence.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/annualQcdActionExecutionEvidence.ts#publishAnnualQcdActionExecutionEvidence',
+      'packages/engine/src/actions/annualQcdExecutionPrerequisite.ts#evaluateAnnualQcdExecutionPrerequisites',
+      'packages/engine/src/strategies/accountEligibility.ts#evaluateQcd',
+    ],
   },
 
   // --- Registered 2026-08-05, with the first committed named QCD ----------
@@ -1576,6 +1738,10 @@ const registry = {
       // recurring amount stood down as well.
       'packages/engine/src/projection/simulate.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts#stageAnnualQcdTaxCharacterPostPass',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+    ],
   },
 
   'treas-reg-1-408-8-g-projection-named-qcd-beyond-rmd': {
@@ -1620,6 +1786,10 @@ const registry = {
       // disclosure that says why it is zero.
       'packages/engine/src/actions/annualQcdExecution.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/annualQcdExecution.ts#executeAnnualQcds',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+    ],
   },
 
   'irc-408-d-3-C-i-inherited-ira-rollover-bar': {
@@ -1658,6 +1828,11 @@ const registry = {
       'packages/engine/src/strategies/accountEligibility.ts',
       'packages/engine/src/actions/rothConversionExecution.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/rothConversionExecution.ts#executeRothConversions',
+      'packages/engine/src/strategies/accountEligibility.ts#evaluateConversion',
+      'packages/engine/src/strategies/accountEligibility.ts#isConvertibleToRoth',
+    ],
   },
 
   'irc-408-d-3-C-ii-surviving-spouse-not-inherited': {
@@ -1681,6 +1856,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
     implementedBy: ['packages/engine/src/actions/beneficiarySpousalElectionStatus.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/actions/beneficiarySpousalElectionStatus.ts#evaluateBeneficiarySpousalElection',
+    ],
   },
 
   'treas-reg-1-408-8-c-2-spousal-deemed-election': {
@@ -1705,6 +1883,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-04',
     implementedBy: ['packages/engine/src/actions/beneficiarySpousalElectionStatus.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/actions/beneficiarySpousalElectionStatus.ts#evaluateBeneficiarySpousalElection',
+    ],
   },
 
   'treas-reg-1-408-8-c-3-spouse-treated-as-owner': {
@@ -1737,6 +1918,10 @@ const registry = {
       'packages/engine/src/actions/beneficiarySpousalElectionStatus.ts',
       'packages/engine/src/actions/beneficiaryTraditionalIraDeathPenalty.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/beneficiarySpousalElectionStatus.ts#evaluateBeneficiarySpousalElection',
+      'packages/engine/src/actions/beneficiaryTraditionalIraDeathPenalty.ts#evaluateBeneficiaryTraditionalIraDeathPenalty',
+    ],
   },
 
   'rev-proc-2025-25-aca-applicable-percentage-2026': {
@@ -1763,6 +1948,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/tax/aca.ts',
       'packages/engine/src/params/data/year2026.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/data/year2026.ts#year2026',
+      'packages/engine/src/tax/aca.ts#acaApplicablePct',
     ],
   },
 
@@ -1791,6 +1980,10 @@ const registry = {
       'packages/engine/src/rmd/rmd.ts',
       'packages/engine/src/rmd/jointLifeTable.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/rmd/jointLifeTable.ts#jointLifeTableDivisor',
+      'packages/engine/src/rmd/rmd.ts#requiredMinimumDistribution',
+    ],
   },
 
   'treas-reg-1-408-8-e-4-i-year-of-death-proportionate-shortfall': {
@@ -1815,6 +2008,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
     implementedBy: ['packages/engine/src/actions/beneficiaryTraditionalIraResidualRmdAllocation.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/actions/beneficiaryTraditionalIraResidualRmdAllocation.ts#prepareBeneficiaryTraditionalIraResidualRmdAllocation',
+    ],
   },
   'irc-86-a-taxable-social-security-two-tier': {
     title: 'Social Security inclusion is two tiers with a capped carry',
@@ -1844,6 +2040,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
     implementedBy: ['packages/engine/src/tax/federalTax.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/tax/federalTax.ts#taxableSocialSecurity',
+    ],
   },
 
   'irc-1411-a-net-investment-income-tax': {
@@ -1876,6 +2075,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/tax/federalTax.ts',
       'packages/engine/src/params/data/year2026.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/data/year2026.ts#year2026',
+      'packages/engine/src/tax/federalTax.ts#computeFederalTax',
     ],
   },
 
@@ -1912,6 +2115,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-07',
     implementedBy: ['packages/engine/src/tax/federalTax.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/tax/federalTax.ts#computeFederalTax',
+    ],
   },
 
   'irc-103-a-state-local-bond-interest-exclusion': {
@@ -1937,6 +2143,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/tax/federalTax.ts',
       'packages/engine/src/projection/simulate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/tax/federalTax.ts#computeFederalTax',
     ],
   },
 
@@ -1965,6 +2175,10 @@ const registry = {
       'packages/engine/src/tax/federalTax.ts',
       'packages/engine/src/params/data/year2026.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/data/year2026.ts#year2026',
+      'packages/engine/src/tax/federalTax.ts#applyCapitalLossCarryforward',
+    ],
   },
 
   'irc-1212-b-capital-loss-carryforward': {
@@ -1991,6 +2205,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/tax/federalTax.ts',
       'packages/engine/src/projection/simulate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/tax/federalTax.ts#applyCapitalLossCarryforward',
     ],
   },
 
@@ -2022,6 +2240,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-27',
     implementedBy: ['packages/engine/src/tax/federalTax.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/tax/federalTax.ts#applyCapitalLossCarryforward',
+    ],
   },
 
   'irc-1-h-1-0-15-20-preferential-rate-schedule': {
@@ -2061,6 +2282,10 @@ const registry = {
       'packages/engine/src/tax/federalTax.ts',
       'packages/engine/src/params/data/year2026.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/data/year2026.ts#year2026',
+      'packages/engine/src/tax/federalTax.ts#capitalGainsTaxStacked',
+    ],
   },
 
   'irc-1-h-optimizer-flat-fifteen-percent-preferential-rate': {
@@ -2085,6 +2310,10 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-27',
     implementedBy: ['packages/engine/src/projection/optimizePlan.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/projection/optimizePlan.ts#buildOptimizerInput',
+      'packages/engine/src/projection/optimizePlan.ts#LP_LTCG_RATE',
+    ],
   },
 
   'irc-1091-a-wash-sale-thirty-day-window': {
@@ -2112,6 +2341,11 @@ const registry = {
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/tax/federalTax.ts',
       'packages/engine/src/model/plan.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#taxableAccountSchema',
+      'packages/engine/src/projection/simulate.ts#planWithdrawals',
+      'packages/engine/src/tax/federalTax.ts#applyCapitalLossCarryforward',
     ],
   },
 
@@ -2143,6 +2377,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-27',
     implementedBy: ['packages/engine/src/model/plan.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#taxableAccountSchema',
+    ],
   },
 
   'irc-1014-a-1-basis-at-death-fair-market-value': {
@@ -2176,6 +2413,11 @@ const registry = {
       'packages/engine/src/projection/compare.ts',
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/model/plan.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#taxableAccountSchema',
+      'packages/engine/src/projection/compare.ts#summarizeProjection',
+      'packages/engine/src/projection/simulate.ts#BalanceState',
     ],
   },
 
@@ -2231,6 +2473,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-27',
     implementedBy: ['packages/engine/src/model/plan.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#taxableAccountSchema',
+    ],
   },
 
   'irc-1-h-capital-gain-stacked-on-ordinary': {
@@ -2257,6 +2502,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/tax/federalTax.ts',
       'packages/engine/src/params/data/year2026.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/data/year2026.ts#year2026',
+      'packages/engine/src/tax/federalTax.ts#capitalGainsTaxStacked',
     ],
   },
 
@@ -2290,6 +2539,11 @@ const registry = {
     implementedBy: [
       'packages/engine/src/tax/federalTax.ts',
       'packages/engine/src/params/data/year2026.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/data/year2026.ts#year2026',
+      'packages/engine/src/tax/federalTax.ts#computeFederalTax',
+      'packages/engine/src/tax/federalTax.ts#tentativeMinimumTax',
     ],
   },
 
@@ -2342,6 +2596,10 @@ const registry = {
       'packages/engine/src/tax/federalTax.ts',
       'packages/engine/src/params/data/year2026.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/data/year2026.ts#year2026',
+      'packages/engine/src/tax/federalTax.ts#amtExemptionAmount',
+    ],
   },
 
   'irc-57-a-5-private-activity-bond-interest-amt-preference': {
@@ -2372,6 +2630,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-07',
     implementedBy: ['packages/engine/src/tax/federalTax.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/tax/federalTax.ts#amtPreferenceItems',
+    ],
   },
 
   'irc-223-f-4-B-hsa-disability-exception': {
@@ -2408,6 +2669,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
     implementedBy: ['packages/engine/src/actions/annualHsaPenaltyEvaluation.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/actions/annualHsaPenaltyEvaluation.ts#evaluateSegment',
+    ],
   },
 
   'irc-72-t-2-A-iii-disability-exception': {
@@ -2438,6 +2702,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-04',
     implementedBy: ['packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts#evaluateOwnedNonRothIraPenaltyPrerequisites',
+    ],
   },
 
   'irc-408-d-8-A-post-70-half-deduction-offset': {
@@ -2466,6 +2733,11 @@ const registry = {
       'packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts',
       'packages/engine/src/actions/annualQcdActionExecutionEvidence.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/annualQcdActionExecutionEvidence.ts#publishAnnualQcdActionExecutionEvidence',
+      'packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts#stageAnnualQcdTaxCharacterPostPass',
+      'packages/engine/src/actions/qcdDeductibleContributionOffset.ts#applyIrc408d8AContributionOffset',
+    ],
   },
 
   'irc-401-a-9-C-v-applicable-age': {
@@ -2490,6 +2762,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
     implementedBy: ['packages/engine/src/params/index.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/params/index.ts#rmdStartAgeForBirthYear',
+    ],
   },
 
   'irc-63-f-additional-standard-deduction-aged': {
@@ -2520,8 +2795,15 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-04',
     implementedBy: [
+      'packages/engine/src/params/index.ts',
       'packages/engine/src/tax/federalTax.ts',
       'packages/engine/src/params/data/year2026.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/data/year2026.ts#year2026',
+      'packages/engine/src/params/index.ts#age65StandardDeductionAddition',
+      'packages/engine/src/params/index.ts#standardDeduction',
+      'packages/engine/src/tax/federalTax.ts#computeFederalTax',
     ],
   },
 
@@ -2547,6 +2829,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
     implementedBy: ['packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts#evaluateOwnedNonRothIraPenaltyPrerequisites',
+    ],
   },
 
   'irc-402-e-4-B-lump-sum-employer-securities-nua-exclusion': {
@@ -2587,6 +2872,11 @@ const registry = {
       'packages/engine/src/actions/contract.ts',
       'packages/engine/src/actions/traditionalEmployerPlanWithdrawalCharacter.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/contract.ts#persistedRetirementActionRequestSchema',
+      'packages/engine/src/actions/traditionalEmployerPlanWithdrawalCharacter.ts#classifyTraditionalEmployerPlanWithdrawal',
+      'packages/engine/src/model/plan.ts#traditionalAccountSchema',
+    ],
   },
 
   'irc-402-a-employer-plan-distribution-receipt-year-taxability': {
@@ -2610,6 +2900,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-27',
     implementedBy: ['packages/engine/src/projection/simulate.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+    ],
   },
 
   'irc-404-a-3-a-employer-deduction-limit': {
@@ -2652,6 +2945,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-27',
     implementedBy: ['packages/engine/src/model/plan.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#traditionalAccountSchema',
+    ],
   },
 
   'irc-72-t-1-qualified-retirement-plan-scope': {
@@ -2682,6 +2978,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-25',
     implementedBy: ['packages/engine/src/actions/execution.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/actions/execution.ts#evaluateRetirementActionSchedule',
+    ],
   },
 
   'usc-42-415-a-1-pia-bend-point-formula': {
@@ -2709,6 +3008,10 @@ const registry = {
       'packages/engine/src/socialSecurity/piaFromEarnings.ts',
       'packages/engine/src/socialSecurity/ssaWageData.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/socialSecurity/piaFromEarnings.ts#piaMonthlyFromAime',
+      'packages/engine/src/socialSecurity/ssaWageData.ts#PIA_BEND_POINTS',
+    ],
   },
 
   'cfr-20-404-410-early-retirement-reduction': {
@@ -2733,6 +3036,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
     implementedBy: ['packages/engine/src/socialSecurity/benefitFactor.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/socialSecurity/benefitFactor.ts#earlyRetirementFactor',
+    ],
   },
 
   'cfr-20-404-313-delayed-retirement-credit': {
@@ -2757,6 +3063,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-04',
     implementedBy: ['packages/engine/src/socialSecurity/benefitFactor.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/socialSecurity/benefitFactor.ts#delayedRetirementFactor',
+    ],
   },
 
   'usc-42-416-l-retirement-age-schedule': {
@@ -2787,6 +3096,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
     implementedBy: ['packages/engine/src/socialSecurity/nra.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/socialSecurity/nra.ts#fraForBirthYear',
+    ],
   },
 
   'usc-42-403-a-2-family-maximum-formula': {
@@ -2813,6 +3125,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/socialSecurity/familyMaximum.ts',
       'packages/engine/src/socialSecurity/ssaWageData.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/socialSecurity/familyMaximum.ts#familyMaximumMonthlyFromPia',
+      'packages/engine/src/socialSecurity/ssaWageData.ts#FAMILY_MAXIMUM_BEND_POINTS',
     ],
   },
 
@@ -2847,6 +3163,10 @@ const registry = {
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/params/data/year2026.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/data/year2026.ts#year2026',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+    ],
   },
 
   'usc-42-402-b-2-spousal-half-of-pia': {
@@ -2870,7 +3190,14 @@ const registry = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
-    implementedBy: ['packages/engine/src/socialSecurity/claimFactor.ts'],
+    implementedBy: [
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/socialSecurity/claimFactor.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/socialSecurity/claimFactor.ts#spousalBenefitFactor',
+    ],
   },
 
   'usc-42-402-r-1-2-deemed-filing-old-age-and-spousal': {
@@ -2915,6 +3242,10 @@ const registry = {
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#socialSecurityIncomeSchema',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+    ],
   },
 
   'pl-118-273-sec-2-3-wep-gpo-repeal': {
@@ -2951,6 +3282,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-26',
     implementedBy: ['packages/engine/src/model/plan.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#socialSecurityIncomeSchema',
+    ],
   },
 
   'usc-42-402-r-survivor-deemed-filing-exemption': {
@@ -2990,6 +3324,10 @@ const registry = {
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#socialSecurityIncomeSchema',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+    ],
   },
 
   'usc-42-402-e-2-widow-full-pia': {
@@ -3014,6 +3352,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-26',
     implementedBy: ['packages/engine/src/socialSecurity/survivorBenefit.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/socialSecurity/survivorBenefit.ts#survivorBenefitMonthly',
+    ],
   },
 
   'usc-42-402-q-1-widow-survivor-early-reduction-schedule': {
@@ -3074,6 +3415,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-26',
     implementedBy: ['packages/engine/src/socialSecurity/survivorBenefit.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/socialSecurity/survivorBenefit.ts#survivorReductionFactor',
+    ],
   },
 
   'poms-rs-00615-320-rib-lim-after-survivor-reduction': {
@@ -3126,6 +3470,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-26',
     implementedBy: ['packages/engine/src/socialSecurity/survivorBenefit.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/socialSecurity/survivorBenefit.ts#survivorBenefitMonthly',
+    ],
   },
 
   'usc-42-402-i-lump-sum-death-payment': {
@@ -3162,6 +3509,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-26',
     implementedBy: ['packages/engine/src/model/plan.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#socialSecurityIncomeSchema',
+    ],
   },
 
   'usc-42-402-e-1-a-current-survivor-remarriage-before-60': {
@@ -3208,6 +3558,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-26',
     implementedBy: ['packages/engine/src/model/plan.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#socialSecurityIncomeSchema',
+    ],
   },
 
   'usc-42-402-d-2-child-survivor-benefit': {
@@ -3238,6 +3591,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-26',
     implementedBy: ['packages/engine/src/model/plan.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#socialSecurityIncomeSchema',
+    ],
   },
 
   'usc-42-416-l-survivor-fra-age-60-attainment-cohorts': {
@@ -3280,6 +3636,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-26',
     implementedBy: ['packages/engine/src/socialSecurity/nra.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/socialSecurity/nra.ts#survivorFraForBirthYear',
+    ],
   },
 
   'usc-42-402-e-2-a-survivor-own-delay-no-drc': {
@@ -3310,6 +3669,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-26',
     implementedBy: ['packages/engine/src/socialSecurity/survivorBenefit.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/socialSecurity/survivorBenefit.ts#survivorBenefitMonthly',
+    ],
   },
 
   'cfr-20-404-338-survivor-deceased-drc-pass-through': {
@@ -3340,6 +3702,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-26',
     implementedBy: ['packages/engine/src/socialSecurity/survivorBenefit.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/socialSecurity/survivorBenefit.ts#survivorBenefitMonthly',
+    ],
   },
 
   'usc-42-402-k-3-a-survivor-own-dual-entitlement-offset': {
@@ -3370,6 +3735,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-26',
     implementedBy: ['packages/engine/src/projection/simulate.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+    ],
   },
 
   'poms-rs-00615-482-arf-crediting-months': {
@@ -3415,6 +3783,10 @@ const registry = {
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/socialSecurity/claimFactor.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/socialSecurity/claimFactor.ts#claimFactor',
+    ],
   },
 
   'usc-42-403-f-1-earnings-test-month-charging': {
@@ -3439,6 +3811,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-27',
     implementedBy: ['packages/engine/src/projection/simulate.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+    ],
   },
 
   'cfr-20-404-435-grace-year-monthly-earnings-test': {
@@ -3483,6 +3858,11 @@ const registry = {
     implementedBy: [
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/projection/simulate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#socialSecurityIncomeSchema',
+      'packages/engine/src/model/plan.ts#wagesIncomeSchema',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
 
@@ -3532,6 +3912,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-27',
     implementedBy: ['packages/engine/src/model/plan.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#socialSecurityIncomeSchema',
+    ],
   },
 
   'usc-42-415-f-2-post-entitlement-pia-recomputation': {
@@ -3619,6 +4002,10 @@ const registry = {
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/socialSecurity/piaFromEarnings.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/socialSecurity/piaFromEarnings.ts#computePiaFromEarnings',
+    ],
   },
 
   'usc-42-402-e-1-b-ii-cfr-20-404-335-disabled-widow-age-50-prescribed-period': {
@@ -3661,6 +4048,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-27',
     implementedBy: ['packages/engine/src/model/plan.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#socialSecurityIncomeSchema',
+    ],
   },
 
   'usc-42-403-a-6-ssdi-family-maximum': {
@@ -3687,6 +4077,11 @@ const registry = {
     implementedBy: [
       'packages/engine/src/socialSecurity/familyMaximum.ts',
       'packages/engine/src/projection/simulate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/socialSecurity/familyMaximum.ts#capAuxiliaryForFamilyMaximum',
+      'packages/engine/src/socialSecurity/familyMaximum.ts#familyMaximumMonthlyFromPia',
     ],
   },
 
@@ -3727,6 +4122,10 @@ const registry = {
       'packages/engine/src/socialSecurity/familyMaximum.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/socialSecurity/familyMaximum.ts#capAuxiliaryForFamilyMaximum',
+    ],
   },
 
   'usc-42-402-d-2-ssdi-child-auxiliary': {
@@ -3751,6 +4150,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-27',
     implementedBy: ['packages/engine/src/model/plan.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#householdSchema',
+    ],
   },
 
   'cfr-20-404-1584-blind-sga-monthly-amount': {
@@ -3785,6 +4187,11 @@ const registry = {
       'packages/engine/src/params/types.ts',
       'packages/engine/src/params/data/year2026.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#socialSecurityIncomeSchema',
+      'packages/engine/src/params/data/year2026.ts#year2026',
+      'packages/engine/src/params/types.ts#sgaMonthlyNonBlind',
+    ],
   },
 
   'cfr-20-404-1592-trial-work-period': {
@@ -3818,6 +4225,11 @@ const registry = {
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/socialSecurity/disability.ts',
       'packages/engine/src/projection/simulate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#socialSecurityIncomeSchema',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/socialSecurity/disability.ts#ssdiSuspendedBySga',
     ],
   },
 
@@ -3859,6 +4271,11 @@ const registry = {
       'packages/engine/src/socialSecurity/disability.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#socialSecurityIncomeSchema',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/socialSecurity/disability.ts#ssdiSuspendedBySga',
+    ],
   },
 
   'cfr-20-404-1592b-expedited-reinstatement': {
@@ -3889,6 +4306,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-27',
     implementedBy: ['packages/engine/src/model/plan.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#socialSecurityIncomeSchema',
+    ],
   },
 
   'usc-42-415-b-2-b-disability-freeze-aime-exclusion': {
@@ -3922,6 +4342,10 @@ const registry = {
       'packages/engine/src/socialSecurity/piaFromEarnings.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/socialSecurity/piaFromEarnings.ts#computePiaFromEarnings',
+    ],
   },
 
   'usc-42-423-c-2-ssdi-five-month-waiting-period': {
@@ -3954,6 +4378,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/socialSecurity/disability.ts',
       'packages/engine/src/projection/simulate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/socialSecurity/disability.ts#inSsdiWindow',
     ],
   },
 
@@ -3991,7 +4419,12 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-27',
     implementedBy: [
+      'packages/engine/src/model/plan.ts',
       'packages/engine/src/projection/simulate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#socialSecurityIncomeSchema',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
 
@@ -4032,6 +4465,10 @@ const registry = {
       'packages/engine/src/socialSecurity/disability.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/socialSecurity/disability.ts#ssdiMonthlyBenefit',
+    ],
   },
 
   'usc-42-426-b-disability-trial-work-medicare-continuation': {
@@ -4064,6 +4501,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/socialSecurity/disability.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#socialSecurityIncomeSchema',
+      'packages/engine/src/socialSecurity/disability.ts#inSsdiWindow',
     ],
   },
 
@@ -4123,6 +4564,11 @@ const registry = {
       'packages/engine/src/params/types.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#healthcareConfigSchema',
+      'packages/engine/src/params/types.ts#ParameterPack',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+    ],
   },
 
   'usc-42-1395r-b-part-b-late-enrollment-penalty': {
@@ -4151,6 +4597,12 @@ const registry = {
       'packages/engine/src/tax/medicare.ts',
       'packages/engine/src/params/data/year2026.ts',
       'packages/engine/src/projection/simulate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#healthcareConfigSchema',
+      'packages/engine/src/params/data/year2026.ts#year2026',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/tax/medicare.ts#medicareAnnualPremiumPerPerson',
     ],
   },
 
@@ -4190,6 +4642,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/projection/simulate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#healthcareConfigSchema',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
 
@@ -4231,6 +4687,11 @@ const registry = {
       'packages/engine/src/tax/medicare.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#healthcareConfigSchema',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/tax/medicare.ts#medicareAnnualPremiumPerPerson',
+    ],
   },
 
   'usc-42-1395r-i-irmaa-applicable-percentage': {
@@ -4264,6 +4725,10 @@ const registry = {
       'packages/engine/src/tax/medicare.ts',
       'packages/engine/src/params/data/year2026.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/data/year2026.ts#year2026',
+      'packages/engine/src/tax/medicare.ts#medicareAnnualPremiumPerPerson',
+    ],
   },
 
   'usc-42-1395r-i-4-b-two-year-magi-lookback': {
@@ -4288,6 +4753,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-27',
     implementedBy: ['packages/engine/src/projection/simulate.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+    ],
   },
 
   'usc-42-1395r-i-4-a-magi-agi-plus-tax-exempt-interest': {
@@ -4317,6 +4785,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-27',
     implementedBy: ['packages/engine/src/projection/simulate.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+    ],
   },
 
   'usc-42-1395r-i-4-a-i-irmaa-magi-foreign-exclusion-addback': {
@@ -4341,6 +4812,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-27',
     implementedBy: ['packages/engine/src/projection/simulate.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+    ],
   },
 
   'irc-36B-c-1-A-applicable-taxpayer-range': {
@@ -4368,6 +4842,10 @@ const registry = {
       'packages/engine/src/tax/aca.ts',
       'packages/engine/src/params/data/year2026.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/data/year2026.ts#year2026',
+      'packages/engine/src/tax/aca.ts#acaEconomicPremiumByMonth',
+    ],
   },
 
   'irc-36B-d-2-B-aca-household-magi-composition': {
@@ -4391,6 +4869,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-07',
     implementedBy: ['packages/engine/src/tax/aca.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/tax/aca.ts#buildAcaHouseholdMagi',
+    ],
   },
 
   'irc-223-b-3-hsa-catch-up-not-indexed': {
@@ -4424,6 +4905,10 @@ const registry = {
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/params/data/year2026.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/data/year2026.ts#year2026',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+    ],
   },
 
   'irc-223-a-hsa-contribution-deduction-reduces-agi': {
@@ -4455,6 +4940,9 @@ const registry = {
     verifiedOn: '2026-08-27',
     implementedBy: [
       'packages/engine/src/projection/simulate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
 
@@ -4495,6 +4983,10 @@ const registry = {
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/params/data/year2026.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/data/year2026.ts#year2026',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+    ],
   },
 
   'irc-415-c-1-annual-additions-lesser-of': {
@@ -4527,6 +5019,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/params/data/year2026.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/data/year2026.ts#year2026',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
 
@@ -4561,6 +5057,10 @@ const registry = {
       'packages/engine/src/tax/propertySale.ts',
       'packages/engine/src/params/data/year2026.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/data/year2026.ts#year2026',
+      'packages/engine/src/tax/propertySale.ts#propertySaleTax',
+    ],
   },
 
   'usc-31-3124-a-federal-obligations-state-exempt': {
@@ -4585,6 +5085,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
     implementedBy: ['packages/engine/src/tax/stateTax.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+    ],
   },
 
   'irc-402-g-1-elective-deferral-aggregate': {
@@ -4615,8 +5118,14 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
     implementedBy: [
+      'packages/engine/src/projection/employerRothCatchUp.ts',
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/params/data/year2026.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/data/year2026.ts#year2026',
+      'packages/engine/src/projection/employerRothCatchUp.ts#allocateEmployerElectiveDeferrals',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
 
@@ -4646,7 +5155,14 @@ const registry = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-25',
-    implementedBy: ['packages/engine/src/model/plan.ts'],
+    implementedBy: [
+      'packages/engine/src/actions/contract.ts',
+      'packages/engine/src/model/plan.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/contract.ts#persistedRothConversionRequestSchema',
+      'packages/engine/src/model/plan.ts#strategiesSchema',
+    ],
   },
 
   'irc-164-b-7-salt-cap-schedule': {
@@ -4679,6 +5195,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/tax/federalTax.ts',
       'packages/engine/src/params/data/year2026.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/data/year2026.ts#year2026',
+      'packages/engine/src/tax/federalTax.ts#saltCapForYear',
     ],
   },
 
@@ -4740,6 +5260,10 @@ const registry = {
     effectiveThrough: 2029,
     verifiedOn: '2026-08-26',
     implementedBy: ['packages/engine/src/tax/federalTax.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/tax/federalTax.ts#itemizedTotal',
+      'packages/engine/src/tax/federalTax.ts#saltCapForYear',
+    ],
   },
 
   'irc-63-c-2-joint-standard-deduction-doubles': {
@@ -4773,6 +5297,10 @@ const registry = {
       'packages/engine/src/tax/federalTax.ts',
       'packages/engine/src/params/data/year2026.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/data/year2026.ts#year2026',
+      'packages/engine/src/tax/federalTax.ts#computeFederalTax',
+    ],
   },
   'irc-219-b-1-ira-limit-lesser-of-compensation': {
     title: 'An IRA contribution is capped by compensation, not only by the dollar limit',
@@ -4796,6 +5324,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
     implementedBy: ['packages/engine/src/projection/simulate.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+    ],
   },
   'irc-219-c-1-spousal-ira-combined-compensation': {
     title: 'A jointly filing couple funds both IRAs from combined compensation',
@@ -4819,6 +5350,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
     implementedBy: ['packages/engine/src/projection/simulate.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+    ],
   },
   'irc-219-b-5-C-iii-ira-catch-up-indexed': {
     title: 'The age-50 IRA catch-up is indexed, unlike the HSA catch-up',
@@ -4845,6 +5379,10 @@ const registry = {
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/params/data/year2026.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/data/year2026.ts#year2026',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+    ],
   },
   'irc-219-f-1-compensation-excludes-deferred-income': {
     title: 'Pension, annuity and deferred income are not compensation for IRA purposes',
@@ -4868,6 +5406,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
     implementedBy: ['packages/engine/src/projection/simulate.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+    ],
   },
   'irc-408A-c-2-roth-shares-the-section-219-ceiling': {
     title: 'Roth and traditional IRA contributions share one annual ceiling',
@@ -4891,6 +5432,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
     implementedBy: ['packages/engine/src/projection/simulate.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+    ],
   },
   'irc-408A-c-3-roth-contribution-agi-phase-out': {
     title: 'The Roth contribution income phase-out is not modeled',
@@ -4913,7 +5457,14 @@ const registry = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
-    implementedBy: ['packages/engine/src/projection/simulate.ts'],
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#rothAccountSchema',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+    ],
   },
   'irc-401-c-2-earned-income-not-modeled': {
     title: 'Self-employment earned income is not a modeled compensation source',
@@ -4936,7 +5487,14 @@ const registry = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-04',
-    implementedBy: ['packages/engine/src/projection/simulate.ts'],
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#wagesIncomeSchema',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+    ],
   },
   'irc-151-d-5-C-iii-I-senior-deduction-per-individual-phase-out': {
     title: 'The senior deduction phase-out reduces the per-individual amount',
@@ -4975,6 +5533,11 @@ const registry = {
       'packages/engine/src/strategies/optimizer.ts',
       'packages/engine/src/params/data/year2026.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/data/year2026.ts#year2026',
+      'packages/engine/src/strategies/optimizer.ts#buildOptimizerModel',
+      'packages/engine/src/tax/federalTax.ts#seniorDeductionAmount',
+    ],
   },
   'irc-56-b-1-D-section-151-deduction-disallowed-for-amt': {
     title: 'The senior deduction is a section 151 deduction disallowed for AMT',
@@ -5010,6 +5573,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
     implementedBy: ['packages/engine/src/tax/federalTax.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/tax/federalTax.ts#computeFederalTax',
+    ],
   },
   'irc-1411-d-modified-agi-foreign-exclusion-addback': {
     title: 'Modified adjusted gross income adds back excluded foreign income',
@@ -5045,6 +5611,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-28',
     implementedBy: ['packages/engine/src/tax/federalTax.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/tax/federalTax.ts#computeFederalTax',
+    ],
   },
 
   // --- Registered 2026-08-03: account-eligibility rules and their proxies -----
@@ -5083,6 +5652,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
     implementedBy: ['packages/engine/src/strategies/accountEligibility.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/strategies/accountEligibility.ts#evaluateConversion',
+    ],
   },
 
   'treas-reg-1-408-8-e-1-i-aggregate-ira-rmd-sum': {
@@ -5126,6 +5698,10 @@ const registry = {
       // without it, and it cites that evidence on every committed allocation.
       'packages/engine/src/actions/rothConversionExecution.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/rothConversionExecution.ts#executeRothConversions',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+    ],
   },
 
   'irc-401-a-9-H-designated-beneficiary-ten-year-rule': {
@@ -5166,6 +5742,11 @@ const registry = {
       'packages/engine/src/strategies/inheritedIra.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/strategies/accountEligibility.ts#followsOwnerRmds',
+      'packages/engine/src/strategies/inheritedIra.ts#inheritedTenYearDeadline',
+    ],
   },
 
   'irc-72-t-2-A-ii-death-beneficiary-exception': {
@@ -5200,6 +5781,11 @@ const registry = {
       'packages/engine/src/actions/beneficiaryTraditionalIraDeathPenalty.ts',
       'packages/engine/src/actions/beneficiaryTraditionalIraAnnualSimulatorDelta.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/beneficiaryTraditionalIraAnnualSimulatorDelta.ts#prepareBeneficiaryTraditionalIraAnnualSimulatorDelta',
+      'packages/engine/src/actions/beneficiaryTraditionalIraDeathPenalty.ts#evaluateBeneficiaryTraditionalIraDeathPenalty',
+      'packages/engine/src/strategies/accountEligibility.ts#traditionalWithdrawalPenaltyRate',
+    ],
   },
 
   'irc-72-t-2-A-i-age-59-half-annual-proxy': {
@@ -5230,6 +5816,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
     implementedBy: ['packages/engine/src/strategies/accountEligibility.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/strategies/accountEligibility.ts#traditionalWithdrawalPenaltyRate',
+    ],
   },
 
   'irc-223-f-4-C-hsa-age-65-annual-proxy': {
@@ -5260,6 +5849,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
     implementedBy: ['packages/engine/src/strategies/accountEligibility.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/strategies/accountEligibility.ts#hsaNonQualifiedPenaltyRate',
+    ],
   },
 
   'irc-72-t-2-A-v-rule-of-55-separation-proxy': {
@@ -5289,6 +5881,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-04',
     implementedBy: ['packages/engine/src/strategies/accountEligibility.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/strategies/accountEligibility.ts#traditionalWithdrawalPenaltyRate',
+    ],
   },
 
   'irc-408A-d-2-roth-qualified-distribution': {
@@ -5324,6 +5919,10 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
     implementedBy: ['packages/engine/src/strategies/rothBasis.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/strategies/rothBasis.ts#ROTH_QUALIFIED_AGE',
+      'packages/engine/src/strategies/rothBasis.ts#splitRothWithdrawal',
+    ],
   },
 
   'irc-408A-d-3-F-roth-conversion-recapture': {
@@ -5367,6 +5966,11 @@ const registry = {
       // nothing was excluded from income, so nothing escapes the recapture.
       'packages/engine/src/projection/simulate.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/strategies/rothBasis.ts#ROTH_SEASONING_YEARS',
+      'packages/engine/src/strategies/rothBasis.ts#splitRothWithdrawal',
+    ],
   },
   'irc-408A-d-3-A-i-zero-basis-conversion-includible': {
     title: 'A zero-basis traditional-IRA conversion is wholly includible',
@@ -5398,6 +6002,10 @@ const registry = {
       'packages/engine/src/actions/rothConversionExecution.ts',
       'packages/engine/src/actions/ownedNonRothIraWithdrawalCharacter.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/ownedNonRothIraWithdrawalCharacter.ts#classifyOwnedNonRothIraAnnualWithdrawals',
+      'packages/engine/src/actions/rothConversionExecution.ts#executeRothConversions',
+    ],
   },
 
   'irc-408A-d-4-B-roth-distribution-ordering': {
@@ -5427,6 +6035,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-25',
     implementedBy: ['packages/engine/src/strategies/rothBasis.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/strategies/rothBasis.ts#splitRothWithdrawal',
+    ],
   },
 
   'irc-408A-d-4-B-converted-layer-taxable-portion-first': {
@@ -5463,6 +6074,11 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-25',
     implementedBy: ['packages/engine/src/strategies/rothBasis.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/strategies/rothBasis.ts#applyConversionPrincipalDebt',
+      'packages/engine/src/strategies/rothBasis.ts#assumedSeedConsequentialSpill',
+      'packages/engine/src/strategies/rothBasis.ts#splitRothWithdrawal',
+    ],
   },
 
   'irc-408A-d-4-B-same-year-conversion-aggregation': {
@@ -5495,6 +6111,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/strategies/rothBasis.ts',
       'packages/engine/src/projection/simulate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/strategies/rothBasis.ts#splitRothWithdrawal',
     ],
   },
 
@@ -5541,6 +6161,10 @@ const registry = {
       'packages/engine/src/tax/federalTax.ts',
       'packages/engine/src/params/data/year2026.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/data/year2026.ts#year2026',
+      'packages/engine/src/tax/federalTax.ts#bracketTax',
+    ],
   },
   'irc-1-j-3-B-rate-tables-adjusted-each-year': {
     title: 'The rate tables are re-prescribed every year, so a nominal projection must index them',
@@ -5583,8 +6207,11 @@ const registry = {
     verifiedOn: '2026-08-03',
     implementedBy: [
       'packages/engine/src/params/index.ts',
-      'packages/engine/src/tax/federalTax.ts',
       'packages/engine/src/projection/simulate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/index.ts#indexFederalTaxPack',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
   'irc-151-d-5-C-senior-deduction-not-indexed': {
@@ -5624,6 +6251,10 @@ const registry = {
       'packages/engine/src/params/index.ts',
       'packages/engine/src/tax/federalTax.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/index.ts#indexFederalTaxPack',
+      'packages/engine/src/tax/federalTax.ts#seniorDeductionAmount',
+    ],
   },
   'irc-1-h-11-qualified-dividends-as-net-capital-gain': {
     title: 'Qualified dividends are folded into net capital gain',
@@ -5659,6 +6290,10 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
     implementedBy: ['packages/engine/src/tax/federalTax.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/tax/federalTax.ts#capitalGainsTaxStacked',
+      'packages/engine/src/tax/federalTax.ts#computeFederalTax',
+    ],
   },
   'irc-86-b-2-provisional-income-modified-agi': {
     title: 'What enters provisional income for taxing Social Security',
@@ -5688,6 +6323,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
     implementedBy: ['packages/engine/src/tax/federalTax.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/tax/federalTax.ts#taxableSocialSecurity',
+    ],
   },
   'irc-63-b-e-itemize-election-and-section-151-additivity': {
     title: 'Itemizing is an election; the section 151 deduction is additive',
@@ -5723,6 +6361,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
     implementedBy: ['packages/engine/src/tax/federalTax.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/tax/federalTax.ts#computeFederalTax',
+    ],
   },
   'irc-67-h-miscellaneous-itemized-permanently-disallowed': {
     title: 'Miscellaneous itemized deductions are permanently disallowed',
@@ -5758,6 +6399,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
     implementedBy: ['packages/engine/src/tax/federalTax.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/tax/federalTax.ts#itemizedTotal',
+    ],
   },
   'irc-56-b-1-A-ii-state-and-local-taxes-disallowed-for-amt': {
     title: 'Deducted state and local taxes are an AMT add-back',
@@ -5787,6 +6431,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
     implementedBy: ['packages/engine/src/tax/federalTax.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/tax/federalTax.ts#computeFederalTax',
+    ],
   },
   'irc-55-b-3-amt-net-capital-gain-maximum-rate': {
     title: 'Preferential capital gain rates survive into the AMT',
@@ -5816,6 +6463,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
     implementedBy: ['packages/engine/src/tax/federalTax.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/tax/federalTax.ts#tentativeMinimumTax',
+    ],
   },
   'irc-1411-c-5-plan-distributions-excluded-from-nii': {
     title: 'Retirement plan distributions are not net investment income',
@@ -5845,6 +6495,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
     implementedBy: ['packages/engine/src/tax/federalTax.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/tax/federalTax.ts#computeFederalTax',
+    ],
   },
   'irc-213-a-medical-expense-deduction': {
     title: 'Medical expense deduction above 7.5 percent of AGI',
@@ -5906,6 +6559,10 @@ const registry = {
       'packages/engine/src/tax/federalTax.ts',
       'packages/engine/src/model/plan.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#itemizedDeductionsSchema',
+      'packages/engine/src/tax/federalTax.ts#itemizedTotal',
+    ],
   },
 
   'irc-213-d-10-eligible-ltc-premium-caps-2026': {
@@ -5932,6 +6589,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/tax/federalTax.ts',
       'packages/engine/src/model/plan.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#itemizedDeductionsSchema',
+      'packages/engine/src/tax/federalTax.ts#itemizedTotal',
     ],
   },
 
@@ -5966,6 +6627,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/projection/simulate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#acaYearContractSchema',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
 
@@ -6017,6 +6682,10 @@ const registry = {
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/tax/federalTax.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#incomeStreamSchema',
+      'packages/engine/src/tax/federalTax.ts#section68Reduction',
+    ],
   },
   'irc-163-h-3-F-acquisition-indebtedness-limit': {
     title: 'Mortgage interest is limited to $750,000 of acquisition debt',
@@ -6045,7 +6714,14 @@ const registry = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
-    implementedBy: ['packages/engine/src/tax/federalTax.ts'],
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/tax/federalTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#itemizedDeductionsSchema',
+      'packages/engine/src/tax/federalTax.ts#itemizedTotal',
+    ],
   },
 
   'irc-163-h-3-E-i-pmi-qualified-residence-interest-restart': {
@@ -6102,6 +6778,10 @@ const registry = {
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/tax/federalTax.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#itemizedDeductionsSchema',
+      'packages/engine/src/tax/federalTax.ts#itemizedTotal',
+    ],
   },
 
   'treas-reg-1-408-8-b-2-prior-december-31-balance': {
@@ -6139,6 +6819,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/rmd/rmd.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/rmd/rmd.ts#requiredMinimumDistribution',
     ],
   },
   'treas-reg-1-408A-4-a-6-rmd-precedes-conversion': {
@@ -6178,6 +6862,11 @@ const registry = {
       'packages/engine/src/strategies/accountEligibility.ts',
       'packages/engine/src/actions/rothConversionExecution.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/rothConversionExecution.ts#executeRothConversions',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/strategies/accountEligibility.ts#resolveOwnerIraRmdSatisfaction',
+    ],
   },
   'treas-reg-1-401-a-9-2-b-2-v-applicable-age-1959': {
     title: 'Applicable age for an owner born in 1959',
@@ -6216,6 +6905,10 @@ const registry = {
       'packages/engine/src/params/index.ts',
       'packages/engine/src/rmd/rmd.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/index.ts#rmdStartAgeForBirthYear',
+      'packages/engine/src/rmd/rmd.ts#requiredMinimumDistribution',
+    ],
   },
   'irc-408-d-8-B-ii-projection-annual-age-proxy': {
     title: 'Annual-ledger stand-in for the age 70.5 QCD date',
@@ -6245,6 +6938,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-04',
     implementedBy: ['packages/engine/src/projection/simulate.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+    ],
   },
   'irc-408-d-8-A-projection-post-70-half-contribution-offset': {
     title: 'Reduction of the QCD exclusion by post-70.5 deductible IRA contributions',
@@ -6271,6 +6967,11 @@ const registry = {
       'packages/engine/src/actions/qcdDeductibleContributionOffset.ts',
       'packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts',
       'packages/engine/src/projection/simulate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts#stageAnnualQcdTaxCharacterPostPass',
+      'packages/engine/src/actions/qcdDeductibleContributionOffset.ts#applyIrc408d8AContributionOffset',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
   'irc-408-d-8-A-projection-household-qcd-aggregation': {
@@ -6307,6 +7008,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-07',
     implementedBy: ['packages/engine/src/projection/simulate.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+    ],
   },
   'irc-408-d-8-D-projection-qcd-after-pro-rata': {
     title: 'Annual-ledger ordering of the QCD against pro-rata basis recovery',
@@ -6347,6 +7051,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-07',
     implementedBy: ['packages/engine/src/projection/simulate.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+    ],
   },
   'irc-223-b-2-7-projection-coverage-proration-and-medicare': {
     title: 'HSA coverage tier, monthly proration, and Medicare entitlement',
@@ -6375,7 +7082,14 @@ const registry = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-04',
-    implementedBy: ['packages/engine/src/projection/simulate.ts'],
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#hsaAccountSchema',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      ],
   },
   'treas-reg-1-401-a-9-9-c-uniform-lifetime-table': {
     title: 'Uniform Lifetime Table denominator for a lifetime required minimum distribution',
@@ -6414,6 +7128,11 @@ const registry = {
       'packages/engine/src/params/index.ts',
       'packages/engine/src/params/data/year2026.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/data/year2026.ts#year2026',
+      'packages/engine/src/params/index.ts#uniformLifetimeDivisor',
+      'packages/engine/src/rmd/rmd.ts#requiredMinimumDistribution',
+    ],
   },
   'treas-reg-1-401-a-9-5-a-2-first-distribution-calendar-year': {
     title: 'First distribution calendar year is the year the applicable age is attained',
@@ -6451,6 +7170,10 @@ const registry = {
       'packages/engine/src/rmd/rmd.ts',
       'packages/engine/src/params/index.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/index.ts#rmdStartAgeForBirthYear',
+      'packages/engine/src/rmd/rmd.ts#requiredMinimumDistribution',
+    ],
   },
   'irc-401-a-9-C-i-first-year-april-1-deferral': {
     title: 'Deferral of the first required minimum distribution to April 1',
@@ -6482,6 +7205,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/rmd/rmd.ts',
       'packages/engine/src/projection/simulate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/rmd/rmd.ts#requiredMinimumDistribution',
     ],
   },
   'irc-401-a-9-C-i-elected-deferral-ignores-attainment-year-distributions': {
@@ -6519,6 +7246,9 @@ const registry = {
     implementedBy: [
       'packages/engine/src/projection/simulate.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+    ],
   },
   'irc-401-a-9-C-i-II-still-working-exception': {
     title: 'Required beginning date deferred while still employed by the plan sponsor',
@@ -6547,8 +7277,14 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
     implementedBy: [
+      'packages/engine/src/model/plan.ts',
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/strategies/accountEligibility.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#personSchema',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/strategies/accountEligibility.ts#followsOwnerRmds',
     ],
   },
   'irc-401-a-9-H-ii-annual-distributions-inside-ten-year-window': {
@@ -6586,6 +7322,12 @@ const registry = {
     implementedBy: [
       'packages/engine/src/strategies/inheritedIra.ts',
       'packages/engine/src/projection/simulate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/strategies/inheritedIra.ts#classifyInheritedRegime',
+      'packages/engine/src/strategies/inheritedIra.ts#inheritedForcedAmount',
+      'packages/engine/src/strategies/inheritedIra.ts#inheritedRequirementForYear',
     ],
   },
   'treas-reg-1-401-a-9-5-d-3-beneficiary-single-life-denominator': {
@@ -6631,6 +7373,10 @@ const registry = {
       'packages/engine/src/strategies/inheritedIra.ts',
       'packages/engine/src/params/index.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/index.ts#singleLifeExpectancyYears',
+      'packages/engine/src/strategies/inheritedIra.ts#beneficiaryRemainingLifeExpectancy',
+    ],
   },
   'treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy': {
     title: 'Greater of the beneficiary and the employee remaining life expectancy',
@@ -6663,6 +7409,12 @@ const registry = {
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/rmd/applicableAge.ts',
       'packages/engine/src/projection/simulate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#inheritedAccountSchema',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/rmd/applicableAge.ts#applicableAgeAttainYears',
+      'packages/engine/src/strategies/inheritedIra.ts#inheritedRequirementForYear',
     ],
   },
   'irc-401-a-9-E-ii-eligible-designated-beneficiary': {
@@ -6701,6 +7453,11 @@ const registry = {
       'packages/engine/src/strategies/inheritedIra.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/strategies/inheritedIra.ts#classifyInheritedRegime',
+      'packages/engine/src/strategies/inheritedIra.ts#inheritedRequirementForYear',
+    ],
   },
   'irc-275-a-6-chapter-43-excise-taxes-nondeductible': {
     title: 'Chapter 43 excise taxes are not deductible',
@@ -6728,6 +7485,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-27',
     implementedBy: ['packages/engine/src/projection/simulate.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+    ],
   },
 
   'irc-4974-rmd-shortfall-excise-tax': {
@@ -6791,6 +7551,10 @@ const registry = {
       'packages/engine/src/rmd/rmdShortfallExcise.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/rmd/rmdShortfallExcise.ts#computeRmdShortfallExcise',
+    ],
   },
   'irc-72-b-annuity-exclusion-ratio': {
     title: 'Exclusion ratio for a non-qualified annuity, and the cap at unrecovered investment',
@@ -6837,6 +7601,12 @@ const registry = {
       'packages/engine/src/params/index.ts',
       'packages/engine/src/params/data/year2026.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/data/year2026.ts#year2026',
+      'packages/engine/src/params/index.ts#annuityExpectedReturnMultiple',
+      'packages/engine/src/projection/annuityForms.ts#annuityExclusionMultiple',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+    ],
   },
   'treas-reg-1-72-7-refund-feature-investment-adjustment': {
     title: 'Adjustment for a period-certain guarantee on a life annuity',
@@ -6868,6 +7638,10 @@ const registry = {
       'packages/engine/src/projection/annuityForms.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/annuityForms.ts#annuityExclusionMultiple',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+    ],
   },
   'treas-reg-1-72-5-b-2-joint-and-survivor-expected-return': {
     title: 'Expected return for a joint and survivor annuity paying a reduced survivor amount',
@@ -6898,6 +7672,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/projection/annuityForms.ts',
       'packages/engine/src/montecarlo/mortality.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/montecarlo/mortality.ts#jointLastSurvivorExpectancy',
+      'packages/engine/src/projection/annuityForms.ts#annuityExclusionMultiple',
     ],
   },
   'irc-1-h-1-E-unrecaptured-section-1250-gain': {
@@ -6935,6 +7713,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/tax/propertySale.ts',
       'packages/engine/src/projection/simulate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/tax/propertySale.ts#propertySaleTax',
     ],
   },
   'irc-121-a-b-principal-residence-eligibility-tests': {
@@ -6979,6 +7761,10 @@ const registry = {
       'packages/engine/src/tax/propertySale.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/tax/propertySale.ts#propertySaleTax',
+    ],
   },
   'irc-86-c-provisional-income-thresholds': {
     title: 'The Social Security base amounts are fixed dollars, and the joint figure is not double',
@@ -7004,6 +7790,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/params/data/year2026.ts',
       'packages/engine/src/tax/federalTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/data/year2026.ts#year2026',
+      'packages/engine/src/tax/federalTax.ts#taxableSocialSecurity',
     ],
   },
   'irc-414-v-3-A-catch-up-excluded-from-415c': {
@@ -7037,6 +7827,10 @@ const registry = {
       'packages/engine/src/projection/employerRothCatchUp.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/employerRothCatchUp.ts#allocateEmployerElectiveDeferrals',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+    ],
   },
   'irc-414-v-2-A-catch-up-limited-to-compensation-excess': {
     title: 'Catch-up cannot exceed compensation minus other elective deferrals',
@@ -7062,6 +7856,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/projection/employerRothCatchUp.ts',
       'packages/engine/src/projection/simulate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/employerRothCatchUp.ts#allocateEmployerElectiveDeferrals',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
   'irc-414-v-7-E-roth-catch-up-wage-threshold': {
@@ -7095,6 +7893,11 @@ const registry = {
       'packages/engine/src/params/data/year2026.ts',
       'packages/engine/src/params/types.ts',
       'packages/engine/src/projection/employerRothCatchUp.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/data/year2026.ts#year2026',
+      'packages/engine/src/params/types.ts#rothCatchUpWageThreshold',
+      'packages/engine/src/projection/employerRothCatchUp.ts#indexRothCatchUpWageThreshold',
     ],
   },
   'irc-414-v-7-A-high-earner-roth-catch-up-mandate': {
@@ -7159,6 +7962,12 @@ const registry = {
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/params/data/year2026.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/data/year2026.ts#year2026',
+      'packages/engine/src/projection/employerRothCatchUp.ts#allocateEmployerElectiveDeferrals',
+      'packages/engine/src/projection/employerRothCatchUp.ts#highEarnerRothCatchUpMandated',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+    ],
   },
   'irc-414-v-7-A-prior-year-fica-wage-proxy': {
     title: 'The 414(v)(7) wage test uses a user-entered Box 3 proxy, and omission fails closed',
@@ -7198,6 +8007,11 @@ const registry = {
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/model/plan.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#traditionalAccountSchema',
+      'packages/engine/src/projection/employerRothCatchUp.ts#priorYearFicaExceedsRothCatchUpThreshold',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+    ],
   },
   'irc-415-d-cost-of-living-adjustment-anchor': {
     title: 'Section 415(d) is the adjustment mechanism the other retirement limits borrow',
@@ -7229,6 +8043,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/params/data/year2026.ts',
       'packages/engine/src/projection/simulate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/data/year2026.ts#year2026',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
   'treas-reg-1-401-a-9-6-q-2-qlac-premium-dollar-limit': {
@@ -7263,6 +8081,11 @@ const registry = {
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/decisions/generators.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/decisions/generators.ts#annuityPurchaseGenerator',
+      'packages/engine/src/params/data/year2026.ts#year2026',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+    ],
   },
   'usc-42-430-b-contribution-and-benefit-base': {
     title: 'The OASDI contribution and benefit base is wage-indexed, not price-indexed',
@@ -7295,6 +8118,10 @@ const registry = {
       'packages/engine/src/params/data/year2026.ts',
       'packages/engine/src/params/types.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/data/year2026.ts#year2026',
+      'packages/engine/src/params/types.ts#ParameterPack',
+    ],
   },
   'usc-42-403-f-8-earnings-test-exempt-amounts': {
     title: 'The earnings test exempt amounts are wage-indexed, and the higher one is not a multiple of the lower',
@@ -7326,6 +8153,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/params/data/year2026.ts',
       'packages/engine/src/projection/simulate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/data/year2026.ts#year2026',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
   'usc-42-1395r-i-5-C-top-irmaa-threshold-frozen': {
@@ -7368,6 +8199,14 @@ const registry = {
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/params/data/year2026.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/insights/detectors/irmaaTierEdge.ts#irmaaTierEdge',
+      'packages/engine/src/params/data/year2026.ts#year2026',
+      'packages/engine/src/params/index.ts#IRMAA_TOP_TIER_FROZEN_THROUGH_YEAR',
+      'packages/engine/src/params/index.ts#irmaaTierThreshold',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/tax/medicare.ts#medicareAnnualPremiumPerPerson',
+    ],
   },
   'usc-42-1395r-a-3-part-b-standard-premium': {
     title: 'The standard Part B premium is half the aged actuarial rate plus a repayment amount',
@@ -7400,6 +8239,11 @@ const registry = {
       'packages/engine/src/params/data/year2026.ts',
       'packages/engine/src/params/index.ts',
       'packages/engine/src/tax/medicare.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/data/year2026.ts#year2026',
+      'packages/engine/src/params/index.ts#partBMonthlyPremium',
+      'packages/engine/src/tax/medicare.ts#medicareAnnualPremiumPerPerson',
     ],
   },
   'cfr-20-404-1574-b-2-sga-non-blind-monthly-amount': {
@@ -7434,6 +8278,11 @@ const registry = {
       'packages/engine/src/socialSecurity/disability.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/data/year2026.ts#year2026',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/socialSecurity/disability.ts#ssdiSuspendedBySga',
+    ],
   },
   'irc-3101-a-oasdi-employee-tax-rate': {
     title: 'The employee-side OASDI rate is a flat statutory percentage',
@@ -7459,6 +8308,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/params/data/year2026.ts',
       'packages/engine/src/params/types.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/data/year2026.ts#year2026',
+      'packages/engine/src/params/types.ts#ParameterPack',
     ],
   },
   'irc-63-c-7-B-ii-conformed-state-deduction-tracks-federal': {
@@ -7512,6 +8365,12 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/params/state/data/year2026.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/index.ts#indexFederalTaxPack',
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/index.ts#conformStateStandardDeduction',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+    ],
   },
   'irc-72-t-2-A-iv-sepp-exception': {
     title: 'The substantially equal periodic payment exception itself',
@@ -7543,6 +8402,10 @@ const registry = {
       'packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.ts',
       'packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts#evaluateOwnedNonRothIraPenaltyPrerequisites',
+      'packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.ts#reconcileOwnedNonRothIraSeppAnnualSchedule',
+    ],
   },
   'irc-72-t-5-sepp-participant-scope': {
     title: 'A SEPP series belongs to one participant and one source account',
@@ -7573,6 +8436,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.ts',
       'packages/engine/src/actions/ownedNonRothIraSeppCurrentPaymentCandidate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.ts#reconcileOwnedNonRothIraSeppAnnualSchedule',
+      'packages/engine/src/actions/ownedNonRothIraSeppCurrentPaymentCandidate.ts#validateOwnedNonRothIraSeppCurrentPaymentCandidate',
     ],
   },
   'notice-2022-6-3-01-three-permitted-methods': {
@@ -7606,6 +8473,10 @@ const registry = {
       'packages/engine/src/actions/ownedNonRothIraSeppCurrentPaymentCandidate.ts',
       'packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/ownedNonRothIraSeppCurrentPaymentCandidate.ts#validateOwnedNonRothIraSeppCurrentPaymentCandidate',
+      'packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.ts#evaluateTraditionalEmployerPlanPenaltyPrerequisite',
+    ],
   },
   'notice-2022-6-3-01-annual-payment-completeness': {
     title: 'The annual payment is a yearly total, and annually is a floor on frequency',
@@ -7635,6 +8506,9 @@ const registry = {
     verifiedOn: '2026-08-04',
     implementedBy: [
       'packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.ts#reconcileOwnedNonRothIraSeppAnnualSchedule',
     ],
   },
   'notice-2022-6-3-02-c-interest-rate-ceiling': {
@@ -7671,6 +8545,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-04',
     implementedBy: ['packages/engine/src/strategies/sepp.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/strategies/sepp.ts#SEPP_AMORTIZATION_RATE_PCT',
+    ],
   },
   'notice-2022-6-3-02-e-single-account-balance-scope': {
     title: 'The series runs against one account balance and is proven against every distribution from it',
@@ -7702,6 +8579,10 @@ const registry = {
       'packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.ts',
       'packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts#evaluateOwnedNonRothIraPenaltyPrerequisites',
+      'packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.ts#reconcileOwnedNonRothIraSeppAnnualSchedule',
+    ],
   },
   'irc-72-t-4-sepp-modification-proof-window': {
     title: 'Absence of a disqualifying modification must be proven through the payment date',
@@ -7728,6 +8609,10 @@ const registry = {
       'packages/engine/src/actions/ownedNonRothIraSeppCurrentPaymentCandidate.ts',
       'packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.ts#reconcileOwnedNonRothIraSeppAnnualSchedule',
+      'packages/engine/src/actions/ownedNonRothIraSeppCurrentPaymentCandidate.ts#validateOwnedNonRothIraSeppCurrentPaymentCandidate',
+    ],
   },
   'notice-2022-6-3-02-e-modification-trigger-detection': {
     title: 'Events that modify a series are not detected by the engine',
@@ -7752,6 +8637,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/actions/ownedNonRothIraSeppCurrentPaymentCandidate.ts',
       'packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.ts#reconcileOwnedNonRothIraSeppAnnualSchedule',
+      'packages/engine/src/actions/ownedNonRothIraSeppCurrentPaymentCandidate.ts#validateOwnedNonRothIraSeppCurrentPaymentCandidate',
     ],
   },
   'notice-2022-6-3-03-b-one-time-method-change': {
@@ -7779,6 +8668,11 @@ const registry = {
       'packages/engine/src/strategies/sepp.ts',
       'packages/engine/src/actions/ownedNonRothIraSeppCurrentPaymentCandidate.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/ownedNonRothIraSeppCurrentPaymentCandidate.ts#validateOwnedNonRothIraSeppCurrentPaymentCandidate',
+      'packages/engine/src/model/plan.ts#seppElectionSchema',
+      'packages/engine/src/strategies/sepp.ts#seppAnnualAmount',
+    ],
   },
   'notice-2022-6-3-03-a-complete-depletion': {
     title: 'Exhausting the account is not a modification',
@@ -7802,6 +8696,9 @@ const registry = {
     verifiedOn: '2026-08-04',
     implementedBy: [
       'packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.ts#reconcileOwnedNonRothIraSeppAnnualSchedule',
     ],
   },
 
@@ -7843,6 +8740,11 @@ const registry = {
       'packages/engine/src/params/data/year2026.ts',
       'packages/engine/src/params/index.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/data/year2026.ts#year2026',
+      'packages/engine/src/params/index.ts#singleLifeExpectancyYears',
+      'packages/engine/src/strategies/sepp.ts#seppAnnualAmount',
+    ],
   },
 
   'notice-2022-6-3-01-b-level-amortization': {
@@ -7875,6 +8777,10 @@ const registry = {
       'packages/engine/src/strategies/sepp.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/strategies/sepp.ts#seppAnnualAmount',
+    ],
   },
 
   'notice-2022-6-3-02-d-account-balance-valuation-window': {
@@ -7899,6 +8805,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-04',
     implementedBy: ['packages/engine/src/projection/simulate.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+    ],
   },
 
   'notice-2022-6-3-02-e-1-projection-contribution-during-series': {
@@ -7932,6 +8841,10 @@ const registry = {
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/strategies/accountEligibility.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/strategies/accountEligibility.ts#acceptsContributions',
+    ],
   },
 
   'irc-72-t-3-B-sepp-separation-annual-proxy': {
@@ -7958,6 +8871,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/actions/annualRetirementPhysicalEventInventory.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/annualRetirementPhysicalEventInventory.ts#buildAnnualRetirementPhysicalEventInventory',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
   'irc-219-f-3-prior-year-contribution-window': {
@@ -7989,6 +8906,12 @@ const registry = {
     implementedBy: [
       'packages/engine/src/actions/ownedNonRothIraAnnualFilingEvidence.ts',
       'packages/engine/src/actions/ownedNonRothIraAnnualPostCandidateEvidence.ts',
+      'packages/engine/src/model/retirementActionAnnualTaxFacts.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/ownedNonRothIraAnnualFilingEvidence.ts#buildPlanOwnedNonRothIraAnnualFilingEvidence',
+      'packages/engine/src/actions/ownedNonRothIraAnnualPostCandidateEvidence.ts#buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput',
+      'packages/engine/src/model/retirementActionAnnualTaxFacts.ts#ordinaryFederalFilingDeadline',
     ],
   },
 
@@ -8022,6 +8945,10 @@ const registry = {
       'packages/engine/src/actions/annualHsaReimbursementLedger.ts',
       'packages/engine/src/actions/annualHsaWithdrawalCharacter.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/annualHsaReimbursementLedger.ts#evaluateAnnualHsaReimbursementLedger',
+      'packages/engine/src/actions/annualHsaWithdrawalCharacter.ts#classifyAnnualHsaWithdrawalCharacter',
+    ],
   },
 
   'notice-2004-2-a-26-expense-incurred-after-hsa-established': {
@@ -8053,6 +8980,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/actions/annualHsaReimbursementLedger.ts',
       'packages/engine/src/actions/annualHsaWithdrawalCharacter.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/annualHsaReimbursementLedger.ts#evaluateAnnualHsaReimbursementLedger',
+      'packages/engine/src/actions/annualHsaWithdrawalCharacter.ts#classifyAnnualHsaWithdrawalCharacter',
     ],
   },
 
@@ -8086,6 +9017,10 @@ const registry = {
       'packages/engine/src/actions/annualHsaReimbursementLedger.ts',
       'packages/engine/src/actions/annualHsaWithdrawalCharacter.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/annualHsaReimbursementLedger.ts#evaluateAnnualHsaReimbursementLedger',
+      'packages/engine/src/actions/annualHsaWithdrawalCharacter.ts#classifyAnnualHsaWithdrawalCharacter',
+    ],
   },
 
   'irc-223-d-2-A-expense-reimbursable-once': {
@@ -8117,6 +9052,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/actions/annualHsaReimbursementLedger.ts',
       'packages/engine/src/actions/annualHsaWithdrawalCharacter.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/annualHsaReimbursementLedger.ts#evaluateAnnualHsaReimbursementLedger',
+      'packages/engine/src/actions/annualHsaWithdrawalCharacter.ts#classifyAnnualHsaWithdrawalCharacter',
     ],
   },
 
@@ -8150,6 +9089,9 @@ const registry = {
     implementedBy: [
       'packages/engine/src/actions/annualHsaReimbursementLedger.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/annualHsaReimbursementLedger.ts#evaluateAnnualHsaReimbursementLedger',
+    ],
   },
 
   'notice-2008-59-a-41-hsa-establishment-date-per-account': {
@@ -8182,6 +9124,9 @@ const registry = {
     implementedBy: [
       'packages/engine/src/actions/annualHsaReimbursementLedger.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/annualHsaReimbursementLedger.ts#evaluateAnnualHsaReimbursementLedger',
+    ],
   },
 
   'irc-72-e-8-B-employer-plan-pro-rata-basis': {
@@ -8213,6 +9158,9 @@ const registry = {
     implementedBy: [
       'packages/engine/src/actions/traditionalEmployerPlanWithdrawalCharacter.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/traditionalEmployerPlanWithdrawalCharacter.ts#classifyTraditionalEmployerPlanWithdrawal',
+    ],
   },
 
   'irc-72-e-8-D-pre-1987-employee-contributions': {
@@ -8238,6 +9186,9 @@ const registry = {
     verifiedOn: '2026-08-04',
     implementedBy: [
       'packages/engine/src/actions/traditionalEmployerPlanWithdrawalCharacter.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/traditionalEmployerPlanWithdrawalCharacter.ts#classifyTraditionalEmployerPlanWithdrawal',
     ],
   },
 
@@ -8270,6 +9221,9 @@ const registry = {
     verifiedOn: '2026-08-04',
     implementedBy: [
       'packages/engine/src/actions/taxableWithdrawalCharacter.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/taxableWithdrawalCharacter.ts#classifyIndividuallyOwnedTaxableWithdrawal',
     ],
   },
 
@@ -8307,6 +9261,9 @@ const registry = {
     verifiedOn: '2026-08-04',
     implementedBy: [
       'packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts#stageAnnualQcdTaxCharacterPostPass',
     ],
   },
   // The distributee half of the old single conversion-identity record, which
@@ -8359,6 +9316,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/actions/aggregateRothConversionOwnerAllocation.ts',
       'packages/engine/src/projection/simulate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/aggregateRothConversionOwnerAllocation.ts#allocateAggregateRothConversionByOwner',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
   'irc-408A-d-3-B-conversion-destination-must-be-a-roth-ira': {
@@ -8441,6 +9402,11 @@ const registry = {
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/strategies/accountEligibility.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/aggregateRothConversionOwnerAllocation.ts#allocateAggregateRothConversionByOwner',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/strategies/accountEligibility.ts#evaluateRetirementActionEligibility',
+    ],
   },
 
   // --- Registered 2026-08-05; settled 2026-08-20 -----------------------------
@@ -8488,6 +9454,11 @@ const registry = {
       'packages/engine/src/strategies/accountEligibility.ts',
       'packages/engine/src/actions/aggregateRothConversionOwnerAllocation.ts',
       'packages/engine/src/projection/simulate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/aggregateRothConversionOwnerAllocation.ts#allocateAggregateRothConversionByOwner',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/strategies/accountEligibility.ts#isConvertibleToRoth',
     ],
   },
 
@@ -8541,6 +9512,10 @@ const registry = {
       'packages/engine/src/actions/annualQcdStandardSection170pLedger.ts',
       'packages/engine/src/tax/annualCharitableDeductionParameters.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/annualQcdStandardSection170pLedger.ts#stageAnnualQcdStandardSection170pLedger',
+      'packages/engine/src/tax/annualCharitableDeductionParameters.ts#annualCharitableDeductionParameters',
+    ],
   },
 
   'irc-170-b-1-G-projection-cash-ceiling-not-applied': {
@@ -8571,6 +9546,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-04',
     implementedBy: ['packages/engine/src/tax/federalTax.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/tax/federalTax.ts#itemizedTotal',
+    ],
   },
 
   'irc-170-p-projection-nonitemizer-deduction-not-allowed': {
@@ -8601,6 +9579,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-04',
     implementedBy: ['packages/engine/src/tax/federalTax.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/tax/federalTax.ts#deduction',
+    ],
   },
 
   // --- Registered 2026-08-27: WS4c Cluster 4 (DAF vehicle) -------------------
@@ -8661,6 +9642,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-27',
     implementedBy: ['packages/engine/src/model/plan.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#itemizedDeductionsSchema',
+    ],
   },
 
   // ---------------------------------------------------------------------------
@@ -8718,6 +9702,11 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/params/state/data/year2026.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/index.ts#conformStateStandardDeduction',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+    ],
   },
 
   'ndcc-57-38-30-3-2-d-long-term-gain-exclusion': {
@@ -8753,6 +9742,10 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/params/state/data/year2026.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+    ],
   },
 
   'pa-pit-retirement-benefits-not-compensation': {
@@ -8784,6 +9777,11 @@ const registry = {
     implementedBy: [
       'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/params/state/data/year2026.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+      'packages/engine/src/tax/stateTax.ts#retirementExclusion',
     ],
   },
 
@@ -8817,6 +9815,10 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/params/state/data/year2026.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+    ],
   },
 
   'nv-const-10-1-9-no-personal-income-tax': {
@@ -8842,6 +9844,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/params/state/data/year2026.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
 
@@ -8886,6 +9892,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/params/state/data/year2026.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
 
@@ -8947,6 +9957,10 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/params/state/data/year2026.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+    ],
   },
 
   'fl-const-7-5-a-income-tax-prohibited': {
@@ -9006,6 +10020,10 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/params/state/data/year2026.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+    ],
   },
 
   'wv-code-11-21-12-social-security-full-modification': {
@@ -9050,6 +10068,10 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/params/state/data/year2026.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+    ],
   },
 
   'ny-tax-612-c-3-a-pension-annuity-exclusion': {
@@ -9088,6 +10110,11 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/params/state/data/year2026.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+      'packages/engine/src/tax/stateTax.ts#retirementExclusion',
+    ],
   },
 
   'il-ita-203-a-2-F-retirement-income-subtraction': {
@@ -9119,6 +10146,11 @@ const registry = {
     implementedBy: [
       'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/params/state/data/year2026.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+      'packages/engine/src/tax/stateTax.ts#retirementExclusion',
     ],
   },
 
@@ -9152,6 +10184,10 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/params/state/data/year2026.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+    ],
   },
 
   'iowa-code-422-7-19-a-retirement-income-exclusion': {
@@ -9177,6 +10213,11 @@ const registry = {
     implementedBy: [
       'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/params/state/data/year2026.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+      'packages/engine/src/tax/stateTax.ts#retirementExclusion',
     ],
   },
 
@@ -9223,6 +10264,11 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/params/state/data/year2026.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/index.ts#conformStateStandardDeduction',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+    ],
   },
 
   'sc-code-12-6-1170-retirement-income-deduction': {
@@ -9254,6 +10300,11 @@ const registry = {
     implementedBy: [
       'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/params/state/data/year2026.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+      'packages/engine/src/tax/stateTax.ts#retirementExclusion',
     ],
   },
 
@@ -9341,6 +10392,10 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxDetail',
+    ],
   },
 
   'ndcc-57-38-30-3-2-s-social-security-subtraction': {
@@ -9386,6 +10441,10 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+    ],
   },
 
   'ndcc-57-38-30-3-2-r-military-retirement-exclusion': {
@@ -9417,6 +10476,11 @@ const registry = {
     implementedBy: [
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#PUBLIC_PENSION_OVERRIDES',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+      'packages/engine/src/tax/stateTax.ts#retirementExclusion',
     ],
   },
 
@@ -9455,6 +10519,11 @@ const registry = {
     implementedBy: [
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#PUBLIC_PENSION_OVERRIDES',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+      'packages/engine/src/tax/stateTax.ts#retirementExclusion',
     ],
   },
 
@@ -9500,6 +10569,11 @@ const registry = {
       'packages/engine/src/params/state/types.ts',
       'packages/engine/src/tax/stateTax.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#PUBLIC_PENSION_OVERRIDES',
+      'packages/engine/src/params/state/types.ts#StateRetirementExclusion',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+    ],
   },
 
   'ndcc-57-38-30-3-2-d-2-qualified-dividend-exclusion': {
@@ -9536,6 +10610,12 @@ const registry = {
       'packages/engine/src/params/state/types.ts',
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#capitalGainsTaxablePct',
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/types.ts#StateTaxParams',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
   // ---------------------------------------------------------------------------
@@ -9625,6 +10705,10 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/params/state/data/year2026.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+    ],
   },
 
   'sd-no-individual-income-tax': {
@@ -9671,6 +10755,10 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/params/state/data/year2026.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+    ],
   },
 
   // Tennessee takes two records because the two halves of its negative rest on
@@ -9712,6 +10800,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/params/state/data/year2026.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxDetail',
     ],
   },
 
@@ -9770,6 +10862,10 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/params/state/data/year2026.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+    ],
   },
 
   'wy-stat-39-12-101-no-state-or-local-income-tax': {
@@ -9811,6 +10907,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/params/state/data/year2026.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxDetail',
     ],
   },
 
@@ -9906,6 +11006,10 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxDetail',
+    ],
   },
 
   'aca-26-51-430-c-published-indexed-standard-deduction': {
@@ -9953,6 +11057,10 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+    ],
   },
 
   'aca-26-51-307-six-thousand-retirement-exemption': {
@@ -9991,6 +11099,11 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+      'packages/engine/src/tax/stateTax.ts#retirementExclusion',
+    ],
   },
 
   'aca-26-51-307-a-1-public-pension-inside-the-six-thousand': {
@@ -10026,6 +11139,11 @@ const registry = {
     implementedBy: [
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#PUBLIC_PENSION_OVERRIDES',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+      'packages/engine/src/tax/stateTax.ts#retirementExclusion',
     ],
   },
 
@@ -10072,6 +11190,11 @@ const registry = {
       'packages/engine/src/params/state/types.ts',
       'packages/engine/src/tax/stateTax.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#PUBLIC_PENSION_OVERRIDES',
+      'packages/engine/src/params/state/types.ts#StateRetirementExclusion',
+      'packages/engine/src/tax/stateTax.ts#retirementExclusion',
+    ],
   },
 
   'aca-26-51-307-a-2-ira-age-fifty-nine-and-a-half-gate': {
@@ -10105,6 +11228,11 @@ const registry = {
       'packages/engine/src/params/state/types.ts',
       'packages/engine/src/tax/stateTax.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/types.ts#StateRetirementExclusion',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+    ],
   },
 
   'aca-26-51-404-b-6-social-security-exclusion': {
@@ -10136,6 +11264,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
 
@@ -10174,6 +11306,10 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+    ],
   },
 
   'aca-26-51-815-b-3-ten-million-dollar-gain-exemption': {
@@ -10206,6 +11342,11 @@ const registry = {
       'packages/engine/src/params/state/types.ts',
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/types.ts#StateTaxParams',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
 
@@ -10266,6 +11407,10 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxDetail',
+    ],
   },
 
   'ars-43-1041-standard-deduction-published-amount': {
@@ -10317,6 +11462,11 @@ const registry = {
       'packages/engine/src/params/state/index.ts',
       'packages/engine/src/tax/stateTax.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/index.ts#conformStateStandardDeduction',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+    ],
   },
 
   'ars-43-1022-10-social-security-railroad-exclusion': {
@@ -10349,6 +11499,10 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+    ],
   },
 
   'ars-43-1022-26-uniformed-services-exclusion': {
@@ -10380,6 +11534,11 @@ const registry = {
     implementedBy: [
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#PUBLIC_PENSION_OVERRIDES',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+      'packages/engine/src/tax/stateTax.ts#retirementExclusion',
     ],
   },
 
@@ -10415,6 +11574,11 @@ const registry = {
     implementedBy: [
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+      'packages/engine/src/tax/stateTax.ts#retirementExclusion',
     ],
   },
 
@@ -10461,6 +11625,11 @@ const registry = {
       'packages/engine/src/params/state/types.ts',
       'packages/engine/src/tax/stateTax.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#PUBLIC_PENSION_OVERRIDES',
+      'packages/engine/src/params/state/types.ts#StateRetirementExclusion',
+      'packages/engine/src/tax/stateTax.ts#retirementExclusion',
+    ],
   },
 
   'ars-43-1022-22-long-term-capital-gain-subtraction': {
@@ -10499,6 +11668,12 @@ const registry = {
       'packages/engine/src/params/state/types.ts',
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#capitalGainsTaxablePct',
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/types.ts#StateTaxParams',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
 
@@ -10542,6 +11717,11 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/params/state/index.ts',
       'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/index.ts#conformStateStandardDeduction',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
 
@@ -10590,6 +11770,10 @@ const registry = {
       // Where "rounds to zero whole cents" is defined, against the same
       // conversion every journal consumer measures a movement with.
       'packages/engine/src/actions/planBalanceAdapter.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/planBalanceAdapter.ts#planDollarsMoveNoLedgerCent',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
 
@@ -10684,6 +11868,10 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxDetail',
+    ],
   },
 
   'ic-6-3-1-3-5-a-8-social-security-railroad-subtraction': {
@@ -10715,6 +11903,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
 
@@ -10756,6 +11948,11 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+      'packages/engine/src/tax/stateTax.ts#retirementExclusion',
+    ],
   },
 
   'ic-6-3-2-4-military-retirement-deduction': {
@@ -10788,6 +11985,11 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/params/state/types.ts',
       'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#PUBLIC_PENSION_OVERRIDES',
+      'packages/engine/src/params/state/types.ts#StateRetirementExclusion',
+      'packages/engine/src/tax/stateTax.ts#retirementExclusion',
     ],
   },
 
@@ -10841,6 +12043,11 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/params/state/types.ts',
       'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/types.ts#StateRetirementExclusion',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
 
@@ -10898,6 +12105,11 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/params/state/types.ts',
       'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/types.ts#StateTaxParams',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxDetail',
     ],
   },
 
@@ -10958,6 +12170,11 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/params/state/types.ts',
       'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/types.ts#StateTaxParams',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
 
@@ -11074,6 +12291,10 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxDetail',
+    ],
   },
 
   'ms-27-7-15-4-retirement-income-excluded-from-gross-income': {
@@ -11131,6 +12352,11 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+      'packages/engine/src/tax/stateTax.ts#retirementExclusion',
+    ],
   },
 
   'ms-early-or-excess-distribution-not-exempt': {
@@ -11175,6 +12401,11 @@ const registry = {
       'packages/engine/src/params/state/types.ts',
       'packages/engine/src/tax/stateTax.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/types.ts#StateRetirementExclusion',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+    ],
   },
 
   'ms-27-7-17-standard-deduction-unindexed': {
@@ -11208,6 +12439,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
 
@@ -11263,6 +12498,11 @@ const registry = {
       'packages/engine/src/params/state/types.ts',
       'packages/engine/src/tax/stateTax.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/types.ts#StateTaxParams',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+    ],
   },
 
   'ms-combined-return-runs-the-schedule-per-spouse': {
@@ -11314,6 +12554,11 @@ const registry = {
       'packages/engine/src/params/state/types.ts',
       'packages/engine/src/tax/stateTax.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/types.ts#StateTaxParams',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxDetail',
+    ],
   },
 
   'ms-capital-gains-taxed-as-ordinary': {
@@ -11339,6 +12584,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
 
@@ -11376,6 +12625,10 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/params/state/data/year2026.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+    ],
   },
 
   'co-crs-39-22-104-federal-base-and-pension-cap': {
@@ -11405,9 +12658,16 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-27',
     implementedBy: [
+      'packages/engine/src/params/state/index.ts',
       'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/params/state/types.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/index.ts#conformStateStandardDeduction',
+      'packages/engine/src/params/state/types.ts#StateRetirementExclusion',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
 
@@ -11435,6 +12695,11 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/params/state/types.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/types.ts#taxesSocialSecurity',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
 
@@ -11468,6 +12733,11 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/params/state/index.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/index.ts#conformStateStandardDeduction',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
 
@@ -11509,6 +12779,11 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/params/state/types.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/types.ts#StateRetirementExclusion',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+    ],
   },
 
   'ct-cgs-12-701-20-b-social-security-retirement': {
@@ -11542,6 +12817,11 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/params/state/types.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/types.ts#StateRetirementExclusion',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+    ],
   },
 
   'de-code-30-1106-social-security-retirement-subtractions': {
@@ -11573,6 +12853,11 @@ const registry = {
     implementedBy: [
       'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/params/state/data/year2026.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+      'packages/engine/src/tax/stateTax.ts#retirementExclusion',
     ],
   },
 
@@ -11606,6 +12891,12 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/params/state/types.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#PUBLIC_PENSION_OVERRIDES',
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/types.ts#StateRetirementExclusion',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+    ],
   },
 
   'id-code-63-3022-federal-standard-and-ss': {
@@ -11632,6 +12923,10 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/params/state/data/year2026.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+    ],
   },
 
   'ks-stat-79-32-117-social-security-exclusion': {
@@ -11657,6 +12952,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/params/state/data/year2026.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
 
@@ -11709,6 +13008,11 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/params/state/types.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#PUBLIC_PENSION_OVERRIDES',
+      'packages/engine/src/params/state/types.ts#StateRetirementExclusion',
+      'packages/engine/src/tax/stateTax.ts#retirementExclusion',
+    ],
   },
 
   'irc-408-d-2-C-projection-pro-rata-measurement-instant': {
@@ -11750,6 +13054,13 @@ const registry = {
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/strategies/iraBasis.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/ownedNonRothIraWithdrawalCharacter.ts#classifyOwnedNonRothIraAnnualWithdrawals',
+      'packages/engine/src/internal/ownedNonRothIraContiguousReplay.ts#replayOwnedNonRothIraContiguousYears',
+      'packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts#validateOwnedNonRothIraRuntimeSourceSeries',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/strategies/iraBasis.ts#openIraProRataYear',
+    ],
   },
 
   'irc-408-d-2-C-annuity-contract-close-of-year-value': {
@@ -11790,6 +13101,12 @@ const registry = {
       'packages/engine/src/internal/ownedNonRothIraContiguousReplay.ts',
       'packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts',
       'packages/engine/src/projection/simulate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/internal/iraAnnuityContractValue.ts#openingAnnuityContractValuePlanDollars',
+      'packages/engine/src/internal/ownedNonRothIraContiguousReplay.ts#replayOwnedNonRothIraContiguousYears',
+      'packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts#validateOwnedNonRothIraRuntimeSourceSeries',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
 
@@ -11850,6 +13167,12 @@ const registry = {
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/internal/iraAnnuityContractValue.ts#ownedIraFundedAnnuityContracts',
+      'packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts#validateOwnedNonRothIraRuntimeSourceSeries',
+      'packages/engine/src/model/plan.ts#annuitySchema',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+    ],
   },
 
   'irc-408-d-2-A-annuity-contract-outside-the-form-8606-aggregate': {
@@ -11898,6 +13221,13 @@ const registry = {
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/strategies/accountEligibility.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/internal/iraAnnuityContractValue.ts#openingAnnuityContractValuePlanDollars',
+      'packages/engine/src/internal/ownedNonRothIraContiguousReplay.ts#replayOwnedNonRothIraContiguousYears',
+      'packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts#validateOwnedNonRothIraRuntimeSourceSeries',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/strategies/accountEligibility.ts#isAggregatedIra',
+    ],
   },
 
   'irc-408-d-2-B-annuity-payment-outside-the-annual-basis-fraction': {
@@ -11937,6 +13267,11 @@ const registry = {
       'packages/engine/src/internal/ownedNonRothIraContiguousReplay.ts',
       'packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts',
       'packages/engine/src/projection/simulate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/internal/ownedNonRothIraContiguousReplay.ts#replayOwnedNonRothIraContiguousYears',
+      'packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts#validateOwnedNonRothIraRuntimeSourceSeries',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
 
@@ -11984,6 +13319,12 @@ const registry = {
       'packages/engine/src/model/migrations.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/model/migrations.ts#migratePlanToCurrent',
+      'packages/engine/src/model/plan.ts#annuitySchema',
+      'packages/engine/src/model/plan.ts#latestNonQlacQualifiedAnnuityStartAge',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+    ],
   },
 
   'treas-reg-1-401-a-9-6-q-1-ii-qlac-commences-by-the-85th-birthday': {
@@ -12024,6 +13365,12 @@ const registry = {
       'packages/engine/src/model/migrations.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/model/migrations.ts#migratePlanToCurrent',
+      'packages/engine/src/model/plan.ts#annuitySchema',
+      'packages/engine/src/model/plan.ts#latestQlacAnnuityStartAge',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+    ],
   },
 
   'treas-reg-1-401-a-9-6-q-2-ii-qlac-premium-cap-across-every-contract': {
@@ -12055,6 +13402,9 @@ const registry = {
     verifiedOn: '2026-08-07',
     implementedBy: [
       'packages/engine/src/projection/simulate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
 
@@ -12100,6 +13450,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/rmd/rmd.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/rmd/rmd.ts#requiredMinimumDistribution',
     ],
   },
   'irs-notice-2022-53-2023-54-2024-35-inherited-rmd-transition-relief': {
@@ -12164,6 +13518,10 @@ const registry = {
       'packages/engine/src/strategies/inheritedIra.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/strategies/inheritedIra.ts#inheritedRequirementForYear',
+    ],
   },
 
   'irc-401-a-9-B-ii-non-designated-beneficiary-five-year-rule': {
@@ -12206,8 +13564,14 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-25',
     implementedBy: [
+      'packages/engine/src/model/plan.ts',
       'packages/engine/src/strategies/inheritedIra.ts',
       'packages/engine/src/projection/simulate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#inheritedBeneficiarySchema',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/strategies/inheritedIra.ts#classifyInheritedRegime',
     ],
   },
 
@@ -12239,8 +13603,14 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-25',
     implementedBy: [
+      'packages/engine/src/model/plan.ts',
       'packages/engine/src/strategies/inheritedIra.ts',
       'packages/engine/src/projection/simulate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#inheritedAccountSchema',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/strategies/inheritedIra.ts#classifyInheritedRegime',
     ],
   },
 
@@ -12278,8 +13648,14 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-25',
     implementedBy: [
+      'packages/engine/src/model/plan.ts',
       'packages/engine/src/strategies/inheritedIra.ts',
       'packages/engine/src/projection/simulate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#inheritedBeneficiarySchema',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/strategies/inheritedIra.ts#classifyInheritedRegime',
     ],
   },
 
@@ -12314,6 +13690,11 @@ const registry = {
       'packages/engine/src/rmd/jointLifeTable.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/rmd/jointLifeTable.ts#jointLifeTableDivisor',
+      'packages/engine/src/rmd/rmd.ts#requiredMinimumDistribution',
+    ],
   },
 
   'irc-408A-c-4-roth-ira-no-lifetime-rmd': {
@@ -12337,6 +13718,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-25',
     implementedBy: ['packages/engine/src/projection/simulate.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+    ],
   },
 
   'irc-402A-c-4-E-in-plan-roth-transfer-not-modeled': {
@@ -12376,6 +13760,12 @@ const registry = {
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/actions/contract.ts',
       'packages/engine/src/strategies/accountEligibility.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/contract.ts#persistedRetirementActionRequestSchema',
+      'packages/engine/src/model/plan.ts#rothAccountSchema',
+      'packages/engine/src/model/plan.ts#traditionalAccountSchema',
+      'packages/engine/src/strategies/accountEligibility.ts#evaluateConversion',
     ],
   },
 
@@ -12417,6 +13807,11 @@ const registry = {
       'packages/engine/src/actions/contract.ts',
       'packages/engine/src/strategies/accountEligibility.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/contract.ts#persistedRetirementActionRequestSchema',
+      'packages/engine/src/model/plan.ts#traditionalAccountSchema',
+      'packages/engine/src/strategies/accountEligibility.ts#evaluateConversion',
+    ],
   },
 
   'irc-402A-d-5-designated-roth-account-no-lifetime-rmd': {
@@ -12448,6 +13843,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/strategies/accountEligibility.ts',
       'packages/engine/src/projection/simulate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/strategies/accountEligibility.ts#followsOwnerRmds',
     ],
   },
 
@@ -12488,6 +13887,10 @@ const registry = {
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/model/plan.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#pensionSchema',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+    ],
   },
 
   'treas-reg-54-4974-1-f-first-year-rbd-excise-tax': {
@@ -12513,6 +13916,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/rmd/rmdShortfallExcise.ts',
       'packages/engine/src/projection/simulate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/rmd/rmdShortfallExcise.ts#computeRmdShortfallExcise',
     ],
   },
 
@@ -12540,6 +13947,10 @@ const registry = {
       'packages/engine/src/rmd/rmdShortfallExcise.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/rmd/rmdShortfallExcise.ts#automaticWaiverReason',
+    ],
   },
 
   'treas-reg-54-4974-1-g-3-year-of-death-automatic-waiver': {
@@ -12565,6 +13976,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/rmd/rmdShortfallExcise.ts',
       'packages/engine/src/projection/simulate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/rmd/rmdShortfallExcise.ts#automaticWaiverReason',
     ],
   },
 
@@ -12592,6 +14007,11 @@ const registry = {
       'packages/engine/src/strategies/accountEligibility.ts',
       'packages/engine/src/strategies/inheritedIra.ts',
       'packages/engine/src/projection/simulate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/strategies/accountEligibility.ts#isTreatAsOwnEffective',
+      'packages/engine/src/strategies/inheritedIra.ts#classifyInheritedRegime',
     ],
   },
 
@@ -12625,6 +14045,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/projection/simulate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#traditionalAccountSchema',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
 
@@ -12671,6 +14095,10 @@ const registry = {
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#traditionalAccountSchema',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+    ],
   },
 
   'irc-401-a-17-plan-compensation-cap': {
@@ -12703,6 +14131,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/projection/simulate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#employerMatchSchema',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
 
@@ -12753,6 +14185,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/actions/contract.ts',
       'packages/engine/src/model/plan.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/contract.ts#persistedRetirementActionRequestSchema',
+      'packages/engine/src/model/plan.ts#traditionalAccountSchema',
     ],
   },
 
@@ -12811,6 +14247,11 @@ const registry = {
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/model/plan.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#rothAccountSchema',
+      'packages/engine/src/model/plan.ts#traditionalAccountSchema',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+    ],
   },
 
   'irc-411-a-2-vesting-schedule-maximums': {
@@ -12843,6 +14284,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/actions/contract.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/contract.ts#persistedRetirementActionRequestSchema',
+      'packages/engine/src/model/plan.ts#traditionalAccountSchema',
     ],
   },
 
@@ -12883,6 +14328,10 @@ const registry = {
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#traditionalAccountSchema',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+    ],
   },
 
   'irc-414-v-7-402-g-7-403b-15-year-catch-up-exclusion': {
@@ -12915,6 +14364,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/projection/simulate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#traditionalAccountSchema',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
 
@@ -12955,6 +14408,10 @@ const registry = {
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/model/plan.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#traditionalAccountSchema',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+    ],
   },
 
   'pl-116-94-div-o-title-I-sec-107-traditional-ira-age-cap-repeal': {
@@ -12986,6 +14443,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/model/plan.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#planSchema',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
 
@@ -13026,6 +14487,10 @@ const registry = {
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#traditionalAccountSchema',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+    ],
   },
 
   'irc-83-a-equity-compensation-execution-character': {
@@ -13057,6 +14522,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/actions/execution.ts',
       'packages/engine/src/model/plan.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/execution.ts#executeOrdinaryWithdrawals',
+      'packages/engine/src/model/plan.ts#equityCompAccountSchema',
     ],
   },
 
@@ -13090,6 +14559,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/projection/simulate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#hsaAccountSchema',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
 
@@ -13136,6 +14609,10 @@ const registry = {
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/model/plan.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#hsaAccountSchema',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+    ],
   },
 
   'irc-402A-e-1-A-plesa-optional-designated-roth-subaccount': {
@@ -13168,6 +14645,11 @@ const registry = {
     implementedBy: [
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/actions/contract.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/contract.ts#persistedRetirementActionRequestSchema',
+      'packages/engine/src/model/plan.ts#rothAccountSchema',
+      'packages/engine/src/model/plan.ts#traditionalAccountSchema',
     ],
   },
 
@@ -13202,6 +14684,11 @@ const registry = {
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/actions/contract.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/contract.ts#persistedRetirementActionRequestSchema',
+      'packages/engine/src/model/plan.ts#rothAccountSchema',
+      'packages/engine/src/model/plan.ts#traditionalAccountSchema',
+    ],
   },
 
   'irc-72-t-2-J-plesa-withdrawal-early-distribution-exception': {
@@ -13235,6 +14722,11 @@ const registry = {
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/actions/contract.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/contract.ts#persistedRetirementActionRequestSchema',
+      'packages/engine/src/model/plan.ts#rothAccountSchema',
+      'packages/engine/src/model/plan.ts#traditionalAccountSchema',
+    ],
   },
 
   'irc-402A-e-7-B-i-plesa-distribution-qualified-roth-treatment': {
@@ -13267,6 +14759,11 @@ const registry = {
     implementedBy: [
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/actions/contract.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/contract.ts#persistedRetirementActionRequestSchema',
+      'packages/engine/src/model/plan.ts#rothAccountSchema',
+      'packages/engine/src/model/plan.ts#traditionalAccountSchema',
     ],
   },
 
@@ -13307,6 +14804,10 @@ const registry = {
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/actions/contract.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/contract.ts#persistedRetirementActionRequestSchema',
+      'packages/engine/src/model/plan.ts#planSchema',
+    ],
   },
 
   'irc-6433-f-6-savers-match-early-distribution-recovery-tax': {
@@ -13339,6 +14840,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/actions/contract.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/contract.ts#persistedRetirementActionRequestSchema',
+      'packages/engine/src/model/plan.ts#planSchema',
     ],
   },
 
@@ -13391,6 +14896,10 @@ const registry = {
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/actions/contract.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/contract.ts#persistedRetirementActionRequestSchema',
+      'packages/engine/src/model/plan.ts#accountUnionSchema',
+    ],
   },
 
   'irc-2503-b-annual-gift-exclusion-not-modeled': {
@@ -13423,6 +14932,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/params/types.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#planSchema',
+      'packages/engine/src/params/types.ts#ParameterPack',
     ],
   },
 
@@ -13481,6 +14994,10 @@ const registry = {
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/params/types.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#planSchema',
+      'packages/engine/src/params/types.ts#ParameterPack',
+    ],
   },
 
   'irc-2010-c-5-dsue-portability-election-not-modeled': {
@@ -13518,6 +15035,9 @@ const registry = {
     verifiedOn: '2026-08-27',
     implementedBy: [
       'packages/engine/src/model/plan.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#planSchema',
     ],
   },
 
@@ -13557,6 +15077,11 @@ const registry = {
     implementedBy: [
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/projection/simulate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#rothAccountSchema',
+      'packages/engine/src/model/plan.ts#traditionalAccountSchema',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
 
@@ -13603,6 +15128,10 @@ const registry = {
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/params/data/year2026.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/data/year2026.ts#year2026',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+    ],
   },
 
   'cfr-31-363-52-savings-bond-annual-purchase-limit': {
@@ -13627,6 +15156,9 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-27',
     implementedBy: ['packages/engine/src/model/plan.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#taxableAccountSchema',
+    ],
   },
 
   'irc-454-savings-bond-interest-deferral': {
@@ -13659,6 +15191,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/projection/simulate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#taxableAccountSchema',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
 
@@ -13705,6 +15241,10 @@ const registry = {
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/tax/federalTax.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#taxableAccountSchema',
+      'packages/engine/src/tax/federalTax.ts#computeFederalTax',
+    ],
   },
 
   'treas-reg-1-1275-7-d-4-positive-inflation-adjustment-oid': {
@@ -13749,6 +15289,10 @@ const registry = {
       'packages/engine/src/ladder/ladderMath.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/ladder/ladderMath.ts#ladderRealFlowsAtOffset',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+    ],
   },
 
   'treas-reg-1-1275-7-f-1-deflation-adjustment-income': {
@@ -13776,6 +15320,11 @@ const registry = {
       'packages/engine/src/ladder/ladderMath.ts',
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/model/plan.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/ladder/ladderMath.ts#ladderRealFlowsAtOffset',
+      'packages/engine/src/model/plan.ts#tipsLadderSchema',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
 
@@ -13805,6 +15354,11 @@ const registry = {
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/model/plan.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/ladder/ladderMath.ts#LadderRung',
+      'packages/engine/src/model/plan.ts#tipsLadderSchema',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+    ],
   },
 
   'treas-reg-1-1275-7-f-3-tips-acquisition-premium': {
@@ -13832,6 +15386,11 @@ const registry = {
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/ladder/ladderMath.ts',
       'packages/engine/src/projection/simulate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/ladder/ladderMath.ts#LadderRung',
+      'packages/engine/src/model/plan.ts#tipsLadderSchema',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
 
@@ -13878,6 +15437,11 @@ const registry = {
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/ladder/ladderMath.ts',
       'packages/engine/src/projection/simulate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/ladder/ladderMath.ts#LadderRung',
+      'packages/engine/src/model/plan.ts#tipsLadderSchema',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
 
@@ -13933,6 +15497,11 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/params/state/data/year2026.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+      'packages/engine/src/tax/stateTax.ts#retirementExclusion',
+    ],
   },
 
   'la-rs-47-44-1-retirement-exemption': {
@@ -13959,6 +15528,11 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/params/state/data/year2026.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+      'packages/engine/src/tax/stateTax.ts#retirementExclusion',
+    ],
   },
 
   'la-rs-47-44-2-social-security-federal-retirement': {
@@ -13984,6 +15558,11 @@ const registry = {
     implementedBy: [
       'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/params/state/data/year2026.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+      'packages/engine/src/tax/stateTax.ts#retirementExclusion',
     ],
   },
 
@@ -14016,6 +15595,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/params/state/data/year2026.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
 
@@ -14067,6 +15650,11 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/params/state/data/year2026.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+      'packages/engine/src/tax/stateTax.ts#retirementExclusion',
+    ],
   },
 
   'ma-gen-laws-ch62-s2-public-pension-exclusion': {
@@ -14098,6 +15686,11 @@ const registry = {
     implementedBy: [
       'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/params/state/data/year2026.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#PUBLIC_PENSION_OVERRIDES',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+      'packages/engine/src/tax/stateTax.ts#retirementExclusion',
     ],
   },
 
@@ -14131,6 +15724,10 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/params/state/data/year2026.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+    ],
   },
 
   'mi-mcl-206-30-f-iii-social-security': {
@@ -14163,6 +15760,10 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/params/state/data/year2026.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+    ],
   },
 
   'mi-mcl-206-30-retirement-and-ss': {
@@ -14194,6 +15795,11 @@ const registry = {
     implementedBy: [
       'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/params/state/data/year2026.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+      'packages/engine/src/tax/stateTax.ts#retirementExclusion',
     ],
   },
 
@@ -14239,6 +15845,10 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/params/state/data/year2026.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+    ],
   },
 
   'mt-mca-15-30-2110-federal-agi-social-security': {
@@ -14279,6 +15889,11 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/params/state/index.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/index.ts#conformStateStandardDeduction',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+    ],
   },
 
   'ne-stat-77-2716-social-security-subtraction': {
@@ -14316,6 +15931,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/params/state/data/year2026.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
 
@@ -14355,6 +15974,11 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/params/state/data/year2026.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#PUBLIC_PENSION_OVERRIDES',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+      'packages/engine/src/tax/stateTax.ts#retirementExclusion',
+    ],
   },
 
   'nh-rsa-77-taxation-of-incomes-repealed': {
@@ -14389,6 +16013,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/params/state/data/year2026.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
 
@@ -14434,6 +16062,11 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/params/state/data/year2026.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+      'packages/engine/src/tax/stateTax.ts#retirementExclusion',
+    ],
   },
 
   // Batch C state records — verified against the staged sources on 2026-08-27.
@@ -14462,6 +16095,11 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/index.ts#conformStateStandardDeduction',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+    ],
   },
 
   'ncgs-105-153-5-social-security-exclusion': {
@@ -14487,6 +16125,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
 
@@ -14527,6 +16169,11 @@ const registry = {
     implementedBy: [
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#PUBLIC_PENSION_OVERRIDES',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+      'packages/engine/src/tax/stateTax.ts#retirementExclusion',
     ],
   },
 
@@ -14578,6 +16225,11 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+      'packages/engine/src/tax/stateTax.ts#retirementExclusion',
+    ],
   },
 
   'or-stat-316-054-social-security-exclusion': {
@@ -14603,6 +16255,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
 
@@ -14660,6 +16316,11 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+      'packages/engine/src/tax/stateTax.ts#retirementExclusion',
+    ],
   },
 
   'ut-code-59-10-114-social-security-tax-credit': {
@@ -14691,6 +16352,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
 
@@ -14772,6 +16437,10 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+    ],
   },
 
   'va-code-58-1-322-03-age-deduction-and-social-security': {
@@ -14797,6 +16466,11 @@ const registry = {
     implementedBy: [
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+      'packages/engine/src/tax/stateTax.ts#retirementExclusion',
     ],
   },
 
@@ -14829,6 +16503,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
 
@@ -14869,6 +16547,12 @@ const registry = {
       'packages/engine/src/params/types.ts',
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#planSchema',
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/types.ts#ParameterPack',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxDetail',
     ],
   },
 
@@ -14921,6 +16605,11 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+      'packages/engine/src/tax/stateTax.ts#retirementExclusion',
+    ],
   },
 
   'wi-schedule-sb-line-5-long-term-capital-gain-exclusion': {
@@ -14953,6 +16642,10 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+    ],
   },
 
   // ---------------------------------------------------------------------------
@@ -14984,6 +16677,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
 
@@ -15024,6 +16721,12 @@ const registry = {
       'packages/engine/src/params/state/types.ts',
       'packages/engine/src/tax/stateTax.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/types.ts#StateRetirementExclusion',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+      'packages/engine/src/tax/stateTax.ts#retirementExclusion',
+    ],
   },
 
   'al-form40-ira-dc-distributions-taxable': {
@@ -15055,6 +16758,11 @@ const registry = {
     implementedBy: [
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+      'packages/engine/src/tax/stateTax.ts#retirementExclusion',
     ],
   },
 
@@ -15088,6 +16796,10 @@ const registry = {
       'packages/engine/src/params/state/types.ts',
       'packages/engine/src/tax/stateTax.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/types.ts#StateRetirementExclusion',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+    ],
   },
 
   'al-form40-railroad-retirement-not-modeled': {
@@ -15111,8 +16823,14 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-28',
     implementedBy: [
+      'packages/engine/src/model/plan.ts',
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#incomeStreamSchema',
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
 
@@ -15152,6 +16870,10 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+    ],
   },
 
   'al-form40-age-65-retirement-exclusion-cap': {
@@ -15186,6 +16908,12 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/params/state/types.ts',
       'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/types.ts#StateRetirementExclusion',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+      'packages/engine/src/tax/stateTax.ts#retirementExclusion',
     ],
   },
 
@@ -15225,6 +16953,10 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+    ],
   },
 
   'al-dor-individual-income-tax-rate-schedule': {
@@ -15256,6 +16988,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxDetail',
     ],
   },
 

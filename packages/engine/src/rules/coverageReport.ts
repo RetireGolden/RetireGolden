@@ -40,6 +40,16 @@ export interface CoverageRule {
   readonly verifiedOn: string
   readonly dueOn: string
   readonly implementedBy: readonly string[]
+  /**
+   * implementedBy joined with the record's declared operative symbols: one
+   * entry per implementing file, each carrying at least one function pin.
+   * Conformance enforces that every declared symbol is a module-scope
+   * declaration (or first-level member) of its file.
+   */
+  readonly implementations: readonly {
+    readonly path: string
+    readonly functions: readonly string[]
+  }[]
   readonly fixtureFiles: readonly string[]
   /**
    * One entry per describeRule call: where the fixture lives (1-based line of
@@ -79,7 +89,7 @@ const QUOTE_FIDELITY_ADVISORY_VERDICTS = ['PUNCTUATION', 'ELISION-PUNCTUATION', 
 
 export interface CoverageReportManifest {
   readonly kind: 'retiregolden.rules-coverage.manifest'
-  readonly version: 2
+  readonly version: 3
   readonly registry: {
     readonly total: number
     readonly byClassification: Readonly<Record<string, number>>
@@ -589,7 +599,7 @@ function buildMarkdown(manifest: CoverageReportManifest): string {
     '',
     '## Manifest contract',
     '',
-    'The JSON manifest (rule-coverage.json, version 2) is the machine contract: each rule additionally carries title, errorDirection (null unless the rule is approximated), conventionRationale and contraryReading (null when unused), deduplicated authority identities (kind, citation, url), and per-fixture detail (path, line, optional note, and the it() titles scanned from the fixture source). This markdown file is the human summary and does not repeat them. Version 2 is a breaking discriminator for readers that check version === 1 strictly; the new fields are additive only for readers that ignore unknown keys and do not pin the version.',
+    'The JSON manifest (rule-coverage.json, version 3) is the machine contract: each rule additionally carries title, errorDirection (null unless the rule is approximated), conventionRationale and contraryReading (null when unused), deduplicated authority identities (kind, citation, url), per-fixture detail (path, line, optional note, and the it() titles scanned from the fixture source), and implementations (per implementing file, the conformance-enforced operative function names). This markdown file is the human summary and does not repeat them. Version 3 is a breaking discriminator for strict version checks (implementations and fixtures are required at 3); the new fields are additive only for readers that ignore unknown keys and do not pin the version.',
     '',
     '## Quote fidelity',
     '',
@@ -662,6 +672,13 @@ export function buildCoverageReport(input: CoverageReportInput): CoverageReport 
       verifiedOn: rule.verifiedOn,
       dueOn: input.dueOnFor(id as TaxRuleId),
       implementedBy: [...rule.implementedBy].sort(),
+      implementations: [...rule.implementedBy].sort().map((path) => ({
+        path,
+        functions: rule.implementedByFunctions
+          .filter((entry: string) => entry.startsWith(path + '#'))
+          .map((entry: string) => entry.slice(path.length + 1))
+          .sort(compareStrings),
+      })),
       fixtureFiles: [...new Set((fixtureDetails.get(id) ?? []).map(({ path }) => path))].sort(compareStrings),
       fixtures: fixtureDetails.get(id) ?? [],
       // Distinct quotes of one provision collapse to one public identity once
@@ -692,10 +709,11 @@ export function buildCoverageReport(input: CoverageReportInput): CoverageReport 
   )
   const manifest: CoverageReportManifest = {
     kind: 'retiregolden.rules-coverage.manifest',
-    // 2: rules carry title/errorDirection/conventionRationale/contraryReading
-    // and deduplicated authority identities. Additive over 1; a consumer that
-    // requires those fields gates on the version instead of key-sniffing.
-    version: 2,
+    // 3: rules additionally carry implementations (per-file function lists)
+    // and per-fixture detail. 2 added title/errorDirection/
+    // conventionRationale/contraryReading and deduplicated authority
+    // identities. A consumer requiring these fields gates on the version.
+    version: 3,
     registry: {
       total: rules.length,
       byClassification: countBy(rules.map(({ classification }) => classification)),

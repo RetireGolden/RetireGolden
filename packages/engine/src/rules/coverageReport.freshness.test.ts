@@ -163,6 +163,7 @@ function syntheticRule(title: string) {
     effectiveThrough: null,
     verifiedOn: '2026-08-27',
     implementedBy: ['packages/engine/src/rules/coverageReport.ts'],
+    implementedByFunctions: ['packages/engine/src/rules/coverageReport.ts#buildCoverageReport'],
   }
 }
 
@@ -172,8 +173,8 @@ function syntheticRule(title: string) {
 // sides regenerate together), so these read expected values from the registry
 // records themselves.
 describe('manifest rule projection contract', () => {
-  it('publishes manifest version 2, the discriminator for the new required fields', () => {
-    expect(report.manifest.version).toBe(2)
+  it('publishes manifest version 3, the discriminator for the required fields', () => {
+    expect(report.manifest.version).toBe(3)
   })
 
   it('copies title, errorDirection, conventionRationale, and contraryReading from the registry', () => {
@@ -193,6 +194,18 @@ describe('manifest rule projection contract', () => {
   it('keeps errorDirection null exactly when the rule is not approximated', () => {
     for (const rule of report.manifest.rules) {
       expect(rule.errorDirection === null, rule.id).toBe(rule.classification !== 'approximated')
+    }
+  })
+
+  it('keeps implementations aligned with implementedBy', () => {
+    for (const rule of report.manifest.rules) {
+      expect(rule.implementations.map(({ path }) => path), rule.id).toEqual(rule.implementedBy)
+      const record = TAX_RULE_REGISTRY[rule.id as keyof typeof TAX_RULE_REGISTRY]
+      const declared = record.implementedByFunctions
+      const published = rule.implementations.flatMap(({ path, functions }) =>
+        functions.map((name) => `${path}#${name}`),
+      )
+      expect([...published].sort(), rule.id).toEqual([...declared].sort())
     }
   })
 
@@ -313,6 +326,7 @@ describe('manifest rule projection contract', () => {
       'fixtureFiles',
       'fixtures',
       'id',
+      'implementations',
       'implementedBy',
       'jurisdiction',
       'title',
@@ -352,6 +366,7 @@ describe('manifest rule projection contract', () => {
         effectiveThrough: null,
         verifiedOn: '2026-08-27',
         implementedBy: ['packages/engine/src/rules/coverageReport.ts'],
+        implementedByFunctions: ['packages/engine/src/rules/coverageReport.ts#buildCoverageReport'],
       },
     } as unknown as typeof TAX_RULE_REGISTRY
     const fixtureReport = buildCoverageReport({
@@ -370,6 +385,11 @@ describe('manifest rule projection contract', () => {
     expect(fixtureRule!.authorities).toEqual([
       { kind: 'statute', citation: 'Fix. Code 1(a)', url: 'https://example.gov/1' },
       { kind: 'statute', citation: 'Fix. Code 1(b)', url: 'https://example.gov/1' },
+    ])
+    // Hand-written expectation, not a builder round-trip: the published
+    // implementations must be exactly the declared pins grouped per file.
+    expect((fixtureRule as { implementations?: unknown }).implementations).toEqual([
+      { path: 'packages/engine/src/rules/coverageReport.ts', functions: ['buildCoverageReport'] },
     ])
     expect(fixtureReport.json).not.toContain('"quotedText":')
   })
