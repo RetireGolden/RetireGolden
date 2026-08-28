@@ -256,10 +256,19 @@ describe('manifest rule projection contract', () => {
         const sourceLines = engineSourceOf(path).split('\n')
         for (const { name, line } of functions) {
           expect(Number.isInteger(line) && line >= 1, `${rule.id}: ${path}#${name}`).toBe(true)
-          // A parent-qualified pin (ND.capitalGainsTaxablePct) anchors at the
-          // member itself, so the member segment is what the line must show.
+          // An ancestor-qualified pin (ND.capitalGainsTaxablePct) anchors at
+          // the member itself, so the member segment is what the line must
+          // show, in declaration position: the name as its own token followed
+          // by :, (, =, <, {, comma, or line end. A comment or prose mention of
+          // the name does not qualify; a same-shaped call site still would,
+          // which is why the synthetic anchor probes in the conformance
+          // suite, not this bind, pin the resolution rule itself.
           const memberName = name.includes('.') ? name.slice(name.lastIndexOf('.') + 1) : name
-          expect(sourceLines[line - 1] ?? '', `${rule.id}: ${path}#${name} line ${line}`).toContain(memberName)
+          const declares = new RegExp(`(?:^|[^\\w$.])${memberName}\\s*(?:[:(=<,{]|$)`, 'u')
+          expect(
+            declares.test(sourceLines[line - 1] ?? ''),
+            `${rule.id}: ${path}#${name} line ${line} does not declare ${memberName}`,
+          ).toBe(true)
         }
       }
     }
@@ -279,12 +288,17 @@ describe('manifest rule projection contract', () => {
           // live source must carry an it( token of its own (the scanner's
           // boundary rule, so a longer identifier like submitIt( cannot
           // satisfy it), for EVERY fixture - an off-by-one that happens to
-          // hold on one sample cannot pass.
+          // hold on one sample cannot pass. When the title's opening quote
+          // shares the line (the formatter's normal shape), the title itself
+          // must start there too, so landing on a SIBLING it( also fails.
           expect(test.line, `${rule.id} ${fixture.path}: ${test.title}`).toBeGreaterThanOrEqual(fixture.line)
-          expect(
-            /(?:^|[^\w$.])it\(/u.test(sourceLines[test.line - 1] ?? ''),
-            `${rule.id} ${fixture.path}#L${test.line}: ${test.title}`,
-          ).toBe(true)
+          const line = sourceLines[test.line - 1] ?? ''
+          const opened = /(?:^|[^\w$.])it\(\s*(['"`]?)/u.exec(line)
+          expect(opened !== null, `${rule.id} ${fixture.path}#L${test.line}: ${test.title}`).toBe(true)
+          const prefix = test.title.slice(0, 15)
+          if (opened![1] !== '' && !/['"`\\]/u.test(prefix)) {
+            expect(line, `${rule.id} ${fixture.path}#L${test.line} should open: ${test.title}`).toContain(prefix)
+          }
         }
       }
     }
@@ -364,6 +378,35 @@ describe('manifest rule projection contract', () => {
     }
     expect(alpha!.fixtures[0]!.note).toBeNull()
     expect(beta!.fixtures[0]!.note).toBe('beta note')
+  })
+
+  it('captures an it() whose title the formatter broke onto its own line', () => {
+    // The scanner's lookahead window must span the line break, and the
+    // published line is the it( token's line, not the title's.
+    const syntheticSource = [
+      "describe" + "Rule('fixture-alpha', { readings: { a: 1, b: 2 }, accepted: 'a' }, ({ accepted }) => {",
+      '  it(', //                                     line 2: the anchor
+      "    'a very long title that the formatter pushed onto its own line discriminates',",
+      '    () => { expect(1).toBe(accepted) },',
+      '  )',
+      '})',
+    ].join('\n')
+    const syntheticRegistry = {
+      'fixture-alpha': syntheticRule('Alpha'),
+    } as unknown as typeof TAX_RULE_REGISTRY
+    const syntheticReport = buildCoverageReport({
+      registry: syntheticRegistry,
+      attestations: COVERAGE_ATTESTATIONS,
+      baselineUnswept: BASELINE_UNSWEPT,
+      testSources: { './synthetic.test.ts': syntheticSource },
+      quoteFidelityLedger: null,
+      dueOnFor: () => '2027-01-01',
+      symbolLineFor,
+    })
+    const alpha = syntheticReport.manifest.rules.find((rule) => rule.id === 'fixture-alpha')
+    expect(alpha!.fixtures[0]!.tests).toEqual([
+      { title: 'a very long title that the formatter pushed onto its own line discriminates', line: 2 },
+    ])
   })
 
   it('publishes unique authority identities with no quotedText', () => {

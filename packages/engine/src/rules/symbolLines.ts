@@ -24,12 +24,15 @@ export interface DeclaredSymbol {
    */
   readonly moduleScope: boolean
   /**
-   * How many member-tier occurrences share the name (interface properties,
-   * pack fields, class members). A member-only name with more than one
-   * occurrence is ambiguous as an anchor: a repeated pack field like a
-   * per-state rate would deep-link one state's rule to another state's
-   * figure. Such pins must qualify the member by its immediate parent
-   * (`ND.capitalGainsTaxablePct`), which the walk also records.
+   * How many distinct member-tier declarations share the name (interface
+   * properties, pack fields, class members). A member-only name with more
+   * than one occurrence is ambiguous as an anchor: a repeated pack field
+   * like a per-state rate would deep-link one state's rule to another
+   * state's figure. Such pins must qualify the member by ancestors
+   * (`ND.capitalGainsTaxablePct`, or a longer chain for deeper nesting);
+   * the walk records every ancestor-suffix spelling of each member.
+   * Occurrences at the same full ancestor path are one logical member (a
+   * get/set pair, a method overload cluster) and count once.
    */
   readonly memberCount: number
 }
@@ -38,6 +41,8 @@ interface MutableDeclaredSymbol {
   line: number
   moduleScope: boolean
   memberCount: number
+  /** Full ancestor paths already counted, so merged members count once. */
+  memberPaths: Set<string>
 }
 
 export function declaredSymbolLinesOf(fileName: string, source: string): ReadonlyMap<string, DeclaredSymbol> {
@@ -48,7 +53,7 @@ export function declaredSymbolLinesOf(fileName: string, source: string): Readonl
     if (name === undefined || !ts.isIdentifier(name)) return
     const existing = table.get(name.text)
     if (existing === undefined) {
-      table.set(name.text, { line: lineOf(name), moduleScope: true, memberCount: 0 })
+      table.set(name.text, { line: lineOf(name), moduleScope: true, memberCount: 0, memberPaths: new Set() })
     } else if (!existing.moduleScope) {
       // Module scope outranks members: the operative declaration, not a
       // same-named interface property, is what the anchor must point at.
@@ -57,21 +62,27 @@ export function declaredSymbolLinesOf(fileName: string, source: string): Readonl
     }
     // Two module-scope occurrences are merged declarations; first line wins.
   }
-  const recordMember = (text: string, name: ts.Node): void => {
+  const recordMember = (text: string, name: ts.Node, fullPath: string): void => {
     const existing = table.get(text)
     if (existing === undefined) {
-      table.set(text, { line: lineOf(name), moduleScope: false, memberCount: 1 })
-    } else if (!existing.moduleScope) {
+      table.set(text, { line: lineOf(name), moduleScope: false, memberCount: 1, memberPaths: new Set([fullPath]) })
+    } else if (!existing.moduleScope && !existing.memberPaths.has(fullPath)) {
+      // A second occurrence at the SAME full path is one logical member (a
+      // get/set pair, a method overload cluster) and never adds ambiguity;
+      // a different path is a genuinely distinct declaration.
+      existing.memberPaths.add(fullPath)
       existing.memberCount += 1 // first line kept; >1 means ambiguous
     }
     // A module-scope entry ignores member occurrences entirely.
   }
-  // Members one level under a module-scope declaration are publishable
-  // (class methods, interface properties, a pack object's top entries);
-  // anything deeper is a local, and a local is not a calculator method.
-  // `parent` is the nearest admitted ancestor name, so every member is also
-  // recorded as `parent.name` for pins whose bare name repeats in the file.
-  const recordMembers = (node: ts.Node, parent: string | undefined): void => {
+  // Property names nested anywhere under a module-scope declaration are
+  // publishable (class methods, interface properties, a data pack's fields
+  // at any depth); function block bodies are never entered, so a local
+  // inside a calculator stays a local. `ancestors` is the chain of admitted
+  // names above the member, and every suffix spelling is recorded
+  // (`cap`, `retirement.cap`, `ND.retirement.cap`, ...) so a pin can add
+  // exactly as much qualification as uniqueness requires.
+  const recordMembers = (node: ts.Node, ancestors: readonly string[]): void => {
     ts.forEachChild(node, (child) => {
       if (
         ts.isPropertyAssignment(child) ||
@@ -87,19 +98,19 @@ export function declaredSymbolLinesOf(fileName: string, source: string): Readonl
         const name = child.name
         const identifier = name !== undefined && ts.isIdentifier(name) ? name : undefined
         if (identifier !== undefined) {
-          recordMember(identifier.text, identifier)
-          if (parent !== undefined) recordMember(parent + '.' + identifier.text, identifier)
+          const fullPath = [...ancestors, identifier.text].join('.')
+          for (let start = 0; start <= ancestors.length; start += 1) {
+            recordMember([...ancestors.slice(start), identifier.text].join('.'), identifier, fullPath)
+          }
         }
-        // A data pack's leaf fields are publishable facts, so property
-        // structure recurses; function bodies never do - a local inside a
-        // calculator stays a local. A non-identifier property name is not
-        // itself admissible but its children still are.
-        const childParent = identifier !== undefined ? identifier.text : parent
-        if (ts.isPropertyAssignment(child) && child.initializer !== undefined) recordMembers(child.initializer, childParent)
-        if (ts.isPropertySignature(child) && child.type !== undefined) recordMembers(child.type, childParent)
+        // A non-identifier property name is not itself admissible but its
+        // children still are.
+        const childAncestors = identifier !== undefined ? [...ancestors, identifier.text] : ancestors
+        if (ts.isPropertyAssignment(child) && child.initializer !== undefined) recordMembers(child.initializer, childAncestors)
+        if (ts.isPropertySignature(child) && child.type !== undefined) recordMembers(child.type, childAncestors)
       }
       if (ts.isObjectLiteralExpression(child) || ts.isTypeLiteralNode(child) || ts.isArrayLiteralExpression(child)) {
-        recordMembers(child, parent)
+        recordMembers(child, ancestors)
       }
     })
   }
@@ -112,16 +123,15 @@ export function declaredSymbolLinesOf(fileName: string, source: string): Readonl
       ts.isEnumDeclaration(statement)
     ) {
       recordModuleScope(statement.name)
-      const parent = statement.name !== undefined && ts.isIdentifier(statement.name) ? statement.name.text : undefined
-      recordMembers(statement, parent)
+      const named = statement.name !== undefined && ts.isIdentifier(statement.name) ? [statement.name.text] : []
+      recordMembers(statement, named)
       continue
     }
     if (ts.isVariableStatement(statement)) {
       for (const declaration of statement.declarationList.declarations) {
         recordModuleScope(declaration.name)
         if (declaration.initializer !== undefined) {
-          const parent = ts.isIdentifier(declaration.name) ? declaration.name.text : undefined
-          recordMembers(declaration.initializer, parent)
+          recordMembers(declaration.initializer, ts.isIdentifier(declaration.name) ? [declaration.name.text] : [])
         }
       }
       continue
@@ -152,7 +162,7 @@ export function symbolAnchorLine(
   if (!entry.moduleScope && entry.memberCount > 1) {
     throw new Error(
       fileName + '#' + symbol + ' is ambiguous (' + entry.memberCount +
-        ' member occurrences); qualify the pin with its parent, e.g. #parent.' + symbol,
+        ' member declarations); qualify the pin with enough ancestors to be unique, e.g. #parent.' + symbol,
     )
   }
   return entry.line

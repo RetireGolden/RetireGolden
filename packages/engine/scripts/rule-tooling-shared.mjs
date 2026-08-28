@@ -14,9 +14,11 @@ export async function loadModule(name) {
 }
 
 /**
- * buildCoverageReport requires symbolLineFor; every script that builds a
- * report shares this resolver so none of them can drift out of the contract.
- * Throws on a missing or ambiguous pin (see symbolLines.ts).
+ * The real deep-link line resolver for the coverage publisher
+ * (rules-coverage.mjs). Throws on a missing or ambiguous pin (see
+ * symbolLines.ts). rules:due and rules:dispatch never publish lines and
+ * deliberately pass a constant stub instead, so an ambiguous pin fails the
+ * conformance suite and the publisher, not a read-only listing.
  */
 export async function makeSymbolLineFor() {
   const { declaredSymbolLinesOf, symbolAnchorLine } = await loadModule('symbolLines.ts')

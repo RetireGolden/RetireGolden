@@ -53,9 +53,18 @@ function declaredSymbolsOf(globKey: string, source: string): ReadonlyMap<string,
   return lines
 }
 
-/** Glob keys are relative to this directory; registry paths are repo-relative. */
+/**
+ * Glob keys are relative to this directory; registry paths are repo-relative.
+ * Vite emits same-directory files as `./name`, not `../rules/name`, so both
+ * folds are needed or a pin under src/rules/ would be invisible here.
+ */
+const engineGlobKeyOf = (repoPath: string): string =>
+  repoPath.replace(/^packages\/engine\/src\/rules\//u, './').replace(/^packages\/engine\/src\//u, '../')
+
 const engineSourcePaths = new Set(
-  Object.keys(engineSources).map((path) => path.replace(/^\.\.\//u, 'packages/engine/src/')),
+  Object.keys(engineSources).map((path) =>
+    path.replace(/^\.\.\//u, 'packages/engine/src/').replace(/^\.\//u, 'packages/engine/src/rules/'),
+  ),
 )
 
 /**
@@ -881,19 +890,43 @@ describe('tax rule registry conformance', () => {
       '  return a',
       '}',
       'const pack = {', //                            line 12
-      '  AZ: { rate: 1 },', //                        line 13
-      '  ND: { rate: 2 },', //                        line 14
+      '  AZ: {', //                                   line 13
+      '    rate: 1,', //                              line 14: member != parent line
+      '    retirement: { cap: 10 },', //              line 15
+      '  },',
+      '  ND: {', //                                   line 17
+      '    rate: 2,', //                              line 18
+      '    retirement: { cap: 20 },', //              line 19
+      '  },',
+      '}',
+      'export class Box {', //                        line 22
+      '  get value(): number {', //                   line 23: get/set = one member
+      '    return 1',
+      '  }',
+      '  set value(next: number) {}',
       '}',
     ].join('\n')
-    const table = declaredSymbolsOf('synthetic-anchor-probe.ts', synthetic)
-    expect(symbolAnchorLine(table, 'synthetic-anchor-probe.ts', 'computeThing')).toBe(4)
-    expect(symbolAnchorLine(table, 'synthetic-anchor-probe.ts', 'overloaded')).toBe(7)
-    expect(symbolAnchorLine(table, 'synthetic-anchor-probe.ts', 'pack')).toBe(12)
-    expect(symbolAnchorLine(table, 'synthetic-anchor-probe.ts', 'AZ')).toBe(13)
-    expect(symbolAnchorLine(table, 'synthetic-anchor-probe.ts', 'AZ.rate')).toBe(13)
-    expect(symbolAnchorLine(table, 'synthetic-anchor-probe.ts', 'ND.rate')).toBe(14)
-    expect(() => symbolAnchorLine(table, 'synthetic-anchor-probe.ts', 'rate')).toThrow(/ambiguous/u)
-    expect(() => symbolAnchorLine(table, 'synthetic-anchor-probe.ts', 'neverDeclaredAnywhere')).toThrow(/not a declared symbol/u)
+    const probe = 'synthetic-anchor-probe.ts'
+    const table = declaredSymbolsOf(probe, synthetic)
+    expect(symbolAnchorLine(table, probe, 'computeThing')).toBe(4)
+    expect(symbolAnchorLine(table, probe, 'overloaded')).toBe(7)
+    expect(symbolAnchorLine(table, probe, 'pack')).toBe(12)
+    expect(symbolAnchorLine(table, probe, 'AZ')).toBe(13)
+    // The member anchors at ITS line, not its parent's - the parent sits on
+    // a different line here precisely so a parent-line regression fails.
+    expect(symbolAnchorLine(table, probe, 'AZ.rate')).toBe(14)
+    expect(symbolAnchorLine(table, probe, 'ND.rate')).toBe(18)
+    // Deep nesting qualifies through the ancestor chain: the immediate
+    // parent alone (retirement.cap) is still ambiguous across states.
+    expect(symbolAnchorLine(table, probe, 'AZ.retirement.cap')).toBe(15)
+    expect(symbolAnchorLine(table, probe, 'ND.retirement.cap')).toBe(19)
+    expect(() => symbolAnchorLine(table, probe, 'rate')).toThrow(/ambiguous/u)
+    expect(() => symbolAnchorLine(table, probe, 'cap')).toThrow(/ambiguous/u)
+    expect(() => symbolAnchorLine(table, probe, 'retirement.cap')).toThrow(/ambiguous/u)
+    // A get/set pair is one logical member, not an ambiguity.
+    expect(symbolAnchorLine(table, probe, 'Box.value')).toBe(23)
+    expect(symbolAnchorLine(table, probe, 'value')).toBe(23)
+    expect(() => symbolAnchorLine(table, probe, 'neverDeclaredAnywhere')).toThrow(/not a declared symbol/u)
   })
 
   it('resolves every implementedByFunctions entry to a listed file and a live symbol', () => {
@@ -921,7 +954,7 @@ describe('tax rule registry conformance', () => {
           violations.push(`${ruleId}: ${entry} path must be in implementedBy`)
           continue
         }
-        const globKey = path.replace(/^packages\/engine\/src\//u, '../')
+        const globKey = engineGlobKeyOf(path)
         const source = engineSources[globKey] as string | undefined
         if (source === undefined) {
           violations.push(`${ruleId}: ${path} not found among engine sources`)

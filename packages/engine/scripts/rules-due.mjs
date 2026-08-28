@@ -1,6 +1,6 @@
 import { parseArgs } from 'node:util'
 import { testSourcesInGlobShape } from './rules-coverage.mjs'
-import { loadModule, makeSymbolLineFor, stripLeadingSeparators, todayUtcIso, validateAsOf } from './rule-tooling-shared.mjs'
+import { loadModule, stripLeadingSeparators, todayUtcIso, validateAsOf } from './rule-tooling-shared.mjs'
 
 const HELP = `Usage: pnpm rules:due [-- --as-of YYYY-MM-DD] [--horizon N] [--check] [--json] [--silent]
 
@@ -107,7 +107,11 @@ async function main() {
     testSources: testSourcesInGlobShape(),
     quoteFidelityLedger: null,
     dueOnFor: taxRuleDueOn,
-    symbolLineFor: await makeSymbolLineFor(),
+    // The due table never publishes deep-link lines, and a newly ambiguous
+    // pin must fail the conformance suite, not a read-only listing an
+    // operator is running mid-triage. rules-coverage.mjs, the publisher,
+    // resolves for real.
+    symbolLineFor: () => 1,
   })
   const totalRules = report.manifest.registry.total
 

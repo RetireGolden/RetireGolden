@@ -50,10 +50,12 @@ export interface CoverageRule {
   /**
    * implementedBy joined with the record's declared operative symbols: one
    * entry per implementing file, each carrying at least one function pin with
-   * the 1-based line of its declaration for deep links. Conformance enforces
-   * that every declared symbol is a module-scope declaration (or first-level
-   * member) of its file, so a moved or deleted symbol regenerates or fails
-   * the build instead of rotting into a dead anchor.
+   * the 1-based line of its declaration for deep links. Conformance resolves
+   * every pin through symbolAnchorLine's two-tier rule (module scope wins; a
+   * member at any nesting depth resolves only when unique, else the pin is
+   * ancestor-qualified like ND.capitalGainsTaxablePct), so a moved, deleted,
+   * or newly ambiguous symbol regenerates or fails the build instead of
+   * rotting into a dead or wrong anchor.
    */
   readonly implementations: readonly {
     readonly path: string
@@ -329,7 +331,7 @@ function testsBetween(
       index = Math.min(skipped, end)
       continue
     }
-    const match = /^\bit\(\s*(['"\u0060])/u.exec(source.slice(index, Math.min(index + 24, end)))
+    const match = /^\bit\(\s*(['"\u0060])/u.exec(source.slice(index, Math.min(index + 64, end)))
     if (match !== null && (index === 0 || !/[\w$.]/u.test(source[index - 1]!))) {
       const quote = match[1]!
       const titleStart = index + match[0].length
