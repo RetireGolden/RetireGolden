@@ -33,7 +33,7 @@ jobs:
   openrouter:
     name: OpenRouter review
     if: github.event_name == 'workflow_dispatch' || !github.event.pull_request.draft
-    uses: RetireGolden/.github/.github/workflows/openrouter-code-review.yml@589783cda4e36231b397b193386e9a92b4eb5fec # .github#21 (action v1.2.2 recall promptcraft)
+    uses: RetireGolden/.github/.github/workflows/openrouter-code-review.yml@d4ca008bb2703d11dab72f12c69b41bad90e2979 # .github#22 (action v1.2.3 falsification pass)
     with:
       pr_number: ${{ inputs.pr_number || github.event.inputs.pr_number || github.event.pull_request.number }}
     secrets:
