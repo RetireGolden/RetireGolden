@@ -40,6 +40,16 @@ export interface CoverageRule {
   readonly verifiedOn: string
   readonly dueOn: string
   readonly implementedBy: readonly string[]
+  /**
+   * implementedBy joined with the record's declared operative symbols: one
+   * entry per implementing file, functions empty until that record's
+   * implementedByFunctions backfill lands. Conformance enforces that every
+   * declared symbol exists in its file.
+   */
+  readonly implementations: readonly {
+    readonly path: string
+    readonly functions: readonly string[]
+  }[]
   readonly fixtureFiles: readonly string[]
   /**
    * One entry per describeRule call: where the fixture lives (1-based line of
@@ -662,6 +672,15 @@ export function buildCoverageReport(input: CoverageReportInput): CoverageReport 
       verifiedOn: rule.verifiedOn,
       dueOn: input.dueOnFor(id as TaxRuleId),
       implementedBy: [...rule.implementedBy].sort(),
+      implementations: [...rule.implementedBy].sort().map((path) => ({
+        path,
+        // Optional on the literal registry type: absent on every record the
+        // backfill has not reached, so it is read through the optional shape.
+        functions: ((rule as { implementedByFunctions?: readonly string[] }).implementedByFunctions ?? [])
+          .filter((entry: string) => entry.startsWith(path + '#'))
+          .map((entry: string) => entry.slice(path.length + 1))
+          .sort(compareStrings),
+      })),
       fixtureFiles: [...new Set((fixtureDetails.get(id) ?? []).map(({ path }) => path))].sort(compareStrings),
       fixtures: fixtureDetails.get(id) ?? [],
       // Distinct quotes of one provision collapse to one public identity once

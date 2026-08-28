@@ -196,6 +196,20 @@ describe('manifest rule projection contract', () => {
     }
   })
 
+  it('keeps implementations aligned with implementedBy', () => {
+    for (const rule of report.manifest.rules) {
+      expect(rule.implementations.map(({ path }) => path), rule.id).toEqual(rule.implementedBy)
+      const record = TAX_RULE_REGISTRY[rule.id as keyof typeof TAX_RULE_REGISTRY] as {
+        implementedByFunctions?: readonly string[]
+      }
+      const declared = record.implementedByFunctions ?? []
+      const published = rule.implementations.flatMap(({ path, functions }) =>
+        functions.map((name) => `${path}#${name}`),
+      )
+      expect([...published].sort(), rule.id).toEqual([...declared].sort())
+    }
+  })
+
   it('keeps fixtures and fixtureFiles consistent, with titles present in the scanned source', () => {
     for (const rule of report.manifest.rules) {
       const paths = [...new Set(rule.fixtures.map(({ path }) => path))]
@@ -313,6 +327,7 @@ describe('manifest rule projection contract', () => {
       'fixtureFiles',
       'fixtures',
       'id',
+      'implementations',
       'implementedBy',
       'jurisdiction',
       'title',

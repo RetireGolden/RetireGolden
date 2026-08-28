@@ -36,6 +36,10 @@ for (const [path, source] of Object.entries(testSources)) {
   }
 }
 
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&')
+}
+
 /** Glob keys are relative to this directory; registry paths are repo-relative. */
 const engineSourcePaths = new Set(
   Object.keys(engineSources).map((path) => path.replace(/^\.\.\//u, 'packages/engine/src/')),
@@ -815,6 +819,32 @@ describe('tax rule registry conformance', () => {
       }
     }
     expect([...new Set(dangling)].sort()).toEqual([])
+  })
+
+  it('resolves every implementedByFunctions entry to a listed file and a live symbol', () => {
+    // The transparency page renders these as the chain's deepest level; an
+    // entry naming a renamed or deleted function must fail here, not rot
+    // publicly. Symbol presence accepts declarations, const/class bindings,
+    // object methods, and property keys.
+    for (const [ruleId, rule] of Object.entries(TAX_RULE_REGISTRY)) {
+      const entries = (rule as { implementedByFunctions?: readonly string[] }).implementedByFunctions ?? []
+      for (const entry of entries) {
+        const parts = entry.split('#')
+        expect(parts.length, `${ruleId}: ${entry} must be <path>#<symbol>`).toBe(2)
+        const [path, symbol] = parts as [string, string]
+        expect(symbol.length, `${ruleId}: ${entry}`).toBeGreaterThan(0)
+        expect(rule.implementedBy, `${ruleId}: ${entry} path must be in implementedBy`).toContain(path)
+        const globKey = path.replace(/^packages\/engine\/src\//u, '../')
+        const source = engineSources[globKey] as string | undefined
+        expect(source, `${ruleId}: ${path} not found among engine sources`).toBeDefined()
+        const name = escapeRegExp(symbol)
+        const declared = new RegExp(
+          `(?:function|const|let|class|interface|type)\\s+${name}\\b|\\b${name}\\s*[:=(]`,
+          'u',
+        )
+        expect(declared.test(source!), `${ruleId}: ${symbol} not found in ${path}`).toBe(true)
+      }
+    }
   })
 
   it('rejects a fixture claiming a rule that is not registered', () => {

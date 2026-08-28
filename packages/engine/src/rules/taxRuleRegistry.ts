@@ -234,6 +234,15 @@ export interface TaxRuleRecord {
   readonly verifiedOn: string
   /** Engine sources implementing it, repo-relative. */
   readonly implementedBy: readonly [string, ...string[]]
+  /**
+   * The operative functions inside `implementedBy`, as `<repo-relative
+   * path>#<symbol>` entries whose path half must appear in `implementedBy`
+   * and whose symbol must exist in that file. Optional until the backfill
+   * wave completes; conformance enforces both halves wherever present so a
+   * renamed or deleted function fails the build instead of rotting on the
+   * public transparency page.
+   */
+  readonly implementedByFunctions?: readonly string[]
 }
 
 const registry = {
@@ -9812,6 +9821,9 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/params/state/data/year2026.ts',
     ],
+    implementedByFunctions: [
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxDetail',
+    ],
   },
 
   // ---------------------------------------------------------------------------
@@ -15256,6 +15268,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/tax/stateTax.ts#computeStateTax',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxDetail',
     ],
   },
 
