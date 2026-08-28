@@ -696,7 +696,7 @@ const registry = {
       citation: 'Instructions for Form 5329, exception 01',
       url: 'https://www.irs.gov/instructions/i5329',
       quotedText:
-        'Qualified retirement plan distributions (does not apply to IRAs) you received after separation from service when the separation from service occurs in or after the year you reach age 55.',
+        'Qualified retirement plan distributions (doesn’t apply to IRAs) you received after separation from service when the separation from service occurs in or after the year you reach age 55 (age 50 for qualified public safety employees and private sector firefighters) or 25 years of service under the plan, whichever is earlier.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -865,7 +865,7 @@ const registry = {
       citation: 'IRC 72(t)(5)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim',
       quotedText:
-        'For purposes of this subsection, the term employee includes any participant, and in the case of an individual retirement plan, the individual for whose benefit such plan was established.',
+        'For purposes of this subsection, the term "employee" includes any participant, and in the case of an individual retirement plan, the individual for whose benefit such plan was established.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -1110,7 +1110,7 @@ const registry = {
       citation: 'IRC 72(t)(10)(A)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim',
       quotedText:
-        'In the case of a distribution to a qualified public safety employee from a governmental plan (within the meaning of section 414(d)) or a distribution from a plan described in clause (iii), (iv), or (vi) of section 402(c)(8)(B) to an employee who provides firefighting services, paragraph (2)(A)(v) shall be applied by substituting age 50 or 25 years of service under the plan, whichever is earlier, for age 55.',
+        'In the case of a distribution to a qualified public safety employee from a governmental plan (within the meaning of section 414(d)) or a distribution from a plan described in clause (iii), (iv), or (vi) of section 402(c)(8)(B) to an employee who provides firefighting services, paragraph (2)(A)(v) shall be applied by substituting "age 50 or 25 years of service under the plan, whichever is earlier" for "age 55".',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -2282,7 +2282,7 @@ const registry = {
       citation: 'IRC 55(b)(1)',
       url: 'https://www.law.cornell.edu/uscode/text/26/55',
       quotedText:
-        'the tentative minimum tax for the taxable year is the sum of - (I) 26 percent of so much of the taxable excess as does not exceed 175,000 dollars, plus (II) 28 percent of so much of the taxable excess as exceeds 175,000 dollars.',
+        'The tentative minimum tax for the taxable year is the sum of— (i) 26 percent of so much of the taxable excess as does not exceed $175,000, plus (ii) 28 percent of so much of the taxable excess as exceeds $175,000.',
     }],
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
@@ -5027,19 +5027,19 @@ const registry = {
       citation: 'IRC 1411(d)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1411&num=0&edition=prelim',
       quotedText:
-        'For purposes of this chapter, the term modified adjusted gross income means adjusted gross income increased by the excess of - (1) the amount excluded from gross income under section 911(a)(1), over (2) the amount of any deductions (taken into account in computing adjusted gross income) or exclusions disallowed under section 911(d)(6) with respect to the amounts described in paragraph (1).',
+        'For purposes of this chapter, the term "modified adjusted gross income" means adjusted gross income increased by the excess of- (1) the amount excluded from gross income under section 911(a)(1), over (2) the amount of any deductions (taken into account in computing adjusted gross income) or exclusions disallowed under section 911(d)(6) with respect to the amounts described in paragraph (1).',
     }, {
       kind: 'statute',
       citation: 'IRC 151(d)(5)(C)(iii)(II)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section151&num=0&edition=prelim',
       quotedText:
-        'For purposes of this clause, the term modified adjusted gross income means the adjusted gross income of the taxpayer for the taxable year increased by any amount excluded from gross income under section 911, 931, or 933.',
+        'For purposes of this clause, the term "modified adjusted gross income" means the adjusted gross income of the taxpayer for the taxable year increased by any amount excluded from gross income under section 911, 931, or 933.',
     }, {
       kind: 'formInstruction',
       citation: 'Schedule 1-A (Form 1040) (2025), Part I, lines 1 to 3',
       url: 'https://www.irs.gov/pub/irs-pdf/f1040s1a.pdf',
       quotedText:
-        'Modified Adjusted Gross Income (MAGI) Amount. Enter the amount from Form 1040, 1040-SR, or 1040-NR, line 11b [line 1]. Enter any income from Puerto Rico that you excluded [line 2a]. Enter the amount from Form 2555, line 45 [line 2b]. Enter the amount from Form 2555, line 50 [line 2c]. Enter the amount from Form 4563, line 15 [line 2d]. Add lines 2a, 2b, 2c, and 2d [line 2e]. Add lines 1 and 2e [line 3].',
+        'Enter the amount from Form 1040, 1040-SR, or 1040-NR, line 11b … Enter any income from Puerto Rico that you excluded … Enter the amount from Form 2555, line 45 … Enter the amount from Form 2555, line 50 … Enter the amount from Form 4563, line 15 … Add lines 2a, 2b, 2c, and 2d … Add lines 1 and 2e',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -11349,10 +11349,10 @@ const registry = {
   // WS4d Batch A — 2026-08-27.
   //
   // These records deliberately cover only the parts of the Batch A packs whose
-  // staged primary texts carry operative language. Alabama remains blocked:
-  // both staged DOR pages are script payloads with no operative retirement or
-  // Social Security statement. The CA, CO, DC, and GA records below use the
-  // refreshed sources; they are not reconstructed from the old matrix.
+  // staged primary texts carry operative language. The CA, CO, DC, and GA
+  // records below use the refreshed sources; they are not reconstructed from
+  // the old matrix. Alabama is registered separately below from the 2025 Form
+  // 40 booklet and the DOR individual-income-tax page (verified 2026-08-28).
   // ---------------------------------------------------------------------------
 
   'ca-rtc-17087-social-security-exclusion': {
@@ -14952,6 +14952,234 @@ const registry = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-27',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  // ---------------------------------------------------------------------------
+  // Alabama — 2026-08-28. Staged 2025 Form 40 booklet (25f40bk.pdf) and AL DOR
+  // individual-income-tax page. The pack's `$6,000` age-65 retirement cap has
+  // no operative text in those staged sources (BLOCKED-SOURCE on that limb).
+  // ---------------------------------------------------------------------------
+
+  'al-form40-social-security-exclusion': {
+    title: 'Alabama excludes Federal Social Security and Railroad Retirement benefits',
+    statement:
+      'Alabama\'s Form 40 booklet lists Federal Social Security benefits and Federal Railroad Retirement benefits among the amounts a taxpayer does not report. The pack\'s `taxesSocialSecurity: false` omits the federally taxable Social Security share from the Alabama base.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:AL',
+    authority: [{
+      kind: 'formInstruction',
+      citation: 'Alabama Department of Revenue, 2025 Form 40 booklet, Examples of Income You DO NOT Report',
+      url: 'https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf',
+      quotedText:
+        'Federal Railroad Retirement benefits. … Federal Social Security benefits.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-28',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  'al-form40-defined-benefit-414j-exemption': {
+    title: 'Alabama exempts any IRC 414(j) defined-benefit payment; the pack tests the bucket, not the plan',
+    statement:
+      'The Form 40 booklet excludes payments from any defined-benefit retirement plan in accordance with IRC 414(j) from income that must be reported, whatever the employer. Approximated: the pack models defined-benefit identity through the payment bucket — `PUBLIC_PENSION_OVERRIDES` carries `AL: { kind: \'full\' }`, so every `publicPensionIncome` dollar is exempt, while `retirementPrivate` stays `{ kind: \'capped\', capPerPerson: 6000, minAge: 65 }`. Neither bucket tests 414(j) status: a private-employer defined-benefit pension carried in the private bucket is taxed above the age-65 cap the booklet exempts (overstates Alabama tax), and a public-plan distribution that is not a 414(j) defined-benefit payment — a governmental defined-contribution or 457(b) draw riding the public bucket — is exempted in full where the booklet reports it as taxable (understates). Which limb a household hits depends on which bucket its pension dollars ride in.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'bothDirections',
+    conventionRationale:
+      'The sign depends on bucket attribution: private-bucket defined-benefit dollars overstate tax, public-bucket non-defined-benefit dollars understate it.',
+    jurisdiction: 'state:AL',
+    authority: [{
+      kind: 'formInstruction',
+      citation: 'Alabama Department of Revenue, 2025 Form 40 booklet, Examples of Income You DO NOT Report',
+      url: 'https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf',
+      quotedText:
+        'Payments from a “Defined Benefit Retirement Plan” in accordance with IRC 414(j). Contact your retirement plan administrator to determine if your plan qualifies.',
+    }, {
+      kind: 'formInstruction',
+      citation: 'Alabama Department of Revenue, 2025 Form 40 booklet, Pensions and Annuities — amounts not taxable',
+      url: 'https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf',
+      quotedText:
+        'Any “defined benefit” retirement plan in accordance with IRC 414(j). Contact your retirement plan administrator to determine if your plan qualifies.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-28',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/params/state/types.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  'al-form40-ira-dc-distributions-taxable': {
+    title: 'Alabama taxes IRA and defined-contribution distributions on Schedule RS',
+    statement:
+      'The Form 40 booklet directs a taxpayer to complete Schedule RS for fully or partially taxable IRA distributions, including SEP, Keogh, 401(k)(2), and 403(b) distributions, and states that pensions are generally fully taxable unless specifically excluded. That is the taxable-retirement side the pack encodes once a distribution is not on the exempt list; the separate pre-1987 cost-recovery worksheet limb is out of scope on its own record.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:AL',
+    authority: [{
+      kind: 'formInstruction',
+      citation: 'Alabama Department of Revenue, 2025 Form 40 booklet, Line 4 — Retirement Income (Schedule RS)',
+      url: 'https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf',
+      quotedText:
+        'Complete Schedule RS to report fully or partially taxable pensions, annuities, IRA distributions (include SEP, Keogh, 401(k)(2), 403(b) distributions), other distributions and retirement distribution(s) exempt from Alabama Income.',
+    }, {
+      kind: 'formInstruction',
+      citation: 'Alabama Department of Revenue, 2025 Form 40 booklet, Pensions and Annuities',
+      url: 'https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf',
+      quotedText:
+        'Generally, unless specifically excluded by law, your pension payments are fully taxable if you did not contribute to the cost of your pension annuity or you have recovered your cost in the plan on prior Alabama income tax returns.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-28',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  'al-form40-pre-1987-cost-recovery-not-modeled': {
+    title: 'Alabama pre-1987 IRA and deferred-compensation cost-recovery worksheet is not modeled',
+    statement:
+      'The Form 40 booklet\'s partially taxable pension worksheet routes IRA, SEP, Keogh, 401(k)(2), and 403(b) withdrawals whose cost basis recovery began before January 1, 1987 onto a separate pre-1987 recovery path. RetireGolden\'s state tax input carries only aggregate private and public retirement dollars and ages — no Alabama cost basis, no pre-1987 recovery start date, and no Schedule RS worksheet lines — so no accepted plan fact reaches that limb.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:AL',
+    authority: [{
+      kind: 'formInstruction',
+      citation: 'Alabama Department of Revenue, 2025 Form 40 booklet, Worksheet for Partially Taxable Pensions — pre-1987 recovery',
+      url: 'https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf',
+      quotedText:
+        'Use lines 1 through 8 to report amounts you withdrew from your IRA, SEP, Keogh, 401(k)(2), or 403(b) account which are not fully taxable and for which you have not recovered any of your cost basis before January 1, 1987. If you began recovering your cost before January 1, 1987, you should report these distributions on lines 11, 12, and 13.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-28',
+    implementedBy: [
+      'packages/engine/src/params/state/types.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  'al-form40-age-65-retirement-exclusion-cap': {
+    title: 'The pack\'s $6,000 age-65 retirement cap is not quote-carried by the staged booklet',
+    statement:
+      'The pack encodes Alabama retirement as `{ kind: \'capped\', capPerPerson: 6000, minAge: 65 }` on the shared private and public buckets. The staged Form 40 booklet\'s Schedule RS instructions establish that non-exempt pensions and IRA distributions are taxable, but they do not carry operative text for a $6,000 age-65 exclusion. Approximated against that staged taxable-retirement baseline: the unquoted cap removes dollars the booklet\'s general fully-taxable rule would leave in the base, understating tax for a non-exempt retirement distribution at age 65 or older.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'understatesTax',
+    conventionRationale:
+      'BLOCKED-SOURCE: the $6,000 age-65 exclusion\'s operative text is not in the staged booklet; quote pends a staged primary',
+    jurisdiction: 'state:AL',
+    authority: [{
+      kind: 'formInstruction',
+      citation: 'Alabama Department of Revenue, 2025 Form 40 booklet, Pensions and Annuities',
+      url: 'https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf',
+      quotedText:
+        'Generally, unless specifically excluded by law, your pension payments are fully taxable if you did not contribute to the cost of your pension annuity or you have recovered your cost in the plan on prior Alabama income tax returns.',
+    }, {
+      kind: 'formInstruction',
+      citation: 'Alabama Department of Revenue, 2025 Form 40 booklet, Line 4 — Retirement Income (Schedule RS)',
+      url: 'https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf',
+      quotedText:
+        'Complete Schedule RS to report fully or partially taxable pensions, annuities, IRA distributions (include SEP, Keogh, 401(k)(2), 403(b) distributions), other distributions and retirement distribution(s) exempt from Alabama Income.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-28',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/params/state/types.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  'al-form40-standard-deduction-agi-slide': {
+    title: 'Alabama\'s standard deduction slides down with AGI; the pack holds the maxima flat',
+    statement:
+      'The Form 40 booklet requires a standard-deduction claimant to use the page-9 chart, which reduces the deduction as Alabama adjusted gross income rises — for a single filer from $3,000 at AGI $0–$12,999 down to $2,500 at AGI $17,750 and above, and for joint filers from $8,500 at AGI $0–$25,999 down to $5,000 at AGI $35,500 and above. Approximated: the pack\'s `standardDeduction: { single: 3000, marriedFilingJointly: 8500 }` grants those maxima at every income, understating tax wherever the chart has already slid.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'understatesTax',
+    conventionRationale: null,
+    jurisdiction: 'state:AL',
+    authority: [{
+      kind: 'formInstruction',
+      citation: 'Alabama Department of Revenue, 2025 Form 40 booklet, Line 11 — Standard Deduction',
+      url: 'https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf',
+      quotedText:
+        'Standard Deduction. If you elect to claim the Standard Deduction, you must check box b on line 11 and use the Standard Deduction chart on page 9 to determine your allowable deduction.',
+    }, {
+      kind: 'formInstruction',
+      citation: 'Alabama Department of Revenue, 2025 Form 40 booklet, page 9 Standard Deduction chart — Single column',
+      url: 'https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf',
+      quotedText:
+        '$ 0 – $12,999 … $3,000 … $17,750 and above … $2,500',
+    }, {
+      kind: 'formInstruction',
+      citation: 'Alabama Department of Revenue, 2025 Form 40 booklet, page 9 Standard Deduction chart — Married Filing Joint column',
+      url: 'https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf',
+      quotedText:
+        '$ 0 – $25,999 … $8,500 … $35,500 and above … $5,000',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-28',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+
+  'al-dor-individual-income-tax-rate-schedule': {
+    title: 'Alabama taxes taxable income at 2%, 4%, and 5% with filing-status break points',
+    statement:
+      'The Alabama Department of Revenue\'s individual income-tax page states the rate schedule: for a single filer, 2 percent on the first $500 of taxable income, 4 percent on the next $2,500, and 5 percent on all over $3,000; for married filing jointly, 2 percent on the first $1,000, 4 percent on the next $5,000, and 5 percent on all over $6,000. The pack\'s `brackets` carry those rates and break points.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:AL',
+    authority: [{
+      kind: 'stateAgencyPublication',
+      citation: 'Alabama Department of Revenue, Individual Income Tax — Rate',
+      url: 'https://www.revenue.alabama.gov/individual-corporate/taxes-administered-by-individual-corporate-income-tax/individual-income-tax/',
+      quotedText:
+        '2 percent on first $500 of taxable income … 4 percent on next $2,500 … 5 percent on all over $3,000',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'Alabama Department of Revenue, Individual Income Tax — Rate (joint)',
+      url: 'https://www.revenue.alabama.gov/individual-corporate/taxes-administered-by-individual-corporate-income-tax/individual-income-tax/',
+      quotedText:
+        'Married persons filing a joint return with adjusted gross income of $10,500 or more: … 2 percent on first $1,000 … 4 percent on next $5,000 … 5 percent on all over $6,000',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-28',
     implementedBy: [
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',

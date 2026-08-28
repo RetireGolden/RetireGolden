@@ -1312,3 +1312,157 @@ describeRule('la-rs-47-44-1-retirement-exemption', {
     expect(computeStateTax(pack('LA'), tooYoung)).toBeGreaterThan(heldForward)
   })
 })
+
+// ─── Alabama approximated pins (Form 40 booklet, 2026-08-28) ─────────────────
+//
+// Closed-form pack math — the engine was not run. PRODUCED_TBD remains the
+// orchestrator sentinel; each pin below is the figure `computeStateTax` must
+// return from the shipped AL pack and the scenario.
+
+const alApproxSingleTax = (taxable: number) => bandedTax(
+  [[0, 500, 2], [500, 3000, 4], [3000, Infinity, 5]],
+  taxable,
+)
+const AL_APPROX_DEDUCTION = 3_000
+const AL_PACK_CAP = 6_000
+const AL_DB_PENSION = 40_000
+// Chart row (Single): AGI $17,750 and above → standard deduction $2,500.
+const AL_CHART_SLID_SINGLE_DEDUCTION = 2_500
+const AL_HIGH_AGI = 50_000
+
+describeRule('al-form40-defined-benefit-414j-exemption', {
+  readings: {
+    // Booklet: any IRC 414(j) defined-benefit payment is not reported, so the
+    // Alabama base keeps none of the $40,000 and tax is zero after the
+    // deduction floor — whichever employer paid it.
+    bookletExemptsTheDefinedBenefitPayment: 0,
+    // Pack private bucket: 40,000 − 6,000 − 3,000 = 31,000 taxable.
+    // Tax: 500×2% + 2,500×4% + 28,000×5% = 10 + 100 + 1,400 = 1,510.
+    packCapsThePrivateBucketAtSixThousand:
+      alApproxSingleTax(AL_DB_PENSION - AL_PACK_CAP - AL_APPROX_DEDUCTION),
+  },
+  accepted: 'bookletExemptsTheDefinedBenefitPayment',
+  produced: 'packCapsThePrivateBucketAtSixThousand',
+  note: 'bucket attribution, not plan identity',
+}, ({ accepted, produced }) => {
+  // The booklet's exemption keys on 414(j) plan identity; the pack keys on the
+  // payment bucket. Each limb below rides one bucket with the other identity.
+  const privateEmployerDefinedBenefit = input({
+    state: 'AL',
+    ordinaryIncome: AL_DB_PENSION,
+    privateRetirementIncome: AL_DB_PENSION,
+    agesAlive: [70],
+  })
+
+  it('taxes a private-employer 414(j) pension above the $6,000 private-bucket cap', () => {
+    expect(computeStateTax(pack('AL'), privateEmployerDefinedBenefit)).toBeCloseTo(produced, 6)
+    expect(produced).toBeGreaterThan(accepted)
+    expect(produced).not.toBe(PRODUCED_TBD)
+    // Derivation: (40,000 − 6,000 − 3,000) through AL 2/4/5% = 1,510.
+    expect(produced).toBeCloseTo(1510, 6)
+  })
+
+  it('exempts a public-bucket draw the booklet taxes, which is the understating limb', () => {
+    const governmentalNonDefinedBenefit = input({
+      state: 'AL',
+      ordinaryIncome: AL_DB_PENSION,
+      publicPensionIncome: AL_DB_PENSION,
+      agesAlive: [70],
+    })
+    // PUBLIC_PENSION_OVERRIDES carries AL: full, so the engine exempts all
+    // $40,000; the booklet reports a non-414(j) governmental draw as taxable:
+    // (40,000 − 3,000) through AL 2/4/5% = 10 + 100 + 1,700 = 1,810.
+    expect(computeStateTax(pack('AL'), governmentalNonDefinedBenefit)).toBeCloseTo(0, 6)
+    expect(alApproxSingleTax(AL_DB_PENSION - AL_APPROX_DEDUCTION)).toBeCloseTo(1810, 6)
+  })
+
+  it('reaches the booklet for the private pension once that bucket is full', () => {
+    const fullPrivateDefinedBenefit = {
+      ...pack('AL'),
+      retirementRuleShared: false,
+      retirementPrivate: { kind: 'full' as const },
+    }
+    expect(computeStateTax(fullPrivateDefinedBenefit, privateEmployerDefinedBenefit)).toBeCloseTo(accepted, 6)
+  })
+})
+
+describeRule('al-form40-age-65-retirement-exclusion-cap', {
+  readings: {
+    // Staged booklet baseline for a non-exempt IRA: fully taxable, no $6,000
+    // exclusion quote. Taxable 40,000 − 3,000 = 37,000 → tax 1,810.
+    stagedFullyTaxableNonExemptRetirement:
+      alApproxSingleTax(AL_DB_PENSION - AL_APPROX_DEDUCTION),
+    // Pack applies the unquoted age-65 $6,000 cap.
+    // Taxable 40,000 − 6,000 − 3,000 = 31,000 → tax 1,510.
+    packGrantsUnquotedSixThousandAgeSixtyFiveCap:
+      alApproxSingleTax(AL_DB_PENSION - AL_PACK_CAP - AL_APPROX_DEDUCTION),
+  },
+  accepted: 'stagedFullyTaxableNonExemptRetirement',
+  produced: 'packGrantsUnquotedSixThousandAgeSixtyFiveCap',
+}, ({ accepted, produced }) => {
+  const scenario = input({
+    state: 'AL',
+    ordinaryIncome: AL_DB_PENSION,
+    privateRetirementIncome: AL_DB_PENSION,
+    agesAlive: [70],
+  })
+
+  it('grants the unquoted $6,000 age-65 cap on taxable private retirement', () => {
+    expect(computeStateTax(pack('AL'), scenario)).toBeCloseTo(produced, 6)
+    expect(computeStateTax(pack('AL'), scenario)).toBeLessThan(accepted)
+    expect(produced).not.toBe(PRODUCED_TBD)
+    expect(produced).toBeCloseTo(1510, 6)
+    expect(accepted).toBeCloseTo(1810, 6)
+  })
+
+  it('reaches the staged fully-taxable baseline once the cap is withheld', () => {
+    const noCap = {
+      ...pack('AL'),
+      retirementPrivate: { kind: 'none' as const },
+      retirementPublic: { kind: 'none' as const },
+    }
+    expect(computeStateTax(noCap, scenario)).toBeCloseTo(accepted, 6)
+  })
+})
+
+describeRule('al-form40-standard-deduction-agi-slide', {
+  readings: {
+    // Page-9 Single chart: AGI $17,750 and above → $2,500 (not the $3,000 max).
+    // Taxable 50,000 − 2,500 = 47,500 → tax 2,335.
+    chartSlidesSingleDeductionAtHighAgi:
+      alApproxSingleTax(AL_HIGH_AGI - AL_CHART_SLID_SINGLE_DEDUCTION),
+    // Pack holds the $3,000 maximum flat at every AGI.
+    // Taxable 50,000 − 3,000 = 47,000 → tax 2,310.
+    packHoldsMaximumStandardDeductionFlat:
+      alApproxSingleTax(AL_HIGH_AGI - AL_APPROX_DEDUCTION),
+  },
+  accepted: 'chartSlidesSingleDeductionAtHighAgi',
+  produced: 'packHoldsMaximumStandardDeductionFlat',
+}, ({ accepted, produced }) => {
+  // Fixture AGI $50,000 is above the Single chart row "$17,750 and above"
+  // ($2,500). The pack still grants the $3,000 maximum.
+  const scenario = input({
+    state: 'AL',
+    ordinaryIncome: AL_HIGH_AGI,
+    agesAlive: [50],
+  })
+
+  it('grants the $3,000 single maximum where the chart has slid to $2,500', () => {
+    expect(computeStateTax(pack('AL'), scenario)).toBeCloseTo(produced, 6)
+    expect(computeStateTax(pack('AL'), scenario)).toBeLessThan(accepted)
+    expect(produced).not.toBe(PRODUCED_TBD)
+    expect(produced).toBeCloseTo(2310, 6)
+    expect(accepted).toBeCloseTo(2335, 6)
+  })
+
+  it('reaches the chart once the pack deduction is replaced with the slid amount', () => {
+    const slid = {
+      ...pack('AL'),
+      standardDeduction: {
+        single: AL_CHART_SLID_SINGLE_DEDUCTION,
+        marriedFilingJointly: pack('AL').standardDeduction.marriedFilingJointly,
+      },
+    }
+    expect(computeStateTax(slid, scenario)).toBeCloseTo(accepted, 6)
+  })
+})

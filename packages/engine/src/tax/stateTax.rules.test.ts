@@ -2820,12 +2820,101 @@ describeRule('wi-stat-71-05-retirement-income-subtraction', {
   })
 })
 
+// Alabama — settled limbs from the 2025 Form 40 booklet and DOR rate page.
+const alSingleTax = (taxable: number) => bandedTax(
+  [[0, 500, 2], [500, 3000, 4], [3000, Infinity, 5]],
+  taxable,
+)
+const AL_DEDUCTION_SINGLE = 3_000
+
+describeRule('al-form40-social-security-exclusion', {
+  readings: {
+    // Booklet: Federal Social Security benefits are not reported. At this
+    // income IRC 86 includes 85% of the $40,000 benefit ($34,000); excluding
+    // it leaves 50,000 − 3,000 = 47,000.
+    federalSocialSecurityOmittedFromAlabamaBase: 50_000 - AL_DEDUCTION_SINGLE,
+    federallyTaxableShareLeftInTheBase: 50_000 + 34_000 - AL_DEDUCTION_SINGLE,
+  },
+  accepted: 'federalSocialSecurityOmittedFromAlabamaBase',
+}, ({ accepted, readings }) => {
+  const scenario = input({
+    state: 'AL',
+    ordinaryIncome: 50_000,
+    ssBenefits: 40_000,
+    agesAlive: [70],
+  })
+
+  it('omits federally taxable Social Security from the Alabama base', () => {
+    expect(computeStateTaxableIncome(pack('AL'), scenario)).toBe(accepted)
+    const asTaxable = computeStateTaxableIncome(
+      { ...pack('AL'), taxesSocialSecurity: true },
+      scenario,
+    )
+    expect(asTaxable).toBe(readings.federallyTaxableShareLeftInTheBase)
+    expect(asTaxable).not.toBe(accepted)
+  })
+})
+
+describeRule('al-form40-ira-dc-distributions-taxable', {
+  readings: {
+    // Under 65 so the pack's age-65 cap does not fire; Schedule RS treatment
+    // keeps the IRA in the ordinary base (40,000 − 3,000).
+    iraDistributionRemainsInTheAlabamaBase: 40_000 - AL_DEDUCTION_SINGLE,
+    treatedLikeAnExemptDefinedBenefitPension: 0,
+  },
+  accepted: 'iraDistributionRemainsInTheAlabamaBase',
+}, ({ accepted, readings }) => {
+  const scenario = input({
+    state: 'AL',
+    ordinaryIncome: 40_000,
+    privateRetirementIncome: 40_000,
+    agesAlive: [60],
+  })
+
+  it('keeps a taxable IRA distribution in the Alabama base', () => {
+    expect(computeStateTaxableIncome(pack('AL'), scenario)).toBe(accepted)
+    const asExempt = {
+      ...pack('AL'),
+      retirementPrivate: { kind: 'full' as const },
+      retirementPublic: { kind: 'full' as const },
+      retirementRuleShared: true,
+    }
+    expect(computeStateTaxableIncome(asExempt, scenario))
+      .toBe(readings.treatedLikeAnExemptDefinedBenefitPension)
+    expect(computeStateTaxableIncome(asExempt, scenario)).not.toBe(accepted)
+  })
+})
+
+describeRule('al-dor-individual-income-tax-rate-schedule', {
+  readings: {
+    // Taxable 5,000 after the $3,000 single deduction: 2% of 500 + 4% of 2,500
+    // + 5% of 2,000 = 10 + 100 + 100 = 210.
+    singleBreaksTwoFourFive: alSingleTax(5_000),
+    // Competing reading applies the joint break points to a single return:
+    // 2% of 1,000 + 4% of 4,000 = 20 + 160 = 180.
+    jointBreaksAppliedToSingleFiler: 1_000 * 0.02 + 4_000 * 0.04,
+  },
+  accepted: 'singleBreaksTwoFourFive',
+}, ({ accepted, readings }) => {
+  // ordinaryIncome 8,000 − standard deduction 3,000 = taxable 5,000, which
+  // crosses the single $3,000 top-bracket threshold but stays inside the joint
+  // $6,000 threshold — so the two schedules disagree.
+  const scenario = input({ state: 'AL', ordinaryIncome: 8_000, agesAlive: [50] })
+
+  it('prices Alabama single brackets rather than the joint schedule', () => {
+    expect(computeStateTax(pack('AL'), scenario)).toBeCloseTo(accepted, 6)
+    expect(computeStateTax(pack('AL'), scenario))
+      .not.toBeCloseTo(readings.jointBreaksAppliedToSingleFiler, 6)
+    expect(accepted).toBeCloseTo(210, 6)
+  })
+})
+
   it('models every state these records describe', () => {
     // A record naming a state the pack does not carry would be a claim about
     // code that is not there.
     for (const code of [
       'ND', 'PA', 'NV', 'TX', 'FL', 'WV', 'NY', 'IL', 'MO', 'IA', 'ME', 'SC',
-      'AK', 'SD', 'TN', 'WY', 'AR', 'AZ', 'IN', 'MS',
+      'AK', 'AL', 'SD', 'TN', 'WY', 'AR', 'AZ', 'IN', 'MS',
       'CA', 'CO', 'CT', 'DC', 'DE', 'GA', 'HI', 'ID', 'KS',
       'NM', 'NC', 'OH', 'OK', 'OR', 'RI', 'UT', 'VT', 'VA', 'WA', 'WI',
       'KY', 'LA', 'MD', 'MA', 'MI', 'MN', 'MT', 'NE', 'NH', 'NJ',

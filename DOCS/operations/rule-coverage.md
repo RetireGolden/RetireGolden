@@ -11,21 +11,22 @@ The registry is the machine-checked chain from a rule to its implementation and 
 
 | Metric | Count |
 | --- | ---: |
-| Total rules | 399 |
-| Classification: approximated | 103 |
-| Classification: outOfScope | 71 |
-| Classification: settled | 221 |
+| Total rules | 406 |
+| Classification: approximated | 106 |
+| Classification: outOfScope | 72 |
+| Classification: settled | 224 |
 | Classification: unsettled | 4 |
 | Volatility: annuallyIndexed | 57 |
 | Volatility: awaitingGuidance | 10 |
-| Volatility: staticStatute | 326 |
+| Volatility: staticStatute | 333 |
 | Volatility: sunsetting | 6 |
 | Federal jurisdiction | 303 |
-| State jurisdiction total | 96 |
+| State jurisdiction total | 103 |
 
 | State jurisdiction | Count |
 | --- | ---: |
 | AK | 1 |
+| AL | 7 |
 | AR | 9 |
 | AZ | 8 |
 | CA | 1 |
@@ -186,7 +187,7 @@ None.
 
 ## Re-verification due dates
 
-The 25 earliest due dates are shown below (399 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
+The 25 earliest due dates are shown below (406 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
 
 | Rule | Volatility | Verified on | Due on |
 | --- | --- | --- | --- |
@@ -222,19 +223,19 @@ The JSON manifest (rule-coverage.json, version 2) is the machine contract: each 
 
 ## Quote fidelity
 
-Committed ledger generated at 2026-08-28T01:14:45.436Z over 1032 authority entries (0 fetched live, 301 from cache).
+Committed ledger generated at 2026-08-28T03:40:27.312Z over 1045 authority entries (177 fetched live, 126 from cache).
 
-45 serious, 43 advisory, 944 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
+38 serious, 45 advisory, 962 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
 not treated as a CI gate; how to read each verdict: DOCS/operations/quote-fidelity.md.
 
 | Verdict | Class | Count |
 | --- | --- | ---: |
-| ABSENT | serious | 32 |
-| ELISION-EXACT | ok | 58 |
+| ABSENT | serious | 25 |
+| ELISION-EXACT | ok | 60 |
 | ELISION-PUNCTUATION | advisory | 4 |
-| EXACT | ok | 694 |
-| PDF-NOT-VERIFIABLE | advisory | 2 |
-| PDF-WORD-LEVEL | ok | 192 |
+| EXACT | ok | 700 |
+| PDF-NOT-VERIFIABLE | advisory | 4 |
+| PDF-WORD-LEVEL | ok | 202 |
 | PUNCTUATION | advisory | 37 |
 | UNFETCHABLE | serious | 13 |
 

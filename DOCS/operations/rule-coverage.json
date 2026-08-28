@@ -2,23 +2,24 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 2,
   "registry": {
-    "total": 399,
+    "total": 406,
     "byClassification": {
-      "approximated": 103,
-      "outOfScope": 71,
-      "settled": 221,
+      "approximated": 106,
+      "outOfScope": 72,
+      "settled": 224,
       "unsettled": 4
     },
     "byVolatility": {
       "annuallyIndexed": 57,
       "awaitingGuidance": 10,
-      "staticStatute": 326,
+      "staticStatute": 333,
       "sunsetting": 6
     },
     "byJurisdiction": {
       "federal": 303,
       "states": {
         "AK": 1,
+        "AL": 7,
         "AR": 9,
         "AZ": 8,
         "CA": 1,
@@ -69,7 +70,7 @@
         "WV": 1,
         "WY": 1
       },
-      "stateTotal": 96
+      "stateTotal": 103
     }
   },
   "attestations": {
@@ -936,6 +937,232 @@
           "kind": "statute",
           "citation": "Alaska Stat. 43.20.011(e)",
           "url": "https://www.akleg.gov/basis/statutes.asp?media=print&type=fetch&secEnd=43.20.030"
+        }
+      ]
+    },
+    {
+      "id": "al-dor-individual-income-tax-rate-schedule",
+      "title": "Alabama taxes taxable income at 2%, 4%, and 5% with filing-status break points",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:AL",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-28",
+      "dueOn": "2027-08-28",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "authorities": [
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Alabama Department of Revenue, Individual Income Tax — Rate",
+          "url": "https://www.revenue.alabama.gov/individual-corporate/taxes-administered-by-individual-corporate-income-tax/individual-income-tax/"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Alabama Department of Revenue, Individual Income Tax — Rate (joint)",
+          "url": "https://www.revenue.alabama.gov/individual-corporate/taxes-administered-by-individual-corporate-income-tax/individual-income-tax/"
+        }
+      ]
+    },
+    {
+      "id": "al-form40-age-65-retirement-exclusion-cap",
+      "title": "The pack's $6,000 age-65 retirement cap is not quote-carried by the staged booklet",
+      "classification": "approximated",
+      "errorDirection": "understatesTax",
+      "conventionRationale": "BLOCKED-SOURCE: the $6,000 age-65 exclusion's operative text is not in the staged booklet; quote pends a staged primary",
+      "contraryReading": null,
+      "jurisdiction": "state:AL",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-28",
+      "dueOn": "2027-08-28",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/params/state/types.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/stateTax.approximation.test.ts"
+      ],
+      "authorities": [
+        {
+          "kind": "formInstruction",
+          "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Pensions and Annuities",
+          "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Line 4 — Retirement Income (Schedule RS)",
+          "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf"
+        }
+      ]
+    },
+    {
+      "id": "al-form40-defined-benefit-414j-exemption",
+      "title": "Alabama exempts any IRC 414(j) defined-benefit payment; the pack tests the bucket, not the plan",
+      "classification": "approximated",
+      "errorDirection": "bothDirections",
+      "conventionRationale": "The sign depends on bucket attribution: private-bucket defined-benefit dollars overstate tax, public-bucket non-defined-benefit dollars understate it.",
+      "contraryReading": null,
+      "jurisdiction": "state:AL",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-28",
+      "dueOn": "2027-08-28",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/params/state/types.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/stateTax.approximation.test.ts"
+      ],
+      "authorities": [
+        {
+          "kind": "formInstruction",
+          "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Examples of Income You DO NOT Report",
+          "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Pensions and Annuities — amounts not taxable",
+          "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf"
+        }
+      ]
+    },
+    {
+      "id": "al-form40-ira-dc-distributions-taxable",
+      "title": "Alabama taxes IRA and defined-contribution distributions on Schedule RS",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:AL",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-28",
+      "dueOn": "2027-08-28",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "authorities": [
+        {
+          "kind": "formInstruction",
+          "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Line 4 — Retirement Income (Schedule RS)",
+          "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Pensions and Annuities",
+          "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf"
+        }
+      ]
+    },
+    {
+      "id": "al-form40-pre-1987-cost-recovery-not-modeled",
+      "title": "Alabama pre-1987 IRA and deferred-compensation cost-recovery worksheet is not modeled",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:AL",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-28",
+      "dueOn": "2027-08-28",
+      "implementedBy": [
+        "packages/engine/src/params/state/types.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "fixtureFiles": [],
+      "authorities": [
+        {
+          "kind": "formInstruction",
+          "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Worksheet for Partially Taxable Pensions — pre-1987 recovery",
+          "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf"
+        }
+      ]
+    },
+    {
+      "id": "al-form40-social-security-exclusion",
+      "title": "Alabama excludes Federal Social Security and Railroad Retirement benefits",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:AL",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-28",
+      "dueOn": "2027-08-28",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "authorities": [
+        {
+          "kind": "formInstruction",
+          "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Examples of Income You DO NOT Report",
+          "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf"
+        }
+      ]
+    },
+    {
+      "id": "al-form40-standard-deduction-agi-slide",
+      "title": "Alabama's standard deduction slides down with AGI; the pack holds the maxima flat",
+      "classification": "approximated",
+      "errorDirection": "understatesTax",
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:AL",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-28",
+      "dueOn": "2027-08-28",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/stateTax.approximation.test.ts"
+      ],
+      "authorities": [
+        {
+          "kind": "formInstruction",
+          "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Line 11 — Standard Deduction",
+          "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, page 9 Standard Deduction chart — Single column",
+          "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, page 9 Standard Deduction chart — Married Filing Joint column",
+          "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf"
         }
       ]
     },
@@ -14704,17 +14931,17 @@
     }
   ],
   "quoteFidelity": {
-    "generatedAt": "2026-08-28T01:14:45.436Z",
-    "entryCount": 1032,
-    "fetched": 0,
-    "cached": 301,
+    "generatedAt": "2026-08-28T03:40:27.312Z",
+    "entryCount": 1045,
+    "fetched": 177,
+    "cached": 126,
     "counts": {
-      "ABSENT": 32,
-      "ELISION-EXACT": 58,
+      "ABSENT": 25,
+      "ELISION-EXACT": 60,
       "ELISION-PUNCTUATION": 4,
-      "EXACT": 694,
-      "PDF-NOT-VERIFIABLE": 2,
-      "PDF-WORD-LEVEL": 192,
+      "EXACT": 700,
+      "PDF-NOT-VERIFIABLE": 4,
+      "PDF-WORD-LEVEL": 202,
       "PUNCTUATION": 37,
       "UNFETCHABLE": 13
     }
