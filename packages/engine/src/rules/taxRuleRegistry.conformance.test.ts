@@ -1,3 +1,4 @@
+import ts from 'typescript'
 import { describe, expect, it } from 'vitest'
 import { describeRule } from './describeRule.js'
 import {
@@ -36,8 +37,51 @@ for (const [path, source] of Object.entries(testSources)) {
   }
 }
 
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&')
+/**
+ * Structural symbol table per file: declaration names, exported bindings,
+ * class/interface members, and object-literal property names, collected from
+ * the TypeScript AST so a deleted mapped occurrence cannot hide behind an
+ * unrelated identifier that merely appears somewhere in the file's text.
+ */
+const declaredSymbolCache = new Map<string, ReadonlySet<string>>()
+
+function declaredSymbolsOf(globKey: string, source: string): ReadonlySet<string> {
+  const cached = declaredSymbolCache.get(globKey)
+  if (cached !== undefined) return cached
+  const file = ts.createSourceFile(globKey, source, ts.ScriptTarget.Latest, true)
+  const names = new Set<string>()
+  const record = (name: ts.Node | undefined): void => {
+    if (name !== undefined && ts.isIdentifier(name)) names.add(name.text)
+  }
+  const visit = (node: ts.Node): void => {
+    if (
+      ts.isFunctionDeclaration(node) ||
+      ts.isClassDeclaration(node) ||
+      ts.isInterfaceDeclaration(node) ||
+      ts.isTypeAliasDeclaration(node) ||
+      ts.isEnumDeclaration(node)
+    ) {
+      record(node.name)
+    } else if (ts.isVariableDeclaration(node) || ts.isBindingElement(node)) {
+      record(node.name)
+    } else if (
+      ts.isPropertyAssignment(node) ||
+      ts.isPropertySignature(node) ||
+      ts.isPropertyDeclaration(node) ||
+      ts.isMethodDeclaration(node) ||
+      ts.isMethodSignature(node) ||
+      ts.isShorthandPropertyAssignment(node) ||
+      ts.isGetAccessorDeclaration(node)
+    ) {
+      record(node.name)
+    } else if (ts.isExportSpecifier(node)) {
+      record(node.name)
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(file)
+  declaredSymbolCache.set(globKey, names)
+  return names
 }
 
 /** Glob keys are relative to this directory; registry paths are repo-relative. */
@@ -837,12 +881,10 @@ describe('tax rule registry conformance', () => {
         const globKey = path.replace(/^packages\/engine\/src\//u, '../')
         const source = engineSources[globKey] as string | undefined
         expect(source, `${ruleId}: ${path} not found among engine sources`).toBeDefined()
-        const name = escapeRegExp(symbol)
-        const declared = new RegExp(
-          `(?:function|const|let|class|interface|type)\\s+${name}\\b|\\b${name}\\s*[:=(]`,
-          'u',
-        )
-        expect(declared.test(source!), `${ruleId}: ${symbol} not found in ${path}`).toBe(true)
+        expect(
+          declaredSymbolsOf(globKey, source!).has(symbol),
+          `${ruleId}: ${symbol} is not a declared symbol in ${path}`,
+        ).toBe(true)
       }
     }
   })

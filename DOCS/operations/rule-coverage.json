@@ -1,6 +1,6 @@
 {
   "kind": "retiregolden.rules-coverage.manifest",
-  "version": 2,
+  "version": 3,
   "registry": {
     "total": 408,
     "byClassification": {

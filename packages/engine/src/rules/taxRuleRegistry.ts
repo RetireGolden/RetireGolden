@@ -237,12 +237,12 @@ export interface TaxRuleRecord {
   /**
    * The operative functions inside `implementedBy`, as `<repo-relative
    * path>#<symbol>` entries whose path half must appear in `implementedBy`
-   * and whose symbol must exist in that file. Optional until the backfill
-   * wave completes; conformance enforces both halves wherever present so a
-   * renamed or deleted function fails the build instead of rotting on the
-   * public transparency page.
+   * and whose symbol must exist in that file. Required and non-empty: the
+   * backfill covered every record, and this stays a ratchet - conformance
+   * fails the build when a symbol disappears from its file, so the public
+   * transparency page can never name a function that no longer exists.
    */
-  readonly implementedByFunctions?: readonly string[]
+  readonly implementedByFunctions: readonly [string, ...string[]]
 }
 
 const registry = {

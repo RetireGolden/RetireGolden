@@ -89,7 +89,7 @@ const QUOTE_FIDELITY_ADVISORY_VERDICTS = ['PUNCTUATION', 'ELISION-PUNCTUATION', 
 
 export interface CoverageReportManifest {
   readonly kind: 'retiregolden.rules-coverage.manifest'
-  readonly version: 2
+  readonly version: 3
   readonly registry: {
     readonly total: number
     readonly byClassification: Readonly<Record<string, number>>
@@ -599,7 +599,7 @@ function buildMarkdown(manifest: CoverageReportManifest): string {
     '',
     '## Manifest contract',
     '',
-    'The JSON manifest (rule-coverage.json, version 2) is the machine contract: each rule additionally carries title, errorDirection (null unless the rule is approximated), conventionRationale and contraryReading (null when unused), deduplicated authority identities (kind, citation, url), and per-fixture detail (path, line, optional note, and the it() titles scanned from the fixture source). This markdown file is the human summary and does not repeat them. Version 2 is a breaking discriminator for readers that check version === 1 strictly; the new fields are additive only for readers that ignore unknown keys and do not pin the version.',
+    'The JSON manifest (rule-coverage.json, version 3) is the machine contract: each rule additionally carries title, errorDirection (null unless the rule is approximated), conventionRationale and contraryReading (null when unused), deduplicated authority identities (kind, citation, url), and per-fixture detail (path, line, optional note, and the it() titles scanned from the fixture source). This markdown file is the human summary and does not repeat them. Version 3 is a breaking discriminator for strict version checks (implementations and fixtures are required at 3); the new fields are additive only for readers that ignore unknown keys and do not pin the version.',
     '',
     '## Quote fidelity',
     '',
@@ -674,9 +674,7 @@ export function buildCoverageReport(input: CoverageReportInput): CoverageReport 
       implementedBy: [...rule.implementedBy].sort(),
       implementations: [...rule.implementedBy].sort().map((path) => ({
         path,
-        // Optional on the literal registry type: absent on every record the
-        // backfill has not reached, so it is read through the optional shape.
-        functions: ((rule as { implementedByFunctions?: readonly string[] }).implementedByFunctions ?? [])
+        functions: rule.implementedByFunctions
           .filter((entry: string) => entry.startsWith(path + '#'))
           .map((entry: string) => entry.slice(path.length + 1))
           .sort(compareStrings),
@@ -711,10 +709,11 @@ export function buildCoverageReport(input: CoverageReportInput): CoverageReport 
   )
   const manifest: CoverageReportManifest = {
     kind: 'retiregolden.rules-coverage.manifest',
-    // 2: rules carry title/errorDirection/conventionRationale/contraryReading
-    // and deduplicated authority identities. Additive over 1; a consumer that
-    // requires those fields gates on the version instead of key-sniffing.
-    version: 2,
+    // 3: rules additionally carry implementations (per-file function lists)
+    // and per-fixture detail. 2 added title/errorDirection/
+    // conventionRationale/contraryReading and deduplicated authority
+    // identities. A consumer requiring these fields gates on the version.
+    version: 3,
     registry: {
       total: rules.length,
       byClassification: countBy(rules.map(({ classification }) => classification)),
