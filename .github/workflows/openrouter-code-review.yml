@@ -14,10 +14,12 @@
 # cancel an in-progress first-pass).
 #
 # The models roster is decided per-repo INSIDE the reusable (keyed off
-# GITHUB_REPOSITORY, frozen at the pinned SHA below). As of the
-# .github#24 pin this repo runs the two-model roster: x-ai/grok-4.6 +
-# z-ai/glm-5.3-flash, merged by the action's recall-safe judge. All
-# other org repos stay single-lane. Revisit this note at each pin bump.
+# GITHUB_REPOSITORY, frozen at the pinned SHA below). This repo has run
+# the two-model roster — x-ai/grok-4.6 + z-ai/glm-5.3-flash, merged by
+# the action's recall-safe judge — since the .github#24 pin; a pin bump
+# does not change the roster unless it says so. All other org repos
+# stay single-lane. On a bump, rewrite this note ONLY if the roster
+# actually changed.
 
 name: OpenRouter code review
 
@@ -39,7 +41,7 @@ jobs:
   openrouter:
     name: OpenRouter review
     if: github.event_name == 'workflow_dispatch' || !github.event.pull_request.draft
-    uses: RetireGolden/.github/.github/workflows/openrouter-code-review.yml@dc5b674eb14d8f32d4fb12993b450e435af02b06 # .github#24 (per-repo models roster; this repo: two-model grok-4.6 + glm-5.3-flash + judge)
+    uses: RetireGolden/.github/.github/workflows/openrouter-code-review.yml@37a463301702925ac699f3c40b46ce4572213c57 # .github#25 (action v1.2.5 cost + readable findings; this repo: two-model grok-4.6 + glm-5.3-flash + judge)
     with:
       pr_number: ${{ inputs.pr_number || github.event.inputs.pr_number || github.event.pull_request.number }}
     secrets:
