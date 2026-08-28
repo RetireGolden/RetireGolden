@@ -6213,7 +6213,7 @@ const registry = {
     implementedByFunctions: [
       'packages/engine/src/params/index.ts#indexFederalTaxPack',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
-      'packages/engine/src/tax/federalTax.ts#computeFederalTax',
+      'packages/engine/src/tax/federalTax.ts#bracketTax',
     ],
   },
   'irc-151-d-5-C-senior-deduction-not-indexed': {

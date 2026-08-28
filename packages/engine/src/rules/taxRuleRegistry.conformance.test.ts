@@ -65,7 +65,9 @@ function declaredSymbolsOf(globKey: string, source: string): ReadonlySet<string>
         ts.isMethodDeclaration(child) ||
         ts.isMethodSignature(child) ||
         ts.isShorthandPropertyAssignment(child) ||
-        ts.isGetAccessorDeclaration(child)
+        ts.isGetAccessorDeclaration(child) ||
+        ts.isSetAccessorDeclaration(child) ||
+        ts.isEnumMember(child)
       ) {
         record(child.name)
         // A data pack's leaf fields are publishable facts, so property
