@@ -103,16 +103,37 @@ describe('rules coverage report artifacts', () => {
 describe('quote-fidelity ledger hash binding', () => {
   it('binds every ledger verdict to the registry quote it judged', async () => {
     // The repo commits a ledger from this change on; a glob or path miss must
-    // fail loudly here, never pass as a silently skipped binding check.
-    expect(quoteFidelityLedger, 'committed quote-fidelity ledger must be found by the glob').not.toBeNull()
-    const { createHash } = await import('node:crypto')
-    const hash = (text: string): string =>
-      createHash('sha256').update(text, 'utf8').digest('hex').slice(0, 16)
+    // fail loudly here, never pass as a silently skipped binding check. A
+    // throw (not an expect) so the null check also narrows for tsc.
+    if (quoteFidelityLedger === null) {
+      throw new Error('committed quote-fidelity ledger must be found by the glob')
+    }
+    // WebCrypto, not node:crypto — the engine's compile-time surface is
+    // deliberately free of node and DOM types, so the minimal runtime shapes
+    // vitest actually provides are declared here instead of widening tsconfig.
+    interface MinimalTextEncoder {
+      encode(input: string): Uint8Array
+    }
+    interface MinimalWebCrypto {
+      subtle: { digest(algorithm: string, data: Uint8Array): Promise<ArrayBuffer> }
+    }
+    const { TextEncoder: TextEncoderConstructor } = globalThis as unknown as {
+      TextEncoder: new () => MinimalTextEncoder
+    }
+    const webCrypto = crypto as unknown as MinimalWebCrypto
+    const encoder = new TextEncoderConstructor()
+    const hash = async (text: string): Promise<string> => {
+      const digest = await webCrypto.subtle.digest('SHA-256', encoder.encode(text))
+      return [...new Uint8Array(digest)]
+        .map((byte) => byte.toString(16).padStart(2, '0'))
+        .join('')
+        .slice(0, 16)
+    }
 
     const expected: string[] = []
     for (const [id, rule] of Object.entries(TAX_RULE_REGISTRY)) {
       for (const authority of rule.authority) {
-        expected.push(`${id} ${authority.citation} ${authority.url} ${hash(authority.quotedText)}`)
+        expected.push(`${id} ${authority.citation} ${authority.url} ${await hash(authority.quotedText)}`)
       }
     }
     const parsed = JSON.parse(quoteFidelityLedger) as {
