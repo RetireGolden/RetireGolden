@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-08-28T04:11:55.602Z",
+  "generatedAt": "2026-08-28T04:22:47.038Z",
   "recordCount": 409,
   "urlCount": 303,
   "fetched": 0,
   "cached": 303,
-  "entryCount": 1049,
+  "entryCount": 1050,
   "counts": {
     "EXACT": 701,
     "PUNCTUATION": 37,
@@ -13,7 +13,8 @@
     "PDF-WORD-LEVEL": 205,
     "ELISION-EXACT": 60,
     "ABSENT": 25,
-    "PDF-NOT-VERIFIABLE": 4
+    "PDF-NOT-VERIFIABLE": 4,
+    "TRUNCATED": 1
   },
   "hostConventions": {
     "uscode.house.gov": {
@@ -10490,6 +10491,20 @@
     },
     {
       "id": "al-form40-defined-benefit-414j-exemption",
+      "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Examples of Income You DO NOT Report (retirement systems)",
+      "host": "www.revenue.alabama.gov",
+      "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf",
+      "quoteSha256": "5560f6dd6784a323",
+      "verdict": "TRUNCATED",
+      "detail": "the quote ends with a terminal period the source does not have there",
+      "diagnosis": {
+        "matchedWords": 7,
+        "totalWords": 7,
+        "continuation": "state of alabama employees retirement system benefits state of alabama judicial retirement system benefits military retirement pay tennessee valley authority pension system benefi"
+      }
+    },
+    {
+      "id": "al-form40-defined-benefit-414j-exemption",
       "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Pensions and Annuities — amounts not taxable",
       "host": "www.revenue.alabama.gov",
       "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf",
@@ -10519,7 +10534,7 @@
       "diagnosis": null
     },
     {
-      "id": "al-form40-pre-1987-cost-recovery-not-modeled",
+      "id": "al-form40-cost-recovery-not-modeled",
       "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Worksheet for Partially Taxable Pensions — pre-1987 recovery",
       "host": "www.revenue.alabama.gov",
       "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf",

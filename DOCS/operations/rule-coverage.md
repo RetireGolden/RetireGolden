@@ -17,8 +17,8 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | Classification: settled | 224 |
 | Classification: unsettled | 5 |
 | Volatility: annuallyIndexed | 57 |
-| Volatility: awaitingGuidance | 10 |
-| Volatility: staticStatute | 336 |
+| Volatility: awaitingGuidance | 11 |
+| Volatility: staticStatute | 335 |
 | Volatility: sunsetting | 6 |
 | Federal jurisdiction | 303 |
 | State jurisdiction total | 106 |
@@ -201,6 +201,7 @@ The 25 earliest due dates are shown below (409 rules total). Comparing dueOn to 
 | irc-6433-a-1-savers-match-qualified-retirement-savings-contributions | awaitingGuidance | 2026-08-26 | 2026-11-24 |
 | irc-6433-f-6-savers-match-early-distribution-recovery-tax | awaitingGuidance | 2026-08-26 | 2026-11-24 |
 | irc-72-t-2-J-plesa-withdrawal-early-distribution-exception | awaitingGuidance | 2026-08-26 | 2026-11-24 |
+| al-form40-age-65-retirement-exclusion-cap | awaitingGuidance | 2026-08-28 | 2026-11-26 |
 | irc-408-d-8-A-annual-qcd-limit | annuallyIndexed | 2026-08-02 | 2026-11-30 |
 | cfr-20-404-1574-b-2-sga-non-blind-monthly-amount | annuallyIndexed | 2026-08-03 | 2026-12-01 |
 | irc-1-h-capital-gain-stacked-on-ordinary | annuallyIndexed | 2026-08-03 | 2026-12-01 |
@@ -215,7 +216,6 @@ The 25 earliest due dates are shown below (409 rules total). Comparing dueOn to 
 | irc-63-c-2-joint-standard-deduction-doubles | annuallyIndexed | 2026-08-03 | 2026-12-01 |
 | treas-reg-1-401-a-9-6-q-2-qlac-premium-dollar-limit | annuallyIndexed | 2026-08-03 | 2026-12-01 |
 | usc-42-1395r-a-3-part-b-standard-premium | annuallyIndexed | 2026-08-03 | 2026-12-01 |
-| usc-42-1395r-i-5-C-top-irmaa-threshold-frozen | annuallyIndexed | 2026-08-03 | 2026-12-01 |
 
 ## Manifest contract
 
@@ -223,9 +223,9 @@ The JSON manifest (rule-coverage.json, version 2) is the machine contract: each 
 
 ## Quote fidelity
 
-Committed ledger generated at 2026-08-28T04:11:55.602Z over 1049 authority entries (0 fetched live, 303 from cache).
+Committed ledger generated at 2026-08-28T04:22:47.038Z over 1050 authority entries (0 fetched live, 303 from cache).
 
-38 serious, 45 advisory, 966 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
+39 serious, 45 advisory, 966 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
 not treated as a CI gate; how to read each verdict: DOCS/operations/quote-fidelity.md.
 
 | Verdict | Class | Count |
@@ -237,6 +237,7 @@ not treated as a CI gate; how to read each verdict: DOCS/operations/quote-fideli
 | PDF-NOT-VERIFIABLE | advisory | 4 |
 | PDF-WORD-LEVEL | ok | 205 |
 | PUNCTUATION | advisory | 37 |
+| TRUNCATED | serious | 1 |
 | UNFETCHABLE | serious | 13 |
 
 Regenerate: pnpm verify:quotes -- --json > DOCS/operations/quote-fidelity-ledger.json (network required), then pnpm rules:coverage.

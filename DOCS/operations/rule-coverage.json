@@ -11,8 +11,8 @@
     },
     "byVolatility": {
       "annuallyIndexed": 57,
-      "awaitingGuidance": 10,
-      "staticStatute": 336,
+      "awaitingGuidance": 11,
+      "staticStatute": 335,
       "sunsetting": 6
     },
     "byJurisdiction": {
@@ -1009,18 +1009,18 @@
       "conventionRationale": "BLOCKED-SOURCE: the $6,000 age-65 exclusion's operative text is not in the staged booklet; quote pends a staged primary",
       "contraryReading": "If the research corpus's 2026 parameter is operative — $12,000 per person at age 65 — the pack's $6,000 understates the exclusion and overstates Alabama tax; if no exclusion exists, the pack understates tax by the granted cap.",
       "jurisdiction": "state:AL",
-      "volatility": "staticStatute",
+      "volatility": "awaitingGuidance",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
       "verifiedOn": "2026-08-28",
-      "dueOn": "2027-08-28",
+      "dueOn": "2026-11-26",
       "implementedBy": [
         "packages/engine/src/params/state/data/year2026.ts",
         "packages/engine/src/params/state/types.ts",
         "packages/engine/src/tax/stateTax.ts"
       ],
       "fixtureFiles": [
-        "packages/engine/src/rules/approximations/stateTax.approximation.test.ts"
+        "packages/engine/src/tax/stateTax.rules.test.ts"
       ],
       "authorities": [
         {
@@ -1031,6 +1031,32 @@
         {
           "kind": "formInstruction",
           "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Line 4 — Retirement Income (Schedule RS)",
+          "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf"
+        }
+      ]
+    },
+    {
+      "id": "al-form40-cost-recovery-not-modeled",
+      "title": "Alabama cost-recovery (basis) mechanics for retirement distributions are not modeled",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:AL",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-28",
+      "dueOn": "2027-08-28",
+      "implementedBy": [
+        "packages/engine/src/params/state/types.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "fixtureFiles": [],
+      "authorities": [
+        {
+          "kind": "formInstruction",
+          "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Worksheet for Partially Taxable Pensions — pre-1987 recovery",
           "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf"
         }
       ]
@@ -1060,6 +1086,11 @@
         {
           "kind": "formInstruction",
           "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Examples of Income You DO NOT Report",
+          "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Examples of Income You DO NOT Report (retirement systems)",
           "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf"
         },
         {
@@ -1131,32 +1162,6 @@
         {
           "kind": "formInstruction",
           "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Dependent's and Student's Income",
-          "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf"
-        }
-      ]
-    },
-    {
-      "id": "al-form40-pre-1987-cost-recovery-not-modeled",
-      "title": "Alabama pre-1987 IRA and deferred-compensation cost-recovery worksheet is not modeled",
-      "classification": "outOfScope",
-      "errorDirection": null,
-      "conventionRationale": null,
-      "contraryReading": null,
-      "jurisdiction": "state:AL",
-      "volatility": "staticStatute",
-      "effectiveFrom": 2026,
-      "effectiveThrough": null,
-      "verifiedOn": "2026-08-28",
-      "dueOn": "2027-08-28",
-      "implementedBy": [
-        "packages/engine/src/params/state/types.ts",
-        "packages/engine/src/tax/stateTax.ts"
-      ],
-      "fixtureFiles": [],
-      "authorities": [
-        {
-          "kind": "formInstruction",
-          "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Worksheet for Partially Taxable Pensions — pre-1987 recovery",
           "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf"
         }
       ]
@@ -3410,8 +3415,8 @@
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-03",
-      "dueOn": "2027-08-03",
+      "verifiedOn": "2026-08-28",
+      "dueOn": "2027-08-28",
       "implementedBy": [
         "packages/engine/src/tax/federalTax.ts"
       ],
@@ -8179,14 +8184,14 @@
       "title": "AMT is the excess of tentative minimum tax over regular tax",
       "classification": "settled",
       "errorDirection": null,
-      "conventionRationale": "Section 55(b)(1) states the breakpoint as 175,000 dollars and it is inflation-adjusted; the 2026 pack carries 244,500. The record is annually indexed for that reason, and the statutory figure should not be read as the current one.",
+      "conventionRationale": "Section 55(b)(1) states the breakpoint as $175,000 and it is inflation-adjusted; the 2026 pack carries 244,500. The record is annually indexed for that reason, and the statutory figure should not be read as the current one.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "annuallyIndexed",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-04",
-      "dueOn": "2026-12-02",
+      "verifiedOn": "2026-08-28",
+      "dueOn": "2026-12-26",
       "implementedBy": [
         "packages/engine/src/params/data/year2026.ts",
         "packages/engine/src/tax/federalTax.ts"
@@ -8953,8 +8958,8 @@
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-03",
-      "dueOn": "2027-08-03",
+      "verifiedOn": "2026-08-28",
+      "dueOn": "2027-08-28",
       "implementedBy": [
         "packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.ts"
       ],
@@ -8978,8 +8983,8 @@
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-03",
-      "dueOn": "2027-08-03",
+      "verifiedOn": "2026-08-28",
+      "dueOn": "2027-08-28",
       "implementedBy": [
         "packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts"
       ],
@@ -9142,8 +9147,8 @@
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-03",
-      "dueOn": "2027-08-03",
+      "verifiedOn": "2026-08-28",
+      "dueOn": "2027-08-28",
       "implementedBy": [
         "packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.ts"
       ],
@@ -15018,8 +15023,8 @@
     }
   ],
   "quoteFidelity": {
-    "generatedAt": "2026-08-28T04:11:55.602Z",
-    "entryCount": 1049,
+    "generatedAt": "2026-08-28T04:22:47.038Z",
+    "entryCount": 1050,
     "fetched": 0,
     "cached": 303,
     "counts": {
@@ -15030,6 +15035,7 @@
       "PDF-NOT-VERIFIABLE": 4,
       "PDF-WORD-LEVEL": 205,
       "PUNCTUATION": 37,
+      "TRUNCATED": 1,
       "UNFETCHABLE": 13
     }
   }

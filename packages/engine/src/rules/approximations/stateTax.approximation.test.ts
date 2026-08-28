@@ -1375,60 +1375,6 @@ describeRule('al-form40-defined-benefit-414j-exemption', {
   })
 })
 
-describeRule('al-form40-age-65-retirement-exclusion-cap', {
-  readings: {
-    // No exclusion beyond the exempt list is derivable from the staged
-    // booklet. Taxable 40,000 − 3,000 = 37,000 → tax 1,810.
-    stagedInstructionsCarryNoAgeExclusion:
-      alApproxSingleTax(AL_DB_PENSION - AL_APPROX_DEDUCTION),
-    // The engine's convention choice, disclosed on the record: $6,000 per
-    // person at 65+. Taxable 40,000 − 6,000 − 3,000 = 31,000 → tax 1,510.
-    encodedSixThousandAtSixtyFive:
-      alApproxSingleTax(AL_DB_PENSION - AL_PACK_CAP - AL_APPROX_DEDUCTION),
-    // The research corpus's 2026 parameter, unquotable until a primary is
-    // staged. Taxable 40,000 − 12,000 − 3,000 = 25,000 → tax 1,210.
-    researchTwelveThousandFor2026:
-      alApproxSingleTax(AL_DB_PENSION - 2 * AL_PACK_CAP - AL_APPROX_DEDUCTION),
-  },
-  // accepted carries the only reading with staged-source support (the
-  // instructions' silence); the engine's $6,000 grant is a disclosed
-  // convention, asserted below as what the pack implements, never as oracle.
-  accepted: 'stagedInstructionsCarryNoAgeExclusion',
-  note: 'unsettled: operative text unsourced',
-}, ({ accepted, readings }) => {
-  const scenario = input({
-    state: 'AL',
-    ordinaryIncome: AL_DB_PENSION,
-    privateRetirementIncome: AL_DB_PENSION,
-    agesAlive: [70],
-  })
-
-  it('implements the encoded $6,000 convention, distinct from every recorded reading', () => {
-    expect(computeStateTax(pack('AL'), scenario)).toBeCloseTo(readings.encodedSixThousandAtSixtyFive, 6)
-    expect(readings.encodedSixThousandAtSixtyFive).toBeCloseTo(1510, 6)
-    expect(accepted).toBeCloseTo(1810, 6)
-    expect(readings.researchTwelveThousandFor2026).toBeCloseTo(1210, 6)
-    expect(computeStateTax(pack('AL'), scenario)).not.toBeCloseTo(accepted, 6)
-    expect(computeStateTax(pack('AL'), scenario)).not.toBeCloseTo(readings.researchTwelveThousandFor2026, 6)
-  })
-
-  it('reaches the accepted no-exclusion reading once the cap is withheld', () => {
-    const noCap = {
-      ...pack('AL'),
-      retirementPrivate: { kind: 'none' as const },
-    }
-    expect(computeStateTax(noCap, scenario)).toBeCloseTo(accepted, 6)
-  })
-
-  it('reaches the research 2026 reading under a doubled cap', () => {
-    const doubled = {
-      ...pack('AL'),
-      retirementPrivate: { kind: 'capped' as const, capPerPerson: 12_000, minAge: 65 },
-    }
-    expect(computeStateTax(doubled, scenario)).toBeCloseTo(readings.researchTwelveThousandFor2026, 6)
-  })
-})
-
 describeRule('al-form40-standard-deduction-agi-slide', {
   readings: {
     // Page-9 Single chart: AGI $17,750 and above → $2,500 (not the $3,000 max).

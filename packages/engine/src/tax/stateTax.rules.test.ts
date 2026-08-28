@@ -2907,6 +2907,71 @@ describeRule('al-dor-individual-income-tax-rate-schedule', {
       .not.toBeCloseTo(readings.jointBreaksAppliedToSingleFiler, 6)
     expect(accepted).toBeCloseTo(210, 6)
   })
+
+  it('prices the joint schedule on a joint return, distinct from the single breaks', () => {
+    // Joint: 20,000 − 8,500 = 11,500 taxable → 2% × 1,000 + 4% × 5,000 +
+    // 5% × 5,500 = 20 + 200 + 275 = 495. The single breaks on the same
+    // taxable would price 10 + 100 + 425 = 535, so the schedules discriminate.
+    const joint = input({
+      state: 'AL',
+      filingStatus: 'marriedFilingJointly',
+      ordinaryIncome: 20_000,
+      agesAlive: [50, 50],
+    })
+    expect(computeStateTax(pack('AL'), joint)).toBeCloseTo(495, 6)
+    expect(computeStateTax(pack('AL'), joint)).not.toBeCloseTo(alSingleTax(11_500), 6)
+  })
+})
+
+describeRule('al-form40-age-65-retirement-exclusion-cap', {
+  readings: {
+    // No exclusion beyond the exempt list is derivable from the staged
+    // booklet. Taxable 40,000 − 3,000 = 37,000 → tax 1,810.
+    stagedInstructionsCarryNoAgeExclusion: alSingleTax(37_000),
+    // The engine's convention choice, disclosed on the record: $6,000 per
+    // person at 65+. Taxable 40,000 − 6,000 − 3,000 = 31,000 → tax 1,510.
+    encodedSixThousandAtSixtyFive: alSingleTax(31_000),
+    // The research corpus's 2026 parameter, unquotable until a primary is
+    // staged. Taxable 40,000 − 12,000 − 3,000 = 25,000 → tax 1,210.
+    researchTwelveThousandFor2026: alSingleTax(25_000),
+  },
+  // accepted carries the only reading with staged-source support (the
+  // instructions' silence); the engine's $6,000 grant is a disclosed
+  // convention, asserted below as what the pack implements, never as oracle.
+  accepted: 'stagedInstructionsCarryNoAgeExclusion',
+  note: 'unsettled: operative text unsourced',
+}, ({ accepted, readings }) => {
+  const scenario = input({
+    state: 'AL',
+    ordinaryIncome: 40_000,
+    privateRetirementIncome: 40_000,
+    agesAlive: [70],
+  })
+
+  it('implements the encoded $6,000 convention, distinct from every recorded reading', () => {
+    expect(computeStateTax(pack('AL'), scenario)).toBeCloseTo(readings.encodedSixThousandAtSixtyFive, 6)
+    expect(readings.encodedSixThousandAtSixtyFive).toBeCloseTo(1510, 6)
+    expect(accepted).toBeCloseTo(1810, 6)
+    expect(readings.researchTwelveThousandFor2026).toBeCloseTo(1210, 6)
+    expect(computeStateTax(pack('AL'), scenario)).not.toBeCloseTo(accepted, 6)
+    expect(computeStateTax(pack('AL'), scenario)).not.toBeCloseTo(readings.researchTwelveThousandFor2026, 6)
+  })
+
+  it('reaches the accepted no-exclusion reading once the cap is withheld', () => {
+    const noCap = {
+      ...pack('AL'),
+      retirementPrivate: { kind: 'none' as const },
+    }
+    expect(computeStateTax(noCap, scenario)).toBeCloseTo(accepted, 6)
+  })
+
+  it('reaches the research 2026 reading under a doubled cap', () => {
+    const doubled = {
+      ...pack('AL'),
+      retirementPrivate: { kind: 'capped' as const, capPerPerson: 12_000, minAge: 65 },
+    }
+    expect(computeStateTax(doubled, scenario)).toBeCloseTo(readings.researchTwelveThousandFor2026, 6)
+  })
 })
 
   it('models every state these records describe', () => {

@@ -673,7 +673,7 @@ const registry = {
   'irc-72-t-2-A-v-rule-of-55': {
     title: 'Rule of 55 separation test',
     statement:
-      'The early-distribution penalty does not apply to an employer-plan distribution after separation from service, where the separation occurs in or after the calendar year the participant attains age 55, from the employer maintaining that plan, and the distribution follows the separation. It never applies to an IRA.',
+      'The early-distribution penalty does not apply to an employer-plan distribution after separation from service, where the separation occurs in or after the calendar year the participant attains age 55, from the employer maintaining that plan, and the distribution follows the separation. It never applies to an IRA. The quoted Form 5329 exception also carries the age-50/25-years-of-service variant for qualified public safety employees and private-sector firefighters; that substitution is IRC 72(t)(10) law, registered separately at `irc-72-t-10-public-safety-early-age`, not part of this rule\'s claim.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -701,7 +701,7 @@ const registry = {
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-08-28',
     implementedBy: ['packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.ts'],
   },
 
@@ -870,7 +870,7 @@ const registry = {
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-08-28',
     implementedBy: ['packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts'],
   },
 
@@ -1115,7 +1115,7 @@ const registry = {
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-08-28',
     implementedBy: ['packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.ts'],
   },
 
@@ -2269,7 +2269,7 @@ const registry = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'Section 55(b)(1) states the breakpoint as 175,000 dollars and it is inflation-adjusted; the 2026 pack carries 244,500. The record is annually indexed for that reason, and the statutory figure should not be read as the current one.',
+      'Section 55(b)(1) states the breakpoint as $175,000 and it is inflation-adjusted; the 2026 pack carries 244,500. The record is annually indexed for that reason, and the statutory figure should not be read as the current one.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -2287,7 +2287,7 @@ const registry = {
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-04',
+    verifiedOn: '2026-08-28',
     implementedBy: [
       'packages/engine/src/tax/federalTax.ts',
       'packages/engine/src/params/data/year2026.ts',
@@ -5044,7 +5044,7 @@ const registry = {
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-08-28',
     implementedBy: ['packages/engine/src/tax/federalTax.ts'],
   },
 
@@ -14993,7 +14993,7 @@ const registry = {
   'al-form40-defined-benefit-414j-exemption': {
     title: 'Alabama exempts any IRC 414(j) defined-benefit payment; the pack caps the private bucket at $6,000',
     statement:
-      'The Form 40 booklet lists payments from any defined-benefit retirement plan in accordance with IRC 414(j) among the amounts a taxpayer does not report, whatever the employer. Approximated: the pack has no plan-identity test — `PUBLIC_PENSION_OVERRIDES` carries `AL: { kind: \'full\' }` for the public bucket, consistent with the booklet\'s exempt list of federal, Alabama-system, and military retirement, while `retirementPrivate` stays `{ kind: \'capped\', capPerPerson: 6000, minAge: 65 }` — so a private-employer 414(j) defined-benefit pension riding the private bucket is taxed above the age-65 cap the booklet exempts, overstating Alabama tax. Whether a public-bucket draw outside the booklet\'s exempt items is taxable is not established by the staged sources, so no understating claim is registered for that side.',
+      'The Form 40 booklet lists payments from any defined-benefit retirement plan in accordance with IRC 414(j) among the amounts a taxpayer does not report, whatever the employer. Approximated: the pack has no plan-identity test — `PUBLIC_PENSION_OVERRIDES` carries `AL: { kind: \'full\' }` for the public bucket, consistent with the booklet\'s exempt list of federal, Alabama-system, and military retirement, while `retirementPrivate` stays `{ kind: \'capped\', capPerPerson: 6000, minAge: 65 }` — so a private-employer 414(j) defined-benefit pension riding the private bucket is taxed above the age-65 cap the booklet exempts, overstating Alabama tax. Under the booklet\'s general rule a public-bucket draw not on the exempt list would be taxable, and the pack\'s full override would exempt it — an understating edge this record notes without pinning: which public plans fall outside the exempt list is not established by the staged sources, and the two independent verifiers of this slice split on whether the general rule reaches them. The registered, pinned direction is the private-bucket overstatement.',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'overstatesTax',
@@ -15005,6 +15005,12 @@ const registry = {
       url: 'https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf',
       quotedText:
         'Examples of Income You DO NOT Report … Payments from a “Defined Benefit Retirement Plan” in accordance with IRC 414(j). Contact your retirement plan administrator to determine if your plan qualifies.',
+    }, {
+      kind: 'formInstruction',
+      citation: 'Alabama Department of Revenue, 2025 Form 40 booklet, Examples of Income You DO NOT Report (retirement systems)',
+      url: 'https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf',
+      quotedText:
+        'United States Retirement System benefits. … State of Alabama Teachers Retirement System benefits. … State of Alabama Employees Retirement System benefits. … Military retirement pay.',
     }, {
       kind: 'formInstruction',
       citation: 'Alabama Department of Revenue, 2025 Form 40 booklet, Pensions and Annuities — amounts not taxable',
@@ -15026,7 +15032,7 @@ const registry = {
   'al-form40-ira-dc-distributions-taxable': {
     title: 'Alabama taxes IRA and defined-contribution distributions on Schedule RS',
     statement:
-      'The Form 40 booklet directs a taxpayer to complete Schedule RS for fully or partially taxable IRA distributions, including SEP, Keogh, 401(k)(2), and 403(b) distributions, and states that pension payments are, unless specifically excluded by law, fully taxable only where the taxpayer contributed no cost or has already recovered the cost on prior Alabama returns — a distribution with unrecovered cost is partially taxable. That conditional taxable-retirement side is what the pack encodes once a distribution is not on the exempt list; the separate pre-1987 cost-recovery worksheet limb is out of scope on its own record.',
+      'The Form 40 booklet directs a taxpayer to complete Schedule RS for fully or partially taxable IRA distributions, including SEP, Keogh, 401(k)(2), and 403(b) distributions, and states that pension payments are, unless specifically excluded by law, fully taxable only where the taxpayer contributed no cost or has already recovered the cost on prior Alabama returns — a distribution with unrecovered cost is partially taxable. The pack encodes only the fully-taxable side of that rule once a distribution is not on the exempt list: it carries no Alabama cost-recovery mechanics, so the partial-taxability limb for unrecovered cost is registered as an absence at `al-form40-cost-recovery-not-modeled`, never claimed as encoded here.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -15055,10 +15061,10 @@ const registry = {
     ],
   },
 
-  'al-form40-pre-1987-cost-recovery-not-modeled': {
-    title: 'Alabama pre-1987 IRA and deferred-compensation cost-recovery worksheet is not modeled',
+  'al-form40-cost-recovery-not-modeled': {
+    title: 'Alabama cost-recovery (basis) mechanics for retirement distributions are not modeled',
     statement:
-      'The Form 40 booklet\'s partially taxable pension worksheet routes IRA, SEP, Keogh, 401(k)(2), and 403(b) withdrawals whose cost basis recovery began before January 1, 1987 onto a separate pre-1987 recovery path. RetireGolden\'s state tax input carries only aggregate private and public retirement dollars and ages — no Alabama cost basis, no pre-1987 recovery start date, and no Schedule RS worksheet lines — so no accepted plan fact reaches that limb.',
+      'The Form 40 booklet makes a pension or IRA distribution with unrecovered cost only partially taxable, and routes withdrawals whose cost recovery began before January 1, 1987 onto a separate pre-1987 worksheet path. RetireGolden\'s state tax input carries only aggregate private and public retirement dollars and ages — no Alabama cost basis, no recovery start date, and no Schedule RS worksheet lines — so no accepted plan fact reaches either cost-recovery limb; the engine taxes a non-exempt distribution in full.',
     classification: 'outOfScope',
     contraryReading: null,
     errorDirection: null,
@@ -15186,7 +15192,7 @@ const registry = {
       quotedText:
         'Complete Schedule RS to report fully or partially taxable pensions, annuities, IRA distributions (include SEP, Keogh, 401(k)(2), 403(b) distributions), other distributions and retirement distribution(s) exempt from Alabama Income.',
     }],
-    volatility: 'staticStatute',
+    volatility: 'awaitingGuidance',
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-28',
