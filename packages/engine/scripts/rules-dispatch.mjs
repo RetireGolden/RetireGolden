@@ -254,6 +254,10 @@ async function main() {
     testSources: testSourcesInGlobShape(),
     quoteFidelityLedger: null,
     dueOnFor: taxRuleDueOn,
+    // Dispatch prompts print paths, never deep-link lines; a newly ambiguous
+    // pin must fail the conformance suite, not abort a handoff. The real
+    // resolver lives in rules-coverage.mjs, the only publisher.
+    symbolLineFor: () => 1,
   })
 
   const chunks = chunkRuleIds(ruleIds, chunkSize)

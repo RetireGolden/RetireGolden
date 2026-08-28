@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import { makeSymbolLineFor } from './rule-tooling-shared.mjs'
 
 const scriptDir = dirname(fileURLToPath(import.meta.url))
 const engineDir = resolve(scriptDir, '..')
@@ -42,6 +43,7 @@ async function main() {
   ])
   const quoteFidelityPath = join(repositoryDir, 'DOCS', 'operations', 'quote-fidelity-ledger.json')
   const quoteFidelityLedger = existsSync(quoteFidelityPath) ? readFileSync(quoteFidelityPath, 'utf8') : null
+  const symbolLineFor = await makeSymbolLineFor()
   const report = buildCoverageReport({
     registry: TAX_RULE_REGISTRY,
     attestations: COVERAGE_ATTESTATIONS,
@@ -49,6 +51,7 @@ async function main() {
     testSources: testSourcesInGlobShape(),
     quoteFidelityLedger,
     dueOnFor: taxRuleDueOn,
+    symbolLineFor,
   })
   const operationsDir = join(repositoryDir, 'DOCS', 'operations')
   writeFileSync(join(operationsDir, 'rule-coverage.md'), report.markdown.replace(/\r\n/g, '\n'), 'utf8')

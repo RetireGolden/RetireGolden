@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
@@ -10,6 +11,26 @@ const rulesDir = join(sourceDir, 'rules')
 export async function loadModule(name) {
   const path = join(rulesDir, name)
   return import(pathToFileURL(path).href)
+}
+
+/**
+ * The real deep-link line resolver for the coverage publisher
+ * (rules-coverage.mjs). Throws on a missing or ambiguous pin (see
+ * symbolLines.ts). rules:due and rules:dispatch never publish lines and
+ * deliberately pass a constant stub instead, so an ambiguous pin fails the
+ * conformance suite and the publisher, not a read-only listing.
+ */
+export async function makeSymbolLineFor() {
+  const { declaredSymbolLinesOf, symbolAnchorLine } = await loadModule('symbolLines.ts')
+  const tables = new Map()
+  return (path, symbol) => {
+    let table = tables.get(path)
+    if (table === undefined) {
+      table = declaredSymbolLinesOf(path, readFileSync(join(repositoryDir, path), 'utf8'))
+      tables.set(path, table)
+    }
+    return symbolAnchorLine(table, path, symbol)
+  }
 }
 
 export function todayUtcIso() {

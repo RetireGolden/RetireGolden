@@ -1,6 +1,6 @@
-import ts from 'typescript'
 import { describe, expect, it } from 'vitest'
 import { describeRule } from './describeRule.js'
+import { declaredSymbolLinesOf, symbolAnchorLine, type DeclaredSymbol } from './symbolLines.js'
 import {
   DEFAULT_REVERIFICATION_INTERVAL_DAYS,
   TAX_RULE_REGISTRY,
@@ -38,77 +38,33 @@ for (const [path, source] of Object.entries(testSources)) {
 }
 
 /**
- * Structural symbol table per file: declaration names, exported bindings,
- * class/interface members, and object-literal property names, collected from
- * the TypeScript AST so a deleted mapped occurrence cannot hide behind an
- * unrelated identifier that merely appears somewhere in the file's text.
+ * Structural symbol table per file, shared with the coverage manifest's
+ * deep-link line resolution (symbolLines.ts) so the set of names this guard
+ * admits and the set of names the manifest can anchor are one implementation.
+ * The synthetic probes below therefore guard both consumers.
  */
-const declaredSymbolCache = new Map<string, ReadonlySet<string>>()
+const declaredSymbolCache = new Map<string, ReadonlyMap<string, DeclaredSymbol>>()
 
-function declaredSymbolsOf(globKey: string, source: string): ReadonlySet<string> {
+function declaredSymbolsOf(globKey: string, source: string): ReadonlyMap<string, DeclaredSymbol> {
   const cached = declaredSymbolCache.get(globKey)
   if (cached !== undefined) return cached
-  const file = ts.createSourceFile(globKey, source, ts.ScriptTarget.Latest, true)
-  const names = new Set<string>()
-  const record = (name: ts.Node | undefined): void => {
-    if (name !== undefined && ts.isIdentifier(name)) names.add(name.text)
-  }
-  // Members one level under a module-scope declaration are publishable
-  // (class methods, interface properties, a pack object's top entries);
-  // anything deeper is a local, and a local is not a calculator method.
-  const recordMembers = (node: ts.Node): void => {
-    ts.forEachChild(node, (child) => {
-      if (
-        ts.isPropertyAssignment(child) ||
-        ts.isPropertySignature(child) ||
-        ts.isPropertyDeclaration(child) ||
-        ts.isMethodDeclaration(child) ||
-        ts.isMethodSignature(child) ||
-        ts.isShorthandPropertyAssignment(child) ||
-        ts.isGetAccessorDeclaration(child) ||
-        ts.isSetAccessorDeclaration(child) ||
-        ts.isEnumMember(child)
-      ) {
-        record(child.name)
-        // A data pack's leaf fields are publishable facts, so property
-        // structure recurses; function bodies never do - a local inside a
-        // calculator stays a local.
-        if (ts.isPropertyAssignment(child) && child.initializer !== undefined) recordMembers(child.initializer)
-        if (ts.isPropertySignature(child) && child.type !== undefined) recordMembers(child.type)
-      }
-      if (ts.isObjectLiteralExpression(child) || ts.isTypeLiteralNode(child) || ts.isArrayLiteralExpression(child)) recordMembers(child)
-    })
-  }
-  for (const statement of file.statements) {
-    if (
-      ts.isFunctionDeclaration(statement) ||
-      ts.isClassDeclaration(statement) ||
-      ts.isInterfaceDeclaration(statement) ||
-      ts.isTypeAliasDeclaration(statement) ||
-      ts.isEnumDeclaration(statement)
-    ) {
-      record(statement.name)
-      recordMembers(statement)
-      continue
-    }
-    if (ts.isVariableStatement(statement)) {
-      for (const declaration of statement.declarationList.declarations) {
-        record(declaration.name)
-        if (declaration.initializer !== undefined) recordMembers(declaration.initializer)
-      }
-      continue
-    }
-    if (ts.isExportDeclaration(statement) && statement.exportClause !== undefined && ts.isNamedExports(statement.exportClause)) {
-      for (const specifier of statement.exportClause.elements) record(specifier.name)
-    }
-  }
-  declaredSymbolCache.set(globKey, names)
-  return names
+  const lines = declaredSymbolLinesOf(globKey, source)
+  declaredSymbolCache.set(globKey, lines)
+  return lines
 }
 
-/** Glob keys are relative to this directory; registry paths are repo-relative. */
+/**
+ * Glob keys are relative to this directory; registry paths are repo-relative.
+ * Vite emits same-directory files as `./name`, not `../rules/name`, so both
+ * folds are needed or a pin under src/rules/ would be invisible here.
+ */
+const engineGlobKeyOf = (repoPath: string): string =>
+  repoPath.replace(/^packages\/engine\/src\/rules\//u, './').replace(/^packages\/engine\/src\//u, '../')
+
 const engineSourcePaths = new Set(
-  Object.keys(engineSources).map((path) => path.replace(/^\.\.\//u, 'packages/engine/src/')),
+  Object.keys(engineSources).map((path) =>
+    path.replace(/^\.\.\//u, 'packages/engine/src/').replace(/^\.\//u, 'packages/engine/src/rules/'),
+  ),
 )
 
 /**
@@ -916,6 +872,72 @@ describe('tax rule registry conformance', () => {
     expect(symbols.has('neverDeclaredAnywhere')).toBe(false)
   })
 
+  it('anchors symbols per the two-tier line rule, on hand-counted synthetic lines', () => {
+    // The published deep-link lines ride on this resolution, so the rule is
+    // pinned by hand: module scope beats a same-named member, merged
+    // module-scope declarations keep the first line, a unique member anchors
+    // at its own line, a repeated member is refused until parent-qualified.
+    const synthetic = [
+      'interface Summary {', //                       line 1
+      '  computeThing: number', //                    line 2: member tier
+      '}',
+      'export function computeThing(): number {', //  line 4: module tier wins
+      '  return 1',
+      '}',
+      'export function overloaded(a: number): number', // line 7: first wins
+      'export function overloaded(a: string): string',
+      'export function overloaded(a: unknown): unknown {',
+      '  return a',
+      '}',
+      'const pack = {', //                            line 12
+      '  AZ: {', //                                   line 13
+      '    rate: 1,', //                              line 14: member != parent line
+      '    retirement: { cap: 10 },', //              line 15
+      '  },',
+      '  ND: {', //                                   line 17
+      '    rate: 2,', //                              line 18
+      '    retirement: { cap: 20 },', //              line 19
+      '  },',
+      '}',
+      'export class Box {', //                        line 22
+      '  get value(): number {', //                   line 23: get/set = one member
+      '    return 1',
+      '  }',
+      '  set value(next: number) {}',
+      '}',
+    ].join('\n')
+    const probe = 'synthetic-anchor-probe.ts'
+    const table = declaredSymbolsOf(probe, synthetic)
+    expect(symbolAnchorLine(table, probe, 'computeThing')).toBe(4)
+    expect(symbolAnchorLine(table, probe, 'overloaded')).toBe(7)
+    expect(symbolAnchorLine(table, probe, 'pack')).toBe(12)
+    expect(symbolAnchorLine(table, probe, 'AZ')).toBe(13)
+    // The member anchors at ITS line, not its parent's - the parent sits on
+    // a different line here precisely so a parent-line regression fails.
+    expect(symbolAnchorLine(table, probe, 'AZ.rate')).toBe(14)
+    expect(symbolAnchorLine(table, probe, 'ND.rate')).toBe(18)
+    // Deep nesting qualifies through the ancestor chain: the immediate
+    // parent alone (retirement.cap) is still ambiguous across states.
+    expect(symbolAnchorLine(table, probe, 'AZ.retirement.cap')).toBe(15)
+    expect(symbolAnchorLine(table, probe, 'ND.retirement.cap')).toBe(19)
+    expect(() => symbolAnchorLine(table, probe, 'rate')).toThrow(/ambiguous/u)
+    expect(() => symbolAnchorLine(table, probe, 'cap')).toThrow(/ambiguous/u)
+    expect(() => symbolAnchorLine(table, probe, 'retirement.cap')).toThrow(/ambiguous/u)
+    // A get/set pair is one logical member, not an ambiguity.
+    expect(symbolAnchorLine(table, probe, 'Box.value')).toBe(23)
+    expect(symbolAnchorLine(table, probe, 'value')).toBe(23)
+    expect(() => symbolAnchorLine(table, probe, 'neverDeclaredAnywhere')).toThrow(/not a declared symbol/u)
+    // Same-named members in DIFFERENT elements of one array are distinct
+    // declarations: position separates their identity, so the name is
+    // ambiguous rather than collapsed onto the first row's line.
+    const rows = declaredSymbolsOf(
+      'synthetic-array-probe.ts',
+      'const rows = [\n  { rate: 1 },\n  { rate: 2 },\n]\n',
+    )
+    expect(() => symbolAnchorLine(rows, 'synthetic-array-probe.ts', 'rate')).toThrow(/ambiguous/u)
+    expect(() => symbolAnchorLine(rows, 'synthetic-array-probe.ts', 'rows.rate')).toThrow(/ambiguous/u)
+  })
+
   it('resolves every implementedByFunctions entry to a listed file and a live symbol', () => {
     // The transparency page renders these as the chain's deepest level; an
     // entry naming a renamed or deleted function must fail here, not rot
@@ -941,14 +963,19 @@ describe('tax rule registry conformance', () => {
           violations.push(`${ruleId}: ${entry} path must be in implementedBy`)
           continue
         }
-        const globKey = path.replace(/^packages\/engine\/src\//u, '../')
+        const globKey = engineGlobKeyOf(path)
         const source = engineSources[globKey] as string | undefined
         if (source === undefined) {
           violations.push(`${ruleId}: ${path} not found among engine sources`)
           continue
         }
-        if (!declaredSymbolsOf(globKey, source).has(symbol)) {
-          violations.push(`${ruleId}: ${symbol} is not a module-scope symbol in ${path}`)
+        try {
+          // Resolvability is the bar, not mere membership: the manifest
+          // publishes this pin's anchor line, so an ambiguous member pin
+          // (a repeated pack field) must fail here with the qualify hint.
+          symbolAnchorLine(declaredSymbolsOf(globKey, source), path, symbol)
+        } catch (error) {
+          violations.push(`${ruleId}: ${error instanceof Error ? error.message : String(error)}`)
         }
       }
     }

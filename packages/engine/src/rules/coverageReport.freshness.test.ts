@@ -4,6 +4,7 @@ import {
   COVERAGE_ATTESTATIONS,
 } from './coverageAttestations.js'
 import { buildCoverageReport, describeRuleCallEnd } from './coverageReport.js'
+import { declaredSymbolLinesOf, symbolAnchorLine, type DeclaredSymbol } from './symbolLines.js'
 import {
   TAX_RULE_REGISTRY,
   TAX_RULE_VOLATILITIES,
@@ -17,6 +18,7 @@ import { testSourcesInGlobShape } from '../../scripts/rules-coverage.mjs'
 
 // Vite requires the options to be inline object literals.
 const testSources = import.meta.glob('../**/*.test.{ts,mts,cts,tsx}', { query: '?raw', import: 'default', eager: true })
+const engineSources = import.meta.glob('../**/*.ts', { query: '?raw', import: 'default', eager: true })
 const operationJsonSources = import.meta.glob('../../../../DOCS/operations/*.json', {
   query: '?raw',
   import: 'default',
@@ -36,6 +38,48 @@ function dayBefore(isoDate: string): string {
   return date.toISOString().slice(0, 10)
 }
 
+/**
+ * Test-source lines keyed by EXACT canonical path (the same fold the builder
+ * applies to glob keys), for the per-test line binds - a suffix match could
+ * silently pick a same-named file from another directory.
+ */
+const testSourcesByCanonicalPath = new Map(
+  Object.entries(testSources).map(([key, source]) => [
+    key.replace(/^\.\.\//u, 'packages/engine/src/').replace(/^\.\//u, 'packages/engine/src/rules/'),
+    source as string,
+  ]),
+)
+const testSourceLineCache = new Map<string, readonly string[]>()
+function testSourceLinesOf(fixturePath: string): readonly string[] {
+  const cached = testSourceLineCache.get(fixturePath)
+  if (cached !== undefined) return cached
+  const source = testSourcesByCanonicalPath.get(fixturePath)
+  if (source === undefined) throw new Error(fixturePath + ' is not a test source the glob can see')
+  const lines = source.split('\n')
+  testSourceLineCache.set(fixturePath, lines)
+  return lines
+}
+
+/** Engine source text for a repo-relative pin path; Vite emits same-directory keys as `./name`. */
+function engineSourceOf(path: string): string {
+  const globKey = path
+    .replace(/^packages\/engine\/src\/rules\//u, './')
+    .replace(/^packages\/engine\/src\//u, '../')
+  const source = engineSources[globKey] as string | undefined
+  if (source === undefined) throw new Error(path + ' is not an engine source file the glob can see')
+  return source
+}
+
+const symbolLineTables = new Map<string, ReadonlyMap<string, DeclaredSymbol>>()
+function symbolLineFor(path: string, symbol: string): number {
+  let table = symbolLineTables.get(path)
+  if (table === undefined) {
+    table = declaredSymbolLinesOf(path, engineSourceOf(path))
+    symbolLineTables.set(path, table)
+  }
+  return symbolAnchorLine(table, path, symbol)
+}
+
 const report = buildCoverageReport({
   registry: TAX_RULE_REGISTRY,
   attestations: COVERAGE_ATTESTATIONS,
@@ -43,6 +87,7 @@ const report = buildCoverageReport({
   testSources,
   quoteFidelityLedger,
   dueOnFor: taxRuleDueOn,
+  symbolLineFor,
 })
 
 describe('rules coverage report artifacts', () => {
@@ -173,8 +218,8 @@ function syntheticRule(title: string) {
 // sides regenerate together), so these read expected values from the registry
 // records themselves.
 describe('manifest rule projection contract', () => {
-  it('publishes manifest version 3, the discriminator for the required fields', () => {
-    expect(report.manifest.version).toBe(3)
+  it('publishes manifest version 4, the discriminator for the required fields', () => {
+    expect(report.manifest.version).toBe(4)
   })
 
   it('copies title, errorDirection, conventionRationale, and contraryReading from the registry', () => {
@@ -203,9 +248,37 @@ describe('manifest rule projection contract', () => {
       const record = TAX_RULE_REGISTRY[rule.id as keyof typeof TAX_RULE_REGISTRY]
       const declared = record.implementedByFunctions
       const published = rule.implementations.flatMap(({ path, functions }) =>
-        functions.map((name) => `${path}#${name}`),
+        functions.map(({ name }) => `${path}#${name}`),
       )
       expect([...published].sort(), rule.id).toEqual([...declared].sort())
+    }
+  })
+
+  // Published lines are deep-link anchors on the transparency page, so each
+  // one is bound to the source text itself: the named line must contain the
+  // symbol. A resolver that agreed with the builder but pointed at the wrong
+  // line would pass a mirror check and fail here.
+  it('anchors every implementation function line to a source line containing the name', () => {
+    for (const rule of report.manifest.rules) {
+      for (const { path, functions } of rule.implementations) {
+        const sourceLines = engineSourceOf(path).split('\n')
+        for (const { name, line } of functions) {
+          expect(Number.isInteger(line) && line >= 1, `${rule.id}: ${path}#${name}`).toBe(true)
+          // An ancestor-qualified pin (ND.capitalGainsTaxablePct) anchors at
+          // the member itself, so the member segment is what the line must
+          // show, in declaration position: the name as its own token followed
+          // by :, (, =, <, {, comma, or line end. A comment or prose mention of
+          // the name does not qualify; a same-shaped call site still would,
+          // which is why the synthetic anchor probes in the conformance
+          // suite, not this bind, pin the resolution rule itself.
+          const memberName = name.includes('.') ? name.slice(name.lastIndexOf('.') + 1) : name
+          const declares = new RegExp(`(?:^|[^\\w$.])${memberName}\\s*(?:[:(=<,{]|$)`, 'u')
+          expect(
+            declares.test(sourceLines[line - 1] ?? ''),
+            `${rule.id}: ${path}#${name} line ${line} does not declare ${memberName}`,
+          ).toBe(true)
+        }
+      }
     }
   })
 
@@ -215,7 +288,26 @@ describe('manifest rule projection contract', () => {
       expect([...rule.fixtureFiles].sort(), rule.id).toEqual(paths.sort())
       for (const fixture of rule.fixtures) {
         expect(fixture.line, rule.id).toBeGreaterThanOrEqual(1)
-        expect(fixture.testTitles.length, `${rule.id} ${fixture.path}`).toBeGreaterThan(0)
+        expect(fixture.tests.length, `${rule.id} ${fixture.path}`).toBeGreaterThan(0)
+        const sourceLines = testSourceLinesOf(fixture.path)
+        for (const test of fixture.tests) {
+          // A test's it( sits inside its describeRule call, never before it,
+          // and its published line is a deep-link anchor: that line of the
+          // live source must carry an it( token of its own (the scanner's
+          // boundary rule, so a longer identifier like submitIt( cannot
+          // satisfy it), for EVERY fixture - an off-by-one that happens to
+          // hold on one sample cannot pass. When the title's opening quote
+          // shares the line (the formatter's normal shape), the title itself
+          // must start there too, so landing on a SIBLING it( also fails.
+          expect(test.line, `${rule.id} ${fixture.path}: ${test.title}`).toBeGreaterThanOrEqual(fixture.line)
+          const line = sourceLines[test.line - 1] ?? ''
+          const opened = /(?:^|[^\w$.])it\(\s*(['"`]?)/u.exec(line)
+          expect(opened !== null, `${rule.id} ${fixture.path}#L${test.line}: ${test.title}`).toBe(true)
+          const prefix = test.title.slice(0, 15)
+          if (opened![1] !== '' && !/['"`\\]/u.test(prefix)) {
+            expect(line, `${rule.id} ${fixture.path}#L${test.line} should open: ${test.title}`).toContain(prefix)
+          }
+        }
       }
     }
     // Spot-bind one fixture's titles to the live source text so the block
@@ -234,8 +326,11 @@ describe('manifest rule projection contract', () => {
     // itself - so a sibling suite between two describeRule calls cannot
     // satisfy this check.
     const block = source.slice(callStart, describeRuleCallEnd(source, callStart))
-    for (const title of sample!.fixtures[0]!.testTitles) {
+    for (const { title, line } of sample!.fixtures[0]!.tests) {
       expect(block, `${sample!.id}: ${title}`).toContain(title)
+      // The published line is a deep-link anchor: that line of the live
+      // source must actually start the it() the title came from.
+      expect(source.split('\n')[line - 1] ?? '', `${sample!.id}: ${title}`).toContain('it(')
     }
   })
 
@@ -272,22 +367,54 @@ describe('manifest rule projection contract', () => {
       testSources: { './synthetic.test.ts': syntheticSource },
       quoteFidelityLedger: null,
       dueOnFor: () => '2027-01-01',
+      symbolLineFor,
     })
     const alpha = syntheticReport.manifest.rules.find((rule) => rule.id === 'fixture-alpha')
     const beta = syntheticReport.manifest.rules.find((rule) => rule.id === 'fixture-beta')
-    expect(alpha!.fixtures[0]!.testTitles).toEqual(['alpha discriminates'])
+    // Hand-counted lines in the synthetic source above: the it() lines are as
+    // load-bearing as the titles now that the manifest publishes them.
+    expect(alpha!.fixtures[0]!.tests).toEqual([{ title: 'alpha discriminates', line: 4 }])
     expect(alpha!.fixtures[0]!.path).toBe('packages/engine/src/rules/synthetic.test.ts')
     expect(alpha!.fixtures[0]!.line).toBe(3)
-    expect(beta!.fixtures[0]!.testTitles).toEqual(['gamma discriminates'])
+    expect(beta!.fixtures[0]!.tests).toEqual([{ title: 'gamma discriminates', line: 12 }])
     expect(beta!.fixtures[0]!.line).toBe(11)
     for (const rule of [alpha!, beta!]) {
       for (const fixture of rule.fixtures) {
-        expect(fixture.testTitles, rule.id).not.toContain('beta belongs to nobody')
-        expect(fixture.testTitles, rule.id).not.toContain('commented out title')
+        expect(fixture.tests.map(({ title }) => title), rule.id).not.toContain('beta belongs to nobody')
+        expect(fixture.tests.map(({ title }) => title), rule.id).not.toContain('commented out title')
       }
     }
     expect(alpha!.fixtures[0]!.note).toBeNull()
     expect(beta!.fixtures[0]!.note).toBe('beta note')
+  })
+
+  it('captures an it() whose title the formatter broke onto its own line', () => {
+    // The scanner's lookahead window must span the line break, and the
+    // published line is the it( token's line, not the title's.
+    const syntheticSource = [
+      "describe" + "Rule('fixture-alpha', { readings: { a: 1, b: 2 }, accepted: 'a' }, ({ accepted }) => {",
+      '  it(', //                                     line 2: the anchor
+      "    'a very long title that the formatter pushed onto its own line discriminates',",
+      '    () => { expect(1).toBe(accepted) },',
+      '  )',
+      '})',
+    ].join('\n')
+    const syntheticRegistry = {
+      'fixture-alpha': syntheticRule('Alpha'),
+    } as unknown as typeof TAX_RULE_REGISTRY
+    const syntheticReport = buildCoverageReport({
+      registry: syntheticRegistry,
+      attestations: COVERAGE_ATTESTATIONS,
+      baselineUnswept: BASELINE_UNSWEPT,
+      testSources: { './synthetic.test.ts': syntheticSource },
+      quoteFidelityLedger: null,
+      dueOnFor: () => '2027-01-01',
+      symbolLineFor,
+    })
+    const alpha = syntheticReport.manifest.rules.find((rule) => rule.id === 'fixture-alpha')
+    expect(alpha!.fixtures[0]!.tests).toEqual([
+      { title: 'a very long title that the formatter pushed onto its own line discriminates', line: 2 },
+    ])
   })
 
   it('publishes unique authority identities with no quotedText', () => {
@@ -376,6 +503,9 @@ describe('manifest rule projection contract', () => {
       testSources,
       quoteFidelityLedger: null,
       dueOnFor: () => '2027-01-01',
+      // A hand-picked sentinel, so the expectation below proves the builder
+      // publishes the injected resolver's line rather than deriving its own.
+      symbolLineFor: () => 47,
     })
     const published = JSON.parse(fixtureReport.json) as {
       rules: { id: string; authorities: unknown }[]
@@ -389,7 +519,7 @@ describe('manifest rule projection contract', () => {
     // Hand-written expectation, not a builder round-trip: the published
     // implementations must be exactly the declared pins grouped per file.
     expect((fixtureRule as { implementations?: unknown }).implementations).toEqual([
-      { path: 'packages/engine/src/rules/coverageReport.ts', functions: ['buildCoverageReport'] },
+      { path: 'packages/engine/src/rules/coverageReport.ts', functions: [{ name: 'buildCoverageReport', line: 47 }] },
     ])
     expect(fixtureReport.json).not.toContain('"quotedText":')
   })

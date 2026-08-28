@@ -107,6 +107,11 @@ async function main() {
     testSources: testSourcesInGlobShape(),
     quoteFidelityLedger: null,
     dueOnFor: taxRuleDueOn,
+    // The due table never publishes deep-link lines, and a newly ambiguous
+    // pin must fail the conformance suite, not a read-only listing an
+    // operator is running mid-triage. rules-coverage.mjs, the publisher,
+    // resolves for real.
+    symbolLineFor: () => 1,
   })
   const totalRules = report.manifest.registry.total
 

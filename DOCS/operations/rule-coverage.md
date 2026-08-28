@@ -81,12 +81,12 @@ The registry is the machine-checked chain from a rule to its implementation and 
 
 | Metric | Value |
 | --- | ---: |
-| Engine source files | 235 |
+| Engine source files | 236 |
 | Swept | 100.0% |
 | Grandfathered unswept baseline | 0 |
 | partial | 61 |
 | registered | 51 |
-| rule-free | 123 |
+| rule-free | 124 |
 | unswept | 0 |
 
 ## Per-directory rollup
@@ -106,7 +106,7 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | params | 8 | 1 | 5 | 2 | 0 |
 | projection | 24 | 8 | 2 | 14 | 0 |
 | rmd | 4 | 1 | 3 | 0 | 0 |
-| rules | 5 | 0 | 1 | 4 | 0 |
+| rules | 6 | 0 | 1 | 5 | 0 |
 | scenarios | 9 | 0 | 0 | 9 | 0 |
 | schema | 7 | 0 | 0 | 7 | 0 |
 | socialSecurity | 9 | 3 | 6 | 0 | 0 |
@@ -219,7 +219,7 @@ The 25 earliest due dates are shown below (408 rules total). Comparing dueOn to 
 
 ## Manifest contract
 
-The JSON manifest (rule-coverage.json, version 3) is the machine contract: each rule additionally carries title, errorDirection (null unless the rule is approximated), conventionRationale and contraryReading (null when unused), deduplicated authority identities (kind, citation, url), per-fixture detail (path, line, optional note, and the it() titles scanned from the fixture source), and implementations (per implementing file, the conformance-enforced operative function names). This markdown file is the human summary and does not repeat them. Version 3 is a breaking discriminator for strict version checks (implementations and fixtures are required at 3); the new fields are additive only for readers that ignore unknown keys and do not pin the version.
+The JSON manifest (rule-coverage.json, version 4) is the machine contract: each rule additionally carries title, errorDirection (null unless the rule is approximated), conventionRationale and contraryReading (null when unused), deduplicated authority identities (kind, citation, url), per-fixture detail (path, line, optional note, and the it() tests scanned from the fixture source, each with its own 1-based line), and implementations (per implementing file, the conformance-enforced operative function names with their 1-based declaration lines). Every line number is recomputed from source on each generation and the freshness suite fails when the committed manifest drifts from the sources in the same commit, so at any commit that passes CI the published lines are exact for that commit. This markdown file is the human summary and does not repeat them. Version 4 is a breaking discriminator for strict version checks (fixtures[].tests and per-function lines replace the flat title and name lists of version 3).
 
 ## Quote fidelity
 
