@@ -1390,7 +1390,10 @@ describeRule('al-form40-age-65-retirement-exclusion-cap', {
     researchTwelveThousandFor2026:
       alApproxSingleTax(AL_DB_PENSION - 2 * AL_PACK_CAP - AL_APPROX_DEDUCTION),
   },
-  accepted: 'encodedSixThousandAtSixtyFive',
+  // accepted carries the only reading with staged-source support (the
+  // instructions' silence); the engine's $6,000 grant is a disclosed
+  // convention, asserted below as what the pack implements, never as oracle.
+  accepted: 'stagedInstructionsCarryNoAgeExclusion',
   note: 'unsettled: operative text unsourced',
 }, ({ accepted, readings }) => {
   const scenario = input({
@@ -1400,21 +1403,21 @@ describeRule('al-form40-age-65-retirement-exclusion-cap', {
     agesAlive: [70],
   })
 
-  it('implements the encoded $6,000 reading, and every reading stays distinct', () => {
-    expect(computeStateTax(pack('AL'), scenario)).toBeCloseTo(accepted, 6)
-    expect(accepted).toBeCloseTo(1510, 6)
-    expect(readings.stagedInstructionsCarryNoAgeExclusion).toBeCloseTo(1810, 6)
+  it('implements the encoded $6,000 convention, distinct from every recorded reading', () => {
+    expect(computeStateTax(pack('AL'), scenario)).toBeCloseTo(readings.encodedSixThousandAtSixtyFive, 6)
+    expect(readings.encodedSixThousandAtSixtyFive).toBeCloseTo(1510, 6)
+    expect(accepted).toBeCloseTo(1810, 6)
     expect(readings.researchTwelveThousandFor2026).toBeCloseTo(1210, 6)
-    expect(accepted).not.toBeCloseTo(readings.stagedInstructionsCarryNoAgeExclusion, 6)
-    expect(accepted).not.toBeCloseTo(readings.researchTwelveThousandFor2026, 6)
+    expect(computeStateTax(pack('AL'), scenario)).not.toBeCloseTo(accepted, 6)
+    expect(computeStateTax(pack('AL'), scenario)).not.toBeCloseTo(readings.researchTwelveThousandFor2026, 6)
   })
 
-  it('reaches the no-exclusion reading once the cap is withheld', () => {
+  it('reaches the accepted no-exclusion reading once the cap is withheld', () => {
     const noCap = {
       ...pack('AL'),
       retirementPrivate: { kind: 'none' as const },
     }
-    expect(computeStateTax(noCap, scenario)).toBeCloseTo(readings.stagedInstructionsCarryNoAgeExclusion, 6)
+    expect(computeStateTax(noCap, scenario)).toBeCloseTo(accepted, 6)
   })
 
   it('reaches the research 2026 reading under a doubled cap', () => {
@@ -1484,5 +1487,60 @@ describeRule('al-form40-standard-deduction-agi-slide', {
       .toBeCloseTo(alApproxJointTax(AL_HIGH_AGI - 8_500), 6)
     expect(computeStateTax(pack('AL'), joint))
       .toBeLessThan(alApproxJointTax(AL_HIGH_AGI - 5_000))
+  })
+})
+
+describeRule('al-form40-personal-and-dependent-exemptions-not-modeled', {
+  readings: {
+    // Form 40 line 13: single personal exemption $1,500 (the quotable figure).
+    // Taxable 50,000 − 3,000 − 1,500 = 45,500 → tax 2,235.
+    bookletSubtractsThePersonalExemption:
+      alApproxSingleTax(AL_HIGH_AGI - AL_APPROX_DEDUCTION - 1_500),
+    // Engine subtracts only the standard deduction: taxable 47,000 → 2,310.
+    packSubtractsOnlyTheStandardDeduction:
+      alApproxSingleTax(AL_HIGH_AGI - AL_APPROX_DEDUCTION),
+  },
+  accepted: 'bookletSubtractsThePersonalExemption',
+  produced: 'packSubtractsOnlyTheStandardDeduction',
+}, ({ accepted, produced }) => {
+  const scenario = input({
+    state: 'AL',
+    ordinaryIncome: AL_HIGH_AGI,
+    agesAlive: [50],
+  })
+
+  it('charges tax on the exemption dollars every Alabama return subtracts', () => {
+    expect(computeStateTax(pack('AL'), scenario)).toBeCloseTo(produced, 6)
+    expect(produced).toBeGreaterThan(accepted)
+    expect(produced).not.toBe(PRODUCED_TBD)
+    expect(produced).toBeCloseTo(2310, 6)
+    expect(accepted).toBeCloseTo(2235, 6)
+  })
+})
+
+describeRule('al-dor-filing-threshold-not-modeled', {
+  readings: {
+    // Single AGI $3,500 sits under the quoted $4,000 applicability level, so
+    // the schedule never attaches and no Alabama tax is due.
+    belowThresholdOwesNothing: 0,
+    // Engine: taxable 3,500 − 3,000 = 500 → 2% × 500 = 10.
+    packTaxesTheRemainderOverTheDeduction:
+      alApproxSingleTax(3_500 - AL_APPROX_DEDUCTION),
+  },
+  accepted: 'belowThresholdOwesNothing',
+  produced: 'packTaxesTheRemainderOverTheDeduction',
+}, ({ accepted, produced }) => {
+  const scenario = input({
+    state: 'AL',
+    ordinaryIncome: 3_500,
+    agesAlive: [50],
+  })
+
+  it('charges banded tax below the quoted filing threshold', () => {
+    expect(computeStateTax(pack('AL'), scenario)).toBeCloseTo(produced, 6)
+    expect(produced).toBeGreaterThan(accepted)
+    expect(produced).not.toBe(PRODUCED_TBD)
+    expect(produced).toBeCloseTo(10, 6)
+    expect(accepted).toBe(0)
   })
 })

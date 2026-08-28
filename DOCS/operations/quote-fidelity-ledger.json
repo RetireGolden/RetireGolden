@@ -1,16 +1,16 @@
 {
-  "generatedAt": "2026-08-28T03:57:43.430Z",
-  "recordCount": 406,
+  "generatedAt": "2026-08-28T04:11:55.602Z",
+  "recordCount": 409,
   "urlCount": 303,
   "fetched": 0,
   "cached": 303,
-  "entryCount": 1045,
+  "entryCount": 1049,
   "counts": {
-    "EXACT": 700,
+    "EXACT": 701,
     "PUNCTUATION": 37,
     "UNFETCHABLE": 13,
     "ELISION-PUNCTUATION": 4,
-    "PDF-WORD-LEVEL": 202,
+    "PDF-WORD-LEVEL": 205,
     "ELISION-EXACT": 60,
     "ABSENT": 25,
     "PDF-NOT-VERIFIABLE": 4
@@ -10526,6 +10526,46 @@
       "quoteSha256": "abf1873770700a4f",
       "verdict": "PDF-WORD-LEVEL",
       "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "al-form40-railroad-retirement-not-modeled",
+      "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Examples of Income You DO NOT Report",
+      "host": "www.revenue.alabama.gov",
+      "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf",
+      "quoteSha256": "8b7945a0fabef23d",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "3 elision segments, all present in the extracted text",
+      "diagnosis": null
+    },
+    {
+      "id": "al-form40-personal-and-dependent-exemptions-not-modeled",
+      "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Line 13 — Personal Exemption",
+      "host": "www.revenue.alabama.gov",
+      "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf",
+      "quoteSha256": "dc15f3d90ea5e4d0",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "al-form40-personal-and-dependent-exemptions-not-modeled",
+      "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Dependent's and Student's Income",
+      "host": "www.revenue.alabama.gov",
+      "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf",
+      "quoteSha256": "494c8c7f4837a5b3",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "al-dor-filing-threshold-not-modeled",
+      "citation": "Alabama Department of Revenue, Individual Income Tax — Rate",
+      "host": "www.revenue.alabama.gov",
+      "url": "https://www.revenue.alabama.gov/individual-corporate/taxes-administered-by-individual-corporate-income-tax/individual-income-tax/",
+      "quoteSha256": "5ae12c148fcc3f9c",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {

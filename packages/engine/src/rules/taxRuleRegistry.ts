@@ -14965,9 +14965,9 @@ const registry = {
   // ---------------------------------------------------------------------------
 
   'al-form40-social-security-exclusion': {
-    title: 'Alabama excludes Federal Social Security and Railroad Retirement benefits',
+    title: 'Alabama excludes Federal Social Security benefits',
     statement:
-      'Alabama\'s Form 40 booklet lists Federal Social Security benefits and Federal Railroad Retirement benefits among the amounts a taxpayer does not report. The pack\'s `taxesSocialSecurity: false` omits the federally taxable Social Security share from the Alabama base.',
+      'Alabama\'s Form 40 booklet lists Federal Social Security benefits among the amounts a taxpayer does not report. The pack\'s `taxesSocialSecurity: false` omits the federally taxable Social Security share from the Alabama base. The exempt list\'s Federal Railroad Retirement item is registered separately at `al-form40-railroad-retirement-not-modeled` — the engine carries no railroad-retirement input, so that limb has no discriminating fixture here.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -15081,6 +15081,87 @@ const registry = {
     ],
   },
 
+  'al-form40-railroad-retirement-not-modeled': {
+    title: 'Alabama excludes Federal Railroad Retirement benefits; the engine has no railroad input',
+    statement:
+      'The Form 40 booklet lists Federal Railroad Retirement benefits among the amounts a taxpayer does not report. Out of scope: the engine has no railroad-retirement income field, so the exclusion cannot be modeled or discriminated by a fixture — a household entering railroad benefits as ordinary income would see them taxed where the booklet exempts them. Registered as an absence rather than folded into the Social Security record, whose fixture only exercises `taxesSocialSecurity`.',
+    classification: 'outOfScope',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:AL',
+    authority: [{
+      kind: 'formInstruction',
+      citation: 'Alabama Department of Revenue, 2025 Form 40 booklet, Examples of Income You DO NOT Report',
+      url: 'https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf',
+      quotedText:
+        'Examples of Income You DO NOT Report … United States Retirement System benefits. … Federal Railroad Retirement benefits.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-28',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+  'al-form40-personal-and-dependent-exemptions-not-modeled': {
+    title: 'Alabama subtracts personal and dependent exemptions the engine does not model',
+    statement:
+      'Form 40 subtracts a personal exemption on line 13, taken from the filing-status line, and a dependent exemption on line 14 for each qualifying dependent. Approximated: `computeStateTaxableIncome` subtracts only the standard deduction and retirement exclusions, so every Alabama return is overtaxed by the omitted exemptions at the filer\'s marginal rate. The staged booklet\'s extractable text carries the $1,500 personal-exemption figure in its dependent-filer passage; the filing-status line amounts beyond it print on the form face and are not quote-carried here.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'overstatesTax',
+    conventionRationale: null,
+    jurisdiction: 'state:AL',
+    authority: [{
+      kind: 'formInstruction',
+      citation: 'Alabama Department of Revenue, 2025 Form 40 booklet, Line 13 — Personal Exemption',
+      url: 'https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf',
+      quotedText:
+        'Line 13 Personal Exemption Enter the personal exemption from line 1, 2, 3, or 4.',
+    }, {
+      kind: 'formInstruction',
+      citation: 'Alabama Department of Revenue, 2025 Form 40 booklet, Dependent\'s and Student\'s Income',
+      url: 'https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf',
+      quotedText:
+        'exemption of $1,500, and his or her parents may claim a dependent exemption if they provided more than 50% of his or her total support.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-28',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
+  'al-dor-filing-threshold-not-modeled': {
+    title: 'Alabama\'s rate schedules attach at AGI filing thresholds the engine does not gate on',
+    statement:
+      'The Department of Revenue\'s rate page attaches the schedules to filers at or above stated adjusted-gross-income levels — $4,000 for single persons, $10,500 for married filing jointly. Approximated: `computeStateTax` applies the schedule at every income, so a filer below the stated threshold — who owes no Alabama return under the quoted applicability language — is charged the banded tax on the small remainder over the standard deduction, overstating tax by at most a few tens of dollars.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'overstatesTax',
+    conventionRationale: null,
+    jurisdiction: 'state:AL',
+    authority: [{
+      kind: 'stateAgencyPublication',
+      citation: 'Alabama Department of Revenue, Individual Income Tax — Rate',
+      url: 'https://www.revenue.alabama.gov/individual-corporate/taxes-administered-by-individual-corporate-income-tax/individual-income-tax/',
+      quotedText:
+        'Single persons with adjusted gross income of $4,000, head of family with adjusted gross income of $7,700, and married persons filing separate returns with adjusted gross income of $5,250 or more: 2 percent on first $500 of taxable income',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-28',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+  },
   'al-form40-age-65-retirement-exclusion-cap': {
     title: 'Alabama\'s age-65 retirement exclusion: the pack\'s $6,000 private-bucket cap has no staged operative text',
     statement:
