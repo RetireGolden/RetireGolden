@@ -4,10 +4,10 @@
   "registry": {
     "total": 406,
     "byClassification": {
-      "approximated": 106,
+      "approximated": 105,
       "outOfScope": 72,
       "settled": 224,
-      "unsettled": 4
+      "unsettled": 5
     },
     "byVolatility": {
       "annuallyIndexed": 57,
@@ -975,11 +975,11 @@
     },
     {
       "id": "al-form40-age-65-retirement-exclusion-cap",
-      "title": "The pack's $6,000 age-65 retirement cap is not quote-carried by the staged booklet",
-      "classification": "approximated",
-      "errorDirection": "understatesTax",
+      "title": "Alabama's age-65 retirement exclusion: the pack's $6,000 private-bucket cap has no staged operative text",
+      "classification": "unsettled",
+      "errorDirection": null,
       "conventionRationale": "BLOCKED-SOURCE: the $6,000 age-65 exclusion's operative text is not in the staged booklet; quote pends a staged primary",
-      "contraryReading": null,
+      "contraryReading": "If the research corpus's 2026 parameter is operative — $12,000 per person at age 65 — the pack's $6,000 understates the exclusion and overstates Alabama tax; if no exclusion exists, the pack understates tax by the granted cap.",
       "jurisdiction": "state:AL",
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
@@ -1009,10 +1009,10 @@
     },
     {
       "id": "al-form40-defined-benefit-414j-exemption",
-      "title": "Alabama exempts any IRC 414(j) defined-benefit payment; the pack tests the bucket, not the plan",
+      "title": "Alabama exempts any IRC 414(j) defined-benefit payment; the pack caps the private bucket at $6,000",
       "classification": "approximated",
-      "errorDirection": "bothDirections",
-      "conventionRationale": "The sign depends on bucket attribution: private-bucket defined-benefit dollars overstate tax, public-bucket non-defined-benefit dollars understate it.",
+      "errorDirection": "overstatesTax",
+      "conventionRationale": null,
       "contraryReading": null,
       "jurisdiction": "state:AL",
       "volatility": "staticStatute",
@@ -14931,10 +14931,10 @@
     }
   ],
   "quoteFidelity": {
-    "generatedAt": "2026-08-28T03:40:27.312Z",
+    "generatedAt": "2026-08-28T03:57:43.430Z",
     "entryCount": 1045,
-    "fetched": 177,
-    "cached": 126,
+    "fetched": 0,
+    "cached": 303,
     "counts": {
       "ABSENT": 25,
       "ELISION-EXACT": 60,

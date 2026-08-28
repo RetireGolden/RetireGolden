@@ -14978,7 +14978,7 @@ const registry = {
       citation: 'Alabama Department of Revenue, 2025 Form 40 booklet, Examples of Income You DO NOT Report',
       url: 'https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf',
       quotedText:
-        'Federal Railroad Retirement benefits. … Federal Social Security benefits.',
+        'Examples of Income You DO NOT Report … Federal Railroad Retirement benefits. … Federal Social Security benefits.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -14991,21 +14991,20 @@ const registry = {
   },
 
   'al-form40-defined-benefit-414j-exemption': {
-    title: 'Alabama exempts any IRC 414(j) defined-benefit payment; the pack tests the bucket, not the plan',
+    title: 'Alabama exempts any IRC 414(j) defined-benefit payment; the pack caps the private bucket at $6,000',
     statement:
-      'The Form 40 booklet excludes payments from any defined-benefit retirement plan in accordance with IRC 414(j) from income that must be reported, whatever the employer. Approximated: the pack models defined-benefit identity through the payment bucket — `PUBLIC_PENSION_OVERRIDES` carries `AL: { kind: \'full\' }`, so every `publicPensionIncome` dollar is exempt, while `retirementPrivate` stays `{ kind: \'capped\', capPerPerson: 6000, minAge: 65 }`. Neither bucket tests 414(j) status: a private-employer defined-benefit pension carried in the private bucket is taxed above the age-65 cap the booklet exempts (overstates Alabama tax), and a public-plan distribution that is not a 414(j) defined-benefit payment — a governmental defined-contribution or 457(b) draw riding the public bucket — is exempted in full where the booklet reports it as taxable (understates). Which limb a household hits depends on which bucket its pension dollars ride in.',
+      'The Form 40 booklet lists payments from any defined-benefit retirement plan in accordance with IRC 414(j) among the amounts a taxpayer does not report, whatever the employer. Approximated: the pack has no plan-identity test — `PUBLIC_PENSION_OVERRIDES` carries `AL: { kind: \'full\' }` for the public bucket, consistent with the booklet\'s exempt list of federal, Alabama-system, and military retirement, while `retirementPrivate` stays `{ kind: \'capped\', capPerPerson: 6000, minAge: 65 }` — so a private-employer 414(j) defined-benefit pension riding the private bucket is taxed above the age-65 cap the booklet exempts, overstating Alabama tax. Whether a public-bucket draw outside the booklet\'s exempt items is taxable is not established by the staged sources, so no understating claim is registered for that side.',
     classification: 'approximated',
     contraryReading: null,
-    errorDirection: 'bothDirections',
-    conventionRationale:
-      'The sign depends on bucket attribution: private-bucket defined-benefit dollars overstate tax, public-bucket non-defined-benefit dollars understate it.',
+    errorDirection: 'overstatesTax',
+    conventionRationale: null,
     jurisdiction: 'state:AL',
     authority: [{
       kind: 'formInstruction',
       citation: 'Alabama Department of Revenue, 2025 Form 40 booklet, Examples of Income You DO NOT Report',
       url: 'https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf',
       quotedText:
-        'Payments from a “Defined Benefit Retirement Plan” in accordance with IRC 414(j). Contact your retirement plan administrator to determine if your plan qualifies.',
+        'Examples of Income You DO NOT Report … Payments from a “Defined Benefit Retirement Plan” in accordance with IRC 414(j). Contact your retirement plan administrator to determine if your plan qualifies.',
     }, {
       kind: 'formInstruction',
       citation: 'Alabama Department of Revenue, 2025 Form 40 booklet, Pensions and Annuities — amounts not taxable',
@@ -15027,7 +15026,7 @@ const registry = {
   'al-form40-ira-dc-distributions-taxable': {
     title: 'Alabama taxes IRA and defined-contribution distributions on Schedule RS',
     statement:
-      'The Form 40 booklet directs a taxpayer to complete Schedule RS for fully or partially taxable IRA distributions, including SEP, Keogh, 401(k)(2), and 403(b) distributions, and states that pensions are generally fully taxable unless specifically excluded. That is the taxable-retirement side the pack encodes once a distribution is not on the exempt list; the separate pre-1987 cost-recovery worksheet limb is out of scope on its own record.',
+      'The Form 40 booklet directs a taxpayer to complete Schedule RS for fully or partially taxable IRA distributions, including SEP, Keogh, 401(k)(2), and 403(b) distributions, and states that pension payments are, unless specifically excluded by law, fully taxable only where the taxpayer contributed no cost or has already recovered the cost on prior Alabama returns — a distribution with unrecovered cost is partially taxable. That conditional taxable-retirement side is what the pack encodes once a distribution is not on the exempt list; the separate pre-1987 cost-recovery worksheet limb is out of scope on its own record.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -15083,12 +15082,13 @@ const registry = {
   },
 
   'al-form40-age-65-retirement-exclusion-cap': {
-    title: 'The pack\'s $6,000 age-65 retirement cap is not quote-carried by the staged booklet',
+    title: 'Alabama\'s age-65 retirement exclusion: the pack\'s $6,000 private-bucket cap has no staged operative text',
     statement:
-      'The pack encodes Alabama retirement as `{ kind: \'capped\', capPerPerson: 6000, minAge: 65 }` on the shared private and public buckets. The staged Form 40 booklet\'s Schedule RS instructions establish that non-exempt pensions and IRA distributions are taxable, but they do not carry operative text for a $6,000 age-65 exclusion. Approximated against that staged taxable-retirement baseline: the unquoted cap removes dollars the booklet\'s general fully-taxable rule would leave in the base, understating tax for a non-exempt retirement distribution at age 65 or older.',
-    classification: 'approximated',
-    contraryReading: null,
-    errorDirection: 'understatesTax',
+      'The pack encodes `retirementPrivate: { kind: \'capped\', capPerPerson: 6000, minAge: 65 }` — the private bucket only; the public bucket carries its own full override. The staged Form 40 booklet establishes that non-exempt pensions and IRA distributions are taxable but carries no operative text for an age-65 dollar exclusion, and the repo\'s research corpus describes a $6,000-per-person age-65 exclusion of defined-contribution retirement income for 2025 rising to $12,000 for 2026 — a description this registry cannot quote as authority. Unsettled: the encoded $6,000, the research corpus\'s larger 2026 amount, and the staged instructions\' silence are recorded side by side; no reading is presented as settled until a quotable primary is staged.',
+    classification: 'unsettled',
+    contraryReading:
+      'If the research corpus\'s 2026 parameter is operative — $12,000 per person at age 65 — the pack\'s $6,000 understates the exclusion and overstates Alabama tax; if no exclusion exists, the pack understates tax by the granted cap.',
+    errorDirection: null,
     conventionRationale:
       'BLOCKED-SOURCE: the $6,000 age-65 exclusion\'s operative text is not in the staged booklet; quote pends a staged primary',
     jurisdiction: 'state:AL',
@@ -15168,7 +15168,7 @@ const registry = {
       citation: 'Alabama Department of Revenue, Individual Income Tax — Rate',
       url: 'https://www.revenue.alabama.gov/individual-corporate/taxes-administered-by-individual-corporate-income-tax/individual-income-tax/',
       quotedText:
-        '2 percent on first $500 of taxable income … 4 percent on next $2,500 … 5 percent on all over $3,000',
+        'Single persons with adjusted gross income of $4,000, head of family with adjusted gross income of $7,700, and married persons filing separate returns with adjusted gross income of $5,250 or more: 2 percent on first $500 of taxable income … 4 percent on next $2,500 … 5 percent on all over $3,000',
     }, {
       kind: 'stateAgencyPublication',
       citation: 'Alabama Department of Revenue, Individual Income Tax — Rate (joint)',

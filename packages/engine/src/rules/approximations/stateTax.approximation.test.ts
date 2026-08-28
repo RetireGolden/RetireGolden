@@ -1343,10 +1343,13 @@ describeRule('al-form40-defined-benefit-414j-exemption', {
   },
   accepted: 'bookletExemptsTheDefinedBenefitPayment',
   produced: 'packCapsThePrivateBucketAtSixThousand',
-  note: 'bucket attribution, not plan identity',
+  note: 'private-bucket defined-benefit limb',
 }, ({ accepted, produced }) => {
   // The booklet's exemption keys on 414(j) plan identity; the pack keys on the
-  // payment bucket. Each limb below rides one bucket with the other identity.
+  // payment bucket, so a private-employer defined-benefit pension rides the
+  // capped private bucket. The record registers only this overstating limb:
+  // the staged sources do not establish taxability of non-exempt public-bucket
+  // draws, so no understating oracle is asserted.
   const privateEmployerDefinedBenefit = input({
     state: 'AL',
     ordinaryIncome: AL_DB_PENSION,
@@ -1362,20 +1365,6 @@ describeRule('al-form40-defined-benefit-414j-exemption', {
     expect(produced).toBeCloseTo(1510, 6)
   })
 
-  it('exempts a public-bucket draw the booklet taxes, which is the understating limb', () => {
-    const governmentalNonDefinedBenefit = input({
-      state: 'AL',
-      ordinaryIncome: AL_DB_PENSION,
-      publicPensionIncome: AL_DB_PENSION,
-      agesAlive: [70],
-    })
-    // PUBLIC_PENSION_OVERRIDES carries AL: full, so the engine exempts all
-    // $40,000; the booklet reports a non-414(j) governmental draw as taxable:
-    // (40,000 − 3,000) through AL 2/4/5% = 10 + 100 + 1,700 = 1,810.
-    expect(computeStateTax(pack('AL'), governmentalNonDefinedBenefit)).toBeCloseTo(0, 6)
-    expect(alApproxSingleTax(AL_DB_PENSION - AL_APPROX_DEDUCTION)).toBeCloseTo(1810, 6)
-  })
-
   it('reaches the booklet for the private pension once that bucket is full', () => {
     const fullPrivateDefinedBenefit = {
       ...pack('AL'),
@@ -1388,18 +1377,22 @@ describeRule('al-form40-defined-benefit-414j-exemption', {
 
 describeRule('al-form40-age-65-retirement-exclusion-cap', {
   readings: {
-    // Staged booklet baseline for a non-exempt IRA: fully taxable, no $6,000
-    // exclusion quote. Taxable 40,000 − 3,000 = 37,000 → tax 1,810.
-    stagedFullyTaxableNonExemptRetirement:
+    // No exclusion beyond the exempt list is derivable from the staged
+    // booklet. Taxable 40,000 − 3,000 = 37,000 → tax 1,810.
+    stagedInstructionsCarryNoAgeExclusion:
       alApproxSingleTax(AL_DB_PENSION - AL_APPROX_DEDUCTION),
-    // Pack applies the unquoted age-65 $6,000 cap.
-    // Taxable 40,000 − 6,000 − 3,000 = 31,000 → tax 1,510.
-    packGrantsUnquotedSixThousandAgeSixtyFiveCap:
+    // The engine's convention choice, disclosed on the record: $6,000 per
+    // person at 65+. Taxable 40,000 − 6,000 − 3,000 = 31,000 → tax 1,510.
+    encodedSixThousandAtSixtyFive:
       alApproxSingleTax(AL_DB_PENSION - AL_PACK_CAP - AL_APPROX_DEDUCTION),
+    // The research corpus's 2026 parameter, unquotable until a primary is
+    // staged. Taxable 40,000 − 12,000 − 3,000 = 25,000 → tax 1,210.
+    researchTwelveThousandFor2026:
+      alApproxSingleTax(AL_DB_PENSION - 2 * AL_PACK_CAP - AL_APPROX_DEDUCTION),
   },
-  accepted: 'stagedFullyTaxableNonExemptRetirement',
-  produced: 'packGrantsUnquotedSixThousandAgeSixtyFiveCap',
-}, ({ accepted, produced }) => {
+  accepted: 'encodedSixThousandAtSixtyFive',
+  note: 'unsettled: operative text unsourced',
+}, ({ accepted, readings }) => {
   const scenario = input({
     state: 'AL',
     ordinaryIncome: AL_DB_PENSION,
@@ -1407,21 +1400,29 @@ describeRule('al-form40-age-65-retirement-exclusion-cap', {
     agesAlive: [70],
   })
 
-  it('grants the unquoted $6,000 age-65 cap on taxable private retirement', () => {
-    expect(computeStateTax(pack('AL'), scenario)).toBeCloseTo(produced, 6)
-    expect(computeStateTax(pack('AL'), scenario)).toBeLessThan(accepted)
-    expect(produced).not.toBe(PRODUCED_TBD)
-    expect(produced).toBeCloseTo(1510, 6)
-    expect(accepted).toBeCloseTo(1810, 6)
+  it('implements the encoded $6,000 reading, and every reading stays distinct', () => {
+    expect(computeStateTax(pack('AL'), scenario)).toBeCloseTo(accepted, 6)
+    expect(accepted).toBeCloseTo(1510, 6)
+    expect(readings.stagedInstructionsCarryNoAgeExclusion).toBeCloseTo(1810, 6)
+    expect(readings.researchTwelveThousandFor2026).toBeCloseTo(1210, 6)
+    expect(accepted).not.toBeCloseTo(readings.stagedInstructionsCarryNoAgeExclusion, 6)
+    expect(accepted).not.toBeCloseTo(readings.researchTwelveThousandFor2026, 6)
   })
 
-  it('reaches the staged fully-taxable baseline once the cap is withheld', () => {
+  it('reaches the no-exclusion reading once the cap is withheld', () => {
     const noCap = {
       ...pack('AL'),
       retirementPrivate: { kind: 'none' as const },
-      retirementPublic: { kind: 'none' as const },
     }
-    expect(computeStateTax(noCap, scenario)).toBeCloseTo(accepted, 6)
+    expect(computeStateTax(noCap, scenario)).toBeCloseTo(readings.stagedInstructionsCarryNoAgeExclusion, 6)
+  })
+
+  it('reaches the research 2026 reading under a doubled cap', () => {
+    const doubled = {
+      ...pack('AL'),
+      retirementPrivate: { kind: 'capped' as const, capPerPerson: 12_000, minAge: 65 },
+    }
+    expect(computeStateTax(doubled, scenario)).toBeCloseTo(readings.researchTwelveThousandFor2026, 6)
   })
 })
 
@@ -1464,5 +1465,24 @@ describeRule('al-form40-standard-deduction-agi-slide', {
       },
     }
     expect(computeStateTax(slid, scenario)).toBeCloseTo(accepted, 6)
+  })
+
+  it('grants the $8,500 joint maximum where the chart row reads $5,000', () => {
+    // Joint chart row "$35,500 and above" → $5,000; the pack grants $8,500.
+    // Pack: banded joint tax on 50,000 − 8,500 = 41,500; chart: on 45,000.
+    const joint = input({
+      state: 'AL',
+      filingStatus: 'marriedFilingJointly',
+      ordinaryIncome: AL_HIGH_AGI,
+      agesAlive: [50, 50],
+    })
+    const alApproxJointTax = (taxable: number) => bandedTax(
+      [[0, 1_000, 2], [1_000, 6_000, 4], [6_000, Infinity, 5]],
+      taxable,
+    )
+    expect(computeStateTax(pack('AL'), joint))
+      .toBeCloseTo(alApproxJointTax(AL_HIGH_AGI - 8_500), 6)
+    expect(computeStateTax(pack('AL'), joint))
+      .toBeLessThan(alApproxJointTax(AL_HIGH_AGI - 5_000))
   })
 })

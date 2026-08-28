@@ -12,10 +12,10 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | Metric | Count |
 | --- | ---: |
 | Total rules | 406 |
-| Classification: approximated | 106 |
+| Classification: approximated | 105 |
 | Classification: outOfScope | 72 |
 | Classification: settled | 224 |
-| Classification: unsettled | 4 |
+| Classification: unsettled | 5 |
 | Volatility: annuallyIndexed | 57 |
 | Volatility: awaitingGuidance | 10 |
 | Volatility: staticStatute | 333 |
@@ -223,7 +223,7 @@ The JSON manifest (rule-coverage.json, version 2) is the machine contract: each 
 
 ## Quote fidelity
 
-Committed ledger generated at 2026-08-28T03:40:27.312Z over 1045 authority entries (177 fetched live, 126 from cache).
+Committed ledger generated at 2026-08-28T03:57:43.430Z over 1045 authority entries (0 fetched live, 303 from cache).
 
 38 serious, 45 advisory, 962 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
 not treated as a CI gate; how to read each verdict: DOCS/operations/quote-fidelity.md.

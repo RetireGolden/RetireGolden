@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-08-28T03:40:27.312Z",
+  "generatedAt": "2026-08-28T03:57:43.430Z",
   "recordCount": 406,
   "urlCount": 303,
-  "fetched": 177,
-  "cached": 126,
+  "fetched": 0,
+  "cached": 303,
   "entryCount": 1045,
   "counts": {
     "EXACT": 700,
@@ -10473,9 +10473,9 @@
       "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Examples of Income You DO NOT Report",
       "host": "www.revenue.alabama.gov",
       "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf",
-      "quoteSha256": "85153bd9cb373ba1",
+      "quoteSha256": "80b818092210add0",
       "verdict": "PDF-WORD-LEVEL",
-      "detail": "2 elision segments, all present in the extracted text",
+      "detail": "3 elision segments, all present in the extracted text",
       "diagnosis": null
     },
     {
@@ -10483,9 +10483,9 @@
       "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Examples of Income You DO NOT Report",
       "host": "www.revenue.alabama.gov",
       "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf",
-      "quoteSha256": "dfb5aa4e5d14f4e9",
+      "quoteSha256": "f0c87b3edb205876",
       "verdict": "PDF-WORD-LEVEL",
-      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "detail": "2 elision segments, all present in the extracted text",
       "diagnosis": null
     },
     {
@@ -10583,7 +10583,7 @@
       "citation": "Alabama Department of Revenue, Individual Income Tax — Rate",
       "host": "www.revenue.alabama.gov",
       "url": "https://www.revenue.alabama.gov/individual-corporate/taxes-administered-by-individual-corporate-income-tax/individual-income-tax/",
-      "quoteSha256": "0243a0a3bded726b",
+      "quoteSha256": "8293445ec6f7e497",
       "verdict": "ELISION-EXACT",
       "detail": "3 segments, every one a literal substring",
       "diagnosis": null
