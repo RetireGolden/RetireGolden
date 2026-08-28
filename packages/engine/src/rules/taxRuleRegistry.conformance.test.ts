@@ -129,6 +129,19 @@ const STATE_PRIMARY_PUBLISHERS: Readonly<Partial<Record<UsStateCode, readonly st
     // the print-fetch endpoint; the practitioner URL returns a shell.
     'akleg.gov',
   ],
+  AL: [
+    // Verified 2026-08-28 against the staged Form 40 booklet PDF and the
+    // Department of Revenue individual-income-tax page. Alabama's Code host
+    // does not supply quote-verifiable operative text for these limbs; the
+    // Department's own booklet and agency page are deliberately admitted as
+    // the primary publishers — the same form-instruction / agency-publication
+    // boundary used for Georgia, Oklahoma, and Utah where script-rendered
+    // code pages cannot carry the quote.
+    //
+    // Bare `revenue.alabama.gov`: usable document URLs carry
+    // `www.revenue.alabama.gov`, and `hostAndPublisherOf` strips the prefix.
+    'revenue.alabama.gov', // Alabama Department of Revenue
+  ],
   AR: [
     // Verified 2026-08-05. Arkansas is the state where "primary source" cannot
     // mean the codified statute: the Arkansas Code and Constitution of 1874 is

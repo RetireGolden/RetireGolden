@@ -1,19 +1,19 @@
 {
-  "generatedAt": "2026-08-28T01:14:45.436Z",
-  "recordCount": 399,
-  "urlCount": 301,
+  "generatedAt": "2026-08-28T05:01:28.404Z",
+  "recordCount": 408,
+  "urlCount": 303,
   "fetched": 0,
-  "cached": 301,
-  "entryCount": 1032,
+  "cached": 303,
+  "entryCount": 1051,
   "counts": {
-    "EXACT": 694,
+    "EXACT": 701,
     "PUNCTUATION": 37,
     "UNFETCHABLE": 13,
     "ELISION-PUNCTUATION": 4,
-    "PDF-WORD-LEVEL": 192,
-    "ELISION-EXACT": 58,
-    "ABSENT": 32,
-    "PDF-NOT-VERIFIABLE": 2
+    "PDF-WORD-LEVEL": 206,
+    "ELISION-EXACT": 60,
+    "ABSENT": 25,
+    "PDF-NOT-VERIFIABLE": 5
   },
   "hostConventions": {
     "uscode.house.gov": {
@@ -373,14 +373,10 @@
       "citation": "Instructions for Form 5329, exception 01",
       "host": "www.irs.gov",
       "url": "https://www.irs.gov/instructions/i5329",
-      "quoteSha256": "b44c951258286c0a",
-      "verdict": "ABSENT",
-      "detail": "the passage does not appear on the page",
-      "diagnosis": {
-        "matchedWords": 5,
-        "totalWords": 30,
-        "continuation": "n't apply to iras) you received after separation from service when the separation from service occurs in or after the year you reach age 55 (age 50 for qualified public safety empl"
-      }
+      "quoteSha256": "13a09f9db1e42d18",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
     },
     {
       "id": "irc-72-t-6-simple-two-year-rate",
@@ -477,14 +473,10 @@
       "citation": "IRC 72(t)(5)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim",
-      "quoteSha256": "d455a8d73c884fb5",
-      "verdict": "ABSENT",
-      "detail": "the passage does not appear on the page",
-      "diagnosis": {
-        "matchedWords": 7,
-        "totalWords": 29,
-        "continuation": "\"transferee\" includes a beneficiary of, or the estate of, the transferee. (h) option to receive annuity in lieu of lump sum if-(1) a contract provides for payment of a lump sum in"
-      }
+      "quoteSha256": "6ccac512f01fadc4",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
     },
     {
       "id": "irc-223-f-4-hsa-age-65-boundary",
@@ -641,14 +633,10 @@
       "citation": "IRC 72(t)(10)(A)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim",
-      "quoteSha256": "4c556267fb23b2ef",
-      "verdict": "ABSENT",
-      "detail": "the passage does not appear on the page",
-      "diagnosis": {
-        "matchedWords": 52,
-        "totalWords": 68,
-        "continuation": "\"age 50 or 25 years of service under the plan, whichever is earlier\" for \"age 55\". (b) qualified public safety employee for purposes of this paragraph, the term \"qualified public"
-      }
+      "quoteSha256": "9a2dee312ee1fb67",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
     },
     {
       "id": "irc-72-t-4-sepp-modification-recapture",
@@ -1433,14 +1421,10 @@
       "citation": "IRC 55(b)(1)",
       "host": "www.law.cornell.edu",
       "url": "https://www.law.cornell.edu/uscode/text/26/55",
-      "quoteSha256": "bcc7d6678a948019",
-      "verdict": "ABSENT",
-      "detail": "the passage does not appear on the page",
-      "diagnosis": {
-        "matchedWords": 25,
-        "totalWords": 42,
-        "continuation": "$175,000, plus (ii) 28 percent of so much of the taxable excess as exceeds $175,000. the amount determined under the preceding sentence shall be reduced by the alternative minimum"
-      }
+      "quoteSha256": "676ba7ed00b35bec",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
     },
     {
       "id": "irc-55-d-exemption-phase-out-rate",
@@ -3475,42 +3459,30 @@
       "citation": "IRC 1411(d)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1411&num=0&edition=prelim",
-      "quoteSha256": "93dfec71fff3ef36",
-      "verdict": "ABSENT",
-      "detail": "the passage does not appear on the page",
-      "diagnosis": {
-        "matchedWords": 7,
-        "totalWords": 59,
-        "continuation": "\"threshold amount\" means-(1) in the case of a taxpayer making a joint return under section 6013 or a surviving spouse (as defined in section 2(a)), $250,000, (2) in the case of a"
-      }
+      "quoteSha256": "8721b049031efeb4",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
     },
     {
       "id": "irc-1411-d-modified-agi-foreign-exclusion-addback",
       "citation": "IRC 151(d)(5)(C)(iii)(II)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section151&num=0&edition=prelim",
-      "quoteSha256": "99e8c4702529a5fa",
-      "verdict": "ABSENT",
-      "detail": "the passage does not appear on the page",
-      "diagnosis": {
-        "matchedWords": 7,
-        "totalWords": 37,
-        "continuation": "\"modified adjusted gross income\" means the adjusted gross income of the taxpayer for the taxable year increased by any amount excluded from gross income under section 911, 931, or"
-      }
+      "quoteSha256": "84b5d9312b6f629d",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
     },
     {
       "id": "irc-1411-d-modified-agi-foreign-exclusion-addback",
       "citation": "Schedule 1-A (Form 1040) (2025), Part I, lines 1 to 3",
       "host": "www.irs.gov",
       "url": "https://www.irs.gov/pub/irs-pdf/f1040s1a.pdf",
-      "quoteSha256": "858fdeeababeb4b2",
-      "verdict": "ABSENT",
-      "detail": "the words do not appear in the document (word-level, so extraction loss does not explain it)",
-      "diagnosis": {
-        "matchedWords": 6,
-        "totalWords": 78,
-        "continuation": "1 enter the amount from form 1040 1040 sr or 1040 nr line 11b 1 2a enter any income from puerto rico that you excluded 2a b enter the amount from form 2555 line 45 2b c enter the"
-      }
+      "quoteSha256": "0a44c00767871c5c",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "7 elision segments, all present in the extracted text",
+      "diagnosis": null
     },
     {
       "id": "irc-408-d-3-G-simple-two-year-rollover-bar",
@@ -10494,6 +10466,196 @@
       "quoteSha256": "8e23444165ce761a",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "al-form40-social-security-exclusion",
+      "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Examples of Income You DO NOT Report",
+      "host": "www.revenue.alabama.gov",
+      "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf",
+      "quoteSha256": "80b818092210add0",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "3 elision segments, all present in the extracted text",
+      "diagnosis": null
+    },
+    {
+      "id": "al-form40-defined-benefit-414j-exemption",
+      "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Examples of Income You DO NOT Report",
+      "host": "www.revenue.alabama.gov",
+      "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf",
+      "quoteSha256": "f0c87b3edb205876",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "2 elision segments, all present in the extracted text",
+      "diagnosis": null
+    },
+    {
+      "id": "al-form40-defined-benefit-414j-exemption",
+      "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Examples of Income You DO NOT Report (retirement systems)",
+      "host": "www.revenue.alabama.gov",
+      "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf",
+      "quoteSha256": "1b8ce5fd0b8750c0",
+      "verdict": "PDF-NOT-VERIFIABLE",
+      "detail": "words all present, but the character difference cannot be separated from extraction loss",
+      "diagnosis": null
+    },
+    {
+      "id": "al-form40-defined-benefit-414j-exemption",
+      "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Pensions and Annuities — amounts not taxable",
+      "host": "www.revenue.alabama.gov",
+      "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf",
+      "quoteSha256": "f40d97ee29f4660e",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "al-form40-ira-dc-distributions-taxable",
+      "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Line 4 — Retirement Income (Schedule RS)",
+      "host": "www.revenue.alabama.gov",
+      "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf",
+      "quoteSha256": "832c8c519e77d4b7",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "al-form40-ira-dc-distributions-taxable",
+      "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Pensions and Annuities",
+      "host": "www.revenue.alabama.gov",
+      "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf",
+      "quoteSha256": "ee758d6fbc00bec5",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "al-form40-cost-recovery-not-modeled",
+      "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Worksheet for Partially Taxable Pensions — pre-1987 recovery",
+      "host": "www.revenue.alabama.gov",
+      "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf",
+      "quoteSha256": "abf1873770700a4f",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "al-form40-cost-recovery-not-modeled",
+      "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Pensions and Annuities",
+      "host": "www.revenue.alabama.gov",
+      "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf",
+      "quoteSha256": "ee758d6fbc00bec5",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "al-form40-railroad-retirement-not-modeled",
+      "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Examples of Income You DO NOT Report",
+      "host": "www.revenue.alabama.gov",
+      "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf",
+      "quoteSha256": "8b7945a0fabef23d",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "3 elision segments, all present in the extracted text",
+      "diagnosis": null
+    },
+    {
+      "id": "al-form40-personal-and-dependent-exemptions-not-modeled",
+      "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Line 13 — Personal Exemption",
+      "host": "www.revenue.alabama.gov",
+      "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf",
+      "quoteSha256": "dc15f3d90ea5e4d0",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "al-form40-personal-and-dependent-exemptions-not-modeled",
+      "citation": "Alabama Department of Revenue, Individual Income Tax — Rate (applicability levels)",
+      "host": "www.revenue.alabama.gov",
+      "url": "https://www.revenue.alabama.gov/individual-corporate/taxes-administered-by-individual-corporate-income-tax/individual-income-tax/",
+      "quoteSha256": "5ae12c148fcc3f9c",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "al-form40-personal-and-dependent-exemptions-not-modeled",
+      "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Dependent's and Student's Income",
+      "host": "www.revenue.alabama.gov",
+      "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf",
+      "quoteSha256": "494c8c7f4837a5b3",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "al-form40-age-65-retirement-exclusion-cap",
+      "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Pensions and Annuities",
+      "host": "www.revenue.alabama.gov",
+      "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf",
+      "quoteSha256": "ee758d6fbc00bec5",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "al-form40-age-65-retirement-exclusion-cap",
+      "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Line 4 — Retirement Income (Schedule RS)",
+      "host": "www.revenue.alabama.gov",
+      "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf",
+      "quoteSha256": "832c8c519e77d4b7",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "al-form40-standard-deduction-agi-slide",
+      "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Line 11 — Standard Deduction",
+      "host": "www.revenue.alabama.gov",
+      "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf",
+      "quoteSha256": "0f44b10347670695",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "al-form40-standard-deduction-agi-slide",
+      "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, page 9 Standard Deduction chart — Single column",
+      "host": "www.revenue.alabama.gov",
+      "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf",
+      "quoteSha256": "d5b0e9975fc944a2",
+      "verdict": "PDF-NOT-VERIFIABLE",
+      "detail": "words all present, but the character difference cannot be separated from extraction loss",
+      "diagnosis": null
+    },
+    {
+      "id": "al-form40-standard-deduction-agi-slide",
+      "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, page 9 Standard Deduction chart — Married Filing Joint column",
+      "host": "www.revenue.alabama.gov",
+      "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf",
+      "quoteSha256": "9180576e862c42ad",
+      "verdict": "PDF-NOT-VERIFIABLE",
+      "detail": "words all present, but the character difference cannot be separated from extraction loss",
+      "diagnosis": null
+    },
+    {
+      "id": "al-dor-individual-income-tax-rate-schedule",
+      "citation": "Alabama Department of Revenue, Individual Income Tax — Rate",
+      "host": "www.revenue.alabama.gov",
+      "url": "https://www.revenue.alabama.gov/individual-corporate/taxes-administered-by-individual-corporate-income-tax/individual-income-tax/",
+      "quoteSha256": "8293445ec6f7e497",
+      "verdict": "ELISION-EXACT",
+      "detail": "3 segments, every one a literal substring",
+      "diagnosis": null
+    },
+    {
+      "id": "al-dor-individual-income-tax-rate-schedule",
+      "citation": "Alabama Department of Revenue, Individual Income Tax — Rate (joint)",
+      "host": "www.revenue.alabama.gov",
+      "url": "https://www.revenue.alabama.gov/individual-corporate/taxes-administered-by-individual-corporate-income-tax/individual-income-tax/",
+      "quoteSha256": "722fcd615666515b",
+      "verdict": "ELISION-EXACT",
+      "detail": "4 segments, every one a literal substring",
       "diagnosis": null
     }
   ],
