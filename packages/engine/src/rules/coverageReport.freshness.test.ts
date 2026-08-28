@@ -386,6 +386,11 @@ describe('manifest rule projection contract', () => {
       { kind: 'statute', citation: 'Fix. Code 1(a)', url: 'https://example.gov/1' },
       { kind: 'statute', citation: 'Fix. Code 1(b)', url: 'https://example.gov/1' },
     ])
+    // Hand-written expectation, not a builder round-trip: the published
+    // implementations must be exactly the declared pins grouped per file.
+    expect((fixtureRule as { implementations?: unknown }).implementations).toEqual([
+      { path: 'packages/engine/src/rules/coverageReport.ts', functions: ['buildCoverageReport'] },
+    ])
     expect(fixtureReport.json).not.toContain('"quotedText":')
   })
 })

@@ -885,6 +885,33 @@ describe('tax rule registry conformance', () => {
     expect([...new Set(dangling)].sort()).toEqual([])
   })
 
+  it('admits module-scope symbols and refuses function locals, per a synthetic source', () => {
+    // The guard itself is guarded: a table that regressed to admitting
+    // locals (or dropping members) fails here on hand-written cases before
+    // any live mapping could exploit it.
+    const synthetic = [
+      'export function outerCalculator(input: number): number {',
+      '  const innerLocal = input * 2',
+      '  return innerLocal',
+      '}',
+      'export const dataPack = {',
+      '  states: {',
+      '    ZZ: { leafField: 1 },',
+      '  },',
+      '}',
+      'export interface ShapeType {',
+      '  memberField: number',
+      '}',
+    ].join('\n')
+    const symbols = declaredSymbolsOf('synthetic-guard-probe.ts', synthetic)
+    expect(symbols.has('outerCalculator')).toBe(true)
+    expect(symbols.has('dataPack')).toBe(true)
+    expect(symbols.has('leafField')).toBe(true)
+    expect(symbols.has('memberField')).toBe(true)
+    expect(symbols.has('innerLocal')).toBe(false)
+    expect(symbols.has('neverDeclaredAnywhere')).toBe(false)
+  })
+
   it('resolves every implementedByFunctions entry to a listed file and a live symbol', () => {
     // The transparency page renders these as the chain's deepest level; an
     // entry naming a renamed or deleted function must fail here, not rot
