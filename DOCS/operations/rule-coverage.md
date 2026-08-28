@@ -219,7 +219,7 @@ The 25 earliest due dates are shown below (408 rules total). Comparing dueOn to 
 
 ## Manifest contract
 
-The JSON manifest (rule-coverage.json, version 2) is the machine contract: each rule additionally carries title, errorDirection (null unless the rule is approximated), conventionRationale and contraryReading (null when unused), and deduplicated authority identities (kind, citation, url). This markdown file is the human summary and does not repeat them. Version 2 is a breaking discriminator for readers that check version === 1 strictly; the new fields are additive only for readers that ignore unknown keys and do not pin the version.
+The JSON manifest (rule-coverage.json, version 2) is the machine contract: each rule additionally carries title, errorDirection (null unless the rule is approximated), conventionRationale and contraryReading (null when unused), deduplicated authority identities (kind, citation, url), and per-fixture detail (path, line, optional note, and the it() titles scanned from the fixture source). This markdown file is the human summary and does not repeat them. Version 2 is a breaking discriminator for readers that check version === 1 strictly; the new fields are additive only for readers that ignore unknown keys and do not pin the version.
 
 ## Quote fidelity
 

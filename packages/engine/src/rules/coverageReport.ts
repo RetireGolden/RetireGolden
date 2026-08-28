@@ -41,6 +41,17 @@ export interface CoverageRule {
   readonly dueOn: string
   readonly implementedBy: readonly string[]
   readonly fixtureFiles: readonly string[]
+  /**
+   * One entry per describeRule call: where the fixture lives (1-based line of
+   * the call) and the it() titles inside its block. Derived from the same
+   * source scan as fixtureFiles; nothing here is hand-maintained.
+   */
+  readonly fixtures: readonly {
+    readonly path: string
+    readonly line: number
+    readonly note: string | null
+    readonly testTitles: readonly string[]
+  }[]
   readonly authorities: readonly {
     readonly kind: TaxRuleAuthority['kind']
     readonly citation: TaxRuleAuthority['citation']
@@ -114,24 +125,252 @@ function countBy(values: readonly string[]): Record<string, number> {
   return Object.fromEntries(Object.entries(counts).sort(([left], [right]) => compareStrings(left, right)))
 }
 
-function fixtureFilesByRule(testSources: Readonly<Record<string, string>>): ReadonlyMap<string, readonly string[]> {
-  const fixturePaths = new Map<string, Set<string>>()
+/**
+ * Lexes `source` from `index`, returning the index just past the current
+ * non-code region when one starts here: a line or block comment, a string or
+ * template literal (with ${} nesting), or a regex literal when `regexOk` says
+ * a regex may start in this position. Returns `index` unchanged otherwise.
+ */
+function skipNonCode(source: string, index: number, regexOk: boolean): number {
+  const char = source[index]!
+  const next = source[index + 1]
+  if (char === '/' && next === '/') {
+    const eol = source.indexOf('\n', index)
+    return eol === -1 ? source.length : eol + 1
+  }
+  if (char === '/' && next === '*') {
+    const close = source.indexOf('*/', index + 2)
+    return close === -1 ? source.length : close + 2
+  }
+  if (char === "'" || char === '"') {
+    let cursor = index + 1
+    while (cursor < source.length && source[cursor] !== char) {
+      cursor += source[cursor] === '\\' ? 2 : 1
+    }
+    return cursor + 1
+  }
+  if (char === '`') {
+    let cursor = index + 1
+    let templateDepth = 0
+    while (cursor < source.length) {
+      const c = source[cursor]!
+      if (c === '\\') {
+        cursor += 2
+        continue
+      }
+      if (c === '$' && source[cursor + 1] === '{') {
+        templateDepth += 1
+        cursor += 2
+        continue
+      }
+      if (c === '}' && templateDepth > 0) {
+        templateDepth -= 1
+        cursor += 1
+        continue
+      }
+      if (c === '`' && templateDepth === 0) return cursor + 1
+      cursor += 1
+    }
+    return source.length
+  }
+  if (char === '/' && regexOk) {
+    let cursor = index + 1
+    let inClass = false
+    while (cursor < source.length) {
+      const c = source[cursor]!
+      if (c === '\\') {
+        cursor += 2
+        continue
+      }
+      if (c === '[') inClass = true
+      else if (c === ']') inClass = false
+      else if (c === '/' && !inClass) return cursor + 1
+      else if (c === '\n') return cursor // not a regex after all; bail at EOL
+      cursor += 1
+    }
+    return source.length
+  }
+  return index
+}
+
+/** A regex literal can start wherever an expression can. */
+function regexCanFollow(source: string, index: number): boolean {
+  let cursor = index - 1
+  while (cursor >= 0 && (source[cursor] === ' ' || source[cursor] === '\t' || source[cursor] === '\n' || source[cursor] === '\r')) {
+    cursor -= 1
+  }
+  if (cursor < 0) return true
+  return '(,=:;!&|?{['.includes(source[cursor]!)
+}
+
+/**
+ * Index just past the closing parenthesis of the describeRule(...) call that
+ * starts at `start`, honoring strings, templates, comments, and regex
+ * literals so punctuation inside them cannot derail the extent.
+ */
+export function describeRuleCallEnd(source: string, start: number): number {
+  const open = source.indexOf('(', start)
+  if (open === -1) return source.length
+  let depth = 0
+  let index = open
+  while (index < source.length) {
+    const skipped = skipNonCode(source, index, regexCanFollow(source, index))
+    if (skipped !== index) {
+      index = skipped
+      continue
+    }
+    const char = source[index]!
+    if (char === '(') depth += 1
+    if (char === ')') {
+      depth -= 1
+      if (depth === 0) return index + 1
+    }
+    index += 1
+  }
+  return source.length
+}
+
+/** Reads the string literal starting at *index* (any quote); null for substitution templates. */
+function readStringLiteral(source: string, index: number, end: number): string | null {
+  const quote = source[index]!
+  if (quote !== "'" && quote !== '"' && quote !== '`') return null
+  let cursor = index + 1
+  let value = ''
+  while (cursor < end) {
+    const c = source[cursor]!
+    if (c === '\\') {
+      value += source[cursor + 1] ?? ''
+      cursor += 2
+      continue
+    }
+    if (c === quote) return value
+    if (quote === '`' && c === '$' && source[cursor + 1] === '{') return null
+    value += c
+    cursor += 1
+  }
+  return null
+}
+
+/**
+ * The spec's note within the call extent, found at CODE level so a note-like
+ * sequence inside a comment, title, or other string never wins, and all three
+ * quote forms are read.
+ */
+function noteWithin(source: string, start: number, end: number): string | null {
+  let index = start
+  while (index < end) {
+    const skipped = skipNonCode(source, index, regexCanFollow(source, index))
+    if (skipped !== index) {
+      index = Math.min(skipped, end)
+      continue
+    }
+    if (source.startsWith('note', index) && (index === 0 || !/[\w$.]/u.test(source[index - 1]!))) {
+      let cursor = index + 4
+      while (cursor < end && (source[cursor] === ' ' || source[cursor] === '\t')) cursor += 1
+      if (source[cursor] === ':') {
+        cursor += 1
+        while (
+          cursor < end &&
+          (source[cursor] === ' ' || source[cursor] === '\t' || source[cursor] === '\n' || source[cursor] === '\r')
+        ) {
+          cursor += 1
+        }
+        return readStringLiteral(source, cursor, end)
+      }
+    }
+    index += 1
+  }
+  return null
+}
+
+/**
+ * it() titles at CODE level within [start, end) — an it('...') spelled inside
+ * a comment or another string never counts. Plain single, double, and
+ * substitution-free backtick titles are all captured.
+ */
+function testTitlesBetween(source: string, start: number, end: number): string[] {
+  const titles: string[] = []
+  let index = start
+  while (index < end) {
+    const skipped = skipNonCode(source, index, regexCanFollow(source, index))
+    if (skipped !== index) {
+      index = Math.min(skipped, end)
+      continue
+    }
+    const match = /^\bit\(\s*(['"\u0060])/u.exec(source.slice(index, Math.min(index + 24, end)))
+    if (match !== null && (index === 0 || !/[\w$.]/u.test(source[index - 1]!))) {
+      const quote = match[1]!
+      const titleStart = index + match[0].length
+      let cursor = titleStart
+      let title = ''
+      let broken = false
+      while (cursor < end) {
+        const c = source[cursor]!
+        if (c === '\\') {
+          title += source[cursor + 1] ?? ''
+          cursor += 2
+          continue
+        }
+        if (c === quote) break
+        if (quote === '\u0060' && c === '$' && source[cursor + 1] === '{') {
+          broken = true // substitution titles are not literal; skip them
+          break
+        }
+        title += c
+        cursor += 1
+      }
+      if (!broken) titles.push(title)
+      index = cursor + 1
+      continue
+    }
+    index += 1
+  }
+  return titles
+}
+
+interface FixtureDetail {
+  readonly path: string
+  readonly line: number
+  readonly note: string | null
+  readonly testTitles: readonly string[]
+}
+
+function fixtureDetailsByRule(testSources: Readonly<Record<string, string>>): ReadonlyMap<string, readonly FixtureDetail[]> {
+  const details = new Map<string, FixtureDetail[]>()
   for (const [path, source] of Object.entries(testSources)) {
     if (path.endsWith(CONFORMANCE_SOURCE)) continue
     // Vite emits same-directory glob keys as `./name`, not `../rules/name`.
     const fixturePath = path
       .replace(/^\.\.\//u, 'packages/engine/src/')
       .replace(/^\.\//u, 'packages/engine/src/rules/')
-    for (const match of source.matchAll(/describeRule\(\s*'([^']+)'/gu)) {
+    const calls = [...source.matchAll(/describeRule\(\s*'([^']+)'/gu)]
+    for (let index = 0; index < calls.length; index += 1) {
+      const match = calls[index]!
       const ruleId = match[1]!
-      const paths = fixturePaths.get(ruleId) ?? new Set<string>()
-      paths.add(fixturePath)
-      fixturePaths.set(ruleId, paths)
+      const start = match.index ?? 0
+      // The block is the describeRule CALL's balanced extent, not a slice to
+      // the next call: it() titles that follow the callback's close in the
+      // same file belong to sibling suites, never to this rule.
+      const end = describeRuleCallEnd(source, start)
+      const testTitles = testTitlesBetween(source, start, end)
+      const note = noteWithin(source, start, end)
+      const line = source.slice(0, start).split('\n').length
+      const list = details.get(ruleId) ?? []
+      list.push({
+        path: fixturePath,
+        line,
+        note,
+        testTitles,
+      })
+      details.set(ruleId, list)
     }
   }
   return new Map(
-    [...fixturePaths.entries()]
-      .map(([ruleId, paths]) => [ruleId, [...paths].sort()] as const)
+    [...details.entries()]
+      .map(
+        ([ruleId, list]) =>
+          [ruleId, [...list].sort((left, right) => compareStrings(left.path, right.path) || left.line - right.line)] as const,
+      )
       .sort(([left], [right]) => compareStrings(left, right)),
   )
 }
@@ -350,7 +589,7 @@ function buildMarkdown(manifest: CoverageReportManifest): string {
     '',
     '## Manifest contract',
     '',
-    'The JSON manifest (rule-coverage.json, version 2) is the machine contract: each rule additionally carries title, errorDirection (null unless the rule is approximated), conventionRationale and contraryReading (null when unused), and deduplicated authority identities (kind, citation, url). This markdown file is the human summary and does not repeat them. Version 2 is a breaking discriminator for readers that check version === 1 strictly; the new fields are additive only for readers that ignore unknown keys and do not pin the version.',
+    'The JSON manifest (rule-coverage.json, version 2) is the machine contract: each rule additionally carries title, errorDirection (null unless the rule is approximated), conventionRationale and contraryReading (null when unused), deduplicated authority identities (kind, citation, url), and per-fixture detail (path, line, optional note, and the it() titles scanned from the fixture source). This markdown file is the human summary and does not repeat them. Version 2 is a breaking discriminator for readers that check version === 1 strictly; the new fields are additive only for readers that ignore unknown keys and do not pin the version.',
     '',
     '## Quote fidelity',
     '',
@@ -407,7 +646,7 @@ function buildMarkdown(manifest: CoverageReportManifest): string {
  * across machines without a filesystem read or clock observation.
  */
 export function buildCoverageReport(input: CoverageReportInput): CoverageReport {
-  const fixtureFiles = fixtureFilesByRule(input.testSources)
+  const fixtureDetails = fixtureDetailsByRule(input.testSources)
   const rules: readonly CoverageRule[] = Object.entries(input.registry)
     .map(([id, rule]) => ({
       id,
@@ -423,7 +662,8 @@ export function buildCoverageReport(input: CoverageReportInput): CoverageReport 
       verifiedOn: rule.verifiedOn,
       dueOn: input.dueOnFor(id as TaxRuleId),
       implementedBy: [...rule.implementedBy].sort(),
-      fixtureFiles: fixtureFiles.get(id) ?? [],
+      fixtureFiles: [...new Set((fixtureDetails.get(id) ?? []).map(({ path }) => path))].sort(compareStrings),
+      fixtures: fixtureDetails.get(id) ?? [],
       // Distinct quotes of one provision collapse to one public identity once
       // quotedText is stripped; duplicates would inflate link lists downstream.
       authorities: dedupeAuthorityIdentities(rule.authority),
