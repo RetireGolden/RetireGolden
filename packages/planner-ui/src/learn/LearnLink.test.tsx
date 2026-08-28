@@ -64,11 +64,14 @@ describe('LearnLink arrow spacing (#329)', () => {
   })
 
   it.each(['inline', 'tip', 'button'] as const)(
-    'variant %s keeps a word-space before the arrow',
+    'variant %s nests label and arrow in one box',
     async (variant) => {
       const link = await renderLink({ variant })
+      const arrow = arrowSpan(link)
       expect(link.textContent).toBe(`${EXAMPLE_LABEL} →`)
-      expect(arrowSpan(link)?.textContent).toBe(' →')
+      expect(arrow?.textContent).toBe(' →')
+      expect(arrow?.parentElement).not.toBe(link)
+      expect(arrow?.parentElement?.textContent).toBe(`${EXAMPLE_LABEL} →`)
     },
   )
 })

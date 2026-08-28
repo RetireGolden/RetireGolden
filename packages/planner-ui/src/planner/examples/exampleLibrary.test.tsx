@@ -108,12 +108,7 @@ describe('example library page', () => {
     const featured = container.querySelectorAll('.example-card a.learn-link')
     expect(featured.length).toBe(3)
     for (const link of featured) {
-      expect(link.textContent).toBe('Learn about this example →')
-      const arrow = link.querySelector('span[aria-hidden="true"]')
-      expect(arrow?.textContent).toBe(' →')
-      // Flex `.btn` collapses a leading space on a direct-child span; nesting
-      // is what keeps the word-space visible (would fail on main).
-      expect(arrow?.parentElement).not.toBe(link)
+      expectLearnArrowSharesLabelBox(link)
     }
 
     const browse = Array.from(container.querySelectorAll('button')).find((b) =>
@@ -131,10 +126,17 @@ describe('example library page', () => {
       expect(actions?.querySelector('button.btn-primary')?.textContent).toBe('Open')
       expect(actions?.querySelector('button.btn-secondary')?.textContent).toBe('Save to my plans')
       const learn = actions?.querySelector('a.learn-link')
-      expect(learn?.textContent).toBe('Learn about this example →')
-      const arrow = learn?.querySelector('span[aria-hidden="true"]')
-      expect(arrow?.textContent).toBe(' →')
-      expect(arrow?.parentElement).not.toBe(learn)
+      expect(learn, 'each card has a Learn control').not.toBeNull()
+      expectLearnArrowSharesLabelBox(learn!)
     }
   })
 })
+
+/** Label + ` →` must share one inline box so `.btn` flex cannot collapse the space. */
+function expectLearnArrowSharesLabelBox(link: Element) {
+  expect(link.textContent).toBe('Learn about this example →')
+  const arrow = link.querySelector('span[aria-hidden="true"]')
+  expect(arrow?.textContent).toBe(' →')
+  expect(arrow?.parentElement).not.toBe(link)
+  expect(arrow?.parentElement?.textContent).toBe('Learn about this example →')
+}
