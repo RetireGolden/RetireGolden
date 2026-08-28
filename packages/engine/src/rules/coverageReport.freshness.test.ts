@@ -145,3 +145,47 @@ describe('quote-fidelity ledger hash binding', () => {
     expect(found.sort()).toEqual(expected.sort())
   })
 })
+
+// The manifest projection is a public contract for the WS6 transparency page.
+// Mirror-the-builder freshness checks cannot catch a wrong projection (both
+// sides regenerate together), so these read expected values from the registry
+// records themselves.
+describe('manifest rule projection contract', () => {
+  it('copies title, errorDirection, conventionRationale, and contraryReading from the registry', () => {
+    for (const rule of report.manifest.rules) {
+      const record = TAX_RULE_REGISTRY[rule.id as keyof typeof TAX_RULE_REGISTRY]
+      expect(record, rule.id).toBeDefined()
+      expect(rule.title, rule.id).toBe(record.title)
+      expect(rule.errorDirection, rule.id).toBe(record.errorDirection)
+      expect(rule.conventionRationale, rule.id).toBe(record.conventionRationale)
+      expect(rule.contraryReading, rule.id).toBe(record.contraryReading)
+      expect(rule.title.length, rule.id).toBeGreaterThan(0)
+    }
+  })
+
+  it('keeps errorDirection null exactly when the rule is not approximated', () => {
+    for (const rule of report.manifest.rules) {
+      expect(rule.errorDirection === null, rule.id).toBe(rule.classification !== 'approximated')
+    }
+  })
+
+  it('publishes unique authority identities with no quotedText', () => {
+    for (const rule of report.manifest.rules) {
+      const identities = rule.authorities.map(
+        (authority) => `${authority.kind}\u0000${authority.citation}\u0000${authority.url}`,
+      )
+      expect(new Set(identities).size, rule.id).toBe(identities.length)
+      for (const authority of rule.authorities) {
+        expect(Object.keys(authority).sort(), rule.id).toEqual(['citation', 'kind', 'url'])
+      }
+    }
+    // The dedupe is real, not vacuous: at least one registry record quotes the
+    // same provision twice, so its identity list must be shorter than its
+    // authority list.
+    const collapsed = report.manifest.rules.filter((rule) => {
+      const record = TAX_RULE_REGISTRY[rule.id as keyof typeof TAX_RULE_REGISTRY]
+      return record !== undefined && rule.authorities.length < record.authority.length
+    })
+    expect(collapsed.length).toBeGreaterThan(0)
+  })
+})
