@@ -146,11 +146,16 @@ describe('quote-fidelity ledger hash binding', () => {
   })
 })
 
-// The manifest projection is a public contract for the WS6 transparency page.
+// The manifest projection is a public contract for the transparency page on
+// retiregolden.org.
 // Mirror-the-builder freshness checks cannot catch a wrong projection (both
 // sides regenerate together), so these read expected values from the registry
 // records themselves.
 describe('manifest rule projection contract', () => {
+  it('publishes manifest version 2, the discriminator for the new required fields', () => {
+    expect(report.manifest.version).toBe(2)
+  })
+
   it('copies title, errorDirection, conventionRationale, and contraryReading from the registry', () => {
     for (const rule of report.manifest.rules) {
       const record = TAX_RULE_REGISTRY[rule.id as keyof typeof TAX_RULE_REGISTRY]
@@ -159,7 +164,9 @@ describe('manifest rule projection contract', () => {
       expect(rule.errorDirection, rule.id).toBe(record.errorDirection)
       expect(rule.conventionRationale, rule.id).toBe(record.conventionRationale)
       expect(rule.contraryReading, rule.id).toBe(record.contraryReading)
-      expect(rule.title.length, rule.id).toBeGreaterThan(0)
+      expect(rule.title.trim().length, rule.id).toBeGreaterThan(0)
+      if (rule.conventionRationale !== null) expect(rule.conventionRationale.trim().length, rule.id).toBeGreaterThan(0)
+      if (rule.contraryReading !== null) expect(rule.contraryReading.trim().length, rule.id).toBeGreaterThan(0)
     }
   })
 
@@ -171,10 +178,20 @@ describe('manifest rule projection contract', () => {
 
   it('publishes unique authority identities with no quotedText', () => {
     for (const rule of report.manifest.rules) {
-      const identities = rule.authorities.map(
-        (authority) => `${authority.kind}\u0000${authority.citation}\u0000${authority.url}`,
-      )
-      expect(new Set(identities).size, rule.id).toBe(identities.length)
+      const record = TAX_RULE_REGISTRY[rule.id as keyof typeof TAX_RULE_REGISTRY]
+      expect(record, rule.id).toBeDefined()
+      // Exact first-seen-unique equality against the registry: this is what
+      // rules out empty lists, url-only dedupe, and last-wins ordering.
+      const seen = new Set<string>()
+      const expectedIdentities: { kind: string; citation: string; url: string }[] = []
+      for (const { kind, citation, url } of record.authority) {
+        const key = `${kind}\u0000${citation}\u0000${url}`
+        if (seen.has(key)) continue
+        seen.add(key)
+        expectedIdentities.push({ kind, citation, url })
+      }
+      expect(rule.authorities, rule.id).toEqual(expectedIdentities)
+      expect(rule.authorities.length, rule.id).toBeGreaterThan(0)
       for (const authority of rule.authorities) {
         expect(Object.keys(authority).sort(), rule.id).toEqual(['citation', 'kind', 'url'])
       }

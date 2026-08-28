@@ -186,7 +186,7 @@ None.
 
 ## Re-verification due dates
 
-The 25 earliest due dates are shown below (399 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically. Per-rule titles, error directions, convention rationales, and authority identities live in the JSON manifest (rule-coverage.json), not in this summary.
+The 25 earliest due dates are shown below (399 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
 
 | Rule | Volatility | Verified on | Due on |
 | --- | --- | --- | --- |
@@ -215,6 +215,10 @@ The 25 earliest due dates are shown below (399 rules total). Comparing dueOn to 
 | treas-reg-1-401-a-9-6-q-2-qlac-premium-dollar-limit | annuallyIndexed | 2026-08-03 | 2026-12-01 |
 | usc-42-1395r-a-3-part-b-standard-premium | annuallyIndexed | 2026-08-03 | 2026-12-01 |
 | usc-42-1395r-i-5-C-top-irmaa-threshold-frozen | annuallyIndexed | 2026-08-03 | 2026-12-01 |
+
+## Manifest contract
+
+The JSON manifest (rule-coverage.json, version 2) is the machine contract: each rule additionally carries title, errorDirection (null unless the rule is approximated), conventionRationale and contraryReading (null when unused), and deduplicated authority identities (kind, citation, url). This markdown file is the human summary and does not repeat them. Version 1 readers that require the new fields must update; the fields are additive for readers that ignore unknown keys.
 
 ## Quote fidelity
 
