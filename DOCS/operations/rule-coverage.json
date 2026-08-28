@@ -1305,7 +1305,8 @@
         {
           "path": "packages/engine/src/tax/stateTax.ts",
           "functions": [
-            "computeStateTaxableIncome"
+            "computeStateTaxableIncome",
+            "retirementExclusion"
           ]
         }
       ],
@@ -4697,8 +4698,7 @@
       "dueOn": "2026-12-01",
       "implementedBy": [
         "packages/engine/src/params/index.ts",
-        "packages/engine/src/projection/simulate.ts",
-        "packages/engine/src/tax/federalTax.ts"
+        "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
         {
@@ -4711,12 +4711,6 @@
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             "simulatePlan"
-          ]
-        },
-        {
-          "path": "packages/engine/src/tax/federalTax.ts",
-          "functions": [
-            "bracketTax"
           ]
         }
       ],

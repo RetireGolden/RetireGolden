@@ -6207,13 +6207,11 @@ const registry = {
     verifiedOn: '2026-08-03',
     implementedBy: [
       'packages/engine/src/params/index.ts',
-      'packages/engine/src/tax/federalTax.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/params/index.ts#indexFederalTaxPack',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
-      'packages/engine/src/tax/federalTax.ts#bracketTax',
     ],
   },
   'irc-151-d-5-C-senior-deduction-not-indexed': {
@@ -16915,6 +16913,7 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
       'packages/engine/src/params/state/types.ts#StateRetirementExclusion',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+      'packages/engine/src/tax/stateTax.ts#retirementExclusion',
     ],
   },
 

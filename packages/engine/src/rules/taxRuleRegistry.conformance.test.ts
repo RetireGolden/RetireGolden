@@ -910,6 +910,8 @@ describe('tax rule registry conformance', () => {
     expect(symbols.has('dataPack')).toBe(true)
     expect(symbols.has('leafField')).toBe(true)
     expect(symbols.has('memberField')).toBe(true)
+    expect(declaredSymbolsOf('synthetic-guard-probe-2.ts', 'export enum Kind { First } export class Box { set value(v: number) {} }').has('First')).toBe(true)
+    expect(declaredSymbolsOf('synthetic-guard-probe-2.ts', 'export enum Kind { First } export class Box { set value(v: number) {} }').has('value')).toBe(true)
     expect(symbols.has('innerLocal')).toBe(false)
     expect(symbols.has('neverDeclaredAnywhere')).toBe(false)
   })
@@ -921,6 +923,9 @@ describe('tax rule registry conformance', () => {
     const violations: string[] = []
     for (const [ruleId, rule] of Object.entries(TAX_RULE_REGISTRY)) {
       const entries = rule.implementedByFunctions
+      if (new Set(entries).size !== entries.length) {
+        violations.push(`${ruleId}: implementedByFunctions carries duplicate entries`)
+      }
       const pinnedPaths = new Set(entries.map((entry) => entry.split('#')[0]))
       for (const path of rule.implementedBy) {
         if (!pinnedPaths.has(path)) violations.push(`${ruleId}: ${path} is on the trail but carries no function pin`)
