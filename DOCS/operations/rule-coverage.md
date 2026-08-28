@@ -218,4 +218,15 @@ The 25 earliest due dates are shown below (399 rules total). Comparing dueOn to 
 
 ## Quote fidelity
 
-No committed ledger — generate one with: pnpm verify:quotes -- --json > DOCS/operations/quote-fidelity-ledger.json (network required; see quote-fidelity.md).
+Committed ledger generated at 2026-08-28T00:54:14.237Z.
+
+| Verdict | Count |
+| --- | ---: |
+| ABSENT | 32 |
+| ELISION-EXACT | 58 |
+| ELISION-PUNCTUATION | 4 |
+| EXACT | 694 |
+| PDF-NOT-VERIFIABLE | 2 |
+| PDF-WORD-LEVEL | 192 |
+| PUNCTUATION | 37 |
+| UNFETCHABLE | 13 |
