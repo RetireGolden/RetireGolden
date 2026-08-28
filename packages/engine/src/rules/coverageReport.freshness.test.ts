@@ -38,16 +38,24 @@ function dayBefore(isoDate: string): string {
   return date.toISOString().slice(0, 10)
 }
 
-/** Test-source lines for a canonical fixture path, for the per-test line binds. */
+/**
+ * Test-source lines keyed by EXACT canonical path (the same fold the builder
+ * applies to glob keys), for the per-test line binds - a suffix match could
+ * silently pick a same-named file from another directory.
+ */
+const testSourcesByCanonicalPath = new Map(
+  Object.entries(testSources).map(([key, source]) => [
+    key.replace(/^\.\.\//u, 'packages/engine/src/').replace(/^\.\//u, 'packages/engine/src/rules/'),
+    source as string,
+  ]),
+)
 const testSourceLineCache = new Map<string, readonly string[]>()
 function testSourceLinesOf(fixturePath: string): readonly string[] {
   const cached = testSourceLineCache.get(fixturePath)
   if (cached !== undefined) return cached
-  const globKey = Object.keys(testSources).find(
-    (key) => fixturePath.endsWith(key.replace(/^\.\.\//u, '').replace(/^\.\//u, 'rules/')),
-  )
-  if (globKey === undefined) throw new Error(fixturePath + ' is not a test source the glob can see')
-  const lines = (testSources[globKey] as string).split('\n')
+  const source = testSourcesByCanonicalPath.get(fixturePath)
+  if (source === undefined) throw new Error(fixturePath + ' is not a test source the glob can see')
+  const lines = source.split('\n')
   testSourceLineCache.set(fixturePath, lines)
   return lines
 }

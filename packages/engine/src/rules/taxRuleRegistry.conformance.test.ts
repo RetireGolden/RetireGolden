@@ -927,6 +927,15 @@ describe('tax rule registry conformance', () => {
     expect(symbolAnchorLine(table, probe, 'Box.value')).toBe(23)
     expect(symbolAnchorLine(table, probe, 'value')).toBe(23)
     expect(() => symbolAnchorLine(table, probe, 'neverDeclaredAnywhere')).toThrow(/not a declared symbol/u)
+    // Same-named members in DIFFERENT elements of one array are distinct
+    // declarations: position separates their identity, so the name is
+    // ambiguous rather than collapsed onto the first row's line.
+    const rows = declaredSymbolsOf(
+      'synthetic-array-probe.ts',
+      'const rows = [\n  { rate: 1 },\n  { rate: 2 },\n]\n',
+    )
+    expect(() => symbolAnchorLine(rows, 'synthetic-array-probe.ts', 'rate')).toThrow(/ambiguous/u)
+    expect(() => symbolAnchorLine(rows, 'synthetic-array-probe.ts', 'rows.rate')).toThrow(/ambiguous/u)
   })
 
   it('resolves every implementedByFunctions entry to a listed file and a live symbol', () => {

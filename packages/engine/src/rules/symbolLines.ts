@@ -77,12 +77,23 @@ export function declaredSymbolLinesOf(fileName: string, source: string): Readonl
   }
   // Property names nested anywhere under a module-scope declaration are
   // publishable (class methods, interface properties, a data pack's fields
-  // at any depth); function block bodies are never entered, so a local
-  // inside a calculator stays a local. `ancestors` is the chain of admitted
-  // names above the member, and every suffix spelling is recorded
-  // (`cap`, `retirement.cap`, `ND.retirement.cap`, ...) so a pin can add
-  // exactly as much qualification as uniqueness requires.
-  const recordMembers = (node: ts.Node, ancestors: readonly string[]): void => {
+  // at any depth); function BLOCK BODIES are never entered, so a local
+  // inside a calculator stays a local (type structure, including a
+  // signature's type-literal, is structure and is entered). `ancestors` is
+  // the chain of admitted names above the member, and every suffix spelling
+  // is recorded (`cap`, `retirement.cap`, `ND.retirement.cap`, ...) so a
+  // pin can add exactly as much qualification as uniqueness requires.
+  // `identityPath` additionally carries array positions (`rows.[2].cap`),
+  // so two same-named members in different elements of one array are
+  // distinct declarations, while a get/set pair or overload cluster at one
+  // identical path still collapses to one logical member.
+  const recordMembers = (node: ts.Node, ancestors: readonly string[], identityPath: readonly string[]): void => {
+    if (ts.isArrayLiteralExpression(node)) {
+      for (let index = 0; index < node.elements.length; index += 1) {
+        recordMembers(node.elements[index]!, ancestors, [...identityPath, '[' + index + ']'])
+      }
+      return
+    }
     ts.forEachChild(node, (child) => {
       if (
         ts.isPropertyAssignment(child) ||
@@ -98,7 +109,7 @@ export function declaredSymbolLinesOf(fileName: string, source: string): Readonl
         const name = child.name
         const identifier = name !== undefined && ts.isIdentifier(name) ? name : undefined
         if (identifier !== undefined) {
-          const fullPath = [...ancestors, identifier.text].join('.')
+          const fullPath = [...identityPath, identifier.text].join('.')
           for (let start = 0; start <= ancestors.length; start += 1) {
             recordMember([...ancestors.slice(start), identifier.text].join('.'), identifier, fullPath)
           }
@@ -106,11 +117,12 @@ export function declaredSymbolLinesOf(fileName: string, source: string): Readonl
         // A non-identifier property name is not itself admissible but its
         // children still are.
         const childAncestors = identifier !== undefined ? [...ancestors, identifier.text] : ancestors
-        if (ts.isPropertyAssignment(child) && child.initializer !== undefined) recordMembers(child.initializer, childAncestors)
-        if (ts.isPropertySignature(child) && child.type !== undefined) recordMembers(child.type, childAncestors)
+        const childIdentity = identifier !== undefined ? [...identityPath, identifier.text] : identityPath
+        if (ts.isPropertyAssignment(child) && child.initializer !== undefined) recordMembers(child.initializer, childAncestors, childIdentity)
+        if (ts.isPropertySignature(child) && child.type !== undefined) recordMembers(child.type, childAncestors, childIdentity)
       }
       if (ts.isObjectLiteralExpression(child) || ts.isTypeLiteralNode(child) || ts.isArrayLiteralExpression(child)) {
-        recordMembers(child, ancestors)
+        recordMembers(child, ancestors, identityPath)
       }
     })
   }
@@ -124,14 +136,15 @@ export function declaredSymbolLinesOf(fileName: string, source: string): Readonl
     ) {
       recordModuleScope(statement.name)
       const named = statement.name !== undefined && ts.isIdentifier(statement.name) ? [statement.name.text] : []
-      recordMembers(statement, named)
+      recordMembers(statement, named, named)
       continue
     }
     if (ts.isVariableStatement(statement)) {
       for (const declaration of statement.declarationList.declarations) {
         recordModuleScope(declaration.name)
         if (declaration.initializer !== undefined) {
-          recordMembers(declaration.initializer, ts.isIdentifier(declaration.name) ? [declaration.name.text] : [])
+          const named = ts.isIdentifier(declaration.name) ? [declaration.name.text] : []
+          recordMembers(declaration.initializer, named, named)
         }
       }
       continue
