@@ -176,6 +176,29 @@ describe('manifest rule projection contract', () => {
     }
   })
 
+  it('keeps fixtures and fixtureFiles consistent, with titles present in the scanned source', () => {
+    for (const rule of report.manifest.rules) {
+      const paths = [...new Set(rule.fixtures.map(({ path }) => path))]
+      expect([...rule.fixtureFiles].sort(), rule.id).toEqual(paths.sort())
+      for (const fixture of rule.fixtures) {
+        expect(fixture.line, rule.id).toBeGreaterThanOrEqual(1)
+        expect(fixture.testTitles.length, `${rule.id} ${fixture.path}`).toBeGreaterThan(0)
+      }
+    }
+    // Spot-bind one fixture's titles to the live source text so the block
+    // scan cannot drift into returning titles from a neighboring rule.
+    const sample = report.manifest.rules.find((rule) => rule.fixtures.length > 0)
+    expect(sample).toBeDefined()
+    const globKey = Object.keys(testSources).find((key) =>
+      sample!.fixtures[0]!.path.endsWith(key.replace(/^\.\.\//u, '').replace(/^\.\//u, 'rules/')),
+    )
+    expect(globKey, sample!.fixtures[0]!.path).toBeDefined()
+    const source = testSources[globKey!] as string
+    for (const title of sample!.fixtures[0]!.testTitles) {
+      expect(source, `${sample!.id}: ${title}`).toContain(title)
+    }
+  })
+
   it('publishes unique authority identities with no quotedText', () => {
     for (const rule of report.manifest.rules) {
       const record = TAX_RULE_REGISTRY[rule.id as keyof typeof TAX_RULE_REGISTRY]
@@ -210,6 +233,7 @@ describe('manifest rule projection contract', () => {
       'effectiveThrough',
       'errorDirection',
       'fixtureFiles',
+      'fixtures',
       'id',
       'implementedBy',
       'jurisdiction',

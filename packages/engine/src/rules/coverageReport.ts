@@ -41,6 +41,16 @@ export interface CoverageRule {
   readonly dueOn: string
   readonly implementedBy: readonly string[]
   readonly fixtureFiles: readonly string[]
+  /**
+   * One entry per describeRule call: where the fixture lives (1-based line of
+   * the call) and the it() titles inside its block. Derived from the same
+   * source scan as fixtureFiles; nothing here is hand-maintained.
+   */
+  readonly fixtures: readonly {
+    readonly path: string
+    readonly line: number
+    readonly testTitles: readonly string[]
+  }[]
   readonly authorities: readonly {
     readonly kind: TaxRuleAuthority['kind']
     readonly citation: TaxRuleAuthority['citation']
@@ -114,24 +124,46 @@ function countBy(values: readonly string[]): Record<string, number> {
   return Object.fromEntries(Object.entries(counts).sort(([left], [right]) => compareStrings(left, right)))
 }
 
-function fixtureFilesByRule(testSources: Readonly<Record<string, string>>): ReadonlyMap<string, readonly string[]> {
-  const fixturePaths = new Map<string, Set<string>>()
+interface FixtureDetail {
+  readonly path: string
+  readonly line: number
+  readonly testTitles: readonly string[]
+}
+
+function fixtureDetailsByRule(testSources: Readonly<Record<string, string>>): ReadonlyMap<string, readonly FixtureDetail[]> {
+  const details = new Map<string, FixtureDetail[]>()
   for (const [path, source] of Object.entries(testSources)) {
     if (path.endsWith(CONFORMANCE_SOURCE)) continue
     // Vite emits same-directory glob keys as `./name`, not `../rules/name`.
     const fixturePath = path
       .replace(/^\.\.\//u, 'packages/engine/src/')
       .replace(/^\.\//u, 'packages/engine/src/rules/')
-    for (const match of source.matchAll(/describeRule\(\s*'([^']+)'/gu)) {
+    const calls = [...source.matchAll(/describeRule\(\s*'([^']+)'/gu)]
+    for (let index = 0; index < calls.length; index += 1) {
+      const match = calls[index]!
       const ruleId = match[1]!
-      const paths = fixturePaths.get(ruleId) ?? new Set<string>()
-      paths.add(fixturePath)
-      fixturePaths.set(ruleId, paths)
+      const start = match.index ?? 0
+      // describeRule blocks are sequential in every fixture file, so the
+      // block's it() titles are the ones between this call and the next (or
+      // end of file). A balanced-brace parse would be sturdier; this scan is
+      // validated by the freshness suite against the live sources.
+      const end = index + 1 < calls.length ? (calls[index + 1]!.index ?? source.length) : source.length
+      const block = source.slice(start, end)
+      const testTitles = [...block.matchAll(/\bit\(\s*'((?:[^'\\]|\\.)*)'/gu)].map((title) =>
+        title[1]!.replace(/\\'/gu, "'"),
+      )
+      const line = source.slice(0, start).split('\n').length
+      const list = details.get(ruleId) ?? []
+      list.push({ path: fixturePath, line, testTitles })
+      details.set(ruleId, list)
     }
   }
   return new Map(
-    [...fixturePaths.entries()]
-      .map(([ruleId, paths]) => [ruleId, [...paths].sort()] as const)
+    [...details.entries()]
+      .map(
+        ([ruleId, list]) =>
+          [ruleId, [...list].sort((left, right) => compareStrings(left.path, right.path) || left.line - right.line)] as const,
+      )
       .sort(([left], [right]) => compareStrings(left, right)),
   )
 }
@@ -407,7 +439,7 @@ function buildMarkdown(manifest: CoverageReportManifest): string {
  * across machines without a filesystem read or clock observation.
  */
 export function buildCoverageReport(input: CoverageReportInput): CoverageReport {
-  const fixtureFiles = fixtureFilesByRule(input.testSources)
+  const fixtureDetails = fixtureDetailsByRule(input.testSources)
   const rules: readonly CoverageRule[] = Object.entries(input.registry)
     .map(([id, rule]) => ({
       id,
@@ -423,7 +455,8 @@ export function buildCoverageReport(input: CoverageReportInput): CoverageReport 
       verifiedOn: rule.verifiedOn,
       dueOn: input.dueOnFor(id as TaxRuleId),
       implementedBy: [...rule.implementedBy].sort(),
-      fixtureFiles: fixtureFiles.get(id) ?? [],
+      fixtureFiles: [...new Set((fixtureDetails.get(id) ?? []).map(({ path }) => path))],
+      fixtures: fixtureDetails.get(id) ?? [],
       // Distinct quotes of one provision collapse to one public identity once
       // quotedText is stripped; duplicates would inflate link lists downstream.
       authorities: dedupeAuthorityIdentities(rule.authority),
