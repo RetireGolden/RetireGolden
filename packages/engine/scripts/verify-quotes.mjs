@@ -1183,11 +1183,15 @@ async function main() {
             citation: r.citation,
             host: r.host,
             url: r.url,
+            // Binds each verdict to the exact quote it judged: a quotedText
+            // edit behind an unchanged citation/URL makes the committed ledger
+            // detectably stale instead of silently republishing old verdicts.
+            quoteSha256: createHash('sha256').update(r.quotedText, 'utf8').digest('hex').slice(0, 16),
             verdict: r.verdict,
             detail: r.detail,
             diagnosis: r.diagnosis ?? null,
           })),
-          apostropheStyle: apostrophes.map((r) => ({ id: r.id, host: r.host, note: r.note })),
+          apostropheStyle: apostrophes.map((r) => ({ id: r.id, citation: r.citation, host: r.host, note: r.note })),
         },
         null,
         2,

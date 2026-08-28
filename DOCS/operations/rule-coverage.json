@@ -7195,6 +7195,19 @@
     }
   ],
   "quoteFidelity": {
-    "status": "no-committed-ledger"
+    "generatedAt": "2026-08-28T01:14:45.436Z",
+    "entryCount": 1032,
+    "fetched": 0,
+    "cached": 301,
+    "counts": {
+      "ABSENT": 32,
+      "ELISION-EXACT": 58,
+      "ELISION-PUNCTUATION": 4,
+      "EXACT": 694,
+      "PDF-NOT-VERIFIABLE": 2,
+      "PDF-WORD-LEVEL": 192,
+      "PUNCTUATION": 37,
+      "UNFETCHABLE": 13
+    }
   }
 }
