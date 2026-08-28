@@ -102,4 +102,39 @@ describe('example library page', () => {
     expect(demo.ok).toBe(true)
     if (demo.ok) expect(demo.plan.origin).toBe('example')
   })
+
+  it('Learn about this example keeps a word-space before the arrow on every card (#329)', async () => {
+    await renderExamples()
+    const featured = container.querySelectorAll('.example-card a.learn-link')
+    expect(featured.length).toBe(3)
+    for (const link of featured) {
+      expect(link.textContent).toBe('Learn about this example →')
+      const arrow = link.querySelector('span[aria-hidden="true"]')
+      expect(arrow?.textContent).toBe(' →')
+      // Flex `.btn` collapses a leading space on a direct-child span; nesting
+      // is what keeps the word-space visible (would fail on main).
+      expect(arrow?.parentElement).not.toBe(link)
+    }
+
+    const browse = Array.from(container.querySelectorAll('button')).find((b) =>
+      /Browse all \d+ examples/.test(b.textContent ?? ''),
+    )!
+    await act(async () => {
+      browse.click()
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    const all = container.querySelectorAll('.example-card a.learn-link')
+    expect(all.length).toBe(EXAMPLE_PLANS.length)
+    for (const card of container.querySelectorAll('.example-card')) {
+      const actions = card.querySelector('.plan-card-actions')
+      expect(actions?.querySelector('button.btn-primary')?.textContent).toBe('Open')
+      expect(actions?.querySelector('button.btn-secondary')?.textContent).toBe('Save to my plans')
+      const learn = actions?.querySelector('a.learn-link')
+      expect(learn?.textContent).toBe('Learn about this example →')
+      const arrow = learn?.querySelector('span[aria-hidden="true"]')
+      expect(arrow?.textContent).toBe(' →')
+      expect(arrow?.parentElement).not.toBe(learn)
+    }
+  })
 })
