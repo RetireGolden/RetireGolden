@@ -276,10 +276,15 @@ describe('manifest rule projection contract', () => {
         for (const test of fixture.tests) {
           // A test's it( sits inside its describeRule call, never before it,
           // and its published line is a deep-link anchor: that line of the
-          // live source must start the it() itself, for EVERY fixture, so an
-          // off-by-one that happens to hold on one sample cannot pass.
+          // live source must carry an it( token of its own (the scanner's
+          // boundary rule, so a longer identifier like submitIt( cannot
+          // satisfy it), for EVERY fixture - an off-by-one that happens to
+          // hold on one sample cannot pass.
           expect(test.line, `${rule.id} ${fixture.path}: ${test.title}`).toBeGreaterThanOrEqual(fixture.line)
-          expect(sourceLines[test.line - 1] ?? '', `${rule.id} ${fixture.path}#L${test.line}: ${test.title}`).toContain('it(')
+          expect(
+            /(?:^|[^\w$.])it\(/u.test(sourceLines[test.line - 1] ?? ''),
+            `${rule.id} ${fixture.path}#L${test.line}: ${test.title}`,
+          ).toBe(true)
         }
       }
     }
