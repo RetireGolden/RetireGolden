@@ -3,7 +3,7 @@ import {
   BASELINE_UNSWEPT,
   COVERAGE_ATTESTATIONS,
 } from './coverageAttestations.js'
-import { buildCoverageReport } from './coverageReport.js'
+import { buildCoverageReport, describeRuleCallEnd } from './coverageReport.js'
 import {
   TAX_RULE_REGISTRY,
   TAX_RULE_VOLATILITIES,
@@ -217,11 +217,10 @@ describe('manifest rule projection contract', () => {
     const callMarker = 'describe' + `Rule('${sample!.id}'`
     const callStart = source.indexOf(callMarker)
     expect(callStart, sample!.id).toBeGreaterThanOrEqual(0)
-    // Bind titles to the call's own extent: appearing elsewhere in the file
-    // is exactly the leak this scan must not have.
-    const nextCall = source.indexOf('describe' + 'Rule(', callStart + 1)
-    const blockEnd = nextCall === -1 ? source.length : nextCall
-    const block = source.slice(callStart, blockEnd)
+    // Bind titles to the call's own balanced extent - the production walker
+    // itself - so a sibling suite between two describeRule calls cannot
+    // satisfy this check.
+    const block = source.slice(callStart, describeRuleCallEnd(source, callStart))
     for (const title of sample!.fixtures[0]!.testTitles) {
       expect(block, `${sample!.id}: ${title}`).toContain(title)
     }

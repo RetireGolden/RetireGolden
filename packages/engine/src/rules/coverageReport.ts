@@ -208,7 +208,7 @@ function regexCanFollow(source: string, index: number): boolean {
  * starts at `start`, honoring strings, templates, comments, and regex
  * literals so punctuation inside them cannot derail the extent.
  */
-function describeRuleCallEnd(source: string, start: number): number {
+export function describeRuleCallEnd(source: string, start: number): number {
   const open = source.indexOf('(', start)
   if (open === -1) return source.length
   let depth = 0
@@ -228,6 +228,59 @@ function describeRuleCallEnd(source: string, start: number): number {
     index += 1
   }
   return source.length
+}
+
+/** Reads the string literal starting at *index* (any quote); null for substitution templates. */
+function readStringLiteral(source: string, index: number, end: number): string | null {
+  const quote = source[index]!
+  if (quote !== "'" && quote !== '"' && quote !== '`') return null
+  let cursor = index + 1
+  let value = ''
+  while (cursor < end) {
+    const c = source[cursor]!
+    if (c === '\\') {
+      value += source[cursor + 1] ?? ''
+      cursor += 2
+      continue
+    }
+    if (c === quote) return value
+    if (quote === '`' && c === '$' && source[cursor + 1] === '{') return null
+    value += c
+    cursor += 1
+  }
+  return null
+}
+
+/**
+ * The spec's note within the call extent, found at CODE level so a note-like
+ * sequence inside a comment, title, or other string never wins, and all three
+ * quote forms are read.
+ */
+function noteWithin(source: string, start: number, end: number): string | null {
+  let index = start
+  while (index < end) {
+    const skipped = skipNonCode(source, index, regexCanFollow(source, index))
+    if (skipped !== index) {
+      index = Math.min(skipped, end)
+      continue
+    }
+    if (source.startsWith('note', index) && (index === 0 || !/[\w$.]/u.test(source[index - 1]!))) {
+      let cursor = index + 4
+      while (cursor < end && (source[cursor] === ' ' || source[cursor] === '\t')) cursor += 1
+      if (source[cursor] === ':') {
+        cursor += 1
+        while (
+          cursor < end &&
+          (source[cursor] === ' ' || source[cursor] === '\t' || source[cursor] === '\n' || source[cursor] === '\r')
+        ) {
+          cursor += 1
+        }
+        return readStringLiteral(source, cursor, end)
+      }
+    }
+    index += 1
+  }
+  return null
 }
 
 /**
@@ -300,13 +353,13 @@ function fixtureDetailsByRule(testSources: Readonly<Record<string, string>>): Re
       // same file belong to sibling suites, never to this rule.
       const end = describeRuleCallEnd(source, start)
       const testTitles = testTitlesBetween(source, start, end)
-      const noteMatch = /\bnote:\s*'((?:[^'\\]|\\.)*)'/u.exec(source.slice(start, end))
+      const note = noteWithin(source, start, end)
       const line = source.slice(0, start).split('\n').length
       const list = details.get(ruleId) ?? []
       list.push({
         path: fixturePath,
         line,
-        note: noteMatch === null ? null : noteMatch[1]!.replace(/\\'/gu, "'"),
+        note,
         testTitles,
       })
       details.set(ruleId, list)
