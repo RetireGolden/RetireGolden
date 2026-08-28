@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-28T01:06:04.327Z",
+  "generatedAt": "2026-08-28T01:14:45.436Z",
   "recordCount": 399,
   "urlCount": 301,
   "fetched": 0,
@@ -10500,121 +10500,145 @@
   "apostropheStyle": [
     {
       "id": "irc-170-b-1-I-floor-ordering",
+      "citation": "IRC 170(b)(1)(I)(i)",
       "host": "uscode.house.gov",
       "note": "quote uses U+2019 (’) where this host renders U+0027 (')"
     },
     {
       "id": "treas-reg-1-408-8-b-3-rmd-first-dollars-out",
+      "citation": "Treas. Reg. 1.408-8(b)(3)",
       "host": "www.law.cornell.edu",
       "note": "quote uses U+0027 (') where this host renders U+2019 (’)"
     },
     {
       "id": "treas-reg-1-408-8-g-projection-named-qcd-beyond-rmd",
+      "citation": "Treas. Reg. 1.408-8(b)(3)",
       "host": "www.law.cornell.edu",
       "note": "quote uses U+0027 (') where this host renders U+2019 (’)"
     },
     {
       "id": "treas-reg-1-408-8-c-2-spousal-deemed-election",
+      "citation": "Treas. Reg. 1.408-8(c)(2)",
       "host": "www.law.cornell.edu",
       "note": "quote uses U+0027 (') where this host renders U+2019 (’)"
     },
     {
       "id": "treas-reg-1-401-a-9-5-joint-life-spouse-sole-beneficiary",
+      "citation": "Treas. Reg. 1.401(a)(9)-5",
       "host": "www.law.cornell.edu",
       "note": "quote uses U+0027 (') where this host renders U+2019 (’)"
     },
     {
       "id": "irc-151-d-5-C-iii-I-senior-deduction-per-individual-phase-out",
+      "citation": "IRC 151(d)(5)(C)(iii)(I)",
       "host": "uscode.house.gov",
       "note": "quote uses U+2019 (’) where this host renders U+0027 (')"
     },
     {
       "id": "irc-408-d-3-G-simple-two-year-rollover-bar",
+      "citation": "IRC 72(t)(6)(A)",
       "host": "uscode.house.gov",
       "note": "quote uses U+2019 (’) where this host renders U+0027 (')"
     },
     {
       "id": "irc-401-a-9-H-designated-beneficiary-ten-year-rule",
+      "citation": "IRC 401(a)(9)(H)(i)",
       "host": "uscode.house.gov",
       "note": "quote uses U+2019 (’) where this host renders U+0027 (')"
     },
     {
       "id": "irc-401-a-9-H-designated-beneficiary-ten-year-rule",
+      "citation": "IRC 401(a)(9)(B)(ii)",
       "host": "uscode.house.gov",
       "note": "quote uses U+2019 (’) where this host renders U+0027 (')"
     },
     {
       "id": "irc-72-t-2-A-i-age-59-half-annual-proxy",
+      "citation": "IRC 72(t)(1)",
       "host": "uscode.house.gov",
       "note": "quote uses U+2019 (’) where this host renders U+0027 (')"
     },
     {
       "id": "treas-reg-1-408-8-b-2-prior-december-31-balance",
+      "citation": "Treas. Reg. 1.401(a)(9)-5(b)(1)",
       "host": "www.ecfr.gov",
       "note": "quote uses U+2019 (’) where this host renders U+0027 (')"
     },
     {
       "id": "irc-408-d-8-B-ii-projection-annual-age-proxy",
+      "citation": "Treas. Reg. 1.401(a)(9)-6(g)(1)(iv)",
       "host": "www.ecfr.gov",
       "note": "quote uses U+2019 (’) where this host renders U+0027 (')"
     },
     {
       "id": "treas-reg-1-401-a-9-9-c-uniform-lifetime-table",
+      "citation": "Treas. Reg. 1.401(a)(9)-5(c)(1)",
       "host": "www.law.cornell.edu",
       "note": "quote uses U+0027 (') where this host renders U+2019 (’)"
     },
     {
       "id": "treas-reg-1-401-a-9-9-c-uniform-lifetime-table",
+      "citation": "Treas. Reg. 1.401(a)(9)-9(c)",
       "host": "www.law.cornell.edu",
       "note": "quote uses U+0027 (') where this host renders U+2019 (’)"
     },
     {
       "id": "treas-reg-1-401-a-9-5-a-2-first-distribution-calendar-year",
+      "citation": "Treas. Reg. 1.401(a)(9)-5(a)(2)(ii)",
       "host": "www.law.cornell.edu",
       "note": "quote uses U+0027 (') where this host renders U+2019 (’)"
     },
     {
       "id": "treas-reg-1-401-a-9-5-a-2-first-distribution-calendar-year",
+      "citation": "Treas. Reg. 1.401(a)(9)-5(a)(3)",
       "host": "www.law.cornell.edu",
       "note": "quote uses U+0027 (') where this host renders U+2019 (’)"
     },
     {
       "id": "irc-401-a-9-C-i-first-year-april-1-deferral",
+      "citation": "Treas. Reg. 1.401(a)(9)-5(a)(3)",
       "host": "www.law.cornell.edu",
       "note": "quote uses U+0027 (') where this host renders U+2019 (’)"
     },
     {
       "id": "irc-401-a-9-C-i-elected-deferral-ignores-attainment-year-distributions",
+      "citation": "Treas. Reg. 1.401(a)(9)-5(a)(3)",
       "host": "www.law.cornell.edu",
       "note": "quote uses U+0027 (') where this host renders U+2019 (’)"
     },
     {
       "id": "irc-401-a-9-C-i-elected-deferral-ignores-attainment-year-distributions",
+      "citation": "Treas. Reg. 1.408-8(b)(3)",
       "host": "www.law.cornell.edu",
       "note": "quote uses U+0027 (') where this host renders U+2019 (’)"
     },
     {
       "id": "irc-401-a-9-H-ii-annual-distributions-inside-ten-year-window",
+      "citation": "Treas. Reg. 1.401(a)(9)-5(d)(1)(i)",
       "host": "www.law.cornell.edu",
       "note": "quote uses U+0027 (') where this host renders U+2019 (’)"
     },
     {
       "id": "irc-401-a-9-H-ii-annual-distributions-inside-ten-year-window",
+      "citation": "Treas. Reg. 1.401(a)(9)-5(d)(2)",
       "host": "www.law.cornell.edu",
       "note": "quote uses U+0027 (') where this host renders U+2019 (’)"
     },
     {
       "id": "irc-72-t-4-sepp-modification-proof-window",
+      "citation": "IRC 72(t)(4)(A)",
       "host": "uscode.house.gov",
       "note": "quote uses U+2019 (’) where this host renders U+0027 (')"
     },
     {
       "id": "notice-2022-6-3-02-e-1-projection-contribution-during-series",
+      "citation": "IRC 72(t)(4)(A)",
       "host": "uscode.house.gov",
       "note": "quote uses U+2019 (’) where this host renders U+0027 (')"
     },
     {
       "id": "irc-414-v-1-plan-permitted-catch-up",
+      "citation": "P.L. 117-328, division T, title I, section 109(a)(1)",
       "host": "www.govinfo.gov",
       "note": "quote uses U+2019 (’) where this host renders U+0027 (')"
     }

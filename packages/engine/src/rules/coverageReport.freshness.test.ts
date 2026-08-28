@@ -102,7 +102,9 @@ describe('rules coverage report artifacts', () => {
 // every ledger verdict must carry the hash of the exact quote it judged.
 describe('quote-fidelity ledger hash binding', () => {
   it('binds every ledger verdict to the registry quote it judged', async () => {
-    if (quoteFidelityLedger === null) return
+    // The repo commits a ledger from this change on; a glob or path miss must
+    // fail loudly here, never pass as a silently skipped binding check.
+    expect(quoteFidelityLedger, 'committed quote-fidelity ledger must be found by the glob').not.toBeNull()
     const { createHash } = await import('node:crypto')
     const hash = (text: string): string =>
       createHash('sha256').update(text, 'utf8').digest('hex').slice(0, 16)

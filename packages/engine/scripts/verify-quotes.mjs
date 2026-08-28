@@ -1191,7 +1191,7 @@ async function main() {
             detail: r.detail,
             diagnosis: r.diagnosis ?? null,
           })),
-          apostropheStyle: apostrophes.map((r) => ({ id: r.id, host: r.host, note: r.note })),
+          apostropheStyle: apostrophes.map((r) => ({ id: r.id, citation: r.citation, host: r.host, note: r.note })),
         },
         null,
         2,

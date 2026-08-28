@@ -218,15 +218,20 @@ The 25 earliest due dates are shown below (399 rules total). Comparing dueOn to 
 
 ## Quote fidelity
 
-Committed ledger generated at 2026-08-28T01:06:04.327Z.
+Committed ledger generated at 2026-08-28T01:14:45.436Z over 1032 authority entries (0 fetched live, 301 from cache).
 
-| Verdict | Count |
-| --- | ---: |
-| ABSENT | 32 |
-| ELISION-EXACT | 58 |
-| ELISION-PUNCTUATION | 4 |
-| EXACT | 694 |
-| PDF-NOT-VERIFIABLE | 2 |
-| PDF-WORD-LEVEL | 192 |
-| PUNCTUATION | 37 |
-| UNFETCHABLE | 13 |
+45 serious, 43 advisory, 944 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
+not treated as a CI gate; how to read each verdict: DOCS/operations/quote-fidelity.md.
+
+| Verdict | Class | Count |
+| --- | --- | ---: |
+| ABSENT | serious | 32 |
+| ELISION-EXACT | ok | 58 |
+| ELISION-PUNCTUATION | advisory | 4 |
+| EXACT | ok | 694 |
+| PDF-NOT-VERIFIABLE | advisory | 2 |
+| PDF-WORD-LEVEL | ok | 192 |
+| PUNCTUATION | advisory | 37 |
+| UNFETCHABLE | serious | 13 |
+
+Regenerate: pnpm verify:quotes -- --json > DOCS/operations/quote-fidelity-ledger.json (network required), then pnpm rules:coverage.
