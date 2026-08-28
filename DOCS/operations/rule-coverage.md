@@ -216,6 +216,10 @@ The 25 earliest due dates are shown below (399 rules total). Comparing dueOn to 
 | usc-42-1395r-a-3-part-b-standard-premium | annuallyIndexed | 2026-08-03 | 2026-12-01 |
 | usc-42-1395r-i-5-C-top-irmaa-threshold-frozen | annuallyIndexed | 2026-08-03 | 2026-12-01 |
 
+## Manifest contract
+
+The JSON manifest (rule-coverage.json, version 2) is the machine contract: each rule additionally carries title, errorDirection (null unless the rule is approximated), conventionRationale and contraryReading (null when unused), and deduplicated authority identities (kind, citation, url). This markdown file is the human summary and does not repeat them. Version 2 is a breaking discriminator for readers that check version === 1 strictly; the new fields are additive only for readers that ignore unknown keys and do not pin the version.
+
 ## Quote fidelity
 
 Committed ledger generated at 2026-08-28T01:14:45.436Z over 1032 authority entries (0 fetched live, 301 from cache).

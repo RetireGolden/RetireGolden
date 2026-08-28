@@ -145,3 +145,130 @@ describe('quote-fidelity ledger hash binding', () => {
     expect(found.sort()).toEqual(expected.sort())
   })
 })
+
+// The manifest projection is a public contract for the transparency page on
+// retiregolden.org.
+// Mirror-the-builder freshness checks cannot catch a wrong projection (both
+// sides regenerate together), so these read expected values from the registry
+// records themselves.
+describe('manifest rule projection contract', () => {
+  it('publishes manifest version 2, the discriminator for the new required fields', () => {
+    expect(report.manifest.version).toBe(2)
+  })
+
+  it('copies title, errorDirection, conventionRationale, and contraryReading from the registry', () => {
+    for (const rule of report.manifest.rules) {
+      const record = TAX_RULE_REGISTRY[rule.id as keyof typeof TAX_RULE_REGISTRY]
+      expect(record, rule.id).toBeDefined()
+      expect(rule.title, rule.id).toBe(record.title)
+      expect(rule.errorDirection, rule.id).toBe(record.errorDirection)
+      expect(rule.conventionRationale, rule.id).toBe(record.conventionRationale)
+      expect(rule.contraryReading, rule.id).toBe(record.contraryReading)
+      expect(rule.title.trim().length, rule.id).toBeGreaterThan(0)
+      if (rule.conventionRationale !== null) expect(rule.conventionRationale.trim().length, rule.id).toBeGreaterThan(0)
+      if (rule.contraryReading !== null) expect(rule.contraryReading.trim().length, rule.id).toBeGreaterThan(0)
+    }
+  })
+
+  it('keeps errorDirection null exactly when the rule is not approximated', () => {
+    for (const rule of report.manifest.rules) {
+      expect(rule.errorDirection === null, rule.id).toBe(rule.classification !== 'approximated')
+    }
+  })
+
+  it('publishes unique authority identities with no quotedText', () => {
+    for (const rule of report.manifest.rules) {
+      const record = TAX_RULE_REGISTRY[rule.id as keyof typeof TAX_RULE_REGISTRY]
+      expect(record, rule.id).toBeDefined()
+      // Exact first-seen-unique equality against the registry: this is what
+      // rules out empty lists, url-only dedupe, and last-wins ordering.
+      const seen = new Set<string>()
+      const expectedIdentities: { kind: string; citation: string; url: string }[] = []
+      for (const { kind, citation, url } of record.authority) {
+        const key = `${kind}\u0000${citation}\u0000${url}`
+        if (seen.has(key)) continue
+        seen.add(key)
+        expectedIdentities.push({ kind, citation, url })
+      }
+      expect(rule.authorities, rule.id).toEqual(expectedIdentities)
+      expect(rule.authorities.length, rule.id).toBeGreaterThan(0)
+      for (const authority of rule.authorities) {
+        expect(Object.keys(authority).sort(), rule.id).toEqual(['citation', 'kind', 'url'])
+      }
+    }
+  })
+
+  it('publishes exactly the documented rule keys, with no quotedText or statement, in the serialized JSON', () => {
+    const published = JSON.parse(report.json) as { rules: Record<string, unknown>[] }
+    const documentedKeys = [
+      'authorities',
+      'classification',
+      'contraryReading',
+      'conventionRationale',
+      'dueOn',
+      'effectiveFrom',
+      'effectiveThrough',
+      'errorDirection',
+      'fixtureFiles',
+      'id',
+      'implementedBy',
+      'jurisdiction',
+      'title',
+      'verifiedOn',
+      'volatility',
+    ]
+    for (const rule of published.rules) {
+      expect(Object.keys(rule).sort(), String(rule.id)).toEqual(documentedKeys)
+    }
+    // Key-level leak guards on the serialized text itself: a spread of the
+    // registry record would reintroduce these long before a human noticed.
+    expect(report.json).not.toContain('"quotedText":')
+    expect(report.json).not.toContain('"statement":')
+    expect(report.json).not.toContain('"authority":')
+  })
+
+  it('collapses duplicate identities per a hand-written fixture, not the builder algorithm', () => {
+    // Two quotes of one provision (one identity), a second citation sharing
+    // the URL (its own identity), and quotedText that must not surface. The
+    // expected list is written by hand so this cannot mirror the builder.
+    const fixtureRegistry = {
+      'fixture-rule': {
+        title: 'Fixture rule',
+        statement: 'Fixture statement that must not be published.',
+        classification: 'settled',
+        contraryReading: null,
+        errorDirection: null,
+        conventionRationale: null,
+        jurisdiction: 'federal',
+        authority: [
+          { kind: 'statute', citation: 'Fix. Code 1(a)', url: 'https://example.gov/1', quotedText: 'first quote' },
+          { kind: 'statute', citation: 'Fix. Code 1(a)', url: 'https://example.gov/1', quotedText: 'second quote of the same span' },
+          { kind: 'statute', citation: 'Fix. Code 1(b)', url: 'https://example.gov/1', quotedText: 'same url, different citation' },
+        ],
+        volatility: 'staticStatute',
+        effectiveFrom: 2026,
+        effectiveThrough: null,
+        verifiedOn: '2026-08-27',
+        implementedBy: ['packages/engine/src/rules/coverageReport.ts'],
+      },
+    } as unknown as typeof TAX_RULE_REGISTRY
+    const fixtureReport = buildCoverageReport({
+      registry: fixtureRegistry,
+      attestations: COVERAGE_ATTESTATIONS,
+      baselineUnswept: BASELINE_UNSWEPT,
+      testSources,
+      quoteFidelityLedger: null,
+      dueOnFor: () => '2027-01-01',
+    })
+    const published = JSON.parse(fixtureReport.json) as {
+      rules: { id: string; authorities: unknown }[]
+    }
+    const fixtureRule = published.rules.find((rule) => rule.id === 'fixture-rule')
+    expect(fixtureRule).toBeDefined()
+    expect(fixtureRule!.authorities).toEqual([
+      { kind: 'statute', citation: 'Fix. Code 1(a)', url: 'https://example.gov/1' },
+      { kind: 'statute', citation: 'Fix. Code 1(b)', url: 'https://example.gov/1' },
+    ])
+    expect(fixtureReport.json).not.toContain('"quotedText":')
+  })
+})
