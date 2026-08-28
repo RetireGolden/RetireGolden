@@ -1738,7 +1738,7 @@ const registry = {
     ],
     implementedByFunctions: [
       'packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts#stageAnnualQcdTaxCharacterPostPass',
-      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/simulate.ts#hasNamedQcdRequest',
     ],
   },
 
@@ -2342,7 +2342,7 @@ const registry = {
     ],
     implementedByFunctions: [
       'packages/engine/src/model/plan.ts#taxableAccountSchema',
-      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/simulate.ts#planWithdrawals',
     ],
   },
 
@@ -2413,7 +2413,7 @@ const registry = {
     ],
     implementedByFunctions: [
       'packages/engine/src/projection/compare.ts#summarizeProjection',
-      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/simulate.ts#BalanceState',
     ],
   },
 
@@ -2627,7 +2627,7 @@ const registry = {
     verifiedOn: '2026-08-07',
     implementedBy: ['packages/engine/src/tax/federalTax.ts'],
     implementedByFunctions: [
-      'packages/engine/src/tax/federalTax.ts#computeFederalTax',
+      'packages/engine/src/tax/federalTax.ts#amtPreferenceItems',
     ],
   },
 
@@ -2867,7 +2867,7 @@ const registry = {
       'packages/engine/src/actions/traditionalEmployerPlanWithdrawalCharacter.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/actions/contract.ts#retirementActionRequestSchema',
+      'packages/engine/src/actions/contract.ts#persistedRetirementActionRequestSchema',
       'packages/engine/src/actions/traditionalEmployerPlanWithdrawalCharacter.ts#classifyTraditionalEmployerPlanWithdrawal',
       'packages/engine/src/model/plan.ts#traditionalAccountSchema',
     ],
@@ -3320,7 +3320,7 @@ const registry = {
     ],
     implementedByFunctions: [
       'packages/engine/src/model/plan.ts#socialSecurityIncomeSchema',
-      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/simulate.ts#ssStreamByPerson',
     ],
   },
 
@@ -3778,7 +3778,8 @@ const registry = {
       'packages/engine/src/socialSecurity/claimFactor.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/simulate.ts#creditedClaimAgeFor',
+      'packages/engine/src/projection/simulate.ts#monthsWithheld',
       'packages/engine/src/socialSecurity/claimFactor.ts#claimFactor',
     ],
   },
@@ -3806,7 +3807,7 @@ const registry = {
     verifiedOn: '2026-08-27',
     implementedBy: ['packages/engine/src/projection/simulate.ts'],
     implementedByFunctions: [
-      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/simulate.ts#monthsWithheld',
     ],
   },
 
@@ -3856,7 +3857,7 @@ const registry = {
     implementedByFunctions: [
       'packages/engine/src/model/plan.ts#socialSecurityIncomeSchema',
       'packages/engine/src/model/plan.ts#wagesIncomeSchema',
-      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/simulate.ts#withheld',
     ],
   },
 
@@ -3997,7 +3998,7 @@ const registry = {
       'packages/engine/src/socialSecurity/piaFromEarnings.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/simulate.ts#resolvedPiaByStreamId',
       'packages/engine/src/socialSecurity/piaFromEarnings.ts#computePiaFromEarnings',
     ],
   },
@@ -4116,7 +4117,7 @@ const registry = {
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/simulate.ts#higherPayableMonths',
       'packages/engine/src/socialSecurity/familyMaximum.ts#capAuxiliaryForFamilyMaximum',
     ],
   },
@@ -4183,7 +4184,7 @@ const registry = {
     implementedByFunctions: [
       'packages/engine/src/model/plan.ts#socialSecurityIncomeSchema',
       'packages/engine/src/params/data/year2026.ts#year2026',
-      'packages/engine/src/params/types.ts#ParameterPack',
+      'packages/engine/src/params/types.ts#sgaMonthlyNonBlind',
     ],
   },
 
@@ -4221,7 +4222,7 @@ const registry = {
     ],
     implementedByFunctions: [
       'packages/engine/src/model/plan.ts#socialSecurityIncomeSchema',
-      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/simulate.ts#annualSga',
       'packages/engine/src/socialSecurity/disability.ts#ssdiSuspendedBySga',
     ],
   },
@@ -4266,7 +4267,7 @@ const registry = {
     ],
     implementedByFunctions: [
       'packages/engine/src/model/plan.ts#socialSecurityIncomeSchema',
-      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/simulate.ts#annualSga',
       'packages/engine/src/socialSecurity/disability.ts#ssdiSuspendedBySga',
     ],
   },
@@ -4372,7 +4373,7 @@ const registry = {
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/simulate.ts#ssdiByPerson',
     ],
   },
 
@@ -4410,10 +4411,12 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-27',
     implementedBy: [
+      'packages/engine/src/model/plan.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/model/plan.ts#socialSecurityIncomeSchema',
+      'packages/engine/src/projection/simulate.ts#onsetAge',
     ],
   },
 
@@ -4631,7 +4634,7 @@ const registry = {
     ],
     implementedByFunctions: [
       'packages/engine/src/model/plan.ts#healthcareConfigSchema',
-      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/simulate.ts#medicareMonths',
     ],
   },
 
@@ -4797,7 +4800,7 @@ const registry = {
     verifiedOn: '2026-08-27',
     implementedBy: ['packages/engine/src/projection/simulate.ts'],
     implementedByFunctions: [
-      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/simulate.ts#magiHistory',
     ],
   },
 
@@ -5144,7 +5147,7 @@ const registry = {
       'packages/engine/src/model/plan.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/actions/contract.ts#rothConversionRequestSchema',
+      'packages/engine/src/actions/contract.ts#persistedRothConversionRequestSchema',
     ],
   },
 
@@ -5244,6 +5247,7 @@ const registry = {
     verifiedOn: '2026-08-26',
     implementedBy: ['packages/engine/src/tax/federalTax.ts'],
     implementedByFunctions: [
+      'packages/engine/src/tax/federalTax.ts#itemizedTotal',
       'packages/engine/src/tax/federalTax.ts#saltCapForYear',
     ],
   },
@@ -5438,9 +5442,13 @@ const registry = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
-    implementedBy: ['packages/engine/src/projection/simulate.ts'],
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
     implementedByFunctions: [
-      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/model/plan.ts#rothAccountSchema',
+      'packages/engine/src/projection/simulate.ts#allowed',
     ],
   },
   'irc-401-c-2-earned-income-not-modeled': {
@@ -5464,9 +5472,13 @@ const registry = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-04',
-    implementedBy: ['packages/engine/src/projection/simulate.ts'],
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
     implementedByFunctions: [
-      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/model/plan.ts#wagesIncomeSchema',
+      'packages/engine/src/projection/simulate.ts#iraCompensationRemaining',
     ],
   },
   'irc-151-d-5-C-iii-I-senior-deduction-per-individual-phase-out': {
@@ -5939,6 +5951,7 @@ const registry = {
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/strategies/rothBasis.ts#ROTH_SEASONING_YEARS',
       'packages/engine/src/strategies/rothBasis.ts#splitRothWithdrawal',
     ],
@@ -6046,6 +6059,8 @@ const registry = {
     verifiedOn: '2026-08-25',
     implementedBy: ['packages/engine/src/strategies/rothBasis.ts'],
     implementedByFunctions: [
+      'packages/engine/src/strategies/rothBasis.ts#applyConversionPrincipalDebt',
+      'packages/engine/src/strategies/rothBasis.ts#assumedSeedConsequentialSpill',
       'packages/engine/src/strategies/rothBasis.ts#splitRothWithdrawal',
     ],
   },
@@ -6181,7 +6196,7 @@ const registry = {
     ],
     implementedByFunctions: [
       'packages/engine/src/params/index.ts#indexFederalTaxPack',
-      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/simulate.ts#limitScale',
     ],
   },
   'irc-151-d-5-C-senior-deduction-not-indexed': {
@@ -6599,8 +6614,8 @@ const registry = {
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/model/plan.ts#planSchema',
-      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/model/plan.ts#acaYearContractSchema',
+      'packages/engine/src/projection/simulate.ts#acaInitialSupportCodes',
     ],
   },
 
@@ -6653,8 +6668,8 @@ const registry = {
       'packages/engine/src/tax/federalTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/model/plan.ts#planSchema',
-      'packages/engine/src/tax/federalTax.ts#computeFederalTax',
+      'packages/engine/src/model/plan.ts#incomeStreamSchema',
+      'packages/engine/src/tax/federalTax.ts#section68Reduction',
     ],
   },
   'irc-163-h-3-F-acquisition-indebtedness-limit': {
@@ -6684,8 +6699,12 @@ const registry = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
-    implementedBy: ['packages/engine/src/tax/federalTax.ts'],
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/tax/federalTax.ts',
+    ],
     implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#itemizedDeductionsSchema',
       'packages/engine/src/tax/federalTax.ts#itemizedTotal',
     ],
   },
@@ -6904,7 +6923,7 @@ const registry = {
     verifiedOn: '2026-08-04',
     implementedBy: ['packages/engine/src/projection/simulate.ts'],
     implementedByFunctions: [
-      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/simulate.ts#donorIds',
     ],
   },
   'irc-408-d-8-A-projection-post-70-half-contribution-offset': {
@@ -7047,9 +7066,14 @@ const registry = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-04',
-    implementedBy: ['packages/engine/src/projection/simulate.ts'],
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
     implementedByFunctions: [
-      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/model/plan.ts#hsaAccountSchema',
+      'packages/engine/src/projection/simulate.ts#hasFamilyCoverage',
+      'packages/engine/src/projection/simulate.ts#limit',
     ],
   },
   'treas-reg-1-401-a-9-9-c-uniform-lifetime-table': {
@@ -7207,7 +7231,7 @@ const registry = {
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/simulate.ts#deferFirstAmount',
     ],
   },
   'irc-401-a-9-C-i-II-still-working-exception': {
@@ -7237,11 +7261,14 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
     implementedBy: [
+      'packages/engine/src/model/plan.ts',
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/strategies/accountEligibility.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/model/plan.ts#personSchema',
+      'packages/engine/src/projection/simulate.ts#followsOwnerRmdsThisYear',
+      'packages/engine/src/strategies/accountEligibility.ts#followsOwnerRmds',
     ],
   },
   'irc-401-a-9-H-ii-annual-distributions-inside-ten-year-window': {
@@ -9483,7 +9510,7 @@ const registry = {
     verifiedOn: '2026-08-04',
     implementedBy: ['packages/engine/src/tax/federalTax.ts'],
     implementedByFunctions: [
-      'packages/engine/src/tax/federalTax.ts#computeFederalTax',
+      'packages/engine/src/tax/federalTax.ts#itemizedTotal',
     ],
   },
 
@@ -9516,7 +9543,7 @@ const registry = {
     verifiedOn: '2026-08-04',
     implementedBy: ['packages/engine/src/tax/federalTax.ts'],
     implementedByFunctions: [
-      'packages/engine/src/tax/federalTax.ts#computeFederalTax',
+      'packages/engine/src/tax/federalTax.ts#deduction',
     ],
   },
 
@@ -10502,9 +10529,8 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#PUBLIC_PENSION_OVERRIDES',
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
-      'packages/engine/src/tax/stateTax.ts#retirementExclusion',
+      'packages/engine/src/params/state/types.ts#StateRetirementExclusion',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
 
@@ -10544,8 +10570,8 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#capitalGainsTaxablePct',
       'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
-      'packages/engine/src/params/state/types.ts#StateTaxParams',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
@@ -11597,8 +11623,8 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#capitalGainsTaxablePct',
       'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
-      'packages/engine/src/params/state/types.ts#StateTaxParams',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
@@ -12328,7 +12354,7 @@ const registry = {
     ],
     implementedByFunctions: [
       'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
-      'packages/engine/src/params/state/types.ts#StateTaxParams',
+      'packages/engine/src/params/state/types.ts#StateRetirementExclusion',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
@@ -12621,7 +12647,7 @@ const registry = {
     ],
     implementedByFunctions: [
       'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
-      'packages/engine/src/params/state/types.ts#StateTaxParams',
+      'packages/engine/src/params/state/types.ts#taxesSocialSecurity',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
@@ -12976,9 +13002,8 @@ const registry = {
       'packages/engine/src/strategies/iraBasis.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/actions/ownedNonRothIraWithdrawalCharacter.ts#classifyOwnedNonRothIraAnnualWithdrawals',
-      'packages/engine/src/internal/ownedNonRothIraContiguousReplay.ts#replayOwnedNonRothIraContiguousYears',
-      'packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts#validateOwnedNonRothIraRuntimeSourceSeries',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/strategies/iraBasis.ts#openIraProRataYear',
     ],
   },
 
@@ -13317,7 +13342,7 @@ const registry = {
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/simulate.ts#qlacCap',
     ],
   },
 
@@ -13481,7 +13506,6 @@ const registry = {
     ],
     implementedByFunctions: [
       'packages/engine/src/model/plan.ts#inheritedBeneficiarySchema',
-      'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/strategies/inheritedIra.ts#classifyInheritedRegime',
     ],
   },
@@ -13520,7 +13544,6 @@ const registry = {
     ],
     implementedByFunctions: [
       'packages/engine/src/model/plan.ts#inheritedAccountSchema',
-      'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/strategies/inheritedIra.ts#classifyInheritedRegime',
     ],
   },
@@ -13565,7 +13588,6 @@ const registry = {
     ],
     implementedByFunctions: [
       'packages/engine/src/model/plan.ts#inheritedBeneficiarySchema',
-      'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/strategies/inheritedIra.ts#classifyInheritedRegime',
     ],
   },
@@ -13672,7 +13694,7 @@ const registry = {
       'packages/engine/src/strategies/accountEligibility.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/actions/contract.ts#retirementActionRequestSchema',
+      'packages/engine/src/actions/contract.ts#persistedRetirementActionRequestSchema',
       'packages/engine/src/model/plan.ts#rothAccountSchema',
       'packages/engine/src/model/plan.ts#traditionalAccountSchema',
     ],
@@ -13717,7 +13739,7 @@ const registry = {
       'packages/engine/src/strategies/accountEligibility.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/actions/contract.ts#retirementActionRequestSchema',
+      'packages/engine/src/actions/contract.ts#persistedRetirementActionRequestSchema',
       'packages/engine/src/model/plan.ts#traditionalAccountSchema',
     ],
   },
@@ -14036,8 +14058,8 @@ const registry = {
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/model/plan.ts#planSchema',
-      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/model/plan.ts#employerMatchSchema',
+      'packages/engine/src/projection/simulate.ts#matchCap',
     ],
   },
 
@@ -14090,7 +14112,7 @@ const registry = {
       'packages/engine/src/model/plan.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/actions/contract.ts#retirementActionRequestSchema',
+      'packages/engine/src/actions/contract.ts#persistedRetirementActionRequestSchema',
       'packages/engine/src/model/plan.ts#traditionalAccountSchema',
     ],
   },
@@ -14151,8 +14173,9 @@ const registry = {
       'packages/engine/src/model/plan.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/model/plan.ts#planSchema',
-      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/model/plan.ts#rothAccountSchema',
+      'packages/engine/src/model/plan.ts#traditionalAccountSchema',
+      'packages/engine/src/projection/simulate.ts#penalties',
     ],
   },
 
@@ -14188,7 +14211,7 @@ const registry = {
       'packages/engine/src/actions/contract.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/actions/contract.ts#retirementActionRequestSchema',
+      'packages/engine/src/actions/contract.ts#persistedRetirementActionRequestSchema',
       'packages/engine/src/model/plan.ts#traditionalAccountSchema',
     ],
   },
@@ -14309,7 +14332,7 @@ const registry = {
       'packages/engine/src/model/plan.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/model/plan.ts#planSchema',
+      'packages/engine/src/model/plan.ts#traditionalAccountSchema',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
@@ -14460,8 +14483,8 @@ const registry = {
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/model/plan.ts#healthcareConfigSchema',
-      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/model/plan.ts#hsaAccountSchema',
+      'packages/engine/src/projection/simulate.ts#hasFamilyCoverage',
     ],
   },
 
@@ -14510,7 +14533,7 @@ const registry = {
     ],
     implementedByFunctions: [
       'packages/engine/src/model/plan.ts#hsaAccountSchema',
-      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/simulate.ts#penalties',
     ],
   },
 
@@ -14546,7 +14569,7 @@ const registry = {
       'packages/engine/src/actions/contract.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/actions/contract.ts#retirementActionRequestSchema',
+      'packages/engine/src/actions/contract.ts#persistedRetirementActionRequestSchema',
       'packages/engine/src/model/plan.ts#rothAccountSchema',
       'packages/engine/src/model/plan.ts#traditionalAccountSchema',
     ],
@@ -14584,7 +14607,7 @@ const registry = {
       'packages/engine/src/actions/contract.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/actions/contract.ts#retirementActionRequestSchema',
+      'packages/engine/src/actions/contract.ts#persistedRetirementActionRequestSchema',
       'packages/engine/src/model/plan.ts#rothAccountSchema',
       'packages/engine/src/model/plan.ts#traditionalAccountSchema',
     ],
@@ -14622,7 +14645,7 @@ const registry = {
       'packages/engine/src/actions/contract.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/actions/contract.ts#retirementActionRequestSchema',
+      'packages/engine/src/actions/contract.ts#persistedRetirementActionRequestSchema',
       'packages/engine/src/model/plan.ts#rothAccountSchema',
       'packages/engine/src/model/plan.ts#traditionalAccountSchema',
     ],
@@ -14660,7 +14683,7 @@ const registry = {
       'packages/engine/src/actions/contract.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/actions/contract.ts#retirementActionRequestSchema',
+      'packages/engine/src/actions/contract.ts#persistedRetirementActionRequestSchema',
       'packages/engine/src/model/plan.ts#rothAccountSchema',
       'packages/engine/src/model/plan.ts#traditionalAccountSchema',
     ],
@@ -14704,7 +14727,7 @@ const registry = {
       'packages/engine/src/actions/contract.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/actions/contract.ts#retirementActionRequestSchema',
+      'packages/engine/src/actions/contract.ts#persistedRetirementActionRequestSchema',
       'packages/engine/src/model/plan.ts#planSchema',
     ],
   },
@@ -14741,7 +14764,7 @@ const registry = {
       'packages/engine/src/actions/contract.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/actions/contract.ts#retirementActionRequestSchema',
+      'packages/engine/src/actions/contract.ts#persistedRetirementActionRequestSchema',
       'packages/engine/src/model/plan.ts#planSchema',
     ],
   },
@@ -14796,7 +14819,7 @@ const registry = {
       'packages/engine/src/actions/contract.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/actions/contract.ts#retirementActionRequestSchema',
+      'packages/engine/src/actions/contract.ts#persistedRetirementActionRequestSchema',
       'packages/engine/src/model/plan.ts#accountUnionSchema',
     ],
   },
@@ -14978,8 +15001,9 @@ const registry = {
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/model/plan.ts#planSchema',
-      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/model/plan.ts#rothAccountSchema',
+      'packages/engine/src/model/plan.ts#traditionalAccountSchema',
+      'packages/engine/src/projection/simulate.ts#employerCatchUpForAge',
     ],
   },
 
@@ -15092,7 +15116,7 @@ const registry = {
     ],
     implementedByFunctions: [
       'packages/engine/src/model/plan.ts#taxableAccountSchema',
-      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/simulate.ts#taxableGross',
     ],
   },
 
@@ -15140,7 +15164,7 @@ const registry = {
       'packages/engine/src/tax/federalTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/model/plan.ts#planSchema',
+      'packages/engine/src/model/plan.ts#taxableAccountSchema',
       'packages/engine/src/tax/federalTax.ts#computeFederalTax',
     ],
   },
@@ -15219,7 +15243,7 @@ const registry = {
       'packages/engine/src/model/plan.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/simulate.ts#accretion',
     ],
   },
 
@@ -15251,7 +15275,7 @@ const registry = {
     ],
     implementedByFunctions: [
       'packages/engine/src/model/plan.ts#tipsLadderSchema',
-      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/simulate.ts#accretion',
     ],
   },
 
@@ -15283,7 +15307,7 @@ const registry = {
     ],
     implementedByFunctions: [
       'packages/engine/src/model/plan.ts#tipsLadderSchema',
-      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/simulate.ts#taxable',
     ],
   },
 
@@ -15333,7 +15357,7 @@ const registry = {
     ],
     implementedByFunctions: [
       'packages/engine/src/model/plan.ts#tipsLadderSchema',
-      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/simulate.ts#taxable',
     ],
   },
 
@@ -16610,7 +16634,7 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/types.ts#StateRetirementExclusion',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
       'packages/engine/src/tax/stateTax.ts#retirementExclusion',
     ],
@@ -16684,7 +16708,7 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/types.ts#StateTaxParams',
+      'packages/engine/src/params/state/types.ts#StateRetirementExclusion',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },

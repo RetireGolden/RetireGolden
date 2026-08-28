@@ -1354,7 +1354,7 @@
         {
           "path": "packages/engine/src/params/state/types.ts",
           "functions": [
-            "StateTaxParams"
+            "StateRetirementExclusion"
           ]
         },
         {
@@ -1400,13 +1400,13 @@
       "implementations": [
         {
           "path": "packages/engine/src/params/state/data/year2026.ts",
-          "functions": [
-            "stateYear2026"
-          ]
+          "functions": []
         },
         {
           "path": "packages/engine/src/params/state/types.ts",
-          "functions": []
+          "functions": [
+            "StateRetirementExclusion"
+          ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.ts",
@@ -1949,14 +1949,13 @@
         {
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
+            "capitalGainsTaxablePct",
             "stateYear2026"
           ]
         },
         {
           "path": "packages/engine/src/params/state/types.ts",
-          "functions": [
-            "StateTaxParams"
-          ]
+          "functions": []
         },
         {
           "path": "packages/engine/src/tax/stateTax.ts",
@@ -2411,7 +2410,7 @@
         {
           "path": "packages/engine/src/params/types.ts",
           "functions": [
-            "ParameterPack"
+            "sgaMonthlyNonBlind"
           ]
         }
       ],
@@ -2458,7 +2457,7 @@
         {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
-            "simulatePlan"
+            "annualSga"
           ]
         },
         {
@@ -2522,7 +2521,7 @@
         {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
-            "simulatePlan"
+            "annualSga"
           ]
         },
         {
@@ -2760,7 +2759,7 @@
         {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
-            "simulatePlan"
+            "withheld"
           ]
         }
       ],
@@ -3039,7 +3038,7 @@
         {
           "path": "packages/engine/src/params/state/types.ts",
           "functions": [
-            "StateTaxParams"
+            "taxesSocialSecurity"
           ]
         },
         {
@@ -4685,7 +4684,7 @@
         {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
-            "simulatePlan"
+            "limitScale"
           ]
         },
         {
@@ -4762,7 +4761,7 @@
         {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
-            "simulatePlan"
+            "BalanceState"
           ]
         }
       ],
@@ -4873,7 +4872,7 @@
         {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
-            "simulatePlan"
+            "planWithdrawals"
           ]
         },
         {
@@ -5208,7 +5207,7 @@
         {
           "path": "packages/engine/src/model/plan.ts",
           "functions": [
-            "planSchema"
+            "taxableAccountSchema"
           ]
         },
         {
@@ -5684,13 +5683,13 @@
         {
           "path": "packages/engine/src/model/plan.ts",
           "functions": [
-            "planSchema"
+            "acaYearContractSchema"
           ]
         },
         {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
-            "simulatePlan"
+            "acaInitialSupportCodes"
           ]
         }
       ],
@@ -5803,9 +5802,16 @@
       "verifiedOn": "2026-08-03",
       "dueOn": "2027-08-03",
       "implementedBy": [
+        "packages/engine/src/model/plan.ts",
         "packages/engine/src/tax/federalTax.ts"
       ],
       "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            "itemizedDeductionsSchema"
+          ]
+        },
         {
           "path": "packages/engine/src/tax/federalTax.ts",
           "functions": [
@@ -5861,6 +5867,7 @@
         {
           "path": "packages/engine/src/tax/federalTax.ts",
           "functions": [
+            "itemizedTotal",
             "saltCapForYear"
           ]
         }
@@ -6081,7 +6088,7 @@
         {
           "path": "packages/engine/src/tax/federalTax.ts",
           "functions": [
-            "computeFederalTax"
+            "itemizedTotal"
           ]
         }
       ],
@@ -6404,7 +6411,7 @@
         {
           "path": "packages/engine/src/tax/federalTax.ts",
           "functions": [
-            "computeFederalTax"
+            "deduction"
           ]
         }
       ],
@@ -6526,7 +6533,7 @@
         {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
-            "simulatePlan"
+            "taxable"
           ]
         }
       ],
@@ -6576,13 +6583,13 @@
         {
           "path": "packages/engine/src/model/plan.ts",
           "functions": [
-            "planSchema"
+            "incomeStreamSchema"
           ]
         },
         {
           "path": "packages/engine/src/tax/federalTax.ts",
           "functions": [
-            "computeFederalTax"
+            "section68Reduction"
           ]
         }
       ],
@@ -7193,7 +7200,7 @@
         {
           "path": "packages/engine/src/model/plan.ts",
           "functions": [
-            "planSchema"
+            "traditionalAccountSchema"
           ]
         },
         {
@@ -7298,13 +7305,21 @@
       "verifiedOn": "2026-08-04",
       "dueOn": "2026-12-02",
       "implementedBy": [
+        "packages/engine/src/model/plan.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
         {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            "hsaAccountSchema"
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
-            "simulatePlan"
+            "hasFamilyCoverage",
+            "limit"
           ]
         }
       ],
@@ -7524,13 +7539,13 @@
         {
           "path": "packages/engine/src/model/plan.ts",
           "functions": [
-            "healthcareConfigSchema"
+            "hsaAccountSchema"
           ]
         },
         {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
-            "simulatePlan"
+            "hasFamilyCoverage"
           ]
         }
       ],
@@ -8174,13 +8189,13 @@
         {
           "path": "packages/engine/src/model/plan.ts",
           "functions": [
-            "planSchema"
+            "employerMatchSchema"
           ]
         },
         {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
-            "simulatePlan"
+            "matchCap"
           ]
         }
       ],
@@ -8237,9 +8252,7 @@
         },
         {
           "path": "packages/engine/src/projection/simulate.ts",
-          "functions": [
-            "simulatePlan"
-          ]
+          "functions": []
         },
         {
           "path": "packages/engine/src/strategies/inheritedIra.ts",
@@ -8287,19 +8300,28 @@
       "verifiedOn": "2026-08-03",
       "dueOn": "2027-08-03",
       "implementedBy": [
+        "packages/engine/src/model/plan.ts",
         "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/strategies/accountEligibility.ts"
       ],
       "implementations": [
         {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            "personSchema"
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
-            "simulatePlan"
+            "followsOwnerRmdsThisYear"
           ]
         },
         {
           "path": "packages/engine/src/strategies/accountEligibility.ts",
-          "functions": []
+          "functions": [
+            "followsOwnerRmds"
+          ]
         }
       ],
       "fixtureFiles": [
@@ -8348,7 +8370,7 @@
         {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
-            "simulatePlan"
+            "deferFirstAmount"
           ]
         }
       ],
@@ -8702,13 +8724,20 @@
       "verifiedOn": "2026-08-04",
       "dueOn": "2027-08-04",
       "implementedBy": [
+        "packages/engine/src/model/plan.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
         {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            "wagesIncomeSchema"
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
-            "simulatePlan"
+            "iraCompensationRemaining"
           ]
         }
       ],
@@ -8873,7 +8902,7 @@
         {
           "path": "packages/engine/src/actions/contract.ts",
           "functions": [
-            "retirementActionRequestSchema"
+            "persistedRetirementActionRequestSchema"
           ]
         },
         {
@@ -9036,7 +9065,7 @@
         {
           "path": "packages/engine/src/actions/contract.ts",
           "functions": [
-            "retirementActionRequestSchema"
+            "persistedRetirementActionRequestSchema"
           ]
         },
         {
@@ -9157,7 +9186,7 @@
         {
           "path": "packages/engine/src/actions/contract.ts",
           "functions": [
-            "retirementActionRequestSchema"
+            "persistedRetirementActionRequestSchema"
           ]
         },
         {
@@ -9263,7 +9292,7 @@
         {
           "path": "packages/engine/src/actions/contract.ts",
           "functions": [
-            "retirementActionRequestSchema"
+            "persistedRetirementActionRequestSchema"
           ]
         },
         {
@@ -9376,7 +9405,7 @@
         {
           "path": "packages/engine/src/actions/contract.ts",
           "functions": [
-            "retirementActionRequestSchema"
+            "persistedRetirementActionRequestSchema"
           ]
         },
         {
@@ -9423,7 +9452,7 @@
         {
           "path": "packages/engine/src/actions/contract.ts",
           "functions": [
-            "retirementActionRequestSchema"
+            "persistedRetirementActionRequestSchema"
           ]
         },
         {
@@ -9470,7 +9499,7 @@
         {
           "path": "packages/engine/src/actions/contract.ts",
           "functions": [
-            "retirementActionRequestSchema"
+            "persistedRetirementActionRequestSchema"
           ]
         },
         {
@@ -9910,29 +9939,27 @@
       "implementations": [
         {
           "path": "packages/engine/src/actions/ownedNonRothIraWithdrawalCharacter.ts",
-          "functions": [
-            "classifyOwnedNonRothIraAnnualWithdrawals"
-          ]
+          "functions": []
         },
         {
           "path": "packages/engine/src/internal/ownedNonRothIraContiguousReplay.ts",
-          "functions": [
-            "replayOwnedNonRothIraContiguousYears"
-          ]
+          "functions": []
         },
         {
           "path": "packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts",
-          "functions": [
-            "validateOwnedNonRothIraRuntimeSourceSeries"
-          ]
+          "functions": []
         },
         {
           "path": "packages/engine/src/projection/simulate.ts",
-          "functions": []
+          "functions": [
+            "simulatePlan"
+          ]
         },
         {
           "path": "packages/engine/src/strategies/iraBasis.ts",
-          "functions": []
+          "functions": [
+            "openIraProRataYear"
+          ]
         }
       ],
       "fixtureFiles": [
@@ -10331,7 +10358,7 @@
         {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
-            "simulatePlan"
+            "hasNamedQcdRequest"
           ]
         }
       ],
@@ -10876,7 +10903,7 @@
         {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
-            "simulatePlan"
+            "donorIds"
           ]
         }
       ],
@@ -11566,13 +11593,20 @@
       "verifiedOn": "2026-08-03",
       "dueOn": "2026-12-01",
       "implementedBy": [
+        "packages/engine/src/model/plan.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
         {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            "rothAccountSchema"
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
-            "simulatePlan"
+            "allowed"
           ]
         }
       ],
@@ -11894,7 +11928,9 @@
       "implementations": [
         {
           "path": "packages/engine/src/projection/simulate.ts",
-          "functions": []
+          "functions": [
+            "simulatePlan"
+          ]
         },
         {
           "path": "packages/engine/src/strategies/rothBasis.ts",
@@ -11957,6 +11993,8 @@
         {
           "path": "packages/engine/src/strategies/rothBasis.ts",
           "functions": [
+            "applyConversionPrincipalDebt",
+            "assumedSeedConsequentialSpill",
             "splitRothWithdrawal"
           ]
         }
@@ -12136,7 +12174,7 @@
         {
           "path": "packages/engine/src/actions/contract.ts",
           "functions": [
-            "retirementActionRequestSchema"
+            "persistedRetirementActionRequestSchema"
           ]
         },
         {
@@ -12182,13 +12220,14 @@
         {
           "path": "packages/engine/src/model/plan.ts",
           "functions": [
-            "planSchema"
+            "rothAccountSchema",
+            "traditionalAccountSchema"
           ]
         },
         {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
-            "simulatePlan"
+            "employerCatchUpForAge"
           ]
         }
       ],
@@ -12900,7 +12939,7 @@
         {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
-            "simulatePlan"
+            "taxableGross"
           ]
         }
       ],
@@ -13048,13 +13087,14 @@
         {
           "path": "packages/engine/src/model/plan.ts",
           "functions": [
-            "planSchema"
+            "rothAccountSchema",
+            "traditionalAccountSchema"
           ]
         },
         {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
-            "simulatePlan"
+            "penalties"
           ]
         }
       ],
@@ -13131,7 +13171,7 @@
         {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
-            "simulatePlan"
+            "penalties"
           ]
         }
       ],
@@ -13301,7 +13341,7 @@
         {
           "path": "packages/engine/src/actions/contract.ts",
           "functions": [
-            "retirementActionRequestSchema"
+            "persistedRetirementActionRequestSchema"
           ]
         },
         {
@@ -13647,7 +13687,7 @@
         {
           "path": "packages/engine/src/tax/federalTax.ts",
           "functions": [
-            "computeFederalTax"
+            "amtPreferenceItems"
           ]
         }
       ],
@@ -13956,7 +13996,7 @@
         {
           "path": "packages/engine/src/actions/contract.ts",
           "functions": [
-            "retirementActionRequestSchema"
+            "persistedRetirementActionRequestSchema"
           ]
         },
         {
@@ -14007,7 +14047,7 @@
         {
           "path": "packages/engine/src/actions/contract.ts",
           "functions": [
-            "retirementActionRequestSchema"
+            "persistedRetirementActionRequestSchema"
           ]
         },
         {
@@ -15031,7 +15071,7 @@
         {
           "path": "packages/engine/src/actions/contract.ts",
           "functions": [
-            "retirementActionRequestSchema"
+            "persistedRetirementActionRequestSchema"
           ]
         },
         {
@@ -15639,7 +15679,7 @@
         {
           "path": "packages/engine/src/actions/contract.ts",
           "functions": [
-            "rothConversionRequestSchema"
+            "persistedRothConversionRequestSchema"
           ]
         },
         {
@@ -17091,7 +17131,7 @@
         {
           "path": "packages/engine/src/params/state/types.ts",
           "functions": [
-            "StateTaxParams"
+            "StateRetirementExclusion"
           ]
         },
         {
@@ -17346,19 +17386,18 @@
       "implementations": [
         {
           "path": "packages/engine/src/params/state/data/year2026.ts",
-          "functions": [
-            "PUBLIC_PENSION_OVERRIDES",
-            "stateYear2026"
-          ]
+          "functions": []
         },
         {
           "path": "packages/engine/src/params/state/types.ts",
-          "functions": []
+          "functions": [
+            "StateRetirementExclusion"
+          ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.ts",
           "functions": [
-            "retirementExclusion"
+            "computeStateTaxableIncome"
           ]
         }
       ],
@@ -17417,14 +17456,13 @@
         {
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
+            "capitalGainsTaxablePct",
             "stateYear2026"
           ]
         },
         {
           "path": "packages/engine/src/params/state/types.ts",
-          "functions": [
-            "StateTaxParams"
-          ]
+          "functions": []
         },
         {
           "path": "packages/engine/src/tax/stateTax.ts",
@@ -19499,7 +19537,8 @@
         {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
-            "simulatePlan"
+            "creditedClaimAgeFor",
+            "monthsWithheld"
           ]
         },
         {
@@ -20114,7 +20153,7 @@
         {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
-            "simulatePlan"
+            "accretion"
           ]
         }
       ],
@@ -20171,7 +20210,7 @@
         {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
-            "simulatePlan"
+            "accretion"
           ]
         }
       ],
@@ -20217,7 +20256,7 @@
         {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
-            "simulatePlan"
+            "taxable"
           ]
         }
       ],
@@ -20787,7 +20826,7 @@
         {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
-            "simulatePlan"
+            "qlacCap"
           ]
         }
       ],
@@ -20909,9 +20948,7 @@
         },
         {
           "path": "packages/engine/src/projection/simulate.ts",
-          "functions": [
-            "simulatePlan"
-          ]
+          "functions": []
         },
         {
           "path": "packages/engine/src/strategies/inheritedIra.ts",
@@ -21797,9 +21834,7 @@
         },
         {
           "path": "packages/engine/src/projection/simulate.ts",
-          "functions": [
-            "simulatePlan"
-          ]
+          "functions": []
         },
         {
           "path": "packages/engine/src/strategies/inheritedIra.ts",
@@ -22163,7 +22198,7 @@
         {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
-            "simulatePlan"
+            "medicareMonths"
           ]
         }
       ],
@@ -22324,7 +22359,7 @@
         {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
-            "simulatePlan"
+            "magiHistory"
           ]
         }
       ],
@@ -22729,7 +22764,7 @@
         {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
-            "simulatePlan"
+            "higherPayableMonths"
           ]
         },
         {
@@ -23317,7 +23352,7 @@
         {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
-            "simulatePlan"
+            "ssStreamByPerson"
           ]
         }
       ],
@@ -23464,7 +23499,7 @@
         {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
-            "simulatePlan"
+            "monthsWithheld"
           ]
         }
       ],
@@ -23740,7 +23775,7 @@
         {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
-            "simulatePlan"
+            "resolvedPiaByStreamId"
           ]
         },
         {
@@ -23946,13 +23981,20 @@
       "verifiedOn": "2026-08-27",
       "dueOn": "2027-08-27",
       "implementedBy": [
+        "packages/engine/src/model/plan.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
         {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            "socialSecurityIncomeSchema"
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
-            "simulatePlan"
+            "onsetAge"
           ]
         }
       ],
@@ -24078,7 +24120,7 @@
         {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
-            "simulatePlan"
+            "ssdiByPerson"
           ]
         },
         {
