@@ -14,10 +14,12 @@
 # cancel an in-progress first-pass).
 #
 # The models roster is decided per-repo INSIDE the reusable (keyed off
-# GITHUB_REPOSITORY, frozen at the pinned SHA below). As of the
-# .github#25 pin this repo runs the two-model roster: x-ai/grok-4.6 +
-# z-ai/glm-5.3-flash, merged by the action's recall-safe judge. All
-# other org repos stay single-lane. Revisit this note at each pin bump.
+# GITHUB_REPOSITORY, frozen at the pinned SHA below). This repo has run
+# the two-model roster — x-ai/grok-4.6 + z-ai/glm-5.3-flash, merged by
+# the action's recall-safe judge — since the .github#24 pin; a pin bump
+# does not change the roster unless it says so. All other org repos
+# stay single-lane. On a bump, rewrite this note ONLY if the roster
+# actually changed.
 
 name: OpenRouter code review
 
