@@ -4,7 +4,7 @@ import {
   COVERAGE_ATTESTATIONS,
 } from './coverageAttestations.js'
 import { buildCoverageReport, describeRuleCallEnd } from './coverageReport.js'
-import { declaredSymbolLinesOf } from './symbolLines.js'
+import { declaredSymbolLinesOf, symbolAnchorLine, type DeclaredSymbol } from './symbolLines.js'
 import {
   TAX_RULE_REGISTRY,
   TAX_RULE_VOLATILITIES,
@@ -38,6 +38,20 @@ function dayBefore(isoDate: string): string {
   return date.toISOString().slice(0, 10)
 }
 
+/** Test-source lines for a canonical fixture path, for the per-test line binds. */
+const testSourceLineCache = new Map<string, readonly string[]>()
+function testSourceLinesOf(fixturePath: string): readonly string[] {
+  const cached = testSourceLineCache.get(fixturePath)
+  if (cached !== undefined) return cached
+  const globKey = Object.keys(testSources).find(
+    (key) => fixturePath.endsWith(key.replace(/^\.\.\//u, '').replace(/^\.\//u, 'rules/')),
+  )
+  if (globKey === undefined) throw new Error(fixturePath + ' is not a test source the glob can see')
+  const lines = (testSources[globKey] as string).split('\n')
+  testSourceLineCache.set(fixturePath, lines)
+  return lines
+}
+
 /** Engine source text for a repo-relative pin path; Vite emits same-directory keys as `./name`. */
 function engineSourceOf(path: string): string {
   const globKey = path
@@ -48,16 +62,14 @@ function engineSourceOf(path: string): string {
   return source
 }
 
-const symbolLineTables = new Map<string, ReadonlyMap<string, number>>()
+const symbolLineTables = new Map<string, ReadonlyMap<string, DeclaredSymbol>>()
 function symbolLineFor(path: string, symbol: string): number {
   let table = symbolLineTables.get(path)
   if (table === undefined) {
     table = declaredSymbolLinesOf(path, engineSourceOf(path))
     symbolLineTables.set(path, table)
   }
-  const line = table.get(symbol)
-  if (line === undefined) throw new Error(path + '#' + symbol + ' has no declaration line')
-  return line
+  return symbolAnchorLine(table, path, symbol)
 }
 
 const report = buildCoverageReport({
@@ -244,7 +256,10 @@ describe('manifest rule projection contract', () => {
         const sourceLines = engineSourceOf(path).split('\n')
         for (const { name, line } of functions) {
           expect(Number.isInteger(line) && line >= 1, `${rule.id}: ${path}#${name}`).toBe(true)
-          expect(sourceLines[line - 1] ?? '', `${rule.id}: ${path}#${name} line ${line}`).toContain(name)
+          // A parent-qualified pin (ND.capitalGainsTaxablePct) anchors at the
+          // member itself, so the member segment is what the line must show.
+          const memberName = name.includes('.') ? name.slice(name.lastIndexOf('.') + 1) : name
+          expect(sourceLines[line - 1] ?? '', `${rule.id}: ${path}#${name} line ${line}`).toContain(memberName)
         }
       }
     }
@@ -257,9 +272,14 @@ describe('manifest rule projection contract', () => {
       for (const fixture of rule.fixtures) {
         expect(fixture.line, rule.id).toBeGreaterThanOrEqual(1)
         expect(fixture.tests.length, `${rule.id} ${fixture.path}`).toBeGreaterThan(0)
+        const sourceLines = testSourceLinesOf(fixture.path)
         for (const test of fixture.tests) {
-          // A test's it( sits inside its describeRule call, never before it.
+          // A test's it( sits inside its describeRule call, never before it,
+          // and its published line is a deep-link anchor: that line of the
+          // live source must start the it() itself, for EVERY fixture, so an
+          // off-by-one that happens to hold on one sample cannot pass.
           expect(test.line, `${rule.id} ${fixture.path}: ${test.title}`).toBeGreaterThanOrEqual(fixture.line)
+          expect(sourceLines[test.line - 1] ?? '', `${rule.id} ${fixture.path}#L${test.line}: ${test.title}`).toContain('it(')
         }
       }
     }

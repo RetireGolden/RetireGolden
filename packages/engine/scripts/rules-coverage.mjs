@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import { makeSymbolLineFor } from './rule-tooling-shared.mjs'
 
 const scriptDir = dirname(fileURLToPath(import.meta.url))
 const engineDir = resolve(scriptDir, '..')
@@ -35,28 +36,14 @@ async function main() {
     { TAX_RULE_REGISTRY, taxRuleDueOn },
     { COVERAGE_ATTESTATIONS, BASELINE_UNSWEPT },
     { buildCoverageReport },
-    { declaredSymbolLinesOf },
   ] = await Promise.all([
     loadModule('taxRuleRegistry.ts'),
     loadModule('coverageAttestations.ts'),
     loadModule('coverageReport.ts'),
-    loadModule('symbolLines.ts'),
   ])
   const quoteFidelityPath = join(repositoryDir, 'DOCS', 'operations', 'quote-fidelity-ledger.json')
   const quoteFidelityLedger = existsSync(quoteFidelityPath) ? readFileSync(quoteFidelityPath, 'utf8') : null
-  const symbolLineTables = new Map()
-  const symbolLineFor = (path, symbol) => {
-    let table = symbolLineTables.get(path)
-    if (table === undefined) {
-      table = declaredSymbolLinesOf(path, readFileSync(join(repositoryDir, path), 'utf8'))
-      symbolLineTables.set(path, table)
-    }
-    const line = table.get(symbol)
-    if (line === undefined) {
-      throw new Error(path + '#' + symbol + ' has no declaration line; conformance and the manifest scan disagree')
-    }
-    return line
-  }
+  const symbolLineFor = await makeSymbolLineFor()
   const report = buildCoverageReport({
     registry: TAX_RULE_REGISTRY,
     attestations: COVERAGE_ATTESTATIONS,

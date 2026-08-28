@@ -2,7 +2,7 @@ import { readdirSync, unlinkSync, writeFileSync } from 'node:fs'
 import { basename, dirname, join, resolve } from 'node:path'
 import { parseArgs } from 'node:util'
 import { testSourcesInGlobShape } from './rules-coverage.mjs'
-import { loadModule, stripLeadingSeparators, todayUtcIso, validateAsOf } from './rule-tooling-shared.mjs'
+import { loadModule, makeSymbolLineFor, stripLeadingSeparators, todayUtcIso, validateAsOf } from './rule-tooling-shared.mjs'
 
 const HELP = `Usage: pnpm rules:dispatch [-- --rule <id>[,<id>...]] [--due] [--as-of YYYY-MM-DD] [--out <path>] [--chunk-size N]
 
@@ -254,6 +254,7 @@ async function main() {
     testSources: testSourcesInGlobShape(),
     quoteFidelityLedger: null,
     dueOnFor: taxRuleDueOn,
+    symbolLineFor: await makeSymbolLineFor(),
   })
 
   const chunks = chunkRuleIds(ruleIds, chunkSize)

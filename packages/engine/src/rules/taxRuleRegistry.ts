@@ -237,10 +237,14 @@ export interface TaxRuleRecord {
   /**
    * The operative functions inside `implementedBy`, as `<repo-relative
    * path>#<symbol>` entries whose path half must appear in `implementedBy`
-   * and whose symbol must exist in that file. Required and non-empty: the
-   * backfill covered every record, and this stays a ratchet - conformance
-   * fails the build when a symbol disappears from its file, so the public
-   * transparency page can never name a function that no longer exists.
+   * and whose symbol must exist in that file. A member whose bare name
+   * repeats in the file (a per-state pack field) must be qualified by its
+   * immediate parent (`ND.capitalGainsTaxablePct`); conformance refuses the
+   * ambiguous bare pin because the manifest publishes each pin's declaration
+   * line as a deep-link anchor. Required and non-empty: the backfill covered
+   * every record, and this stays a ratchet - conformance fails the build
+   * when a symbol disappears from its file, so the public transparency page
+   * can never name a function that no longer exists.
    */
   readonly implementedByFunctions: readonly [string, ...string[]]
 }
@@ -10612,7 +10616,7 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#capitalGainsTaxablePct',
+      'packages/engine/src/params/state/data/year2026.ts#ND.capitalGainsTaxablePct',
       'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
       'packages/engine/src/params/state/types.ts#StateTaxParams',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
@@ -11670,7 +11674,7 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#capitalGainsTaxablePct',
+      'packages/engine/src/params/state/data/year2026.ts#AZ.capitalGainsTaxablePct',
       'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
       'packages/engine/src/params/state/types.ts#StateTaxParams',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',

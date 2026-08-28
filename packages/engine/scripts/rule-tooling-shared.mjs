@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
@@ -10,6 +11,24 @@ const rulesDir = join(sourceDir, 'rules')
 export async function loadModule(name) {
   const path = join(rulesDir, name)
   return import(pathToFileURL(path).href)
+}
+
+/**
+ * buildCoverageReport requires symbolLineFor; every script that builds a
+ * report shares this resolver so none of them can drift out of the contract.
+ * Throws on a missing or ambiguous pin (see symbolLines.ts).
+ */
+export async function makeSymbolLineFor() {
+  const { declaredSymbolLinesOf, symbolAnchorLine } = await loadModule('symbolLines.ts')
+  const tables = new Map()
+  return (path, symbol) => {
+    let table = tables.get(path)
+    if (table === undefined) {
+      table = declaredSymbolLinesOf(path, readFileSync(join(repositoryDir, path), 'utf8'))
+      tables.set(path, table)
+    }
+    return symbolAnchorLine(table, path, symbol)
+  }
 }
 
 export function todayUtcIso() {

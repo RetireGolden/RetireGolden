@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { describeRule } from './describeRule.js'
-import { declaredSymbolLinesOf } from './symbolLines.js'
+import { declaredSymbolLinesOf, symbolAnchorLine, type DeclaredSymbol } from './symbolLines.js'
 import {
   DEFAULT_REVERIFICATION_INTERVAL_DAYS,
   TAX_RULE_REGISTRY,
@@ -43,9 +43,9 @@ for (const [path, source] of Object.entries(testSources)) {
  * admits and the set of names the manifest can anchor are one implementation.
  * The synthetic probes below therefore guard both consumers.
  */
-const declaredSymbolCache = new Map<string, ReadonlyMap<string, number>>()
+const declaredSymbolCache = new Map<string, ReadonlyMap<string, DeclaredSymbol>>()
 
-function declaredSymbolsOf(globKey: string, source: string): ReadonlyMap<string, number> {
+function declaredSymbolsOf(globKey: string, source: string): ReadonlyMap<string, DeclaredSymbol> {
   const cached = declaredSymbolCache.get(globKey)
   if (cached !== undefined) return cached
   const lines = declaredSymbolLinesOf(globKey, source)
@@ -863,6 +863,39 @@ describe('tax rule registry conformance', () => {
     expect(symbols.has('neverDeclaredAnywhere')).toBe(false)
   })
 
+  it('anchors symbols per the two-tier line rule, on hand-counted synthetic lines', () => {
+    // The published deep-link lines ride on this resolution, so the rule is
+    // pinned by hand: module scope beats a same-named member, merged
+    // module-scope declarations keep the first line, a unique member anchors
+    // at its own line, a repeated member is refused until parent-qualified.
+    const synthetic = [
+      'interface Summary {', //                       line 1
+      '  computeThing: number', //                    line 2: member tier
+      '}',
+      'export function computeThing(): number {', //  line 4: module tier wins
+      '  return 1',
+      '}',
+      'export function overloaded(a: number): number', // line 7: first wins
+      'export function overloaded(a: string): string',
+      'export function overloaded(a: unknown): unknown {',
+      '  return a',
+      '}',
+      'const pack = {', //                            line 12
+      '  AZ: { rate: 1 },', //                        line 13
+      '  ND: { rate: 2 },', //                        line 14
+      '}',
+    ].join('\n')
+    const table = declaredSymbolsOf('synthetic-anchor-probe.ts', synthetic)
+    expect(symbolAnchorLine(table, 'synthetic-anchor-probe.ts', 'computeThing')).toBe(4)
+    expect(symbolAnchorLine(table, 'synthetic-anchor-probe.ts', 'overloaded')).toBe(7)
+    expect(symbolAnchorLine(table, 'synthetic-anchor-probe.ts', 'pack')).toBe(12)
+    expect(symbolAnchorLine(table, 'synthetic-anchor-probe.ts', 'AZ')).toBe(13)
+    expect(symbolAnchorLine(table, 'synthetic-anchor-probe.ts', 'AZ.rate')).toBe(13)
+    expect(symbolAnchorLine(table, 'synthetic-anchor-probe.ts', 'ND.rate')).toBe(14)
+    expect(() => symbolAnchorLine(table, 'synthetic-anchor-probe.ts', 'rate')).toThrow(/ambiguous/u)
+    expect(() => symbolAnchorLine(table, 'synthetic-anchor-probe.ts', 'neverDeclaredAnywhere')).toThrow(/not a declared symbol/u)
+  })
+
   it('resolves every implementedByFunctions entry to a listed file and a live symbol', () => {
     // The transparency page renders these as the chain's deepest level; an
     // entry naming a renamed or deleted function must fail here, not rot
@@ -894,8 +927,13 @@ describe('tax rule registry conformance', () => {
           violations.push(`${ruleId}: ${path} not found among engine sources`)
           continue
         }
-        if (!declaredSymbolsOf(globKey, source).has(symbol)) {
-          violations.push(`${ruleId}: ${symbol} is not a module-scope symbol in ${path}`)
+        try {
+          // Resolvability is the bar, not mere membership: the manifest
+          // publishes this pin's anchor line, so an ambiguous member pin
+          // (a repeated pack field) must fail here with the qualify hint.
+          symbolAnchorLine(declaredSymbolsOf(globKey, source), path, symbol)
+        } catch (error) {
+          violations.push(`${ruleId}: ${error instanceof Error ? error.message : String(error)}`)
         }
       }
     }

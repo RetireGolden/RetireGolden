@@ -74,11 +74,11 @@
     }
   },
   "attestations": {
-    "totalFiles": 235,
+    "totalFiles": 236,
     "byStatus": {
       "partial": 61,
       "registered": 51,
-      "rule-free": 123,
+      "rule-free": 124,
       "unswept": 0
     },
     "sweptPct": 100,
@@ -501,10 +501,10 @@
     },
     {
       "directory": "rules",
-      "files": 5,
+      "files": 6,
       "byStatus": {
         "registered": 1,
-        "rule-free": 4
+        "rule-free": 5
       }
     },
     {
@@ -2256,7 +2256,7 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "capitalGainsTaxablePct",
+              "name": "AZ.capitalGainsTaxablePct",
               "line": 170
             },
             {
@@ -15954,7 +15954,7 @@
             },
             {
               "name": "tentativeMinimumTax",
-              "line": 80
+              "line": 366
             }
           ]
         }
@@ -16010,7 +16010,7 @@
           "functions": [
             {
               "name": "tentativeMinimumTax",
-              "line": 80
+              "line": 366
             }
           ]
         }
@@ -18453,7 +18453,7 @@
           "functions": [
             {
               "name": "taxableSocialSecurity",
-              "line": 48
+              "line": 286
             }
           ]
         }
@@ -18509,7 +18509,7 @@
           "functions": [
             {
               "name": "taxableSocialSecurity",
-              "line": 48
+              "line": 286
             }
           ]
         }
@@ -18575,7 +18575,7 @@
           "functions": [
             {
               "name": "taxableSocialSecurity",
-              "line": 48
+              "line": 286
             }
           ]
         }
@@ -20805,8 +20805,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "capitalGainsTaxablePct",
-              "line": 170
+              "name": "ND.capitalGainsTaxablePct",
+              "line": 648
             },
             {
               "name": "stateYear2026",

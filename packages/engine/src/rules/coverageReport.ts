@@ -315,7 +315,12 @@ function noteWithin(source: string, start: number, end: number): string | null {
  * substitution-free backtick titles are all captured, each with the 1-based
  * line of its it( token so the published manifest can deep-link to the test.
  */
-function testsBetween(source: string, start: number, end: number): { title: string; line: number }[] {
+function testsBetween(
+  source: string,
+  start: number,
+  end: number,
+  newlines: readonly number[],
+): { title: string; line: number }[] {
   const tests: { title: string; line: number }[] = []
   let index = start
   while (index < end) {
@@ -346,7 +351,7 @@ function testsBetween(source: string, start: number, end: number): { title: stri
         title += c
         cursor += 1
       }
-      if (!broken) tests.push({ title, line: source.slice(0, index).split('\n').length })
+      if (!broken) tests.push({ title, line: lineAt(newlines, index) })
       index = cursor + 1
       continue
     }
@@ -362,6 +367,27 @@ interface FixtureDetail {
   readonly tests: readonly { readonly title: string; readonly line: number }[]
 }
 
+/** Newline offsets, computed once per file so line lookups during the scan stay O(log n). */
+function newlineOffsets(source: string): readonly number[] {
+  const offsets: number[] = []
+  for (let index = source.indexOf('\n'); index !== -1; index = source.indexOf('\n', index + 1)) {
+    offsets.push(index)
+  }
+  return offsets
+}
+
+/** 1-based line containing `position`: count of newlines strictly before it, plus one. */
+function lineAt(newlines: readonly number[], position: number): number {
+  let low = 0
+  let high = newlines.length
+  while (low < high) {
+    const mid = (low + high) >> 1
+    if (newlines[mid]! < position) low = mid + 1
+    else high = mid
+  }
+  return low + 1
+}
+
 function fixtureDetailsByRule(testSources: Readonly<Record<string, string>>): ReadonlyMap<string, readonly FixtureDetail[]> {
   const details = new Map<string, FixtureDetail[]>()
   for (const [path, source] of Object.entries(testSources)) {
@@ -371,6 +397,7 @@ function fixtureDetailsByRule(testSources: Readonly<Record<string, string>>): Re
       .replace(/^\.\.\//u, 'packages/engine/src/')
       .replace(/^\.\//u, 'packages/engine/src/rules/')
     const calls = [...source.matchAll(/describeRule\(\s*'([^']+)'/gu)]
+    const newlines = calls.length > 0 ? newlineOffsets(source) : []
     for (let index = 0; index < calls.length; index += 1) {
       const match = calls[index]!
       const ruleId = match[1]!
@@ -379,9 +406,9 @@ function fixtureDetailsByRule(testSources: Readonly<Record<string, string>>): Re
       // the next call: it() titles that follow the callback's close in the
       // same file belong to sibling suites, never to this rule.
       const end = describeRuleCallEnd(source, start)
-      const tests = testsBetween(source, start, end)
+      const tests = testsBetween(source, start, end, newlines)
       const note = noteWithin(source, start, end)
-      const line = source.slice(0, start).split('\n').length
+      const line = lineAt(newlines, start)
       const list = details.get(ruleId) ?? []
       list.push({
         path: fixturePath,
