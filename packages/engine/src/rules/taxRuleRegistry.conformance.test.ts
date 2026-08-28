@@ -1,6 +1,6 @@
-import ts from 'typescript'
 import { describe, expect, it } from 'vitest'
 import { describeRule } from './describeRule.js'
+import { declaredSymbolLinesOf } from './symbolLines.js'
 import {
   DEFAULT_REVERIFICATION_INTERVAL_DAYS,
   TAX_RULE_REGISTRY,
@@ -38,72 +38,19 @@ for (const [path, source] of Object.entries(testSources)) {
 }
 
 /**
- * Structural symbol table per file: declaration names, exported bindings,
- * class/interface members, and object-literal property names, collected from
- * the TypeScript AST so a deleted mapped occurrence cannot hide behind an
- * unrelated identifier that merely appears somewhere in the file's text.
+ * Structural symbol table per file, shared with the coverage manifest's
+ * deep-link line resolution (symbolLines.ts) so the set of names this guard
+ * admits and the set of names the manifest can anchor are one implementation.
+ * The synthetic probes below therefore guard both consumers.
  */
-const declaredSymbolCache = new Map<string, ReadonlySet<string>>()
+const declaredSymbolCache = new Map<string, ReadonlyMap<string, number>>()
 
-function declaredSymbolsOf(globKey: string, source: string): ReadonlySet<string> {
+function declaredSymbolsOf(globKey: string, source: string): ReadonlyMap<string, number> {
   const cached = declaredSymbolCache.get(globKey)
   if (cached !== undefined) return cached
-  const file = ts.createSourceFile(globKey, source, ts.ScriptTarget.Latest, true)
-  const names = new Set<string>()
-  const record = (name: ts.Node | undefined): void => {
-    if (name !== undefined && ts.isIdentifier(name)) names.add(name.text)
-  }
-  // Members one level under a module-scope declaration are publishable
-  // (class methods, interface properties, a pack object's top entries);
-  // anything deeper is a local, and a local is not a calculator method.
-  const recordMembers = (node: ts.Node): void => {
-    ts.forEachChild(node, (child) => {
-      if (
-        ts.isPropertyAssignment(child) ||
-        ts.isPropertySignature(child) ||
-        ts.isPropertyDeclaration(child) ||
-        ts.isMethodDeclaration(child) ||
-        ts.isMethodSignature(child) ||
-        ts.isShorthandPropertyAssignment(child) ||
-        ts.isGetAccessorDeclaration(child) ||
-        ts.isSetAccessorDeclaration(child) ||
-        ts.isEnumMember(child)
-      ) {
-        record(child.name)
-        // A data pack's leaf fields are publishable facts, so property
-        // structure recurses; function bodies never do - a local inside a
-        // calculator stays a local.
-        if (ts.isPropertyAssignment(child) && child.initializer !== undefined) recordMembers(child.initializer)
-        if (ts.isPropertySignature(child) && child.type !== undefined) recordMembers(child.type)
-      }
-      if (ts.isObjectLiteralExpression(child) || ts.isTypeLiteralNode(child) || ts.isArrayLiteralExpression(child)) recordMembers(child)
-    })
-  }
-  for (const statement of file.statements) {
-    if (
-      ts.isFunctionDeclaration(statement) ||
-      ts.isClassDeclaration(statement) ||
-      ts.isInterfaceDeclaration(statement) ||
-      ts.isTypeAliasDeclaration(statement) ||
-      ts.isEnumDeclaration(statement)
-    ) {
-      record(statement.name)
-      recordMembers(statement)
-      continue
-    }
-    if (ts.isVariableStatement(statement)) {
-      for (const declaration of statement.declarationList.declarations) {
-        record(declaration.name)
-        if (declaration.initializer !== undefined) recordMembers(declaration.initializer)
-      }
-      continue
-    }
-    if (ts.isExportDeclaration(statement) && statement.exportClause !== undefined && ts.isNamedExports(statement.exportClause)) {
-      for (const specifier of statement.exportClause.elements) record(specifier.name)
-    }
-  }
-  declaredSymbolCache.set(globKey, names)
-  return names
+  const lines = declaredSymbolLinesOf(globKey, source)
+  declaredSymbolCache.set(globKey, lines)
+  return lines
 }
 
 /** Glob keys are relative to this directory; registry paths are repo-relative. */

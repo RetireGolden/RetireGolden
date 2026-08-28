@@ -23,6 +23,13 @@ export interface CoverageReportInput {
   readonly quoteFidelityLedger: string | null
   /** Due-date derivation — inject taxRuleDueOn from the registry module; one home for the arithmetic. */
   readonly dueOnFor: (ruleId: TaxRuleId) => string
+  /**
+   * 1-based declaration line of a pinned `path#symbol`, injected so this
+   * module stays browser-pure (the AST walk lives in symbolLines.ts, which
+   * imports the typescript package). Conformance guarantees every pin
+   * resolves, so callers throw rather than return a sentinel on a miss.
+   */
+  readonly symbolLineFor: (path: string, symbol: string) => number
 }
 
 export interface CoverageRule {
@@ -42,25 +49,34 @@ export interface CoverageRule {
   readonly implementedBy: readonly string[]
   /**
    * implementedBy joined with the record's declared operative symbols: one
-   * entry per implementing file, each carrying at least one function pin.
-   * Conformance enforces that every declared symbol is a module-scope
-   * declaration (or first-level member) of its file.
+   * entry per implementing file, each carrying at least one function pin with
+   * the 1-based line of its declaration for deep links. Conformance enforces
+   * that every declared symbol is a module-scope declaration (or first-level
+   * member) of its file, so a moved or deleted symbol regenerates or fails
+   * the build instead of rotting into a dead anchor.
    */
   readonly implementations: readonly {
     readonly path: string
-    readonly functions: readonly string[]
+    readonly functions: readonly {
+      readonly name: string
+      readonly line: number
+    }[]
   }[]
   readonly fixtureFiles: readonly string[]
   /**
    * One entry per describeRule call: where the fixture lives (1-based line of
-   * the call) and the it() titles inside its block. Derived from the same
-   * source scan as fixtureFiles; nothing here is hand-maintained.
+   * the call) and the it() tests inside its block, each with its own 1-based
+   * line for deep links. Derived from the same source scan as fixtureFiles;
+   * nothing here is hand-maintained.
    */
   readonly fixtures: readonly {
     readonly path: string
     readonly line: number
     readonly note: string | null
-    readonly testTitles: readonly string[]
+    readonly tests: readonly {
+      readonly title: string
+      readonly line: number
+    }[]
   }[]
   readonly authorities: readonly {
     readonly kind: TaxRuleAuthority['kind']
@@ -89,7 +105,7 @@ const QUOTE_FIDELITY_ADVISORY_VERDICTS = ['PUNCTUATION', 'ELISION-PUNCTUATION', 
 
 export interface CoverageReportManifest {
   readonly kind: 'retiregolden.rules-coverage.manifest'
-  readonly version: 3
+  readonly version: 4
   readonly registry: {
     readonly total: number
     readonly byClassification: Readonly<Record<string, number>>
@@ -294,12 +310,13 @@ function noteWithin(source: string, start: number, end: number): string | null {
 }
 
 /**
- * it() titles at CODE level within [start, end) — an it('...') spelled inside
+ * it() tests at CODE level within [start, end) — an it('...') spelled inside
  * a comment or another string never counts. Plain single, double, and
- * substitution-free backtick titles are all captured.
+ * substitution-free backtick titles are all captured, each with the 1-based
+ * line of its it( token so the published manifest can deep-link to the test.
  */
-function testTitlesBetween(source: string, start: number, end: number): string[] {
-  const titles: string[] = []
+function testsBetween(source: string, start: number, end: number): { title: string; line: number }[] {
+  const tests: { title: string; line: number }[] = []
   let index = start
   while (index < end) {
     const skipped = skipNonCode(source, index, regexCanFollow(source, index))
@@ -329,20 +346,20 @@ function testTitlesBetween(source: string, start: number, end: number): string[]
         title += c
         cursor += 1
       }
-      if (!broken) titles.push(title)
+      if (!broken) tests.push({ title, line: source.slice(0, index).split('\n').length })
       index = cursor + 1
       continue
     }
     index += 1
   }
-  return titles
+  return tests
 }
 
 interface FixtureDetail {
   readonly path: string
   readonly line: number
   readonly note: string | null
-  readonly testTitles: readonly string[]
+  readonly tests: readonly { readonly title: string; readonly line: number }[]
 }
 
 function fixtureDetailsByRule(testSources: Readonly<Record<string, string>>): ReadonlyMap<string, readonly FixtureDetail[]> {
@@ -362,7 +379,7 @@ function fixtureDetailsByRule(testSources: Readonly<Record<string, string>>): Re
       // the next call: it() titles that follow the callback's close in the
       // same file belong to sibling suites, never to this rule.
       const end = describeRuleCallEnd(source, start)
-      const testTitles = testTitlesBetween(source, start, end)
+      const tests = testsBetween(source, start, end)
       const note = noteWithin(source, start, end)
       const line = source.slice(0, start).split('\n').length
       const list = details.get(ruleId) ?? []
@@ -370,7 +387,7 @@ function fixtureDetailsByRule(testSources: Readonly<Record<string, string>>): Re
         path: fixturePath,
         line,
         note,
-        testTitles,
+        tests,
       })
       details.set(ruleId, list)
     }
@@ -599,7 +616,7 @@ function buildMarkdown(manifest: CoverageReportManifest): string {
     '',
     '## Manifest contract',
     '',
-    'The JSON manifest (rule-coverage.json, version 3) is the machine contract: each rule additionally carries title, errorDirection (null unless the rule is approximated), conventionRationale and contraryReading (null when unused), deduplicated authority identities (kind, citation, url), per-fixture detail (path, line, optional note, and the it() titles scanned from the fixture source), and implementations (per implementing file, the conformance-enforced operative function names). This markdown file is the human summary and does not repeat them. Version 3 is a breaking discriminator for strict version checks (implementations and fixtures are required at 3); the new fields are additive only for readers that ignore unknown keys and do not pin the version.',
+    'The JSON manifest (rule-coverage.json, version 4) is the machine contract: each rule additionally carries title, errorDirection (null unless the rule is approximated), conventionRationale and contraryReading (null when unused), deduplicated authority identities (kind, citation, url), per-fixture detail (path, line, optional note, and the it() tests scanned from the fixture source, each with its own 1-based line), and implementations (per implementing file, the conformance-enforced operative function names with their 1-based declaration lines). Every line number is recomputed from source on each generation and the freshness suite fails when the committed manifest drifts from the sources in the same commit, so at any commit that passes CI the published lines are exact for that commit. This markdown file is the human summary and does not repeat them. Version 4 is a breaking discriminator for strict version checks (fixtures[].tests and per-function lines replace the flat title and name lists of version 3).',
     '',
     '## Quote fidelity',
     '',
@@ -677,7 +694,8 @@ export function buildCoverageReport(input: CoverageReportInput): CoverageReport 
         functions: rule.implementedByFunctions
           .filter((entry: string) => entry.startsWith(path + '#'))
           .map((entry: string) => entry.slice(path.length + 1))
-          .sort(compareStrings),
+          .sort(compareStrings)
+          .map((name) => ({ name, line: input.symbolLineFor(path, name) })),
       })),
       fixtureFiles: [...new Set((fixtureDetails.get(id) ?? []).map(({ path }) => path))].sort(compareStrings),
       fixtures: fixtureDetails.get(id) ?? [],
@@ -709,11 +727,13 @@ export function buildCoverageReport(input: CoverageReportInput): CoverageReport 
   )
   const manifest: CoverageReportManifest = {
     kind: 'retiregolden.rules-coverage.manifest',
-    // 3: rules additionally carry implementations (per-file function lists)
-    // and per-fixture detail. 2 added title/errorDirection/
-    // conventionRationale/contraryReading and deduplicated authority
-    // identities. A consumer requiring these fields gates on the version.
-    version: 3,
+    // 4: implementation functions and fixture tests carry 1-based declaration
+    // lines for deep links (fixtures[].tests replaces the flat testTitles
+    // list). 3 added implementations and per-fixture detail; 2 added title/
+    // errorDirection/conventionRationale/contraryReading and deduplicated
+    // authority identities. A consumer requiring these fields gates on the
+    // version.
+    version: 4,
     registry: {
       total: rules.length,
       byClassification: countBy(rules.map(({ classification }) => classification)),

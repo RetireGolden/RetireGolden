@@ -21,6 +21,9 @@ const report = buildCoverageReport({
   testSources,
   quoteFidelityLedger: null,
   dueOnFor: taxRuleDueOn,
+  // Dispatch prompts never publish deep-link lines; a constant keeps this
+  // suite free of the AST resolver the freshness suite exercises for real.
+  symbolLineFor: () => 1,
 })
 
 const PINNED_RULE_ID = 'usc-42-430-b-contribution-and-benefit-base'
