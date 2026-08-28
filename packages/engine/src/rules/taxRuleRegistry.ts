@@ -625,7 +625,6 @@ const registry = {
     implementedBy: ['packages/engine/src/projection/simulate.ts'],
   },
 
-
   // --- Registered 2026-08-03 from the WS1 rule-matrix audit ---------------
 
   'irc-408-d-8-B-ii-age-70-half': {
@@ -8544,7 +8543,6 @@ const registry = {
     ],
   },
 
-
   'irc-170-b-1-G-projection-cash-ceiling-not-applied': {
     title: 'The 60 percent ceiling on cash gifts is not applied to the projected charitable deduction',
     statement:
@@ -8574,7 +8572,6 @@ const registry = {
     verifiedOn: '2026-08-04',
     implementedBy: ['packages/engine/src/tax/federalTax.ts'],
   },
-
 
   'irc-170-p-projection-nonitemizer-deduction-not-allowed': {
     title: 'The nonitemizer charitable deduction is not allowed in the projection',
@@ -15010,7 +15007,7 @@ const registry = {
       citation: 'Alabama Department of Revenue, 2025 Form 40 booklet, Examples of Income You DO NOT Report (retirement systems)',
       url: 'https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf',
       quotedText:
-        'United States Retirement System benefits. … State of Alabama Teachers Retirement System benefits. … State of Alabama Employees Retirement System benefits. … Military retirement pay.',
+        'United States Retirement System benefits … State of Alabama Teachers Retirement System benefits … State of Alabama Employees Retirement System benefits … State of Alabama Judicial Retirement System benefits … Military retirement pay',
     }, {
       kind: 'formInstruction',
       citation: 'Alabama Department of Revenue, 2025 Form 40 booklet, Pensions and Annuities — amounts not taxable',
@@ -15076,6 +15073,12 @@ const registry = {
       url: 'https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf',
       quotedText:
         'Use lines 1 through 8 to report amounts you withdrew from your IRA, SEP, Keogh, 401(k)(2), or 403(b) account which are not fully taxable and for which you have not recovered any of your cost basis before January 1, 1987. If you began recovering your cost before January 1, 1987, you should report these distributions on lines 11, 12, and 13.',
+    }, {
+      kind: 'formInstruction',
+      citation: 'Alabama Department of Revenue, 2025 Form 40 booklet, Pensions and Annuities',
+      url: 'https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf',
+      quotedText:
+        'Generally, unless specifically excluded by law, your pension payments are fully taxable if you did not contribute to the cost of your pension annuity or you have recovered your cost in the plan on prior Alabama income tax returns.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -15112,10 +15115,11 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
     ],
   },
+
   'al-form40-personal-and-dependent-exemptions-not-modeled': {
     title: 'Alabama subtracts personal and dependent exemptions the engine does not model',
     statement:
-      'Form 40 subtracts a personal exemption on line 13, taken from the filing-status line, and a dependent exemption on line 14 for each qualifying dependent. Approximated: `computeStateTaxableIncome` subtracts only the standard deduction and retirement exclusions, so every Alabama return is overtaxed by the omitted exemptions at the filer\'s marginal rate. The staged booklet\'s extractable text carries the $1,500 personal-exemption figure in its dependent-filer passage; the filing-status line amounts beyond it print on the form face and are not quote-carried here.',
+      'Form 40 subtracts a personal exemption on line 13, taken from the filing-status line, and a dependent exemption on line 14 for each qualifying dependent. Approximated: `computeStateTaxableIncome` subtracts only the standard deduction and retirement exclusions, so every Alabama return is overtaxed by the omitted exemptions at the filer\'s marginal rate. The pin uses the booklet\'s only extractable personal-exemption dollar — the $1,500 of the dependent-filer passage — as a floor: any line-1-through-4 amount at or above it makes the true overstatement at least the pinned delta. The filing-status amounts and the line-14 dependent dollar print on the form face and are not quote-carried, so those limbs are named but unpinned. The Department\'s rate page also attaches the schedules only at stated adjusted-gross-income levels; within the modeled filing statuses that applicability floor is arithmetically shadowed by these exemptions plus the standard deduction, so no separate below-threshold record is registered.',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'overstatesTax',
@@ -15127,6 +15131,12 @@ const registry = {
       url: 'https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf',
       quotedText:
         'Line 13 Personal Exemption Enter the personal exemption from line 1, 2, 3, or 4.',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'Alabama Department of Revenue, Individual Income Tax — Rate (applicability levels)',
+      url: 'https://www.revenue.alabama.gov/individual-corporate/taxes-administered-by-individual-corporate-income-tax/individual-income-tax/',
+      quotedText:
+        'Single persons with adjusted gross income of $4,000, head of family with adjusted gross income of $7,700, and married persons filing separate returns with adjusted gross income of $5,250 or more: 2 percent on first $500 of taxable income',
     }, {
       kind: 'formInstruction',
       citation: 'Alabama Department of Revenue, 2025 Form 40 booklet, Dependent\'s and Student\'s Income',
@@ -15143,31 +15153,7 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
     ],
   },
-  'al-dor-filing-threshold-not-modeled': {
-    title: 'Alabama\'s rate schedules attach at AGI filing thresholds the engine does not gate on',
-    statement:
-      'The Department of Revenue\'s rate page attaches the schedules to filers at or above stated adjusted-gross-income levels — $4,000 for single persons, $10,500 for married filing jointly. Approximated: `computeStateTax` applies the schedule at every income, so a filer below the stated threshold — who owes no Alabama return under the quoted applicability language — is charged the banded tax on the small remainder over the standard deduction, overstating tax by at most a few tens of dollars.',
-    classification: 'approximated',
-    contraryReading: null,
-    errorDirection: 'overstatesTax',
-    conventionRationale: null,
-    jurisdiction: 'state:AL',
-    authority: [{
-      kind: 'stateAgencyPublication',
-      citation: 'Alabama Department of Revenue, Individual Income Tax — Rate',
-      url: 'https://www.revenue.alabama.gov/individual-corporate/taxes-administered-by-individual-corporate-income-tax/individual-income-tax/',
-      quotedText:
-        'Single persons with adjusted gross income of $4,000, head of family with adjusted gross income of $7,700, and married persons filing separate returns with adjusted gross income of $5,250 or more: 2 percent on first $500 of taxable income',
-    }],
-    volatility: 'staticStatute',
-    effectiveFrom: 2026,
-    effectiveThrough: null,
-    verifiedOn: '2026-08-28',
-    implementedBy: [
-      'packages/engine/src/params/state/data/year2026.ts',
-      'packages/engine/src/tax/stateTax.ts',
-    ],
-  },
+
   'al-form40-age-65-retirement-exclusion-cap': {
     title: 'Alabama\'s age-65 retirement exclusion: the pack\'s $6,000 private-bucket cap has no staged operative text',
     statement:
@@ -15206,7 +15192,7 @@ const registry = {
   'al-form40-standard-deduction-agi-slide': {
     title: 'Alabama\'s standard deduction slides down with AGI; the pack holds the maxima flat',
     statement:
-      'The Form 40 booklet requires a standard-deduction claimant to use the page-9 chart, which reduces the deduction as Alabama adjusted gross income rises — for a single filer from $3,000 at AGI $0–$12,999 down to $2,500 at AGI $17,750 and above, and for joint filers from $8,500 at AGI $0–$25,999 down to $5,000 at AGI $35,500 and above. Approximated: the pack\'s `standardDeduction: { single: 3000, marriedFilingJointly: 8500 }` grants those maxima at every income, understating tax wherever the chart has already slid.',
+      'The Form 40 booklet requires a standard-deduction claimant to use the page-9 chart, which reduces the deduction as Alabama adjusted gross income rises — for a single filer from $3,000 at AGI $0–$12,999 down to $2,500 at AGI $17,750 and above, and for joint filers from $8,500 at AGI $0–$25,999 down to $5,000 at AGI $35,500 and above. Approximated: the pack\'s `standardDeduction: { single: 3000, marriedFilingJointly: 8500 }` grants those maxima at every income, understating tax wherever the chart has already slid. The chart-row quotes verify against the staged booklet copy; the live PDF\'s chart region defeats the fetch-time extractor, so the fidelity ledger carries them as PDF-NOT-VERIFIABLE rather than confirmed — the documented undetermined class.',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'understatesTax',

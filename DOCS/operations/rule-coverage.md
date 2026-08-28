@@ -11,22 +11,22 @@ The registry is the machine-checked chain from a rule to its implementation and 
 
 | Metric | Count |
 | --- | ---: |
-| Total rules | 409 |
-| Classification: approximated | 107 |
+| Total rules | 408 |
+| Classification: approximated | 106 |
 | Classification: outOfScope | 73 |
 | Classification: settled | 224 |
 | Classification: unsettled | 5 |
 | Volatility: annuallyIndexed | 57 |
 | Volatility: awaitingGuidance | 11 |
-| Volatility: staticStatute | 335 |
+| Volatility: staticStatute | 334 |
 | Volatility: sunsetting | 6 |
 | Federal jurisdiction | 303 |
-| State jurisdiction total | 106 |
+| State jurisdiction total | 105 |
 
 | State jurisdiction | Count |
 | --- | ---: |
 | AK | 1 |
-| AL | 10 |
+| AL | 9 |
 | AR | 9 |
 | AZ | 8 |
 | CA | 1 |
@@ -187,7 +187,7 @@ None.
 
 ## Re-verification due dates
 
-The 25 earliest due dates are shown below (409 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
+The 25 earliest due dates are shown below (408 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
 
 | Rule | Volatility | Verified on | Due on |
 | --- | --- | --- | --- |
@@ -223,9 +223,9 @@ The JSON manifest (rule-coverage.json, version 2) is the machine contract: each 
 
 ## Quote fidelity
 
-Committed ledger generated at 2026-08-28T04:22:47.038Z over 1050 authority entries (0 fetched live, 303 from cache).
+Committed ledger generated at 2026-08-28T05:01:28.404Z over 1051 authority entries (0 fetched live, 303 from cache).
 
-39 serious, 45 advisory, 966 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
+38 serious, 46 advisory, 967 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
 not treated as a CI gate; how to read each verdict: DOCS/operations/quote-fidelity.md.
 
 | Verdict | Class | Count |
@@ -234,10 +234,9 @@ not treated as a CI gate; how to read each verdict: DOCS/operations/quote-fideli
 | ELISION-EXACT | ok | 60 |
 | ELISION-PUNCTUATION | advisory | 4 |
 | EXACT | ok | 701 |
-| PDF-NOT-VERIFIABLE | advisory | 4 |
-| PDF-WORD-LEVEL | ok | 205 |
+| PDF-NOT-VERIFIABLE | advisory | 5 |
+| PDF-WORD-LEVEL | ok | 206 |
 | PUNCTUATION | advisory | 37 |
-| TRUNCATED | serious | 1 |
 | UNFETCHABLE | serious | 13 |
 
 Regenerate: pnpm verify:quotes -- --json > DOCS/operations/quote-fidelity-ledger.json (network required), then pnpm rules:coverage.

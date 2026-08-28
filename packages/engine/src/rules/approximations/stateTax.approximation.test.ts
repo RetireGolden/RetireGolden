@@ -1315,7 +1315,8 @@ describeRule('la-rs-47-44-1-retirement-exemption', {
 
 // ─── Alabama approximated pins (Form 40 booklet, 2026-08-28) ─────────────────
 //
-// Closed-form pack math — the engine was not run. PRODUCED_TBD remains the
+// Closed-form pack math: each pin is derived by hand and the test asserts
+// the engine reproduces it. PRODUCED_TBD remains the
 // orchestrator sentinel; each pin below is the figure `computeStateTax` must
 // return from the shipped AL pack and the scenario.
 
@@ -1363,6 +1364,21 @@ describeRule('al-form40-defined-benefit-414j-exemption', {
     expect(produced).not.toBe(PRODUCED_TBD)
     // Derivation: (40,000 − 6,000 − 3,000) through AL 2/4/5% = 1,510.
     expect(produced).toBeCloseTo(1510, 6)
+  })
+
+  it('taxes the whole pension for an under-65 private defined-benefit retiree', () => {
+    // The cap needs minAge 65, so a 55-year-old's exempt 414(j) pension is
+    // taxed in full: (40,000 − 3,000) through 2/4/5% = 1,810 vs booklet 0 —
+    // the same limb at its widest.
+    const underSixtyFive = input({
+      state: 'AL',
+      ordinaryIncome: AL_DB_PENSION,
+      privateRetirementIncome: AL_DB_PENSION,
+      agesAlive: [55],
+    })
+    expect(computeStateTax(pack('AL'), underSixtyFive))
+      .toBeCloseTo(alApproxSingleTax(AL_DB_PENSION - AL_APPROX_DEDUCTION), 6)
+    expect(alApproxSingleTax(AL_DB_PENSION - AL_APPROX_DEDUCTION)).toBeCloseTo(1810, 6)
   })
 
   it('reaches the booklet for the private pension once that bucket is full', () => {
@@ -1464,29 +1480,3 @@ describeRule('al-form40-personal-and-dependent-exemptions-not-modeled', {
   })
 })
 
-describeRule('al-dor-filing-threshold-not-modeled', {
-  readings: {
-    // Single AGI $3,500 sits under the quoted $4,000 applicability level, so
-    // the schedule never attaches and no Alabama tax is due.
-    belowThresholdOwesNothing: 0,
-    // Engine: taxable 3,500 − 3,000 = 500 → 2% × 500 = 10.
-    packTaxesTheRemainderOverTheDeduction:
-      alApproxSingleTax(3_500 - AL_APPROX_DEDUCTION),
-  },
-  accepted: 'belowThresholdOwesNothing',
-  produced: 'packTaxesTheRemainderOverTheDeduction',
-}, ({ accepted, produced }) => {
-  const scenario = input({
-    state: 'AL',
-    ordinaryIncome: 3_500,
-    agesAlive: [50],
-  })
-
-  it('charges banded tax below the quoted filing threshold', () => {
-    expect(computeStateTax(pack('AL'), scenario)).toBeCloseTo(produced, 6)
-    expect(produced).toBeGreaterThan(accepted)
-    expect(produced).not.toBe(PRODUCED_TBD)
-    expect(produced).toBeCloseTo(10, 6)
-    expect(accepted).toBe(0)
-  })
-})

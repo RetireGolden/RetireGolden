@@ -1,20 +1,19 @@
 {
-  "generatedAt": "2026-08-28T04:22:47.038Z",
-  "recordCount": 409,
+  "generatedAt": "2026-08-28T05:01:28.404Z",
+  "recordCount": 408,
   "urlCount": 303,
   "fetched": 0,
   "cached": 303,
-  "entryCount": 1050,
+  "entryCount": 1051,
   "counts": {
     "EXACT": 701,
     "PUNCTUATION": 37,
     "UNFETCHABLE": 13,
     "ELISION-PUNCTUATION": 4,
-    "PDF-WORD-LEVEL": 205,
+    "PDF-WORD-LEVEL": 206,
     "ELISION-EXACT": 60,
     "ABSENT": 25,
-    "PDF-NOT-VERIFIABLE": 4,
-    "TRUNCATED": 1
+    "PDF-NOT-VERIFIABLE": 5
   },
   "hostConventions": {
     "uscode.house.gov": {
@@ -10494,14 +10493,10 @@
       "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Examples of Income You DO NOT Report (retirement systems)",
       "host": "www.revenue.alabama.gov",
       "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf",
-      "quoteSha256": "5560f6dd6784a323",
-      "verdict": "TRUNCATED",
-      "detail": "the quote ends with a terminal period the source does not have there",
-      "diagnosis": {
-        "matchedWords": 7,
-        "totalWords": 7,
-        "continuation": "state of alabama employees retirement system benefits state of alabama judicial retirement system benefits military retirement pay tennessee valley authority pension system benefi"
-      }
+      "quoteSha256": "1b8ce5fd0b8750c0",
+      "verdict": "PDF-NOT-VERIFIABLE",
+      "detail": "words all present, but the character difference cannot be separated from extraction loss",
+      "diagnosis": null
     },
     {
       "id": "al-form40-defined-benefit-414j-exemption",
@@ -10544,6 +10539,16 @@
       "diagnosis": null
     },
     {
+      "id": "al-form40-cost-recovery-not-modeled",
+      "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Pensions and Annuities",
+      "host": "www.revenue.alabama.gov",
+      "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf",
+      "quoteSha256": "ee758d6fbc00bec5",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
       "id": "al-form40-railroad-retirement-not-modeled",
       "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Examples of Income You DO NOT Report",
       "host": "www.revenue.alabama.gov",
@@ -10565,22 +10570,22 @@
     },
     {
       "id": "al-form40-personal-and-dependent-exemptions-not-modeled",
+      "citation": "Alabama Department of Revenue, Individual Income Tax — Rate (applicability levels)",
+      "host": "www.revenue.alabama.gov",
+      "url": "https://www.revenue.alabama.gov/individual-corporate/taxes-administered-by-individual-corporate-income-tax/individual-income-tax/",
+      "quoteSha256": "5ae12c148fcc3f9c",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "al-form40-personal-and-dependent-exemptions-not-modeled",
       "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Dependent's and Student's Income",
       "host": "www.revenue.alabama.gov",
       "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf",
       "quoteSha256": "494c8c7f4837a5b3",
       "verdict": "PDF-WORD-LEVEL",
       "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
-      "diagnosis": null
-    },
-    {
-      "id": "al-dor-filing-threshold-not-modeled",
-      "citation": "Alabama Department of Revenue, Individual Income Tax — Rate",
-      "host": "www.revenue.alabama.gov",
-      "url": "https://www.revenue.alabama.gov/individual-corporate/taxes-administered-by-individual-corporate-income-tax/individual-income-tax/",
-      "quoteSha256": "5ae12c148fcc3f9c",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {

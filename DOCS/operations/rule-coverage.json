@@ -2,9 +2,9 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 2,
   "registry": {
-    "total": 409,
+    "total": 408,
     "byClassification": {
-      "approximated": 107,
+      "approximated": 106,
       "outOfScope": 73,
       "settled": 224,
       "unsettled": 5
@@ -12,14 +12,14 @@
     "byVolatility": {
       "annuallyIndexed": 57,
       "awaitingGuidance": 11,
-      "staticStatute": 335,
+      "staticStatute": 334,
       "sunsetting": 6
     },
     "byJurisdiction": {
       "federal": 303,
       "states": {
         "AK": 1,
-        "AL": 10,
+        "AL": 9,
         "AR": 9,
         "AZ": 8,
         "CA": 1,
@@ -70,7 +70,7 @@
         "WV": 1,
         "WY": 1
       },
-      "stateTotal": 106
+      "stateTotal": 105
     }
   },
   "attestations": {
@@ -941,34 +941,6 @@
       ]
     },
     {
-      "id": "al-dor-filing-threshold-not-modeled",
-      "title": "Alabama's rate schedules attach at AGI filing thresholds the engine does not gate on",
-      "classification": "approximated",
-      "errorDirection": "overstatesTax",
-      "conventionRationale": null,
-      "contraryReading": null,
-      "jurisdiction": "state:AL",
-      "volatility": "staticStatute",
-      "effectiveFrom": 2026,
-      "effectiveThrough": null,
-      "verifiedOn": "2026-08-28",
-      "dueOn": "2027-08-28",
-      "implementedBy": [
-        "packages/engine/src/params/state/data/year2026.ts",
-        "packages/engine/src/tax/stateTax.ts"
-      ],
-      "fixtureFiles": [
-        "packages/engine/src/rules/approximations/stateTax.approximation.test.ts"
-      ],
-      "authorities": [
-        {
-          "kind": "stateAgencyPublication",
-          "citation": "Alabama Department of Revenue, Individual Income Tax — Rate",
-          "url": "https://www.revenue.alabama.gov/individual-corporate/taxes-administered-by-individual-corporate-income-tax/individual-income-tax/"
-        }
-      ]
-    },
-    {
       "id": "al-dor-individual-income-tax-rate-schedule",
       "title": "Alabama taxes taxable income at 2%, 4%, and 5% with filing-status break points",
       "classification": "settled",
@@ -1057,6 +1029,11 @@
         {
           "kind": "formInstruction",
           "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Worksheet for Partially Taxable Pensions — pre-1987 recovery",
+          "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Pensions and Annuities",
           "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf"
         }
       ]
@@ -1158,6 +1135,11 @@
           "kind": "formInstruction",
           "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Line 13 — Personal Exemption",
           "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Alabama Department of Revenue, Individual Income Tax — Rate (applicability levels)",
+          "url": "https://www.revenue.alabama.gov/individual-corporate/taxes-administered-by-individual-corporate-income-tax/individual-income-tax/"
         },
         {
           "kind": "formInstruction",
@@ -15023,8 +15005,8 @@
     }
   ],
   "quoteFidelity": {
-    "generatedAt": "2026-08-28T04:22:47.038Z",
-    "entryCount": 1050,
+    "generatedAt": "2026-08-28T05:01:28.404Z",
+    "entryCount": 1051,
     "fetched": 0,
     "cached": 303,
     "counts": {
@@ -15032,10 +15014,9 @@
       "ELISION-EXACT": 60,
       "ELISION-PUNCTUATION": 4,
       "EXACT": 701,
-      "PDF-NOT-VERIFIABLE": 4,
-      "PDF-WORD-LEVEL": 205,
+      "PDF-NOT-VERIFIABLE": 5,
+      "PDF-WORD-LEVEL": 206,
       "PUNCTUATION": 37,
-      "TRUNCATED": 1,
       "UNFETCHABLE": 13
     }
   }

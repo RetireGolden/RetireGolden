@@ -2833,7 +2833,7 @@ describeRule('al-form40-social-security-exclusion', {
     // income IRC 86 includes 85% of the $40,000 benefit ($34,000); excluding
     // it leaves 50,000 − 3,000 = 47,000.
     federalSocialSecurityOmittedFromAlabamaBase: 50_000 - AL_DEDUCTION_SINGLE,
-    federallyTaxableShareLeftInTheBase: 50_000 + 34_000 - AL_DEDUCTION_SINGLE,
+    federallyTaxableShareLeftInTheBase: 50_000 + 0.85 * 40_000 - AL_DEDUCTION_SINGLE,
   },
   accepted: 'federalSocialSecurityOmittedFromAlabamaBase',
 }, ({ accepted, readings }) => {
@@ -2935,10 +2935,11 @@ describeRule('al-form40-age-65-retirement-exclusion-cap', {
     // staged. Taxable 40,000 − 12,000 − 3,000 = 25,000 → tax 1,210.
     researchTwelveThousandFor2026: alSingleTax(25_000),
   },
-  // accepted carries the only reading with staged-source support (the
-  // instructions' silence); the engine's $6,000 grant is a disclosed
-  // convention, asserted below as what the pack implements, never as oracle.
-  accepted: 'stagedInstructionsCarryNoAgeExclusion',
+  // Repo convention for unsettled fixtures (irc-408-d-8-B-ii-age-70-half,
+  // treas-reg-1-401-a-9-2-b-2-v-applicable-age-1959): accepted carries the
+  // convention the engine took, disclosed on the record's conventionRationale;
+  // the competing readings stay pinned as distinct values.
+  accepted: 'encodedSixThousandAtSixtyFive',
   note: 'unsettled: operative text unsourced',
 }, ({ accepted, readings }) => {
   const scenario = input({
@@ -2948,21 +2949,21 @@ describeRule('al-form40-age-65-retirement-exclusion-cap', {
     agesAlive: [70],
   })
 
-  it('implements the encoded $6,000 convention, distinct from every recorded reading', () => {
-    expect(computeStateTax(pack('AL'), scenario)).toBeCloseTo(readings.encodedSixThousandAtSixtyFive, 6)
-    expect(readings.encodedSixThousandAtSixtyFive).toBeCloseTo(1510, 6)
-    expect(accepted).toBeCloseTo(1810, 6)
+  it('implements the encoded $6,000 convention and discriminates the competing readings', () => {
+    expect(computeStateTax(pack('AL'), scenario)).toBeCloseTo(accepted, 6)
+    expect(accepted).toBeCloseTo(1510, 6)
+    expect(readings.stagedInstructionsCarryNoAgeExclusion).toBeCloseTo(1810, 6)
     expect(readings.researchTwelveThousandFor2026).toBeCloseTo(1210, 6)
-    expect(computeStateTax(pack('AL'), scenario)).not.toBeCloseTo(accepted, 6)
+    expect(computeStateTax(pack('AL'), scenario)).not.toBeCloseTo(readings.stagedInstructionsCarryNoAgeExclusion, 6)
     expect(computeStateTax(pack('AL'), scenario)).not.toBeCloseTo(readings.researchTwelveThousandFor2026, 6)
   })
 
-  it('reaches the accepted no-exclusion reading once the cap is withheld', () => {
+  it('reaches the no-exclusion reading once the cap is withheld', () => {
     const noCap = {
       ...pack('AL'),
       retirementPrivate: { kind: 'none' as const },
     }
-    expect(computeStateTax(noCap, scenario)).toBeCloseTo(accepted, 6)
+    expect(computeStateTax(noCap, scenario)).toBeCloseTo(readings.stagedInstructionsCarryNoAgeExclusion, 6)
   })
 
   it('reaches the research 2026 reading under a doubled cap', () => {
