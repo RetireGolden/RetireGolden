@@ -196,13 +196,79 @@ describe('manifest rule projection contract', () => {
         expect(Object.keys(authority).sort(), rule.id).toEqual(['citation', 'kind', 'url'])
       }
     }
-    // The dedupe is real, not vacuous: at least one registry record quotes the
-    // same provision twice, so its identity list must be shorter than its
-    // authority list.
-    const collapsed = report.manifest.rules.filter((rule) => {
-      const record = TAX_RULE_REGISTRY[rule.id as keyof typeof TAX_RULE_REGISTRY]
-      return record !== undefined && rule.authorities.length < record.authority.length
+  })
+
+  it('publishes exactly the documented rule keys, with no quotedText or statement, in the serialized JSON', () => {
+    const published = JSON.parse(report.json) as { rules: Record<string, unknown>[] }
+    const documentedKeys = [
+      'authorities',
+      'classification',
+      'contraryReading',
+      'conventionRationale',
+      'dueOn',
+      'effectiveFrom',
+      'effectiveThrough',
+      'errorDirection',
+      'fixtureFiles',
+      'id',
+      'implementedBy',
+      'jurisdiction',
+      'title',
+      'verifiedOn',
+      'volatility',
+    ]
+    for (const rule of published.rules) {
+      expect(Object.keys(rule).sort(), String(rule.id)).toEqual(documentedKeys)
+    }
+    // Key-level leak guards on the serialized text itself: a spread of the
+    // registry record would reintroduce these long before a human noticed.
+    expect(report.json).not.toContain('"quotedText":')
+    expect(report.json).not.toContain('"statement":')
+    expect(report.json).not.toContain('"authority":')
+  })
+
+  it('collapses duplicate identities per a hand-written fixture, not the builder algorithm', () => {
+    // Two quotes of one provision (one identity), a second citation sharing
+    // the URL (its own identity), and quotedText that must not surface. The
+    // expected list is written by hand so this cannot mirror the builder.
+    const fixtureRegistry = {
+      'fixture-rule': {
+        title: 'Fixture rule',
+        statement: 'Fixture statement that must not be published.',
+        classification: 'settled',
+        contraryReading: null,
+        errorDirection: null,
+        conventionRationale: null,
+        jurisdiction: 'federal',
+        authority: [
+          { kind: 'statute', citation: 'Fix. Code 1(a)', url: 'https://example.gov/1', quotedText: 'first quote' },
+          { kind: 'statute', citation: 'Fix. Code 1(a)', url: 'https://example.gov/1', quotedText: 'second quote of the same span' },
+          { kind: 'statute', citation: 'Fix. Code 1(b)', url: 'https://example.gov/1', quotedText: 'same url, different citation' },
+        ],
+        volatility: 'staticStatute',
+        effectiveFrom: 2026,
+        effectiveThrough: null,
+        verifiedOn: '2026-08-27',
+        implementedBy: ['packages/engine/src/rules/coverageReport.ts'],
+      },
+    } as unknown as typeof TAX_RULE_REGISTRY
+    const fixtureReport = buildCoverageReport({
+      registry: fixtureRegistry,
+      attestations: COVERAGE_ATTESTATIONS,
+      baselineUnswept: BASELINE_UNSWEPT,
+      testSources,
+      quoteFidelityLedger: null,
+      dueOnFor: () => '2027-01-01',
     })
-    expect(collapsed.length).toBeGreaterThan(0)
+    const published = JSON.parse(fixtureReport.json) as {
+      rules: { id: string; authorities: unknown }[]
+    }
+    const fixtureRule = published.rules.find((rule) => rule.id === 'fixture-rule')
+    expect(fixtureRule).toBeDefined()
+    expect(fixtureRule!.authorities).toEqual([
+      { kind: 'statute', citation: 'Fix. Code 1(a)', url: 'https://example.gov/1' },
+      { kind: 'statute', citation: 'Fix. Code 1(b)', url: 'https://example.gov/1' },
+    ])
+    expect(fixtureReport.json).not.toContain('"quotedText":')
   })
 })
