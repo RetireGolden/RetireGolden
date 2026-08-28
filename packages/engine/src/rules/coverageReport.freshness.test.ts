@@ -214,8 +214,16 @@ describe('manifest rule projection contract', () => {
     )
     expect(globKey, sample!.fixtures[0]!.path).toBeDefined()
     const source = testSources[globKey!] as string
+    const callMarker = 'describe' + `Rule('${sample!.id}'`
+    const callStart = source.indexOf(callMarker)
+    expect(callStart, sample!.id).toBeGreaterThanOrEqual(0)
+    // Bind titles to the call's own extent: appearing elsewhere in the file
+    // is exactly the leak this scan must not have.
+    const nextCall = source.indexOf('describe' + 'Rule(', callStart + 1)
+    const blockEnd = nextCall === -1 ? source.length : nextCall
+    const block = source.slice(callStart, blockEnd)
     for (const title of sample!.fixtures[0]!.testTitles) {
-      expect(source, `${sample!.id}: ${title}`).toContain(title)
+      expect(block, `${sample!.id}: ${title}`).toContain(title)
     }
   })
 
@@ -224,6 +232,8 @@ describe('manifest rule projection contract', () => {
     // suite's title must land on neither rule. This is the leak class the
     // sequential-slice scan shipped with, pinned so it cannot return.
     const syntheticSource = [
+      '// synthetic fixture source for the scan contract',
+      "// an it('commented out title') here must not be captured",
       // 'describe' + 'Rule' is split so the conformance suite's raw-text scan
       // does not read these synthetic ids as claimed fixtures.
       "describe" + "Rule('fixture-alpha', { readings: { a: 1, b: 2 }, accepted: 'a' }, ({ accepted }) => {",
@@ -234,7 +244,7 @@ describe('manifest rule projection contract', () => {
       "  it('beta belongs to nobody', () => { expect(true).toBe(true) })",
       '})',
       '',
-      "describe" + "Rule('fixture-beta', { readings: { a: 1, b: 2 }, accepted: 'a' }, ({ accepted }) => {",
+      "describe" + "Rule('fixture-beta', { readings: { a: 1, b: 2 }, accepted: 'a', note: 'beta note' }, ({ accepted }) => {",
       "  it('gamma discriminates', () => { expect(1).toBe(accepted) })",
       '})',
       '',
@@ -254,12 +264,18 @@ describe('manifest rule projection contract', () => {
     const alpha = syntheticReport.manifest.rules.find((rule) => rule.id === 'fixture-alpha')
     const beta = syntheticReport.manifest.rules.find((rule) => rule.id === 'fixture-beta')
     expect(alpha!.fixtures[0]!.testTitles).toEqual(['alpha discriminates'])
+    expect(alpha!.fixtures[0]!.path).toBe('packages/engine/src/rules/synthetic.test.ts')
+    expect(alpha!.fixtures[0]!.line).toBe(3)
     expect(beta!.fixtures[0]!.testTitles).toEqual(['gamma discriminates'])
+    expect(beta!.fixtures[0]!.line).toBe(11)
     for (const rule of [alpha!, beta!]) {
       for (const fixture of rule.fixtures) {
         expect(fixture.testTitles, rule.id).not.toContain('beta belongs to nobody')
+        expect(fixture.testTitles, rule.id).not.toContain('commented out title')
       }
     }
+    expect(alpha!.fixtures[0]!.note).toBeNull()
+    expect(beta!.fixtures[0]!.note).toBe('beta note')
   })
 
   it('publishes unique authority identities with no quotedText', () => {
