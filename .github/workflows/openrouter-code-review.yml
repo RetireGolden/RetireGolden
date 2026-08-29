@@ -1,15 +1,23 @@
-# Thin caller for the org OpenRouter PR review.
+# Thin caller for the org-required OpenRouter PR review.
 # Implementation lives in RetireGolden/.github — do not copy it here.
-# Separate workflow from Grok code review so a failure here cannot red
-# review / grok-first-pass-gate or cancel Grok jobs.
 #
 # Pass only OPENROUTER_API_KEY. Do not inherit.
+#
+# OpenRouter is independent of Grok: this caller passes only
+# OPENROUTER_API_KEY and the reusable never invokes a Grok fallback.
+# The stable required-check context is:
+#
+#   review / openrouter-first-pass-gate
+#
+# Main Guard must migrate once from `review / grok-first-pass-gate` to
+# that context when this caller is activated.
 #
 # As of the .github#19 pin (action v1.2.0), synchronize runs a VERIFY
 # round that SKIPS with a notice (zero token spend) until a first-pass
 # has seeded this PR's review loop. Seed with workflow_dispatch
-# (pr_number), or the PR's next reopen / ready_for_review. Still advisory — never a
-# required check. Per-PR concurrency lives in the org reusable's own
+# (pr_number), or the PR's next reopen / ready_for_review. The stable
+# first-pass gate carries a completed initial review across later pushes.
+# Per-PR concurrency lives in the org reusable's own
 # job-level groups; do not add a workflow-level group here (it could
 # cancel an in-progress first-pass).
 #
@@ -44,12 +52,17 @@ on:
 permissions:
   contents: read
   pull-requests: write
+  # The central reusable publishes the stable required-gate commit status.
+  statuses: write
 
 jobs:
-  openrouter:
-    name: OpenRouter review
+  # Keep this id stable: it is the first half of the required check context
+  # `review / openrouter-first-pass-gate`.
+  review:
     if: github.event_name == 'workflow_dispatch' || !github.event.pull_request.draft
-    uses: RetireGolden/.github/.github/workflows/openrouter-code-review.yml@79863e9b7b5608022b220ad9b7d6e6c944748c21 # .github#27 (action v1.2.6 diff-budget triage; this repo: two-model grok-4.6 + glm-5.3-flash + judge)
+    # Central independent-review workflow pinned to the .github#30 merge commit
+    # (OpenRouter action v1.2.7 and its stable independent required gate).
+    uses: RetireGolden/.github/.github/workflows/openrouter-code-review.yml@97b571df12df0089cff3dd310bcad907b5c94cab # .github#30 (OpenRouter action v1.2.7 independent gate)
     with:
       pr_number: ${{ inputs.pr_number || github.event.inputs.pr_number || github.event.pull_request.number }}
     secrets:

@@ -1,22 +1,12 @@
-# Thin caller for the org-required Grok Build PR review.
+# Manual emergency caller for the legacy Grok Build PR review.
 # Implementation lives in RetireGolden/.github — do not copy it here.
 #
-# Green-on-partial is intentional (.github#26): when a diff exceeds
-# the embed cap it is truncated, Grok still reviews the full PR with
-# read-only tools, and the run completes with an explicit `partial`
-# verdict, which grok-first-pass-gate accepts. A green gate on
-# `partial` means the embed was incomplete, not that review was
-# skipped; partial runs never publish review-loop ledger state, so
-# follow-up rounds re-review from the last complete marker.
-# Since .github#28 (action v1.0.7), an over-cap diff first stubs
-# generated/large data files (lock files, vendored paths, data diffs
-# over 64 KB) to header-only entries - a partial can mean stubbed
-# hunks, not a positional cut, and hand-written source stays embedded.
+# This workflow intentionally has no pull_request trigger. It is independent
+# of the required OpenRouter workflow and spends xAI tokens only when a human
+# explicitly dispatches it for a PR number.
 name: Grok code review
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
     inputs:
       pr_number:
@@ -32,8 +22,8 @@ permissions:
 
 jobs:
   review:
-    uses: RetireGolden/.github/.github/workflows/grok-code-review.yml@11985ab7153fe7f6b7126c459d72459249d954e7 # .github#28 (action v1.0.7 generated-file triage)
+    uses: RetireGolden/.github/.github/workflows/grok-code-review.yml@97b571df12df0089cff3dd310bcad907b5c94cab # .github#30 (Grok action v1.0.8 manual safeguards)
     with:
-      pr_number: ${{ inputs.pr_number || github.event.inputs.pr_number || github.event.pull_request.number }}
+      pr_number: ${{ inputs.pr_number }}
     secrets:
       XAI_API_KEY: ${{ secrets.XAI_API_KEY }}

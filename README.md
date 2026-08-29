@@ -52,7 +52,7 @@ pnpm dev
 
 ## CI/CD
 
-Nine GitHub Actions workflows: the SWA pipeline and both security scans run on pushes and pull requests to `main`; Grok Build review, the OpenRouter sibling review, and CLA enforcement run on PR activity; the Owl parity oracle and the engine and planner-ui npm releases are triggered manually (the engine release also fires on `engine-v*` tags). Full setup notes: [DOCS/operations/ci-cd-and-deploy.md](DOCS/operations/ci-cd-and-deploy.md).
+Nine GitHub Actions workflows: the SWA pipeline and both security scans run on pushes and pull requests to `main`; OpenRouter review and CLA enforcement run on PR activity; Grok Build review is manual emergency-only; the Owl parity oracle and the engine and planner-ui npm releases are triggered manually (the engine release also fires on `engine-v*` tags). Full setup notes: [DOCS/operations/ci-cd-and-deploy.md](DOCS/operations/ci-cd-and-deploy.md).
 
 ### Azure Static Web Apps — build & deploy
 
@@ -98,17 +98,19 @@ Reusable workflow invoked by the Azure deploy job after a **PR preview** is live
 
 Runs on pull-request activity. First-time contributors are asked to sign the [Contributor License Agreement](CLA.md) by replying with the acceptance phrase; the check blocks merge until every commit author has signed. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
-### Grok Build review
+### Grok Build emergency review
 
 [`.github/workflows/grok-code-review.yml`](.github/workflows/grok-code-review.yml)
 
-Runs on pull-request open, sync, reopen, and ready-for-review (and manually from the Actions tab). Delegates to the org workflow in `RetireGolden/.github` to post an automated Grok Build review on the PR diff.
+Manual-only from the Actions tab. A human supplies the PR number when an independent emergency Grok review is wanted. It is not triggered by pull-request activity, is not a fallback for OpenRouter, and is not a required check.
 
-### OpenRouter sibling review
+### OpenRouter required review
 
 [`.github/workflows/openrouter-code-review.yml`](.github/workflows/openrouter-code-review.yml)
 
-Non-required bake-off sibling of Grok. Runs on pull-request open, sync, reopen, and ready-for-review (and manually from the Actions tab); skips drafts (intentional). Needs the org Actions secret `OPENROUTER_API_KEY`. Delegates to the org workflow in `RetireGolden/.github`. The caller has no concurrency group, so it cannot cancel Grok.
+Runs on pull-request open, sync, reopen, and ready-for-review (and manually from the Actions tab); GitHub prevents draft PRs from merging, and the review starts when a draft is marked ready. It passes only the org `OPENROUTER_API_KEY` to the reusable workflow. The OpenRouter roster may route an `x-ai/grok-4.6` model lane through OpenRouter, but it never invokes the standalone Grok workflow, never receives `XAI_API_KEY`, and has no fallback to that legacy stack. The required context is `review / openrouter-first-pass-gate`; it turns green only after OpenRouter publishes a usable full-PR first-pass review, then carries that proof across synchronize events while follow-up reviews continue independently. If the initial run fails before seeding that proof, rerun it with this workflow's manual `pr_number` dispatch; synchronize events deliberately do not restart an unseeded full review and its token spend automatically.
+
+Cutover requires this ordered operation: first merge the pinned OpenRouter action and central `RetireGolden/.github` reusable; then merge the product caller change while the existing Grok gate is still satisfied; immediately replace Main Guard's required context `review / grok-first-pass-gate` with `review / openrouter-first-pass-gate`. GitHub cannot make the workflow merge and ruleset edit atomic, so operators should expect a short controlled interval in which open PRs may wait for the old context. Keep that interval brief, verify the new context on an active PR, and manually dispatch OpenRouter for any existing PR that needs a seed. The old Grok workflow remains available only for explicit emergency dispatches and is never an OpenRouter fallback.
 
 ### Engine package release
 

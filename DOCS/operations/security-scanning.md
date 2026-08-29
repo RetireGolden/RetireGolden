@@ -133,17 +133,20 @@ flowchart TD
 
 ## 5. Gating & branch protection
 
-A red check only blocks a merge if it is a **required status check**. The repo's **"Main Guard"** ruleset
-(applies to the default branch) requires both:
+A red check only blocks a merge if it is a **required status check**. After the
+OpenRouter cutover, the repo's **"Main Guard"** ruleset (applies to the default
+branch) requires all three contexts:
 
 - `Scan (p/default)` (Semgrep job)
 - `ZAP DAST / ZAP Baseline` (the `dast` caller job / reusable ZAP job)
+- `review / openrouter-first-pass-gate` (independent OpenRouter full-PR review)
 
 Configuration: `strict` policy is **off** (PRs don't need to be rebased before merging, to keep friction
 low), enforcement is **active**, and the existing PR-review requirement and admin bypass are preserved.
 
-Net effect: a PR is blocked when Semgrep finds an **ERROR** issue or ZAP finds a **High-risk** alert;
-low/medium/informational findings are surfaced but never block.
+Net effect: a PR is blocked when Semgrep finds an **ERROR** issue, ZAP finds a
+**High-risk** alert, or OpenRouter has not published a usable full-PR first-pass
+review. Low/medium/informational security findings are surfaced but never block.
 
 > [!NOTE]
 > **Label gate.** On PRs, **Semgrep always runs** (cheap scan, real required-check result on every push),
@@ -154,9 +157,11 @@ low/medium/informational findings are surfaced but never block.
 
 > [!WARNING]
 > **Renaming coupling.** The required checks are keyed to **job/display names**. If you rename the Semgrep
-> job (`Scan (p/default)`), the `dast` job (`ZAP DAST`), or the reusable ZAP job (`ZAP Baseline`), you must
-> update the "Main Guard" ruleset's required-check contexts to match — otherwise every merge to `main` will
-> block forever, waiting on a check that never reports under the old name.
+> job (`Scan (p/default)`), the `dast` job (`ZAP DAST`), the reusable ZAP job
+> (`ZAP Baseline`), the OpenRouter caller job (`review`), or its reusable gate
+> (`openrouter-first-pass-gate`), you must update the "Main Guard" ruleset's
+> required-check contexts to match — otherwise every merge to `main` will block
+> forever, waiting on a check that never reports under the old name.
 
 ---
 
