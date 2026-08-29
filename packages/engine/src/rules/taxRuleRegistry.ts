@@ -2765,9 +2765,17 @@ const registry = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
-    implementedBy: ['packages/engine/src/params/index.ts'],
+    implementedBy: [
+      'packages/engine/src/params/index.ts',
+      'packages/engine/src/insights/detectors/rothBridgeHeadroom.ts',
+      'packages/engine/src/decisions/objectives.ts',
+      'packages/engine/src/rmd/applicableAge.ts',
+    ],
     implementedByFunctions: [
       'packages/engine/src/params/index.ts#rmdStartAgeForBirthYear',
+      'packages/engine/src/insights/detectors/rothBridgeHeadroom.ts#rothBridgeHeadroom',
+      'packages/engine/src/decisions/objectives.ts#bridgeYearFilter',
+      'packages/engine/src/rmd/applicableAge.ts#applicableAgeAttainYears',
     ],
   },
 
@@ -7764,10 +7772,12 @@ const registry = {
     implementedBy: [
       'packages/engine/src/tax/propertySale.ts',
       'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/insights/detectors/missingDataBasis.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/tax/propertySale.ts#propertySaleTax',
+      'packages/engine/src/insights/detectors/missingDataBasis.ts#missingDataBasis',
     ],
   },
   'irc-86-c-provisional-income-thresholds': {
@@ -13368,12 +13378,14 @@ const registry = {
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/model/migrations.ts',
       'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/decisions/generators.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/model/migrations.ts#migratePlanToCurrent',
       'packages/engine/src/model/plan.ts#annuitySchema',
       'packages/engine/src/model/plan.ts#latestQlacAnnuityStartAge',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/decisions/generators.ts#annuityPurchaseGenerator',
     ],
   },
 
