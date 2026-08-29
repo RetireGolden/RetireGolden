@@ -13,6 +13,14 @@
 # job-level groups; do not add a workflow-level group here (it could
 # cancel an in-progress first-pass).
 #
+# Dense PRs: since the .github#27 pin (action v1.2.6), an over-budget
+# diff (max_diff_kb) is packed per file instead of raw-truncated —
+# generated/vendored files demote to stubs that stay coverage-accounted
+# and tool-readable — so a fully embedded-or-stubbed diff keeps its real
+# verdict and publishes the review-loop ledger (follow-up rounds keep
+# continuity). Only files dropped entirely still force `partial`.
+# Rewrite this note ONLY if the dense-diff behavior actually changes.
+#
 # The models roster is decided per-repo INSIDE the reusable (keyed off
 # GITHUB_REPOSITORY, frozen at the pinned SHA below). This repo has run
 # the two-model roster — x-ai/grok-4.6 + z-ai/glm-5.3-flash, merged by
