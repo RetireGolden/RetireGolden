@@ -1,5 +1,13 @@
 # Thin caller for the org-required Grok Build PR review.
 # Implementation lives in RetireGolden/.github — do not copy it here.
+#
+# Green-on-partial is intentional (.github#26): when a diff exceeds
+# the embed cap it is truncated, Grok still reviews the full PR with
+# read-only tools, and the run completes with an explicit `partial`
+# verdict, which grok-first-pass-gate accepts. A green gate on
+# `partial` means the embed was incomplete, not that review was
+# skipped; partial runs never publish review-loop ledger state, so
+# follow-up rounds re-review from the last complete marker.
 name: Grok code review
 
 on:
@@ -20,7 +28,7 @@ permissions:
 
 jobs:
   review:
-    uses: RetireGolden/.github/.github/workflows/grok-code-review.yml@ed323b2437d45eaec4ca6955c384bcf19aeb8357 # grok action v1.0.6 (dense-PR truncation degrades to partial)
+    uses: RetireGolden/.github/.github/workflows/grok-code-review.yml@ed323b2437d45eaec4ca6955c384bcf19aeb8357 # .github#26 (action v1.0.6 dense-PR truncation degrades to partial)
     with:
       pr_number: ${{ inputs.pr_number || github.event.inputs.pr_number || github.event.pull_request.number }}
     secrets:
