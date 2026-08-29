@@ -31,9 +31,9 @@ export function DisclaimerPage() {
           RMDs, IRMAA, ACA credits) at planning precision, not return-filing precision. State income tax models each
           state's brackets, standard deduction, Social Security treatment, and major retirement-income exclusions,
           with a flat-rate override for corrections; credits, local/city taxes, and income-tested exclusions are
-          simplified or omitted. Many real-world provisions are approximated. The rule-by-rule accounting, every
-          modeled tax rule with its statutory citation, its classification, and the tests and code that carry it, is
-          published in the{' '}
+          simplified or omitted. Many real-world provisions are approximated. The registry behind this is public:
+          every tax rule the engine registers is published with the authority it cites and its classification, and
+          modeled rules link the exact tests and code that carry them. See the{' '}
           <a href="https://retiregolden.org/methodology/tax-rules/" target="_blank" rel="noopener noreferrer">
             tax-rule methodology
           </a>{' '}

@@ -78,6 +78,9 @@ describe('PlannerEdition defaults (no provider)', () => {
     expect(text).toContain('Software license & third-party notices')
     expect(text).toContain('AGPL-3.0')
     expect(container.querySelector('a[href="https://www.gnu.org/licenses/agpl-3.0.html"]')).not.toBeNull()
+    // The methodology link is a public, checkable claim: a typo in the URL
+    // must fail here, not ship as a 404 in the core trust copy.
+    expect(container.querySelector('a[href="https://retiregolden.org/methodology/tax-rules/"]')).not.toBeNull()
   })
 })
 
@@ -126,6 +129,9 @@ describe('PlannerEditionProvider overrides', () => {
     expect(text).toContain('Educational use only')
     expect(text).toContain('No warranty')
     expect(text).toContain('Where the numbers come from')
+    // The methodology link is shared substance (same publisher for every
+    // edition), so a host override must not lose it.
+    expect(container.querySelector('a[href="https://retiregolden.org/methodology/tax-rules/"]')).not.toBeNull()
   })
 
   it('normalizes an empty or whitespace homeLabel back to the default', async () => {
