@@ -26,7 +26,19 @@ export function DisclaimerPage() {
       <ul>
         <li>Projections depend entirely on your inputs and assumptions. Small changes in returns, inflation, or longevity produce very different outcomes.</li>
         <li>Monte Carlo success rates are statistics about a simplified model, not probabilities about your actual life.</li>
-        <li>The tax engine covers common federal rules (brackets, Social Security taxation, capital-gains stacking, RMDs, IRMAA, ACA credits) at planning precision, not return-filing precision. State income tax models each state's brackets, standard deduction, Social Security treatment, and major retirement-income exclusions, with a flat-rate override for corrections; credits, local/city taxes, and income-tested exclusions are simplified or omitted. Many real-world provisions are approximated.</li>
+        <li>
+          The tax engine covers common federal rules (brackets, Social Security taxation, capital-gains stacking,
+          RMDs, IRMAA, ACA credits) at planning precision, not return-filing precision. State income tax models each
+          state's brackets, standard deduction, Social Security treatment, and major retirement-income exclusions,
+          with a flat-rate override for corrections; credits, local/city taxes, and income-tested exclusions are
+          simplified or omitted. Many real-world provisions are approximated. The rule-by-rule accounting, every
+          modeled tax rule with its statutory citation, its classification, and the tests and code that carry it, is
+          published in the{' '}
+          <a href="https://retiregolden.org/methodology/tax-rules/" target="_blank" rel="noopener noreferrer">
+            tax-rule methodology
+          </a>{' '}
+          on retiregolden.org.
+        </li>
         <li>Life-expectancy estimates are population statistics with coarse lifestyle adjustments. They say nothing certain about any individual.</li>
         <li>Historical market data in the bootstrap models is approximate and the past does not predict the future.</li>
       </ul>
