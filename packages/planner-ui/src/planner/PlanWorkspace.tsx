@@ -172,7 +172,7 @@ function KpiBar() {
       <div className="kpi">
         <span className="kpi-label">Lifetime tax</span>
         <span className="kpi-value">{money(summary.lifetimeTaxesAndPenalties)}</span>
-        <span className="kpi-sub">{hideAmounts ? 'amounts hidden' : 'nominal $ · federal + state + penalties'}</span>
+        <span className="kpi-sub">{hideAmounts ? 'amounts hidden' : 'nominal $ · tax + penalties'}</span>
       </div>
       <div className="kpi">
         <span className="kpi-label">Roth converted</span>

@@ -1,11 +1,13 @@
 /**
  * KPI bar overflow containment.
  *
- * Lifetime Tax's subtext ("nominal $ · federal + state + penalties") is
- * longer than a 10rem auto-fit column. `white-space: nowrap` without
+ * An earlier Lifetime Tax sub-line ("nominal $ · federal + state + penalties")
+ * was longer than a 10rem auto-fit column. `white-space: nowrap` without
  * overflow containment painted that line into Roth Converted, so the
  * next cell read `penaltiesending Roth $0`. Containment lives on
  * `.kpi-sub` so focus rings and large headline values stay visible.
+ * #318 shortened the workspace Lifetime tax copy. This file still guards
+ * the #287 containment, not that copy.
  */
 
 import { describe, expect, it } from 'vitest'
