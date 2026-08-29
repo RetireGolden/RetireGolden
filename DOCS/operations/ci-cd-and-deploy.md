@@ -79,9 +79,10 @@ PR only while it carries the **`run-ci` label**:
 
 ## Branch protection
 
-The **"Main Guard"** ruleset on `main` requires the security checks to pass before merge; the required
-contexts are coupled to job/display names — see [security-scanning.md](security-scanning.md) §5 before
-renaming any job.
+The **"Main Guard"** ruleset on `main` requires the security checks and the
+independent `review / openrouter-first-pass-gate` review context to pass before
+merge. Required contexts are coupled to job/display names — see
+[security-scanning.md](security-scanning.md) §5 before renaming any job.
 
 ## Local commands
 
