@@ -516,6 +516,10 @@ const cacheKey = (url) => createHash('sha256').update(url).digest('hex').slice(0
  *                                     the publisher for a missing poppler would be a finding
  *                                     about this machine.
  * @property {string[]} variants     Normalised full-text renderings; a quote need match only one.
+ * @property {boolean} [suspectStub] The text was shorter than MIN_SOURCE_TEXT_CHARS. Variants are
+ *                                   still searched — a match on a tiny page is real (a repealed
+ *                                   chapter's page is one line) — but a miss reports UNFETCHABLE
+ *                                   with the stub problem instead of ABSENT.
  * @property {boolean} fromCache
  */
 
@@ -699,9 +703,17 @@ async function loadSource(url, opts) {
   // source behind a verdict that reads like the publisher's fault.
   const longestVariant = variants.reduce((left, right) => (right.length > left.length ? right : left))
   if (longestVariant.length < MIN_SOURCE_TEXT_CHARS) {
+    // Not condemned outright: some documents genuinely ARE this short — a
+    // repealed chapter's page is one line of repeal history. The variants are
+    // kept and verdictFor decides per quote: a quote that MATCHES a tiny page
+    // cannot be a false absence, while a quote that misses reports
+    // UNFETCHABLE with this problem rather than ABSENT, so a shell page
+    // still never accuses the registry.
     return {
       ...base,
-      ok: false,
+      ok: true,
+      suspectStub: true,
+      variants,
       problem: `only ${longestVariant.length} characters of text — a shell or error page, not the document`,
     }
   }
@@ -884,6 +896,15 @@ function verdictFor(entry, source) {
   }
 
   const missing = segments.filter((_, i) => rungs[i] < 0)
+
+  // A miss against a suspect stub is not evidence of absence: the page text
+  // was too short to be trusted as the document (a shell, a challenge page,
+  // an error body). Matches above stand — a stub cannot fake the presence of
+  // an exact statutory passage — but a miss reports the source problem, so a
+  // shell page never turns into an accusation against the registry.
+  if (source.suspectStub) {
+    return { verdict: 'UNFETCHABLE', detail: source.problem ?? 'source text too short to trust' }
+  }
 
   // Unmarked truncation: the quote closes a sentence the source keeps writing.
   const trimmed = missing.map((s) => s.replace(/[.;:,]+$/, ''))
