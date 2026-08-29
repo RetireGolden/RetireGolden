@@ -95,10 +95,32 @@ const USER_AGENT =
  * compatible-bot shape, so the transparent identity must stay first.
  */
 const BROWSER_FALLBACK_UA =
+  // A point-in-time mainstream identity (Chrome 128, captured 2026-08); it
+  // only needs to look like a current browser, and moves when it stops doing so.
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36'
 
 /** Statuses that mean "this client identity was refused" — worth one retry. */
 const FALLBACK_STATUSES = new Set([401, 403, 406])
+
+/**
+ * Hosts admitted to the retry, one by one, each with its robots.txt read
+ * first. Admission requires an official publisher whose robots policy permits
+ * the cited paths while its perimeter still refuses the transparent identity.
+ * www.jct.gov is deliberately NOT here: it runs an interactive challenge and
+ * the documented stance — report UNFETCHABLE, never work around it — stands.
+ */
+const FALLBACK_HOSTS = new Set(['www.ssa.gov'])
+
+/**
+ * Whether a refused response earns the one disclosed browser-identity retry.
+ * Pure so the ladder's gate is testable offline.
+ *
+ * @param {string} host
+ * @param {number} status
+ */
+export function fallbackEligible(host, status) {
+  return FALLBACK_HOSTS.has(host) && FALLBACK_STATUSES.has(status)
+}
 
 /** Public government servers. Serialise requests and space them out. */
 const DEFAULT_DELAY_MS = 1200
@@ -602,7 +624,11 @@ async function fetchWithCache(url, opts) {
         cached !== null &&
         typeof meta.bytes === 'number' &&
         Number.isFinite(meta.bytes) &&
-        cached.length === meta.bytes
+        cached.length === meta.bytes &&
+        // A cached refusal from before a host joined the allowlist would
+        // replay the 403 forever and the ladder would never run; a refused
+        // status on an allowlisted host is a cache miss, not evidence.
+        !(fallbackEligible(new URL(url).host, meta.status ?? 0) && meta.fetchProfile !== 'browserFallback')
       ) {
         return {
           body: cached,
@@ -617,12 +643,18 @@ async function fetchWithCache(url, opts) {
   await sleep(opts.delayMs)
   let fetchProfile = /** @type {'transparent' | 'browserFallback'} */ ('transparent')
   let result = await fetchOnce(url, USER_AGENT)
-  if (result.error === undefined && FALLBACK_STATUSES.has(result.status)) {
-    // The transparent identity was explicitly refused. One disclosed retry as
-    // a browser; the retry result is used only if the host actually serves it.
+  if (result.error === undefined && fallbackEligible(new URL(url).host, result.status)) {
+    // The transparent identity was explicitly refused by an allowlisted host.
+    // One disclosed retry as a browser; the retry result is used only if the
+    // host actually serves a document rather than a challenge page — caching a
+    // dressed-up block as a success would later read as a false ABSENT.
     await sleep(opts.delayMs)
     const retried = await fetchOnce(url, BROWSER_FALLBACK_UA)
-    if (retried.error === undefined && retried.status >= 200 && retried.status < 300) {
+    if (
+      retried.error === undefined &&
+      retried.status >= 200 && retried.status < 300 &&
+      !BLOCK_MARKERS.test(retried.body.toString('utf8'))
+    ) {
       result = retried
       fetchProfile = 'browserFallback'
     }

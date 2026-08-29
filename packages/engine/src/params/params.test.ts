@@ -14,7 +14,9 @@ import {
   partBMonthlyPremium,
   rmdStartAgeForBirthYear,
   standardDeduction,
-  uniformLifetimeDivisor, TRUSTEES_DEFAULT_SS_HAIRCUT } from './index.js'
+  uniformLifetimeDivisor,
+  TRUSTEES_DEFAULT_SS_HAIRCUT,
+} from './index.js'
 
 describe('packForYear', () => {
   it('returns the exact pack for a published year', () => {

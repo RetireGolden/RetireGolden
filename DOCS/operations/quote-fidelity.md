@@ -189,16 +189,22 @@ and www.tn.gov each permits crawling the paths the registry cites (tn.gov is a
 blanket `Allow: /`), so those refusals contradict the hosts' own published
 policy for reading public law and public-domain federal work.
 
-On exactly that refusal class the verifier retries once as a mainstream
-browser. The retry is disclosed, never silent: a row verified through it
-carries `fetchProfile: "browserFallback"` in the committed ledger, and the
-cache meta records the same. The transparent identity always goes first
-because at least one publisher requires it - eCFR serves the full regulation
-only to the compatible-bot shape and a stub to browsers.
+On exactly that refusal class, and only for hosts admitted to a small
+allowlist (`FALLBACK_HOSTS` in the script - each admitted only after its
+robots.txt was read and found to permit the cited paths), the verifier
+retries once as a mainstream browser. The retry is disclosed, never silent: a
+row verified through it carries `fetchProfile: "browserFallback"` in the
+committed ledger, and the cache meta records the same. The transparent
+identity always goes first because at least one publisher requires it - eCFR
+serves the full regulation only to the compatible-bot shape and a stub to
+browsers. www.jct.gov is deliberately outside the allowlist: it runs an
+interactive challenge, and the stance recorded elsewhere in this document -
+report `UNFETCHABLE`, never work around it - is unchanged.
 
-Hosts that reject both identities (nysenate.gov and tn.gov fingerprint the
-TLS client, not just the user-agent string) stay honestly `UNFETCHABLE` with
-the block documented, exactly as before.
+Hosts outside the allowlist behave exactly as before. nysenate.gov
+fingerprints the TLS client and refuses both identities, so its rows stay
+honestly `UNFETCHABLE`; tn.gov, which refused the transparent identity on
+some paths when the block was first documented, currently serves it again.
 
 ## Caveats
 

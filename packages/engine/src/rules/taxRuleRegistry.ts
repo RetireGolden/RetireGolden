@@ -3294,14 +3294,14 @@ const registry = {
     ],
   },
   'ssa-2026-trustees-oasdi-depletion-default-haircut': {
-    title: 'The default Social Security haircut is the 2026 Trustees combined-OASDI projection',
+    title: 'The prebuilt Social Security haircut scenario is the 2026 Trustees combined-OASDI projection',
     statement:
-      'The 2026 Trustees Report intermediate projection has the combined OASDI reserves depleted in the third quarter of 2034 with 83 percent of scheduled benefits payable at that time. The engine\'s default benefit haircut carries exactly that projection - a 17 percent cut from 2034 - as a user-overridable planning assumption.',
+      'The 2026 Trustees Report intermediate projection has the combined OASDI reserves depleted in the third quarter of 2034 with 83 percent of scheduled benefits payable at that time. The engine exports that projection as a constant - a 17 percent cut from 2034 - and the planning surface builds its prebuilt what-if scenario from it; the engine itself applies whatever haircut a plan carries, including none.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'This is a projection default, not law: current law simply stops paying beyond trust fund income once reserves deplete, and Congress may act before 2034. The default exists so a plan that says nothing about the shortfall still confronts the Trustees\' own best estimate; the user can set a different cut or none. The OASI-standalone projection (fourth quarter of 2032, 78 percent payable) is deliberately not the default because the combined OASDI basis is the conventional indicator of the program as a whole.',
+      'A projection scenario, not law: current law simply stops paying beyond trust fund income once reserves deplete, and Congress may act before 2034. Two simplifications are deliberate. The scenario holds the cut flat at 17 percent, where the report projects payability declining from 83 percent at depletion to 65 percent by 2100 - a one-step stand-in for a declining path. And the combined OASDI basis is used rather than the OASI-standalone projection (fourth quarter of 2032, 78 percent payable) because the combined basis is the conventional indicator of the program as a whole.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'agencyGuidance',
@@ -3324,7 +3324,7 @@ const registry = {
   'ssa-table-4c6-period-life-table-vintage': {
     title: 'The longevity tables are the SSA period life table, one vintage behind the live host',
     statement:
-      'The engine\'s baseline life expectancies are SSA\'s Actuarial Life Table (Table 4C6) as published for the 2025 Trustees Report - the 2022 period table. The live page now presents the 2023 period table used in the 2026 Trustees Report, so the embedded vintage trails the published one until the next table refresh (male life expectancy at 65: 17.48 embedded versus 18.12 currently published).',
+      'The engine\'s baseline life expectancies are SSA\'s Actuarial Life Table (Table 4C6) as published for the 2025 Trustees Report - the 2022 period table. The live page now presents the 2023 period table used in the 2026 Trustees Report, so the embedded vintage trails the published one until the next table refresh (life expectancy at 65: male 17.48 embedded versus 18.12 published, female 20.12 embedded versus 20.66 published).',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'bothDirections',
@@ -3336,7 +3336,7 @@ const registry = {
       citation: 'SSA Actuarial Life Table (Table 4C6)',
       url: 'https://www.ssa.gov/oact/STATS/table4c6.html',
       quotedText:
-        'Here we present the 2023 period life table for the Social Security area population , as used in the 2026 Trustees Report (TR).',
+        'Here we present the 2023 period life table for the Social Security area population , as used in the 2026 Trustees Report (TR). \u2026 65 0.016455 79,084 18.12 0.010188 87,399 20.66',
     }],
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
@@ -7058,7 +7058,7 @@ const registry = {
       'A person born in 1959 satisfies both prongs of the SECURE 2.0 applicable-age definition at once, so the statute names age 73 and age 75 for the same individual. The engine uses 73, following the proposed regulation that would fill the paragraph the final regulation left reserved.',
     classification: 'unsettled',
     contraryReading:
-      'IRC 401(a)(9)(C)(v)(II) applies on its own terms to a 1959 birth, because such a person attains age 74 in 2033, after December 31, 2032. Read alone it makes the applicable age 75 and defers the first distribution calendar year by two years. Nothing in the enacted text resolves the overlap, Treas. Reg. 1.401(a)(9)-2(b)(2)(v) is reserved, and the only source choosing 73 is a notice of proposed rulemaking that has not been finalised. The two readings differ by two distribution calendar years of forced ordinary income for the whole 1959 cohort.',
+      'IRC 401(a)(9)(C)(v)(II) applies on its own terms to a 1959 birth, because such a person attains age 74 in 2033, after December 31, 2032. Read alone it makes the applicable age 75 and defers the first distribution calendar year by two years. Nothing in the enacted text resolves the overlap, Treas. Reg. 1.401(a)(9)-2(b)(2)(v) is reserved, and the only source choosing 73 is a notice of proposed rulemaking that has not been finalised. The two readings differ by two distribution calendar years of forced ordinary income for the whole 1959 cohort. Announcement 2026-7 (2026-11 I.R.B. 697) defers the final regulations\' applicability to no earlier than 6 months after issuance and prescribes a reasonable, good-faith interpretation in the interim - it selects neither 73 nor 75, so the contest stands.',
     errorDirection: null,
     conventionRationale: null,
     jurisdiction: 'federal',
@@ -9627,12 +9627,12 @@ const registry = {
   'usc-12-1715z-20-b-hecm-minimum-age-62': {
     title: 'A HECM borrower (or spouse) must be at least 62',
     statement:
-      'The FHA home equity conversion mortgage program defines the eligible homeowner as one who is, or whose spouse is, at least 62 years of age. The HECM buffer detector refuses to surface a reverse-mortgage line-of-credit candidate for any household whose youngest member is under 62.',
+      'The FHA home equity conversion mortgage program defines the eligible homeowner as one who is, or whose spouse is, at least 62 years of age. The HECM buffer detector enforces that floor as a conservative screen: no reverse-mortgage line-of-credit candidate is surfaced unless every household member has reached 62, measured at year granularity.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'First housing-law record in the registry. The registry already spans Title 26, Title 42 benefit statutes, 20 C.F.R. and POMS wherever the engine enforces the rule; the same admission test - an engine gate whose refusal traces to an operative statutory clause - is met here, so the domain follows the enforcement rather than the other way around.',
+      'First housing-law record in the registry, admitted on the same test as its Title 42 and POMS records: an engine gate whose refusal traces to an operative statutory clause. Two deliberate deviations from the clause itself: the screen requires the YOUNGEST member to be 62 where the statute is satisfied by either spouse - conservative, because the principal limit factor is keyed to the youngest age anyway and a candidate the statute would allow is merely not suggested - and age is measured at year granularity, so a member attaining 62 during the start year is treated as eligible for the suggestion a few months early. Neither deviation touches a tax figure; the card is a scenario suggestion.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',

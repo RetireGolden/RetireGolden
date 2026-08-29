@@ -57,14 +57,15 @@ describe('period life table vintage', () => {
   // pinned, so the next vintage refresh must come through this fixture.
   describeRule('ssa-table-4c6-period-life-table-vintage', {
     readings: {
-      currentlyPublishedTwentyTwentyThreePeriod: 18.12,
-      embeddedTwentyTwentyTwoPeriod: 17.48,
+      currentlyPublishedTwentyTwentyThreePeriod: { male: 18.12, female: 20.66 },
+      embeddedTwentyTwentyTwoPeriod: { male: 17.48, female: 20.12 },
     },
     accepted: 'currentlyPublishedTwentyTwentyThreePeriod',
     produced: 'embeddedTwentyTwentyTwoPeriod',
   }, ({ produced }) => {
-    it('carries the 2022-period male life expectancy at 65', () => {
-      expect(baselineRemainingYears(65, 'male')).toBe(produced)
+    it('carries the 2022-period life expectancies at 65 for both sexes', () => {
+      expect(baselineRemainingYears(65, 'male')).toBe(produced.male)
+      expect(baselineRemainingYears(65, 'female')).toBe(produced.female)
     })
   })
 })

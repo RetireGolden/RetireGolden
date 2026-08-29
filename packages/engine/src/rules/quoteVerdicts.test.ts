@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { htmlVariants, verdictFor, type QuoteVerdictSource } from '../../scripts/verify-quotes.mjs'
+import { fallbackEligible, htmlVariants, verdictFor, type QuoteVerdictSource } from '../../scripts/verify-quotes.mjs'
 
 /**
  * Pins the suspect-stub verdict contract introduced with the drift sweep: a
@@ -60,5 +60,23 @@ describe('suspect-stub verdict contract', () => {
     }
     const { verdict } = verdictFor({ quotedText: 'This passage exists in no shell page anywhere.' }, source)
     expect(verdict).toBe('ABSENT')
+  })
+})
+
+describe('fetch identity ladder gate', () => {
+  it('retries only refused statuses on allowlisted hosts', () => {
+    expect(fallbackEligible('www.ssa.gov', 403)).toBe(true)
+    expect(fallbackEligible('www.ssa.gov', 401)).toBe(true)
+    expect(fallbackEligible('www.ssa.gov', 406)).toBe(true)
+  })
+  it('never retries a served or errored response', () => {
+    expect(fallbackEligible('www.ssa.gov', 200)).toBe(false)
+    expect(fallbackEligible('www.ssa.gov', 404)).toBe(false)
+    expect(fallbackEligible('www.ssa.gov', 500)).toBe(false)
+  })
+  it('never retries hosts outside the allowlist, jct.gov included', () => {
+    expect(fallbackEligible('www.jct.gov', 403)).toBe(false)
+    expect(fallbackEligible('www.nysenate.gov', 403)).toBe(false)
+    expect(fallbackEligible('uscode.house.gov', 403)).toBe(false)
   })
 })

@@ -2690,16 +2690,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 207,
+          "line": 209,
           "note": "Values are the annual gate the projection uses, twelve times the published monthly amount.",
           "tests": [
             {
               "title": "derives the monthly amount from the wage index the regulation names",
-              "line": 212
+              "line": 214
             },
             {
               "title": "gates SSDI on the 2026 substantial gainful activity amount",
-              "line": 221
+              "line": 223
             }
           ]
         }
@@ -9564,12 +9564,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 498,
+          "line": 500,
           "note": null,
           "tests": [
             {
               "title": "carries the employee side rather than the combined rate",
-              "line": 502
+              "line": 504
             }
           ]
         }
@@ -10149,12 +10149,12 @@
         },
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 102,
+          "line": 104,
           "note": null,
           "tests": [
             {
               "title": "sends the first post-window cohort straight to 75",
-              "line": 106
+              "line": 108
             }
           ]
         }
@@ -15452,12 +15452,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 450,
+          "line": 452,
           "note": null,
           "tests": [
             {
               "title": "carries the adjusted threshold on a five-thousand-dollar step",
-              "line": 454
+              "line": 456
             }
           ]
         },
@@ -15617,16 +15617,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 464,
+          "line": 466,
           "note": null,
           "tests": [
             {
               "title": "moves the annual additions limit on a thousand-dollar step",
-              "line": 468
+              "line": 470
             },
             {
               "title": "leaves every borrowing limit on the step its own provision names",
-              "line": 474
+              "line": 476
             }
           ]
         }
@@ -18897,16 +18897,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 427,
+          "line": 429,
           "note": "Values are the joint adjusted base amount, above which up to 85 percent of the benefit is included.",
           "tests": [
             {
               "title": "keeps the joint amounts at the figures the statute states",
-              "line": 432
+              "line": 434
             },
             {
               "title": "is the opposite of the standard deduction, which does double",
-              "line": 441
+              "line": 443
             }
           ]
         }
@@ -24178,10 +24178,10 @@
     },
     {
       "id": "ssa-2026-trustees-oasdi-depletion-default-haircut",
-      "title": "The default Social Security haircut is the 2026 Trustees combined-OASDI projection",
+      "title": "The prebuilt Social Security haircut scenario is the 2026 Trustees combined-OASDI projection",
       "classification": "settled",
       "errorDirection": null,
-      "conventionRationale": "This is a projection default, not law: current law simply stops paying beyond trust fund income once reserves deplete, and Congress may act before 2034. The default exists so a plan that says nothing about the shortfall still confronts the Trustees' own best estimate; the user can set a different cut or none. The OASI-standalone projection (fourth quarter of 2032, 78 percent payable) is deliberately not the default because the combined OASDI basis is the conventional indicator of the program as a whole.",
+      "conventionRationale": "A projection scenario, not law: current law simply stops paying beyond trust fund income once reserves deplete, and Congress may act before 2034. Two simplifications are deliberate. The scenario holds the cut flat at 17 percent, where the report projects payability declining from 83 percent at depletion to 65 percent by 2100 - a one-step stand-in for a declining path. And the combined OASDI basis is used rather than the OASI-standalone projection (fourth quarter of 2032, 78 percent payable) because the combined basis is the conventional indicator of the program as a whole.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "annuallyIndexed",
@@ -24209,12 +24209,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 516,
+          "line": 518,
           "note": null,
           "tests": [
             {
               "title": "defaults to the combined-OASDI depletion projection",
-              "line": 523
+              "line": 525
             }
           ]
         }
@@ -24268,7 +24268,7 @@
           "note": null,
           "tests": [
             {
-              "title": "carries the 2022-period male life expectancy at 65",
+              "title": "carries the 2022-period life expectancies at 65 for both sexes",
               "line": 66
             }
           ]
@@ -24764,7 +24764,7 @@
       "classification": "unsettled",
       "errorDirection": null,
       "conventionRationale": null,
-      "contraryReading": "IRC 401(a)(9)(C)(v)(II) applies on its own terms to a 1959 birth, because such a person attains age 74 in 2033, after December 31, 2032. Read alone it makes the applicable age 75 and defers the first distribution calendar year by two years. Nothing in the enacted text resolves the overlap, Treas. Reg. 1.401(a)(9)-2(b)(2)(v) is reserved, and the only source choosing 73 is a notice of proposed rulemaking that has not been finalised. The two readings differ by two distribution calendar years of forced ordinary income for the whole 1959 cohort.",
+      "contraryReading": "IRC 401(a)(9)(C)(v)(II) applies on its own terms to a 1959 birth, because such a person attains age 74 in 2033, after December 31, 2032. Read alone it makes the applicable age 75 and defers the first distribution calendar year by two years. Nothing in the enacted text resolves the overlap, Treas. Reg. 1.401(a)(9)-2(b)(2)(v) is reserved, and the only source choosing 73 is a notice of proposed rulemaking that has not been finalised. The two readings differ by two distribution calendar years of forced ordinary income for the whole 1959 cohort. Announcement 2026-7 (2026-11 I.R.B. 697) defers the final regulations' applicability to no earlier than 6 months after issuance and prescribes a reasonable, good-faith interpretation in the interim - it selects neither 73 nor 75, so the contest stands.",
       "jurisdiction": "federal",
       "volatility": "awaitingGuidance",
       "effectiveFrom": 2026,
@@ -24801,12 +24801,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 168,
+          "line": 170,
           "note": null,
           "tests": [
             {
               "title": "takes the proposed regulation reading for a 1959 birth",
-              "line": 172
+              "line": 174
             }
           ]
         }
@@ -25561,12 +25561,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 484,
+          "line": 486,
           "note": null,
           "tests": [
             {
               "title": "carries the published cap on a ten-thousand-dollar step",
-              "line": 488
+              "line": 490
             }
           ]
         }
@@ -27094,7 +27094,7 @@
       "title": "A HECM borrower (or spouse) must be at least 62",
       "classification": "settled",
       "errorDirection": null,
-      "conventionRationale": "First housing-law record in the registry. The registry already spans Title 26, Title 42 benefit statutes, 20 C.F.R. and POMS wherever the engine enforces the rule; the same admission test - an engine gate whose refusal traces to an operative statutory clause - is met here, so the domain follows the enforcement rather than the other way around.",
+      "conventionRationale": "First housing-law record in the registry, admitted on the same test as its Title 42 and POMS records: an engine gate whose refusal traces to an operative statutory clause. Two deliberate deviations from the clause itself: the screen requires the YOUNGEST member to be 62 where the statute is satisfied by either spouse - conservative, because the principal limit factor is keyed to the youngest age anyway and a candidate the statute would allow is merely not suggested - and age is measured at year granularity, so a member attaining 62 during the start year is treated as eligible for the suggestion a few months early. Neither deviation touches a tax figure; the card is a scenario suggestion.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -27128,6 +27128,10 @@
             {
               "title": "refuses at 61 and surfaces at 62 for an otherwise qualifying home",
               "line": 44
+            },
+            {
+              "title": "holds the conservative youngest-member screen the record discloses",
+              "line": 50
             }
           ]
         }
@@ -27301,12 +27305,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 354,
+          "line": 356,
           "note": "The twenty cents between them is the repayment amount, which the promulgated figure carries and a re-derivation from the actuarial rate drops.",
           "tests": [
             {
               "title": "carries the promulgated premium rather than half the actuarial rate",
-              "line": 361
+              "line": 363
             }
           ]
         }
@@ -27626,36 +27630,36 @@
       "fixtures": [
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 247,
+          "line": 249,
           "note": "Values are the top-tier MAGI floor for a single filer in a 2032 premium year at 2 percent inflation.",
           "tests": [
             {
               "title": "resumes indexing after 2027 from a base one year behind the general one",
-              "line": 262
+              "line": 264
             },
             {
               "title": "separates the three readings by the tier a household lands in",
-              "line": 273
+              "line": 275
             },
             {
               "title": "holds the top tier still for every premium year through 2027",
-              "line": 280
+              "line": 282
             },
             {
               "title": "never stops indexing the rows beneath the top one",
-              "line": 288
+              "line": 290
             },
             {
               "title": "carves out the 150 percent joint figure with the individual one",
-              "line": 299
+              "line": 301
             },
             {
               "title": "keeps rounding the top row once a post-freeze pack carries it forward",
-              "line": 317
+              "line": 319
             },
             {
               "title": "refuses a pack year that cannot measure from the August 2026 base",
-              "line": 334
+              "line": 336
             }
           ]
         }
@@ -28957,16 +28961,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 393,
+          "line": 395,
           "note": "Values are the lower annual exempt amount, twelve times the monthly one.",
           "tests": [
             {
               "title": "derives the lower exempt amount from the wage index rather than from prices",
-              "line": 398
+              "line": 400
             },
             {
               "title": "derives the higher exempt amount from its own base and reference year",
-              "line": 411
+              "line": 413
             }
           ]
         }
@@ -29668,12 +29672,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 372,
+          "line": 374,
           "note": "The price reading takes the 2025 base of 176,100 and the benefit increase the same notice announces for 2026.",
           "tests": [
             {
               "title": "derives the base from the wage index rather than from prices",
-              "line": 377
+              "line": 379
             }
           ]
         }
@@ -30393,14 +30397,14 @@
     }
   ],
   "quoteFidelity": {
-    "generatedAt": "2026-08-29T22:16:03.825Z",
+    "generatedAt": "2026-08-29T22:38:38.425Z",
     "entryCount": 1064,
-    "fetched": 4,
-    "cached": 302,
+    "fetched": 0,
+    "cached": 306,
     "counts": {
-      "ELISION-EXACT": 63,
+      "ELISION-EXACT": 64,
       "ELISION-PUNCTUATION": 4,
-      "EXACT": 741,
+      "EXACT": 740,
       "PDF-NOT-VERIFIABLE": 5,
       "PDF-WORD-LEVEL": 212,
       "PUNCTUATION": 36,

@@ -46,5 +46,21 @@ describe('hecmBufferCandidate', () => {
       const at62 = hecmBufferCandidate.screen(context('1964-01-01'))
       expect(at62?.id).toBe(readings.surfacedUnderSixtyTwo)
     })
+
+    it('holds the conservative youngest-member screen the record discloses', () => {
+      // The statute is satisfied when EITHER spouse is 62; the screen requires
+      // the youngest member to be 62 and deliberately stays quiet for a
+      // 63/59 couple. Disclosed in the record's conventionRationale.
+      const ctx = context('1963-01-01')
+      ctx.plan.household.people.push({
+        id: 'p2',
+        name: 'Sam',
+        dob: '1967-01-01',
+        sex: 'average',
+        retirementAge: null,
+        longevity: { planningAge: 60, source: 'manual' },
+      } as never)
+      expect(hecmBufferCandidate.screen(ctx)).toBe(accepted)
+    })
   })
 })
