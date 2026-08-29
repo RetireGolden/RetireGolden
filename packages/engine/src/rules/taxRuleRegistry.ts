@@ -7058,7 +7058,7 @@ const registry = {
       'A person born in 1959 satisfies both prongs of the SECURE 2.0 applicable-age definition at once, so the statute names age 73 and age 75 for the same individual. The engine uses 73, following the proposed regulation that would fill the paragraph the final regulation left reserved.',
     classification: 'unsettled',
     contraryReading:
-      'IRC 401(a)(9)(C)(v)(II) applies on its own terms to a 1959 birth, because such a person attains age 74 in 2033, after December 31, 2032. Read alone it makes the applicable age 75 and defers the first distribution calendar year by two years. Nothing in the enacted text resolves the overlap, Treas. Reg. 1.401(a)(9)-2(b)(2)(v) is reserved, and the only source choosing 73 is a notice of proposed rulemaking that has not been finalised. The two readings differ by two distribution calendar years of forced ordinary income for the whole 1959 cohort. Announcement 2026-7 (2026-11 I.R.B. 697) defers the final regulations\' applicability to no earlier than 6 months after issuance and prescribes a reasonable, good-faith interpretation in the interim - it selects neither 73 nor 75, so the contest stands.',
+      'IRC 401(a)(9)(C)(v)(II) applies on its own terms to a 1959 birth, because such a person attains age 74 in 2033, after December 31, 2032. Read alone it makes the applicable age 75 and defers the first distribution calendar year by two years. Nothing in the enacted text resolves the overlap, Treas. Reg. 1.401(a)(9)-2(b)(2)(v) is reserved, and the only source choosing 73 is a notice of proposed rulemaking that has not been finalised. The two readings differ by two distribution calendar years of forced ordinary income for the whole 1959 cohort. The nearest current guidance, Announcement 2026-7 (2026-11 I.R.B. 697), defers the anticipated applicability of final regulations amending 1.401(a)(9)-4, -5, and -6 and never mentions paragraph (b)(2)(v) or the 1959 cohort - verified against the full IRB text 2026-08-29 - so the contest stands with no guidance selecting either age.',
     errorDirection: null,
     conventionRationale: null,
     jurisdiction: 'federal',
@@ -7080,12 +7080,6 @@ const registry = {
       url: 'https://www.govinfo.gov/content/pkg/FR-2024-07-19/html/2024-14543.htm',
       quotedText:
         '(v) Employees born in 1959. In the case of an employee born in 1959, the applicable age is age 73.',
-    }, {
-      kind: 'irsNotice',
-      citation: 'Announcement 2026-7, 2026-11 I.R.B. 697',
-      url: 'https://www.irs.gov/irb/2026-11_IRB',
-      quotedText:
-        'Final regulations amending \u00a7\u00a7 1.401(a)(9)-4, 1.401(a)(9)-5, and 1.401(a)(9)-6, issued pursuant to the 2024 proposed regulations, are anticipated to apply for purposes of determining required minimum distributions for the distribution calendar year that begins no earlier than 6 months after the date that final regulations are issued in the Federal Register . For periods before the applicability date of these regulations, taxpayers must continue to apply a reasonable, good-faith interpretation of the statutory provisions underlying the regulations.',
     }],
     volatility: 'awaitingGuidance',
     effectiveFrom: 2026,

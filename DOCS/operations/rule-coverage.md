@@ -162,7 +162,7 @@ None.
 | projection/ownedIraAnnualPhysicalTransactionInputs.ts | 2026-08-29 | Form 8606 line-7/8 and QCD staging semantics; the input builder carries one combined distribution bucket, so it does not enforce the line-7-versus-8 split; no record |
 | projection/ownedNonRothIraAnnualObservation.ts | 2026-08-24 | April-15/weekend/Emancipation-Day filing deadline; no record |
 | projection/simulate.ts | 2026-08-26 | QCD/RMD/annuity/contribution/QLAC covered; residual 59½/HSA/Roth-five-year/Rule-of-55 proxies, inherited-Roth post-flip, Medicare age-65, HSA family-limit, spousal/survivor SS |
-| rmd/applicableAge.ts | 2026-08-29 | Named by treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy; the born-1959 dual-age contest record now quotes Announcement 2026-7 directly (the anticipated applicability deferral and the good-faith interim standard), confirming unsettled; residual: the RBD April-1 arm (this module consumes an asserted RBD-status fact) and the 70½/July-1949 cohort tiers pending a pre-SECURE historical-edition record |
+| rmd/applicableAge.ts | 2026-08-29 | Named by treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy; the born-1959 record's contraryReading now records what the full IRB text of Announcement 2026-7 shows - it defers final regulations amending 1.401(a)(9)-4, -5, and -6 and never mentions paragraph (b)(2)(v) or the 1959 cohort, so no current guidance addresses the contest; residual: the RBD April-1 arm (this module consumes an asserted RBD-status fact) and the 70½/July-1949 cohort tiers pending a pre-SECURE historical-edition record |
 | socialSecurity/maritalBenefits.ts | 2026-08-24 | Eligibility rules (10-yr divorce, 9-mo survivor marriage, age gates, remarriage forfeiture) have no records |
 | socialSecurity/piaFromEarnings.ts | 2026-08-27 | AIME pipeline (age 22–61 window, 5 lowest dropped, top-35 years, AWI indexing) not separately registered; the disability-freeze exclusion and post-entitlement recomputation base window ARE registered as approximations |
 | strategies/accountEligibility.ts | 2026-08-25 | SECURE 2020 gate portion of S2 treat-as-own election timing not registered to this file |
@@ -210,16 +210,16 @@ The JSON manifest (rule-coverage.json, version 4) is the machine contract: each 
 
 ## Quote fidelity
 
-Committed ledger generated at 2026-08-29T22:38:38.425Z over 1064 authority entries (0 fetched live, 306 from cache).
+Committed ledger generated at 2026-08-29T22:51:26.881Z over 1063 authority entries (0 fetched live, 305 from cache).
 
-3 serious, 45 advisory, 1016 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
+3 serious, 45 advisory, 1015 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
 not treated as a CI gate; how to read each verdict: DOCS/operations/quote-fidelity.md.
 
 | Verdict | Class | Count |
 | --- | --- | ---: |
 | ELISION-EXACT | ok | 64 |
 | ELISION-PUNCTUATION | advisory | 4 |
-| EXACT | ok | 740 |
+| EXACT | ok | 739 |
 | PDF-NOT-VERIFIABLE | advisory | 5 |
 | PDF-WORD-LEVEL | ok | 212 |
 | PUNCTUATION | advisory | 36 |

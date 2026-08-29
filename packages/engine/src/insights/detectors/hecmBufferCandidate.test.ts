@@ -62,5 +62,14 @@ describe('hecmBufferCandidate', () => {
       } as never)
       expect(hecmBufferCandidate.screen(ctx)).toBe(accepted)
     })
+
+    it('pins the year-granularity admission the record disclosed', () => {
+      // Born December 31, 1964: not 62 until the last day of the start year,
+      // yet the year-arithmetic screen treats the member as 62 for all of
+      // 2026 and surfaces the card early. Disclosed in conventionRationale;
+      // pinned here so tightening the granularity must come through review.
+      const early = hecmBufferCandidate.screen(context('1964-12-31'))
+      expect(early?.id).toBe(readings.surfacedUnderSixtyTwo)
+    })
   })
 })
