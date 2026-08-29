@@ -84,8 +84,8 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | Engine source files | 236 |
 | Swept | 100.0% |
 | Grandfathered unswept baseline | 0 |
-| partial | 42 |
-| registered | 69 |
+| partial | 43 |
+| registered | 68 |
 | rule-free | 125 |
 | unswept | 0 |
 
@@ -94,7 +94,7 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | Directory | Files | Partial | Registered | Rule-free | Unswept |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | (root) | 3 | 0 | 0 | 3 | 0 |
-| actions | 74 | 14 | 34 | 26 | 0 |
+| actions | 74 | 15 | 33 | 26 | 0 |
 | allocation | 1 | 0 | 0 | 1 | 0 |
 | decisions | 19 | 2 | 2 | 15 | 0 |
 | insights | 22 | 2 | 3 | 17 | 0 |
@@ -129,6 +129,7 @@ None.
 | actions/annualRetirementPhysicalEventInventory.ts | 2026-08-24 | Inherited-RMD regime; owner-RMD start age; spouse-as-own transition; annuity/Form 8606 treatment; direct-trustee QCD origin; no record |
 | actions/beneficiaryTraditionalIraAnnualPlanApplication.ts | 2026-08-24 | Beneficiary-owned inherited traditional-IRA/death-year source gate; no record |
 | actions/beneficiaryTraditionalIraResidualRmdActionIdentity.ts | 2026-08-24 | Residual-RMD source restricted to beneficiary-owned inherited traditional IRA; no record |
+| actions/beneficiaryTraditionalIraWithdrawalCharacter.ts | 2026-08-29 | The nonzero-line-8 refusal mixes two things the reviewers rightly split: for a non-spouse beneficiary it is the 408(d)(3)(C)(i) bar, registered at that record's own enforcers, and for a spouse beneficiary a conversion after electing ownership is lawful but unsupported - the refusal reason names exactly that, so the engine-scope half stays the residual here |
 | actions/ownedNonRothIraAnnualFilingEvidence.ts | 2026-08-29 | Prior-year contribution window covered and the ownedIraPool filter is now pinned by the pool-scope record; the January-1 opening-basis anchor stays an engine convention (408(d)(2)(C) computes values as of the close of the year) and is the sole residual |
 | actions/ownedNonRothIraAnnualPhysicalTransaction.ts | 2026-08-29 | Same-owner Roth destination and designated-Roth vehicle refusal registered under irc-408-d-3-A-i and irc-408A-d-3-B, and line-7/line-8 categorization under form-8606-lines-7-and-8-distinct-distribution-staging; QCD charitable-debit scope remains unregistered |
 | actions/ownedNonRothIraAnnualPlanCoordinator.ts | 2026-08-29 | The owner-wide non-inherited pool filter and the out-of-pool line-8 refusal are registered under irc-408-d-2-A-owner-wide-non-inherited-ira-pool; the line-7/line-8 stacking composition and the exact age-59½ threshold representation remain the residuals |

@@ -63,7 +63,7 @@ export const COVERAGE_ATTESTATIONS: Readonly<Record<string, CoverageAttestation>
   'actions/beneficiaryTraditionalIraResidualRmdChronology.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'actions/beneficiaryTraditionalIraResidualRmdMovementCandidate.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'actions/beneficiaryTraditionalIraResidualRmdPhysicalTransaction.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
-  'actions/beneficiaryTraditionalIraWithdrawalCharacter.ts': Object.freeze({ status: 'registered', sweptOn: '2026-08-29', note: 'The nonzero-line-8 refusal on an inherited pool is the 408(d)(3)(C)(i) bar\'s Form 8606 face and that record now names the classifier' }),
+  'actions/beneficiaryTraditionalIraWithdrawalCharacter.ts': Object.freeze({ status: 'partial', sweptOn: '2026-08-29', note: 'The nonzero-line-8 refusal mixes two things the reviewers rightly split: for a non-spouse beneficiary it is the 408(d)(3)(C)(i) bar, registered at that record\'s own enforcers, and for a spouse beneficiary a conversion after electing ownership is lawful but unsupported - the refusal reason names exactly that, so the engine-scope half stays the residual here' }),
   'actions/civilDate.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'actions/contract.ts': Object.freeze({ status: 'registered', sweptOn: '2026-08-25', note: null }),
   'actions/conversionLinkedWithdrawalGroup.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),

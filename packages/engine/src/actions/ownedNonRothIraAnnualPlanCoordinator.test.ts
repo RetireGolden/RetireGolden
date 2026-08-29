@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
+import { describeRule } from '../rules/describeRule.js'
+
 import type { Plan } from '../model/plan.js'
 import {
   cashAccount,
@@ -315,6 +317,44 @@ function qualifiedSeppRoute(
 }
 
 describe('Plan-owned non-Roth IRA annual coordinator', () => {
+  // The pool-scope record's composition pair: both of the owner's IRAs enter
+  // ONE pool (408(d)(2)(A)-(B) one-contract aggregation) while the spouse's
+  // IRA stays out - the pool is per filing person, never household-wide.
+  describeRule('irc-408-d-2-A-owner-wide-non-inherited-ira-pool', {
+    note: 'the basis pool is owner-wide, not per-account and not household-wide',
+    readings: {
+      ownerWideSingleContract: ['ira-requested', 'ira-sibling'],
+      householdWideMergedPool: ['ira-requested', 'ira-sibling', 'ira-spouse'],
+    },
+    accepted: 'ownerWideSingleContract',
+  }, ({ accepted }) => {
+    it('aggregates both owner IRAs and excludes the spouse account', () => {
+      const value = input()
+      const valuePlan = value.plan as Plan
+      valuePlan.household.people = [
+        ...valuePlan.household.people,
+        {
+          id: 'spouse',
+          name: 'Spouse',
+          dob: '1952-01-01',
+          sex: 'average',
+          retirementAge: null,
+          longevity: { planningAge: 60, source: 'manual' },
+        } as never,
+      ]
+      valuePlan.accounts = [
+        ...valuePlan.accounts,
+        traditionalAccount(asAccountId('ira-spouse'), 5_000, asPersonId('spouse')),
+      ]
+      const result = successful(value)
+      expect(
+        result.annualEvidence.characterization.annualBasisEvidence.poolMembers
+          .map((member) => String(member.sourceAccountId))
+          .sort(),
+      ).toEqual([...accepted].sort())
+    })
+  })
+
   it('binds one requested account to the complete two-account pool with explicit empty line 8', () => {
     const result = successful()
     expect(result.annualEvidence.penaltyPrerequisites.evaluations[0]?.outcome)

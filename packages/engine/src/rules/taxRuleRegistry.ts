@@ -1175,7 +1175,7 @@ const registry = {
   'irc-408-d-2-A-owner-wide-non-inherited-ira-pool': {
     title: 'The annual basis pool is all of the owner\'s own IRAs, and only those',
     statement:
-      'For the annual pro-rata basis computation, all of an individual\'s individual retirement plans are treated as one contract and all of a year\'s distributions as one distribution, so the engine builds one basis pool per person. The pool\'s boundaries follow the Form 8606 filing unit as the IRS administers it: a spouse\'s IRAs are a separate pool with a separate form, and inherited IRAs are excluded from the owned pool, their basis running on separate forms per decedent.',
+      'For the annual pro-rata basis computation, all of an individual\'s individual retirement plans are treated as one contract and all of a year\'s distributions as one distribution, so the engine builds one basis pool per person. The pool\'s boundaries follow the Form 8606 filing unit as the IRS administers it: a spouse\'s IRAs are a separate pool with a separate form, and inherited IRAs are excluded from the owned pool, their basis handled under the separately registered inherited regime.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -1912,7 +1912,6 @@ const registry = {
       'packages/engine/src/actions/rothConversionExecution.ts',
       'packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts',
       'packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts',
-      'packages/engine/src/actions/beneficiaryTraditionalIraWithdrawalCharacter.ts',
       'packages/engine/src/actions/beneficiaryTraditionalIraResidualRmdAnnualRefinalization.ts',
     ],
     implementedByFunctions: [
@@ -1921,7 +1920,6 @@ const registry = {
       'packages/engine/src/strategies/accountEligibility.ts#isConvertibleToRoth',
       'packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts#conversionSourceIssue',
       'packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts#validateOwnedNonRothIraRuntimeSourceSeries',
-      'packages/engine/src/actions/beneficiaryTraditionalIraWithdrawalCharacter.ts#classifyBeneficiaryTraditionalIraWithdrawal',
       'packages/engine/src/actions/beneficiaryTraditionalIraResidualRmdAnnualRefinalization.ts#prepareBeneficiaryTraditionalIraResidualRmdAnnualRefinalization',
     ],
   },

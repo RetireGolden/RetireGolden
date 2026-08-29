@@ -76,8 +76,8 @@
   "attestations": {
     "totalFiles": 236,
     "byStatus": {
-      "partial": 42,
-      "registered": 69,
+      "partial": 43,
+      "registered": 68,
       "rule-free": 125,
       "unswept": 0
     },
@@ -115,6 +115,11 @@
       "path": "actions/beneficiaryTraditionalIraResidualRmdActionIdentity.ts",
       "sweptOn": "2026-08-24",
       "note": "Residual-RMD source restricted to beneficiary-owned inherited traditional IRA; no record"
+    },
+    {
+      "path": "actions/beneficiaryTraditionalIraWithdrawalCharacter.ts",
+      "sweptOn": "2026-08-29",
+      "note": "The nonzero-line-8 refusal mixes two things the reviewers rightly split: for a non-spouse beneficiary it is the 408(d)(3)(C)(i) bar, registered at that record's own enforcers, and for a spouse beneficiary a conversion after electing ownership is lawful but unsupported - the refusal reason names exactly that, so the engine-scope half stays the residual here"
     },
     {
       "path": "actions/ownedNonRothIraAnnualFilingEvidence.ts",
@@ -309,8 +314,8 @@
       "directory": "actions",
       "files": 74,
       "byStatus": {
-        "partial": 14,
-        "registered": 34,
+        "partial": 15,
+        "registered": 33,
         "rule-free": 26
       }
     },
@@ -11757,9 +11762,21 @@
         }
       ],
       "fixtureFiles": [
+        "packages/engine/src/actions/ownedNonRothIraAnnualPlanCoordinator.test.ts",
         "packages/engine/src/actions/ownedNonRothIraMovementCandidate.test.ts"
       ],
       "fixtures": [
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraAnnualPlanCoordinator.test.ts",
+          "line": 323,
+          "note": "the basis pool is owner-wide, not per-account and not household-wide",
+          "tests": [
+            {
+              "title": "aggregates both owner IRAs and excludes the spouse account",
+              "line": 331
+            }
+          ]
+        },
         {
           "path": "packages/engine/src/actions/ownedNonRothIraMovementCandidate.test.ts",
           "line": 254,
@@ -12349,7 +12366,6 @@
       "dueOn": "2027-08-25",
       "implementedBy": [
         "packages/engine/src/actions/beneficiaryTraditionalIraResidualRmdAnnualRefinalization.ts",
-        "packages/engine/src/actions/beneficiaryTraditionalIraWithdrawalCharacter.ts",
         "packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts",
         "packages/engine/src/actions/rothConversionExecution.ts",
         "packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts",
@@ -12362,15 +12378,6 @@
             {
               "name": "prepareBeneficiaryTraditionalIraResidualRmdAnnualRefinalization",
               "line": 704
-            }
-          ]
-        },
-        {
-          "path": "packages/engine/src/actions/beneficiaryTraditionalIraWithdrawalCharacter.ts",
-          "functions": [
-            {
-              "name": "classifyBeneficiaryTraditionalIraWithdrawal",
-              "line": 321
             }
           ]
         },
