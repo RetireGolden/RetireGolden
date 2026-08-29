@@ -85,10 +85,12 @@ const DEFAULT_DELAY_MS = 1200
 const FETCH_TIMEOUT_MS = 45_000
 
 /**
- * A fetched HTML page that yields less text than this is a shell, a bot
- * challenge, or an error page dressed as a 200. Treating it as a real source
- * would report every quote on it as absent, so it is an unfetchable source
- * instead — assertion 3, and the reason a stub can never masquerade as a pass.
+ * A fetched HTML page yielding less text than this is SUSPECT — usually a
+ * shell, a bot challenge, or an error page dressed as a 200, but sometimes a
+ * genuinely tiny document (a repealed chapter's page is one line). Suspect
+ * pages keep their variants and are judged per quote: a match verifies (with
+ * a stub disclosure in the detail), a miss reports UNFETCHABLE rather than
+ * ABSENT — assertion 3, and the reason a stub can never accuse the registry.
  */
 const MIN_SOURCE_TEXT_CHARS = 2000
 
@@ -818,6 +820,16 @@ const ADVISORY = Object.freeze(['PUNCTUATION', 'ELISION-PUNCTUATION'])
  * @param {Source} source
  */
 export function verdictFor(entry, source) {
+  const decided = verdictForInner(entry, source)
+  // Disclosure, not disqualification: a verified quote on a page the length
+  // heuristic flagged stays verified, and the ledger says where it matched.
+  if (source.suspectStub && decided.verdict !== 'UNFETCHABLE') {
+    return { ...decided, detail: decided.detail + ' (matched on a page below the shell-length threshold)' }
+  }
+  return decided
+}
+
+function verdictForInner(entry, source) {
   if (source.pdfUnreadable) {
     return { verdict: 'PDF-NOT-VERIFIABLE', detail: source.problem ?? 'PDF text could not be extracted' }
   }

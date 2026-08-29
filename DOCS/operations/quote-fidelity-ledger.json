@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-29T12:54:16.341Z",
+  "generatedAt": "2026-08-29T13:11:01.480Z",
   "recordCount": 409,
   "urlCount": 305,
   "fetched": 0,
@@ -7825,7 +7825,7 @@
       "url": "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=RTC&sectionNum=17087.",
       "quoteSha256": "059c728d7540c50a",
       "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "detail": "literal substring of the source (matched on a page below the shell-length threshold)",
       "diagnosis": null
     },
     {
@@ -9705,7 +9705,7 @@
       "url": "https://www.legis.la.gov/legis/Law.aspx?d=102134",
       "quoteSha256": "5cbdc46dd6903d52",
       "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "detail": "literal substring of the source (matched on a page below the shell-length threshold)",
       "diagnosis": null
     },
     {
@@ -10045,7 +10045,7 @@
       "url": "https://www.gencourt.state.nh.us/rsa/html/V/77/77-mrg.htm",
       "quoteSha256": "459ca8b623847a5b",
       "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "detail": "literal substring of the source (matched on a page below the shell-length threshold)",
       "diagnosis": null
     },
     {
@@ -10055,7 +10055,7 @@
       "url": "https://www.gencourt.state.nh.us/rsa/html/V/77/77-mrg.htm",
       "quoteSha256": "513d7314aa5a5e34",
       "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "detail": "literal substring of the source (matched on a page below the shell-length threshold)",
       "diagnosis": null
     },
     {
@@ -10215,7 +10215,7 @@
       "url": "https://webserver.rilegislature.gov/Statutes/TITLE44/44-30/44-I/44-30-1.htm",
       "quoteSha256": "800b650f16874a5a",
       "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "detail": "literal substring of the source (matched on a page below the shell-length threshold)",
       "diagnosis": null
     },
     {
@@ -10285,7 +10285,7 @@
       "url": "https://incometax.utah.gov/file-pay/tax-rates/",
       "quoteSha256": "8b71dbecb859e92d",
       "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "detail": "literal substring of the source (matched on a page below the shell-length threshold)",
       "diagnosis": null
     },
     {

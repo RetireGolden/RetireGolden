@@ -54,9 +54,12 @@ Exactly three things, plus two free checks. Everything else it reports without a
 2. **After the punctuation ladder, the quote is still a substring of the source.** The ladder folds away
    differences in how a publisher *renders* a character. What survives it is a difference in the words.
 3. **A source that cannot be fetched fails loudly.** Never skipped, never silently passed. A page that
-   returns 200 but only a few hundred characters of text — a shell, a bot challenge, an error page in
-   disguise — counts as unfetchable, because treating it as a source would report every quote on it as
-   absent.
+   returns 200 but only a few hundred characters of text — usually a shell, a bot challenge, an error
+   page in disguise — is treated as *suspect*: its text is still searched, because some documents
+   genuinely are that short (a repealed chapter’s page is one line of repeal history), and a quote that
+   matches a tiny page is a real verification. Only a MISS against a suspect page reports UNFETCHABLE
+   (with the stub diagnosis) rather than ABSENT, so a shell page can never accuse the registry of quoting
+   a passage that is not there. Matches on suspect pages carry a disclosure in their ledger detail.
 
 Free, because the fetch already happened:
 

@@ -25,11 +25,13 @@ function stubSource(html: string): QuoteVerdictSource {
 
 describe('suspect-stub verdict contract', () => {
   it('verifies an exact quote found on a genuinely tiny page', () => {
-    const { verdict } = verdictFor(
+    const { verdict, detail } = verdictFor(
       { quotedText: 'Repealed. Secs. 65, 70(1), Ch. 503, L. 2021.' },
       stubSource(REPEAL_PAGE),
     )
     expect(verdict).toBe('EXACT')
+    // A verified match on a flagged-short page is disclosed, not hidden.
+    expect(detail).toContain('below the shell-length threshold')
   })
 
   it('keeps the diagnostic rungs ahead of the stub guard', () => {
