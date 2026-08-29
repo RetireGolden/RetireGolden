@@ -10036,10 +10036,30 @@
         }
       ],
       "fixtureFiles": [
+        "packages/engine/src/decisions/objectives.cohortBoundary.test.ts",
         "packages/engine/src/insights/detectors/rothBridgeHeadroom.test.ts",
         "packages/engine/src/params/params.test.ts"
       ],
       "fixtures": [
+        {
+          "path": "packages/engine/src/decisions/objectives.cohortBoundary.test.ts",
+          "line": 23,
+          "note": "objective bridge window ends at the cohort-dependent applicable age",
+          "tests": [
+            {
+              "title": "keeps ages 73 and 74 in the window for the first 75-cohort (born 1960)",
+              "line": 32
+            },
+            {
+              "title": "ends the window at the applicable age for the final 73-cohort (born 1959)",
+              "line": 44
+            },
+            {
+              "title": "changes nothing reachable for pre-1951 cohorts, whose applicable age already passed",
+              "line": 48
+            }
+          ]
+        },
         {
           "path": "packages/engine/src/insights/detectors/rothBridgeHeadroom.test.ts",
           "line": 41,

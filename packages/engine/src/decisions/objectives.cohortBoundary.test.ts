@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { ProjectionResult } from '../projection/types.js'
+import { describeRule } from '../rules/describeRule.js'
 import { bridgeYearFilter } from './objectives.js'
 
 /**
@@ -19,15 +20,36 @@ function row(birthYear: number, ageAttained: number): ProjectionResult['years'][
 }
 
 describe('bridgeYearFilter applicable-age cohort boundary', () => {
-  it('keeps ages 73 and 74 in the window for the first 75-cohort (born 1960)', () => {
-    expect(bridgeYearFilter(row(1960, 73))).toBe(true)
-    expect(bridgeYearFilter(row(1960, 74))).toBe(true)
-    expect(bridgeYearFilter(row(1960, 75))).toBe(false)
-  })
+  describeRule('irc-401-a-9-C-v-applicable-age', {
+    note: 'objective bridge window ends at the cohort-dependent applicable age',
+    readings: {
+      cohortDependentApplicableAge: { born1960Age74: true, born1959Age73: false },
+      hardcodedAgeSeventyThree: { born1960Age74: false, born1959Age73: false },
+      nineteenFiftyNineMappedToSeventyFive: { born1960Age74: true, born1959Age73: true },
+    },
+    accepted: 'cohortDependentApplicableAge',
+  }, ({ accepted, readings }) => {
+    it('keeps ages 73 and 74 in the window for the first 75-cohort (born 1960)', () => {
+      const actual = {
+        born1960Age74: bridgeYearFilter(row(1960, 74)),
+        born1959Age73: bridgeYearFilter(row(1959, 73)),
+      }
+      expect(actual).toEqual(accepted)
+      expect(actual).not.toEqual(readings.hardcodedAgeSeventyThree)
+      expect(actual).not.toEqual(readings.nineteenFiftyNineMappedToSeventyFive)
+      expect(bridgeYearFilter(row(1960, 73))).toBe(true)
+      expect(bridgeYearFilter(row(1960, 75))).toBe(false)
+    })
 
-  it('ends the window at the applicable age for the final 73-cohort (born 1959)', () => {
-    expect(bridgeYearFilter(row(1959, 72))).toBe(true)
-    // Guards the reverse drift too: a 1959 birth mapped to 75 would keep 73 in.
-    expect(bridgeYearFilter(row(1959, 73))).toBe(false)
+    it('ends the window at the applicable age for the final 73-cohort (born 1959)', () => {
+      expect(bridgeYearFilter(row(1959, 72))).toBe(true)
+    })
+
+    it('changes nothing reachable for pre-1951 cohorts, whose applicable age already passed', () => {
+      // Born 1950, age 72 (year 2022): before any projection year, and the
+      // helper's 72 puts them past the window either way.
+      expect(bridgeYearFilter(row(1950, 72))).toBe(false)
+      expect(bridgeYearFilter(row(1950, 76))).toBe(false)
+    })
   })
 })
