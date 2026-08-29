@@ -84,8 +84,13 @@ export function LearnLink({ slug, label = 'Learn more', anchor, variant = 'inlin
       className={classes}
       state={safeFrom ? { learnFrom: safeFrom, learnFromLabel: originLabel(location.pathname) } : undefined}
     >
-      {label}
-      <span aria-hidden="true"> →</span>
+      {/* Label + ` →` share one inline box. `.btn` is inline-flex with no gap,
+          so a leading space on a flex-item sibling collapses — the flush
+          "example→" on /examples cards (#329). */}
+      <span>
+        {label}
+        <span aria-hidden="true"> →</span>
+      </span>
     </Link>
   )
 }

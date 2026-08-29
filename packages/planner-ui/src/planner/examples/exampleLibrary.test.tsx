@@ -102,4 +102,41 @@ describe('example library page', () => {
     expect(demo.ok).toBe(true)
     if (demo.ok) expect(demo.plan.origin).toBe('example')
   })
+
+  it('Learn about this example keeps a word-space before the arrow on every card (#329)', async () => {
+    await renderExamples()
+    const featured = container.querySelectorAll('.example-card a.learn-link')
+    expect(featured.length).toBe(3)
+    for (const link of featured) {
+      expectLearnArrowSharesLabelBox(link)
+    }
+
+    const browse = Array.from(container.querySelectorAll('button')).find((b) =>
+      /Browse all \d+ examples/.test(b.textContent ?? ''),
+    )!
+    await act(async () => {
+      browse.click()
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    const all = container.querySelectorAll('.example-card a.learn-link')
+    expect(all.length).toBe(EXAMPLE_PLANS.length)
+    for (const card of container.querySelectorAll('.example-card')) {
+      const actions = card.querySelector('.plan-card-actions')
+      expect(actions?.querySelector('button.btn-primary')?.textContent).toBe('Open')
+      expect(actions?.querySelector('button.btn-secondary')?.textContent).toBe('Save to my plans')
+      const learn = actions?.querySelector('a.learn-link')
+      expect(learn, 'each card has a Learn control').not.toBeNull()
+      expectLearnArrowSharesLabelBox(learn!)
+    }
+  })
 })
+
+/** Label + ` →` must share one inline box so `.btn` flex cannot collapse the space. */
+function expectLearnArrowSharesLabelBox(link: Element) {
+  expect(link.textContent).toBe('Learn about this example →')
+  const arrow = link.querySelector('span[aria-hidden="true"]')
+  expect(arrow?.textContent).toBe(' →')
+  expect(arrow?.parentElement).not.toBe(link)
+  expect(arrow?.parentElement?.textContent).toBe('Learn about this example →')
+}
