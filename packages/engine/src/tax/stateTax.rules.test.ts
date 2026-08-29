@@ -2308,11 +2308,15 @@ describeRule('mt-mca-15-30-2120-federal-taxable-income-base', {
   },
   accepted: 'federallyTaxableShareInTheBase',
 }, ({ accepted, readings }) => {
+  // Age 64 deliberately: below both the 15-30-2120(3)(g) age gate and the
+  // federal age-65 addition, so this settled fixture stays decoupled from the
+  // registered (3)(g) defect and keeps its readings valid when that gap is
+  // eventually closed.
   const scenario = input({
     state: 'MT',
     ordinaryIncome: MT_SS_OTHER,
     ssBenefits: MT_SS,
-    agesAlive: [70],
+    agesAlive: [64],
   })
 
   it('starts Montana from federal taxable income, so federally taxable Social Security stays in', () => {
@@ -2350,15 +2354,60 @@ describeRule('mt-mca-15-30-2120-3-g-age-65-subtraction', {
   produced: 'packLeavesTheFullBaseTaxable',
   note: 'age-65 additional subtraction, 15-30-2120(3)(g) floor',
 }, ({ accepted, produced }) => {
+  // Both age signals raised so the pin trips whichever field a future
+  // implementation keys on. The raw pack carries no standard-deduction age
+  // addition, so peopleAged65Plus does not move today's produced figure.
   const scenario = input({
     state: 'MT',
     ordinaryIncome: MT_AGE65_INCOME,
     agesAlive: [65],
+    peopleAged65Plus: 1,
   })
 
   it('pins the missing Montana age-65 subtraction', () => {
     expect(computeStateTaxableIncome(pack('MT'), scenario)).toBeCloseTo(produced, 6)
     expect(computeStateTaxableIncome(pack('MT'), scenario)).not.toBeCloseTo(accepted, 6)
+  })
+
+  it('grants nothing below 65 under either reading', () => {
+    const at64 = input({
+      state: 'MT',
+      ordinaryIncome: MT_AGE65_INCOME,
+      agesAlive: [64],
+    })
+    expect(computeStateTaxableIncome(pack('MT'), at64))
+      .toBeCloseTo(MT_AGE65_INCOME - MT_DEDUCTION, 6)
+  })
+})
+
+// The statute grants the subtraction "for each taxpayer" at 65, so a married
+// couple who have both attained 65 doubles it. The engine grants nothing, and
+// this leg pins the per-taxpayer arithmetic so a future per-RETURN
+// implementation cannot satisfy the accepted reading either.
+const MT_MFJ_AGE65_INCOME = 140_000
+const MT_DEDUCTION_JOINT = 32_200
+
+describeRule('mt-mca-15-30-2120-3-g-age-65-subtraction', {
+  readings: {
+    statuteSubtractsTheFloorForEachTaxpayer:
+      MT_MFJ_AGE65_INCOME - MT_DEDUCTION_JOINT - 2 * MT_AGE65_SUBTRACTION_FLOOR,
+    packLeavesTheFullBaseTaxable: MT_MFJ_AGE65_INCOME - MT_DEDUCTION_JOINT,
+  },
+  accepted: 'statuteSubtractsTheFloorForEachTaxpayer',
+  produced: 'packLeavesTheFullBaseTaxable',
+  note: 'per-taxpayer doubling for a couple both 65',
+}, ({ accepted, produced }) => {
+  const joint = input({
+    state: 'MT',
+    filingStatus: 'marriedFilingJointly',
+    ordinaryIncome: MT_MFJ_AGE65_INCOME,
+    agesAlive: [65, 65],
+    peopleAged65Plus: 2,
+  })
+
+  it('pins the missing per-taxpayer doubling for a couple both 65', () => {
+    expect(computeStateTaxableIncome(pack('MT'), joint)).toBeCloseTo(produced, 6)
+    expect(computeStateTaxableIncome(pack('MT'), joint)).not.toBeCloseTo(accepted, 6)
   })
 })
 

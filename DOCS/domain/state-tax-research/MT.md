@@ -4,8 +4,9 @@ Tax year: 2025. Researched 2026-06-13.
 
 > **2026 correction (registry intake, 2026-08-29; supersedes this document's Social Security and
 > subtraction claims below):** current law was verified against the 2025 Montana Code Annotated at
-> `mca.legmt.gov`. Three claims below describe PRE-2024 law that SB 399 (Secs. 65, 70(1), Ch. 503,
-> L. 2021) repealed with former 15-30-2110:
+> `mca.legmt.gov`. Two claims below describe PRE-2024 law that SB 399 (Secs. 65, 70(1), Ch. 503,
+> L. 2021) repealed with former 15-30-2110, and a third — the age-65 subtraction, which IS current
+> law — needed its mechanism completed:
 >
 > 1. **There is NO income-tested Social Security subtraction.** 15-30-2120(3) contains no Social
 >    Security item of any kind; the $25k/$32k tiered subtraction described below (and by the
@@ -14,10 +15,11 @@ Tax year: 2025. Researched 2026-06-13.
 > 2. **The base is federal TAXABLE income, not federal AGI.** 15-30-2101(22): Montana taxable
 >    income means federal taxable income adjusted as provided in 15-30-2120. The federal standard
 >    deduction therefore flows through by construction (`standardDeductionConformity: 'federal'`).
-> 3. **The age-65 subtraction is 15-30-2120(3)(g): $5,500 per taxpayer 65+, inflation-adjusted**
->    under 15-30-2120(7) (rounded to the nearest $10), so the operative figure exceeds the floor.
->    Not modeled; registered as `mt-mca-15-30-2120-3-g-age-65-subtraction`
->    (approximated/overstatesTax, produced pin in stateTax.rules.test.ts).
+> 3. **The age-65 subtraction is current law, 15-30-2120(3)(g): $5,500 per taxpayer 65+,
+>    inflation-adjusted** under 15-30-2120(7) (rounded to the nearest $10), so the operative figure
+>    exceeds the floor this document quotes. Not modeled; registered as
+>    `mt-mca-15-30-2120-3-g-age-65-subtraction` (approximated/overstatesTax, produced pins in
+>    stateTax.rules.test.ts, single and both-65 MFJ).
 >
 > Registry records: `mt-mca-15-30-2120-federal-taxable-income-base` (supersedes
 > `mt-mca-15-30-2110-federal-agi-social-security`) and the (3)(g) record above. The registry is
@@ -32,7 +34,7 @@ Tax year: 2025. Researched 2026-06-13.
 
 ## Summary
 - Broad individual income tax: **yes** (two brackets, 4.7% and 5.9%)
-- Taxes Social Security benefits: **yes** (starts from the federally taxable amount; income-based subtraction exempts lower-income retirees)
+- Taxes Social Security benefits: **yes** (starts from the federally taxable amount; the income-based subtraction this line once described was repealed for 2024+ — see the 2026 correction above)
 - Long-term capital gains: **preferential** — separate lower CG rates (3.0% / 4.1%); modeled as ordinary, noted
 - Retirement income (pension, IRA, 401k): mostly taxed; only a small ($5,500 per person) age-65 subtraction
 

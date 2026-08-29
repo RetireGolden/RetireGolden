@@ -1400,16 +1400,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2916,
+          "line": 2965,
           "note": null,
           "tests": [
             {
               "title": "prices Alabama single brackets rather than the joint schedule",
-              "line": 2932
+              "line": 2981
             },
             {
               "title": "prices the joint schedule on a joint return, distinct from the single breaks",
-              "line": 2939
+              "line": 2988
             }
           ]
         }
@@ -1484,20 +1484,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2954,
+          "line": 3003,
           "note": "unsettled: operative text unsourced",
           "tests": [
             {
               "title": "implements the encoded $6,000 convention and discriminates the competing readings",
-              "line": 2980
+              "line": 3029
             },
             {
               "title": "reaches the no-exclusion reading once the cap is withheld",
-              "line": 2989
+              "line": 3038
             },
             {
               "title": "reaches the research 2026 reading under a doubled cap",
-              "line": 2997
+              "line": 3046
             }
           ]
         }
@@ -1707,12 +1707,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2886,
+          "line": 2935,
           "note": null,
           "tests": [
             {
               "title": "keeps a taxable IRA distribution in the Alabama base",
-              "line": 2902
+              "line": 2951
             }
           ]
         }
@@ -1901,12 +1901,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2858,
+          "line": 2907,
           "note": null,
           "tests": [
             {
               "title": "omits federally taxable Social Security from the Alabama base",
-              "line": 2875
+              "line": 2924
             }
           ]
         }
@@ -20502,12 +20502,27 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2343,
+          "line": 2347,
           "note": "age-65 additional subtraction, 15-30-2120(3)(g) floor",
           "tests": [
             {
               "title": "pins the missing Montana age-65 subtraction",
-              "line": 2359
+              "line": 2367
+            },
+            {
+              "title": "grants nothing below 65 under either reading",
+              "line": 2372
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 2390,
+          "note": "per-taxpayer doubling for a couple both 65",
+          "tests": [
+            {
+              "title": "pins the missing per-taxpayer doubling for a couple both 65",
+              "line": 2408
             }
           ]
         }
@@ -20521,6 +20536,11 @@
         {
           "kind": "statute",
           "citation": "Mont. Code Ann. 15-30-2120(7)(a) (2025)",
+          "url": "https://mca.legmt.gov/bills/mca/title_0150/chapter_0300/part_0210/section_0200/0150-0300-0210-0200.html"
+        },
+        {
+          "kind": "statute",
+          "citation": "Mont. Code Ann. 15-30-2120(7)(b) (2025)",
           "url": "https://mca.legmt.gov/bills/mca/title_0150/chapter_0300/part_0210/section_0200/0150-0300-0210-0200.html"
         }
       ]
@@ -20583,15 +20603,15 @@
           "tests": [
             {
               "title": "starts Montana from federal taxable income, so federally taxable Social Security stays in",
-              "line": 2318
+              "line": 2322
             },
             {
               "title": "would drop the benefit if Montana subtracted it the way a false flag does",
-              "line": 2324
+              "line": 2328
             },
             {
               "title": "carries the federal standard deduction with it, not a frozen state figure",
-              "line": 2330
+              "line": 2334
             }
           ]
         }
@@ -20605,6 +20625,11 @@
         {
           "kind": "statute",
           "citation": "Mont. Code Ann. 15-30-2120(1) (2025)",
+          "url": "https://mca.legmt.gov/bills/mca/title_0150/chapter_0300/part_0210/section_0200/0150-0300-0210-0200.html"
+        },
+        {
+          "kind": "statute",
+          "citation": "Mont. Code Ann. 15-30-2120(3) (2025)",
           "url": "https://mca.legmt.gov/bills/mca/title_0150/chapter_0300/part_0210/section_0200/0150-0300-0210-0200.html"
         },
         {
@@ -20662,12 +20687,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2460,
+          "line": 2509,
           "note": null,
           "tests": [
             {
               "title": "subtracts Title II Social Security from North Carolina income",
-              "line": 2469
+              "line": 2518
             }
           ]
         }
@@ -21449,16 +21474,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2374,
+          "line": 2423,
           "note": null,
           "tests": [
             {
               "title": "subtracts every federally included Social Security dollar from 2024",
-              "line": 2390
+              "line": 2439
             },
             {
               "title": "would tax 85% of the benefit under the shopping-list reading",
-              "line": 2396
+              "line": 2445
             }
           ]
         }
@@ -21524,16 +21549,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2404,
+          "line": 2453,
           "note": null,
           "tests": [
             {
               "title": "leaves a New Hampshire retiree with no state base at all",
-              "line": 2425
+              "line": 2474
             },
             {
               "title": "would build a base if Chapter 77 were still in force",
-              "line": 2430
+              "line": 2479
             }
           ]
         }
@@ -21692,12 +21717,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2438,
+          "line": 2487,
           "note": null,
           "tests": [
             {
               "title": "pins the high-income path where the blanket pack exclusion diverges from the source threshold",
-              "line": 2453
+              "line": 2502
             }
           ]
         }
@@ -22889,23 +22914,23 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2477,
+          "line": 2526,
           "note": "public-pension deduction limb",
           "tests": [
             {
               "title": "pins the over-broad full public-pension override",
-              "line": 2496
+              "line": 2545
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2503,
+          "line": 2552,
           "note": "retirement-income credit limb",
           "tests": [
             {
               "title": "pins the omitted Ohio retirement-income credit",
-              "line": 2517
+              "line": 2566
             }
           ]
         }
@@ -22975,12 +23000,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2524,
+          "line": 2573,
           "note": "military-retirement exception to the common cap",
           "tests": [
             {
               "title": "pins the military exception the generic retirement bucket cannot express",
-              "line": 2542
+              "line": 2591
             }
           ]
         }
@@ -23056,12 +23081,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2572,
+          "line": 2621,
           "note": null,
           "tests": [
             {
               "title": "subtracts federally taxable Social Security as ORS 316.054 directs",
-              "line": 2584
+              "line": 2633
             }
           ]
         }
@@ -23627,34 +23652,34 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2592,
+          "line": 2641,
           "note": "Social Security AGI threshold limb",
           "tests": [
             {
               "title": "pins the low-AGI age-qualified Social Security modification",
-              "line": 2607
+              "line": 2656
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2614,
+          "line": 2663,
           "note": "pension ceiling limb",
           "tests": [
             {
               "title": "pins the current pension ceiling rather than the stale pack cap",
-              "line": 2633
+              "line": 2682
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2640,
+          "line": 2689,
           "note": "pension AGI-threshold limb",
           "tests": [
             {
               "title": "pins the opposite direction when the pension AGI test disallows any modification",
-              "line": 2660
+              "line": 2709
             }
           ]
         }
@@ -29136,12 +29161,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2549,
+          "line": 2598,
           "note": null,
           "tests": [
             {
               "title": "pins the unmodeled Utah Social Security benefits credit",
-              "line": 2565
+              "line": 2614
             }
           ]
         }
@@ -29206,23 +29231,23 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2687,
+          "line": 2736,
           "note": null,
           "tests": [
             {
               "title": "pins the high-income phase-out that the retirement-cap mapping misses",
-              "line": 2706
+              "line": 2755
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2713,
+          "line": 2762,
           "note": "wage-only age deduction limb",
           "tests": [
             {
               "title": "pins the opposite direction when an age-65 filer has wages but no modeled pension",
-              "line": 2727
+              "line": 2776
             }
           ]
         }
@@ -29278,12 +29303,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2667,
+          "line": 2716,
           "note": null,
           "tests": [
             {
               "title": "pins Vermont's complete low-AGI Social Security exclusion",
-              "line": 2680
+              "line": 2729
             }
           ]
         }
@@ -29384,12 +29409,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2734,
+          "line": 2783,
           "note": null,
           "tests": [
             {
               "title": "keeps Washington out of the broad state-income-tax path",
-              "line": 2753
+              "line": 2802
             }
           ]
         }
@@ -29527,12 +29552,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2771,
+          "line": 2820,
           "note": "30% long-term capital-gain subtraction",
           "tests": [
             {
               "title": "pins Wisconsin's unrepresented long-term capital-gain exclusion",
-              "line": 2785
+              "line": 2834
             }
           ]
         }
@@ -29597,20 +29622,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2792,
+          "line": 2841,
           "note": "age-67 retirement attribution and election limbs",
           "tests": [
             {
               "title": "shelters retirement dollars received by the under-67 spouse",
-              "line": 2816
+              "line": 2865
             },
             {
               "title": "matches the pooled $48,000 cap when both spouses are 67",
-              "line": 2825
+              "line": 2874
             },
             {
               "title": "grants a 65-year-old nothing where Line 17 would allow $5,000",
-              "line": 2838
+              "line": 2887
             }
           ]
         }
@@ -29795,15 +29820,15 @@
     }
   ],
   "quoteFidelity": {
-    "generatedAt": "2026-08-29T04:09:26.812Z",
-    "entryCount": 1054,
+    "generatedAt": "2026-08-29T04:34:12.359Z",
+    "entryCount": 1056,
     "fetched": 1,
     "cached": 304,
     "counts": {
       "ABSENT": 25,
       "ELISION-EXACT": 59,
       "ELISION-PUNCTUATION": 4,
-      "EXACT": 704,
+      "EXACT": 706,
       "PDF-NOT-VERIFIABLE": 5,
       "PDF-WORD-LEVEL": 206,
       "PUNCTUATION": 37,

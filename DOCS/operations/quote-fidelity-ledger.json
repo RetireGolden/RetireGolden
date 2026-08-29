@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-08-29T04:09:26.812Z",
+  "generatedAt": "2026-08-29T04:34:12.359Z",
   "recordCount": 409,
   "urlCount": 305,
   "fetched": 1,
   "cached": 304,
-  "entryCount": 1054,
+  "entryCount": 1056,
   "counts": {
-    "EXACT": 704,
+    "EXACT": 706,
     "PUNCTUATION": 37,
     "UNFETCHABLE": 14,
     "ELISION-PUNCTUATION": 4,
@@ -9920,6 +9920,16 @@
     },
     {
       "id": "mt-mca-15-30-2120-federal-taxable-income-base",
+      "citation": "Mont. Code Ann. 15-30-2120(3) (2025)",
+      "host": "mca.legmt.gov",
+      "url": "https://mca.legmt.gov/bills/mca/title_0150/chapter_0300/part_0210/section_0200/0150-0300-0210-0200.html",
+      "quoteSha256": "0a8732db892ce1a3",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "mt-mca-15-30-2120-federal-taxable-income-base",
       "citation": "Mont. Code Ann. 15-30-2110 (repealed) (2025)",
       "host": "mca.legmt.gov",
       "url": "https://mca.legmt.gov/bills/mca/title_0150/chapter_0300/part_0210/section_0100/0150-0300-0210-0100.html",
@@ -9954,6 +9964,16 @@
       "host": "mca.legmt.gov",
       "url": "https://mca.legmt.gov/bills/mca/title_0150/chapter_0300/part_0210/section_0200/0150-0300-0210-0200.html",
       "quoteSha256": "43a63097ad370f60",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "mt-mca-15-30-2120-3-g-age-65-subtraction",
+      "citation": "Mont. Code Ann. 15-30-2120(7)(b) (2025)",
+      "host": "mca.legmt.gov",
+      "url": "https://mca.legmt.gov/bills/mca/title_0150/chapter_0300/part_0210/section_0200/0150-0300-0210-0200.html",
+      "quoteSha256": "df74bfe4061dac04",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null
