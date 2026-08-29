@@ -1831,11 +1831,13 @@ const registry = {
     implementedBy: [
       'packages/engine/src/strategies/accountEligibility.ts',
       'packages/engine/src/actions/rothConversionExecution.ts',
+      'packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/actions/rothConversionExecution.ts#executeRothConversions',
       'packages/engine/src/strategies/accountEligibility.ts#evaluateConversion',
       'packages/engine/src/strategies/accountEligibility.ts#isConvertibleToRoth',
+      'packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts#conversionSourceIssue',
     ],
   },
 
@@ -9330,10 +9332,19 @@ const registry = {
     implementedBy: [
       'packages/engine/src/actions/aggregateRothConversionOwnerAllocation.ts',
       'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts',
+      'packages/engine/src/actions/retirementActionManualReview.ts',
+      'packages/engine/src/decisions/rothConversionCandidateAdapter.ts',
+      'packages/engine/src/projection/optimizerAggregateConversionPromotion.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/actions/aggregateRothConversionOwnerAllocation.ts#allocateAggregateRothConversionByOwner',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts#conversionSourceIssue',
+      'packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts#conversionDestinationIssue',
+      'packages/engine/src/actions/retirementActionManualReview.ts#targetIdentitySemanticsIssue',
+      'packages/engine/src/decisions/rothConversionCandidateAdapter.ts#adaptFillTargetRothConversionGeneratorCandidate',
+      'packages/engine/src/projection/optimizerAggregateConversionPromotion.ts#promoteOneYear',
     ],
   },
   'irc-408A-d-3-B-conversion-destination-must-be-a-roth-ira': {
@@ -9415,11 +9426,13 @@ const registry = {
       'packages/engine/src/actions/aggregateRothConversionOwnerAllocation.ts',
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/strategies/accountEligibility.ts',
+      'packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/actions/aggregateRothConversionOwnerAllocation.ts#allocateAggregateRothConversionByOwner',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/strategies/accountEligibility.ts#evaluateRetirementActionEligibility',
+      'packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts#conversionDestinationIssue',
     ],
   },
 
@@ -9468,11 +9481,13 @@ const registry = {
       'packages/engine/src/strategies/accountEligibility.ts',
       'packages/engine/src/actions/aggregateRothConversionOwnerAllocation.ts',
       'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/projection/optimizerAggregateConversionPromotion.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/actions/aggregateRothConversionOwnerAllocation.ts#allocateAggregateRothConversionByOwner',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/strategies/accountEligibility.ts#isConvertibleToRoth',
+      'packages/engine/src/projection/optimizerAggregateConversionPromotion.ts#promoteOneYear',
     ],
   },
 

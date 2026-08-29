@@ -88,8 +88,8 @@
   "partial": [
     {
       "path": "actions/aggregateRothConversionOwnerAllocation.ts",
-      "sweptOn": "2026-08-24",
-      "note": "RMD-before-conversion ordering/snapshot; no record"
+      "sweptOn": "2026-08-29",
+      "note": "same-owner pro-rata allocation long registered under irc-408-d-3-A-i; the RMD-before-conversion ordering it relies on is enforced upstream (resolveOwnerIraRmdSatisfaction), and this file consumes the post-RMD snapshot as a contract rather than enforcing it - that contract stays the residual"
     },
     {
       "path": "actions/annualOwnedNonRothIraPoolCapacity.ts",
@@ -178,18 +178,18 @@
     },
     {
       "path": "actions/retirementActionCandidateIdentityAllocator.ts",
-      "sweptOn": "2026-08-24",
-      "note": "Conversion source/destination vehicle restrictions and QCD source-IRA restrictions; no record"
+      "sweptOn": "2026-08-29",
+      "note": "conversion source and destination identity registered under irc-408-d-3-A-i, the inherited-source refusal under irc-408-d-3-C-i, and the named-action designated-Roth refusal under irc-408A-d-3-B (conversionDestinationIssue kind gate); QCD source-IRA restrictions remain open"
     },
     {
       "path": "actions/retirementActionManualReview.ts",
-      "sweptOn": "2026-08-24",
-      "note": "Replacement source-owner and Roth-destination eligibility checks; no record"
+      "sweptOn": "2026-08-29",
+      "note": "replacement source-owner and Roth-destination identity checks registered under irc-408-d-3-A-i; the type gate here does not discriminate a designated Roth (that vehicle refusal lives in the identity allocator), and the QCD source-owner clause remains open"
     },
     {
       "path": "actions/rothConversionExecution.ts",
-      "sweptOn": "2026-08-25",
-      "note": "Positive-basis deferred character and direct conversion vehicle gates; no record"
+      "sweptOn": "2026-08-29",
+      "note": "ordering and inherited-bar records name executeRothConversions; the positive-basis deferred-character branch publishes null character for the downstream annual 408(d)(2) pass to resolve, and that deferral plus the direct-vehicle gates remain the residual"
     },
     {
       "path": "actions/traditionalEmployerPlanPenaltyPrerequisite.ts",
@@ -208,8 +208,8 @@
     },
     {
       "path": "decisions/rothConversionCandidateAdapter.ts",
-      "sweptOn": "2026-08-24",
-      "note": "Same-owner Roth destination/date gate; no record"
+      "sweptOn": "2026-08-29",
+      "note": "same-owner destination gate registered under irc-408-d-3-A-i; the dated-intent gate remains unregistered"
     },
     {
       "path": "insights/detectors/hecmBufferCandidate.ts",
@@ -298,8 +298,8 @@
     },
     {
       "path": "projection/optimizerAggregateConversionPromotion.ts",
-      "sweptOn": "2026-08-24",
-      "note": "§408A-4 A-6(b) RMD-first, 401(k)(2)(B)(i) distributability, and same-owner Roth destination; no records"
+      "sweptOn": "2026-08-29",
+      "note": "same-owner trim registered under irc-408-d-3-A-i and the distributability predicate under irc-401-k-2-B-i; RMD-first ordering is an upstream snapshot contract enforced at resolveOwnerIraRmdSatisfaction, not here, and stays the residual"
     },
     {
       "path": "projection/ownedIraAnnualPhysicalTransactionInputs.ts",
@@ -10478,6 +10478,7 @@
       "dueOn": "2027-08-20",
       "implementedBy": [
         "packages/engine/src/actions/aggregateRothConversionOwnerAllocation.ts",
+        "packages/engine/src/projection/optimizerAggregateConversionPromotion.ts",
         "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/strategies/accountEligibility.ts"
       ],
@@ -10488,6 +10489,15 @@
             {
               "name": "allocateAggregateRothConversionByOwner",
               "line": 276
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/optimizerAggregateConversionPromotion.ts",
+          "functions": [
+            {
+              "name": "promoteOneYear",
+              "line": 525
             }
           ]
         },
@@ -12011,6 +12021,10 @@
       "dueOn": "2027-08-04",
       "implementedBy": [
         "packages/engine/src/actions/aggregateRothConversionOwnerAllocation.ts",
+        "packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts",
+        "packages/engine/src/actions/retirementActionManualReview.ts",
+        "packages/engine/src/decisions/rothConversionCandidateAdapter.ts",
+        "packages/engine/src/projection/optimizerAggregateConversionPromotion.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
@@ -12020,6 +12034,46 @@
             {
               "name": "allocateAggregateRothConversionByOwner",
               "line": 276
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts",
+          "functions": [
+            {
+              "name": "conversionDestinationIssue",
+              "line": 338
+            },
+            {
+              "name": "conversionSourceIssue",
+              "line": 294
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/retirementActionManualReview.ts",
+          "functions": [
+            {
+              "name": "targetIdentitySemanticsIssue",
+              "line": 361
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/decisions/rothConversionCandidateAdapter.ts",
+          "functions": [
+            {
+              "name": "adaptFillTargetRothConversionGeneratorCandidate",
+              "line": 386
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/optimizerAggregateConversionPromotion.ts",
+          "functions": [
+            {
+              "name": "promoteOneYear",
+              "line": 525
             }
           ]
         },
@@ -12106,10 +12160,20 @@
       "verifiedOn": "2026-08-25",
       "dueOn": "2027-08-25",
       "implementedBy": [
+        "packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts",
         "packages/engine/src/actions/rothConversionExecution.ts",
         "packages/engine/src/strategies/accountEligibility.ts"
       ],
       "implementations": [
+        {
+          "path": "packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts",
+          "functions": [
+            {
+              "name": "conversionSourceIssue",
+              "line": 294
+            }
+          ]
+        },
         {
           "path": "packages/engine/src/actions/rothConversionExecution.ts",
           "functions": [
@@ -14095,6 +14159,7 @@
       "dueOn": "2027-08-05",
       "implementedBy": [
         "packages/engine/src/actions/aggregateRothConversionOwnerAllocation.ts",
+        "packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts",
         "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/strategies/accountEligibility.ts"
       ],
@@ -14105,6 +14170,15 @@
             {
               "name": "allocateAggregateRothConversionByOwner",
               "line": 276
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts",
+          "functions": [
+            {
+              "name": "conversionDestinationIssue",
+              "line": 338
             }
           ]
         },
