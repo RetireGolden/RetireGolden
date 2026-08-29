@@ -22,8 +22,8 @@ permissions:
 
 jobs:
   review:
-    uses: RetireGolden/.github/.github/workflows/grok-code-review.yml@571cb618da27029371b3468ee3ad2ad580f42d2d # independent OR cutover; manual Grok safeguards
+    uses: RetireGolden/.github/.github/workflows/grok-code-review.yml@97b571df12df0089cff3dd310bcad907b5c94cab # .github#30 (Grok action v1.0.8 manual safeguards)
     with:
-      pr_number: ${{ inputs.pr_number || github.event.inputs.pr_number || github.event.pull_request.number }}
+      pr_number: ${{ inputs.pr_number }}
     secrets:
       XAI_API_KEY: ${{ secrets.XAI_API_KEY }}

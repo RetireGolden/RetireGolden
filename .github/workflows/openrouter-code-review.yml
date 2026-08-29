@@ -52,6 +52,7 @@ on:
 permissions:
   contents: read
   pull-requests: write
+  # The central reusable publishes the stable required-gate commit status.
   statuses: write
 
 jobs:
@@ -59,9 +60,9 @@ jobs:
   # `review / openrouter-first-pass-gate`.
   review:
     if: github.event_name == 'workflow_dispatch' || !github.event.pull_request.draft
-    # Central independent-review workflow pinned to the reviewed commit that
-    # carries OpenRouter action v1.2.7 and its stable required gate.
-    uses: RetireGolden/.github/.github/workflows/openrouter-code-review.yml@571cb618da27029371b3468ee3ad2ad580f42d2d
+    # Central independent-review workflow pinned to the .github#30 merge commit
+    # (OpenRouter action v1.2.7 and its stable independent required gate).
+    uses: RetireGolden/.github/.github/workflows/openrouter-code-review.yml@97b571df12df0089cff3dd310bcad907b5c94cab # .github#30 (OpenRouter action v1.2.7 independent gate)
     with:
       pr_number: ${{ inputs.pr_number || github.event.inputs.pr_number || github.event.pull_request.number }}
     secrets:

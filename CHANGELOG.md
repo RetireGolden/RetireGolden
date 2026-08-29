@@ -4,6 +4,11 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## 2026-08
 
+**2026-08-29**
+- Replaced automatic standalone Grok PR review with the independent OpenRouter
+  review workflow and stable `review / openrouter-first-pass-gate` context.
+  The legacy Grok workflow is manual-only; it is not an OpenRouter fallback.
+
 **2026-08-25**
 - Re-enabled the production web import capability after the WS6 incident-switch
   rehearsal proved the deployed one-key switch removed every browser file-input
