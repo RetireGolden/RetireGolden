@@ -3293,6 +3293,63 @@ const registry = {
       'packages/engine/src/decisions/generators.ts#SS_GRID_CLAIM_AGES',
     ],
   },
+  'ssa-2026-trustees-oasdi-depletion-default-haircut': {
+    title: 'The default Social Security haircut is the 2026 Trustees combined-OASDI projection',
+    statement:
+      'The 2026 Trustees Report intermediate projection has the combined OASDI reserves depleted in the third quarter of 2034 with 83 percent of scheduled benefits payable at that time. The engine\'s default benefit haircut carries exactly that projection - a 17 percent cut from 2034 - as a user-overridable planning assumption.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'This is a projection default, not law: current law simply stops paying beyond trust fund income once reserves deplete, and Congress may act before 2034. The default exists so a plan that says nothing about the shortfall still confronts the Trustees\' own best estimate; the user can set a different cut or none. The OASI-standalone projection (fourth quarter of 2032, 78 percent payable) is deliberately not the default because the combined OASDI basis is the conventional indicator of the program as a whole.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'agencyGuidance',
+      citation: 'A Summary of the 2026 Annual Reports, Social Security and Medicare Boards of Trustees',
+      url: 'https://www.ssa.gov/oact/trsum/',
+      quotedText:
+        'If these two legally separate trust funds were combined, then the OASDI reserves would be projected to become depleted in the third quarter of 2034 and 83 percent of scheduled Social Security benefits would be payable at that time, declining to 65 percent by 2100.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-29',
+    implementedBy: [
+      'packages/engine/src/params/index.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/index.ts#TRUSTEES_DEFAULT_SS_HAIRCUT',
+    ],
+  },
+  'ssa-table-4c6-period-life-table-vintage': {
+    title: 'The longevity tables are the SSA period life table, one vintage behind the live host',
+    statement:
+      'The engine\'s baseline life expectancies are SSA\'s Actuarial Life Table (Table 4C6) as published for the 2025 Trustees Report - the 2022 period table. The live page now presents the 2023 period table used in the 2026 Trustees Report, so the embedded vintage trails the published one until the next table refresh (male life expectancy at 65: 17.48 embedded versus 18.12 currently published).',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'bothDirections',
+    conventionRationale:
+      'The table is refreshed deliberately, not silently: longevity feeds Monte Carlo horizons and annuitization comparisons, so a vintage bump changes results and belongs in a reviewed change, and this record is what goes stale to force that review. Direction is both ways - longer published expectancies lengthen horizons for some households and shift claiming and conversion comparisons in either direction.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'agencyGuidance',
+      citation: 'SSA Actuarial Life Table (Table 4C6)',
+      url: 'https://www.ssa.gov/oact/STATS/table4c6.html',
+      quotedText:
+        'Here we present the 2023 period life table for the Social Security area population , as used in the 2026 Trustees Report (TR).',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-29',
+    implementedBy: [
+      'packages/engine/src/longevity/ssaPeriod2022.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/longevity/ssaPeriod2022.ts#MALE',
+      'packages/engine/src/longevity/ssaPeriod2022.ts#FEMALE',
+    ],
+  },
 
   'usc-42-402-r-1-2-deemed-filing-old-age-and-spousal': {
     title: 'Current eligible old-age and current-spouse benefits are deemed filed together',
@@ -7023,11 +7080,17 @@ const registry = {
       url: 'https://www.govinfo.gov/content/pkg/FR-2024-07-19/html/2024-14543.htm',
       quotedText:
         '(v) Employees born in 1959. In the case of an employee born in 1959, the applicable age is age 73.',
+    }, {
+      kind: 'irsNotice',
+      citation: 'Announcement 2026-7, 2026-11 I.R.B. 697',
+      url: 'https://www.irs.gov/irb/2026-11_IRB',
+      quotedText:
+        'Final regulations amending \u00a7\u00a7 1.401(a)(9)-4, 1.401(a)(9)-5, and 1.401(a)(9)-6, issued pursuant to the 2024 proposed regulations, are anticipated to apply for purposes of determining required minimum distributions for the distribution calendar year that begins no earlier than 6 months after the date that final regulations are issued in the Federal Register . For periods before the applicability date of these regulations, taxpayers must continue to apply a reasonable, good-faith interpretation of the statutory provisions underlying the regulations.',
     }],
     volatility: 'awaitingGuidance',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-08-29',
     implementedBy: [
       'packages/engine/src/params/index.ts',
       'packages/engine/src/rmd/rmd.ts',
@@ -9559,6 +9622,34 @@ const registry = {
       'packages/engine/src/strategies/accountEligibility.ts#evaluateRetirementActionEligibility',
       'packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts#conversionDestinationIssue',
       'packages/engine/src/actions/ownedNonRothIraAnnualPhysicalTransaction.ts#preparePlanOwnedNonRothIraAnnualPhysicalTransaction',
+    ],
+  },
+  'usc-12-1715z-20-b-hecm-minimum-age-62': {
+    title: 'A HECM borrower (or spouse) must be at least 62',
+    statement:
+      'The FHA home equity conversion mortgage program defines the eligible homeowner as one who is, or whose spouse is, at least 62 years of age. The HECM buffer detector refuses to surface a reverse-mortgage line-of-credit candidate for any household whose youngest member is under 62.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'First housing-law record in the registry. The registry already spans Title 26, Title 42 benefit statutes, 20 C.F.R. and POMS wherever the engine enforces the rule; the same admission test - an engine gate whose refusal traces to an operative statutory clause - is met here, so the domain follows the enforcement rather than the other way around.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: '12 U.S.C. 1715z-20(b)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title12-section1715z-20&num=0&edition=prelim',
+      quotedText:
+        'The terms "elderly homeowner" and "homeowner" mean any homeowner who is, or whose spouse is, at least 62 years of age or such higher age as the Secretary may prescribe.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-29',
+    implementedBy: [
+      'packages/engine/src/insights/detectors/hecmBufferCandidate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/insights/detectors/hecmBufferCandidate.ts#hecmBufferCandidate',
     ],
   },
 

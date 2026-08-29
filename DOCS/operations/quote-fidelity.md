@@ -178,6 +178,28 @@ notes column is prose and is not compared.
 | `www.irs.gov` (PDF) | not recoverable | not recoverable | extracts as U+FFFD | Word-level matching only. See "Why PDF sources never PASS". |
 | `www.jct.gov` | unknown | unknown | unknown | Behind a Cloudflare challenge; the script reports it `UNFETCHABLE` rather than working around it. |
 
+## The fetch identity ladder
+
+The verifier identifies itself honestly first: every request goes out as
+`RetireGolden-quote-verifier/1.0` with a link to this repository. Some official
+hosts sit behind perimeter rules that refuse that identity outright - a 401,
+403, or 406 from a client-fingerprint filter, not from the publisher's stated
+crawl policy. Grounded 2026-08-29: robots.txt on www.ssa.gov, www.nysenate.gov,
+and www.tn.gov each permits crawling the paths the registry cites (tn.gov is a
+blanket `Allow: /`), so those refusals contradict the hosts' own published
+policy for reading public law and public-domain federal work.
+
+On exactly that refusal class the verifier retries once as a mainstream
+browser. The retry is disclosed, never silent: a row verified through it
+carries `fetchProfile: "browserFallback"` in the committed ledger, and the
+cache meta records the same. The transparent identity always goes first
+because at least one publisher requires it - eCFR serves the full regulation
+only to the compatible-bot shape and a stub to browsers.
+
+Hosts that reject both identities (nysenate.gov and tn.gov fingerprint the
+TLS client, not just the user-agent string) stay honestly `UNFETCHABLE` with
+the block documented, exactly as before.
+
 ## Caveats
 
 - **A failure is not automatically a registry defect.** Confirm against the enrolled text before changing a

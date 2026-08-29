@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
+import { describeRule } from '../rules/describeRule.js'
+
 import { baselineRemainingYears } from '../longevity/ssaPeriod2022.js'
 import { annualMortality, MAX_AGE, sampleDeathAge } from './mortality.js'
 import { createRng } from './rng.js'
@@ -45,5 +47,24 @@ describe('sampleDeathAge', () => {
     const expected = currentAge + baselineRemainingYears(currentAge, 'male')
     // Within ~1 year (the +0.5 curtate convention and integer ages aside).
     expect(Math.abs(meanDeathAge - expected)).toBeLessThan(1.0)
+  })
+})
+
+describe('period life table vintage', () => {
+  // The engine embeds the 2022 period table (2025 TR): male e(65) = 17.48.
+  // The live Table 4C6 now presents the 2023 period table (2026 TR), where
+  // male e(65) = 18.12. Registered approximated with the embedded value
+  // pinned, so the next vintage refresh must come through this fixture.
+  describeRule('ssa-table-4c6-period-life-table-vintage', {
+    readings: {
+      currentlyPublishedTwentyTwentyThreePeriod: 18.12,
+      embeddedTwentyTwentyTwoPeriod: 17.48,
+    },
+    accepted: 'currentlyPublishedTwentyTwentyThreePeriod',
+    produced: 'embeddedTwentyTwentyTwoPeriod',
+  }, ({ produced }) => {
+    it('carries the 2022-period male life expectancy at 65', () => {
+      expect(baselineRemainingYears(65, 'male')).toBe(produced)
+    })
   })
 })

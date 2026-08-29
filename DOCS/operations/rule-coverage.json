@@ -2,21 +2,21 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 4,
   "registry": {
-    "total": 412,
+    "total": 415,
     "byClassification": {
-      "approximated": 108,
+      "approximated": 109,
       "outOfScope": 73,
-      "settled": 226,
+      "settled": 228,
       "unsettled": 5
     },
     "byVolatility": {
-      "annuallyIndexed": 58,
+      "annuallyIndexed": 60,
       "awaitingGuidance": 11,
-      "staticStatute": 337,
+      "staticStatute": 338,
       "sunsetting": 6
     },
     "byJurisdiction": {
-      "federal": 306,
+      "federal": 309,
       "states": {
         "AK": 1,
         "AL": 9,
@@ -76,8 +76,8 @@
   "attestations": {
     "totalFiles": 236,
     "byStatus": {
-      "partial": 51,
-      "registered": 60,
+      "partial": 48,
+      "registered": 63,
       "rule-free": 125,
       "unswept": 0
     },
@@ -197,11 +197,6 @@
       "note": "same-owner destination gate registered under irc-408-d-3-A-i; the dated-intent gate remains unregistered"
     },
     {
-      "path": "insights/detectors/hecmBufferCandidate.ts",
-      "sweptOn": "2026-08-29",
-      "note": "returns null under age 62, the statutory HECM minimum age (12 U.S.C. 1715z-20(b)). Held partial pending an owner scope decision: the registry has held tax statutes only, and admitting housing law is a domain expansion the sweep does not decide"
-    },
-    {
       "path": "insights/detectors/missingDataBasis.ts",
       "sweptOn": "2026-08-29",
       "note": "The detector consumes the shared ROTH_QUALIFIED_AGE constant to scope its suggestion; the qualified-distribution rule itself is registered and enforced at the Roth basis records, which do not name this consumer"
@@ -227,11 +222,6 @@
       "note": "TIPS OID/deflation and §171 premium absence registered (treas-reg-1-1275-7-f-1-deflation-adjustment-income, treas-reg-1-1275-7-f-2-deflation-basis-decrease-not-modeled, treas-reg-1-1275-7-f-3-tips-acquisition-premium, irc-171-tips-bond-premium-amortization); statutory 0.125% min coupon and par-yield pricing conventions remain"
     },
     {
-      "path": "longevity/ssaPeriod2022.ts",
-      "sweptOn": "2026-08-24",
-      "note": "SSA 2022 period table provenance/vintage unregistered; statutory-use records name consumers"
-    },
-    {
       "path": "model/migrations.ts",
       "sweptOn": "2026-08-24",
       "note": "Lump-sum election load repairs; inherited qualified-annuity premium retarget/stand-down beyond annuity-start ceiling records"
@@ -248,13 +238,8 @@
     },
     {
       "path": "montecarlo/mortality.ts",
-      "sweptOn": "2026-08-24",
-      "note": "SSA 2022 period-table q(x) derivation for stochastic longevity MC; separate from treas-reg annuitization record"
-    },
-    {
-      "path": "params/index.ts",
       "sweptOn": "2026-08-29",
-      "note": "The C-CPI-U-vs-plan-inflation indexing liberty is stated in the records naming indexFederalTaxPack; the Trustees default SS haircut (2034, 17%) remains unregistered because its source is the 2026 Trustees Report, which is owner-staged and not yet fetchable"
+      "note": "Derives q(x) from the period life table registered at longevity/ssaPeriod2022.ts (ssa-table-4c6-period-life-table-vintage); the e(x)-to-q(x) derivation itself is engine math with no separate statutory claim, and this consumer is deliberately not pinned"
     },
     {
       "path": "projection/annualCashFlowCapture.ts",
@@ -299,7 +284,7 @@
     {
       "path": "rmd/applicableAge.ts",
       "sweptOn": "2026-08-29",
-      "note": "Named by treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy and the applicable-age record for applicableAgeAttainYears' cohort mapping consumers; residual: the RBD April-1 arm (this module consumes an asserted RBD-status fact rather than deriving April 1), the 70½/July-1949 cohorts, and the born-1959 dual-age contest awaiting Announcement 2026-7"
+      "note": "Named by treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy; the born-1959 dual-age contest record now quotes Announcement 2026-7 directly (the anticipated applicability deferral and the good-faith interim standard), confirming unsettled; residual: the RBD April-1 arm (this module consumes an asserted RBD-status fact) and the 70½/July-1949 cohort tiers pending a pre-SECURE historical-edition record"
     },
     {
       "path": "socialSecurity/maritalBenefits.ts",
@@ -379,8 +364,8 @@
       "directory": "insights",
       "files": 22,
       "byStatus": {
-        "partial": 3,
-        "registered": 2,
+        "partial": 2,
+        "registered": 3,
         "rule-free": 17
       }
     },
@@ -405,7 +390,7 @@
       "directory": "longevity",
       "files": 2,
       "byStatus": {
-        "partial": 1,
+        "registered": 1,
         "rule-free": 1
       }
     },
@@ -428,8 +413,7 @@
       "directory": "params",
       "files": 8,
       "byStatus": {
-        "partial": 1,
-        "registered": 5,
+        "registered": 6,
         "rule-free": 2
       }
     },
@@ -2706,16 +2690,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 208,
+          "line": 207,
           "note": "Values are the annual gate the projection uses, twelve times the published monthly amount.",
           "tests": [
             {
               "title": "derives the monthly amount from the wage index the regulation names",
-              "line": 213
+              "line": 212
             },
             {
               "title": "gates SSDI on the 2026 substantial gainful activity amount",
-              "line": 222
+              "line": 221
             }
           ]
         }
@@ -9580,12 +9564,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 499,
+          "line": 498,
           "note": null,
           "tests": [
             {
               "title": "carries the employee side rather than the combined rate",
-              "line": 503
+              "line": 502
             }
           ]
         }
@@ -10165,12 +10149,12 @@
         },
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 103,
+          "line": 102,
           "note": null,
           "tests": [
             {
               "title": "sends the first post-window cohort straight to 75",
-              "line": 107
+              "line": 106
             }
           ]
         }
@@ -15468,12 +15452,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 451,
+          "line": 450,
           "note": null,
           "tests": [
             {
               "title": "carries the adjusted threshold on a five-thousand-dollar step",
-              "line": 455
+              "line": 454
             }
           ]
         },
@@ -15633,16 +15617,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 465,
+          "line": 464,
           "note": null,
           "tests": [
             {
               "title": "moves the annual additions limit on a thousand-dollar step",
-              "line": 469
+              "line": 468
             },
             {
               "title": "leaves every borrowing limit on the step its own provision names",
-              "line": 475
+              "line": 474
             }
           ]
         }
@@ -18913,16 +18897,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 428,
+          "line": 427,
           "note": "Values are the joint adjusted base amount, above which up to 85 percent of the benefit is included.",
           "tests": [
             {
               "title": "keeps the joint amounts at the figures the statute states",
-              "line": 433
+              "line": 432
             },
             {
               "title": "is the opposite of the standard deduction, which does double",
-              "line": 442
+              "line": 441
             }
           ]
         }
@@ -24193,6 +24177,112 @@
       ]
     },
     {
+      "id": "ssa-2026-trustees-oasdi-depletion-default-haircut",
+      "title": "The default Social Security haircut is the 2026 Trustees combined-OASDI projection",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "This is a projection default, not law: current law simply stops paying beyond trust fund income once reserves deplete, and Congress may act before 2034. The default exists so a plan that says nothing about the shortfall still confronts the Trustees' own best estimate; the user can set a different cut or none. The OASI-standalone projection (fourth quarter of 2032, 78 percent payable) is deliberately not the default because the combined OASDI basis is the conventional indicator of the program as a whole.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-29",
+      "dueOn": "2026-12-27",
+      "implementedBy": [
+        "packages/engine/src/params/index.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/index.ts",
+          "functions": [
+            {
+              "name": "TRUSTEES_DEFAULT_SS_HAIRCUT",
+              "line": 40
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/params/params.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/params/params.test.ts",
+          "line": 516,
+          "note": null,
+          "tests": [
+            {
+              "title": "defaults to the combined-OASDI depletion projection",
+              "line": 523
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "agencyGuidance",
+          "citation": "A Summary of the 2026 Annual Reports, Social Security and Medicare Boards of Trustees",
+          "url": "https://www.ssa.gov/oact/trsum/"
+        }
+      ]
+    },
+    {
+      "id": "ssa-table-4c6-period-life-table-vintage",
+      "title": "The longevity tables are the SSA period life table, one vintage behind the live host",
+      "classification": "approximated",
+      "errorDirection": "bothDirections",
+      "conventionRationale": "The table is refreshed deliberately, not silently: longevity feeds Monte Carlo horizons and annuitization comparisons, so a vintage bump changes results and belongs in a reviewed change, and this record is what goes stale to force that review. Direction is both ways - longer published expectancies lengthen horizons for some households and shift claiming and conversion comparisons in either direction.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-29",
+      "dueOn": "2026-12-27",
+      "implementedBy": [
+        "packages/engine/src/longevity/ssaPeriod2022.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/longevity/ssaPeriod2022.ts",
+          "functions": [
+            {
+              "name": "FEMALE",
+              "line": 21
+            },
+            {
+              "name": "MALE",
+              "line": 8
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/montecarlo/mortality.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/montecarlo/mortality.test.ts",
+          "line": 58,
+          "note": null,
+          "tests": [
+            {
+              "title": "carries the 2022-period male life expectancy at 65",
+              "line": 66
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "agencyGuidance",
+          "citation": "SSA Actuarial Life Table (Table 4C6)",
+          "url": "https://www.ssa.gov/oact/STATS/table4c6.html"
+        }
+      ]
+    },
+    {
       "id": "tn-const-2-28-earned-income-tax-prohibited",
       "title": "Tennessee’s constitution bars a tax on payroll or earned income only",
       "classification": "settled",
@@ -24679,8 +24769,8 @@
       "volatility": "awaitingGuidance",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-03",
-      "dueOn": "2026-11-01",
+      "verifiedOn": "2026-08-29",
+      "dueOn": "2026-11-27",
       "implementedBy": [
         "packages/engine/src/params/index.ts",
         "packages/engine/src/rmd/rmd.ts"
@@ -24711,12 +24801,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 169,
+          "line": 168,
           "note": null,
           "tests": [
             {
               "title": "takes the proposed regulation reading for a 1959 birth",
-              "line": 173
+              "line": 172
             }
           ]
         }
@@ -24736,6 +24826,11 @@
           "kind": "regulation",
           "citation": "Prop. Treas. Reg. 1.401(a)(9)-2(b)(2)(v), REG-103529-23, 89 FR 58644",
           "url": "https://www.govinfo.gov/content/pkg/FR-2024-07-19/html/2024-14543.htm"
+        },
+        {
+          "kind": "irsNotice",
+          "citation": "Announcement 2026-7, 2026-11 I.R.B. 697",
+          "url": "https://www.irs.gov/irb/2026-11_IRB"
         }
       ]
     },
@@ -25466,12 +25561,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 485,
+          "line": 484,
           "note": null,
           "tests": [
             {
               "title": "carries the published cap on a ten-thousand-dollar step",
-              "line": 489
+              "line": 488
             }
           ]
         }
@@ -26995,6 +27090,57 @@
       ]
     },
     {
+      "id": "usc-12-1715z-20-b-hecm-minimum-age-62",
+      "title": "A HECM borrower (or spouse) must be at least 62",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "First housing-law record in the registry. The registry already spans Title 26, Title 42 benefit statutes, 20 C.F.R. and POMS wherever the engine enforces the rule; the same admission test - an engine gate whose refusal traces to an operative statutory clause - is met here, so the domain follows the enforcement rather than the other way around.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-29",
+      "dueOn": "2027-08-29",
+      "implementedBy": [
+        "packages/engine/src/insights/detectors/hecmBufferCandidate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/insights/detectors/hecmBufferCandidate.ts",
+          "functions": [
+            {
+              "name": "hecmBufferCandidate",
+              "line": 15
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/insights/detectors/hecmBufferCandidate.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/insights/detectors/hecmBufferCandidate.test.ts",
+          "line": 36,
+          "note": "no HECM buffer candidate below age 62",
+          "tests": [
+            {
+              "title": "refuses at 61 and surfaces at 62 for an otherwise qualifying home",
+              "line": 44
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "12 U.S.C. 1715z-20(b)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title12-section1715z-20&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
       "id": "usc-31-3124-a-federal-obligations-state-exempt",
       "title": "Interest on federal obligations is outside every state income tax base",
       "classification": "settled",
@@ -27155,12 +27301,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 355,
+          "line": 354,
           "note": "The twenty cents between them is the repayment amount, which the promulgated figure carries and a re-derivation from the actuarial rate drops.",
           "tests": [
             {
               "title": "carries the promulgated premium rather than half the actuarial rate",
-              "line": 362
+              "line": 361
             }
           ]
         }
@@ -27480,36 +27626,36 @@
       "fixtures": [
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 248,
+          "line": 247,
           "note": "Values are the top-tier MAGI floor for a single filer in a 2032 premium year at 2 percent inflation.",
           "tests": [
             {
               "title": "resumes indexing after 2027 from a base one year behind the general one",
-              "line": 263
+              "line": 262
             },
             {
               "title": "separates the three readings by the tier a household lands in",
-              "line": 274
+              "line": 273
             },
             {
               "title": "holds the top tier still for every premium year through 2027",
-              "line": 281
+              "line": 280
             },
             {
               "title": "never stops indexing the rows beneath the top one",
-              "line": 289
+              "line": 288
             },
             {
               "title": "carves out the 150 percent joint figure with the individual one",
-              "line": 300
+              "line": 299
             },
             {
               "title": "keeps rounding the top row once a post-freeze pack carries it forward",
-              "line": 318
+              "line": 317
             },
             {
               "title": "refuses a pack year that cannot measure from the August 2026 base",
-              "line": 335
+              "line": 334
             }
           ]
         }
@@ -28811,16 +28957,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 394,
+          "line": 393,
           "note": "Values are the lower annual exempt amount, twelve times the monthly one.",
           "tests": [
             {
               "title": "derives the lower exempt amount from the wage index rather than from prices",
-              "line": 399
+              "line": 398
             },
             {
               "title": "derives the higher exempt amount from its own base and reference year",
-              "line": 412
+              "line": 411
             }
           ]
         }
@@ -29522,12 +29668,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 373,
+          "line": 372,
           "note": "The price reading takes the 2025 base of 176,100 and the benefit increase the same notice announces for 2026.",
           "tests": [
             {
               "title": "derives the base from the wage index rather than from prices",
-              "line": 378
+              "line": 377
             }
           ]
         }
@@ -30247,14 +30393,14 @@
     }
   ],
   "quoteFidelity": {
-    "generatedAt": "2026-08-29T20:35:20.796Z",
-    "entryCount": 1060,
-    "fetched": 0,
+    "generatedAt": "2026-08-29T22:16:03.825Z",
+    "entryCount": 1064,
+    "fetched": 4,
     "cached": 302,
     "counts": {
       "ELISION-EXACT": 63,
       "ELISION-PUNCTUATION": 4,
-      "EXACT": 737,
+      "EXACT": 741,
       "PDF-NOT-VERIFIABLE": 5,
       "PDF-WORD-LEVEL": 212,
       "PUNCTUATION": 36,
