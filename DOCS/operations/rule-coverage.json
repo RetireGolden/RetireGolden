@@ -2,21 +2,21 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 4,
   "registry": {
-    "total": 409,
+    "total": 410,
     "byClassification": {
       "approximated": 107,
       "outOfScope": 73,
-      "settled": 224,
+      "settled": 225,
       "unsettled": 5
     },
     "byVolatility": {
       "annuallyIndexed": 58,
       "awaitingGuidance": 11,
-      "staticStatute": 334,
+      "staticStatute": 335,
       "sunsetting": 6
     },
     "byJurisdiction": {
-      "federal": 303,
+      "federal": 304,
       "states": {
         "AK": 1,
         "AL": 9,
@@ -76,8 +76,8 @@
   "attestations": {
     "totalFiles": 236,
     "byStatus": {
-      "partial": 57,
-      "registered": 54,
+      "partial": 56,
+      "registered": 55,
       "rule-free": 125,
       "unswept": 0
     },
@@ -138,38 +138,38 @@
     },
     {
       "path": "actions/ownedNonRothIraAnnualCandidateTransaction.ts",
-      "sweptOn": "2026-08-24",
-      "note": "Owned traditional/SEP/SIMPLE IRA source scope and line-7 movement staging; no record"
+      "sweptOn": "2026-08-29",
+      "note": "Owned traditional/SEP/SIMPLE IRA source scope remains unregistered; line-7 staging is registered where it is enforced (the movement stager), and this wrapper enforces no line semantics itself"
     },
     {
       "path": "actions/ownedNonRothIraAnnualFilingEvidence.ts",
-      "sweptOn": "2026-08-24",
-      "note": "Prior-year contribution window covered; owner-wide non-inherited IRA pool and January-1 opening-basis requirement; no record"
+      "sweptOn": "2026-08-29",
+      "note": "Prior-year contribution window covered; the January-1 opening-basis requirement is an engine convention (408(d)(2)(C) computes values as of the close of the year, so the calendar anchor here is architecture, not statute) and stays unregistered, as does the owner-wide non-inherited pool scope"
     },
     {
       "path": "actions/ownedNonRothIraAnnualFilingSourceResolver.ts",
-      "sweptOn": "2026-08-24",
-      "note": "Filing source restricted to owned non-inherited traditional IRA pool; no record"
+      "sweptOn": "2026-08-29",
+      "note": "Filing source restricted to owned non-inherited traditional IRA pool; the scope claim has no record"
     },
     {
       "path": "actions/ownedNonRothIraAnnualPhysicalTransaction.ts",
-      "sweptOn": "2026-08-24",
-      "note": "Form 8606 line-7/line-8 categorization; same-owner Roth-IRA destination; QCD charitable-debit scope; no record"
+      "sweptOn": "2026-08-29",
+      "note": "Same-owner Roth destination and designated-Roth vehicle refusal registered under irc-408-d-3-A-i and irc-408A-d-3-B, and line-7/line-8 categorization under form-8606-lines-7-and-8-distinct-distribution-staging; QCD charitable-debit scope remains unregistered"
     },
     {
       "path": "actions/ownedNonRothIraAnnualPlanCoordinator.ts",
-      "sweptOn": "2026-08-24",
+      "sweptOn": "2026-08-29",
       "note": "Owner-wide pool excludes inherited IRAs; Form 8606 numerator/denominator and line-7/line-8 stacking; exact age-59½ threshold; no record"
     },
     {
       "path": "actions/ownedNonRothIraAnnualPostCandidateEvidence.ts",
-      "sweptOn": "2026-08-24",
+      "sweptOn": "2026-08-29",
       "note": "Contribution window covered; Form 8606 lines 1/4/6/7/9, owner-wide pool, and explicit zero line 8; no record"
     },
     {
       "path": "actions/ownedNonRothIraMovementCandidate.ts",
-      "sweptOn": "2026-08-24",
-      "note": "Source constrained to owned traditional/SEP/SIMPLE IRAs; positive withdrawals emitted as line 7; no record"
+      "sweptOn": "2026-08-29",
+      "note": "Line-7 staging of executed owned-IRA withdrawals registered under form-8606-line-7-owned-ira-movement-staging; the owned traditional/SEP/SIMPLE source-scope claim remains unregistered"
     },
     {
       "path": "actions/ownedNonRothIraPenaltyPrerequisite.ts",
@@ -228,13 +228,8 @@
     },
     {
       "path": "internal/ownedNonRothIraAnnualAttemptSettlement.ts",
-      "sweptOn": "2026-08-24",
-      "note": "408(d)(3)(A)(i) same-owner conversion identity; no record"
-    },
-    {
-      "path": "internal/ownedNonRothIraRuntimeSourceSeries.ts",
-      "sweptOn": "2026-08-24",
-      "note": "Records cover QCD and annuity aggregation; residual 408(d)(3)(A)(i) same-owner conversion, 408(d)(3)(C) inherited-rollover bar, and RMD-before-conversion ordering"
+      "sweptOn": "2026-08-29",
+      "note": "Its one statutory claim - the retired 408(d)(3)(A)(i) same-owner re-check - is enforced upstream in the runtime source series, where the record now pins it; this module itself enforces no rule and so is not named by any record"
     },
     {
       "path": "ladder/bridge.ts",
@@ -278,8 +273,8 @@
     },
     {
       "path": "projection/annualCashFlowCapture.ts",
-      "sweptOn": "2026-08-24",
-      "note": "Form 8606 basis, QCD exclusion, annuity and penalty character composition; no record"
+      "sweptOn": "2026-08-29",
+      "note": "Form 8606 basis, QCD exclusion, annuity and penalty character composition; assembly composes results computed and registered elsewhere and enforces none of them, so no record names it"
     },
     {
       "path": "projection/compare.ts",
@@ -303,8 +298,8 @@
     },
     {
       "path": "projection/ownedIraAnnualPhysicalTransactionInputs.ts",
-      "sweptOn": "2026-08-24",
-      "note": "Form 8606 line-7/8 and QCD staging semantics; no record"
+      "sweptOn": "2026-08-29",
+      "note": "Form 8606 line-7/8 and QCD staging semantics; the input builder carries one combined distribution bucket, so it does not enforce the line-7-versus-8 split; no record"
     },
     {
       "path": "projection/ownedNonRothIraAnnualObservation.ts",
@@ -418,8 +413,8 @@
       "directory": "internal",
       "files": 9,
       "byStatus": {
-        "partial": 2,
-        "registered": 2,
+        "partial": 1,
+        "registered": 3,
         "rule-free": 5
       }
     },
@@ -4042,6 +4037,57 @@
           "kind": "formInstruction",
           "citation": "Instructions for Form 8606 (2025), Line 4",
           "url": "https://www.irs.gov/pub/irs-pdf/i8606.pdf"
+        }
+      ]
+    },
+    {
+      "id": "form-8606-line-7-owned-ira-movement-staging",
+      "title": "Owned IRA ordinary distributions stage on Form 8606 line 7",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-29",
+      "dueOn": "2027-08-29",
+      "implementedBy": [
+        "packages/engine/src/actions/ownedNonRothIraMovementCandidate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraMovementCandidate.ts",
+          "functions": [
+            {
+              "name": "stageOwnedNonRothIraOrdinaryWithdrawalMovements",
+              "line": 410
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/actions/ownedNonRothIraMovementCandidate.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraMovementCandidate.test.ts",
+          "line": 218,
+          "note": "executed owned-IRA withdrawals stage as line 7 distribution candidates",
+          "tests": [
+            {
+              "title": "stages the executed withdrawal as a line-7 distribution candidate",
+              "line": 226
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "formInstruction",
+          "citation": "Form 8606 (2025), line 7",
+          "url": "https://www.irs.gov/pub/irs-pdf/f8606.pdf"
         }
       ]
     },
@@ -12021,9 +12067,11 @@
       "dueOn": "2027-08-04",
       "implementedBy": [
         "packages/engine/src/actions/aggregateRothConversionOwnerAllocation.ts",
+        "packages/engine/src/actions/ownedNonRothIraAnnualPhysicalTransaction.ts",
         "packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts",
         "packages/engine/src/actions/retirementActionManualReview.ts",
         "packages/engine/src/decisions/rothConversionCandidateAdapter.ts",
+        "packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts",
         "packages/engine/src/projection/optimizerAggregateConversionPromotion.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
@@ -12034,6 +12082,15 @@
             {
               "name": "allocateAggregateRothConversionByOwner",
               "line": 276
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraAnnualPhysicalTransaction.ts",
+          "functions": [
+            {
+              "name": "preparePlanOwnedNonRothIraAnnualPhysicalTransaction",
+              "line": 1455
             }
           ]
         },
@@ -12065,6 +12122,15 @@
             {
               "name": "adaptFillTargetRothConversionGeneratorCandidate",
               "line": 386
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts",
+          "functions": [
+            {
+              "name": "validateOwnedNonRothIraRuntimeSourceSeries",
+              "line": 2465
             }
           ]
         },
@@ -12162,6 +12228,7 @@
       "implementedBy": [
         "packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts",
         "packages/engine/src/actions/rothConversionExecution.ts",
+        "packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts",
         "packages/engine/src/strategies/accountEligibility.ts"
       ],
       "implementations": [
@@ -12180,6 +12247,15 @@
             {
               "name": "executeRothConversions",
               "line": 928
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts",
+          "functions": [
+            {
+              "name": "validateOwnedNonRothIraRuntimeSourceSeries",
+              "line": 2465
             }
           ]
         },
@@ -14159,6 +14235,7 @@
       "dueOn": "2027-08-05",
       "implementedBy": [
         "packages/engine/src/actions/aggregateRothConversionOwnerAllocation.ts",
+        "packages/engine/src/actions/ownedNonRothIraAnnualPhysicalTransaction.ts",
         "packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts",
         "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/strategies/accountEligibility.ts"
@@ -14170,6 +14247,15 @@
             {
               "name": "allocateAggregateRothConversionByOwner",
               "line": 276
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraAnnualPhysicalTransaction.ts",
+          "functions": [
+            {
+              "name": "preparePlanOwnedNonRothIraAnnualPhysicalTransaction",
+              "line": 1455
             }
           ]
         },
@@ -26160,6 +26246,7 @@
       "dueOn": "2027-08-03",
       "implementedBy": [
         "packages/engine/src/actions/rothConversionExecution.ts",
+        "packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts",
         "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/strategies/accountEligibility.ts"
       ],
@@ -26170,6 +26257,15 @@
             {
               "name": "executeRothConversions",
               "line": 928
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts",
+          "functions": [
+            {
+              "name": "validateOwnedNonRothIraRuntimeSourceSeries",
+              "line": 2465
             }
           ]
         },
@@ -29961,17 +30057,17 @@
     }
   ],
   "quoteFidelity": {
-    "generatedAt": "2026-08-29T13:11:01.480Z",
-    "entryCount": 1056,
+    "generatedAt": "2026-08-29T17:39:16.376Z",
+    "entryCount": 1057,
     "fetched": 0,
-    "cached": 305,
+    "cached": 306,
     "counts": {
       "ABSENT": 25,
       "ELISION-EXACT": 60,
       "ELISION-PUNCTUATION": 4,
       "EXACT": 714,
       "PDF-NOT-VERIFIABLE": 5,
-      "PDF-WORD-LEVEL": 208,
+      "PDF-WORD-LEVEL": 209,
       "PUNCTUATION": 37,
       "UNFETCHABLE": 3
     }

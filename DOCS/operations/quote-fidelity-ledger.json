@@ -1,14 +1,14 @@
 {
-  "generatedAt": "2026-08-29T13:11:01.480Z",
-  "recordCount": 409,
-  "urlCount": 305,
+  "generatedAt": "2026-08-29T17:39:16.376Z",
+  "recordCount": 410,
+  "urlCount": 306,
   "fetched": 0,
-  "cached": 305,
-  "entryCount": 1056,
+  "cached": 306,
+  "entryCount": 1057,
   "counts": {
     "EXACT": 714,
     "PUNCTUATION": 37,
-    "PDF-WORD-LEVEL": 208,
+    "PDF-WORD-LEVEL": 209,
     "ELISION-PUNCTUATION": 4,
     "ELISION-EXACT": 60,
     "ABSENT": 25,
@@ -584,6 +584,16 @@
       "host": "www.irs.gov",
       "url": "https://www.irs.gov/pub/irs-pdf/i8606.pdf",
       "quoteSha256": "a20b1e1fefd2e8ca",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "form-8606-line-7-owned-ira-movement-staging",
+      "citation": "Form 8606 (2025), line 7",
+      "host": "www.irs.gov",
+      "url": "https://www.irs.gov/pub/irs-pdf/f8606.pdf",
+      "quoteSha256": "47cb01854f22f0d6",
       "verdict": "PDF-WORD-LEVEL",
       "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
       "diagnosis": null

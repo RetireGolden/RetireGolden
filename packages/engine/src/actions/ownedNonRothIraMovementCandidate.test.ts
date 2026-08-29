@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { describeRule } from '../rules/describeRule.js'
 
 import type {
   OrdinaryWithdrawalRequest,
@@ -208,6 +209,44 @@ function finalizeStaged(options: {
 }
 
 describe('stageOwnedNonRothIraOrdinaryWithdrawalMovements', () => {
+  // The record's discriminating pair, stated in the form's terms: an executed
+  // ordinary withdrawal from the owned non-Roth IRA pool appears among the
+  // Form 8606 line 7 distribution candidates, and a reading under which owned
+  // IRA distributions are not reportable on line 7 would stage none. The
+  // request fits inside the opening balance so the expected amount is the
+  // statutory consequence, not balance clipping.
+  describeRule('form-8606-line-7-owned-ira-movement-staging', {
+    note: 'executed owned-IRA withdrawals stage as line 7 distribution candidates',
+    readings: {
+      distributionStagedOnLineSeven: [75],
+      rejectedNotReportableOnLineSeven: [] as number[],
+    },
+    accepted: 'distributionStagedOnLineSeven',
+  }, ({ accepted }) => {
+    it('stages the executed withdrawal as a line-7 distribution candidate', () => {
+      const result = stageOwnedNonRothIraOrdinaryWithdrawalMovements({
+        ownerPersonId: asPersonId('owner'),
+        taxYear: 2030,
+        requests: [
+          withdrawal({
+            suffix: 'full',
+            executionDate: '2030-06-01',
+            sequence: 1,
+            allocations: [allocation('full', 'ira-one', 75)],
+          }),
+        ],
+        openingBalances: [{
+          accountId: asAccountId('ira-one'),
+          openingBalance: asUsdCents(100),
+        }],
+        sourceEvidence: [source('ira-one')],
+      })
+      expect(result.status).toBe('movementCandidateStaged')
+      expect(result.line7Distributions.map((item) => item.grossAmount))
+        .toEqual(accepted)
+    })
+  })
+
   it('stages same-source actions sequentially as full, partial, and all-zero candidates', () => {
     const result = stageOwnedNonRothIraOrdinaryWithdrawalMovements({
       ownerPersonId: asPersonId('owner'),
