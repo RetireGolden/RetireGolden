@@ -60,9 +60,9 @@ jobs:
   # `review / openrouter-first-pass-gate`.
   review:
     if: github.event_name == 'workflow_dispatch' || !github.event.pull_request.draft
-    # Central independent-review workflow pinned to the .github#30 merge commit
-    # (OpenRouter action v1.2.7 and its stable independent required gate).
-    uses: RetireGolden/.github/.github/workflows/openrouter-code-review.yml@97b571df12df0089cff3dd310bcad907b5c94cab # .github#30 (OpenRouter action v1.2.7 independent gate)
+    # Central independent-review workflow pinned to the .github#31 merge commit
+    # (reviewed OpenRouter action #17 plus the stable independent gate).
+    uses: RetireGolden/.github/.github/workflows/openrouter-code-review.yml@e9f8f78d1ce8a1655e7dd2ea78ae52b56ad117b2 # .github#31 (action#17 v1.2.7 review fixes)
     with:
       pr_number: ${{ inputs.pr_number || github.event.inputs.pr_number || github.event.pull_request.number }}
     secrets:
