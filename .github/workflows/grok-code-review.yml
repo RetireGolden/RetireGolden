@@ -8,6 +8,10 @@
 # `partial` means the embed was incomplete, not that review was
 # skipped; partial runs never publish review-loop ledger state, so
 # follow-up rounds re-review from the last complete marker.
+# Since .github#28 (action v1.0.7), an over-cap diff first stubs
+# generated/large data files (lock files, vendored paths, data diffs
+# over 64 KB) to header-only entries - a partial can mean stubbed
+# hunks, not a positional cut, and hand-written source stays embedded.
 name: Grok code review
 
 on:
