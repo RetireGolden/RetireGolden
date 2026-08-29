@@ -4,7 +4,7 @@ import type { Detector } from '../types.js'
 export const rothBridgeHeadroom: Detector = {
   id: 'roth-bridge-headroom',
   category: 'tax-brackets',
-  version: 1,
+  version: 2,
   screen(ctx) {
     if (ctx.plan.strategies.rothConversion.mode !== 'none') {
       return null

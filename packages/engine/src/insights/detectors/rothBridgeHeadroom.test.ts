@@ -38,6 +38,10 @@ function lastBridgeYear(birthYear: number): string {
 }
 
 describe('rothBridgeHeadroom applicable-age cohort boundary', () => {
+  it('records the material cohort-dependent trigger change as detector version 2', () => {
+    expect(rothBridgeHeadroom.version).toBe(2)
+  })
+
   describeRule('irc-401-a-9-C-v-applicable-age', {
     note: 'detector bridge window ends at the cohort-dependent applicable age',
     readings: {
