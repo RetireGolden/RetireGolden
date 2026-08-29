@@ -2096,17 +2096,17 @@ const registry = {
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1411&num=0&edition=prelim',
       quotedText:
         'In the case of an individual, there is hereby imposed (in addition to any other tax imposed by this subtitle) for each taxable year a tax equal to 3.8 percent of the lesser of- (A) net investment income for such taxable year, or (B) the excess (if any) of- (i) the modified adjusted gross income for such taxable year, over (ii) the threshold amount.',
-      }, {
+    }, {
       kind: 'statute',
       citation: 'IRC 1411(b)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1411&num=0&edition=prelim',
       quotedText:
         'For purposes of this chapter, the term "threshold amount" means- (1) in the case of a taxpayer making a joint return under section 6013 or a surviving spouse (as defined in section 2(a)), $250,000, (2) in the case of a married taxpayer (as defined in section 7703) filing a separate return, ½ of the dollar amount determined under paragraph (1), and (3) in any other case, $200,000.',
-      }],
+    }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-08-29',
     implementedBy: [
       'packages/engine/src/tax/federalTax.ts',
       'packages/engine/src/params/data/year2026.ts',
@@ -2201,11 +2201,11 @@ const registry = {
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1211&num=0&edition=prelim',
       quotedText:
         'In the case of a taxpayer other than a corporation, losses from sales or exchanges of capital assets shall be allowed only to the extent of the gains from such sales or exchanges, plus (if such losses exceed such gains) the lower of- (1) $3,000 ($1,500 in the case of a married individual filing a separate return), or (2) the excess of such losses over such gains.',
-      }],
+    }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-08-29',
     implementedBy: [
       'packages/engine/src/tax/federalTax.ts',
       'packages/engine/src/params/data/year2026.ts',
@@ -2791,11 +2791,11 @@ const registry = {
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section401&num=0&edition=prelim',
       quotedText:
         '(I) In the case of an individual who attains age 72 after December 31, 2022, and age 73 before January 1, 2033, the applicable age is 73. (II) In the case of an individual who attains age 74 after December 31, 2032, the applicable age is 75.',
-      }],
+    }],
     volatility: 'sunsetting',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-08-29',
     implementedBy: [
       'packages/engine/src/params/index.ts',
       'packages/engine/src/insights/detectors/rothBridgeHeadroom.ts',
@@ -2826,17 +2826,17 @@ const registry = {
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section63&num=0&edition=prelim',
       quotedText:
         'The taxpayer shall be entitled to an additional amount of $600- (A) for himself if he has attained age 65 before the close of his taxable year, and (B) for the spouse of the taxpayer if the spouse has attained age 65 before the close of the taxable year and an additional exemption is allowable to the taxpayer for such spouse under section 151(b).',
-      }, {
+    }, {
       kind: 'statute',
       citation: 'IRC 63(f)(3)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section63&num=0&edition=prelim',
       quotedText:
         'In the case of an individual who is not married and is not a surviving spouse, paragraphs (1) and (2) shall be applied by substituting "$750" for "$600".',
-      }],
+    }],
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-04',
+    verifiedOn: '2026-08-29',
     implementedBy: [
       'packages/engine/src/params/index.ts',
       'packages/engine/src/tax/federalTax.ts',
@@ -3127,17 +3127,17 @@ const registry = {
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section416&num=0&edition=prelim',
       quotedText:
         'The term "retirement age" means- (A) with respect to an individual who attains early retirement age (as defined in paragraph (2)) before January 1, 2000, 65 years of age; (B) with respect to an individual who attains early retirement age after December 31, 1999, and before January 1, 2005, 65 years of age plus the number of months in the age increase factor (as determined under paragraph (3)) for the calendar year in which such individual attains early retirement age; (C) with respect to an individual who attains early retirement age after December 31, 2004, and before January 1, 2017, 66 years of age; (D) with respect to an individual who attains early retirement age after December 31, 2016, and before January 1, 2022, 66 years of age plus the number of months in the age increase factor (as determined under paragraph (3)) for the calendar year in which such individual attains early retirement age; and (E) with respect to an individual who attains early retirement age after December 31, 2021, 67 years of age.',
-      }, {
+    }, {
       kind: 'statute',
       citation: '42 U.S.C. 416(l)(2)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section416&num=0&edition=prelim',
       quotedText:
         'The term "early retirement age" means age 62 in the case of an old-age, wife\'s, or husband\'s insurance benefit, and age 60 in the case of a widow\'s or widower\'s insurance benefit.',
-      }],
+    }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-08-29',
     implementedBy: ['packages/engine/src/socialSecurity/nra.ts'],
     implementedByFunctions: [
       'packages/engine/src/socialSecurity/nra.ts#fraForBirthYear',
@@ -4596,12 +4596,12 @@ const registry = {
       citation: 'P.L. 117-169, section 11406(a), adding 1860D-2(b)(9)(D)',
       url: 'https://www.govinfo.gov/content/pkg/PLAW-117publ169/pdf/PLAW-117publ169.pdf',
       quotedText:
-        'In this paragraph, the term `applicable copayment amount\' means, with … respect to a covered insulin product under a prescription drug plan or an … during plan years 2023, 2024, and 2025, $35; and … during plan year 2026 and each subsequent plan year, the lesser of … an amount equal to 25 percent of the maximum fair price established for the covered insulin product in accordance with part E of title XI',
+        'In this paragraph, the term `applicable copayment amount\' means, with … respect to a covered insulin product under a prescription drug plan or an … plan dispensed-- ``(i) during plan years 2023, 2024, and 2025, $35; and ``(ii) during plan year 2026 and each subsequent plan year, the lesser of-- ``(I) $35; ``(II) an amount equal to 25 percent of the maximum fair price established for the covered insulin product in accordance with part E of title XI; or ``(III) an amount equal to 25 percent of the negotiated price of the covered insulin product under the prescription drug plan or',
     }],
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-27',
+    verifiedOn: '2026-08-29',
     implementedBy: [
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/params/types.ts',
@@ -4876,11 +4876,11 @@ const registry = {
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section36B&num=0&edition=prelim',
       quotedText:
         'The term "applicable taxpayer" means, with respect to any taxable year, a taxpayer whose household income for the taxable year equals or exceeds 100 percent but does not exceed 400 percent of an amount equal to the poverty line for a family of the size involved.',
-      }],
+    }],
     volatility: 'sunsetting',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-08-29',
     implementedBy: [
       'packages/engine/src/tax/aca.ts',
       'packages/engine/src/params/data/year2026.ts',
@@ -5149,17 +5149,17 @@ const registry = {
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402&num=0&edition=prelim',
       quotedText:
         'Notwithstanding subsections (e)(3) and (h)(1)(B), the elective deferrals of any individual for any taxable year shall be included in such individual\'s gross income to the extent the amount of such deferrals for the taxable year exceeds the applicable dollar amount.',
-      }, {
+    }, {
       kind: 'statute',
       citation: 'IRC 402(g)(3)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402&num=0&edition=prelim',
       quotedText:
         'For purposes of this subsection, the term "elective deferrals" means, with respect to any taxable year, the sum of- (A) any employer contribution under a qualified cash or deferred arrangement (as defined in section 401(k)) to the extent not includible in gross income for the taxable year under subsection (e)(3) (determined without regard to this subsection), (B) any employer contribution to the extent not includible in gross income for the taxable year under subsection (h)(1)(B) (determined without regard to this subsection), (C) any employer contribution to purchase an annuity contract under section 403(b) under a salary reduction agreement (within the meaning of section 3121(a)(5)(D)), and (D) any elective employer contribution under section 408(p)(2)(A)(i).',
-      }],
+    }],
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-08-29',
     implementedBy: [
       'packages/engine/src/projection/employerRothCatchUp.ts',
       'packages/engine/src/projection/simulate.ts',
@@ -5324,18 +5324,18 @@ const registry = {
       citation: 'IRC 63(c)(2)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section63&num=0&edition=prelim',
       quotedText:
-        'the basic standard deduction is- (A) 200 percent of the dollar amount in effect under subparagraph (C) for the taxable year in the case of- (i) a joint return, or (ii) a surviving spouse (as defined in section 2(a)), (B) $4,400 in the case of a head of household (as defined in section 2(b)), or (C) $3,000 in any other case.',
-      }, {
+        'For purposes of paragraph (1), the basic standard deduction is- (A) 200 percent of the dollar amount in effect under subparagraph (C) for the taxable year in the case of- (i) a joint return, or (ii) a surviving spouse (as defined in section 2(a)), (B) $4,400 in the case of a head of household (as defined in section 2(b)), or (C) $3,000 in any other case.',
+    }, {
       kind: 'statute',
-      citation: 'IRC 63(c)(7)',
+      citation: 'IRC 63(c)(7)(A)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section63&num=0&edition=prelim',
       quotedText:
-        'In the case of a taxable year beginning after December 31, 2017- (A) Increase in standard deduction Paragraph (2) shall be applied- (i) by substituting "$23,625" for "$4,400" in subparagraph (B), and (ii) by substituting "$15,750" for "$3,000" in subparagraph (C).',
-      }],
+        'In the case of a taxable year beginning after December 31, 2017- … Paragraph (2) shall be applied- (i) by substituting "$23,625" for "$4,400" in subparagraph (B), and (ii) by substituting "$15,750" for "$3,000" in subparagraph (C).',
+    }],
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-08-29',
     implementedBy: [
       'packages/engine/src/tax/federalTax.ts',
       'packages/engine/src/params/data/year2026.ts',
@@ -5413,11 +5413,11 @@ const registry = {
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section219&num=0&edition=prelim',
       quotedText:
         'In the case of any taxable year beginning in a calendar year after 2023, the $1,000 amount under subparagraph (B)(ii) shall be increased by an amount equal to- (I) such dollar amount, multiplied by (II) the cost-of-living adjustment determined under section 1(f)(3) for the calendar year in which the taxable year begins, determined by substituting "calendar year 2022" for "calendar year 2016" in subparagraph (A)(ii) thereof.',
-      }],
+    }],
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-08-29',
     implementedBy: [
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/params/data/year2026.ts',
@@ -5443,11 +5443,11 @@ const registry = {
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section219&num=0&edition=prelim',
       quotedText:
         'For purposes of this section, the term "compensation" includes earned income (as defined in section 401(c)(2)). The term "compensation" does not include any amount received as a pension or annuity and does not include any amount received as deferred compensation.',
-      }],
+    }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-08-29',
     implementedBy: ['packages/engine/src/projection/simulate.ts'],
     implementedByFunctions: [
       'packages/engine/src/projection/simulate.ts#simulatePlan',
@@ -5495,11 +5495,11 @@ const registry = {
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408A&num=0&edition=prelim',
       quotedText:
         'The amount determined under paragraph (2) for any taxable year shall not exceed an amount equal to the amount determined under paragraph (2)(A) for such taxable year, reduced (but not below zero) by the amount which bears the same ratio to such amount as- (i) the excess of- (I) the taxpayer\'s adjusted gross income for such taxable year, over (II) the applicable dollar amount, bears to (ii) $15,000 ($10,000 in the case of a joint return or a married individual filing a separate return).',
-      }],
+    }],
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-08-29',
     implementedBy: [
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/projection/simulate.ts',
@@ -5554,23 +5554,23 @@ const registry = {
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section151&num=0&edition=prelim',
       quotedText:
         'In the case of a taxable year beginning before January 1, 2029, there shall be allowed a deduction in an amount equal to $6,000 for each qualified individual with respect to the taxpayer.',
-      }, {
+    }, {
       kind: 'statute',
       citation: 'IRC 151(d)(5)(C)(iii)(I)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section151&num=0&edition=prelim',
       quotedText:
         'In the case of any taxpayer for any taxable year, the $6,000 amount in clause (i) shall be reduced (but not below zero) by 6 percent of so much of the taxpayer\'s modified adjusted gross income as exceeds $75,000 ($150,000 in the case of a joint return).',
-      }, {
+    }, {
       kind: 'formInstruction',
       citation: 'Schedule 1-A (Form 1040) (2025), Part V, lines 32 to 37',
       url: 'https://www.irs.gov/pub/irs-pdf/f1040s1a.pdf',
       quotedText:
-        'Enter $75,000 ($150,000 if married filing jointly) … Multiply line 33 by 6% (0.06) … Subtract line 34 from $6,000. If zero or less, enter -0- … Add lines 36a and 36b',
+        'Enter $75,000 ($150,000 if married filing jointly) … Multiply line 33 by 6% (0.06) … Subtract line 34 from $6,000. If zero or less, enter -0- … If you have a valid social security number (see instructions) and were born before January 2, 1961, enter the amount from line 35 … If you are married filing jointly, your spouse has a valid social security number (see instructions), and your spouse was born before January 2, 1961, enter the amount from line 35 … Enhanced deduction for seniors. Add lines 36a and 36b',
     }],
     volatility: 'sunsetting',
     effectiveFrom: 2026,
     effectiveThrough: 2028,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-08-29',
     implementedBy: [
       'packages/engine/src/tax/federalTax.ts',
       'packages/engine/src/strategies/optimizer.ts',
@@ -5603,8 +5603,8 @@ const registry = {
       citation: 'IRC 63(b)(2)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section63&num=0&edition=prelim',
       quotedText:
-        'In the case of an individual who does not elect to itemize his deductions for the taxable year, for purposes of this subtitle, the term "taxable income" means adjusted gross income, minus- (1) the standard deduction, (2) the deduction for personal exemptions provided in section 151,',
-      }, {
+        'In the case of an individual who does not elect to itemize his deductions for the taxable year, for purposes of this subtitle, the term "taxable income" means adjusted gross income, minus- (1) the standard deduction, (2) the deduction for personal exemptions provided in section 151, (3) any deduction provided in section 199A, … (7) so much of the deduction allowed by section 163(a) as is attributable to the exception under section 163(h)(4)(A).',
+    }, {
       kind: 'formInstruction',
       citation: 'Form 6251 (2025), lines 1a and 1b',
       url: 'https://www.irs.gov/pub/irs-pdf/f6251.pdf',
@@ -5614,7 +5614,7 @@ const registry = {
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-08-29',
     implementedBy: ['packages/engine/src/tax/federalTax.ts'],
     implementedByFunctions: [
       'packages/engine/src/tax/federalTax.ts#computeFederalTax',
@@ -6225,29 +6225,29 @@ const registry = {
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1&num=0&edition=prelim',
       quotedText:
         'For taxable years beginning after December 31, 2018, the Secretary shall prescribe tables which shall apply in lieu of the tables contained in paragraph (2) in the same manner as under paragraphs (1) and (2) of subsection (f) (applied without regard to clauses (i) and (ii) of subsection (f)(2)(A)), except that in prescribing such tables- (i) solely for purposes of determining the dollar amounts at which any rate bracket higher than 12 percent ends and at which any rate bracket higher than 22 percent begins, subsection (f)(3) shall be applied by substituting "calendar year 2017" for "calendar year 2016" in subparagraph (A)(ii) thereof, (ii) subsection (f)(7)(B) shall apply to any unmarried individual other than a surviving spouse or head of household, and (iii) subsection (f)(8) shall not apply.',
-      }, {
+    }, {
       kind: 'statute',
       citation: 'IRC 1(j)(5)(C)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1&num=0&edition=prelim',
       quotedText:
-        'In the case of any taxable year beginning after 2018, each of the dollar amounts in clauses (i) and (ii) of subparagraph (B) shall be increased by an amount equal to- (i) such dollar amount, multiplied by (ii) the cost-of-living adjustment determined under subsection (f)(3) for the calendar year in which the taxable year begins, determined by substituting "calendar year 2017" for "calendar year 2016" in subparagraph (A)(ii) thereof.',
-      }, {
+        'In the case of any taxable year beginning after 2018, each of the dollar amounts in clauses (i) and (ii) of subparagraph (B) shall be increased by an amount equal to- (i) such dollar amount, multiplied by (ii) the cost-of-living adjustment determined under subsection (f)(3) for the calendar year in which the taxable year begins, determined by substituting "calendar year 2017" for "calendar year 2016" in subparagraph (A)(ii) thereof. If any increase under this subparagraph is not a multiple of $50, such increase shall be rounded to the next lowest multiple of $50.',
+    }, {
       kind: 'statute',
       citation: 'IRC 63(c)(7)(B)(ii)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section63&num=0&edition=prelim',
       quotedText:
         'In the case of a taxable year beginning after 2025, the $23,625 and $15,750 amounts in subparagraph (A) shall each be increased by an amount equal to- (I) such dollar amount, multiplied by (II) the cost-of-living adjustment determined under section 1(f)(3) for the calendar year in which the taxable year begins, determined by substituting "2024" for "2016" in subparagraph (A)(ii) thereof.',
-      }, {
+    }, {
       kind: 'statute',
       citation: 'IRC 55(d)(4)(B)(i)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section55&num=0&edition=prelim',
       quotedText:
-        'In the case of any taxable year beginning in a calendar year after 2018 (2026, in the case of the $1,000,000 amount in subparagraph (A)(ii)(I)), the amounts described in clause (ii) shall each be increased by an amount equal to- (I) such dollar amount, multiplied by (II) the cost-of-living adjustment determined under section 1(f)(3) for the calendar year in which the taxable year begins,',
-      }],
+        'In the case of any taxable year beginning in a calendar year after 2018 (2026, in the case of the $1,000,000 amount in subparagraph (A)(ii)(I)), the amounts described in clause (ii) shall each be increased by an amount equal to- (I) such dollar amount, multiplied by (II) the cost-of-living adjustment determined under section 1(f)(3) for the calendar year in which the taxable year begins, determined by substituting for "calendar year 2016" in subparagraph (A)(ii) thereof- (1) "calendar year 2017", in the case of the $109,400 amount in subparagraph (A)(i)(I) and the $70,300 amount in subparagraph (A)(i)(II), and (2) "calendar year 2025", in the case of the $1,000,000 amount in subparagraph (A)(ii)(I).',
+    }],
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-08-29',
     implementedBy: [
       'packages/engine/src/params/index.ts',
       'packages/engine/src/projection/simulate.ts',
@@ -6273,23 +6273,23 @@ const registry = {
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section151&num=0&edition=prelim',
       quotedText:
         'In the case of a taxable year beginning before January 1, 2029, there shall be allowed a deduction in an amount equal to $6,000 for each qualified individual with respect to the taxpayer.',
-      }, {
+    }, {
       kind: 'statute',
       citation: 'IRC 151(d)(5)(C)(iii)(I)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section151&num=0&edition=prelim',
       quotedText:
         'In the case of any taxpayer for any taxable year, the $6,000 amount in clause (i) shall be reduced (but not below zero) by 6 percent of so much of the taxpayer\'s modified adjusted gross income as exceeds $75,000 ($150,000 in the case of a joint return).',
-      }, {
+    }, {
       kind: 'statute',
       citation: 'IRC 151(d)(4)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section151&num=0&edition=prelim',
       quotedText:
         'Except as provided in paragraph (5), in the case of any taxable year beginning in a calendar year after 1989, the dollar amount contained in paragraph (1) shall be increased by an amount equal to- (A) such dollar amount, multiplied by (B) the cost-of-living adjustment determined under section 1(f)(3) for the calendar year in which the taxable year begins, by substituting "calendar year 1988" for "calendar year 2016" in subparagraph (A)(ii) thereof.',
-      }],
+    }],
     volatility: 'sunsetting',
     effectiveFrom: 2025,
     effectiveThrough: 2028,
-    verifiedOn: '2026-08-04',
+    verifiedOn: '2026-08-29',
     implementedBy: [
       'packages/engine/src/params/index.ts',
       'packages/engine/src/tax/federalTax.ts',
@@ -9871,12 +9871,12 @@ const registry = {
       citation: '61 Pa. Code 103.13(e)',
       url: 'https://www.pacodeandbulletin.gov/Display/pacode?file=/secure/pacode/data/061/chapter103/s103.13.html',
       quotedText:
-        'The amount subject to tax shall be the net gains or net income less net losses derived from the sale, exchange or other disposition of property … real or personal, tangible or intangible … to the extent that the value of that which is received or receivable is greater than or, in the case of a loss, less than the basis of the taxpayer.',
+        'Gain or loss on property acquired on or after June 1, 1971. The amount subject to tax shall be the net gains or net income less net losses derived from the sale, exchange or other disposition of property … real or personal, tangible or intangible … to the extent that the value of that which is received or receivable is greater than or, in the case of a loss, less than the basis of the taxpayer.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-04',
+    verifiedOn: '2026-08-29',
     implementedBy: [
       'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/params/state/data/year2026.ts',

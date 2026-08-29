@@ -5549,8 +5549,8 @@
       "volatility": "annuallyIndexed",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-03",
-      "dueOn": "2026-12-01",
+      "verifiedOn": "2026-08-29",
+      "dueOn": "2026-12-27",
       "implementedBy": [
         "packages/engine/src/params/index.ts",
         "packages/engine/src/projection/simulate.ts"
@@ -6008,8 +6008,8 @@
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-03",
-      "dueOn": "2027-08-03",
+      "verifiedOn": "2026-08-29",
+      "dueOn": "2027-08-29",
       "implementedBy": [
         "packages/engine/src/params/data/year2026.ts",
         "packages/engine/src/tax/federalTax.ts"
@@ -6310,8 +6310,8 @@
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-03",
-      "dueOn": "2027-08-03",
+      "verifiedOn": "2026-08-29",
+      "dueOn": "2027-08-29",
       "implementedBy": [
         "packages/engine/src/params/data/year2026.ts",
         "packages/engine/src/tax/federalTax.ts"
@@ -6558,8 +6558,8 @@
       "volatility": "sunsetting",
       "effectiveFrom": 2026,
       "effectiveThrough": 2028,
-      "verifiedOn": "2026-08-03",
-      "dueOn": "2026-12-31",
+      "verifiedOn": "2026-08-29",
+      "dueOn": "2027-01-26",
       "implementedBy": [
         "packages/engine/src/params/data/year2026.ts",
         "packages/engine/src/strategies/optimizer.ts",
@@ -6663,8 +6663,8 @@
       "volatility": "sunsetting",
       "effectiveFrom": 2025,
       "effectiveThrough": 2028,
-      "verifiedOn": "2026-08-04",
-      "dueOn": "2027-01-01",
+      "verifiedOn": "2026-08-29",
+      "dueOn": "2027-01-26",
       "implementedBy": [
         "packages/engine/src/params/index.ts",
         "packages/engine/src/tax/federalTax.ts"
@@ -8286,8 +8286,8 @@
       "volatility": "annuallyIndexed",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-03",
-      "dueOn": "2026-12-01",
+      "verifiedOn": "2026-08-29",
+      "dueOn": "2026-12-27",
       "implementedBy": [
         "packages/engine/src/params/data/year2026.ts",
         "packages/engine/src/projection/simulate.ts"
@@ -8398,8 +8398,8 @@
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-03",
-      "dueOn": "2027-08-03",
+      "verifiedOn": "2026-08-29",
+      "dueOn": "2027-08-29",
       "implementedBy": [
         "packages/engine/src/projection/simulate.ts"
       ],
@@ -9567,8 +9567,8 @@
       "volatility": "sunsetting",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-03",
-      "dueOn": "2026-12-31",
+      "verifiedOn": "2026-08-29",
+      "dueOn": "2027-01-26",
       "implementedBy": [
         "packages/engine/src/params/data/year2026.ts",
         "packages/engine/src/tax/aca.ts"
@@ -10035,8 +10035,8 @@
       "volatility": "sunsetting",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-03",
-      "dueOn": "2026-12-31",
+      "verifiedOn": "2026-08-29",
+      "dueOn": "2027-01-26",
       "implementedBy": [
         "packages/engine/src/decisions/objectives.ts",
         "packages/engine/src/insights/detectors/rothBridgeHeadroom.ts",
@@ -10883,8 +10883,8 @@
       "volatility": "annuallyIndexed",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-03",
-      "dueOn": "2026-12-01",
+      "verifiedOn": "2026-08-29",
+      "dueOn": "2026-12-27",
       "implementedBy": [
         "packages/engine/src/params/data/year2026.ts",
         "packages/engine/src/projection/employerRothCatchUp.ts",
@@ -13976,8 +13976,8 @@
       "volatility": "annuallyIndexed",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-03",
-      "dueOn": "2026-12-01",
+      "verifiedOn": "2026-08-29",
+      "dueOn": "2026-12-27",
       "implementedBy": [
         "packages/engine/src/model/plan.ts",
         "packages/engine/src/projection/simulate.ts"
@@ -16409,8 +16409,8 @@
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-03",
-      "dueOn": "2027-08-03",
+      "verifiedOn": "2026-08-29",
+      "dueOn": "2027-08-29",
       "implementedBy": [
         "packages/engine/src/tax/federalTax.ts"
       ],
@@ -16591,8 +16591,8 @@
       "volatility": "annuallyIndexed",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-03",
-      "dueOn": "2026-12-01",
+      "verifiedOn": "2026-08-29",
+      "dueOn": "2026-12-27",
       "implementedBy": [
         "packages/engine/src/params/data/year2026.ts",
         "packages/engine/src/tax/federalTax.ts"
@@ -16641,7 +16641,7 @@
         },
         {
           "kind": "statute",
-          "citation": "IRC 63(c)(7)",
+          "citation": "IRC 63(c)(7)(A)",
           "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section63&num=0&edition=prelim"
         }
       ]
@@ -16762,8 +16762,8 @@
       "volatility": "annuallyIndexed",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-04",
-      "dueOn": "2026-12-02",
+      "verifiedOn": "2026-08-29",
+      "dueOn": "2026-12-27",
       "implementedBy": [
         "packages/engine/src/params/data/year2026.ts",
         "packages/engine/src/params/index.ts",
@@ -23327,8 +23327,8 @@
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-04",
-      "dueOn": "2027-08-04",
+      "verifiedOn": "2026-08-29",
+      "dueOn": "2027-08-29",
       "implementedBy": [
         "packages/engine/src/params/state/data/year2026.ts",
         "packages/engine/src/tax/stateTax.ts"
@@ -27495,8 +27495,8 @@
       "volatility": "annuallyIndexed",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-27",
-      "dueOn": "2026-12-25",
+      "verifiedOn": "2026-08-29",
+      "dueOn": "2026-12-27",
       "implementedBy": [
         "packages/engine/src/model/plan.ts",
         "packages/engine/src/params/types.ts",
@@ -28908,8 +28908,8 @@
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-03",
-      "dueOn": "2027-08-03",
+      "verifiedOn": "2026-08-29",
+      "dueOn": "2027-08-29",
       "implementedBy": [
         "packages/engine/src/socialSecurity/nra.ts"
       ],
@@ -30057,14 +30057,14 @@
     }
   ],
   "quoteFidelity": {
-    "generatedAt": "2026-08-29T18:12:59.434Z",
+    "generatedAt": "2026-08-29T18:34:00.689Z",
     "entryCount": 1057,
     "fetched": 0,
     "cached": 301,
     "counts": {
-      "ELISION-EXACT": 61,
+      "ELISION-EXACT": 63,
       "ELISION-PUNCTUATION": 4,
-      "EXACT": 736,
+      "EXACT": 734,
       "PDF-NOT-VERIFIABLE": 5,
       "PDF-WORD-LEVEL": 212,
       "PUNCTUATION": 36,

@@ -1,16 +1,16 @@
 {
-  "generatedAt": "2026-08-29T18:12:59.434Z",
+  "generatedAt": "2026-08-29T18:34:00.689Z",
   "recordCount": 410,
   "urlCount": 301,
   "fetched": 0,
   "cached": 301,
   "entryCount": 1057,
   "counts": {
-    "EXACT": 736,
+    "EXACT": 734,
     "PUNCTUATION": 36,
     "PDF-WORD-LEVEL": 212,
     "ELISION-PUNCTUATION": 4,
-    "ELISION-EXACT": 61,
+    "ELISION-EXACT": 63,
     "UNFETCHABLE": 3,
     "PDF-NOT-VERIFIABLE": 5
   },
@@ -2832,9 +2832,9 @@
       "citation": "P.L. 117-169, section 11406(a), adding 1860D-2(b)(9)(D)",
       "host": "www.govinfo.gov",
       "url": "https://www.govinfo.gov/content/pkg/PLAW-117publ169/pdf/PLAW-117publ169.pdf",
-      "quoteSha256": "e9fa5f99adb890e5",
+      "quoteSha256": "da3e537968d7242c",
       "verdict": "PDF-WORD-LEVEL",
-      "detail": "5 elision segments, all present in the extracted text",
+      "detail": "3 elision segments, all present in the extracted text",
       "diagnosis": null
     },
     {
@@ -3242,19 +3242,19 @@
       "citation": "IRC 63(c)(2)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section63&num=0&edition=prelim",
-      "quoteSha256": "755f8597a5c65b3d",
+      "quoteSha256": "812f544bcfb17915",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
       "id": "irc-63-c-2-joint-standard-deduction-doubles",
-      "citation": "IRC 63(c)(7)",
+      "citation": "IRC 63(c)(7)(A)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section63&num=0&edition=prelim",
-      "quoteSha256": "5e179a12d1cec82c",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "quoteSha256": "af725e028145b921",
+      "verdict": "ELISION-EXACT",
+      "detail": "2 segments, every one a literal substring",
       "diagnosis": null
     },
     {
@@ -3352,9 +3352,9 @@
       "citation": "Schedule 1-A (Form 1040) (2025), Part V, lines 32 to 37",
       "host": "www.irs.gov",
       "url": "https://www.irs.gov/pub/irs-pdf/f1040s1a.pdf",
-      "quoteSha256": "923cf2575fa453e9",
+      "quoteSha256": "433eb52c80b6167b",
       "verdict": "PDF-WORD-LEVEL",
-      "detail": "4 elision segments, all present in the extracted text",
+      "detail": "6 elision segments, all present in the extracted text",
       "diagnosis": null
     },
     {
@@ -3372,9 +3372,9 @@
       "citation": "IRC 63(b)(2)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section63&num=0&edition=prelim",
-      "quoteSha256": "e65c4d3035cf334d",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "quoteSha256": "b626ea03080fe6ed",
+      "verdict": "ELISION-EXACT",
+      "detail": "2 segments, every one a literal substring",
       "diagnosis": null
     },
     {
@@ -3792,7 +3792,7 @@
       "citation": "IRC 1(j)(5)(C)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1&num=0&edition=prelim",
-      "quoteSha256": "a268d695820fe665",
+      "quoteSha256": "d9b59fa87db49465",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null
@@ -3812,7 +3812,7 @@
       "citation": "IRC 55(d)(4)(B)(i)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section55&num=0&edition=prelim",
-      "quoteSha256": "a699c8330b12aa63",
+      "quoteSha256": "1285ee0a6736a195",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null
@@ -6162,7 +6162,7 @@
       "citation": "61 Pa. Code 103.13(e)",
       "host": "www.pacodeandbulletin.gov",
       "url": "https://www.pacodeandbulletin.gov/Display/pacode?file=/secure/pacode/data/061/chapter103/s103.13.html",
-      "quoteSha256": "8ff4bd0b57014414",
+      "quoteSha256": "b663c858df8a72eb",
       "verdict": "ELISION-EXACT",
       "detail": "3 segments, every one a literal substring",
       "diagnosis": null
