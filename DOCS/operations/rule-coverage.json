@@ -76,9 +76,9 @@
   "attestations": {
     "totalFiles": 236,
     "byStatus": {
-      "partial": 61,
-      "registered": 51,
-      "rule-free": 124,
+      "partial": 54,
+      "registered": 56,
+      "rule-free": 126,
       "unswept": 0
     },
     "sweptPct": 100,
@@ -135,11 +135,6 @@
       "path": "actions/beneficiaryTraditionalIraWithdrawalCharacter.ts",
       "sweptOn": "2026-08-24",
       "note": "Inherited-IRA line-8 conversion/spousal-conversion refusal; no record"
-    },
-    {
-      "path": "actions/execution.ts",
-      "sweptOn": "2026-08-25",
-      "note": "Equity compensation fully ordinary-income at execution; no record"
     },
     {
       "path": "actions/ownedNonRothIraAnnualCandidateTransaction.ts",
@@ -202,21 +197,6 @@
       "note": "Rule of 55, employer-SEPP, permitted methods, public-safety and recapture covered; age-59½ threshold, 10% rate, disability waiver lack records"
     },
     {
-      "path": "decisions/decisionFixtures.ts",
-      "sweptOn": "2026-08-24",
-      "note": "RMD age 73 and Social Security claim-age fixtures; no record"
-    },
-    {
-      "path": "decisions/generators.ts",
-      "sweptOn": "2026-08-24",
-      "note": "Registry covers QLAC premium cap; residual bracket targets 10/12/22/24 and SS grid 62–70; no records; QLAC start-age 85 ceiling (Treas. Reg. 1.401(a)(9)-6(q)(1)(ii)) hardcoded"
-    },
-    {
-      "path": "decisions/objectives.ts",
-      "sweptOn": "2026-08-24",
-      "note": "Age-73 pre-RMD bridge heuristic; no record"
-    },
-    {
       "path": "decisions/pensionElection.ts",
       "sweptOn": "2026-08-24",
       "note": "Tax-free direct rollover into traditional IRA; no record"
@@ -228,18 +208,8 @@
     },
     {
       "path": "insights/detectors/hecmBufferCandidate.ts",
-      "sweptOn": "2026-08-24",
-      "note": "returns null under age 62 — the statutory HECM minimum age (12 U.S.C. 1715z-20(b)); no record names this file"
-    },
-    {
-      "path": "insights/detectors/missingDataBasis.ts",
-      "sweptOn": "2026-08-24",
-      "note": "independently classifies zero-basis primary-residence gain as fully covered by the pack §121 cap (tax vs timing-only copy); no record names this file"
-    },
-    {
-      "path": "insights/detectors/rothBridgeHeadroom.ts",
-      "sweptOn": "2026-08-24",
-      "note": "treats every 73+ person as post-RMD; applicable age is cohort-dependent (73 or 75, rmd/applicableAge) — detector should consume the registered helper; no record names this file"
+      "sweptOn": "2026-08-29",
+      "note": "returns null under age 62, the statutory HECM minimum age (12 U.S.C. 1715z-20(b)). Held partial pending an owner scope decision: the registry has held tax statutes only, and admitting housing law is a domain expansion the sweep does not decide"
     },
     {
       "path": "insights/detectors/ssClaimMilestone.ts",
@@ -307,11 +277,6 @@
       "note": "after-tax estate haircuts incl. taxable step-up registered (irc-1014-a-1-basis-at-death-fair-market-value); Form 8606 basis exclusion, spousal rollover, HSA non-spouse income remain"
     },
     {
-      "path": "projection/flatTax.ts",
-      "sweptOn": "2026-08-24",
-      "note": "Statutory 85% Social Security inclusion; no record"
-    },
-    {
       "path": "projection/optimizePlan.ts",
       "sweptOn": "2026-08-27",
       "note": "Flat 15% LTCG LP rate registered (irc-1-h-optimizer-flat-fifteen-percent-preferential-rate); other optimizer linearizations remain unregistered"
@@ -338,13 +303,13 @@
     },
     {
       "path": "rmd/applicableAge.ts",
-      "sweptOn": "2026-08-24",
-      "note": "SECURE 2.0 applicable ages/RBD April-1; born-1959 dual-age contest; 70½ cohort & July-1949 cut; no records naming this file"
+      "sweptOn": "2026-08-29",
+      "note": "SECURE 2.0 applicable ages/RBD April-1; born-1959 dual-age contest; 70½ cohort & July-1949 cut. Correction: treas-reg-1-401-a-9-5-d-1-ii and the applicable-age records DO name this file; residual is the RBD April-1 arm and the pre-SECURE cohorts"
     },
     {
       "path": "socialSecurity/claimFactor.ts",
-      "sweptOn": "2026-08-24",
-      "note": "worker claim-age window and factor composition rest on records naming benefitFactor.ts; no record names this file"
+      "sweptOn": "2026-08-29",
+      "note": "Correction: usc-42-402-b-2-spousal-half-of-pia and poms-rs-00615-482-arf-crediting-months DO name this file; residual narrows to the worker 62y0m-70y0m claim window and DRC/ARF factor composition"
     },
     {
       "path": "socialSecurity/maritalBenefits.ts",
@@ -388,8 +353,8 @@
     },
     {
       "path": "tax/propertySale.ts",
-      "sweptOn": "2026-08-24",
-      "note": "Personal-use capital loss nondeductible (gain floored at zero); no record naming this file"
+      "sweptOn": "2026-08-29",
+      "note": "Personal-use capital loss nondeductible (gain floored at zero) remains unregistered. Correction: three section 121/1250 records DO name this file; the loss-floor clause specifically is the residual"
     }
   ],
   "directoryRollup": [
@@ -404,8 +369,8 @@
       "directory": "actions",
       "files": 74,
       "byStatus": {
-        "partial": 23,
-        "registered": 25,
+        "partial": 22,
+        "registered": 26,
         "rule-free": 26
       }
     },
@@ -420,16 +385,17 @@
       "directory": "decisions",
       "files": 19,
       "byStatus": {
-        "partial": 5,
-        "rule-free": 14
+        "partial": 2,
+        "registered": 2,
+        "rule-free": 15
       }
     },
     {
       "directory": "insights",
       "files": 22,
       "byStatus": {
-        "partial": 4,
-        "registered": 1,
+        "partial": 2,
+        "registered": 3,
         "rule-free": 17
       }
     },
@@ -486,9 +452,9 @@
       "directory": "projection",
       "files": 24,
       "byStatus": {
-        "partial": 8,
+        "partial": 7,
         "registered": 2,
-        "rule-free": 14
+        "rule-free": 15
       }
     },
     {
@@ -5817,10 +5783,20 @@
       "verifiedOn": "2026-08-03",
       "dueOn": "2027-08-03",
       "implementedBy": [
+        "packages/engine/src/insights/detectors/missingDataBasis.ts",
         "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/tax/propertySale.ts"
       ],
       "implementations": [
+        {
+          "path": "packages/engine/src/insights/detectors/missingDataBasis.ts",
+          "functions": [
+            {
+              "name": "missingDataBasis",
+              "line": 135
+            }
+          ]
+        },
         {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
@@ -10001,9 +9977,29 @@
       "verifiedOn": "2026-08-03",
       "dueOn": "2026-12-31",
       "implementedBy": [
+        "packages/engine/src/decisions/objectives.ts",
+        "packages/engine/src/insights/detectors/rothBridgeHeadroom.ts",
         "packages/engine/src/params/index.ts"
       ],
       "implementations": [
+        {
+          "path": "packages/engine/src/decisions/objectives.ts",
+          "functions": [
+            {
+              "name": "bridgeYearFilter",
+              "line": 85
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/insights/detectors/rothBridgeHeadroom.ts",
+          "functions": [
+            {
+              "name": "rothBridgeHeadroom",
+              "line": 4
+            }
+          ]
+        },
         {
           "path": "packages/engine/src/params/index.ts",
           "functions": [
@@ -24925,11 +24921,21 @@
       "verifiedOn": "2026-08-07",
       "dueOn": "2027-08-07",
       "implementedBy": [
+        "packages/engine/src/decisions/generators.ts",
         "packages/engine/src/model/migrations.ts",
         "packages/engine/src/model/plan.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
+        {
+          "path": "packages/engine/src/decisions/generators.ts",
+          "functions": [
+            {
+              "name": "annuityPurchaseGenerator",
+              "line": 549
+            }
+          ]
+        },
         {
           "path": "packages/engine/src/model/migrations.ts",
           "functions": [

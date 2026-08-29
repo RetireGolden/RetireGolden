@@ -9,6 +9,7 @@
  */
 
 import type { Plan } from '../model/plan.js'
+import { rmdStartAgeForBirthYear } from '../params/index.js'
 import type { ProjectionResult } from '../projection/types.js'
 import { planForCandidate } from './evaluateCandidate.js'
 import type { DecisionContext, ExactDecisionEvaluation } from './types.js'
@@ -82,7 +83,12 @@ function survivorYearFilter(year: ProjectionResult['years'][number]): boolean {
 
 /** Pre-RMD, post-wage years with no Social Security yet — the early-retirement bridge. */
 function bridgeYearFilter(year: ProjectionResult['years'][number]): boolean {
-  const anyPreRmd = year.people.some((person) => person.alive && person.ageAttained < 73)
+  // Cohort-dependent, not a constant: SECURE 2.0 puts the applicable age at
+  // 73 only through the 1959 birth cohort, then 75. ageAttained is year
+  // minus birth year, so the birth year falls out of the row.
+  const anyPreRmd = year.people.some(
+    (person) => person.alive && person.ageAttained < rmdStartAgeForBirthYear(year.year - person.ageAttained),
+  )
   return year.incomes.wages < 10_000 && year.incomes.socialSecurity <= 0 && anyPreRmd
 }
 

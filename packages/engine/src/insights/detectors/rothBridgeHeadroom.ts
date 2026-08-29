@@ -1,3 +1,4 @@
+import { rmdStartAgeForBirthYear } from '../../params/index.js'
 import type { Detector } from '../types.js'
 
 export const rothBridgeHeadroom: Detector = {
@@ -26,7 +27,12 @@ export const rothBridgeHeadroom: Detector = {
 
     for (const y of ctx.projection.result.years) {
       const allRetired = y.incomes.wages < 10000
-      const anyPreRmd = y.people.some((p) => p.alive && p.ageAttained < 73)
+      // Cohort-dependent, not a constant: SECURE 2.0 puts the applicable age
+      // at 73 only through the 1959 birth cohort, then 75. ageAttained is
+      // year minus birth year, so the birth year falls out of the row.
+      const anyPreRmd = y.people.some(
+        (p) => p.alive && p.ageAttained < rmdStartAgeForBirthYear(y.year - p.ageAttained),
+      )
       const hasTradFunds = ctx.plan.accounts
         .filter((a) => a.type === 'traditional' && !a.inherited)
         .reduce((sum, a) => sum + (y.balances[a.id] ?? 0), 0) > 10000
