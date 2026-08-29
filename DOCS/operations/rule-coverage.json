@@ -76,8 +76,8 @@
   "attestations": {
     "totalFiles": 236,
     "byStatus": {
-      "partial": 52,
-      "registered": 59,
+      "partial": 57,
+      "registered": 54,
       "rule-free": 125,
       "unswept": 0
     },
@@ -86,6 +86,11 @@
   },
   "unswept": [],
   "partial": [
+    {
+      "path": "actions/aggregateRothConversionOwnerAllocation.ts",
+      "sweptOn": "2026-08-29",
+      "note": "same-owner pro-rata allocation long registered under irc-408-d-3-A-i; the RMD-before-conversion ordering it relies on is enforced upstream (resolveOwnerIraRmdSatisfaction), and this file consumes the post-RMD snapshot as a contract rather than enforcing it - that contract stays the residual"
+    },
     {
       "path": "actions/annualOwnedNonRothIraPoolCapacity.ts",
       "sweptOn": "2026-08-24",
@@ -174,7 +179,17 @@
     {
       "path": "actions/retirementActionCandidateIdentityAllocator.ts",
       "sweptOn": "2026-08-29",
-      "note": "Conversion source and destination vehicle restrictions are registered under irc-408A-d-3-B-conversion-destination-must-be-a-roth-ira; QCD source-IRA restrictions remain open because no matching QCD record fits"
+      "note": "conversion source and destination identity registered under irc-408-d-3-A-i, the inherited-source refusal under irc-408-d-3-C-i, and the named-action designated-Roth refusal under irc-408A-d-3-B (conversionDestinationIssue kind gate); QCD source-IRA restrictions remain open"
+    },
+    {
+      "path": "actions/retirementActionManualReview.ts",
+      "sweptOn": "2026-08-29",
+      "note": "replacement source-owner and Roth-destination identity checks registered under irc-408-d-3-A-i; the type gate here does not discriminate a designated Roth (that vehicle refusal lives in the identity allocator), and the QCD source-owner clause remains open"
+    },
+    {
+      "path": "actions/rothConversionExecution.ts",
+      "sweptOn": "2026-08-29",
+      "note": "ordering and inherited-bar records name executeRothConversions; the positive-basis deferred-character branch publishes null character for the downstream annual 408(d)(2) pass to resolve, and that deferral plus the direct-vehicle gates remain the residual"
     },
     {
       "path": "actions/traditionalEmployerPlanPenaltyPrerequisite.ts",
@@ -190,6 +205,11 @@
       "path": "decisions/pensionElection.ts",
       "sweptOn": "2026-08-24",
       "note": "Tax-free direct rollover into traditional IRA; no record"
+    },
+    {
+      "path": "decisions/rothConversionCandidateAdapter.ts",
+      "sweptOn": "2026-08-29",
+      "note": "same-owner destination gate registered under irc-408-d-3-A-i; the dated-intent gate remains unregistered"
     },
     {
       "path": "insights/detectors/hecmBufferCandidate.ts",
@@ -277,6 +297,11 @@
       "note": "Flat 15% LTCG LP rate registered (irc-1-h-optimizer-flat-fifteen-percent-preferential-rate); other optimizer linearizations remain unregistered"
     },
     {
+      "path": "projection/optimizerAggregateConversionPromotion.ts",
+      "sweptOn": "2026-08-29",
+      "note": "same-owner trim registered under irc-408-d-3-A-i and the distributability predicate under irc-401-k-2-B-i; RMD-first ordering is an upstream snapshot contract enforced at resolveOwnerIraRmdSatisfaction, not here, and stays the residual"
+    },
+    {
       "path": "projection/ownedIraAnnualPhysicalTransactionInputs.ts",
       "sweptOn": "2026-08-24",
       "note": "Form 8606 line-7/8 and QCD staging semantics; no record"
@@ -359,8 +384,8 @@
       "directory": "actions",
       "files": 74,
       "byStatus": {
-        "partial": 19,
-        "registered": 29,
+        "partial": 22,
+        "registered": 26,
         "rule-free": 26
       }
     },
@@ -375,8 +400,8 @@
       "directory": "decisions",
       "files": 19,
       "byStatus": {
-        "partial": 2,
-        "registered": 2,
+        "partial": 3,
+        "registered": 1,
         "rule-free": 15
       }
     },
@@ -442,8 +467,8 @@
       "directory": "projection",
       "files": 24,
       "byStatus": {
-        "partial": 7,
-        "registered": 3,
+        "partial": 8,
+        "registered": 2,
         "rule-free": 14
       }
     },
@@ -11916,8 +11941,7 @@
       "implementedBy": [
         "packages/engine/src/actions/annualIraBasisAllocation.ts",
         "packages/engine/src/actions/beneficiaryTraditionalIraWithdrawalCharacter.ts",
-        "packages/engine/src/actions/ownedNonRothIraWithdrawalCharacter.ts",
-        "packages/engine/src/actions/rothConversionExecution.ts"
+        "packages/engine/src/actions/ownedNonRothIraWithdrawalCharacter.ts"
       ],
       "implementations": [
         {
@@ -11944,15 +11968,6 @@
             {
               "name": "classifyOwnedNonRothIraAnnualWithdrawals",
               "line": 248
-            }
-          ]
-        },
-        {
-          "path": "packages/engine/src/actions/rothConversionExecution.ts",
-          "functions": [
-            {
-              "name": "executeUnchecked",
-              "line": 636
             }
           ]
         }
@@ -12006,6 +12021,10 @@
       "dueOn": "2027-08-04",
       "implementedBy": [
         "packages/engine/src/actions/aggregateRothConversionOwnerAllocation.ts",
+        "packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts",
+        "packages/engine/src/actions/retirementActionManualReview.ts",
+        "packages/engine/src/decisions/rothConversionCandidateAdapter.ts",
+        "packages/engine/src/projection/optimizerAggregateConversionPromotion.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
@@ -12015,6 +12034,46 @@
             {
               "name": "allocateAggregateRothConversionByOwner",
               "line": 276
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts",
+          "functions": [
+            {
+              "name": "conversionDestinationIssue",
+              "line": 338
+            },
+            {
+              "name": "conversionSourceIssue",
+              "line": 294
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/retirementActionManualReview.ts",
+          "functions": [
+            {
+              "name": "targetIdentitySemanticsIssue",
+              "line": 361
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/decisions/rothConversionCandidateAdapter.ts",
+          "functions": [
+            {
+              "name": "adaptFillTargetRothConversionGeneratorCandidate",
+              "line": 386
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/optimizerAggregateConversionPromotion.ts",
+          "functions": [
+            {
+              "name": "promoteOneYear",
+              "line": 525
             }
           ]
         },
@@ -12101,10 +12160,20 @@
       "verifiedOn": "2026-08-25",
       "dueOn": "2027-08-25",
       "implementedBy": [
+        "packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts",
         "packages/engine/src/actions/rothConversionExecution.ts",
         "packages/engine/src/strategies/accountEligibility.ts"
       ],
       "implementations": [
+        {
+          "path": "packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts",
+          "functions": [
+            {
+              "name": "conversionSourceIssue",
+              "line": 294
+            }
+          ]
+        },
         {
           "path": "packages/engine/src/actions/rothConversionExecution.ts",
           "functions": [
@@ -14091,10 +14160,6 @@
       "implementedBy": [
         "packages/engine/src/actions/aggregateRothConversionOwnerAllocation.ts",
         "packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts",
-        "packages/engine/src/actions/retirementActionManualReview.ts",
-        "packages/engine/src/actions/rothConversionExecution.ts",
-        "packages/engine/src/decisions/rothConversionCandidateAdapter.ts",
-        "packages/engine/src/projection/optimizerAggregateConversionPromotion.ts",
         "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/strategies/accountEligibility.ts"
       ],
@@ -14114,46 +14179,6 @@
             {
               "name": "conversionDestinationIssue",
               "line": 338
-            },
-            {
-              "name": "conversionSourceIssue",
-              "line": 294
-            }
-          ]
-        },
-        {
-          "path": "packages/engine/src/actions/retirementActionManualReview.ts",
-          "functions": [
-            {
-              "name": "targetIdentitySemanticsIssue",
-              "line": 361
-            }
-          ]
-        },
-        {
-          "path": "packages/engine/src/actions/rothConversionExecution.ts",
-          "functions": [
-            {
-              "name": "executeUnchecked",
-              "line": 636
-            }
-          ]
-        },
-        {
-          "path": "packages/engine/src/decisions/rothConversionCandidateAdapter.ts",
-          "functions": [
-            {
-              "name": "adaptFillTargetRothConversionGeneratorCandidate",
-              "line": 386
-            }
-          ]
-        },
-        {
-          "path": "packages/engine/src/projection/optimizerAggregateConversionPromotion.ts",
-          "functions": [
-            {
-              "name": "promoteOneYear",
-              "line": 525
             }
           ]
         },
@@ -26134,37 +26159,17 @@
       "verifiedOn": "2026-08-03",
       "dueOn": "2027-08-03",
       "implementedBy": [
-        "packages/engine/src/actions/aggregateRothConversionOwnerAllocation.ts",
         "packages/engine/src/actions/rothConversionExecution.ts",
-        "packages/engine/src/projection/optimizerAggregateConversionPromotion.ts",
         "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/strategies/accountEligibility.ts"
       ],
       "implementations": [
-        {
-          "path": "packages/engine/src/actions/aggregateRothConversionOwnerAllocation.ts",
-          "functions": [
-            {
-              "name": "allocateAggregateRothConversionByOwner",
-              "line": 276
-            }
-          ]
-        },
         {
           "path": "packages/engine/src/actions/rothConversionExecution.ts",
           "functions": [
             {
               "name": "executeRothConversions",
               "line": 928
-            }
-          ]
-        },
-        {
-          "path": "packages/engine/src/projection/optimizerAggregateConversionPromotion.ts",
-          "functions": [
-            {
-              "name": "promoteOneYear",
-              "line": 525
             }
           ]
         },

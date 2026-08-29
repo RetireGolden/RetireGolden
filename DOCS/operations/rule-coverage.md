@@ -84,8 +84,8 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | Engine source files | 236 |
 | Swept | 100.0% |
 | Grandfathered unswept baseline | 0 |
-| partial | 52 |
-| registered | 59 |
+| partial | 57 |
+| registered | 54 |
 | rule-free | 125 |
 | unswept | 0 |
 
@@ -94,9 +94,9 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | Directory | Files | Partial | Registered | Rule-free | Unswept |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | (root) | 3 | 0 | 0 | 3 | 0 |
-| actions | 74 | 19 | 29 | 26 | 0 |
+| actions | 74 | 22 | 26 | 26 | 0 |
 | allocation | 1 | 0 | 0 | 1 | 0 |
-| decisions | 19 | 2 | 2 | 15 | 0 |
+| decisions | 19 | 3 | 1 | 15 | 0 |
 | insights | 22 | 3 | 2 | 17 | 0 |
 | internal | 9 | 2 | 2 | 5 | 0 |
 | ladder | 4 | 2 | 0 | 2 | 0 |
@@ -104,7 +104,7 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | model | 3 | 3 | 0 | 0 | 0 |
 | montecarlo | 11 | 1 | 0 | 10 | 0 |
 | params | 8 | 1 | 5 | 2 | 0 |
-| projection | 24 | 7 | 3 | 14 | 0 |
+| projection | 24 | 8 | 2 | 14 | 0 |
 | rmd | 4 | 1 | 3 | 0 | 0 |
 | rules | 6 | 0 | 1 | 5 | 0 |
 | scenarios | 9 | 0 | 0 | 9 | 0 |
@@ -123,6 +123,7 @@ None.
 
 | Path | Swept on | Residual claims |
 | --- | --- | --- |
+| actions/aggregateRothConversionOwnerAllocation.ts | 2026-08-29 | same-owner pro-rata allocation long registered under irc-408-d-3-A-i; the RMD-before-conversion ordering it relies on is enforced upstream (resolveOwnerIraRmdSatisfaction), and this file consumes the post-RMD snapshot as a contract rather than enforcing it - that contract stays the residual |
 | actions/annualOwnedNonRothIraPoolCapacity.ts | 2026-08-24 | QCD pool restricted to donor-owned non-Roth IRAs; no record |
 | actions/annualQcdDerivedTaxCharacter.ts | 2026-08-25 | Owned-source eligibility gate; no record; QCD taxable/excludable/basis partition; no record |
 | actions/annualQcdPhysicalExecution.ts | 2026-08-24 | QCD pool restricted to owned traditional IRAs, excluding inherited/Roth; no record |
@@ -140,10 +141,13 @@ None.
 | actions/ownedNonRothIraAnnualPostCandidateEvidence.ts | 2026-08-24 | Contribution window covered; Form 8606 lines 1/4/6/7/9, owner-wide pool, and explicit zero line 8; no record |
 | actions/ownedNonRothIraMovementCandidate.ts | 2026-08-24 | Source constrained to owned traditional/SEP/SIMPLE IRAs; positive withdrawals emitted as line 7; no record |
 | actions/ownedNonRothIraPenaltyPrerequisite.ts | 2026-08-24 | Age, 10%/25% rates, disability, SEPP, SIMPLE period, and scope covered; death exception rejected through owner-alive evidence; no record |
-| actions/retirementActionCandidateIdentityAllocator.ts | 2026-08-29 | Conversion source and destination vehicle restrictions are registered under irc-408A-d-3-B-conversion-destination-must-be-a-roth-ira; QCD source-IRA restrictions remain open because no matching QCD record fits |
+| actions/retirementActionCandidateIdentityAllocator.ts | 2026-08-29 | conversion source and destination identity registered under irc-408-d-3-A-i, the inherited-source refusal under irc-408-d-3-C-i, and the named-action designated-Roth refusal under irc-408A-d-3-B (conversionDestinationIssue kind gate); QCD source-IRA restrictions remain open |
+| actions/retirementActionManualReview.ts | 2026-08-29 | replacement source-owner and Roth-destination identity checks registered under irc-408-d-3-A-i; the type gate here does not discriminate a designated Roth (that vehicle refusal lives in the identity allocator), and the QCD source-owner clause remains open |
+| actions/rothConversionExecution.ts | 2026-08-29 | ordering and inherited-bar records name executeRothConversions; the positive-basis deferred-character branch publishes null character for the downstream annual 408(d)(2) pass to resolve, and that deferral plus the direct-vehicle gates remain the residual |
 | actions/traditionalEmployerPlanPenaltyPrerequisite.ts | 2026-08-24 | Rule of 55, employer-SEPP, permitted methods, public-safety and recapture covered; age-59½ threshold, 10% rate, disability waiver lack records |
 | decisions/generators.ts | 2026-08-29 | QLAC 85 ceiling registered via treas-reg-1-401-a-9-6-q-1-ii-qlac-commences-by-the-85th-birthday naming annuityPurchaseGenerator; the bracket-target list is a search-space choice, but SS_GRID_CLAIM_AGES encodes the statutory 62-70 worker claiming window and stays a residual with claimFactor.ts |
 | decisions/pensionElection.ts | 2026-08-24 | Tax-free direct rollover into traditional IRA; no record |
+| decisions/rothConversionCandidateAdapter.ts | 2026-08-29 | same-owner destination gate registered under irc-408-d-3-A-i; the dated-intent gate remains unregistered |
 | insights/detectors/hecmBufferCandidate.ts | 2026-08-29 | returns null under age 62, the statutory HECM minimum age (12 U.S.C. 1715z-20(b)). Held partial pending an owner scope decision: the registry has held tax statutes only, and admitting housing law is a domain expansion the sweep does not decide |
 | insights/detectors/missingDataBasis.ts | 2026-08-29 | the section 121 coverage classification is registered via irc-121-a-b-principal-residence-eligibility-tests naming this detector (another independent implementation beside tax/propertySale.ts and the simulate path - consolidation candidate). Residual: the detector also gates on ROTH_QUALIFIED_AGE independently, and the Roth 59½ records do not name it |
 | insights/detectors/ssClaimMilestone.ts | 2026-08-24 | Re-derives SS entitlement/eligibility (former-spouse gates, family max, payable months) beyond registry gaps for maritalBenefits/nra |
@@ -161,6 +165,7 @@ None.
 | projection/compare.ts | 2026-08-27 | after-tax estate haircuts incl. taxable step-up registered (irc-1014-a-1-basis-at-death-fair-market-value); Form 8606 basis exclusion, spousal rollover, HSA non-spouse income remain |
 | projection/flatTax.ts | 2026-08-29 | V1 placeholder whose only importers are test files, so the IRC 86 85 percent inclusion it computes never reaches a user-facing number; kept partial rather than rule-free so the claim stays visible if the file ever gains a production consumer |
 | projection/optimizePlan.ts | 2026-08-27 | Flat 15% LTCG LP rate registered (irc-1-h-optimizer-flat-fifteen-percent-preferential-rate); other optimizer linearizations remain unregistered |
+| projection/optimizerAggregateConversionPromotion.ts | 2026-08-29 | same-owner trim registered under irc-408-d-3-A-i and the distributability predicate under irc-401-k-2-B-i; RMD-first ordering is an upstream snapshot contract enforced at resolveOwnerIraRmdSatisfaction, not here, and stays the residual |
 | projection/ownedIraAnnualPhysicalTransactionInputs.ts | 2026-08-24 | Form 8606 line-7/8 and QCD staging semantics; no record |
 | projection/ownedNonRothIraAnnualObservation.ts | 2026-08-24 | April-15/weekend/Emancipation-Day filing deadline; no record |
 | projection/simulate.ts | 2026-08-26 | QCD/RMD/annuity/contribution/QLAC covered; residual 59½/HSA/Roth-five-year/Rule-of-55 proxies, inherited-Roth post-flip, Medicare age-65, HSA family-limit, spousal/survivor SS |

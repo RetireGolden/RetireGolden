@@ -1066,13 +1066,11 @@ const registry = {
       'packages/engine/src/actions/ownedNonRothIraWithdrawalCharacter.ts',
       'packages/engine/src/actions/beneficiaryTraditionalIraWithdrawalCharacter.ts',
       'packages/engine/src/actions/annualIraBasisAllocation.ts',
-      'packages/engine/src/actions/rothConversionExecution.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/actions/annualIraBasisAllocation.ts#allocateAnnualIraBasis',
       'packages/engine/src/actions/beneficiaryTraditionalIraWithdrawalCharacter.ts#classifyBeneficiaryTraditionalIraWithdrawal',
       'packages/engine/src/actions/ownedNonRothIraWithdrawalCharacter.ts#classifyOwnedNonRothIraAnnualWithdrawals',
-      'packages/engine/src/actions/rothConversionExecution.ts#executeUnchecked',
     ],
   },
 
@@ -1833,11 +1831,13 @@ const registry = {
     implementedBy: [
       'packages/engine/src/strategies/accountEligibility.ts',
       'packages/engine/src/actions/rothConversionExecution.ts',
+      'packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/actions/rothConversionExecution.ts#executeRothConversions',
       'packages/engine/src/strategies/accountEligibility.ts#evaluateConversion',
       'packages/engine/src/strategies/accountEligibility.ts#isConvertibleToRoth',
+      'packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts#conversionSourceIssue',
     ],
   },
 
@@ -6875,15 +6875,11 @@ const registry = {
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/strategies/accountEligibility.ts',
       'packages/engine/src/actions/rothConversionExecution.ts',
-      'packages/engine/src/actions/aggregateRothConversionOwnerAllocation.ts',
-      'packages/engine/src/projection/optimizerAggregateConversionPromotion.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/actions/rothConversionExecution.ts#executeRothConversions',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/strategies/accountEligibility.ts#resolveOwnerIraRmdSatisfaction',
-      'packages/engine/src/actions/aggregateRothConversionOwnerAllocation.ts#allocateAggregateRothConversionByOwner',
-      'packages/engine/src/projection/optimizerAggregateConversionPromotion.ts#promoteOneYear',
     ],
   },
   'treas-reg-1-401-a-9-2-b-2-v-applicable-age-1959': {
@@ -9336,10 +9332,19 @@ const registry = {
     implementedBy: [
       'packages/engine/src/actions/aggregateRothConversionOwnerAllocation.ts',
       'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts',
+      'packages/engine/src/actions/retirementActionManualReview.ts',
+      'packages/engine/src/decisions/rothConversionCandidateAdapter.ts',
+      'packages/engine/src/projection/optimizerAggregateConversionPromotion.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/actions/aggregateRothConversionOwnerAllocation.ts#allocateAggregateRothConversionByOwner',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts#conversionSourceIssue',
+      'packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts#conversionDestinationIssue',
+      'packages/engine/src/actions/retirementActionManualReview.ts#targetIdentitySemanticsIssue',
+      'packages/engine/src/decisions/rothConversionCandidateAdapter.ts#adaptFillTargetRothConversionGeneratorCandidate',
+      'packages/engine/src/projection/optimizerAggregateConversionPromotion.ts#promoteOneYear',
     ],
   },
   'irc-408A-d-3-B-conversion-destination-must-be-a-roth-ira': {
@@ -9421,22 +9426,13 @@ const registry = {
       'packages/engine/src/actions/aggregateRothConversionOwnerAllocation.ts',
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/strategies/accountEligibility.ts',
-      'packages/engine/src/actions/rothConversionExecution.ts',
       'packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts',
-      'packages/engine/src/actions/retirementActionManualReview.ts',
-      'packages/engine/src/decisions/rothConversionCandidateAdapter.ts',
-      'packages/engine/src/projection/optimizerAggregateConversionPromotion.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/actions/aggregateRothConversionOwnerAllocation.ts#allocateAggregateRothConversionByOwner',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/strategies/accountEligibility.ts#evaluateRetirementActionEligibility',
-      'packages/engine/src/actions/rothConversionExecution.ts#executeUnchecked',
-      'packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts#conversionSourceIssue',
       'packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts#conversionDestinationIssue',
-      'packages/engine/src/actions/retirementActionManualReview.ts#targetIdentitySemanticsIssue',
-      'packages/engine/src/decisions/rothConversionCandidateAdapter.ts#adaptFillTargetRothConversionGeneratorCandidate',
-      'packages/engine/src/projection/optimizerAggregateConversionPromotion.ts#promoteOneYear',
     ],
   },
 
