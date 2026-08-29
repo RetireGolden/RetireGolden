@@ -10102,7 +10102,7 @@
           "functions": [
             {
               "name": "applicableAgeAttainYears",
-              "line": 294
+              "line": 295
             }
           ]
         }
@@ -24764,7 +24764,7 @@
       "classification": "unsettled",
       "errorDirection": null,
       "conventionRationale": null,
-      "contraryReading": "IRC 401(a)(9)(C)(v)(II) applies on its own terms to a 1959 birth, because such a person attains age 74 in 2033, after December 31, 2032. Read alone it makes the applicable age 75 and defers the first distribution calendar year by two years. Nothing in the enacted text resolves the overlap, Treas. Reg. 1.401(a)(9)-2(b)(2)(v) is reserved, and the only source choosing 73 is a notice of proposed rulemaking that has not been finalised. The two readings differ by two distribution calendar years of forced ordinary income for the whole 1959 cohort. The nearest current guidance, Announcement 2026-7 (2026-11 I.R.B. 697), defers the anticipated applicability of final regulations amending 1.401(a)(9)-4, -5, and -6 and never mentions paragraph (b)(2)(v) or the 1959 cohort - verified against the full IRB text 2026-08-29 - so the contest stands with no guidance selecting either age.",
+      "contraryReading": "IRC 401(a)(9)(C)(v)(II) applies on its own terms to a 1959 birth, because such a person attains age 74 in 2033, after December 31, 2032. Read alone it makes the applicable age 75 and defers the first distribution calendar year by two years. Nothing in the enacted text resolves the overlap, Treas. Reg. 1.401(a)(9)-2(b)(2)(v) is reserved, and the only source choosing 73 is a notice of proposed rulemaking that has not been finalised. The two readings differ by two distribution calendar years of forced ordinary income for the whole 1959 cohort. The nearest current guidance, Announcement 2026-7 (2026-11 I.R.B. 697), defers the anticipated applicability of final regulations amending 1.401(a)(9)-4, -5, and -6 and never mentions paragraph (b)(2)(v) or the 1959 cohort, so the contest stands with no guidance selecting either age.",
       "jurisdiction": "federal",
       "volatility": "awaitingGuidance",
       "effectiveFrom": 2026,
@@ -25023,7 +25023,7 @@
           "functions": [
             {
               "name": "applicableAgeAttainYears",
-              "line": 294
+              "line": 295
             }
           ]
         },
