@@ -4,9 +4,9 @@
   "registry": {
     "total": 412,
     "byClassification": {
-      "approximated": 107,
+      "approximated": 108,
       "outOfScope": 73,
-      "settled": 227,
+      "settled": 226,
       "unsettled": 5
     },
     "byVolatility": {
@@ -76,8 +76,8 @@
   "attestations": {
     "totalFiles": 236,
     "byStatus": {
-      "partial": 49,
-      "registered": 62,
+      "partial": 51,
+      "registered": 60,
       "rule-free": 125,
       "unswept": 0
     },
@@ -95,6 +95,11 @@
       "path": "actions/annualOwnedNonRothIraPoolCapacity.ts",
       "sweptOn": "2026-08-24",
       "note": "QCD pool restricted to donor-owned non-Roth IRAs; no record"
+    },
+    {
+      "path": "actions/annualQcdDerivedTaxCharacter.ts",
+      "sweptOn": "2026-08-29",
+      "note": "Owned-source eligibility arrives as typed AcceptedQcdSourceEligibilityEvidence - this module consumes what the QCD execution prerequisite evaluator enforces, and the 408(d)(8) source records are registered at that evaluator; the taxable/excludable/basis partition is registered under the composition-order and taxable-first records"
     },
     {
       "path": "actions/annualQcdResidualForm8606.ts",
@@ -197,6 +202,11 @@
       "note": "returns null under age 62, the statutory HECM minimum age (12 U.S.C. 1715z-20(b)). Held partial pending an owner scope decision: the registry has held tax statutes only, and admitting housing law is a domain expansion the sweep does not decide"
     },
     {
+      "path": "insights/detectors/missingDataBasis.ts",
+      "sweptOn": "2026-08-29",
+      "note": "The detector consumes the shared ROTH_QUALIFIED_AGE constant to scope its suggestion; the qualified-distribution rule itself is registered and enforced at the Roth basis records, which do not name this consumer"
+    },
+    {
       "path": "insights/detectors/ssClaimMilestone.ts",
       "sweptOn": "2026-08-24",
       "note": "Re-derives SS entitlement/eligibility (former-spouse gates, family max, payable months) beyond registry gaps for maritalBenefits/nra"
@@ -209,7 +219,7 @@
     {
       "path": "ladder/bridge.ts",
       "sweptOn": "2026-08-29",
-      "note": "The age-62 floor the bridge sizes against is registered under usc-42-402-worker-claim-window-62-to-70 at the claim-factor that enforces it; this file consumes the floor and the PIA sizing as contracts rather than enforcing them, and stays partial on that consumption"
+      "note": "The bridge sizes spending from age 62 to the claim age; the 62-70 worker window is registered under usc-42-402-worker-claim-window-62-to-70 at the claim factor, and this file calls that factor rather than enforcing the window itself"
     },
     {
       "path": "ladder/ladderMath.ts",
@@ -289,7 +299,7 @@
     {
       "path": "rmd/applicableAge.ts",
       "sweptOn": "2026-08-29",
-      "note": "The RBD April-1 arm is now registered under irc-401-a-9-C-i-first-year-april-1-deferral and the born-1959 contest under the unsettled treas-reg-1-401-a-9-2-b-2-v-applicable-age-1959, both naming this file; the 70½/July-1949 cohort tiers remain unregistered pending a pre-SECURE historical-edition record"
+      "note": "Named by treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy and the applicable-age record for applicableAgeAttainYears' cohort mapping consumers; residual: the RBD April-1 arm (this module consumes an asserted RBD-status fact rather than deriving April 1), the 70½/July-1949 cohorts, and the born-1959 dual-age contest awaiting Announcement 2026-7"
     },
     {
       "path": "socialSecurity/maritalBenefits.ts",
@@ -344,8 +354,8 @@
       "directory": "actions",
       "files": 74,
       "byStatus": {
-        "partial": 19,
-        "registered": 29,
+        "partial": 20,
+        "registered": 28,
         "rule-free": 26
       }
     },
@@ -369,8 +379,8 @@
       "directory": "insights",
       "files": 22,
       "byStatus": {
-        "partial": 2,
-        "registered": 3,
+        "partial": 3,
+        "registered": 2,
         "rule-free": 17
       }
     },
@@ -7097,10 +7107,10 @@
     },
     {
       "id": "irc-165-c-personal-use-sale-loss-nondeductible",
-      "title": "A loss on the sale of personal-use property is not deductible",
-      "classification": "settled",
-      "errorDirection": null,
-      "conventionRationale": null,
+      "title": "The property-sale path floors every loss at zero; 165(c) only bars the personal-use ones",
+      "classification": "approximated",
+      "errorDirection": "overstatesTax",
+      "conventionRationale": "One disposition path prices all property sales. The zero floor is the statutory answer for personal-use property and an approximation for profit-transaction property, where the forgone capital loss (and its 1211(b) ordinary offset) overstates tax.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -7128,12 +7138,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/propertySale.test.ts",
-          "line": 107,
+          "line": 108,
           "note": null,
           "tests": [
             {
-              "title": "floors the disposition gain at zero on a below-basis sale",
-              "line": 111
+              "title": "floors the below-basis sale at zero instead of carrying the deductible loss",
+              "line": 113
             }
           ]
         }
@@ -9990,7 +10000,6 @@
       "dueOn": "2027-08-27",
       "implementedBy": [
         "packages/engine/src/projection/simulate.ts",
-        "packages/engine/src/rmd/applicableAge.ts",
         "packages/engine/src/rmd/rmd.ts"
       ],
       "implementations": [
@@ -10000,15 +10009,6 @@
             {
               "name": "simulatePlan",
               "line": 770
-            }
-          ]
-        },
-        {
-          "path": "packages/engine/src/rmd/applicableAge.ts",
-          "functions": [
-            {
-              "name": "deriveRbdComparison",
-              "line": 200
             }
           ]
         },
@@ -13271,7 +13271,6 @@
       "implementedBy": [
         "packages/engine/src/actions/annualQcdDerivedTaxCharacter.ts",
         "packages/engine/src/actions/annualQcdExecutionPrerequisite.ts",
-        "packages/engine/src/actions/annualQcdPhysicalExecution.ts",
         "packages/engine/src/strategies/accountEligibility.ts"
       ],
       "implementations": [
@@ -13290,15 +13289,6 @@
             {
               "name": "evaluateAnnualQcdExecutionPrerequisites",
               "line": 817
-            }
-          ]
-        },
-        {
-          "path": "packages/engine/src/actions/annualQcdPhysicalExecution.ts",
-          "functions": [
-            {
-              "name": "stageAnnualQcdPhysicalExecution",
-              "line": 512
             }
           ]
         },
@@ -14167,19 +14157,9 @@
       "verifiedOn": "2026-08-03",
       "dueOn": "2027-08-03",
       "implementedBy": [
-        "packages/engine/src/insights/detectors/missingDataBasis.ts",
         "packages/engine/src/strategies/rothBasis.ts"
       ],
       "implementations": [
-        {
-          "path": "packages/engine/src/insights/detectors/missingDataBasis.ts",
-          "functions": [
-            {
-              "name": "missingDataBasis",
-              "line": 135
-            }
-          ]
-        },
         {
           "path": "packages/engine/src/strategies/rothBasis.ts",
           "functions": [
@@ -24703,7 +24683,6 @@
       "dueOn": "2026-11-01",
       "implementedBy": [
         "packages/engine/src/params/index.ts",
-        "packages/engine/src/rmd/applicableAge.ts",
         "packages/engine/src/rmd/rmd.ts"
       ],
       "implementations": [
@@ -24713,15 +24692,6 @@
             {
               "name": "rmdStartAgeForBirthYear",
               "line": 137
-            }
-          ]
-        },
-        {
-          "path": "packages/engine/src/rmd/applicableAge.ts",
-          "functions": [
-            {
-              "name": "applicableAgeAttainYears",
-              "line": 294
             }
           ]
         },
@@ -28484,7 +28454,7 @@
       "title": "Worker old-age benefits are claimable from 62, and delayed credits stop at 70",
       "classification": "settled",
       "errorDirection": null,
-      "conventionRationale": null,
+      "conventionRationale": "The claim-age refusal above 70y0m is an engine convention, not a statutory bar: 402(w)(2)(A) stops increment months at 70, which makes every later claim weakly dominated, and the planner prices only claim ages that can change the benefit. The refusal below 62y0m tracks 402(a)(2) directly.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -28494,6 +28464,7 @@
       "dueOn": "2027-08-29",
       "implementedBy": [
         "packages/engine/src/decisions/generators.ts",
+        "packages/engine/src/socialSecurity/benefitFactor.ts",
         "packages/engine/src/socialSecurity/claimFactor.ts"
       ],
       "implementations": [
@@ -28507,15 +28478,20 @@
           ]
         },
         {
+          "path": "packages/engine/src/socialSecurity/benefitFactor.ts",
+          "functions": [
+            {
+              "name": "retirementBenefitPiaFactor",
+              "line": 32
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/socialSecurity/claimFactor.ts",
           "functions": [
             {
               "name": "claimFactor",
               "line": 22
-            },
-            {
-              "name": "spousalBenefitFactor",
-              "line": 51
             }
           ]
         }
@@ -28526,12 +28502,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/socialSecurity/claimFactor.test.ts",
-          "line": 77,
-          "note": "claim ages outside 62y0m-70y0m are refused; the bounds themselves price",
+          "line": 79,
+          "note": "claim ages outside 62y0m-70y0m are refused, not priced",
           "tests": [
             {
-              "title": "refuses claims outside the window and prices exactly at the bounds",
-              "line": 85
+              "title": "refuses one month below the floor and one month above the ceiling",
+              "line": 87
             }
           ]
         }

@@ -1405,13 +1405,11 @@ const registry = {
       'packages/engine/src/strategies/accountEligibility.ts',
       'packages/engine/src/actions/annualQcdExecutionPrerequisite.ts',
       'packages/engine/src/actions/annualQcdDerivedTaxCharacter.ts',
-      'packages/engine/src/actions/annualQcdPhysicalExecution.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/actions/annualQcdDerivedTaxCharacter.ts#finalizeAnnualQcdDerivedTaxCharacter',
       'packages/engine/src/actions/annualQcdExecutionPrerequisite.ts#evaluateAnnualQcdExecutionPrerequisites',
       'packages/engine/src/strategies/accountEligibility.ts#evaluateQcd',
-      'packages/engine/src/actions/annualQcdPhysicalExecution.ts#stageAnnualQcdPhysicalExecution',
     ],
   },
 
@@ -3260,11 +3258,12 @@ const registry = {
   'usc-42-402-worker-claim-window-62-to-70': {
     title: 'Worker old-age benefits are claimable from 62, and delayed credits stop at 70',
     statement:
-      'Old-age insurance entitlement requires attaining age 62, and delayed retirement credit months accrue only for months prior to the month age 70 is attained, so no claim age outside 62y0m through 70y0m changes the benefit. The engine enforces that window: the claim-factor computation refuses claim ages outside it and the decision generator offers only claim ages inside it.',
+      'Old-age insurance entitlement requires attaining age 62, and delayed retirement credit increment months accrue only for months prior to the month age 70 is attained. The floor is statutory: no worker claim exists before 62. The ceiling is economic: a claim after 70 remains lawful but pays the same monthly benefit as a claim at 70 with months of benefits forgone, so the engine models no claim age above 70.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
-    conventionRationale: null,
+    conventionRationale:
+      'The claim-age refusal above 70y0m is an engine convention, not a statutory bar: 402(w)(2)(A) stops increment months at 70, which makes every later claim weakly dominated, and the planner prices only claim ages that can change the benefit. The refusal below 62y0m tracks 402(a)(2) directly.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -3285,11 +3284,12 @@ const registry = {
     verifiedOn: '2026-08-29',
     implementedBy: [
       'packages/engine/src/socialSecurity/claimFactor.ts',
+      'packages/engine/src/socialSecurity/benefitFactor.ts',
       'packages/engine/src/decisions/generators.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/socialSecurity/claimFactor.ts#claimFactor',
-      'packages/engine/src/socialSecurity/claimFactor.ts#spousalBenefitFactor',
+      'packages/engine/src/socialSecurity/benefitFactor.ts#retirementBenefitPiaFactor',
       'packages/engine/src/decisions/generators.ts#SS_GRID_CLAIM_AGES',
     ],
   },
@@ -5360,13 +5360,14 @@ const registry = {
     ],
   },
   'irc-165-c-personal-use-sale-loss-nondeductible': {
-    title: 'A loss on the sale of personal-use property is not deductible',
+    title: 'The property-sale path floors every loss at zero; 165(c) only bars the personal-use ones',
     statement:
-      'Section 165(c) limits an individual\'s loss deduction to business losses, losses in transactions entered into for profit, and casualty or theft losses. A loss on the sale of personal-use property, a home sold below basis among them, is none of those, so the engine floors the disposition gain at zero rather than letting a personal loss offset other income.',
-    classification: 'settled',
+      'Section 165(c) limits an individual\'s loss deduction to business losses, losses in transactions entered into for profit, and casualty or theft losses. A loss on personal-use property, a home sold below basis among them, is therefore nondeductible, and flooring that gain at zero is exact. But the engine prices every property account\'s planned sale through the same function, and for an investment property a sale below basis is a deductible loss under 165(c)(2) that the floor denies.',
+    classification: 'approximated',
     contraryReading: null,
-    errorDirection: null,
-    conventionRationale: null,
+    errorDirection: 'overstatesTax',
+    conventionRationale:
+      'One disposition path prices all property sales. The zero floor is the statutory answer for personal-use property and an approximation for profit-transaction property, where the forgone capital loss (and its 1211(b) ordinary offset) overstates tax.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -6042,12 +6043,10 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
     implementedBy: ['packages/engine/src/strategies/rothBasis.ts',
-      'packages/engine/src/insights/detectors/missingDataBasis.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/strategies/rothBasis.ts#ROTH_QUALIFIED_AGE',
       'packages/engine/src/strategies/rothBasis.ts#splitRothWithdrawal',
-      'packages/engine/src/insights/detectors/missingDataBasis.ts#missingDataBasis',
     ],
   },
 
@@ -7032,12 +7031,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/params/index.ts',
       'packages/engine/src/rmd/rmd.ts',
-      'packages/engine/src/rmd/applicableAge.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/params/index.ts#rmdStartAgeForBirthYear',
       'packages/engine/src/rmd/rmd.ts#requiredMinimumDistribution',
-      'packages/engine/src/rmd/applicableAge.ts#applicableAgeAttainYears',
     ],
   },
   'irc-408-d-8-B-ii-projection-annual-age-proxy': {
@@ -7335,12 +7332,10 @@ const registry = {
     implementedBy: [
       'packages/engine/src/rmd/rmd.ts',
       'packages/engine/src/projection/simulate.ts',
-      'packages/engine/src/rmd/applicableAge.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/rmd/rmd.ts#requiredMinimumDistribution',
-      'packages/engine/src/rmd/applicableAge.ts#deriveRbdComparison',
     ],
   },
   'irc-401-a-9-C-i-elected-deferral-ignores-attainment-year-distributions': {
