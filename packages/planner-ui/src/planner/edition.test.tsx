@@ -78,6 +78,16 @@ describe('PlannerEdition defaults (no provider)', () => {
     expect(text).toContain('Software license & third-party notices')
     expect(text).toContain('AGPL-3.0')
     expect(container.querySelector('a[href="https://www.gnu.org/licenses/agpl-3.0.html"]')).not.toBeNull()
+    // The methodology link is a public, checkable claim. This catches a
+    // one-sided edit (component or test alone) and the link's contract; it
+    // cannot see the org site, so an org-side route move is the org repo's
+    // redirect obligation, not this suite's.
+    const methodology = container.querySelector('a[href="https://retiregolden.org/methodology/tax-rules/"]')
+    expect(methodology).not.toBeNull()
+    expect(methodology!.textContent).toContain('tax-rule methodology on retiregolden.org')
+    expect(methodology!.getAttribute('target')).toBe('_blank')
+    expect(methodology!.getAttribute('rel')).toBe('noopener noreferrer')
+    expect(text).toContain('the page names the exact engine snapshot it renders')
   })
 })
 
@@ -126,6 +136,10 @@ describe('PlannerEditionProvider overrides', () => {
     expect(text).toContain('Educational use only')
     expect(text).toContain('No warranty')
     expect(text).toContain('Where the numbers come from')
+    // The methodology link is shared substance (same publisher for every
+    // edition), so a host override must not lose it or its claim.
+    expect(container.querySelector('a[href="https://retiregolden.org/methodology/tax-rules/"]')).not.toBeNull()
+    expect(text).toContain('the page names the exact engine snapshot it renders')
   })
 
   it('normalizes an empty or whitespace homeLabel back to the default', async () => {

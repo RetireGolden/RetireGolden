@@ -26,7 +26,24 @@ export function DisclaimerPage() {
       <ul>
         <li>Projections depend entirely on your inputs and assumptions. Small changes in returns, inflation, or longevity produce very different outcomes.</li>
         <li>Monte Carlo success rates are statistics about a simplified model, not probabilities about your actual life.</li>
-        <li>The tax engine covers common federal rules (brackets, Social Security taxation, capital-gains stacking, RMDs, IRMAA, ACA credits) at planning precision, not return-filing precision. State income tax models each state's brackets, standard deduction, Social Security treatment, and major retirement-income exclusions, with a flat-rate override for corrections; credits, local/city taxes, and income-tested exclusions are simplified or omitted. Many real-world provisions are approximated.</li>
+        <li>
+          The tax engine covers common federal rules (brackets, Social Security taxation, capital-gains stacking,
+          RMDs, IRMAA, ACA credits) at planning precision, not return-filing precision. State income tax models each
+          state's brackets, standard deduction, Social Security treatment, and major retirement-income exclusions,
+          with a flat-rate override for corrections; credits, local/city taxes, and income-tested exclusions are
+          simplified or omitted. Many real-world provisions are approximated. The registry behind this is public.
+          The{' '}
+          <a
+            href="https://retiregolden.org/methodology/tax-rules/"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Opens retiregolden.org in a new tab"
+          >
+            tax-rule methodology on retiregolden.org
+          </a>{' '}
+          publishes it rule by rule, each with the authority it cites and its classification, and modeled rules link
+          the tests and code that carry them; the page names the exact engine snapshot it renders.
+        </li>
         <li>Life-expectancy estimates are population statistics with coarse lifestyle adjustments. They say nothing certain about any individual.</li>
         <li>Historical market data in the bootstrap models is approximate and the past does not predict the future.</li>
       </ul>
