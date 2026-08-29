@@ -383,14 +383,16 @@ const STATE_PRIMARY_PUBLISHERS: Readonly<Partial<Record<UsStateCode, readonly st
     'revisor.mn.gov', // Office of the Revisor of Statutes, Minnesota Statutes
   ],
   MT: [
-    // Verified 2026-08-27. `archive.legmt.gov` is the 2013 MCA compilation the
-    // staged fetch actually served for §15-30-2110; the current Code is not
-    // in the staged set. `revenue.mt.gov` is the department's 2026 withholding
-    // notice, admitted because that notice is the source for the federal
-    // standard-deduction effect on Montana taxable income. The `archive.`
-    // subdomain is listed deliberately: this table strips only a leading
-    // `www.`, so the apex would admit nothing that was checked.
-    'archive.legmt.gov', // Montana Legislative Services, archived Montana Code Annotated
+    // Verified 2026-08-29. `mca.legmt.gov` serves the current Montana Code
+    // Annotated (2025 compilation; `archive.legmt.gov` section URLs now 301
+    // there), which unblocked the 2026-08-27 BLOCKED-SOURCE residual and
+    // carries the operative 15-30-2101/2120 text plus the 15-30-2110 repeal
+    // line. `revenue.mt.gov` is the department's 2026 withholding notice,
+    // admitted because that notice is the source for the federal
+    // standard-deduction effect on Montana taxable income. Subdomains are
+    // listed deliberately: this table strips only a leading `www.`, so the
+    // apex would admit nothing that was checked.
+    'mca.legmt.gov', // Montana Legislative Services, current Montana Code Annotated
     'revenue.mt.gov', // Montana Department of Revenue
   ],
   NE: [
