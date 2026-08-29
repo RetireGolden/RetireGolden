@@ -9816,7 +9816,7 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#states.ND',
+      'packages/engine/src/params/state/data/year2026.ts#ND.capitalGainsTaxablePct',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
@@ -11380,7 +11380,7 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#AR',
+      'packages/engine/src/params/state/data/year2026.ts#AR.capitalGainsTaxablePct',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
@@ -11744,7 +11744,6 @@ const registry = {
     ],
     implementedByFunctions: [
       'packages/engine/src/params/state/data/year2026.ts#AZ.capitalGainsTaxablePct',
-      'packages/engine/src/params/state/data/year2026.ts#states.AZ',
       'packages/engine/src/params/state/types.ts#StateTaxParams',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
@@ -15636,6 +15635,7 @@ const registry = {
     ],
     implementedByFunctions: [
       'packages/engine/src/params/state/data/year2026.ts#states.LA',
+      'packages/engine/src/params/state/data/year2026.ts#PUBLIC_PENSION_OVERRIDES.LA',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
       'packages/engine/src/tax/stateTax.ts#retirementExclusion',
     ],

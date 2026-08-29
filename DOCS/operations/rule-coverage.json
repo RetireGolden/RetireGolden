@@ -1126,8 +1126,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "AR",
-              "line": 181
+              "name": "AR.capitalGainsTaxablePct",
+              "line": 192
             }
           ]
         },
@@ -2234,10 +2234,6 @@
             {
               "name": "AZ.capitalGainsTaxablePct",
               "line": 170
-            },
-            {
-              "name": "states.AZ",
-              "line": 156
             }
           ]
         },
@@ -19353,6 +19349,10 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
+              "name": "PUBLIC_PENSION_OVERRIDES.LA",
+              "line": 92
+            },
+            {
               "name": "states.LA",
               "line": 399
             }
@@ -21229,8 +21229,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "states.ND",
-              "line": 637
+              "name": "ND.capitalGainsTaxablePct",
+              "line": 648
             }
           ]
         },
