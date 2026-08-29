@@ -81,8 +81,8 @@ function survivorYearFilter(year: ProjectionResult['years'][number]): boolean {
   return year.people.length > 1 && alive === 1
 }
 
-/** Pre-RMD, post-wage years with no Social Security yet — the early-retirement bridge. */
-function bridgeYearFilter(year: ProjectionResult['years'][number]): boolean {
+/** Pre-RMD, post-wage years with no Social Security yet — the early-retirement bridge. Exported for the cohort-boundary test only. */
+export function bridgeYearFilter(year: ProjectionResult['years'][number]): boolean {
   // Cohort-dependent, not a constant: SECURE 2.0 puts the applicable age at
   // 73 only through the 1959 birth cohort, then 75. ageAttained is year
   // minus birth year, so the birth year falls out of the row.

@@ -2769,11 +2769,13 @@ const registry = {
       'packages/engine/src/params/index.ts',
       'packages/engine/src/insights/detectors/rothBridgeHeadroom.ts',
       'packages/engine/src/decisions/objectives.ts',
+      'packages/engine/src/rmd/applicableAge.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/params/index.ts#rmdStartAgeForBirthYear',
       'packages/engine/src/insights/detectors/rothBridgeHeadroom.ts#rothBridgeHeadroom',
       'packages/engine/src/decisions/objectives.ts#bridgeYearFilter',
+      'packages/engine/src/rmd/applicableAge.ts#applicableAgeAttainYears',
     ],
   },
 

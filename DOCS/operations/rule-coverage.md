@@ -84,9 +84,9 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | Engine source files | 236 |
 | Swept | 100.0% |
 | Grandfathered unswept baseline | 0 |
-| partial | 54 |
-| registered | 56 |
-| rule-free | 126 |
+| partial | 57 |
+| registered | 54 |
+| rule-free | 125 |
 | unswept | 0 |
 
 ## Per-directory rollup
@@ -96,15 +96,15 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | (root) | 3 | 0 | 0 | 3 | 0 |
 | actions | 74 | 22 | 26 | 26 | 0 |
 | allocation | 1 | 0 | 0 | 1 | 0 |
-| decisions | 19 | 2 | 2 | 15 | 0 |
-| insights | 22 | 2 | 3 | 17 | 0 |
+| decisions | 19 | 3 | 1 | 15 | 0 |
+| insights | 22 | 3 | 2 | 17 | 0 |
 | internal | 9 | 2 | 2 | 5 | 0 |
 | ladder | 4 | 2 | 0 | 2 | 0 |
 | longevity | 2 | 1 | 0 | 1 | 0 |
 | model | 3 | 3 | 0 | 0 | 0 |
 | montecarlo | 11 | 1 | 0 | 10 | 0 |
 | params | 8 | 1 | 5 | 2 | 0 |
-| projection | 24 | 7 | 2 | 15 | 0 |
+| projection | 24 | 8 | 2 | 14 | 0 |
 | rmd | 4 | 1 | 3 | 0 | 0 |
 | rules | 6 | 0 | 1 | 5 | 0 |
 | scenarios | 9 | 0 | 0 | 9 | 0 |
@@ -145,9 +145,11 @@ None.
 | actions/retirementActionManualReview.ts | 2026-08-24 | Replacement source-owner and Roth-destination eligibility checks; no record |
 | actions/rothConversionExecution.ts | 2026-08-25 | Positive-basis deferred character and direct conversion vehicle gates; no record |
 | actions/traditionalEmployerPlanPenaltyPrerequisite.ts | 2026-08-24 | Rule of 55, employer-SEPP, permitted methods, public-safety and recapture covered; age-59½ threshold, 10% rate, disability waiver lack records |
+| decisions/generators.ts | 2026-08-29 | QLAC 85 ceiling registered via treas-reg-1-401-a-9-6-q-1-ii-qlac-commences-by-the-85th-birthday naming annuityPurchaseGenerator; the bracket-target list is a search-space choice, but SS_GRID_CLAIM_AGES encodes the statutory 62-70 worker claiming window and stays a residual with claimFactor.ts |
 | decisions/pensionElection.ts | 2026-08-24 | Tax-free direct rollover into traditional IRA; no record |
 | decisions/rothConversionCandidateAdapter.ts | 2026-08-24 | Same-owner Roth destination/date gate; no record |
 | insights/detectors/hecmBufferCandidate.ts | 2026-08-29 | returns null under age 62, the statutory HECM minimum age (12 U.S.C. 1715z-20(b)). Held partial pending an owner scope decision: the registry has held tax statutes only, and admitting housing law is a domain expansion the sweep does not decide |
+| insights/detectors/missingDataBasis.ts | 2026-08-29 | the section 121 coverage classification is registered via irc-121-a-b-principal-residence-eligibility-tests naming this detector (another independent implementation beside tax/propertySale.ts and the simulate path - consolidation candidate). Residual: the detector also gates on ROTH_QUALIFIED_AGE independently, and the Roth 59½ records do not name it |
 | insights/detectors/ssClaimMilestone.ts | 2026-08-24 | Re-derives SS entitlement/eligibility (former-spouse gates, family max, payable months) beyond registry gaps for maritalBenefits/nra |
 | internal/ownedNonRothIraAnnualAttemptSettlement.ts | 2026-08-24 | 408(d)(3)(A)(i) same-owner conversion identity; no record |
 | internal/ownedNonRothIraRuntimeSourceSeries.ts | 2026-08-24 | Records cover QCD and annuity aggregation; residual 408(d)(3)(A)(i) same-owner conversion, 408(d)(3)(C) inherited-rollover bar, and RMD-before-conversion ordering |
@@ -161,12 +163,13 @@ None.
 | params/index.ts | 2026-08-24 | Trustees default SS haircut (2034, 17%); indexFederalTaxPack uses plan inflation not C-CPI-U; convention only in records naming federalTax.ts |
 | projection/annualCashFlowCapture.ts | 2026-08-24 | Form 8606 basis, QCD exclusion, annuity and penalty character composition; no record |
 | projection/compare.ts | 2026-08-27 | after-tax estate haircuts incl. taxable step-up registered (irc-1014-a-1-basis-at-death-fair-market-value); Form 8606 basis exclusion, spousal rollover, HSA non-spouse income remain |
+| projection/flatTax.ts | 2026-08-29 | V1 placeholder whose only importers are test files, so the IRC 86 85 percent inclusion it computes never reaches a user-facing number; kept partial rather than rule-free so the claim stays visible if the file ever gains a production consumer |
 | projection/optimizePlan.ts | 2026-08-27 | Flat 15% LTCG LP rate registered (irc-1-h-optimizer-flat-fifteen-percent-preferential-rate); other optimizer linearizations remain unregistered |
 | projection/optimizerAggregateConversionPromotion.ts | 2026-08-24 | §408A-4 A-6(b) RMD-first, 401(k)(2)(B)(i) distributability, and same-owner Roth destination; no records |
 | projection/ownedIraAnnualPhysicalTransactionInputs.ts | 2026-08-24 | Form 8606 line-7/8 and QCD staging semantics; no record |
 | projection/ownedNonRothIraAnnualObservation.ts | 2026-08-24 | April-15/weekend/Emancipation-Day filing deadline; no record |
 | projection/simulate.ts | 2026-08-26 | QCD/RMD/annuity/contribution/QLAC covered; residual 59½/HSA/Roth-five-year/Rule-of-55 proxies, inherited-Roth post-flip, Medicare age-65, HSA family-limit, spousal/survivor SS |
-| rmd/applicableAge.ts | 2026-08-29 | SECURE 2.0 applicable ages/RBD April-1; born-1959 dual-age contest; 70½ cohort & July-1949 cut. Correction: treas-reg-1-401-a-9-5-d-1-ii and the applicable-age records DO name this file; residual is the RBD April-1 arm and the pre-SECURE cohorts |
+| rmd/applicableAge.ts | 2026-08-29 | named by treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy and, from 2026-08-29, by irc-401-a-9-C-v-applicable-age (applicableAgeAttainYears). Residual: the RBD April-1 arm, the 70½/July-1949 cohorts, and the born-1959 dual-age contest awaiting Announcement 2026-7 |
 | socialSecurity/claimFactor.ts | 2026-08-29 | Correction: usc-42-402-b-2-spousal-half-of-pia and poms-rs-00615-482-arf-crediting-months DO name this file; residual narrows to the worker 62y0m-70y0m claim window and DRC/ARF factor composition |
 | socialSecurity/maritalBenefits.ts | 2026-08-24 | Eligibility rules (10-yr divorce, 9-mo survivor marriage, age gates, remarriage forfeiture) have no records |
 | socialSecurity/piaFromEarnings.ts | 2026-08-27 | AIME pipeline (age 22–61 window, 5 lowest dropped, top-35 years, AWI indexing) not separately registered; the disability-freeze exclusion and post-entitlement recomputation base window ARE registered as approximations |

@@ -76,9 +76,9 @@
   "attestations": {
     "totalFiles": 236,
     "byStatus": {
-      "partial": 54,
-      "registered": 56,
-      "rule-free": 126,
+      "partial": 57,
+      "registered": 54,
+      "rule-free": 125,
       "unswept": 0
     },
     "sweptPct": 100,
@@ -197,6 +197,11 @@
       "note": "Rule of 55, employer-SEPP, permitted methods, public-safety and recapture covered; age-59½ threshold, 10% rate, disability waiver lack records"
     },
     {
+      "path": "decisions/generators.ts",
+      "sweptOn": "2026-08-29",
+      "note": "QLAC 85 ceiling registered via treas-reg-1-401-a-9-6-q-1-ii-qlac-commences-by-the-85th-birthday naming annuityPurchaseGenerator; the bracket-target list is a search-space choice, but SS_GRID_CLAIM_AGES encodes the statutory 62-70 worker claiming window and stays a residual with claimFactor.ts"
+    },
+    {
       "path": "decisions/pensionElection.ts",
       "sweptOn": "2026-08-24",
       "note": "Tax-free direct rollover into traditional IRA; no record"
@@ -210,6 +215,11 @@
       "path": "insights/detectors/hecmBufferCandidate.ts",
       "sweptOn": "2026-08-29",
       "note": "returns null under age 62, the statutory HECM minimum age (12 U.S.C. 1715z-20(b)). Held partial pending an owner scope decision: the registry has held tax statutes only, and admitting housing law is a domain expansion the sweep does not decide"
+    },
+    {
+      "path": "insights/detectors/missingDataBasis.ts",
+      "sweptOn": "2026-08-29",
+      "note": "the section 121 coverage classification is registered via irc-121-a-b-principal-residence-eligibility-tests naming this detector (another independent implementation beside tax/propertySale.ts and the simulate path - consolidation candidate). Residual: the detector also gates on ROTH_QUALIFIED_AGE independently, and the Roth 59½ records do not name it"
     },
     {
       "path": "insights/detectors/ssClaimMilestone.ts",
@@ -277,6 +287,11 @@
       "note": "after-tax estate haircuts incl. taxable step-up registered (irc-1014-a-1-basis-at-death-fair-market-value); Form 8606 basis exclusion, spousal rollover, HSA non-spouse income remain"
     },
     {
+      "path": "projection/flatTax.ts",
+      "sweptOn": "2026-08-29",
+      "note": "V1 placeholder whose only importers are test files, so the IRC 86 85 percent inclusion it computes never reaches a user-facing number; kept partial rather than rule-free so the claim stays visible if the file ever gains a production consumer"
+    },
+    {
       "path": "projection/optimizePlan.ts",
       "sweptOn": "2026-08-27",
       "note": "Flat 15% LTCG LP rate registered (irc-1-h-optimizer-flat-fifteen-percent-preferential-rate); other optimizer linearizations remain unregistered"
@@ -304,7 +319,7 @@
     {
       "path": "rmd/applicableAge.ts",
       "sweptOn": "2026-08-29",
-      "note": "SECURE 2.0 applicable ages/RBD April-1; born-1959 dual-age contest; 70½ cohort & July-1949 cut. Correction: treas-reg-1-401-a-9-5-d-1-ii and the applicable-age records DO name this file; residual is the RBD April-1 arm and the pre-SECURE cohorts"
+      "note": "named by treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy and, from 2026-08-29, by irc-401-a-9-C-v-applicable-age (applicableAgeAttainYears). Residual: the RBD April-1 arm, the 70½/July-1949 cohorts, and the born-1959 dual-age contest awaiting Announcement 2026-7"
     },
     {
       "path": "socialSecurity/claimFactor.ts",
@@ -385,8 +400,8 @@
       "directory": "decisions",
       "files": 19,
       "byStatus": {
-        "partial": 2,
-        "registered": 2,
+        "partial": 3,
+        "registered": 1,
         "rule-free": 15
       }
     },
@@ -394,8 +409,8 @@
       "directory": "insights",
       "files": 22,
       "byStatus": {
-        "partial": 2,
-        "registered": 3,
+        "partial": 3,
+        "registered": 2,
         "rule-free": 17
       }
     },
@@ -452,9 +467,9 @@
       "directory": "projection",
       "files": 24,
       "byStatus": {
-        "partial": 7,
+        "partial": 8,
         "registered": 2,
-        "rule-free": 15
+        "rule-free": 14
       }
     },
     {
@@ -9979,7 +9994,8 @@
       "implementedBy": [
         "packages/engine/src/decisions/objectives.ts",
         "packages/engine/src/insights/detectors/rothBridgeHeadroom.ts",
-        "packages/engine/src/params/index.ts"
+        "packages/engine/src/params/index.ts",
+        "packages/engine/src/rmd/applicableAge.ts"
       ],
       "implementations": [
         {
@@ -10008,12 +10024,37 @@
               "line": 137
             }
           ]
+        },
+        {
+          "path": "packages/engine/src/rmd/applicableAge.ts",
+          "functions": [
+            {
+              "name": "applicableAgeAttainYears",
+              "line": 294
+            }
+          ]
         }
       ],
       "fixtureFiles": [
+        "packages/engine/src/insights/detectors/rothBridgeHeadroom.test.ts",
         "packages/engine/src/params/params.test.ts"
       ],
       "fixtures": [
+        {
+          "path": "packages/engine/src/insights/detectors/rothBridgeHeadroom.test.ts",
+          "line": 41,
+          "note": "detector bridge window ends at the cohort-dependent applicable age",
+          "tests": [
+            {
+              "title": "last included year is age 74 for the first 75-cohort (born 1960)",
+              "line": 50
+            },
+            {
+              "title": "last included year is age 72 for the final 73-cohort (born 1959); the RMD start year is excluded",
+              "line": 57
+            }
+          ]
+        },
         {
           "path": "packages/engine/src/params/params.test.ts",
           "line": 103,
