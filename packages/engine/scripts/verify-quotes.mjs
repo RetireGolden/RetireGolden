@@ -85,10 +85,12 @@ const DEFAULT_DELAY_MS = 1200
 const FETCH_TIMEOUT_MS = 45_000
 
 /**
- * A fetched HTML page that yields less text than this is a shell, a bot
- * challenge, or an error page dressed as a 200. Treating it as a real source
- * would report every quote on it as absent, so it is an unfetchable source
- * instead — assertion 3, and the reason a stub can never masquerade as a pass.
+ * A fetched HTML page yielding less text than this is SUSPECT — usually a
+ * shell, a bot challenge, or an error page dressed as a 200, but sometimes a
+ * genuinely tiny document (a repealed chapter's page is one line). Suspect
+ * pages keep their variants and are judged per quote: a match verifies (with
+ * a stub disclosure in the detail), a miss reports UNFETCHABLE rather than
+ * ABSENT — assertion 3, and the reason a stub can never accuse the registry.
  */
 const MIN_SOURCE_TEXT_CHARS = 2000
 
@@ -364,7 +366,7 @@ function decodeEntities(s) {
  * @param {string} html
  * @returns {string[]}
  */
-function htmlVariants(html) {
+export function htmlVariants(html) {
   const withoutNoise = html
     .replace(/<script[\s\S]*?<\/script>/gi, ' ')
     .replace(/<style[\s\S]*?<\/style>/gi, ' ')
@@ -516,6 +518,10 @@ const cacheKey = (url) => createHash('sha256').update(url).digest('hex').slice(0
  *                                     the publisher for a missing poppler would be a finding
  *                                     about this machine.
  * @property {string[]} variants     Normalised full-text renderings; a quote need match only one.
+ * @property {boolean} [suspectStub] The text was shorter than MIN_SOURCE_TEXT_CHARS. Variants are
+ *                                   still searched — a match on a tiny page is real (a repealed
+ *                                   chapter's page is one line) — but a miss reports UNFETCHABLE
+ *                                   with the stub problem instead of ABSENT.
  * @property {boolean} fromCache
  */
 
@@ -699,9 +705,17 @@ async function loadSource(url, opts) {
   // source behind a verdict that reads like the publisher's fault.
   const longestVariant = variants.reduce((left, right) => (right.length > left.length ? right : left))
   if (longestVariant.length < MIN_SOURCE_TEXT_CHARS) {
+    // Not condemned outright: some documents genuinely ARE this short — a
+    // repealed chapter's page is one line of repeal history. The variants are
+    // kept and verdictFor decides per quote: a quote that MATCHES a tiny page
+    // cannot be a false absence, while a quote that misses reports
+    // UNFETCHABLE with this problem rather than ABSENT, so a shell page
+    // still never accuses the registry.
     return {
       ...base,
-      ok: false,
+      ok: true,
+      suspectStub: true,
+      variants,
       problem: `only ${longestVariant.length} characters of text — a shell or error page, not the document`,
     }
   }
@@ -805,7 +819,17 @@ const ADVISORY = Object.freeze(['PUNCTUATION', 'ELISION-PUNCTUATION'])
  * @param {{id: string, citation: string, url: string, host: string, quotedText: string}} entry
  * @param {Source} source
  */
-function verdictFor(entry, source) {
+export function verdictFor(entry, source) {
+  const decided = verdictForInner(entry, source)
+  // Disclosure, not disqualification: a verified quote on a page the length
+  // heuristic flagged stays verified, and the ledger says where it matched.
+  if (source.suspectStub && decided.verdict !== 'UNFETCHABLE') {
+    return { ...decided, detail: decided.detail + ' (matched on a page below the shell-length threshold)' }
+  }
+  return decided
+}
+
+function verdictForInner(entry, source) {
   if (source.pdfUnreadable) {
     return { verdict: 'PDF-NOT-VERIFIABLE', detail: source.problem ?? 'PDF text could not be extracted' }
   }
@@ -916,6 +940,16 @@ function verdictFor(entry, source) {
       detail:
         'matches only after ignoring a comma, period, semicolon or colon on which the quote and the source disagree',
     }
+  }
+
+  // A miss against a suspect stub is not evidence of absence: the page text
+  // was too short to be trusted as the document (a shell, a challenge page,
+  // an error body). This sits AFTER the truncation and stray-punctuation
+  // rungs on purpose — a short page with a fixable quote defect still gets
+  // its diagnostic verdict — and only the final absence claim is replaced,
+  // so a shell page never turns into an accusation against the registry.
+  if (source.suspectStub) {
+    return { verdict: 'UNFETCHABLE', detail: source.problem ?? 'source text too short to trust' }
   }
 
   return {
@@ -1204,4 +1238,6 @@ async function main() {
   return results.some((r) => SERIOUS.includes(r.verdict)) ? 1 : 0
 }
 
-process.exitCode = await main()
+if (import.meta.main) {
+  process.exitCode = await main()
+}

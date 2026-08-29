@@ -223,20 +223,20 @@ The JSON manifest (rule-coverage.json, version 4) is the machine contract: each 
 
 ## Quote fidelity
 
-Committed ledger generated at 2026-08-29T04:34:12.359Z over 1056 authority entries (1 fetched live, 304 from cache).
+Committed ledger generated at 2026-08-29T13:11:01.480Z over 1056 authority entries (0 fetched live, 305 from cache).
 
-39 serious, 46 advisory, 971 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
+28 serious, 46 advisory, 982 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
 not treated as a CI gate; how to read each verdict: DOCS/operations/quote-fidelity.md.
 
 | Verdict | Class | Count |
 | --- | --- | ---: |
 | ABSENT | serious | 25 |
-| ELISION-EXACT | ok | 59 |
+| ELISION-EXACT | ok | 60 |
 | ELISION-PUNCTUATION | advisory | 4 |
-| EXACT | ok | 706 |
+| EXACT | ok | 714 |
 | PDF-NOT-VERIFIABLE | advisory | 5 |
-| PDF-WORD-LEVEL | ok | 206 |
+| PDF-WORD-LEVEL | ok | 208 |
 | PUNCTUATION | advisory | 37 |
-| UNFETCHABLE | serious | 14 |
+| UNFETCHABLE | serious | 3 |
 
 Regenerate: pnpm verify:quotes -- --json > DOCS/operations/quote-fidelity-ledger.json (network required), then pnpm rules:coverage.

@@ -1,18 +1,18 @@
 {
-  "generatedAt": "2026-08-29T04:34:12.359Z",
+  "generatedAt": "2026-08-29T13:11:01.480Z",
   "recordCount": 409,
   "urlCount": 305,
-  "fetched": 1,
-  "cached": 304,
+  "fetched": 0,
+  "cached": 305,
   "entryCount": 1056,
   "counts": {
-    "EXACT": 706,
+    "EXACT": 714,
     "PUNCTUATION": 37,
-    "UNFETCHABLE": 14,
+    "PDF-WORD-LEVEL": 208,
     "ELISION-PUNCTUATION": 4,
-    "PDF-WORD-LEVEL": 206,
-    "ELISION-EXACT": 59,
+    "ELISION-EXACT": 60,
     "ABSENT": 25,
+    "UNFETCHABLE": 3,
     "PDF-NOT-VERIFIABLE": 5
   },
   "hostConventions": {
@@ -82,10 +82,10 @@
       "id": "irc-170-b-1-I-floor-ordering",
       "citation": "JCT, General Explanation of P.L. 119-21 (JCS-1-26)",
       "host": "www.jct.gov",
-      "url": "https://www.jct.gov/publications/2026/s-1-26/",
+      "url": "https://www.jct.gov/getattachment/16f5eded-d2f9-425e-80a2-83a930056c38/s-1-26.pdf",
       "quoteSha256": "c74d046627f38801",
-      "verdict": "UNFETCHABLE",
-      "detail": "HTTP 403",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
       "diagnosis": null
     },
     {
@@ -102,10 +102,10 @@
       "id": "irc-170-d-1-C-floor-carryforward-gate",
       "citation": "JCT, General Explanation of P.L. 119-21 (JCS-1-26)",
       "host": "www.jct.gov",
-      "url": "https://www.jct.gov/publications/2026/s-1-26/",
+      "url": "https://www.jct.gov/getattachment/16f5eded-d2f9-425e-80a2-83a930056c38/s-1-26.pdf",
       "quoteSha256": "255ce7a54486dcc7",
-      "verdict": "UNFETCHABLE",
-      "detail": "HTTP 403",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
       "diagnosis": null
     },
     {
@@ -6424,8 +6424,8 @@
       "host": "www.ilga.gov",
       "url": "https://www.ilga.gov/Legislation/ilcs/documents/003500050K203.htm",
       "quoteSha256": "af6ec3bd3b93c85a",
-      "verdict": "UNFETCHABLE",
-      "detail": "HTTP 404",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -6434,8 +6434,8 @@
       "host": "www.ilga.gov",
       "url": "https://www.ilga.gov/Legislation/ilcs/documents/003500050K203.htm",
       "quoteSha256": "b20aa287a892d09c",
-      "verdict": "UNFETCHABLE",
-      "detail": "HTTP 404",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -6764,8 +6764,8 @@
       "host": "www.tn.gov",
       "url": "https://www.tn.gov/revenue/taxes/hall-income-tax/due-date-and-tax-rates.html",
       "quoteSha256": "2284aa3871cc969d",
-      "verdict": "UNFETCHABLE",
-      "detail": "request failed: TypeError: fetch failed",
+      "verdict": "ELISION-EXACT",
+      "detail": "2 segments, every one a literal substring",
       "diagnosis": null
     },
     {
@@ -7824,8 +7824,8 @@
       "host": "leginfo.legislature.ca.gov",
       "url": "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=RTC&sectionNum=17087.",
       "quoteSha256": "059c728d7540c50a",
-      "verdict": "UNFETCHABLE",
-      "detail": "only 1657 characters of text — a shell or error page, not the document",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source (matched on a page below the shell-length threshold)",
       "diagnosis": null
     },
     {
@@ -9704,8 +9704,8 @@
       "host": "www.legis.la.gov",
       "url": "https://www.legis.la.gov/legis/Law.aspx?d=102134",
       "quoteSha256": "5cbdc46dd6903d52",
-      "verdict": "UNFETCHABLE",
-      "detail": "only 1063 characters of text — a shell or error page, not the document",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source (matched on a page below the shell-length threshold)",
       "diagnosis": null
     },
     {
@@ -10044,8 +10044,8 @@
       "host": "www.gencourt.state.nh.us",
       "url": "https://www.gencourt.state.nh.us/rsa/html/V/77/77-mrg.htm",
       "quoteSha256": "459ca8b623847a5b",
-      "verdict": "UNFETCHABLE",
-      "detail": "only 168 characters of text — a shell or error page, not the document",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source (matched on a page below the shell-length threshold)",
       "diagnosis": null
     },
     {
@@ -10054,8 +10054,8 @@
       "host": "www.gencourt.state.nh.us",
       "url": "https://www.gencourt.state.nh.us/rsa/html/V/77/77-mrg.htm",
       "quoteSha256": "513d7314aa5a5e34",
-      "verdict": "UNFETCHABLE",
-      "detail": "only 168 characters of text — a shell or error page, not the document",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source (matched on a page below the shell-length threshold)",
       "diagnosis": null
     },
     {
@@ -10214,8 +10214,8 @@
       "host": "webserver.rilegislature.gov",
       "url": "https://webserver.rilegislature.gov/Statutes/TITLE44/44-30/44-I/44-30-1.htm",
       "quoteSha256": "800b650f16874a5a",
-      "verdict": "UNFETCHABLE",
-      "detail": "only 1574 characters of text — a shell or error page, not the document",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source (matched on a page below the shell-length threshold)",
       "diagnosis": null
     },
     {
@@ -10284,8 +10284,8 @@
       "host": "incometax.utah.gov",
       "url": "https://incometax.utah.gov/file-pay/tax-rates/",
       "quoteSha256": "8b71dbecb859e92d",
-      "verdict": "UNFETCHABLE",
-      "detail": "only 1744 characters of text — a shell or error page, not the document",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source (matched on a page below the shell-length threshold)",
       "diagnosis": null
     },
     {

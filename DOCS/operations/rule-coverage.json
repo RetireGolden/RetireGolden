@@ -7290,7 +7290,7 @@
         {
           "kind": "legislativeHistory",
           "citation": "JCT, General Explanation of P.L. 119-21 (JCS-1-26)",
-          "url": "https://www.jct.gov/publications/2026/s-1-26/"
+          "url": "https://www.jct.gov/getattachment/16f5eded-d2f9-425e-80a2-83a930056c38/s-1-26.pdf"
         }
       ]
     },
@@ -7475,7 +7475,7 @@
         {
           "kind": "legislativeHistory",
           "citation": "JCT, General Explanation of P.L. 119-21 (JCS-1-26)",
-          "url": "https://www.jct.gov/publications/2026/s-1-26/"
+          "url": "https://www.jct.gov/getattachment/16f5eded-d2f9-425e-80a2-83a930056c38/s-1-26.pdf"
         }
       ]
     },
@@ -29820,19 +29820,19 @@
     }
   ],
   "quoteFidelity": {
-    "generatedAt": "2026-08-29T04:34:12.359Z",
+    "generatedAt": "2026-08-29T13:11:01.480Z",
     "entryCount": 1056,
-    "fetched": 1,
-    "cached": 304,
+    "fetched": 0,
+    "cached": 305,
     "counts": {
       "ABSENT": 25,
-      "ELISION-EXACT": 59,
+      "ELISION-EXACT": 60,
       "ELISION-PUNCTUATION": 4,
-      "EXACT": 706,
+      "EXACT": 714,
       "PDF-NOT-VERIFIABLE": 5,
-      "PDF-WORD-LEVEL": 206,
+      "PDF-WORD-LEVEL": 208,
       "PUNCTUATION": 37,
-      "UNFETCHABLE": 14
+      "UNFETCHABLE": 3
     }
   }
 }

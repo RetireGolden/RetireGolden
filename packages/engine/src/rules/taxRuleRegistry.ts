@@ -304,7 +304,7 @@ const registry = {
     }, {
       kind: 'legislativeHistory',
       citation: 'JCT, General Explanation of P.L. 119-21 (JCS-1-26)',
-      url: 'https://www.jct.gov/publications/2026/s-1-26/',
+      url: 'https://www.jct.gov/getattachment/16f5eded-d2f9-425e-80a2-83a930056c38/s-1-26.pdf',
       quotedText:
         'Charitable contributions that exceed the applicable percentage limit generally may be carried forward for up to five years.',
     }],
@@ -336,7 +336,7 @@ const registry = {
     }, {
       kind: 'legislativeHistory',
       citation: 'JCT, General Explanation of P.L. 119-21 (JCS-1-26)',
-      url: 'https://www.jct.gov/publications/2026/s-1-26/',
+      url: 'https://www.jct.gov/getattachment/16f5eded-d2f9-425e-80a2-83a930056c38/s-1-26.pdf',
       quotedText:
         'If a taxpayer has excess contributions in a taxable year, the taxpayer is permitted to carry forward the amount disallowed by the 0.5 percent floor.',
     }],
