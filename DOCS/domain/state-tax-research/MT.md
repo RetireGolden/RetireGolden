@@ -2,6 +2,27 @@
 
 Tax year: 2025. Researched 2026-06-13.
 
+> **2026 correction (registry intake, 2026-08-29; supersedes this document's Social Security and
+> subtraction claims below):** current law was verified against the 2025 Montana Code Annotated at
+> `mca.legmt.gov`. Three claims below describe PRE-2024 law that SB 399 (Secs. 65, 70(1), Ch. 503,
+> L. 2021) repealed with former 15-30-2110:
+>
+> 1. **There is NO income-tested Social Security subtraction.** 15-30-2120(3) contains no Social
+>    Security item of any kind; the $25k/$32k tiered subtraction described below (and by the
+>    accountinginsights citation) died with 15-30-2110. `taxesSocialSecurity: true` is exact under
+>    current law, not a conservative simplification.
+> 2. **The base is federal TAXABLE income, not federal AGI.** 15-30-2101(22): Montana taxable
+>    income means federal taxable income adjusted as provided in 15-30-2120. The federal standard
+>    deduction therefore flows through by construction (`standardDeductionConformity: 'federal'`).
+> 3. **The age-65 subtraction is 15-30-2120(3)(g): $5,500 per taxpayer 65+, inflation-adjusted**
+>    under 15-30-2120(7) (rounded to the nearest $10), so the operative figure exceeds the floor.
+>    Not modeled; registered as `mt-mca-15-30-2120-3-g-age-65-subtraction`
+>    (approximated/overstatesTax, produced pin in stateTax.rules.test.ts).
+>
+> Registry records: `mt-mca-15-30-2120-federal-taxable-income-base` (supersedes
+> `mt-mca-15-30-2110-federal-agi-social-security`) and the (3)(g) record above. The registry is
+> canon; this document remains discovery history.
+
 > **2026 update (staleness sweep, 2026-07-16):** HB 337 (2025 session) rewrote the brackets: 2026 =
 > **4.7% / 5.65%** with the threshold widened to **$47,500 single / $95,000 MFJ**; 2027 steps again to
 > 4.7% / 5.4% at $65,000 / $130,000. The 2026 pack encodes the 2026 values, and the standard deduction

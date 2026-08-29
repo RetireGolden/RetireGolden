@@ -2300,7 +2300,7 @@ const MT_SS_OTHER = 90_000
 const MT_SS = 40_000
 const MT_SS_FEDERALLY_TAXABLE = 0.85 * MT_SS
 
-describeRule('mt-mca-15-30-2110-federal-agi-social-security', {
+describeRule('mt-mca-15-30-2120-federal-taxable-income-base', {
   readings: {
     federallyTaxableShareInTheBase:
       mtSingleTax(MT_SS_OTHER + MT_SS_FEDERALLY_TAXABLE - MT_DEDUCTION),
@@ -2315,7 +2315,7 @@ describeRule('mt-mca-15-30-2110-federal-agi-social-security', {
     agesAlive: [70],
   })
 
-  it('starts Montana from federal AGI, so federally taxable Social Security stays in', () => {
+  it('starts Montana from federal taxable income, so federally taxable Social Security stays in', () => {
     expect(computeStateTax(pack('MT'), scenario)).toBeCloseTo(accepted, 6)
     expect(computeStateTaxableIncome(pack('MT'), scenario))
       .toBeCloseTo(MT_SS_OTHER + MT_SS_FEDERALLY_TAXABLE - MT_DEDUCTION, 6)
@@ -2331,6 +2331,34 @@ describeRule('mt-mca-15-30-2110-federal-agi-social-security', {
     expect(pack('MT').standardDeductionConformity).toBe('federal')
     const projected = conformStateStandardDeduction(pack('MT'), FEDERAL_AGE65_ADDITION, INFLATION_SCALE)
     expect(projected.standardDeduction.single).toBeCloseTo(MT_DEDUCTION * INFLATION_SCALE, 6)
+  })
+})
+
+// 15-30-2120(3)(g) grants this 65-year-old an additional $5,500 subtraction
+// (the statutory floor; 15-30-2120(7) inflates it annually). The pack has no
+// age-based-subtraction mechanism, so the full base stays taxable.
+const MT_AGE65_INCOME = 90_000
+const MT_AGE65_SUBTRACTION_FLOOR = 5_500
+
+describeRule('mt-mca-15-30-2120-3-g-age-65-subtraction', {
+  readings: {
+    statuteSubtractsTheAgeSixtyFiveFloor:
+      MT_AGE65_INCOME - MT_DEDUCTION - MT_AGE65_SUBTRACTION_FLOOR,
+    packLeavesTheFullBaseTaxable: MT_AGE65_INCOME - MT_DEDUCTION,
+  },
+  accepted: 'statuteSubtractsTheAgeSixtyFiveFloor',
+  produced: 'packLeavesTheFullBaseTaxable',
+  note: 'age-65 additional subtraction, 15-30-2120(3)(g) floor',
+}, ({ accepted, produced }) => {
+  const scenario = input({
+    state: 'MT',
+    ordinaryIncome: MT_AGE65_INCOME,
+    agesAlive: [65],
+  })
+
+  it('pins the missing Montana age-65 subtraction', () => {
+    expect(computeStateTaxableIncome(pack('MT'), scenario)).toBeCloseTo(produced, 6)
+    expect(computeStateTaxableIncome(pack('MT'), scenario)).not.toBeCloseTo(accepted, 6)
   })
 })
 

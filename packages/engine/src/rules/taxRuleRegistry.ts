@@ -15855,28 +15855,32 @@ const registry = {
     ],
   },
 
-  'mt-mca-15-30-2110-federal-agi-social-security': {
-    title: 'Montana starts from federal AGI, so federally taxable Social Security is in the base',
+  'mt-mca-15-30-2120-federal-taxable-income-base': {
+    title: 'Montana starts from federal taxable income, so federally taxable Social Security stays in the base',
     statement:
-      'Montana adjusted gross income is the taxpayer\'s federal adjusted gross income, and married taxpayers who must include part of their Social Security benefits in federal AGI are told how to split that federal base on separate Montana returns — which is only intelligible if the federally taxable share is in Montana AGI. The pack encodes that as `taxesSocialSecurity: true`. The 2026 department notice also states that changes to the federal standard deduction affect Montana taxable income, which is why the pack is tagged `standardDeductionConformity: \'federal\'`. The 2013 compilation of this section still prints a $3,600 pension exclusion the 2026 pack does not carry; that compilation is not authority for 2026 pension treatment and this record does not adopt it.',
+      'Montana taxable income means federal taxable income adjusted as provided in 15-30-2120, and the subtraction list in 15-30-2120(3) contains no Social Security item of any kind, so the federally taxable share of benefits stays in the Montana base - `taxesSocialSecurity: true`. Starting from federal TAXABLE income also imports the federal standard deduction directly, which is what `standardDeductionConformity: \'federal\'` encodes and what the 2026 department withholding notice confirms. This record supersedes mt-mca-15-30-2110-federal-agi-social-security: former 15-30-2110 (the federal-AGI starting point, the income-tested Social Security subtraction the research corpus described, and the $3,600 pension exclusion its 2013 compilation printed) was repealed by Secs. 65 and 70(1) of Ch. 503, L. 2021 (SB 399), so under current law those reliefs are a NO-GRANT, not an unmodeled subtraction - which closes the BLOCKED-SOURCE residual the predecessor record carried. The age-65 subtraction current law DOES grant is registered separately as mt-mca-15-30-2120-3-g-age-65-subtraction.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
-    conventionRationale:
-      'Queued residual (BLOCKED-SOURCE): research at DOCS/domain/state-tax-research/MT.md lines 39-54 names an income-tested Social Security subtraction that would reduce Montana tax for lower-income retirees while the pack leaves the federally taxable share in. Neither staged primary for this record — the 2013 MCA compilation at archive.legmt.gov nor the 2026 revenue.mt.gov withholding notice — carries the operative subtraction text, so no separate approximated record is registered from those files and the research doc is not quoted as authority.',
+    conventionRationale: null,
     jurisdiction: 'state:MT',
     authority: [{
       kind: 'statute',
-      citation: 'Mont. Code Ann. 15-30-2110(1) (2013 compilation)',
-      url: 'https://archive.legmt.gov/bills/2013/mca/15/30/15-30-2110.htm',
+      citation: 'Mont. Code Ann. 15-30-2101(22) (2025)',
+      url: 'https://mca.legmt.gov/bills/mca/title_0150/chapter_0300/part_0210/section_0010/0150-0300-0210-0010.html',
       quotedText:
-        'Subject to subsection (13), adjusted gross income is the taxpayer\'s federal adjusted gross income as defined in section 62 of the Internal Revenue Code, 26 U.S.C. 62, and in addition includes the following:',
+        '"Montana taxable income" means federal taxable income as determined for federal income tax purposes and adjusted as provided in 15-30-2120',
     }, {
       kind: 'statute',
-      citation: 'Mont. Code Ann. 15-30-2110(5) (2013 compilation)',
-      url: 'https://archive.legmt.gov/bills/2013/mca/15/30/15-30-2110.htm',
+      citation: 'Mont. Code Ann. 15-30-2120(1) (2025)',
+      url: 'https://mca.legmt.gov/bills/mca/title_0150/chapter_0300/part_0210/section_0200/0150-0300-0210-0200.html',
       quotedText:
-        'Married taxpayers filing a joint federal return who are required to include part of their social security benefits or part of their tier 1 railroad retirement benefits in federal adjusted gross income may split the federal base used in calculation of federal taxable social security benefits or federal taxable tier 1 railroad retirement benefits when they file separate Montana income tax returns. The federal base must be split equally on the Montana return.',
+        'The items in subsection (2) are added to and the items in subsection (3) are subtracted from federal taxable income to determine Montana taxable income.',
+    }, {
+      kind: 'statute',
+      citation: 'Mont. Code Ann. 15-30-2110 (repealed) (2025)',
+      url: 'https://mca.legmt.gov/bills/mca/title_0150/chapter_0300/part_0210/section_0100/0150-0300-0210-0100.html',
+      quotedText: 'Repealed. Secs. 65, 70(1), Ch. 503, L. 2021.',
     }, {
       kind: 'stateAgencyPublication',
       citation: 'Montana Department of Revenue, Updated Montana Wage Withholding Tables and MW-4 Now Available (2026)',
@@ -15887,7 +15891,7 @@ const registry = {
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-27',
+    verifiedOn: '2026-08-29',
     implementedBy: [
       'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/params/state/data/year2026.ts',
@@ -15896,6 +15900,42 @@ const registry = {
     implementedByFunctions: [
       'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
       'packages/engine/src/params/state/index.ts#conformStateStandardDeduction',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+    ],
+  },
+
+  'mt-mca-15-30-2120-3-g-age-65-subtraction': {
+    title: 'Montana subtracts $5,500 per taxpayer at 65, inflation-adjusted; the pack has no such knob',
+    statement:
+      'For each taxpayer that has attained the age of 65, 15-30-2120(3)(g) subtracts an additional $5,500 from federal taxable income, and 15-30-2120(7) directs the department to multiply that subtraction by the inflation factor each year (rounded to the nearest $10), so the operative figure grows above the statutory floor. The pack carries `retirement: { kind: \'none\' }` and the schema has no age-based-subtraction mechanism at all, so the engine taxes the full base. Produced pin: on the fixture household (single, age 65, $90,000 ordinary income, $16,100 federal-conformed deduction) the engine leaves Montana taxable income at $73,900 where the statute reads at most $68,400 - overstating tax by the top-bracket rate on the subtraction, about $311 at 5.65% on the $5,500 floor alone, and by more once the (7) inflation factor lifts it. A married couple who have both attained 65 doubles the gap.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'overstatesTax',
+    conventionRationale:
+      'The record pins the $5,500 statutory floor rather than the department\'s inflation-adjusted figure for the tax year: the floor is in the quoted statute, while the adjusted amount is published administratively under 15-30-2120(7) and no primary source for the 2026 figure is staged. The floor understates the size of the overstatement, never the direction.',
+    jurisdiction: 'state:MT',
+    authority: [{
+      kind: 'statute',
+      citation: 'Mont. Code Ann. 15-30-2120(3)(g) (2025)',
+      url: 'https://mca.legmt.gov/bills/mca/title_0150/chapter_0300/part_0210/section_0200/0150-0300-0210-0200.html',
+      quotedText: 'for each taxpayer that has attained the age of 65, an additional subtraction of $5,500;',
+    }, {
+      kind: 'statute',
+      citation: 'Mont. Code Ann. 15-30-2120(7)(a) (2025)',
+      url: 'https://mca.legmt.gov/bills/mca/title_0150/chapter_0300/part_0210/section_0200/0150-0300-0210-0200.html',
+      quotedText:
+        'By November 1 of each year, the department shall multiply the subtractions from federal taxable income in subsections (3)(g) and (3)(o) by the inflation factor for that tax year for a taxpayer that either: (i) has attained the age of 65; or (ii) is a qualified volunteer firefighter or volunteer emergency care provider.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-29',
+    implementedBy: [
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#MT',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
