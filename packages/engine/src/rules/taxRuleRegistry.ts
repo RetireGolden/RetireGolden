@@ -1142,9 +1142,9 @@ const registry = {
     ],
   },
   'form-8606-line-7-owned-ira-movement-staging': {
-    title: 'Owned IRA distributions stage on Form 8606 line 7 and conversions are excluded from it',
+    title: 'Owned IRA ordinary distributions stage on Form 8606 line 7',
     statement:
-      'A positive ordinary withdrawal executed from the owner\'s non-Roth IRA pool is staged as a Form 8606 line 7 distribution candidate for annual basis characterization, and amounts converted to a Roth IRA are not staged as line 7 distributions.',
+      'A positive ordinary withdrawal executed from the owner\'s non-Roth IRA pool is staged as a Form 8606 line 7 distribution candidate for annual basis characterization. Which staged movements are excluded from line 7 (conversions among them) is the separately registered line-7-versus-line-8 staging split.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -1156,12 +1156,6 @@ const registry = {
       url: 'https://www.irs.gov/pub/irs-pdf/f8606.pdf',
       quotedText:
         'Enter your distributions from traditional IRAs in 2025. Do not include rollovers (but do include certain 2025 retirement plan distribution repayments treated as rollovers (see instructions)). Also, do not include qualified charitable distributions; a one-time distribution to fund an HSA; conversions to a Roth IRA; certain returned contributions; or recharacterizations of traditional IRA contributions.',
-    }, {
-      kind: 'formInstruction',
-      citation: 'Instructions for Form 8606 (2025), Line 7',
-      url: 'https://www.irs.gov/pub/irs-pdf/i8606.pdf',
-      quotedText:
-        'Don\u2019t include any of the following on line 7 \u2026 Distributions that you converted to a Roth IRA.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,

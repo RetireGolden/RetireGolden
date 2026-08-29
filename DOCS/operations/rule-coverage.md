@@ -136,7 +136,7 @@ None.
 | actions/ownedNonRothIraAnnualCandidateTransaction.ts | 2026-08-29 | Owned traditional/SEP/SIMPLE IRA source scope remains unregistered; line-7 staging is registered where it is enforced (the movement stager), and this wrapper enforces no line semantics itself |
 | actions/ownedNonRothIraAnnualFilingEvidence.ts | 2026-08-29 | Prior-year contribution window covered; the January-1 opening-basis requirement is an engine convention (408(d)(2)(C) computes values as of the close of the year, so the calendar anchor here is architecture, not statute) and stays unregistered, as does the owner-wide non-inherited pool scope |
 | actions/ownedNonRothIraAnnualFilingSourceResolver.ts | 2026-08-29 | Filing source restricted to owned non-inherited traditional IRA pool; the scope claim has no record |
-| actions/ownedNonRothIraAnnualPhysicalTransaction.ts | 2026-08-29 | Same-owner Roth destination and designated-Roth vehicle refusal registered under irc-408-d-3-A-i and irc-408A-d-3-B; Form 8606 line-7/line-8 categorization and QCD charitable-debit scope remain unregistered |
+| actions/ownedNonRothIraAnnualPhysicalTransaction.ts | 2026-08-29 | Same-owner Roth destination and designated-Roth vehicle refusal registered under irc-408-d-3-A-i and irc-408A-d-3-B, and line-7/line-8 categorization under form-8606-lines-7-and-8-distinct-distribution-staging; QCD charitable-debit scope remains unregistered |
 | actions/ownedNonRothIraAnnualPlanCoordinator.ts | 2026-08-29 | Owner-wide pool excludes inherited IRAs; Form 8606 numerator/denominator and line-7/line-8 stacking; exact age-59½ threshold; no record |
 | actions/ownedNonRothIraAnnualPostCandidateEvidence.ts | 2026-08-29 | Contribution window covered; Form 8606 lines 1/4/6/7/9, owner-wide pool, and explicit zero line 8; no record |
 | actions/ownedNonRothIraMovementCandidate.ts | 2026-08-29 | Line-7 staging of executed owned-IRA withdrawals registered under form-8606-line-7-owned-ira-movement-staging; the owned traditional/SEP/SIMPLE source-scope claim remains unregistered |
@@ -218,9 +218,9 @@ The JSON manifest (rule-coverage.json, version 4) is the machine contract: each 
 
 ## Quote fidelity
 
-Committed ledger generated at 2026-08-29T17:24:43.884Z over 1058 authority entries (0 fetched live, 306 from cache).
+Committed ledger generated at 2026-08-29T17:39:16.376Z over 1057 authority entries (0 fetched live, 306 from cache).
 
-28 serious, 46 advisory, 984 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
+28 serious, 46 advisory, 983 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
 not treated as a CI gate; how to read each verdict: DOCS/operations/quote-fidelity.md.
 
 | Verdict | Class | Count |
@@ -230,7 +230,7 @@ not treated as a CI gate; how to read each verdict: DOCS/operations/quote-fideli
 | ELISION-PUNCTUATION | advisory | 4 |
 | EXACT | ok | 714 |
 | PDF-NOT-VERIFIABLE | advisory | 5 |
-| PDF-WORD-LEVEL | ok | 210 |
+| PDF-WORD-LEVEL | ok | 209 |
 | PUNCTUATION | advisory | 37 |
 | UNFETCHABLE | serious | 3 |
 

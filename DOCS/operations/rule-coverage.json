@@ -154,7 +154,7 @@
     {
       "path": "actions/ownedNonRothIraAnnualPhysicalTransaction.ts",
       "sweptOn": "2026-08-29",
-      "note": "Same-owner Roth destination and designated-Roth vehicle refusal registered under irc-408-d-3-A-i and irc-408A-d-3-B; Form 8606 line-7/line-8 categorization and QCD charitable-debit scope remain unregistered"
+      "note": "Same-owner Roth destination and designated-Roth vehicle refusal registered under irc-408-d-3-A-i and irc-408A-d-3-B, and line-7/line-8 categorization under form-8606-lines-7-and-8-distinct-distribution-staging; QCD charitable-debit scope remains unregistered"
     },
     {
       "path": "actions/ownedNonRothIraAnnualPlanCoordinator.ts",
@@ -4042,7 +4042,7 @@
     },
     {
       "id": "form-8606-line-7-owned-ira-movement-staging",
-      "title": "Owned IRA distributions stage on Form 8606 line 7 and conversions are excluded from it",
+      "title": "Owned IRA ordinary distributions stage on Form 8606 line 7",
       "classification": "settled",
       "errorDirection": null,
       "conventionRationale": null,
@@ -4088,11 +4088,6 @@
           "kind": "formInstruction",
           "citation": "Form 8606 (2025), line 7",
           "url": "https://www.irs.gov/pub/irs-pdf/f8606.pdf"
-        },
-        {
-          "kind": "formInstruction",
-          "citation": "Instructions for Form 8606 (2025), Line 7",
-          "url": "https://www.irs.gov/pub/irs-pdf/i8606.pdf"
         }
       ]
     },
@@ -30062,8 +30057,8 @@
     }
   ],
   "quoteFidelity": {
-    "generatedAt": "2026-08-29T17:24:43.884Z",
-    "entryCount": 1058,
+    "generatedAt": "2026-08-29T17:39:16.376Z",
+    "entryCount": 1057,
     "fetched": 0,
     "cached": 306,
     "counts": {
@@ -30072,7 +30067,7 @@
       "ELISION-PUNCTUATION": 4,
       "EXACT": 714,
       "PDF-NOT-VERIFIABLE": 5,
-      "PDF-WORD-LEVEL": 210,
+      "PDF-WORD-LEVEL": 209,
       "PUNCTUATION": 37,
       "UNFETCHABLE": 3
     }
