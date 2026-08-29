@@ -1,17 +1,16 @@
 {
-  "generatedAt": "2026-08-29T17:39:16.376Z",
+  "generatedAt": "2026-08-29T18:48:29.368Z",
   "recordCount": 410,
-  "urlCount": 306,
+  "urlCount": 301,
   "fetched": 0,
-  "cached": 306,
+  "cached": 301,
   "entryCount": 1057,
   "counts": {
-    "EXACT": 714,
-    "PUNCTUATION": 37,
-    "PDF-WORD-LEVEL": 209,
+    "EXACT": 734,
+    "PUNCTUATION": 36,
+    "PDF-WORD-LEVEL": 212,
     "ELISION-PUNCTUATION": 4,
-    "ELISION-EXACT": 60,
-    "ABSENT": 25,
+    "ELISION-EXACT": 63,
     "UNFETCHABLE": 3,
     "PDF-NOT-VERIFIABLE": 5
   },
@@ -1151,26 +1150,22 @@
     {
       "id": "irc-1411-a-net-investment-income-tax",
       "citation": "IRC 1411(a)(1)",
-      "host": "www.law.cornell.edu",
-      "url": "https://www.law.cornell.edu/uscode/text/26/1411",
-      "quoteSha256": "ad2c636e891ffa0a",
-      "verdict": "PUNCTUATION",
-      "detail": "matches only after: dash-spacing",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1411&num=0&edition=prelim",
+      "quoteSha256": "ee5a06ab6071ae01",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
       "id": "irc-1411-a-net-investment-income-tax",
       "citation": "IRC 1411(b)",
-      "host": "www.law.cornell.edu",
-      "url": "https://www.law.cornell.edu/uscode/text/26/1411",
-      "quoteSha256": "0e633f62c11b6582",
-      "verdict": "ABSENT",
-      "detail": "the passage does not appear on the page",
-      "diagnosis": {
-        "matchedWords": 2,
-        "totalWords": 63,
-        "continuation": "\"threshold amount\" means-(1) in the case of a taxpayer making a joint return under section 6013 or a surviving spouse (as defined in section 2(a)), $250,000, (2) in the case of a"
-      }
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1411&num=0&edition=prelim",
+      "quoteSha256": "385827aebf4d520c",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
     },
     {
       "id": "irc-1411-tax-exempt-interest-outside-both-niit-legs",
@@ -1215,16 +1210,12 @@
     {
       "id": "irc-1211-b-capital-loss-ordinary-offset",
       "citation": "IRC 1211(b)",
-      "host": "www.law.cornell.edu",
-      "url": "https://www.law.cornell.edu/uscode/text/26/1211",
-      "quoteSha256": "d6c275f8b6e6a59b",
-      "verdict": "ABSENT",
-      "detail": "the passage does not appear on the page",
-      "diagnosis": {
-        "matchedWords": 43,
-        "totalWords": 68,
-        "continuation": "$3,000 ($1,500 in the case of a married individual filing a separate return), or (2) the excess of such losses over such gains. (aug. 16, 1954, ch. 736, 68a stat. 321; pub. l. 91-"
-      }
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1211&num=0&edition=prelim",
+      "quoteSha256": "aa82e19d96b012c2",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
     },
     {
       "id": "irc-1212-b-capital-loss-carryforward",
@@ -1569,23 +1560,19 @@
     {
       "id": "irc-401-a-9-C-v-applicable-age",
       "citation": "IRC 401(a)(9)(C)(v)",
-      "host": "www.law.cornell.edu",
-      "url": "https://www.law.cornell.edu/uscode/text/26/401",
-      "quoteSha256": "2285906db989758e",
-      "verdict": "ABSENT",
-      "detail": "the passage does not appear on the page",
-      "diagnosis": {
-        "matchedWords": 26,
-        "totalWords": 45,
-        "continuation": "(ii) in the case of an individual who attains age 74 after december 31, 2032, the applicable age is 75. (d) life expectancy.-for purposes of this paragraph, the life expectancy of"
-      }
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section401&num=0&edition=prelim",
+      "quoteSha256": "ab683d06842fc511",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
     },
     {
       "id": "irc-63-f-additional-standard-deduction-aged",
       "citation": "IRC 63(f)(1)",
-      "host": "www.law.cornell.edu",
-      "url": "https://www.law.cornell.edu/uscode/text/26/63",
-      "quoteSha256": "aa24b7772cfd39e2",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section63&num=0&edition=prelim",
+      "quoteSha256": "14bee43ddf082f16",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null
@@ -1593,16 +1580,12 @@
     {
       "id": "irc-63-f-additional-standard-deduction-aged",
       "citation": "IRC 63(f)(3)",
-      "host": "www.law.cornell.edu",
-      "url": "https://www.law.cornell.edu/uscode/text/26/63",
-      "quoteSha256": "e7a14683cf51f86f",
-      "verdict": "ABSENT",
-      "detail": "the passage does not appear on the page",
-      "diagnosis": {
-        "matchedWords": 25,
-        "totalWords": 30,
-        "continuation": "\"$750\" for \"$600\". (4) blindness defined for purposes of this subsection, an individual is blind only if his central visual acuity does not exceed 20/200 in the better eye with co"
-      }
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section63&num=0&edition=prelim",
+      "quoteSha256": "f1e6934fb0c30c09",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
     },
     {
       "id": "irc-72-t-1-additional-tax-on-includible-portion",
@@ -1747,30 +1730,22 @@
     {
       "id": "usc-42-416-l-retirement-age-schedule",
       "citation": "42 U.S.C. 416(l)(1)",
-      "host": "www.law.cornell.edu",
-      "url": "https://www.law.cornell.edu/uscode/text/42/416",
-      "quoteSha256": "b65e89fd486e8930",
-      "verdict": "ABSENT",
-      "detail": "the passage does not appear on the page",
-      "diagnosis": {
-        "matchedWords": 23,
-        "totalWords": 77,
-        "continuation": "age; (d) with respect to an individual who attains early retirement age after december 31, 2016, and before january 1, 2022, 66 years of age plus the number of months in the age i"
-      }
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section416&num=0&edition=prelim",
+      "quoteSha256": "92219a2cf9f3954c",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
     },
     {
       "id": "usc-42-416-l-retirement-age-schedule",
       "citation": "42 U.S.C. 416(l)(2)",
-      "host": "www.law.cornell.edu",
-      "url": "https://www.law.cornell.edu/uscode/text/42/416",
-      "quoteSha256": "5a0478ae6cf6c974",
-      "verdict": "ABSENT",
-      "detail": "the passage does not appear on the page",
-      "diagnosis": {
-        "matchedWords": 2,
-        "totalWords": 32,
-        "continuation": "\"spouse\" means a wife as defined in subsection (b) or a husband as defined in subsection (f). (2) the term \"surviving spouse\" means a widow as defined in subsection (c) or a widow"
-      }
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section416&num=0&edition=prelim",
+      "quoteSha256": "913726a822db402e",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
     },
     {
       "id": "usc-42-403-a-2-family-maximum-formula",
@@ -2857,14 +2832,10 @@
       "citation": "P.L. 117-169, section 11406(a), adding 1860D-2(b)(9)(D)",
       "host": "www.govinfo.gov",
       "url": "https://www.govinfo.gov/content/pkg/PLAW-117publ169/pdf/PLAW-117publ169.pdf",
-      "quoteSha256": "d68a4032fc62ae9e",
-      "verdict": "ABSENT",
-      "detail": "the words do not appear in the document (word-level, so extraction loss does not explain it)",
-      "diagnosis": {
-        "matchedWords": 7,
-        "totalWords": 101,
-        "continuation": "jmbennett on lap3p8d0r2prod with publaw verdate sep 11 2014 13 57 oct 25 2022 jkt 029139 po 00169 frm 00086 fmt 6580 sfmt 6581 e publaw publ169 117 publ169 public law 117 169 aug"
-      }
+      "quoteSha256": "82e78cf5ed0bd0b4",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "3 elision segments, all present in the extracted text",
+      "diagnosis": null
     },
     {
       "id": "usc-42-1395r-b-part-b-late-enrollment-penalty",
@@ -2999,16 +2970,12 @@
     {
       "id": "irc-36B-c-1-A-applicable-taxpayer-range",
       "citation": "IRC 36B(c)(1)(A)",
-      "host": "www.law.cornell.edu",
-      "url": "https://www.law.cornell.edu/uscode/text/26/36B",
-      "quoteSha256": "4da28390f27c299a",
-      "verdict": "ABSENT",
-      "detail": "the passage does not appear on the page",
-      "diagnosis": {
-        "matchedWords": 2,
-        "totalWords": 46,
-        "continuation": "\"premium assistance credit amount\" means, with respect to any taxable year, the sum of the premium assistance amounts determined under paragraph (2) with respect to all coverage m"
-      }
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section36B&num=0&edition=prelim",
+      "quoteSha256": "8aef3a0a0ae2e83b",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
     },
     {
       "id": "irc-36B-d-2-B-aca-household-magi-composition",
@@ -3143,9 +3110,9 @@
     {
       "id": "irc-402-g-1-elective-deferral-aggregate",
       "citation": "IRC 402(g)(1)(A)",
-      "host": "www.law.cornell.edu",
-      "url": "https://www.law.cornell.edu/uscode/text/26/402",
-      "quoteSha256": "54d7ffe441a1aaf6",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402&num=0&edition=prelim",
+      "quoteSha256": "9d0203a1d090fedc",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null
@@ -3153,16 +3120,12 @@
     {
       "id": "irc-402-g-1-elective-deferral-aggregate",
       "citation": "IRC 402(g)(3)",
-      "host": "www.law.cornell.edu",
-      "url": "https://www.law.cornell.edu/uscode/text/26/402",
-      "quoteSha256": "705275e874a3bd43",
-      "verdict": "ABSENT",
-      "detail": "the passage does not appear on the page",
-      "diagnosis": {
-        "matchedWords": 2,
-        "totalWords": 44,
-        "continuation": "\"highly compensated employee\" has the meaning given such term by section 414(q). (c) rules applicable to rollovers from exempt trusts (1) exclusion from incomeif-(a) any portion o"
-      }
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402&num=0&edition=prelim",
+      "quoteSha256": "dfc516fee9023cb6",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
     },
     {
       "id": "irs-notice-2014-54-employer-plan-after-tax-rollover-allocation",
@@ -3277,30 +3240,22 @@
     {
       "id": "irc-63-c-2-joint-standard-deduction-doubles",
       "citation": "IRC 63(c)(2)",
-      "host": "www.law.cornell.edu",
-      "url": "https://www.law.cornell.edu/uscode/text/26/63",
-      "quoteSha256": "973c68ffa5323d9b",
-      "verdict": "ABSENT",
-      "detail": "the passage does not appear on the page",
-      "diagnosis": {
-        "matchedWords": 31,
-        "totalWords": 51,
-        "continuation": "spouse (as defined in section 2(a)), (b) $4,400 in the case of a head of household (as defined in section 2(b)), or (c) $3,000 in any other case. (3) additional standard deduction"
-      }
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section63&num=0&edition=prelim",
+      "quoteSha256": "812f544bcfb17915",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
     },
     {
       "id": "irc-63-c-2-joint-standard-deduction-doubles",
-      "citation": "IRC 63(c)(7)",
-      "host": "www.law.cornell.edu",
-      "url": "https://www.law.cornell.edu/uscode/text/26/63",
-      "quoteSha256": "308a81ece7ce5c1d",
-      "verdict": "ABSENT",
-      "detail": "the passage does not appear on the page",
-      "diagnosis": {
-        "matchedWords": 2,
-        "totalWords": 21,
-        "continuation": "for \"calendar year 2016\" in subparagraph (a)(ii) thereof-(i) \"calendar year 1987\" in the case of the dollar amounts contained in paragraph (2)(b), (2)(c), or (5)(a) or subsection"
-      }
+      "citation": "IRC 63(c)(7)(A)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section63&num=0&edition=prelim",
+      "quoteSha256": "af725e028145b921",
+      "verdict": "ELISION-EXACT",
+      "detail": "2 segments, every one a literal substring",
+      "diagnosis": null
     },
     {
       "id": "irc-219-b-1-ira-limit-lesser-of-compensation",
@@ -3325,30 +3280,22 @@
     {
       "id": "irc-219-b-5-C-iii-ira-catch-up-indexed",
       "citation": "IRC 219(b)(5)(C)(iii)",
-      "host": "www.law.cornell.edu",
-      "url": "https://www.law.cornell.edu/uscode/text/26/219",
-      "quoteSha256": "afee72ab94429680",
-      "verdict": "ABSENT",
-      "detail": "the passage does not appear on the page",
-      "diagnosis": {
-        "matchedWords": 15,
-        "totalWords": 43,
-        "continuation": "$1,000 amount under subparagraph (b)(ii) shall be increased by an amount equal to-(i) such dollar amount, multiplied by (ii) the cost-of-living adjustment determined under section"
-      }
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section219&num=0&edition=prelim",
+      "quoteSha256": "bcc499bf0320b861",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
     },
     {
       "id": "irc-219-f-1-compensation-excludes-deferred-income",
       "citation": "IRC 219(f)(1)",
-      "host": "www.law.cornell.edu",
-      "url": "https://www.law.cornell.edu/uscode/text/26/219",
-      "quoteSha256": "87d2e2dd4308888b",
-      "verdict": "ABSENT",
-      "detail": "the passage does not appear on the page",
-      "diagnosis": {
-        "matchedWords": 7,
-        "totalWords": 40,
-        "continuation": "\"qualified retirement contribution\" means-(1) any amount paid in cash for the taxable year by or on behalf of an individual to an individual retirement plan for such individual's"
-      }
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section219&num=0&edition=prelim",
+      "quoteSha256": "caffc10316e61774",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
     },
     {
       "id": "irc-408A-c-2-roth-shares-the-section-219-ceiling",
@@ -3363,16 +3310,12 @@
     {
       "id": "irc-408A-c-3-roth-contribution-agi-phase-out",
       "citation": "IRC 408A(c)(3)(A)",
-      "host": "www.law.cornell.edu",
-      "url": "https://www.law.cornell.edu/uscode/text/26/408A",
-      "quoteSha256": "90ca0b413d018560",
-      "verdict": "ABSENT",
-      "detail": "the passage does not appear on the page",
-      "diagnosis": {
-        "matchedWords": 55,
-        "totalWords": 74,
-        "continuation": "$15,000 ($10,000 in the case of a joint return or a married individual filing a separate return). the rules of subparagraphs (b) and (c) of section 219(g)(2) shall apply to any re"
-      }
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408A&num=0&edition=prelim",
+      "quoteSha256": "8af281446c1d9771",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
     },
     {
       "id": "irc-401-c-2-earned-income-not-modeled",
@@ -3389,42 +3332,30 @@
       "citation": "IRC 151(d)(5)(C)(i)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section151&num=0&edition=prelim",
-      "quoteSha256": "702aa5e95a49a2f8",
-      "verdict": "ABSENT",
-      "detail": "the passage does not appear on the page",
-      "diagnosis": {
-        "matchedWords": 23,
-        "totalWords": 34,
-        "continuation": "$6,000 for each qualified individual with respect to the taxpayer. (ii) qualified individual for purposes of clause (i), the term \"qualified individual\" means-(i) the taxpayer, if"
-      }
+      "quoteSha256": "7ab7de3ab4846769",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
     },
     {
       "id": "irc-151-d-5-C-iii-I-senior-deduction-per-individual-phase-out",
       "citation": "IRC 151(d)(5)(C)(iii)(I)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section151&num=0&edition=prelim",
-      "quoteSha256": "317910efdf596d5a",
-      "verdict": "ABSENT",
-      "detail": "the passage does not appear on the page",
-      "diagnosis": {
-        "matchedWords": 11,
-        "totalWords": 50,
-        "continuation": "$6,000 amount in clause (i) shall be reduced (but not below zero) by 6 percent of so much of the taxpayer's modified adjusted gross income as exceeds $75,000 ($150,000 in the case"
-      }
+      "quoteSha256": "1b8480f311c3a621",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
     },
     {
       "id": "irc-151-d-5-C-iii-I-senior-deduction-per-individual-phase-out",
-      "citation": "Schedule 1-A (Form 1040) (2025), Part V, lines 35 to 37",
+      "citation": "Schedule 1-A (Form 1040) (2025), Part V, lines 32 to 37",
       "host": "www.irs.gov",
       "url": "https://www.irs.gov/pub/irs-pdf/f1040s1a.pdf",
-      "quoteSha256": "a47df031f0402204",
-      "verdict": "ABSENT",
-      "detail": "the words do not appear in the document (word-level, so extraction loss does not explain it)",
-      "diagnosis": {
-        "matchedWords": 12,
-        "totalWords": 79,
-        "continuation": "35 36a if you have a valid social security number see instructions and were born before january 2 1961 enter the amount from line 35 36a b if you are married filing jointly your s"
-      }
+      "quoteSha256": "433eb52c80b6167b",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "6 elision segments, all present in the extracted text",
+      "diagnosis": null
     },
     {
       "id": "irc-56-b-1-D-section-151-deduction-disallowed-for-amt",
@@ -3441,28 +3372,20 @@
       "citation": "IRC 63(b)(2)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section63&num=0&edition=prelim",
-      "quoteSha256": "3275d1b505b9d4f6",
-      "verdict": "ABSENT",
-      "detail": "the passage does not appear on the page",
-      "diagnosis": {
-        "matchedWords": 25,
-        "totalWords": 45,
-        "continuation": "\"taxable income\" means adjusted gross income, minus-(1) the standard deduction, (2) the deduction for personal exemptions provided in section 151, (3) any deduction provided in se"
-      }
+      "quoteSha256": "b626ea03080fe6ed",
+      "verdict": "ELISION-EXACT",
+      "detail": "2 segments, every one a literal substring",
+      "diagnosis": null
     },
     {
       "id": "irc-56-b-1-D-section-151-deduction-disallowed-for-amt",
       "citation": "Form 6251 (2025), lines 1a and 1b",
       "host": "www.irs.gov",
       "url": "https://www.irs.gov/pub/irs-pdf/f6251.pdf",
-      "quoteSha256": "6bba753289e5fbd8",
-      "verdict": "ABSENT",
-      "detail": "the words do not appear in the document (word-level, so extraction loss does not explain it)",
-      "diagnosis": {
-        "matchedWords": 18,
-        "totalWords": 44,
-        "continuation": "1a b subtract line 1a from form 1040 1040 sr or 1040 nr line 11b if less than zero enter as a negative amount 1b 2a if filing schedule a form 1040 enter the taxes from schedule a"
-      }
+      "quoteSha256": "3088fe4b4fe63739",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "2 elision segments, all present in the extracted text",
+      "diagnosis": null
     },
     {
       "id": "irc-1411-d-modified-agi-foreign-exclusion-addback",
@@ -3857,79 +3780,59 @@
     {
       "id": "irc-1-j-3-B-rate-tables-adjusted-each-year",
       "citation": "IRC 1(j)(3)(B)",
-      "host": "www.law.cornell.edu",
-      "url": "https://www.law.cornell.edu/uscode/text/26/1",
-      "quoteSha256": "f0cd3ec1bb52ec5b",
-      "verdict": "ABSENT",
-      "detail": "the passage does not appear on the page",
-      "diagnosis": {
-        "matchedWords": 91,
-        "totalWords": 102,
-        "continuation": "\"calendar year 2017\" for \"calendar year 2016\" in subparagraph (a)(ii) thereof, (ii) subsection (f)(7)(b) shall apply to any unmarried individual other than a surviving spouse or h"
-      }
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1&num=0&edition=prelim",
+      "quoteSha256": "18058b274f6bd196",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
     },
     {
       "id": "irc-1-j-3-B-rate-tables-adjusted-each-year",
       "citation": "IRC 1(j)(5)(C)",
-      "host": "www.law.cornell.edu",
-      "url": "https://www.law.cornell.edu/uscode/text/26/1",
-      "quoteSha256": "6e92d2bb42cfc059",
-      "verdict": "ABSENT",
-      "detail": "the passage does not appear on the page",
-      "diagnosis": {
-        "matchedWords": 57,
-        "totalWords": 68,
-        "continuation": "\"calendar year 2017\" for \"calendar year 2016\" in subparagraph (a)(ii) thereof. if any increase under this subparagraph is not a multiple of $50, such increase shall be rounded to"
-      }
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1&num=0&edition=prelim",
+      "quoteSha256": "d9b59fa87db49465",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
     },
     {
       "id": "irc-1-j-3-B-rate-tables-adjusted-each-year",
       "citation": "IRC 63(c)(7)(B)(ii)",
-      "host": "www.law.cornell.edu",
-      "url": "https://www.law.cornell.edu/uscode/text/26/63",
-      "quoteSha256": "8eb76381371b0e19",
-      "verdict": "ABSENT",
-      "detail": "the passage does not appear on the page",
-      "diagnosis": {
-        "matchedWords": 11,
-        "totalWords": 62,
-        "continuation": "$23,625 and $15,750 amounts in subparagraph (a) shall each be increased by an amount equal to-(i) such dollar amount, multiplied by (ii) the cost-of-living adjustment determined u"
-      }
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section63&num=0&edition=prelim",
+      "quoteSha256": "6352f4431e63f9aa",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
     },
     {
       "id": "irc-1-j-3-B-rate-tables-adjusted-each-year",
       "citation": "IRC 55(d)(4)(B)(i)",
-      "host": "www.law.cornell.edu",
-      "url": "https://www.law.cornell.edu/uscode/text/26/55",
-      "quoteSha256": "95b53b6c8d6fd7ef",
-      "verdict": "ABSENT",
-      "detail": "the passage does not appear on the page",
-      "diagnosis": {
-        "matchedWords": 20,
-        "totalWords": 64,
-        "continuation": "$1,000,000 amount in subparagraph (a)(ii)(i)), the amounts described in clause (ii) shall each be increased by an amount equal to-(i) such dollar amount, multiplied by (ii) the co"
-      }
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section55&num=0&edition=prelim",
+      "quoteSha256": "1285ee0a6736a195",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
     },
     {
       "id": "irc-151-d-5-C-senior-deduction-not-indexed",
       "citation": "IRC 151(d)(5)(C)(i)",
-      "host": "www.law.cornell.edu",
-      "url": "https://www.law.cornell.edu/uscode/text/26/151",
-      "quoteSha256": "702aa5e95a49a2f8",
-      "verdict": "ABSENT",
-      "detail": "the passage does not appear on the page",
-      "diagnosis": {
-        "matchedWords": 23,
-        "totalWords": 34,
-        "continuation": "$6,000 for each qualified individual with respect to the taxpayer. (ii) qualified individualfor purposes of clause (i), the term \"qualified individual\" means-(i) the taxpayer, if"
-      }
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section151&num=0&edition=prelim",
+      "quoteSha256": "7ab7de3ab4846769",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
     },
     {
       "id": "irc-151-d-5-C-senior-deduction-not-indexed",
       "citation": "IRC 151(d)(5)(C)(iii)(I)",
-      "host": "www.law.cornell.edu",
-      "url": "https://www.law.cornell.edu/uscode/text/26/151",
-      "quoteSha256": "ae16cdd952efc09f",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section151&num=0&edition=prelim",
+      "quoteSha256": "1b8480f311c3a621",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null
@@ -3937,9 +3840,9 @@
     {
       "id": "irc-151-d-5-C-senior-deduction-not-indexed",
       "citation": "IRC 151(d)(4)",
-      "host": "www.law.cornell.edu",
-      "url": "https://www.law.cornell.edu/uscode/text/26/151",
-      "quoteSha256": "24a985952b05f311",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section151&num=0&edition=prelim",
+      "quoteSha256": "52682dff86ac28e7",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null
@@ -6259,14 +6162,10 @@
       "citation": "61 Pa. Code 103.13(e)",
       "host": "www.pacodeandbulletin.gov",
       "url": "https://www.pacodeandbulletin.gov/Display/pacode?file=/secure/pacode/data/061/chapter103/s103.13.html",
-      "quoteSha256": "65f0179d7c74652a",
-      "verdict": "ABSENT",
-      "detail": "the passage does not appear on the page",
-      "diagnosis": {
-        "matchedWords": 37,
-        "totalWords": 72,
-        "continuation": "propertyreal or personal, tangible or intangibleto the extent that the value of that which is received or receivable is greater than or, in the case of a loss, less than the bas"
-      }
+      "quoteSha256": "b663c858df8a72eb",
+      "verdict": "ELISION-EXACT",
+      "detail": "3 segments, every one a literal substring",
+      "diagnosis": null
     },
     {
       "id": "nv-const-10-1-9-no-personal-income-tax",
@@ -10749,12 +10648,6 @@
       "citation": "Treas. Reg. 1.401(a)(9)-5",
       "host": "www.law.cornell.edu",
       "note": "quote uses U+0027 (') where this host renders U+2019 (’)"
-    },
-    {
-      "id": "irc-151-d-5-C-iii-I-senior-deduction-per-individual-phase-out",
-      "citation": "IRC 151(d)(5)(C)(iii)(I)",
-      "host": "uscode.house.gov",
-      "note": "quote uses U+2019 (’) where this host renders U+0027 (')"
     },
     {
       "id": "irc-408-d-3-G-simple-two-year-rollover-bar",

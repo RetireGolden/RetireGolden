@@ -201,16 +201,16 @@ The 25 earliest due dates are shown below (410 rules total). Comparing dueOn to 
 | cfr-20-404-1574-b-2-sga-non-blind-monthly-amount | annuallyIndexed | 2026-08-03 | 2026-12-01 |
 | irc-1-h-capital-gain-stacked-on-ordinary | annuallyIndexed | 2026-08-03 | 2026-12-01 |
 | irc-1-j-2-progressive-ordinary-rate-schedule | annuallyIndexed | 2026-08-03 | 2026-12-01 |
-| irc-1-j-3-B-rate-tables-adjusted-each-year | annuallyIndexed | 2026-08-03 | 2026-12-01 |
-| irc-219-b-5-C-iii-ira-catch-up-indexed | annuallyIndexed | 2026-08-03 | 2026-12-01 |
-| irc-402-g-1-elective-deferral-aggregate | annuallyIndexed | 2026-08-03 | 2026-12-01 |
 | irc-408-d-8-F-split-interest-sublimit | annuallyIndexed | 2026-08-03 | 2026-12-01 |
-| irc-408A-c-3-roth-contribution-agi-phase-out | annuallyIndexed | 2026-08-03 | 2026-12-01 |
 | irc-414-v-7-E-roth-catch-up-wage-threshold | annuallyIndexed | 2026-08-03 | 2026-12-01 |
 | irc-415-d-cost-of-living-adjustment-anchor | annuallyIndexed | 2026-08-03 | 2026-12-01 |
-| irc-63-c-2-joint-standard-deduction-doubles | annuallyIndexed | 2026-08-03 | 2026-12-01 |
 | treas-reg-1-401-a-9-6-q-2-qlac-premium-dollar-limit | annuallyIndexed | 2026-08-03 | 2026-12-01 |
 | usc-42-1395r-a-3-part-b-standard-premium | annuallyIndexed | 2026-08-03 | 2026-12-01 |
+| usc-42-1395r-i-5-C-top-irmaa-threshold-frozen | annuallyIndexed | 2026-08-03 | 2026-12-01 |
+| usc-42-403-f-8-earnings-test-exempt-amounts | annuallyIndexed | 2026-08-03 | 2026-12-01 |
+| usc-42-430-b-contribution-and-benefit-base | annuallyIndexed | 2026-08-03 | 2026-12-01 |
+| irc-223-b-2-7-projection-coverage-proration-and-medicare | annuallyIndexed | 2026-08-04 | 2026-12-02 |
+| irc-414-v-2-E-super-catch-up-window | annuallyIndexed | 2026-08-04 | 2026-12-02 |
 
 ## Manifest contract
 
@@ -218,20 +218,19 @@ The JSON manifest (rule-coverage.json, version 4) is the machine contract: each 
 
 ## Quote fidelity
 
-Committed ledger generated at 2026-08-29T17:39:16.376Z over 1057 authority entries (0 fetched live, 306 from cache).
+Committed ledger generated at 2026-08-29T18:48:29.368Z over 1057 authority entries (0 fetched live, 301 from cache).
 
-28 serious, 46 advisory, 983 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
+3 serious, 45 advisory, 1009 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
 not treated as a CI gate; how to read each verdict: DOCS/operations/quote-fidelity.md.
 
 | Verdict | Class | Count |
 | --- | --- | ---: |
-| ABSENT | serious | 25 |
-| ELISION-EXACT | ok | 60 |
+| ELISION-EXACT | ok | 63 |
 | ELISION-PUNCTUATION | advisory | 4 |
-| EXACT | ok | 714 |
+| EXACT | ok | 734 |
 | PDF-NOT-VERIFIABLE | advisory | 5 |
-| PDF-WORD-LEVEL | ok | 209 |
-| PUNCTUATION | advisory | 37 |
+| PDF-WORD-LEVEL | ok | 212 |
+| PUNCTUATION | advisory | 36 |
 | UNFETCHABLE | serious | 3 |
 
 Regenerate: pnpm verify:quotes -- --json > DOCS/operations/quote-fidelity-ledger.json (network required), then pnpm rules:coverage.
