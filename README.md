@@ -52,7 +52,7 @@ pnpm dev
 
 ## CI/CD
 
-Nine GitHub Actions workflows: the SWA pipeline and both security scans run on pushes and pull requests to `main`; Grok Build review, the OpenRouter sibling review, and CLA enforcement run on PR activity; the Owl parity oracle and the engine and planner-ui npm releases are triggered manually (the engine release also fires on `engine-v*` tags). Full setup notes: [DOCS/operations/ci-cd-and-deploy.md](DOCS/operations/ci-cd-and-deploy.md).
+Nine GitHub Actions workflows: the SWA pipeline and both security scans run on pushes and pull requests to `main`; OpenRouter review and CLA enforcement run on PR activity; Grok Build review is manual emergency-only; the Owl parity oracle and the engine and planner-ui npm releases are triggered manually (the engine release also fires on `engine-v*` tags). Full setup notes: [DOCS/operations/ci-cd-and-deploy.md](DOCS/operations/ci-cd-and-deploy.md).
 
 ### Azure Static Web Apps — build & deploy
 
@@ -98,17 +98,19 @@ Reusable workflow invoked by the Azure deploy job after a **PR preview** is live
 
 Runs on pull-request activity. First-time contributors are asked to sign the [Contributor License Agreement](CLA.md) by replying with the acceptance phrase; the check blocks merge until every commit author has signed. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
-### Grok Build review
+### Grok Build emergency review
 
 [`.github/workflows/grok-code-review.yml`](.github/workflows/grok-code-review.yml)
 
-Runs on pull-request open, sync, reopen, and ready-for-review (and manually from the Actions tab). Delegates to the org workflow in `RetireGolden/.github` to post an automated Grok Build review on the PR diff.
+Manual-only from the Actions tab. A human supplies the PR number when an independent emergency Grok review is wanted. It is not triggered by pull-request activity, is not a fallback for OpenRouter, and is not a required check.
 
-### OpenRouter sibling review
+### OpenRouter required review
 
 [`.github/workflows/openrouter-code-review.yml`](.github/workflows/openrouter-code-review.yml)
 
-Non-required bake-off sibling of Grok. Runs on pull-request open, sync, reopen, and ready-for-review (and manually from the Actions tab); skips drafts (intentional). Needs the org Actions secret `OPENROUTER_API_KEY`. Delegates to the org workflow in `RetireGolden/.github`. The caller has no concurrency group, so it cannot cancel Grok.
+Runs on pull-request open, sync, reopen, and ready-for-review (and manually from the Actions tab); drafts remain gated until marked ready. It passes only the org `OPENROUTER_API_KEY` to the reusable workflow and has no Grok or xAI fallback. The required context is `review / openrouter-first-pass-gate`; it turns green only after OpenRouter publishes a usable full-PR first-pass review, then carries that proof across synchronize events while follow-up reviews continue independently.
+
+Cutover requires a one-time Main Guard ruleset migration: after the pinned OpenRouter action changes and central `RetireGolden/.github` reusable are merged, replace required context `review / grok-first-pass-gate` with `review / openrouter-first-pass-gate`. Merge the product caller change and update the ruleset as one coordinated activation so PRs are never left waiting for a check that no workflow emits. The old Grok workflow remains available only for explicit emergency dispatches.
 
 ### Engine package release
 
