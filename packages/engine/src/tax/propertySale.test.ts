@@ -98,3 +98,29 @@ describe('property disposition tax (§121 / recapture)', () => {
     expect(r.ordinaryGain).toBe(0)
   })
 })
+
+describe('personal-use sale at a loss (§165(c))', () => {
+  // Sale 300,000 against basis 400,000. Section 165(c) does not reach a loss
+  // on personal-use property, so no negative gain may leave this function to
+  // offset other income; the reading that lets it through would carry
+  // -100,000 of capital gain.
+  describeRule('irc-165-c-personal-use-sale-loss-nondeductible', {
+    readings: { lossNondeductibleGainFloorsAtZero: 0, personalLossFlowsThroughAsNegativeGain: -100_000 },
+    accepted: 'lossNondeductibleGainFloorsAtZero',
+  }, ({ accepted }) => {
+    it('floors the disposition gain at zero on a below-basis sale', () => {
+      const r = propertySaleTax({
+        salePrice: 300_000,
+        costBasis: 400_000,
+        sellingCostPct: 0,
+        depreciationRecapture: 0,
+        primaryResidence: false,
+        filingStatus: 'single',
+        pack,
+      })
+      expect(r.capitalGain).toBe(accepted)
+      expect(r.ordinaryGain).toBe(accepted)
+      expect(r.excludedGain).toBe(accepted)
+    })
+  })
+})

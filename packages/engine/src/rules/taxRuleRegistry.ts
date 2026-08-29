@@ -1322,11 +1322,13 @@ const registry = {
       // reach the owned pool's basis history however the request was authored.
       'packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts',
       'packages/engine/src/strategies/accountEligibility.ts',
+      'packages/engine/src/actions/annualQcdPhysicalExecution.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/actions/annualQcdExecutionPrerequisite.ts#evaluateAnnualQcdExecutionPrerequisites',
       'packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts#validateOwnedNonRothIraRuntimeSourceSeries',
       'packages/engine/src/strategies/accountEligibility.ts#evaluateQcd',
+      'packages/engine/src/actions/annualQcdPhysicalExecution.ts#stageAnnualQcdPhysicalExecution',
     ],
   },
 
@@ -1357,11 +1359,13 @@ const registry = {
       // Roth source is refused before any question of tax character arises.
       'packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts',
       'packages/engine/src/strategies/accountEligibility.ts',
+      'packages/engine/src/actions/annualQcdPhysicalExecution.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/actions/annualQcdExecutionPrerequisite.ts#evaluateAnnualQcdExecutionPrerequisites',
       'packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts#validateOwnedNonRothIraRuntimeSourceSeries',
       'packages/engine/src/strategies/accountEligibility.ts#evaluateQcd',
+      'packages/engine/src/actions/annualQcdPhysicalExecution.ts#stageAnnualQcdPhysicalExecution',
     ],
   },
 
@@ -1401,11 +1405,13 @@ const registry = {
       'packages/engine/src/strategies/accountEligibility.ts',
       'packages/engine/src/actions/annualQcdExecutionPrerequisite.ts',
       'packages/engine/src/actions/annualQcdDerivedTaxCharacter.ts',
+      'packages/engine/src/actions/annualQcdPhysicalExecution.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/actions/annualQcdDerivedTaxCharacter.ts#finalizeAnnualQcdDerivedTaxCharacter',
       'packages/engine/src/actions/annualQcdExecutionPrerequisite.ts#evaluateAnnualQcdExecutionPrerequisites',
       'packages/engine/src/strategies/accountEligibility.ts#evaluateQcd',
+      'packages/engine/src/actions/annualQcdPhysicalExecution.ts#stageAnnualQcdPhysicalExecution',
     ],
   },
 
@@ -2736,9 +2742,12 @@ const registry = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-04',
-    implementedBy: ['packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts'],
+    implementedBy: ['packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts',
+      'packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.ts',
+    ],
     implementedByFunctions: [
       'packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts#evaluateOwnedNonRothIraPenaltyPrerequisites',
+      'packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.ts#evaluateTraditionalEmployerPlanPenaltyPrerequisite',
     ],
   },
 
@@ -3078,9 +3087,12 @@ const registry = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
-    implementedBy: ['packages/engine/src/socialSecurity/benefitFactor.ts'],
+    implementedBy: ['packages/engine/src/socialSecurity/benefitFactor.ts',
+      'packages/engine/src/socialSecurity/claimFactor.ts',
+    ],
     implementedByFunctions: [
       'packages/engine/src/socialSecurity/benefitFactor.ts#earlyRetirementFactor',
+      'packages/engine/src/socialSecurity/claimFactor.ts#claimFactor',
     ],
   },
 
@@ -3105,9 +3117,12 @@ const registry = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-04',
-    implementedBy: ['packages/engine/src/socialSecurity/benefitFactor.ts'],
+    implementedBy: ['packages/engine/src/socialSecurity/benefitFactor.ts',
+      'packages/engine/src/socialSecurity/claimFactor.ts',
+    ],
     implementedByFunctions: [
       'packages/engine/src/socialSecurity/benefitFactor.ts#delayedRetirementFactor',
+      'packages/engine/src/socialSecurity/claimFactor.ts#claimFactor',
     ],
   },
 
@@ -3240,6 +3255,42 @@ const registry = {
     implementedByFunctions: [
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/socialSecurity/claimFactor.ts#spousalBenefitFactor',
+    ],
+  },
+  'usc-42-402-worker-claim-window-62-to-70': {
+    title: 'Worker old-age benefits are claimable from 62, and delayed credits stop at 70',
+    statement:
+      'Old-age insurance entitlement requires attaining age 62, and delayed retirement credit months accrue only for months prior to the month age 70 is attained, so no claim age outside 62y0m through 70y0m changes the benefit. The engine enforces that window: the claim-factor computation refuses claim ages outside it and the decision generator offers only claim ages inside it.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 402(a)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
+      quotedText:
+        'Every individual who- (1) is a fully insured individual (as defined in section 414(a) of this title ), (2) has attained age 62, and (3) has filed application for old-age insurance benefits or was entitled to disability insurance benefits for the month preceding the month in which he attained retirement age (as defined in section 416(l) of this title ), shall be entitled to an old-age insurance benefit for each month \u2026',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 402(w)(2)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
+      quotedText:
+        'For purposes of this subsection, the number of increment months for any individual shall be a number equal to the total number of the months- (A) which have elapsed after the month before the month in which such individual attained retirement age (as defined in section 416(l) of this title ) or (if later) December 1970 and prior to the month in which such individual attained age 70 \u2026',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-29',
+    implementedBy: [
+      'packages/engine/src/socialSecurity/claimFactor.ts',
+      'packages/engine/src/decisions/generators.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/socialSecurity/claimFactor.ts#claimFactor',
+      'packages/engine/src/socialSecurity/claimFactor.ts#spousalBenefitFactor',
+      'packages/engine/src/decisions/generators.ts#SS_GRID_CLAIM_AGES',
     ],
   },
 
@@ -5308,6 +5359,33 @@ const registry = {
       'packages/engine/src/tax/federalTax.ts#saltCapForYear',
     ],
   },
+  'irc-165-c-personal-use-sale-loss-nondeductible': {
+    title: 'A loss on the sale of personal-use property is not deductible',
+    statement:
+      'Section 165(c) limits an individual\'s loss deduction to business losses, losses in transactions entered into for profit, and casualty or theft losses. A loss on the sale of personal-use property, a home sold below basis among them, is none of those, so the engine floors the disposition gain at zero rather than letting a personal loss offset other income.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 165(c)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section165&num=0&edition=prelim',
+      quotedText:
+        'In the case of an individual, the deduction under subsection (a) shall be limited to- (1) losses incurred in a trade or business; (2) losses incurred in any transaction entered into for profit, though not connected with a trade or business; and (3) except as provided in subsection (h), losses of property not connected with a trade or business or a transaction entered into for profit, if such losses arise from fire, storm, shipwreck, or other casualty, or from theft.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-29',
+    implementedBy: [
+      'packages/engine/src/tax/propertySale.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/tax/propertySale.ts#propertySaleTax',
+    ],
+  },
 
   'irc-63-c-2-joint-standard-deduction-doubles': {
     title: 'The joint standard deduction is 200 percent of the unmarried one',
@@ -5823,11 +5901,13 @@ const registry = {
       'packages/engine/src/strategies/accountEligibility.ts',
       'packages/engine/src/actions/beneficiaryTraditionalIraDeathPenalty.ts',
       'packages/engine/src/actions/beneficiaryTraditionalIraAnnualSimulatorDelta.ts',
+      'packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/actions/beneficiaryTraditionalIraAnnualSimulatorDelta.ts#prepareBeneficiaryTraditionalIraAnnualSimulatorDelta',
       'packages/engine/src/actions/beneficiaryTraditionalIraDeathPenalty.ts#evaluateBeneficiaryTraditionalIraDeathPenalty',
       'packages/engine/src/strategies/accountEligibility.ts#traditionalWithdrawalPenaltyRate',
+      'packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts#evaluateOwnedNonRothIraPenaltyPrerequisites',
     ],
   },
 
@@ -5961,10 +6041,13 @@ const registry = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
-    implementedBy: ['packages/engine/src/strategies/rothBasis.ts'],
+    implementedBy: ['packages/engine/src/strategies/rothBasis.ts',
+      'packages/engine/src/insights/detectors/missingDataBasis.ts',
+    ],
     implementedByFunctions: [
       'packages/engine/src/strategies/rothBasis.ts#ROTH_QUALIFIED_AGE',
       'packages/engine/src/strategies/rothBasis.ts#splitRothWithdrawal',
+      'packages/engine/src/insights/detectors/missingDataBasis.ts#missingDataBasis',
     ],
   },
 
@@ -6949,10 +7032,12 @@ const registry = {
     implementedBy: [
       'packages/engine/src/params/index.ts',
       'packages/engine/src/rmd/rmd.ts',
+      'packages/engine/src/rmd/applicableAge.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/params/index.ts#rmdStartAgeForBirthYear',
       'packages/engine/src/rmd/rmd.ts#requiredMinimumDistribution',
+      'packages/engine/src/rmd/applicableAge.ts#applicableAgeAttainYears',
     ],
   },
   'irc-408-d-8-B-ii-projection-annual-age-proxy': {
@@ -7250,10 +7335,12 @@ const registry = {
     implementedBy: [
       'packages/engine/src/rmd/rmd.ts',
       'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/rmd/applicableAge.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/rmd/rmd.ts#requiredMinimumDistribution',
+      'packages/engine/src/rmd/applicableAge.ts#deriveRbdComparison',
     ],
   },
   'irc-401-a-9-C-i-elected-deferral-ignores-attainment-year-distributions': {

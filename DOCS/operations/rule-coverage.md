@@ -11,16 +11,16 @@ The registry is the machine-checked chain from a rule to its implementation and 
 
 | Metric | Count |
 | --- | ---: |
-| Total rules | 410 |
+| Total rules | 412 |
 | Classification: approximated | 107 |
 | Classification: outOfScope | 73 |
-| Classification: settled | 225 |
+| Classification: settled | 227 |
 | Classification: unsettled | 5 |
 | Volatility: annuallyIndexed | 58 |
 | Volatility: awaitingGuidance | 11 |
-| Volatility: staticStatute | 335 |
+| Volatility: staticStatute | 337 |
 | Volatility: sunsetting | 6 |
-| Federal jurisdiction | 304 |
+| Federal jurisdiction | 306 |
 | State jurisdiction total | 106 |
 
 | State jurisdiction | Count |
@@ -84,8 +84,8 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | Engine source files | 236 |
 | Swept | 100.0% |
 | Grandfathered unswept baseline | 0 |
-| partial | 56 |
-| registered | 55 |
+| partial | 49 |
+| registered | 62 |
 | rule-free | 125 |
 | unswept | 0 |
 
@@ -94,10 +94,10 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | Directory | Files | Partial | Registered | Rule-free | Unswept |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | (root) | 3 | 0 | 0 | 3 | 0 |
-| actions | 74 | 22 | 26 | 26 | 0 |
+| actions | 74 | 19 | 29 | 26 | 0 |
 | allocation | 1 | 0 | 0 | 1 | 0 |
-| decisions | 19 | 3 | 1 | 15 | 0 |
-| insights | 22 | 3 | 2 | 17 | 0 |
+| decisions | 19 | 2 | 2 | 15 | 0 |
+| insights | 22 | 2 | 3 | 17 | 0 |
 | internal | 9 | 1 | 3 | 5 | 0 |
 | ladder | 4 | 2 | 0 | 2 | 0 |
 | longevity | 2 | 1 | 0 | 1 | 0 |
@@ -109,10 +109,10 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | rules | 6 | 0 | 1 | 5 | 0 |
 | scenarios | 9 | 0 | 0 | 9 | 0 |
 | schema | 7 | 0 | 0 | 7 | 0 |
-| socialSecurity | 9 | 3 | 6 | 0 | 0 |
+| socialSecurity | 9 | 2 | 7 | 0 | 0 |
 | spending | 5 | 0 | 0 | 5 | 0 |
 | strategies | 7 | 3 | 4 | 0 | 0 |
-| tax | 7 | 4 | 2 | 1 | 0 |
+| tax | 7 | 3 | 3 | 1 | 0 |
 | testing | 2 | 0 | 0 | 2 | 0 |
 
 ## Unswept files
@@ -125,8 +125,6 @@ None.
 | --- | --- | --- |
 | actions/aggregateRothConversionOwnerAllocation.ts | 2026-08-29 | same-owner pro-rata allocation long registered under irc-408-d-3-A-i; the RMD-before-conversion ordering it relies on is enforced upstream (resolveOwnerIraRmdSatisfaction), and this file consumes the post-RMD snapshot as a contract rather than enforcing it - that contract stays the residual |
 | actions/annualOwnedNonRothIraPoolCapacity.ts | 2026-08-24 | QCD pool restricted to donor-owned non-Roth IRAs; no record |
-| actions/annualQcdDerivedTaxCharacter.ts | 2026-08-25 | Owned-source eligibility gate; no record; QCD taxable/excludable/basis partition; no record |
-| actions/annualQcdPhysicalExecution.ts | 2026-08-24 | QCD pool restricted to owned traditional IRAs, excluding inherited/Roth; no record |
 | actions/annualQcdResidualForm8606.ts | 2026-08-25 | Residual line-7/line-8 pro-rata reconciliation; no record |
 | actions/annualRetirementPhysicalEventInventory.ts | 2026-08-24 | Inherited-RMD regime; owner-RMD start age; spouse-as-own transition; annuity/Form 8606 treatment; direct-trustee QCD origin; no record |
 | actions/beneficiaryTraditionalIraAnnualPlanApplication.ts | 2026-08-24 | Beneficiary-owned inherited traditional-IRA/death-year source gate; no record |
@@ -140,26 +138,23 @@ None.
 | actions/ownedNonRothIraAnnualPlanCoordinator.ts | 2026-08-29 | Owner-wide pool excludes inherited IRAs; Form 8606 numerator/denominator and line-7/line-8 stacking; exact age-59½ threshold; no record |
 | actions/ownedNonRothIraAnnualPostCandidateEvidence.ts | 2026-08-29 | Contribution window covered; Form 8606 lines 1/4/6/7/9, owner-wide pool, and explicit zero line 8; no record |
 | actions/ownedNonRothIraMovementCandidate.ts | 2026-08-29 | Line-7 staging of executed owned-IRA withdrawals registered under form-8606-line-7-owned-ira-movement-staging; the owned traditional/SEP/SIMPLE source-scope claim remains unregistered |
-| actions/ownedNonRothIraPenaltyPrerequisite.ts | 2026-08-24 | Age, 10%/25% rates, disability, SEPP, SIMPLE period, and scope covered; death exception rejected through owner-alive evidence; no record |
 | actions/retirementActionCandidateIdentityAllocator.ts | 2026-08-29 | conversion source and destination identity registered under irc-408-d-3-A-i, the inherited-source refusal under irc-408-d-3-C-i, and the named-action designated-Roth refusal under irc-408A-d-3-B (conversionDestinationIssue kind gate); QCD source-IRA restrictions remain open |
 | actions/retirementActionManualReview.ts | 2026-08-29 | replacement source-owner and Roth-destination identity checks registered under irc-408-d-3-A-i; the type gate here does not discriminate a designated Roth (that vehicle refusal lives in the identity allocator), and the QCD source-owner clause remains open |
 | actions/rothConversionExecution.ts | 2026-08-29 | ordering and inherited-bar records name executeRothConversions; the positive-basis deferred-character branch publishes null character for the downstream annual 408(d)(2) pass to resolve, and that deferral plus the direct-vehicle gates remain the residual |
-| actions/traditionalEmployerPlanPenaltyPrerequisite.ts | 2026-08-24 | Rule of 55, employer-SEPP, permitted methods, public-safety and recapture covered; age-59½ threshold, 10% rate, disability waiver lack records |
-| decisions/generators.ts | 2026-08-29 | QLAC 85 ceiling registered via treas-reg-1-401-a-9-6-q-1-ii-qlac-commences-by-the-85th-birthday naming annuityPurchaseGenerator; the bracket-target list is a search-space choice, but SS_GRID_CLAIM_AGES encodes the statutory 62-70 worker claiming window and stays a residual with claimFactor.ts |
+| actions/traditionalEmployerPlanPenaltyPrerequisite.ts | 2026-08-29 | Rule of 55, employer-SEPP, permitted methods, public-safety, recapture and the age-59½ threshold are registered records naming this file, and irc-72-t-2-A-iii now names the disability arm; the 10% rate application site for employer plans remains the residual |
 | decisions/pensionElection.ts | 2026-08-24 | Tax-free direct rollover into traditional IRA; no record |
 | decisions/rothConversionCandidateAdapter.ts | 2026-08-29 | same-owner destination gate registered under irc-408-d-3-A-i; the dated-intent gate remains unregistered |
 | insights/detectors/hecmBufferCandidate.ts | 2026-08-29 | returns null under age 62, the statutory HECM minimum age (12 U.S.C. 1715z-20(b)). Held partial pending an owner scope decision: the registry has held tax statutes only, and admitting housing law is a domain expansion the sweep does not decide |
-| insights/detectors/missingDataBasis.ts | 2026-08-29 | the section 121 coverage classification is registered via irc-121-a-b-principal-residence-eligibility-tests naming this detector (another independent implementation beside tax/propertySale.ts and the simulate path - consolidation candidate). Residual: the detector also gates on ROTH_QUALIFIED_AGE independently, and the Roth 59½ records do not name it |
 | insights/detectors/ssClaimMilestone.ts | 2026-08-24 | Re-derives SS entitlement/eligibility (former-spouse gates, family max, payable months) beyond registry gaps for maritalBenefits/nra |
 | internal/ownedNonRothIraAnnualAttemptSettlement.ts | 2026-08-29 | Its one statutory claim - the retired 408(d)(3)(A)(i) same-owner re-check - is enforced upstream in the runtime source series, where the record now pins it; this module itself enforces no rule and so is not named by any record |
-| ladder/bridge.ts | 2026-08-24 | Bridge cannot start before SS age 62; uses claimFactor/PIA sizing without naming record |
+| ladder/bridge.ts | 2026-08-29 | The age-62 floor the bridge sizes against is registered under usc-42-402-worker-claim-window-62-to-70 at the claim-factor that enforces it; this file consumes the floor and the PIA sizing as contracts rather than enforcing them, and stays partial on that consumption |
 | ladder/ladderMath.ts | 2026-08-27 | TIPS OID/deflation and §171 premium absence registered (treas-reg-1-1275-7-f-1-deflation-adjustment-income, treas-reg-1-1275-7-f-2-deflation-basis-decrease-not-modeled, treas-reg-1-1275-7-f-3-tips-acquisition-premium, irc-171-tips-bond-premium-amortization); statutory 0.125% min coupon and par-yield pricing conventions remain |
 | longevity/ssaPeriod2022.ts | 2026-08-24 | SSA 2022 period table provenance/vintage unregistered; statutory-use records name consumers |
 | model/migrations.ts | 2026-08-24 | Lump-sum election load repairs; inherited qualified-annuity premium retarget/stand-down beyond annuity-start ceiling records |
 | model/plan.ts | 2026-08-24 | Inherited IRA regime parse rules; spouse J&S RMD gate; 403(b) aggregation; SEPP schema; Roth inherited rules; HSA/stateMove/retirement-action eligibility gates |
 | model/retirementActionAnnualTaxFacts.ts | 2026-08-24 | April filing deadline w/ weekend & Emancipation Day adjustments; post-year IRA contribution window invariants; record names other files |
 | montecarlo/mortality.ts | 2026-08-24 | SSA 2022 period-table q(x) derivation for stochastic longevity MC; separate from treas-reg annuitization record |
-| params/index.ts | 2026-08-24 | Trustees default SS haircut (2034, 17%); indexFederalTaxPack uses plan inflation not C-CPI-U; convention only in records naming federalTax.ts |
+| params/index.ts | 2026-08-29 | The C-CPI-U-vs-plan-inflation indexing liberty is stated in the records naming indexFederalTaxPack; the Trustees default SS haircut (2034, 17%) remains unregistered because its source is the 2026 Trustees Report, which is owner-staged and not yet fetchable |
 | projection/annualCashFlowCapture.ts | 2026-08-29 | Form 8606 basis, QCD exclusion, annuity and penalty character composition; assembly composes results computed and registered elsewhere and enforces none of them, so no record names it |
 | projection/compare.ts | 2026-08-27 | after-tax estate haircuts incl. taxable step-up registered (irc-1014-a-1-basis-at-death-fair-market-value); Form 8606 basis exclusion, spousal rollover, HSA non-spouse income remain |
 | projection/flatTax.ts | 2026-08-29 | V1 placeholder whose only importers are test files, so the IRC 86 85 percent inclusion it computes never reaches a user-facing number; kept partial rather than rule-free so the claim stays visible if the file ever gains a production consumer |
@@ -168,8 +163,7 @@ None.
 | projection/ownedIraAnnualPhysicalTransactionInputs.ts | 2026-08-29 | Form 8606 line-7/8 and QCD staging semantics; the input builder carries one combined distribution bucket, so it does not enforce the line-7-versus-8 split; no record |
 | projection/ownedNonRothIraAnnualObservation.ts | 2026-08-24 | April-15/weekend/Emancipation-Day filing deadline; no record |
 | projection/simulate.ts | 2026-08-26 | QCD/RMD/annuity/contribution/QLAC covered; residual 59½/HSA/Roth-five-year/Rule-of-55 proxies, inherited-Roth post-flip, Medicare age-65, HSA family-limit, spousal/survivor SS |
-| rmd/applicableAge.ts | 2026-08-29 | named by treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy and, from 2026-08-29, by irc-401-a-9-C-v-applicable-age (applicableAgeAttainYears). Residual: the RBD April-1 arm, the 70½/July-1949 cohorts, and the born-1959 dual-age contest awaiting Announcement 2026-7 |
-| socialSecurity/claimFactor.ts | 2026-08-29 | Correction: usc-42-402-b-2-spousal-half-of-pia and poms-rs-00615-482-arf-crediting-months DO name this file; residual narrows to the worker 62y0m-70y0m claim window and DRC/ARF factor composition |
+| rmd/applicableAge.ts | 2026-08-29 | The RBD April-1 arm is now registered under irc-401-a-9-C-i-first-year-april-1-deferral and the born-1959 contest under the unsettled treas-reg-1-401-a-9-2-b-2-v-applicable-age-1959, both naming this file; the 70½/July-1949 cohort tiers remain unregistered pending a pre-SECURE historical-edition record |
 | socialSecurity/maritalBenefits.ts | 2026-08-24 | Eligibility rules (10-yr divorce, 9-mo survivor marriage, age gates, remarriage forfeiture) have no records |
 | socialSecurity/piaFromEarnings.ts | 2026-08-27 | AIME pipeline (age 22–61 window, 5 lowest dropped, top-35 years, AWI indexing) not separately registered; the disability-freeze exclusion and post-entitlement recomputation base window ARE registered as approximations |
 | strategies/accountEligibility.ts | 2026-08-25 | SECURE 2020 gate portion of S2 treat-as-own election timing not registered to this file |
@@ -178,11 +172,10 @@ None.
 | tax/annualCharitableDeductionParameters.ts | 2026-08-24 | §170(b)(1)(I) 0.5% floor, §170(b)(1)(G) 60% limit, §68 thresholds/rate; only §170(p) cap record names this file |
 | tax/federalTax.ts | 2026-08-26 | implements §86 SS inclusion, NIIT, AMT screen, senior-deduction phase-out, LTCG stacking with records naming it, but §170(b)(1)(I)(ii) category waterfall is applied only in the ledger file its record names |
 | tax/medicare.ts | 2026-08-27 | Part B/IRMAA premium path and Part B late-enrollment absence registered (usc-42-1395r-*, cfr-20-418-1205-1230-*); post-pack premiumScale (healthcare-inflation stand-in) remains |
-| tax/propertySale.ts | 2026-08-29 | Personal-use capital loss nondeductible (gain floored at zero) remains unregistered. Correction: three section 121/1250 records DO name this file; the loss-floor clause specifically is the residual |
 
 ## Re-verification due dates
 
-The 25 earliest due dates are shown below (410 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
+The 25 earliest due dates are shown below (412 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
 
 | Rule | Volatility | Verified on | Due on |
 | --- | --- | --- | --- |
@@ -218,16 +211,16 @@ The JSON manifest (rule-coverage.json, version 4) is the machine contract: each 
 
 ## Quote fidelity
 
-Committed ledger generated at 2026-08-29T18:48:29.368Z over 1057 authority entries (0 fetched live, 301 from cache).
+Committed ledger generated at 2026-08-29T20:35:20.796Z over 1060 authority entries (0 fetched live, 302 from cache).
 
-3 serious, 45 advisory, 1009 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
+3 serious, 45 advisory, 1012 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
 not treated as a CI gate; how to read each verdict: DOCS/operations/quote-fidelity.md.
 
 | Verdict | Class | Count |
 | --- | --- | ---: |
 | ELISION-EXACT | ok | 63 |
 | ELISION-PUNCTUATION | advisory | 4 |
-| EXACT | ok | 734 |
+| EXACT | ok | 737 |
 | PDF-NOT-VERIFIABLE | advisory | 5 |
 | PDF-WORD-LEVEL | ok | 212 |
 | PUNCTUATION | advisory | 36 |
