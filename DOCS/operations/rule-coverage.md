@@ -218,7 +218,7 @@ The JSON manifest (rule-coverage.json, version 4) is the machine contract: each 
 
 ## Quote fidelity
 
-Committed ledger generated at 2026-08-29T18:34:00.689Z over 1057 authority entries (0 fetched live, 301 from cache).
+Committed ledger generated at 2026-08-29T18:48:29.368Z over 1057 authority entries (0 fetched live, 301 from cache).
 
 3 serious, 45 advisory, 1009 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
 not treated as a CI gate; how to read each verdict: DOCS/operations/quote-fidelity.md.

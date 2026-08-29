@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-29T18:34:00.689Z",
+  "generatedAt": "2026-08-29T18:48:29.368Z",
   "recordCount": 410,
   "urlCount": 301,
   "fetched": 0,
@@ -2832,7 +2832,7 @@
       "citation": "P.L. 117-169, section 11406(a), adding 1860D-2(b)(9)(D)",
       "host": "www.govinfo.gov",
       "url": "https://www.govinfo.gov/content/pkg/PLAW-117publ169/pdf/PLAW-117publ169.pdf",
-      "quoteSha256": "da3e537968d7242c",
+      "quoteSha256": "82e78cf5ed0bd0b4",
       "verdict": "PDF-WORD-LEVEL",
       "detail": "3 elision segments, all present in the extracted text",
       "diagnosis": null

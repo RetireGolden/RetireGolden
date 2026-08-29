@@ -4596,7 +4596,7 @@ const registry = {
       citation: 'P.L. 117-169, section 11406(a), adding 1860D-2(b)(9)(D)',
       url: 'https://www.govinfo.gov/content/pkg/PLAW-117publ169/pdf/PLAW-117publ169.pdf',
       quotedText:
-        'In this paragraph, the term `applicable copayment amount\' means, with … respect to a covered insulin product under a prescription drug plan or an … plan dispensed-- ``(i) during plan years 2023, 2024, and 2025, $35; and ``(ii) during plan year 2026 and each subsequent plan year, the lesser of-- ``(I) $35; ``(II) an amount equal to 25 percent of the maximum fair price established for the covered insulin product in accordance with part E of title XI; or ``(III) an amount equal to 25 percent of the negotiated price of the covered insulin product under the prescription drug plan or',
+        'In this paragraph, the term `applicable copayment amount\' means, with … respect to a covered insulin product under a prescription drug plan or an … plan dispensed-- ``(i) during plan years 2023, 2024, and 2025, $35; and ``(ii) during plan year 2026 and each subsequent plan year, the lesser of-- ``(I) $35; ``(II) an amount equal to 25 percent of the maximum fair price established for the covered insulin product in accordance with part E of title XI; or ``(III) an amount equal to 25 percent of the negotiated price of the covered insulin product under the prescription drug plan or …',
     }],
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
