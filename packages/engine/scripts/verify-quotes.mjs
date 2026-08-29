@@ -364,7 +364,7 @@ function decodeEntities(s) {
  * @param {string} html
  * @returns {string[]}
  */
-function htmlVariants(html) {
+export function htmlVariants(html) {
   const withoutNoise = html
     .replace(/<script[\s\S]*?<\/script>/gi, ' ')
     .replace(/<style[\s\S]*?<\/style>/gi, ' ')
@@ -817,7 +817,7 @@ const ADVISORY = Object.freeze(['PUNCTUATION', 'ELISION-PUNCTUATION'])
  * @param {{id: string, citation: string, url: string, host: string, quotedText: string}} entry
  * @param {Source} source
  */
-function verdictFor(entry, source) {
+export function verdictFor(entry, source) {
   if (source.pdfUnreadable) {
     return { verdict: 'PDF-NOT-VERIFIABLE', detail: source.problem ?? 'PDF text could not be extracted' }
   }
@@ -897,15 +897,6 @@ function verdictFor(entry, source) {
 
   const missing = segments.filter((_, i) => rungs[i] < 0)
 
-  // A miss against a suspect stub is not evidence of absence: the page text
-  // was too short to be trusted as the document (a shell, a challenge page,
-  // an error body). Matches above stand — a stub cannot fake the presence of
-  // an exact statutory passage — but a miss reports the source problem, so a
-  // shell page never turns into an accusation against the registry.
-  if (source.suspectStub) {
-    return { verdict: 'UNFETCHABLE', detail: source.problem ?? 'source text too short to trust' }
-  }
-
   // Unmarked truncation: the quote closes a sentence the source keeps writing.
   const trimmed = missing.map((s) => s.replace(/[.;:,]+$/, ''))
   if (
@@ -937,6 +928,16 @@ function verdictFor(entry, source) {
       detail:
         'matches only after ignoring a comma, period, semicolon or colon on which the quote and the source disagree',
     }
+  }
+
+  // A miss against a suspect stub is not evidence of absence: the page text
+  // was too short to be trusted as the document (a shell, a challenge page,
+  // an error body). This sits AFTER the truncation and stray-punctuation
+  // rungs on purpose — a short page with a fixable quote defect still gets
+  // its diagnostic verdict — and only the final absence claim is replaced,
+  // so a shell page never turns into an accusation against the registry.
+  if (source.suspectStub) {
+    return { verdict: 'UNFETCHABLE', detail: source.problem ?? 'source text too short to trust' }
   }
 
   return {
@@ -1225,4 +1226,6 @@ async function main() {
   return results.some((r) => SERIOUS.includes(r.verdict)) ? 1 : 0
 }
 
-process.exitCode = await main()
+if (import.meta.main) {
+  process.exitCode = await main()
+}
