@@ -41,7 +41,7 @@ jobs:
   openrouter:
     name: OpenRouter review
     if: github.event_name == 'workflow_dispatch' || !github.event.pull_request.draft
-    uses: RetireGolden/.github/.github/workflows/openrouter-code-review.yml@37a463301702925ac699f3c40b46ce4572213c57 # .github#25 (action v1.2.5 cost + readable findings; this repo: two-model grok-4.6 + glm-5.3-flash + judge)
+    uses: RetireGolden/.github/.github/workflows/openrouter-code-review.yml@79863e9b7b5608022b220ad9b7d6e6c944748c21 # .github#27 (action v1.2.6 diff-budget triage; this repo: two-model grok-4.6 + glm-5.3-flash + judge)
     with:
       pr_number: ${{ inputs.pr_number || github.event.inputs.pr_number || github.event.pull_request.number }}
     secrets:
