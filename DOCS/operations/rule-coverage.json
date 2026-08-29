@@ -2,21 +2,21 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 4,
   "registry": {
-    "total": 411,
+    "total": 410,
     "byClassification": {
       "approximated": 107,
       "outOfScope": 73,
-      "settled": 226,
+      "settled": 225,
       "unsettled": 5
     },
     "byVolatility": {
       "annuallyIndexed": 58,
       "awaitingGuidance": 11,
-      "staticStatute": 336,
+      "staticStatute": 335,
       "sunsetting": 6
     },
     "byJurisdiction": {
-      "federal": 305,
+      "federal": 304,
       "states": {
         "AK": 1,
         "AL": 9,
@@ -76,8 +76,8 @@
   "attestations": {
     "totalFiles": 236,
     "byStatus": {
-      "partial": 47,
-      "registered": 64,
+      "partial": 56,
+      "registered": 55,
       "rule-free": 125,
       "unswept": 0
     },
@@ -137,9 +137,39 @@
       "note": "Inherited-IRA line-8 conversion/spousal-conversion refusal; no record"
     },
     {
+      "path": "actions/ownedNonRothIraAnnualCandidateTransaction.ts",
+      "sweptOn": "2026-08-29",
+      "note": "Owned traditional/SEP/SIMPLE IRA source scope remains unregistered; line-7 staging is registered where it is enforced (the movement stager), and this wrapper enforces no line semantics itself"
+    },
+    {
+      "path": "actions/ownedNonRothIraAnnualFilingEvidence.ts",
+      "sweptOn": "2026-08-29",
+      "note": "Prior-year contribution window covered; the January-1 opening-basis requirement is an engine convention (408(d)(2)(C) computes values as of the close of the year, so the calendar anchor here is architecture, not statute) and stays unregistered, as does the owner-wide non-inherited pool scope"
+    },
+    {
+      "path": "actions/ownedNonRothIraAnnualFilingSourceResolver.ts",
+      "sweptOn": "2026-08-29",
+      "note": "Filing source restricted to owned non-inherited traditional IRA pool; the scope claim has no record"
+    },
+    {
+      "path": "actions/ownedNonRothIraAnnualPhysicalTransaction.ts",
+      "sweptOn": "2026-08-29",
+      "note": "Same-owner Roth destination and designated-Roth vehicle refusal registered under irc-408-d-3-A-i and irc-408A-d-3-B; Form 8606 line-7/line-8 categorization and QCD charitable-debit scope remain unregistered"
+    },
+    {
       "path": "actions/ownedNonRothIraAnnualPlanCoordinator.ts",
       "sweptOn": "2026-08-29",
-      "note": "Exact age-59½ threshold remains in the penalty cluster"
+      "note": "Owner-wide pool excludes inherited IRAs; Form 8606 numerator/denominator and line-7/line-8 stacking; exact age-59½ threshold; no record"
+    },
+    {
+      "path": "actions/ownedNonRothIraAnnualPostCandidateEvidence.ts",
+      "sweptOn": "2026-08-29",
+      "note": "Contribution window covered; Form 8606 lines 1/4/6/7/9, owner-wide pool, and explicit zero line 8; no record"
+    },
+    {
+      "path": "actions/ownedNonRothIraMovementCandidate.ts",
+      "sweptOn": "2026-08-29",
+      "note": "Line-7 staging of executed owned-IRA withdrawals registered under form-8606-line-7-owned-ira-movement-staging; the owned traditional/SEP/SIMPLE source-scope claim remains unregistered"
     },
     {
       "path": "actions/ownedNonRothIraPenaltyPrerequisite.ts",
@@ -197,6 +227,11 @@
       "note": "Re-derives SS entitlement/eligibility (former-spouse gates, family max, payable months) beyond registry gaps for maritalBenefits/nra"
     },
     {
+      "path": "internal/ownedNonRothIraAnnualAttemptSettlement.ts",
+      "sweptOn": "2026-08-29",
+      "note": "Its one statutory claim - the retired 408(d)(3)(A)(i) same-owner re-check - is enforced upstream in the runtime source series, where the record now pins it; this module itself enforces no rule and so is not named by any record"
+    },
+    {
       "path": "ladder/bridge.ts",
       "sweptOn": "2026-08-24",
       "note": "Bridge cannot start before SS age 62; uses claimFactor/PIA sizing without naming record"
@@ -237,6 +272,11 @@
       "note": "Trustees default SS haircut (2034, 17%); indexFederalTaxPack uses plan inflation not C-CPI-U; convention only in records naming federalTax.ts"
     },
     {
+      "path": "projection/annualCashFlowCapture.ts",
+      "sweptOn": "2026-08-29",
+      "note": "Form 8606 basis, QCD exclusion, annuity and penalty character composition; assembly composes results computed and registered elsewhere and enforces none of them, so no record names it"
+    },
+    {
       "path": "projection/compare.ts",
       "sweptOn": "2026-08-27",
       "note": "after-tax estate haircuts incl. taxable step-up registered (irc-1014-a-1-basis-at-death-fair-market-value); Form 8606 basis exclusion, spousal rollover, HSA non-spouse income remain"
@@ -255,6 +295,11 @@
       "path": "projection/optimizerAggregateConversionPromotion.ts",
       "sweptOn": "2026-08-29",
       "note": "same-owner trim registered under irc-408-d-3-A-i and the distributability predicate under irc-401-k-2-B-i; RMD-first ordering is an upstream snapshot contract enforced at resolveOwnerIraRmdSatisfaction, not here, and stays the residual"
+    },
+    {
+      "path": "projection/ownedIraAnnualPhysicalTransactionInputs.ts",
+      "sweptOn": "2026-08-29",
+      "note": "Form 8606 line-7/8 and QCD staging semantics; the input builder carries one combined distribution bucket, so it does not enforce the line-7-versus-8 split; no record"
     },
     {
       "path": "projection/ownedNonRothIraAnnualObservation.ts",
@@ -334,8 +379,8 @@
       "directory": "actions",
       "files": 74,
       "byStatus": {
-        "partial": 16,
-        "registered": 32,
+        "partial": 22,
+        "registered": 26,
         "rule-free": 26
       }
     },
@@ -368,7 +413,8 @@
       "directory": "internal",
       "files": 9,
       "byStatus": {
-        "registered": 4,
+        "partial": 1,
+        "registered": 3,
         "rule-free": 5
       }
     },
@@ -416,8 +462,8 @@
       "directory": "projection",
       "files": 24,
       "byStatus": {
-        "partial": 6,
-        "registered": 4,
+        "partial": 8,
+        "registered": 2,
         "rule-free": 14
       }
     },
@@ -3862,8 +3908,7 @@
       "dueOn": "2027-08-25",
       "implementedBy": [
         "packages/engine/src/actions/annualQcdResidualForm8606.ts",
-        "packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts",
-        "packages/engine/src/projection/annualCashFlowCapture.ts"
+        "packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts"
       ],
       "implementations": [
         {
@@ -3881,15 +3926,6 @@
             {
               "name": "stageAnnualQcdTaxCharacterPostPass",
               "line": 477
-            }
-          ]
-        },
-        {
-          "path": "packages/engine/src/projection/annualCashFlowCapture.ts",
-          "functions": [
-            {
-              "name": "assembleYearCashFlow",
-              "line": 1480
             }
           ]
         }
@@ -3930,57 +3966,6 @@
           "kind": "formInstruction",
           "citation": "Instructions for Form 8606 (2025), Line 8",
           "url": "https://www.irs.gov/pub/irs-pdf/i8606.pdf"
-        }
-      ]
-    },
-    {
-      "id": "form-8606-january-1-opening-basis-snapshot",
-      "title": "Annual Form 8606 staging starts from a January 1 opening basis snapshot",
-      "classification": "settled",
-      "errorDirection": null,
-      "conventionRationale": null,
-      "contraryReading": null,
-      "jurisdiction": "federal",
-      "volatility": "staticStatute",
-      "effectiveFrom": 2026,
-      "effectiveThrough": null,
-      "verifiedOn": "2026-08-29",
-      "dueOn": "2027-08-29",
-      "implementedBy": [
-        "packages/engine/src/actions/ownedNonRothIraAnnualFilingEvidence.ts"
-      ],
-      "implementations": [
-        {
-          "path": "packages/engine/src/actions/ownedNonRothIraAnnualFilingEvidence.ts",
-          "functions": [
-            {
-              "name": "buildPlanOwnedNonRothIraAnnualFilingEvidence",
-              "line": 774
-            }
-          ]
-        }
-      ],
-      "fixtureFiles": [
-        "packages/engine/src/actions/ownedNonRothIraAnnualFilingEvidence.test.ts"
-      ],
-      "fixtures": [
-        {
-          "path": "packages/engine/src/actions/ownedNonRothIraAnnualFilingEvidence.test.ts",
-          "line": 284,
-          "note": "opening basis must be evidenced as of January 1 of the tax year",
-          "tests": [
-            {
-              "title": "refuses an opening basis dated January 2 and builds from January 1",
-              "line": 292
-            }
-          ]
-        }
-      ],
-      "authorities": [
-        {
-          "kind": "statute",
-          "citation": "IRC 408(d)(2)",
-          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim"
         }
       ]
     },
@@ -4057,7 +4042,7 @@
     },
     {
       "id": "form-8606-line-7-owned-ira-movement-staging",
-      "title": "Owned non-Roth IRA withdrawals stage as Form 8606 line 7 movements",
+      "title": "Owned IRA distributions stage on Form 8606 line 7 and conversions are excluded from it",
       "classification": "settled",
       "errorDirection": null,
       "conventionRationale": null,
@@ -4069,19 +4054,9 @@
       "verifiedOn": "2026-08-29",
       "dueOn": "2027-08-29",
       "implementedBy": [
-        "packages/engine/src/actions/ownedNonRothIraAnnualCandidateTransaction.ts",
         "packages/engine/src/actions/ownedNonRothIraMovementCandidate.ts"
       ],
       "implementations": [
-        {
-          "path": "packages/engine/src/actions/ownedNonRothIraAnnualCandidateTransaction.ts",
-          "functions": [
-            {
-              "name": "preparePlanOwnedNonRothIraAnnualCandidateTransaction",
-              "line": 274
-            }
-          ]
-        },
         {
           "path": "packages/engine/src/actions/ownedNonRothIraMovementCandidate.ts",
           "functions": [
@@ -4098,12 +4073,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/ownedNonRothIraMovementCandidate.test.ts",
-          "line": 216,
-          "note": "positive owned-IRA withdrawals stage as line 7 candidates",
+          "line": 218,
+          "note": "executed owned-IRA withdrawals stage as line 7 distribution candidates",
           "tests": [
             {
-              "title": "emits one line-7 candidate per positive executed withdrawal",
-              "line": 224
+              "title": "stages the executed withdrawal as a line-7 distribution candidate",
+              "line": 226
             }
           ]
         }
@@ -4111,12 +4086,12 @@
       "authorities": [
         {
           "kind": "formInstruction",
-          "citation": "Instructions for Form 8606 (2025), Line 7",
-          "url": "https://www.irs.gov/pub/irs-pdf/i8606.pdf"
+          "citation": "Form 8606 (2025), line 7",
+          "url": "https://www.irs.gov/pub/irs-pdf/f8606.pdf"
         },
         {
           "kind": "formInstruction",
-          "citation": "Instructions for Form 8606 (2025), Line 8",
+          "citation": "Instructions for Form 8606 (2025), Line 7",
           "url": "https://www.irs.gov/pub/irs-pdf/i8606.pdf"
         }
       ]
@@ -4136,11 +4111,7 @@
       "dueOn": "2027-08-25",
       "implementedBy": [
         "packages/engine/src/actions/annualRetirementPhysicalEventInventory.ts",
-        "packages/engine/src/actions/ownedNonRothIraAnnualCandidateTransaction.ts",
-        "packages/engine/src/actions/ownedNonRothIraAnnualPhysicalTransaction.ts",
-        "packages/engine/src/actions/ownedNonRothIraAnnualPlanCoordinator.ts",
-        "packages/engine/src/actions/ownedNonRothIraAnnualPostCandidateEvidence.ts",
-        "packages/engine/src/projection/ownedIraAnnualPhysicalTransactionInputs.ts"
+        "packages/engine/src/actions/ownedNonRothIraAnnualPhysicalTransaction.ts"
       ],
       "implementations": [
         {
@@ -4153,47 +4124,11 @@
           ]
         },
         {
-          "path": "packages/engine/src/actions/ownedNonRothIraAnnualCandidateTransaction.ts",
-          "functions": [
-            {
-              "name": "preparePlanOwnedNonRothIraAnnualCandidateTransaction",
-              "line": 274
-            }
-          ]
-        },
-        {
           "path": "packages/engine/src/actions/ownedNonRothIraAnnualPhysicalTransaction.ts",
           "functions": [
             {
               "name": "preparePlanOwnedNonRothIraAnnualPhysicalTransaction",
               "line": 1455
-            }
-          ]
-        },
-        {
-          "path": "packages/engine/src/actions/ownedNonRothIraAnnualPlanCoordinator.ts",
-          "functions": [
-            {
-              "name": "coordinatePlanOwnedNonRothIraAnnualWithdrawalCandidate",
-              "line": 1938
-            }
-          ]
-        },
-        {
-          "path": "packages/engine/src/actions/ownedNonRothIraAnnualPostCandidateEvidence.ts",
-          "functions": [
-            {
-              "name": "buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput",
-              "line": 447
-            }
-          ]
-        },
-        {
-          "path": "packages/engine/src/projection/ownedIraAnnualPhysicalTransactionInputs.ts",
-          "functions": [
-            {
-              "name": "buildOwnedIraAnnualPhysicalTransactionInputs",
-              "line": 317
             }
           ]
         }
@@ -8561,16 +8496,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/ownedNonRothIraAnnualFilingEvidence.test.ts",
-          "line": 786,
+          "line": 762,
           "note": null,
           "tests": [
             {
               "title": "refuses a prior-year contribution made after the unextended deadline",
-              "line": 798
+              "line": 774
             },
             {
               "title": "counts a contribution made inside the window toward that year basis",
-              "line": 809
+              "line": 785
             }
           ]
         }
@@ -11749,7 +11684,6 @@
       "implementedBy": [
         "packages/engine/src/internal/ownedNonRothIraContiguousReplay.ts",
         "packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts",
-        "packages/engine/src/projection/annualCashFlowCapture.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
@@ -11768,15 +11702,6 @@
             {
               "name": "validateOwnedNonRothIraRuntimeSourceSeries",
               "line": 2465
-            }
-          ]
-        },
-        {
-          "path": "packages/engine/src/projection/annualCashFlowCapture.ts",
-          "functions": [
-            {
-              "name": "assembleYearCashFlow",
-              "line": 1480
             }
           ]
         },
@@ -12067,12 +11992,7 @@
       "implementedBy": [
         "packages/engine/src/actions/annualIraBasisAllocation.ts",
         "packages/engine/src/actions/beneficiaryTraditionalIraWithdrawalCharacter.ts",
-        "packages/engine/src/actions/ownedNonRothIraAnnualFilingEvidence.ts",
-        "packages/engine/src/actions/ownedNonRothIraAnnualFilingSourceResolver.ts",
-        "packages/engine/src/actions/ownedNonRothIraAnnualPlanCoordinator.ts",
-        "packages/engine/src/actions/ownedNonRothIraAnnualPostCandidateEvidence.ts",
-        "packages/engine/src/actions/ownedNonRothIraWithdrawalCharacter.ts",
-        "packages/engine/src/projection/annualCashFlowCapture.ts"
+        "packages/engine/src/actions/ownedNonRothIraWithdrawalCharacter.ts"
       ],
       "implementations": [
         {
@@ -12094,56 +12014,11 @@
           ]
         },
         {
-          "path": "packages/engine/src/actions/ownedNonRothIraAnnualFilingEvidence.ts",
-          "functions": [
-            {
-              "name": "buildPlanOwnedNonRothIraAnnualFilingEvidence",
-              "line": 774
-            }
-          ]
-        },
-        {
-          "path": "packages/engine/src/actions/ownedNonRothIraAnnualFilingSourceResolver.ts",
-          "functions": [
-            {
-              "name": "resolvePlanOwnedNonRothIraAnnualFilingSources",
-              "line": 271
-            }
-          ]
-        },
-        {
-          "path": "packages/engine/src/actions/ownedNonRothIraAnnualPlanCoordinator.ts",
-          "functions": [
-            {
-              "name": "coordinatePlanOwnedNonRothIraAnnualWithdrawalCandidate",
-              "line": 1938
-            }
-          ]
-        },
-        {
-          "path": "packages/engine/src/actions/ownedNonRothIraAnnualPostCandidateEvidence.ts",
-          "functions": [
-            {
-              "name": "buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput",
-              "line": 447
-            }
-          ]
-        },
-        {
           "path": "packages/engine/src/actions/ownedNonRothIraWithdrawalCharacter.ts",
           "functions": [
             {
               "name": "classifyOwnedNonRothIraAnnualWithdrawals",
               "line": 248
-            }
-          ]
-        },
-        {
-          "path": "packages/engine/src/projection/annualCashFlowCapture.ts",
-          "functions": [
-            {
-              "name": "assembleYearCashFlow",
-              "line": 1480
             }
           ]
         }
@@ -12201,7 +12076,6 @@
         "packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts",
         "packages/engine/src/actions/retirementActionManualReview.ts",
         "packages/engine/src/decisions/rothConversionCandidateAdapter.ts",
-        "packages/engine/src/internal/ownedNonRothIraAnnualAttemptSettlement.ts",
         "packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts",
         "packages/engine/src/projection/optimizerAggregateConversionPromotion.ts",
         "packages/engine/src/projection/simulate.ts"
@@ -12253,15 +12127,6 @@
             {
               "name": "adaptFillTargetRothConversionGeneratorCandidate",
               "line": 386
-            }
-          ]
-        },
-        {
-          "path": "packages/engine/src/internal/ownedNonRothIraAnnualAttemptSettlement.ts",
-          "functions": [
-            {
-              "name": "runOwnedNonRothIraAnnualSettlementAttempts",
-              "line": 826
             }
           ]
         },
@@ -13110,7 +12975,6 @@
       "dueOn": "2027-08-25",
       "implementedBy": [
         "packages/engine/src/actions/annualQcdExecutionPrerequisite.ts",
-        "packages/engine/src/actions/ownedNonRothIraAnnualPhysicalTransaction.ts",
         "packages/engine/src/strategies/accountEligibility.ts"
       ],
       "implementations": [
@@ -13120,15 +12984,6 @@
             {
               "name": "evaluateAnnualQcdExecutionPrerequisites",
               "line": 817
-            }
-          ]
-        },
-        {
-          "path": "packages/engine/src/actions/ownedNonRothIraAnnualPhysicalTransaction.ts",
-          "functions": [
-            {
-              "name": "preparePlanOwnedNonRothIraAnnualPhysicalTransaction",
-              "line": 1455
             }
           ]
         },
@@ -13562,10 +13417,7 @@
       "dueOn": "2027-08-02",
       "implementedBy": [
         "packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts",
-        "packages/engine/src/actions/ownedNonRothIraAnnualPhysicalTransaction.ts",
-        "packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts",
-        "packages/engine/src/projection/annualCashFlowCapture.ts",
-        "packages/engine/src/projection/ownedIraAnnualPhysicalTransactionInputs.ts"
+        "packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts"
       ],
       "implementations": [
         {
@@ -13578,38 +13430,11 @@
           ]
         },
         {
-          "path": "packages/engine/src/actions/ownedNonRothIraAnnualPhysicalTransaction.ts",
-          "functions": [
-            {
-              "name": "preparePlanOwnedNonRothIraAnnualPhysicalTransaction",
-              "line": 1455
-            }
-          ]
-        },
-        {
           "path": "packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts",
           "functions": [
             {
               "name": "validateOwnedNonRothIraRuntimeSourceSeries",
               "line": 2465
-            }
-          ]
-        },
-        {
-          "path": "packages/engine/src/projection/annualCashFlowCapture.ts",
-          "functions": [
-            {
-              "name": "assembleYearCashFlow",
-              "line": 1480
-            }
-          ]
-        },
-        {
-          "path": "packages/engine/src/projection/ownedIraAnnualPhysicalTransactionInputs.ts",
-          "functions": [
-            {
-              "name": "buildOwnedIraAnnualPhysicalTransactionInputs",
-              "line": 317
             }
           ]
         }
@@ -13933,8 +13758,7 @@
       "verifiedOn": "2026-08-02",
       "dueOn": "2026-10-31",
       "implementedBy": [
-        "packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts",
-        "packages/engine/src/projection/annualCashFlowCapture.ts"
+        "packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts"
       ],
       "implementations": [
         {
@@ -13943,15 +13767,6 @@
             {
               "name": "stageAnnualQcdTaxCharacterPostPass",
               "line": 477
-            }
-          ]
-        },
-        {
-          "path": "packages/engine/src/projection/annualCashFlowCapture.ts",
-          "functions": [
-            {
-              "name": "assembleYearCashFlow",
-              "line": 1480
             }
           ]
         }
@@ -17585,8 +17400,7 @@
       "verifiedOn": "2026-08-03",
       "dueOn": "2027-08-03",
       "implementedBy": [
-        "packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts",
-        "packages/engine/src/projection/annualCashFlowCapture.ts"
+        "packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts"
       ],
       "implementations": [
         {
@@ -17595,15 +17409,6 @@
             {
               "name": "evaluateOwnedNonRothIraPenaltyPrerequisites",
               "line": 820
-            }
-          ]
-        },
-        {
-          "path": "packages/engine/src/projection/annualCashFlowCapture.ts",
-          "functions": [
-            {
-              "name": "assembleYearCashFlow",
-              "line": 1480
             }
           ]
         }
@@ -30257,15 +30062,15 @@
     }
   ],
   "quoteFidelity": {
-    "generatedAt": "2026-08-29T16:54:40.959Z",
-    "entryCount": 1059,
+    "generatedAt": "2026-08-29T17:24:43.884Z",
+    "entryCount": 1058,
     "fetched": 0,
-    "cached": 305,
+    "cached": 306,
     "counts": {
       "ABSENT": 25,
       "ELISION-EXACT": 60,
       "ELISION-PUNCTUATION": 4,
-      "EXACT": 715,
+      "EXACT": 714,
       "PDF-NOT-VERIFIABLE": 5,
       "PDF-WORD-LEVEL": 210,
       "PUNCTUATION": 37,

@@ -209,29 +209,25 @@ function finalizeStaged(options: {
 }
 
 describe('stageOwnedNonRothIraOrdinaryWithdrawalMovements', () => {
-  // The record's discriminating pair: positive executed withdrawals from the
-  // owned traditional/SEP/SIMPLE pool are staged as Form 8606 line 7
-  // distribution candidates. A reading that left them unstaged would emit no
-  // line-7 entries at all for the same requests.
+  // The record's discriminating pair, stated in the form's terms: an executed
+  // ordinary withdrawal from the owned non-Roth IRA pool appears among the
+  // Form 8606 line 7 distribution candidates, and a reading under which owned
+  // IRA distributions are not reportable on line 7 would stage none. The
+  // request fits inside the opening balance so the expected amount is the
+  // statutory consequence, not balance clipping.
   describeRule('form-8606-line-7-owned-ira-movement-staging', {
-    note: 'positive owned-IRA withdrawals stage as line 7 candidates',
+    note: 'executed owned-IRA withdrawals stage as line 7 distribution candidates',
     readings: {
-      positiveWithdrawalsStagedOnLineSeven: [75, 25],
-      rejectedUnstagedWithdrawals: [] as number[],
+      distributionStagedOnLineSeven: [75],
+      rejectedNotReportableOnLineSeven: [] as number[],
     },
-    accepted: 'positiveWithdrawalsStagedOnLineSeven',
-  }, ({ accepted, readings }) => {
-    it('emits one line-7 candidate per positive executed withdrawal', () => {
+    accepted: 'distributionStagedOnLineSeven',
+  }, ({ accepted }) => {
+    it('stages the executed withdrawal as a line-7 distribution candidate', () => {
       const result = stageOwnedNonRothIraOrdinaryWithdrawalMovements({
         ownerPersonId: asPersonId('owner'),
         taxYear: 2030,
         requests: [
-          withdrawal({
-            suffix: 'partial',
-            executionDate: '2030-06-02',
-            sequence: 1,
-            allocations: [allocation('partial', 'ira-one', 50)],
-          }),
           withdrawal({
             suffix: 'full',
             executionDate: '2030-06-01',
@@ -246,9 +242,8 @@ describe('stageOwnedNonRothIraOrdinaryWithdrawalMovements', () => {
         sourceEvidence: [source('ira-one')],
       })
       expect(result.status).toBe('movementCandidateStaged')
-      expect(result.line7Distributions.map((item) => item.grossAmount)).toEqual(accepted)
       expect(result.line7Distributions.map((item) => item.grossAmount))
-        .not.toEqual(readings.rejectedUnstagedWithdrawals)
+        .toEqual(accepted)
     })
   })
 
