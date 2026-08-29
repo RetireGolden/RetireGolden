@@ -2,21 +2,21 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 4,
   "registry": {
-    "total": 415,
+    "total": 416,
     "byClassification": {
       "approximated": 109,
       "outOfScope": 73,
-      "settled": 228,
+      "settled": 229,
       "unsettled": 5
     },
     "byVolatility": {
       "annuallyIndexed": 60,
       "awaitingGuidance": 11,
-      "staticStatute": 338,
+      "staticStatute": 339,
       "sunsetting": 6
     },
     "byJurisdiction": {
-      "federal": 309,
+      "federal": 310,
       "states": {
         "AK": 1,
         "AL": 9,
@@ -76,8 +76,8 @@
   "attestations": {
     "totalFiles": 236,
     "byStatus": {
-      "partial": 48,
-      "registered": 63,
+      "partial": 44,
+      "registered": 67,
       "rule-free": 125,
       "unswept": 0
     },
@@ -102,11 +102,6 @@
       "note": "Owned-source eligibility arrives as typed AcceptedQcdSourceEligibilityEvidence - this module consumes what the QCD execution prerequisite evaluator enforces, and the 408(d)(8) source records are registered at that evaluator; the taxable/excludable/basis partition is registered under the composition-order and taxable-first records"
     },
     {
-      "path": "actions/annualQcdResidualForm8606.ts",
-      "sweptOn": "2026-08-25",
-      "note": "Residual line-7/line-8 pro-rata reconciliation; no record"
-    },
-    {
       "path": "actions/annualRetirementPhysicalEventInventory.ts",
       "sweptOn": "2026-08-24",
       "note": "Inherited-RMD regime; owner-RMD start age; spouse-as-own transition; annuity/Form 8606 treatment; direct-trustee QCD origin; no record"
@@ -122,29 +117,19 @@
       "note": "Residual-RMD source restricted to beneficiary-owned inherited traditional IRA; no record"
     },
     {
-      "path": "actions/beneficiaryTraditionalIraResidualRmdAnnualRefinalization.ts",
-      "sweptOn": "2026-08-24",
-      "note": "Form 8606 line-7/line-8 residual rebuild and forced-zero line 8; no record"
-    },
-    {
-      "path": "actions/beneficiaryTraditionalIraWithdrawalCharacter.ts",
-      "sweptOn": "2026-08-24",
-      "note": "Inherited-IRA line-8 conversion/spousal-conversion refusal; no record"
-    },
-    {
       "path": "actions/ownedNonRothIraAnnualCandidateTransaction.ts",
       "sweptOn": "2026-08-29",
-      "note": "Owned traditional/SEP/SIMPLE IRA source scope remains unregistered; line-7 staging is registered where it is enforced (the movement stager), and this wrapper enforces no line semantics itself"
+      "note": "The owned source scope is registered under irc-408-d-2-A-owner-wide-non-inherited-ira-pool at the movement stager whose gate enforces it; this wrapper enforces neither the scope nor any line semantics itself and no record names it"
     },
     {
       "path": "actions/ownedNonRothIraAnnualFilingEvidence.ts",
       "sweptOn": "2026-08-29",
-      "note": "Prior-year contribution window covered; the January-1 opening-basis requirement is an engine convention (408(d)(2)(C) computes values as of the close of the year, so the calendar anchor here is architecture, not statute) and stays unregistered, as does the owner-wide non-inherited pool scope"
+      "note": "Prior-year contribution window covered; the owner-wide non-inherited pool scope is registered under irc-408-d-2-A-owner-wide-non-inherited-ira-pool at the gates that enforce it; the January-1 opening-basis anchor stays an engine convention (408(d)(2)(C) computes values as of the close of the year)"
     },
     {
       "path": "actions/ownedNonRothIraAnnualFilingSourceResolver.ts",
       "sweptOn": "2026-08-29",
-      "note": "Filing source restricted to owned non-inherited traditional IRA pool; the scope claim has no record"
+      "note": "The owned non-inherited pool restriction arrives through schema claims; enforcement and registration live at the pool-scope record's pinned gates, and this resolver's own issues are binding and dedup integrity with no separate statutory claim"
     },
     {
       "path": "actions/ownedNonRothIraAnnualPhysicalTransaction.ts",
@@ -154,17 +139,12 @@
     {
       "path": "actions/ownedNonRothIraAnnualPlanCoordinator.ts",
       "sweptOn": "2026-08-29",
-      "note": "Owner-wide pool excludes inherited IRAs; Form 8606 numerator/denominator and line-7/line-8 stacking; exact age-59½ threshold; no record"
+      "note": "The owner-wide non-inherited pool filter and the out-of-pool line-8 refusal are registered under irc-408-d-2-A-owner-wide-non-inherited-ira-pool; the exact age-59½ threshold representation remains the residual"
     },
     {
       "path": "actions/ownedNonRothIraAnnualPostCandidateEvidence.ts",
       "sweptOn": "2026-08-29",
-      "note": "Contribution window covered; Form 8606 lines 1/4/6/7/9, owner-wide pool, and explicit zero line 8; no record"
-    },
-    {
-      "path": "actions/ownedNonRothIraMovementCandidate.ts",
-      "sweptOn": "2026-08-29",
-      "note": "Line-7 staging of executed owned-IRA withdrawals registered under form-8606-line-7-owned-ira-movement-staging; the owned traditional/SEP/SIMPLE source-scope claim remains unregistered"
+      "note": "Pool completeness (every owned non-inherited sibling, employer/inherited/foreign refused) is registered under irc-408-d-2-A-owner-wide-non-inherited-ira-pool and the contribution window was already covered; the line 1/4/6/9 staging composition remains the residual"
     },
     {
       "path": "actions/retirementActionCandidateIdentityAllocator.ts",
@@ -339,8 +319,8 @@
       "directory": "actions",
       "files": 74,
       "byStatus": {
-        "partial": 20,
-        "registered": 28,
+        "partial": 16,
+        "registered": 32,
         "rule-free": 26
       }
     },
@@ -4080,16 +4060,36 @@
       "verifiedOn": "2026-08-25",
       "dueOn": "2027-08-25",
       "implementedBy": [
+        "packages/engine/src/actions/annualQcdResidualForm8606.ts",
         "packages/engine/src/actions/annualRetirementPhysicalEventInventory.ts",
+        "packages/engine/src/actions/beneficiaryTraditionalIraResidualRmdAnnualRefinalization.ts",
         "packages/engine/src/actions/ownedNonRothIraAnnualPhysicalTransaction.ts"
       ],
       "implementations": [
+        {
+          "path": "packages/engine/src/actions/annualQcdResidualForm8606.ts",
+          "functions": [
+            {
+              "name": "stageAnnualQcdResidualForm8606",
+              "line": 304
+            }
+          ]
+        },
         {
           "path": "packages/engine/src/actions/annualRetirementPhysicalEventInventory.ts",
           "functions": [
             {
               "name": "buildAnnualRetirementPhysicalEventInventory",
               "line": 1323
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/beneficiaryTraditionalIraResidualRmdAnnualRefinalization.ts",
+          "functions": [
+            {
+              "name": "prepareBeneficiaryTraditionalIraResidualRmdAnnualRefinalization",
+              "line": 704
             }
           ]
         },
@@ -11690,6 +11690,82 @@
       ]
     },
     {
+      "id": "irc-408-d-2-A-owner-wide-non-inherited-ira-pool",
+      "title": "The annual basis pool is all of the owner's own IRAs, and only those",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-29",
+      "dueOn": "2027-08-29",
+      "implementedBy": [
+        "packages/engine/src/actions/ownedNonRothIraAnnualPlanCoordinator.ts",
+        "packages/engine/src/actions/ownedNonRothIraAnnualPostCandidateEvidence.ts",
+        "packages/engine/src/actions/ownedNonRothIraMovementCandidate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraAnnualPlanCoordinator.ts",
+          "functions": [
+            {
+              "name": "coordinatePlanOwnedNonRothIraAnnualWithdrawalCandidate",
+              "line": 1938
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraAnnualPostCandidateEvidence.ts",
+          "functions": [
+            {
+              "name": "buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput",
+              "line": 447
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraMovementCandidate.ts",
+          "functions": [
+            {
+              "name": "stageOwnedNonRothIraOrdinaryWithdrawalMovements",
+              "line": 410
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/actions/ownedNonRothIraMovementCandidate.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraMovementCandidate.test.ts",
+          "line": 254,
+          "note": "inherited sources are refused at the owned-pool gate",
+          "tests": [
+            {
+              "title": "refuses an inherited source before any staging happens",
+              "line": 262
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 408(d)(2)(A)-(B)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "Instructions for Form 8606 (2025)",
+          "url": "https://www.irs.gov/pub/irs-pdf/i8606.pdf"
+        }
+      ]
+    },
+    {
       "id": "irc-408-d-2-B-annuity-payment-outside-the-annual-basis-fraction",
       "title": "An IRA annuity payment takes the year’s share of basis like any other distribution",
       "classification": "settled",
@@ -12252,12 +12328,32 @@
       "verifiedOn": "2026-08-25",
       "dueOn": "2027-08-25",
       "implementedBy": [
+        "packages/engine/src/actions/beneficiaryTraditionalIraResidualRmdAnnualRefinalization.ts",
+        "packages/engine/src/actions/beneficiaryTraditionalIraWithdrawalCharacter.ts",
         "packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts",
         "packages/engine/src/actions/rothConversionExecution.ts",
         "packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts",
         "packages/engine/src/strategies/accountEligibility.ts"
       ],
       "implementations": [
+        {
+          "path": "packages/engine/src/actions/beneficiaryTraditionalIraResidualRmdAnnualRefinalization.ts",
+          "functions": [
+            {
+              "name": "prepareBeneficiaryTraditionalIraResidualRmdAnnualRefinalization",
+              "line": 704
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/beneficiaryTraditionalIraWithdrawalCharacter.ts",
+          "functions": [
+            {
+              "name": "classifyBeneficiaryTraditionalIraWithdrawal",
+              "line": 321
+            }
+          ]
+        },
         {
           "path": "packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts",
           "functions": [
@@ -30396,16 +30492,16 @@
     }
   ],
   "quoteFidelity": {
-    "generatedAt": "2026-08-29T22:51:26.881Z",
-    "entryCount": 1063,
+    "generatedAt": "2026-08-29T23:20:56.336Z",
+    "entryCount": 1065,
     "fetched": 0,
     "cached": 305,
     "counts": {
       "ELISION-EXACT": 64,
       "ELISION-PUNCTUATION": 4,
-      "EXACT": 739,
+      "EXACT": 740,
       "PDF-NOT-VERIFIABLE": 5,
-      "PDF-WORD-LEVEL": 212,
+      "PDF-WORD-LEVEL": 213,
       "PUNCTUATION": 36,
       "UNFETCHABLE": 3
     }
