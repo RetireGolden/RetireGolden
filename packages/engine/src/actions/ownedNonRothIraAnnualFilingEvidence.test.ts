@@ -277,6 +277,30 @@ describe('Plan-owned non-Roth IRA annual filing evidence', () => {
     expect(issueKinds(added)).toContain('reviewedPoolMismatch')
   })
 
+  // The record's discriminating pair: the pass REQUIRES the opening basis to
+  // be evidenced exactly as of January 1 of the tax year. A reading that
+  // accepted any dated snapshot would have built evidence from the
+  // January-2 record this fixture presents.
+  describeRule('form-8606-january-1-opening-basis-snapshot', {
+    note: 'opening basis must be evidenced as of January 1 of the tax year',
+    readings: {
+      januaryFirstSnapshotRequired: 'annualFilingEvidenceBlocked',
+      anyDatedSnapshotAccepted: 'annualFilingEvidenceBuilt',
+    },
+    accepted: 'januaryFirstSnapshotRequired',
+  }, ({ accepted, readings }) => {
+    it('refuses an opening basis dated January 2 and builds from January 1', () => {
+      const wrongDate = clone()
+      ;(wrongDate.sourceRecord as PlanOwnedNonRothIraAnnualFilingSourceRecord)
+        .openingBasis.asOfDate = '2030-01-02'
+      const result = buildPlanOwnedNonRothIraAnnualFilingEvidence(wrongDate)
+      expect(result.status).toBe(accepted)
+      expect(result.status).not.toBe(readings.anyDatedSnapshotAccepted)
+      expect(built().annualBasisRecord.recordStatus)
+        .toBe('openingBasisAndExplicitZeroRolloverFactsComplete')
+    })
+  })
+
   it('requires January 1 opening basis and literal-zero rollover facts', () => {
     const wrongDate = clone()
     ;(wrongDate.sourceRecord as PlanOwnedNonRothIraAnnualFilingSourceRecord)

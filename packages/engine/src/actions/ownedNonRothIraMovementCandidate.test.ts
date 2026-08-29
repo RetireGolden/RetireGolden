@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { describeRule } from '../rules/describeRule.js'
 
 import type {
   OrdinaryWithdrawalRequest,
@@ -208,6 +209,49 @@ function finalizeStaged(options: {
 }
 
 describe('stageOwnedNonRothIraOrdinaryWithdrawalMovements', () => {
+  // The record's discriminating pair: positive executed withdrawals from the
+  // owned traditional/SEP/SIMPLE pool are staged as Form 8606 line 7
+  // distribution candidates. A reading that left them unstaged would emit no
+  // line-7 entries at all for the same requests.
+  describeRule('form-8606-line-7-owned-ira-movement-staging', {
+    note: 'positive owned-IRA withdrawals stage as line 7 candidates',
+    readings: {
+      positiveWithdrawalsStagedOnLineSeven: [75, 25],
+      rejectedUnstagedWithdrawals: [] as number[],
+    },
+    accepted: 'positiveWithdrawalsStagedOnLineSeven',
+  }, ({ accepted, readings }) => {
+    it('emits one line-7 candidate per positive executed withdrawal', () => {
+      const result = stageOwnedNonRothIraOrdinaryWithdrawalMovements({
+        ownerPersonId: asPersonId('owner'),
+        taxYear: 2030,
+        requests: [
+          withdrawal({
+            suffix: 'partial',
+            executionDate: '2030-06-02',
+            sequence: 1,
+            allocations: [allocation('partial', 'ira-one', 50)],
+          }),
+          withdrawal({
+            suffix: 'full',
+            executionDate: '2030-06-01',
+            sequence: 1,
+            allocations: [allocation('full', 'ira-one', 75)],
+          }),
+        ],
+        openingBalances: [{
+          accountId: asAccountId('ira-one'),
+          openingBalance: asUsdCents(100),
+        }],
+        sourceEvidence: [source('ira-one')],
+      })
+      expect(result.status).toBe('movementCandidateStaged')
+      expect(result.line7Distributions.map((item) => item.grossAmount)).toEqual(accepted)
+      expect(result.line7Distributions.map((item) => item.grossAmount))
+        .not.toEqual(readings.rejectedUnstagedWithdrawals)
+    })
+  })
+
   it('stages same-source actions sequentially as full, partial, and all-zero candidates', () => {
     const result = stageOwnedNonRothIraOrdinaryWithdrawalMovements({
       ownerPersonId: asPersonId('owner'),

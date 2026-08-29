@@ -409,14 +409,17 @@ const registry = {
     verifiedOn: '2026-08-02',
     implementedBy: [
       'packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts',
-      // The legacy projection reaches the same result structurally rather than
-      // arithmetically: a moving QCD carries no Form 8606 line, so its gross
-      // never enters the annual denominator and no basis is allocated to it.
       'packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts',
+      'packages/engine/src/actions/ownedNonRothIraAnnualPhysicalTransaction.ts',
+      'packages/engine/src/projection/annualCashFlowCapture.ts',
+      'packages/engine/src/projection/ownedIraAnnualPhysicalTransactionInputs.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts#stageAnnualQcdTaxCharacterPostPass',
       'packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts#validateOwnedNonRothIraRuntimeSourceSeries',
+      'packages/engine/src/actions/ownedNonRothIraAnnualPhysicalTransaction.ts#preparePlanOwnedNonRothIraAnnualPhysicalTransaction',
+      'packages/engine/src/projection/annualCashFlowCapture.ts#assembleYearCashFlow',
+      'packages/engine/src/projection/ownedIraAnnualPhysicalTransactionInputs.ts#buildOwnedIraAnnualPhysicalTransactionInputs',
     ],
   },
 
@@ -447,9 +450,13 @@ const registry = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-02',
-    implementedBy: ['packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts'],
+    implementedBy: [
+      'packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts',
+      'packages/engine/src/projection/annualCashFlowCapture.ts',
+    ],
     implementedByFunctions: [
       'packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts#stageAnnualQcdTaxCharacterPostPass',
+      'packages/engine/src/projection/annualCashFlowCapture.ts#assembleYearCashFlow',
     ],
   },
 
@@ -494,10 +501,12 @@ const registry = {
     implementedBy: [
       'packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts',
       'packages/engine/src/actions/annualQcdResidualForm8606.ts',
+      'packages/engine/src/projection/annualCashFlowCapture.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/actions/annualQcdResidualForm8606.ts#stageAnnualQcdResidualForm8606',
       'packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts#stageAnnualQcdTaxCharacterPostPass',
+      'packages/engine/src/projection/annualCashFlowCapture.ts#assembleYearCashFlow',
     ],
   },
 
@@ -1066,11 +1075,48 @@ const registry = {
       'packages/engine/src/actions/ownedNonRothIraWithdrawalCharacter.ts',
       'packages/engine/src/actions/beneficiaryTraditionalIraWithdrawalCharacter.ts',
       'packages/engine/src/actions/annualIraBasisAllocation.ts',
+      'packages/engine/src/actions/ownedNonRothIraAnnualFilingEvidence.ts',
+      'packages/engine/src/actions/ownedNonRothIraAnnualFilingSourceResolver.ts',
+      'packages/engine/src/actions/ownedNonRothIraAnnualPlanCoordinator.ts',
+      'packages/engine/src/actions/ownedNonRothIraAnnualPostCandidateEvidence.ts',
+      'packages/engine/src/projection/annualCashFlowCapture.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/actions/annualIraBasisAllocation.ts#allocateAnnualIraBasis',
       'packages/engine/src/actions/beneficiaryTraditionalIraWithdrawalCharacter.ts#classifyBeneficiaryTraditionalIraWithdrawal',
       'packages/engine/src/actions/ownedNonRothIraWithdrawalCharacter.ts#classifyOwnedNonRothIraAnnualWithdrawals',
+      'packages/engine/src/actions/ownedNonRothIraAnnualFilingEvidence.ts#buildPlanOwnedNonRothIraAnnualFilingEvidence',
+      'packages/engine/src/actions/ownedNonRothIraAnnualFilingSourceResolver.ts#resolvePlanOwnedNonRothIraAnnualFilingSources',
+      'packages/engine/src/actions/ownedNonRothIraAnnualPlanCoordinator.ts#coordinatePlanOwnedNonRothIraAnnualWithdrawalCandidate',
+      'packages/engine/src/actions/ownedNonRothIraAnnualPostCandidateEvidence.ts#buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput',
+      'packages/engine/src/projection/annualCashFlowCapture.ts#assembleYearCashFlow',
+    ],
+  },
+  'form-8606-january-1-opening-basis-snapshot': {
+    title: 'Annual Form 8606 staging starts from a January 1 opening basis snapshot',
+    statement:
+      'The annual owned-IRA basis pass must carry one exact January 1 opening basis snapshot for the owner-wide non-Roth IRA pool before it stages current-year contributions, distributions, and conversions.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 408(d)(2)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim',
+      quotedText:
+        'For purposes of applying section 72 to any amount described in paragraph (1)- (A) all individual retirement plans shall be treated as 1 contract, (B) all distributions during any taxable year shall be treated as 1 distribution, and (C) the value of the contract, income on the contract, and investment in the contract shall be computed as of the close of the calendar year in which the taxable year begins.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-29',
+    implementedBy: [
+      'packages/engine/src/actions/ownedNonRothIraAnnualFilingEvidence.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/ownedNonRothIraAnnualFilingEvidence.ts#buildPlanOwnedNonRothIraAnnualFilingEvidence',
     ],
   },
 
@@ -1135,10 +1181,53 @@ const registry = {
     implementedBy: [
       'packages/engine/src/actions/ownedNonRothIraAnnualPhysicalTransaction.ts',
       'packages/engine/src/actions/annualRetirementPhysicalEventInventory.ts',
+      'packages/engine/src/actions/ownedNonRothIraAnnualCandidateTransaction.ts',
+      'packages/engine/src/actions/ownedNonRothIraAnnualPlanCoordinator.ts',
+      'packages/engine/src/actions/ownedNonRothIraAnnualPostCandidateEvidence.ts',
+      'packages/engine/src/projection/ownedIraAnnualPhysicalTransactionInputs.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/actions/annualRetirementPhysicalEventInventory.ts#buildAnnualRetirementPhysicalEventInventory',
       'packages/engine/src/actions/ownedNonRothIraAnnualPhysicalTransaction.ts#preparePlanOwnedNonRothIraAnnualPhysicalTransaction',
+      'packages/engine/src/actions/ownedNonRothIraAnnualCandidateTransaction.ts#preparePlanOwnedNonRothIraAnnualCandidateTransaction',
+      'packages/engine/src/actions/ownedNonRothIraAnnualPlanCoordinator.ts#coordinatePlanOwnedNonRothIraAnnualWithdrawalCandidate',
+      'packages/engine/src/actions/ownedNonRothIraAnnualPostCandidateEvidence.ts#buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput',
+      'packages/engine/src/projection/ownedIraAnnualPhysicalTransactionInputs.ts#buildOwnedIraAnnualPhysicalTransactionInputs',
+    ],
+  },
+  'form-8606-line-7-owned-ira-movement-staging': {
+    title: 'Owned non-Roth IRA withdrawals stage as Form 8606 line 7 movements',
+    statement:
+      'A positive ordinary withdrawal from an owned traditional, SEP, or SIMPLE IRA is staged as a Form 8606 line 7 distribution candidate before annual basis characterization.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'formInstruction',
+      citation: 'Instructions for Form 8606 (2025), Line 7',
+      url: 'https://www.irs.gov/pub/irs-pdf/i8606.pdf',
+      quotedText:
+        'Don’t include any of the following on line 7 … Distributions that you converted to a Roth IRA.',
+    }, {
+      kind: 'formInstruction',
+      citation: 'Instructions for Form 8606 (2025), Line 8',
+      url: 'https://www.irs.gov/pub/irs-pdf/i8606.pdf',
+      quotedText:
+        'If, in 2025, you converted any amounts from traditional IRAs to a Roth IRA, enter on line 8 the net amount you converted.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-29',
+    implementedBy: [
+      'packages/engine/src/actions/ownedNonRothIraAnnualCandidateTransaction.ts',
+      'packages/engine/src/actions/ownedNonRothIraMovementCandidate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/ownedNonRothIraAnnualCandidateTransaction.ts#preparePlanOwnedNonRothIraAnnualCandidateTransaction',
+      'packages/engine/src/actions/ownedNonRothIraMovementCandidate.ts#stageOwnedNonRothIraOrdinaryWithdrawalMovements',
     ],
   },
 
@@ -1449,10 +1538,12 @@ const registry = {
     implementedBy: [
       'packages/engine/src/strategies/accountEligibility.ts',
       'packages/engine/src/actions/annualQcdExecutionPrerequisite.ts',
+      'packages/engine/src/actions/ownedNonRothIraAnnualPhysicalTransaction.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/actions/annualQcdExecutionPrerequisite.ts#evaluateAnnualQcdExecutionPrerequisites',
       'packages/engine/src/strategies/accountEligibility.ts#evaluateQcd',
+      'packages/engine/src/actions/ownedNonRothIraAnnualPhysicalTransaction.ts#preparePlanOwnedNonRothIraAnnualPhysicalTransaction',
     ],
   },
 
@@ -1832,12 +1923,14 @@ const registry = {
       'packages/engine/src/strategies/accountEligibility.ts',
       'packages/engine/src/actions/rothConversionExecution.ts',
       'packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts',
+      'packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/actions/rothConversionExecution.ts#executeRothConversions',
       'packages/engine/src/strategies/accountEligibility.ts#evaluateConversion',
       'packages/engine/src/strategies/accountEligibility.ts#isConvertibleToRoth',
       'packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts#conversionSourceIssue',
+      'packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts#validateOwnedNonRothIraRuntimeSourceSeries',
     ],
   },
 
@@ -2842,9 +2935,13 @@ const registry = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
-    implementedBy: ['packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts'],
+    implementedBy: [
+      'packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts',
+      'packages/engine/src/projection/annualCashFlowCapture.ts',
+    ],
     implementedByFunctions: [
       'packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts#evaluateOwnedNonRothIraPenaltyPrerequisites',
+      'packages/engine/src/projection/annualCashFlowCapture.ts#assembleYearCashFlow',
     ],
   },
 
@@ -6875,11 +6972,13 @@ const registry = {
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/strategies/accountEligibility.ts',
       'packages/engine/src/actions/rothConversionExecution.ts',
+      'packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/actions/rothConversionExecution.ts#executeRothConversions',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/strategies/accountEligibility.ts#resolveOwnerIraRmdSatisfaction',
+      'packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts#validateOwnedNonRothIraRuntimeSourceSeries',
     ],
   },
   'treas-reg-1-401-a-9-2-b-2-v-applicable-age-1959': {
@@ -9336,6 +9435,9 @@ const registry = {
       'packages/engine/src/actions/retirementActionManualReview.ts',
       'packages/engine/src/decisions/rothConversionCandidateAdapter.ts',
       'packages/engine/src/projection/optimizerAggregateConversionPromotion.ts',
+      'packages/engine/src/actions/ownedNonRothIraAnnualPhysicalTransaction.ts',
+      'packages/engine/src/internal/ownedNonRothIraAnnualAttemptSettlement.ts',
+      'packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/actions/aggregateRothConversionOwnerAllocation.ts#allocateAggregateRothConversionByOwner',
@@ -9345,6 +9447,9 @@ const registry = {
       'packages/engine/src/actions/retirementActionManualReview.ts#targetIdentitySemanticsIssue',
       'packages/engine/src/decisions/rothConversionCandidateAdapter.ts#adaptFillTargetRothConversionGeneratorCandidate',
       'packages/engine/src/projection/optimizerAggregateConversionPromotion.ts#promoteOneYear',
+      'packages/engine/src/actions/ownedNonRothIraAnnualPhysicalTransaction.ts#preparePlanOwnedNonRothIraAnnualPhysicalTransaction',
+      'packages/engine/src/internal/ownedNonRothIraAnnualAttemptSettlement.ts#runOwnedNonRothIraAnnualSettlementAttempts',
+      'packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts#validateOwnedNonRothIraRuntimeSourceSeries',
     ],
   },
   'irc-408A-d-3-B-conversion-destination-must-be-a-roth-ira': {
@@ -9427,12 +9532,14 @@ const registry = {
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/strategies/accountEligibility.ts',
       'packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts',
+      'packages/engine/src/actions/ownedNonRothIraAnnualPhysicalTransaction.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/actions/aggregateRothConversionOwnerAllocation.ts#allocateAggregateRothConversionByOwner',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/strategies/accountEligibility.ts#evaluateRetirementActionEligibility',
       'packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts#conversionDestinationIssue',
+      'packages/engine/src/actions/ownedNonRothIraAnnualPhysicalTransaction.ts#preparePlanOwnedNonRothIraAnnualPhysicalTransaction',
     ],
   },
 
@@ -13296,11 +13403,13 @@ const registry = {
       'packages/engine/src/internal/ownedNonRothIraContiguousReplay.ts',
       'packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts',
       'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/projection/annualCashFlowCapture.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/internal/ownedNonRothIraContiguousReplay.ts#replayOwnedNonRothIraContiguousYears',
       'packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts#validateOwnedNonRothIraRuntimeSourceSeries',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/annualCashFlowCapture.ts#assembleYearCashFlow',
     ],
   },
 
