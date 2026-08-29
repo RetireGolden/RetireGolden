@@ -9,7 +9,8 @@
  * - born 1951–1958 → applicable age 73;
  * - born 1959 → contested between 73 and 75 (enacted §107 places the cohort in
  *   both buckets; Prop. Reg. §1.401(a)(9)-2 would resolve to 73, but T.D. 10001
- *   reserved the paragraph and Announcement 2026-7 defers the fix);
+ *   reserved the paragraph; Announcement 2026-7 defers only the anticipated
+ *   final amendments to §§ 1.401(a)(9)-4, -5 and -6 and does not mention it);
  * - born 1960 or later → applicable age 75.
  *
  * For a non-70½ tier the RBD is April 1 of the year after the calendar year the
@@ -271,7 +272,7 @@ export function deriveRbdComparison(input: RbdDerivationInput): RbdDerivation {
       kind: 'needs-review',
       reason,
       detail:
-        'owner born 1959 has a contested applicable age (73 vs 75 under SECURE 2.0 §107; Prop. Reg. §1.401(a)(9)-2 would resolve to 73 but remains reserved under Announcement 2026-7), and the feasible RBD years straddle the death year so death-vs-RBD cannot be settled; supply a settled applicable-age resolution or a death year outside both candidate RBD years',
+        'owner born 1959 has a contested applicable age (73 vs 75 under SECURE 2.0 §107; Prop. Reg. §1.401(a)(9)-2 would resolve to 73 but the final paragraph remains reserved, and Announcement 2026-7 does not address it), and the feasible RBD years straddle the death year so death-vs-RBD cannot be settled; supply a settled applicable-age resolution or a death year outside both candidate RBD years',
     }
   }
 

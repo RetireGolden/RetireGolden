@@ -1,16 +1,16 @@
 {
-  "generatedAt": "2026-08-29T20:35:20.796Z",
-  "recordCount": 412,
-  "urlCount": 302,
+  "generatedAt": "2026-08-29T22:51:26.881Z",
+  "recordCount": 415,
+  "urlCount": 305,
   "fetched": 0,
-  "cached": 302,
-  "entryCount": 1060,
+  "cached": 305,
+  "entryCount": 1063,
   "counts": {
-    "EXACT": 737,
+    "EXACT": 739,
     "PUNCTUATION": 36,
     "PDF-WORD-LEVEL": 212,
     "ELISION-PUNCTUATION": 4,
-    "ELISION-EXACT": 63,
+    "ELISION-EXACT": 64,
     "UNFETCHABLE": 3,
     "PDF-NOT-VERIFIABLE": 5
   },
@@ -1806,6 +1806,28 @@
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null
+    },
+    {
+      "id": "ssa-2026-trustees-oasdi-depletion-default-haircut",
+      "citation": "A Summary of the 2026 Annual Reports, Social Security and Medicare Boards of Trustees",
+      "host": "www.ssa.gov",
+      "url": "https://www.ssa.gov/oact/trsum/",
+      "quoteSha256": "7a4d58ce49b1e235",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null,
+      "fetchProfile": "browserFallback"
+    },
+    {
+      "id": "ssa-table-4c6-period-life-table-vintage",
+      "citation": "SSA Actuarial Life Table (Table 4C6)",
+      "host": "www.ssa.gov",
+      "url": "https://www.ssa.gov/oact/STATS/table4c6.html",
+      "quoteSha256": "0297433e220ae397",
+      "verdict": "ELISION-EXACT",
+      "detail": "2 segments, every one a literal substring",
+      "diagnosis": null,
+      "fetchProfile": "browserFallback"
     },
     {
       "id": "usc-42-402-r-1-2-deemed-filing-old-age-and-spousal",
@@ -5953,6 +5975,16 @@
       "host": "www.irs.gov",
       "url": "https://www.irs.gov/irb/2010-51_IRB",
       "quoteSha256": "bc16505bef5f737e",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-12-1715z-20-b-hecm-minimum-age-62",
+      "citation": "12 U.S.C. 1715z-20(b)(1)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title12-section1715z-20&num=0&edition=prelim",
+      "quoteSha256": "bd2d7771a4d6bd54",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null

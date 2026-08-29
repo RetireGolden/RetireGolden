@@ -15,6 +15,7 @@ import {
   rmdStartAgeForBirthYear,
   standardDeduction,
   uniformLifetimeDivisor,
+  TRUSTEES_DEFAULT_SS_HAIRCUT,
 } from './index.js'
 
 describe('packForYear', () => {
@@ -505,6 +506,24 @@ describe('parameter pack provenance', () => {
       expect(pack.socialSecurity.oasdiEmployeeRatePct).not.toBe(readings.combinedEmployerAndEmployee)
       expect(pack.socialSecurity.oasdiEmployeeRatePct * 2)
         .toBeCloseTo(readings.combinedEmployerAndEmployee, 10)
+    })
+  })
+})
+
+describe('trustees default haircut', () => {
+  // The 2026 Trustees Report's combined-OASDI intermediate projection:
+  // depletion Q3 2034, 83 percent payable (a 17 percent cut). The rejected
+  // reading takes the OASI-standalone projection instead - depletion Q4 2032,
+  // 78 percent payable - which the conventionRationale deliberately declines.
+  describeRule('ssa-2026-trustees-oasdi-depletion-default-haircut', {
+    readings: {
+      combinedOasdiIntermediate: { fromYear: 2034, cutPct: 17 },
+      oasiStandaloneProjection: { fromYear: 2032, cutPct: 22 },
+    },
+    accepted: 'combinedOasdiIntermediate',
+  }, ({ accepted }) => {
+    it('defaults to the combined-OASDI depletion projection', () => {
+      expect(TRUSTEES_DEFAULT_SS_HAIRCUT).toEqual(accepted)
     })
   })
 })

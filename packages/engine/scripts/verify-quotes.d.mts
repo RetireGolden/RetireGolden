@@ -7,6 +7,8 @@
 export interface QuoteVerdictSource {
   readonly url: string
   readonly ok: boolean
+  /** 'browserFallback' when the disclosed identity retry served the page. */
+  readonly fetchProfile?: 'transparent' | 'browserFallback'
   readonly problem?: string
   readonly isPdf: boolean
   readonly pdfUnreadable?: boolean
@@ -19,3 +21,4 @@ export declare function verdictFor(
   source: QuoteVerdictSource,
 ): { readonly verdict: string; readonly detail: string }
 export declare function htmlVariants(html: string): string[]
+export declare function fallbackEligible(host: string, status: number): boolean

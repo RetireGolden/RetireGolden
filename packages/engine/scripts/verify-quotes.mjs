@@ -80,6 +80,48 @@ const pkgDir = resolve(scriptDir, '..')
 const USER_AGENT =
   'Mozilla/5.0 (compatible; RetireGolden-quote-verifier/1.0; +https://github.com/RetireGolden/RetireGolden)'
 
+/**
+ * Retry identity for official hosts whose perimeter rejects the transparent
+ * identity above. Grounded 2026-08-29: robots.txt on www.ssa.gov,
+ * www.nysenate.gov and www.tn.gov each permits crawling the cited paths
+ * (tn.gov is a blanket `Allow: /`), so a 401/403/406 from those perimeters is
+ * an over-broad client-fingerprint rule contradicting the host's own stated
+ * crawl policy, not an expressed refusal to be read. The verifier therefore
+ * identifies itself honestly FIRST and only after an explicit rejection
+ * retries once as a mainstream browser. Every row verified through the retry
+ * carries `fetchProfile: 'browserFallback'` in the committed ledger, so the
+ * retry is disclosed, never silent. eCFR is the counterexample that keeps the
+ * attempt order fixed: it serves the full regulation only to the
+ * compatible-bot shape, so the transparent identity must stay first.
+ */
+const BROWSER_FALLBACK_UA =
+  // A point-in-time mainstream identity (Chrome 128, captured 2026-08); it
+  // only needs to look like a current browser, and moves when it stops doing so.
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36'
+
+/** Statuses that mean "this client identity was refused" — worth one retry. */
+const FALLBACK_STATUSES = new Set([401, 403, 406])
+
+/**
+ * Hosts admitted to the retry, one by one, each with its robots.txt read
+ * first. Admission requires an official publisher whose robots policy permits
+ * the cited paths while its perimeter still refuses the transparent identity.
+ * www.jct.gov is deliberately NOT here: it runs an interactive challenge and
+ * the documented stance — report UNFETCHABLE, never work around it — stands.
+ */
+const FALLBACK_HOSTS = new Set(['www.ssa.gov'])
+
+/**
+ * Whether a refused response earns the one disclosed browser-identity retry.
+ * Pure so the ladder's gate is testable offline.
+ *
+ * @param {string} host
+ * @param {number} status
+ */
+export function fallbackEligible(host, status) {
+  return FALLBACK_HOSTS.has(host) && FALLBACK_STATUSES.has(status)
+}
+
 /** Public government servers. Serialise requests and space them out. */
 const DEFAULT_DELAY_MS = 1200
 const FETCH_TIMEOUT_MS = 45_000
@@ -543,7 +585,7 @@ function readCacheMeta(metaPath) {
 /**
  * @param {string} url
  * @param {{cacheDir: string, refresh: boolean, delayMs: number}} opts
- * @returns {Promise<{body: Buffer, contentType: string, status: number, fromCache: boolean, error?: string}>}
+ * @returns {Promise<{body: Buffer, contentType: string, status: number, fromCache: boolean, fetchProfile: 'transparent' | 'browserFallback', error?: string}>}
  */
 async function fetchWithCache(url, opts) {
   const key = cacheKey(url)
@@ -582,24 +624,76 @@ async function fetchWithCache(url, opts) {
         cached !== null &&
         typeof meta.bytes === 'number' &&
         Number.isFinite(meta.bytes) &&
-        cached.length === meta.bytes
+        cached.length === meta.bytes &&
+        // A cached refusal from before a host joined the allowlist would
+        // replay the 403 forever and the ladder would never run; a refused
+        // status on an allowlisted host is a cache miss, not evidence.
+        !(fallbackEligible(new URL(url).host, meta.status ?? 0) && meta.fetchProfile !== 'browserFallback')
       ) {
         return {
           body: cached,
           contentType: meta.contentType ?? '',
           status: meta.status ?? 0,
           fromCache: true,
+          fetchProfile: meta.fetchProfile === 'browserFallback' ? 'browserFallback' : 'transparent',
         }
       }
     }
   }
   await sleep(opts.delayMs)
+  let fetchProfile = /** @type {'transparent' | 'browserFallback'} */ ('transparent')
+  let result = await fetchOnce(url, USER_AGENT)
+  if (result.error === undefined && fallbackEligible(new URL(url).host, result.status)) {
+    // The transparent identity was explicitly refused by an allowlisted host.
+    // One disclosed retry as a browser; the retry result is used only if the
+    // host actually serves a document rather than a challenge page — caching a
+    // dressed-up block as a success would later read as a false ABSENT.
+    await sleep(opts.delayMs)
+    const retried = await fetchOnce(url, BROWSER_FALLBACK_UA)
+    if (
+      retried.error === undefined &&
+      retried.status >= 200 && retried.status < 300 &&
+      !BLOCK_MARKERS.test(retried.body.toString('utf8'))
+    ) {
+      result = retried
+      fetchProfile = 'browserFallback'
+    }
+  }
+  if (result.error === undefined) {
+    // Persisting is best-effort, and it has its own catch on purpose. Under the
+    // outer one, a read-only or full cache directory returned an empty body and
+    // an error — so a source that arrived intact became UNFETCHABLE, and a run
+    // on such a machine would report every cited document unreachable while
+    // every one of them had been fetched.
+    try {
+      mkdirSync(opts.cacheDir, { recursive: true })
+      writeFileSync(bodyPath, result.body)
+      writeFileSync(
+        metaPath,
+        `${JSON.stringify({ url, status: result.status, contentType: result.contentType, fetchedAt: new Date().toISOString(), bytes: result.body.length, fetchProfile }, null, 1)}\n`,
+      )
+    } catch (err) {
+      warnLocalIo(`could not write the source cache in ${opts.cacheDir}`, err)
+    }
+  }
+  return { ...result, fetchProfile }
+}
+
+/**
+ * One fetch attempt under one client identity. Streaming, capped, no caching —
+ * the caller owns persistence and the identity ladder.
+ *
+ * @param {string} url
+ * @param {string} userAgent
+ * @returns {Promise<{body: Buffer, contentType: string, status: number, fromCache: false, error?: string}>}
+ */
+async function fetchOnce(url, userAgent) {
   try {
     const response = await fetch(url, {
       redirect: 'follow',
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
       headers: {
-        'user-agent': USER_AGENT,
+        'user-agent': userAgent,
         accept: 'text/html,application/xhtml+xml,application/pdf,*/*',
         'accept-language': 'en-US,en;q=0.9',
       },
@@ -635,22 +729,6 @@ async function fetchWithCache(url, opts) {
       chunks.push(buf)
     }
     const body = Buffer.concat(chunks)
-    // Persisting is best-effort, and it has its own catch on purpose. Under the
-    // outer one, a read-only or full cache directory returned an empty body and
-    // an error — so a source that arrived intact became UNFETCHABLE, and a run
-    // on such a machine would report every cited document unreachable while
-    // every one of them had been fetched. The fetch above is the only thing in
-    // this function allowed to produce that verdict.
-    try {
-      mkdirSync(opts.cacheDir, { recursive: true })
-      writeFileSync(bodyPath, body)
-      writeFileSync(
-        metaPath,
-        `${JSON.stringify({ url, status: response.status, contentType, fetchedAt: new Date().toISOString(), bytes: body.length }, null, 1)}\n`,
-      )
-    } catch (err) {
-      warnLocalIo(`could not write the source cache in ${opts.cacheDir}`, err)
-    }
     return { body, contentType, status: response.status, fromCache: false }
   } catch (err) {
     return { body: Buffer.alloc(0), contentType: '', status: 0, fromCache: false, error: String(err) }
@@ -663,8 +741,8 @@ async function fetchWithCache(url, opts) {
  * @returns {Promise<Source>}
  */
 async function loadSource(url, opts) {
-  const { body, contentType, status, fromCache, error } = await fetchWithCache(url, opts)
-  const base = { url, isPdf: false, variants: [], fromCache }
+  const { body, contentType, status, fromCache, fetchProfile, error } = await fetchWithCache(url, opts)
+  const base = { url, isPdf: false, variants: [], fromCache, fetchProfile }
   if (error) return { ...base, ok: false, problem: `request failed: ${error}` }
   if (status < 200 || status >= 300) return { ...base, ok: false, problem: `HTTP ${status}` }
 
@@ -1194,6 +1272,9 @@ async function main() {
 
   const results = entries.map((entry) => ({
     ...entry,
+    ...(sources.get(entry.url)?.fetchProfile === 'browserFallback'
+      ? { fetchProfile: /** @type {const} */ ('browserFallback') }
+      : {}),
     ...verdictFor(entry, sources.get(entry.url)),
   }))
 
@@ -1224,6 +1305,10 @@ async function main() {
             verdict: r.verdict,
             detail: r.detail,
             diagnosis: r.diagnosis ?? null,
+            // Present only when the transparent identity was refused and the
+            // disclosed browser retry served the document (see
+            // BROWSER_FALLBACK_UA). Absent means the transparent fetch worked.
+            ...(r.fetchProfile === 'browserFallback' ? { fetchProfile: r.fetchProfile } : {}),
           })),
           apostropheStyle: apostrophes.map((r) => ({ id: r.id, citation: r.citation, host: r.host, note: r.note })),
         },

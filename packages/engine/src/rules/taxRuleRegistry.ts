@@ -3293,6 +3293,63 @@ const registry = {
       'packages/engine/src/decisions/generators.ts#SS_GRID_CLAIM_AGES',
     ],
   },
+  'ssa-2026-trustees-oasdi-depletion-default-haircut': {
+    title: 'The prebuilt Social Security haircut scenario is the 2026 Trustees combined-OASDI projection',
+    statement:
+      'The 2026 Trustees Report intermediate projection has the combined OASDI reserves depleted in the third quarter of 2034 with 83 percent of scheduled benefits payable at that time. The engine exports that projection as a constant - a 17 percent cut from 2034 - and the planning surface builds its prebuilt what-if scenario from it; the engine itself applies whatever haircut a plan carries, including none.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'A projection scenario, not law: current law simply stops paying beyond trust fund income once reserves deplete, and Congress may act before 2034. Two simplifications are deliberate. The scenario holds the cut flat at 17 percent, where the report projects payability declining from 83 percent at depletion to 65 percent by 2100 - a one-step stand-in for a declining path. And the combined OASDI basis is used rather than the OASI-standalone projection (fourth quarter of 2032, 78 percent payable) because the combined basis is the conventional indicator of the program as a whole.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'agencyGuidance',
+      citation: 'A Summary of the 2026 Annual Reports, Social Security and Medicare Boards of Trustees',
+      url: 'https://www.ssa.gov/oact/trsum/',
+      quotedText:
+        'If these two legally separate trust funds were combined, then the OASDI reserves would be projected to become depleted in the third quarter of 2034 and 83 percent of scheduled Social Security benefits would be payable at that time, declining to 65 percent by 2100.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-29',
+    implementedBy: [
+      'packages/engine/src/params/index.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/index.ts#TRUSTEES_DEFAULT_SS_HAIRCUT',
+    ],
+  },
+  'ssa-table-4c6-period-life-table-vintage': {
+    title: 'The longevity tables are the SSA period life table, one vintage behind the live host',
+    statement:
+      'The engine\'s baseline life expectancies are SSA\'s Actuarial Life Table (Table 4C6) as published for the 2025 Trustees Report - the 2022 period table. The live page now presents the 2023 period table used in the 2026 Trustees Report, so the embedded vintage trails the published one until the next table refresh (life expectancy at 65: male 17.48 embedded versus 18.12 published, female 20.12 embedded versus 20.66 published).',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'bothDirections',
+    conventionRationale:
+      'The table is refreshed deliberately, not silently: longevity feeds Monte Carlo horizons and annuitization comparisons, so a vintage bump changes results and belongs in a reviewed change, and this record is what goes stale to force that review. Direction is both ways - longer published expectancies lengthen horizons for some households and shift claiming and conversion comparisons in either direction.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'agencyGuidance',
+      citation: 'SSA Actuarial Life Table (Table 4C6)',
+      url: 'https://www.ssa.gov/oact/STATS/table4c6.html',
+      quotedText:
+        'Here we present the 2023 period life table for the Social Security area population , as used in the 2026 Trustees Report (TR). \u2026 65 0.016455 79,084 18.12 0.010188 87,399 20.66',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-29',
+    implementedBy: [
+      'packages/engine/src/longevity/ssaPeriod2022.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/longevity/ssaPeriod2022.ts#MALE',
+      'packages/engine/src/longevity/ssaPeriod2022.ts#FEMALE',
+    ],
+  },
 
   'usc-42-402-r-1-2-deemed-filing-old-age-and-spousal': {
     title: 'Current eligible old-age and current-spouse benefits are deemed filed together',
@@ -7001,7 +7058,7 @@ const registry = {
       'A person born in 1959 satisfies both prongs of the SECURE 2.0 applicable-age definition at once, so the statute names age 73 and age 75 for the same individual. The engine uses 73, following the proposed regulation that would fill the paragraph the final regulation left reserved.',
     classification: 'unsettled',
     contraryReading:
-      'IRC 401(a)(9)(C)(v)(II) applies on its own terms to a 1959 birth, because such a person attains age 74 in 2033, after December 31, 2032. Read alone it makes the applicable age 75 and defers the first distribution calendar year by two years. Nothing in the enacted text resolves the overlap, Treas. Reg. 1.401(a)(9)-2(b)(2)(v) is reserved, and the only source choosing 73 is a notice of proposed rulemaking that has not been finalised. The two readings differ by two distribution calendar years of forced ordinary income for the whole 1959 cohort.',
+      'IRC 401(a)(9)(C)(v)(II) applies on its own terms to a 1959 birth, because such a person attains age 74 in 2033, after December 31, 2032. Read alone it makes the applicable age 75 and defers the first distribution calendar year by two years. Nothing in the enacted text resolves the overlap, Treas. Reg. 1.401(a)(9)-2(b)(2)(v) is reserved, and the only source choosing 73 is a notice of proposed rulemaking that has not been finalised. The two readings differ by two distribution calendar years of forced ordinary income for the whole 1959 cohort. The nearest current guidance, Announcement 2026-7 (2026-11 I.R.B. 697), defers the anticipated applicability of final regulations amending 1.401(a)(9)-4, -5, and -6 and never mentions paragraph (b)(2)(v) or the 1959 cohort, so the contest stands with no guidance selecting either age.',
     errorDirection: null,
     conventionRationale: null,
     jurisdiction: 'federal',
@@ -7027,7 +7084,7 @@ const registry = {
     volatility: 'awaitingGuidance',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-08-29',
     implementedBy: [
       'packages/engine/src/params/index.ts',
       'packages/engine/src/rmd/rmd.ts',
@@ -9559,6 +9616,34 @@ const registry = {
       'packages/engine/src/strategies/accountEligibility.ts#evaluateRetirementActionEligibility',
       'packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts#conversionDestinationIssue',
       'packages/engine/src/actions/ownedNonRothIraAnnualPhysicalTransaction.ts#preparePlanOwnedNonRothIraAnnualPhysicalTransaction',
+    ],
+  },
+  'usc-12-1715z-20-b-hecm-minimum-age-62': {
+    title: 'A HECM borrower (or spouse) must be at least 62',
+    statement:
+      'The FHA home equity conversion mortgage program defines the eligible homeowner as one who is, or whose spouse is, at least 62 years of age. The HECM buffer detector enforces that floor as a conservative screen: no reverse-mortgage line-of-credit candidate is surfaced unless every household member has reached 62, measured at year granularity.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'First housing-law record in the registry, admitted on the same test as its Title 42 and POMS records: an engine gate whose refusal traces to an operative statutory clause. Two deliberate deviations from the clause itself: the screen requires the YOUNGEST member to be 62 where the statute is satisfied by either spouse - conservative, because the principal limit factor is keyed to the youngest age anyway and a candidate the statute would allow is merely not suggested - and age is measured at year granularity, so a member attaining 62 during the start year is treated as eligible for the suggestion a few months early. Neither deviation touches a tax figure; the card is a scenario suggestion.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: '12 U.S.C. 1715z-20(b)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title12-section1715z-20&num=0&edition=prelim',
+      quotedText:
+        'The terms "elderly homeowner" and "homeowner" mean any homeowner who is, or whose spouse is, at least 62 years of age or such higher age as the Secretary may prescribe.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-29',
+    implementedBy: [
+      'packages/engine/src/insights/detectors/hecmBufferCandidate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/insights/detectors/hecmBufferCandidate.ts#hecmBufferCandidate',
     ],
   },
 
