@@ -20,7 +20,7 @@ permissions:
 
 jobs:
   review:
-    uses: RetireGolden/.github/.github/workflows/grok-code-review.yml@fe20f331e17eb390f4b992b6dfbe3e46ddfc227f
+    uses: RetireGolden/.github/.github/workflows/grok-code-review.yml@ed323b2437d45eaec4ca6955c384bcf19aeb8357 # grok action v1.0.6 (dense-PR truncation degrades to partial)
     with:
       pr_number: ${{ inputs.pr_number || github.event.inputs.pr_number || github.event.pull_request.number }}
     secrets:
