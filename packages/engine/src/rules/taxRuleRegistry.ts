@@ -1322,11 +1322,13 @@ const registry = {
       // reach the owned pool's basis history however the request was authored.
       'packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts',
       'packages/engine/src/strategies/accountEligibility.ts',
+      'packages/engine/src/actions/annualQcdPhysicalExecution.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/actions/annualQcdExecutionPrerequisite.ts#evaluateAnnualQcdExecutionPrerequisites',
       'packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts#validateOwnedNonRothIraRuntimeSourceSeries',
       'packages/engine/src/strategies/accountEligibility.ts#evaluateQcd',
+      'packages/engine/src/actions/annualQcdPhysicalExecution.ts#stageAnnualQcdPhysicalExecution',
     ],
   },
 
@@ -1357,11 +1359,13 @@ const registry = {
       // Roth source is refused before any question of tax character arises.
       'packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts',
       'packages/engine/src/strategies/accountEligibility.ts',
+      'packages/engine/src/actions/annualQcdPhysicalExecution.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/actions/annualQcdExecutionPrerequisite.ts#evaluateAnnualQcdExecutionPrerequisites',
       'packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts#validateOwnedNonRothIraRuntimeSourceSeries',
       'packages/engine/src/strategies/accountEligibility.ts#evaluateQcd',
+      'packages/engine/src/actions/annualQcdPhysicalExecution.ts#stageAnnualQcdPhysicalExecution',
     ],
   },
 
@@ -2736,9 +2740,12 @@ const registry = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-04',
-    implementedBy: ['packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts'],
+    implementedBy: ['packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts',
+      'packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.ts',
+    ],
     implementedByFunctions: [
       'packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts#evaluateOwnedNonRothIraPenaltyPrerequisites',
+      'packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.ts#evaluateTraditionalEmployerPlanPenaltyPrerequisite',
     ],
   },
 
@@ -3078,9 +3085,12 @@ const registry = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
-    implementedBy: ['packages/engine/src/socialSecurity/benefitFactor.ts'],
+    implementedBy: ['packages/engine/src/socialSecurity/benefitFactor.ts',
+      'packages/engine/src/socialSecurity/claimFactor.ts',
+    ],
     implementedByFunctions: [
       'packages/engine/src/socialSecurity/benefitFactor.ts#earlyRetirementFactor',
+      'packages/engine/src/socialSecurity/claimFactor.ts#claimFactor',
     ],
   },
 
@@ -3105,9 +3115,12 @@ const registry = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-04',
-    implementedBy: ['packages/engine/src/socialSecurity/benefitFactor.ts'],
+    implementedBy: ['packages/engine/src/socialSecurity/benefitFactor.ts',
+      'packages/engine/src/socialSecurity/claimFactor.ts',
+    ],
     implementedByFunctions: [
       'packages/engine/src/socialSecurity/benefitFactor.ts#delayedRetirementFactor',
+      'packages/engine/src/socialSecurity/claimFactor.ts#claimFactor',
     ],
   },
 
@@ -3240,6 +3253,44 @@ const registry = {
     implementedByFunctions: [
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/socialSecurity/claimFactor.ts#spousalBenefitFactor',
+    ],
+  },
+  'usc-42-402-worker-claim-window-62-to-70': {
+    title: 'Worker old-age benefits are claimable from 62, and delayed credits stop at 70',
+    statement:
+      'Old-age insurance entitlement requires attaining age 62, and delayed retirement credit increment months accrue only for months prior to the month age 70 is attained. The floor is statutory: no worker claim exists before 62. The ceiling is economic: a claim after 70 remains lawful but pays the same monthly benefit as a claim at 70 with months of benefits forgone, so the engine models no claim age above 70.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The claim-age refusal above 70y0m is an engine convention, not a statutory bar: 402(w)(2)(A) stops increment months at 70, which makes every later claim weakly dominated, and the planner prices only claim ages that can change the benefit. The refusal below 62y0m tracks 402(a)(2) directly.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 402(a)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
+      quotedText:
+        'Every individual who- (1) is a fully insured individual (as defined in section 414(a) of this title ), (2) has attained age 62, and (3) has filed application for old-age insurance benefits or was entitled to disability insurance benefits for the month preceding the month in which he attained retirement age (as defined in section 416(l) of this title ), shall be entitled to an old-age insurance benefit for each month \u2026',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 402(w)(2)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
+      quotedText:
+        'For purposes of this subsection, the number of increment months for any individual shall be a number equal to the total number of the months- (A) which have elapsed after the month before the month in which such individual attained retirement age (as defined in section 416(l) of this title ) or (if later) December 1970 and prior to the month in which such individual attained age 70 \u2026',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-29',
+    implementedBy: [
+      'packages/engine/src/socialSecurity/claimFactor.ts',
+      'packages/engine/src/socialSecurity/benefitFactor.ts',
+      'packages/engine/src/decisions/generators.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/socialSecurity/claimFactor.ts#claimFactor',
+      'packages/engine/src/socialSecurity/benefitFactor.ts#retirementBenefitPiaFactor',
+      'packages/engine/src/decisions/generators.ts#SS_GRID_CLAIM_AGES',
     ],
   },
 
@@ -5308,6 +5359,34 @@ const registry = {
       'packages/engine/src/tax/federalTax.ts#saltCapForYear',
     ],
   },
+  'irc-165-c-personal-use-sale-loss-nondeductible': {
+    title: 'The property-sale path floors every loss at zero; 165(c) only bars the personal-use ones',
+    statement:
+      'Section 165(c) limits an individual\'s loss deduction to business losses, losses in transactions entered into for profit, and casualty or theft losses. A loss on personal-use property, a home sold below basis among them, is therefore nondeductible, and flooring that gain at zero is exact. But the engine prices every property account\'s planned sale through the same function, and for an investment property a sale below basis is a deductible loss under 165(c)(2) that the floor denies.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'overstatesTax',
+    conventionRationale:
+      'One disposition path prices all property sales. The zero floor is the statutory answer for personal-use property and an approximation for profit-transaction property, where the forgone capital loss (and its 1211(b) ordinary offset) overstates tax.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 165(c)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section165&num=0&edition=prelim',
+      quotedText:
+        'In the case of an individual, the deduction under subsection (a) shall be limited to- (1) losses incurred in a trade or business; (2) losses incurred in any transaction entered into for profit, though not connected with a trade or business; and (3) except as provided in subsection (h), losses of property not connected with a trade or business or a transaction entered into for profit, if such losses arise from fire, storm, shipwreck, or other casualty, or from theft.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-29',
+    implementedBy: [
+      'packages/engine/src/tax/propertySale.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/tax/propertySale.ts#propertySaleTax',
+    ],
+  },
 
   'irc-63-c-2-joint-standard-deduction-doubles': {
     title: 'The joint standard deduction is 200 percent of the unmarried one',
@@ -5823,11 +5902,13 @@ const registry = {
       'packages/engine/src/strategies/accountEligibility.ts',
       'packages/engine/src/actions/beneficiaryTraditionalIraDeathPenalty.ts',
       'packages/engine/src/actions/beneficiaryTraditionalIraAnnualSimulatorDelta.ts',
+      'packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/actions/beneficiaryTraditionalIraAnnualSimulatorDelta.ts#prepareBeneficiaryTraditionalIraAnnualSimulatorDelta',
       'packages/engine/src/actions/beneficiaryTraditionalIraDeathPenalty.ts#evaluateBeneficiaryTraditionalIraDeathPenalty',
       'packages/engine/src/strategies/accountEligibility.ts#traditionalWithdrawalPenaltyRate',
+      'packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts#evaluateOwnedNonRothIraPenaltyPrerequisites',
     ],
   },
 
@@ -5961,7 +6042,8 @@ const registry = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
-    implementedBy: ['packages/engine/src/strategies/rothBasis.ts'],
+    implementedBy: ['packages/engine/src/strategies/rothBasis.ts',
+    ],
     implementedByFunctions: [
       'packages/engine/src/strategies/rothBasis.ts#ROTH_QUALIFIED_AGE',
       'packages/engine/src/strategies/rothBasis.ts#splitRothWithdrawal',

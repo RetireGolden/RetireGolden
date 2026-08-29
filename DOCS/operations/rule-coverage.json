@@ -2,21 +2,21 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 4,
   "registry": {
-    "total": 410,
+    "total": 412,
     "byClassification": {
-      "approximated": 107,
+      "approximated": 108,
       "outOfScope": 73,
-      "settled": 225,
+      "settled": 226,
       "unsettled": 5
     },
     "byVolatility": {
       "annuallyIndexed": 58,
       "awaitingGuidance": 11,
-      "staticStatute": 335,
+      "staticStatute": 337,
       "sunsetting": 6
     },
     "byJurisdiction": {
-      "federal": 304,
+      "federal": 306,
       "states": {
         "AK": 1,
         "AL": 9,
@@ -76,8 +76,8 @@
   "attestations": {
     "totalFiles": 236,
     "byStatus": {
-      "partial": 56,
-      "registered": 55,
+      "partial": 51,
+      "registered": 60,
       "rule-free": 125,
       "unswept": 0
     },
@@ -98,13 +98,8 @@
     },
     {
       "path": "actions/annualQcdDerivedTaxCharacter.ts",
-      "sweptOn": "2026-08-25",
-      "note": "Owned-source eligibility gate; no record; QCD taxable/excludable/basis partition; no record"
-    },
-    {
-      "path": "actions/annualQcdPhysicalExecution.ts",
-      "sweptOn": "2026-08-24",
-      "note": "QCD pool restricted to owned traditional IRAs, excluding inherited/Roth; no record"
+      "sweptOn": "2026-08-29",
+      "note": "Owned-source eligibility arrives as typed AcceptedQcdSourceEligibilityEvidence - this module consumes what the QCD execution prerequisite evaluator enforces, and the 408(d)(8) source records are registered at that evaluator; the taxable/excludable/basis partition is registered under the composition-order and taxable-first records"
     },
     {
       "path": "actions/annualQcdResidualForm8606.ts",
@@ -172,11 +167,6 @@
       "note": "Line-7 staging of executed owned-IRA withdrawals registered under form-8606-line-7-owned-ira-movement-staging; the owned traditional/SEP/SIMPLE source-scope claim remains unregistered"
     },
     {
-      "path": "actions/ownedNonRothIraPenaltyPrerequisite.ts",
-      "sweptOn": "2026-08-24",
-      "note": "Age, 10%/25% rates, disability, SEPP, SIMPLE period, and scope covered; death exception rejected through owner-alive evidence; no record"
-    },
-    {
       "path": "actions/retirementActionCandidateIdentityAllocator.ts",
       "sweptOn": "2026-08-29",
       "note": "conversion source and destination identity registered under irc-408-d-3-A-i, the inherited-source refusal under irc-408-d-3-C-i, and the named-action designated-Roth refusal under irc-408A-d-3-B (conversionDestinationIssue kind gate); QCD source-IRA restrictions remain open"
@@ -193,13 +183,8 @@
     },
     {
       "path": "actions/traditionalEmployerPlanPenaltyPrerequisite.ts",
-      "sweptOn": "2026-08-24",
-      "note": "Rule of 55, employer-SEPP, permitted methods, public-safety and recapture covered; age-59½ threshold, 10% rate, disability waiver lack records"
-    },
-    {
-      "path": "decisions/generators.ts",
       "sweptOn": "2026-08-29",
-      "note": "QLAC 85 ceiling registered via treas-reg-1-401-a-9-6-q-1-ii-qlac-commences-by-the-85th-birthday naming annuityPurchaseGenerator; the bracket-target list is a search-space choice, but SS_GRID_CLAIM_AGES encodes the statutory 62-70 worker claiming window and stays a residual with claimFactor.ts"
+      "note": "Rule of 55, employer-SEPP, permitted methods, public-safety, recapture and the age-59½ threshold are registered records naming this file, and irc-72-t-2-A-iii now names the disability arm; the 10% rate application site for employer plans remains the residual"
     },
     {
       "path": "decisions/pensionElection.ts",
@@ -219,7 +204,7 @@
     {
       "path": "insights/detectors/missingDataBasis.ts",
       "sweptOn": "2026-08-29",
-      "note": "the section 121 coverage classification is registered via irc-121-a-b-principal-residence-eligibility-tests naming this detector (another independent implementation beside tax/propertySale.ts and the simulate path - consolidation candidate). Residual: the detector also gates on ROTH_QUALIFIED_AGE independently, and the Roth 59½ records do not name it"
+      "note": "The detector consumes the shared ROTH_QUALIFIED_AGE constant to scope its suggestion; the qualified-distribution rule itself is registered and enforced at the Roth basis records, which do not name this consumer"
     },
     {
       "path": "insights/detectors/ssClaimMilestone.ts",
@@ -233,8 +218,8 @@
     },
     {
       "path": "ladder/bridge.ts",
-      "sweptOn": "2026-08-24",
-      "note": "Bridge cannot start before SS age 62; uses claimFactor/PIA sizing without naming record"
+      "sweptOn": "2026-08-29",
+      "note": "The bridge sizes spending from age 62 to the claim age; the 62-70 worker window is registered under usc-42-402-worker-claim-window-62-to-70 at the claim factor, and this file calls that factor rather than enforcing the window itself"
     },
     {
       "path": "ladder/ladderMath.ts",
@@ -268,8 +253,8 @@
     },
     {
       "path": "params/index.ts",
-      "sweptOn": "2026-08-24",
-      "note": "Trustees default SS haircut (2034, 17%); indexFederalTaxPack uses plan inflation not C-CPI-U; convention only in records naming federalTax.ts"
+      "sweptOn": "2026-08-29",
+      "note": "The C-CPI-U-vs-plan-inflation indexing liberty is stated in the records naming indexFederalTaxPack; the Trustees default SS haircut (2034, 17%) remains unregistered because its source is the 2026 Trustees Report, which is owner-staged and not yet fetchable"
     },
     {
       "path": "projection/annualCashFlowCapture.ts",
@@ -314,12 +299,7 @@
     {
       "path": "rmd/applicableAge.ts",
       "sweptOn": "2026-08-29",
-      "note": "named by treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy and, from 2026-08-29, by irc-401-a-9-C-v-applicable-age (applicableAgeAttainYears). Residual: the RBD April-1 arm, the 70½/July-1949 cohorts, and the born-1959 dual-age contest awaiting Announcement 2026-7"
-    },
-    {
-      "path": "socialSecurity/claimFactor.ts",
-      "sweptOn": "2026-08-29",
-      "note": "Correction: usc-42-402-b-2-spousal-half-of-pia and poms-rs-00615-482-arf-crediting-months DO name this file; residual narrows to the worker 62y0m-70y0m claim window and DRC/ARF factor composition"
+      "note": "Named by treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy and the applicable-age record for applicableAgeAttainYears' cohort mapping consumers; residual: the RBD April-1 arm (this module consumes an asserted RBD-status fact rather than deriving April 1), the 70½/July-1949 cohorts, and the born-1959 dual-age contest awaiting Announcement 2026-7"
     },
     {
       "path": "socialSecurity/maritalBenefits.ts",
@@ -360,11 +340,6 @@
       "path": "tax/medicare.ts",
       "sweptOn": "2026-08-27",
       "note": "Part B/IRMAA premium path and Part B late-enrollment absence registered (usc-42-1395r-*, cfr-20-418-1205-1230-*); post-pack premiumScale (healthcare-inflation stand-in) remains"
-    },
-    {
-      "path": "tax/propertySale.ts",
-      "sweptOn": "2026-08-29",
-      "note": "Personal-use capital loss nondeductible (gain floored at zero) remains unregistered. Correction: three section 121/1250 records DO name this file; the loss-floor clause specifically is the residual"
     }
   ],
   "directoryRollup": [
@@ -379,8 +354,8 @@
       "directory": "actions",
       "files": 74,
       "byStatus": {
-        "partial": 22,
-        "registered": 26,
+        "partial": 20,
+        "registered": 28,
         "rule-free": 26
       }
     },
@@ -395,8 +370,8 @@
       "directory": "decisions",
       "files": 19,
       "byStatus": {
-        "partial": 3,
-        "registered": 1,
+        "partial": 2,
+        "registered": 2,
         "rule-free": 15
       }
     },
@@ -501,8 +476,8 @@
       "directory": "socialSecurity",
       "files": 9,
       "byStatus": {
-        "partial": 3,
-        "registered": 6
+        "partial": 2,
+        "registered": 7
       }
     },
     {
@@ -524,8 +499,8 @@
       "directory": "tax",
       "files": 7,
       "byStatus": {
-        "partial": 4,
-        "registered": 2,
+        "partial": 3,
+        "registered": 3,
         "rule-free": 1
       }
     },
@@ -3023,7 +2998,8 @@
       "verifiedOn": "2026-08-04",
       "dueOn": "2027-08-04",
       "implementedBy": [
-        "packages/engine/src/socialSecurity/benefitFactor.ts"
+        "packages/engine/src/socialSecurity/benefitFactor.ts",
+        "packages/engine/src/socialSecurity/claimFactor.ts"
       ],
       "implementations": [
         {
@@ -3032,6 +3008,15 @@
             {
               "name": "delayedRetirementFactor",
               "line": 23
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/claimFactor.ts",
+          "functions": [
+            {
+              "name": "claimFactor",
+              "line": 22
             }
           ]
         }
@@ -3130,7 +3115,8 @@
       "verifiedOn": "2026-08-03",
       "dueOn": "2027-08-03",
       "implementedBy": [
-        "packages/engine/src/socialSecurity/benefitFactor.ts"
+        "packages/engine/src/socialSecurity/benefitFactor.ts",
+        "packages/engine/src/socialSecurity/claimFactor.ts"
       ],
       "implementations": [
         {
@@ -3139,6 +3125,15 @@
             {
               "name": "earlyRetirementFactor",
               "line": 13
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/claimFactor.ts",
+          "functions": [
+            {
+              "name": "claimFactor",
+              "line": 22
             }
           ]
         }
@@ -7107,6 +7102,57 @@
           "kind": "statute",
           "citation": "IRC 164(b)(7)(A)",
           "url": "https://www.law.cornell.edu/uscode/text/26/164"
+        }
+      ]
+    },
+    {
+      "id": "irc-165-c-personal-use-sale-loss-nondeductible",
+      "title": "The property-sale path floors every loss at zero; 165(c) only bars the personal-use ones",
+      "classification": "approximated",
+      "errorDirection": "overstatesTax",
+      "conventionRationale": "One disposition path prices all property sales. The zero floor is the statutory answer for personal-use property and an approximation for profit-transaction property, where the forgone capital loss (and its 1211(b) ordinary offset) overstates tax.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-29",
+      "dueOn": "2027-08-29",
+      "implementedBy": [
+        "packages/engine/src/tax/propertySale.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/tax/propertySale.ts",
+          "functions": [
+            {
+              "name": "propertySaleTax",
+              "line": 50
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/propertySale.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/propertySale.test.ts",
+          "line": 108,
+          "note": null,
+          "tests": [
+            {
+              "title": "floors the below-basis sale at zero instead of carrying the deductible loss",
+              "line": 113
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 165(c)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section165&num=0&edition=prelim"
         }
       ]
     },
@@ -13688,6 +13734,7 @@
       "dueOn": "2027-08-03",
       "implementedBy": [
         "packages/engine/src/actions/annualQcdExecutionPrerequisite.ts",
+        "packages/engine/src/actions/annualQcdPhysicalExecution.ts",
         "packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts",
         "packages/engine/src/strategies/accountEligibility.ts"
       ],
@@ -13698,6 +13745,15 @@
             {
               "name": "evaluateAnnualQcdExecutionPrerequisites",
               "line": 817
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/annualQcdPhysicalExecution.ts",
+          "functions": [
+            {
+              "name": "stageAnnualQcdPhysicalExecution",
+              "line": 512
             }
           ]
         },
@@ -13806,6 +13862,7 @@
       "dueOn": "2027-08-03",
       "implementedBy": [
         "packages/engine/src/actions/annualQcdExecutionPrerequisite.ts",
+        "packages/engine/src/actions/annualQcdPhysicalExecution.ts",
         "packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts",
         "packages/engine/src/strategies/accountEligibility.ts"
       ],
@@ -13816,6 +13873,15 @@
             {
               "name": "evaluateAnnualQcdExecutionPrerequisites",
               "line": 817
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/annualQcdPhysicalExecution.ts",
+          "functions": [
+            {
+              "name": "stageAnnualQcdPhysicalExecution",
+              "line": 512
             }
           ]
         },
@@ -17780,6 +17846,7 @@
       "implementedBy": [
         "packages/engine/src/actions/beneficiaryTraditionalIraAnnualSimulatorDelta.ts",
         "packages/engine/src/actions/beneficiaryTraditionalIraDeathPenalty.ts",
+        "packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts",
         "packages/engine/src/strategies/accountEligibility.ts"
       ],
       "implementations": [
@@ -17798,6 +17865,15 @@
             {
               "name": "evaluateBeneficiaryTraditionalIraDeathPenalty",
               "line": 296
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts",
+          "functions": [
+            {
+              "name": "evaluateOwnedNonRothIraPenaltyPrerequisites",
+              "line": 820
             }
           ]
         },
@@ -17870,7 +17946,8 @@
       "verifiedOn": "2026-08-04",
       "dueOn": "2027-08-04",
       "implementedBy": [
-        "packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts"
+        "packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts",
+        "packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.ts"
       ],
       "implementations": [
         {
@@ -17879,6 +17956,15 @@
             {
               "name": "evaluateOwnedNonRothIraPenaltyPrerequisites",
               "line": 820
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.ts",
+          "functions": [
+            {
+              "name": "evaluateTraditionalEmployerPlanPenaltyPrerequisite",
+              "line": 562
             }
           ]
         }
@@ -28364,6 +28450,82 @@
       ]
     },
     {
+      "id": "usc-42-402-worker-claim-window-62-to-70",
+      "title": "Worker old-age benefits are claimable from 62, and delayed credits stop at 70",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The claim-age refusal above 70y0m is an engine convention, not a statutory bar: 402(w)(2)(A) stops increment months at 70, which makes every later claim weakly dominated, and the planner prices only claim ages that can change the benefit. The refusal below 62y0m tracks 402(a)(2) directly.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-29",
+      "dueOn": "2027-08-29",
+      "implementedBy": [
+        "packages/engine/src/decisions/generators.ts",
+        "packages/engine/src/socialSecurity/benefitFactor.ts",
+        "packages/engine/src/socialSecurity/claimFactor.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/decisions/generators.ts",
+          "functions": [
+            {
+              "name": "SS_GRID_CLAIM_AGES",
+              "line": 270
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/benefitFactor.ts",
+          "functions": [
+            {
+              "name": "retirementBenefitPiaFactor",
+              "line": 32
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/claimFactor.ts",
+          "functions": [
+            {
+              "name": "claimFactor",
+              "line": 22
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/socialSecurity/claimFactor.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/socialSecurity/claimFactor.test.ts",
+          "line": 79,
+          "note": "claim ages outside 62y0m-70y0m are refused, not priced",
+          "tests": [
+            {
+              "title": "refuses one month below the floor and one month above the ceiling",
+              "line": 87
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 402(a)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 402(w)(2)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
       "id": "usc-42-403-a-2-family-maximum-formula",
       "title": "The family maximum is marginal across three bend points",
       "classification": "settled",
@@ -30085,14 +30247,14 @@
     }
   ],
   "quoteFidelity": {
-    "generatedAt": "2026-08-29T18:48:29.368Z",
-    "entryCount": 1057,
+    "generatedAt": "2026-08-29T20:35:20.796Z",
+    "entryCount": 1060,
     "fetched": 0,
-    "cached": 301,
+    "cached": 302,
     "counts": {
       "ELISION-EXACT": 63,
       "ELISION-PUNCTUATION": 4,
-      "EXACT": 734,
+      "EXACT": 737,
       "PDF-NOT-VERIFIABLE": 5,
       "PDF-WORD-LEVEL": 212,
       "PUNCTUATION": 36,

@@ -67,3 +67,37 @@ describe('spousalBenefitFactor', () => {
     expect(() => spousalBenefitFactor(dob.y, dob.m, dob.d, { years: 71, months: 0 })).toThrow()
   })
 })
+
+describe('worker claim window', () => {
+  // 42 U.S.C. 402(a)(2) requires attaining age 62 for entitlement, and
+  // 402(w)(2)(A) accrues delayed retirement credit months only prior to the
+  // month age 70 is attained. Under the accepted reading, claim ages outside
+  // 62y0m-70y0m are refused. Under the rejected reading the window does not
+  // exist and the factor keeps pricing: one month below the floor would price
+  // 0.7 - 5/12% = 0.6958333..., one month above the ceiling 1.24 + 2/3% =
+  // 1.2466666... - values the refusing implementation can never produce.
+  describeRule('usc-42-402-worker-claim-window-62-to-70', {
+    note: 'claim ages outside 62y0m-70y0m are refused, not priced',
+    readings: {
+      claimOutsideWindowRefused: 'RangeError',
+      claimPricedBeyondWindow: [0.6958333333333333, 1.2466666666666666],
+    },
+    accepted: 'claimOutsideWindowRefused',
+  }, ({ accepted, readings }) => {
+    it('refuses one month below the floor and one month above the ceiling', () => {
+      const below = () => claimFactor(dob.y, dob.m, dob.d, { years: 61, months: 11 })
+      const above = () => claimFactor(dob.y, dob.m, dob.d, { years: 70, months: 1 })
+      expect(below).toThrow(RangeError)
+      expect(above).toThrow(RangeError)
+      let name = ''
+      try { below() } catch (err) { name = (err as Error).constructor.name }
+      expect(name).toBe(accepted)
+      // The refused ages never reach the pricing the rejected reading expects.
+      const [beyondFloor, beyondCeiling] = readings.claimPricedBeyondWindow
+      expect(claimFactor(dob.y, dob.m, dob.d, { years: 62, months: 0 }))
+        .toBeGreaterThan(beyondFloor)
+      expect(claimFactor(dob.y, dob.m, dob.d, { years: 70, months: 0 }))
+        .toBeLessThan(beyondCeiling)
+    })
+  })
+})

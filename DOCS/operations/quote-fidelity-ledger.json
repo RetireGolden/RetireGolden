@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-08-29T18:48:29.368Z",
-  "recordCount": 410,
-  "urlCount": 301,
+  "generatedAt": "2026-08-29T20:35:20.796Z",
+  "recordCount": 412,
+  "urlCount": 302,
   "fetched": 0,
-  "cached": 301,
-  "entryCount": 1057,
+  "cached": 302,
+  "entryCount": 1060,
   "counts": {
-    "EXACT": 734,
+    "EXACT": 737,
     "PUNCTUATION": 36,
     "PDF-WORD-LEVEL": 212,
     "ELISION-PUNCTUATION": 4,
@@ -1788,6 +1788,26 @@
       "diagnosis": null
     },
     {
+      "id": "usc-42-402-worker-claim-window-62-to-70",
+      "citation": "42 U.S.C. 402(a)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim",
+      "quoteSha256": "94a5d16601dbdf19",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-402-worker-claim-window-62-to-70",
+      "citation": "42 U.S.C. 402(w)(2)(A)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim",
+      "quoteSha256": "4321b2de15c11bc0",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
       "id": "usc-42-402-r-1-2-deemed-filing-old-age-and-spousal",
       "citation": "42 U.S.C. 402(r)(1)",
       "host": "uscode.house.gov",
@@ -3233,6 +3253,16 @@
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section164&num=0&edition=prelim",
       "quoteSha256": "284a54e993544e6a",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-165-c-personal-use-sale-loss-nondeductible",
+      "citation": "IRC 165(c)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section165&num=0&edition=prelim",
+      "quoteSha256": "9d527070886d88fb",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null
