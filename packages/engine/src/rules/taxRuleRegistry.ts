@@ -8414,7 +8414,14 @@ const registry = {
     ],
     implementedByFunctions: [
       'packages/engine/src/params/index.ts#indexFederalTaxPack',
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#CO',
+      'packages/engine/src/params/state/data/year2026.ts#DC',
+      'packages/engine/src/params/state/data/year2026.ts#IA',
+      'packages/engine/src/params/state/data/year2026.ts#ID',
+      'packages/engine/src/params/state/data/year2026.ts#MO',
+      'packages/engine/src/params/state/data/year2026.ts#MT',
+      'packages/engine/src/params/state/data/year2026.ts#states.ND',
+      'packages/engine/src/params/state/data/year2026.ts#NM',
       'packages/engine/src/params/state/index.ts#conformStateStandardDeduction',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
@@ -9769,7 +9776,7 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#states.ND',
       'packages/engine/src/params/state/index.ts#conformStateStandardDeduction',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
@@ -9809,7 +9816,7 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#states.ND',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
@@ -9845,7 +9852,7 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#PA',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
       'packages/engine/src/tax/stateTax.ts#retirementExclusion',
     ],
@@ -9882,7 +9889,7 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#PA',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
@@ -9912,7 +9919,7 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#NV',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
@@ -9960,7 +9967,7 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#TX',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
@@ -10024,7 +10031,7 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#TX',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
@@ -10087,7 +10094,7 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#FL',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
@@ -10135,7 +10142,7 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#WV',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
@@ -10177,7 +10184,7 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#states.NY',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
       'packages/engine/src/tax/stateTax.ts#retirementExclusion',
     ],
@@ -10214,7 +10221,7 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#IL',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
       'packages/engine/src/tax/stateTax.ts#retirementExclusion',
     ],
@@ -10251,7 +10258,7 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#MO',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
@@ -10281,7 +10288,7 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#IA',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
       'packages/engine/src/tax/stateTax.ts#retirementExclusion',
     ],
@@ -10331,7 +10338,7 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#ME',
       'packages/engine/src/params/state/index.ts#conformStateStandardDeduction',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
@@ -10368,7 +10375,7 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#states.SC',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
       'packages/engine/src/tax/stateTax.ts#retirementExclusion',
     ],
@@ -10459,7 +10466,7 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#states.ND',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxDetail',
     ],
   },
@@ -10508,7 +10515,7 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#states.ND',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
@@ -10679,7 +10686,7 @@ const registry = {
     ],
     implementedByFunctions: [
       'packages/engine/src/params/state/data/year2026.ts#ND.capitalGainsTaxablePct',
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#states.ND',
       'packages/engine/src/params/state/types.ts#StateTaxParams',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
@@ -10772,7 +10779,7 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#AK',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
@@ -10822,7 +10829,7 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#SD',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
@@ -10868,7 +10875,7 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#TN',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxDetail',
     ],
   },
@@ -10929,7 +10936,7 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#TN',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
@@ -10975,7 +10982,7 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#WY',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxDetail',
     ],
   },
@@ -11073,7 +11080,7 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#AR',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxDetail',
     ],
   },
@@ -11124,7 +11131,7 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#AR',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
@@ -11166,7 +11173,7 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#AR',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
       'packages/engine/src/tax/stateTax.ts#retirementExclusion',
     ],
@@ -11295,7 +11302,7 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#AR',
       'packages/engine/src/params/state/types.ts#StateRetirementExclusion',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
@@ -11332,7 +11339,7 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#AR',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
@@ -11373,7 +11380,7 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#AR',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
@@ -11410,7 +11417,7 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#AR',
       'packages/engine/src/params/state/types.ts#StateTaxParams',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
@@ -11474,7 +11481,7 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#states.AZ',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxDetail',
     ],
   },
@@ -11529,7 +11536,7 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#states.AZ',
       'packages/engine/src/params/state/index.ts#conformStateStandardDeduction',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
@@ -11566,7 +11573,7 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#states.AZ',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
@@ -11642,7 +11649,7 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#states.AZ',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
       'packages/engine/src/tax/stateTax.ts#retirementExclusion',
     ],
@@ -11737,7 +11744,7 @@ const registry = {
     ],
     implementedByFunctions: [
       'packages/engine/src/params/state/data/year2026.ts#AZ.capitalGainsTaxablePct',
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#states.AZ',
       'packages/engine/src/params/state/types.ts#StateTaxParams',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
@@ -11785,7 +11792,7 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#states.AZ',
       'packages/engine/src/params/state/index.ts#conformStateStandardDeduction',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
@@ -11935,7 +11942,7 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#IN',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxDetail',
     ],
   },
@@ -11971,7 +11978,7 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#IN',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
@@ -12015,7 +12022,7 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#IN',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
       'packages/engine/src/tax/stateTax.ts#retirementExclusion',
     ],
@@ -12111,7 +12118,7 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#IN',
       'packages/engine/src/params/state/types.ts#StateRetirementExclusion',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
@@ -12173,7 +12180,7 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#IN',
       'packages/engine/src/params/state/types.ts#StateTaxParams',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxDetail',
     ],
@@ -12238,7 +12245,7 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#IN',
       'packages/engine/src/params/state/types.ts#StateTaxParams',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
@@ -12358,7 +12365,7 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#MS',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxDetail',
     ],
   },
@@ -12419,7 +12426,7 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#MS',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
       'packages/engine/src/tax/stateTax.ts#retirementExclusion',
     ],
@@ -12468,7 +12475,7 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#MS',
       'packages/engine/src/params/state/types.ts#StateRetirementExclusion',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
@@ -12507,7 +12514,7 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#MS',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
@@ -12565,7 +12572,7 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#MS',
       'packages/engine/src/params/state/types.ts#StateTaxParams',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
@@ -12621,7 +12628,7 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#MS',
       'packages/engine/src/params/state/types.ts#StateTaxParams',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxDetail',
     ],
@@ -12652,7 +12659,7 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#MS',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
@@ -12692,7 +12699,7 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#CA',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
@@ -12730,7 +12737,7 @@ const registry = {
       'packages/engine/src/params/state/types.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#CO',
       'packages/engine/src/params/state/index.ts#conformStateStandardDeduction',
       'packages/engine/src/params/state/types.ts#StateRetirementExclusion',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
@@ -12763,7 +12770,7 @@ const registry = {
       'packages/engine/src/params/state/types.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#CO',
       'packages/engine/src/params/state/types.ts#taxesSocialSecurity',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
@@ -12801,7 +12808,7 @@ const registry = {
       'packages/engine/src/params/state/index.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#DC',
       'packages/engine/src/params/state/index.ts#conformStateStandardDeduction',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
@@ -12846,7 +12853,7 @@ const registry = {
       'packages/engine/src/params/state/types.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#GA',
       'packages/engine/src/params/state/types.ts#StateRetirementExclusion',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
@@ -12884,7 +12891,7 @@ const registry = {
       'packages/engine/src/params/state/types.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#CT',
       'packages/engine/src/params/state/types.ts#StateRetirementExclusion',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
@@ -12921,7 +12928,7 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#DE',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
       'packages/engine/src/tax/stateTax.ts#retirementExclusion',
     ],
@@ -12959,7 +12966,7 @@ const registry = {
     ],
     implementedByFunctions: [
       'packages/engine/src/params/state/data/year2026.ts#PUBLIC_PENSION_OVERRIDES',
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#states.HI',
       'packages/engine/src/params/state/types.ts#StateRetirementExclusion',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
@@ -12990,7 +12997,7 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#ID',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
@@ -13020,7 +13027,7 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#states.KS',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
@@ -15566,7 +15573,7 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#KY',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
       'packages/engine/src/tax/stateTax.ts#retirementExclusion',
     ],
@@ -15597,7 +15604,7 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#states.LA',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
       'packages/engine/src/tax/stateTax.ts#retirementExclusion',
     ],
@@ -15628,7 +15635,7 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#states.LA',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
       'packages/engine/src/tax/stateTax.ts#retirementExclusion',
     ],
@@ -15665,7 +15672,7 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#MD',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
@@ -15719,7 +15726,7 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#MD',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
       'packages/engine/src/tax/stateTax.ts#retirementExclusion',
     ],
@@ -15793,7 +15800,7 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#states.MA',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
@@ -15829,7 +15836,7 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#MI',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
@@ -15865,7 +15872,7 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#MI',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
       'packages/engine/src/tax/stateTax.ts#retirementExclusion',
     ],
@@ -15914,7 +15921,7 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#MN',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
@@ -15968,7 +15975,7 @@ const registry = {
       'packages/engine/src/params/state/index.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#MT',
       'packages/engine/src/params/state/index.ts#conformStateStandardDeduction',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
@@ -16052,7 +16059,7 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#states.NE',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
@@ -16134,7 +16141,7 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#NH',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
@@ -16182,7 +16189,7 @@ const registry = {
       'packages/engine/src/params/state/data/year2026.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#NJ',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
       'packages/engine/src/tax/stateTax.ts#retirementExclusion',
     ],
@@ -16215,7 +16222,7 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#NM',
       'packages/engine/src/params/state/index.ts#conformStateStandardDeduction',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
@@ -16246,7 +16253,7 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#NC',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
@@ -16345,7 +16352,7 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#OK',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
       'packages/engine/src/tax/stateTax.ts#retirementExclusion',
     ],
@@ -16376,7 +16383,7 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#OR',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
@@ -16436,7 +16443,7 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#RI',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
       'packages/engine/src/tax/stateTax.ts#retirementExclusion',
     ],
@@ -16473,7 +16480,7 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#UT',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
@@ -16557,7 +16564,7 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#VT',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
@@ -16587,7 +16594,7 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#VA',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
       'packages/engine/src/tax/stateTax.ts#retirementExclusion',
     ],
@@ -16624,7 +16631,7 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#WA',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
@@ -16669,7 +16676,7 @@ const registry = {
     ],
     implementedByFunctions: [
       'packages/engine/src/model/plan.ts#planSchema',
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#WA',
       'packages/engine/src/params/types.ts#ParameterPack',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxDetail',
     ],
@@ -16725,7 +16732,7 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#WI',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
       'packages/engine/src/tax/stateTax.ts#retirementExclusion',
     ],
@@ -16762,7 +16769,7 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#WI',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
@@ -16798,7 +16805,7 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#states.AL',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
@@ -16841,7 +16848,7 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#states.AL',
       'packages/engine/src/params/state/types.ts#StateRetirementExclusion',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
       'packages/engine/src/tax/stateTax.ts#retirementExclusion',
@@ -16879,7 +16886,7 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#states.AL',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
       'packages/engine/src/tax/stateTax.ts#retirementExclusion',
     ],
@@ -16948,7 +16955,7 @@ const registry = {
     ],
     implementedByFunctions: [
       'packages/engine/src/model/plan.ts#incomeStreamSchema',
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#states.AL',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
@@ -16990,7 +16997,7 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#states.AL',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
@@ -17029,7 +17036,7 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#states.AL',
       'packages/engine/src/params/state/types.ts#StateRetirementExclusion',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
       'packages/engine/src/tax/stateTax.ts#retirementExclusion',
@@ -17073,7 +17080,7 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#states.AL',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
@@ -17109,7 +17116,7 @@ const registry = {
       'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#stateYear2026',
+      'packages/engine/src/params/state/data/year2026.ts#states.AL',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxDetail',
     ],
   },

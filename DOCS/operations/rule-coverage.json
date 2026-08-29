@@ -560,8 +560,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "AR",
+              "line": 181
             }
           ]
         },
@@ -724,8 +724,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "AR",
+              "line": 181
             }
           ]
         },
@@ -893,8 +893,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "AR",
+              "line": 181
             }
           ]
         },
@@ -972,8 +972,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "AR",
+              "line": 181
             }
           ]
         },
@@ -1042,8 +1042,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "AR",
+              "line": 181
             }
           ]
         },
@@ -1126,8 +1126,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "AR",
+              "line": 181
             }
           ]
         },
@@ -1206,8 +1206,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "AR",
+              "line": 181
             }
           ]
         },
@@ -1285,8 +1285,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "AK",
+              "line": 136
             }
           ]
         },
@@ -1355,8 +1355,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "states.AL",
+              "line": 127
             }
           ]
         },
@@ -1426,8 +1426,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "states.AL",
+              "line": 127
             }
           ]
         },
@@ -1566,8 +1566,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "states.AL",
+              "line": 127
             }
           ]
         },
@@ -1658,8 +1658,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "states.AL",
+              "line": 127
             }
           ]
         },
@@ -1728,8 +1728,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "states.AL",
+              "line": 127
             }
           ]
         },
@@ -1809,8 +1809,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "states.AL",
+              "line": 127
             }
           ]
         },
@@ -1856,8 +1856,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "states.AL",
+              "line": 127
             }
           ]
         },
@@ -1917,8 +1917,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "states.AL",
+              "line": 127
             }
           ]
         },
@@ -1996,8 +1996,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "states.AZ",
+              "line": 156
             }
           ]
         },
@@ -2071,8 +2071,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "states.AZ",
+              "line": 156
             }
           ]
         },
@@ -2236,8 +2236,8 @@
               "line": 170
             },
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "states.AZ",
+              "line": 156
             }
           ]
         },
@@ -2394,8 +2394,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "states.AZ",
+              "line": 156
             }
           ]
         },
@@ -2469,8 +2469,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "states.AZ",
+              "line": 156
             }
           ]
         },
@@ -2554,8 +2554,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "states.AZ",
+              "line": 156
             }
           ]
         },
@@ -2643,8 +2643,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "CA",
+              "line": 212
             }
           ]
         },
@@ -3436,8 +3436,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "CO",
+              "line": 234
             }
           ]
         },
@@ -3521,8 +3521,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "CO",
+              "line": 234
             }
           ]
         },
@@ -3592,8 +3592,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "CT",
+              "line": 242
             }
           ]
         },
@@ -3679,8 +3679,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "DC",
+              "line": 276
             }
           ]
         },
@@ -3754,8 +3754,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "DE",
+              "line": 259
             }
           ]
         },
@@ -3835,8 +3835,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "FL",
+              "line": 293
             }
           ]
         },
@@ -4180,8 +4180,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "GA",
+              "line": 300
             }
           ]
         },
@@ -4265,8 +4265,8 @@
               "line": 57
             },
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "states.HI",
+              "line": 309
             }
           ]
         },
@@ -4340,8 +4340,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "IN",
+              "line": 343
             }
           ]
         },
@@ -4411,8 +4411,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "IN",
+              "line": 343
             }
           ]
         },
@@ -4505,8 +4505,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "IN",
+              "line": 343
             }
           ]
         },
@@ -4590,8 +4590,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "IN",
+              "line": 343
             }
           ]
         },
@@ -4759,8 +4759,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "IN",
+              "line": 343
             }
           ]
         },
@@ -4838,8 +4838,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "IN",
+              "line": 343
             }
           ]
         },
@@ -4927,8 +4927,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "ID",
+              "line": 328
             }
           ]
         },
@@ -4988,8 +4988,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "IL",
+              "line": 337
             }
           ]
         },
@@ -5062,8 +5062,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "IA",
+              "line": 378
             }
           ]
         },
@@ -16679,8 +16679,36 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "CO",
+              "line": 234
+            },
+            {
+              "name": "DC",
+              "line": 276
+            },
+            {
+              "name": "IA",
+              "line": 378
+            },
+            {
+              "name": "ID",
+              "line": 328
+            },
+            {
+              "name": "MO",
+              "line": 513
+            },
+            {
+              "name": "MT",
+              "line": 537
+            },
+            {
+              "name": "NM",
+              "line": 593
+            },
+            {
+              "name": "states.ND",
+              "line": 637
             }
           ]
         },
@@ -19081,8 +19109,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "states.KS",
+              "line": 384
             }
           ]
         },
@@ -19142,8 +19170,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "KY",
+              "line": 393
             }
           ]
         },
@@ -19256,8 +19284,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "states.LA",
+              "line": 399
             }
           ]
         },
@@ -19325,8 +19353,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "states.LA",
+              "line": 399
             }
           ]
         },
@@ -19476,8 +19504,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "states.MA",
+              "line": 443
             }
           ]
         },
@@ -19546,8 +19574,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "MD",
+              "line": 424
             }
           ]
         },
@@ -19616,8 +19644,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "MD",
+              "line": 424
             }
           ]
         },
@@ -19709,8 +19737,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "MI",
+              "line": 449
             }
           ]
         },
@@ -19779,8 +19807,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "MI",
+              "line": 449
             }
           ]
         },
@@ -19853,8 +19881,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "MN",
+              "line": 455
             }
           ]
         },
@@ -19933,8 +19961,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "MO",
+              "line": 513
             }
           ]
         },
@@ -20004,8 +20032,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "ME",
+              "line": 405
             }
           ]
         },
@@ -20093,8 +20121,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "MS",
+              "line": 472
             }
           ]
         },
@@ -20186,8 +20214,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "MS",
+              "line": 472
             }
           ]
         },
@@ -20261,8 +20289,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "MS",
+              "line": 472
             }
           ]
         },
@@ -20355,8 +20383,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "MS",
+              "line": 472
             }
           ]
         },
@@ -20454,8 +20482,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "MS",
+              "line": 472
             }
           ]
         },
@@ -20524,8 +20552,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "MS",
+              "line": 472
             }
           ]
         },
@@ -20614,8 +20642,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "MS",
+              "line": 472
             }
           ]
         },
@@ -20785,8 +20813,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "MT",
+              "line": 537
             }
           ]
         },
@@ -20883,8 +20911,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "NC",
+              "line": 629
             }
           ]
         },
@@ -20944,8 +20972,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "states.ND",
+              "line": 637
             }
           ]
         },
@@ -21122,8 +21150,8 @@
               "line": 648
             },
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "states.ND",
+              "line": 637
             }
           ]
         },
@@ -21201,8 +21229,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "states.ND",
+              "line": 637
             }
           ]
         },
@@ -21353,8 +21381,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "states.ND",
+              "line": 637
             }
           ]
         },
@@ -21508,8 +21536,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "states.ND",
+              "line": 637
             }
           ]
         },
@@ -21670,8 +21698,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "states.NE",
+              "line": 548
             }
           ]
         },
@@ -21745,8 +21773,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "NH",
+              "line": 568
             }
           ]
         },
@@ -21815,8 +21843,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "NJ",
+              "line": 574
             }
           ]
         },
@@ -21904,8 +21932,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "NM",
+              "line": 593
             }
           ]
         },
@@ -22962,8 +22990,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "NV",
+              "line": 563
             }
           ]
         },
@@ -23027,8 +23055,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "states.NY",
+              "line": 608
             }
           ]
         },
@@ -23192,8 +23220,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "OK",
+              "line": 673
             }
           ]
         },
@@ -23277,8 +23305,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "OR",
+              "line": 691
             }
           ]
         },
@@ -23338,8 +23366,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "PA",
+              "line": 706
             }
           ]
         },
@@ -23408,8 +23436,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "PA",
+              "line": 706
             }
           ]
         },
@@ -23844,8 +23872,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "RI",
+              "line": 715
             }
           ]
         },
@@ -23956,8 +23984,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "states.SC",
+              "line": 724
             }
           ]
         },
@@ -24030,8 +24058,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "SD",
+              "line": 738
             }
           ]
         },
@@ -24100,8 +24128,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "TN",
+              "line": 743
             }
           ]
         },
@@ -24170,8 +24198,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "TN",
+              "line": 743
             }
           ]
         },
@@ -26762,8 +26790,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "TX",
+              "line": 748
             }
           ]
         },
@@ -26827,8 +26855,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "TX",
+              "line": 748
             }
           ]
         },
@@ -29377,8 +29405,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "UT",
+              "line": 753
             }
           ]
         },
@@ -29443,8 +29471,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "VA",
+              "line": 774
             }
           ]
         },
@@ -29519,8 +29547,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "VT",
+              "line": 759
             }
           ]
         },
@@ -29625,8 +29653,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "WA",
+              "line": 789
             }
           ]
         },
@@ -29702,8 +29730,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "WA",
+              "line": 789
             }
           ]
         },
@@ -29768,8 +29796,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "WI",
+              "line": 811
             }
           ]
         },
@@ -29834,8 +29862,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "WI",
+              "line": 811
             }
           ]
         },
@@ -29927,8 +29955,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "WV",
+              "line": 795
             }
           ]
         },
@@ -30007,8 +30035,8 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "stateYear2026",
-              "line": 836
+              "name": "WY",
+              "line": 826
             }
           ]
         },
