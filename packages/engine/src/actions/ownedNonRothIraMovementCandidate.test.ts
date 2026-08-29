@@ -282,6 +282,26 @@ describe('stageOwnedNonRothIraOrdinaryWithdrawalMovements', () => {
       let name = ''
       try { attempt() } catch (err) { name = (err as Error).constructor.name }
       expect(name).toBe(accepted)
+      // The identical request with owned evidence stages, so the refusal is
+      // the gate discriminating on inheritance status, not a broken stager.
+      const owned = stageOwnedNonRothIraOrdinaryWithdrawalMovements({
+        ownerPersonId: asPersonId('owner'),
+        taxYear: 2030,
+        requests: [
+          withdrawal({
+            suffix: 'full',
+            executionDate: '2030-06-01',
+            sequence: 1,
+            allocations: [allocation('full', 'ira-one', 75)],
+          }),
+        ],
+        openingBalances: [{
+          accountId: asAccountId('ira-one'),
+          openingBalance: asUsdCents(100),
+        }],
+        sourceEvidence: [source('ira-one')],
+      })
+      expect(owned.status).toBe('movementCandidateStaged')
     })
   })
 

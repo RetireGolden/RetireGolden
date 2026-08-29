@@ -1175,11 +1175,12 @@ const registry = {
   'irc-408-d-2-A-owner-wide-non-inherited-ira-pool': {
     title: 'The annual basis pool is all of the owner\'s own IRAs, and only those',
     statement:
-      'For the annual pro-rata basis computation, all traditional, SEP, and SIMPLE IRAs of one individual are treated as a single contract, so the engine builds one owner-wide pool per person. A spouse\'s IRAs form a separate pool with a separate Form 8606, and inherited IRAs are excluded from the owned pool entirely - their basis runs on separate Forms 8606 per decedent under the inherited regime.',
+      'For the annual pro-rata basis computation, all of an individual\'s individual retirement plans are treated as one contract and all of a year\'s distributions as one distribution, so the engine builds one basis pool per person. The pool\'s boundaries follow the Form 8606 filing unit as the IRS administers it: a spouse\'s IRAs are a separate pool with a separate form, and inherited IRAs are excluded from the owned pool, their basis running on separate forms per decedent.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
-    conventionRationale: null,
+    conventionRationale:
+      'The one-contract aggregation is statutory. The exclusions are not: as the sibling 408(d)(2) fraction record already records, 408(d)(2)(A) says "all individual retirement plans" without qualification, and the spousal and inherited separations rest on the Form 8606 instructions and Publication 590-B - uniform administrative practice, publication-level authority. The engine follows the IRS position; the pinned gates are where that composition is enforced.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -1202,11 +1203,17 @@ const registry = {
       'packages/engine/src/actions/ownedNonRothIraMovementCandidate.ts',
       'packages/engine/src/actions/ownedNonRothIraAnnualPlanCoordinator.ts',
       'packages/engine/src/actions/ownedNonRothIraAnnualPostCandidateEvidence.ts',
+      'packages/engine/src/actions/ownedNonRothIraAnnualCandidateTransaction.ts',
+      'packages/engine/src/actions/ownedNonRothIraAnnualFilingSourceResolver.ts',
+      'packages/engine/src/actions/ownedNonRothIraAnnualFilingEvidence.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/actions/ownedNonRothIraMovementCandidate.ts#stageOwnedNonRothIraOrdinaryWithdrawalMovements',
       'packages/engine/src/actions/ownedNonRothIraAnnualPlanCoordinator.ts#coordinatePlanOwnedNonRothIraAnnualWithdrawalCandidate',
       'packages/engine/src/actions/ownedNonRothIraAnnualPostCandidateEvidence.ts#buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput',
+      'packages/engine/src/actions/ownedNonRothIraAnnualCandidateTransaction.ts#preparePlanOwnedNonRothIraAnnualCandidateTransaction',
+      'packages/engine/src/actions/ownedNonRothIraAnnualFilingSourceResolver.ts#resolvePlanOwnedNonRothIraAnnualFilingSources',
+      'packages/engine/src/actions/ownedNonRothIraAnnualFilingEvidence.ts#buildPlanOwnedNonRothIraAnnualFilingEvidence',
     ],
   },
 
