@@ -5106,7 +5106,7 @@
           "functions": [
             {
               "name": "capitalGainsTaxStacked",
-              "line": 333
+              "line": 366
             }
           ]
         }
@@ -5246,11 +5246,11 @@
           "functions": [
             {
               "name": "capitalGainsTaxStacked",
-              "line": 333
+              "line": 366
             },
             {
               "name": "computeFederalTax",
-              "line": 442
+              "line": 475
             }
           ]
         }
@@ -5321,7 +5321,7 @@
           "functions": [
             {
               "name": "capitalGainsTaxStacked",
-              "line": 333
+              "line": 366
             }
           ]
         }
@@ -5459,7 +5459,7 @@
           "functions": [
             {
               "name": "bracketTax",
-              "line": 270
+              "line": 303
             }
           ]
         }
@@ -5691,7 +5691,7 @@
           "functions": [
             {
               "name": "computeFederalTax",
-              "line": 442
+              "line": 475
             }
           ]
         }
@@ -5766,7 +5766,7 @@
           "functions": [
             {
               "name": "applyCapitalLossCarryforward",
-              "line": 415
+              "line": 448
             }
           ]
         }
@@ -5994,7 +5994,7 @@
           "functions": [
             {
               "name": "applyCapitalLossCarryforward",
-              "line": 415
+              "line": 448
             }
           ]
         }
@@ -6045,7 +6045,7 @@
           "functions": [
             {
               "name": "applyCapitalLossCarryforward",
-              "line": 415
+              "line": 448
             }
           ]
         }
@@ -6111,7 +6111,7 @@
           "functions": [
             {
               "name": "applyCapitalLossCarryforward",
-              "line": 415
+              "line": 448
             }
           ]
         }
@@ -6172,7 +6172,7 @@
           "functions": [
             {
               "name": "computeFederalTax",
-              "line": 442
+              "line": 475
             }
           ]
         }
@@ -6296,7 +6296,7 @@
           "functions": [
             {
               "name": "computeFederalTax",
-              "line": 442
+              "line": 475
             }
           ]
         }
@@ -6352,7 +6352,7 @@
           "functions": [
             {
               "name": "computeFederalTax",
-              "line": 442
+              "line": 475
             }
           ]
         }
@@ -6408,7 +6408,7 @@
           "functions": [
             {
               "name": "computeFederalTax",
-              "line": 442
+              "line": 475
             }
           ]
         }
@@ -6473,7 +6473,7 @@
           "functions": [
             {
               "name": "computeFederalTax",
-              "line": 442
+              "line": 475
             }
           ]
         }
@@ -6554,7 +6554,7 @@
           "functions": [
             {
               "name": "seniorDeductionAmount",
-              "line": 310
+              "line": 343
             }
           ]
         }
@@ -6649,7 +6649,7 @@
           "functions": [
             {
               "name": "seniorDeductionAmount",
-              "line": 310
+              "line": 343
             }
           ]
         }
@@ -6772,7 +6772,7 @@
           "functions": [
             {
               "name": "itemizedTotal",
-              "line": 123
+              "line": 129
             }
           ]
         }
@@ -6870,7 +6870,7 @@
           "functions": [
             {
               "name": "itemizedTotal",
-              "line": 123
+              "line": 129
             }
           ]
         }
@@ -6934,11 +6934,11 @@
           "functions": [
             {
               "name": "itemizedTotal",
-              "line": 123
+              "line": 129
             },
             {
               "name": "saltCapForYear",
-              "line": 106
+              "line": 112
             }
           ]
         }
@@ -7037,7 +7037,7 @@
           "functions": [
             {
               "name": "saltCapForYear",
-              "line": 106
+              "line": 112
             }
           ]
         }
@@ -7255,7 +7255,7 @@
           "functions": [
             {
               "name": "itemizedTotal",
-              "line": 123
+              "line": 129
             }
           ]
         }
@@ -7399,7 +7399,7 @@
           "functions": [
             {
               "name": "charitableAfterFloor",
-              "line": 160
+              "line": 172
             }
           ]
         }
@@ -7657,7 +7657,7 @@
           "functions": [
             {
               "name": "deduction",
-              "line": 53
+              "line": 59
             }
           ]
         }
@@ -7876,7 +7876,7 @@
           "functions": [
             {
               "name": "section68Reduction",
-              "line": 192
+              "line": 211
             }
           ]
         }
@@ -8062,7 +8062,7 @@
           "functions": [
             {
               "name": "itemizedTotal",
-              "line": 123
+              "line": 129
             }
           ]
         }
@@ -8169,7 +8169,7 @@
           "functions": [
             {
               "name": "itemizedTotal",
-              "line": 123
+              "line": 129
             }
           ]
         }
@@ -16351,11 +16351,11 @@
           "functions": [
             {
               "name": "computeFederalTax",
-              "line": 442
+              "line": 475
             },
             {
               "name": "tentativeMinimumTax",
-              "line": 366
+              "line": 399
             }
           ]
         }
@@ -16411,7 +16411,7 @@
           "functions": [
             {
               "name": "tentativeMinimumTax",
-              "line": 366
+              "line": 399
             }
           ]
         }
@@ -16477,7 +16477,7 @@
           "functions": [
             {
               "name": "amtExemptionAmount",
-              "line": 351
+              "line": 384
             }
           ]
         }
@@ -16548,7 +16548,7 @@
           "functions": [
             {
               "name": "computeFederalTax",
-              "line": 442
+              "line": 475
             }
           ]
         }
@@ -16604,7 +16604,7 @@
           "functions": [
             {
               "name": "computeFederalTax",
-              "line": 442
+              "line": 475
             }
           ]
         }
@@ -16669,7 +16669,7 @@
           "functions": [
             {
               "name": "amtPreferenceItems",
-              "line": 77
+              "line": 83
             }
           ]
         }
@@ -16725,7 +16725,7 @@
           "functions": [
             {
               "name": "computeFederalTax",
-              "line": 442
+              "line": 475
             }
           ]
         }
@@ -16796,7 +16796,7 @@
           "functions": [
             {
               "name": "computeFederalTax",
-              "line": 442
+              "line": 475
             }
           ]
         }
@@ -17009,7 +17009,7 @@
           "functions": [
             {
               "name": "computeFederalTax",
-              "line": 442
+              "line": 475
             }
           ]
         }
@@ -17246,7 +17246,7 @@
           "functions": [
             {
               "name": "itemizedTotal",
-              "line": 123
+              "line": 129
             }
           ]
         }
@@ -17327,7 +17327,7 @@
           "functions": [
             {
               "name": "section68Reduction",
-              "line": 192
+              "line": 211
             }
           ]
         }
@@ -18917,7 +18917,7 @@
           "functions": [
             {
               "name": "taxableSocialSecurity",
-              "line": 286
+              "line": 319
             }
           ]
         }
@@ -18973,7 +18973,7 @@
           "functions": [
             {
               "name": "taxableSocialSecurity",
-              "line": 286
+              "line": 319
             }
           ]
         }
@@ -19039,7 +19039,7 @@
           "functions": [
             {
               "name": "taxableSocialSecurity",
-              "line": 286
+              "line": 319
             }
           ]
         }

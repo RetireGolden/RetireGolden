@@ -3483,6 +3483,8 @@ const registry = {
       kind: 'statute',
       citation: 'P.L. 118-273, § 3(a)',
       url: 'https://www.govinfo.gov/content/pkg/PLAW-118publ273/pdf/PLAW-118publ273.pdf',
+      // The enrolled text continues immediately into subsection (b), so the
+      // terminal U+2026 honestly discloses that omitted continuation.
       quotedText:
         'Section 215 of the Social Security Act (42 U.S.C. 415) is amended-- (1) in subsection (a), by striking paragraph (7); (2) in subsection (d), by striking paragraph (3); and (3) in subsection (f), by striking paragraph (9)…',
     }, {
@@ -15188,6 +15190,8 @@ const registry = {
       kind: 'statute',
       citation: 'P.L. 117-328, division T, title I, section 126(d)',
       url: 'https://www.govinfo.gov/content/pkg/PLAW-117publ328/pdf/PLAW-117publ328.pdf',
+      // The enrolled text continues immediately into section 127, so the
+      // terminal U+2026 honestly discloses that omitted continuation.
       quotedText:
         '(d) EFFECTIVE DATE.--The amendments made by this section shall apply with respect to distributions after December 31, 2023…',
     }],

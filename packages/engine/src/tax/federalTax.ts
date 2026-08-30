@@ -20,11 +20,13 @@
  *      either branch per §56(b)(1)(D)), AMT exemption/phaseout, and
  *      preferential-rate-aware tentative minimum tax.
  *
- * Every figure is read from the year's parameter pack. For a year no pack has
- * been published for, the caller supplies `inflationScale` and the annually
- * indexed figures -- rate brackets, standard deduction and age-65 addition,
- * capital-gain breakpoints, AMT exemption/phase-out/28% threshold -- are
- * carried forward with it (`indexFederalTaxPack`). The unindexed ones are not:
+ * Figures are read from the year's parameter pack, with the exact 2026 §170
+ * floor and §68 threshold/rate facts supplied by their authoritative carrier.
+ * For a year no pack has been published, the caller supplies `inflationScale`
+ * and the annually indexed figures -- rate brackets, standard deduction and
+ * age-65 addition, capital-gain breakpoints, AMT exemption/phase-out/28%
+ * threshold -- are carried forward with it (`indexFederalTaxPack`). The
+ * unindexed ones are not:
  * the section 86 provisional-income tiers and the section 1411 NIIT thresholds
  * stay put by design, which is why more of a benefit becomes taxable and more
  * income meets NIIT as a plan runs on.
@@ -40,6 +42,10 @@
 import { indexFederalTaxPack, packForYear, standardDeduction } from '../params/index.js'
 import type { FilingStatus, ParameterPack, TaxBracket } from '../params/types.js'
 import { taxParameterFilingStatus, type TaxCalculator, type TaxYearInput } from '../projection/types.js'
+import {
+  annualCharitableDeductionParameters,
+  type AnnualCharitableDeductionParameters2026,
+} from './annualCharitableDeductionParameters.js'
 
 export interface FederalTaxDetail {
   year: number
@@ -125,10 +131,16 @@ function itemizedTotal(
   items: TaxYearInput['itemizedDeductions'],
   year: number,
   contributionBase: number,
+  parameters: Readonly<AnnualCharitableDeductionParameters2026> | null,
 ): number {
   if (!items) return 0
   const salt = Math.min(Math.max(0, items.stateAndLocalTaxes), saltCapForYear(pack, year))
-  const charitable = charitableAfterFloor(Math.max(0, items.charitable), contributionBase, year)
+  const charitable = charitableAfterFloor(
+    Math.max(0, items.charitable),
+    contributionBase,
+    year,
+    parameters,
+  )
   return salt + Math.max(0, items.mortgageInterest) + charitable
 }
 
@@ -153,17 +165,24 @@ function itemizedTotal(
  * is permanent and there is nothing to carry. The ceiling itself is not wired,
  * so no such excess can arise here.
  *
- * The 0.5 percent is written as an exact integer ratio. Spelling it `0.005 *
- * base` introduces a float intermediate into a figure that feeds an equality
- * comparison against the standard deduction.
+ * The carrier supplies 0.5 percent as an exact integer ratio. Spelling it
+ * `0.005 * base` introduces a float intermediate into a figure that feeds an
+ * equality comparison against the standard deduction.
  */
 function charitableAfterFloor(
   charitable: number,
   contributionBase: number,
   year: number,
+  parameters: Readonly<AnnualCharitableDeductionParameters2026> | null,
 ): number {
   if (year < 2026 || charitable <= 0) return charitable
-  const floor = (Math.max(0, contributionBase) * 5) / 1_000
+  // Only 2026 has an authoritative carrier. Later projection years retain the
+  // established stand-in computation without asking that carrier to stand in.
+  const floor = parameters === null
+    ? (Math.max(0, contributionBase) * 5) / 1_000
+    : (Math.max(0, contributionBase)
+      * Number(parameters.itemizerContributionFloorRate.numerator))
+      / Number(parameters.itemizerContributionFloorRate.denominator)
   return Math.max(0, charitable - floor)
 }
 
@@ -191,28 +210,42 @@ function charitableAfterFloor(
  */
 function section68Reduction(
   pack: ParameterPack,
+  filingStatus: TaxYearInput['filingStatus'],
   taxStatus: FilingStatus,
   itemizedBeforeLimitation: number,
   agi: number,
   seniorDeduction: number,
   year: number,
+  parameters: Readonly<AnnualCharitableDeductionParameters2026> | null,
 ): number {
   if (year < 2026 || itemizedBeforeLimitation <= 0) return 0
-  const brackets = pack.federalTax.brackets[taxStatus]
-  // §68(a)(2) names "the dollar amount at which the 37 percent rate bracket
-  // under section 1 begins", so the bracket is found by its rate rather than by
-  // being last. If a future pack ever tops out below 37 percent the statute's
-  // reference has no referent, and the top bracket is the honest stand-in —
-  // silently skipping the limitation would understate tax without saying so.
-  const thirtySeven = brackets.find((bracket) => bracket.ratePct === 37)
-    ?? brackets[brackets.length - 1]
-  if (thirtySeven === undefined) return 0
-  const base = Math.max(0, agi - seniorDeduction - thirtySeven.lowerBound)
-  // Multiply before dividing: 2/37 is not representable, and evaluating it
-  // first leaves an intermediate that only rounds back to the right answer by
-  // luck. Left unrounded, like every other figure on this path; the exact-cent
-  // ledger rounds half-up at the cent and the two agree to within half a cent.
-  return (2 * Math.min(itemizedBeforeLimitation, base)) / 37
+  let threshold: number
+  let numerator: number
+  let denominator: number
+  if (parameters !== null) {
+    threshold = parameters.section68ThresholdByFilingStatusCents[filingStatus] / 100
+    numerator = Number(parameters.section68LimitationRate.numerator)
+    denominator = Number(parameters.section68LimitationRate.denominator)
+  } else {
+    const brackets = pack.federalTax.brackets[taxStatus]
+    // §68(a)(2) names "the dollar amount at which the 37 percent rate bracket
+    // under section 1 begins", so the bracket is found by its rate rather than
+    // by being last. If a future stand-in pack ever tops out below 37 percent,
+    // its top bracket remains the established honest stand-in.
+    const thirtySeven = brackets.find((bracket) => bracket.ratePct === 37)
+      ?? brackets[brackets.length - 1]
+    if (thirtySeven === undefined) return 0
+    threshold = thirtySeven.lowerBound
+    numerator = 2
+    denominator = 37
+  }
+  const base = Math.max(0, agi - seniorDeduction - threshold)
+  // Multiply by the selected exact-ratio numerator before dividing by its
+  // denominator. Evaluating the ratio first can leave a floating intermediate
+  // that only rounds back to the right answer by luck. Left unrounded, like
+  // every other figure on this path; the exact-cent ledger rounds half-up at
+  // the cent and the two agree to within half a cent.
+  return (numerator * Math.min(itemizedBeforeLimitation, base)) / denominator
 }
 
 /**
@@ -457,6 +490,9 @@ export function computeFederalTax(input: TaxYearInput): FederalTaxDetail {
   // to be carried forward with it; `indexFederalTaxPack` is a no-op at scale 1
   // and leaves the statutorily unindexed figures alone at any scale.
   const pack = indexFederalTaxPack(publishedPack, input.inflationScale ?? 1)
+  const charitableParameters = year === 2026
+    ? annualCharitableDeductionParameters(2026)
+    : null
 
   const agiExcludingSs = ordinary + netCapital + qualifiedDividends // a net capital loss can drive this below zero
   const taxableSs = taxableSocialSecurity(
@@ -485,7 +521,13 @@ export function computeFederalTax(input: TaxYearInput): FederalTaxDetail {
   const standardBase = standardDeduction(pack, taxStatus, input.peopleAged65Plus)
   // §170(b)(1)(H) defines the contribution base as adjusted gross income, and
   // the charitable deduction is below the line, so `agi` does not depend on it.
-  const itemizedBeforeSection68 = itemizedTotal(pack, input.itemizedDeductions, year, agi)
+  const itemizedBeforeSection68 = itemizedTotal(
+    pack,
+    input.itemizedDeductions,
+    year,
+    agi,
+    charitableParameters,
+  )
   // §68(b) applies this "after the application of any other limitation on the
   // allowance of any itemized deduction", so it runs on the assembled total and
   // nothing may be added to that total afterwards. The election below compares
@@ -493,11 +535,13 @@ export function computeFederalTax(input: TaxYearInput): FederalTaxDetail {
   // deduction and what it may actually deduct, not what it could have.
   const section68Limitation = section68Reduction(
     pack,
+    filingStatus,
     taxStatus,
     itemizedBeforeSection68,
     agi,
     senior,
     year,
+    charitableParameters,
   )
   const itemized = itemizedBeforeSection68 - section68Limitation
   const useItemized = itemized > standardBase

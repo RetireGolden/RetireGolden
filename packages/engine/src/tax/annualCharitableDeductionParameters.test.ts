@@ -53,7 +53,7 @@ describe('annualCharitableDeductionParameters', () => {
     })
   })
 
-  it('aligns the section 68 single and married-filing-jointly thresholds with the live 37-percent bracket starts', () => {
+  it('aligns all section 68 filing-status thresholds with the live 37-percent bracket starts', () => {
     const parameters = annualCharitableDeductionParameters(2026)
     const single37PercentBracket = year2026.federalTax.brackets.single.find(
       ({ ratePct }) => ratePct === 37,
@@ -65,12 +65,13 @@ describe('annualCharitableDeductionParameters', () => {
 
     expect(single37PercentBracket).toBeDefined()
     expect(marriedFilingJointly37PercentBracket).toBeDefined()
-    expect(parameters.section68ThresholdByFilingStatusCents.single).toBe(
-      single37PercentBracket!.lowerBound * 100,
-    )
-    expect(parameters.section68ThresholdByFilingStatusCents.marriedFilingJointly).toBe(
-      marriedFilingJointly37PercentBracket!.lowerBound * 100,
-    )
+    expect(parameters.section68ThresholdByFilingStatusCents).toEqual({
+      single: single37PercentBracket!.lowerBound * 100,
+      headOfHousehold: single37PercentBracket!.lowerBound * 100,
+      marriedFilingJointly: marriedFilingJointly37PercentBracket!.lowerBound * 100,
+      marriedFilingSeparately: marriedFilingJointly37PercentBracket!.lowerBound * 50,
+      qualifyingSurvivingSpouse: marriedFilingJointly37PercentBracket!.lowerBound * 100,
+    })
   })
 
   it('carries stable statutory and section 68 threshold provenance', () => {
