@@ -25,6 +25,7 @@
     "test:coverage": "pnpm --filter @retiregolden/engine test:coverage && pnpm --filter @retiregolden/planner-ui test:coverage && pnpm --filter retiregolden-web test:coverage",
     "build": "pnpm --filter @retiregolden/engine build && pnpm --filter @retiregolden/planner-ui build && pnpm --filter retiregolden-web build",
     "dev": "pnpm --filter retiregolden-web dev",
+    "bundle-budget": "pnpm --filter retiregolden-web bundle-budget",
     "cases": "pnpm --filter retiregolden-web cases",
     "cases:diff": "pnpm --filter retiregolden-web cases:diff",
     "owl-parity": "pnpm --filter retiregolden-web owl-parity",

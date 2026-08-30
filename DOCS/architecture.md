@@ -131,11 +131,16 @@ by `planner/yearCashFlow/`: cash-flow and transfer Sankeys, a complete accessibl
 detail CSV. It consumes `YearResult.cashFlow` and applies only the existing display transform; it never
 recomputes money math.
 
+All three off-thread surfaces share **one** worker entry, `src/workers/planner.worker.ts`, routing on a
+`channel` tag: a bundler builds each worker entry in its own pass, so separate entries would each carry
+their own copy of the engine simulation core ([operations/bundle-budget.md](operations/bundle-budget.md)).
+
 - **Monte Carlo** drives the identical `simulate` with stochastic inputs across a **Web Worker pool**
-  (`src/mc/`), seedable for reproducibility.
-- **The optimizer** (`src/optimize/`) solves a MILP with **HiGHS compiled to WASM** in a worker (the ~3 MB
-  wasm loads lazily), emitting a schedule that the exact ledger then re-runs. See [features/optimizer.md](features/optimizer.md).
-- **The relocation sweep** (planner-ui `relocation/`) runs the same plan once per candidate state in a Web Worker,
+  (`src/mc/`, `monteCarlo` channel), seedable for reproducibility.
+- **The optimizer** (`src/optimize/`, `optimize` channel) solves a MILP with **HiGHS compiled to WASM** (the
+  ~3 MB wasm loads only when Optimize runs), emitting a schedule that the exact ledger then re-runs. See
+  [features/optimizer.md](features/optimizer.md).
+- **The relocation sweep** (planner-ui `relocation/`, `relocation` channel) runs the same plan once per candidate state,
   again through the identical `simulate` — same-ledger discipline holds for every what-if surface (the
   survivor transition view runs `simulate` with death-age overrides on the main projection path).
 

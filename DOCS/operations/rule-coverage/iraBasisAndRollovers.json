@@ -1,0 +1,1336 @@
+{
+  "kind": "retiregolden.rules-coverage.shard",
+  "version": 5,
+  "module": "iraBasisAndRollovers",
+  "rules": [
+    {
+      "id": "form-8606-line-4-post-year-contribution-exclusion",
+      "title": "A following-calendar-year contribution is excluded from the current distribution fraction",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-25",
+      "dueOn": "2027-08-25",
+      "implementedBy": [
+        "packages/engine/src/actions/ownedNonRothIraAnnualFilingEvidence.ts",
+        "packages/engine/src/actions/ownedNonRothIraAnnualPostCandidateEvidence.ts",
+        "packages/engine/src/actions/ownedNonRothIraWithdrawalCharacter.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraAnnualFilingEvidence.ts",
+          "functions": [
+            {
+              "name": "buildPlanOwnedNonRothIraAnnualFilingEvidence",
+              "line": 774
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraAnnualPostCandidateEvidence.ts",
+          "functions": [
+            {
+              "name": "buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput",
+              "line": 447
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraWithdrawalCharacter.ts",
+          "functions": [
+            {
+              "name": "classifyOwnedNonRothIraAnnualWithdrawals",
+              "line": 248
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/actions/ownedNonRothIraWithdrawalCharacter.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraWithdrawalCharacter.test.ts",
+          "line": 172,
+          "note": "following-calendar-year contribution window",
+          "tests": [
+            {
+              "title": "removes the line-4 amount before characterizing a positive distribution",
+              "line": 180
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "formInstruction",
+          "citation": "Instructions for Form 8606 (2025), Line 4",
+          "url": "https://www.irs.gov/pub/irs-pdf/i8606.pdf"
+        }
+      ]
+    },
+    {
+      "id": "form-8606-line-7-owned-ira-movement-staging",
+      "title": "Owned IRA ordinary distributions stage on Form 8606 line 7",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-29",
+      "dueOn": "2027-08-29",
+      "implementedBy": [
+        "packages/engine/src/actions/ownedNonRothIraMovementCandidate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraMovementCandidate.ts",
+          "functions": [
+            {
+              "name": "stageOwnedNonRothIraOrdinaryWithdrawalMovements",
+              "line": 410
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/actions/ownedNonRothIraMovementCandidate.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraMovementCandidate.test.ts",
+          "line": 218,
+          "note": "executed owned-IRA withdrawals stage as line 7 distribution candidates",
+          "tests": [
+            {
+              "title": "stages the executed withdrawal as a line-7 distribution candidate",
+              "line": 226
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "formInstruction",
+          "citation": "Form 8606 (2025), line 7",
+          "url": "https://www.irs.gov/pub/irs-pdf/f8606.pdf"
+        }
+      ]
+    },
+    {
+      "id": "form-8606-lines-7-and-8-distinct-distribution-staging",
+      "title": "Form 8606 keeps ordinary distributions and Roth conversions in separate totals",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-25",
+      "dueOn": "2027-08-25",
+      "implementedBy": [
+        "packages/engine/src/actions/annualQcdResidualForm8606.ts",
+        "packages/engine/src/actions/annualRetirementPhysicalEventInventory.ts",
+        "packages/engine/src/actions/beneficiaryTraditionalIraResidualRmdAnnualRefinalization.ts",
+        "packages/engine/src/actions/ownedNonRothIraAnnualPhysicalTransaction.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/annualQcdResidualForm8606.ts",
+          "functions": [
+            {
+              "name": "stageAnnualQcdResidualForm8606",
+              "line": 304
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/annualRetirementPhysicalEventInventory.ts",
+          "functions": [
+            {
+              "name": "buildAnnualRetirementPhysicalEventInventory",
+              "line": 1323
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/beneficiaryTraditionalIraResidualRmdAnnualRefinalization.ts",
+          "functions": [
+            {
+              "name": "prepareBeneficiaryTraditionalIraResidualRmdAnnualRefinalization",
+              "line": 704
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraAnnualPhysicalTransaction.ts",
+          "functions": [
+            {
+              "name": "preparePlanOwnedNonRothIraAnnualPhysicalTransaction",
+              "line": 1455
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/actions/ownedNonRothIraAnnualPhysicalTransaction.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraAnnualPhysicalTransaction.test.ts",
+          "line": 319,
+          "note": "ordinary distribution and Roth conversion use separate annual lines",
+          "tests": [
+            {
+              "title": "stages a conversion onto line 8 rather than folding it into line 7",
+              "line": 327
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "formInstruction",
+          "citation": "Instructions for Form 8606 (2025), Line 7",
+          "url": "https://www.irs.gov/pub/irs-pdf/i8606.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "Instructions for Form 8606 (2025), Line 8",
+          "url": "https://www.irs.gov/pub/irs-pdf/i8606.pdf"
+        }
+      ]
+    },
+    {
+      "id": "irc-408-d-1-ira-annuity-premium-is-not-a-distribution",
+      "title": "Buying an annuity contract with IRA dollars is not a distribution",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "WHY THE TWO STRUCTURES DO NOT HAVE TO BE DISTINGUISHED, which is the question the Plan schema raises by carrying neither. A Plan annuity purchase records a premium, a funding account, a tax qualification and a QLAC flag; it does not record who issues the contract, and it therefore cannot say whether the result is a section 408(b) individual retirement annuity or an annuity contract sitting inside a section 408(a) trust. That silence is harmless here because the two roads arrive at the same place. On the first, the contract is itself an individual retirement plan and the movement into it is a trustee-to-trustee transfer, which Treas. Reg. 1.408-8(d)(4) states is not a distribution and which the Form 1099-R instructions direct the issuer not to report. On the second, nothing moved between plans at all — the trust exchanged cash for a contract, the way it would exchange cash for a bond. Section 408(a)(3) forbids the trust to invest in life insurance contracts and says nothing against an annuity contract, and the Form 1099-R instructions name the shape explicitly when they extend the Roth-conversion valuation rule to \"a traditional IRA holds an annuity contract as an account asset\". So the schema is not missing a fact the answer turns on. IT WOULD MATTER FOR A DIFFERENT QUESTION, and this is worth recording because the temptation to derive it here is real. Section 408(b)(2)(B) caps the annual premium of an individual retirement annuity at the section 219(b)(1)(A) dollar amount, and unlike section 408(a)(1) — which carves rollover contributions out of the parallel cap on an account — subsection (b) states no such exception in its text. A large single premium therefore sits uneasily with the first structure and not at all with the second. That asymmetry is not resolved here, because nothing this engine computes turns on it: the character of the purchase, the aggregation of the contract, and the taxation of the payments are the same either way. It is registered so that a later reader who needs the distinction knows it was seen and set aside rather than missed. ONE ROUTE TO THE CONTRARY READING IS NOT CLOSED, and the statement above should be read against it. The schema refuses a `nonQualified` premium drawn on a traditional account, which is the distribution-and-purchase shape said in so many words, but an annuity account’s `ownerPersonId` is independent of its funding account’s, so a Plan may name ONE spouse’s contract and pay for it out of the OTHER’s IRA. On the reading this record takes that is still not a distribution -- nothing was paid out to anybody -- and the engine treats it that way: the contract enters the funding owner’s section 408(d)(2) aggregate, its payments are that owner’s line-7 distributions AND are priced at that owner’s annual basis fraction — the two travel together, and separating them is a defect this engine wrote and caught: the gross joined the pool owner’s line 7 while the character was looked up under the contract’s owner, so the payment was charged in full and the basis its own allocation had already spent was never applied. Its `startAge` goes on being measured against the person the Plan named, which is the one question that field does answer. The competing reading is that a contract belonging to somebody else could only have been reached by distributing to the IRA owner first and gifting the proceeds, which would put the whole premium on that owner’s line 7 and raise a transfer question the model has no field for. Nothing here decides between them. What is recorded is that the engine takes the first, that the second would produce a materially larger tax in the purchase year, and that a shape a saved plan file already contains is a poor place to discover the question -- refusing it would only have sent the year to a ledger that drops the contract from line 6 altogether, which neither reading supports.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-07",
+      "dueOn": "2027-08-07",
+      "implementedBy": [
+        "packages/engine/src/internal/iraAnnuityContractValue.ts",
+        "packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts",
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/internal/iraAnnuityContractValue.ts",
+          "functions": [
+            {
+              "name": "ownedIraFundedAnnuityContracts",
+              "line": 100
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts",
+          "functions": [
+            {
+              "name": "validateOwnedNonRothIraRuntimeSourceSeries",
+              "line": 2465
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "annuitySchema",
+              "line": 1127
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/iraAnnuityCharacter.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/iraAnnuityCharacter.approximation.test.ts",
+          "line": 1037,
+          "note": "the character of the premium",
+          "tests": [
+            {
+              "title": "reports no income for a 200,000 dollar premium paid out of the IRA",
+              "line": 1058
+            },
+            {
+              "title": "reports the same income as the household that bought nothing",
+              "line": 1065
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/rules/approximations/iraAnnuityCharacter.approximation.test.ts",
+          "line": 1072,
+          "note": "the funding arms",
+          "tests": [
+            {
+              "title": "refuses to draw a non-qualified premium from a traditional account",
+              "line": 1102
+            },
+            {
+              "title": "admits the qualified arm from the same account",
+              "line": 1113
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 408(d)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 408(b)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 7701(a)(37)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section7701&num=0&edition=prelim"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.408-8(d)(4)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.408-8"
+        },
+        {
+          "kind": "irsPublication",
+          "citation": "IRS Publication 590-B, Distribution of an annuity contract from your IRA account",
+          "url": "https://www.irs.gov/pub/irs-pdf/p590b.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "Instructions for Forms 1099-R and 5498 (2026), Transfers; Roth IRA conversions",
+          "url": "https://www.irs.gov/pub/irs-pdf/i1099r.pdf"
+        }
+      ]
+    },
+    {
+      "id": "irc-408-d-2-A-annuity-contract-outside-the-form-8606-aggregate",
+      "title": "An annuity contract an IRA bought stays inside the Form 8606 aggregate",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "WHAT THE PROBE SHOWED, kept because it is the proof and not the history. Take a 76-year-old with a 1,000,000 dollar traditional IRA carrying 200,000 of nondeductible basis, a 42,194.09 required distribution, a 100,000 dollar Roth conversion, and a 0 percent return assumption. Run that household twice, once as it stands and once with a 200,000 dollar qualified annuity premium paid out of the same IRA in the same year. Under the compelled reading the two households report the SAME ordinary income, to the cent, because the premium moves value from one line-6 asset to another and line 9 is 1,000,000 either way: 142,194.09 of lines 7 and 8 at a basis fraction of 0.2 is 113,755.27. The engine reports 113,755.27 for both of them. It used to report 106,645.57 for the household with the premium — 7,109.70 less, in one year, for a transaction that changed nothing the statute measures — and the fixture that pinned that gap now pins its absence. THE ZERO PERCENT RETURN IS STILL DELIBERATE and still does the same work: it makes the contract’s December 31 value exactly the premium, so the figure needs no valuation convention and the fixture measures aggregation rather than valuation. WHAT IS NOT CLOSED HERE, and must not be read as closed. This record is about WHETHER the contract is in the denominator, not about what number goes in. The engine supplies premium accumulated less payments, floored at zero, with no growth, because no authority supplies an actuarial fair market value and the Plan carries no contract growth rate; that convention is registered separately, with both of its directions and their magnitudes, as irc-408-d-2-C-annuity-contract-close-of-year-value. At a 0 percent return the two questions do not interact at all, which is why the figures above are unaffected by it. SETTLED ON 2026-08-07, having been approximated since 2026-08-05. The record as written then said the fix \"cannot be\" made \"without a contract value the model does not carry\", and that the value \"belongs to the slice that adds the field, not to the slice that found the gap\". Both sentences were right about the sequencing and wrong about the difficulty: the field is a channel rather than a balance, and the reason the gap survived was not that the value was unavailable but that no arm of the engine had been asked to carry one. The old entry also predicted its own end correctly — \"the day a contract value enters the denominator the pin fails and names this entry\" — and that is how this reclassification was found.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-07",
+      "dueOn": "2027-08-07",
+      "implementedBy": [
+        "packages/engine/src/internal/iraAnnuityContractValue.ts",
+        "packages/engine/src/internal/ownedNonRothIraContiguousReplay.ts",
+        "packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts",
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/strategies/accountEligibility.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/internal/iraAnnuityContractValue.ts",
+          "functions": [
+            {
+              "name": "openingAnnuityContractValuePlanDollars",
+              "line": 157
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/internal/ownedNonRothIraContiguousReplay.ts",
+          "functions": [
+            {
+              "name": "replayOwnedNonRothIraContiguousYears",
+              "line": 417
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts",
+          "functions": [
+            {
+              "name": "validateOwnedNonRothIraRuntimeSourceSeries",
+              "line": 2465
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/strategies/accountEligibility.ts",
+          "functions": [
+            {
+              "name": "isAggregatedIra",
+              "line": 1392
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/iraAnnuityCharacter.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/iraAnnuityCharacter.approximation.test.ts",
+          "line": 213,
+          "note": "the line 6 denominator",
+          "tests": [
+            {
+              "title": "recovers basis at the fraction the whole aggregate produces",
+              "line": 247
+            },
+            {
+              "title": "makes a purchase the form cannot see invisible to the engine too",
+              "line": 270
+            },
+            {
+              "title": "carries the contract at the value the aggregate lost, and no more",
+              "line": 294
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 408(d)(2)(A), (B)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 7701(a)(37)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section7701&num=0&edition=prelim"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "Instructions for Form 8606 (2025), IRAs Generally; Line 6",
+          "url": "https://www.irs.gov/pub/irs-pdf/i8606.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "Instructions for Forms 1099-R and 5498 (2026), Form 5498 Box 5",
+          "url": "https://www.irs.gov/pub/irs-pdf/i1099r.pdf"
+        }
+      ]
+    },
+    {
+      "id": "irc-408-d-2-A-owner-wide-non-inherited-ira-pool",
+      "title": "The annual basis pool is all of the owner's own IRAs, and only those",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The one-contract aggregation is statutory. The exclusions are not: as the sibling 408(d)(2) fraction record already records, 408(d)(2)(A) says \"all individual retirement plans\" without qualification, and the spousal and inherited separations rest on the Form 8606 instructions and Publication 590-B - uniform administrative practice, publication-level authority. The engine follows the IRS position; the pinned gates are where that composition is enforced.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-29",
+      "dueOn": "2027-08-29",
+      "implementedBy": [
+        "packages/engine/src/actions/ownedNonRothIraAnnualCandidateTransaction.ts",
+        "packages/engine/src/actions/ownedNonRothIraAnnualFilingEvidence.ts",
+        "packages/engine/src/actions/ownedNonRothIraAnnualFilingSourceResolver.ts",
+        "packages/engine/src/actions/ownedNonRothIraAnnualPlanCoordinator.ts",
+        "packages/engine/src/actions/ownedNonRothIraAnnualPostCandidateEvidence.ts",
+        "packages/engine/src/actions/ownedNonRothIraMovementCandidate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraAnnualCandidateTransaction.ts",
+          "functions": [
+            {
+              "name": "preparePlanOwnedNonRothIraAnnualCandidateTransaction",
+              "line": 274
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraAnnualFilingEvidence.ts",
+          "functions": [
+            {
+              "name": "buildPlanOwnedNonRothIraAnnualFilingEvidence",
+              "line": 774
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraAnnualFilingSourceResolver.ts",
+          "functions": [
+            {
+              "name": "resolvePlanOwnedNonRothIraAnnualFilingSources",
+              "line": 271
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraAnnualPlanCoordinator.ts",
+          "functions": [
+            {
+              "name": "coordinatePlanOwnedNonRothIraAnnualWithdrawalCandidate",
+              "line": 1938
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraAnnualPostCandidateEvidence.ts",
+          "functions": [
+            {
+              "name": "buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput",
+              "line": 447
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraMovementCandidate.ts",
+          "functions": [
+            {
+              "name": "stageOwnedNonRothIraOrdinaryWithdrawalMovements",
+              "line": 410
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/actions/ownedNonRothIraAnnualPlanCoordinator.test.ts",
+        "packages/engine/src/actions/ownedNonRothIraMovementCandidate.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraAnnualPlanCoordinator.test.ts",
+          "line": 323,
+          "note": "the basis pool is owner-wide, not per-account and not household-wide",
+          "tests": [
+            {
+              "title": "aggregates both owner IRAs and excludes the spouse account",
+              "line": 331
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraMovementCandidate.test.ts",
+          "line": 254,
+          "note": "inherited sources are refused at the owned-pool gate",
+          "tests": [
+            {
+              "title": "refuses an inherited source before any staging happens",
+              "line": 262
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 408(d)(2)(A)-(B)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "Instructions for Form 8606 (2025)",
+          "url": "https://www.irs.gov/pub/irs-pdf/i8606.pdf"
+        }
+      ]
+    },
+    {
+      "id": "irc-408-d-2-B-annuity-payment-outside-the-annual-basis-fraction",
+      "title": "An IRA annuity payment takes the year’s share of basis like any other distribution",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "THE FIXTURE NO LONGER HOLDS THE DENOMINATOR FIXED, and that change is the measure of what closed. While the contract sat outside line 6 this fixture had to price both of its readings over the ENGINE’S pool, or it would have become a second measurement of the companion defect rather than a measurement of this one. Both defects are closed, so the figures below are the statute’s throughout. An 80-year-old with a 1,000,000 dollar IRA carrying 200,000 of basis pays a 200,000 dollar qualified premium in 2026 and receives 12,000 from the contract in the same year, at a 0 percent return. Line 7 is the 49,504.95 required distribution plus the 12,000 payment, 61,504.95. Line 6 is the 750,495.05 the account kept plus the 188,000 the contract still holds, 938,495.05; line 9 is 1,000,000 exactly, the fraction is 0.2, and the year’s ordinary income is 49,203.96. Turning the contract’s payments on moves that figure by 9,600, which is 12,000 at the year’s own 0.8 — the payment taking its share, which is what this record exists to say. WHAT THE OLD ENTRY CLAIMED AND WHERE IT LANDED. It pinned 49,128.71 produced against 46,128.71 accepted and called the 3,000 between them the basis the payment was refused, while saying in terms that \"the true statutory figure is larger than 3,000 and is deliberately not claimed\" because the correct denominator was unavailable. It is available now, and the true figure is 49,203.96 — 75.25 ABOVE the old produced figure rather than 3,000 below it. That is not a contradiction: this record’s overstatement and its companion’s understatement ran in opposite directions on the same household, and the companion’s was the larger of the two here. A reader who expected the fix to lower this household’s tax should read that as the reason a pair of opposed approximations must never be netted in prose. WHAT WOULD CLOSE IT, said the old entry, “is a single change with a wide blast radius: routing an IRA-funded annuity payment through the owned-non-Roth-IRA withdrawal character path instead of the fully-ordinary branch.” That is what was done. WHERE THE FULLY-ORDINARY BRANCH SURVIVES, enumerated rather than gestured at, because the first version of this paragraph said “one shape” and was wrong. It survives in two places and both are correct. First, a contract outside the section 408(d)(2) aggregate altogether: Plan validation requires a qualified purchase to be funded from an owned traditional ACCOUNT and does not require an IRA, so an employer plan can pay a premium, and a contract its pre-tax dollars bought is not in this aggregation and its payments carry no Form 8606 basis to share. Second, a year the settlement does not commit, where the payment keeps the legacy treatment rather than being split against a pro-rata state opened on a pool the contract is not in — a second approximation invented to paper over the first. A THIRD SHAPE WAS FOUND AND CLOSED while verifying this sentence: a qualified purchase quoting a ZERO premium was excluded from staging, so a contract that paid without having been paid for had no occurrence and charged its payments in full while the year’s other distributions shared the basis — 2,400 a year on the fixture household. Nothing in 408(d)(2)(B) turns on how a contract was acquired, so it is staged like any other, contributing nothing to line 6 because it holds nothing. A CROSS-OWNER PURCHASE IS NOT ON THE LIST EITHER, and for one revision it silently was: the character was looked up under the contract’s own owner while the settlement published it under the pool owner, so a Plan naming one spouse’s contract against the other’s IRA charged the payment in full AND spent the basis the settlement had already allocated — tax charged, basis gone, every paying year, and nothing recording that it had happened. The lookup asks under the pool owner now, and the two households report the same figure to the cent.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-07",
+      "dueOn": "2027-08-07",
+      "implementedBy": [
+        "packages/engine/src/internal/ownedNonRothIraContiguousReplay.ts",
+        "packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/internal/ownedNonRothIraContiguousReplay.ts",
+          "functions": [
+            {
+              "name": "replayOwnedNonRothIraContiguousYears",
+              "line": 417
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts",
+          "functions": [
+            {
+              "name": "validateOwnedNonRothIraRuntimeSourceSeries",
+              "line": 2465
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/iraAnnuityCharacter.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/iraAnnuityCharacter.approximation.test.ts",
+          "line": 336,
+          "note": "the payment’s share of basis",
+          "tests": [
+            {
+              "title": "prices the annuity payment at the fraction the aggregate produced",
+              "line": 362
+            },
+            {
+              "title": "adds the payment at its taxable share and not at its face",
+              "line": 377
+            },
+            {
+              "title": "prices a payment the same whoever the contract is named for",
+              "line": 402
+            },
+            {
+              "title": "keeps a cross-owner contract whole across every paying year",
+              "line": 509
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 408(d)(2)(A), (B)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim"
+        },
+        {
+          "kind": "irsPublication",
+          "citation": "IRS Publication 590-B, Distribution of an annuity contract from your IRA account, Tax treatment",
+          "url": "https://www.irs.gov/pub/irs-pdf/p590b.pdf"
+        },
+        {
+          "kind": "irsPublication",
+          "citation": "IRS Publication 590-B, Distribution of an annuity contract from your IRA account",
+          "url": "https://www.irs.gov/pub/irs-pdf/p590b.pdf"
+        }
+      ]
+    },
+    {
+      "id": "irc-408-d-2-C-annuity-contract-close-of-year-value",
+      "title": "What the engine says an IRA-owned annuity contract is worth on December 31",
+      "classification": "approximated",
+      "errorDirection": "bothDirections",
+      "conventionRationale": "WHY NOT GROWTH, since the obvious alternative is one line of code. A Plan annuity account inherits `annualReturnPct` from the shared account shape, and it defaults to the household’s own portfolio assumption when null. Reading it would make the contract compound at whatever a user set for their brokerage, which is a larger assertion about an insurer’s general account than the silence it would replace, and it would do it invisibly. The convention errs in a direction a reader can reason about; a borrowed return rate errs in whatever direction the user’s unrelated assumption happens to point. WHY A ZERO FLOOR. A contract value cannot be negative and a denominator must not be reduced by one, so a contract that has paid out more than its premium contributes nothing further to line 6 while the whole of each payment still reports on line 7. That is deliberate and it is one of the two directions below. DIRECTION, MEASURED RATHER THAN ARGUED. Take the 76-year-old with a 1,000,000 dollar IRA carrying 200,000 of basis, a 42,194.09 required distribution and a 100,000 dollar Roth conversion, and give them a 50,000 dollar qualified premium paid out of that same IRA. At a 5 percent return the household reports 114,859.33 where the identical household that bought no contract reports 114,924.86 — 65.53 LESS, because line 9 is 1,040,390.30 against 1,042,890.30, and the 2,500 between them is exactly 5 percent of the premium the convention did not credit. At a negative 5 percent return the same pair parts by 77.41 in the other direction, because the convention did not debit the loss either. The gap grows with the premium and with the return and depends on nothing else, but NOT linearly in either: at a 200,000 dollar premium and the same 5 percent it is 264.01, where four times 65.53 would be 262.12. The withheld growth is linear in the premium; the income it moves is not, because the same withheld growth is also missing from the denominator it is divided by. UNDERSTATES TAX IN A GAIN YEAR AND OVERSTATES IT IN A LOSS YEAR, and the two do not cancel across a lifetime unless returns do. The zero floor runs the same way as the gain case: a still-paying contract held at zero understates the denominator, raises the basis fraction, and returns basis to the residual IRA faster than the form allows. MAGNITUDE is the year’s lines 7 and 8 multiplied by the difference between the two fractions, so it scales with the premium as a share of the aggregate and vanishes for a household with no basis, where the fraction is 1 whatever the denominator. THE ACCEPTED READING IS ITSELF A STAND-IN, and this is the part to argue with. What the authority requires is a fair market value, and neither figure above is one; the accepted figure is read off the household that bought no contract, which is the reading section 408(d)(2)(A) supports as far as it goes — the aggregation treats the plans as one contract, so a movement between two of them is not an event section 72 measures, and a valuation that made the purchase visible to line 9 would defeat what the aggregation is for. What it assumes beyond that is that the contract earns what the account would have, which is true of no particular contract. A deferred annuity crediting interest may beat it; an annuitized life contract held by a short-lived annuitant is worth far less than its undistributed premium. The record does not claim the counterfactual figure is right. It claims the engine’s figure is not a valuation at all, and uses the one determinable December 31 figure the model can produce to say which way and by how much. A SECOND CONVENTION RIDES ON THE FIRST, and it has its own direction. A contract bought before the projection started opens from the Plan’s QUOTED premium, and the quoted premium is not always what the contract received: a purchase inside the projection funds min(premium, spendable), so a premium larger than its funding account leaves the contract short, and a purchase before the projection has no balance left to have been short of. Nothing in the Plan records the shortfall, so the seed cannot know it. The result is that ONE contract has two values decided by nothing but which year the projection starts in: a 90,000 dollar premium quoted against a 30,000 dollar IRA gives a contract holding 18,000 at the end of 2027 in the projection that watched the purchase happen, and 78,000 in the same household reopened a year later. DIRECTION, and unlike the growth question above it is one-sided: funding is a minimum, so the quote is an upper bound on what moved and the seed can only be too high. Too high a contract value is too large a line 6, a smaller basis fraction, less basis recovered, and MORE tax. It is bounded by the premium and by nothing else, and it is zero for every contract the projection funds itself, which is every contract a plan built in the app will contain. THE QLAC CAP IS APPLIED TO THE SEED and was not until 2026-08-07: Treas. Reg. 1.401(a)(9)-6(q)(2) is a rule about the contract rather than about which year a projection starts in, so a 400,000 dollar QLAC seeded at 400,000 pre-start where the same purchase inside the projection was reduced to the cap. That half is closed; the funded-versus-quoted half is not closeable from the Plan and is registered here instead. WHAT WOULD CLOSE THE WHOLE OF IT is a contract value the Plan actually carries — an account value for a deferred contract, or a mortality-and-interest reserve for an annuitized one — and either is a modelling decision with its own authority question rather than an arithmetic fix.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-07",
+      "dueOn": "2027-08-07",
+      "implementedBy": [
+        "packages/engine/src/internal/iraAnnuityContractValue.ts",
+        "packages/engine/src/internal/ownedNonRothIraContiguousReplay.ts",
+        "packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/internal/iraAnnuityContractValue.ts",
+          "functions": [
+            {
+              "name": "openingAnnuityContractValuePlanDollars",
+              "line": 157
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/internal/ownedNonRothIraContiguousReplay.ts",
+          "functions": [
+            {
+              "name": "replayOwnedNonRothIraContiguousYears",
+              "line": 417
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts",
+          "functions": [
+            {
+              "name": "validateOwnedNonRothIraRuntimeSourceSeries",
+              "line": 2465
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/iraAnnuityCharacter.approximation.test.ts",
+        "packages/engine/src/rules/approximations/simulateContributionsAndQcd.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/iraAnnuityCharacter.approximation.test.ts",
+          "line": 637,
+          "note": "the pre-projection seed",
+          "tests": [
+            {
+              "title": "opens a pre-projection contract at a premium it may never have received",
+              "line": 654
+            },
+            {
+              "title": "overstates the line 6 denominator and never understates it",
+              "line": 682
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/rules/approximations/simulateContributionsAndQcd.approximation.test.ts",
+          "line": 986,
+          "note": "a gain year",
+          "tests": [
+            {
+              "title": "withholds the growth the premium would have earned in the account",
+              "line": 1007
+            },
+            {
+              "title": "errs the other way in a loss year, and not at all in a flat one",
+              "line": 1028
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 408(d)(2)(C)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "Instructions for Form 8606 (2025), Line 6",
+          "url": "https://www.irs.gov/pub/irs-pdf/i8606.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "Instructions for Forms 1099-R and 5498 (2026), Form 5498 Box 5",
+          "url": "https://www.irs.gov/pub/irs-pdf/i1099r.pdf"
+        }
+      ]
+    },
+    {
+      "id": "irc-408-d-2-C-projection-pro-rata-measurement-instant",
+      "title": "The instant the Form 8606 pro-rata denominator is measured",
+      "classification": "approximated",
+      "errorDirection": "bothDirections",
+      "conventionRationale": "THE ONE SHAPE STILL REACHING THE FALLBACK IS A MAGNITUDE, not an event, and that is the whole of what has changed. Every refusal that used to route an ordinary year here has been closed by making the refusing arm source-allocatable, which is the remedy this record has prescribed since it was written: the charitable one closed when the nonmoving overlay learned to carry its per-owner 408(d)(8)(D) attribution, the exact-action one when the source series bound itself to the executor’s own evidence instead of to the mere presence of a declaration, and the annuity one when the contract a premium buys was given a value channel the replay carries. What remains is sourceAmountInvalid: a figure too large to cross the exact-cent boundary refuses the year, the year prices on the fallback, and the departure is fully visible there. A HUNDRED-TRILLION-DOLLAR IRA IS ABSURD AND IS STATED ANYWAY. The boundary is the exact-cent ledger’s own: cents are held as safe integers, so a Plan-dollar figure above about 90.07 trillion cannot be represented and the year refuses. A 76-year-old with a 100,000,000,000,000 dollar IRA carrying 20 percent basis, taking the 4,219,409,282,700.42 requirement and converting 10,000,000,000,000, reports 11,375,527,426,160.34 of ordinary income at a 0 percent return, at a 5 percent return, and at a negative 5 percent return alike — the invariance IS the defect, because a denominator measured before the year’s growth cannot move when the growth does. The statutory measure at 5 percent is 11,492,485,972,361.12. The same household one order of magnitude smaller settles and moves with the return. No user has this balance; the record is not about the user, it is about whether the fallback is reachable, and it is. THE INVENTORY THIS RECORD PUBLISHED EARLIER ON 2026-08-07 WAS WRONG, and the correction is why the paragraph above states a boundary rather than a list. It claimed eight probed shapes had all settled and concluded that no valid Plan reached the fallback — true of the eight, and the largest balance among them was 90 trillion, one notch BELOW the exact-cent ceiling. A record that reasons from a probe set to a universal has to say which universe the probe covered, and that one did not. DIRECTION OF ERROR: the sign is the sign of the year’s return on the retained balance. In a gain year the statutory denominator is larger, the basis fraction smaller, and the fallback returns MORE basis than the form does — understating that year’s income and spending basis that later years then do not have. In a loss year the denominator shrinks below the fallback’s, the fraction rises, and the fallback returns LESS basis, overstating income. Neither is a timing wash within the year and the two do not cancel across a lifetime unless returns do. MAGNITUDE: the departure is (line 7 + line 8) × growth-on-the-retained-balance ÷ denominator, so it is negligible on a household whose only IRA activity is a required distribution and material on a conversion year, where line 8 can be many times line 7. PINNED ON BOTH SIDES OF THE BOUNDARY. The fallback: the overflow household above. The settled path, twice: a 76-year-old with a 1,000,000 dollar IRA carrying 200,000 of basis, a 42,194.09 required distribution and a 100,000 dollar Roth conversion reports 113,755.27 at a 0 percent return and 114,924.86 at a 5 percent one, and the same household with a 40,000 dollar aggregate charitable gift instead reports 80,903.66 and 81,814.18. A third settled fixture pins the annuity shape, which used to be this record’s produced arm and now reports 114,859.33 at 5 percent where it once reported 112,258.49 at every return alike. NOT CORRECTED HERE, and the reason has not changed. Giving the fallback the statutory denominator means giving it the same multi-pass fixed point the settlement already runs, because the denominator needs the year’s total distributions and those are decided after the fraction is needed and depend on it — there is no closed form available at distribution time. The remedy runs the other way, one refusal at a time, and it has now run out of refusals that describe events rather than magnitudes. CORRECTION HISTORY. As first written on 2026-08-05 this record said “the annual ledger measures the denominator at a different instant” and “the engine denominator is invariant to the return assumption; the statutory one is not”, and it named only simulate.ts and strategies/iraBasis.ts as implementing the rule. Both sentences generalized a one-shape observation to the whole engine. It was re-scoped to the fallback, with a settled-path fixture added so the boundary was pinned rather than asserted. Re-scoped AGAIN later that day: the version then claimed “the single refusal reachable today is qcdStageRequired”, wrong twice over, since the annuity and exact-action refusals were reachable when it was written and the charitable one had stopped being. It then named the annuity purchase as the one shape its departure was measured on and predicted its own end in terms — “if the annuity premium ever stops leaving the captured pool this shape settles, and then it is this suite, not only the record, that has to be revisited.” It did, and it was; the record was briefly reclassified settled on that basis and is approximated again here, on the shape the reclassification had not probed.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-07",
+      "dueOn": "2027-08-07",
+      "implementedBy": [
+        "packages/engine/src/actions/ownedNonRothIraWithdrawalCharacter.ts",
+        "packages/engine/src/internal/ownedNonRothIraContiguousReplay.ts",
+        "packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts",
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/strategies/iraBasis.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraWithdrawalCharacter.ts",
+          "functions": [
+            {
+              "name": "classifyOwnedNonRothIraAnnualWithdrawals",
+              "line": 248
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/internal/ownedNonRothIraContiguousReplay.ts",
+          "functions": [
+            {
+              "name": "replayOwnedNonRothIraContiguousYears",
+              "line": 417
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts",
+          "functions": [
+            {
+              "name": "validateOwnedNonRothIraRuntimeSourceSeries",
+              "line": 2465
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/strategies/iraBasis.ts",
+          "functions": [
+            {
+              "name": "openIraProRataYear",
+              "line": 56
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/simulateContributionsAndQcd.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/simulateContributionsAndQcd.approximation.test.ts",
+          "line": 857,
+          "note": "the exact-cent overflow that still reaches the fallback",
+          "tests": [
+            {
+              "title": "prices a gain year off a denominator that never saw the gain",
+              "line": 877
+            },
+            {
+              "title": "returns the same income at a 0 percent and a negative return",
+              "line": 895
+            },
+            {
+              "title": "settles one order of magnitude below the exact-cent ceiling",
+              "line": 910
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 408(d)(2)(C)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "Instructions for Form 8606 (2025), Line 6",
+          "url": "https://www.irs.gov/pub/irs-pdf/i8606.pdf"
+        }
+      ]
+    },
+    {
+      "id": "irc-408-d-2-annual-pro-rata-basis",
+      "title": "Annual pro-rata basis recovery across all owned non-Roth IRAs",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The exclusion of inherited IRAs from the owner pool has no authority above publication level. IRC 408(d)(2)(A) says \"all individual retirement plans\" without qualification, and an inherited IRA is one from which the beneficiary takes distributions; the separation rests on Publication 590-B and the Form 8606 instructions, neither of which binds. Roth separation, by contrast, is statutory under 408A(d)(4)(A). The engine follows the IRS position because it is uniform administrative practice and the literal reading has no practitioner following, but the asymmetry in authority is worth knowing. Note the pooling is per decedent, not merely owned versus inherited.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2027-08-04",
+      "implementedBy": [
+        "packages/engine/src/actions/annualIraBasisAllocation.ts",
+        "packages/engine/src/actions/beneficiaryTraditionalIraWithdrawalCharacter.ts",
+        "packages/engine/src/actions/ownedNonRothIraWithdrawalCharacter.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/annualIraBasisAllocation.ts",
+          "functions": [
+            {
+              "name": "allocateAnnualIraBasis",
+              "line": 464
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/beneficiaryTraditionalIraWithdrawalCharacter.ts",
+          "functions": [
+            {
+              "name": "classifyBeneficiaryTraditionalIraWithdrawal",
+              "line": 321
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraWithdrawalCharacter.ts",
+          "functions": [
+            {
+              "name": "classifyOwnedNonRothIraAnnualWithdrawals",
+              "line": 248
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/actions/ownedNonRothIraWithdrawalCharacter.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraWithdrawalCharacter.test.ts",
+          "line": 130,
+          "note": null,
+          "tests": [
+            {
+              "title": "derives one annual denominator across every owned non-Roth IRA",
+              "line": 134
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 408(d)(2)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 408A(d)(4)(A)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/408A"
+        },
+        {
+          "kind": "irsPublication",
+          "citation": "IRS Publication 590-B, inherited IRA basis",
+          "url": "https://www.irs.gov/publications/p590b"
+        }
+      ]
+    },
+    {
+      "id": "irc-408-d-3-A-i-conversion-benefits-the-distributee",
+      "title": "A conversion must come out of and go into the same individual’s own accounts",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The authority fixes whose dollars may move and whose account may receive them. It selects nothing about how a household-level conversion request is divided between two people who each hold convertible balances, and nothing about which of one person’s several Roth accounts receives their share, so both are engine conventions. The split is pro rata on each owner’s GROSS convertible balance, not on the taxable fraction of it, because what an owner may convert is limited by what they hold and not by how much of it is pre-tax; the weight is snapshotted after the RMD block, which Treas. Reg. 1.408A-4 A-6(b) requires the forced distribution to precede, and before the drain loop reduces any balance, because reading it mid-loop would weight each owner by whatever the earlier owners happened to leave behind. A genuine split is allocated in exact cents by largest remainder so the parts sum to the whole with no floating-point residue deciding whose dollars move; a household with one convertible owner is deliberately NOT routed through cents, because quantizing a target the sizer produced in raw Plan dollars would change an answer the owner boundary has no quarrel with. The receiving account is that owner’s first Roth account in Plan order, which is arbitrary between two accounts of the same kind and is not arbitrary between kinds -- see the vehicle record. An owner whose slice is trimmed for want of a destination is excluded from the shortfall total the year reports, because an owner who cannot convert is not a shortfall against anyone’s balance and saying so would answer the wrong question with the wrong fix.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2027-08-04",
+      "implementedBy": [
+        "packages/engine/src/actions/aggregateRothConversionOwnerAllocation.ts",
+        "packages/engine/src/actions/ownedNonRothIraAnnualPhysicalTransaction.ts",
+        "packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts",
+        "packages/engine/src/actions/retirementActionManualReview.ts",
+        "packages/engine/src/decisions/rothConversionCandidateAdapter.ts",
+        "packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts",
+        "packages/engine/src/projection/optimizerAggregateConversionPromotion.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/aggregateRothConversionOwnerAllocation.ts",
+          "functions": [
+            {
+              "name": "allocateAggregateRothConversionByOwner",
+              "line": 276
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraAnnualPhysicalTransaction.ts",
+          "functions": [
+            {
+              "name": "preparePlanOwnedNonRothIraAnnualPhysicalTransaction",
+              "line": 1455
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts",
+          "functions": [
+            {
+              "name": "conversionDestinationIssue",
+              "line": 338
+            },
+            {
+              "name": "conversionSourceIssue",
+              "line": 294
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/retirementActionManualReview.ts",
+          "functions": [
+            {
+              "name": "targetIdentitySemanticsIssue",
+              "line": 361
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/decisions/rothConversionCandidateAdapter.ts",
+          "functions": [
+            {
+              "name": "adaptFillTargetRothConversionGeneratorCandidate",
+              "line": 386
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts",
+          "functions": [
+            {
+              "name": "validateOwnedNonRothIraRuntimeSourceSeries",
+              "line": 2465
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/optimizerAggregateConversionPromotion.ts",
+          "functions": [
+            {
+              "name": "promoteOneYear",
+              "line": 525
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/conversionOwnerIdentity.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/conversionOwnerIdentity.test.ts",
+          "line": 137,
+          "note": null,
+          "tests": [
+            {
+              "title": "does not convert one spouse’s IRA into the other spouse’s Roth",
+              "line": 149
+            },
+            {
+              "title": "says whose share was skipped and what would let it convert",
+              "line": 171
+            },
+            {
+              "title": "does warn when the destination is missing entirely, so the household case is distinct",
+              "line": 195
+            },
+            {
+              "title": "converts the same amount when the owners do match, so the fixture is about identity",
+              "line": 210
+            },
+            {
+              "title": "credits each owner’s own Roth with that owner’s own pro-rata slice",
+              "line": 228
+            },
+            {
+              "title": "never credits one owner’s Roth out of another owner’s dollars",
+              "line": 267
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 408A(e)(1), through clause (B)(ii)",
+          "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapD-partI-subpartA-sec408A.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 408(d)(3)(A), complete",
+          "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapD-partI-subpartA-sec408.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 408A(d)(3)(B), complete",
+          "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapD-partI-subpartA-sec408A.htm"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.408A-4, A-1(a), second requirement",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.408A-4"
+        }
+      ]
+    },
+    {
+      "id": "irc-408-d-3-C-i-inherited-ira-rollover-bar",
+      "title": "A nonspouse inherited IRA cannot be rolled over or converted",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-25",
+      "dueOn": "2027-08-25",
+      "implementedBy": [
+        "packages/engine/src/actions/beneficiaryTraditionalIraResidualRmdAnnualRefinalization.ts",
+        "packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts",
+        "packages/engine/src/actions/rothConversionExecution.ts",
+        "packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts",
+        "packages/engine/src/strategies/accountEligibility.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/beneficiaryTraditionalIraResidualRmdAnnualRefinalization.ts",
+          "functions": [
+            {
+              "name": "prepareBeneficiaryTraditionalIraResidualRmdAnnualRefinalization",
+              "line": 704
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts",
+          "functions": [
+            {
+              "name": "conversionSourceIssue",
+              "line": 294
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/rothConversionExecution.ts",
+          "functions": [
+            {
+              "name": "executeRothConversions",
+              "line": 928
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts",
+          "functions": [
+            {
+              "name": "validateOwnedNonRothIraRuntimeSourceSeries",
+              "line": 2465
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/strategies/accountEligibility.ts",
+          "functions": [
+            {
+              "name": "evaluateConversion",
+              "line": 650
+            },
+            {
+              "name": "isConvertibleToRoth",
+              "line": 1360
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 408(d)(3)(C)(i)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 408(d)(3)(C)(ii)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 408A(e)(1), clause (B)(i)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408A&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-408-d-3-C-ii-surviving-spouse-not-inherited",
+      "title": "A surviving spouse does not hold an inherited IRA",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2027-08-03",
+      "implementedBy": [
+        "packages/engine/src/actions/beneficiarySpousalElectionStatus.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/beneficiarySpousalElectionStatus.ts",
+          "functions": [
+            {
+              "name": "evaluateBeneficiarySpousalElection",
+              "line": 113
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/actions/beneficiarySpousalElectionStatus.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/actions/beneficiarySpousalElectionStatus.test.ts",
+          "line": 36,
+          "note": null,
+          "tests": [
+            {
+              "title": "keeps a surviving spouse inside the election rules",
+              "line": 43
+            },
+            {
+              "title": "takes a non-spouse beneficiary out of scope",
+              "line": 49
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 408(d)(3)(C)(ii)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/408"
+        }
+      ]
+    },
+    {
+      "id": "irc-408-d-3-G-simple-two-year-rollover-bar",
+      "title": "SIMPLE IRA two-year bar on rollover and Roth conversion",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "This is not the rule already registered as irc-72-t-6-simple-two-year-rate, and neither record covers the other. That one is the rate substitution in 72(t)(6)(A): it prices a distribution the taxpayer is nonetheless permitted to take, and every 72(t)(2) exception still zeroes it. This one is the eligibility bar in 408(d)(3)(G): it makes the movement unavailable at all. They share a period and nothing else, so a distribution can sit inside the period, carry no additional tax because an exception applies, and still be ineligible for rollover or conversion. Reading either record as coverage of the other would leave a conversion the statute forbids being merely repriced at 25 percent. The period itself is measured as 24 calendar months from the participation start date using the month-end clamp in actions/civilDate.ts, and the comparison is strict, so a conversion dated on the 24-month anniversary is permitted and one dated the day before is refused. That follows from a 2-year period beginning on the participation date, which runs through the day before the anniversary.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2027-08-03",
+      "implementedBy": [
+        "packages/engine/src/strategies/accountEligibility.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/strategies/accountEligibility.ts",
+          "functions": [
+            {
+              "name": "evaluateConversion",
+              "line": 650
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/strategies/accountEligibility.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/strategies/accountEligibility.test.ts",
+          "line": 1462,
+          "note": null,
+          "tests": [
+            {
+              "title": "refuses the conversion outright inside the two-year period",
+              "line": 1490
+            },
+            {
+              "title": "lifts the bar on the 24-month anniversary itself",
+              "line": 1497
+            },
+            {
+              "title": "does not reach an ordinary traditional IRA of the same owner",
+              "line": 1503
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 408(d)(3)(G)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 408A(e)(1)(B)(i)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/408A"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 72(t)(6)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim"
+        }
+      ]
+    }
+  ]
+}

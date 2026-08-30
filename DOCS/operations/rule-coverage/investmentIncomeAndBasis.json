@@ -1,0 +1,1930 @@
+{
+  "kind": "retiregolden.rules-coverage.shard",
+  "version": 5,
+  "module": "investmentIncomeAndBasis",
+  "rules": [
+    {
+      "id": "cfr-31-363-52-savings-bond-annual-purchase-limit",
+      "title": "Series EE/I book-entry annual purchase principal limit is not modeled",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": "The absence surface is model/plan.ts: taxableAccountSchema carries an aggregate brokerage balance, cost basis, and generic annual contribution, but no savings-bond instrument, TreasuryDirect owner, or annual bond-purchase history. The generic contribution field cannot be treated as a book-entry savings-bond purchase without inventing the instrument and owner facts on which the annual limit turns.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "taxableAccountSchema",
+              "line": 404
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "31 CFR 363.52",
+          "url": "https://www.ecfr.gov/current/title-31/section-363.52"
+        }
+      ]
+    },
+    {
+      "id": "irc-1-h-1-0-15-20-preferential-rate-schedule",
+      "title": "The modeled net-capital-gain schedule has 0, 15, and 20 percent layers",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The quoted 1(h)(1) text still keys its layer boundaries to income taxed below 25 and 39.6 percent; section 1(j)(5)(B) overrides those references with the maximum zero rate amount and maximum 15-percent rate amount, which are the indexed dollar breakpoints the parameter pack stores and the engine reads. The rates and layer order come from the quoted text; the boundary dollars come from the override and the Rev. Proc. 2025-32 2026 amounts. The companion fixture locks the rates and layer order against the 2026 pack only.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2026-12-25",
+      "implementedBy": [
+        "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/tax/federalTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/data/year2026.ts",
+          "functions": [
+            {
+              "name": "year2026",
+              "line": 16
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/federalTax.ts",
+          "functions": [
+            {
+              "name": "capitalGainsTaxStacked",
+              "line": 366
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/federalTax.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/federalTax.test.ts",
+          "line": 589,
+          "note": null,
+          "tests": [
+            {
+              "title": "moves modeled preferential gain into the 20 percent layer above the second breakpoint",
+              "line": 593
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 1(h)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 1(j)(5)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1&num=0&edition=prelim"
+        },
+        {
+          "kind": "irsNotice",
+          "citation": "Rev. Proc. 2025-32, section 4.03",
+          "url": "https://www.irs.gov/pub/irs-drop/rp-25-32.pdf"
+        }
+      ]
+    },
+    {
+      "id": "irc-1-h-1-E-unrecaptured-section-1250-gain",
+      "title": "Depreciation on real property is capital gain capped at 25 percent, not ordinary income",
+      "classification": "approximated",
+      "errorDirection": "overstatesTax",
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2027-08-03",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/tax/propertySale.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/propertySale.ts",
+          "functions": [
+            {
+              "name": "propertySaleTax",
+              "line": 50
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/annuityAndProperty.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/annuityAndProperty.approximation.test.ts",
+          "line": 220,
+          "note": null,
+          "tests": [
+            {
+              "title": "classifies the depreciation as ordinary income rather than capital gain",
+              "line": 241
+            },
+            {
+              "title": "leaves the capital-gain slice short by the depreciation",
+              "line": 246
+            },
+            {
+              "title": "returns no field in which a 25 percent ceiling could be carried",
+              "line": 253
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 1(h)(1)(E)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/1"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 1(h)(6)(A)(i)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/1"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 1250(b)(1)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/1250"
+        }
+      ]
+    },
+    {
+      "id": "irc-1-h-11-qualified-dividends-as-net-capital-gain",
+      "title": "Qualified dividends are folded into net capital gain",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The engine carries qualified dividends as a separate input rather than as a slice of ordinary income, and adds them to AGI once. That matters because a qualified dividend is simultaneously ordinary income for AGI, provisional income, and NIIT modified AGI, and preferential income for the rate schedule. Note also that 1(h)(11)(B) and (C) impose holding-period and qualified-foreign-corporation tests the engine cannot verify: it takes the qualified character of the supplied figure on trust.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2027-08-03",
+      "implementedBy": [
+        "packages/engine/src/tax/federalTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/tax/federalTax.ts",
+          "functions": [
+            {
+              "name": "capitalGainsTaxStacked",
+              "line": 366
+            },
+            {
+              "name": "computeFederalTax",
+              "line": 475
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/federalTax.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/federalTax.test.ts",
+          "line": 1703,
+          "note": null,
+          "tests": [
+            {
+              "title": "runs qualified dividends through the preferential stack",
+              "line": 1707
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 1(h)(11)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 1(h)(11)(B)(i)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1&num=0&edition=prelim"
+        },
+        {
+          "kind": "irsNotice",
+          "citation": "Rev. Proc. 2025-32, section 4.03",
+          "url": "https://www.irs.gov/pub/irs-drop/rp-25-32.pdf"
+        }
+      ]
+    },
+    {
+      "id": "irc-1-h-capital-gain-stacked-on-ordinary",
+      "title": "Net capital gain stacks on top of ordinary taxable income",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The statute frames the result as a ceiling -- the tax \"shall not exceed\" the sum of its components -- and enumerates the bands as offsets from the amount of taxable income otherwise taxed below 25 percent. The engine computes the bands directly from the ordinary taxable amount, which reaches the same figure for the rate schedule it models and is the reason the code carries no explicit 25 percent reference.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2026-12-01",
+      "implementedBy": [
+        "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/tax/federalTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/data/year2026.ts",
+          "functions": [
+            {
+              "name": "year2026",
+              "line": 16
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/federalTax.ts",
+          "functions": [
+            {
+              "name": "capitalGainsTaxStacked",
+              "line": 366
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/federalTax.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/federalTax.test.ts",
+          "line": 565,
+          "note": null,
+          "tests": [
+            {
+              "title": "measures the preferential bands from the top of ordinary income",
+              "line": 569
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/federalTax.test.ts",
+          "line": 1978,
+          "note": null,
+          "tests": [
+            {
+              "title": "starts the 15% layer at the breakpoint prescribed for that year",
+              "line": 1982
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 1(h)(1)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/1"
+        }
+      ]
+    },
+    {
+      "id": "irc-1-h-optimizer-flat-fifteen-percent-preferential-rate",
+      "title": "The optimizer linearizes all taxable-bucket gain at 15 percent",
+      "classification": "approximated",
+      "errorDirection": "bothDirections",
+      "conventionRationale": "A single rate makes the optimizer's taxable-bucket objective linear. Its 15-percent value is a chosen planning approximation, not a statutory rate that applies uniformly to a taxpayer's gains. The companion fixtures pin marginal rates in the same unit: the statutory marginal rate derived from the exact tax delta on the plan the optimizer sees, against the optimizer's flat 0.15.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/projection/optimizePlan.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/optimizePlan.ts",
+          "functions": [
+            {
+              "name": "LP_LTCG_RATE",
+              "line": 75
+            },
+            {
+              "name": "buildOptimizerInput",
+              "line": 482
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/federalTax.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/federalTax.test.ts",
+          "line": 663,
+          "note": "zero-percent layer dollar",
+          "tests": [
+            {
+              "title": "prices a zero-layer marginal dollar at 15 percent inside the linearized solve",
+              "line": 669
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/federalTax.test.ts",
+          "line": 719,
+          "note": "twenty-percent layer dollar",
+          "tests": [
+            {
+              "title": "prices a twenty-percent-layer marginal dollar at 15 percent inside the linearized solve",
+              "line": 725
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 1(h)(1)(B)-(D)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-1014-a-1-basis-at-death-fair-market-value",
+      "title": "Inherited property generally takes date-of-death fair-market-value basis",
+      "classification": "approximated",
+      "errorDirection": "bothDirections",
+      "conventionRationale": "Approximated rather than out of scope because both surfaces produce figures the rule touches. compare.ts's after-tax estate treats taxable (and equity-comp) balances as stepped-up and untaxed to heirs, while simulate.ts leaves costBasis unchanged through a death year, so the surviving path can realize the pre-death embedded gain. One half understates heir tax relative to a no-step-up reading; the other overstates tax on a post-death sale relative to a consistent step-up. The companion fixture discriminates those readings through simulatePlan and summarizeProjection.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/compare.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "taxableAccountSchema",
+              "line": 404
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/compare.ts",
+          "functions": [
+            {
+              "name": "summarizeProjection",
+              "line": 91
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "BalanceState",
+              "line": 540
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/federalTax.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/federalTax.test.ts",
+          "line": 923,
+          "note": null,
+          "tests": [
+            {
+              "title": "keeps original basis on a post-death taxable sale while the estate metric assumes step-up",
+              "line": 932
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 1014(a)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1014&num=0&edition=prelim"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.1014-1(a)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.1014-1"
+        }
+      ]
+    },
+    {
+      "id": "irc-103-a-state-local-bond-interest-exclusion",
+      "title": "State and local bond interest is excluded from gross income",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/tax/federalTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/federalTax.ts",
+          "functions": [
+            {
+              "name": "computeFederalTax",
+              "line": 475
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/federalTax.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/federalTax.test.ts",
+          "line": 327,
+          "note": null,
+          "tests": [
+            {
+              "title": "keeps municipal-bond interest out of federal AGI and taxable income by direct inclusion",
+              "line": 334
+            },
+            {
+              "title": "raises AGI only by the taxable-Social-Security increment when munis enter provisional income",
+              "line": 351
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 103(a)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section103&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-1091-a-wash-sale-thirty-day-window",
+      "title": "Wash-sale losses are disallowed for substantially identical securities acquired in the 61-day window",
+      "classification": "approximated",
+      "errorDirection": "bothDirections",
+      "conventionRationale": "Approximated rather than out of scope because the engine emits a realized gain or loss for every taxable sale and deducts net losses through the capital-loss path in simulate.ts; nothing here fails closed. The accepted Plan surface is model/plan.ts: a taxable account carries aggregate balance and cost basis, but no security or lot identity, acquisition or disposition date, replacement purchase, contract or option, substantially-identical determination, or dealer-status fact, so a wash-sale cannot be identified and every realized loss is allowed. The companion fixture drives one taxable account (basis above balance) through simulatePlan with a year-one one-time goal forcing its full sale and wages high enough to absorb the section 1211(b) ordinary offset, then stands that single observed ordinary-offset figure against both authority limbs: (1) replacement inside the 61-day window (deduction disallowed → $0) and (2) no replacement purchase (loss allowed → $3,000). The Plan cannot express a replacement purchase, so the annual projection observably deducts $3,000 under both limbs — that collapse is the approximation. Understating tax in the sale year and over- or under-stating it later through missing replacement-basis adjustments is why the direction cannot be narrowed — the same rationale shape as treas-reg-1-1012-1-c-lot-basis-and-holding-period.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/tax/federalTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "taxableAccountSchema",
+              "line": 404
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "planWithdrawals",
+              "line": 610
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/federalTax.ts",
+          "functions": [
+            {
+              "name": "applyCapitalLossCarryforward",
+              "line": 448
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/federalTax.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/federalTax.test.ts",
+          "line": 818,
+          "note": null,
+          "tests": [
+            {
+              "title": "deducts a realized taxable-sale loss without a replacement-purchase fact",
+              "line": 832
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 1091(a)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1091&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-121-a-b-principal-residence-eligibility-tests",
+      "title": "Eligibility tests that gate the principal-residence exclusion",
+      "classification": "approximated",
+      "errorDirection": "understatesTax",
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2027-08-03",
+      "implementedBy": [
+        "packages/engine/src/insights/detectors/missingDataBasis.ts",
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/tax/propertySale.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/insights/detectors/missingDataBasis.ts",
+          "functions": [
+            {
+              "name": "missingDataBasis",
+              "line": 135
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/propertySale.ts",
+          "functions": [
+            {
+              "name": "propertySaleTax",
+              "line": 50
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/annuityAndProperty.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/annuityAndProperty.approximation.test.ts",
+          "line": 294,
+          "note": "a seller who fails the two-year test entirely",
+          "tests": [
+            {
+              "title": "excludes the whole gain from a sale that qualifies for nothing",
+              "line": 303
+            },
+            {
+              "title": "takes no input by which any eligibility test could be expressed",
+              "line": 313
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/rules/approximations/annuityAndProperty.approximation.test.ts",
+          "line": 348,
+          "note": "gain allocated to periods of nonqualified use after 2008",
+          "tests": [
+            {
+              "title": "excludes the nonqualified-use share along with the rest",
+              "line": 357
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 121(a)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/121"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 121(b)(2)(A)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/121"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 121(b)(3)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/121"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 121(b)(5)(A) and (B)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/121"
+        }
+      ]
+    },
+    {
+      "id": "irc-121-d-6-exclusion-cannot-reach-recapture",
+      "title": "The residence exclusion cannot reach depreciation recapture",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The engine takes recapture as an input rather than deriving it from a depreciation schedule, and prices it at ordinary rates rather than the section 1250 25 percent maximum. Both are planning-grade stand-ins; the ordering that this rule fixes is not.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2027-08-03",
+      "implementedBy": [
+        "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/tax/propertySale.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/data/year2026.ts",
+          "functions": [
+            {
+              "name": "year2026",
+              "line": 16
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/propertySale.ts",
+          "functions": [
+            {
+              "name": "propertySaleTax",
+              "line": 50
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/propertySale.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/propertySale.test.ts",
+          "line": 21,
+          "note": null,
+          "tests": [
+            {
+              "title": "carves recapture out before applying the exclusion cap",
+              "line": 25
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 121(a)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/121"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 121(d)(6)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/121"
+        }
+      ]
+    },
+    {
+      "id": "irc-1211-b-capital-loss-ordinary-offset",
+      "title": "A net capital loss offsets ordinary income only up to 3,000 dollars",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The statute sets 1,500 dollars for a married individual filing separately. The projection collapses every filing status to single or married-filing-jointly, so that case is out of scope rather than handled at half the cap. The 3,000 dollar figure has never been indexed since 1978.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-29",
+      "dueOn": "2027-08-29",
+      "implementedBy": [
+        "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/tax/federalTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/data/year2026.ts",
+          "functions": [
+            {
+              "name": "year2026",
+              "line": 16
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/federalTax.ts",
+          "functions": [
+            {
+              "name": "applyCapitalLossCarryforward",
+              "line": 448
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/federalTax.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/federalTax.test.ts",
+          "line": 386,
+          "note": null,
+          "tests": [
+            {
+              "title": "deducts only the annual cap and carries the rest forward",
+              "line": 390
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 1211(b)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1211&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-1212-b-2-zero-income-section-1211-allowance-preserves-carryforward",
+      "title": "A section 1211(b) allowance cannot burn the carryforward pool without adjusted taxable income",
+      "classification": "approximated",
+      "errorDirection": "overstatesTax",
+      "conventionRationale": "applyCapitalLossCarryforward burns up to the annual ordinary-income allowance from the pool whenever a loss remains, even when ordinary income is zero and there is no taxable income for a section 1211(b) deduction to offset. A smaller remaining pool overstates tax when a later year's gains would otherwise have been absorbed. The companion fixture pins a zero-income year's remaining pool against statutory preservation.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/tax/federalTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/tax/federalTax.ts",
+          "functions": [
+            {
+              "name": "applyCapitalLossCarryforward",
+              "line": 448
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/federalTax.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/federalTax.test.ts",
+          "line": 497,
+          "note": null,
+          "tests": [
+            {
+              "title": "burns the annual allowance from the pool even when ordinary income is zero",
+              "line": 502
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 1212(b)(2)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1212&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 1212(b)(2)(B)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1212&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-1212-b-capital-loss-carryforward",
+      "title": "Individual capital-loss carryforwards continue into succeeding tax years",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The plan stores one combined pool rather than separate short- and long-term carryovers. That missing character is already registered with the account-level lot and holding-period approximation (treas-reg-1-1012-1-c-lot-basis-and-holding-period). The section 1212(b)(2) adjusted-taxable-income limit on how much of a section 1211(b) allowance burns the carryforward pool in a zero-income year is registered separately. The describeRule fixture drives the pool through simulatePlan so the year-to-year threading in simulate.ts is inside the rule's coverage.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/tax/federalTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/federalTax.ts",
+          "functions": [
+            {
+              "name": "applyCapitalLossCarryforward",
+              "line": 448
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/federalTax.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/federalTax.test.ts",
+          "line": 467,
+          "note": null,
+          "tests": [
+            {
+              "title": "threads the unabsorbed pool through simulatePlan into year-two capital-gains tax",
+              "line": 471
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 1212(b)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1212&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-135-education-savings-bond-interest-exclusion",
+      "title": "Education savings-bond interest exclusion is limited by qualified expenses and modified AGI",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": "The absence surface is model/plan.ts and tax/federalTax.ts: the Plan has no qualified savings-bond redemption or education-expense vocabulary, and the federal calculator has no section 135 exclusion line. Generic taxable interest and one-time income cannot be relabeled as bond interest used for a qualifying student without inventing the required redemption, expense, and MAGI facts.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/tax/federalTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "taxableAccountSchema",
+              "line": 404
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/federalTax.ts",
+          "functions": [
+            {
+              "name": "computeFederalTax",
+              "line": 475
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 135(a)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section135&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 135(b)(1)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section135&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 135(b)(1)(B)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section135&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 135(b)(2)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section135&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-1400z-2-qof-deferral-and-ten-year-basis-election",
+      "title": "Qualified opportunity fund investment defers eligible gain and can receive a ten-year basis election",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": "One record keeps both limbs quote-carried from the staged compiled text. The body still prints the pre-2027 December 31, 2026 election and inclusion cutoffs; the Amendment of Section note carries the Pub. L. 119-21 post-2026 permanent text (rolling five-year deferral, amended (a)(2) without a new-sale cutoff, qualified rural opportunity fund). volatility is staticStatute because the program is permanent after the amending act — sunsetting would fit only a legacy-only record — and the legacy cutoff stays in the statement rather than effectiveThrough, which moots a dueOn-after-cutoff alarm for a still-open permanent regime.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "taxableAccountSchema",
+              "line": 404
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 1400Z-2(a)(1)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1400Z-2&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 1400Z-2(a)(2) (legacy pre-2027 elections)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1400Z-2&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 1400Z-2(b)(1) (legacy pre-2027 elections)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1400Z-2&num=0&edition=prelim"
+        },
+        {
+          "kind": "legislativeHistory",
+          "citation": "Amendment note to IRC 1400Z-2, P.L. 119-21 sec. 70421 - post-2026 (a)(2)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1400Z-2&num=0&edition=prelim"
+        },
+        {
+          "kind": "legislativeHistory",
+          "citation": "Amendment note to IRC 1400Z-2, P.L. 119-21 sec. 70421 - post-2026 (b)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1400Z-2&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 1400Z-2(c) (legacy / continuing ten-year election)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1400Z-2&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-1411-a-net-investment-income-tax",
+      "title": "Net investment income tax is the lesser of two amounts",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The thresholds are not indexed, so the record is static rather than annually indexed. Modified adjusted gross income is built under 1411(d) rather than read off the adjusted gross income line; see irc-1411-d-modified-agi-foreign-exclusion-addback.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-29",
+      "dueOn": "2027-08-29",
+      "implementedBy": [
+        "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/tax/federalTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/data/year2026.ts",
+          "functions": [
+            {
+              "name": "year2026",
+              "line": 16
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/federalTax.ts",
+          "functions": [
+            {
+              "name": "computeFederalTax",
+              "line": 475
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/federalTax.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/federalTax.test.ts",
+          "line": 223,
+          "note": null,
+          "tests": [
+            {
+              "title": "taxes the smaller of investment income and the threshold excess",
+              "line": 227
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 1411(a)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1411&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 1411(b)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1411&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-1411-c-5-plan-distributions-excluded-from-nii",
+      "title": "Retirement plan distributions are not net investment income",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "This is the mechanism behind the most common NIIT surprise in retirement planning, and it only appears correctly if the two halves of 1411(a)(1) are kept separate: the distribution is absent from the net investment income leg and present in the modified AGI leg. The engine gets this right structurally by carrying plan distributions in ordinary income and building net investment income from a separate set of inputs. Note the exclusion is keyed to the type of plan, not to the character of the earnings inside it, so the investment return accumulated in an IRA never becomes net investment income.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2027-08-03",
+      "implementedBy": [
+        "packages/engine/src/tax/federalTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/tax/federalTax.ts",
+          "functions": [
+            {
+              "name": "computeFederalTax",
+              "line": 475
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/federalTax.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/federalTax.test.ts",
+          "line": 1876,
+          "note": null,
+          "tests": [
+            {
+              "title": "leaves plan distributions out of net investment income but not out of modified AGI",
+              "line": 1880
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 1411(c)(5)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1411&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 1411(a)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1411&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-1411-d-modified-agi-foreign-exclusion-addback",
+      "title": "Modified adjusted gross income adds back excluded foreign income",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The two definitions are not identical: 1411(d) reaches only section 911 and nets out the deductions 911(d)(6) disallows, while 151(d)(5)(C)(iii)(II) reaches sections 911, 931, and 933 with no netting. The engine carries one excluded-foreign-income figure and applies it to both, which is the broader definition in both places. That same figure already feeds section 86 provisional income, where 86(b)(2)(A) likewise reaches 911, 931, and 933, so splitting the two would mean splitting an input the household reports as one number.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-28",
+      "dueOn": "2027-08-28",
+      "implementedBy": [
+        "packages/engine/src/tax/federalTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/tax/federalTax.ts",
+          "functions": [
+            {
+              "name": "computeFederalTax",
+              "line": 475
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/federalTax.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/federalTax.test.ts",
+          "line": 253,
+          "note": null,
+          "tests": [
+            {
+              "title": "counts excluded foreign earned income against both limits",
+              "line": 260
+            },
+            {
+              "title": "leaves a return with no excluded foreign income at its AGI",
+              "line": 278
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 1411(d)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1411&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 151(d)(5)(C)(iii)(II)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section151&num=0&edition=prelim"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "Schedule 1-A (Form 1040) (2025), Part I, lines 1 to 3",
+          "url": "https://www.irs.gov/pub/irs-pdf/f1040s1a.pdf"
+        }
+      ]
+    },
+    {
+      "id": "irc-1411-tax-exempt-interest-outside-both-niit-legs",
+      "title": "Tax-exempt interest enters neither leg of the net investment income tax",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-07",
+      "dueOn": "2027-08-07",
+      "implementedBy": [
+        "packages/engine/src/tax/federalTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/tax/federalTax.ts",
+          "functions": [
+            {
+              "name": "computeFederalTax",
+              "line": 475
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/federalTax.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/federalTax.test.ts",
+          "line": 298,
+          "note": null,
+          "tests": [
+            {
+              "title": "keeps tax-exempt interest out of investment income and out of the threshold leg",
+              "line": 302
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 103(a)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section103&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 1411(c)(1)(A)(i)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1411&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 1411(d)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1411&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-165-c-personal-use-sale-loss-nondeductible",
+      "title": "The property-sale path floors every loss at zero; 165(c) only bars the personal-use ones",
+      "classification": "approximated",
+      "errorDirection": "overstatesTax",
+      "conventionRationale": "One disposition path prices all property sales. The zero floor is the statutory answer for personal-use property and an approximation for profit-transaction property, where the forgone capital loss (and its 1211(b) ordinary offset) overstates tax.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-29",
+      "dueOn": "2027-08-29",
+      "implementedBy": [
+        "packages/engine/src/tax/propertySale.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/tax/propertySale.ts",
+          "functions": [
+            {
+              "name": "propertySaleTax",
+              "line": 50
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/propertySale.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/propertySale.test.ts",
+          "line": 108,
+          "note": null,
+          "tests": [
+            {
+              "title": "floors the below-basis sale at zero instead of carrying the deductible loss",
+              "line": 113
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 165(c)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section165&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-171-tips-bond-premium-amortization",
+      "title": "TIPS bond premium amortization requires bond-level facts",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": "The absence surface is model/plan.ts, ladder/ladderMath.ts, and projection/simulate.ts. tipsLadderSchema stores only target real income, payout years, and an optional aggregate purchase transfer; ladderMath.ts retains synthetic rung cost but no holder basis or issue-price ledger, and simulate.ts carries no premium balance to offset coupon or OID. A taxable account costBasis is an aggregate brokerage basis and cannot identify a TIPS rung or a section 171 election, so it is not an accepted premium fact. Acquisition premium on TIPS is registered separately at treas-reg-1-1275-7-f-3-tips-acquisition-premium.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/ladder/ladderMath.ts",
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/ladder/ladderMath.ts",
+          "functions": [
+            {
+              "name": "LadderRung",
+              "line": 45
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "tipsLadderSchema",
+              "line": 1387
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 171(a)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section171&num=0&edition=prelim"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.171-2(a)(1)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.171-2"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.171-2(a)(3)(iii)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.171-2"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.1275-7(f)(3)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.1275-7"
+        }
+      ]
+    },
+    {
+      "id": "irc-454-savings-bond-interest-deferral",
+      "title": "Savings-bond interest is deferred until redemption, maturity, or disposition unless elected",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": "The absence surface spans model/plan.ts and projection/simulate.ts. taxableAccountSchema.interestYieldPct is a generic current-year yield and simulate.ts immediately adds that yield to ordinary income; neither surface identifies a savings bond, redemption or maturity date, accounting method, or the section 454 election that would select current inclusion. Treating generic interest as a savings bond would conflate an ordinary brokerage yield with a deferred savings-bond obligation.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "taxableAccountSchema",
+              "line": 404
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 454(a)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section454&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 454(c)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section454&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "rev-rul-2008-5-ira-wash-sale-permanent-loss-disallowance",
+      "title": "An IRA repurchase disallows the wash-sale loss without an IRA basis adjustment",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": "TaxRuleAuthorityKind has no revenue-ruling member. This is recorded as irsNotice, the closest existing kind for IRB guidance — a revenue ruling is IRB guidance; a publication is not.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "taxableAccountSchema",
+              "line": 404
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "irsNotice",
+          "citation": "Rev. Rul. 2008-5, FACTS",
+          "url": "https://www.irs.gov/pub/irs-drop/rr-08-05.pdf"
+        },
+        {
+          "kind": "irsNotice",
+          "citation": "Rev. Rul. 2008-5, HOLDING",
+          "url": "https://www.irs.gov/pub/irs-drop/rr-08-05.pdf"
+        }
+      ]
+    },
+    {
+      "id": "treas-reg-1-1012-1-c-lot-basis-and-holding-period",
+      "title": "Taxable-account basis and holding period are properties of a lot",
+      "classification": "approximated",
+      "errorDirection": "bothDirections",
+      "conventionRationale": "Approximated rather than out of scope because the engine emits a realized gain or loss for every taxable sale; nothing here fails closed. Both of its errors run in both directions, which is why the direction cannot be narrowed: the basis recovered on a partial sale is too high or too low depending on which lots a first-in-first-out or specific-identification seller would have sold, and the missing holding-period character understates tax on a short-term sale and overstates it on a long-term one. The average-cost approximation is defensible for a long-horizon projection and indefensible for a filing-grade statement of a particular year, and the two uses are not distinguished here. Across a full drawdown the account-level ratio and true lot accounting converge, because every lot is eventually sold and the total basis is the same either way, so the approximation costs little over a lifetime. It costs a great deal in any single year a user might act on. The missing holding-period character is the larger of the two gaps and is not an approximation at all: it is a fact the engine never had, since no lot acquisition dates enter the account model, and no convention over a single blended number can recover it.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2027-08-04",
+      "implementedBy": [
+        "packages/engine/src/actions/taxableWithdrawalCharacter.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/taxableWithdrawalCharacter.ts",
+          "functions": [
+            {
+              "name": "classifyIndividuallyOwnedTaxableWithdrawal",
+              "line": 405
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/seppHsaAndCharacter.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/seppHsaAndCharacter.approximation.test.ts",
+          "line": 752,
+          "note": "basis recovered on a partial sale of two lots",
+          "tests": [
+            {
+              "title": "recovers blended basis where the regulation charges the earliest lot",
+              "line": 761
+            },
+            {
+              "title": "takes one cost-basis figure for the account and no lot at all",
+              "line": 774
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/rules/approximations/seppHsaAndCharacter.approximation.test.ts",
+          "line": 804,
+          "note": "holding-period character of the realized gain",
+          "tests": [
+            {
+              "title": "reports gain with no holding period, so short-term and long-term are one number",
+              "line": 813
+            },
+            {
+              "title": "never receives an acquisition date it could derive one from",
+              "line": 835
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "26 CFR 1.1012-1(c)(1)(i)",
+          "url": "https://www.ecfr.gov/api/renderer/v1/content/enhanced/current/title-26?chapter=I&subchapter=A&part=1&section=1.1012-1"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 1222(3)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1222&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "treas-reg-1-1275-7-d-4-positive-inflation-adjustment-oid",
+      "title": "A positive TIPS inflation adjustment is annual OID",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/ladder/ladderMath.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/ladder/ladderMath.ts",
+          "functions": [
+            {
+              "name": "ladderRealFlowsAtOffset",
+              "line": 154
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/federalTax.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/federalTax.test.ts",
+          "line": 2138,
+          "note": "2027 positive indexation is a phantom OID character",
+          "tests": [
+            {
+              "title": "records positive inflation accretion as OID in the cash-flow ledger",
+              "line": 2146
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.1275-7(a)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.1275-7"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.1275-7(b)(1)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.1275-7"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.1275-7(d)(4)(i)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.1275-7"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.1275-7(d)(4)(iii)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.1275-7"
+        }
+      ]
+    },
+    {
+      "id": "treas-reg-1-1275-7-f-1-deflation-adjustment-income",
+      "title": "TIPS deflation adjustments reduce interest with an ordinary-loss carry limit",
+      "classification": "approximated",
+      "errorDirection": "overstatesTax",
+      "conventionRationale": "DEFECT — no behavior change in this registration slice. projection/simulate.ts computes `accretion` as `outstandingFace * Math.max(0, inflFactor - prevInflFactor)`, so a deflation year contributes no negative adjustment, no ordinary-loss carry, and no interest reduction. A paired market path with prior positive inflation followed by deflation drives the gap: the authority reduces current interest (and may permit a bounded ordinary loss), while the engine still reports the coupon as taxable ordinary income. The fixture adds 100,000 of ordinary wages so the tax line remains above zero and pins the produced annual MAGI. The basis decrease under (f)(2) is registered separately at treas-reg-1-1275-7-f-2-deflation-basis-decrease-not-modeled.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/ladder/ladderMath.ts",
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/ladder/ladderMath.ts",
+          "functions": [
+            {
+              "name": "ladderRealFlowsAtOffset",
+              "line": 154
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "tipsLadderSchema",
+              "line": 1387
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/federalTax.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/federalTax.test.ts",
+          "line": 2206,
+          "note": "paired positive-inflation then deflation path; 2027 non-maturity",
+          "tests": [
+            {
+              "title": "pins the engine output while distinguishing the deflation reading",
+              "line": 2215
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.1275-7(f)(1)(i)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.1275-7"
+        }
+      ]
+    },
+    {
+      "id": "treas-reg-1-1275-7-f-2-deflation-basis-decrease-not-modeled",
+      "title": "TIPS deflation basis decrease is not modeled",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": "The absence surface is ladder/ladderMath.ts and projection/simulate.ts: ladder accretion is clamped at zero and no holder-basis ledger records deflation adjustments taken into account under (f)(1). Omitting the (f)(2) basis decrease leaves basis too high and can understate later gain tax when that basis is recovered, but that limb is separate from the income-year clamp registered at treas-reg-1-1275-7-f-1-deflation-adjustment-income.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/ladder/ladderMath.ts",
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/ladder/ladderMath.ts",
+          "functions": [
+            {
+              "name": "LadderRung",
+              "line": 45
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "tipsLadderSchema",
+              "line": 1387
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.1275-7(f)(2)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.1275-7"
+        }
+      ]
+    },
+    {
+      "id": "treas-reg-1-1275-7-f-3-tips-acquisition-premium",
+      "title": "TIPS acquisition premium reduces OID under acquisition-premium rules",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": "The absence surface is model/plan.ts, ladder/ladderMath.ts, and projection/simulate.ts. tipsLadderSchema stores only target real income, payout years, and an optional aggregate purchase transfer; ladderMath.ts retains synthetic rung cost but no holder basis, issue price, or acquisition-premium ledger, and simulate.ts carries no premium balance to offset OID. Bond premium amortization under section 171 is registered separately at irc-171-tips-bond-premium-amortization.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/ladder/ladderMath.ts",
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/ladder/ladderMath.ts",
+          "functions": [
+            {
+              "name": "LadderRung",
+              "line": 45
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "tipsLadderSchema",
+              "line": 1387
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.1275-7(f)(3)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.1275-7"
+        }
+      ]
+    },
+    {
+      "id": "usc-31-3124-a-federal-obligations-state-exempt",
+      "title": "Interest on federal obligations is outside every state income tax base",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "This is why the exemption is applied uniformly rather than per state pack: it is federal law binding every state, so no state entry can opt into taxing it. The engine subtracts the interest from the state base because it arrives inside ordinary income.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2027-08-03",
+      "implementedBy": [
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.test.ts",
+          "line": 109,
+          "note": null,
+          "tests": [
+            {
+              "title": "keeps federal obligation interest out of the state base",
+              "line": 113
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "31 U.S.C. 3124(a)",
+          "url": "https://www.law.cornell.edu/uscode/text/31/3124"
+        }
+      ]
+    }
+  ]
+}

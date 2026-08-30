@@ -8,7 +8,8 @@ Carlo never runs a second, simplified model, so a stochastic run can't diverge f
 **Code:** [engine/montecarlo/](../../packages/engine/src/montecarlo/) (`marketModels.ts`, `historicalReturns.ts`,
 `rng.ts`, `mortality.ts`, `ltcShock.ts`, `run.ts`, `sharedPaths.ts`, `frontiers.ts`,
 `historicalSuites.ts`); the Web Worker pool in
-[packages/planner-ui/src/mc/](../../packages/planner-ui/src/mc/) (`monteCarlo.worker.ts`, `pool.ts`); scenarios in
+[packages/planner-ui/src/mc/](../../packages/planner-ui/src/mc/) (`pool.ts`, `runRequest.ts`) over the planner's shared
+worker entry [workers/planner.worker.ts](../../packages/planner-ui/src/workers/planner.worker.ts); scenarios in
 [engine/scenarios/](../../packages/engine/src/scenarios/) and [engine/projection/compare.ts](../../packages/engine/src/projection/compare.ts);
 UI in [planner/MonteCarloPage.tsx](../../packages/planner-ui/src/planner/MonteCarloPage.tsx),
 [ScenariosPage.tsx](../../packages/planner-ui/src/planner/ScenariosPage.tsx), and
@@ -21,7 +22,7 @@ UI in [planner/MonteCarloPage.tsx](../../packages/planner-ui/src/planner/MonteCa
   responsive; the RNG is **seedable** (so runs reproduce and scenario diffs aren't sampling noise).
 - **Return models** behind one interface: lognormal IID per asset class with correlation, historical bootstrap (iid/block/sequence), plus more (Student-t, regime-switch Markov, CAPE-conditioned, stationary/empirical bootstrap variants, GARCH, inflation regime, reversed-history, user-shock, additive Gaussian, AR(1) mean-reverting). **15 total** — exceeds Owl's advertised 14 — selectable on Monte Carlo page (default unchanged). All drive the *exact* tax/ledger engine. 1,000 paths by default, 10,000 on demand. See domain-rules §12.
 - **Class-level correlated shocks:** when any account opts into a four-class allocation
-  ([domain-rules-reference.md §15](../domain/domain-rules-reference.md)), both models also emit per-class
+  ([domain-rules-reference.md §15](../domain/domain-rules-reference/15-asset-classes-allocation-and-rebalancing-opt-in.md)), both models also emit per-class
   shocks sharing the deterministic ledger's allocation schema — the lognormal model via a Cholesky draw over
   the documented correlation matrix (the single market factor doubles as the first Gaussian, so allocated
   and unallocated accounts co-move), the historical models by replaying the S&P/Treasury series of the same
@@ -52,7 +53,7 @@ UI in [planner/MonteCarloPage.tsx](../../packages/planner-ui/src/planner/MonteCa
   Monte Carlo reports **required-floor** and **target-lifestyle** success alongside the classic success %, plus
   target-attainment percentiles, target shortfall, ideal/excess funding rates, flexible-goal outcomes, and
   guardrail action counts. Absent a policy, behavior is unchanged. Details and defaults:
-  [domain-rules-reference.md](../domain/domain-rules-reference.md) Section 14; code in
+  [domain-rules-reference.md](../domain/domain-rules-reference/14-spending-layers-and-guardrails-opt-in.md) Section 14; code in
   [engine/spending/](../../packages/engine/src/spending/).
 - **Risk-based guardrails + adjustment outlook (opt-in):** the alternative guardrail mode triggers on
   **dollar portfolio thresholds** solved from a target probability-of-success band

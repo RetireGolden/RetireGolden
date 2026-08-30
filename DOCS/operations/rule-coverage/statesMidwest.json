@@ -1,0 +1,2299 @@
+{
+  "kind": "retiregolden.rules-coverage.shard",
+  "version": 5,
+  "module": "statesMidwest",
+  "rules": [
+    {
+      "id": "ic-6-3-1-3-5-a-8-social-security-railroad-subtraction",
+      "title": "Indiana subtracts the federally taxable Social Security and Railroad Retirement amount",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:IN",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-05",
+      "dueOn": "2027-08-05",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "IN",
+              "line": 343
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 1362,
+          "note": null,
+          "tests": [
+            {
+              "title": "leaves a high-income Hoosier’s Social Security out of the Indiana base",
+              "line": 1376
+            },
+            {
+              "title": "would pull 34,000 of benefit into the base if Indiana taxed it",
+              "line": 1381
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IC 6-3-1-3.5(a)(8)",
+          "url": "https://iga.in.gov/ic/2026/Title_6/Article_3/Chapter_1.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "IC 6-3-1-3.5(a)",
+          "url": "https://iga.in.gov/ic/2026/Title_6/Article_3/Chapter_1.pdf"
+        }
+      ]
+    },
+    {
+      "id": "ic-6-3-1-3-5-exemptions-not-a-standard-deduction",
+      "title": "Indiana has no standard deduction, and the exemptions it has instead are not modelled",
+      "classification": "approximated",
+      "errorDirection": "overstatesTax",
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:IN",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-05",
+      "dueOn": "2027-08-05",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/params/state/types.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "IN",
+              "line": 343
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/types.ts",
+          "functions": [
+            {
+              "name": "StateTaxParams",
+              "line": 33
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/stateTax.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
+          "line": 741,
+          "note": null,
+          "tests": [
+            {
+              "title": "subtracts nothing from an Indiana base Indiana subtracts $4,000 from",
+              "line": 757
+            },
+            {
+              "title": "reaches the statute’s figure only by borrowing a field that then over-deducts under 65",
+              "line": 762
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IC 6-3-1-3.5(a)(3)",
+          "url": "https://iga.in.gov/ic/2026/Title_6/Article_3/Chapter_1.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "IC 6-3-1-3.5(a)(4)(B)",
+          "url": "https://iga.in.gov/ic/2026/Title_6/Article_3/Chapter_1.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "IC 6-3-1-3.5(a)(5)(C)",
+          "url": "https://iga.in.gov/ic/2026/Title_6/Article_3/Chapter_1.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "2025 Schedule 3 (Exemptions), State Form 53997, line 1",
+          "url": "https://forms.in.gov/Download.aspx?id=16936"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Indiana DOR, Income Tax Information Bulletin #26 (January 2023), age 65 exemptions",
+          "url": "https://www.in.gov/dor/files/ib26.pdf"
+        }
+      ]
+    },
+    {
+      "id": "ic-6-3-2-1-flat-rate-ramp",
+      "title": "Indiana’s flat individual rate and its legislated ramp",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:IN",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": 2026,
+      "verifiedOn": "2026-08-05",
+      "dueOn": "2027-08-05",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "IN",
+              "line": 343
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxDetail",
+              "line": 145
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 1314,
+          "note": null,
+          "tests": [
+            {
+              "title": "charges the 2026 step of the ramp, not the 2025 one",
+              "line": 1327
+            },
+            {
+              "title": "would over-charge by the ramp step if the prior year were held forward",
+              "line": 1332
+            },
+            {
+              "title": "is filing-status blind, with no married-filing-jointly doubling",
+              "line": 1344
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IC 6-3-2-1(b)(7)",
+          "url": "https://iga.in.gov/ic/2026/Title_6/Article_3/Chapter_2.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "IC 6-3-2-1(b)(8)",
+          "url": "https://iga.in.gov/ic/2026/Title_6/Article_3/Chapter_2.pdf"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Indiana DOR, Departmental Notice #1, effective Jan. 1, 2026 (R46 / 01-26)",
+          "url": "https://www.in.gov/dor/files/dn01.pdf"
+        },
+        {
+          "kind": "legislativeHistory",
+          "citation": "IC 6-3-2-1, source note",
+          "url": "https://iga.in.gov/ic/2026/Title_6/Article_3/Chapter_2.pdf"
+        }
+      ]
+    },
+    {
+      "id": "ic-6-3-2-3-7-civil-service-annuity-age-62",
+      "title": "Indiana’s civil service annuity deduction is age 62, capped, and offset by Social Security",
+      "classification": "approximated",
+      "errorDirection": "overstatesTax",
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:IN",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-05",
+      "dueOn": "2027-08-05",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/params/state/types.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "IN",
+              "line": 343
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/types.ts",
+          "functions": [
+            {
+              "name": "StateRetirementExclusion",
+              "line": 25
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/stateTax.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
+          "line": 657,
+          "note": null,
+          "tests": [
+            {
+              "title": "gives a 65-year-old CSRS annuitant no adjustment at all",
+              "line": 676
+            },
+            {
+              "title": "reaches the statute’s figure only through a cap that cannot also carry the military case",
+              "line": 681
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IC 6-3-2-3.7(b)",
+          "url": "https://iga.in.gov/ic/2026/Title_6/Article_3/Chapter_2.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "IC 6-3-2-3.7(a), first page",
+          "url": "https://iga.in.gov/ic/2026/Title_6/Article_3/Chapter_2.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "IC 6-3-2-3.7(a), continued",
+          "url": "https://iga.in.gov/ic/2026/Title_6/Article_3/Chapter_2.pdf"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Indiana DOR, Income Tax Information Bulletin #6 (June 2025)",
+          "url": "https://www.in.gov/dor/files/ib06.pdf"
+        }
+      ]
+    },
+    {
+      "id": "ic-6-3-2-4-military-retirement-deduction",
+      "title": "Indiana deducts military retirement in full, and the pack deducts none of it",
+      "classification": "approximated",
+      "errorDirection": "overstatesTax",
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:IN",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-05",
+      "dueOn": "2027-08-05",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/params/state/types.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "PUBLIC_PENSION_OVERRIDES",
+              "line": 57
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/types.ts",
+          "functions": [
+            {
+              "name": "StateRetirementExclusion",
+              "line": 25
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "retirementExclusion",
+              "line": 40
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/stateTax.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
+          "line": 613,
+          "note": null,
+          "tests": [
+            {
+              "title": "charges Indiana tax on a military pension Indiana deducts in full",
+              "line": 631
+            },
+            {
+              "title": "reaches the statute’s figure only by exempting every public pension in the state",
+              "line": 636
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IC 6-3-2-4(a)(2)",
+          "url": "https://iga.in.gov/ic/2026/Title_6/Article_3/Chapter_2.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "2025 Form IT-40 instruction booklet, Schedule 2 Other Deductions, code 632",
+          "url": "https://forms.in.gov/Download.aspx?id=16915"
+        }
+      ]
+    },
+    {
+      "id": "ic-6-3-2-no-general-retirement-deduction",
+      "title": "Indiana taxes private AND state and local government pensions in full",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:IN",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-05",
+      "dueOn": "2027-08-05",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "IN",
+              "line": 343
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            },
+            {
+              "name": "retirementExclusion",
+              "line": 40
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 1396,
+          "note": null,
+          "tests": [
+            {
+              "title": "taxes a TRF pension in full",
+              "line": 1410
+            },
+            {
+              "title": "taxes a private pension and an IRA distribution the same way",
+              "line": 1415
+            },
+            {
+              "title": "would exempt the whole pension under the override the pack used to carry",
+              "line": 1427
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IC 6-3-1-3.5(a)(36)",
+          "url": "https://iga.in.gov/ic/2026/Title_6/Article_3/Chapter_1.pdf"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Indiana DOR, Income Tax Information Bulletin #26 (January 2023)",
+          "url": "https://www.in.gov/dor/files/ib26.pdf"
+        }
+      ]
+    },
+    {
+      "id": "ic-6-3-6-2-2-county-income-tax-shares-the-state-base",
+      "title": "Indiana’s county income tax is universal, and the pack has no default for it",
+      "classification": "approximated",
+      "errorDirection": "understatesTax",
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:IN",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-05",
+      "dueOn": "2026-12-03",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/params/state/types.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "IN",
+              "line": 343
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/types.ts",
+          "functions": [
+            {
+              "name": "StateTaxParams",
+              "line": 33
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxDetail",
+              "line": 145
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/stateTax.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
+          "line": 702,
+          "note": null,
+          "tests": [
+            {
+              "title": "charges an Indiana household no county tax when the caller names no rate",
+              "line": 713
+            },
+            {
+              "title": "reaches the statute’s figure the moment a rate is supplied, which is the shape being right",
+              "line": 723
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IC 6-3.6-2-2",
+          "url": "https://iga.in.gov/ic/2026/Title_6/Article_3.6/Chapter_2.pdf"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Indiana DOR, Income Tax Information Bulletin #26 (January 2023)",
+          "url": "https://www.in.gov/dor/files/ib26.pdf"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Indiana DOR, Departmental Notice #1, effective Jan. 1, 2026 (R46 / 01-26)",
+          "url": "https://www.in.gov/dor/files/dn01.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "2025 Schedule CT-40 (County Tax Schedule for Full-Year Residents), line 2",
+          "url": "https://forms.in.gov/Download.aspx?id=16902"
+        }
+      ]
+    },
+    {
+      "id": "il-ita-203-a-2-F-retirement-income-subtraction",
+      "title": "Illinois subtracts retirement income with no age condition",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:IL",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2027-08-04",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "IL",
+              "line": 337
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            },
+            {
+              "name": "retirementExclusion",
+              "line": 40
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 572,
+          "note": null,
+          "tests": [
+            {
+              "title": "subtracts an Illinois retiree’s IRA income at 58",
+              "line": 588
+            },
+            {
+              "title": "would tax all of it if the subtraction carried the usual age gate",
+              "line": 592
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "35 ILCS 5/203(a)(2)(F)",
+          "url": "https://www.ilga.gov/Legislation/ilcs/documents/003500050K203.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "35 ILCS 5/203(a)(2)",
+          "url": "https://www.ilga.gov/Legislation/ilcs/documents/003500050K203.htm"
+        }
+      ]
+    },
+    {
+      "id": "iowa-code-422-7-19-a-retirement-income-exclusion",
+      "title": "Iowa excludes retirement income from age 55",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:IA",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2027-08-04",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "IA",
+              "line": 378
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            },
+            {
+              "name": "retirementExclusion",
+              "line": 40
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 644,
+          "note": null,
+          "tests": [
+            {
+              "title": "excludes an Iowa retiree’s pension in full at 56",
+              "line": 659
+            },
+            {
+              "title": "would tax it under the sixty-five gate most states use",
+              "line": 663
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Iowa Code 422.7(19)(a)",
+          "url": "https://www.legis.iowa.gov/docs/code/422.7.pdf"
+        }
+      ]
+    },
+    {
+      "id": "ks-stat-79-32-117-public-pension-exclusion",
+      "title": "Kansas exempts listed public retirement plans, not every public pension",
+      "classification": "approximated",
+      "errorDirection": "understatesTax",
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:KS",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/params/state/types.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "PUBLIC_PENSION_OVERRIDES",
+              "line": 57
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/types.ts",
+          "functions": [
+            {
+              "name": "StateRetirementExclusion",
+              "line": 25
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "retirementExclusion",
+              "line": 40
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 1998,
+          "note": null,
+          "tests": [
+            {
+              "title": "pins the overbroad Kansas public-pension override",
+              "line": 2014
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "K.S.A. 79-32,117(c)(vii)",
+          "url": "https://www.ksrevisor.gov/statutes/chapters/ch79/079_032_0117.html"
+        },
+        {
+          "kind": "statute",
+          "citation": "K.S.A. 79-32,117(c)(ix)",
+          "url": "https://www.ksrevisor.gov/statutes/chapters/ch79/079_032_0117.html"
+        },
+        {
+          "kind": "statute",
+          "citation": "K.S.A. 79-32,117(c)(xii)",
+          "url": "https://www.ksrevisor.gov/statutes/chapters/ch79/079_032_0117.html"
+        },
+        {
+          "kind": "statute",
+          "citation": "K.S.A. 79-32,117(c)(xix)",
+          "url": "https://www.ksrevisor.gov/statutes/chapters/ch79/079_032_0117.html"
+        },
+        {
+          "kind": "statute",
+          "citation": "K.S.A. 79-32,117(c)(xxiii)",
+          "url": "https://www.ksrevisor.gov/statutes/chapters/ch79/079_032_0117.html"
+        }
+      ]
+    },
+    {
+      "id": "ks-stat-79-32-117-social-security-exclusion",
+      "title": "Kansas subtracts all federally taxable Social Security from 2024",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:KS",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "states.KS",
+              "line": 384
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 1968,
+          "note": null,
+          "tests": [
+            {
+              "title": "subtracts all post-2023 federally taxable Kansas Social Security",
+              "line": 1984
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "K.S.A. 79-32,117(c)(xviii)(B)",
+          "url": "https://www.ksrevisor.gov/statutes/chapters/ch79/079_032_0117.html"
+        }
+      ]
+    },
+    {
+      "id": "mi-mcl-206-30-f-iii-social-security",
+      "title": "Michigan deducts Social Security benefits included in AGI",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:MI",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "MI",
+              "line": 449
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 2268,
+          "note": null,
+          "tests": [
+            {
+              "title": "deducts Social Security from Michigan taxable income",
+              "line": 2282
+            },
+            {
+              "title": "would add the federally taxable share if Michigan taxed it",
+              "line": 2287
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Mich. Comp. Laws 206.30(1)(f)",
+          "url": "https://www.legislature.mi.gov/mileg.aspx?objectName=mcl-206-30&page=getObject"
+        },
+        {
+          "kind": "statute",
+          "citation": "Mich. Comp. Laws 206.30(1)(f)(iii)",
+          "url": "https://www.legislature.mi.gov/mileg.aspx?objectName=mcl-206-30&page=getObject"
+        }
+      ]
+    },
+    {
+      "id": "mi-mcl-206-30-retirement-and-ss",
+      "title": "Michigan's 2026 retirement deduction is not a flat per-person cap",
+      "classification": "approximated",
+      "errorDirection": "bothDirections",
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:MI",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2026-12-25",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "MI",
+              "line": 449
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            },
+            {
+              "name": "retirementExclusion",
+              "line": 40
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/stateTax.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
+          "line": 942,
+          "note": null,
+          "tests": [
+            {
+              "title": "grants a 50-year-old the $49,423 cap a senior-citizen deduction does not",
+              "line": 962
+            },
+            {
+              "title": "reaches the statute once the cap is withheld from a non-senior",
+              "line": 969
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Mich. Comp. Laws 206.30(10)(d)",
+          "url": "https://www.legislature.mi.gov/mileg.aspx?objectName=mcl-206-30&page=getObject"
+        },
+        {
+          "kind": "statute",
+          "citation": "Mich. Comp. Laws 206.30(1)(f)(iv)",
+          "url": "https://www.legislature.mi.gov/mileg.aspx?objectName=mcl-206-30&page=getObject"
+        }
+      ]
+    },
+    {
+      "id": "mn-stat-290-0132-subd-26-social-security-inclusion",
+      "title": "Minnesota subtracts federally taxable Social Security on an income-tested schedule the pack omits",
+      "classification": "approximated",
+      "errorDirection": "overstatesTax",
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:MN",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2026-12-25",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "MN",
+              "line": 455
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/stateTax.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
+          "line": 994,
+          "note": null,
+          "tests": [
+            {
+              "title": "leaves the whole federally taxable share in, with no subdivision-26 subtraction",
+              "line": 1011
+            },
+            {
+              "title": "reaches the statute once the simplified subtraction is taken off the base",
+              "line": 1019
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Minn. Stat. 290.0132, subd. 26(a)",
+          "url": "https://www.revisor.mn.gov/statutes/cite/290.0132"
+        },
+        {
+          "kind": "statute",
+          "citation": "Minn. Stat. 290.0132, subd. 26(b)",
+          "url": "https://www.revisor.mn.gov/statutes/cite/290.0132"
+        },
+        {
+          "kind": "statute",
+          "citation": "Minn. Stat. 290.0132, subd. 26(c)",
+          "url": "https://www.revisor.mn.gov/statutes/cite/290.0132"
+        },
+        {
+          "kind": "statute",
+          "citation": "Minn. Stat. 290.0132, subd. 26(c)(1)–(2)",
+          "url": "https://www.revisor.mn.gov/statutes/cite/290.0132"
+        }
+      ]
+    },
+    {
+      "id": "mo-rsmo-143-121-capital-gain-deduction",
+      "title": "Missouri subtracts 100% of an individual’s capital gains",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:MO",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2025,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2027-08-04",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "MO",
+              "line": 513
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 620,
+          "note": null,
+          "tests": [
+            {
+              "title": "leaves the whole capital gain out of the Missouri base",
+              "line": 629
+            },
+            {
+              "title": "would tax it like every other income-tax state in the pack",
+              "line": 634
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Mo. Rev. Stat. 143.121.3(14)(a)",
+          "url": "https://revisor.mo.gov/main/OneSection.aspx?section=143.121"
+        },
+        {
+          "kind": "statute",
+          "citation": "Mo. Rev. Stat. 143.121.3",
+          "url": "https://revisor.mo.gov/main/OneSection.aspx?section=143.121"
+        }
+      ]
+    },
+    {
+      "id": "ndcc-57-38-30-3-1-g-commissioner-indexed-rate-schedule",
+      "title": "North Dakota’s operative brackets are the commissioner’s indexed schedule",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:ND",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2023,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-05",
+      "dueOn": "2026-12-03",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "states.ND",
+              "line": 637
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxDetail",
+              "line": 145
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 134,
+          "note": null,
+          "tests": [
+            {
+              "title": "measures a 2026 North Dakotan against the 2026 schedule the commissioner published",
+              "line": 143
+            },
+            {
+              "title": "would over-tax the same household on the schedule the pack used to carry",
+              "line": 148
+            },
+            {
+              "title": "carries the joint schedule too, which indexes by a different amount",
+              "line": 165
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "N.D.C.C. 57-38-30.3(1)(g)",
+          "url": "https://ndlegis.gov/cencode/t57c38.pdf"
+        },
+        {
+          "kind": "legislativeHistory",
+          "citation": "2023 N.D. H.B. 1158 (enrolled), § 8",
+          "url": "https://ndlegis.gov/assembly/68-2023/regular/documents/23-0351-06000.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "2026 Forms ND-1 and ND-EZ Tax Rate Schedules (Form ND-1ES), Single",
+          "url": "https://www.tax.nd.gov/sites/www/files/documents/forms/individual/2025-iit/28709-form-nd-1es-2026.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "2026 Forms ND-1 and ND-EZ Tax Rate Schedules (Form ND-1ES), Married filing jointly and Qualifying surviving spouse",
+          "url": "https://www.tax.nd.gov/sites/www/files/documents/forms/individual/2025-iit/28709-form-nd-1es-2026.pdf"
+        }
+      ]
+    },
+    {
+      "id": "ndcc-57-38-30-3-2-closed-subtraction-list",
+      "title": "North Dakota subtracts no retirement income beyond the two it names",
+      "classification": "approximated",
+      "errorDirection": "understatesTax",
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:ND",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2023,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-05",
+      "dueOn": "2027-08-05",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/params/state/types.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "PUBLIC_PENSION_OVERRIDES",
+              "line": 57
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/types.ts",
+          "functions": [
+            {
+              "name": "StateRetirementExclusion",
+              "line": 25
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/stateTax.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
+          "line": 129,
+          "note": null,
+          "tests": [
+            {
+              "title": "exempts a civil-service pension North Dakota taxes in full",
+              "line": 152
+            },
+            {
+              "title": "reaches the statute’s figure once the public bucket stops exempting",
+              "line": 157
+            },
+            {
+              "title": "still taxes private retirement income, which is the half the pack gets right",
+              "line": 167
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "N.D.C.C. 57-38-30.3(2)",
+          "url": "https://ndlegis.gov/cencode/t57c38.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "N.D.C.C. 57-38-30.3(2)(a)",
+          "url": "https://ndlegis.gov/cencode/t57c38.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "2025 Form ND-1 instructions, Line 8 — U.S. Railroad Retirement Board benefits",
+          "url": "https://www.tax.nd.gov/sites/www/files/documents/forms/individual/2025-iit/2025-individual-income-tax-booklet.pdf"
+        }
+      ]
+    },
+    {
+      "id": "ndcc-57-38-30-3-2-d-2-qualified-dividend-exclusion",
+      "title": "North Dakota excludes 40% of qualified dividends",
+      "classification": "approximated",
+      "errorDirection": "overstatesTax",
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:ND",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-05",
+      "dueOn": "2027-08-05",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/params/state/types.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "ND.capitalGainsTaxablePct",
+              "line": 648
+            },
+            {
+              "name": "states.ND",
+              "line": 637
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/types.ts",
+          "functions": [
+            {
+              "name": "StateTaxParams",
+              "line": 33
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/stateTax.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
+          "line": 181,
+          "note": null,
+          "tests": [
+            {
+              "title": "taxes the whole qualified dividend rather than the statute’s 60%",
+              "line": 198
+            },
+            {
+              "title": "reaches the statute’s figure only by shrinking the input, which is not a fix",
+              "line": 203
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "N.D.C.C. 57-38-30.3(2)(d)(2)",
+          "url": "https://ndlegis.gov/cencode/t57c38.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "2025 Form ND-1 instructions, Line 13 — Qualified dividend exclusion",
+          "url": "https://www.tax.nd.gov/sites/www/files/documents/forms/individual/2025-iit/2025-individual-income-tax-booklet.pdf"
+        }
+      ]
+    },
+    {
+      "id": "ndcc-57-38-30-3-2-d-long-term-gain-exclusion",
+      "title": "North Dakota excludes 40% of net long-term capital gain",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:ND",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-05",
+      "dueOn": "2027-08-05",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "ND.capitalGainsTaxablePct",
+              "line": 648
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 310,
+          "note": null,
+          "tests": [
+            {
+              "title": "leaves forty percent of a long-term gain out of the North Dakota base",
+              "line": 331
+            },
+            {
+              "title": "would tax the whole gain with the included share left at its default",
+              "line": 338
+            },
+            {
+              "title": "still taxes the included sixty percent at ordinary North Dakota rates",
+              "line": 345
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "N.D.C.C. 57-38-30.3(2)(d)",
+          "url": "https://ndlegis.gov/cencode/t57c38.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "2025 Form ND-1 instructions, Worksheet For Net Long-Term Capital Gain Exclusion (Form ND-1, line 6), line 8",
+          "url": "https://www.tax.nd.gov/sites/www/files/documents/forms/individual/2025-iit/2025-individual-income-tax-booklet.pdf"
+        }
+      ]
+    },
+    {
+      "id": "ndcc-57-38-30-3-2-r-military-retirement-exclusion",
+      "title": "North Dakota excludes retired military personnel benefits in full",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:ND",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2019,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-05",
+      "dueOn": "2027-08-05",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "PUBLIC_PENSION_OVERRIDES",
+              "line": 57
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            },
+            {
+              "name": "retirementExclusion",
+              "line": 40
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 235,
+          "note": null,
+          "tests": [
+            {
+              "title": "takes the whole military pension out of a North Dakota base",
+              "line": 251
+            },
+            {
+              "title": "would tax all 45,000 of it if the public bucket carried no exclusion",
+              "line": 256
+            },
+            {
+              "title": "does not spill the exclusion onto private retirement income",
+              "line": 261
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "N.D.C.C. 57-38-30.3(2)(r)",
+          "url": "https://ndlegis.gov/cencode/t57c38.pdf"
+        },
+        {
+          "kind": "legislativeHistory",
+          "citation": "2019 N.D. H.B. 1053 (enrolled), § 2",
+          "url": "https://ndlegis.gov/assembly/66-2019/regular/documents/19-0357-02000.pdf"
+        }
+      ]
+    },
+    {
+      "id": "ndcc-57-38-30-3-2-s-social-security-subtraction",
+      "title": "North Dakota subtracts every federally taxable Social Security dollar",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:ND",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2021,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-05",
+      "dueOn": "2027-08-05",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "states.ND",
+              "line": 637
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 191,
+          "note": null,
+          "tests": [
+            {
+              "title": "leaves a high-income North Dakotan’s Social Security out of the state base",
+              "line": 210
+            },
+            {
+              "title": "would pull 34,000 of benefit into the base under the pre-2021 threshold rule",
+              "line": 216
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "N.D.C.C. 57-38-30.3(2)(s)",
+          "url": "https://ndlegis.gov/cencode/t57c38.pdf"
+        },
+        {
+          "kind": "legislativeHistory",
+          "citation": "2021 N.D. S.B. 2351 (special session, enrolled), § 2, amending former subdivision t",
+          "url": "https://ndlegis.gov/assembly/67-2021/special/documents/21-1097-02000.pdf"
+        },
+        {
+          "kind": "legislativeHistory",
+          "citation": "2021 N.D. S.B. 2351 (special session, enrolled), § 3",
+          "url": "https://ndlegis.gov/assembly/67-2021/special/documents/21-1097-02000.pdf"
+        }
+      ]
+    },
+    {
+      "id": "ndcc-57-38-30-3-2-t-retired-peace-officer-exclusion",
+      "title": "North Dakota excludes retired law enforcement personnel benefits in full",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:ND",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2023,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-05",
+      "dueOn": "2027-08-05",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "PUBLIC_PENSION_OVERRIDES",
+              "line": 57
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            },
+            {
+              "name": "retirementExclusion",
+              "line": 40
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 280,
+          "note": null,
+          "tests": [
+            {
+              "title": "takes a retired officer’s benefit out of a North Dakota base in full",
+              "line": 296
+            },
+            {
+              "title": "would tax it as ordinary retirement income without the subdivision",
+              "line": 300
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "N.D.C.C. 57-38-30.3(2)(t)",
+          "url": "https://ndlegis.gov/cencode/t57c38.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "N.D.C.C. 57-38-30.3(2)(t)(2)",
+          "url": "https://ndlegis.gov/cencode/t57c38.pdf"
+        },
+        {
+          "kind": "legislativeHistory",
+          "citation": "2023 N.D. S.B. 2147 (enrolled), § 2",
+          "url": "https://ndlegis.gov/assembly/68-2023/regular/documents/23-0019-03000.pdf"
+        }
+      ]
+    },
+    {
+      "id": "ndcc-57-38-30-3-federal-taxable-income-base",
+      "title": "North Dakota taxable income is federal taxable income, adjusted",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:ND",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2027-08-04",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/params/state/index.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "states.ND",
+              "line": 637
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/index.ts",
+          "functions": [
+            {
+              "name": "conformStateStandardDeduction",
+              "line": 90
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 72,
+          "note": null,
+          "tests": [
+            {
+              "title": "moves North Dakota’s deduction with the federal figure it is a copy of",
+              "line": 81
+            },
+            {
+              "title": "would freeze it if the conformity tag were dropped, which is the reading the statute rejects",
+              "line": 87
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "N.D.C.C. 57-38-30.3(2)",
+          "url": "https://ndlegis.gov/cencode/t57c38.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "N.D.C.C. 57-38-30.3(1)",
+          "url": "https://ndlegis.gov/cencode/t57c38.pdf"
+        }
+      ]
+    },
+    {
+      "id": "ne-stat-77-2716-public-pension-exemption",
+      "title": "Nebraska's public-pension override is military and CSRS, not every public pension",
+      "classification": "approximated",
+      "errorDirection": "understatesTax",
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:NE",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2024,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "PUBLIC_PENSION_OVERRIDES",
+              "line": 57
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            },
+            {
+              "name": "retirementExclusion",
+              "line": 40
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/stateTax.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
+          "line": 1041,
+          "note": null,
+          "tests": [
+            {
+              "title": "exempts a school-retirement annuity the closed list does not name",
+              "line": 1058
+            },
+            {
+              "title": "taxes a private IRA of the same amount, which is the other bucket",
+              "line": 1064
+            },
+            {
+              "title": "reaches the statute once the public override is dropped",
+              "line": 1074
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Neb. Rev. Stat. 77-2716(15)(b)",
+          "url": "https://www.nebraskalegislature.gov/laws/statutes.php?statute=77-2716"
+        },
+        {
+          "kind": "statute",
+          "citation": "Neb. Rev. Stat. 77-2716(15)(c)",
+          "url": "https://www.nebraskalegislature.gov/laws/statutes.php?statute=77-2716"
+        },
+        {
+          "kind": "statute",
+          "citation": "Neb. Rev. Stat. 77-2716(20)",
+          "url": "https://www.nebraskalegislature.gov/laws/statutes.php?statute=77-2716"
+        }
+      ]
+    },
+    {
+      "id": "ne-stat-77-2716-social-security-subtraction",
+      "title": "Nebraska subtracts 100% of federally included Social Security from 2024",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:NE",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2024,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "states.NE",
+              "line": 548
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 2423,
+          "note": null,
+          "tests": [
+            {
+              "title": "subtracts every federally included Social Security dollar from 2024",
+              "line": 2439
+            },
+            {
+              "title": "would tax 85% of the benefit under the shopping-list reading",
+              "line": 2445
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Neb. Rev. Stat. 77-2716(14)(a)",
+          "url": "https://www.nebraskalegislature.gov/laws/statutes.php?statute=77-2716"
+        },
+        {
+          "kind": "statute",
+          "citation": "Neb. Rev. Stat. 77-2716(14)(a)(iv)",
+          "url": "https://www.nebraskalegislature.gov/laws/statutes.php?statute=77-2716"
+        },
+        {
+          "kind": "statute",
+          "citation": "Neb. Rev. Stat. 77-2716(14)(b)",
+          "url": "https://www.nebraskalegislature.gov/laws/statutes.php?statute=77-2716"
+        }
+      ]
+    },
+    {
+      "id": "oh-rev-code-5747-01-social-security-and-public-pension",
+      "title": "Ohio subtracts Social Security and uniformed-services retirement, but uses a separate retirement-income credit",
+      "classification": "approximated",
+      "errorDirection": "bothDirections",
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:OH",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "PUBLIC_PENSION_OVERRIDES",
+              "line": 57
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            },
+            {
+              "name": "retirementExclusion",
+              "line": 40
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 2526,
+          "note": "public-pension deduction limb",
+          "tests": [
+            {
+              "title": "pins the over-broad full public-pension override",
+              "line": 2545
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 2552,
+          "note": "retirement-income credit limb",
+          "tests": [
+            {
+              "title": "pins the omitted Ohio retirement-income credit",
+              "line": 2566
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Ohio Rev. Code §5747.01(A)(5)",
+          "url": "https://codes.ohio.gov/ohio-revised-code/section-5747.01"
+        },
+        {
+          "kind": "statute",
+          "citation": "Ohio Rev. Code §5747.01(A)(23)",
+          "url": "https://codes.ohio.gov/ohio-revised-code/section-5747.01"
+        },
+        {
+          "kind": "statute",
+          "citation": "Ohio Rev. Code §5747.055(B)",
+          "url": "https://codes.ohio.gov/ohio-revised-code/section-5747.055"
+        }
+      ]
+    },
+    {
+      "id": "sd-no-individual-income-tax",
+      "title": "South Dakota levies no individual income tax, and could",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:SD",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-05",
+      "dueOn": "2027-08-05",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "SD",
+              "line": 738
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 746,
+          "note": null,
+          "tests": [
+            {
+              "title": "leaves a South Dakota retiree with no state base at all",
+              "line": 765
+            },
+            {
+              "title": "would build a base the day the Legislature exercised the power it holds",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "S.D. Dept. of Revenue, Individuals — Taxes, \"Income Tax\"",
+          "url": "https://dor.sd.gov/individuals/taxes/"
+        },
+        {
+          "kind": "statute",
+          "citation": "S.D. Const. art. XI, § 2",
+          "url": "https://sdsos.gov/general-information/about-state-south-dakota/docs/2024%20South%20Dakota%20Constitution.pdf"
+        }
+      ]
+    },
+    {
+      "id": "wi-schedule-sb-line-5-long-term-capital-gain-exclusion",
+      "title": "Wisconsin excludes 30% of qualifying long-term capital gain; the pack taxes the whole gain as ordinary",
+      "classification": "approximated",
+      "errorDirection": "overstatesTax",
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:WI",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "WI",
+              "line": 811
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 2820,
+          "note": "30% long-term capital-gain subtraction",
+          "tests": [
+            {
+              "title": "pins Wisconsin's unrepresented long-term capital-gain exclusion",
+              "line": 2834
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "formInstruction",
+          "citation": "2025 Wisconsin Schedule SB Instructions, Line 5",
+          "url": "https://www.revenue.wi.gov/TaxForms2025/2025-ScheduleSB-Inst.pdf"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Wisconsin Department of Revenue, Individual income tax rates",
+          "url": "https://www.revenue.wi.gov/Pages/FAQS/pcs-taxrates.aspx"
+        }
+      ]
+    },
+    {
+      "id": "wi-stat-71-05-retirement-income-subtraction",
+      "title": "Wisconsin’s $24,000 age-67 retirement subtraction is per-recipient and credits-restricted; the pack caps pooled income and skips the election",
+      "classification": "approximated",
+      "errorDirection": "bothDirections",
+      "conventionRationale": "The sign depends on household facts: which spouse received the retirement dollars decides the attribution limb (understates), while forgone credits and the Line 17 cohort decide the election limbs (overstate).",
+      "contraryReading": null,
+      "jurisdiction": "state:WI",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "WI",
+              "line": 811
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            },
+            {
+              "name": "retirementExclusion",
+              "line": 40
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 2841,
+          "note": "age-67 retirement attribution and election limbs",
+          "tests": [
+            {
+              "title": "shelters retirement dollars received by the under-67 spouse",
+              "line": 2865
+            },
+            {
+              "title": "matches the pooled $48,000 cap when both spouses are 67",
+              "line": 2874
+            },
+            {
+              "title": "grants a 65-year-old nothing where Line 17 would allow $5,000",
+              "line": 2887
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "formInstruction",
+          "citation": "2025 Wisconsin Schedule SB Instructions, Line 4",
+          "url": "https://www.revenue.wi.gov/TaxForms2025/2025-ScheduleSB-Inst.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "2025 Wisconsin Schedule SB Instructions, Line 16",
+          "url": "https://www.revenue.wi.gov/TaxForms2025/2025-ScheduleSB-Inst.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "2025 Wisconsin Schedule SB Instructions, Line 16 (joint pooled cap)",
+          "url": "https://www.revenue.wi.gov/TaxForms2025/2025-ScheduleSB-Inst.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "2025 Wisconsin Schedule SB Instructions, Line 16 (credit forfeiture)",
+          "url": "https://www.revenue.wi.gov/TaxForms2025/2025-ScheduleSB-Inst.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "2025 Wisconsin Schedule SB Instructions, Line 17",
+          "url": "https://www.revenue.wi.gov/TaxForms2025/2025-ScheduleSB-Inst.pdf"
+        }
+      ]
+    }
+  ]
+}

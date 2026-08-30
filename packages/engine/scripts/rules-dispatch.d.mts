@@ -6,3 +6,10 @@ export function buildDispatchPrompt(input: {
   /** Repo-relative record module path per rule id. Omitted, the prompt falls back to naming the whole records directory. */
   recordModuleOf?: ReadonlyMap<string, string>
 }): string
+
+/**
+ * Repo-relative coverage shard for a record module path. Mirrors
+ * `coverageShardPath` in coverageReport.ts; the two are pinned against each
+ * other in dispatchTooling.test.ts.
+ */
+export function coverageShardOf(recordModulePath: string): string

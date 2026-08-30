@@ -25,7 +25,7 @@ e2e  ─┘
 | `lint` | push + labeled PR | root `pnpm install --frozen-lockfile` then `pnpm lint` (ESLint in `packages/engine`, `packages/planner-ui`, and `app`) |
 | `test` | push + labeled PR | root `pnpm install --frozen-lockfile` then `pnpm test:coverage` (Vitest in `packages/engine`, `packages/planner-ui`, and `app`) |
 | `e2e` | push + labeled PR | Playwright browser layout tests (`pnpm test:e2e`) in `app/` |
-| `build` | needs `lint`, `test`, `e2e` | root `pnpm build` (engine `tsc -b`, planner-ui `tsc -b`, then app `tsc -b && vite build`), then both packages' pack-smoke scripts (the engine tarball from plain Node ESM; the planner-ui tarball from a scratch Vite consumer); uploads `app/dist` as the `dist` artifact |
+| `build` | needs `lint`, `test`, `e2e` | root `pnpm build` (engine `tsc -b`, planner-ui `tsc -b`, then app `tsc -b && vite build`, the **bundle budget** — `check-bundle-budget.mjs`, which fails the build when `dist/` is over its measured size limits, see [bundle-budget.md](bundle-budget.md) — and sitemap generation), then both packages' pack-smoke scripts (the engine tarball from plain Node ESM; the planner-ui tarball from a scratch Vite consumer, which also pins the single-worker-entry invariant); uploads `app/dist` as the `dist` artifact |
 | `deploy` | needs `build`; skipped on PR close | downloads `dist`, deploys via `Azure/static-web-apps-deploy@v1` with `skip_app_build: true`, `app_location: app/dist`; exposes the deployed URL as `preview_url` |
 | `dast` | PR only; needs `deploy` | OWASP ZAP baseline scan of the freshly deployed PR preview URL — see [security-scanning.md](security-scanning.md). On unlabeled PRs it still invokes `zap.yml` with an empty URL (the scan job skips itself) so the required nested check reports as skipped instead of hanging on "Expected" |
 | `close_pull_request` | PR close | tears down the SWA preview environment |
@@ -49,6 +49,13 @@ PR only while it carries the **`run-ci` label**:
   the label lands on `main` unvalidated (the push-to-`main` run will still catch it, but after the fact).
 - **Semgrep is exempt**: it runs on every PR push regardless of the label, so the SAST required check is
   always a real result. It's a cheap CLI scan — the label gate covers the expensive pipeline only.
+- **The resolve gate is also exempt**: [`resolve-gate.yml`](../../.github/workflows/resolve-gate.yml)
+  runs ungated on PRs touching `pnpm-workspace.yaml`, `pnpm-lock.yaml`, or any `package.json` (plus
+  weekly and on dispatch). It deletes the lockfile and re-resolves from scratch, because every other
+  job's `--frozen-lockfile` install skips resolution and therefore the workspace supply-chain gates
+  (`trustPolicy`, `minimumReleaseAge`, `blockExoticSubdeps`); it also fails when a `trustPolicyExclude`
+  entry no longer appears in a fresh resolve, so stale exemptions surface instead of standing as
+  silent trust waivers. Like Semgrep, it's a ~1-minute job.
 - Both workflows also **cancel in-progress PR runs** when a newer commit is pushed (concurrency
   groups), so rapid-fire pushes only pay for the latest commit. Pushes to `main` are never cancelled,
   and unrelated label events never cancel a live pipeline.

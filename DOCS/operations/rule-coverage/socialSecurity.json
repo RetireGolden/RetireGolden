@@ -1,0 +1,3051 @@
+{
+  "kind": "retiregolden.rules-coverage.shard",
+  "version": 5,
+  "module": "socialSecurity",
+  "rules": [
+    {
+      "id": "cfr-20-404-1574-b-2-sga-non-blind-monthly-amount",
+      "title": "The non-blind substantial gainful activity amount is set by regulation and wage-indexed",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The projection compares annual wages against twelve times the monthly amount, which is an annual-granularity stand-in: the regulation applies the level to average monthly earnings, so a beneficiary whose earnings are concentrated in part of the year is treated differently by the two. The regulation is also carried forward on the general inflation assumption rather than on the national average wage index, for want of a wage path in the engine. The Federal Register determination that fixes the year figure is registered under the regulation authority kind, which is also where the underlying 20 CFR provision sits; the enum has no member for an agency determination published in the Federal Register, and adding one is a schema decision rather than a research finding.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2026-12-01",
+      "implementedBy": [
+        "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/socialSecurity/disability.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/data/year2026.ts",
+          "functions": [
+            {
+              "name": "year2026",
+              "line": 16
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/disability.ts",
+          "functions": [
+            {
+              "name": "ssdiSuspendedBySga",
+              "line": 35
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/params/params.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/params/params.test.ts",
+          "line": 209,
+          "note": "Values are the annual gate the projection uses, twelve times the published monthly amount.",
+          "tests": [
+            {
+              "title": "derives the monthly amount from the wage index the regulation names",
+              "line": 214
+            },
+            {
+              "title": "gates SSDI on the 2026 substantial gainful activity amount",
+              "line": 223
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.1574(b)(2)(ii)",
+          "url": "https://www.ecfr.gov/current/title-20/section-404.1574"
+        },
+        {
+          "kind": "regulation",
+          "citation": "SSA, Cost-of-Living Increase and Other Determinations for 2026, 90 FR 49047 (Nov. 3, 2025)",
+          "url": "https://www.govinfo.gov/content/pkg/FR-2025-11-03/html/2025-19763.htm"
+        }
+      ]
+    },
+    {
+      "id": "cfr-20-404-1584-blind-sga-monthly-amount",
+      "title": "Blind SGA is a separate wage-indexed monthly amount",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": "This follows the authority shape of cfr-20-404-1574-b-2-sga-non-blind-monthly-amount: the current-year amount is a wage-indexed determination, not an OACT table lookup. The staged eCFR text establishes that blindness has a distinct guideline and wage-indexing method. The implementation surface is absent in both model/plan.ts and params/types.ts/year2026.ts: there is no blindness input, `sgaMonthlyBlind`, or branch selecting one.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2026-12-25",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/params/types.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "socialSecurityIncomeSchema",
+              "line": 1480
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/data/year2026.ts",
+          "functions": [
+            {
+              "name": "year2026",
+              "line": 16
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/types.ts",
+          "functions": [
+            {
+              "name": "sgaMonthlyNonBlind",
+              "line": 219
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.1584(d)(3)",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-P/subject-group-ECFR3694c7fc1368ec8/section-404.1584"
+        },
+        {
+          "kind": "regulation",
+          "citation": "SSA, Cost-of-Living Increase and Other Determinations for 2026, 90 FR 49047 (Nov. 3, 2025)",
+          "url": "https://www.govinfo.gov/content/pkg/FR-2025-11-03/html/2025-19763.htm"
+        }
+      ]
+    },
+    {
+      "id": "cfr-20-404-1592-trial-work-period",
+      "title": "The nine-service-month trial work period preserves SSDI",
+      "classification": "approximated",
+      "errorDirection": "bothDirections",
+      "conventionRationale": "The companion fixture assigns the same 20,281-dollar 2026 total either to a first January service month or to a ninth December service month after entitlement, leaving the other eleven months at zero in each case. Both are still protected trial-work months, so the authority-side annual benefit remains 24,000 dollars on a 2,000-dollar PIA. The annual Plan makes those distinct monthly cases identical and simulate.ts treats both as annual SGA, returning a suspended annual benefit. The opposite monthly concentration can make an annual total look harmless while an SGA month is payable differently, and replacement-spending taxation depends on its funding source; neither tax direction is one-sided.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2026-12-25",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/socialSecurity/disability.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "socialSecurityIncomeSchema",
+              "line": 1480
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/disability.ts",
+          "functions": [
+            {
+              "name": "ssdiSuspendedBySga",
+              "line": 35
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/simulate.test.ts",
+          "line": 479,
+          "note": null,
+          "tests": [
+            {
+              "title": "cannot distinguish protected first and ninth trial-work months from annual SGA",
+              "line": 493
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.1592(a)",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-P/subject-group-ECFR47cbdc321ec526a/section-404.1592"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.1592(b)",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-P/subject-group-ECFR47cbdc321ec526a/section-404.1592"
+        }
+      ]
+    },
+    {
+      "id": "cfr-20-404-1592a-extended-period-of-eligibility",
+      "title": "The 36-month extended period of eligibility tests SGA by month",
+      "classification": "approximated",
+      "errorDirection": "bothDirections",
+      "conventionRationale": "The companion fixtures use the same expressible 20,281-dollar annual wage total after trial work has ended. When it is earned in January alone, January and the next two months are payable under the grace rule and payment restarts from April, for a 24,000-dollar annual benefit on a 2,000-dollar PIA. When it is spread at more than monthly SGA across all twelve months, only the three grace months are payable, for 6,000 dollars. simulate.ts cannot distinguish the two monthly histories and produces its whole-year SGA suspension for both. The taxpayer-tax direction changes with the monthly pattern and with the account used to fill any spending shortfall.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2026-12-25",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/socialSecurity/disability.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "socialSecurityIncomeSchema",
+              "line": 1480
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/disability.ts",
+          "functions": [
+            {
+              "name": "ssdiSuspendedBySga",
+              "line": 35
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/simulate.test.ts",
+          "line": 510,
+          "note": null,
+          "tests": [
+            {
+              "title": "cannot distinguish January-only EPE from every-month SGA on annual wages",
+              "line": 524
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.1592a(a)(2)(i)",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-P/subject-group-ECFR47cbdc321ec526a/section-404.1592a"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.1592a(b)(2)(ii)",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-P/subject-group-ECFR47cbdc321ec526a/section-404.1592a"
+        }
+      ]
+    },
+    {
+      "id": "cfr-20-404-1592b-expedited-reinstatement",
+      "title": "Expedited reinstatement is available within 60 months of work termination",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": "A `disability.onsetAge` is a prospective worker-SSDI switch, not a terminated-entitlement history or a medical finding. Treating a new onset age as a reinstatement would invent all of the facts that distinguish EXR from a new application. The annual SGA suspension is not EXR workflow and must not be presented as one.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "socialSecurityIncomeSchema",
+              "line": 1480
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.1592b",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-P/subject-group-ECFR47cbdc321ec526a/section-404.1592b"
+        }
+      ]
+    },
+    {
+      "id": "cfr-20-404-313-delayed-retirement-credit",
+      "title": "Delayed retirement credits accrue at 2/3 of 1 percent and stop at 70",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The 2/3 of 1 percent rate applies to individuals born after 1 January 1943; earlier cohorts have lower rates that the engine does not model, because a person reaching full retirement age in a projected year is necessarily in the later group.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2027-08-04",
+      "implementedBy": [
+        "packages/engine/src/socialSecurity/benefitFactor.ts",
+        "packages/engine/src/socialSecurity/claimFactor.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/socialSecurity/benefitFactor.ts",
+          "functions": [
+            {
+              "name": "delayedRetirementFactor",
+              "line": 23
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/claimFactor.ts",
+          "functions": [
+            {
+              "name": "claimFactor",
+              "line": 22
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/socialSecurity/benefitFactor.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/socialSecurity/benefitFactor.test.ts",
+          "line": 52,
+          "note": null,
+          "tests": [
+            {
+              "title": "stops crediting at age seventy however long the delay",
+              "line": 56
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.313(b)(1), (b)(2)",
+          "url": "https://www.law.cornell.edu/cfr/text/20/404.313"
+        }
+      ]
+    },
+    {
+      "id": "cfr-20-404-338-survivor-deceased-drc-pass-through",
+      "title": "The deceased worker’s delayed-retirement credits pass through to the survivor base",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The general DRC-accrual rule is registered at cfr-20-404-313-delayed-retirement-credit. This narrower record covers its survivor consequence and is tested without a survivor reduction so the fixture isolates whether the deceased worker’s actual increased amount survives into the base.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2027-08-26",
+      "implementedBy": [
+        "packages/engine/src/socialSecurity/survivorBenefit.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/socialSecurity/survivorBenefit.ts",
+          "functions": [
+            {
+              "name": "survivorBenefitMonthly",
+              "line": 70
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/socialSecurity/survivorBenefit.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/socialSecurity/survivorBenefit.test.ts",
+          "line": 61,
+          "note": "deceased delayed retirement credits",
+          "tests": [
+            {
+              "title": "carries the deceased worker’s delayed credits into the unreduced survivor amount",
+              "line": 66
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 402(e)(2)(C)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.338(b)",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR219bf3e41a78e9f/section-404.338"
+        }
+      ]
+    },
+    {
+      "id": "cfr-20-404-410-early-retirement-reduction",
+      "title": "The early-claim reduction changes rate after 36 months",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The engine works in whole months before full retirement age and does not model the special rules for a benefit that is later recomputed, so the factor is a pure function of the month count.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2027-08-03",
+      "implementedBy": [
+        "packages/engine/src/socialSecurity/benefitFactor.ts",
+        "packages/engine/src/socialSecurity/claimFactor.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/socialSecurity/benefitFactor.ts",
+          "functions": [
+            {
+              "name": "earlyRetirementFactor",
+              "line": 13
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/claimFactor.ts",
+          "functions": [
+            {
+              "name": "claimFactor",
+              "line": 22
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/socialSecurity/benefitFactor.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/socialSecurity/benefitFactor.test.ts",
+          "line": 19,
+          "note": null,
+          "tests": [
+            {
+              "title": "slows the reduction after the thirty-sixth month",
+              "line": 23
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.410(a)",
+          "url": "https://www.law.cornell.edu/cfr/text/20/404.410"
+        }
+      ]
+    },
+    {
+      "id": "cfr-20-404-435-grace-year-monthly-earnings-test",
+      "title": "The grace-year monthly earnings test preserves non-service-month benefits",
+      "classification": "approximated",
+      "errorDirection": "bothDirections",
+      "conventionRationale": "The accepted Plan surface is model/plan.ts: `wagesIncomeSchema` has `annualGross` and `endAge`, while a Social Security stream has one `claimAge`; neither carries service by calendar month, monthly wages, a grace-year designation, or non-service months. simulate.ts applies its annual earnings test to the emitted annual wage amount. The companion fixture gives the engine one 60,000-dollar annual wage total and stands that single observed annual figure against both authority limbs: (1) six July-through-December non-service months and (2) service in all twelve months. The monthly rule pays 8,400 dollars only in the first limb; the annual proxy observably pays zero for both, because the Plan carries no service-month fact and the annual test withholds the entire year's benefit. That collapse of one engine input against both limbs is the approximation.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "socialSecurityIncomeSchema",
+              "line": 1480
+            },
+            {
+              "name": "wagesIncomeSchema",
+              "line": 1431
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/simulate.test.ts",
+          "line": 965,
+          "note": null,
+          "tests": [
+            {
+              "title": "cannot preserve a grace-year non-service-month benefit from annual wages alone",
+              "line": 979
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.435(a), (a)(7)",
+          "url": "https://www.ecfr.gov/current/title-20/section-404.435"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.435(b)(1)",
+          "url": "https://www.ecfr.gov/current/title-20/section-404.435"
+        },
+        {
+          "kind": "agencyGuidance",
+          "citation": "SSA POMS RS 02501.030, § A",
+          "url": "https://secure.ssa.gov/poms.nsf/lnx/0302501030"
+        },
+        {
+          "kind": "agencyGuidance",
+          "citation": "SSA POMS RS 02501.030, § C",
+          "url": "https://secure.ssa.gov/poms.nsf/lnx/0302501030"
+        }
+      ]
+    },
+    {
+      "id": "cfr-20-404-640-application-withdrawal-repayment",
+      "title": "Withdrawal of a benefit application with repayment is outside the Plan",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": "Absence-record surface is model/plan.ts: `socialSecurityIncomeSchema` stores a single `claimAge` alongside PIA and earnings inputs, with no first-entitlement month, written withdrawal request, approval/consent status, repayment amount, prior withdrawal, claim reset, or replacement-claim date. Its `strategiesSchema.retirementActions` accepts no Social Security application-withdrawal or repayment action. No accepted Plan can supply the conjunctive trigger facts without inventing them.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "socialSecurityIncomeSchema",
+              "line": 1480
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.640(b)(3)",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-G/subject-group-ECFR25e4230c435dfbf/section-404.640"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.640(b)(4)(i)",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-G/subject-group-ECFR25e4230c435dfbf/section-404.640"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.640(d)",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-G/subject-group-ECFR25e4230c435dfbf/section-404.640"
+        },
+        {
+          "kind": "agencyGuidance",
+          "citation": "SSA POMS GN 00206.005, § A first bullet (12-month RIB filing)",
+          "url": "https://secure.ssa.gov/poms.nsf/lnx/0200206005"
+        },
+        {
+          "kind": "agencyGuidance",
+          "citation": "SSA POMS GN 00206.005, § A second bullet (repayment)",
+          "url": "https://secure.ssa.gov/poms.nsf/lnx/0200206005"
+        }
+      ]
+    },
+    {
+      "id": "irc-3101-a-oasdi-employee-tax-rate",
+      "title": "The employee-side OASDI rate is a flat statutory percentage",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The rate is carried in the parameter pack and consumed outside the engine, by the Social Security analysis page in the planner package, which the registry cannot name because implementedBy is checked against engine sources. The pack and its type are listed instead, which are the files a later reader would change.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 1990,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2027-08-03",
+      "implementedBy": [
+        "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/params/types.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/data/year2026.ts",
+          "functions": [
+            {
+              "name": "year2026",
+              "line": 16
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/types.ts",
+          "functions": [
+            {
+              "name": "ParameterPack",
+              "line": 53
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/params/params.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/params/params.test.ts",
+          "line": 500,
+          "note": null,
+          "tests": [
+            {
+              "title": "carries the employee side rather than the combined rate",
+              "line": 504
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 3101(a)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section3101&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-86-a-taxable-social-security-two-tier",
+      "title": "Social Security inclusion is two tiers with a capped carry",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The statute caps the carried amount at 4,500 dollars single and 6,000 joint. The engine computes half the spread between the base and adjusted base amounts instead, which equals those figures exactly -- 0.5 x (34,000 - 25,000) and 0.5 x (44,000 - 32,000) -- so the cap stays correct if the thresholds are ever re-indexed, rather than drifting from two hard-coded constants.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2027-08-03",
+      "implementedBy": [
+        "packages/engine/src/tax/federalTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/tax/federalTax.ts",
+          "functions": [
+            {
+              "name": "taxableSocialSecurity",
+              "line": 319
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/federalTax.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/federalTax.test.ts",
+          "line": 156,
+          "note": null,
+          "tests": [
+            {
+              "title": "carries the capped tier-one amount into the 85 percent band",
+              "line": 160
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 86(a)(2)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/86"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 86(b)(2)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/86"
+        }
+      ]
+    },
+    {
+      "id": "irc-86-b-2-provisional-income-modified-agi",
+      "title": "What enters provisional income for taxing Social Security",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The engine adds back only the 911, 931, and 933 exclusions and tax-exempt interest. The other four add-backs in 86(b)(2)(A) are sections 85(c), 135, 137, and 221, which cover unemployment compensation, education savings bond interest, adoption assistance, and student loan interest. None can plausibly appear in a household this engine models alongside Social Security benefits, so omitting them is a scope decision rather than a reading of the statute. Note the base amounts in 86(c) carry no inflation adjustment and have not moved since 1983 and 1993, which is why the engine holds them as unindexed constants.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2027-08-03",
+      "implementedBy": [
+        "packages/engine/src/tax/federalTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/tax/federalTax.ts",
+          "functions": [
+            {
+              "name": "taxableSocialSecurity",
+              "line": 319
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/federalTax.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/federalTax.test.ts",
+          "line": 1731,
+          "note": null,
+          "tests": [
+            {
+              "title": "counts tax-exempt interest in provisional income",
+              "line": 1735
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 86(b)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section86&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 86(b)(2)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section86&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-86-c-provisional-income-thresholds",
+      "title": "The Social Security base amounts are fixed dollars, and the joint figure is not double",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The base amount is zero rather than 25,000 for a married taxpayer who files separately and did not live apart from the spouse for the whole year, which makes the whole benefit taxable at the 85 percent rate. The engine has no married-filing-separately status, so that case cannot arise; the record notes it because a later filing status added without reading 86(c)(1)(C) would inherit the unmarried figure and understate the tax by the largest margin the section allows.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 1994,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2027-08-03",
+      "implementedBy": [
+        "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/tax/federalTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/data/year2026.ts",
+          "functions": [
+            {
+              "name": "year2026",
+              "line": 16
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/federalTax.ts",
+          "functions": [
+            {
+              "name": "taxableSocialSecurity",
+              "line": 319
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/params/params.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/params/params.test.ts",
+          "line": 429,
+          "note": "Values are the joint adjusted base amount, above which up to 85 percent of the benefit is included.",
+          "tests": [
+            {
+              "title": "keeps the joint amounts at the figures the statute states",
+              "line": 434
+            },
+            {
+              "title": "is the opposite of the standard deduction, which does double",
+              "line": 443
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 86(c)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section86&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "pl-118-273-sec-2-3-wep-gpo-repeal",
+      "title": "WEP and GPO are repealed for title II monthly benefits after December 2023",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": "Absence-record surface is model/plan.ts: the Plan has no WEP/GPO flag, non-covered-pension fact, or covered-service fact. A code sweep found no WEP or GPO adjustment in socialSecurity/benefitFactor.ts, socialSecurity/claimFactor.ts, socialSecurity/disability.ts, socialSecurity/familyMaximum.ts, socialSecurity/maritalBenefits.ts, socialSecurity/nra.ts, socialSecurity/piaFromEarnings.ts, socialSecurity/ssaWageData.ts, socialSecurity/survivorBenefit.ts, or projection/simulate.ts — consistent with those trigger facts being unrepresentable for any startYear.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2027-08-26",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "socialSecurityIncomeSchema",
+              "line": 1480
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "P.L. 118-273, § 2(a)",
+          "url": "https://www.govinfo.gov/content/pkg/PLAW-118publ273/pdf/PLAW-118publ273.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "P.L. 118-273, § 3(a)",
+          "url": "https://www.govinfo.gov/content/pkg/PLAW-118publ273/pdf/PLAW-118publ273.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "P.L. 118-273, § 4",
+          "url": "https://www.govinfo.gov/content/pkg/PLAW-118publ273/pdf/PLAW-118publ273.pdf"
+        }
+      ]
+    },
+    {
+      "id": "poms-rs-00615-320-rib-lim-after-survivor-reduction",
+      "title": "RIB-LIM is tested after the widow(er) age reduction",
+      "classification": "approximated",
+      "errorDirection": "bothDirections",
+      "conventionRationale": "DEFECT — no behavior change in this registry slice. The code evaluates `max(deceasedActualMonthly, 0.825 × deceasedPiaMonthly)` before `survivorReductionFactor`, while POMS evaluates the widow(er) benefit after the age reduction before imposing the larger RIB-LIM amount. The companion fixture sets a 2,000-dollar PIA, a 1,400-dollar deceased reduced benefit, and a survivor claim at 63 against a 66-year survivor FRA: the authority-derived amount is 1,650 dollars because the widow(er) amount after reduction for age (2,000 x .8575 = 1,715) exceeds both limits, while the engine reduces that 1,650-dollar limit again. The observed engine amount is 1,414.875 - the 1,650-dollar limit reduced again by the .8575 age factor - pinned in the companion fixture.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2027-08-26",
+      "implementedBy": [
+        "packages/engine/src/socialSecurity/survivorBenefit.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/socialSecurity/survivorBenefit.ts",
+          "functions": [
+            {
+              "name": "survivorBenefitMonthly",
+              "line": 70
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/socialSecurity/survivorBenefit.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/socialSecurity/survivorBenefit.test.ts",
+          "line": 125,
+          "note": null,
+          "tests": [
+            {
+              "title": "pins the engine’s pre-reduction RIB-LIM ordering",
+              "line": 139
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 402(e)(2)(D)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.338(c)",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR219bf3e41a78e9f/section-404.338"
+        },
+        {
+          "kind": "agencyGuidance",
+          "citation": "SSA POMS RS 00615.320, § A.2",
+          "url": "https://secure.ssa.gov/poms.nsf/lnx/0300615320"
+        },
+        {
+          "kind": "agencyGuidance",
+          "citation": "SSA POMS RS 00615.320, § A.3",
+          "url": "https://secure.ssa.gov/poms.nsf/lnx/0300615320"
+        }
+      ]
+    },
+    {
+      "id": "poms-rs-00615-482-arf-crediting-months",
+      "title": "ARF credits every full or partial work-deduction month",
+      "classification": "approximated",
+      "errorDirection": "bothDirections",
+      "conventionRationale": "The annualized convention is explicit in simulate.ts: after applying one annual earnings-test amount, it calculates `Math.round((withheld / benefit) * payableMonths)` and caps that integer to the year's payable months. That is not a record of the calendar months carrying a full or partial work deduction. The companion fixture withholds 2,000 dollars in each of the five below-FRA working years: the statute charges 1,400 dollars to the first month and 600 to the next, so POMS credits two months per year, ten in all, and a post-FRA year pays 17,800 dollars. The engine's annual ratio rounds to one credited month per year, five in all, and observably pays 17,300.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/socialSecurity/claimFactor.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/claimFactor.ts",
+          "functions": [
+            {
+              "name": "claimFactor",
+              "line": 22
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/simulate.test.ts",
+          "line": 900,
+          "note": null,
+          "tests": [
+            {
+              "title": "rounds annual withholding to one ARF crediting month per year",
+              "line": 908
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 403(f)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section403&num=0&edition=prelim"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.415(a)",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-E/section-404.415"
+        },
+        {
+          "kind": "agencyGuidance",
+          "citation": "SSA POMS RS 00615.482, § C.1",
+          "url": "https://secure.ssa.gov/poms.nsf/lnx/0300615482"
+        },
+        {
+          "kind": "agencyGuidance",
+          "citation": "SSA POMS RS 00615.482, § C.1 note",
+          "url": "https://secure.ssa.gov/poms.nsf/lnx/0300615482"
+        }
+      ]
+    },
+    {
+      "id": "ssa-2026-trustees-oasdi-depletion-default-haircut",
+      "title": "The prebuilt Social Security haircut scenario is the 2026 Trustees combined-OASDI projection",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "A projection scenario, not law: current law simply stops paying beyond trust fund income once reserves deplete, and Congress may act before 2034. Two simplifications are deliberate. The scenario holds the cut flat at 17 percent, where the report projects payability declining from 83 percent at depletion to 65 percent by 2100 - a one-step stand-in for a declining path. And the combined OASDI basis is used rather than the OASI-standalone projection (fourth quarter of 2032, 78 percent payable) because the combined basis is the conventional indicator of the program as a whole.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-29",
+      "dueOn": "2026-12-27",
+      "implementedBy": [
+        "packages/engine/src/params/index.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/index.ts",
+          "functions": [
+            {
+              "name": "TRUSTEES_DEFAULT_SS_HAIRCUT",
+              "line": 40
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/params/params.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/params/params.test.ts",
+          "line": 518,
+          "note": null,
+          "tests": [
+            {
+              "title": "defaults to the combined-OASDI depletion projection",
+              "line": 525
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "agencyGuidance",
+          "citation": "A Summary of the 2026 Annual Reports, Social Security and Medicare Boards of Trustees",
+          "url": "https://www.ssa.gov/oact/trsum/"
+        }
+      ]
+    },
+    {
+      "id": "ssa-table-4c6-period-life-table-vintage",
+      "title": "The longevity tables are the SSA period life table, one vintage behind the live host",
+      "classification": "approximated",
+      "errorDirection": "bothDirections",
+      "conventionRationale": "The table is refreshed deliberately, not silently: longevity feeds Monte Carlo horizons and annuitization comparisons, so a vintage bump changes results and belongs in a reviewed change, and this record is what goes stale to force that review. Direction is both ways - longer published expectancies lengthen horizons for some households and shift claiming and conversion comparisons in either direction.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-29",
+      "dueOn": "2026-12-27",
+      "implementedBy": [
+        "packages/engine/src/longevity/ssaPeriod2022.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/longevity/ssaPeriod2022.ts",
+          "functions": [
+            {
+              "name": "FEMALE",
+              "line": 21
+            },
+            {
+              "name": "MALE",
+              "line": 8
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/montecarlo/mortality.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/montecarlo/mortality.test.ts",
+          "line": 58,
+          "note": null,
+          "tests": [
+            {
+              "title": "carries the 2022-period life expectancies at 65 for both sexes",
+              "line": 66
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "agencyGuidance",
+          "citation": "SSA Actuarial Life Table (Table 4C6)",
+          "url": "https://www.ssa.gov/oact/STATS/table4c6.html"
+        }
+      ]
+    },
+    {
+      "id": "usc-42-402-b-2-spousal-half-of-pia",
+      "title": "A spousal benefit is half the PIA and earns no delayed credits",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "Section 402(b)(2) is expressly subject to subsection (q), which supplies the early-claim reduction. The engine applies a steeper schedule for the spousal case than for a retirement benefit -- 25/36 of 1 percent for the first 36 months rather than 5/9 -- and models the deemed-filing era only, assuming the worker has already filed so the spouse is eligible.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2027-08-03",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/socialSecurity/claimFactor.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/claimFactor.ts",
+          "functions": [
+            {
+              "name": "spousalBenefitFactor",
+              "line": 51
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/socialSecurity/claimFactor.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/socialSecurity/claimFactor.test.ts",
+          "line": 19,
+          "note": null,
+          "tests": [
+            {
+              "title": "stops growing at full retirement age",
+              "line": 23
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 402(b)(2)",
+          "url": "https://www.law.cornell.edu/uscode/text/42/402"
+        }
+      ]
+    },
+    {
+      "id": "usc-42-402-c-2-ssdi-spouse-auxiliary",
+      "title": "An SSDI spouse auxiliary is one-half PIA before the disability-family reduction",
+      "classification": "approximated",
+      "errorDirection": "bothDirections",
+      "conventionRationale": "The disability limb of section 402(c)(1) quoted on this record lets a husband qualify on a worker entitled to disability insurance benefits without waiting for that worker to claim old-age benefits. simulate.ts nevertheless calculates `higherPayableMonths` from the worker stream's 62–70 `claimAge`, even though the SSDI branch disregards it for the worker payment. Section 425(a) also makes the worker's disability-benefit suspension suspend auxiliaries on that wage record, while the generic post-top-up SGA pass zeros only the worker. Benefit errors can affect taxable Social Security or trigger a taxable, tax-free, or gain-bearing replacement withdrawal, so the taxpayer-tax sign varies.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/socialSecurity/familyMaximum.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/familyMaximum.ts",
+          "functions": [
+            {
+              "name": "capAuxiliaryForFamilyMaximum",
+              "line": 54
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/simulate.test.ts",
+          "line": 393,
+          "note": "claimAge gate",
+          "tests": [
+            {
+              "title": "does not start the SSDI spouse auxiliary before the worker reaches claimAge",
+              "line": 402
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.test.ts",
+          "line": 429,
+          "note": "425(a) suspension limb",
+          "tests": [
+            {
+              "title": "zeros only the SSDI worker when wages exceed annual SGA, leaving the spouse paid",
+              "line": 439
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 402(c)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 402(c)(2)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 425(a)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section425&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "usc-42-402-d-2-child-survivor-benefit",
+      "title": "Child survivor benefits are outside the Plan",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": "Absence-record surface is model/plan.ts: `household.hasQualifyingDependent` is a tax-filing boolean, not a child identity, dependency, age, student, disability, or Social Security-benefit record. familyMaximum.ts therefore caps only a modeled current-spouse auxiliary and has no child allocation to price. No accepted Plan supplies the trigger facts for a child survivor benefit.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2027-08-26",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "socialSecurityIncomeSchema",
+              "line": 1480
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 402(d)(2)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 403(a)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section403&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "usc-42-402-d-2-ssdi-child-auxiliary",
+      "title": "Living-child SSDI auxiliary benefits are outside the Plan",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": "Absence-record surface is model/plan.ts: `household.hasQualifyingDependent` is a tax-filing boolean, not a child identity, dependency, age, student, disability, or Social Security-benefit record. familyMaximum.ts therefore caps only a modeled current-spouse auxiliary and has no child allocation to price. No accepted Plan supplies the trigger facts for a living-child SSDI auxiliary.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "householdSchema",
+              "line": 201
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 402(d)(2)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "usc-42-402-e-1-a-current-survivor-remarriage-before-60",
+      "title": "A current-spouse survivor’s later remarriage is outside the Plan",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": "Absence-record surface is model/plan.ts: a Social Security stream for a current household spouse has no post-death remarriage age, date, or status. formerSpouseSchema has `remarriedAtAge` only for an already-deceased former spouse, which is why maritalBenefits.ts can model that separate input path but cannot supply the missing future fact for the current-couple survivor pass. No accepted Plan can therefore trigger the current-spouse rule without inventing a remarriage.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2027-08-26",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "socialSecurityIncomeSchema",
+              "line": 1480
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 402(e)(1)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 402(e)(3)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 402(e)(3)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.336(e)",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR219bf3e41a78e9f/section-404.336"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.336(e)(1)",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR219bf3e41a78e9f/section-404.336"
+        }
+      ]
+    },
+    {
+      "id": "usc-42-402-e-1-b-ii-cfr-20-404-335-disabled-widow-age-50-prescribed-period",
+      "title": "A disabled widow(er) may qualify at 50 only with timely statutory disability",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": "This folds the age-50 and seven-year limbs into one record. Section 402(e)(1)(B)(ii) makes the age exception conditional on disability beginning before paragraph (4)'s period ends, and 20 CFR 404.335(c)(1) supplies the seven-year timing test. A separate record would name the same missing DWB claim surface and would not identify an independent implemented calculation. The generic survivor path and the generic worker-SSDI onset field do not make a DWB claim: formerSpouseSchema has no death date or prescribed-period anchor, and the disability object has only an onset age.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "socialSecurityIncomeSchema",
+              "line": 1480
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 402(e)(1)(B)(ii)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.335(c), (c)(1)",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR219bf3e41a78e9f/section-404.335"
+        },
+        {
+          "kind": "agencyGuidance",
+          "citation": "SSA POMS DI 10110.001, § A",
+          "url": "https://secure.ssa.gov/poms.nsf/lnx/0410110001"
+        },
+        {
+          "kind": "agencyGuidance",
+          "citation": "SSA POMS DI 10110.001, § D",
+          "url": "https://secure.ssa.gov/poms.nsf/lnx/0410110001"
+        }
+      ]
+    },
+    {
+      "id": "usc-42-402-e-2-a-survivor-own-delay-no-drc",
+      "title": "A survivor’s own delay past survivor FRA earns no delayed-retirement credits",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "This rule is intentionally distinct from the deceased worker’s DRC pass-through. The survivor amount is not a retirement claim by the survivor, so the helper permits the deceased’s already-earned credits in the base but does not manufacture new credits from the survivor’s post-FRA delay.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2027-08-26",
+      "implementedBy": [
+        "packages/engine/src/socialSecurity/survivorBenefit.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/socialSecurity/survivorBenefit.ts",
+          "functions": [
+            {
+              "name": "survivorBenefitMonthly",
+              "line": 70
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/socialSecurity/survivorBenefit.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/socialSecurity/survivorBenefit.test.ts",
+          "line": 183,
+          "note": null,
+          "tests": [
+            {
+              "title": "does not add credits when the survivor waits from FRA to 70",
+              "line": 191
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 402(e)(2)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.313(a)",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR545f4aa361a6356/section-404.313"
+        }
+      ]
+    },
+    {
+      "id": "usc-42-402-e-2-widow-full-pia",
+      "title": "A widow benefit is the whole PIA, not half of it",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "This record covers the whole-PIA limb only: its fixture holds the deceased at FRA so the whole-versus-half readings discriminate without delayed credits in play. The subparagraph (C) deeming that carries the deceased’s delayed credits into the survivor base is fixture-pinned at cfr-20-404-338-survivor-deceased-drc-pass-through. The early-deceased RIB-LIM amount and its ordering relative to the survivor’s own age reduction are registered separately at poms-rs-00615-320-rib-lim-after-survivor-reduction.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2027-08-26",
+      "implementedBy": [
+        "packages/engine/src/socialSecurity/survivorBenefit.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/socialSecurity/survivorBenefit.ts",
+          "functions": [
+            {
+              "name": "survivorBenefitMonthly",
+              "line": 70
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/socialSecurity/survivorBenefit.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/socialSecurity/survivorBenefit.test.ts",
+          "line": 39,
+          "note": null,
+          "tests": [
+            {
+              "title": "pays the whole primary insurance amount to an unreduced survivor",
+              "line": 43
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 402(e)(2)(A)",
+          "url": "https://www.law.cornell.edu/uscode/text/42/402"
+        }
+      ]
+    },
+    {
+      "id": "usc-42-402-i-lump-sum-death-payment",
+      "title": "The $255 Social Security lump-sum death payment is outside the Plan",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": "The engine has no death-payment surface at all — no simulate.ts pass emits a lump sum and no accepted input feeds one — and the further statutory facts (fully or currently insured status as such, the application within two years, alternative payees) have no Plan fields. A married couple where one dies is expressible, so outOfScope does not rest on unrepresentable household facts. A one-time $255 payment is an absence, not an approximation, because the engine emits no figure the rule could correct.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2027-08-26",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "socialSecurityIncomeSchema",
+              "line": 1480
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 402(i)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.390",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR1c2245c503cd9d5/section-404.390"
+        }
+      ]
+    },
+    {
+      "id": "usc-42-402-k-3-a-survivor-own-dual-entitlement-offset",
+      "title": "Own retirement and survivor benefits combine to the higher amount, not both full amounts",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The ledger publishes one Social Security amount rather than separate technical-entitlement components. That representation is valid for this rule because the statutory offset leaves the total equal to the larger amount; it must not be read as allowing both unreduced full benefits.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2027-08-26",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/simulate.test.ts",
+          "line": 1099,
+          "note": null,
+          "tests": [
+            {
+              "title": "steps the survivor up to the deceased spouse’s larger benefit without adding both",
+              "line": 1107
+            },
+            {
+              "title": "keeps the survivor’s own larger benefit when the deceased’s amount is smaller",
+              "line": 1134
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 402(k)(3)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "agencyGuidance",
+          "citation": "SSA POMS RS 00615.301, § A.1",
+          "url": "https://secure.ssa.gov/poms.nsf/lnx/0300615301"
+        }
+      ]
+    },
+    {
+      "id": "usc-42-402-q-1-widow-survivor-early-reduction-schedule",
+      "title": "A survivor claim at 60 starts at 71.5 percent and rises to the survivor FRA amount",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "This record is confined to the reduction curve after a survivor FRA has been supplied. The nra.ts age-60-cohort error for 1961-and-later survivors is recorded separately at usc-42-416-l-survivor-fra-age-60-attainment-cohorts; it is not a competing reading of this helper’s month interpolation.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2027-08-26",
+      "implementedBy": [
+        "packages/engine/src/socialSecurity/survivorBenefit.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/socialSecurity/survivorBenefit.ts",
+          "functions": [
+            {
+              "name": "survivorReductionFactor",
+              "line": 56
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/socialSecurity/survivorBenefit.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/socialSecurity/survivorBenefit.test.ts",
+          "line": 80,
+          "note": null,
+          "tests": [
+            {
+              "title": "reduces a non-disabled age-60 survivor to 71.5 percent of the base",
+              "line": 87
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/survivorBenefit.test.ts",
+          "line": 100,
+          "note": "midpoint claim at 63",
+          "tests": [
+            {
+              "title": "prorates the widow reduction by the varying fraction at a midpoint before survivor FRA",
+              "line": 112
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 402(e)(1)(B)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 402(q)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 402(q)(1)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 402(q)(1)(B)(i)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 402(q)(6)(A)(iii)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 402(q)(6)(B)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "agencyGuidance",
+          "citation": "SSA POMS RS 00615.301, § B.1.b",
+          "url": "https://secure.ssa.gov/poms.nsf/lnx/0300615301"
+        }
+      ]
+    },
+    {
+      "id": "usc-42-402-r-1-2-deemed-filing-old-age-and-spousal",
+      "title": "Current eligible old-age and current-spouse benefits are deemed filed together",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2027-08-26",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "socialSecurityIncomeSchema",
+              "line": 1480
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/simulate.test.ts",
+          "line": 578,
+          "note": null,
+          "tests": [
+            {
+              "title": "deems own filed so year-one benefit is the own amount, not restricted spouse-only",
+              "line": 585
+            },
+            {
+              "title": "exposes exactly one claimAge and no restricted-application vocabulary on the SS stream",
+              "line": 608
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 402(r)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 402(r)(2)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 402(r)(3)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 402, Editorial Notes, Effective Date of 2015 Amendment (BBA 2015 § 831(a)(3))",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "usc-42-402-r-survivor-deemed-filing-exemption",
+      "title": "Survivor benefits are exempt from deemed filing, but a whole-plan survivor/own switch is not representable",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": "model/plan.ts defines a Social Security stream with one `claimAge` whose years are schema-clamped to 62–70. simulate.ts derives both the own and survivor ages from that same stream field, so no accepted Plan can supply the two claim dates a switch requires (including a survivor-only claim at 60). The separate planner-ui survivorSwitching view illustrates two dates but does not make them ledger inputs.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2027-08-26",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "socialSecurityIncomeSchema",
+              "line": 1480
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 402(r)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 402(r)(2)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "agencyGuidance",
+          "citation": "SSA POMS GN 00204.035, § B",
+          "url": "https://secure.ssa.gov/poms.nsf/lnx/0200204035"
+        }
+      ]
+    },
+    {
+      "id": "usc-42-402-worker-claim-window-62-to-70",
+      "title": "Worker old-age benefits are claimable from 62, and delayed credits stop at 70",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The claim-age refusal above 70y0m is an engine convention, not a statutory bar: 402(w)(2)(A) stops increment months at 70, which makes every later claim weakly dominated, and the planner prices only claim ages that can change the benefit. The refusal below 62y0m tracks 402(a)(2) directly.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-29",
+      "dueOn": "2027-08-29",
+      "implementedBy": [
+        "packages/engine/src/decisions/generators.ts",
+        "packages/engine/src/socialSecurity/benefitFactor.ts",
+        "packages/engine/src/socialSecurity/claimFactor.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/decisions/generators.ts",
+          "functions": [
+            {
+              "name": "SS_GRID_CLAIM_AGES",
+              "line": 270
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/benefitFactor.ts",
+          "functions": [
+            {
+              "name": "retirementBenefitPiaFactor",
+              "line": 32
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/claimFactor.ts",
+          "functions": [
+            {
+              "name": "claimFactor",
+              "line": 22
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/socialSecurity/claimFactor.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/socialSecurity/claimFactor.test.ts",
+          "line": 79,
+          "note": "claim ages outside 62y0m-70y0m are refused, not priced",
+          "tests": [
+            {
+              "title": "refuses one month below the floor and one month above the ceiling",
+              "line": 87
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 402(a)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 402(w)(2)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "usc-42-403-a-2-family-maximum-formula",
+      "title": "The family maximum is marginal across three bend points",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The bend points here are not the ones used for the primary insurance amount itself; section 403(a)(2) has its own set, indexed separately, which is why the engine carries a second table rather than reusing the PIA bend points.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2026-12-02",
+      "implementedBy": [
+        "packages/engine/src/socialSecurity/familyMaximum.ts",
+        "packages/engine/src/socialSecurity/ssaWageData.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/socialSecurity/familyMaximum.ts",
+          "functions": [
+            {
+              "name": "familyMaximumMonthlyFromPia",
+              "line": 29
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/ssaWageData.ts",
+          "functions": [
+            {
+              "name": "FAMILY_MAXIMUM_BEND_POINTS",
+              "line": 140
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/socialSecurity/familyMaximum.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/socialSecurity/familyMaximum.test.ts",
+          "line": 24,
+          "note": null,
+          "tests": [
+            {
+              "title": "applies each rate only to the PIA inside its own band",
+              "line": 28
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 403(a)(1)",
+          "url": "https://www.law.cornell.edu/uscode/text/42/403"
+        }
+      ]
+    },
+    {
+      "id": "usc-42-403-a-6-ssdi-family-maximum",
+      "title": "The SSDI family maximum is AIME-based, not the retirement/survivor bend-point formula",
+      "classification": "approximated",
+      "errorDirection": "bothDirections",
+      "conventionRationale": "Section 403(a)(6)'s 85/100/150 percentages are the controlling disability-family formula. POMS RS 00615.736 is omitted here because it instructs the ordinary PIA bend-point maximum for people who become disabled — the exact retirement/survivor reading this record rejects. The sign is not one-sided in taxpayer-tax terms: a too-large or too-small Social Security amount changes taxable benefits, and a spending shortfall can instead be funded with withdrawals whose tax character depends on the account used.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/socialSecurity/familyMaximum.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/familyMaximum.ts",
+          "functions": [
+            {
+              "name": "capAuxiliaryForFamilyMaximum",
+              "line": 54
+            },
+            {
+              "name": "familyMaximumMonthlyFromPia",
+              "line": 29
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/simulate.test.ts",
+          "line": 357,
+          "note": null,
+          "tests": [
+            {
+              "title": "uses the retirement/survivor maximum for an SSDI worker and spouse",
+              "line": 365
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 403(a)(6)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section403&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "usc-42-403-f-1-earnings-test-month-charging",
+      "title": "Excess earnings are charged to calendar months, not annual benefit fractions",
+      "classification": "approximated",
+      "errorDirection": "bothDirections",
+      "conventionRationale": "The annual earnings amount itself is implemented by the existing `usc-42-403-f-3-retirement-earnings-test` record. This distinct convention record covers its missing month-charging unit: simulate.ts neither carries an ordered sequence of monthly entitlements nor consumes excess earnings against that sequence. In the companion fixture each below-FRA working year's 2,000 dollars of excess earnings must charge a 1,400-dollar first month and a 600-dollar second month, two partial-or-full deduction months per year; the annual ratio rounds to one per year, and the observed post-FRA benefit is 17,300 dollars against the statute-derived 17,800. This record and `poms-rs-00615-482-arf-crediting-months` share a single engine observable (the annualized month count feeds the ARF), so their fixtures intentionally pin the same produced figure from distinct legal limbs. A charging-only implementation could not be verified apart from the ARF credit with this observable — reclassifying either record requires a distinct charging observable (ordered months or unequal monthly entitlements).",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/simulate.test.ts",
+          "line": 917,
+          "note": "shares the ARF observable",
+          "tests": [
+            {
+              "title": "collapses the charging sequence into the annual ratio",
+              "line": 926
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 403(f)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section403&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "usc-42-403-f-3-retirement-earnings-test",
+      "title": "The earnings test withholds half the excess, a third in the FRA year",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "Withholding is applied annually against annual wages rather than month by month, and the withheld months are credited back at full retirement age through an adjustment-reduction-factor approximation. The statute operates on monthly benefits payable, so this is an annual-granularity convention rather than a reading of section 403(f). The cap at benefits payable is not part of that convention -- it is section 403(b) -- but it is worth naming here because it means a fixture whose wages are high enough for the cap to bind tests the cap rather than the 403(f)(3) rate.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2026-12-02",
+      "implementedBy": [
+        "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/data/year2026.ts",
+          "functions": [
+            {
+              "name": "year2026",
+              "line": 16
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/simulate.test.ts",
+          "line": 741,
+          "note": null,
+          "tests": [
+            {
+              "title": "withholds half the excess for a beneficiary under FRA all year",
+              "line": 745
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 403(f)(3)",
+          "url": "https://www.law.cornell.edu/uscode/text/42/403"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 403(b)(1)",
+          "url": "https://www.law.cornell.edu/uscode/text/42/403"
+        }
+      ]
+    },
+    {
+      "id": "usc-42-403-f-8-earnings-test-exempt-amounts",
+      "title": "The earnings test exempt amounts are wage-indexed, and the higher one is not a multiple of the lower",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The projection carries both exempt amounts forward on the general inflation assumption because the engine has no national-average-wage path, and the plan supplies no wage growth input from which one could be built. That is a stand-in rather than a reading of section 203(f)(8)(B), and it biases the projected exempt amount low in the direction that withholds more benefit than the Act would, since wages have historically outrun prices. It is recorded here rather than left in the code because the fix is a new assumption rather than a change of formula.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2026-12-01",
+      "implementedBy": [
+        "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/data/year2026.ts",
+          "functions": [
+            {
+              "name": "year2026",
+              "line": 16
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/params/params.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/params/params.test.ts",
+          "line": 395,
+          "note": "Values are the lower annual exempt amount, twelve times the monthly one.",
+          "tests": [
+            {
+              "title": "derives the lower exempt amount from the wage index rather than from prices",
+              "line": 400
+            },
+            {
+              "title": "derives the higher exempt amount from its own base and reference year",
+              "line": 413
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "42 USC 403(f)(8)(B)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section403&num=0&edition=prelim"
+        },
+        {
+          "kind": "regulation",
+          "citation": "SSA, Cost-of-Living Increase and Other Determinations for 2026, 90 FR 49047 (Nov. 3, 2025)",
+          "url": "https://www.govinfo.gov/content/pkg/FR-2025-11-03/html/2025-19763.htm"
+        }
+      ]
+    },
+    {
+      "id": "usc-42-415-a-1-pia-bend-point-formula",
+      "title": "The PIA formula is marginal across two bend points",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The bend points are not fixed dollar figures. Section 415(a)(1)(B) sets them at 180 and 1,085 dollars for 1979 eligibility and re-derives them for every later year from the ratio of the national average wage index two years prior to the 1977 index, which is why the engine carries a table by eligibility year rather than a constant.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2026-12-02",
+      "implementedBy": [
+        "packages/engine/src/socialSecurity/piaFromEarnings.ts",
+        "packages/engine/src/socialSecurity/ssaWageData.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/socialSecurity/piaFromEarnings.ts",
+          "functions": [
+            {
+              "name": "piaMonthlyFromAime",
+              "line": 103
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/ssaWageData.ts",
+          "functions": [
+            {
+              "name": "PIA_BEND_POINTS",
+              "line": 88
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/socialSecurity/piaFromEarnings.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/socialSecurity/piaFromEarnings.test.ts",
+          "line": 27,
+          "note": null,
+          "tests": [
+            {
+              "title": "applies each rate only to the earnings inside its own band",
+              "line": 31
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 415(a)(1)(A), (a)(1)(A)(i)-(iii)",
+          "url": "https://www.law.cornell.edu/uscode/text/42/415"
+        }
+      ]
+    },
+    {
+      "id": "usc-42-415-b-2-b-disability-freeze-aime-exclusion",
+      "title": "A disability freeze excludes disability years from AIME computation",
+      "classification": "approximated",
+      "errorDirection": "bothDirections",
+      "conventionRationale": "The fixture uses a 1964 worker with 33 pre-disability earnings years indexed to 69,846 dollars each and seven wholly disabled zero-earnings years from 2019 through 2025, with `disability.onsetAge` 55 (2019 onset). The statutory reading excludes the seven disability years, then applies the ordinary five-year dropout to 33 elapsed years: 28 × 69,846 ÷ (28 × 12), floored, equals an AIME of 5,820. The code has the onset fact but no exclusion pass; it carries two of the seven zeros after its five-year dropout and observably returns an AIME of 5,487 (33 × 69,846 ÷ 420, floored). The simulate-level companion observes the benefit paid from that unfrozen AIME against the freeze-side benefit. A lower or higher Social Security benefit can alter taxable benefits or the tax character of replacement withdrawals, so the taxpayer-tax sign varies.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/socialSecurity/piaFromEarnings.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/piaFromEarnings.ts",
+          "functions": [
+            {
+              "name": "computePiaFromEarnings",
+              "line": 125
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/socialSecurity/disability.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/socialSecurity/disability.test.ts",
+          "line": 94,
+          "note": "unit AIME",
+          "tests": [
+            {
+              "title": "does not exclude seven wholly disabled zero-earnings years from the AIME divisor",
+              "line": 103
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/disability.test.ts",
+          "line": 118,
+          "note": "simulate with onsetAge",
+          "tests": [
+            {
+              "title": "pays the unfrozen-AIME SSDI benefit even when disability.onsetAge is set",
+              "line": 127
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 415(b)(2)(B)(ii)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 415(b)(2)(B)(iii)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "usc-42-415-f-2-post-entitlement-pia-recomputation",
+      "title": "Post-entitlement covered earnings can recompute a higher PIA",
+      "classification": "approximated",
+      "errorDirection": "bothDirections",
+      "conventionRationale": "simulate.ts has a real PIA-from-earnings path, so this is not an absence record: before projecting any year it resolves each Social Security stream's PIA once from `socialSecurityIncomeSchema.earnings` and optional pre-retirement `earningsProjection`. Later `wagesIncomeSchema` income is not appended to that history or recomputed. Closing 415(f)(2) also requires widening the base-year window in piaFromEarnings.ts (`computePiaFromEarnings` clamps `lastBaseYear` to eligibility-1), which is why that file stays in implementedBy. The companion fixture gives a fully insured worker ten AWI-level covered years (2013-2022), claims at 2029 FRA, and supplies 10,000 dollars of covered wages in 2030. The authority-side recomputation replaces a zero in the top-35 set: indexed earnings rise by 10,000, AIME from 1,518 to 1,542, and 2024 second-band PIA from 1,166.60 to 1,174.30 (delta 7.70, above the one-dollar threshold), so 2031 pays 14,091.60; the engine observably leaves the initially resolved 1,166.60 PIA in force and pays 13,999.20.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/socialSecurity/piaFromEarnings.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/piaFromEarnings.ts",
+          "functions": [
+            {
+              "name": "computePiaFromEarnings",
+              "line": 125
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/simulate.test.ts",
+          "line": 1078,
+          "note": null,
+          "tests": [
+            {
+              "title": "does not recompute a higher PIA from post-FRA covered wages",
+              "line": 1086
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 415(a)(1)(A)(ii)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 415(a)(1)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 415(b)(2)(A)(i)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 415(b)(2)(B)(i)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 415(b)(2)(B)(ii)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 415(f)(2)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 415(f)(2)(C)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 415(f)(2)(D)(i)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 415(f)(4)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.211(b)(2)",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-C/subject-group-ECFR7fa0e3667334188/section-404.211"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.211(e)(2)",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-C/subject-group-ECFR7fa0e3667334188/section-404.211"
+        }
+      ]
+    },
+    {
+      "id": "usc-42-416-l-retirement-age-schedule",
+      "title": "Retirement age keys on attaining age 62, not on birth year",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "Because the statute turns on attaining age 62 rather than on a birth year, the boundary moves for anyone born on 1 January: the Social Security Administration treats a person as attaining an age on the day before their birthday, so a 1 January 1960 birth attains 62 in 2021 and falls under the 66-plus-factor branch rather than the flat 67. The engine expresses this as an effective birth year of the prior calendar year.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-29",
+      "dueOn": "2027-08-29",
+      "implementedBy": [
+        "packages/engine/src/socialSecurity/nra.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/socialSecurity/nra.ts",
+          "functions": [
+            {
+              "name": "fraForBirthYear",
+              "line": 27
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/socialSecurity/nra.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/socialSecurity/nra.test.ts",
+          "line": 16,
+          "note": null,
+          "tests": [
+            {
+              "title": "sends a January 1 birth to the prior cohort",
+              "line": 20
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 416(l)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section416&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 416(l)(2)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section416&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "usc-42-416-l-survivor-fra-age-60-attainment-cohorts",
+      "title": "Survivor FRA follows age-60 attainment cohorts, reaching 67 for 1962+",
+      "classification": "approximated",
+      "errorDirection": "bothDirections",
+      "conventionRationale": "DEFECT — no behavior change in this registry slice. survivorFraForBirthYear returns 66y8m for 1960 and every later effective birth year. For an effective 1962 birth, age 60 is attained in 2022, so section 416(l)(1)(E) supplies age 67; the companion fixture pins the statute-derived 804 months against the observed engine value of 800 months.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2027-08-26",
+      "implementedBy": [
+        "packages/engine/src/socialSecurity/nra.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/socialSecurity/nra.ts",
+          "functions": [
+            {
+              "name": "survivorFraForBirthYear",
+              "line": 62
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/socialSecurity/survivorBenefit.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/socialSecurity/survivorBenefit.test.ts",
+          "line": 152,
+          "note": null,
+          "tests": [
+            {
+              "title": "pins the separate survivor-FRA table for the 1962 age-60 cohort",
+              "line": 168
+            },
+            {
+              "title": "pins the 1961 age-60 cohort at the engine’s 66y8m cap, not statutory 66y10m",
+              "line": 175
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 416(l)(1)(D)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section416&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 416(l)(1)(E)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section416&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 416(l)(2)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section416&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 416(l)(3)(B)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section416&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "usc-42-423-a-2-402-q-retirement-claim-before-disability-onset",
+      "title": "A reduced retirement claim before later disability onset carries into DIB",
+      "classification": "approximated",
+      "errorDirection": "bothDirections",
+      "conventionRationale": "DEFECT — no behavior change in this registry slice. For claimAge 62, onsetAge 65, FRA 67, and a 2,000-dollar PIA, the authority-side amounts are 16,800 before onset (70 percent retirement factor) and 19,200 from onset (402(q)(2) treats retirement age as attained in the first DIB month, so a 36-month reduction period yields an 80 percent factor). The engine observably pays 0 before onset and 24,000 from onset. Extra or missing benefit changes taxable Social Security income, and a spending shortfall can be funded from accounts whose tax character differs, so the taxpayer-tax sign is not one-sided.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "socialSecurityIncomeSchema",
+              "line": 1480
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/simulate.test.ts",
+          "line": 320,
+          "note": null,
+          "tests": [
+            {
+              "title": "pays nothing before onset and the full PIA afterward when claimAge precedes onsetAge",
+              "line": 328
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 423(a)(2)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section423&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 402(q)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 402(q)(2)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "usc-42-423-a-2-cfr-20-404-317-ssdi-full-pia-fra-conversion",
+      "title": "SSDI pays the full PIA until retirement age, then the PIA continues as retirement",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The stream's `claimAge` is deliberately ignored while its disability onset is active before FRA, so importing the ordinary age-62 factor would give the wrong amount. At FRA the code stays on the SSDI branch and only relabels the published source to own retirement at the same full PIA, rather than treating the change as a new claim or a DRC opportunity. The companion fixture extends the observed object through the first post-FRA year so the no-DRC continuation is pinned, and adds a 1959-born (FRA 66y10m) cohort observation for the fra.years-only gate.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/socialSecurity/disability.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/disability.ts",
+          "functions": [
+            {
+              "name": "ssdiMonthlyBenefit",
+              "line": 22
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/simulate.test.ts",
+          "line": 211,
+          "note": "integer FRA 67 cohort",
+          "tests": [
+            {
+              "title": "pays the full PIA during SSDI, at FRA, and in the first post-FRA year",
+              "line": 219
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.test.ts",
+          "line": 242,
+          "note": "1959 FRA 66y10m cohort",
+          "tests": [
+            {
+              "title": "observes the unreduced PIA for a 66y10m FRA cohort around fra.years",
+              "line": 250
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 423(a)(2)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section423&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 423(a)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section423&num=0&edition=prelim"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.317",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR545f4aa361a6356/section-404.317"
+        }
+      ]
+    },
+    {
+      "id": "usc-42-423-c-2-ssdi-five-month-waiting-period",
+      "title": "SSDI begins only after a five-month waiting period",
+      "classification": "approximated",
+      "errorDirection": "bothDirections",
+      "conventionRationale": "DEFECT — no behavior change in this registry slice. For a January-equivalent onset and a 2,000-dollar PIA, section 423 pays at most seven months (14,000) in the onset year while the engine observably pays twelve (24,000). Extra early benefit raises taxable Social Security income; when spending is instead funded from a traditional account the missing-benefit case replaces each dollar with a fully taxable withdrawal, so the taxpayer-tax sign flips with the funding channel.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/socialSecurity/disability.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/disability.ts",
+          "functions": [
+            {
+              "name": "inSsdiWindow",
+              "line": 44
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/simulate.test.ts",
+          "line": 287,
+          "note": null,
+          "tests": [
+            {
+              "title": "pays a full onset-year SSDI benefit where the waiting period leaves at most seven months",
+              "line": 295
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 423(c)(2)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section423&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 423(a)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section423&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "usc-42-426-b-disability-trial-work-medicare-continuation",
+      "title": "Disabled-worker Medicare continuation after trial work is not modeled",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": "This is an input and result boundary. socialSecurityIncomeSchema carries only disability.onsetAge, and disability.ts/simulate.ts use it to price an annual SSDI stream; neither accepts a trial-work ending date, subsequent termination, continuing impairment, counterfactual inability to engage in substantial gainful activity, or Part A coverage. A generic healthcare expense cannot turn those absent facts into an entitlement interval. The 78-month cap and the substituted 15-month rule are quoted exactly; no CMS guidance establishing the queue's 93-month formulation was staged.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/socialSecurity/disability.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "socialSecurityIncomeSchema",
+              "line": 1480
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/disability.ts",
+          "functions": [
+            {
+              "name": "inSsdiWindow",
+              "line": 44
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 426(b)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section426&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "usc-42-430-b-contribution-and-benefit-base",
+      "title": "The OASDI contribution and benefit base is wage-indexed, not price-indexed",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The parameter pack carries the base but no engine calculator reads it yet, and the engine has no national-average-wage path to carry it forward on: the plan supplies a general inflation assumption and nothing else. When a calculator does read it, scaling by general inflation will be a stand-in for wage indexing rather than a reading of section 230, and this record is where that has to be said. The same caution applies to the retirement earnings test exempt amounts, which are wage-indexed by the same ratio.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2026-12-01",
+      "implementedBy": [
+        "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/params/types.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/data/year2026.ts",
+          "functions": [
+            {
+              "name": "year2026",
+              "line": 16
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/types.ts",
+          "functions": [
+            {
+              "name": "ParameterPack",
+              "line": 53
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/params/params.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/params/params.test.ts",
+          "line": 374,
+          "note": "The price reading takes the 2025 base of 176,100 and the benefit increase the same notice announces for 2026.",
+          "tests": [
+            {
+              "title": "derives the base from the wage index rather than from prices",
+              "line": 379
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "42 USC 430(b)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section430&num=0&edition=prelim"
+        },
+        {
+          "kind": "regulation",
+          "citation": "SSA, Cost-of-Living Increase and Other Determinations for 2026, 90 FR 49047 (Nov. 3, 2025)",
+          "url": "https://www.govinfo.gov/content/pkg/FR-2025-11-03/html/2025-19763.htm"
+        }
+      ]
+    }
+  ]
+}

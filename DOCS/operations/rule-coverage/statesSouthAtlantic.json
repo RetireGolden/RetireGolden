@@ -1,0 +1,779 @@
+{
+  "kind": "retiregolden.rules-coverage.shard",
+  "version": 5,
+  "module": "statesSouthAtlantic",
+  "rules": [
+    {
+      "id": "dc-code-47-1803-03-federal-standard-and-ss",
+      "title": "The District excludes federally taxable Social Security and follows the federal standard-deduction choice",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:DC",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/params/state/index.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "DC",
+              "line": 276
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/index.ts",
+          "functions": [
+            {
+              "name": "conformStateStandardDeduction",
+              "line": 90
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 1668,
+          "note": null,
+          "tests": [
+            {
+              "title": "omits the District Social Security subtraction from the taxable base",
+              "line": 1684
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "D.C. Code 47-1803.02(a)(2)(L)",
+          "url": "https://code.dccouncil.gov/us/dc/council/code/sections/47-1803.02"
+        },
+        {
+          "kind": "statute",
+          "citation": "D.C. Code 47-1803.03(c)",
+          "url": "https://code.dccouncil.gov/us/dc/council/code/sections/47-1803.03"
+        }
+      ]
+    },
+    {
+      "id": "de-code-30-1106-social-security-retirement-subtractions",
+      "title": "Delaware subtracts federally taxable Social Security and up to $12,500 of retirement income at age 60",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:DE",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "DE",
+              "line": 259
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            },
+            {
+              "name": "retirementExclusion",
+              "line": 40
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 1855,
+          "note": "Social Security limb",
+          "tests": [
+            {
+              "title": "subtracts Delaware Social Security included in federal AGI",
+              "line": 1871
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 1881,
+          "note": "retirement-age limb",
+          "tests": [
+            {
+              "title": "subtracts the $12,500 Delaware retirement cap from age 60",
+              "line": 1897
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Del. Code tit. 30, 1106(b)(3)(b)(2)",
+          "url": "https://delcode.delaware.gov/title30/c011/sc02/index.html"
+        },
+        {
+          "kind": "statute",
+          "citation": "Del. Code tit. 30, 1106(b)(4)",
+          "url": "https://delcode.delaware.gov/title30/c011/sc02/index.html"
+        }
+      ]
+    },
+    {
+      "id": "fl-const-7-5-a-income-tax-prohibited",
+      "title": "No Florida income tax reaches a natural person",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:FL",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-05",
+      "dueOn": "2027-08-05",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "FL",
+              "line": 293
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 495,
+          "note": null,
+          "tests": [
+            {
+              "title": "leaves a Florida retiree with no state base at all",
+              "line": 511
+            },
+            {
+              "title": "would tax the same income if the imposition reached natural persons",
+              "line": 516
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Fla. Const. art. VII, sec. 5(a)",
+          "url": "https://www.flsenate.gov/Laws/Constitution/Article7"
+        },
+        {
+          "kind": "statute",
+          "citation": "Fla. Stat. 220.11(1)",
+          "url": "https://www.flsenate.gov/Laws/Statutes/2025/220.11"
+        },
+        {
+          "kind": "statute",
+          "citation": "Fla. Stat. 220.03(1)(z)",
+          "url": "https://www.flsenate.gov/Laws/Statutes/2025/220.03"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Florida Tax Handbook 2025 (Office of Economic and Demographic Research), Personal Income Tax",
+          "url": "https://edr.state.fl.us/Content/revenues/reports/tax-handbook/taxhandbook2025.pdf"
+        }
+      ]
+    },
+    {
+      "id": "ga-code-48-7-27-retirement-and-social-security-exclusion",
+      "title": "Georgia has a $35,000 retirement-income tier at ages 62-64 and separately subtracts taxable Social Security",
+      "classification": "approximated",
+      "errorDirection": "overstatesTax",
+      "conventionRationale": "Georgia's official Code host is script-rendered and did not yield quote-verifiable operative text. The Department of Revenue is deliberately admitted as the state's own publisher because its retirement page supplies the operative filing instruction and points taxpayers to its own IT-511 booklet and worksheet, which supplies the two dollar amounts. This is the same primary-agency-publication boundary used where a usable code text is unavailable, not a secondary summary substituted for one.",
+      "contraryReading": null,
+      "jurisdiction": "state:GA",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/params/state/types.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "GA",
+              "line": 300
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/types.ts",
+          "functions": [
+            {
+              "name": "StateRetirementExclusion",
+              "line": 25
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 1764,
+          "note": "age-62-through-64 retirement-income limb",
+          "tests": [
+            {
+              "title": "pins the missing Georgia age-63 retirement exclusion",
+              "line": 1781
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Georgia Department of Revenue, Retirement Income Exclusion",
+          "url": "https://dor.georgia.gov/retirement-income-exclusion"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "Georgia Department of Revenue, 2025 Form 500 Schedule 1, Retirement Income Exclusion worksheet",
+          "url": "https://dor.georgia.gov/document/document/2025-it-511-individual-income-tax-booklet/download"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "Georgia Department of Revenue, 2025 Form 500 Schedule 1, line 8",
+          "url": "https://dor.georgia.gov/document/document/2025-it-511-individual-income-tax-booklet/download"
+        }
+      ]
+    },
+    {
+      "id": "md-tax-10-207-social-security-exclusion",
+      "title": "Maryland subtracts Social Security and railroad-retirement payments",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:MD",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "MD",
+              "line": 424
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 2201,
+          "note": null,
+          "tests": [
+            {
+              "title": "keeps Social Security out of Maryland adjusted gross income",
+              "line": 2216
+            },
+            {
+              "title": "would add the federally taxable portion if Maryland taxed it",
+              "line": 2222
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Md. Tax-General 10-207(a)",
+          "url": "https://mgaleg.maryland.gov/2026RS/Statute_Web/gtg/10-207.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "Md. Tax-General 10-207(j)",
+          "url": "https://mgaleg.maryland.gov/2026RS/Statute_Web/gtg/10-207.pdf"
+        }
+      ]
+    },
+    {
+      "id": "md-tax-10-209-pension-exclusion",
+      "title": "Maryland’s pension subtraction is not a flat $41,200 of all retirement",
+      "classification": "approximated",
+      "errorDirection": "bothDirections",
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:MD",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2026-12-25",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "MD",
+              "line": 424
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            },
+            {
+              "name": "retirementExclusion",
+              "line": 40
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/stateTax.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
+          "line": 1154,
+          "note": null,
+          "tests": [
+            {
+              "title": "grants a 65-year-old $41,200 of IRA exclusion the statute withholds",
+              "line": 1173
+            },
+            {
+              "title": "reaches the statute once the cap is withheld from the IRA",
+              "line": 1182
+            },
+            {
+              "title": "also withholds the cap at 64, which is the age the statute names",
+              "line": 1190
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Md. Tax-General 10-209(a)(1)",
+          "url": "https://mgaleg.maryland.gov/mgawebsite/Laws/StatuteText?article=gtg&section=10-209&enactments=false"
+        },
+        {
+          "kind": "statute",
+          "citation": "Md. Tax-General 10-209(a)(2)(i)",
+          "url": "https://mgaleg.maryland.gov/mgawebsite/Laws/StatuteText?article=gtg&section=10-209&enactments=false"
+        },
+        {
+          "kind": "statute",
+          "citation": "Md. Tax-General 10-209(b)",
+          "url": "https://mgaleg.maryland.gov/mgawebsite/Laws/StatuteText?article=gtg&section=10-209&enactments=false"
+        },
+        {
+          "kind": "statute",
+          "citation": "Md. Tax-General 10-209(b)(1)–(2)",
+          "url": "https://mgaleg.maryland.gov/mgawebsite/Laws/StatuteText?article=gtg&section=10-209&enactments=false"
+        },
+        {
+          "kind": "statute",
+          "citation": "Md. Tax-General 10-209(c)",
+          "url": "https://mgaleg.maryland.gov/mgawebsite/Laws/StatuteText?article=gtg&section=10-209&enactments=false"
+        }
+      ]
+    },
+    {
+      "id": "ncgs-105-153-5-social-security-exclusion",
+      "title": "North Carolina subtracts Title II Social Security benefits",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:NC",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "NC",
+              "line": 629
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 2509,
+          "note": null,
+          "tests": [
+            {
+              "title": "subtracts Title II Social Security from North Carolina income",
+              "line": 2518
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "N.C. Gen. Stat. §105-153.5(b)(3)",
+          "url": "https://www.ncleg.gov/EnactedLegislation/Statutes/HTML/BySection/Chapter_105/GS_105-153.5.html"
+        }
+      ]
+    },
+    {
+      "id": "sc-code-12-6-1170-retirement-income-deduction",
+      "title": "South Carolina’s retirement deduction has a tier below age 65",
+      "classification": "approximated",
+      "errorDirection": "overstatesTax",
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:SC",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2027-08-04",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "states.SC",
+              "line": 724
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            },
+            {
+              "name": "retirementExclusion",
+              "line": 40
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/stateTax.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
+          "line": 327,
+          "note": null,
+          "tests": [
+            {
+              "title": "gives a 62-year-old South Carolinian no deduction at all",
+              "line": 343
+            },
+            {
+              "title": "reaches the statute’s figure once the lower tier is modelled",
+              "line": 348
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "S.C. Code 12-6-1170(A)(1)",
+          "url": "https://www.scstatehouse.gov/code/t12c006.php"
+        },
+        {
+          "kind": "statute",
+          "citation": "S.C. Code 12-6-1170(B)",
+          "url": "https://www.scstatehouse.gov/code/t12c006.php"
+        }
+      ]
+    },
+    {
+      "id": "va-code-58-1-322-03-age-deduction-and-social-security",
+      "title": "Virginia phases the age-65 deduction out against adjusted federal AGI",
+      "classification": "approximated",
+      "errorDirection": "bothDirections",
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:VA",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "VA",
+              "line": 774
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            },
+            {
+              "name": "retirementExclusion",
+              "line": 40
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 2736,
+          "note": null,
+          "tests": [
+            {
+              "title": "pins the high-income phase-out that the retirement-cap mapping misses",
+              "line": 2755
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 2762,
+          "note": "wage-only age deduction limb",
+          "tests": [
+            {
+              "title": "pins the opposite direction when an age-65 filer has wages but no modeled pension",
+              "line": 2776
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Va. Code §58.1-322.03(5)",
+          "url": "https://law.lis.virginia.gov/vacode/title58.1/chapter3/section58.1-322.03/"
+        }
+      ]
+    },
+    {
+      "id": "wv-code-11-21-12-social-security-full-modification",
+      "title": "West Virginia exempts all Social Security from 2026",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:WV",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2027-08-04",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "WV",
+              "line": 795
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 542,
+          "note": null,
+          "tests": [
+            {
+              "title": "keeps every dollar of Social Security out of the West Virginia base",
+              "line": 555
+            },
+            {
+              "title": "would add the federally taxable portion under the pre-2026 treatment",
+              "line": 560
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "W. Va. Code 11-21-12(c)(8)(A)",
+          "url": "https://code.wvlegislature.gov/11-21-12/"
+        },
+        {
+          "kind": "statute",
+          "citation": "W. Va. Code 11-21-12(c)(8)(B)",
+          "url": "https://code.wvlegislature.gov/11-21-12/"
+        },
+        {
+          "kind": "statute",
+          "citation": "W. Va. Code 11-21-12(c)(8)(E)",
+          "url": "https://code.wvlegislature.gov/11-21-12/"
+        },
+        {
+          "kind": "statute",
+          "citation": "W. Va. Code 11-21-12(c)(8)(F)",
+          "url": "https://code.wvlegislature.gov/11-21-12/"
+        }
+      ]
+    }
+  ]
+}

@@ -328,6 +328,45 @@ void _classificationLiteralGuards
 
 export const TAX_RULE_REGISTRY = Object.freeze(registry)
 
+/**
+ * The same modules the spread above composes, paired with their file basenames,
+ * as data rather than syntax. The spread has to stay a spread — that is what
+ * keeps `TaxRuleId` a closed literal union — so this list is written beside it
+ * and must be kept in step; `taxRuleRegistry.conformance.test.ts` fails when it
+ * drifts from `records/` on disk, and its per-module key counts must still sum
+ * to the registry total, which is what catches a duplicate id the spread would
+ * otherwise swallow.
+ *
+ * Consumers use it for the *contention unit*: the coverage ledger is sharded
+ * one JSON file per module (`DOCS/operations/rule-coverage/<module>.json`) and
+ * the dispatch tooling locks a handoff to the modules it actually edits, so two
+ * re-verifications in different domains no longer collide on one 30k-line file.
+ */
+export const TAX_RULE_RECORD_MODULES: readonly (readonly [
+  string,
+  Readonly<Record<string, TaxRuleRecord>>,
+])[] = Object.freeze([
+  ['annuities', annuityRecords],
+  ['charitableDeductions', charitableDeductionRecords],
+  ['charitableDistributions', charitableDistributionRecords],
+  ['contributionAndDeferralLimits', contributionAndDeferralLimitRecords],
+  ['earlyDistributionsAndSepp', earlyDistributionAndSeppRecords],
+  ['healthSavingsAccounts', healthSavingsAccountRecords],
+  ['individualIncomeTax', individualIncomeTaxRecords],
+  ['investmentIncomeAndBasis', investmentIncomeAndBasisRecords],
+  ['iraBasisAndRollovers', iraBasisAndRolloverRecords],
+  ['medicareAndHealthCoverage', medicareAndHealthCoverageRecords],
+  ['requiredMinimumDistributions', requiredMinimumDistributionRecords],
+  ['rothAccounts', rothAccountRecords],
+  ['socialSecurity', socialSecurityRecords],
+  ['statesMidwest', midwestStateRecords],
+  ['statesNortheast', northeastStateRecords],
+  ['statesSouthAtlantic', southAtlanticStateRecords],
+  ['statesSouthCentral', southCentralStateRecords],
+  ['statesWest', westStateRecords],
+  ['transfersAndUnmodeledRegimes', transferAndUnmodeledRegimeRecords],
+] as const)
+
 export type TaxRuleId = keyof typeof TAX_RULE_REGISTRY
 
 export const taxRuleIds = Object.freeze(

@@ -1,0 +1,52 @@
+name: Resolve Gate
+
+# Every install job in CI runs --frozen-lockfile, which skips resolution and
+# therefore the supply-chain gates in pnpm-workspace.yaml (trustPolicy,
+# minimumReleaseAge, blockExoticSubdeps). This workflow re-resolves from
+# scratch so a regression fails here instead of on every contributor's next
+# non-frozen `pnpm install`.
+
+on:
+  pull_request:
+    paths:
+      - pnpm-workspace.yaml
+      - pnpm-lock.yaml
+      - '**/package.json'
+  schedule:
+    - cron: '17 6 * * 1' # weekly: registry-side changes can shift a fresh resolve
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fresh-resolve:
+    name: From-scratch resolve exercises trust policy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+
+      - name: Resolve with no lockfile
+        run: |
+          rm pnpm-lock.yaml
+          pnpm install --lockfile-only
+
+      - name: Fail on stale trustPolicyExclude entries
+        run: |
+          # Each exemption names an exact version. If a fresh resolve no
+          # longer picks that tuple, the exemption waives nothing and should
+          # be dropped rather than sit as a standing trust waiver.
+          fail=0
+          while read -r entry; do
+            [ -n "$entry" ] || continue
+            if ! grep -qF "$entry" pnpm-lock.yaml; then
+              echo "::error file=pnpm-workspace.yaml::trustPolicyExclude entry '$entry' no longer appears in a fresh resolve; drop the exemption"
+              fail=1
+            fi
+          done < <(tr -d '\r' < pnpm-workspace.yaml | sed -n '/^trustPolicyExclude:/,/^[^ ]/p' | grep '^  - ' | sed "s/^  - //; s/'//g")
+          exit "$fail"

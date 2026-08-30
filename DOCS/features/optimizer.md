@@ -7,8 +7,10 @@ menu) the rest of the planner provides. Several tax-depth refinements that sharp
 withdrawal/conversion engine ride alongside it.
 
 **Code:** pure solver in [engine/strategies/optimizer.ts](../../packages/engine/src/strategies/optimizer.ts) and
-[engine/projection/optimizePlan.ts](../../packages/engine/src/projection/optimizePlan.ts); Web Worker in
-[packages/planner-ui/src/optimize/](../../packages/planner-ui/src/optimize/); UI in [planner/OptimizePage.tsx](../../packages/planner-ui/src/planner/OptimizePage.tsx).
+[engine/projection/optimizePlan.ts](../../packages/engine/src/projection/optimizePlan.ts); the run request and its
+spawner in [packages/planner-ui/src/optimize/](../../packages/planner-ui/src/optimize/), on the planner's shared
+worker entry [workers/planner.worker.ts](../../packages/planner-ui/src/workers/planner.worker.ts) (`optimize`
+channel); UI in [planner/OptimizePage.tsx](../../packages/planner-ui/src/planner/OptimizePage.tsx).
 
 ## Design decisions (and why)
 
@@ -187,7 +189,7 @@ durability, sustainable spending, and opt-in downside resilience) rank them with
 constraints. Other plan-patch generators — bounded asset-location swaps (`assetLocationGenerator`, surfaced on
 the **Insights** `asset-location` card when a plan opts into static allocation on multiple accounts; not part of
 the Roth conversion tournament) and annuity purchases (`annuityPurchaseGenerator` — cover-the-floor SPIA /
-QLAC-at-cap / no-purchase, see [domain rules §17](../domain/domain-rules-reference.md)) — plug into the same
+QLAC-at-cap / no-purchase, see [domain rules §17](../domain/domain-rules-reference/17-guaranteed-income-annuity-purchases.md)) — plug into the same
 `evaluateCandidate` path. The survivor-liquidity policy honors an optional user-set **survivor reserve
 target** (`strategies.survivorReserveTarget`, today's dollars) as a hard floor, disqualifying any candidate
 whose deflated survivor-year investable balance falls below it. Insights previews use the same evaluator, so an
@@ -284,7 +286,8 @@ agree exactly:
 
 - **"How much can I spend?"** page on the Optimize rail
   ([planner/SpendingSolverPage.tsx](../../packages/planner-ui/src/planner/SpendingSolverPage.tsx)) — runs the solver in a
-  dedicated Web Worker ([optimize/spendingSolve.worker.ts](../../packages/planner-ui/src/optimize/spendingSolve.worker.ts)),
+  Web Worker on the `spendingSolve` channel ([optimize/spendingRunner.ts](../../packages/planner-ui/src/optimize/spendingRunner.ts)
+  over [workers/planner.worker.ts](../../packages/planner-ui/src/workers/planner.worker.ts)),
   shows the answer + evidence, and can add a scenario at the solved level.
 - **Insights `spending-headroom` detector**
   ([engine/insights/detectors/spendingHeadroom.ts](../../packages/engine/src/insights/detectors/spendingHeadroom.ts))
@@ -378,8 +381,11 @@ Both are negligible against UX budget — the solve itself is not the cost. Beha
 converted in the low bracket, spread conversions across years, and never tripped the IRMAA threshold.
 
 **Bundle cost:** `highs.wasm` is **3.0 MB** (3,078,627 bytes) plus 67 KB of `highs.js` glue. The wasm dominates
-and is lazy-loaded only when Optimize is invoked (the worker imports it via `highs/build/highs.wasm?url` so Vite
-emits it as a separate asset that never enters the main/app chunk).
+and is fetched only when Optimize is invoked: the worker entry imports it via `highs/runtime?url` (the package's
+exported alias for `build/highs.wasm`), which yields a URL string and makes Vite emit the wasm as a separate
+asset that never enters the main/app chunk — and `runOptimizeRequest` imports the `highs.js` glue dynamically,
+so the worker's other channels pay nothing for either. The wasm is also excluded from the PWA precache and
+runtime-cached instead ([operations/bundle-budget.md](../operations/bundle-budget.md)).
 
 **Decision:** MILP via HiGHS-WASM is viable — proceed with the MILP path, no heuristic fallback needed. The
-only cost to manage is the one-time 3 MB wasm load, handled by lazy-loading the worker.
+only cost to manage is the one-time 3 MB wasm load, deferred until the optimize channel actually runs.

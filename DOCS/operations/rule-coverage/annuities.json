@@ -1,0 +1,377 @@
+{
+  "kind": "retiregolden.rules-coverage.shard",
+  "version": 5,
+  "module": "annuities",
+  "rules": [
+    {
+      "id": "irc-72-b-annuity-exclusion-ratio",
+      "title": "Exclusion ratio for a non-qualified annuity, and the cap at unrecovered investment",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "Table V rather than Table I is the correct table because Tables V through VIII govern any contract whose investment includes post-June-1986 money, which is every contract a plan under this engine could be buying. The distinction is load-bearing and not cosmetic: at age 66 the Table I male multiple is 14.4 and the Table V multiple is 19.2, a difference of about a third in the expected return and therefore in the ratio.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2027-08-03",
+      "implementedBy": [
+        "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/params/index.ts",
+        "packages/engine/src/projection/annuityForms.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/data/year2026.ts",
+          "functions": [
+            {
+              "name": "year2026",
+              "line": 16
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/index.ts",
+          "functions": [
+            {
+              "name": "annuityExpectedReturnMultiple",
+              "line": 182
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/annuityForms.ts",
+          "functions": [
+            {
+              "name": "annuityExclusionMultiple",
+              "line": 48
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/guaranteedIncomeEstate.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/guaranteedIncomeEstate.test.ts",
+          "line": 348,
+          "note": null,
+          "tests": [
+            {
+              "title": "taxes each payment net of the ratio fixed at the annuity starting date",
+              "line": 356
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/guaranteedIncomeEstate.test.ts",
+          "line": 372,
+          "note": null,
+          "tests": [
+            {
+              "title": "taxes the whole payment once the investment in the contract is recovered",
+              "line": 376
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 72(b)(1)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/72"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 72(b)(2)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/72"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.72-5(a)(1)",
+          "url": "https://www.law.cornell.edu/cfr/text/26/1.72-5"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.72-9",
+          "url": "https://www.law.cornell.edu/cfr/text/26/1.72-9"
+        }
+      ]
+    },
+    {
+      "id": "irc-72-e-8-B-employer-plan-pro-rata-basis",
+      "title": "Employer-plan after-tax basis comes out pro rata, not first",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2027-08-04",
+      "implementedBy": [
+        "packages/engine/src/actions/traditionalEmployerPlanWithdrawalCharacter.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/traditionalEmployerPlanWithdrawalCharacter.ts",
+          "functions": [
+            {
+              "name": "classifyTraditionalEmployerPlanWithdrawal",
+              "line": 288
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/actions/traditionalEmployerPlanWithdrawalCharacter.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/actions/traditionalEmployerPlanWithdrawalCharacter.test.ts",
+          "line": 397,
+          "note": null,
+          "tests": [
+            {
+              "title": "recovers basis in the investment-to-account-balance ratio",
+              "line": 406
+            },
+            {
+              "title": "leaves a distribution smaller than the basis partly taxable",
+              "line": 419
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 72(e)(8)(B)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 72(e)(8)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-72-e-8-D-pre-1987-employee-contributions",
+      "title": "Pre-1987 employee contributions are recovered before the pro-rata rule bites",
+      "classification": "approximated",
+      "errorDirection": "bothDirections",
+      "conventionRationale": "Approximated rather than out of scope because the engine applies the ordinary pro-rata rule and returns a number; it never refuses for want of the grandfathered layer. The direction is recorded as both because this is a timing error: tax is overstated in the early withdrawal years while basis the statute would return in full is instead spread across the account, and understated later as that basis comes out. It nets to zero over a full drawdown, but an annual projection is exactly where the year matters, and the overstated years are the ones a retiree is drawing on the account. Worth recording rather than dismissing as historical, because this engine audience is the cohort it reaches: a participant who made after-tax contributions to a plan that allowed in-service withdrawals in 1986 is in their late sixties or older today, and the balance has had forty years to grow, so the grandfathered layer can be large in dollars even where it is small as a fraction of the account. It is not modelled because the two facts it needs, the December 31, 1986 investment in the contract and whether the plan permitted pre-separation withdrawal on May 5, 1986, appear on no statement a household can produce and would have to come from the plan administrator.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2027-08-04",
+      "implementedBy": [
+        "packages/engine/src/actions/traditionalEmployerPlanWithdrawalCharacter.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/traditionalEmployerPlanWithdrawalCharacter.ts",
+          "functions": [
+            {
+              "name": "classifyTraditionalEmployerPlanWithdrawal",
+              "line": 288
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/seppHsaAndCharacter.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/seppHsaAndCharacter.approximation.test.ts",
+          "line": 660,
+          "note": "ordinary income on a distribution inside the grandfathered layer",
+          "tests": [
+            {
+              "title": "taxes four fifths of a distribution the statute returns whole",
+              "line": 669
+            },
+            {
+              "title": "carries no pre-1987 layer and no May 5, 1986 plan-terms flag to carry one",
+              "line": 685
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 72(e)(8)(D)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "treas-reg-1-72-5-b-2-joint-and-survivor-expected-return",
+      "title": "Expected return for a joint and survivor annuity paying a reduced survivor amount",
+      "classification": "approximated",
+      "errorDirection": "understatesTax",
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2027-08-03",
+      "implementedBy": [
+        "packages/engine/src/montecarlo/mortality.ts",
+        "packages/engine/src/projection/annuityForms.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/montecarlo/mortality.ts",
+          "functions": [
+            {
+              "name": "jointLastSurvivorExpectancy",
+              "line": 57
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/annuityForms.ts",
+          "functions": [
+            {
+              "name": "annuityExclusionMultiple",
+              "line": 48
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/annuityAndProperty.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/annuityAndProperty.approximation.test.ts",
+          "line": 159,
+          "note": null,
+          "tests": [
+            {
+              "title": "the accepted figure is Example 2 arithmetic, not a number chosen here",
+              "line": 181
+            },
+            {
+              "title": "understates the expected return prescribed by Table VI",
+              "line": 188
+            },
+            {
+              "title": "varies by sex, which a unisex Table VI cannot do",
+              "line": 197
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.72-5(b)(2)",
+          "url": "https://www.law.cornell.edu/cfr/text/26/1.72-5"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.72-5(b)(2), Example 2",
+          "url": "https://www.law.cornell.edu/cfr/text/26/1.72-5"
+        }
+      ]
+    },
+    {
+      "id": "treas-reg-1-72-7-refund-feature-investment-adjustment",
+      "title": "Adjustment for a period-certain guarantee on a life annuity",
+      "classification": "approximated",
+      "errorDirection": "bothDirections",
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2027-08-03",
+      "implementedBy": [
+        "packages/engine/src/projection/annuityForms.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/annuityForms.ts",
+          "functions": [
+            {
+              "name": "annuityExclusionMultiple",
+              "line": 48
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/annuityAndProperty.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/annuityAndProperty.approximation.test.ts",
+          "line": 81,
+          "note": "a guarantee longer than the single-life multiple",
+          "tests": [
+            {
+              "title": "the accepted multiple is the pack Table V entry, not a figure chosen here",
+              "line": 95
+            },
+            {
+              "title": "raises the denominator to the certain period instead of adjusting the investment",
+              "line": 102
+            },
+            {
+              "title": "makes no adjustment at all where the guarantee is shorter than the life multiple",
+              "line": 113
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 72(c)(2)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/72"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.72-7(b)",
+          "url": "https://www.law.cornell.edu/cfr/text/26/1.72-7"
+        }
+      ]
+    }
+  ]
+}

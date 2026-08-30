@@ -45,7 +45,7 @@ targets, annual rebalancing trades back to target (realizing taxable gains throu
 opt-out honored), a brokerage account's taxable yield follows the mix, and Monte Carlo shocks each class
 with documented correlations. Class assumptions are an editable Assumptions-level table with sourced
 defaults; accounts without an allocation are unchanged. Rules + sources:
-[domain-rules-reference.md §15](../domain/domain-rules-reference.md). The decision engine's
+[domain-rules-reference.md §15](../domain/domain-rules-reference/15-asset-classes-allocation-and-rebalancing-opt-in.md). The decision engine's
 `assetLocationGenerator` proposes bounded asset-location swaps (bonds → traditional, stocks →
 taxable/Roth) as plan patches priced on the exact ledger. When multiple accounts opt into static allocation,
 the Insights `asset-location` card previews the exact-ledger winner.
@@ -56,10 +56,10 @@ carry an optional **purchase event** — trading liquid assets for guaranteed in
 deferred **QLAC**), with exclusion-ratio taxation and, for a QLAC, its premium excluded from the RMD base.
 The decision engine's `annuityPurchaseGenerator` proposes bounded purchase candidates (cover-the-floor SPIA /
 QLAC-at-cap / no-purchase) on the same exact ledger. Rules + sources:
-[domain-rules-reference.md §17](../domain/domain-rules-reference.md).
+[domain-rules-reference.md §17](../domain/domain-rules-reference/17-guaranteed-income-annuity-purchases.md).
 
 **Annuity depth v2 + pension and home-equity decisions** (2026-07-08, all opt-in/no-op-default;
-[domain rules §19](../domain/domain-rules-reference.md)): annuities carry a **payout form** — life-only
+[domain rules §19](../domain/domain-rules-reference/19-annuity-payout-forms-the-annuitization-sweep.md)): annuities carry a **payout form** — life-only
 (default), life with an N-year **period certain**, or **joint & survivor** with a chosen continuation share —
 with non-qualified exclusion-ratio taxation extended per form
 ([engine/projection/annuityForms.ts](../../packages/engine/src/projection/annuityForms.ts), planning-grade
@@ -155,7 +155,7 @@ One-time goals (amount + year). Healthcare:
   Opt-in **SSA-44 redetermination** (`expenses.healthcare.ssa44`) models Form SSA-44 relief after a
   qualifying life-changing event (a couple's first death; optionally each retirement year): affected premium
   years use min(lookback, prior-year) MAGI, priced in-solve by the Roth optimizer and never raising a premium
-  ([domain rules §7](../domain/domain-rules-reference.md)).
+  ([domain rules §7](../domain/domain-rules-reference/07-medicare-and-irmaa-2026.md)).
 - Optional long-term-care shock (deterministic episode + Monte-Carlo shock) — see [insurance.md](insurance.md).
 
 ## 5. Contributions and accumulation (pre-retirement)
@@ -213,7 +213,7 @@ data-driven, and every eligible donor has their own). It is **not** conditional 
 beyond the owner's RMD are debited straight from donor-owned IRAs. Separately, a named `qcd` retirement
 action identifies the donor, the source IRA, and the charity, and the annual ledger commits it per donor
 ([taxes.md § Named QCD actions](taxes.md#named-qcd-actions)). A **QLAC** annuity purchase (§2,
-[domain rules §17](../domain/domain-rules-reference.md)) removes its premium from the RMD base until the
+[domain rules §17](../domain/domain-rules-reference/17-guaranteed-income-annuity-purchases.md)) removes its premium from the RMD base until the
 deferred payouts begin. The inherited-account **10-year rule** is modeled (forced
 distributions to the post-death deadline — [strategies/inheritedIra.ts](../../packages/engine/src/strategies/inheritedIra.ts)).
 Code: [rmd/rmd.ts](../../packages/engine/src/rmd/rmd.ts).

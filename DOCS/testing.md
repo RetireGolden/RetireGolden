@@ -132,8 +132,9 @@ Every change to a calculated rule carries this checklist:
 1. Add or update the **smallest atomic oracle test** for the changed rule.
 2. Add an **integration test through `simulatePlan`** if the rule affects cash flow, tax, MAGI, balances,
    or warnings.
-3. Update [domain/domain-rules-reference.md](domain/domain-rules-reference.md) (rule + source URL) and the
-   relevant `features/*` doc.
+3. Update the rule's own section under [domain/domain-rules-reference/](domain/domain-rules-reference/)
+   (rule + source URL) — the section file, not the
+   [index](domain/domain-rules-reference.md) — and the relevant `features/*` doc.
 4. If a current-year parameter changed, update provenance
    (`packages/engine/src/params/provenance.ts`) and [maintenance-schedule.md](maintenance-schedule.md).
 5. If a characterization snapshot changed, include a review note explaining why.
