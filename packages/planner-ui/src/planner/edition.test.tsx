@@ -7,7 +7,7 @@
  * while a differently-licensed, account-backed host stays factually correct.
  */
 import 'fake-indexeddb/auto'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { MemoryRouter, useRoutes } from 'react-router'
@@ -20,6 +20,7 @@ import { DisclaimerPage } from './DisclaimerPage'
 import { ExamplesPage } from './examples/ExamplesPage'
 import { PlannerEditionProvider } from './PlannerEditionProvider'
 import { waitForSelector } from '../testSupport/settle'
+import { LAZY_ROUTE_PRELOAD_TIMEOUT_MS, preloadLazyRoutes } from '../testSupport/lazyRoutes'
 
 let container: HTMLDivElement
 let root: Root
@@ -150,6 +151,17 @@ describe('PlannerEditionProvider overrides', () => {
 })
 
 describe('PlannerEdition in the plan workspace (route-group host)', () => {
+  // These are the only tests here that mount `plan/*`, which is behind
+  // `lazy()`; the Examples and Disclaimer cases above render statically
+  // imported pages. Load that chunk before the timed tests start, or
+  // whichever file reaches it first in a run pays its cold evaluation inside
+  // a 5 s test timeout — see ../testSupport/lazyRoutes.ts. Scoped to this
+  // describe rather than the file so a filtered run of the others does not
+  // pay for a chunk it never mounts.
+  beforeAll(async () => {
+    await preloadLazyRoutes('plan')
+  }, LAZY_ROUTE_PRELOAD_TIMEOUT_MS)
+
   it('defaults: breadcrumb, rail back link, and save tooltip carry the web copy', async () => {
     const sample = createSamplePlan()
     const saved = await savePlan(sample)

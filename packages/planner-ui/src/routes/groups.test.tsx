@@ -5,7 +5,7 @@
  * the home group entirely.
  */
 import 'fake-indexeddb/auto'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { act, isValidElement, type ReactNode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { renderToString } from 'react-dom/server'
@@ -18,11 +18,27 @@ import { plannerContentRoutes, plannerHomeRoutes, plannerWorkspaceRoutes } from 
 import PlanRoutes from './PlanRoutes'
 import { createSamplePlan } from '../testSupport/samplePlan'
 import { waitFor, waitForText } from '../testSupport/settle'
+import { LAZY_ROUTE_PRELOAD_TIMEOUT_MS, preloadLazyRoutes } from '../testSupport/lazyRoutes'
 
 /** A bare host: no planner chrome, just the given groups under a router. */
 function GroupHost({ routes }: { routes: RouteObject[] }) {
   return useRoutes(routes)
 }
+
+// Every chunk this file waits on is behind `lazy()`: `plan/*`, `examples`,
+// and — since the workspace output screens became lazy too — the `Results:`
+// destination the basename test navigates to.
+//
+// `plan/*` is already safe: the static `PlanRoutes` import above is evaluated
+// before any test in this file runs, which is a real guarantee, though one
+// this file gets as a side effect of an import kept for the route-tree
+// assertion. `examples` has nothing warming it at all, and `Results:` rests
+// only on whatever the earlier workspace render happened to pull in first —
+// incidental warmth, not a guarantee. Naming all three keeps the reason
+// stated rather than inferred — see ../testSupport/lazyRoutes.ts.
+beforeAll(async () => {
+  await preloadLazyRoutes('plan', 'examples', 'results')
+}, LAZY_ROUTE_PRELOAD_TIMEOUT_MS)
 
 beforeEach(() => {
   globalThis.indexedDB = new IDBFactory()

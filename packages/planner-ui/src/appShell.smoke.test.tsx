@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 import 'fake-indexeddb/auto'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { act } from 'react'
 import { renderToString } from 'react-dom/server'
 import { createRoot } from 'react-dom/client'
@@ -13,6 +13,20 @@ import { App } from './App.tsx'
 import { _resetPlanStoreForTests, savePlan } from './data/planStore'
 import type { PlanStore } from './data/planStoreContext'
 import { waitFor, waitForText } from './testSupport/settle'
+import { LAZY_ROUTE_PRELOAD_TIMEOUT_MS, preloadLazyRoutes } from './testSupport/lazyRoutes'
+
+// Three waits in this file block on a `lazy()` chunk: 'Example library'
+// (`examples`), 'Import & migrate' (`import`), and the accounts poll for
+// 'Update balances from a broker CSV', which sits behind the workspace
+// (`plan`). Preload all three so no cold chunk is evaluated inside a test's
+// wait budget — see ./testSupport/lazyRoutes.ts.
+//
+// `/learn` is deliberately absent. That test asserts `document.title` right
+// after render and clicks a chrome link; it never waits on Learn's content,
+// so preloading it would buy nothing and cost a chunk evaluation.
+beforeAll(async () => {
+  await preloadLazyRoutes('examples', 'import', 'plan')
+}, LAZY_ROUTE_PRELOAD_TIMEOUT_MS)
 
 beforeEach(() => {
   globalThis.indexedDB = new IDBFactory()
