@@ -335,7 +335,7 @@ inadmissible.
 
 ## Registered rules
 Every lever above is registered in
-`packages/engine/src/rules/taxRuleRegistry.ts` under `jurisdiction: 'state:MS'`:
+`packages/engine/src/rules/records/statesSouthCentral.ts` under `jurisdiction: 'state:MS'`:
 
 | Rule id | Classification |
 |---|---|

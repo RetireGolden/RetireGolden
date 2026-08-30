@@ -229,7 +229,7 @@ inadmissible.
 
 ## Registered rules
 Every lever above is registered in
-`packages/engine/src/rules/taxRuleRegistry.ts` under `jurisdiction: 'state:AZ'`:
+`packages/engine/src/rules/records/statesWest.ts` under `jurisdiction: 'state:AZ'`:
 
 | Rule id | Classification |
 |---|---|

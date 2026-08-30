@@ -1,11 +1,15 @@
 /**
- * The tax rule registry.
+ * The tax rule registry: its types, its composition, and its helpers.
  *
- * Every statutory rule this engine implements is recorded here with the
- * authority it rests on, the reading we took, and the date that reading was last
- * verified against primary sources. The registry is the single answer to "why
- * are we calculating it this way" — for a test, for a reviewer, for a report,
- * and for an advisor defending a number to a CPA.
+ * The records themselves live in the per-domain modules under `./records/`,
+ * one statutory rule per frozen record, which this file spreads into the single
+ * frozen `TAX_RULE_REGISTRY`. A record carries the authority it rests on, the
+ * reading we took, and the date that reading was last verified against primary
+ * sources. The registry is the single answer to "why are we calculating it this
+ * way" — for a test, for a reviewer, for a report, and for an advisor defending
+ * a number to a CPA. Reading a record means opening its module; reading the
+ * shape a record must have, or the re-verification helpers over the whole set,
+ * means staying here.
  *
  * Three properties make that work:
  *
@@ -18,7 +22,8 @@
  *    between candidate readings. See `describeRule` in the test support module;
  *    conformance is asserted by `taxRuleRegistry.conformance.test.ts`.
  *
- * Adding a rule means doing the primary-source research first. A record whose
+ * Adding a rule means doing the primary-source research first, then writing the
+ * record into the `./records/` module for its domain. A record whose
  * `authority` is thin is worse than no record, because it lends unearned
  * confidence to a guess.
  */

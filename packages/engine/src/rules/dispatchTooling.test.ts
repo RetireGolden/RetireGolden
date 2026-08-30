@@ -70,6 +70,31 @@ describe('dispatch tooling', () => {
       )
     })
 
+    it('locks the conflict check to the dispatched record modules, not the rules directory', () => {
+      // The lock exists because two agents editing the SAME record collide. It
+      // must not also stop two agents editing different domains: since the
+      // split, `records/rothAccounts.ts` and `records/statesWest.ts` merge
+      // cleanly, and the tooling files under `rules/` hold no records at all.
+      const ruleId = 'irc-4974-rmd-shortfall-excise-tax'
+      const modulePath = 'packages/engine/src/rules/records/requiredMinimumDistributions.ts'
+      const markdown = buildDispatchPrompt({
+        asOf: '2026-12-01',
+        ruleIds: [ruleId],
+        registry: TAX_RULE_REGISTRY,
+        manifestRules: report.manifest.rules,
+        recordModuleOf: new Map([[ruleId, modulePath]]),
+      })
+      expect(markdown).toContain('**Record module:** ' + modulePath)
+      expect(markdown).toContain('require zero hits for any of ')
+      expect(markdown).toContain('`' + modulePath + '`')
+      expect(markdown).toContain('`packages/engine/src/rules/taxRuleRegistry.ts`')
+      // The refreshed coverage ledgers collide even between dispatches whose
+      // record modules never touch, so they are inside the lock.
+      expect(markdown).toContain('`DOCS/operations/rule-coverage.json`')
+      expect(markdown).toContain('`DOCS/operations/rule-coverage.md`')
+      expect(markdown).not.toContain('zero hits under `packages/engine/src/rules/`')
+    })
+
     it('throws on an unknown id', () => {
       expect(() =>
         buildDispatchPrompt({

@@ -778,7 +778,34 @@ const kindedEntries: readonly (readonly [string, KindedRule])[] =
 const implementationEntries: readonly (readonly [string, ImplementedRule])[] =
   taxRuleIds.map((ruleId) => [ruleId, TAX_RULE_REGISTRY[ruleId]] as const)
 
+/**
+ * Every record module on disk, read from the source scan rather than from the
+ * hand-kept list above. `engineSources` already holds every engine `.ts`, and
+ * Vite emits this directory's children under either prefix, so both spellings
+ * are matched for the same reason `engineGlobKeyOf` folds both.
+ */
+const RECORD_MODULE_FILE = /^(?:\.\.\/rules|\.)\/records\/([^/]+)\.ts$/u
+
+const recordModuleFileNames = Object.keys(engineSources)
+  .map((path) => RECORD_MODULE_FILE.exec(path)?.[1])
+  .filter((name): name is string => name !== undefined && !name.endsWith('.test'))
+  .sort()
+
 describe('tax rule registry conformance', () => {
+  it('accounts for every record module on disk, so an orphan cannot hide', () => {
+    // The key-count guard below sums RECORD_MODULES, a hand-kept list, against
+    // the registry. A new records/*.ts that is written but added to NEITHER the
+    // list nor the registry spread satisfies that sum trivially — its keys are
+    // on neither side — and nothing else sees it: the coverage attestation for
+    // the file only has to exist, and `isRecordStore` in
+    // coverageAttestations.conformance.test.ts exempts every records/*.ts from
+    // the implementedBy check. So the directory itself is the authority here,
+    // and the list has to account for all of it. A glob prefix that stopped
+    // matching would empty the left side and fail this too, rather than pass
+    // vacuously.
+    expect(recordModuleFileNames).toEqual([...RECORD_MODULES.map(([name]) => name)].sort())
+  })
+
   it('registers each rule id in exactly one record module', () => {
     // Object spread lets a later duplicate key overwrite an earlier one, and
     // the losing record then vanishes from TAX_RULE_REGISTRY with no compile

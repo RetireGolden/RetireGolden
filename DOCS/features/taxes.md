@@ -8,8 +8,9 @@ all dollar values come from versioned parameter packs, never hardcoded.
 The source-verified [tax-strategy coverage and claim-control inventory](../domain/tax-strategy-coverage-inventory.md)
 states which modeled results can support cockpit-v1 comparisons or actions and which require narrower wording
 or prerequisite engine work.
-Statutory authority is not restated in these pages. It lives in the typed, frozen rule registry
-([engine/rules/taxRuleRegistry.ts](../../packages/engine/src/rules/taxRuleRegistry.ts)) — one record per rule with
+Statutory authority is not restated in these pages. It lives in the typed, frozen rule registry — the per-domain
+record modules in [engine/rules/records/](../../packages/engine/src/rules/records), composed by
+[taxRuleRegistry.ts](../../packages/engine/src/rules/taxRuleRegistry.ts) — one record per rule with
 the operative language quoted rather than paraphrased, the reading taken, the jurisdiction, the date last verified,
 the engine sources implementing it, and a classification: `settled` where the engine returns the authority's
 figure, `approximated` where it returns a knowably-wrong one — with a required `errorDirection` saying which way it

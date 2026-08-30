@@ -64,8 +64,28 @@ export interface WaitForOptions {
   readonly attempts?: number
   /** Real milliseconds handed to the scheduler between attempts. */
   readonly intervalMs?: number
-  /** Extra context appended to the timeout message, e.g. the host's text. */
+  /**
+   * Extra context appended to the timeout message, e.g. the host's text.
+   * Omit it and the message carries the document's own text instead, so a
+   * raw `waitFor` still reports what the DOM actually held.
+   */
   readonly describe?: () => string
+}
+
+/** How much rendered text a timeout message carries before it is cut off. */
+const TIMEOUT_TEXT_LIMIT = 2000
+
+/**
+ * The rendered text a timeout should report when the caller named no
+ * `describe`. Truncated because a whole workspace render is thousands of
+ * characters of layout chrome, and the first screenful is where the answer
+ * is. Guarded for `document` so a helper called from a non-jsdom environment
+ * degrades to the bare message rather than throwing over the real failure.
+ */
+function renderedTextDump(): string {
+  if (typeof document === 'undefined') return ''
+  const text = document.body?.textContent ?? ''
+  return text.length > TIMEOUT_TEXT_LIMIT ? `${text.slice(0, TIMEOUT_TEXT_LIMIT)}… (truncated)` : text
 }
 
 /**
@@ -73,6 +93,11 @@ export interface WaitForOptions {
  * `act()` between attempts. Prefer this over a fixed sleep: it returns as
  * soon as the condition is observable rather than always paying the worst
  * case, and it fails with a message instead of a bare assertion mismatch.
+ *
+ * The timeout names what the DOM held at the end. Callers waiting on one host
+ * pass `describe` to narrow that to their own subtree; callers polling a
+ * predicate of their own get the document dump by default, which is the
+ * diagnostic the per-file helpers this replaced used to append by hand.
  */
 export async function waitFor(predicate: () => boolean, options: WaitForOptions = {}): Promise<void> {
   const { what = 'expected render', attempts = 200, intervalMs = 10, describe } = options
@@ -81,7 +106,8 @@ export async function waitFor(predicate: () => boolean, options: WaitForOptions 
     await advanceBy(intervalMs)
   }
   if (predicate()) return
-  const context = describe ? `; got: ${describe()}` : ''
+  const detail = describe ? describe() : renderedTextDump()
+  const context = detail === '' ? '' : `; got: ${detail}`
   throw new Error(`Timed out waiting for ${what}${context}`)
 }
 

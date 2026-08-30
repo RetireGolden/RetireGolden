@@ -18,7 +18,8 @@ and fix the doc to match the code.
 
 ## Bidirectional correctness
 
-Research → Rules (`DOCS/domain` +
+Research → Rules (`DOCS/domain` + the per-domain record modules in
+`packages/engine/src/rules/records/`, composed by
 `packages/engine/src/rules/taxRuleRegistry.ts`) → discriminating unit tests
 → calculator/code.
 
