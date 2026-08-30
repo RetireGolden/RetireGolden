@@ -137,7 +137,7 @@ because the engine ships into browser bundles where there is no package.json to
 read. The MCP's `build_plan` accepts this value back as `engineVersion` and warns
 when a document was exported under a different engine than the one running.
 
-Test fixtures used by the RetireGolden apps' own suites ship under
+Test fixtures and deterministic test doubles used by the RetireGolden apps' own suites ship under
 `@retiregolden/engine/testing/*` — framework-free (no vitest or other
 test-runner dependency), but not part of the supported runtime API.
 
@@ -159,7 +159,7 @@ test-runner dependency), but not part of the supported runtime API.
 | `decisions/`, `insights/` | Candidate evaluation, recommendation detectors |
 | `ladder/` | TIPS ladder math, Social Security bridge, FedInvest CSV parsing |
 | `allocation/`, `spending/` | Asset classes, spending shape presets |
-| `testing/` | Plan fixtures and money matchers for consumer test suites |
+| `testing/` | Plan fixtures, money matchers, and deterministic tax doubles for consumer test suites |
 | `version` | `ENGINE_VERSION` — this package's version, generated from `package.json` |
 
 ## License

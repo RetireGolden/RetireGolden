@@ -5,6 +5,31 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 ## 2026-08
 
 **2026-08-30**
+- Moved the flat-rate tax stub out of the projection engine and into the
+  testing-support surface, without breaking anyone. The body moved from
+  `packages/engine/src/projection/flatTax.ts` to
+  `packages/engine/src/testing/flatTax.ts`; the old path is now a deprecated
+  re-export, so `@retiregolden/engine/projection/flatTax` still resolves and
+  still exports the same `createFlatTaxCalculator`. No consumer breaks. All 89
+  in-repo importers (85 engine test files, 4 planner-UI test files) moved to
+  `@retiregolden/engine/testing/flatTax`, leaving the old subpath with no
+  in-repo consumers — it exists purely for external code pinned to it. The
+  arithmetic is untouched and no fixture's expected dollar changed. A new
+  pack-smoke assertion now proves both subpaths resolve and yield the *same*
+  function object, so the compatibility promise is enforced rather than merely
+  commented. Removal is deferred to a future major and is **not** scheduled;
+  when it happens it must be done by adding an exact `"./projection/flatTax":
+  null` exports key, which wins over the `./projection/*` pattern — never by
+  deleting that wildcard, which would take down every other projection subpath
+  including `projection/simulate`.
+- Corrected stale roadmap framing that outlived the work it described. The stub
+  called itself a "V1 placeholder" awaiting replacement "in roadmap phase V2",
+  and the `TaxCalculator` interface said the same. The real federal engine
+  shipped long ago, and nothing is queued to replace this file — it is the
+  permanent, deliberate test double for those 89 suites. Both comments now say
+  so. The interface's comment mattered most: it is re-exported through the
+  public `projection/types.js` façade and emitted into the shipped `.d.ts`, so
+  consumers were reading the outdated claim in editor tooltips.
 - Reversed the planner-UI / MCP dependency direction so all arrows point one
   way. `@retiregolden/planner-ui` no longer dev-depends on the published
   `@retiregolden/mcp`; the MCP depends on planner-UI, never the reverse. The

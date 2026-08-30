@@ -125,8 +125,9 @@ export interface TaxYearInput {
 }
 
 /**
- * Pluggable tax computation. V1 ships a flat placeholder; the real federal
- * engine (roadmap V2) implements the same interface.
+ * Pluggable tax computation. The shipped calculator composes the federal
+ * engine with the state engine through combineTaxCalculators(); test suites
+ * inject deterministic doubles through the same interface.
  */
 export interface TaxCalculator {
   compute(input: TaxYearInput): number
