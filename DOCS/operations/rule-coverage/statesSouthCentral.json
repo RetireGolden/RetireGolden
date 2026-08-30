@@ -1,0 +1,2603 @@
+{
+  "kind": "retiregolden.rules-coverage.shard",
+  "version": 5,
+  "module": "statesSouthCentral",
+  "rules": [
+    {
+      "id": "aca-26-51-201-published-indexed-rate-schedule",
+      "title": "Arkansas’s operative brackets are the Secretary’s published indexed schedule",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:AR",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2024,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-05",
+      "dueOn": "2026-12-03",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "AR",
+              "line": 181
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxDetail",
+              "line": 145
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 906,
+          "note": null,
+          "tests": [
+            {
+              "title": "measures a 2026 Arkansan against the schedule the department published",
+              "line": 915
+            },
+            {
+              "title": "would over-tax the same household on the schedule the pack used to carry",
+              "line": 920
+            },
+            {
+              "title": "opens with a zero bracket, which the schedule it replaced does not",
+              "line": 937
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "formInstruction",
+          "citation": "2026 Form AR1000ES instructions, Tax Rate Schedule",
+          "url": "https://www.dfa.arkansas.gov/wp-content/uploads/2026_Final_AR1000ES.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "2026 Form AR1000ES instructions, Tax Rate Schedule, \"IF YOUR NET TAXABLE INCOME IS\" column",
+          "url": "https://www.dfa.arkansas.gov/wp-content/uploads/2026_Final_AR1000ES.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "2025 Indexed Tax Brackets, \"Less Than or Equal To\" and \"Percentage\" columns",
+          "url": "https://www.dfa.arkansas.gov/wp-content/uploads/2025_TaxBrackets.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "2025 Indexed Tax Brackets, \"From\" column",
+          "url": "https://www.dfa.arkansas.gov/wp-content/uploads/2025_TaxBrackets.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "Ark. Code Ann. 26-51-201(d)(1) (2023 Ark. Acts, Act 532, § 2)",
+          "url": "https://arkleg.state.ar.us/Home/FTPDocument?path=%2FACTS%2F2023R%2FPublic%2FACT532.pdf"
+        }
+      ]
+    },
+    {
+      "id": "aca-26-51-307-a-1-public-pension-inside-the-six-thousand",
+      "title": "Arkansas gives a civil-service pension the same $6,000 as a private one",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:AR",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2018,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-05",
+      "dueOn": "2027-08-05",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "PUBLIC_PENSION_OVERRIDES",
+              "line": 57
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            },
+            {
+              "name": "retirementExclusion",
+              "line": 40
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 1021,
+          "note": null,
+          "tests": [
+            {
+              "title": "taxes an ATRS pension above $6,000",
+              "line": 1040
+            },
+            {
+              "title": "would exempt the whole pension under the override the pack used to carry",
+              "line": 1044
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Ark. Code Ann. 26-51-307(a)(1) (2017 Ark. Acts, Act 141, § 3)",
+          "url": "https://arkleg.state.ar.us/Home/FTPDocument?path=%2FACTS%2F2017R%2FPublic%2FACT141.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "2025 Form AR1000F/AR1000NR instructions, Line 17",
+          "url": "https://www.dfa.arkansas.gov/wp-content/uploads/2025_AR1000F_and_AR1000NR_Instructions.pdf"
+        }
+      ]
+    },
+    {
+      "id": "aca-26-51-307-a-2-ira-age-fifty-nine-and-a-half-gate",
+      "title": "Arkansas’s $6,000 reaches an IRA distribution only at 59½, and the pack does not test it",
+      "classification": "approximated",
+      "errorDirection": "understatesTax",
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:AR",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2018,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-05",
+      "dueOn": "2027-08-05",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/params/state/types.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "AR",
+              "line": 181
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/types.ts",
+          "functions": [
+            {
+              "name": "StateRetirementExclusion",
+              "line": 25
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/stateTax.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
+          "line": 411,
+          "note": null,
+          "tests": [
+            {
+              "title": "exempts $6,000 of an early IRA withdrawal Arkansas taxes in full",
+              "line": 428
+            },
+            {
+              "title": "reaches the statute’s figure only by gating an employer pension the same way",
+              "line": 433
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Ark. Code Ann. 26-51-307(a)(2)(A) (2017 Ark. Acts, Act 141, § 3)",
+          "url": "https://arkleg.state.ar.us/Home/FTPDocument?path=%2FACTS%2F2017R%2FPublic%2FACT141.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "2025 Form AR1000F/AR1000NR instructions, Line 17, traditional IRA distributions",
+          "url": "https://www.dfa.arkansas.gov/wp-content/uploads/2025_AR1000F_and_AR1000NR_Instructions.pdf"
+        }
+      ]
+    },
+    {
+      "id": "aca-26-51-307-e-uniformed-services-full-exemption",
+      "title": "Arkansas exempts uniformed-services retirement in full, and the pack caps it at $6,000",
+      "classification": "approximated",
+      "errorDirection": "overstatesTax",
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:AR",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2018,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-05",
+      "dueOn": "2027-08-05",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/params/state/types.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "PUBLIC_PENSION_OVERRIDES",
+              "line": 57
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/types.ts",
+          "functions": [
+            {
+              "name": "StateRetirementExclusion",
+              "line": 25
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "retirementExclusion",
+              "line": 40
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/stateTax.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
+          "line": 368,
+          "note": null,
+          "tests": [
+            {
+              "title": "charges Arkansas tax on a military pension above $6,000",
+              "line": 386
+            },
+            {
+              "title": "reaches the statute’s figure only by exempting every public pension in the state",
+              "line": 391
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Ark. Code Ann. 26-51-307(e)(1) (2017 Ark. Acts, Act 141, § 3)",
+          "url": "https://arkleg.state.ar.us/Home/FTPDocument?path=%2FACTS%2F2017R%2FPublic%2FACT141.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "Ark. Code Ann. 26-51-307(f)(1) (2023 Ark. Acts, Act 358, § 1)",
+          "url": "https://arkleg.state.ar.us/Home/FTPDocument?path=%2FACTS%2F2023R%2FPublic%2FACT358.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "2025 Form AR1000F/AR1000NR instructions, Line 17",
+          "url": "https://www.dfa.arkansas.gov/wp-content/uploads/2025_AR1000F_and_AR1000NR_Instructions.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "2025 Form AR1000F/AR1000NR instructions, Line 17, military retirement and the $6,000 exemption",
+          "url": "https://www.dfa.arkansas.gov/wp-content/uploads/2025_AR1000F_and_AR1000NR_Instructions.pdf"
+        }
+      ]
+    },
+    {
+      "id": "aca-26-51-307-six-thousand-retirement-exemption",
+      "title": "Arkansas exempts $6,000 of retirement income per taxpayer, once across every source",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:AR",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2018,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-05",
+      "dueOn": "2027-08-05",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "AR",
+              "line": 181
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            },
+            {
+              "name": "retirementExclusion",
+              "line": 40
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 985,
+          "note": null,
+          "tests": [
+            {
+              "title": "exempts $6,000 across both pensions rather than $6,000 of each",
+              "line": 1002
+            },
+            {
+              "title": "would grant two exemptions if the public bucket carried a rule of its own",
+              "line": 1008
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Ark. Code Ann. 26-51-307(a)(1) (2017 Ark. Acts, Act 141, § 3)",
+          "url": "https://arkleg.state.ar.us/Home/FTPDocument?path=%2FACTS%2F2017R%2FPublic%2FACT141.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "2025 Form AR1000F/AR1000NR instructions, Exempt Income, note to items 12 and 13",
+          "url": "https://www.dfa.arkansas.gov/wp-content/uploads/2025_AR1000F_and_AR1000NR_Instructions.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "2025 Form AR1000F/AR1000NR instructions, Line 18A",
+          "url": "https://www.dfa.arkansas.gov/wp-content/uploads/2025_AR1000F_and_AR1000NR_Instructions.pdf"
+        }
+      ]
+    },
+    {
+      "id": "aca-26-51-404-b-6-social-security-exclusion",
+      "title": "Arkansas leaves Social Security out of gross income altogether",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:AR",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2018,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-05",
+      "dueOn": "2027-08-05",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "AR",
+              "line": 181
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 1064,
+          "note": null,
+          "tests": [
+            {
+              "title": "leaves a high-income Arkansan’s Social Security out of the state base",
+              "line": 1079
+            },
+            {
+              "title": "would pull 34,000 of benefit into the base if Arkansas taxed it",
+              "line": 1085
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "formInstruction",
+          "citation": "2025 Form AR1000F/AR1000NR instructions, Exempt Income, item 8",
+          "url": "https://www.dfa.arkansas.gov/wp-content/uploads/2025_AR1000F_and_AR1000NR_Instructions.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "Ark. Code Ann. 26-51-404(b)(6)(B) (2017 Ark. Acts, Act 141, § 5)",
+          "url": "https://arkleg.state.ar.us/Home/FTPDocument?path=%2FACTS%2F2017R%2FPublic%2FACT141.pdf"
+        }
+      ]
+    },
+    {
+      "id": "aca-26-51-430-c-published-indexed-standard-deduction",
+      "title": "Arkansas’s standard deduction is its own figure, indexed annually and capped at 3%",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:AR",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2022,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-05",
+      "dueOn": "2026-12-03",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "AR",
+              "line": 181
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 946,
+          "note": null,
+          "tests": [
+            {
+              "title": "deducts the amount the department published for 2026",
+              "line": 955
+            },
+            {
+              "title": "would carry a two-year-stale figure on the amount the pack used to hold",
+              "line": 961
+            },
+            {
+              "title": "is Arkansas’s own figure, so the federal conformity indexer must not touch it",
+              "line": 967
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Ark. Code Ann. 26-51-430(c)(1) (2021 Ark. Acts (2d Ex. Sess.), Act 1, § 9)",
+          "url": "https://arkleg.state.ar.us/Home/FTPDocument?path=%2FACTS%2F2021S2%2FPublic%2FACT1.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "Ark. Code Ann. 26-51-430(c)(2)(A)(i) (2021 Ark. Acts (2d Ex. Sess.), Act 1, § 9)",
+          "url": "https://arkleg.state.ar.us/Home/FTPDocument?path=%2FACTS%2F2021S2%2FPublic%2FACT1.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "2026 Form AR1000ES worksheet, line 2",
+          "url": "https://www.dfa.arkansas.gov/wp-content/uploads/2026_Final_AR1000ES.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "2025 Form AR1000F/AR1000NR instructions, Standard Deduction table",
+          "url": "https://www.dfa.arkansas.gov/wp-content/uploads/2025_AR1000F_and_AR1000NR_Instructions.pdf"
+        }
+      ]
+    },
+    {
+      "id": "aca-26-51-815-b-2-fifty-percent-capital-gain-exclusion",
+      "title": "Arkansas exempts 50% of net capital gain",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:AR",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2016,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-05",
+      "dueOn": "2027-08-05",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "AR.capitalGainsTaxablePct",
+              "line": 192
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 1096,
+          "note": null,
+          "tests": [
+            {
+              "title": "leaves half of a capital gain out of the Arkansas base",
+              "line": 1112
+            },
+            {
+              "title": "would tax the whole gain with the included share left at its default",
+              "line": 1118
+            },
+            {
+              "title": "still taxes the included half at ordinary Arkansas rates",
+              "line": 1123
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Ark. Code Ann. 26-51-815(b)(2) (2015 Ark. Acts, Act 1173, § 1)",
+          "url": "https://arkleg.state.ar.us/Acts/FTPDocument?path=%2FACTS%2F2015R%2FPublic%2F&file=1173.pdf&ddBienniumSession=2015%2F2015R"
+        },
+        {
+          "kind": "statute",
+          "citation": "Ark. Code Ann. 26-51-815(b)(2)(C) (2015 Ark. Acts, Act 1173, § 1)",
+          "url": "https://arkleg.state.ar.us/Acts/FTPDocument?path=%2FACTS%2F2015R%2FPublic%2F&file=1173.pdf&ddBienniumSession=2015%2F2015R"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "2025 Form AR1000D, line 8",
+          "url": "https://www.dfa.arkansas.gov/wp-content/uploads/2025_AR1000D_CapitalGains.pdf"
+        }
+      ]
+    },
+    {
+      "id": "aca-26-51-815-b-3-ten-million-dollar-gain-exemption",
+      "title": "Arkansas exempts net capital gain above $10 million in full",
+      "classification": "approximated",
+      "errorDirection": "overstatesTax",
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:AR",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2014,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-05",
+      "dueOn": "2027-08-05",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/params/state/types.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "AR",
+              "line": 181
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/types.ts",
+          "functions": [
+            {
+              "name": "StateTaxParams",
+              "line": 33
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/stateTax.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
+          "line": 451,
+          "note": null,
+          "tests": [
+            {
+              "title": "taxes half of the excess above $10,000,000 that Arkansas exempts outright",
+              "line": 461
+            },
+            {
+              "title": "reaches the statute’s figure only by shrinking the input, which is not a fix",
+              "line": 466
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Ark. Code Ann. 26-51-815(b)(3) (2015 Ark. Acts, Act 1173, § 2)",
+          "url": "https://arkleg.state.ar.us/Acts/FTPDocument?path=%2FACTS%2F2015R%2FPublic%2F&file=1173.pdf&ddBienniumSession=2015%2F2015R"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "2025 Form AR1000D, line 7b",
+          "url": "https://www.dfa.arkansas.gov/wp-content/uploads/2025_AR1000D_CapitalGains.pdf"
+        }
+      ]
+    },
+    {
+      "id": "al-dor-individual-income-tax-rate-schedule",
+      "title": "Alabama taxes taxable income at 2%, 4%, and 5% with filing-status break points",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:AL",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-28",
+      "dueOn": "2027-08-28",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "states.AL",
+              "line": 127
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxDetail",
+              "line": 145
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 2965,
+          "note": null,
+          "tests": [
+            {
+              "title": "prices Alabama single brackets rather than the joint schedule",
+              "line": 2981
+            },
+            {
+              "title": "prices the joint schedule on a joint return, distinct from the single breaks",
+              "line": 2988
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Alabama Department of Revenue, Individual Income Tax — Rate",
+          "url": "https://www.revenue.alabama.gov/individual-corporate/taxes-administered-by-individual-corporate-income-tax/individual-income-tax/"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Alabama Department of Revenue, Individual Income Tax — Rate (joint)",
+          "url": "https://www.revenue.alabama.gov/individual-corporate/taxes-administered-by-individual-corporate-income-tax/individual-income-tax/"
+        }
+      ]
+    },
+    {
+      "id": "al-form40-age-65-retirement-exclusion-cap",
+      "title": "Alabama's age-65 retirement exclusion: the pack's $6,000 private-bucket cap has no staged operative text",
+      "classification": "unsettled",
+      "errorDirection": null,
+      "conventionRationale": "BLOCKED-SOURCE: the $6,000 age-65 exclusion's operative text is not in the staged booklet; quote pends a staged primary",
+      "contraryReading": "If the research corpus's 2026 parameter is operative — $12,000 per person at age 65 — the pack's $6,000 understates the exclusion and overstates Alabama tax; if no exclusion exists, the pack understates tax by the granted cap.",
+      "jurisdiction": "state:AL",
+      "volatility": "awaitingGuidance",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-28",
+      "dueOn": "2026-11-26",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/params/state/types.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "states.AL",
+              "line": 127
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/types.ts",
+          "functions": [
+            {
+              "name": "StateRetirementExclusion",
+              "line": 25
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            },
+            {
+              "name": "retirementExclusion",
+              "line": 40
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 3003,
+          "note": "unsettled: operative text unsourced",
+          "tests": [
+            {
+              "title": "implements the encoded $6,000 convention and discriminates the competing readings",
+              "line": 3029
+            },
+            {
+              "title": "reaches the no-exclusion reading once the cap is withheld",
+              "line": 3038
+            },
+            {
+              "title": "reaches the research 2026 reading under a doubled cap",
+              "line": 3046
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "formInstruction",
+          "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Pensions and Annuities",
+          "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Line 4 — Retirement Income (Schedule RS)",
+          "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf"
+        }
+      ]
+    },
+    {
+      "id": "al-form40-cost-recovery-not-modeled",
+      "title": "Alabama cost-recovery (basis) mechanics for retirement distributions are not modeled",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:AL",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-28",
+      "dueOn": "2027-08-28",
+      "implementedBy": [
+        "packages/engine/src/params/state/types.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/types.ts",
+          "functions": [
+            {
+              "name": "StateRetirementExclusion",
+              "line": 25
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "formInstruction",
+          "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Worksheet for Partially Taxable Pensions — pre-1987 recovery",
+          "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Pensions and Annuities",
+          "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf"
+        }
+      ]
+    },
+    {
+      "id": "al-form40-defined-benefit-414j-exemption",
+      "title": "Alabama exempts any IRC 414(j) defined-benefit payment; the pack caps the private bucket at $6,000",
+      "classification": "approximated",
+      "errorDirection": "overstatesTax",
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:AL",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-28",
+      "dueOn": "2027-08-28",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/params/state/types.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "states.AL",
+              "line": 127
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/types.ts",
+          "functions": [
+            {
+              "name": "StateRetirementExclusion",
+              "line": 25
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            },
+            {
+              "name": "retirementExclusion",
+              "line": 40
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/stateTax.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
+          "line": 1334,
+          "note": "private-bucket defined-benefit limb",
+          "tests": [
+            {
+              "title": "taxes a private-employer 414(j) pension above the $6,000 private-bucket cap",
+              "line": 1361
+            },
+            {
+              "title": "taxes the whole pension for an under-65 private defined-benefit retiree",
+              "line": 1369
+            },
+            {
+              "title": "reaches the booklet for the private pension once that bucket is full",
+              "line": 1384
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "formInstruction",
+          "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Examples of Income You DO NOT Report",
+          "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Examples of Income You DO NOT Report (retirement systems)",
+          "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Pensions and Annuities — amounts not taxable",
+          "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf"
+        }
+      ]
+    },
+    {
+      "id": "al-form40-ira-dc-distributions-taxable",
+      "title": "Alabama taxes IRA and defined-contribution distributions on Schedule RS",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:AL",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-28",
+      "dueOn": "2027-08-28",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "states.AL",
+              "line": 127
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            },
+            {
+              "name": "retirementExclusion",
+              "line": 40
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 2935,
+          "note": null,
+          "tests": [
+            {
+              "title": "keeps a taxable IRA distribution in the Alabama base",
+              "line": 2951
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "formInstruction",
+          "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Line 4 — Retirement Income (Schedule RS)",
+          "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Pensions and Annuities",
+          "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf"
+        }
+      ]
+    },
+    {
+      "id": "al-form40-personal-and-dependent-exemptions-not-modeled",
+      "title": "Alabama subtracts personal and dependent exemptions the engine does not model",
+      "classification": "approximated",
+      "errorDirection": "overstatesTax",
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:AL",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-28",
+      "dueOn": "2027-08-28",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "states.AL",
+              "line": 127
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/stateTax.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
+          "line": 1455,
+          "note": null,
+          "tests": [
+            {
+              "title": "charges tax on the exemption dollars every Alabama return subtracts",
+              "line": 1474
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "formInstruction",
+          "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Line 13 — Personal Exemption",
+          "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Alabama Department of Revenue, Individual Income Tax — Rate (applicability levels)",
+          "url": "https://www.revenue.alabama.gov/individual-corporate/taxes-administered-by-individual-corporate-income-tax/individual-income-tax/"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Dependent's and Student's Income",
+          "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf"
+        }
+      ]
+    },
+    {
+      "id": "al-form40-railroad-retirement-not-modeled",
+      "title": "Alabama excludes Federal Railroad Retirement benefits; the engine has no railroad input",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:AL",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-28",
+      "dueOn": "2027-08-28",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "incomeStreamSchema",
+              "line": 1553
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "states.AL",
+              "line": 127
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "formInstruction",
+          "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Examples of Income You DO NOT Report",
+          "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf"
+        }
+      ]
+    },
+    {
+      "id": "al-form40-social-security-exclusion",
+      "title": "Alabama excludes Federal Social Security benefits",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:AL",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-28",
+      "dueOn": "2027-08-28",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "states.AL",
+              "line": 127
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 2907,
+          "note": null,
+          "tests": [
+            {
+              "title": "omits federally taxable Social Security from the Alabama base",
+              "line": 2924
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "formInstruction",
+          "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Examples of Income You DO NOT Report",
+          "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf"
+        }
+      ]
+    },
+    {
+      "id": "al-form40-standard-deduction-agi-slide",
+      "title": "Alabama's standard deduction slides down with AGI; the pack holds the maxima flat",
+      "classification": "approximated",
+      "errorDirection": "understatesTax",
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:AL",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-28",
+      "dueOn": "2027-08-28",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "states.AL",
+              "line": 127
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/stateTax.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
+          "line": 1394,
+          "note": null,
+          "tests": [
+            {
+              "title": "grants the $3,000 single maximum where the chart has slid to $2,500",
+              "line": 1416
+            },
+            {
+              "title": "reaches the chart once the pack deduction is replaced with the slid amount",
+              "line": 1424
+            },
+            {
+              "title": "grants the $8,500 joint maximum where the chart row reads $5,000",
+              "line": 1435
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "formInstruction",
+          "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Line 11 — Standard Deduction",
+          "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, page 9 Standard Deduction chart — Single column",
+          "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, page 9 Standard Deduction chart — Married Filing Joint column",
+          "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf"
+        }
+      ]
+    },
+    {
+      "id": "ky-krs-141-retirement-and-social-security",
+      "title": "Kentucky excludes Social Security and up to $31,110 of retirement distributions at a flat 3.5%",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:KY",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "KY",
+              "line": 393
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            },
+            {
+              "name": "retirementExclusion",
+              "line": 40
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 2044,
+          "note": "Social Security limb",
+          "tests": [
+            {
+              "title": "keeps Social Security out of Kentucky adjusted gross income",
+              "line": 2060
+            },
+            {
+              "title": "would pull the federally taxable share in if Kentucky taxed it",
+              "line": 2066
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 2075,
+          "note": "retirement-distribution limb",
+          "tests": [
+            {
+              "title": "excludes $31,110 of a private IRA distribution with no age gate",
+              "line": 2094
+            },
+            {
+              "title": "would charge more if private retirement were left in the base",
+              "line": 2100
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 2111,
+          "note": "flat-rate limb",
+          "tests": [
+            {
+              "title": "taxes net income at three and one-half percent for 2026",
+              "line": 2126
+            },
+            {
+              "title": "would charge more at the former four percent rate",
+              "line": 2130
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "KRS 141.019(1)(e)",
+          "url": "https://apps.legislature.ky.gov/law/statutes/statute.aspx?id=57914"
+        },
+        {
+          "kind": "statute",
+          "citation": "KRS 141.019(1)(g)1.b.",
+          "url": "https://apps.legislature.ky.gov/law/statutes/statute.aspx?id=57914"
+        },
+        {
+          "kind": "statute",
+          "citation": "KRS 141.019(1)(g)2.c.",
+          "url": "https://apps.legislature.ky.gov/law/statutes/statute.aspx?id=57914"
+        },
+        {
+          "kind": "statute",
+          "citation": "KRS 141.020(2)(f)",
+          "url": "https://apps.legislature.ky.gov/law/statutes/statute.aspx?id=56339"
+        }
+      ]
+    },
+    {
+      "id": "la-rs-47-44-1-retirement-exemption",
+      "title": "Louisiana exempts retirement income from age 65, CPI-U indexed from 2026; the pack holds $12,000 flat",
+      "classification": "approximated",
+      "errorDirection": "overstatesTax",
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:LA",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2026-12-25",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "states.LA",
+              "line": 399
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            },
+            {
+              "name": "retirementExclusion",
+              "line": 40
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/stateTax.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
+          "line": 1263,
+          "note": null,
+          "tests": [
+            {
+              "title": "pins the held-forward unindexed $12,000 against the CPI-U indexing method",
+              "line": 1291
+            },
+            {
+              "title": "withholds the exemption at 64, which is the age the statute names",
+              "line": 1303
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "La. R.S. 47:44.1(A)",
+          "url": "https://www.legis.la.gov/legis/Law.aspx?d=102133"
+        }
+      ]
+    },
+    {
+      "id": "la-rs-47-44-2-social-security-federal-retirement",
+      "title": "Louisiana exempts Social Security, federal retirement, and railroad retirement",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:LA",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "PUBLIC_PENSION_OVERRIDES.LA",
+              "line": 92
+            },
+            {
+              "name": "states.LA",
+              "line": 399
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            },
+            {
+              "name": "retirementExclusion",
+              "line": 40
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 2152,
+          "note": null,
+          "tests": [
+            {
+              "title": "keeps Social Security out of the Louisiana base",
+              "line": 2166
+            },
+            {
+              "title": "would pull the federally taxable share in if Louisiana taxed it",
+              "line": 2172
+            },
+            {
+              "title": "also exempts a United States Government retirement annuity in the public bucket",
+              "line": 2178
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "La. R.S. 47:44.2",
+          "url": "https://www.legis.la.gov/legis/Law.aspx?d=102134"
+        }
+      ]
+    },
+    {
+      "id": "ms-27-7-15-4-retirement-income-excluded-from-gross-income",
+      "title": "Mississippi excludes all retirement income from gross income, public and private",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:MS",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-05",
+      "dueOn": "2027-08-05",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "MS",
+              "line": 472
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            },
+            {
+              "name": "retirementExclusion",
+              "line": 40
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 1494,
+          "note": null,
+          "tests": [
+            {
+              "title": "leaves a private pension out of the Mississippi base entirely",
+              "line": 1509
+            },
+            {
+              "title": "reaches paragraph (k) income on the same terms as paragraph (l) income",
+              "line": 1515
+            },
+            {
+              "title": "would tax the pension if the exclusion were dropped",
+              "line": 1531
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Miss. Code Ann. 27-7-15(4)(k), as reprinted in 2026 Miss. H.B. 693",
+          "url": "https://billstatus.ls.state.ms.us/documents/2026/html/HB/0600-0699/HB0693IN.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "Miss. Code Ann. 27-7-15(4)(l), as reprinted in 2026 Miss. H.B. 693",
+          "url": "https://billstatus.ls.state.ms.us/documents/2026/html/HB/0600-0699/HB0693IN.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "Miss. Code Ann. 27-7-15(4)(l), Roth distributions",
+          "url": "https://billstatus.ls.state.ms.us/documents/2026/html/HB/0600-0699/HB0693IN.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "Miss. Code Ann. 27-7-15(4)(l), survivor sentence",
+          "url": "https://billstatus.ls.state.ms.us/documents/2026/html/HB/0600-0699/HB0693IN.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "Miss. Code Ann. 27-7-15(4), as reprinted in 2026 Miss. H.B. 489",
+          "url": "https://billstatus.ls.state.ms.us/documents/2026/html/HB/0400-0499/HB0489PS.htm"
+        }
+      ]
+    },
+    {
+      "id": "ms-27-7-17-standard-deduction-unindexed",
+      "title": "Mississippi’s standard deduction is fixed in statute and never indexed",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:MS",
+      "volatility": "staticStatute",
+      "effectiveFrom": 1999,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-05",
+      "dueOn": "2027-08-05",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "MS",
+              "line": 472
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 1542,
+          "note": null,
+          "tests": [
+            {
+              "title": "deducts Mississippi’s own statutory amount",
+              "line": 1558
+            },
+            {
+              "title": "is untagged, so the federal conformity indexer moves neither it nor an age-65 addition",
+              "line": 1564
+            },
+            {
+              "title": "would drift away from the statute in every projected year if it were tagged",
+              "line": 1575
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Miss. Code Ann. 27-7-17(3)(b)(i), as brought forward in 2026 Miss. H.B. 866",
+          "url": "https://billstatus.ls.state.ms.us/documents/2026/html/HB/0800-0899/HB0866IN.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "Miss. Code Ann. 27-7-17(3)(b)(iv), as brought forward in 2026 Miss. H.B. 866",
+          "url": "https://billstatus.ls.state.ms.us/documents/2026/html/HB/0800-0899/HB0866IN.htm"
+        }
+      ]
+    },
+    {
+      "id": "ms-27-7-21-personal-and-age-65-exemptions",
+      "title": "Mississippi’s personal and age-65 exemptions sit on top of the standard deduction",
+      "classification": "approximated",
+      "errorDirection": "overstatesTax",
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:MS",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-05",
+      "dueOn": "2027-08-05",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/params/state/types.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "MS",
+              "line": 472
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/types.ts",
+          "functions": [
+            {
+              "name": "StateTaxParams",
+              "line": 33
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/stateTax.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
+          "line": 843,
+          "note": null,
+          "tests": [
+            {
+              "title": "charges the modal Mississippi retiree 4% on $15,000 Mississippi exempts",
+              "line": 860
+            },
+            {
+              "title": "reaches the statute’s figure only by folding an exemption into the deduction field",
+              "line": 870
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Miss. Code Ann. 27-7-21(b), as brought forward in 2026 Miss. H.B. 1996",
+          "url": "https://billstatus.ls.state.ms.us/documents/2026/html/HB/1900-1999/HB1996IN.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "Miss. Code Ann. 27-7-21(c), as brought forward in 2026 Miss. H.B. 1996",
+          "url": "https://billstatus.ls.state.ms.us/documents/2026/html/HB/1900-1999/HB1996IN.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "Miss. Code Ann. 27-7-21(c), one exemption per couple",
+          "url": "https://billstatus.ls.state.ms.us/documents/2026/html/HB/1900-1999/HB1996IN.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "Miss. Code Ann. 27-7-21(f), as brought forward in 2026 Miss. H.B. 1996",
+          "url": "https://billstatus.ls.state.ms.us/documents/2026/html/HB/1900-1999/HB1996IN.htm"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "MS DOR, 2025 Form 80-105, line 15",
+          "url": "https://www.dor.ms.gov/sites/default/files/tax-forms/individual/80105258%201.pdf"
+        }
+      ]
+    },
+    {
+      "id": "ms-27-7-5-rate-ramp",
+      "title": "Mississippi’s zero band and its legislated rate ramp",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:MS",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": 2026,
+      "verifiedOn": "2026-08-05",
+      "dueOn": "2027-08-05",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "MS",
+              "line": 472
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxDetail",
+              "line": 145
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 1451,
+          "note": null,
+          "tests": [
+            {
+              "title": "exempts the first $10,000 of taxable income and charges 4% above it",
+              "line": 1463
+            },
+            {
+              "title": "costs exactly the zero band times the rate less than a bandless schedule",
+              "line": 1468
+            },
+            {
+              "title": "charges nothing at all below the band",
+              "line": 1480
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Miss. Code Ann. 27-7-5(1)(b)(ii)4, as amended by 2025 Miss. H.B. 1, § 1",
+          "url": "https://billstatus.ls.state.ms.us/documents/2025/html/HB/0001-0099/HB0001SG.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "Miss. Code Ann. 27-7-5(1)(b)(ii)5, as amended by 2025 Miss. H.B. 1, § 1",
+          "url": "https://billstatus.ls.state.ms.us/documents/2025/html/HB/0001-0099/HB0001SG.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "Miss. Code Ann. 27-7-5(1)(b)(ii)6, as amended by 2025 Miss. H.B. 1, § 1",
+          "url": "https://billstatus.ls.state.ms.us/documents/2025/html/HB/0001-0099/HB0001SG.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "Miss. Code Ann. 27-7-5(1)(b)(ii)7, as amended by 2025 Miss. H.B. 1, § 1",
+          "url": "https://billstatus.ls.state.ms.us/documents/2025/html/HB/0001-0099/HB0001SG.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "Miss. Code Ann. 27-7-5(1)(b)(ii), closing sentence",
+          "url": "https://billstatus.ls.state.ms.us/documents/2025/html/HB/0001-0099/HB0001SG.htm"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "MS DOR, Individual Income Tax — Tax Rates",
+          "url": "https://www.dor.ms.gov/individual/tax-rates"
+        },
+        {
+          "kind": "legislativeHistory",
+          "citation": "2025 Miss. H.B. 1 (Build Up Mississippi Act), § 30",
+          "url": "https://billstatus.ls.state.ms.us/documents/2025/html/HB/0001-0099/HB0001SG.htm"
+        }
+      ]
+    },
+    {
+      "id": "ms-capital-gains-taxed-as-ordinary",
+      "title": "Mississippi taxes capital gains at the ordinary rate",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:MS",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-05",
+      "dueOn": "2027-08-05",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "MS",
+              "line": 472
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 1592,
+          "note": null,
+          "tests": [
+            {
+              "title": "puts the whole gain in the base at the ordinary rate",
+              "line": 1607
+            },
+            {
+              "title": "prices a gain exactly as it prices the same amount of ordinary income",
+              "line": 1612
+            },
+            {
+              "title": "would exclude half the gain if the included share were set as Arkansas’s is",
+              "line": 1619
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "formInstruction",
+          "citation": "MS DOR, 2025 Form 80-100 instructions, Line 40 — Capital Gain or Loss",
+          "url": "https://www.dor.ms.gov/sites/default/files/tax-forms/individual/80100251%202.pdf"
+        }
+      ]
+    },
+    {
+      "id": "ms-combined-return-runs-the-schedule-per-spouse",
+      "title": "A Mississippi combined return runs the rate schedule separately for each spouse",
+      "classification": "approximated",
+      "errorDirection": "overstatesTax",
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:MS",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-05",
+      "dueOn": "2027-08-05",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/params/state/types.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "MS",
+              "line": 472
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/types.ts",
+          "functions": [
+            {
+              "name": "StateTaxParams",
+              "line": 33
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxDetail",
+              "line": 145
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/stateTax.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
+          "line": 887,
+          "note": null,
+          "tests": [
+            {
+              "title": "gives a married couple one $10,000 zero band where a combined return gets two",
+              "line": 903
+            },
+            {
+              "title": "reaches the combined figure only by doubling the band for every married couple",
+              "line": 909
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "MS DOR, Individual Income Tax — Tax Rates, combined returns",
+          "url": "https://www.dor.ms.gov/individual/tax-rates"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "MS DOR, 2025 Form 80-100 instructions, Schedule of Tax Computation, Line 1",
+          "url": "https://www.dor.ms.gov/sites/default/files/tax-forms/individual/80100251%202.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "MS DOR, 2025 Form 80-100 instructions, Filing Status for Married Persons",
+          "url": "https://www.dor.ms.gov/sites/default/files/tax-forms/individual/80100251%202.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "Miss. Code Ann. 27-7-17(3)(b), combined returns",
+          "url": "https://billstatus.ls.state.ms.us/documents/2026/html/HB/0800-0899/HB0866IN.htm"
+        }
+      ]
+    },
+    {
+      "id": "ms-early-or-excess-distribution-not-exempt",
+      "title": "Mississippi’s retirement exclusion does not reach an early or excess distribution",
+      "classification": "approximated",
+      "errorDirection": "understatesTax",
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:MS",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-05",
+      "dueOn": "2027-08-05",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/params/state/types.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "MS",
+              "line": 472
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/types.ts",
+          "functions": [
+            {
+              "name": "StateRetirementExclusion",
+              "line": 25
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/stateTax.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
+          "line": 793,
+          "note": null,
+          "tests": [
+            {
+              "title": "exempts an early withdrawal Mississippi taxes in full",
+              "line": 811
+            },
+            {
+              "title": "is not reachable through minAge, which asks a different question",
+              "line": 816
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "formInstruction",
+          "citation": "MS DOR, 2025 Form 80-100 instructions, Line 46 — Total Pensions and Annuities",
+          "url": "https://www.dor.ms.gov/sites/default/files/tax-forms/individual/80100251%202.pdf"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "MS DOR, Individual Income Tax FAQ — \"Is retirement income taxable?\"",
+          "url": "https://www.dor.ms.gov/individual/individual-income-tax-frequently-asked-questions"
+        },
+        {
+          "kind": "statute",
+          "citation": "Miss. Code Ann. 27-7-15(4)(l), as reprinted in 2026 Miss. H.B. 693",
+          "url": "https://billstatus.ls.state.ms.us/documents/2026/html/HB/0600-0699/HB0693IN.htm"
+        }
+      ]
+    },
+    {
+      "id": "ok-stat-68-2358-retirement-and-social-security",
+      "title": "Oklahoma subtracts Social Security and caps ordinary retirement exclusions at $10,000 per person",
+      "classification": "approximated",
+      "errorDirection": "overstatesTax",
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:OK",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "OK",
+              "line": 673
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            },
+            {
+              "name": "retirementExclusion",
+              "line": 40
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 2573,
+          "note": "military-retirement exception to the common cap",
+          "tests": [
+            {
+              "title": "pins the military exception the generic retirement bucket cannot express",
+              "line": 2591
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "formInstruction",
+          "citation": "2025 Oklahoma Form 511 packet, Schedule 511-A line 2",
+          "url": "https://oklahoma.gov/content/dam/ok/en/tax/documents/forms/individuals/current/511-Pkt.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "2025 Oklahoma Form 511 packet, Schedule 511-A line 4",
+          "url": "https://oklahoma.gov/content/dam/ok/en/tax/documents/forms/individuals/current/511-Pkt.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "2025 Oklahoma Form 511 packet, Schedule 511-A line 5",
+          "url": "https://oklahoma.gov/content/dam/ok/en/tax/documents/forms/individuals/current/511-Pkt.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "2025 Oklahoma Form 511 packet, Schedule 511-A line 6",
+          "url": "https://oklahoma.gov/content/dam/ok/en/tax/documents/forms/individuals/current/511-Pkt.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "2025 Oklahoma Form 511 packet, Schedule 511-A line 3",
+          "url": "https://oklahoma.gov/content/dam/ok/en/tax/documents/forms/individuals/current/511-Pkt.pdf"
+        }
+      ]
+    },
+    {
+      "id": "tn-const-2-28-earned-income-tax-prohibited",
+      "title": "Tennessee’s constitution bars a tax on payroll or earned income only",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:TN",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-05",
+      "dueOn": "2027-08-05",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "TN",
+              "line": 743
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxDetail",
+              "line": 145
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 780,
+          "note": null,
+          "tests": [
+            {
+              "title": "keeps a Tennessee wage earner’s payroll out of any state base",
+              "line": 792
+            },
+            {
+              "title": "would tax the same payroll without the constitutional bar",
+              "line": 797
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Tenn. Const. art. II, § 28",
+          "url": "https://publications.tnsosfiles.com/pub/2023%20TN%20Constitution.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "Tenn. Const. art. II, § 28 (retained grant)",
+          "url": "https://publications.tnsosfiles.com/pub/2023%20TN%20Constitution.pdf"
+        }
+      ]
+    },
+    {
+      "id": "tn-hall-income-tax-repealed-from-2021",
+      "title": "Tennessee’s Hall tax on interest and dividends is gone from 2021",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:TN",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2021,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-05",
+      "dueOn": "2027-08-05",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "TN",
+              "line": 743
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 804,
+          "note": null,
+          "tests": [
+            {
+              "title": "leaves a Tennessee retiree’s interest and dividends untaxed",
+              "line": 823
+            },
+            {
+              "title": "would reach every dollar of it if the Hall tax had survived",
+              "line": 828
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "TN Dept. of Revenue, Hall Income Tax — Due Date and Tax Rates",
+          "url": "https://www.tn.gov/revenue/taxes/hall-income-tax/due-date-and-tax-rates.html"
+        },
+        {
+          "kind": "statute",
+          "citation": "Tenn. Const. art. II, § 28 (retained grant)",
+          "url": "https://publications.tnsosfiles.com/pub/2023%20TN%20Constitution.pdf"
+        }
+      ]
+    },
+    {
+      "id": "tx-const-8-24-a-individual-income-tax-prohibited",
+      "title": "Texas may not tax an individual’s net income",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:TX",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2020,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-05",
+      "dueOn": "2027-08-05",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "TX",
+              "line": 748
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 442,
+          "note": null,
+          "tests": [
+            {
+              "title": "leaves a Texas retiree’s pension and IRA income out of any state base",
+              "line": 459
+            },
+            {
+              "title": "would carry all of it if the legislature could reach net income",
+              "line": 464
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Tex. Const. art. VIII, sec. 24-a",
+          "url": "https://tlc.texas.gov/docs/legref/TxConst.pdf"
+        }
+      ]
+    },
+    {
+      "id": "tx-const-8-24-b-capital-gains-tax-prohibited",
+      "title": "Texas may not tax an individual’s capital gains from 2026",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:TX",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-05",
+      "dueOn": "2027-08-05",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "TX",
+              "line": 748
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 471,
+          "note": null,
+          "tests": [
+            {
+              "title": "leaves a realized gain outside any Texas base",
+              "line": 484
+            },
+            {
+              "title": "would put the gain in the base under the question section 24-a left open",
+              "line": 488
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Tex. Const. art. VIII, sec. 24-b(a)",
+          "url": "https://tlc.texas.gov/docs/legref/TxConst.pdf"
+        },
+        {
+          "kind": "legislativeHistory",
+          "citation": "Tex. S.J.R. 18, 89th Leg., R.S. (2025) (enrolled), § 1 (proposed art. VIII, sec. 24-b(b))",
+          "url": "https://capitol.texas.gov/tlodocs/89R/billtext/html/SJ00018F.htm"
+        },
+        {
+          "kind": "legislativeHistory",
+          "citation": "Tex. S.J.R. 18, 89th Leg., R.S. (2025) (enrolled), § 2",
+          "url": "https://capitol.texas.gov/tlodocs/89R/billtext/html/SJ00018F.htm"
+        }
+      ]
+    }
+  ]
+}

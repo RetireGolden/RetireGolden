@@ -166,6 +166,32 @@ None.
 | tax/federalTax.ts | 2026-08-26 | implements §86 SS inclusion, NIIT, AMT screen, senior-deduction phase-out, LTCG stacking with records naming it, but §170(b)(1)(I)(ii) category waterfall is applied only in the ledger file its record names |
 | tax/medicare.ts | 2026-08-27 | Part B/IRMAA premium path and Part B late-enrollment absence registered (usc-42-1395r-*, cfr-20-418-1205-1230-*); post-pack premiumScale (healthcare-inflation stand-in) remains |
 
+## Coverage shards
+
+Per-rule payloads are sharded one file per record module under `DOCS/operations/rule-coverage/`, mirroring `packages/engine/src/rules/records/`. A re-verification rewrites only the shard whose module it edits, so dispatches in different domains no longer collide on one file.
+
+| Shard | Rules |
+| --- | ---: |
+| rule-coverage/annuities.json | 5 |
+| rule-coverage/charitableDeductions.json | 14 |
+| rule-coverage/charitableDistributions.json | 22 |
+| rule-coverage/contributionAndDeferralLimits.json | 37 |
+| rule-coverage/earlyDistributionsAndSepp.json | 28 |
+| rule-coverage/healthSavingsAccounts.json | 18 |
+| rule-coverage/individualIncomeTax.json | 19 |
+| rule-coverage/investmentIncomeAndBasis.json | 30 |
+| rule-coverage/iraBasisAndRollovers.json | 14 |
+| rule-coverage/medicareAndHealthCoverage.json | 16 |
+| rule-coverage/requiredMinimumDistributions.json | 40 |
+| rule-coverage/rothAccounts.json | 13 |
+| rule-coverage/socialSecurity.json | 48 |
+| rule-coverage/statesMidwest.json | 29 |
+| rule-coverage/statesNortheast.json | 11 |
+| rule-coverage/statesSouthAtlantic.json | 10 |
+| rule-coverage/statesSouthCentral.json | 33 |
+| rule-coverage/statesWest.json | 23 |
+| rule-coverage/transfersAndUnmodeledRegimes.json | 6 |
+
 ## Re-verification due dates
 
 The 25 earliest due dates are shown below (416 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
@@ -200,7 +226,11 @@ The 25 earliest due dates are shown below (416 rules total). Comparing dueOn to 
 
 ## Manifest contract
 
-The JSON manifest (rule-coverage.json, version 4) is the machine contract: each rule additionally carries title, errorDirection (null unless the rule is approximated), conventionRationale and contraryReading (null when unused), deduplicated authority identities (kind, citation, url), per-fixture detail (path, line, optional note, and the it() tests scanned from the fixture source, each with its own 1-based line), and implementations (per implementing file, the conformance-enforced operative function names with their 1-based declaration lines). Every line number is recomputed from source on each generation and the freshness suite fails when the committed manifest drifts from the sources in the same commit, so at any commit that passes CI the published lines are exact for that commit. This markdown file is the human summary and does not repeat them. Version 4 is a breaking discriminator for strict version checks (fixtures[].tests and per-function lines replace the flat title and name lists of version 3).
+The JSON ledger (version 5) is the machine contract, and it is split in two: rule-coverage.json is the INDEX — registry and attestation totals, the per-directory rollup, the unswept and partial lists, the quote-fidelity summary, and a shards array naming every shard with its path and rule count — while the per-rule payloads live in the shard files it names, one per record module. A consumer reads the index, then reads the shards it needs; the union of the shards' rules arrays, sorted by id, is what version 4 published inline as manifest.rules.
+
+Each rule carries title, errorDirection (null unless the rule is approximated), conventionRationale and contraryReading (null when unused), deduplicated authority identities (kind, citation, url), per-fixture detail (path, line, optional note, and the it() tests scanned from the fixture source, each with its own 1-based line), and implementations (per implementing file, the conformance-enforced operative function names with their 1-based declaration lines). Every line number is recomputed from source on each generation and the freshness suite fails when the committed index or any committed shard drifts from the sources in the same commit, so at any commit that passes CI the published lines are exact for that commit. This markdown file is the human summary and does not repeat them.
+
+Version 5 is a breaking discriminator for strict version checks: manifest.rules moved out of the index into the shards. Version 4 added fixtures[].tests and per-function lines in place of the flat title and name lists of version 3.
 
 ## Quote fidelity
 

@@ -1,0 +1,2602 @@
+{
+  "kind": "retiregolden.rules-coverage.shard",
+  "version": 5,
+  "module": "contributionAndDeferralLimits",
+  "rules": [
+    {
+      "id": "irc-219-b-1-ira-limit-lesser-of-compensation",
+      "title": "An IRA contribution is capped by compensation, not only by the dollar limit",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "This is the same shape as the section 415(c) annual additions cap: a two prong lesser of where applying only the dollar prong silently overstates. The engine previously applied only the dollar prong here. Wages are the engine only compensation source, so the compensation prong reads from projected wages for the year.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2027-08-03",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/simulate.test.ts",
+          "line": 5373,
+          "note": null,
+          "tests": [
+            {
+              "title": "holds a low earner to compensation rather than to the dollar limit",
+              "line": 5377
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 219(b)(1)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/219"
+        }
+      ]
+    },
+    {
+      "id": "irc-219-b-5-B-ira-catch-up-excludes-employer-plan-super-catch-up",
+      "title": "An IRA receives its section 219 age-50 catch-up, not the employer-plan super catch-up",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "simulate.ts separates employer accounts, which call employerCatchUpForAge, from traditional and Roth IRA accounts, which add only contributionLimits.iraCatchUp50 at age 50 or later. The fixture in employerRothCatchUp.test.ts discriminates the published 2026 7,500 plus 1,100 IRA total from the employer-plan 7,500 plus 11,250 reading for an age-62 owner. The 11,250 comparison value comes from Notice 2025-67; it is not calculated from the statutory formula.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2026-12-24",
+      "implementedBy": [
+        "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/data/year2026.ts",
+          "functions": [
+            {
+              "name": "year2026",
+              "line": 16
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/employerRothCatchUp.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/employerRothCatchUp.test.ts",
+          "line": 302,
+          "note": "an age-62 IRA has the IRA catch-up, not the employer-plan amount",
+          "tests": [
+            {
+              "title": "does not apply the employer-plan super catch-up to an IRA",
+              "line": 310
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 219(b)(5)(B)(i)-(ii)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section219&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 414(v)(6)(A)(i)-(iv)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section414&num=0&edition=prelim"
+        },
+        {
+          "kind": "irsNotice",
+          "citation": "IRS Notice 2025-67, IRA catch-up limit",
+          "url": "https://www.irs.gov/pub/irs-drop/n-25-67.pdf"
+        },
+        {
+          "kind": "irsNotice",
+          "citation": "IRS Notice 2025-67, ages 60-63 catch-up limit",
+          "url": "https://www.irs.gov/pub/irs-drop/n-25-67.pdf"
+        }
+      ]
+    },
+    {
+      "id": "irc-219-b-5-C-iii-ira-catch-up-indexed",
+      "title": "The age-50 IRA catch-up is indexed, unlike the HSA catch-up",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "Worth a record precisely because the neighbouring HSA catch-up under section 223(b)(3) is not indexed and must stay flat. The two look alike and behave differently, so the engine projects this one and holds the other. The indexing here was added by SECURE 2.0 section 108; before 2024 this amount was flat as well, which is why older secondary sources describe it that way.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-29",
+      "dueOn": "2026-12-27",
+      "implementedBy": [
+        "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/data/year2026.ts",
+          "functions": [
+            {
+              "name": "year2026",
+              "line": 16
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/simulate.test.ts",
+          "line": 5452,
+          "note": null,
+          "tests": [
+            {
+              "title": "projects the age-50 catch-up instead of holding it flat",
+              "line": 5456
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 219(b)(5)(C)(iii)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section219&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-219-c-1-spousal-ira-combined-compensation",
+      "title": "A jointly filing couple funds both IRAs from combined compensation",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "Two prongs pull in opposite directions and both must hold. Capping each spouse at their own wages alone would deny a non-earning spouse an IRA the statute plainly allows; pooling without a per-person dollar limit would let one spouse absorb the whole household ceiling. The engine models the pool only when the projected filing status is married filing jointly and both spouses are alive, since section 219(c)(2) conditions the rule on a joint return.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2027-08-03",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/simulate.test.ts",
+          "line": 5391,
+          "note": null,
+          "tests": [
+            {
+              "title": "lets a non-earning spouse draw on the earner’s compensation, up to the combined total",
+              "line": 5395
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 219(c)(1)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/219"
+        }
+      ]
+    },
+    {
+      "id": "irc-219-f-1-compensation-excludes-deferred-income",
+      "title": "Pension, annuity and deferred income are not compensation for IRA purposes",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "This is what makes the compensation prong bite in a retirement projection. Most years in a plan have no wages at all, and a reading that counted any income as compensation would leave the section 219(b)(1) cap inert for exactly the span the projection is about.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-29",
+      "dueOn": "2027-08-29",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/simulate.test.ts",
+          "line": 5413,
+          "note": null,
+          "tests": [
+            {
+              "title": "gives a retiree living on a pension no contribution room",
+              "line": 5417
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 219(f)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section219&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-219-f-3-prior-year-contribution-window",
+      "title": "A prior-year IRA contribution must be made by the unextended due date",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2027-08-04",
+      "implementedBy": [
+        "packages/engine/src/actions/ownedNonRothIraAnnualFilingEvidence.ts",
+        "packages/engine/src/actions/ownedNonRothIraAnnualPostCandidateEvidence.ts",
+        "packages/engine/src/model/retirementActionAnnualTaxFacts.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraAnnualFilingEvidence.ts",
+          "functions": [
+            {
+              "name": "buildPlanOwnedNonRothIraAnnualFilingEvidence",
+              "line": 774
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraAnnualPostCandidateEvidence.ts",
+          "functions": [
+            {
+              "name": "buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput",
+              "line": 447
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/model/retirementActionAnnualTaxFacts.ts",
+          "functions": [
+            {
+              "name": "ordinaryFederalFilingDeadline",
+              "line": 52
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/actions/ownedNonRothIraAnnualFilingEvidence.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraAnnualFilingEvidence.test.ts",
+          "line": 762,
+          "note": null,
+          "tests": [
+            {
+              "title": "refuses a prior-year contribution made after the unextended deadline",
+              "line": 774
+            },
+            {
+              "title": "counts a contribution made inside the window toward that year basis",
+              "line": 785
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 219(f)(3)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section219&num=0&edition=prelim"
+        },
+        {
+          "kind": "irsPublication",
+          "citation": "IRS Publication 590-A, When Can Contributions Be Made",
+          "url": "https://www.irs.gov/publications/p590a"
+        }
+      ]
+    },
+    {
+      "id": "irc-219-g-traditional-ira-deduction-phaseout",
+      "title": "Traditional-IRA deductions phase out for workplace-plan participants",
+      "classification": "approximated",
+      "errorDirection": "understatesTax",
+      "conventionRationale": "DEFECT — no behavior change in this registration slice. The Plan can carry a traditional IRA, wages, filing status, and an employer account, but has no active-participant fact or section 219(g) MAGI calculation. projection/simulate.ts nevertheless adds an allowed traditional IRA deposit to preTaxContributions. The fixture supplies a one-dollar employer deferral to establish actual participation, uses 100,000 dollars of wages, and derives the accepted 99,999-dollar 100-percent-flat-tax base by allowing the employer deferral but no 100-dollar IRA deduction; the observed engine output is 99,899 — the deposit is deducted despite the phaseout — pinned until a separately authorized implementation fix changes it.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2026-12-24",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "traditionalAccountSchema",
+              "line": 894
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/simulateContributionsAndQcd.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/simulateContributionsAndQcd.approximation.test.ts",
+          "line": 253,
+          "note": "active-participant deduction phase-out",
+          "tests": [
+            {
+              "title": "deducts a traditional-IRA contribution after the active-participant phase-out ends",
+              "line": 266
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 219(g)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section219&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 219(g)(2)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section219&num=0&edition=prelim"
+        },
+        {
+          "kind": "irsNotice",
+          "citation": "Notice 2025-67, traditional IRA deduction phase-out ranges",
+          "url": "https://www.irs.gov/pub/irs-drop/n-25-67.pdf"
+        }
+      ]
+    },
+    {
+      "id": "irc-401-a-17-plan-compensation-cap",
+      "title": "Qualified-plan compensation taken into account is capped",
+      "classification": "approximated",
+      "errorDirection": "understatesTax",
+      "conventionRationale": "DEFECT — no behavior change in this registration slice. The match dollars are not current-year taxable income; they inflate tax-deferred balances and therefore defer and understate future tax while overstating resources. That is the same resource-inflating / future-tax-understating shape as irc-414-v-1-plan-permitted-catch-up and irc-408A-c-3-roth-contribution-agi-phase-out, which also use understatesTax when the engine admits more tax-advantaged contribution than the authority allows. The fixture pins employerMatch at the uncapped 24,500 against the statute's 21,600 until a separately authorized implementation fix changes it. model/plan.test.ts still gates the absent plan-defined compensation field.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2026-12-24",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "employerMatchSchema",
+              "line": 379
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/simulateContributionsAndQcd.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/simulateContributionsAndQcd.approximation.test.ts",
+          "line": 130,
+          "note": "uncapped wages inflate the 6%-of-pay match",
+          "tests": [
+            {
+              "title": "computes employer match from uncapped wages above the 401(a)(17) cap",
+              "line": 139
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 401(a)(17)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section401&num=0&edition=prelim"
+        },
+        {
+          "kind": "irsNotice",
+          "citation": "Notice 2025-67, annual compensation limitation",
+          "url": "https://www.irs.gov/pub/irs-drop/n-25-67.pdf"
+        }
+      ]
+    },
+    {
+      "id": "irc-401-c-2-earned-income-not-modeled",
+      "title": "Self-employment earned income is not a modeled compensation source",
+      "classification": "approximated",
+      "errorDirection": "overstatesTax",
+      "conventionRationale": "The direction of this gap is the opposite of the Roth phase-out gap: it understates rather than overstates, denying contribution room to a self-employed household that is entitled to it. It is recorded here so the section 219(b)(1) compensation prong is not read as complete. The engine income model has no self-employment stream to read from, so closing this needs a model change and not a calculation change.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2027-08-04",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "wagesIncomeSchema",
+              "line": 1431
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/simulateContributionsAndQcd.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/simulateContributionsAndQcd.approximation.test.ts",
+          "line": 309,
+          "note": null,
+          "tests": [
+            {
+              "title": "denies IRA contribution room to a household whose only earnings are self-employment",
+              "line": 320
+            },
+            {
+              "title": "allows the identical amount when the same dollars arrive as wages",
+              "line": 331
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 401(c)(2)(A)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/401"
+        }
+      ]
+    },
+    {
+      "id": "irc-401-k-11-simple-401-k-elective-deferral-limit",
+      "title": "SIMPLE 401(k) elective deferrals use the separate SIMPLE limit",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": "The generic 402(g) aggregate record is deliberately not extended to call a 401(k) SIMPLE: that plan-document status is absent. model/plan.test.ts gates the employer-plan-type membership, and actions/contract.test.ts gates the absence of a plan-term correction/action arm. The enhanced-limit election under 408(p)(2)(E)(i)(II) is not carried here — one claim per record.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2026-12-24",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "traditionalAccountSchema",
+              "line": 894
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 401(k)(11)(B)(i)(I)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section401&num=0&edition=prelim"
+        },
+        {
+          "kind": "irsNotice",
+          "citation": "Notice 2025-67, SIMPLE retirement account and SIMPLE 401(k) limitation",
+          "url": "https://www.irs.gov/pub/irs-drop/n-25-67.pdf"
+        }
+      ]
+    },
+    {
+      "id": "irc-401-k-2-B-i-employer-plan-conversion-source-not-gated-by-distributability",
+      "title": "A pre-tax employer plan balance may be converted to a Roth IRA only when a 401(k)(2)(B)(i) event is provable",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The authority fixes that a Roth-IRA rollover needs a distribution, and that elective deferrals are not distributable before a 401(k)(2)(B)(i) event. It selects nothing about how a year-granularity projection proves those events from the facts a Plan already carries, so those two proofs are engine conventions. Separation is the owner’s attained age at or past retirementAge, the same proxy the Rule of 55 and the 72(t)(3)(B) SEPP path already use; no separation-from-service schema field was added. Age 59½ is the attained-age-60 threshold the 72(t) additional-tax path already uses, because the aggregate conversion has no day-of-year execution date on which a half-year test could be proved. kind employer is the only discriminant a traditional account carries, so 403(b) and governmental 457(b) balances fail closed under the same gate rather than being told apart. Hardship is not treated as convertible: it is distributable but not rollable. 402A(c)(4)(E), added by ATRA section 902 for transfers after 2012-12-31, is a different act -- an optional in-plan transfer of otherwise nondistributable amounts to a designated Roth account in the same plan, which Notice 2013-74 Q-3 keeps under the old distribution lock -- and is not this path. Match and nonelective in-service distributions, and a real in-plan feature flag, are later splits.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-20",
+      "dueOn": "2027-08-20",
+      "implementedBy": [
+        "packages/engine/src/actions/aggregateRothConversionOwnerAllocation.ts",
+        "packages/engine/src/projection/optimizerAggregateConversionPromotion.ts",
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/strategies/accountEligibility.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/aggregateRothConversionOwnerAllocation.ts",
+          "functions": [
+            {
+              "name": "allocateAggregateRothConversionByOwner",
+              "line": 276
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/optimizerAggregateConversionPromotion.ts",
+          "functions": [
+            {
+              "name": "promoteOneYear",
+              "line": 525
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/strategies/accountEligibility.ts",
+          "functions": [
+            {
+              "name": "isConvertibleToRoth",
+              "line": 1360
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/employerPlanConversionSource.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/employerPlanConversionSource.approximation.test.ts",
+          "line": 119,
+          "note": null,
+          "tests": [
+            {
+              "title": "does not convert a 401(k) balance the plan may not distribute",
+              "line": 134
+            },
+            {
+              "title": "names the employer plan it refused to draw from",
+              "line": 145
+            },
+            {
+              "title": "refuses the account through the predicate that now carries the gate",
+              "line": 167
+            },
+            {
+              "title": "names the unused locked 401(k) when an IRA only partly fills the request",
+              "line": 178
+            },
+            {
+              "title": "agrees with the statute for a separated participant past 59½",
+              "line": 221
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 401(k)(2)(B)(i)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section401&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 408A(e)(1)(B)(ii)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408A&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 402(c)(4), lead-in and (C)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-401-m-employee-contribution-mega-backdoor-roth-not-modeled",
+      "title": "Employer-plan employee-contribution mega-backdoor Roth path is not modeled",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": "The IRA-only nondeductibleBasis field is intentionally not an employer-plan after-tax contribution record: model/plan.ts rejects it on an employer traditional account. The employer-account schemas retain neither a separate employee-contribution/basis pool nor the plan permission and distribution facts that select a route. model/plan.test.ts pins that schema vocabulary, and actions/contract.test.ts pins the absence of a corresponding action from both request unions. The existing Notice 2014-54 record remains narrower: it covers allocation of an already-expressible simultaneous employer-plan disbursement to multiple destinations, not the absent source and feature facts here.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2027-08-26",
+      "implementedBy": [
+        "packages/engine/src/actions/contract.ts",
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/strategies/accountEligibility.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/contract.ts",
+          "functions": [
+            {
+              "name": "persistedRetirementActionRequestSchema",
+              "line": 389
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "traditionalAccountSchema",
+              "line": 894
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/strategies/accountEligibility.ts",
+          "functions": [
+            {
+              "name": "evaluateConversion",
+              "line": 650
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 401(m)(3)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section401&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 402(c)(1)(A)-(B)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 402A(c)(4)(E)(i)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402A&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-402-a-employer-plan-distribution-receipt-year-taxability",
+      "title": "Employer-plan distributions are taxable in the year received",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/simulate.test.ts",
+          "line": 2498,
+          "note": "April 1 first-RMD deferral receipt-year income",
+          "tests": [
+            {
+              "title": "books the deferred employer-plan RMD as ordinary income in the following receipt year",
+              "line": 2512
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 402(a)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-402-e-4-B-lump-sum-employer-securities-nua-exclusion",
+      "title": "NUA in employer securities: distribution exclusion and sale treatment",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": "The plan model carries an employer-plan balance only: traditionalAccountSchema's nondeductibleBasis is IRA-only, and the schema comment says employer-plan after-tax money is not modeled. After-tax employee basis exists only as runtime classifier evidence (afterTaxEmployeeBasisBeforeDistribution) on traditionalEmployerPlanWithdrawalCharacter, whose withdrawal character is basis return or ordinary income. The action contract rejects a NUA action kind. The action-kind refusal is covered in actions/contract.test.ts. Notice 98-24 now extends this record because its sale-side holding-period treatment is inseparable from the excluded NUA whose amount the Plan cannot state; it does not warrant a computed result or a separate record when the engine has neither the NUA/security facts nor the later sale facts.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/actions/contract.ts",
+        "packages/engine/src/actions/traditionalEmployerPlanWithdrawalCharacter.ts",
+        "packages/engine/src/model/plan.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/contract.ts",
+          "functions": [
+            {
+              "name": "persistedRetirementActionRequestSchema",
+              "line": 389
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/traditionalEmployerPlanWithdrawalCharacter.ts",
+          "functions": [
+            {
+              "name": "classifyTraditionalEmployerPlanWithdrawal",
+              "line": 288
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "traditionalAccountSchema",
+              "line": 894
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 402(e)(4)(B)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 72(t)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim"
+        },
+        {
+          "kind": "irsNotice",
+          "citation": "IRS Notice 98-24, 1998-17 I.R.B.",
+          "url": "https://www.irs.gov/pub/irs-irbs/irb98-17.pdf"
+        }
+      ]
+    },
+    {
+      "id": "irc-402-g-1-elective-deferral-aggregate",
+      "title": "The elective deferral limit is per individual, not per plan",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "Section 402(g)(3) counts 401(k), 403(b), SARSEP and SIMPLE deferrals in the same total. The engine groups by owner rather than by plan for exactly this reason, and does not model the separate 457(b) limit, which genuinely does sit alongside rather than inside this one.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-29",
+      "dueOn": "2026-12-27",
+      "implementedBy": [
+        "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/projection/employerRothCatchUp.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/data/year2026.ts",
+          "functions": [
+            {
+              "name": "year2026",
+              "line": 16
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/employerRothCatchUp.ts",
+          "functions": [
+            {
+              "name": "allocateEmployerElectiveDeferrals",
+              "line": 104
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/simulate.test.ts",
+          "line": 2247,
+          "note": null,
+          "tests": [
+            {
+              "title": "shares one deferral limit across every employer plan",
+              "line": 2251
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 402(g)(1)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 402(g)(3)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-402-g-2-excess-elective-deferral-correction",
+      "title": "A timely excess-elective-deferral distribution avoids taxing the deferral twice",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": "The contribution allocator prevents modeled requests from exceeding its aggregate ceiling; it is not a record of an actual excess or a corrective distribution. actions/contract.test.ts gates the request and persisted action unions against a correction kind, while model/plan.test.ts gates the missing correction facts.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2027-08-26",
+      "implementedBy": [
+        "packages/engine/src/actions/contract.ts",
+        "packages/engine/src/model/plan.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/contract.ts",
+          "functions": [
+            {
+              "name": "persistedRetirementActionRequestSchema",
+              "line": 389
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "traditionalAccountSchema",
+              "line": 894
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 402(g)(2)(A)(i)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 402(g)(2)(A)(ii)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 402(g)(2)(C)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 402(g)(2)(C)(ii)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-402-g-7-403b-15-year-catch-up",
+      "title": "The special 403(b) 15-year catch-up has independent eligibility and caps",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": "employerPlanType: 403b is an RMD-aggregation label only; it does not establish any of the section 402(g)(7) predicates. model/plan.test.ts gates those absent membership fields and actions/contract.test.ts gates the absence of a catch-up certification/action.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2027-08-26",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "traditionalAccountSchema",
+              "line": 894
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 402(g)(7)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 402(g)(7)(A)(i)-(iii)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "regulation",
+          "citation": "26 CFR 1.403(b)-4(c)(3)(iii)-(iv)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.403(b)-4"
+        }
+      ]
+    },
+    {
+      "id": "irc-404-a-3-a-employer-deduction-limit",
+      "title": "Employer plan-contribution deduction is a sponsor-side limit",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": "IRC 404(a)'s general deduction gate and 404(a)(3)(A)(i)'s amount limit both address the same absent employer-return surface, so they are deliberately one record rather than two non-dispositive fragments. Household wages and a configured employer match are participant-side facts the Plan does carry; they neither identify the sponsor nor make a sponsor deduction calculation reachable.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "traditionalAccountSchema",
+              "line": 894
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 404(a)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section404&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 404(a)(3)(A)(i)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section404&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 404(a)(3)(A)(i)(I)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section404&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 404(a)(3)(A)(i)(II)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section404&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-408-p-2-E-i-II-simple-enhanced-elective-deferral-election",
+      "title": "A SIMPLE plan may elect the enhanced elective-deferral dollar amount",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": "Separated from irc-401-k-11-simple-401-k-elective-deferral-limit so each record carries one claim: that record is the generally applicable (i)(III) amount; this one is the election limb. model/plan.test.ts gates employer-plan-type membership against a simple401k arm, and actions/contract.test.ts gates the absence of a plan-term election/action.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2026-12-24",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "traditionalAccountSchema",
+              "line": 894
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 401(k)(11)(B)(i)(I)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section401&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 408(p)(2)(E)(i)(II)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 408(p)(2)(E)(ii)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim"
+        },
+        {
+          "kind": "irsNotice",
+          "citation": "Notice 2025-67, SIMPLE retirement account and SIMPLE 401(k) limitation",
+          "url": "https://www.irs.gov/pub/irs-drop/n-25-67.pdf"
+        }
+      ]
+    },
+    {
+      "id": "irc-411-a-2-vesting-schedule-maximums",
+      "title": "Employer contributions are subject to section 411 vesting maxima",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": "A projected account balance is not evidence that each underlying employer contribution is vested. model/plan.test.ts gates the absence of vesting schedule and service fields, and actions/contract.test.ts gates the absence of a vesting action or certification.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2027-08-26",
+      "implementedBy": [
+        "packages/engine/src/actions/contract.ts",
+        "packages/engine/src/model/plan.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/contract.ts",
+          "functions": [
+            {
+              "name": "persistedRetirementActionRequestSchema",
+              "line": 389
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "traditionalAccountSchema",
+              "line": 894
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 411(a)(2)(B)(ii)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section411&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 411(a)(2)(B)(iii)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section411&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-414-v-1-plan-permitted-catch-up",
+      "title": "An employer plan may permit, but need not offer, a catch-up contribution",
+      "classification": "approximated",
+      "errorDirection": "understatesTax",
+      "conventionRationale": "The input model identifies an account as kind employer but has no plan-permits-catch-up fact. simulate.ts consequently assigns employerCatchUpForAge to every employer account at the eligible age. The fixture in employerRothCatchUp.test.ts uses an age-62 participant who requests 24,500 plus 11,250: a plan without the optional feature allows only 24,500, but the engine accepts 35,750 as a pre-tax contribution and understates tax. The published 11,250 figure used by that fixture is Notice 2025-67's 2026 figure, not a reconstruction of SECURE 2.0's formula.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2026-12-24",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "rothAccountSchema",
+              "line": 942
+            },
+            {
+              "name": "traditionalAccountSchema",
+              "line": 894
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/employerRothCatchUp.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/employerRothCatchUp.test.ts",
+          "line": 274,
+          "note": "a missing plan term makes the optional age-62 catch-up automatic",
+          "tests": [
+            {
+              "title": "accepts the super catch-up even though the plan-permission fact is absent",
+              "line": 283
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 414(v)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section414&num=0&edition=prelim"
+        },
+        {
+          "kind": "legislativeHistory",
+          "citation": "P.L. 117-328, division T, title I, section 109(a)(1)",
+          "url": "https://www.govinfo.gov/content/pkg/PLAW-117publ328/pdf/PLAW-117publ328.pdf"
+        },
+        {
+          "kind": "irsNotice",
+          "citation": "IRS Notice 2025-67",
+          "url": "https://www.irs.gov/pub/irs-drop/n-25-67.pdf"
+        }
+      ]
+    },
+    {
+      "id": "irc-414-v-2-A-catch-up-limited-to-compensation-excess",
+      "title": "Catch-up cannot exceed compensation minus other elective deferrals",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "Wages are the engine's only 415(c)(3) compensation source, the same stand-in the 415(c) pay prong already uses. IRA catch-up under 219(b)(5) is outside 414(v).",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-19",
+      "dueOn": "2027-08-19",
+      "implementedBy": [
+        "packages/engine/src/projection/employerRothCatchUp.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/employerRothCatchUp.ts",
+          "functions": [
+            {
+              "name": "allocateEmployerElectiveDeferrals",
+              "line": 104
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/employerRothCatchUp.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/employerRothCatchUp.test.ts",
+          "line": 506,
+          "note": "catch-up is limited to pay minus the 402(g) base",
+          "tests": [
+            {
+              "title": "caps redirected catch-up at compensation minus other electives",
+              "line": 514
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 414(v)(2)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section414&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-414-v-2-E-super-catch-up-window",
+      "title": "The higher catch-up covers ages 60 to 63 and stops at 64",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The two legs of 414(v)(2)(E)(i) are a 10,000 dollar amount and 150 percent of the 2024 amount, and the greater of them governs. That is why the 2026 figure is 11,250 rather than 150 percent of the current 8,000 catch-up, as IRS Notice 2025-67 confirms. Only the first leg moves: 414(v)(2)(C)(i) adjusts the (E) amounts for years after 2025 off a July 1 2024 base quarter, while the second leg is computed off a 2024 figure that will never change, so it is 11,250 forever. The engine therefore projects the indexed leg and takes the greater of it and the pack-year amount, rather than carrying the inflation factor onto the operative figure — Notice 2025-67 is the discriminating evidence, since it held the ages 60-63 amount flat for 2026 in the same year the ordinary catch-up rose from 7,500 to 8,000. Two simplifications remain. The engine projects the indexed leg on the smooth plan inflation path and does not apply the statutory rounding down to a multiple of 500, so the year the leg overtakes 11,250 can land early by up to a step. And the pack carries that leg at 10,000 for 2026, which is a derivation rather than a published figure: the IRS notices state only the operative amount, and one year of cost-of-living from the July 2024 base quarter falls well short of the 10,500 step. The age-55 HSA addition is registered separately because section 223(g) omits it from indexing entirely — the same shape of rule with a third answer again.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2026-12-02",
+      "implementedBy": [
+        "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/data/year2026.ts",
+          "functions": [
+            {
+              "name": "year2026",
+              "line": 16
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/simulate.test.ts",
+          "line": 1977,
+          "note": "the window closes at 64",
+          "tests": [
+            {
+              "title": "drops back to the ordinary catch-up at sixty-four",
+              "line": 1982
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.test.ts",
+          "line": 2025,
+          "note": "a sub-step increase does not move the amount",
+          "tests": [
+            {
+              "title": "does not move the amount when the increase falls short of a 500 step",
+              "line": 2030
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.test.ts",
+          "line": 2078,
+          "note": "the increase is measured from a fixed origin, not year over year",
+          "tests": [
+            {
+              "title": "banks cost-of-living below a step until it carries the amount up",
+              "line": 2087
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.test.ts",
+          "line": 2122,
+          "note": "which amount the adjustment reaches",
+          "tests": [
+            {
+              "title": "indexes the operative amount rather than the inoperative 10,000 leg",
+              "line": 2131
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 414(v)(2)(B)(i)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/414"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 414(v)(2)(E)(i)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/414"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 414(v)(2)(C)(i)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/414"
+        }
+      ]
+    },
+    {
+      "id": "irc-414-v-3-A-catch-up-excluded-from-415c",
+      "title": "Section 414(v) catch-up is not an annual addition under 415(c)",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The engine already split the §402(g) base from the 414(v) catch-up slice for the Roth-character mandate. That same slice is the paragraph (1) contribution paragraph (3)(A) names. IRA catch-up under 219(b)(5) is outside 414(v) and never enters this carve-out. Current-year wages stand in for 415(c)(3) compensation, as they already do for the 415(c) pay prong.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-19",
+      "dueOn": "2027-08-19",
+      "implementedBy": [
+        "packages/engine/src/projection/employerRothCatchUp.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/employerRothCatchUp.ts",
+          "functions": [
+            {
+              "name": "allocateEmployerElectiveDeferrals",
+              "line": 104
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/employerRothCatchUp.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/employerRothCatchUp.test.ts",
+          "line": 536,
+          "note": "catch-up is not taken into account for match room",
+          "tests": [
+            {
+              "title": "leaves leftover 415(c) room for match after the 402(g) base only",
+              "line": 544
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 414(v)(3)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section414&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 414(v)(7)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section414&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-414-v-7-402-g-7-403b-15-year-catch-up-exclusion",
+      "title": "The 403(b) 15-year catch-up is not the 414(v)(1) Roth-mandated catch-up",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": "This is not a duplicate of irc-414-v-7-A-high-earner-roth-catch-up-mandate: that record covers the 414(v)(1) catch-up, including SIMPLE IRA and Roth-program limbs. The missing 402(g)(7) membership facts are gated in model/plan.test.ts.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2027-08-26",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "traditionalAccountSchema",
+              "line": 894
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 414(v)(7)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section414&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 402(g)(7)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-414-v-7-A-high-earner-roth-catch-up-mandate",
+      "title": "High-earner employer-plan catch-up must be designated Roth in 2026 and later",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The wage figure the engine compares to the threshold is a user-entered prior-calendar-year FICA amount on the employer account, not a Form W-2 Box 3 retrieved per sponsoring employer; that input gap is registered separately at irc-414-v-7-A-prior-year-fica-wage-proxy. Roth capability is inferred from the presence of a Roth employer account for the same owner, because the plan model has no employer identity and no qualified-Roth-contribution-program flag. Catch-up redirected onto that sibling remains elective deferral of the source plan for employer match. SEP and SIMPLE IRA are the IRA kind and never enter this allocator. Regular (non-catch-up) elective deferrals keep the account type the plan already states. Named-arm RMD coordination and the age-70½ proxy are outside this record.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-19",
+      "dueOn": "2027-08-19",
+      "implementedBy": [
+        "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/projection/employerRothCatchUp.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/data/year2026.ts",
+          "functions": [
+            {
+              "name": "year2026",
+              "line": 16
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/employerRothCatchUp.ts",
+          "functions": [
+            {
+              "name": "allocateEmployerElectiveDeferrals",
+              "line": 104
+            },
+            {
+              "name": "highEarnerRothCatchUpMandated",
+              "line": 43
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/employerRothCatchUp.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/employerRothCatchUp.test.ts",
+          "line": 190,
+          "note": "exactly 150,000 is not over the threshold",
+          "tests": [
+            {
+              "title": "leaves the catch-up pre-tax when prior-year FICA equals 150,000",
+              "line": 198
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/employerRothCatchUp.test.ts",
+          "line": 217,
+          "note": "150,000.01 forces the catch-up slice into Roth",
+          "tests": [
+            {
+              "title": "recharacterizes the age-50 catch-up as designated Roth one cent over the threshold",
+              "line": 225
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/employerRothCatchUp.test.ts",
+          "line": 244,
+          "note": "ages 60-63 super catch-up is the same 414(v) dollars",
+          "tests": [
+            {
+              "title": "Roth-mandates the 11,250 super catch-up at age 62, not only 8,000",
+              "line": 252
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/employerRothCatchUp.test.ts",
+          "line": 327,
+          "note": "zero prior FICA is not subject",
+          "tests": [
+            {
+              "title": "leaves the catch-up pre-tax when prior-year FICA is zero",
+              "line": 335
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/employerRothCatchUp.test.ts",
+          "line": 353,
+          "note": "no Roth feature zeroes the high-earner catch-up",
+          "tests": [
+            {
+              "title": "drops the catch-up rather than keeping it pre-tax when there is no Roth employer account",
+              "line": 361
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/employerRothCatchUp.test.ts",
+          "line": 376,
+          "note": "2026 is statute plus good-faith, not delayed to 2027",
+          "tests": [
+            {
+              "title": "applies the Roth mandate in 2026 rather than waiting for T.D. 10033 applicability",
+              "line": 384
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/employerRothCatchUp.test.ts",
+          "line": 407,
+          "note": "IRA catch-up is not recharacterized",
+          "tests": [
+            {
+              "title": "does not recharacterize an IRA catch-up when the employer wage test is met",
+              "line": 415
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/employerRothCatchUp.test.ts",
+          "line": 569,
+          "note": "redirected catch-up stays elective deferral for match",
+          "tests": [
+            {
+              "title": "applies the source match formula to the redirected catch-up",
+              "line": 577
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 414(v)(7)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section414&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 414(v)(7)(C)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section414&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 414(v)(6)(A)(iv)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section414&num=0&edition=prelim"
+        },
+        {
+          "kind": "irsNotice",
+          "citation": "Notice 2025-67, section on the Roth catch-up wage threshold",
+          "url": "https://www.irs.gov/pub/irs-drop/n-25-67.pdf"
+        },
+        {
+          "kind": "regulation",
+          "citation": "T.D. 10033, 26 CFR 1.414(v)-2(b)(2)",
+          "url": "https://www.govinfo.gov/content/pkg/FR-2025-09-16/html/2025-17865.htm"
+        },
+        {
+          "kind": "regulation",
+          "citation": "T.D. 10033, DATES / Applicability Dates",
+          "url": "https://www.govinfo.gov/content/pkg/FR-2025-09-16/html/2025-17865.htm"
+        },
+        {
+          "kind": "regulation",
+          "citation": "T.D. 10033, preamble on FICA wages and self-employment",
+          "url": "https://www.govinfo.gov/content/pkg/FR-2025-09-16/html/2025-17865.htm"
+        }
+      ]
+    },
+    {
+      "id": "irc-414-v-7-A-prior-year-fica-wage-proxy",
+      "title": "The 414(v)(7) wage test uses a user-entered Box 3 proxy, and omission fails closed",
+      "classification": "approximated",
+      "errorDirection": "understatesTax",
+      "conventionRationale": "The mandate itself is enacted; the approximation is the input. Inferring Box 3 from current-year wages, MAGI, or the HCE test would invent a wage test the statute does not use and would over-apply the mandate to self-employment and to wages from a different employer. Leaving the field at zero matches T.D. 10033's no-FICA result and is the fail-closed reading the fixtures pin. The field is a single static figure for every contribution year 2026 and later; the engine does not reconstruct a year-by-year Box 3 series.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-19",
+      "dueOn": "2027-08-19",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/employerRothCatchUp.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "traditionalAccountSchema",
+              "line": 894
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/employerRothCatchUp.ts",
+          "functions": [
+            {
+              "name": "priorYearFicaExceedsRothCatchUpThreshold",
+              "line": 36
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/rothCatchUpWageProxy.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/rothCatchUpWageProxy.approximation.test.ts",
+          "line": 83,
+          "note": "omitted prior-year FICA fails closed to not subject",
+          "tests": [
+            {
+              "title": "does not infer Box 3 from current-year wages when the field is omitted",
+              "line": 92
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 414(v)(7)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section414&num=0&edition=prelim"
+        },
+        {
+          "kind": "regulation",
+          "citation": "T.D. 10033, preamble on FICA wages and self-employment",
+          "url": "https://www.govinfo.gov/content/pkg/FR-2025-09-16/html/2025-17865.htm"
+        },
+        {
+          "kind": "irsNotice",
+          "citation": "Notice 2025-67, section on the Roth catch-up wage threshold",
+          "url": "https://www.irs.gov/pub/irs-drop/n-25-67.pdf"
+        }
+      ]
+    },
+    {
+      "id": "irc-414-v-7-E-roth-catch-up-wage-threshold",
+      "title": "The Roth catch-up wage threshold moves in five-thousand-dollar steps",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The pack carries the published 2026 step. The projection now reads that figure for the 414(v)(7)(A) wage test; the character mandate and the Box 3 input proxy are registered separately at irc-414-v-7-A-high-earner-roth-catch-up-mandate and irc-414-v-7-A-prior-year-fica-wage-proxy. What remains settled here is the FIGURE and the five-thousand-dollar rounding, not the character of the catch-up.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2026-12-01",
+      "implementedBy": [
+        "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/params/types.ts",
+        "packages/engine/src/projection/employerRothCatchUp.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/data/year2026.ts",
+          "functions": [
+            {
+              "name": "year2026",
+              "line": 16
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/types.ts",
+          "functions": [
+            {
+              "name": "rothCatchUpWageThreshold",
+              "line": 140
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/employerRothCatchUp.ts",
+          "functions": [
+            {
+              "name": "indexRothCatchUpWageThreshold",
+              "line": 20
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/params/params.test.ts",
+        "packages/engine/src/projection/employerRothCatchUp.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/params/params.test.ts",
+          "line": 452,
+          "note": null,
+          "tests": [
+            {
+              "title": "carries the adjusted threshold on a five-thousand-dollar step",
+              "line": 456
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/employerRothCatchUp.test.ts",
+          "line": 146,
+          "note": "an increase of 4,999.99 holds the prior step",
+          "tests": [
+            {
+              "title": "holds 150,000 when the COLA increase is 4,999.99",
+              "line": 154
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/employerRothCatchUp.test.ts",
+          "line": 164,
+          "note": "an increase of 5,000 is a whole step",
+          "tests": [
+            {
+              "title": "returns 155,000 when the COLA increase is 5,000",
+              "line": 172
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 414(v)(7)(A), (v)(7)(E)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section414&num=0&edition=prelim"
+        },
+        {
+          "kind": "irsNotice",
+          "citation": "Notice 2025-67, section on the Roth catch-up wage threshold",
+          "url": "https://www.irs.gov/pub/irs-drop/n-25-67.pdf"
+        }
+      ]
+    },
+    {
+      "id": "irc-415-c-1-annual-additions-lesser-of",
+      "title": "Annual additions are capped by pay as well as by the dollar limit",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "Section 415(c)(3) compensation is broader than wages, and the engine uses wages as the stand-in, so the pay prong binds slightly earlier here than under the statute. Annual additions under 415(c)(2) are employer contributions, employee contributions and forfeitures; the engine models the first two and has no concept of forfeitures.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2026-12-02",
+      "implementedBy": [
+        "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/data/year2026.ts",
+          "functions": [
+            {
+              "name": "year2026",
+              "line": 16
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/simulate.test.ts",
+          "line": 2167,
+          "note": "the cap binds total additions, not the match alone",
+          "tests": [
+            {
+              "title": "never lets total additions exceed the participant pay",
+              "line": 2172
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.test.ts",
+          "line": 2208,
+          "note": "the pay prong binds deferrals too",
+          "tests": [
+            {
+              "title": "binds the deferral itself, not only the match",
+              "line": 2213
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 415(c)(1)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/415"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 415(c)(2)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/415"
+        }
+      ]
+    },
+    {
+      "id": "irc-415-d-cost-of-living-adjustment-anchor",
+      "title": "Section 415(d) is the adjustment mechanism the other retirement limits borrow",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The statutory adjustment lands on rounded steps while the projection multiplies the pack figure by a continuous inflation factor, so a projected year can sit between two published steps. Holding the step exactly would require index values for years that have not happened, which do not exist at planning time, so the continuous factor is a deliberate approximation. It is bounded by one rounding step, unbiased over a long horizon, and never reverses the direction of a limit. What it must not be extended to is a figure with no adjustment provision at all, where the same multiplication produces a number the statute never allows.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2026-12-01",
+      "implementedBy": [
+        "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/data/year2026.ts",
+          "functions": [
+            {
+              "name": "year2026",
+              "line": 16
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/params/params.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/params/params.test.ts",
+          "line": 466,
+          "note": null,
+          "tests": [
+            {
+              "title": "moves the annual additions limit on a thousand-dollar step",
+              "line": 470
+            },
+            {
+              "title": "leaves every borrowing limit on the step its own provision names",
+              "line": 476
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 415(d)(1), (d)(2), (d)(3)(D), (d)(4)(B)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section415&num=0&edition=prelim"
+        },
+        {
+          "kind": "irsNotice",
+          "citation": "Notice 2025-67, section on the section 415 limitations",
+          "url": "https://www.irs.gov/pub/irs-drop/n-25-67.pdf"
+        }
+      ]
+    },
+    {
+      "id": "irc-457-b-3-final-three-year-catch-up",
+      "title": "An eligible 457(b) plan may provide a final-three-taxable-year catch-up",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": "The generic employer-deferral allocator treats 457b only as a plan class and has no final-three-year state. model/plan.test.ts gates the missing sponsor, normal-retirement-age, and unused-deferral fields; actions/contract.test.ts gates the absence of an attested special-catch-up action. The id drops \"governmental\" because section 457(b)(3) is not limited to governmental sponsors.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2026-12-24",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "traditionalAccountSchema",
+              "line": 894
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 457(e)(1)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section457&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 457(e)(1)(B)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section457&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 457(b)(3)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section457&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-4973-a-b-f-ira-and-roth-excess-contribution-excise",
+      "title": "Uncorrected IRA and Roth IRA excess contributions incur the section 4973 excise",
+      "classification": "approximated",
+      "errorDirection": "understatesTax",
+      "conventionRationale": "DEFECT — no behavior change in this registration slice. projection/simulate.ts has a Roth contribution path and a penalties total, but no section 4973 IRA/Roth excess-contribution term. The companion fixture uses a 100-dollar Roth contribution at income already above the 2026 Roth phase-out and derives 6 dollars as 100 × 0.06; the observed produced value is 0 — no excise term exists, so penalties stay untouched — pinned until a separately authorized implementation fix changes it.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2027-08-26",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "rothAccountSchema",
+              "line": 942
+            },
+            {
+              "name": "traditionalAccountSchema",
+              "line": 894
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/simulateContributionsAndQcd.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/simulateContributionsAndQcd.approximation.test.ts",
+          "line": 216,
+          "note": "Roth excess-contribution excise",
+          "tests": [
+            {
+              "title": "does not price the excise on a Roth contribution above a zero phase-out limit",
+              "line": 228
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 4973(a)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section4973&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 4973(b)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section4973&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 4973(f)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section4973&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 4973(b)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section4973&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 4973(f)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section4973&num=0&edition=prelim"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "2025 Form 5329, Part IV, line 25",
+          "url": "https://www.irs.gov/pub/irs-pdf/f5329.pdf"
+        }
+      ]
+    },
+    {
+      "id": "irc-6433-a-1-savers-match-qualified-retirement-savings-contributions",
+      "title": "Saver's Match is a post-2026 contribution for eligible savers",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": "This is deliberately registered ahead of the first statutory tax year rather than projected as a 2026 credit. The plan model has no Saver's Match eligibility, qualifying-contribution, match-payment, or match-account fields, and the action contract has no claim or deposit kind. Those schema and action-vocabulary refusals are covered in model/plan.test.ts and actions/contract.test.ts. effectiveFrom is 2027 because the enacting applicability is taxable years beginning after December 31, 2026 — the rule cannot govern a 2026 pack year.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "awaitingGuidance",
+      "effectiveFrom": 2027,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2026-11-24",
+      "implementedBy": [
+        "packages/engine/src/actions/contract.ts",
+        "packages/engine/src/model/plan.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/contract.ts",
+          "functions": [
+            {
+              "name": "persistedRetirementActionRequestSchema",
+              "line": 389
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "planSchema",
+              "line": 2130
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 6433(a)(1)-(2)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section6433&num=0&edition=prelim"
+        },
+        {
+          "kind": "legislativeHistory",
+          "citation": "P.L. 117-328, division T, title I, section 103(a), (f)",
+          "url": "https://www.govinfo.gov/content/pkg/PLAW-117publ328/pdf/PLAW-117publ328.pdf"
+        },
+        {
+          "kind": "irsNotice",
+          "citation": "IRS Notice 2026-48, section I",
+          "url": "https://www.irs.gov/pub/irs-drop/n-26-48.pdf"
+        }
+      ]
+    },
+    {
+      "id": "irc-6433-f-6-savers-match-early-distribution-recovery-tax",
+      "title": "Certain early Saver's Match distributions create a recovery tax",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": "The recovery rule depends on a section 6433(a)(2) contribution history, end-of-year Saver's Match balance, and the specified-early-distribution classification. None is expressible on an account or a retirement action. The missing Saver's Match schema and action vocabulary are refused by the additive gates in model/plan.test.ts and actions/contract.test.ts. effectiveFrom is 2027 because the enacting applicability is taxable years beginning after December 31, 2026 — the rule cannot govern a 2026 pack year.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "awaitingGuidance",
+      "effectiveFrom": 2027,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2026-11-24",
+      "implementedBy": [
+        "packages/engine/src/actions/contract.ts",
+        "packages/engine/src/model/plan.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/contract.ts",
+          "functions": [
+            {
+              "name": "persistedRetirementActionRequestSchema",
+              "line": 389
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "planSchema",
+              "line": 2130
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 6433(f)(6)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section6433&num=0&edition=prelim"
+        },
+        {
+          "kind": "irsNotice",
+          "citation": "IRS Notice 2026-48, section I",
+          "url": "https://www.irs.gov/pub/irs-drop/n-26-48.pdf"
+        }
+      ]
+    },
+    {
+      "id": "irc-83-a-equity-compensation-execution-character",
+      "title": "Equity-compensation execution is not universally ordinary income at execution",
+      "classification": "approximated",
+      "errorDirection": "bothDirections",
+      "conventionRationale": "DEFECT — no behavior change in this registration slice. actions/execution.ts emits fullyTaxableCompensationAtExecution with ordinaryIncomeAmount equal to the whole executed amount. One fixture drives the alreadyVested path and derives a zero section 83(a) compensation amount in the later execution year while the engine classifies the whole 75-dollar execution as ordinary income (overstates tax). A second fixture drives a zero-basis cliff vesting 100 dollars in the execution year with only 75 executed: section 83(a) includes the full 100 of vested value, but the executor reports ordinary income only on the executed 75 (understates tax). Both signs are pinned until a separately authorized implementation fix changes them.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2027-08-26",
+      "implementedBy": [
+        "packages/engine/src/actions/execution.ts",
+        "packages/engine/src/model/plan.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/execution.ts",
+          "functions": [
+            {
+              "name": "executeOrdinaryWithdrawals",
+              "line": 2144
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "equityCompAccountSchema",
+              "line": 438
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/actions/execution.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/actions/execution.test.ts",
+          "line": 1787,
+          "note": "already-vested equity execution",
+          "tests": [
+            {
+              "title": "classifies an already-vested equity execution as ordinary income anyway",
+              "line": 1802
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/execution.test.ts",
+          "line": 1833,
+          "note": "partial-execution cliff vest",
+          "tests": [
+            {
+              "title": "reports ordinary income only on the executed part of a same-year cliff vest",
+              "line": 1842
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 61(a)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section61&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 83(a)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section83&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irs-notice-2014-54-employer-plan-after-tax-rollover-allocation",
+      "title": "After-tax employer-plan rollover allocation to multiple destinations is not modeled",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-25",
+      "dueOn": "2027-08-25",
+      "implementedBy": [
+        "packages/engine/src/actions/contract.ts",
+        "packages/engine/src/model/plan.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/contract.ts",
+          "functions": [
+            {
+              "name": "persistedRothConversionRequestSchema",
+              "line": 337
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "strategiesSchema",
+              "line": 1910
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "irsNotice",
+          "citation": "IRS Notice 2014-54, section III, first paragraph",
+          "url": "https://www.irs.gov/pub/irs-drop/n-14-54.pdf"
+        },
+        {
+          "kind": "irsNotice",
+          "citation": "IRS Notice 2014-54, section III, second paragraph",
+          "url": "https://www.irs.gov/pub/irs-drop/n-14-54.pdf"
+        }
+      ]
+    },
+    {
+      "id": "pl-116-94-div-o-title-I-sec-107-traditional-ira-age-cap-repeal",
+      "title": "Traditional IRA contributions have no maximum contribution age",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2027-08-26",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "planSchema",
+              "line": 2130
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/simulateContributionsAndQcd.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/simulateContributionsAndQcd.approximation.test.ts",
+          "line": 282,
+          "note": "age 80 still has compensation",
+          "tests": [
+            {
+              "title": "allows an otherwise eligible traditional-IRA contribution after age 70.5",
+              "line": 293
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "legislativeHistory",
+          "citation": "P.L. 116-94, division O, title I, section 107(a)",
+          "url": "https://www.govinfo.gov/content/pkg/PLAW-116publ94/pdf/PLAW-116publ94.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 219(d)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section219&num=0&edition=prelim"
+        }
+      ]
+    }
+  ]
+}

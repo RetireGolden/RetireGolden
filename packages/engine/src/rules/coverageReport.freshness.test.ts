@@ -6,6 +6,7 @@ import {
 import { buildCoverageReport, describeRuleCallEnd } from './coverageReport.js'
 import { declaredSymbolLinesOf, symbolAnchorLine, type DeclaredSymbol } from './symbolLines.js'
 import {
+  TAX_RULE_RECORD_MODULES,
   TAX_RULE_REGISTRY,
   TAX_RULE_VOLATILITIES,
   taxRuleDueOn,
@@ -14,7 +15,7 @@ import {
 } from './taxRuleRegistry.js'
 import committedJson from '../../../../DOCS/operations/rule-coverage.json?raw'
 import committedMarkdown from '../../../../DOCS/operations/rule-coverage.md?raw'
-import { testSourcesInGlobShape } from '../../scripts/rules-coverage.mjs'
+import { isGeneratedShardText, testSourcesInGlobShape } from '../../scripts/rules-coverage.mjs'
 
 // Vite requires the options to be inline object literals.
 const testSources = import.meta.glob('../**/*.test.{ts,mts,cts,tsx}', { query: '?raw', import: 'default', eager: true })
@@ -24,6 +25,18 @@ const operationJsonSources = import.meta.glob('../../../../DOCS/operations/*.jso
   import: 'default',
   eager: true,
 })
+const committedShardSources = import.meta.glob('../../../../DOCS/operations/rule-coverage/*.json', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+})
+/** Committed shard text keyed by file name (`statesWest.json`). */
+const committedShards = new Map(
+  Object.entries(committedShardSources).map(([path, source]) => [
+    path.slice(path.lastIndexOf('/') + 1),
+    source as string,
+  ]),
+)
 const quoteFidelityLedger = Object.entries(operationJsonSources)
   .find(([path]) => path.endsWith('/quote-fidelity-ledger.json'))?.[1] ?? null
 
@@ -88,6 +101,7 @@ const report = buildCoverageReport({
   quoteFidelityLedger,
   dueOnFor: taxRuleDueOn,
   symbolLineFor,
+  recordModules: TAX_RULE_RECORD_MODULES,
 })
 
 describe('rules coverage report artifacts', () => {
@@ -99,6 +113,87 @@ describe('rules coverage report artifacts', () => {
     expect(report.manifest.attestations.totalFiles).toBe(Object.keys(COVERAGE_ATTESTATIONS).length)
     expect(normalizeNewlines(committedMarkdown)).toBe(normalizeNewlines(report.markdown))
     expect(normalizeNewlines(committedJson)).toBe(normalizeNewlines(report.json))
+  })
+
+  // The index alone is no longer the ledger: pinning it while the shards drift
+  // would publish stale per-rule payloads under a fresh-looking index. The
+  // committed shard SET is compared both ways, so a renamed module's orphan
+  // file fails here rather than lingering as a second source of truth.
+  it('matches every committed coverage shard, with no orphan shard files', () => {
+    const generated = new Map(
+      report.shards.map((shard) => [shard.path.slice(shard.path.lastIndexOf('/') + 1), shard.json]),
+    )
+    expect([...committedShards.keys()].sort()).toEqual([...generated.keys()].sort())
+    for (const [fileName, json] of generated) {
+      expect(normalizeNewlines(committedShards.get(fileName) ?? ''), fileName).toBe(normalizeNewlines(json))
+    }
+  })
+
+  // The split's correctness condition, asserted against the registry rather
+  // than against the builder: the shards partition the rules — every id exactly
+  // once, none dropped, none duplicated across two shards.
+  it('partitions every registry rule across the shards exactly once', () => {
+    const shardedIds = report.shards.flatMap((shard) => shard.shard.rules.map((rule) => rule.id))
+    expect(shardedIds.length).toBe(taxRuleIds.length)
+    expect([...shardedIds].sort()).toEqual([...taxRuleIds].sort())
+    expect(report.manifest.shards.map(({ module, ruleCount }) => [module, ruleCount])).toEqual(
+      report.shards.map((shard) => [shard.module, shard.shard.rules.length]),
+    )
+    // Each shard holds exactly the ids its record module registers — the shard
+    // boundary IS the record module, which is what makes the dispatch lock
+    // narrow enough to be worth having.
+    const recordIdsByModule = new Map(
+      TAX_RULE_RECORD_MODULES.map(([name, records]) => [name, Object.keys(records).sort()]),
+    )
+    for (const shard of report.shards) {
+      expect(shard.shard.rules.map((rule) => rule.id), shard.module).toEqual(recordIdsByModule.get(shard.module))
+      expect(shard.shard.module, shard.module).toBe(shard.module)
+      expect(shard.shard.version, shard.module).toBe(5)
+    }
+  })
+
+  it('refuses to publish a rule that belongs to no record module', () => {
+    expect(() =>
+      buildCoverageReport({
+        registry: TAX_RULE_REGISTRY,
+        attestations: COVERAGE_ATTESTATIONS,
+        baselineUnswept: BASELINE_UNSWEPT,
+        testSources,
+        quoteFidelityLedger: null,
+        dueOnFor: taxRuleDueOn,
+        symbolLineFor,
+        recordModules: [],
+      }),
+    ).toThrow(/belongs to no record module/)
+  })
+
+  // The generator sweeps its shard directory so a renamed module cannot leave
+  // an orphan behind. That sweep must recognise its OWN output rather than
+  // deleting whatever .json it finds: a draft or scratch file somebody put
+  // there is not a report writer's to destroy.
+  it('recognises a generated shard by its kind, and nothing else', () => {
+    // A real shard the builder just produced, so the accepted case is the
+    // actual published text rather than a hand-written lookalike.
+    const realShard = report.shards.find(({ module }) => module === 'statesWest')
+    expect(realShard).toBeDefined()
+    expect(isGeneratedShardText(realShard!.json)).toBe(true)
+    // The index is NOT a shard: it carries the manifest kind, and sweeping it
+    // would delete the file naming every shard.
+    expect(isGeneratedShardText(report.json)).toBe(false)
+
+    for (const [label, text] of [
+      ['foreign kind', JSON.stringify({ kind: 'someone.elses.file', keep: true })],
+      ['no kind at all', JSON.stringify({ notes: 'a draft somebody parked here' })],
+      ['unparseable', '{ not json'],
+      ['empty', ''],
+      // Valid JSON that is not a plain object: `null` is the trap a bare
+      // typeof check would call an object and delete.
+      ['bare array', '[1, 2, 3]'],
+      ['json null', 'null'],
+      ['json string', '"retiregolden.rules-coverage.shard"'],
+    ] as const) {
+      expect(isGeneratedShardText(text), label).toBe(false)
+    }
   })
 
   // Binds the freshness test to the coverage script's glob walk, not only to the
@@ -130,7 +225,7 @@ describe('rules coverage report artifacts', () => {
   // of being mirrored by a local copy of the same arithmetic.
   it('agrees taxRulesDueForVerification due dates with the report builder', () => {
     for (const volatility of TAX_RULE_VOLATILITIES) {
-      const manifestRule = report.manifest.rules.find(
+      const manifestRule = report.rules.find(
         (candidate) => TAX_RULE_REGISTRY[candidate.id as keyof typeof TAX_RULE_REGISTRY]?.volatility === volatility,
       )
       expect(manifestRule, 'manifest rule for volatility ' + volatility).toBeDefined()
@@ -218,12 +313,19 @@ function syntheticRule(title: string) {
 // sides regenerate together), so these read expected values from the registry
 // records themselves.
 describe('manifest rule projection contract', () => {
-  it('publishes manifest version 4, the discriminator for the required fields', () => {
-    expect(report.manifest.version).toBe(4)
+  it('publishes manifest version 5, the discriminator for the sharded layout', () => {
+    expect(report.manifest.version).toBe(5)
+    // Version 5's breaking change is exactly this: the index stops carrying the
+    // per-rule payloads and names the shards that do.
+    expect((report.manifest as { rules?: unknown }).rules).toBeUndefined()
+    expect(report.manifest.shards.length).toBeGreaterThan(0)
+    for (const entry of report.manifest.shards) {
+      expect(entry.path, entry.module).toBe('rule-coverage/' + entry.module + '.json')
+    }
   })
 
   it('copies title, errorDirection, conventionRationale, and contraryReading from the registry', () => {
-    for (const rule of report.manifest.rules) {
+    for (const rule of report.rules) {
       const record = TAX_RULE_REGISTRY[rule.id as keyof typeof TAX_RULE_REGISTRY]
       expect(record, rule.id).toBeDefined()
       expect(rule.title, rule.id).toBe(record.title)
@@ -237,13 +339,13 @@ describe('manifest rule projection contract', () => {
   })
 
   it('keeps errorDirection null exactly when the rule is not approximated', () => {
-    for (const rule of report.manifest.rules) {
+    for (const rule of report.rules) {
       expect(rule.errorDirection === null, rule.id).toBe(rule.classification !== 'approximated')
     }
   })
 
   it('keeps implementations aligned with implementedBy', () => {
-    for (const rule of report.manifest.rules) {
+    for (const rule of report.rules) {
       expect(rule.implementations.map(({ path }) => path), rule.id).toEqual(rule.implementedBy)
       const record = TAX_RULE_REGISTRY[rule.id as keyof typeof TAX_RULE_REGISTRY]
       const declared = record.implementedByFunctions
@@ -259,7 +361,7 @@ describe('manifest rule projection contract', () => {
   // symbol. A resolver that agreed with the builder but pointed at the wrong
   // line would pass a mirror check and fail here.
   it('anchors every implementation function line to a source line containing the name', () => {
-    for (const rule of report.manifest.rules) {
+    for (const rule of report.rules) {
       for (const { path, functions } of rule.implementations) {
         const sourceLines = engineSourceOf(path).split('\n')
         for (const { name, line } of functions) {
@@ -283,7 +385,7 @@ describe('manifest rule projection contract', () => {
   })
 
   it('keeps fixtures and fixtureFiles consistent, with titles present in the scanned source', () => {
-    for (const rule of report.manifest.rules) {
+    for (const rule of report.rules) {
       const paths = [...new Set(rule.fixtures.map(({ path }) => path))]
       expect([...rule.fixtureFiles].sort(), rule.id).toEqual(paths.sort())
       for (const fixture of rule.fixtures) {
@@ -312,7 +414,7 @@ describe('manifest rule projection contract', () => {
     }
     // Spot-bind one fixture's titles to the live source text so the block
     // scan cannot drift into returning titles from a neighboring rule.
-    const sample = report.manifest.rules.find((rule) => rule.fixtures.length > 0)
+    const sample = report.rules.find((rule) => rule.fixtures.length > 0)
     expect(sample).toBeDefined()
     const globKey = Object.keys(testSources).find((key) =>
       sample!.fixtures[0]!.path.endsWith(key.replace(/^\.\.\//u, '').replace(/^\.\//u, 'rules/')),
@@ -368,9 +470,10 @@ describe('manifest rule projection contract', () => {
       quoteFidelityLedger: null,
       dueOnFor: () => '2027-01-01',
       symbolLineFor,
+      recordModules: [['synthetic', syntheticRegistry]],
     })
-    const alpha = syntheticReport.manifest.rules.find((rule) => rule.id === 'fixture-alpha')
-    const beta = syntheticReport.manifest.rules.find((rule) => rule.id === 'fixture-beta')
+    const alpha = syntheticReport.rules.find((rule) => rule.id === 'fixture-alpha')
+    const beta = syntheticReport.rules.find((rule) => rule.id === 'fixture-beta')
     // Hand-counted lines in the synthetic source above: the it() lines are as
     // load-bearing as the titles now that the manifest publishes them.
     expect(alpha!.fixtures[0]!.tests).toEqual([{ title: 'alpha discriminates', line: 4 }])
@@ -410,15 +513,16 @@ describe('manifest rule projection contract', () => {
       quoteFidelityLedger: null,
       dueOnFor: () => '2027-01-01',
       symbolLineFor,
+      recordModules: [['synthetic', syntheticRegistry]],
     })
-    const alpha = syntheticReport.manifest.rules.find((rule) => rule.id === 'fixture-alpha')
+    const alpha = syntheticReport.rules.find((rule) => rule.id === 'fixture-alpha')
     expect(alpha!.fixtures[0]!.tests).toEqual([
       { title: 'a very long title that the formatter pushed onto its own line discriminates', line: 2 },
     ])
   })
 
   it('publishes unique authority identities with no quotedText', () => {
-    for (const rule of report.manifest.rules) {
+    for (const rule of report.rules) {
       const record = TAX_RULE_REGISTRY[rule.id as keyof typeof TAX_RULE_REGISTRY]
       expect(record, rule.id).toBeDefined()
       // Exact first-seen-unique equality against the registry: this is what
@@ -440,7 +544,13 @@ describe('manifest rule projection contract', () => {
   })
 
   it('publishes exactly the documented rule keys, with no quotedText or statement, in the serialized JSON', () => {
-    const published = JSON.parse(report.json) as { rules: Record<string, unknown>[] }
+    // The rules now serialize into the shards, so the key contract and the leak
+    // guards are asserted over the shard text — the index carries no rules at
+    // all, and checking only it would pass vacuously.
+    const published = report.shards.flatMap(
+      (shard) => (JSON.parse(shard.json) as { rules: Record<string, unknown>[] }).rules,
+    )
+    expect(published.length).toBe(report.rules.length)
     const documentedKeys = [
       'authorities',
       'classification',
@@ -460,14 +570,16 @@ describe('manifest rule projection contract', () => {
       'verifiedOn',
       'volatility',
     ]
-    for (const rule of published.rules) {
+    for (const rule of published) {
       expect(Object.keys(rule).sort(), String(rule.id)).toEqual(documentedKeys)
     }
     // Key-level leak guards on the serialized text itself: a spread of the
     // registry record would reintroduce these long before a human noticed.
-    expect(report.json).not.toContain('"quotedText":')
-    expect(report.json).not.toContain('"statement":')
-    expect(report.json).not.toContain('"authority":')
+    for (const text of [report.json, ...report.shards.map(({ json }) => json)]) {
+      expect(text).not.toContain('"quotedText":')
+      expect(text).not.toContain('"statement":')
+      expect(text).not.toContain('"authority":')
+    }
   })
 
   it('collapses duplicate identities per a hand-written fixture, not the builder algorithm', () => {
@@ -506,11 +618,12 @@ describe('manifest rule projection contract', () => {
       // A hand-picked sentinel, so the expectation below proves the builder
       // publishes the injected resolver's line rather than deriving its own.
       symbolLineFor: () => 47,
+      recordModules: [['synthetic', fixtureRegistry]],
     })
-    const published = JSON.parse(fixtureReport.json) as {
-      rules: { id: string; authorities: unknown }[]
-    }
-    const fixtureRule = published.rules.find((rule) => rule.id === 'fixture-rule')
+    const published = fixtureReport.shards.flatMap(
+      (shard) => (JSON.parse(shard.json) as { rules: { id: string; authorities: unknown }[] }).rules,
+    )
+    const fixtureRule = published.find((rule) => rule.id === 'fixture-rule')
     expect(fixtureRule).toBeDefined()
     expect(fixtureRule!.authorities).toEqual([
       { kind: 'statute', citation: 'Fix. Code 1(a)', url: 'https://example.gov/1' },
@@ -521,6 +634,8 @@ describe('manifest rule projection contract', () => {
     expect((fixtureRule as { implementations?: unknown }).implementations).toEqual([
       { path: 'packages/engine/src/rules/coverageReport.ts', functions: [{ name: 'buildCoverageReport', line: 47 }] },
     ])
-    expect(fixtureReport.json).not.toContain('"quotedText":')
+    for (const text of [fixtureReport.json, ...fixtureReport.shards.map(({ json }) => json)]) {
+      expect(text).not.toContain('"quotedText":')
+    }
   })
 })

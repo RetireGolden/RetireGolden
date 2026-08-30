@@ -187,7 +187,7 @@ durability, sustainable spending, and opt-in downside resilience) rank them with
 constraints. Other plan-patch generators — bounded asset-location swaps (`assetLocationGenerator`, surfaced on
 the **Insights** `asset-location` card when a plan opts into static allocation on multiple accounts; not part of
 the Roth conversion tournament) and annuity purchases (`annuityPurchaseGenerator` — cover-the-floor SPIA /
-QLAC-at-cap / no-purchase, see [domain rules §17](../domain/domain-rules-reference.md)) — plug into the same
+QLAC-at-cap / no-purchase, see [domain rules §17](../domain/domain-rules-reference/17-guaranteed-income-annuity-purchases.md)) — plug into the same
 `evaluateCandidate` path. The survivor-liquidity policy honors an optional user-set **survivor reserve
 target** (`strategies.survivorReserveTarget`, today's dollars) as a hard floor, disqualifying any candidate
 whose deflated survivor-year investable balance falls below it. Insights previews use the same evaluator, so an

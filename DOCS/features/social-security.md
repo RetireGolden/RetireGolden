@@ -161,7 +161,7 @@ simplifications / registered gaps: the disability freeze (AIME exclusion; onset 
 Medicare wait (note-only), and living-child auxiliaries (`usc-42-402-d-2-ssdi-child-auxiliary`). The
 current-spouse auxiliary and family maximum on an SSDI worker are produced by the generic paths with
 registered approximations (`usc-42-402-c-2-ssdi-spouse-auxiliary`, `usc-42-403-a-6-ssdi-family-maximum`).
-Cited in [domain rules §4](../domain/domain-rules-reference.md).
+Cited in [domain rules §4](../domain/domain-rules-reference/04-social-security-program-parameters-2026.md).
 
 ## Documented simplifications / deferred
 

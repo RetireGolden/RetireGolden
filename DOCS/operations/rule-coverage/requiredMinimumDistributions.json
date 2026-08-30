@@ -1,0 +1,3100 @@
+{
+  "kind": "retiregolden.rules-coverage.shard",
+  "version": 5,
+  "module": "requiredMinimumDistributions",
+  "rules": [
+    {
+      "id": "irc-275-a-6-chapter-43-excise-taxes-nondeductible",
+      "title": "Chapter 43 excise taxes are not deductible",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/simulate.test.ts",
+          "line": 2956,
+          "note": "RMD-shortfall excise remains outside AGI, taxable income, and MAGI",
+          "tests": [
+            {
+              "title": "keeps a chapter 43 RMD-shortfall excise out of the income-tax base",
+              "line": 2972
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 275(a)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section275&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 275(a)(6)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section275&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-401-a-9-B-ii-non-designated-beneficiary-five-year-rule",
+      "title": "Non-designated beneficiary uses the five-year rule before the RBD",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": "The plan schema records the non-individual category but has no facts to establish a qualifying trust or to calculate its separate five-year distribution schedule. The inherited classifier therefore emits its typed X3 refusal; projection still routes that refusal through the registered inheritedForcedAmount fallback so a plan that parsed still projects. inheritedRegime.test.ts covers the classification refusal on the driven path.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-25",
+      "dueOn": "2027-08-25",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/strategies/inheritedIra.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "inheritedBeneficiarySchema",
+              "line": 470
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/strategies/inheritedIra.ts",
+          "functions": [
+            {
+              "name": "classifyInheritedRegime",
+              "line": 460
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 401(a)(9)(E)(i)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section401&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 401(a)(9)(H)(i)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section401&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 401(a)(9)(B)(ii)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section401&num=0&edition=prelim"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 54.4974-1(c)(1)",
+          "url": "https://www.ecfr.gov/current/title-26/section-54.4974-1"
+        }
+      ]
+    },
+    {
+      "id": "irc-401-a-9-C-i-II-still-working-exception",
+      "title": "Required beginning date deferred while still employed by the plan sponsor",
+      "classification": "approximated",
+      "errorDirection": "overstatesTax",
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2027-08-03",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/strategies/accountEligibility.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "personSchema",
+              "line": 154
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/strategies/accountEligibility.ts",
+          "functions": [
+            {
+              "name": "followsOwnerRmds",
+              "line": 1382
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/rmdAndInherited.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/rmdAndInherited.approximation.test.ts",
+          "line": 268,
+          "note": null,
+          "tests": [
+            {
+              "title": "forces an employer-plan distribution from a participant still seven years from retiring",
+              "line": 278
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 401(a)(9)(C)(i)(II)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/401"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 401(a)(9)(C)(ii)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/401"
+        }
+      ]
+    },
+    {
+      "id": "irc-401-a-9-C-i-elected-deferral-ignores-attainment-year-distributions",
+      "title": "Elected first-year deferral ignores attainment-year IRA distributions",
+      "classification": "approximated",
+      "errorDirection": "overstatesTax",
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/rmdAndInherited.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/rmdAndInherited.approximation.test.ts",
+          "line": 194,
+          "note": "elected deferral with attainment-year IRA income",
+          "tests": [
+            {
+              "title": "defers the full first-year amount even after an attainment-year IRA draw",
+              "line": 216
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 401(a)(9)(C)(i)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/401"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.401(a)(9)-5(a)(3)",
+          "url": "https://www.law.cornell.edu/cfr/text/26/1.401(a)(9)-5"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.408-8(b)(3)",
+          "url": "https://www.law.cornell.edu/cfr/text/26/1.408-8"
+        }
+      ]
+    },
+    {
+      "id": "irc-401-a-9-C-i-first-year-april-1-deferral",
+      "title": "Deferral of the first required minimum distribution to April 1",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "Paying in the attainment year is always permitted under Treas. Reg. 1.401(a)(9)-5(a)(3); the remaining engineering choice is only the default when no election is supplied. The engine defaults to attainment-year booking and requires an explicit opt-in for the April 1 path rather than inventing a household preference. The settled claim stops at the default and the clean elected path; an intervening attainment-year distribution is not part of either fixture.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/rmd/rmd.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/rmd/rmd.ts",
+          "functions": [
+            {
+              "name": "requiredMinimumDistribution",
+              "line": 35
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/rmdAndInherited.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/rmdAndInherited.approximation.test.ts",
+          "line": 70,
+          "note": "default books attainment-year without election",
+          "tests": [
+            {
+              "title": "books the first-year amount in the attainment year when no deferral is elected",
+              "line": 84
+            },
+            {
+              "title": "leaves the following year carrying one distribution rather than two under the default",
+              "line": 92
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/rules/approximations/rmdAndInherited.approximation.test.ts",
+          "line": 112,
+          "note": "clean elected owned-IRA April 1 deferral",
+          "tests": [
+            {
+              "title": "holds the owned-IRA first-year amount until the following receipt year when elected",
+              "line": 130
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 401(a)(9)(C)(i)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/401"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.401(a)(9)-5(a)(3)",
+          "url": "https://www.law.cornell.edu/cfr/text/26/1.401(a)(9)-5"
+        }
+      ]
+    },
+    {
+      "id": "irc-401-a-9-C-v-applicable-age",
+      "title": "The RMD applicable age steps 72 to 73 to 75, never 74",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The engine maps birth year to applicable age rather than restating the attainment windows, which is equivalent: a 1959 birth attains 73 in 2032, inside the window, while a 1960 birth attains 73 in 2033 and 74 in 2034, landing in the later rule. Expressing it by birth year is why no 74 appears anywhere in the code, and that absence is correct rather than a missing case.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "sunsetting",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-29",
+      "dueOn": "2027-01-26",
+      "implementedBy": [
+        "packages/engine/src/decisions/objectives.ts",
+        "packages/engine/src/insights/detectors/rothBridgeHeadroom.ts",
+        "packages/engine/src/params/index.ts",
+        "packages/engine/src/rmd/applicableAge.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/decisions/objectives.ts",
+          "functions": [
+            {
+              "name": "bridgeYearFilter",
+              "line": 85
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/insights/detectors/rothBridgeHeadroom.ts",
+          "functions": [
+            {
+              "name": "rothBridgeHeadroom",
+              "line": 4
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/index.ts",
+          "functions": [
+            {
+              "name": "rmdStartAgeForBirthYear",
+              "line": 137
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/rmd/applicableAge.ts",
+          "functions": [
+            {
+              "name": "applicableAgeAttainYears",
+              "line": 295
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/decisions/objectives.cohortBoundary.test.ts",
+        "packages/engine/src/insights/detectors/rothBridgeHeadroom.test.ts",
+        "packages/engine/src/params/params.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/decisions/objectives.cohortBoundary.test.ts",
+          "line": 23,
+          "note": "objective bridge window ends at the cohort-dependent applicable age",
+          "tests": [
+            {
+              "title": "keeps ages 73 and 74 in the window for the first 75-cohort (born 1960)",
+              "line": 32
+            },
+            {
+              "title": "ends the window at the applicable age for the final 73-cohort (born 1959)",
+              "line": 44
+            },
+            {
+              "title": "changes nothing reachable for pre-1951 cohorts, whose applicable age already passed",
+              "line": 48
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/insights/detectors/rothBridgeHeadroom.test.ts",
+          "line": 41,
+          "note": "detector bridge window ends at the cohort-dependent applicable age",
+          "tests": [
+            {
+              "title": "last included year is age 74 for the first 75-cohort (born 1960)",
+              "line": 50
+            },
+            {
+              "title": "last included year is age 72 for the final 73-cohort (born 1959); the RMD start year is excluded",
+              "line": 57
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/params.test.ts",
+          "line": 104,
+          "note": null,
+          "tests": [
+            {
+              "title": "sends the first post-window cohort straight to 75",
+              "line": 108
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 401(a)(9)(C)(v)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section401&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-401-a-9-E-ii-eligible-designated-beneficiary",
+      "title": "Eligible designated beneficiary escapes the 10-year rule",
+      "classification": "approximated",
+      "errorDirection": "overstatesTax",
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2027-08-03",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/strategies/inheritedIra.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/strategies/inheritedIra.ts",
+          "functions": [
+            {
+              "name": "classifyInheritedRegime",
+              "line": 460
+            },
+            {
+              "name": "inheritedRequirementForYear",
+              "line": 1054
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/rmdAndInherited.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/rmdAndInherited.approximation.test.ts",
+          "line": 361,
+          "note": null,
+          "tests": [
+            {
+              "title": "empties an eligible designated beneficiary's account in the tenth year",
+              "line": 377
+            },
+            {
+              "title": "requires nothing inside the window that the life-expectancy rule would require",
+              "line": 388
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 401(a)(9)(E)(ii)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/401"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 401(a)(9)(H)(ii)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/401"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 401(a)(9)(E)(iii)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/401"
+        }
+      ]
+    },
+    {
+      "id": "irc-401-a-9-H-designated-beneficiary-ten-year-rule",
+      "title": "SECURE Act ten-year rule for a designated beneficiary",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "Two limits on how far this record reaches, stated so it is not read as covering more than it does. First, the engine treats every inherited account as held by a beneficiary who is not an eligible designated beneficiary, because the plan model carries no beneficiary category. A surviving spouse, a minor child of the employee, a disabled or chronically ill beneficiary, or a beneficiary not more than ten years younger than the decedent is entitled under 401(a)(9)(H)(ii) to the life-expectancy payout in (B)(iii), and will be shown a faster forced drawdown than the law requires. Second, the size of the annual amount required in years one through nine when the decedent had reached the required beginning date is a separate question from the ten-year deadline registered here. The divisor is registered as treas-reg-1-401-a-9-5-d-3-beneficiary-single-life-denominator, and the greater-of test it does not apply as treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2027-08-03",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/strategies/accountEligibility.ts",
+        "packages/engine/src/strategies/inheritedIra.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/strategies/accountEligibility.ts",
+          "functions": [
+            {
+              "name": "followsOwnerRmds",
+              "line": 1382
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/strategies/inheritedIra.ts",
+          "functions": [
+            {
+              "name": "inheritedTenYearDeadline",
+              "line": 50
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/strategies/accountEligibility.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/strategies/accountEligibility.test.ts",
+          "line": 1515,
+          "note": null,
+          "tests": [
+            {
+              "title": "keeps an inherited account off the owner RMD schedule entirely",
+              "line": 1533
+            },
+            {
+              "title": "sweeps the balance in the tenth year after the death and not the fifth",
+              "line": 1538
+            },
+            {
+              "title": "forces nothing in the interim years when the decedent had not begun distributions",
+              "line": 1544
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 401(a)(9)(H)(i)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section401&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 401(a)(9)(B)(ii)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section401&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 408(a)(6)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-401-a-9-H-ii-annual-distributions-inside-ten-year-window",
+      "title": "Whether annual distributions are also required inside the 10-year window",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2027-08-03",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/strategies/inheritedIra.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/strategies/inheritedIra.ts",
+          "functions": [
+            {
+              "name": "classifyInheritedRegime",
+              "line": 460
+            },
+            {
+              "name": "inheritedForcedAmount",
+              "line": 109
+            },
+            {
+              "name": "inheritedRequirementForYear",
+              "line": 1054
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/strategies/inheritedIra.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/strategies/inheritedIra.test.ts",
+          "line": 113,
+          "note": null,
+          "tests": [
+            {
+              "title": "requires an annual distribution in every window year after a post-RBD death",
+              "line": 117
+            },
+            {
+              "title": "requires none in the window when the decedent died before that date",
+              "line": 121
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 401(a)(9)(B)(i)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/401"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.401(a)(9)-5(d)(1)(i)",
+          "url": "https://www.law.cornell.edu/cfr/text/26/1.401(a)(9)-5"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.401(a)(9)-5(d)(2)",
+          "url": "https://www.law.cornell.edu/cfr/text/26/1.401(a)(9)-5"
+        }
+      ]
+    },
+    {
+      "id": "irc-402-c-4-B-rmd-not-eligible-rollover-distribution",
+      "title": "Required distributions are not eligible rollover distributions",
+      "classification": "approximated",
+      "errorDirection": "understatesTax",
+      "conventionRationale": "DEFECT — no behavior change in this registry slice. projection/simulate.ts's pension lump-sum rollover (model/plan.ts validates the election into an owned traditional account) credits the entire lumpSumOffer.amount as a tax-free direct rollover. Section 402(c)(4)(B) excludes the §401(a)(9)-required portion from the eligible-rollover-distribution definition; on the fixture an owner past the RBD with a 237,000 offer has a 10,000 RMD portion (237,000 ÷ Uniform Lifetime 23.7 at age 76) that should stay taxable and only 227,000 should roll. The engine rolls the full 237,000 and pays no taxable pension income in the election year. The fixture pins the produced zero taxable pension income and bounds the rolled balance above the eligible 227,000 until a separately authorized implementation fix changes it.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-25",
+      "dueOn": "2027-08-25",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "pensionSchema",
+              "line": 1047
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.annualCashFlow.transfer.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/simulate.annualCashFlow.transfer.test.ts",
+          "line": 813,
+          "note": "pension lump-sum past RBD",
+          "tests": [
+            {
+              "title": "credits the entire pension lump-sum offer as a tax-free rollover past the RBD",
+              "line": 830
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 402(c)(4)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 402(c)(4)(B)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.408-8(b)(3)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.408-8"
+        }
+      ]
+    },
+    {
+      "id": "irc-402A-d-5-designated-roth-account-no-lifetime-rmd",
+      "title": "Designated Roth employer account has no lifetime RMD after 2023",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2027-08-26",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/strategies/accountEligibility.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/strategies/accountEligibility.ts",
+          "functions": [
+            {
+              "name": "followsOwnerRmds",
+              "line": 1382
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/rmdShortfallExcise.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/rmdShortfallExcise.test.ts",
+          "line": 298,
+          "note": "living designated Roth employer-account owner past the ordinary RMD age",
+          "tests": [
+            {
+              "title": "never creates a lifetime §4974 obligation for a living designated Roth account owner",
+              "line": 306
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 402A(d)(5)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402A&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 402A, Editorial Notes, Effective Date of 2022 Amendment (SECURE 2.0 Act § 325(b)(1))",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402A&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-408A-c-4-roth-ira-no-lifetime-rmd",
+      "title": "Roth IRA owner has no lifetime RMD",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-25",
+      "dueOn": "2027-08-25",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/rmdShortfallExcise.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/rmdShortfallExcise.test.ts",
+          "line": 269,
+          "note": "living Roth IRA owner past the ordinary RMD age",
+          "tests": [
+            {
+              "title": "never creates a lifetime §4974 obligation for a living Roth IRA owner",
+              "line": 277
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 408A(c)(4)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408A&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-4974-rmd-shortfall-excise-tax",
+      "title": "Excise tax on a required minimum distribution shortfall",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The law fixes the arithmetic, applicable-plan restriction, correction-window endpoints, and relief fact patterns. Three implementation choices remain. First, ordinary employer plans fail closed per account; only an account explicitly classified as a 403(b) joins the owner’s other explicit 403(b)s. Second, inherited IRAs join only when the Plan carries the same explicit decedentId; absent identity fails closed per account, because matching birth/death facts cannot prove one decedent. Third, correction and waiver inputs are evidence, not money movements. The §4974 calculator therefore cannot manufacture a distribution, tax character, or cash flow: callers model the corrective distribution separately in the year received and use the evidence seam only to price the original excise. That separation keeps the chapter 43 tax out of MAGI and prevents a correction from silently satisfying a current-year RMD while proposed §1.401(a)(9)-5(g)(2)(iv) remains reserved in the final regulations.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2023,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-21",
+      "dueOn": "2027-08-21",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/rmd/rmdShortfallExcise.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/rmd/rmdShortfallExcise.ts",
+          "functions": [
+            {
+              "name": "computeRmdShortfallExcise",
+              "line": 311
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rmd/rmdShortfallExcise.test.ts",
+        "packages/engine/src/rules/approximations/rmdAndInherited.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rmd/rmdShortfallExcise.test.ts",
+          "line": 110,
+          "note": "partial shortfall",
+          "tests": [
+            {
+              "title": "applies 25 percent to required minus timely distributed",
+              "line": 118
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/rmd/rmdShortfallExcise.test.ts",
+          "line": 128,
+          "note": "10 percent correction path",
+          "tests": [
+            {
+              "title": "requires the corrective distribution and the reflecting return inside the window",
+              "line": 136
+            },
+            {
+              "title": "uses the earliest statutory correction-window endpoint",
+              "line": 159
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/rmd/rmdShortfallExcise.test.ts",
+          "line": 168,
+          "note": "discretionary waiver denied versus granted",
+          "tests": [
+            {
+              "title": "does not turn a waiver request or denial into a grant",
+              "line": 176
+            },
+            {
+              "title": "uses zero only for an explicit modeled grant",
+              "line": 187
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/rules/approximations/rmdAndInherited.approximation.test.ts",
+          "line": 417,
+          "note": null,
+          "tests": [
+            {
+              "title": "charges 25 percent when the whole required amount goes undistributed",
+              "line": 424
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 4974(a)",
+          "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleD-chap43-sec4974.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 4974(e)(1)",
+          "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleD-chap43-sec4974.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 4974(d)",
+          "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleD-chap43-sec4974.htm"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 54.4974-1(a)(2)(iii)",
+          "url": "https://www.law.cornell.edu/cfr/text/26/54.4974-1"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 54.4974-1(e)",
+          "url": "https://www.law.cornell.edu/cfr/text/26/54.4974-1"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 54.4974-1(h)",
+          "url": "https://www.law.cornell.edu/cfr/text/26/54.4974-1"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "2025 Instructions for Form 5329, Part IX",
+          "url": "https://www.irs.gov/pub/irs-pdf/i5329.pdf"
+        }
+      ]
+    },
+    {
+      "id": "irs-notice-2022-53-2023-54-2024-35-inherited-rmd-transition-relief",
+      "title": "Inherited-RMD transition relief ended after 2024",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-25",
+      "dueOn": "2027-08-25",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/strategies/inheritedIra.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/strategies/inheritedIra.ts",
+          "functions": [
+            {
+              "name": "inheritedRequirementForYear",
+              "line": 1054
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/strategies/inheritedRegime.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/strategies/inheritedRegime.test.ts",
+          "line": 73,
+          "note": "annual R1 amount after the 2024 relief year",
+          "tests": [
+            {
+              "title": "stops marking a post-RBD ten-year annual amount as notice-waived in 2025",
+              "line": 89
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "irsNotice",
+          "citation": "Notice 2022-53, section IV.B",
+          "url": "https://www.irs.gov/pub/irs-drop/n-22-53.pdf"
+        },
+        {
+          "kind": "irsNotice",
+          "citation": "Notice 2022-53, section IV.C",
+          "url": "https://www.irs.gov/pub/irs-drop/n-22-53.pdf"
+        },
+        {
+          "kind": "irsNotice",
+          "citation": "Notice 2023-54, section V.B",
+          "url": "https://www.irs.gov/pub/irs-drop/n-23-54.pdf"
+        },
+        {
+          "kind": "irsNotice",
+          "citation": "Notice 2023-54, section V.C",
+          "url": "https://www.irs.gov/pub/irs-drop/n-23-54.pdf"
+        },
+        {
+          "kind": "irsNotice",
+          "citation": "Notice 2024-35, section IV.B",
+          "url": "https://www.irs.gov/pub/irs-drop/n-24-35.pdf"
+        },
+        {
+          "kind": "irsNotice",
+          "citation": "Notice 2024-35, section IV.C",
+          "url": "https://www.irs.gov/pub/irs-drop/n-24-35.pdf"
+        },
+        {
+          "kind": "irsNotice",
+          "citation": "Notice 2024-35, section I",
+          "url": "https://www.irs.gov/pub/irs-drop/n-24-35.pdf"
+        }
+      ]
+    },
+    {
+      "id": "treas-reg-1-401-a-9-2-b-2-v-applicable-age-1959",
+      "title": "Applicable age for an owner born in 1959",
+      "classification": "unsettled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": "IRC 401(a)(9)(C)(v)(II) applies on its own terms to a 1959 birth, because such a person attains age 74 in 2033, after December 31, 2032. Read alone it makes the applicable age 75 and defers the first distribution calendar year by two years. Nothing in the enacted text resolves the overlap, Treas. Reg. 1.401(a)(9)-2(b)(2)(v) is reserved, and the only source choosing 73 is a notice of proposed rulemaking that has not been finalised. The two readings differ by two distribution calendar years of forced ordinary income for the whole 1959 cohort. The nearest current guidance, Announcement 2026-7 (2026-11 I.R.B. 697), defers the anticipated applicability of final regulations amending 1.401(a)(9)-4, -5, and -6 and never mentions paragraph (b)(2)(v) or the 1959 cohort, so the contest stands with no guidance selecting either age.",
+      "jurisdiction": "federal",
+      "volatility": "awaitingGuidance",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-29",
+      "dueOn": "2026-11-27",
+      "implementedBy": [
+        "packages/engine/src/params/index.ts",
+        "packages/engine/src/rmd/rmd.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/index.ts",
+          "functions": [
+            {
+              "name": "rmdStartAgeForBirthYear",
+              "line": 137
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/rmd/rmd.ts",
+          "functions": [
+            {
+              "name": "requiredMinimumDistribution",
+              "line": 35
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/params/params.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/params/params.test.ts",
+          "line": 170,
+          "note": null,
+          "tests": [
+            {
+              "title": "takes the proposed regulation reading for a 1959 birth",
+              "line": 174
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 401(a)(9)(C)(v)",
+          "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapD-partI-subpartA-sec401.htm"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.401(a)(9)-2(b)(2)(iv), (v), (vi)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-2"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Prop. Treas. Reg. 1.401(a)(9)-2(b)(2)(v), REG-103529-23, 89 FR 58644",
+          "url": "https://www.govinfo.gov/content/pkg/FR-2024-07-19/html/2024-14543.htm"
+        }
+      ]
+    },
+    {
+      "id": "treas-reg-1-401-a-9-5-a-2-first-distribution-calendar-year",
+      "title": "First distribution calendar year is the year the applicable age is attained",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2027-08-03",
+      "implementedBy": [
+        "packages/engine/src/params/index.ts",
+        "packages/engine/src/rmd/rmd.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/index.ts",
+          "functions": [
+            {
+              "name": "rmdStartAgeForBirthYear",
+              "line": 137
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/rmd/rmd.ts",
+          "functions": [
+            {
+              "name": "requiredMinimumDistribution",
+              "line": 35
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rmd/rmd.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rmd/rmd.test.ts",
+          "line": 117,
+          "note": null,
+          "tests": [
+            {
+              "title": "recognises the first required distribution in the attainment year",
+              "line": 125
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 401(a)(9)(C)(i)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/401"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.401(a)(9)-5(a)(2)(ii)",
+          "url": "https://www.law.cornell.edu/cfr/text/26/1.401(a)(9)-5"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.401(a)(9)-5(a)(3)",
+          "url": "https://www.law.cornell.edu/cfr/text/26/1.401(a)(9)-5"
+        }
+      ]
+    },
+    {
+      "id": "treas-reg-1-401-a-9-5-b-4-qlac-excluded-from-the-rmd-account-balance",
+      "title": "A QLAC’s value is excluded from the required-distribution account balance",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "THE MECHANISM IS NOT THE RULE, and the record says so because the coincidence is load-bearing in one direction and misleading in the other. The regulation excludes the VALUE OF THE CONTRACT from a balance that still notionally contains it; the engine never puts it there, having no contract value at all. On a QLAC the two agree for every year and every return assumption, since the base is the remaining account either way, so nothing here is approximated. On a contract that is NOT a QLAC the same single mechanism produced an exclusion the regulation does not allow, and that is registered separately at treas-reg-1-401-a-9-6-a-3-i-annuity-payments-commence-by-the-required-beginning-date. UNTIL 2026-08-07 THE TWO RECORDS PINNED THE SAME PAIR OF FIGURES with the accepted and produced labels exchanged, and this record said that the day the engine learned to tell the contracts apart, one fixture would flip and the other must not. That day was 2026-08-07: the neighbouring record is now settled, because plan validation refuses a qualified non-QLAC contract that defers past the owner’s required beginning date, and the shape its produced fixture measured is unreachable through any valid plan. What flipped there was that fixture, from an arithmetic gap to the refusal itself. NOTHING HERE MOVED, which is the discipline working rather than a coincidence: this record’s accepted reading and its 33,091.96 are the same figures on the same household, and they have to be, because the mechanism the engine uses to reach them was never the thing that changed. THE AGGREGATION ELECTION IS A SEPARATE RULE and is not what this record covers. Treas. Reg. 1.408-8(e)(1)(ii) and 1.401(a)(9)-5(a)(5)(iv) let an owner ELECT to put the contract’s value back into the base and reduce the requirement by the annuity payments; Publication 590-B walks the same election through an example. It is an election, so declining it is the default and the engine’s silence is a permitted position rather than an omission — but it is a position, and a Plan has no field with which to take the other one. The QLAC premium cap is a third rule again, registered at treas-reg-1-401-a-9-6-q-2-qlac-premium-dollar-limit for its value and at treas-reg-1-401-a-9-6-q-2-ii-qlac-premium-cap-across-every-contract for the running total the engine does not keep; this record says nothing about how large the premium may be, only about where its value sits once paid. THE \"AS LATE AS THE MONTH AFTER THE EIGHTY-FIFTH BIRTHDAY\" IN THE STATEMENT ABOVE IS NOW AN ENFORCED LIMIT, added 2026-08-07. That clause has been in this record since it was written, and it described the deferral (q)(1)(ii) permits — but until that date nothing in the engine held a contract to it, and a plan could carry a QLAC starting at 95 and receive this exclusion for every one of those years. Plan validation now refuses a QLAC whose payments commence past that date, a stored document carrying one is repaired at load, and the projection warns for any caller that reaches the purchase pass without parsing first. That rule is registered separately at treas-reg-1-401-a-9-6-q-1-ii-qlac-commences-by-the-85th-birthday. NOTHING HERE MOVED AGAIN: this record’s accepted reading and its 33,091.96 are still the same figures on the same household, because a start age of 85 was always within the ceiling and the mechanism that reaches the base was never what changed.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-07",
+      "dueOn": "2027-08-07",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/rmd/rmd.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/rmd/rmd.ts",
+          "functions": [
+            {
+              "name": "requiredMinimumDistribution",
+              "line": 35
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/iraAnnuityCharacter.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/iraAnnuityCharacter.approximation.test.ts",
+          "line": 905,
+          "note": "the QLAC carve-out",
+          "tests": [
+            {
+              "title": "computes the requirement on what the account kept",
+              "line": 917
+            },
+            {
+              "title": "reaches the regulation’s base by a mechanism that is not the regulation",
+              "line": 924
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.401(a)(9)-5(b)(4)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-5"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.408-8(h)(1)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.408-8"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.401(a)(9)-6(q)(1)(ii)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-6"
+        },
+        {
+          "kind": "irsPublication",
+          "citation": "IRS Publication 590-B, annuity contract purchased with a portion of the account balance",
+          "url": "https://www.irs.gov/pub/irs-pdf/p590b.pdf"
+        }
+      ]
+    },
+    {
+      "id": "treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy",
+      "title": "Greater of the beneficiary and the employee remaining life expectancy",
+      "classification": "approximated",
+      "errorDirection": "overstatesTax",
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2027-08-04",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/rmd/applicableAge.ts",
+        "packages/engine/src/strategies/inheritedIra.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "inheritedAccountSchema",
+              "line": 762
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/rmd/applicableAge.ts",
+          "functions": [
+            {
+              "name": "applicableAgeAttainYears",
+              "line": 295
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/strategies/inheritedIra.ts",
+          "functions": [
+            {
+              "name": "inheritedRequirementForYear",
+              "line": 1054
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/rmdAndInherited.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/rmdAndInherited.approximation.test.ts",
+          "line": 316,
+          "note": null,
+          "tests": [
+            {
+              "title": "divides by the beneficiary expectancy where the employee expectancy is the greater",
+              "line": 324
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.401(a)(9)-5(d)(1)(ii)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-5"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.401(a)(9)-5(d)(3)(ii)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-5"
+        }
+      ]
+    },
+    {
+      "id": "treas-reg-1-401-a-9-5-d-3-beneficiary-single-life-denominator",
+      "title": "Beneficiary remaining life expectancy: which table, and whether it is fixed",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "Three notes on how far this reaches. First, the subtract-one branch is the only one an inherited account in this engine can take: a surviving spouse does not hold an inherited IRA at all under IRC 408(d)(3)(C)(ii), so the (d)(3)(iv) redetermination has no path here, and the engine holds no beneficiary-category fact that could select it. Second, the table is read at a whole age, as singleLifeExpectancyYears in params/index.ts does, and the fixed entry may fall to zero or below for a beneficiary who inherits past about 110; the module then requires the whole remaining interest, since there is nothing left to divide by. Third, this record covers the beneficiary expectancy only. The greater-of test that compares it against the employee expectancy is a separate paragraph and is registered separately as treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy, where it remains out of scope. Until this record was settled the module divided by a sex-specific SSA period life expectancy looked up at the beneficiary current age, described in its own header as a documented proxy for the Single Life Table; the fixture asserting that behaviour called the same SSA function the module called and could not have failed.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2027-08-04",
+      "implementedBy": [
+        "packages/engine/src/params/index.ts",
+        "packages/engine/src/strategies/inheritedIra.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/index.ts",
+          "functions": [
+            {
+              "name": "singleLifeExpectancyYears",
+              "line": 160
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/strategies/inheritedIra.ts",
+          "functions": [
+            {
+              "name": "beneficiaryRemainingLifeExpectancy",
+              "line": 73
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/strategies/inheritedIra.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/strategies/inheritedIra.test.ts",
+          "line": 140,
+          "note": "which table supplies the expectancy",
+          "tests": [
+            {
+              "title": "sizes the annual amount from the Single Life Table, not the SSA period table",
+              "line": 162
+            },
+            {
+              "title": "carries the published divisor, not an approximation of it",
+              "line": 167
+            },
+            {
+              "title": "is unisex, so no SSA column can be recovered from the amount",
+              "line": 175
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/strategies/inheritedIra.test.ts",
+          "line": 185,
+          "note": "fixed at the first distribution year or redetermined each year",
+          "tests": [
+            {
+              "title": "reduces the initial expectancy by one a year rather than re-reading the table",
+              "line": 211
+            },
+            {
+              "title": "reads the table once, at the age reached in the year after death",
+              "line": 216
+            },
+            {
+              "title": "does not turn on the age the beneficiary happens to be now",
+              "line": 231
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.401(a)(9)-5(d)(3)(i)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-5"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.401(a)(9)-5(d)(3)(iii)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-5"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.401(a)(9)-5(d)(3)(iv)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-5"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.401(a)(9)-9(b)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-9"
+        }
+      ]
+    },
+    {
+      "id": "treas-reg-1-401-a-9-5-joint-life-spouse-sole-beneficiary",
+      "title": "Joint and Last Survivor Table needs a spouse more than 10 years younger",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The regulation measures the age gap between individuals; the engine compares ages attained in the calendar year, which is the granularity the projection runs at and can differ from the exact gap by under a year around a birthday.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2027-08-04",
+      "implementedBy": [
+        "packages/engine/src/rmd/jointLifeTable.ts",
+        "packages/engine/src/rmd/rmd.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/rmd/jointLifeTable.ts",
+          "functions": [
+            {
+              "name": "jointLifeTableDivisor",
+              "line": 659
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/rmd/rmd.ts",
+          "functions": [
+            {
+              "name": "requiredMinimumDistribution",
+              "line": 35
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rmd/rmd.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rmd/rmd.test.ts",
+          "line": 16,
+          "note": null,
+          "tests": [
+            {
+              "title": "keeps a spouse exactly ten years younger on the Uniform Lifetime Table",
+              "line": 23
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.401(a)(9)-5",
+          "url": "https://www.law.cornell.edu/cfr/text/26/1.401(a)(9)-5"
+        }
+      ]
+    },
+    {
+      "id": "treas-reg-1-401-a-9-6-a-3-i-annuity-payments-commence-by-the-required-beginning-date",
+      "title": "Only a QLAC may sit outside the RMD account balance while its payments are deferred",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "THE TEST IS DERIVED, NOT DECLARED, which is what made the refusal cheap enough to be worth taking. A Plan carries the contract’s startAge, the purchase year and the owner’s date of birth, and that is everything the required beginning date needs: 1.401(a)(9)-2(b)(1) puts it at April 1 of the calendar year FOLLOWING the year the owner attains the applicable age, and the projection pays a contract twelve monthly amounts in the year the owner attains startAge, so the engine’s own model of commencement is January 1 of that year. The last permissible start is therefore the year the owner attains the applicable age plus one, and no new field is added. THE SECOND TERM, AND WHY IT IS NOT OPTIONAL. The bound above is the later of that year and the PURCHASE year. An owner who annuitizes at 80 passed their required beginning date years ago, so every contract they could buy commences after it; the first term alone would refuse the ordinary immediate annuity, which the regulation plainly allows and which this engine’s own Form 8606 fixtures are built on. What (a)(3)(i) forbids is using the annuity form to postpone distributions, and a contract paying from the year its premium is paid postpones nothing — the account was already distributing under the account rules and the contract takes over on purchase. A refusal stricter than its authority would not have been this rule. WHAT THE ACCEPTED READING ASSUMES, kept from the approximated version because it is still the load-bearing step. A contract failing 1.401(a)(9)-6(a)(3) is a qualification failure rather than a valuation rule, and the regulation does not spell out an arithmetic remedy; the reading taken is that a bifurcation the regulation does not permit does not happen. The alternative — that the value leaves the base anyway and the failure is the custodian’s problem — would make 1.401(a)(9)-5(b)(4) and 1.401(a)(9)-6(q)(1)(iii) do no work at all, since every deferred contract would already enjoy what the QLAC rules were written to grant. That is a reading which erases its own authority, which is why refusing the shape rather than pricing it is not a shortcut. HISTORY, APPENDED RATHER THAN DELETED. Until 2026-08-07 this record was classified approximated with errorDirection understatesTax, and it pinned these figures: a 76-year-old with a 1,000,000 dollar traditional IRA and a 0 percent return pays a 200,000 dollar qualified premium in 2026 for a contract whose payments start at age 85, nine years past the required beginning date and not declared a QLAC. The 2026 requirement was unaffected either way, resting on the prior December 31 balance; the 2027 requirement parted, the accepted reading leaving the contract in the base for 41,825.59 on 957,805.91 while the engine computed 33,091.96 on 757,805.91 — a shortfall of 8,733.62 in the second year alone, recurring and compounding. The same household with qlac: true produced the identical 33,091.96, which was the sharpest statement of the defect available: the engine had exactly one mechanism and could not tell a QLAC from a non-QLAC because it never had a second one. THE REMEDY AS THE RECORD STATED IT, AND WHAT WAS ACTUALLY BUILT. The approximated version offered a two-way choice and named no migration: \"Either a contract value the RMD base can re-include when the contract is not a QLAC and its payments start after the required beginning date, or a plan-validation refusal of that combination. The second is much cheaper and loses only a shape the regulation does not permit anyway; neither is done here.\" The cheaper arm is the one taken. Extending it with a load-time repair and a projection warning is this slice’s design decision rather than something the record had registered: parse alone would have locked every household holding the old shape out of the plan the new message tells them to fix, and the repair discipline this repo settled on for the pension lump-sum election and the inherited-funded annuity premium is what that seam already exists for. THE REPAIR, AND WHY IT IS A STAND-DOWN. A stored document carrying the shape has its purchase cleared and its monthly amount zeroed, so the premium never leaves the funding balance and the contract pays nothing. Two other repairs were available and both are refused by the never-richer bar the load seam is under. Marking the contract a QLAC would confer precisely the grant the regulation withholds — the household never chose it, the relabel would keep the exclusion the refusal exists to remove, and it is not even safe on its own terms, since the premium would then be clamped to the statutory cap and a start past 85 would still fail (q)(1)(ii). Advancing the start age to the required beginning date would pay a monthly amount quoted for a deferred start across years nobody bought it for. The stand-down is the strictly poorer direction and it leaves the account in the plan, so the household can see what happened and re-author it either way. TWO CORRECTIONS ENTERED 2026-08-07 when the companion ceiling landed at treas-reg-1-401-a-9-6-q-1-ii-qlac-commences-by-the-85th-birthday, so that neither sentence above is read for more than it can carry. First, the aside that \"a start past 85 would still fail (q)(1)(ii)\" is true of every owner but one: (q)(1)(ii)’s deadline is the first day of the month after the 85th anniversary, which for a DECEMBER birthday falls on January 1 of the next calendar year, and the engine’s January-1 model of commencement puts a start age of 86 exactly on it. The ceiling is 85, and 86 for a December birth; the relabel argument is unaffected, because the ceiling is a ceiling either way. Second, the refusal message quoted here as an unconditional \"lower Start age, or tick QLAC\" is now conditional. Ticking the box is a real remedy only where the start age also clears the (q)(1)(ii) ceiling, so the message names it only then and otherwise says why it would not help — the same treatment the companion record’s message gives to unticking.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-07",
+      "dueOn": "2027-08-07",
+      "implementedBy": [
+        "packages/engine/src/model/migrations.ts",
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/migrations.ts",
+          "functions": [
+            {
+              "name": "migratePlanToCurrent",
+              "line": 1002
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "annuitySchema",
+              "line": 1127
+            },
+            {
+              "name": "latestNonQlacQualifiedAnnuityStartAge",
+              "line": 67
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/iraAnnuityCharacter.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/iraAnnuityCharacter.approximation.test.ts",
+          "line": 760,
+          "note": "a deferred contract that is not a QLAC",
+          "tests": [
+            {
+              "title": "refuses a deferred contract that is not a QLAC",
+              "line": 775
+            },
+            {
+              "title": "admits the same contract the moment it is declared a QLAC",
+              "line": 791
+            },
+            {
+              "title": "admits an immediate contract bought after the required beginning date",
+              "line": 798
+            },
+            {
+              "title": "leaves the requirement on the household that bought no contract untouched",
+              "line": 813
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.401(a)(9)-6(a)(3)(i)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-6"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.401(a)(9)-5(a)(5)(iii)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-5"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.401(a)(9)-6(q)(1)(iii)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-6"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.408-8(a)(1)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.408-8"
+        }
+      ]
+    },
+    {
+      "id": "treas-reg-1-401-a-9-6-q-1-ii-qlac-commences-by-the-85th-birthday",
+      "title": "A QLAC may defer, but not past the first of the month after the owner’s 85th birthday",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "THE BOUND IS A BIRTH MONTH, NOT THE CONSTANT 85, and the record leads with that because it is the only part a reader would otherwise assume was a bug. The regulation’s deadline is a DATE and this model’s start ages are calendar years, so the two have to be bridged, and the bridge is the same one the required-beginning-date record is built on: simulatePlan pays a contract twelve monthly amounts in the calendar year the owner attains startAge (startCalendarYear = dobYear + startAge, the guaranteed-income pass), so the engine’s model of commencement is January 1 of that year. Ask of each candidate start age whether that January 1 falls on or before the first day of the month next following the 85th anniversary. A start age of 85 or lower commences no later than January 1 of the year the owner attains 85, and the deadline is at the earliest February 1 of that same year (a January birthday), so every such contract clears it. A start age of 87 or higher is late for everyone. A start age of 86 is the whole question: it commences on January 1 of the year the owner attains 86, which for a birthday in any month but December is a full year after a deadline that fell in the previous calendar year — but for a DECEMBER birthday the 85th anniversary is in December and the first day of the next month IS that January 1, so the contract commences on the last day the regulation permits, exactly. The ceiling is therefore 85, and 86 for a December birth. WHY THE DECEMBER CASE IS NOT TIDIED AWAY. It is the same arithmetic that gives the neighbouring bound its + 1, which exists because THAT deadline — April 1 of the year following attainment of the applicable age — also falls in the calendar year after the one the age names. Refusing 86 for a December-born owner would be a refusal stricter than the authority for it, and it would force that household to model a contract commencing a full year before the one they actually hold; a refusal stricter than its authority is not this rule, which is the discipline the neighbouring record’s second term was written to state. THE TEST IS DERIVED, NOT DECLARED. A Plan already carries the contract’s startAge and the owner’s date of birth, so no new field is added, and the same owner resolution the projection uses (the named owner, or the first person in the household when the account carries none) is taken at parse, at load and in the projection. THE MESSAGE NAMES THE OTHER BOX ONLY WHEN THE OTHER BOX WOULD WORK. Each of the two refusals has two conceivable remedies — move the start age, or change which bound applies by ticking or unticking QLAC — and the second is a dead end whenever the other bound refuses the same age too. A QLAC refused at a start age of 90 cannot be rescued by unticking the box, because the required-beginning-date bound is lower still in every case but an annuitization bought at that very age; a non-QLAC refused at 90 cannot be rescued by ticking it, because 90 is past this ceiling as well. Both messages are therefore derived from which of the two shapes the plan could actually store, and the earlier message’s unconditional \"or tick QLAC\" was corrected to match when this bound landed. THE SAME DERIVATION GOVERNS EVERY SURFACE THAT NAMES THE BOX, added on review because two of them had been left asserting what the parse had stopped asserting. The accounts editor’s field help and the load-repair notice each carried an unconditional claim that the QLAC box is the way to start later, and neither is reliably true: the required-beginning-date ceiling is the LATER of the applicable RMD age plus one and the owner’s age in the purchase year, so it climbs with a late annuitization and overtakes the QLAC’s fixed 85 or 86 — an owner buying at 96 is held to 95 without the box and would be dropped to 85 by ticking it. Both now compare the two ceilings for the owner in front of them, offer the box only where it admits a later start, and otherwise say which age the other shape would impose. The editor reads both ceilings from one helper, and the load repair carries both numbers on the repair record, so no surface re-derives the comparison for itself. WHAT \"ONE SEAM\" DOES AND DOES NOT MEAN, tightened on a second review that found the migration and the editor disagreeing about a limit that is not in this record at all. A Plan will not store an annuity start age past ANNUITY_MAX_START_AGE, which is the model’s own projection range and not a tax rule — nothing here says a contract commencing at 96 is unlawful. That constant is now exported once and read by the schema that enforces it, the editor, and the load repair, because all three had been carrying their own copy. It is applied to the ceiling a message OFFERS, since a suggestion has to name a start age the household can actually store, and deliberately NOT to the ceiling that decides whether the stand-down fires: the repair exists because a shape has no legal expression, and a start age this program merely declines to project is not that shape. Capping the trigger would destroy a lawful purchase for a range limit, and would not even buy the parse, because the stand-down preserves the start age on purpose. Such a document is refused whole, with the schema naming the field that is out of range. THE REPAIR, AND WHY IT IS A STAND-DOWN. A stored document carrying the shape has its purchase cleared and its monthly amount zeroed, so the premium never leaves the funding balance and the contract pays nothing. The same three repairs were available as for the neighbouring bound and the same two are refused by the never-richer bar the load seam is under. Unticking the QLAC box is the mirror of the relabel that record refuses, and is richer for a second reason of its own: it lifts the statutory premium cap the household’s own election put the contract under, and it lands the contract on the required-beginning-date bound, which is lower than the ceiling it just failed. Advancing the start age would pay a monthly amount quoted for a deferred start across years nobody bought it for, and the argument is stronger here than next door because a QLAC’s entire pricing IS its deferral. The stand-down is the strictly poorer direction and it leaves the account in the plan carrying its name and start age, so the household can see what happened and re-author it. WHAT THIS RECORD DOES NOT COVER. How large the premium may be is a different rule, registered at treas-reg-1-401-a-9-6-q-2-qlac-premium-dollar-limit for its value and at treas-reg-1-401-a-9-6-q-2-ii-qlac-premium-cap-across-every-contract for the running total the engine does not keep. Where the contract’s value sits once paid is treas-reg-1-401-a-9-5-b-4-qlac-excluded-from-the-rmd-account-balance, whose statement has always said a QLAC may defer \"as late as the month after the owner’s eighty-fifth birthday\" — until 2026-08-07 that sentence described a limit nothing in the engine enforced, and it now describes one that is enforced at parse, at load and in the projection. Paragraphs (q)(1)(i), (iv) and (v) impose further conditions on a QLAC (the premium limitation, the absence of a commutation benefit or cash surrender right after the required beginning date, and the contract’s own statement that it is intended to be a QLAC) and are not modelled; a Plan has no field for the last two, and a household that ticks the QLAC box is taken at its word that the contract it bought is one.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-07",
+      "dueOn": "2027-08-07",
+      "implementedBy": [
+        "packages/engine/src/decisions/generators.ts",
+        "packages/engine/src/model/migrations.ts",
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/decisions/generators.ts",
+          "functions": [
+            {
+              "name": "annuityPurchaseGenerator",
+              "line": 549
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/model/migrations.ts",
+          "functions": [
+            {
+              "name": "migratePlanToCurrent",
+              "line": 1002
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "annuitySchema",
+              "line": 1127
+            },
+            {
+              "name": "latestQlacAnnuityStartAge",
+              "line": 119
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/iraAnnuityCharacter.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/iraAnnuityCharacter.approximation.test.ts",
+          "line": 842,
+          "note": "a QLAC deferred past 85",
+          "tests": [
+            {
+              "title": "refuses a QLAC that commences after the owner’s 85th birthday",
+              "line": 855
+            },
+            {
+              "title": "admits the same contract one year earlier",
+              "line": 866
+            },
+            {
+              "title": "gives a December-born owner the extra year the deadline actually gives them",
+              "line": 872
+            },
+            {
+              "title": "does not send the household to a refusal the other box would give them",
+              "line": 884
+            },
+            {
+              "title": "warns rather than staying silent for a caller that skips the parse",
+              "line": 896
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.401(a)(9)-6(q)(1)(ii)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-6"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.401(a)(9)-6(q)(1)(iii)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-6"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.401(a)(9)-5(b)(4)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-5"
+        }
+      ]
+    },
+    {
+      "id": "treas-reg-1-401-a-9-6-q-2-ii-qlac-premium-cap-across-every-contract",
+      "title": "The QLAC premium cap is checked one contract at a time, not against the household’s running total",
+      "classification": "approximated",
+      "errorDirection": "understatesTax",
+      "conventionRationale": "PINNED FIGURES. A 76-year-old with a 1,000,000 dollar traditional IRA and a 0 percent return pays two 150,000 dollar QLAC premiums in 2026 out of that IRA, 300,000 together against a 210,000 cap. Neither premium exceeds the cap alone, so the per-contract test the engine applies is silent and no warning fires. The 2026 requirement is unaffected either way, resting on the prior December 31 balance. In 2027 the accepted reading has 210,000 of QLAC-eligible premium outside the base and the excess 90,000 still inside it, for a base of 747,805.91 and a requirement of 32,655.28; the engine puts the whole 300,000 outside, for a base of 657,805.91 and a requirement of 28,725.15. The gap is 3,930.13 in that year and it recurs. DIRECTION. Understates tax, by the same route the QLAC carve-out itself runs: a smaller base is a smaller required distribution, less ordinary income in the year, and a larger balance compounding into later years. WHAT THE ACCEPTED READING TAKES AS GIVEN. The regulation says a premium above the limitation means the contract is not a QLAC, and it supplies a correction mechanism rather than an arithmetic haircut. This record does not re-derive that; it takes the engine’s OWN convention for a single over-cap contract — reduce the premium to the cap, warn, and treat the excess as ineligible, which treas-reg-1-401-a-9-6-q-2-qlac-premium-dollar-limit registers as settled — and asks only that the cap be the running total the subsection defines rather than a fresh allowance per contract. The departure is therefore about the AGGREGATION and nothing else, which is why the fixture holds every other term fixed and varies only the number of contracts. NOT THE SAME RULE AS THE CAP’S VALUE. That the pack carries 210,000 for 2026, and that a projected year multiplies it by a continuous inflation factor rather than stepping it, are both settled at treas-reg-1-401-a-9-6-q-2-qlac-premium-dollar-limit and are not restated here. WHAT IT WOULD TAKE TO FIX. A per-owner running total carried across the purchase pass and reduced by every QLAC premium already funded in the projection, ordered by purchase year and then by a stable account order so the reduction is deterministic; premiums in the same year would have to agree on an order before the second one could be measured against the first. It is not done here. This record was opened on 2026-08-07 while the neighbouring commence-by-the-required-beginning-date defect was being closed, because the reg was open and the gap was found rather than because it was in that slice’s scope.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-07",
+      "dueOn": "2027-08-07",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/iraAnnuityCharacter.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/iraAnnuityCharacter.approximation.test.ts",
+          "line": 976,
+          "note": "two contracts against one cap",
+          "tests": [
+            {
+              "title": "lets a second QLAC spend the whole cap again",
+              "line": 991
+            },
+            {
+              "title": "says nothing while the pair passes the cap",
+              "line": 1003
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.401(a)(9)-6(q)(2)(ii), (q)(4)(ii)(A)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-6"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.401(a)(9)-5(b)(4)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-5"
+        }
+      ]
+    },
+    {
+      "id": "treas-reg-1-401-a-9-6-q-2-qlac-premium-dollar-limit",
+      "title": "The QLAC premium cap is a household-wide running total that moves in ten-thousand-dollar steps",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The regulation moves the cap as a step function while the projection multiplies it by a continuous inflation factor, so a projected year can sit between two published steps and a premium within one step of the cap can read as eligible when the regulation would refuse it, or the reverse. The error is bounded by a single ten-thousand-dollar step. Holding the step would require index values for years that have not happened, so the continuous factor is the same deliberate approximation taken for every other limit that borrows the section 415(d) mechanism. WHAT THIS RECORD DOES NOT COVER, added 2026-08-07 so the statement above is not read for more than it settles. The statement describes the cap as one running total across every retirement arrangement of an individual, and that is what the subsection says; it is not what this engine enforces. The projection holds each purchase to the cap on its own and never reads what another contract has already used, so a household with two QLACs can exceed the total without anything objecting. That gap is registered and pinned separately at treas-reg-1-401-a-9-6-q-2-ii-qlac-premium-cap-across-every-contract. What remains settled here is the FIGURE the pack carries and the indexing mechanism that produces it.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2026-12-01",
+      "implementedBy": [
+        "packages/engine/src/decisions/generators.ts",
+        "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/decisions/generators.ts",
+          "functions": [
+            {
+              "name": "annuityPurchaseGenerator",
+              "line": 549
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/data/year2026.ts",
+          "functions": [
+            {
+              "name": "year2026",
+              "line": 16
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/params/params.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/params/params.test.ts",
+          "line": 486,
+          "note": null,
+          "tests": [
+            {
+              "title": "carries the published cap on a ten-thousand-dollar step",
+              "line": 490
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.401(a)(9)-6(q)(2)(ii), (q)(4)(ii)(A)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-6"
+        },
+        {
+          "kind": "irsNotice",
+          "citation": "Notice 2025-67, section on the qualifying longevity annuity contract limitation",
+          "url": "https://www.irs.gov/pub/irs-drop/n-25-67.pdf"
+        }
+      ]
+    },
+    {
+      "id": "treas-reg-1-401-a-9-8-a-1-ii-separate-account-deadline",
+      "title": "Separate-account treatment requires a timely separate account",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": "The account model has no dated separate-account establishment fact. Its typed multiple-beneficiary refusal is already exercised in inheritedRegime.test.ts; projection still routes that refusal through the registered inheritedForcedAmount fallback so a plan that parsed still projects. No numeric describeRule is lawful for this out-of-scope record.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-25",
+      "dueOn": "2027-08-25",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/strategies/inheritedIra.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "inheritedAccountSchema",
+              "line": 762
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/strategies/inheritedIra.ts",
+          "functions": [
+            {
+              "name": "classifyInheritedRegime",
+              "line": 460
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.401(a)(9)-8(a)(1)(i)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-8"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.401(a)(9)-8(a)(1)(ii)(A)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-8"
+        }
+      ]
+    },
+    {
+      "id": "treas-reg-1-401-a-9-9-c-uniform-lifetime-table",
+      "title": "Uniform Lifetime Table denominator for a lifetime required minimum distribution",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2027-08-03",
+      "implementedBy": [
+        "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/params/index.ts",
+        "packages/engine/src/rmd/rmd.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/data/year2026.ts",
+          "functions": [
+            {
+              "name": "year2026",
+              "line": 16
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/index.ts",
+          "functions": [
+            {
+              "name": "uniformLifetimeDivisor",
+              "line": 143
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/rmd/rmd.ts",
+          "functions": [
+            {
+              "name": "requiredMinimumDistribution",
+              "line": 35
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rmd/rmd.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rmd/rmd.test.ts",
+          "line": 89,
+          "note": null,
+          "tests": [
+            {
+              "title": "divides the prior year-end balance by the denominator for the age attained",
+              "line": 97
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.401(a)(9)-5(c)(1)",
+          "url": "https://www.law.cornell.edu/cfr/text/26/1.401(a)(9)-5"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.401(a)(9)-9(c)",
+          "url": "https://www.law.cornell.edu/cfr/text/26/1.401(a)(9)-9"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.401(a)(9)-9(f)(1)",
+          "url": "https://www.law.cornell.edu/cfr/text/26/1.401(a)(9)-9"
+        }
+      ]
+    },
+    {
+      "id": "treas-reg-1-401-a-9-9-d-joint-life-table-divisor-literals",
+      "title": "Joint and Last Survivor Table divisor literals",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-25",
+      "dueOn": "2027-08-25",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/rmd/jointLifeTable.ts",
+        "packages/engine/src/rmd/rmd.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/rmd/jointLifeTable.ts",
+          "functions": [
+            {
+              "name": "jointLifeTableDivisor",
+              "line": 659
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/rmd/rmd.ts",
+          "functions": [
+            {
+              "name": "requiredMinimumDistribution",
+              "line": 35
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rmd/rmd.golden.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rmd/rmd.golden.test.ts",
+          "line": 74,
+          "note": "Table 3 row and column literals",
+          "tests": [
+            {
+              "title": "uses the Treasury Table 3 literal for a qualifying younger spouse",
+              "line": 85
+            },
+            {
+              "title": "uses the Treasury Table 3 literal below the Pub. 590-B age slice",
+              "line": 99
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.401(a)(9)-9(d), Table 3",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-9"
+        }
+      ]
+    },
+    {
+      "id": "treas-reg-1-408-8-b-2-prior-december-31-balance",
+      "title": "RMD numerator is the prior December 31 balance",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2027-08-03",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/rmd/rmd.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/rmd/rmd.ts",
+          "functions": [
+            {
+              "name": "requiredMinimumDistribution",
+              "line": 35
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/simulate.test.ts",
+          "line": 5498,
+          "note": null,
+          "tests": [
+            {
+              "title": "computes the RMD on the untouched prior year-end balance",
+              "line": 5502
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.408-8(b)(2)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.408-8"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.401(a)(9)-5(b)(1)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-5"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.401(a)(9)-5(a)(1)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-5"
+        }
+      ]
+    },
+    {
+      "id": "treas-reg-1-408-8-b-3-rmd-first-dollars-out",
+      "title": "Distributions satisfy the RMD in the order they occur",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The consequence the engine must honour is derived rather than stated: because the RMD is satisfied in the order distributions actually occur, an ordinary withdrawal taken before a QCD in the same year irrevocably consumes RMD dollars, and the later QCD cannot retroactively displace it or make it nontaxable. No IRS pronouncement states that negative proposition directly; it follows from combining 1.408-8(b)(3) with 1.408-8(g)(1), and is uniform practitioner understanding. Note the annual-aggregation rule of 408(d)(2) does not extend here - that provision governs basis recovery under section 72, not RMD satisfaction, and an engine reasoning from it alone would wrongly conclude the ordering is irrelevant.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2027-08-04",
+      "implementedBy": [
+        "packages/engine/src/actions/annualQcdPhysicalExecution.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/annualQcdPhysicalExecution.ts",
+          "functions": [
+            {
+              "name": "stageAnnualQcdPhysicalExecution",
+              "line": 512
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/actions/annualQcdPhysicalExecution.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/actions/annualQcdPhysicalExecution.test.ts",
+          "line": 289,
+          "note": null,
+          "tests": [
+            {
+              "title": "caps RMD satisfaction at the exact opening RMD remaining",
+              "line": 293
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.408-8(b)(3)",
+          "url": "https://www.law.cornell.edu/cfr/text/26/1.408-8"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.408-8(g)(1)",
+          "url": "https://www.law.cornell.edu/cfr/text/26/1.408-8"
+        },
+        {
+          "kind": "irsNotice",
+          "citation": "IRS Notice 2007-7, Q&A-42",
+          "url": "https://www.irs.gov/pub/irs-drop/n-07-07.pdf"
+        }
+      ]
+    },
+    {
+      "id": "treas-reg-1-408-8-c-2-spousal-deemed-election",
+      "title": "Spousal deemed election on an undistributed post-death-year amount",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The regulation measures the trigger per calendar year, so an unobserved year is refused rather than assumed satisfied: an unobserved year is exactly the year in which the deemed election would have occurred.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2027-08-04",
+      "implementedBy": [
+        "packages/engine/src/actions/beneficiarySpousalElectionStatus.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/beneficiarySpousalElectionStatus.ts",
+          "functions": [
+            {
+              "name": "evaluateBeneficiarySpousalElection",
+              "line": 113
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/actions/beneficiarySpousalElectionStatus.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/actions/beneficiarySpousalElectionStatus.test.ts",
+          "line": 61,
+          "note": null,
+          "tests": [
+            {
+              "title": "begins owner treatment when a post-death-year amount goes undistributed",
+              "line": 68
+            },
+            {
+              "title": "does not read the year of death as a trigger year",
+              "line": 85
+            },
+            {
+              "title": "treats a non-rollover contribution as a trigger",
+              "line": 98
+            },
+            {
+              "title": "refuses an unobserved year rather than assuming it was satisfied",
+              "line": 107
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.408-8(c)(2)",
+          "url": "https://www.law.cornell.edu/cfr/text/26/1.408-8"
+        }
+      ]
+    },
+    {
+      "id": "treas-reg-1-408-8-c-3-spouse-as-own-death-year-rmd",
+      "title": "Death-year spouse election retains the decedent’s unsatisfied RMD",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-25",
+      "dueOn": "2027-08-25",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/strategies/accountEligibility.ts",
+        "packages/engine/src/strategies/inheritedIra.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/strategies/accountEligibility.ts",
+          "functions": [
+            {
+              "name": "isTreatAsOwnEffective",
+              "line": 1232
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/strategies/inheritedIra.ts",
+          "functions": [
+            {
+              "name": "classifyInheritedRegime",
+              "line": 460
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.inheritedRegimeExecution.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/simulate.inheritedRegimeExecution.test.ts",
+          "line": 230,
+          "note": "same-calendar-year treat-as-own election",
+          "tests": [
+            {
+              "title": "E6b S2 same-year flip: keeps the decedent year-of-death RMD and suppresses owner RMD",
+              "line": 246
+            },
+            {
+              "title": "S2 post-election: SEPP distributes from the flipped account",
+              "line": 286
+            },
+            {
+              "title": "blocks scheduled contributions to an inherited Roth",
+              "line": 311
+            },
+            {
+              "title": "E7: falls back to the legacy schedule for an estate and labels the refusal",
+              "line": 340
+            },
+            {
+              "title": "E8: keeps voluntary inherited-traditional draws out of the forced-only distribution total",
+              "line": 366
+            },
+            {
+              "title": "E9: preserves the two-field legacy amounts at three annual Single Life walk-back points",
+              "line": 384
+            },
+            {
+              "title": "E10: enters owner RMD rules at the S2 identity flip after a synthetic refusal",
+              "line": 398
+            },
+            {
+              "title": "E11 K1: voluntary inherited Roth draws stay outside the beneficiary owned-Roth ordering pool",
+              "line": 418
+            },
+            {
+              "title": "P5: emits successor-scope evidence and stops forcing after the beneficiary dies",
+              "line": 447
+            },
+            {
+              "title": "P6: marks the R1 relief-year amount notice-waived for non-execution",
+              "line": 475
+            },
+            {
+              "title": "P7: stamps pre-horizon year-of-death RMD limitation on the legacy refusal path",
+              "line": 517
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.408-8(c)(3)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.408-8"
+        }
+      ]
+    },
+    {
+      "id": "treas-reg-1-408-8-c-3-spouse-treated-as-owner",
+      "title": "After the election the spouse is the owner for all Code purposes",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2027-08-03",
+      "implementedBy": [
+        "packages/engine/src/actions/beneficiarySpousalElectionStatus.ts",
+        "packages/engine/src/actions/beneficiaryTraditionalIraDeathPenalty.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/beneficiarySpousalElectionStatus.ts",
+          "functions": [
+            {
+              "name": "evaluateBeneficiarySpousalElection",
+              "line": 113
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/beneficiaryTraditionalIraDeathPenalty.ts",
+          "functions": [
+            {
+              "name": "evaluateBeneficiaryTraditionalIraDeathPenalty",
+              "line": 296
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/actions/beneficiaryTraditionalIraDeathPenalty.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/actions/beneficiaryTraditionalIraDeathPenalty.test.ts",
+          "line": 227,
+          "note": null,
+          "tests": [
+            {
+              "title": "stops answering once the spouse has become the owner",
+              "line": 234
+            },
+            {
+              "title": "still applies the death exception before any election",
+              "line": 251
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.408-8(c)(3)",
+          "url": "https://www.law.cornell.edu/cfr/text/26/1.408-8"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 72(t)(2)(A)(ii)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/72"
+        }
+      ]
+    },
+    {
+      "id": "treas-reg-1-408-8-e-1-i-aggregate-ira-rmd-sum",
+      "title": "The sum of separately calculated IRA RMDs must leave some IRA",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "Paragraph (e)(1)(i) leaves a living owner free to choose which IRAs the sum comes from, so the engine has to pick an order that the regulation permits but does not select. It sweeps an unmet amount across the remaining owned IRAs in plan account order, which is one of the permitted choices; no ordering here is more correct than another, and none of them changes the total distributed or its tax character. The proportionate allocation of 1.408-8(e)(4)(i) is deliberately not borrowed, because that paragraph governs the year-of-death shortfall passing to beneficiaries rather than a living owner free choice.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2027-08-03",
+      "implementedBy": [
+        "packages/engine/src/actions/rothConversionExecution.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/rothConversionExecution.ts",
+          "functions": [
+            {
+              "name": "executeRothConversions",
+              "line": 928
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/simulate.test.ts",
+          "line": 2571,
+          "note": null,
+          "tests": [
+            {
+              "title": "takes an emptied IRA share from the owner other IRAs, not from the employer plan",
+              "line": 2579
+            },
+            {
+              "title": "never reaches into the other spouse IRAs to cover a shortfall",
+              "line": 2628
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.408-8(e)(1)(i)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.408-8"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.408-8(e)(2)(i)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.408-8"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.408A-4, A-6(b)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.408A-4"
+        }
+      ]
+    },
+    {
+      "id": "treas-reg-1-408-8-e-4-i-year-of-death-proportionate-shortfall",
+      "title": "Year-of-death RMD shortfall is shared proportionately",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The engine never models other beneficiaries designations, so it cannot observe whether (e)(4)(i) binds in a given year. It allocates proportionately unconditionally instead: where designations are identical, (e)(1) free choice permits any split including the proportionate one, so the proportionate split is correct under both branches while an account-order drain is correct under only one.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2027-08-03",
+      "implementedBy": [
+        "packages/engine/src/actions/beneficiaryTraditionalIraResidualRmdAllocation.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/beneficiaryTraditionalIraResidualRmdAllocation.ts",
+          "functions": [
+            {
+              "name": "prepareBeneficiaryTraditionalIraResidualRmdAllocation",
+              "line": 559
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/actions/beneficiaryTraditionalIraResidualRmdAllocation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/actions/beneficiaryTraditionalIraResidualRmdAllocation.test.ts",
+          "line": 127,
+          "note": null,
+          "tests": [
+            {
+              "title": "splits the residual by balance rather than by account order",
+              "line": 131
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.408-8(e)(4)(i)",
+          "url": "https://www.law.cornell.edu/cfr/text/26/1.408-8"
+        }
+      ]
+    },
+    {
+      "id": "treas-reg-1-408-8-projection-sub-cent-distribution-discharge",
+      "title": "Required distribution below one cent is discharged rather than distributed",
+      "classification": "approximated",
+      "errorDirection": "understatesTax",
+      "conventionRationale": "Direction of error: permissive, and bounded at under one cent per owned account per year. The undistributed fraction stays in the account rather than entering income, so ordinary income is understated by it and the year-end balance overstated by the same amount, and both persist for as long as the residue does. Nothing compounds: the residue never grows, and the fraction is below the smallest unit any published figure carries. What the convention buys is that the movement is representable at all. A fraction of a cent is not transferable in currency, no custodian can move it, and the exact-cent runtime journal has no way to hold a gross that rounds to nothing — so the alternatives were to record an occurrence for a movement that did not happen, or to move dollars with no occurrence explaining them, and the journal contract that every movement is explained forbids the second while the first is a false record. The half that is a decision rather than a consequence is the DISCHARGE. Two seams downstream read an undistributed remainder as proof that every one of the owner aggregated IRAs was exhausted: the conversion executor Treas. Reg. 1.408A-4 A-6(b) reserve, which refuses a conversion while a required amount is outstanding, and a named charitable gift RMD coordination, which reports how much of the requirement the gift satisfied. A residue too small to move is not that proof, so routing it to those seams would refuse lawful conversions and misreport lawful gifts for as long as the residue survived, which is permanently. It is therefore treated as settled and never reaches them. What is NOT modelled here and must not be read into it: the section 4974 excise on a shortfall is not priced anywhere in this engine at all, so no penalty is understated by this record in particular — that gap is registered on its own terms as irc-4974-rmd-shortfall-excise-tax. The retirement path is an exact-cent balance ledger, which would remove the residue rather than manage it; until then the fixture pins the required amount the engine computes against the zero it distributes.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-05",
+      "dueOn": "2027-08-05",
+      "implementedBy": [
+        "packages/engine/src/actions/planBalanceAdapter.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/planBalanceAdapter.ts",
+          "functions": [
+            {
+              "name": "planDollarsMoveNoLedgerCent",
+              "line": 101
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/rmdAndInherited.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/rmdAndInherited.approximation.test.ts",
+          "line": 482,
+          "note": null,
+          "tests": [
+            {
+              "title": "distributes nothing where the required amount rounds to zero cents",
+              "line": 503
+            },
+            {
+              "title": "leaves the residue inert rather than working it down year by year",
+              "line": 522
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.408-8(e)(1)(i)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.408-8"
+        }
+      ]
+    },
+    {
+      "id": "treas-reg-1-408A-4-a-6-rmd-precedes-conversion",
+      "title": "A required minimum distribution cannot be converted to a Roth IRA",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2027-08-03",
+      "implementedBy": [
+        "packages/engine/src/actions/rothConversionExecution.ts",
+        "packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts",
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/strategies/accountEligibility.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/rothConversionExecution.ts",
+          "functions": [
+            {
+              "name": "executeRothConversions",
+              "line": 928
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts",
+          "functions": [
+            {
+              "name": "validateOwnedNonRothIraRuntimeSourceSeries",
+              "line": 2465
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/strategies/accountEligibility.ts",
+          "functions": [
+            {
+              "name": "resolveOwnerIraRmdSatisfaction",
+              "line": 246
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/retirementActionExecution.test.ts",
+        "packages/engine/src/projection/simulate.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/retirementActionExecution.test.ts",
+          "line": 2308,
+          "note": "named-action RMD-reserve evidence",
+          "tests": [
+            {
+              "title": "bars the conversion when every aggregated IRA was emptied before the sum came out",
+              "line": 2317
+            },
+            {
+              "title": "clears the conversion when the sweep took the whole sum from another owned IRA",
+              "line": 2334
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.test.ts",
+          "line": 5555,
+          "note": null,
+          "tests": [
+            {
+              "title": "satisfies the whole RMD before any dollar becomes a conversion",
+              "line": 5559
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.408A-4, A-6(a)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.408A-4"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.408A-4, A-6(c)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.408A-4"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.408A-4, A-7(a)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.408A-4"
+        }
+      ]
+    },
+    {
+      "id": "treas-reg-54-4974-1-c-five-year-deadline-rmd",
+      "title": "Five-year deadline carries the remaining interest as its RMD",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": "This is the deadline-year limb of irc-401-a-9-B-ii-non-designated-beneficiary-five-year-rule. The same unmodeled estate/trust/entity facts make a numeric five-year fixture unavailable; inheritedRegime.test.ts exercises the classification refusal, and projection still routes that refusal through the registered inheritedForcedAmount fallback.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-25",
+      "dueOn": "2027-08-25",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/strategies/inheritedIra.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "inheritedBeneficiarySchema",
+              "line": 470
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/strategies/inheritedIra.ts",
+          "functions": [
+            {
+              "name": "classifyInheritedRegime",
+              "line": 460
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 54.4974-1(c)(1)",
+          "url": "https://www.ecfr.gov/current/title-26/section-54.4974-1"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 54.4974-1(c)(2)",
+          "url": "https://www.ecfr.gov/current/title-26/section-54.4974-1"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 401(a)(9)(B)(ii)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section401&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "treas-reg-54-4974-1-f-first-year-rbd-excise-tax",
+      "title": "Deferred first-year RMD shortfall is taxed in the RBD year",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-25",
+      "dueOn": "2027-08-25",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/rmd/rmdShortfallExcise.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/rmd/rmdShortfallExcise.ts",
+          "functions": [
+            {
+              "name": "computeRmdShortfallExcise",
+              "line": 311
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/rmdShortfallExcise.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/rmdShortfallExcise.test.ts",
+          "line": 132,
+          "note": "April 1 excise in the RBD year",
+          "tests": [
+            {
+              "title": "books a missed deferred first amount in the RBD year beside the separate current RMD",
+              "line": 146
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 54.4974-1(f)",
+          "url": "https://www.ecfr.gov/current/title-26/section-54.4974-1"
+        }
+      ]
+    },
+    {
+      "id": "treas-reg-54-4974-1-g-2-edb-ten-year-election-automatic-waiver",
+      "title": "EDB ten-year election automatic waiver has stated conditions",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-25",
+      "dueOn": "2027-08-25",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/rmd/rmdShortfallExcise.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/rmd/rmdShortfallExcise.ts",
+          "functions": [
+            {
+              "name": "automaticWaiverReason",
+              "line": 259
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rmd/rmdShortfallExcise.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rmd/rmdShortfallExcise.test.ts",
+          "line": 197,
+          "note": "each independently modeled automatic-waiver condition",
+          "tests": [
+            {
+              "title": "requires the EDB, default-life-expectancy, ninth-year-election, and Commissioner conditions",
+              "line": 205
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 54.4974-1(g)(2)",
+          "url": "https://www.ecfr.gov/current/title-26/section-54.4974-1"
+        }
+      ]
+    },
+    {
+      "id": "treas-reg-54-4974-1-g-3-year-of-death-automatic-waiver",
+      "title": "Year-of-death automatic waiver has stated conditions",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-25",
+      "dueOn": "2027-08-25",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/rmd/rmdShortfallExcise.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/rmd/rmdShortfallExcise.ts",
+          "functions": [
+            {
+              "name": "automaticWaiverReason",
+              "line": 259
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rmd/rmdShortfallExcise.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rmd/rmdShortfallExcise.test.ts",
+          "line": 244,
+          "note": "same-year death, full correction, later-of deadline, and Commissioner conditions",
+          "tests": [
+            {
+              "title": "requires each independently modeled year-of-death waiver condition",
+              "line": 252
+            },
+            {
+              "title": "waives when the beneficiary filing deadline is later than December 31 of the following year",
+              "line": 292
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 54.4974-1(g)(3)",
+          "url": "https://www.ecfr.gov/current/title-26/section-54.4974-1"
+        }
+      ]
+    }
+  ]
+}

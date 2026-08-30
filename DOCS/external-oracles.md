@@ -264,8 +264,8 @@ The systematic version of this comparison is the Owl parity harness —
 5. Add a RetireGolden test with frozen expected values and assumption comments.
 6. If RetireGolden fails, classify the difference before changing code: bad RetireGolden math or
    parameter, intentional simplification, bad fixture mapping, or external oracle limitation.
-7. Update [testing.md](testing.md)'s companion docs as needed
-   ([domain/domain-rules-reference.md](domain/domain-rules-reference.md), the relevant `features/*` doc).
+7. Update [testing.md](testing.md)'s companion docs as needed (the rule's section under
+   [domain/domain-rules-reference/](domain/domain-rules-reference/), the relevant `features/*` doc).
 
 ## Review cadence
 
