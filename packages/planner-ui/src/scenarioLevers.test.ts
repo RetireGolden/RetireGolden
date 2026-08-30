@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { Plan } from '@retiregolden/engine/model/plan'
-import { createFlatTaxCalculator } from '@retiregolden/engine/projection/flatTax'
+import { createFlatTaxCalculator } from '@retiregolden/engine/testing/flatTax'
 import { parseScenarioPatch } from '@retiregolden/engine/scenarios/contract'
 import { applyScenarioPatch } from '@retiregolden/engine/scenarios/scenarios'
 import { buildExampleCouple } from './planner/examples/buildExampleCouple'

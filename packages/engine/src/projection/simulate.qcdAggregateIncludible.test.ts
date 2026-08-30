@@ -43,7 +43,7 @@
 import { expect, it } from 'vitest'
 
 import { createEmptyPlan, parsePlan, type Account, type Plan } from '../model/plan.js'
-import { createFlatTaxCalculator } from './flatTax.js'
+import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import { describeRule } from '../rules/describeRule.js'
 import { buildOptimizerInput } from './optimizePlan.js'
 import { simulatePlan } from './simulate.js'

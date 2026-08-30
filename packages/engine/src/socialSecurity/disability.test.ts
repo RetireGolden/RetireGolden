@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { describeRule } from '../rules/describeRule.js'
 import { createEmptyPlan, parsePlan, type Plan } from '../model/plan.js'
 import { simulatePlan } from '../projection/simulate.js'
-import { createFlatTaxCalculator } from '../projection/flatTax.js'
+import { createFlatTaxCalculator } from '../testing/flatTax.js'
 
 import { ssdiMonthlyBenefit, ssdiSuspendedBySga, inSsdiWindow, SGA_ANNUAL_MONTHS } from './disability.js'
 import { computePiaFromEarnings, isPiaFromEarningsError, piaMonthlyFromAime } from './piaFromEarnings.js'

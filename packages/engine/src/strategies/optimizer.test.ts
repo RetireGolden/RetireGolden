@@ -14,7 +14,7 @@ import { packForYear } from '../params/index.js'
 import type { FilingStatus } from '../params/types.js'
 import { describeRule } from '../rules/describeRule.js'
 import { createEmptyPlan, parsePlan, type Account, type Plan } from '../model/plan.js'
-import { createFlatTaxCalculator } from '../projection/flatTax.js'
+import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import { simulatePlan } from '../projection/simulate.js'
 import {
   buildOptimizerModel,

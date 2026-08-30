@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { applyScenarioPatch } from '../scenarios/scenarios.js'
 import type { Account, Plan } from '../model/plan.js'
 import { cashAccount, couplePlan, singlePersonPlan, validatePlan } from '../testing/planFixtures.js'
-import { createFlatTaxCalculator } from './flatTax.js'
+import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import {
   optimizePlan,
   runExactLedgerTournament,

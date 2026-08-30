@@ -100,7 +100,7 @@ import {
   traditionalAccount,
   validatePlan,
 } from '../testing/planFixtures.js'
-import { createFlatTaxCalculator } from './flatTax.js'
+import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import { simulatePlan, type SimulateAnnualCounterfactualRequest } from './simulate.js'
 
 const START_YEAR = 2026

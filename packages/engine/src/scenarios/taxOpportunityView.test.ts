@@ -7,7 +7,7 @@ import {
   indexFederalTaxPack,
   packForYear,
 } from '../params/index.js'
-import { createFlatTaxCalculator } from '../projection/flatTax.js'
+import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import { simulatePlan } from '../projection/simulate.js'
 import {
   taxParameterFilingStatus,

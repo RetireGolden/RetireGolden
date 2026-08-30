@@ -17,7 +17,7 @@ import {
   validatePlan,
 } from '../testing/planFixtures.js'
 import type { AnnualLiabilityRunTaxInput } from '../actions/annualLiabilityRunIdentity.js'
-import { createFlatTaxCalculator } from './flatTax.js'
+import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import { simulatePlan, type SimulateAnnualCounterfactualRequest } from './simulate.js'
 import type { YearResult } from './types.js'
 

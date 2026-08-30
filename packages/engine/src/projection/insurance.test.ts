@@ -9,7 +9,7 @@ import {
   type Plan,
 } from '../model/plan.js'
 import { compareLtcStress } from './compare.js'
-import { createFlatTaxCalculator } from './flatTax.js'
+import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import { simulatePlan } from './simulate.js'
 
 let counter = 0

@@ -13,7 +13,7 @@ import { createEmptyPlan, parsePlan, type Account, type Plan, type TipsLadder } 
 import { EMBEDDED_REAL_YIELD_CURVE } from '../params/index.js'
 import { buildLadder } from '../ladder/ladderMath.js'
 import { createStateTaxCalculator } from '../tax/stateTax.js'
-import { createFlatTaxCalculator } from './flatTax.js'
+import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import { simulatePlan } from './simulate.js'
 
 let counter = 0

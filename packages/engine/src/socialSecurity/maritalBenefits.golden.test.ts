@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { createFlatTaxCalculator } from '../projection/flatTax.js'
+import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import type { FormerSpouse } from '../model/plan.js'
 import { expectMoney } from '../testing/money.js'
 import { couplePlan, runPlan, socialSecurityIncome } from '../testing/planFixtures.js'

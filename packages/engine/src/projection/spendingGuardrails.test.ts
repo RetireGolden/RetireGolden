@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { createFlatTaxCalculator } from './flatTax.js'
+import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import { simulatePlan } from './simulate.js'
 import type { MarketSeries } from './types.js'
 import { cashAccount, runPlan, singlePersonPlan, taxableAccount, validatePlan } from '../testing/planFixtures.js'

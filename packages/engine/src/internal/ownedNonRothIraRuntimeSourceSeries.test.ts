@@ -8,7 +8,7 @@ import {
   traditionalAccount,
   validatePlan,
 } from '../testing/planFixtures.js'
-import { createFlatTaxCalculator } from '../projection/flatTax.js'
+import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import { simulatePlan } from '../projection/simulate.js'
 import type { YearResult } from '../projection/types.js'
 import { validateOwnedNonRothIraRuntimeSourceSeries } from './ownedNonRothIraRuntimeSourceSeries.js'

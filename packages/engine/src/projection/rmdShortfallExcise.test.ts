@@ -11,7 +11,7 @@ import {
   singlePersonPlan,
   traditionalAccount,
 } from '../testing/planFixtures.js'
-import { createFlatTaxCalculator } from './flatTax.js'
+import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import { simulatePlan, type SimulateOptions } from './simulate.js'
 
 const noTax = createFlatTaxCalculator(0)

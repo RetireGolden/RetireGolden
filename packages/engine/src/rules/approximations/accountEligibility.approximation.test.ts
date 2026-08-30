@@ -24,7 +24,7 @@ import { expect, it } from 'vitest'
 
 import { addCalendarMonths } from '../../actions/civilDate.js'
 import { createEmptyPlan, parsePlan, type Account, type Plan } from '../../model/plan.js'
-import { createFlatTaxCalculator } from '../../projection/flatTax.js'
+import { createFlatTaxCalculator } from '../../testing/flatTax.js'
 import { simulatePlan } from '../../projection/simulate.js'
 import type { YearResult } from '../../projection/types.js'
 import {

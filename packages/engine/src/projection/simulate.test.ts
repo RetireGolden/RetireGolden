@@ -16,7 +16,7 @@ import { computePiaFromEarnings, isPiaFromEarningsError } from '../socialSecurit
 import { AWI_BY_YEAR } from '../socialSecurity/ssaWageData.js'
 import { combineTaxCalculators, computeFederalTax, createFederalTaxCalculator } from '../tax/federalTax.js'
 import { createStateTaxCalculator } from '../tax/stateTax.js'
-import { createFlatTaxCalculator } from './flatTax.js'
+import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import { compareOptimizerExactLedgerResults } from './optimizerExactLedgerComparison.js'
 import { simulatePlan } from './simulate.js'
 import { claimFactor } from '../socialSecurity/claimFactor.js'
@@ -1652,7 +1652,7 @@ describe('spending, withdrawals, and depletion', () => {
   })
 })
 
-describe('taxes (flat placeholder)', () => {
+describe('taxes (flat test double)', () => {
   it('grosses up traditional withdrawals to cover the tax on them', () => {
     const plan = basePlan()
     plan.expenses.baseAnnual = 80_000

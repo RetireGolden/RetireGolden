@@ -7,7 +7,7 @@ import type { DecisionCandidate } from '../decisions/types.js'
 import { parsePlan, type Account, type Plan } from '../model/plan.js'
 import { applyScenarioPatch } from '../scenarios/scenarios.js'
 import { couplePlan, singlePersonPlan, validatePlan } from '../testing/planFixtures.js'
-import { createFlatTaxCalculator } from './flatTax.js'
+import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import {
   chooseAggregateConversionPromotionIntents,
   promoteAggregateConversionSchedule,

@@ -13,7 +13,7 @@ import {
   traditionalAccount,
   validatePlan,
 } from '../testing/planFixtures.js'
-import { createFlatTaxCalculator } from './flatTax.js'
+import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import { simulatePlan } from './simulate.js'
 import type { YearResult } from './types.js'
 

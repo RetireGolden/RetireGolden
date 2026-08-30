@@ -9,7 +9,7 @@ import { describe, expect, it } from 'vitest'
 
 import { createEmptyPlan, parsePlan, type Account, type AnnuityPayoutForm, type Plan } from '../model/plan.js'
 import { jointLastSurvivorExpectancy } from '../montecarlo/mortality.js'
-import { createFlatTaxCalculator } from './flatTax.js'
+import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import { simulatePlan } from './simulate.js'
 
 let counter = 0

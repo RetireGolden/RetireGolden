@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { Account, Plan } from '../model/plan.js'
-import { createFlatTaxCalculator } from '../projection/flatTax.js'
+import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import type {
   SimulatorAnnualPassStateBindings,
   SimulatorAnnualPassValueBinding,

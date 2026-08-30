@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest'
 
 import { createEmptyPlan, parsePlan, type Plan } from '../model/plan.js'
 import { EMBEDDED_REAL_YIELD_CURVE } from '../params/index.js'
-import { createFlatTaxCalculator } from '../projection/flatTax.js'
+import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import { simulatePlan } from '../projection/simulate.js'
 import { computeFundedRatio } from './fundedRatio.js'
 import { realPresentValue, realYieldAt } from './ladderMath.js'

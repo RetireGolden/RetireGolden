@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { parsePlan, type Account, type IncomeStream, type Plan } from '../model/plan.js'
 import { singlePersonPlan } from '../testing/planFixtures.js'
-import { createFlatTaxCalculator } from './flatTax.js'
+import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import { ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS } from './moneyTolerance.js'
 import {
   simulatePlan,
