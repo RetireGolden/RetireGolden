@@ -204,18 +204,18 @@ The JSON manifest (rule-coverage.json, version 4) is the machine contract: each 
 
 ## Quote fidelity
 
-Committed ledger generated at 2026-08-30T00:48:43.948Z over 1066 authority entries (0 fetched live, 306 from cache).
+Committed ledger generated at 2026-08-30T01:23:40.459Z over 1066 authority entries (0 fetched live, 305 from cache).
 
 3 serious, 47 advisory, 1016 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
 not treated as a CI gate; how to read each verdict: DOCS/operations/quote-fidelity.md.
 
 | Verdict | Class | Count |
 | --- | --- | ---: |
-| ELISION-EXACT | ok | 65 |
+| ELISION-EXACT | ok | 64 |
 | ELISION-PUNCTUATION | advisory | 4 |
 | EXACT | ok | 740 |
 | PDF-NOT-VERIFIABLE | advisory | 7 |
-| PDF-WORD-LEVEL | ok | 211 |
+| PDF-WORD-LEVEL | ok | 212 |
 | PUNCTUATION | advisory | 36 |
 | UNFETCHABLE | serious | 3 |
 

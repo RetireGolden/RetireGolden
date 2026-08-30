@@ -7199,7 +7199,7 @@
           "functions": [
             {
               "name": "annualCharitableDeductionParameters",
-              "line": 131
+              "line": 132
             }
           ]
         }
@@ -7390,7 +7390,7 @@
           "functions": [
             {
               "name": "annualCharitableDeductionParameters",
-              "line": 131
+              "line": 132
             }
           ]
         },
@@ -7584,7 +7584,7 @@
           "functions": [
             {
               "name": "annualCharitableDeductionParameters",
-              "line": 131
+              "line": 132
             }
           ]
         }
@@ -17318,7 +17318,7 @@
           "functions": [
             {
               "name": "annualCharitableDeductionParameters",
-              "line": 131
+              "line": 132
             }
           ]
         },
@@ -17382,7 +17382,7 @@
         {
           "kind": "irsNotice",
           "citation": "Rev. Proc. 2025-32, section 4.01, Tables 1-4",
-          "url": "https://www.irs.gov/irb/2025-45_IRB"
+          "url": "https://www.irs.gov/pub/irs-drop/rp-25-32.pdf"
         }
       ]
     },
@@ -30549,16 +30549,16 @@
     }
   ],
   "quoteFidelity": {
-    "generatedAt": "2026-08-30T00:48:43.948Z",
+    "generatedAt": "2026-08-30T01:23:40.459Z",
     "entryCount": 1066,
     "fetched": 0,
-    "cached": 306,
+    "cached": 305,
     "counts": {
-      "ELISION-EXACT": 65,
+      "ELISION-EXACT": 64,
       "ELISION-PUNCTUATION": 4,
       "EXACT": 740,
       "PDF-NOT-VERIFIABLE": 7,
-      "PDF-WORD-LEVEL": 211,
+      "PDF-WORD-LEVEL": 212,
       "PUNCTUATION": 36,
       "UNFETCHABLE": 3
     }

@@ -1,16 +1,16 @@
 {
-  "generatedAt": "2026-08-30T00:48:43.948Z",
+  "generatedAt": "2026-08-30T01:23:40.459Z",
   "recordCount": 416,
-  "urlCount": 306,
+  "urlCount": 305,
   "fetched": 0,
-  "cached": 306,
+  "cached": 305,
   "entryCount": 1066,
   "counts": {
     "EXACT": 740,
     "PUNCTUATION": 36,
-    "PDF-WORD-LEVEL": 211,
+    "PDF-WORD-LEVEL": 212,
     "ELISION-PUNCTUATION": 4,
-    "ELISION-EXACT": 65,
+    "ELISION-EXACT": 64,
     "PDF-NOT-VERIFIABLE": 7,
     "UNFETCHABLE": 3
   },
@@ -431,10 +431,10 @@
       "id": "irc-68-overall-itemized-limitation",
       "citation": "Rev. Proc. 2025-32, section 4.01, Tables 1-4",
       "host": "www.irs.gov",
-      "url": "https://www.irs.gov/irb/2025-45_IRB",
+      "url": "https://www.irs.gov/pub/irs-drop/rp-25-32.pdf",
       "quoteSha256": "a73da4bde4619123",
-      "verdict": "ELISION-EXACT",
-      "detail": "8 segments, every one a literal substring",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "8 elision segments, all present in the extracted text",
       "diagnosis": null
     },
     {

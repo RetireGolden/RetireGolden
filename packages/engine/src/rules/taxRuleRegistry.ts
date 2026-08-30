@@ -856,7 +856,7 @@ const registry = {
     }, {
       kind: 'irsNotice',
       citation: 'Rev. Proc. 2025-32, section 4.01, Tables 1-4',
-      url: 'https://www.irs.gov/irb/2025-45_IRB',
+      url: 'https://www.irs.gov/pub/irs-drop/rp-25-32.pdf',
       quotedText:
         'TABLE 1 - Section 1(j)(2)(A) –Married Individuals Filing Joint Returns and Surviving Spouses … Over $768,700 $206,583.50 plus 37% of the excess over $768,700 … TABLE 2 - Section 1(j)(2)(B) - Heads of Households … Over $640,600 $191,171 plus 37% of the excess over $640,600 … TABLE 3 - Section 1(j)(2)(C) – Unmarried Individuals (other than Surviving Spouses and Heads of Households) … Over $640,600 $192,979.25 plus 37% of the excess over $640,600 … TABLE 4 - Section 1(j)(2)(D) – Married Individuals Filing Separate Returns … Over $384,350 $103,291.75 plus 37% of the excess over $384,350',
     }],
@@ -11267,9 +11267,9 @@ const registry = {
     }, {
       // The AR1000ES schedule's two halves interleave in extraction, so this
       // separate threshold-only quotation preserves its literal text run. The
-      // following indexed-brackets quotation preserves literal row order: each
-      // Less Than or Equal To endpoint is immediately followed by its
-      // percentage, and ellipses mark rows omitted between segments.
+      // following indexed-brackets quotation preserves one endpoint/percentage
+      // pair from each extracted row, with ellipses marking the omitted text
+      // between pairs.
       kind: 'formInstruction',
       citation: '2026 Form AR1000ES instructions, Tax Rate Schedule, "IF YOUR NET TAXABLE INCOME IS" column',
       url: 'https://www.dfa.arkansas.gov/wp-content/uploads/2026_Final_AR1000ES.pdf',
