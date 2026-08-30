@@ -83,11 +83,15 @@ The serializer is `serializeSinglePlan` in
 [`packages/planner-ui/src/data/planFormat.ts`](../../packages/planner-ui/src/data/planFormat.ts),
 published on the same `@retiregolden/planner-ui/plan-format` subpath as the backup envelope.
 
-It is pinned end-to-end by `tests/planForAiRoundtrip.test.ts` in the
-[RetireGolden-MCP](https://github.com/RetireGolden/RetireGolden-MCP) repo, which feeds a real copied
-payload to the real `build_plan` and checks that the plan, the start year, and the projection come
-back unchanged. **That guard lives there, not here, on purpose**: the MCP is the consumer of this
-payload, so it depends on `@retiregolden/planner-ui` and this repo depends on nothing of the MCP's.
+Its end-to-end guard — feeding a real copied payload to a real `build_plan` and checking that the
+plan, the start year and the projection come back unchanged — lives in the
+[RetireGolden-MCP](https://github.com/RetireGolden/RetireGolden-MCP) repo. As a **point-in-time
+pointer**, it moved there on 2026-08-30 as `tests/planForAiRoundtrip.test.ts`; that path is where to
+start looking, not a guarantee. Nothing in this tree can verify it, so if the filename does not
+resolve, search that repository rather than trusting it.
+
+**That guard lives there, not here, on purpose**: the MCP is the consumer of this payload, so it
+depends on `@retiregolden/planner-ui` and this repo depends on nothing of the MCP's.
 The arrow used to point both ways — this repo carried a dev dependency on the published
 `@retiregolden/mcp` — which meant a `build_plan` regression stayed invisible until an npm release
 carried it across. An **MCP-side** regression now fails in the pull request that causes it.

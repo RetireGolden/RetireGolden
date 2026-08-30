@@ -60,10 +60,11 @@ External-oracle fixtures follow the sourcing, tolerance, and record-keeping rule
 
 **One documented exception to co-location.** The single-plan export's round trip through the MCP's
 `build_plan` lives in the [RetireGolden-MCP](https://github.com/RetireGolden/RetireGolden-MCP) repo,
-as `tests/planForAiRoundtrip.test.ts`, not beside the serializer here. The MCP is the *consumer* of
-that payload, and a guard hosted here could only ever test a published MCP — one release behind the
-change that broke it, and requiring a dependency arrow back from producer to consumer. The producer
-side of the contract is still co-located, in
+not beside the serializer here — as a **point-in-time pointer**, it moved there on 2026-08-30 as
+`tests/planForAiRoundtrip.test.ts`, a starting point for a search rather than a path this repo can
+verify. The MCP is the *consumer* of that payload, and a guard hosted here could only ever test a
+published MCP — one release behind the change that broke it, and requiring a dependency arrow back
+from producer to consumer. The producer side of the contract is still co-located, in
 [`packages/planner-ui/src/data/planFormat.test.ts`](../packages/planner-ui/src/data/planFormat.test.ts).
 See [plan-file-format.md](features/plan-file-format.md) for the full split. Do not recreate the
 removed dev dependency on `@retiregolden/mcp` to bring that test back.
