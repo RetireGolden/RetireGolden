@@ -1,10 +1,11 @@
 # Report goldens are compared byte-for-byte (vitest toMatchFileSnapshot);
 # pin them to LF so Windows autocrlf checkouts don't break the comparison.
 packages/planner-ui/src/report/goldens/** text eol=lf
-# Vitest rewrites inline snapshot files with LF regardless of platform. Under
-# autocrlf a CRLF checkout leaves a stale size in the index, so every local test
-# run leaves the file "modified" with an empty diff. Pin them to LF to match
-# what vitest writes.
+# Vitest rewrites external snapshot files (toMatchSnapshot) with LF regardless
+# of platform. Under autocrlf a CRLF checkout leaves a stale size in the index,
+# so every local test run leaves the file "modified" with an empty diff. Pin
+# them to LF to match what vitest writes. Inline snapshots live in .test.ts
+# sources and are not covered here; they only get rewritten under -u.
 *.snap text eol=lf
 # The complete-export manifest fixture is byte-exact producer output whose
 # SHA-256 is pinned in tests; a CRLF rewrite would change the digest.
