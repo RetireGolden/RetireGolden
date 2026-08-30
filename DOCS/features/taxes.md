@@ -90,7 +90,7 @@ State brackets are a separate question and are still held nominal (see `params/s
   is charged before that date, and a miss lands in the RBD year beside any separate current-year miss
   (`treas-reg-54-4974-1-f-first-year-rbd-excise-tax`). Correction
   evidence prices the excise only; the corrective account movement and its income character remain separate ledger
-  inputs. See [domain rules §6](../domain/domain-rules-reference.md#6-rmds-secure-20).
+  inputs. See [domain rules §6](../domain/domain-rules-reference/06-rmds-secure-20.md).
 - **QCD:** a modeled household QCD's qualified portion is excluded from ordinary income, and the gift counts toward an RMD when one is due. It
   is **not** conditional on an RMD: the pre-RMD window from 70½ (resolved from the birth month at annual
   granularity — attained 71, or attained 70 with a January–June birth month) to the applicable RMD age is open,
@@ -514,7 +514,7 @@ capped exclusion there applies once to the combined private + public retirement 
 ## Account depth (HSA, nondeductible basis, property sales)
 
 Opt-in account-level tax depth (all additive with no-op defaults, so pre-existing plans are unchanged). Full
-rules and citations: [domain rules §16](../domain/domain-rules-reference.md#16-account-eligibility-hsa-nondeductible-basis-and-fixed-asset-disposition-opt-in).
+rules and citations: [domain rules §16](../domain/domain-rules-reference/16-account-eligibility-hsa-nondeductible-basis-and.md).
 
 - **Account eligibility service** (`engine/strategies/accountEligibility.ts`) centralizes the
   withdraw / convert / RMD / spendable / penalty rules so every consumer (ledger, optimizer input, decision
@@ -627,7 +627,7 @@ rules and citations: [domain rules §16](../domain/domain-rules-reference.md#16-
   The standalone-only `buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput` boundary now
   binds the canonical candidate, complete owner-wide December 31 pool, basis, and contribution-window
   evidence into a frozen classifier input without classifying or executing it; see
-  [domain rules §16](../domain/domain-rules-reference.md#16-account-eligibility-hsa-nondeductible-basis-and-fixed-asset-disposition-opt-in).
+  [domain rules §16](../domain/domain-rules-reference/16-account-eligibility-hsa-nondeductible-basis-and.md).
   Separately, `validateOwnedNonRothIraSeppCurrentPaymentCandidate` validates one current named SEPP
   payment as a provisional schedule-state transition. Its raw payment record references the canonical
   distribution and prior terminal state rather than restating caller-computed actual gross, character,
@@ -672,7 +672,7 @@ rules and citations: [domain rules §16](../domain/domain-rules-reference.md#16-
 ## Guaranteed income and estate depth
 
 Opt-in tax treatment for annuity purchases and the after-tax estate (all additive with no-op defaults). Full
-rules and citations: [domain rules §17](../domain/domain-rules-reference.md#17-guaranteed-income-annuity-purchases-and-estate--beneficiary-depth-opt-in).
+rules and citations: [domain rules §17](../domain/domain-rules-reference/17-guaranteed-income-annuity-purchases-and-estate.md).
 
 - **Annuity purchase taxation.** A purchased **non-qualified** annuity (cash/taxable-funded) taxes each
   payout by the **IRS Pub 939 exclusion ratio** — the premium is recovered tax-free over the expected-return
