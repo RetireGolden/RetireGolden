@@ -7,12 +7,26 @@ because the only signal was Vite's `chunkSizeWarningLimit`, which prints a warni
 
 [`app/scripts/check-bundle-budget.mjs`](../../app/scripts/check-bundle-budget.mjs) is the gate. It runs
 as part of `pnpm --filter retiregolden-web build`, straight after `vite build`, and exits non-zero when
-`dist/` is over budget — so the build, and therefore CI and the deploy, fail rather than warn.
+`dist/` is over budget — so the build, and therefore CI and the deploy, fail rather than warn. It is a thin
+CLI over [`bundleBudget.mjs`](../../app/scripts/bundleBudget.mjs), which holds the limits, the parsers, and
+the evaluation as pure functions with fixture tests in
+[`bundleBudget.test.mjs`](../../app/scripts/bundleBudget.test.mjs).
 
 ```bash
 pnpm build                 # the budget runs inside the app build
 pnpm bundle-budget         # print the table against an existing dist/, never fail
 ```
+
+Both **weigh** a build; neither makes one. `pnpm bundle-budget` (i.e. `--report`) suppresses the failure
+exit for an over-budget build so you can read the whole table at once, but with no `app/dist/` at all it
+still exits non-zero: there is nothing to report on, and pretending otherwise would be the same fail-open
+this gate exists to prevent. Run a build first.
+
+**It fails closed.** Every "could not measure this" path is a failure, not a skipped row: an unreadable or
+unparsable `index.html` or `sw.js`, a precache manifest that yields zero entries, a referenced chunk that
+is not on disk. A size gate whose parser quietly returns nothing is worse than no gate — the build stays
+green and now carries a false assurance. Workbox and Vite own those output formats, so the parsers are
+expected to break someday; when they do, the build stops rather than reporting `0.0 KiB`.
 
 Sizes are **KiB (1024 bytes), uncompressed**, matching workbox's own precache report. Vite's build log
 prints kB (1000 bytes), so the same chunk reads ~2.4% larger there. Uncompressed rather than gzip on
@@ -27,26 +41,40 @@ the parse cost that dominates on a low-end device is paid on the decompressed by
 | engine simulation core (`useProjection`) | 640 KiB | 572 KiB | The deterministic ledger the analysis pages share |
 | Learning Center registry | 600 KiB | 540 KiB | Article prose |
 | chart vendor (`CartesianChart`) | 380 KiB | 326 KiB | Recharts and its d3 slices |
-| app entry (`index`), exactly one | 300 KiB | 248 KiB | What a cold visit blocks on |
+| app entry (the script `index.html` loads) | 300 KiB | 248 KiB | The chunk a cold visit blocks on first |
 | every other JS chunk | 260 KiB | 201 KiB (`PlanRoutes`) | Route and page chunks staying route-sized |
 | all JS together | 4400 KiB | 4022 KiB | "Many new chunks", not just one fat one |
 | one stylesheet / all CSS | 64 / 80 KiB | 45 / 52 KiB | The token layer |
 | landing critical path | 1100 KiB | 1012 KiB | Entry + every `modulepreload`: what a cold visit blocks on |
 | PWA precache | 4500 KiB | 4152 KiB | Install cost, and the offline guarantee's price |
 
-Each limit is the size measured when the budget landed plus roughly 10–25% headroom: ordinary feature
-work fits, a structural regression does not.
+Each limit is the size measured when the budget landed plus headroom, and the headroom is deliberately
+uneven — read the table, not an average:
+
+- The **aggregate** rows are tight, ~9%: the precache (4152 → 4500) and the landing critical path
+  (1012 → 1100). These are the two numbers a reader actually pays, and they are the ones that drifted, so
+  they get the least slack. Expect to justify growth here, not absorb it.
+- The **per-class chunk** rows sit near 11–17% (worker 903 → 1000, `useProjection` 572 → 640,
+  `learningRegistry` 540 → 600, Recharts 326 → 380): enough for a feature landing in a known chunk.
+- The **loosest** rows are the ones with the most natural variation: the per-chunk default (201 → 260,
+  ~29%) has to fit whatever the next route chunk turns out to weigh, and CSS (45 → 64, ~42%) is small
+  enough that percentages there mean little in absolute terms.
 
 The **exactly one worker** rule is the load-bearing one. A bundler builds every worker *entry* in its own
 pass, so two entries cannot share a chunk — a second worker entry means a second copy of the ~740 KiB
 engine core in `dist/` and in the precache. That is precisely how the app came to ship four of them
 (3,147 KiB of near-identical code) before they were collapsed onto
 [`workers/planner.worker.ts`](../../packages/planner-ui/src/workers/planner.worker.ts), which dispatches
-on a channel tag instead. Off-thread work belongs on that entry, on a new channel.
+on a channel tag instead. Off-thread work belongs on that entry, on a new channel. The same invariant is
+asserted a second time, from the outside, by planner-ui's
+[`pack-smoke.mjs`](../../packages/planner-ui/scripts/pack-smoke.mjs): a scratch Vite consumer of the
+published tarball must emit exactly one worker chunk.
 
 A chunk rolldown names differently after a refactor stops matching its row and falls through to the
 260 KiB default. That is intended: a chunk that changed identity should be looked at, not silently
-inherit a large allowance.
+inherit a large allowance. The app entry is the exception — it is identified by the script `index.html`
+actually loads, not by an `index-<hash>.js` name pattern, which would also match a dependency that
+happens to have an `index.js` internal entry.
 
 ## What is *not* precached
 
@@ -74,9 +102,15 @@ In order of preference:
 2. **Check for a duplicate.** Two chunks holding the same dependency usually means an import crossed a
    boundary it did not need to — a worker entry, an eager import from an entry module, a type-only
    import written as a value import.
-3. **Raise the limit, in the same commit, with the reason.** The budget is a measured limit, not a
-   preference; a limit raised without a note is how the 6.3 MB happened. Never raise
-   `chunkSizeWarningLimit` instead — that changes nothing about what ships.
+3. **Raise the limit** (in [`bundleBudget.mjs`](../../app/scripts/bundleBudget.mjs)) **in the same commit,
+   with the reason.** The budget is a measured limit, not a preference; a limit raised without a note is
+   how the 6.3 MB happened. Never raise `chunkSizeWarningLimit` instead — that changes nothing about what
+   ships.
+
+If instead the failure says something is *unmeasured*, the parser broke: check what `vite build` now emits
+into `dist/index.html` or what workbox writes into `dist/sw.js`, fix `parseLandingScripts` /
+`parsePrecacheUrls`, and add the new shape to the fixtures in `bundleBudget.test.mjs`. Do not "fix" it by
+letting the row disappear.
 
 To see where a chunk's weight actually is, build with a plugin that dumps `chunk.modules` from
 `generateBundle`, or run `pnpm dlx vite-bundle-visualizer` against `app/`. Neither is a committed

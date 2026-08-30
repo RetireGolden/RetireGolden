@@ -1,6 +1,7 @@
 /**
- * Spawns the relocation-compare sweep in a Web Worker (lazy-loaded only here)
- * and resolves the comparison. Falls back to a synchronous in-process run
+ * Runs the relocation-compare sweep on the planner's shared Web Worker
+ * (../workers/planner.worker.ts, `relocation` channel) and resolves the
+ * comparison. Falls back to a synchronous in-process run
  * where Worker is unavailable (tests, very old browsers), mirroring
  * src/optimize/spendingRunner.ts.
  */

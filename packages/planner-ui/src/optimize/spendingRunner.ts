@@ -1,8 +1,9 @@
 /**
- * Spawns the sustainable-spending solver in a Web Worker (lazy-loaded only
- * here) and resolves the summarized result. Falls back to a synchronous
- * in-process solve where Worker is unavailable (tests, very old browsers),
- * mirroring ./runner.ts.
+ * Runs the sustainable-spending solver on the planner's shared Web Worker
+ * (../workers/planner.worker.ts, `spendingSolve` channel) and resolves the
+ * summarized result. No wasm — the solver is pure `simulatePlan` bisection.
+ * Falls back to a synchronous in-process solve where Worker is unavailable
+ * (tests, very old browsers), mirroring ./runner.ts.
  */
 
 import type { SpendingSolveRequest, SpendingSolveResponse, SpendingSolveResult } from './spendingMessages'

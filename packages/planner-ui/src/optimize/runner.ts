@@ -1,6 +1,9 @@
 /**
- * Spawns the optimizer in a Web Worker (lazy-loaded only here, so the wasm
- * chunk is fetched only when Optimize is invoked) and resolves the schedule.
+ * Runs the optimizer on the planner's shared Web Worker
+ * (../workers/planner.worker.ts, `optimize` channel) and resolves the
+ * schedule. The worker script is shared with Monte Carlo, the spending solver,
+ * and relocation compare, so it may already be in the browser's cache; what
+ * stays lazy is the ~3 MB HiGHS wasm, which only this channel ever fetches.
  * Falls back to a synchronous in-process solve where Worker is unavailable
  * (tests, very old browsers), mirroring src/mc/pool.ts.
  */
