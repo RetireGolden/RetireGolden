@@ -277,11 +277,13 @@ const registry = {
     effectiveThrough: null,
     verifiedOn: '2026-08-04',
     implementedBy: [
-      'packages/engine/src/tax/federalTax.ts',
       'packages/engine/src/actions/annualQcdItemizedSection170Ledger.ts',
+      'packages/engine/src/tax/annualCharitableDeductionParameters.ts',
+      'packages/engine/src/tax/federalTax.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/actions/annualQcdItemizedSection170Ledger.ts#stageAnnualQcdItemizedSection170Ledger',
+      'packages/engine/src/tax/annualCharitableDeductionParameters.ts#annualCharitableDeductionParameters',
       'packages/engine/src/tax/federalTax.ts#charitableAfterFloor',
     ],
   },
@@ -837,7 +839,7 @@ const registry = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'Publication 505 states the rate as 5.4 percent, which is a truncation of 2/37 (0.0540540...), not the rule. The engine computes the exact rational because the difference is roughly $5.41 per $100,000 of limitation base and this provision only bites at incomes where that is real money. Note also that the amended section has no exempt categories and no 80 percent cap, both features of the pre-2018 Pease rule, so logic ported from that era would carry forward carve-outs that no longer exist. The threshold figure itself is not cited here. A Rev. Proc. 2025-32 authority was removed on 2026-08-04 because its quotedText was a fluent prose sentence stating three bracket figures, and that document presents the brackets as tables -- the sentence appears nowhere in it, so the field whose whole purpose is verbatim operative language held a composed paraphrase. Nothing was lost by removing it: 68(a) above already defines the threshold as the point where the 37 percent bracket begins under section 1, and the indexed dollar amount comes from the parameter pack, which is how every other inflation-adjusted figure in this registry is sourced.',
+      'Publication 505 states the rate as 5.4 percent, which is a truncation of 2/37 (0.0540540...), not the rule. The engine computes the exact rational because the difference is roughly $5.41 per $100,000 of limitation base and this provision only bites at incomes where that is real money. Note also that the amended section has no exempt categories and no 80 percent cap, both features of the pre-2018 Pease rule, so logic ported from that era would carry forward carve-outs that no longer exist. The indexed thresholds are the starts of the 37 percent rows in Rev. Proc. 2025-32 section 4.01, quoted below. Its filing-status rows map directly to the parameter carrier: joint and surviving-spouse share one row, while head of household, unmarried individuals, and married filing separately each retain their own row. This preserves the same rate-table convention as irc-1-j-2-progressive-ordinary-rate-schedule while retaining every status-specific threshold required by section 68.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -851,17 +853,25 @@ const registry = {
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section68&num=0&edition=prelim',
       quotedText:
         'This section shall be applied after the application of any other limitation on the allowance of any itemized deduction.',
+    }, {
+      kind: 'irsNotice',
+      citation: 'Rev. Proc. 2025-32, section 4.01, Tables 1-4',
+      url: 'https://www.irs.gov/pub/irs-drop/rp-25-32.pdf',
+      quotedText:
+        'TABLE 1 - Section 1(j)(2)(A) –Married Individuals Filing Joint Returns and Surviving Spouses … Over $768,700 $206,583.50 plus 37% of the excess over $768,700 … TABLE 2 - Section 1(j)(2)(B) - Heads of Households … Over $640,600 $191,171 plus 37% of the excess over $640,600 … TABLE 3 - Section 1(j)(2)(C) – Unmarried Individuals (other than Surviving Spouses and Heads of Households) … Over $640,600 $192,979.25 plus 37% of the excess over $640,600 … TABLE 4 - Section 1(j)(2)(D) – Married Individuals Filing Separate Returns … Over $384,350 $103,291.75 plus 37% of the excess over $384,350',
     }],
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-04',
+    verifiedOn: '2026-08-29',
     implementedBy: [
       'packages/engine/src/actions/annualSection68ItemizedDeduction.ts',
+      'packages/engine/src/tax/annualCharitableDeductionParameters.ts',
       'packages/engine/src/tax/federalTax.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/actions/annualSection68ItemizedDeduction.ts#buildAnnualSection68ItemizedDeductionEvidence',
+      'packages/engine/src/tax/annualCharitableDeductionParameters.ts#annualCharitableDeductionParameters',
       'packages/engine/src/tax/federalTax.ts#section68Reduction',
     ],
   },
@@ -919,9 +929,13 @@ const registry = {
     effectiveFrom: 2018,
     effectiveThrough: null,
     verifiedOn: '2026-08-04',
-    implementedBy: ['packages/engine/src/actions/annualQcdItemizedSection170Ledger.ts'],
+    implementedBy: [
+      'packages/engine/src/actions/annualQcdItemizedSection170Ledger.ts',
+      'packages/engine/src/tax/annualCharitableDeductionParameters.ts',
+    ],
     implementedByFunctions: [
       'packages/engine/src/actions/annualQcdItemizedSection170Ledger.ts#stageAnnualQcdItemizedSection170Ledger',
+      'packages/engine/src/tax/annualCharitableDeductionParameters.ts#annualCharitableDeductionParameters',
     ],
   },
 
@@ -3469,8 +3483,10 @@ const registry = {
       kind: 'statute',
       citation: 'P.L. 118-273, § 3(a)',
       url: 'https://www.govinfo.gov/content/pkg/PLAW-118publ273/pdf/PLAW-118publ273.pdf',
+      // The enrolled text continues immediately into subsection (b), so the
+      // terminal U+2026 honestly discloses that omitted continuation.
       quotedText:
-        'Section 215 of the Social Security Act (42 U.S.C. 415) is amended-- (1) in subsection (a), by striking paragraph (7); (2) in subsection (d), by striking paragraph (3); and (3) in subsection (f), by striking paragraph (9).',
+        'Section 215 of the Social Security Act (42 U.S.C. 415) is amended-- (1) in subsection (a), by striking paragraph (7); (2) in subsection (d), by striking paragraph (3); and (3) in subsection (f), by striking paragraph (9)…',
     }, {
       kind: 'statute',
       citation: 'P.L. 118-273, § 4',
@@ -11251,13 +11267,11 @@ const registry = {
       quotedText:
         'If your NET TAXABLE INCOME is less than $5,599, your tax is zero percent (0%) of your net taxable income.',
     }, {
-      // The schedule's "IF YOUR NET TAXABLE INCOME IS" column, as one run of
-      // the form's own text. A rate schedule is a two-dimensional layout and
-      // the AR1000ES interleaves its two halves badly enough that a row read
-      // across pairs a threshold with the wrong rate; the column read down does
-      // not. So the thresholds are quoted from the column that holds them and
-      // the rates from the department's own bracket table below, rather than
-      // from a tidied single-string rendering of either.
+      // The AR1000ES schedule's two halves interleave in extraction, so this
+      // separate threshold-only quotation preserves its literal text run. The
+      // following indexed-brackets quotation preserves one endpoint/percentage
+      // pair from each extracted row, with ellipses marking the omitted text
+      // between pairs.
       kind: 'formInstruction',
       citation: '2026 Form AR1000ES instructions, Tax Rate Schedule, "IF YOUR NET TAXABLE INCOME IS" column',
       url: 'https://www.dfa.arkansas.gov/wp-content/uploads/2026_Final_AR1000ES.pdf',
@@ -11266,7 +11280,7 @@ const registry = {
       kind: 'formInstruction',
       citation: '2025 Indexed Tax Brackets, "Less Than or Equal To" and "Percentage" columns',
       url: 'https://www.dfa.arkansas.gov/wp-content/uploads/2025_TaxBrackets.pdf',
-      quotedText: '$5,599 0.00% $11,199 2.00% $15,999 3.00% $26,399 3.40% $94,700 3.90%',
+      quotedText: '$5,599 0.00% … $11,199 2.00% … $15,999 3.00% … $26,399 3.40% … $94,700 3.90%',
     }, {
       kind: 'formInstruction',
       citation: '2025 Indexed Tax Brackets, "From" column',
@@ -15176,8 +15190,10 @@ const registry = {
       kind: 'statute',
       citation: 'P.L. 117-328, division T, title I, section 126(d)',
       url: 'https://www.govinfo.gov/content/pkg/PLAW-117publ328/pdf/PLAW-117publ328.pdf',
+      // The enrolled text continues immediately into section 127, so the
+      // terminal U+2026 honestly discloses that omitted continuation.
       quotedText:
-        '(d) EFFECTIVE DATE.--The amendments made by this section shall apply with respect to distributions after December 31, 2023.',
+        '(d) EFFECTIVE DATE.--The amendments made by this section shall apply with respect to distributions after December 31, 2023…',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,

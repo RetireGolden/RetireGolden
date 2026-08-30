@@ -1,18 +1,18 @@
 {
-  "generatedAt": "2026-08-29T23:20:56.336Z",
+  "generatedAt": "2026-08-30T01:23:40.459Z",
   "recordCount": 416,
   "urlCount": 305,
   "fetched": 0,
   "cached": 305,
-  "entryCount": 1065,
+  "entryCount": 1066,
   "counts": {
     "EXACT": 740,
     "PUNCTUATION": 36,
-    "PDF-WORD-LEVEL": 213,
+    "PDF-WORD-LEVEL": 212,
     "ELISION-PUNCTUATION": 4,
     "ELISION-EXACT": 64,
-    "UNFETCHABLE": 3,
-    "PDF-NOT-VERIFIABLE": 5
+    "PDF-NOT-VERIFIABLE": 7,
+    "UNFETCHABLE": 3
   },
   "hostConventions": {
     "uscode.house.gov": {
@@ -425,6 +425,16 @@
       "quoteSha256": "ff8ecec02b4350a1",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-68-overall-itemized-limitation",
+      "citation": "Rev. Proc. 2025-32, section 4.01, Tables 1-4",
+      "host": "www.irs.gov",
+      "url": "https://www.irs.gov/pub/irs-drop/rp-25-32.pdf",
+      "quoteSha256": "a73da4bde4619123",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "8 elision segments, all present in the extracted text",
       "diagnosis": null
     },
     {
@@ -1904,9 +1914,9 @@
       "citation": "P.L. 118-273, § 3(a)",
       "host": "www.govinfo.gov",
       "url": "https://www.govinfo.gov/content/pkg/PLAW-118publ273/pdf/PLAW-118publ273.pdf",
-      "quoteSha256": "2ddf4df3f468b892",
-      "verdict": "PDF-WORD-LEVEL",
-      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "quoteSha256": "6ed2b2fc18ee28c7",
+      "verdict": "PDF-NOT-VERIFIABLE",
+      "detail": "words all present, but the character difference cannot be separated from extraction loss",
       "diagnosis": null
     },
     {
@@ -2895,8 +2905,8 @@
       "host": "www.govinfo.gov",
       "url": "https://www.govinfo.gov/content/pkg/PLAW-117publ169/pdf/PLAW-117publ169.pdf",
       "quoteSha256": "82e78cf5ed0bd0b4",
-      "verdict": "PDF-WORD-LEVEL",
-      "detail": "3 elision segments, all present in the extracted text",
+      "verdict": "PDF-NOT-VERIFIABLE",
+      "detail": "words all present, but the character difference cannot be separated from extraction loss",
       "diagnosis": null
     },
     {
@@ -6805,8 +6815,8 @@
       "host": "www.dfa.arkansas.gov",
       "url": "https://www.dfa.arkansas.gov/wp-content/uploads/2026_Final_AR1000ES.pdf",
       "quoteSha256": "49e7641a5cf80484",
-      "verdict": "PDF-WORD-LEVEL",
-      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "verdict": "PDF-NOT-VERIFIABLE",
+      "detail": "words all present, but the character difference cannot be separated from extraction loss",
       "diagnosis": null
     },
     {
@@ -6814,9 +6824,9 @@
       "citation": "2025 Indexed Tax Brackets, \"Less Than or Equal To\" and \"Percentage\" columns",
       "host": "www.dfa.arkansas.gov",
       "url": "https://www.dfa.arkansas.gov/wp-content/uploads/2025_TaxBrackets.pdf",
-      "quoteSha256": "0c24edfda0017518",
+      "quoteSha256": "8328200057af7d93",
       "verdict": "PDF-WORD-LEVEL",
-      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "detail": "5 elision segments, all present in the extracted text",
       "diagnosis": null
     },
     {
@@ -9274,9 +9284,9 @@
       "citation": "P.L. 117-328, division T, title I, section 126(d)",
       "host": "www.govinfo.gov",
       "url": "https://www.govinfo.gov/content/pkg/PLAW-117publ328/pdf/PLAW-117publ328.pdf",
-      "quoteSha256": "f2360cdbcc016a09",
-      "verdict": "PDF-WORD-LEVEL",
-      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "quoteSha256": "75c43a867ca4c954",
+      "verdict": "PDF-NOT-VERIFIABLE",
+      "detail": "words all present, but the character difference cannot be separated from extraction loss",
       "diagnosis": null
     },
     {
@@ -10665,8 +10675,8 @@
       "host": "www.revenue.alabama.gov",
       "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf",
       "quoteSha256": "d5b0e9975fc944a2",
-      "verdict": "PDF-NOT-VERIFIABLE",
-      "detail": "words all present, but the character difference cannot be separated from extraction loss",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "4 elision segments, all present in the extracted text",
       "diagnosis": null
     },
     {
@@ -10675,8 +10685,8 @@
       "host": "www.revenue.alabama.gov",
       "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf",
       "quoteSha256": "9180576e862c42ad",
-      "verdict": "PDF-NOT-VERIFIABLE",
-      "detail": "words all present, but the character difference cannot be separated from extraction loss",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "4 elision segments, all present in the extracted text",
       "diagnosis": null
     },
     {

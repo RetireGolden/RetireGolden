@@ -4,6 +4,7 @@ import {
   deriveAnnualCharitableDeductionParametersEvidenceId,
   type AnnualCharitableDeductionParameters2026,
 } from './annualCharitableDeductionParameters.js'
+import { year2026 } from '../params/data/year2026.js'
 
 describe('annualCharitableDeductionParameters', () => {
   it('exposes the exact 2026 rates and the single floor quantization', () => {
@@ -52,15 +53,36 @@ describe('annualCharitableDeductionParameters', () => {
     })
   })
 
-  it('carries stable statutory and implementation provenance', () => {
+  it('aligns all section 68 filing-status thresholds with the live 37-percent bracket starts', () => {
+    const parameters = annualCharitableDeductionParameters(2026)
+    const single37PercentBracket = year2026.federalTax.brackets.single.find(
+      ({ ratePct }) => ratePct === 37,
+    )
+    const marriedFilingJointly37PercentBracket =
+      year2026.federalTax.brackets.marriedFilingJointly.find(
+        ({ ratePct }) => ratePct === 37,
+      )
+
+    expect(single37PercentBracket).toBeDefined()
+    expect(marriedFilingJointly37PercentBracket).toBeDefined()
+    expect(parameters.section68ThresholdByFilingStatusCents).toEqual({
+      single: single37PercentBracket!.lowerBound * 100,
+      headOfHousehold: single37PercentBracket!.lowerBound * 100,
+      marriedFilingJointly: marriedFilingJointly37PercentBracket!.lowerBound * 100,
+      marriedFilingSeparately: marriedFilingJointly37PercentBracket!.lowerBound * 50,
+      qualifyingSurvivingSpouse: marriedFilingJointly37PercentBracket!.lowerBound * 100,
+    })
+  })
+
+  it('carries stable statutory and section 68 threshold provenance', () => {
     expect(annualCharitableDeductionParameters(2026).provenance).toEqual({
       statuteSourceId: '26-usc-68-and-170-2026',
       section68Url: 'https://www.govinfo.gov/link/uscode/26/68',
       section170Url: 'https://www.govinfo.gov/link/uscode/26/170',
       amendingLawSourceId: 'pub-l-119-21',
       amendingLawUrl: 'https://www.govinfo.gov/link/plaw/119/public/21',
-      implementationSourceId: 'irs-publication-505-2026',
-      implementationUrl: 'https://www.irs.gov/publications/p505',
+      section68ThresholdSourceId: 'irs-rev-proc-2025-32',
+      section68ThresholdUrl: 'https://www.irs.gov/pub/irs-drop/rp-25-32.pdf',
     })
   })
 

@@ -19,8 +19,8 @@ export interface AnnualCharitableDeductionParametersProvenance {
   readonly section170Url: 'https://www.govinfo.gov/link/uscode/26/170'
   readonly amendingLawSourceId: 'pub-l-119-21'
   readonly amendingLawUrl: 'https://www.govinfo.gov/link/plaw/119/public/21'
-  readonly implementationSourceId: 'irs-publication-505-2026'
-  readonly implementationUrl: 'https://www.irs.gov/publications/p505'
+  readonly section68ThresholdSourceId: 'irs-rev-proc-2025-32'
+  readonly section68ThresholdUrl: 'https://www.irs.gov/pub/irs-drop/rp-25-32.pdf'
 }
 
 export interface AnnualCharitableDeductionParameters2026 {
@@ -75,7 +75,7 @@ export function deriveAnnualCharitableDeductionParametersEvidenceId(
     facts.section68Quantization,
     [source.statuteSourceId, source.section68Url, source.section170Url,
       source.amendingLawSourceId, source.amendingLawUrl,
-      source.implementationSourceId, source.implementationUrl],
+      source.section68ThresholdSourceId, source.section68ThresholdUrl],
   ])
 }
 
@@ -85,6 +85,7 @@ const section68Rate = Object.freeze({ numerator: 2n, denominator: 37n })
 const nonjointCap = asUsdCents(100_000)
 const jointCap = asUsdCents(200_000)
 const section68Single = asUsdCents(64_060_000)
+const section68HeadOfHousehold = asUsdCents(64_060_000)
 const section68Joint = asUsdCents(76_870_000)
 const section68Separate = asUsdCents(38_435_000)
 
@@ -103,7 +104,7 @@ const facts = Object.freeze({
   }),
   section68ThresholdByFilingStatusCents: Object.freeze({
     single: section68Single,
-    headOfHousehold: section68Single,
+    headOfHousehold: section68HeadOfHousehold,
     marriedFilingJointly: section68Joint,
     marriedFilingSeparately: section68Separate,
     qualifyingSurvivingSpouse: section68Joint,
@@ -117,8 +118,8 @@ const facts = Object.freeze({
     section170Url: 'https://www.govinfo.gov/link/uscode/26/170' as const,
     amendingLawSourceId: 'pub-l-119-21' as const,
     amendingLawUrl: 'https://www.govinfo.gov/link/plaw/119/public/21' as const,
-    implementationSourceId: 'irs-publication-505-2026' as const,
-    implementationUrl: 'https://www.irs.gov/publications/p505' as const,
+    section68ThresholdSourceId: 'irs-rev-proc-2025-32' as const,
+    section68ThresholdUrl: 'https://www.irs.gov/pub/irs-drop/rp-25-32.pdf' as const,
   }),
 }) satisfies ParametersWithoutEvidenceId
 
