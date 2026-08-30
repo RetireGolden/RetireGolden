@@ -40,7 +40,12 @@ export const CHUNK_BUDGETS = [
   },
   {
     label: 'Learning Center registry',
-    match: /^learningRegistry-[^/]*\.js$/,
+    // `articleIndex` is the metadata itself and `learningRegistry` is the
+    // selector layer that statically imports it; today they land in one chunk
+    // named for the registry, but a chunking change could emit either name.
+    // Matching both keeps the metadata under this limit instead of letting it
+    // slide into the looser per-chunk default under a new name.
+    match: /^(learningRegistry|articleIndex)-[^/]*\.js$/,
     // Metadata only, since article bodies became per-article dynamic imports.
     // ~0.9 KiB per article, so this is roughly 25 more articles of room; when
     // it trips, raise it, do not put prose back into the index.

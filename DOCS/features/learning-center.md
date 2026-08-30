@@ -223,9 +223,13 @@ Initial category set:
 
 ### 7.1 File structure
 
-Articles are authored as **structured TypeScript** so prose, visuals, and metadata
-live together, bundle for offline use, and stay type-safe. The content lives under
-`packages/planner-ui/src/learn/`:
+Articles are authored as **structured TypeScript** so prose and visuals bundle for
+offline use and stay type-safe. Metadata and prose live **apart**: an article's
+metadata is an entry in `articleIndex.ts`, which is statically imported and rides the
+landing critical path, while its `blocks[]` body is a module under `content/` loaded
+on demand. Never put prose in the index — that coupling is exactly what
+[operations/bundle-budget.md](../operations/bundle-budget.md) exists to catch. The
+content lives under `packages/planner-ui/src/learn/`:
 
 ```text
 packages/planner-ui/src/learn/

@@ -136,8 +136,16 @@ Metadata and body are now separate modules:
   when its article page renders, and nothing else pulls one.
 
 That took `learningRegistry` from 540 to 124 KiB and the landing critical path from 1012 to 596 KiB. It
-costs about 111 more chunks in `dist/` (78 → 189) and the same in the precache, for +27 KiB of total JS —
-the offline guarantee is unchanged, the bytes just arrive as more files.
+costs about 111 more chunks in `dist/` (78 → 189) and the same in the precache (98 → 209 entries), for
++27 KiB of total JS.
+
+The precache still holds the same content, so what an offline visit can do is unchanged — but *installing*
+it is now roughly twice as many requests, and a service-worker install is all-or-nothing: one failed
+request fails the install, and the worker retries from scratch on the next visit rather than activating
+half-populated. That is a slower, flakier first install on a bad connection, not a lost guarantee, and it
+is the price of per-article chunks. If it ever shows up as a real install-failure rate, the lever is
+grouping bodies (by category, say) to trade some of the on-demand granularity back for fewer files —
+**not** dropping Learn text out of the precache, which would trade the product guarantee for a number.
 
 Both rows were tightened to the new measurement in the same change. Putting article prose back into the
 index — an eager import from `articleIndex.ts`, or an article body inlined on a metadata entry — is what

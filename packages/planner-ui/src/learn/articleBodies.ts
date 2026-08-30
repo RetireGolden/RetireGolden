@@ -175,5 +175,13 @@ export function loadArticleBody(slug: string): Promise<ArticleBlock[] | undefine
   const loader = BODY_LOADERS[slug]
   const promise = loader ? loader() : Promise.resolve(undefined)
   inFlight.set(slug, promise)
+  // Only successes are worth caching. A dropped connection mid-chunk would
+  // otherwise leave the rejection in the map and rethrow it on every later
+  // visit to that article, so the reader could not recover without reloading
+  // the page. Dropping it means the next render issues a fresh import. The
+  // identity check keeps a slower failure from evicting a newer attempt.
+  void promise.catch(() => {
+    if (inFlight.get(slug) === promise) inFlight.delete(slug)
+  })
   return promise
 }
