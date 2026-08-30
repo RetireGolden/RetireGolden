@@ -514,7 +514,7 @@ capped exclusion there applies once to the combined private + public retirement 
 ## Account depth (HSA, nondeductible basis, property sales)
 
 Opt-in account-level tax depth (all additive with no-op defaults, so pre-existing plans are unchanged). Full
-rules and citations: [domain rules §16](../domain/domain-rules-reference/16-account-eligibility-hsa-nondeductible-basis-and.md).
+rules and citations: [domain rules §16](../domain/domain-rules-reference/16-account-eligibility-hsa-nondeductible-basis.md).
 
 - **Account eligibility service** (`engine/strategies/accountEligibility.ts`) centralizes the
   withdraw / convert / RMD / spendable / penalty rules so every consumer (ledger, optimizer input, decision
@@ -627,7 +627,7 @@ rules and citations: [domain rules §16](../domain/domain-rules-reference/16-acc
   The standalone-only `buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput` boundary now
   binds the canonical candidate, complete owner-wide December 31 pool, basis, and contribution-window
   evidence into a frozen classifier input without classifying or executing it; see
-  [domain rules §16](../domain/domain-rules-reference/16-account-eligibility-hsa-nondeductible-basis-and.md).
+  [domain rules §16](../domain/domain-rules-reference/16-account-eligibility-hsa-nondeductible-basis.md).
   Separately, `validateOwnedNonRothIraSeppCurrentPaymentCandidate` validates one current named SEPP
   payment as a provisional schedule-state transition. Its raw payment record references the canonical
   distribution and prior terminal state rather than restating caller-computed actual gross, character,
@@ -672,7 +672,7 @@ rules and citations: [domain rules §16](../domain/domain-rules-reference/16-acc
 ## Guaranteed income and estate depth
 
 Opt-in tax treatment for annuity purchases and the after-tax estate (all additive with no-op defaults). Full
-rules and citations: [domain rules §17](../domain/domain-rules-reference/17-guaranteed-income-annuity-purchases-and-estate.md).
+rules and citations: [domain rules §17](../domain/domain-rules-reference/17-guaranteed-income-annuity-purchases.md).
 
 - **Annuity purchase taxation.** A purchased **non-qualified** annuity (cash/taxable-funded) taxes each
   payout by the **IRS Pub 939 exclusion ratio** — the premium is recovered tax-free over the expected-return

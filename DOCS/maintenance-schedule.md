@@ -13,8 +13,10 @@ The annual refresh is a **data change, not a code change** (that's the point of 
 
 1. Add a new dated parameter pack for the year under `packages/engine/src/params/data/` (federal) and
    `packages/engine/src/params/state/` (states), copying forward and updating the published figures.
-2. Update [domain/domain-rules-reference.md](domain/domain-rules-reference.md) with the new numbers and
-   refresh the source links; bump the provenance dates (`engine/params/provenance.ts`).
+2. Update the affected sections under [domain/domain-rules-reference/](domain/domain-rules-reference/)
+   with the new numbers and refresh the source links — edit the section files, not the
+   [index](domain/domain-rules-reference.md); bump the provenance dates
+   (`engine/params/provenance.ts`).
 3. Re-run the engine tests and any offline oracle fixtures (Owl / PolicyEngine / Open Social Security).
 4. Run `pnpm verify:quotes` and work the ledger. It re-fetches every source the tax rule registry cites
    and checks each `quotedText` against it — the one check that catches a citation whose page moved under

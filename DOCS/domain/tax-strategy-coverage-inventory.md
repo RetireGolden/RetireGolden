@@ -82,7 +82,7 @@ The pure `buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput` API no
 standalone inventory, staged candidate, complete owner-wide December 31 pool, basis, and following-year
 contribution evidence into a frozen classifier input without classifying, executing, or integrating with
 projection. The normative contract is in
-[domain rules §16](domain-rules-reference/16-account-eligibility-hsa-nondeductible-basis-and.md).
+[domain rules §16](domain-rules-reference/16-account-eligibility-hsa-nondeductible-basis.md).
 
 Three identity-bearing executors now commit inside the annual projection rather than only in isolated boundaries:
 the exact-cent ordinary-withdrawal executor, the named Roth-conversion executor, and the named-QCD executor —

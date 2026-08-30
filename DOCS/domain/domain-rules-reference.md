@@ -43,23 +43,23 @@ unchanged by the split; a heading anchor still resolves inside its own file.
 
 | Section | File |
 | --- | --- |
-| 1. Federal income tax (2026) | [01-federal-income-tax-2026.md](domain-rules-reference/01-federal-income-tax-2026.md) |
-| 2. Long-term capital gains and NIIT (2026) | [02-long-term-capital-gains-and-niit-2026.md](domain-rules-reference/02-long-term-capital-gains-and-niit-2026.md) |
-| 3. Social Security benefit taxation | [03-social-security-benefit-taxation.md](domain-rules-reference/03-social-security-benefit-taxation.md) |
-| 4. Social Security program parameters (2026) | [04-social-security-program-parameters-2026.md](domain-rules-reference/04-social-security-program-parameters-2026.md) |
-| 5. Retirement accounts: contribution limits (2026) | [05-retirement-accounts-contribution-limits-2026.md](domain-rules-reference/05-retirement-accounts-contribution-limits-2026.md) |
-| 6. RMDs (SECURE 2.0) | [06-rmds-secure-20.md](domain-rules-reference/06-rmds-secure-20.md) |
-| 7. Medicare and IRMAA (2026) | [07-medicare-and-irmaa-2026.md](domain-rules-reference/07-medicare-and-irmaa-2026.md) |
-| 8. ACA premium tax credit (pre-65 retirees) | [08-aca-premium-tax-credit-pre-65-retirees.md](domain-rules-reference/08-aca-premium-tax-credit-pre-65-retirees.md) |
-| 9. State and local income tax | [09-state-and-local-income-tax.md](domain-rules-reference/09-state-and-local-income-tax.md) |
-| 10. Roth conversion rules | [10-roth-conversion-rules.md](domain-rules-reference/10-roth-conversion-rules.md) |
-| 11. Withdrawal sequencing (modeling conventions) | [11-withdrawal-sequencing-modeling-conventions.md](domain-rules-reference/11-withdrawal-sequencing-modeling-conventions.md) |
-| 12. Monte Carlo methodology notes | [12-monte-carlo-methodology-notes.md](domain-rules-reference/12-monte-carlo-methodology-notes.md) |
-| 13. Default assumptions (user-overridable) | [13-default-assumptions-user-overridable.md](domain-rules-reference/13-default-assumptions-user-overridable.md) |
-| 14. Spending layers and guardrails (opt-in) | [14-spending-layers-and-guardrails-opt-in.md](domain-rules-reference/14-spending-layers-and-guardrails-opt-in.md) |
-| 15. Asset classes, allocation, and rebalancing (opt-in) | [15-asset-classes-allocation-and-rebalancing-opt-in.md](domain-rules-reference/15-asset-classes-allocation-and-rebalancing-opt-in.md) |
-| 16. Account eligibility, HSA, nondeductible basis, and fixed-asset disposition (opt-in) | [16-account-eligibility-hsa-nondeductible-basis-and.md](domain-rules-reference/16-account-eligibility-hsa-nondeductible-basis-and.md) |
-| 17. Guaranteed income (annuity purchases) and estate & beneficiary depth (opt-in) | [17-guaranteed-income-annuity-purchases-and-estate.md](domain-rules-reference/17-guaranteed-income-annuity-purchases-and-estate.md) |
-| 18. TIPS income floor: ladders, the SS bridge, and the funded ratio (opt-in) | [18-tips-income-floor-ladders-the-ss-bridge-and-the.md](domain-rules-reference/18-tips-income-floor-ladders-the-ss-bridge-and-the.md) |
-| 19. Annuity payout forms, the annuitization sweep, pension lump-sum elections, and the HECM buffer (opt-in) | [19-annuity-payout-forms-the-annuitization-sweep.md](domain-rules-reference/19-annuity-payout-forms-the-annuitization-sweep.md) |
-| 20. Tax-exempt interest across income definitions (authority matrix) | [20-tax-exempt-interest-across-income-definitions.md](domain-rules-reference/20-tax-exempt-interest-across-income-definitions.md) |
+| 1. Federal income tax (2026) | [01-federal-income-tax-2026.md](domain-rules-reference/01-federal-income-tax-2026.md) |
+| 2. Long-term capital gains and NIIT (2026) | [02-long-term-capital-gains-and-niit-2026.md](domain-rules-reference/02-long-term-capital-gains-and-niit-2026.md) |
+| 3. Social Security benefit taxation | [03-social-security-benefit-taxation.md](domain-rules-reference/03-social-security-benefit-taxation.md) |
+| 4. Social Security program parameters (2026) | [04-social-security-program-parameters-2026.md](domain-rules-reference/04-social-security-program-parameters-2026.md) |
+| 5. Retirement accounts: contribution limits (2026) | [05-retirement-accounts-contribution-limits-2026.md](domain-rules-reference/05-retirement-accounts-contribution-limits-2026.md) |
+| 6. RMDs (SECURE 2.0) | [06-rmds-secure-20.md](domain-rules-reference/06-rmds-secure-20.md) |
+| 7. Medicare and IRMAA (2026) | [07-medicare-and-irmaa-2026.md](domain-rules-reference/07-medicare-and-irmaa-2026.md) |
+| 8. ACA premium tax credit (pre-65 retirees) | [08-aca-premium-tax-credit-pre-65-retirees.md](domain-rules-reference/08-aca-premium-tax-credit-pre-65-retirees.md) |
+| 9. State and local income tax | [09-state-and-local-income-tax.md](domain-rules-reference/09-state-and-local-income-tax.md) |
+| 10. Roth conversion rules | [10-roth-conversion-rules.md](domain-rules-reference/10-roth-conversion-rules.md) |
+| 11. Withdrawal sequencing (modeling conventions) | [11-withdrawal-sequencing-modeling-conventions.md](domain-rules-reference/11-withdrawal-sequencing-modeling-conventions.md) |
+| 12. Monte Carlo methodology notes | [12-monte-carlo-methodology-notes.md](domain-rules-reference/12-monte-carlo-methodology-notes.md) |
+| 13. Default assumptions (user-overridable) | [13-default-assumptions-user-overridable.md](domain-rules-reference/13-default-assumptions-user-overridable.md) |
+| 14. Spending layers and guardrails (opt-in) | [14-spending-layers-and-guardrails-opt-in.md](domain-rules-reference/14-spending-layers-and-guardrails-opt-in.md) |
+| 15. Asset classes, allocation, and rebalancing (opt-in) | [15-asset-classes-allocation-and-rebalancing-opt-in.md](domain-rules-reference/15-asset-classes-allocation-and-rebalancing-opt-in.md) |
+| 16. Account eligibility, HSA, nondeductible basis, and fixed-asset disposition (opt-in) | [16-account-eligibility-hsa-nondeductible-basis.md](domain-rules-reference/16-account-eligibility-hsa-nondeductible-basis.md) |
+| 17. Guaranteed income (annuity purchases) and estate & beneficiary depth (opt-in) | [17-guaranteed-income-annuity-purchases.md](domain-rules-reference/17-guaranteed-income-annuity-purchases.md) |
+| 18. TIPS income floor: ladders, the SS bridge, and the funded ratio (opt-in) | [18-tips-income-floor-ladders-the-ss-bridge.md](domain-rules-reference/18-tips-income-floor-ladders-the-ss-bridge.md) |
+| 19. Annuity payout forms, the annuitization sweep, pension lump-sum elections, and the HECM buffer (opt-in) | [19-annuity-payout-forms-the-annuitization-sweep.md](domain-rules-reference/19-annuity-payout-forms-the-annuitization-sweep.md) |
+| 20. Tax-exempt interest across income definitions (authority matrix) | [20-tax-exempt-interest-across-income-definitions.md](domain-rules-reference/20-tax-exempt-interest-across-income-definitions.md) |

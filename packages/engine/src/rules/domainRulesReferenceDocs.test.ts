@@ -56,6 +56,49 @@ describe('DOCS/domain/domain-rules-reference index', () => {
     expect(numbers).toEqual(numbers.map((_, index) => index + 1))
   })
 
+  // The split shipped with a bare CR sitting mid-row in all 20 table rows: the
+  // section headings were sliced out of a CRLF file without stripping the CR,
+  // so every row broke in two and the table did not render at all. Rendering is
+  // the index's entire job, so the row shape is pinned here.
+  it('renders every section row as one table row carrying both title and link', () => {
+    const lines = domainRulesReferenceMarkdown.split('\n')
+    const header = lines.findIndex((line) => line.replace(/\r/gu, '') === '| Section | File |')
+    expect(header, 'index should carry a Section/File table').toBeGreaterThanOrEqual(0)
+    expect(lines[header + 1]!.replace(/\r/gu, '')).toBe('| --- | --- |')
+
+    const rows = lines
+      .slice(header + 2)
+      .map((line) => line.replace(/\r$/u, ''))
+      .filter((line) => line.startsWith('|'))
+    expect(rows.length).toBe(shards.size)
+    for (const row of rows) {
+      // A stray CR anywhere inside the row is the exact defect: CommonMark ends
+      // the row there and the remainder becomes a separate paragraph.
+      expect(row, row).not.toMatch(/\r/u)
+      const cells = row.split('|').slice(1, -1).map((cell) => cell.trim())
+      expect(cells.length, row).toBe(2)
+      expect(cells[0], row).toMatch(/^\d+\. \S/u)
+      const link = /^\[([^\]]+)\]\(domain-rules-reference\/([^)]+)\)$/u.exec(cells[1]!)
+      expect(link, 'second cell should link to a section file: ' + row).not.toBeNull()
+      expect(link![1]).toBe(link![2])
+      expect(shards.has(link![2]!), link![2]).toBe(true)
+    }
+  })
+
+  it('names section files without a dangling connective word', () => {
+    // Long headings are truncated to keep the checked-out path short on
+    // Windows; the numeric prefix identifies the section and the index table
+    // carries the full title. Truncation must still stop on a whole word rather
+    // than leaving a name ending in "-and" or "-the", which reads as corrupted.
+    for (const name of shards.keys()) {
+      // `(opt-in)` closes several headings and slugs to a trailing `-opt-in`;
+      // it is a whole word, not a truncation, so it is peeled before the check.
+      const slug = name.replace(/\.md$/u, '').replace(/-opt-in$/u, '')
+      const last = slug.slice(slug.lastIndexOf('-') + 1)
+      expect(['and', 'the', 'of', 'a', 'an', 'to', 'for', 'with'], name).not.toContain(last)
+    }
+  })
+
   it('states the split in the index rather than leaving the sections unexplained', () => {
     expect(domainRulesReferenceMarkdown).toContain('[`domain-rules-reference/`](domain-rules-reference/)')
     // The preamble is the part the split had to preserve: it carries the
