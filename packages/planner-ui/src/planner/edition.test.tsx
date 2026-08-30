@@ -7,7 +7,7 @@
  * while a differently-licensed, account-backed host stays factually correct.
  */
 import 'fake-indexeddb/auto'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { MemoryRouter, useRoutes } from 'react-router'
@@ -20,9 +20,18 @@ import { DisclaimerPage } from './DisclaimerPage'
 import { ExamplesPage } from './examples/ExamplesPage'
 import { PlannerEditionProvider } from './PlannerEditionProvider'
 import { waitForSelector } from '../testSupport/settle'
+import { LAZY_ROUTE_PRELOAD_TIMEOUT_MS, preloadLazyRoutes } from '../testSupport/lazyRoutes'
 
 let container: HTMLDivElement
 let root: Root
+
+// The workspace tests below mount `plan/*`, which is behind `lazy()`. Load
+// that chunk before the timed tests start, or whichever file reaches it first
+// in a run pays its cold evaluation inside a 5 s test timeout — see
+// ../testSupport/lazyRoutes.ts.
+beforeAll(async () => {
+  await preloadLazyRoutes('plan')
+}, LAZY_ROUTE_PRELOAD_TIMEOUT_MS)
 
 beforeEach(() => {
   globalThis.indexedDB = new IDBFactory()

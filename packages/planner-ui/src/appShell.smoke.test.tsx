@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 import 'fake-indexeddb/auto'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { act } from 'react'
 import { renderToString } from 'react-dom/server'
 import { createRoot } from 'react-dom/client'
@@ -13,6 +13,14 @@ import { App } from './App.tsx'
 import { _resetPlanStoreForTests, savePlan } from './data/planStore'
 import type { PlanStore } from './data/planStoreContext'
 import { waitFor, waitForText } from './testSupport/settle'
+import { LAZY_ROUTE_PRELOAD_TIMEOUT_MS, preloadLazyRoutes } from './testSupport/lazyRoutes'
+
+// 'renders the examples page' mounts `/examples`, which is behind `lazy()`;
+// preload it so the cold chunk is not evaluated inside a 5 s test timeout —
+// see ./testSupport/lazyRoutes.ts.
+beforeAll(async () => {
+  await preloadLazyRoutes('examples')
+}, LAZY_ROUTE_PRELOAD_TIMEOUT_MS)
 
 beforeEach(() => {
   globalThis.indexedDB = new IDBFactory()

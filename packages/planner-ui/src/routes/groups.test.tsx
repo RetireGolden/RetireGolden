@@ -5,7 +5,7 @@
  * the home group entirely.
  */
 import 'fake-indexeddb/auto'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { act, isValidElement, type ReactNode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { renderToString } from 'react-dom/server'
@@ -18,11 +18,22 @@ import { plannerContentRoutes, plannerHomeRoutes, plannerWorkspaceRoutes } from 
 import PlanRoutes from './PlanRoutes'
 import { createSamplePlan } from '../testSupport/samplePlan'
 import { waitFor, waitForText } from '../testSupport/settle'
+import { LAZY_ROUTE_PRELOAD_TIMEOUT_MS, preloadLazyRoutes } from '../testSupport/lazyRoutes'
 
 /** A bare host: no planner chrome, just the given groups under a router. */
 function GroupHost({ routes }: { routes: RouteObject[] }) {
   return useRoutes(routes)
 }
+
+// Every chunk this file waits on is behind `lazy()`: `plan/*`, `examples`,
+// and — since the workspace output screens became lazy too — the `Results:`
+// destination the basename test navigates to. The static `PlanRoutes` import
+// above happens to warm the first, and the workspace render happens to warm
+// most of what Results needs; neither is a guarantee any of this file's own
+// ordering should rest on. Name all three — see ../testSupport/lazyRoutes.ts.
+beforeAll(async () => {
+  await preloadLazyRoutes('plan', 'examples', 'results')
+}, LAZY_ROUTE_PRELOAD_TIMEOUT_MS)
 
 beforeEach(() => {
   globalThis.indexedDB = new IDBFactory()

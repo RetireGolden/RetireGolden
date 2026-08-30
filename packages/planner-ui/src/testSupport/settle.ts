@@ -55,11 +55,15 @@ export interface WaitForOptions {
   /** What the caller was waiting for, used in the timeout message. */
   readonly what?: string
   /**
-   * Poll attempts before giving up. The default covers the slowest thing the
-   * suite waits on — a lazy route chunk mounting under a cold worker — with
-   * room to spare, and still trips well inside vitest's 5 s test timeout so a
-   * genuine hang is reported as "timed out waiting for X" rather than as an
-   * assertion against an empty DOM.
+   * Poll attempts before giving up. The default is sized to trip inside
+   * vitest's 5 s test timeout, so a genuine hang is reported as "timed out
+   * waiting for X" rather than as an assertion against an empty DOM.
+   *
+   * It is deliberately NOT sized to cover a cold `lazy()` route chunk: that
+   * graph takes seconds to evaluate the first time anything in a run imports
+   * it, which no honest poll budget fits inside a 5 s test. Tests that render
+   * a lazy route preload it in `beforeAll` instead (./lazyRoutes.ts), which
+   * is why raising this number is the wrong fix for such a timeout.
    */
   readonly attempts?: number
   /** Real milliseconds handed to the scheduler between attempts. */
