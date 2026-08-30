@@ -12,6 +12,7 @@ import { createEmptyPlan } from '@retiregolden/engine/model/plan'
 import { App } from './App.tsx'
 import { _resetPlanStoreForTests, savePlan } from './data/planStore'
 import type { PlanStore } from './data/planStoreContext'
+import { waitFor, waitForText } from './testSupport/settle'
 
 beforeEach(() => {
   globalThis.indexedDB = new IDBFactory()
@@ -96,11 +97,7 @@ describe('App shell smoke', () => {
       )
     })
     expect(document.title).toBe('RetireGolden')
-    for (let attempt = 0; attempt < 50 && document.title !== 'RetireGolden'; attempt++) {
-      await act(async () => {
-        await new Promise((r) => setTimeout(r, 10))
-      })
-    }
+    await waitFor(() => document.title === 'RetireGolden', { what: 'the default document title' })
     expect(document.title).toBe('RetireGolden')
     expect(container.querySelector('#theme-switcher-label')?.textContent).toBe('Theme')
     expect(container.querySelector('.skip-link')?.textContent).toMatch(/Skip to content/)
@@ -118,11 +115,7 @@ describe('App shell smoke', () => {
         </MemoryRouter>,
       )
     })
-    for (let attempt = 0; attempt < 50 && document.title !== 'Your plans · RetireGolden'; attempt++) {
-      await act(async () => {
-        await new Promise((r) => setTimeout(r, 10))
-      })
-    }
+    await waitFor(() => document.title === 'Your plans · RetireGolden', { what: 'the returning-visitor title' })
     expect(document.title).toBe('Your plans · RetireGolden')
     await act(async () => returningRoot.unmount())
   })
@@ -140,18 +133,13 @@ describe('App shell smoke', () => {
         </MemoryRouter>,
       )
     })
-    for (let attempt = 0; attempt < 100 && !container.innerHTML.includes('Example library'); attempt++) {
-      await act(async () => {
-        await new Promise((r) => setTimeout(r, 10))
-      })
-    }
+    await waitForText(container, 'Example library')
     expect(container.innerHTML).toContain('Example library')
     expect(container.innerHTML).toContain('← Your plans')
     await act(async () => root.unmount())
   })
 
   it('threads the host import boundary through home, direct import, and plan accounts', async () => {
-    ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
     const html = renderToString(
       <MemoryRouter initialEntries={['/']}>
         <App importEnabled={false} />
@@ -170,11 +158,7 @@ describe('App shell smoke', () => {
         </MemoryRouter>,
       )
     })
-    for (let attempt = 0; attempt < 100 && !directImport.textContent?.includes('Import & migrate'); attempt++) {
-      await act(async () => {
-        await new Promise((resolve) => setTimeout(resolve, 10))
-      })
-    }
+    await waitForText(directImport, 'Import & migrate')
     expect(directImport.textContent).toContain('File import is temporarily unavailable')
     expect(directImport.querySelector('input[type="file"]')).toBeNull()
 

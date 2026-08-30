@@ -12,8 +12,6 @@ import { AccountFields } from './AccountFields'
 import { EVEN_START_WEIGHTS, TAX_EXEMPT_ALLOCATION_DOUBLE_COUNT_WARNING, localCalendarDateIso } from './sectionHelpers'
 import { Issues } from './shared'
 
-;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true
-
 let root: Root | null = null
 let container: HTMLDivElement | null = null
 

@@ -25,6 +25,7 @@
     "src",
     "!src/**/*.test.ts",
     "!src/**/*.test.tsx",
+    "!src/testSupport",
     "!src/report/goldens",
     "!src/import/documentBenchmark.ts",
     "!src/import/documentCorpus.ts",

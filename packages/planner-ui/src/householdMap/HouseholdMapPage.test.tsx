@@ -21,6 +21,7 @@ import { PlanWorkspace } from '../planner/PlanWorkspace'
 import { PrivacyProvider } from '../planner/privacyContext'
 import { buildExampleCouple } from '../planner/examples/buildExampleCouple'
 import { HouseholdMapPage } from './HouseholdMapPage'
+import { waitForSelector, waitForText } from '../testSupport/settle'
 
 beforeEach(() => {
   globalThis.indexedDB = new IDBFactory()
@@ -275,18 +276,14 @@ describe('HouseholdMapPage inside the real workspace chrome', () => {
       root!.render(
         <MemoryRouter initialEntries={[`/plan/${plan.id}/household-map`]}>
           <Routes>
-            <Route path="/plan/:planId/*" element={<PlanWorkspace />}>
+            <Route path="/plan/:planId" element={<PlanWorkspace />}>
               <Route path="household-map" element={<HouseholdMapPage />} />
             </Route>
           </Routes>
         </MemoryRouter>,
       )
     })
-    for (let attempt = 0; attempt < 100 && !container.querySelector('.household-map-stage'); attempt++) {
-      await act(async () => {
-        await new Promise((resolve) => setTimeout(resolve, 10))
-      })
-    }
+    await waitForSelector(container, '.household-map-stage')
 
     // The workspace KPI bar with real dollar values IS on the page…
     const kpiBar = container.querySelector('.kpi-bar')
@@ -314,7 +311,7 @@ describe('HouseholdMapPage inside the real workspace chrome', () => {
       root!.render(
         <MemoryRouter initialEntries={[`/plan/${plan.id}/household-map`]}>
           <Routes>
-            <Route path="/plan/:planId/*" element={<PlanWorkspace />}>
+            <Route path="/plan/:planId" element={<PlanWorkspace />}>
               <Route path="household-map" element={<HouseholdMapPage />} />
               <Route path="results" element={<div>results stub</div>} />
             </Route>
@@ -322,11 +319,7 @@ describe('HouseholdMapPage inside the real workspace chrome', () => {
         </MemoryRouter>,
       )
     })
-    for (let attempt = 0; attempt < 100 && !container.querySelector('.household-map-stage'); attempt++) {
-      await act(async () => {
-        await new Promise((resolve) => setTimeout(resolve, 10))
-      })
-    }
+    await waitForSelector(container, '.household-map-stage')
 
     // With amounts visible the KPI bar shows real dollars.
     expect(container.querySelector('.kpi-bar')!.textContent).toContain('$')
@@ -347,11 +340,7 @@ describe('HouseholdMapPage inside the real workspace chrome', () => {
     await act(async () => {
       resultsLink.click()
     })
-    for (let attempt = 0; attempt < 100 && !container.textContent?.includes('results stub'); attempt++) {
-      await act(async () => {
-        await new Promise((resolve) => setTimeout(resolve, 10))
-      })
-    }
+    await waitForText(container, 'results stub')
     expect(container.querySelector('.kpi-bar')!.textContent).toContain('$')
     expect(container.querySelector('.kpi-bar')!.textContent).not.toContain('•••')
   })

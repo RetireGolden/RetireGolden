@@ -16,11 +16,9 @@ import { mintEligibilityEvidenceId } from '../retirementActionEligibilityFacts'
 import { createSamplePlan } from '../../testSupport/samplePlan'
 import { RetirementActionsEditor } from './RetirementActionsEditor'
 import { StrategySection } from './StrategySection'
+import { waitForText } from '../../testSupport/settle'
 
 const THIS_YEAR = new Date().getFullYear()
-
-;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean })
-  .IS_REACT_ACT_ENVIRONMENT = true
 
 let root: Root | null = null
 let container: HTMLDivElement | null = null
@@ -162,14 +160,6 @@ async function mount(
   root = createRoot(container)
   await act(async () => root!.render(<Harness />))
   return { container, current: () => current }
-}
-
-async function waitForText(host: HTMLElement, text: string) {
-  for (let attempt = 0; attempt < 100; attempt++) {
-    if (host.textContent?.includes(text)) return
-    await act(async () => new Promise((resolve) => setTimeout(resolve, 10)))
-  }
-  throw new Error(`Timed out waiting for ${text}`)
 }
 
 function controlByLabel<T extends HTMLInputElement | HTMLSelectElement>(

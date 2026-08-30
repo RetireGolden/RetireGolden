@@ -26,6 +26,7 @@ import { HouseholdSection } from '../planner/sections'
 import { YourPlans } from '../planner/home/YourPlans'
 import { ExamplePreviewBanner } from '../planner/examples/ExamplePreviewBanner'
 import { createSamplePlan } from '../testSupport/samplePlan'
+import { AUTOSAVE_SETTLE_MS, settleAutosave, sleep } from '../testSupport/settle'
 
 /** In-memory PlanStore that records every call, standing in for a host adapter. */
 function makeFakeStore() {
@@ -60,9 +61,6 @@ beforeEach(() => {
   _resetPlanStoreForTests()
   localStorage.clear()
 })
-
-/** Waits past the 600 ms autosave debounce. */
-const settle = () => new Promise((r) => setTimeout(r, 750))
 
 /** Renders a rename-on-click probe inside a workspace over the given store. */
 function Probe() {
@@ -122,7 +120,7 @@ describe('read-only autosave suppression', () => {
 
     await act(async () => {
       ;(container.querySelector('[data-testid="rename"]') as HTMLButtonElement).click()
-      await settle()
+      await sleep(AUTOSAVE_SETTLE_MS)
     })
 
     // Read-only means the plan cannot mutate: the on-screen name is unchanged
@@ -147,7 +145,7 @@ describe('read-only autosave suppression', () => {
 
     await act(async () => {
       ;(container.querySelector('[data-testid="rename"]') as HTMLButtonElement).click()
-      await settle()
+      await sleep(AUTOSAVE_SETTLE_MS)
     })
 
     expect(calls.filter((c) => c === `savePlan:${sample.id}`)).toHaveLength(1)
@@ -220,7 +218,7 @@ describe('read-only flips mid-session', () => {
       ;(container.querySelector('[data-testid="rename"]') as HTMLButtonElement).click()
     })
     await act(async () => { root.render(tree(true)) })
-    await act(async () => { await settle() })
+    await settleAutosave()
 
     // The scheduled save never reached the store.
     expect(calls.filter((c) => c.startsWith('savePlan:'))).toEqual([])

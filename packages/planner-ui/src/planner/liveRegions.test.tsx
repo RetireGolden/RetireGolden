@@ -29,6 +29,7 @@ import * as pool from '../mc/pool'
 import { MonteCarloPage } from './MonteCarloPage'
 import { InsightsPage } from './insights/InsightsPage'
 import { PlanPickerPage } from './PlanPickerPage'
+import { advanceBy } from '../testSupport/settle'
 
 const actualPool = await vi.importActual<typeof import('../mc/pool')>('../mc/pool')
 const mockedRunMc = vi.mocked(pool.runMonteCarlo)
@@ -55,11 +56,6 @@ afterEach(async () => {
 function contextFor(plan: Plan): PlanContextValue {
   return { plan, update: () => {}, discardPendingSave: () => {}, saveState: 'saved', issues: [] }
 }
-
-const flush = (ms: number) =>
-  act(async () => {
-    await new Promise((r) => setTimeout(r, ms))
-  })
 
 async function mountWithPlan(page: React.ReactNode, plan: Plan) {
   await act(async () => {
@@ -93,7 +89,7 @@ describe('Monte Carlo announcements', () => {
   it('announces completion into a polite status region', async () => {
     mockedRunMc.mockImplementation((plan, opts) => actualPool.runMonteCarlo(plan, { ...opts, pathCount: 8 }))
     await mountWithPlan(<MonteCarloPage />, createSamplePlan())
-    await flush(400) // past the 250 ms auto-run debounce
+    await advanceBy(400) // past the 250 ms auto-run debounce
     const region = statusRegion()!
     expect(region).not.toBeNull()
     expect(region.textContent).toMatch(/Simulation complete\. \d+ percent of markets sustain the plan\./)
@@ -102,7 +98,7 @@ describe('Monte Carlo announcements', () => {
   it('announces a failed run into an assertive alert region', async () => {
     mockedRunMc.mockImplementation(() => Promise.reject(new Error('worker exploded')))
     await mountWithPlan(<MonteCarloPage />, createSamplePlan())
-    await flush(400)
+    await advanceBy(400)
     const alert = alertRegion()!
     expect(alert).not.toBeNull()
     expect(alert.textContent).toContain('Simulation error: worker exploded')
@@ -117,7 +113,7 @@ describe('Monte Carlo announcements', () => {
     )
     const plan = createSamplePlan()
     await mountWithPlan(<MonteCarloPage />, plan)
-    await flush(300)
+    await advanceBy(300)
     // Mid-run: the status announces the run start, not a stale completion.
     expect(statusRegion()?.textContent).toMatch(/Simulating .* market paths…/)
     const latchPlan = createSamplePlan()
@@ -135,7 +131,7 @@ describe('Monte Carlo announcements', () => {
     // Force a REAL top-down re-render (root.render with the same tree makes
     // React re-render every component); the latched message stays identical.
     await mountWithPlan(<MonteCarloPage />, plan)
-    await flush(50)
+    await advanceBy(50)
     expect(statusRegion()?.textContent).toBe(first)
   })
 })
@@ -151,7 +147,7 @@ describe('home-page notices', () => {
         </MemoryRouter>,
       )
     })
-    await flush(60)
+    await advanceBy(60)
     // The live region exists before any notice text is inserted (so screen
     // readers announce the change rather than miss a late-mounted region).
     expect(statusRegion()).not.toBeNull()
@@ -164,7 +160,7 @@ describe('insight dismissal announcements', () => {
     const saved = await savePlan(sample)
     if (!saved.ok) throw new Error('seed save failed')
     await mountWithPlan(<InsightsPage />, sample)
-    await flush(60)
+    await advanceBy(60)
     const dismissBtn = Array.from(container.querySelectorAll('button')).find(
       (b) => b.getAttribute('aria-label') === 'Dismiss this insight',
     )

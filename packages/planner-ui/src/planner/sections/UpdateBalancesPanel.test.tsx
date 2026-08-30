@@ -36,6 +36,7 @@ import {
 } from '../refreshProtectionContext'
 import { UpdateBalancesPanel } from './UpdateBalancesPanel'
 import { ImportAvailabilityProvider } from '../../import/ImportAvailabilityProvider'
+import { advanceBy } from '../../testSupport/settle'
 
 let root: Root | null = null
 let container: HTMLDivElement | null = null
@@ -221,12 +222,6 @@ function enableDurableRefreshHistory() {
   _resetRefreshHistoryForTests()
 }
 
-async function settlePanel() {
-  await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 20))
-  })
-}
-
 function selects(el: HTMLElement): HTMLSelectElement[] {
   return Array.from(el.querySelectorAll('tbody select'))
 }
@@ -343,7 +338,7 @@ describe('UpdateBalancesPanel', () => {
     await chooseFile(el, TWO_ACCOUNT_CSV)
 
     act(() => applyButton(el).click())
-    await settlePanel()
+    await advanceBy(20)
 
     expect(plan.accounts.find((account) => account.id === 'acct-brokerage')!).toMatchObject({ balance: 55_000, costBasis: 40_000 })
     expect(el.querySelector('[role="status"]')?.textContent).not.toContain('No undo record could be saved in this browser.')
@@ -363,7 +358,7 @@ describe('UpdateBalancesPanel', () => {
       applyButton(el).click()
       cancel.click()
     })
-    await settlePanel()
+    await advanceBy(20)
 
     expect(plan.accounts.find((account) => account.id === 'acct-brokerage')!).toMatchObject({ balance: 1, costBasis: 1 })
     expect(plan.accounts.find((account) => account.id === 'acct-roth')!).toMatchObject({ balance: 1 })
@@ -471,10 +466,10 @@ describe('UpdateBalancesPanel', () => {
     }
     await saveRefreshSnapshot(snapshot)
     const el = renderPanel(plan, { protectedAccounts: protect(plan, { accountId: 'acct-brokerage' }) })
-    await settlePanel()
+    await advanceBy(20)
 
     act(() => restoreButtons(el)[0]!.click())
-    await settlePanel()
+    await advanceBy(20)
 
     expect(brokerage).toMatchObject({ balance: 50_000, costBasis: 30_000 })
     expect(roth).toMatchObject({ balance: 5_000 })
@@ -523,14 +518,14 @@ describe('UpdateBalancesPanel', () => {
       ],
     })
     const el = renderPanel(plan)
-    await settlePanel()
+    await advanceBy(20)
     const restores = restoreButtons(el)
 
     act(() => {
       restores[0]!.click()
       restores[1]!.click()
     })
-    await settlePanel()
+    await advanceBy(20)
 
     expect(brokerage).toMatchObject({ balance: 10_000, costBasis: 8_000 })
   })

@@ -16,6 +16,7 @@ import { _resetPlanStoreForTests, savePlan } from '../data/planStore'
 import { RouteErrorBoundary } from '../RouteErrorBoundary'
 import { plannerContentRoutes, plannerHomeRoutes, plannerWorkspaceRoutes } from './groups'
 import { createSamplePlan } from '../testSupport/samplePlan'
+import { waitFor, waitForText } from '../testSupport/settle'
 
 /** A bare host: no planner chrome, just the given groups under a router. */
 function GroupHost({ routes }: { routes: RouteObject[] }) {
@@ -39,11 +40,7 @@ async function renderAt(path: string, routes: RouteObject[], readyWhen: (html: s
       </MemoryRouter>,
     )
   })
-  for (let attempt = 0; attempt < 200 && !readyWhen(container.innerHTML); attempt++) {
-    await act(async () => {
-      await new Promise((r) => setTimeout(r, 10))
-    })
-  }
+  await waitFor(() => readyWhen(container.innerHTML), { what: `the lazy route at ${path}` })
   return {
     container,
     unmount: async () => {
@@ -99,11 +96,7 @@ describe('workspace group mounted alone', () => {
         </MemoryRouter>,
       )
     })
-    for (let attempt = 0; attempt < 200 && !container.innerHTML.includes('workspace-rail'); attempt++) {
-      await act(async () => {
-        await new Promise((r) => setTimeout(r, 10))
-      })
-    }
+    await waitFor(() => container.innerHTML.includes('workspace-rail'), { what: 'the workspace rail' })
     expect(container.textContent).toContain('Household')
 
     // Navigate in-app via the rail (rendered href carries the basename), and
@@ -115,11 +108,7 @@ describe('workspace group mounted alone', () => {
     await act(async () => {
       resultsLink!.click()
     })
-    for (let attempt = 0; attempt < 200 && !(container.textContent ?? '').includes('Results:'); attempt++) {
-      await act(async () => {
-        await new Promise((r) => setTimeout(r, 10))
-      })
-    }
+    await waitForText(container, 'Results:')
     expect(container.querySelector('h1')?.textContent).toBe(`Results: ${sample.name}`)
 
     await act(async () => root.unmount())
