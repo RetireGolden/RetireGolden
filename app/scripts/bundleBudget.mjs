@@ -41,7 +41,10 @@ export const CHUNK_BUDGETS = [
   {
     label: 'Learning Center registry',
     match: /^learningRegistry-[^/]*\.js$/,
-    maxKiB: 600,
+    // Metadata only, since article bodies became per-article dynamic imports.
+    // ~0.9 KiB per article, so this is roughly 25 more articles of room; when
+    // it trips, raise it, do not put prose back into the index.
+    maxKiB: 150,
   },
   {
     label: 'chart vendor (Recharts)',
@@ -68,11 +71,11 @@ export const TOTAL_CSS_KIB = 80
  * The landing critical path: the entry script plus everything index.html
  * modulepreloads, which is what a cold first visit blocks on before anything
  * renders. The most user-visible number here, and the one this budget mainly
- * holds the line on — it did not improve in the split work, because
- * `learningRegistry` is over half of it (bundle-budget.md, "Known, and not
- * fixed here").
+ * holds the line on. Splitting article bodies out of `learningRegistry` took
+ * it from 1011.7 to 596.0 KiB; the limit is set so the entry and the registry
+ * could each grow into their own budgets and still fit.
  */
-export const LANDING_PATH_KIB = 1100
+export const LANDING_PATH_KIB = 700
 /**
  * What the service worker precaches, i.e. what an install costs and what an
  * offline visit is guaranteed. The HiGHS wasm (~3 MB) and the Learn

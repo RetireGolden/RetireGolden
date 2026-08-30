@@ -39,24 +39,27 @@ the parse cost that dominates on a low-end device is paid on the decompressed by
 |---|---|---|---|
 | planner Web Worker, and **exactly one of them** | 1000 KiB | 903 KiB | The engine simulation core, shipped once |
 | engine simulation core (`useProjection`) | 640 KiB | 572 KiB | The deterministic ledger the analysis pages share |
-| Learning Center registry | 600 KiB | 540 KiB | Article prose |
+| Learning Center registry | 150 KiB | 124 KiB | Article *metadata* — bodies load per article |
 | chart vendor (`CartesianChart`) | 380 KiB | 326 KiB | Recharts and its d3 slices |
 | app entry (the script `index.html` loads) | 300 KiB | 248 KiB | The chunk a cold visit blocks on first |
-| every other JS chunk | 260 KiB | 201 KiB (`PlanRoutes`) | Route and page chunks staying route-sized |
-| all JS together | 4400 KiB | 4022 KiB | "Many new chunks", not just one fat one |
+| every other JS chunk | 260 KiB | 206 KiB (`PlanRoutes`) | Route and page chunks staying route-sized |
+| all JS together | 4400 KiB | 4049 KiB | "Many new chunks", not just one fat one |
 | one stylesheet / all CSS | 64 / 80 KiB | 45 / 52 KiB | The token layer |
-| landing critical path | 1100 KiB | 1012 KiB | Entry + every `modulepreload`: what a cold visit blocks on |
-| PWA precache | 4500 KiB | 4152 KiB | Install cost, and the offline guarantee's price |
+| landing critical path | 700 KiB | 596 KiB | Entry + every `modulepreload`: what a cold visit blocks on |
+| PWA precache | 4500 KiB | 4179 KiB | Install cost, and the offline guarantee's price |
 
 Each limit is the size measured when the budget landed plus headroom, and the headroom is deliberately
 uneven — read the table, not an average:
 
-- The **aggregate** rows are tight, ~9%: the precache (4152 → 4500) and the landing critical path
-  (1012 → 1100). These are the two numbers a reader actually pays, and they are the ones that drifted, so
-  they get the least slack. Expect to justify growth here, not absorb it.
-- The **per-class chunk** rows sit near 11–17% (worker 903 → 1000, `useProjection` 572 → 640,
-  `learningRegistry` 540 → 600, Recharts 326 → 380): enough for a feature landing in a known chunk.
-- The **loosest** rows are the ones with the most natural variation: the per-chunk default (201 → 260,
+- The **aggregate** rows are tight, ~8–17%: the precache (4179 → 4500) and the landing critical path
+  (596 → 700). These are the two numbers a reader actually pays, and they are the ones that drifted, so
+  they get the least slack. Expect to justify growth here, not absorb it. The landing row's slack is
+  sized so the entry and the registry could each grow into their own limits and still fit.
+- The **per-class chunk** rows sit near 11–21% (worker 903 → 1000, `useProjection` 572 → 640,
+  `learningRegistry` 124 → 150, Recharts 326 → 380): enough for a feature landing in a known chunk.
+  `learningRegistry` now holds only metadata, about 0.9 KiB per article, so its 26 KiB of slack is
+  roughly 25 more articles.
+- The **loosest** rows are the ones with the most natural variation: the per-chunk default (206 → 260,
   ~29%) has to fit whatever the next route chunk turns out to weigh, and CSS (45 → 64, ~42%) is small
   enough that percentages there mean little in absolute terms.
 
@@ -116,16 +119,26 @@ To see where a chunk's weight actually is, build with a plugin that dumps `chunk
 `generateBundle`, or run `pnpm dlx vite-bundle-visualizer` against `app/`. Neither is a committed
 dependency; the budget is.
 
-## Known, and not fixed here
+## The Learn content split
 
-`learningRegistry` (540 KiB, ~157 KiB gzipped) is `modulepreload`ed on the landing page, because the home
-page's "Start here" links and every `LearnLink` call `getArticle()` synchronously — for a title and a
-slug-exists check. The chunk is over half the landing payload and almost all of it is article prose that
-nothing on that page renders. Fixing it means separating each article's metadata from its `blocks[]`
-across the ~110 modules in [`learn/content/`](../../packages/planner-ui/src/learn/content) and making the
-registry's article-body access asynchronous. That is a content-model change, not a packaging one, so it
-is deliberately out of scope for the budget work and tracked separately.
+`learningRegistry` used to be 540 KiB (~157 KiB gzipped) and `modulepreload`ed on the landing page,
+because the home page's "Start here" links and every `LearnLink` call `getArticle()` synchronously — for
+a title and a slug-exists check — and each article carried its `blocks[]` body inline. Over half the
+landing payload was article prose nothing on that page renders.
 
-Which is why the landing critical path is the one number the splits did **not** move: 1,035 kB before,
-1,036 kB after. Everything else got materially smaller; that row is a ratchet holding the line until the
-Learn content is split.
+Metadata and body are now separate modules:
+
+- [`learn/articleIndex.ts`](../../packages/planner-ui/src/learn/articleIndex.ts) holds every article's
+  metadata and is statically imported, so it is what rides the landing path.
+- [`learn/content/`](../../packages/planner-ui/src/learn/content) holds only `blocks[]` bodies, reached
+  through the per-article `import()` map in
+  [`learn/articleBodies.ts`](../../packages/planner-ui/src/learn/articleBodies.ts). A body is fetched
+  when its article page renders, and nothing else pulls one.
+
+That took `learningRegistry` from 540 to 124 KiB and the landing critical path from 1012 to 596 KiB. It
+costs about 111 more chunks in `dist/` (78 → 189) and the same in the precache, for +27 KiB of total JS —
+the offline guarantee is unchanged, the bytes just arrive as more files.
+
+Both rows were tightened to the new measurement in the same change. Putting article prose back into the
+index — an eager import from `articleIndex.ts`, or an article body inlined on a metadata entry — is what
+the `learningRegistry` row now exists to catch.

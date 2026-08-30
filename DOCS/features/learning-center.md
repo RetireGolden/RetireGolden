@@ -9,8 +9,11 @@ contextual links from the planner, and the body of educational content itself.
 
 **Code:** [packages/planner-ui/src/learn/](../../packages/planner-ui/src/learn/) — pages (`LearningCenterPage`,
 `ArticlePage`, `GlossaryPage`, `SourcesPage`), the article registry
-([learningRegistry.ts](../../packages/planner-ui/src/learn/learningRegistry.ts)), reusable blocks under
-`components/`, and ~100 articles authored as structured TypeScript under `content/`.
+([learningRegistry.ts](../../packages/planner-ui/src/learn/learningRegistry.ts)) over the metadata index
+([articleIndex.ts](../../packages/planner-ui/src/learn/articleIndex.ts)), reusable blocks under
+`components/`, and the article bodies authored as structured TypeScript under `content/`, reached through
+the per-article `import()` map in
+[articleBodies.ts](../../packages/planner-ui/src/learn/articleBodies.ts).
 
 This document is the **authoring standard**: the product stance, information
 architecture, the article style guide, the topic inventory, and how the planner
@@ -229,14 +232,16 @@ packages/planner-ui/src/learn/
   LearningCenterPage.tsx
   ArticlePage.tsx
   GlossaryPage.tsx
-  learningRegistry.ts
+  learningRegistry.ts     # types, categories, selectors
+  articleIndex.ts         # metadata for every article (static)
+  articleBodies.ts        # slug -> () => import('./content/…')
+  glossary.ts
   learn.css
-  content/
-    articles/
-      roth-conversion-basics.md
-      social-security-claiming-age.md
-      monte-carlo-success-rate.md
-    glossary.ts
+  content/                # bodies only: `export const blocks: ArticleBlock[]`
+    roth-conversion-basics.ts
+    social-security-claiming-age-basics.ts
+    understanding-monte-carlo-success-rate.ts
+    examplePlanBodies.ts
   components/
     ArticleShell.tsx
     ArticleFigure.tsx
@@ -251,7 +256,10 @@ tooling and keeps every article type-checked against the registry.
 
 ### 7.2 Article metadata
 
-Article metadata is defined in [learningRegistry.ts](../../packages/planner-ui/src/learn/learningRegistry.ts) (the source of truth):
+Article metadata is one entry per article in
+[articleIndex.ts](../../packages/planner-ui/src/learn/articleIndex.ts) (the source of truth), typed by
+`LearningArticleMeta` in [learningRegistry.ts](../../packages/planner-ui/src/learn/learningRegistry.ts).
+The `blocks[]` body is a separate module under `content/`, so it never travels with the metadata:
 
 ```ts
 type LearningArticle = {
