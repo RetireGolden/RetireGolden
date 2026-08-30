@@ -74,11 +74,11 @@
     }
   },
   "attestations": {
-    "totalFiles": 236,
+    "totalFiles": 265,
     "byStatus": {
       "partial": 42,
-      "registered": 69,
-      "rule-free": 125,
+      "registered": 88,
+      "rule-free": 135,
       "unswept": 0
     },
     "sweptPct": 100,
@@ -389,11 +389,11 @@
     },
     {
       "directory": "projection",
-      "files": 24,
+      "files": 34,
       "byStatus": {
         "partial": 8,
         "registered": 2,
-        "rule-free": 14
+        "rule-free": 24
       }
     },
     {
@@ -406,9 +406,9 @@
     },
     {
       "directory": "rules",
-      "files": 6,
+      "files": 25,
       "byStatus": {
-        "registered": 1,
+        "registered": 20,
         "rule-free": 5
       }
     },

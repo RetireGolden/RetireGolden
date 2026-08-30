@@ -30,6 +30,7 @@ import { usePlan } from '../planner/planContextCore'
 import { saveExampleToMyPlans, saveFreshDemo } from '../planner/examples/loadExample'
 import { EXAMPLE_PLANS } from '../planner/examples/registry'
 import { createSamplePlan } from '../testSupport/samplePlan'
+import { AUTOSAVE_SETTLE_MS, sleep, waitFor } from '../testSupport/settle'
 
 /** In-memory PlanStore that records every call, standing in for a host adapter. */
 function makeFakeStore() {
@@ -64,9 +65,6 @@ beforeEach(() => {
   _resetPlanStoreForTests()
   localStorage.clear()
 })
-
-/** Waits past the 600 ms autosave debounce. */
-const settle = () => new Promise((r) => setTimeout(r, 750))
 
 describe('seam operations over a fake store', () => {
   it('loadPlanVia migrates+validates the stored document and reports a missing record as not_object', async () => {
@@ -227,7 +225,7 @@ describe('workspace over a fake store', () => {
 
     await act(async () => {
       ;(container.querySelector('[data-testid="rename"]') as HTMLButtonElement).click()
-      await settle()
+      await sleep(AUTOSAVE_SETTLE_MS)
     })
     expect(container.querySelector('[data-testid="state"]')!.textContent).toBe('saved')
     expect((docs.get(sample.id) as Plan).name).toBe('Host renamed')
@@ -239,16 +237,6 @@ describe('workspace over a fake store', () => {
 })
 
 describe('<PlannerApp/> store injection', () => {
-  async function waitFor(container: HTMLElement, predicate: () => boolean) {
-    for (let attempt = 0; attempt < 200; attempt++) {
-      if (predicate()) return
-      await act(async () => {
-        await new Promise((resolve) => setTimeout(resolve, 10))
-      })
-    }
-    throw new Error(`Timed out waiting for expected render; got: ${container.textContent}`)
-  }
-
   async function mountApp(ui: ReactNode) {
     const container = document.createElement('div')
     document.body.appendChild(container)
@@ -275,7 +263,7 @@ describe('<PlannerApp/> store injection', () => {
         <App />
       </PlanStoreProvider>,
     )
-    await waitFor(container, () => (container.textContent ?? '').includes('Ambient host plan'))
+    await waitFor(() => (container.textContent ?? '').includes('Ambient host plan'))
     await unmount()
   })
 
@@ -285,7 +273,7 @@ describe('<PlannerApp/> store injection', () => {
     docs.set(sample.id, structuredClone(sample))
 
     const { container, unmount } = await mountApp(<App planStore={store} />)
-    await waitFor(container, () => (container.textContent ?? '').includes('Host plan to clear'))
+    await waitFor(() => (container.textContent ?? '').includes('Host plan to clear'))
 
     const clearBtn = Array.from(container.querySelectorAll('button')).find((b) => b.textContent === 'Clear all data')
     await act(async () => {
@@ -307,7 +295,7 @@ describe('<PlannerApp/> store injection', () => {
     })
 
     expect(docs.size).toBe(0)
-    await waitFor(container, () => !(container.textContent ?? '').includes('Host plan to clear'))
+    await waitFor(() => !(container.textContent ?? '').includes('Host plan to clear'))
     await unmount()
   })
 })

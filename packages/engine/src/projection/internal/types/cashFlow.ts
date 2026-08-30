@@ -1,0 +1,517 @@
+/**
+ * The identity-bearing annual cash-flow report: entity references, the closed
+ * source/use/transfer vocabularies, tax character, and reconciliation.
+ *
+ * One slice of the projection type surface. `../../types.ts` re-exports every
+ * slice, so `projection/types.js` stays the single public specifier for all of
+ * them; the package export map blocks `projection/internal/*`, so this module
+ * is not separately importable. Declarations and the commentary attached to
+ * them were moved here verbatim, so a block that says "above" or "below" may
+ * now point across a module boundary.
+ */
+import type { AccountId, PersonId } from '../../../actions/index.js'
+
+/**
+ * Stable identifier for one annual cash-flow reporting line. The grammar and
+ * escaping rules are specified in `DOCS/features/year-cash-flow.md`; values are
+ * opaque to consumers and are not display labels.
+ */
+export type YearCashFlowLineId = string
+
+/** A person identity already present at the producing ledger site. */
+export interface YearCashFlowPersonReference {
+  readonly entityKind: 'person'
+  readonly personId: PersonId
+}
+
+/** A portfolio, debt, pension, or annuity account identity from the Plan. */
+export interface YearCashFlowAccountReference {
+  readonly entityKind: 'account'
+  readonly accountId: AccountId
+}
+
+/** An income-stream identity from the Plan. */
+export interface YearCashFlowIncomeStreamReference {
+  readonly entityKind: 'incomeStream'
+  readonly incomeStreamId: string
+}
+
+/** A property account identity from the Plan. */
+export interface YearCashFlowPropertyReference {
+  readonly entityKind: 'propertyAccount'
+  readonly propertyAccountId: AccountId
+}
+
+/** An LTC or permanent-life policy identity from the Plan. */
+export interface YearCashFlowPolicyReference {
+  readonly entityKind: 'insurancePolicy'
+  readonly policyId: string
+}
+
+/** An annuity contract, identified by its annuity account in the Plan. */
+export interface YearCashFlowAnnuityContractReference {
+  readonly entityKind: 'annuityContract'
+  readonly annuityAccountId: AccountId
+}
+
+/** A flexible or fixed one-time spending-goal identity from the Plan. */
+export interface YearCashFlowGoalReference {
+  readonly entityKind: 'goal'
+  readonly goalId: string
+}
+
+/** A durable care-event identity from the Plan's long-term-care configuration. */
+export interface YearCashFlowCareEventReference {
+  readonly entityKind: 'careEvent'
+  readonly careEventId: string
+}
+
+/** A TIPS ladder identity from the Plan. */
+export interface YearCashFlowTipsLadderReference {
+  readonly entityKind: 'tipsLadder'
+  readonly ladderId: string
+}
+
+/**
+ * A named retirement action and, when the executor has it, the allocation
+ * whose source account supplied this line.
+ */
+export interface YearCashFlowRetirementActionReference {
+  readonly entityKind: 'retirementAction'
+  readonly actionId: string
+  readonly allocationId?: string
+}
+
+/**
+ * An owner-wide owned-IRA RMD pool: the level at which the ledger nets QCD
+ * diversion and pools Roth-IRA early effects; used where no single source
+ * account truthfully exists.
+ */
+export interface YearCashFlowRequiredDistributionPoolReference {
+  readonly entityKind: 'requiredDistributionPool'
+  readonly personId: PersonId
+}
+
+/**
+ * Durable identities carried from producing ledger sites. An empty identity
+ * array means that the ledger has only a household aggregate; publishers must
+ * not infer an owner or synthesize an entity reference.
+ */
+export type YearCashFlowEntityReference =
+  | Readonly<YearCashFlowPersonReference>
+  | Readonly<YearCashFlowAccountReference>
+  | Readonly<YearCashFlowIncomeStreamReference>
+  | Readonly<YearCashFlowPropertyReference>
+  | Readonly<YearCashFlowPolicyReference>
+  | Readonly<YearCashFlowAnnuityContractReference>
+  | Readonly<YearCashFlowGoalReference>
+  | Readonly<YearCashFlowCareEventReference>
+  | Readonly<YearCashFlowTipsLadderReference>
+  | Readonly<YearCashFlowRetirementActionReference>
+  | Readonly<YearCashFlowRequiredDistributionPoolReference>
+
+/** The household cash hub used only as a typed transfer endpoint. */
+export interface YearCashFlowHouseholdCashReference {
+  readonly entityKind: 'householdCash'
+}
+
+/** A charity endpoint; the current aggregate strategy has no durable charity ID. */
+export interface YearCashFlowCharityReference {
+  readonly entityKind: 'charity'
+  /** Durable charity designation from a named QCD request; absent for the aggregate strategy's anonymous charity. */
+  readonly designationId?: string
+}
+
+/** The employer side of an employer-match credit. */
+export interface YearCashFlowEmployerReference {
+  readonly entityKind: 'employer'
+}
+
+/** The external pension plan that supplies a direct lump-sum rollover. */
+export interface YearCashFlowPensionPlanReference {
+  readonly entityKind: 'pensionPlan'
+  readonly pensionAccountId: AccountId
+}
+
+/** Yield generated by an account before a reinvestment election credits it. */
+export interface YearCashFlowAccountYieldReference {
+  readonly entityKind: 'accountYield'
+  readonly accountId: AccountId
+}
+
+/** Residual cash for a plan that has no cash or taxable destination account. */
+export interface YearCashFlowUnassignedCashReference {
+  readonly entityKind: 'unassignedCash'
+}
+
+/** Typed endpoints allowed on a direct transfer line. */
+export type YearCashFlowTransferEndpoint =
+  | YearCashFlowEntityReference
+  | Readonly<YearCashFlowHouseholdCashReference>
+  | Readonly<YearCashFlowCharityReference>
+  | Readonly<YearCashFlowEmployerReference>
+  | Readonly<YearCashFlowPensionPlanReference>
+  | Readonly<YearCashFlowAccountYieldReference>
+  | Readonly<YearCashFlowUnassignedCashReference>
+
+/** The mutually exclusive role a source line has in the household-cash view. */
+export type YearCashFlowSourceRole =
+  /** External or off-ledger cash available to the household. */
+  | 'spendableSource'
+  /** Account dollars delivered to the household by a forced, committed, or need-based draw. */
+  | 'portfolioFunding'
+  /** HECM debt proceeds, kept distinct from income and portfolio funding. */
+  | 'loanProceeds'
+  /** A balance credit after the funding solve, excluded from the household-cash identity. */
+  | 'postSolveDeposit'
+
+/** Closed source vocabulary for the inventoried `simulate.ts` cash terms. */
+export type YearCashFlowSourceKind =
+  /** `incomes.wages`, emitted per wage income stream. */
+  | 'wages'
+  /** `incomes.socialSecurity`, after earnings-test or SGA withholding. */
+  | 'socialSecurity'
+  /** `incomes.pension`, emitted per pension account. */
+  | 'pension'
+  /** `incomes.annuity`, emitted per annuity contract. */
+  | 'annuityPayment'
+  /** `incomes.tipsLadder` coupons plus maturing principal, emitted per ladder. */
+  | 'tipsLadderCash'
+  /** `incomes.recurring`, emitted per recurring income stream. */
+  | 'recurringIncome'
+  /** `incomes.oneTime`, emitted per one-time income stream. */
+  | 'oneTimeIncome'
+  /** Distributed taxable-account `taxableYield`, emitted per account. */
+  | 'taxableAccountYield'
+  /** Distributed `taxExemptInterest`, emitted per taxable account. */
+  | 'taxExemptInterest'
+  /** Exact-basis `propertySaleProceedsTotal`, net of selling costs and HECM payoff. */
+  | 'propertySaleProceeds'
+  /** Employer-plan RMD per account (gross), or one owner's owned-IRA RMD net of that owner's QCD diversion. */
+  | 'requiredMinimumDistribution'
+  /** Account-level `seppTotal` delivered outside the need-based waterfall. */
+  | 'seppDistribution'
+  /** Account-level forced `inheritedTotal`, traditional or Roth. */
+  | 'inheritedAccountDistribution'
+  /** Allocation-level cash in `retirementActionProceeds`. */
+  | 'retirementActionWithdrawal'
+  /** Account-level accepted `withdrawalPlan.byAccountId` funding. */
+  | 'needBasedPortfolioWithdrawal'
+  /** Coordinated HECM dollars added to `cashInflows` before the accepted solve. */
+  | 'hecmCoordinatedDraw'
+  /** `hecmShortfallDraw` dollars applied after the accepted withdrawal plan. */
+  | 'hecmBackstopDraw'
+  /** Legacy `expectedNetProceeds` property-sale deposit after the solve. */
+  | 'legacyPropertySaleDeposit'
+  /** Permanent-life `deathBenefit` deposited after the solve. */
+  | 'lifeInsuranceDeathBenefit'
+
+/** Non-cash tax character attached to a physical line or standalone metadata. */
+export type YearCashFlowTaxCharacterKind =
+  /** `ordinaryIncome` character, including taxable pension, distribution, and action amounts. */
+  | 'ordinaryIncome'
+  /** `oneTimeGains`, property-sale gains, `taxableSales`, or action `realizedGains`. */
+  | 'capitalGain'
+  /** `qualifiedDividends`, a tax subset of distributed taxable-account yield. */
+  | 'qualifiedDividend'
+  /** `taxExemptInterest`, cash-real but excluded from ordinary income. */
+  | 'taxExemptIncome'
+  /** `rmdNontaxable`, `seppNontaxable`, annuity basis, TIPS principal, or IRA basis return. */
+  | 'returnOfBasis'
+  /** `qcdIncomeOffset` or `namedQcdIncomeOffset`; never a second gift. */
+  | 'qcdIncomeExclusion'
+  /** `qcdNonQualifiedOrdinaryIncome`, character on the same QCD transfer. */
+  | 'nonQualifiedQcdOrdinaryIncome'
+  /** TIPS inflation accretion/OID that is taxable without current-year cash. */
+  | 'tipsPhantomOidIncome'
+  /** ACA `foreignExclusionAddback` attested for MAGI; tax-only, never cash. */
+  | 'foreignExclusionAddback'
+
+/**
+ * Tax-only characterization. `amountPlanDollars` is nominal and is never
+ * included in either cash conservation identity or in transfer debit/credit
+ * totals. `capitalGain` may be negative for a realized loss; other character
+ * amounts are nonnegative.
+ */
+export interface YearCashFlowTaxCharacter {
+  readonly kind: YearCashFlowTaxCharacterKind
+  readonly amountPlanDollars: number
+}
+
+/**
+ * Tax character that has no physical cash or transfer line to attach to, such
+ * as TIPS phantom OID or a gain realized entirely inside an account. It is
+ * excluded from every money total.
+ */
+export interface YearCashFlowStandaloneTaxCharacter {
+  readonly id: YearCashFlowLineId
+  readonly taxCharacter: Readonly<YearCashFlowTaxCharacter>
+  readonly identities: readonly YearCashFlowEntityReference[]
+  /** Present when the metadata characterizes a related physical reporting line. */
+  readonly relatedLineId?: YearCashFlowLineId
+}
+
+/** One nominal Plan-dollar source that entered household cash during the funding solve. */
+export interface YearCashFlowCashSourceLine {
+  readonly id: YearCashFlowLineId
+  readonly kind: YearCashFlowSourceKind
+  readonly role: Exclude<YearCashFlowSourceRole, 'postSolveDeposit'>
+  readonly amountPlanDollars: number
+  readonly identities: readonly YearCashFlowEntityReference[]
+  /** Present only when the physical amount also has separately useful tax character. */
+  readonly taxCharacter?: readonly Readonly<YearCashFlowTaxCharacter>[]
+}
+
+/**
+ * One nominal Plan-dollar receipt deposited after the funding solve. Excluded
+ * from the cash identity, so the destination is required - without it a
+ * consumer could not route the deposited dollars anywhere.
+ */
+export interface YearCashFlowPostSolveDepositLine {
+  readonly id: YearCashFlowLineId
+  readonly kind: YearCashFlowSourceKind
+  readonly role: 'postSolveDeposit'
+  readonly amountPlanDollars: number
+  readonly identities: readonly YearCashFlowEntityReference[]
+  /** Present only when the physical amount also has separately useful tax character. */
+  readonly taxCharacter?: readonly Readonly<YearCashFlowTaxCharacter>[]
+  readonly postSolveDestination: YearCashFlowTransferEndpoint
+}
+
+/** One nominal Plan-dollar source in the household-cash or post-solve view. */
+export type YearCashFlowSourceLine =
+  | Readonly<YearCashFlowCashSourceLine>
+  | Readonly<YearCashFlowPostSolveDepositLine>
+
+/** Closed use vocabulary for the inventoried `simulate.ts` cash terms. */
+export type YearCashFlowUseKind =
+  /** `requiredLifestyle` in the recurring lifestyle stack. */
+  | 'requiredLifestyle'
+  /** `targetLifestyle` before guardrail and final-funding reductions. */
+  | 'targetLifestyle'
+  /** `idealLifestyle` before guardrail and final-funding reductions. */
+  | 'idealLifestyle'
+  /** `excessLifestyle` before guardrail and final-funding reductions. */
+  | 'excessLifestyle'
+  /** Per-goal `fundedNominal` plus `unfundedNominal` in the one-time scheduler. */
+  | 'oneTimeGoal'
+  /** Per-account annual `debtService`. */
+  | 'debtService'
+  /** Per-property `propertyCosts` for tax and homeowner insurance. */
+  | 'propertyCosts'
+  /** Final fixed-point `healthcare`, already net of ACA premium support. */
+  | 'healthcare'
+  /** Per-policy amount included in `insurancePremiums`. */
+  | 'insurancePremium'
+  /** Net per-person care cost, `careCost` less `ltcBenefit`; the reimbursement is an offset inside this line, never a separate cash source. */
+  | 'longTermCare'
+  /** Settled annual `tax`, never `advisoryFederalTax.detail.totalTax`. */
+  | 'settledTax'
+  /** Final `penalties`, classed by `YearCashFlowPenaltyClass`; account- or owner-pool-attributed. */
+  | 'earlyWithdrawalPenalty'
+  /** Requested and allowed `contributions`, emitted per destination account. */
+  | 'contribution'
+  /** Residual `surplus`/`surplusInvested`, emitted per chosen destination. */
+  | 'surplusInvestment'
+
+/**
+ * Closed early-withdrawal penalty vocabulary. Traditional, HSA, and employer
+ * designated-Roth penalties are account-attributed; owned Roth-IRA early
+ * effects are pooled per owner and never assigned to a member account.
+ */
+export type YearCashFlowPenaltyClass =
+  /** Traditional pre-59.5 early-distribution penalty. */
+  | 'traditionalEarly'
+  /** HSA nonmedical pre-65 distribution penalty. */
+  | 'hsaNonMedical'
+  /** Roth early-distribution effects: per account for employer designated-Roth pools, per owner for owned Roth IRAs. */
+  | 'rothEarly'
+
+/**
+ * One requested household use. At engine native precision every line satisfies
+ * `requestedPlanDollars = fundedPlanDollars + unfundedPlanDollars`. Only the
+ * funded amount participates in household-cash routing.
+ */
+export interface YearCashFlowUseLine {
+  readonly id: YearCashFlowLineId
+  readonly kind: YearCashFlowUseKind
+  /** Present exactly when `kind` is `earlyWithdrawalPenalty`; the closed class is payload, not ID parsing. */
+  readonly penaltyClass?: YearCashFlowPenaltyClass
+  readonly requestedPlanDollars: number
+  readonly fundedPlanDollars: number
+  readonly unfundedPlanDollars: number
+  readonly identities: readonly YearCashFlowEntityReference[]
+}
+
+/** Closed direct-transfer vocabulary for the inventoried `simulate.ts` movements. */
+export type YearCashFlowTransferKind =
+  /** `namedRothConversionExecuted`, from its named source allocation to Roth destination. */
+  | 'namedRothConversion'
+  /** Aggregate `rothConversion`, from an allocated traditional source to Roth destination. */
+  | 'aggregateRothConversion'
+  /** The physical IRA-to-charity distribution channel (`qcdFromRmd`, beyond-RMD `legacyQcd`, `namedQcdExecuted`). Qualification is NOT implied: the excludable portion is the `qcdIncomeExclusion` metadata and any non-qualified excess is `nonQualifiedQcdOrdinaryIncome`; consumers must not label dollars qualified beyond that metadata. */
+  | 'qualifiedCharitableDistribution'
+  /** Allowed `contributions`, from household cash to each destination account. */
+  | 'employeeContribution'
+  /** `employerMatch`, from employer to its destination account. */
+  | 'employerMatch'
+  /** Funded annuity premium and `annuityContractPremiumCredit`. */
+  | 'annuityPurchase'
+  /** Funded TIPS purchase debit from its funding account to its ladder. */
+  | 'tipsLadderPurchase'
+  /** `rolloverInflow`, from the external pension plan to the rollover account. */
+  | 'pensionRollover'
+  /** `taxableYieldReinvested`, from account yield back to that account. */
+  | 'reinvestedYield'
+  /** `surplus` cash deposited to its account or unassigned-cash destination. */
+  | 'surplusInvestment'
+
+/**
+ * Why a transfer references a cash-view line. `sameDollarLaterStage` points at
+ * the SAME funded dollars at another stage. `divertedBeforeHouseholdCash` is a
+ * complement pointer: it names the cash-view line carrying the remaining
+ * household-available dollars of the same gross event, not the diverted
+ * dollars themselves. Either way the referenced line must exist and the two
+ * amounts are never summed within one view.
+ */
+export type YearCashFlowLineageRelationship =
+  /** The same funded contribution or surplus dollar at its later account-credit stage. */
+  | 'sameDollarLaterStage'
+  /**
+   * A committed account credit whose linked use was only partly funded - the
+   * committed-credit edge. The transfer's amount exceeds the use line's funded
+   * amount by exactly its unfunded remainder; validators accept that exact
+   * difference here and only here.
+   */
+  | 'committedCreditBeyondFunding'
+  /**
+   * A charity-routed slice of a gross owned-IRA RMD. Points at the owner's net
+   * RMD cash line - the complement of this gift - which is published, possibly
+   * with a zero amount, whenever the owner's diversion is positive.
+   */
+  | 'divertedBeforeHouseholdCash'
+
+/** Explicit cross-view lineage; consumers must never sum the referenced stages. */
+export interface YearCashFlowLineage {
+  readonly lineId: YearCashFlowLineId
+  readonly relationship: YearCashFlowLineageRelationship
+}
+
+/**
+ * One direct movement. Debit and credit are paired representations of one
+ * nominal Plan-dollar amount and must match at the reconciliation tolerance.
+ */
+export interface YearCashFlowTransferLine {
+  readonly id: YearCashFlowLineId
+  readonly kind: YearCashFlowTransferKind
+  readonly source: YearCashFlowTransferEndpoint
+  readonly destination: YearCashFlowTransferEndpoint
+  readonly debitPlanDollars: number
+  readonly creditPlanDollars: number
+  readonly identities: readonly YearCashFlowEntityReference[]
+  /** Conversion and QCD tax effects are metadata, never additional money links. */
+  readonly taxCharacter?: readonly Readonly<YearCashFlowTaxCharacter>[]
+  /** Present only when another view describes an earlier or later stage of these dollars. */
+  readonly lineage?: readonly Readonly<YearCashFlowLineage>[]
+}
+
+/** Totals for the household-cash conservation identity. */
+export interface YearCashFlowCashIdentityTotals {
+  readonly spendableSourcesPlanDollars: number
+  readonly portfolioFundingPlanDollars: number
+  readonly loanProceedsPlanDollars: number
+  /** Spendable sources + portfolio funding + loan proceeds. */
+  readonly sourceTotalPlanDollars: number
+  /** Funded lifestyle, goal, debt, property, healthcare, insurance, and care uses. */
+  readonly fundedHouseholdUsesPlanDollars: number
+  readonly settledTaxPlanDollars: number
+  readonly penaltiesPlanDollars: number
+  readonly contributionsPlanDollars: number
+  readonly surplusInvestmentPlanDollars: number
+  /** Funded household uses + tax + penalties + contributions + surplus investment. */
+  readonly destinationTotalPlanDollars: number
+  /** `sourceTotalPlanDollars - destinationTotalPlanDollars`, before display rounding. */
+  readonly differencePlanDollars: number
+}
+
+/** Totals for requested-use conservation across every `useLines` member. */
+export interface YearCashFlowUseIdentityTotals {
+  readonly requestedUsesPlanDollars: number
+  readonly fundedUsesPlanDollars: number
+  readonly unfundedUsesPlanDollars: number
+  /** `fundedUsesPlanDollars + unfundedUsesPlanDollars`. */
+  readonly dispositionTotalPlanDollars: number
+  /** `requestedUsesPlanDollars - dispositionTotalPlanDollars`. */
+  readonly differencePlanDollars: number
+}
+
+/** Paired totals for the separate direct-transfer view. */
+export interface YearCashFlowTransferIdentityTotals {
+  readonly debitsPlanDollars: number
+  readonly creditsPlanDollars: number
+  /** `debitsPlanDollars - creditsPlanDollars`. */
+  readonly differencePlanDollars: number
+}
+
+/** Machine-readable reasons that make an annual cash-flow report unsafe to graph. */
+export type YearCashFlowReconciliationReasonCode =
+  /** The household-cash source and destination totals differ beyond tolerance. */
+  | 'cashIdentityMismatch'
+  /** Requested uses do not equal funded plus unfunded uses beyond tolerance. */
+  | 'useIdentityMismatch'
+  /** Direct-transfer debits and credits differ beyond tolerance. */
+  | 'transferIdentityMismatch'
+  /** Two or more published lines have the same supposedly stable ID. */
+  | 'duplicateLineId'
+  /** A physical amount is negative, a non-loss character is negative, or any amount is nonfinite. */
+  | 'invalidAmount'
+  /** A line omitted an identity that its producing ledger site carries. */
+  | 'missingRequiredIdentity'
+  /** Cross-stage lineage is missing, dangling, or economically inconsistent. */
+  | 'invalidLineage'
+  /** A nonzero ledger term has no supported closed-kind treatment. */
+  | 'unsupportedLedgerTerm'
+
+/** Exact machine-readable evidence for one reconciliation failure. */
+export interface YearCashFlowReconciliationDiagnostic {
+  readonly reasonCode: YearCashFlowReconciliationReasonCode
+  readonly lineIds: readonly YearCashFlowLineId[]
+  readonly expectedPlanDollars?: number
+  readonly actualPlanDollars?: number
+  readonly differencePlanDollars?: number
+}
+
+/**
+ * Native-precision annual reconciliation. A `notReconciled` report remains
+ * published for diagnosis, but graphical consumers must refuse to render it.
+ */
+export interface YearCashFlowReconciliation {
+  readonly status: 'reconciled' | 'notReconciled'
+  /** Strict structural tolerance for line, use, transfer, and lineage checks. */
+  readonly tolerancePlanDollars: number
+  /** Cash conservation tolerance, aligned with the annual funding fixed point. */
+  readonly cashIdentityTolerancePlanDollars: number
+  readonly cash: Readonly<YearCashFlowCashIdentityTotals>
+  readonly uses: Readonly<YearCashFlowUseIdentityTotals>
+  readonly transfers: Readonly<YearCashFlowTransferIdentityTotals>
+  /** Empty exactly when `status` is `reconciled`. */
+  readonly reasonCodes: readonly YearCashFlowReconciliationReasonCode[]
+  /** Empty exactly when `status` is `reconciled`. */
+  readonly diagnostics: readonly Readonly<YearCashFlowReconciliationDiagnostic>[]
+}
+
+/**
+ * Optional identity-bearing reporting detail for one `YearResult`. It is a
+ * ledger contract, not chart data: amounts are nominal Plan dollars and the
+ * structure contains no display labels, styling, coordinates, or inferred
+ * ownership. When present, all reporting arrays are complete (and may be
+ * empty); absence of `YearResult.cashFlow` means “not captured,” never “zero.”
+ */
+export interface YearCashFlow {
+  readonly sourceLines: readonly Readonly<YearCashFlowSourceLine>[]
+  readonly useLines: readonly Readonly<YearCashFlowUseLine>[]
+  readonly transferLines: readonly Readonly<YearCashFlowTransferLine>[]
+  readonly taxCharacterMetadata:
+    readonly Readonly<YearCashFlowStandaloneTaxCharacter>[]
+  readonly reconciliation: Readonly<YearCashFlowReconciliation>
+}

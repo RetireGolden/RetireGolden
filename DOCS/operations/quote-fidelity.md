@@ -1,6 +1,7 @@
 # Quote fidelity: verifying the tax rule registry against its sources
 
-Every rule in [`packages/engine/src/rules/taxRuleRegistry.ts`](../../packages/engine/src/rules/taxRuleRegistry.ts)
+Every rule in the record modules under [`packages/engine/src/rules/records/`](../../packages/engine/src/rules/records)
+— composed into the frozen registry by [`taxRuleRegistry.ts`](../../packages/engine/src/rules/taxRuleRegistry.ts) —
 carries an `authority[]` array, and every entry in it carries a `url` and a `quotedText`. The field's
 contract is **character-exact operative language, quoted rather than paraphrased**. That contract is the
 registry's whole value: the quote is what a preparer is shown when they ask why a number came out the way

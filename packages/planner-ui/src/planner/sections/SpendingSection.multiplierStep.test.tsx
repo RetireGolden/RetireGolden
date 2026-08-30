@@ -20,8 +20,6 @@ import { PlanCtx } from '../planContextCore'
 import { createSamplePlan } from '../../testSupport/samplePlan'
 import { SpendingSection } from './SpendingSection'
 
-;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true
-
 let root: Root | null = null
 let container: HTMLDivElement | null = null
 

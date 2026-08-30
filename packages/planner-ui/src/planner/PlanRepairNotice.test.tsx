@@ -28,25 +28,10 @@ import { PlanProvider } from './PlanContext'
 import { PlanRepairCtx } from './planRepairContext'
 import { PlanRepairNotice } from './PlanRepairNotice'
 import { createSamplePlan } from '../testSupport/samplePlan'
-
-;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean })
-  .IS_REACT_ACT_ENVIRONMENT = true
+import { settle } from '../testSupport/settle'
 
 let container: HTMLDivElement
 let root: Root
-
-/**
- * Drain the async work a load can queue. The auto-seed path is load, miss,
- * build from the registry, write to IndexedDB, adopt, and fake-indexeddb
- * settles on timers rather than microtasks, so one flush is not enough.
- */
-async function settle(passes = 4) {
-  for (let i = 0; i < passes; i++) {
-    await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 0))
-    })
-  }
-}
 
 beforeEach(() => {
   globalThis.indexedDB = new IDBFactory()

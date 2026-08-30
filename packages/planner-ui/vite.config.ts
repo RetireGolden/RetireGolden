@@ -21,6 +21,10 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+    // Declares the React act environment once for the whole package. Files
+    // still opt into jsdom per-file with a `@vitest-environment` pragma; this
+    // only removes the copy-pasted act preamble that used to sit next to it.
+    setupFiles: ['./src/testSupport/vitestSetup.ts'],
     server: {
       deps: {
         // The plan-export round-trip test drives the real @retiregolden/mcp.

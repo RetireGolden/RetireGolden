@@ -27,6 +27,7 @@ vi.mock('../mc/pool', async (importOriginal) => {
 import * as pool from '../mc/pool'
 import { MonteCarloPage } from './MonteCarloPage'
 import { SsAnalysisPage } from './SsAnalysisPage'
+import { advanceBy } from '../testSupport/settle'
 
 const actualPool = await vi.importActual<typeof import('../mc/pool')>('../mc/pool')
 const mockedRunMc = vi.mocked(pool.runMonteCarlo)
@@ -57,16 +58,11 @@ async function mount(page: React.ReactNode, plan: Plan) {
   })
 }
 
-const flush = (ms: number) =>
-  act(async () => {
-    await new Promise((r) => setTimeout(r, ms))
-  })
-
 describe('MonteCarloPage worker failures', () => {
   it('renders an error banner and stops running when the auto-run rejects', async () => {
     mockedRunMc.mockImplementation(() => Promise.reject(new Error('worker exploded')))
     await mount(<MonteCarloPage />, createSamplePlan())
-    await flush(400) // past the 250 ms auto-run debounce
+    await advanceBy(400) // past the 250 ms auto-run debounce
     expect(container.textContent).toContain('Simulation error: worker exploded')
     // The running progress bar is gone and no stale skeleton remains.
     expect(container.querySelector('[role="progressbar"]')).toBeNull()
@@ -85,7 +81,7 @@ describe('MonteCarloPage worker failures', () => {
     mockedFrontiers.mockImplementation(() => Promise.reject(new Error('frontier worker exploded')))
     mockedHistorical.mockImplementation(() => Promise.reject(new Error('stress worker exploded')))
     await mount(<MonteCarloPage />, createSamplePlan())
-    await flush(400)
+    await advanceBy(400)
 
     const buttons = () => [...container.querySelectorAll('button')]
     const frontierBtn = buttons().find((b) => b.textContent?.includes('frontiers'))
@@ -94,12 +90,12 @@ describe('MonteCarloPage worker failures', () => {
     expect(stressBtn).toBeDefined()
 
     await act(async () => frontierBtn!.click())
-    await flush(20)
+    await advanceBy(20)
     expect(container.textContent).toContain('Frontier run error: frontier worker exploded')
     expect(frontierBtn!.disabled).toBe(false)
 
     await act(async () => stressBtn!.click())
-    await flush(20)
+    await advanceBy(20)
     expect(container.textContent).toContain('Stress suite error: stress worker exploded')
     expect(stressBtn!.disabled).toBe(false)
     await act(async () => root.unmount())
@@ -115,7 +111,7 @@ describe('SsAnalysisPage robustness check failure', () => {
     )
     expect(button).toBeDefined()
     await act(async () => button!.click())
-    await flush(20)
+    await advanceBy(20)
     expect(container.textContent).toContain('Robustness check error: worker exploded')
     expect(button!.disabled).toBe(false)
     await act(async () => root.unmount())

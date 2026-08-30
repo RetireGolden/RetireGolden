@@ -9,22 +9,13 @@ import { IDBFactory } from 'fake-indexeddb'
 import { _resetPlanStoreForTests, savePlan } from '../data/planStore'
 import { createSamplePlan } from '../testSupport/samplePlan'
 import { PlanWorkspace } from './PlanWorkspace'
+import { waitFor } from '../testSupport/settle'
 
 beforeEach(() => {
   globalThis.indexedDB = new IDBFactory()
   _resetPlanStoreForTests()
   localStorage.clear()
 })
-
-async function waitFor(predicate: () => boolean) {
-  for (let attempt = 0; attempt < 100; attempt++) {
-    if (predicate()) return
-    await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 10))
-    })
-  }
-  throw new Error('Timed out waiting for expected render')
-}
 
 /** Honest workspace chrome for lifetimeTaxesAndPenalties (tax + penalties). */
 const LIFETIME_TAX_KPI_SUB = 'nominal $ · tax + penalties'

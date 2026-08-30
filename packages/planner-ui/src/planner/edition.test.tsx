@@ -19,6 +19,7 @@ import { createSamplePlan } from '../testSupport/samplePlan'
 import { DisclaimerPage } from './DisclaimerPage'
 import { ExamplesPage } from './examples/ExamplesPage'
 import { PlannerEditionProvider } from './PlannerEditionProvider'
+import { waitForSelector } from '../testSupport/settle'
 
 let container: HTMLDivElement
 let root: Root
@@ -54,12 +55,8 @@ async function renderWorkspace(planId: string, node: (host: React.ReactNode) => 
       <MemoryRouter initialEntries={[`/plan/${planId}/household`]}>{node(<WorkspaceHost />)}</MemoryRouter>,
     )
   })
-  // The workspace section chunk is lazy — poll until the rail mounts.
-  for (let attempt = 0; attempt < 200 && !container.querySelector('.workspace-rail'); attempt++) {
-    await act(async () => {
-      await new Promise((r) => setTimeout(r, 10))
-    })
-  }
+  // The workspace section chunk is lazy — wait until the rail mounts.
+  await waitForSelector(container, '.workspace-rail')
 }
 
 describe('PlannerEdition defaults (no provider)', () => {

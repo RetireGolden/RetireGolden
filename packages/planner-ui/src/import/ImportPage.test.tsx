@@ -15,6 +15,7 @@ import { _resetPlanStoreForTests, listUserPlanSummaries } from '../data/planStor
 import { ImportPage } from './ImportPage'
 import { parseImportProvenance } from './provenance'
 import { ImportAvailabilityProvider } from './ImportAvailabilityProvider'
+import { waitFor } from '../testSupport/settle'
 
 let root: Root | null = null
 let container: HTMLDivElement | null = null
@@ -94,16 +95,8 @@ function selectByKeyboard(sel: HTMLSelectElement, value: string) {
 }
 
 /** Poll for an observable UI condition instead of sleeping a fixed interval. */
-async function waitForUi(done: () => boolean, what: string) {
-  const deadline = Date.now() + 2000
-  for (;;) {
-    await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 5))
-    })
-    if (done()) return
-    if (Date.now() > deadline) throw new Error(`timed out waiting for ${what}`)
-  }
-}
+const waitForUi = (done: () => boolean, what: string) =>
+  waitFor(done, { what, attempts: 400, intervalMs: 5 })
 
 async function chooseFile(el: HTMLElement, file: File, done: () => boolean, what: string) {
   const input = el.querySelector<HTMLInputElement>('input[type="file"]')!

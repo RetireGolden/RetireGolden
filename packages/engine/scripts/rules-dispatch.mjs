@@ -2,7 +2,39 @@ import { readdirSync, unlinkSync, writeFileSync } from 'node:fs'
 import { basename, dirname, join, resolve } from 'node:path'
 import { parseArgs } from 'node:util'
 import { testSourcesInGlobShape } from './rules-coverage.mjs'
-import { loadModule, stripLeadingSeparators, todayUtcIso, validateAsOf } from './rule-tooling-shared.mjs'
+import { engineDir, loadModule, stripLeadingSeparators, todayUtcIso, validateAsOf } from './rule-tooling-shared.mjs'
+
+const REGISTRY_FACADE_PATH = 'packages/engine/src/rules/taxRuleRegistry.ts'
+const RECORDS_DIR_PATH = 'packages/engine/src/rules/records'
+
+/**
+ * Generated files a dispatch always rewrites, whatever rules it carries.
+ * `pnpm rules:coverage` republishes both from `verifiedOn`, so two dispatches
+ * in flight collide here even when their record modules never touch.
+ */
+const COVERAGE_LEDGER_PATHS = [
+  'DOCS/operations/rule-coverage.md',
+  'DOCS/operations/rule-coverage.json',
+]
+
+/**
+ * Repo-relative record module path per rule id, read from the modules
+ * themselves rather than from a hand-kept list, so a new module in
+ * `records/` is mapped the moment it is spread into the registry.
+ */
+async function loadRecordModuleOf() {
+  const recordsDir = join(engineDir, 'src', 'rules', 'records')
+  const byRuleId = new Map()
+  for (const name of readdirSync(recordsDir).sort()) {
+    if (!name.endsWith('.ts') || name.endsWith('.test.ts')) continue
+    const module = await loadModule(join('records', name))
+    for (const exported of Object.values(module)) {
+      if (exported === null || typeof exported !== 'object') continue
+      for (const ruleId of Object.keys(exported)) byRuleId.set(ruleId, RECORDS_DIR_PATH + '/' + name)
+    }
+  }
+  return byRuleId
+}
 
 const HELP = `Usage: pnpm rules:dispatch [-- --rule <id>[,<id>...]] [--due] [--as-of YYYY-MM-DD] [--out <path>] [--chunk-size N]
 
@@ -69,9 +101,19 @@ function chunkRuleIds(ruleIds, chunkSize) {
  * Self-contained markdown handoff prompt for a fresh agent session.
  * Kept pure so a future test can snapshot the template.
  */
-export function buildDispatchPrompt({ asOf, ruleIds, registry, manifestRules }) {
+export function buildDispatchPrompt({ asOf, ruleIds, registry, manifestRules, recordModuleOf = new Map() }) {
   const manifestById = new Map(manifestRules.map((rule) => [rule.id, rule]))
   const ids = [...ruleIds].sort()
+
+  // The files this dispatch will actually edit, which is what another open PR
+  // has to overlap for the two to collide. A rule whose module is unknown
+  // (a caller that passed no map) falls back to the whole records directory,
+  // so the check can only ever be too broad, never too narrow.
+  const contendedPaths = [...new Set([
+    ...ids.map((id) => recordModuleOf.get(id) ?? RECORDS_DIR_PATH + '/'),
+    REGISTRY_FACADE_PATH,
+    ...COVERAGE_LEDGER_PATHS,
+  ])].sort()
 
   const lines = [
     '# Re-verification dispatch: ' + ids.join(', ') + ' (generated ' + asOf + ')',
@@ -82,7 +124,7 @@ export function buildDispatchPrompt({ asOf, ruleIds, registry, manifestRules }) 
     '- Create a worktree/branch from `origin/main`.',
     '- Enable Corepack and use pnpm (`corepack enable`).',
     '- Read `AGENTS.md` first.',
-    '- The rule registry lives at `packages/engine/src/rules/taxRuleRegistry.ts`; each rule below is one record keyed by its id.',
+    '- The rule registry is composed in `' + REGISTRY_FACADE_PATH + '` from the per-domain modules in `' + RECORDS_DIR_PATH + '/`; each rule below is one record keyed by its id, in exactly one of those modules, and each rule section names the module it lives in.',
     '',
     '## The binding edit order',
     '',
@@ -104,7 +146,7 @@ export function buildDispatchPrompt({ asOf, ruleIds, registry, manifestRules }) 
     '- (network, manual; see `DOCS/operations/quote-fidelity.md`)',
     '- If any result moves: run `pnpm cases:diff`, review every delta, and add a `CHANGELOG.md` entry announcing the correction — corrections are announced, never silent.',
     '- `pnpm rules:coverage` and commit the refreshed `DOCS/operations/rule-coverage.md` and `rule-coverage.json` (`verifiedOn` changes them)',
-    '- Confirm no other open PR changes the registry file: for each PR in `gh pr list --state open --limit 200 --json number -q .[].number`, run `gh pr diff <n> --name-only` and require zero hits for `taxRuleRegistry.ts` before pushing, excluding this branch\'s own PR.',
+    '- Confirm no other open PR edits the files this dispatch touches: for each PR in `gh pr list --state open --limit 200 --json number -q .[].number`, run `gh pr diff <n> --name-only` and require zero hits for any of ' + contendedPaths.map((path) => '`' + path + '`').join(', ') + ' before pushing, excluding this branch\'s own PR. Only these paths — a rules PR editing a DIFFERENT record module merges cleanly alongside this one, and the tooling and conformance files under `packages/engine/src/rules/` hold no records at all.',
     '- One PR; review-bot findings fixed on the same branch',
     '',
   ]
@@ -116,6 +158,12 @@ export function buildDispatchPrompt({ asOf, ruleIds, registry, manifestRules }) 
     if (!manifest) throw new Error('Unknown rule id in manifest: ' + id)
 
     lines.push('## ' + id, '')
+    lines.push(
+      '**Record module:** ' +
+        (recordModuleOf.get(id) ??
+          'unknown — `git grep -n "\'' + id + '\': {" ' + RECORDS_DIR_PATH + '` finds it'),
+      '',
+    )
     lines.push('**Title:** ' + rule.title, '')
     lines.push('**Statement:** ' + rule.statement, '')
     lines.push(
@@ -260,6 +308,7 @@ async function main() {
     symbolLineFor: () => 1,
   })
 
+  const recordModuleOf = await loadRecordModuleOf()
   const chunks = chunkRuleIds(ruleIds, chunkSize)
 
   if (chunks.length > 1 && !values.out) {
@@ -278,6 +327,7 @@ async function main() {
       ruleIds: chunks[0],
       registry: TAX_RULE_REGISTRY,
       manifestRules: report.manifest.rules,
+      recordModuleOf,
     })
     if (values.out) {
       clearPriorOutputs(values.out)
@@ -297,6 +347,7 @@ async function main() {
       ruleIds: chunks[i],
       registry: TAX_RULE_REGISTRY,
       manifestRules: report.manifest.rules,
+      recordModuleOf,
     })
     writeFileSync(outPath, normalize(markdown), 'utf8')
     written.push(outPath)

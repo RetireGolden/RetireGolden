@@ -302,7 +302,7 @@ inadmissible.
 
 ## Registered rules
 Every lever above is registered in
-`packages/engine/src/rules/taxRuleRegistry.ts` under `jurisdiction: 'state:IN'`:
+`packages/engine/src/rules/records/statesMidwest.ts` under `jurisdiction: 'state:IN'`:
 
 | Rule id | Classification |
 |---|---|

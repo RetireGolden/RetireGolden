@@ -12,6 +12,53 @@ import {
   type TaxRuleVolatility,
   type UsStateCode,
 } from './taxRuleRegistry.js'
+import { annuityRecords } from './records/annuities.js'
+import { charitableDeductionRecords } from './records/charitableDeductions.js'
+import { charitableDistributionRecords } from './records/charitableDistributions.js'
+import { contributionAndDeferralLimitRecords } from './records/contributionAndDeferralLimits.js'
+import { earlyDistributionAndSeppRecords } from './records/earlyDistributionsAndSepp.js'
+import { healthSavingsAccountRecords } from './records/healthSavingsAccounts.js'
+import { individualIncomeTaxRecords } from './records/individualIncomeTax.js'
+import { investmentIncomeAndBasisRecords } from './records/investmentIncomeAndBasis.js'
+import { iraBasisAndRolloverRecords } from './records/iraBasisAndRollovers.js'
+import { medicareAndHealthCoverageRecords } from './records/medicareAndHealthCoverage.js'
+import { requiredMinimumDistributionRecords } from './records/requiredMinimumDistributions.js'
+import { rothAccountRecords } from './records/rothAccounts.js'
+import { socialSecurityRecords } from './records/socialSecurity.js'
+import { midwestStateRecords } from './records/statesMidwest.js'
+import { northeastStateRecords } from './records/statesNortheast.js'
+import { southAtlanticStateRecords } from './records/statesSouthAtlantic.js'
+import { southCentralStateRecords } from './records/statesSouthCentral.js'
+import { westStateRecords } from './records/statesWest.js'
+import { transferAndUnmodeledRegimeRecords } from './records/transfersAndUnmodeledRegimes.js'
+
+/**
+ * Every module `taxRuleRegistry.ts` spreads into the registry, imported
+ * directly so the duplicate-key guard below can count each one's keys. Spread
+ * silently lets a later duplicate win, so the registry alone cannot show that a
+ * rule id was registered twice; only the parts can.
+ */
+const RECORD_MODULES: readonly (readonly [string, Readonly<Record<string, unknown>>])[] = [
+  ['charitableDeductions', charitableDeductionRecords],
+  ['charitableDistributions', charitableDistributionRecords],
+  ['iraBasisAndRollovers', iraBasisAndRolloverRecords],
+  ['requiredMinimumDistributions', requiredMinimumDistributionRecords],
+  ['rothAccounts', rothAccountRecords],
+  ['earlyDistributionsAndSepp', earlyDistributionAndSeppRecords],
+  ['annuities', annuityRecords],
+  ['contributionAndDeferralLimits', contributionAndDeferralLimitRecords],
+  ['healthSavingsAccounts', healthSavingsAccountRecords],
+  ['medicareAndHealthCoverage', medicareAndHealthCoverageRecords],
+  ['socialSecurity', socialSecurityRecords],
+  ['investmentIncomeAndBasis', investmentIncomeAndBasisRecords],
+  ['individualIncomeTax', individualIncomeTaxRecords],
+  ['transfersAndUnmodeledRegimes', transferAndUnmodeledRegimeRecords],
+  ['statesNortheast', northeastStateRecords],
+  ['statesMidwest', midwestStateRecords],
+  ['statesSouthAtlantic', southAtlanticStateRecords],
+  ['statesSouthCentral', southCentralStateRecords],
+  ['statesWest', westStateRecords],
+]
 
 /**
  * Coverage is discovered by scanning sources rather than recorded at runtime,
@@ -731,7 +778,46 @@ const kindedEntries: readonly (readonly [string, KindedRule])[] =
 const implementationEntries: readonly (readonly [string, ImplementedRule])[] =
   taxRuleIds.map((ruleId) => [ruleId, TAX_RULE_REGISTRY[ruleId]] as const)
 
+/**
+ * Every record module on disk, read from the source scan rather than from the
+ * hand-kept list above. `engineSources` already holds every engine `.ts`, and
+ * Vite emits this directory's children under either prefix, so both spellings
+ * are matched for the same reason `engineGlobKeyOf` folds both.
+ */
+const RECORD_MODULE_FILE = /^(?:\.\.\/rules|\.)\/records\/([^/]+)\.ts$/u
+
+const recordModuleFileNames = Object.keys(engineSources)
+  .map((path) => RECORD_MODULE_FILE.exec(path)?.[1])
+  .filter((name): name is string => name !== undefined)
+  .sort()
+
 describe('tax rule registry conformance', () => {
+  it('accounts for every record module on disk, so an orphan cannot hide', () => {
+    // The key-count guard below sums RECORD_MODULES, a hand-kept list, against
+    // the registry. A new records/*.ts that is written but added to NEITHER the
+    // list nor the registry spread satisfies that sum trivially — its keys are
+    // on neither side — and nothing else sees it: the coverage attestation for
+    // the file only has to exist, and `isRecordStore` in
+    // coverageAttestations.conformance.test.ts exempts every records/*.ts from
+    // the implementedBy check. So the directory itself is the authority here,
+    // and the list has to account for all of it — including a stray
+    // records/*.test.ts, which would otherwise be invisible to this guard and
+    // exempt from attestation checking at once. A glob prefix that stopped
+    // matching would empty the left side and fail this too, rather than pass
+    // vacuously.
+    expect(recordModuleFileNames).toEqual([...RECORD_MODULES.map(([name]) => name)].sort())
+  })
+
+  it('registers each rule id in exactly one record module', () => {
+    // Object spread lets a later duplicate key overwrite an earlier one, and
+    // the losing record then vanishes from TAX_RULE_REGISTRY with no compile
+    // error and nothing naming it. Counting keys module by module catches that:
+    // if two modules register the same id, the parts sum to more than the whole.
+    const perModule = RECORD_MODULES.map(([name, records]) => [name, Object.keys(records).length] as const)
+    const total = perModule.reduce((sum, [, count]) => sum + count, 0)
+    expect({ total, perModule }).toEqual({ total: taxRuleIds.length, perModule })
+  })
+
   it('covers every settled rule with a discriminating fixture', () => {
     const uncovered = taxRuleIds.filter((ruleId) =>
       TAX_RULE_REGISTRY[ruleId].classification === 'settled' && !claimedRuleIds.has(ruleId))

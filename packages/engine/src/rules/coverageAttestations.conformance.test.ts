@@ -95,10 +95,15 @@ describe('coverage attestations', () => {
         registryNamedPaths.add(implementedBy.replace(/^packages\/engine\/src\//u, ''))
       }
     }
-    const REGISTERED_WITHOUT_REGISTRY_NAME = 'rules/taxRuleRegistry.ts'
+    // The record store never names itself: a record's implementedBy points at
+    // the engine code the rule governs, not at the file the record is written
+    // in. The store is the composing module plus the per-domain record modules
+    // it spreads.
+    const isRecordStore = (path: string): boolean =>
+      path === 'rules/taxRuleRegistry.ts' || /^rules\/records\/[^/]+\.ts$/u.test(path)
     const registeredButUnnamed = Object.entries(COVERAGE_ATTESTATIONS)
       .filter(([path, attestation]) =>
-        attestation.status === 'registered' && path !== REGISTERED_WITHOUT_REGISTRY_NAME && !registryNamedPaths.has(path))
+        attestation.status === 'registered' && !isRecordStore(path) && !registryNamedPaths.has(path))
       .map(([path]) => path)
       .sort()
     expect(

@@ -1,3 +1,6 @@
+// Side-effect import: registers the `./x.js` -> `./x.ts` resolve hook that lets
+// loadModule below read engine sources without a prior build.
+import './typescript-source-resolution.mjs'
 import { readFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'

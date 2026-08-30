@@ -21,6 +21,7 @@ import { LEARN } from '../planner/learnLinks'
 import { GLOSSARY_TERMS } from './glossary'
 import { renderInline } from './inlineMarkdown'
 import { LEARN_CHART_IDS } from './components/charts'
+import { waitFor } from '../testSupport/settle'
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
 const CATEGORY_IDS = new Set(LEARNING_CATEGORIES.map((c) => c.id))
@@ -54,12 +55,7 @@ async function renderAt(path: string, entry: InitialEntry = path): Promise<strin
     )
   })
 
-  for (let attempt = 0; attempt < 100; attempt++) {
-    if (!container.querySelector('.route-loading')) break
-    await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 10))
-    })
-  }
+  await waitFor(() => !container.querySelector('.route-loading'), { what: 'the lazy route chunk' })
 
   const html = container.innerHTML
   await act(async () => {

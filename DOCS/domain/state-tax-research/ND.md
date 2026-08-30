@@ -216,7 +216,7 @@ permanently inadmissible.
 
 ## Registered rules
 Every lever above except the standard deduction and the two unmodeled items is
-registered in `packages/engine/src/rules/taxRuleRegistry.ts` under
+registered in `packages/engine/src/rules/records/statesMidwest.ts` under
 `jurisdiction: 'state:ND'`:
 
 | Rule id | Classification |

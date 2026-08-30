@@ -21,25 +21,13 @@ import { projectPlan } from './useProjection'
 import { AccountsSection, AssumptionsSection, HouseholdSection, InsuranceSection, SpendingSection, StrategySection } from './sections'
 import { InsightsPage } from './insights/InsightsPage'
 import { acaReportStatus } from './acaReportStatus'
+import { AUTOSAVE_SETTLE_MS, sleep, waitFor } from '../testSupport/settle'
 
 beforeEach(() => {
   globalThis.indexedDB = new IDBFactory()
   _resetPlanStoreForTests()
   localStorage.clear()
 })
-
-/** Waits past the 600 ms autosave debounce. */
-const settle = () => new Promise((r) => setTimeout(r, 750))
-
-async function waitFor(predicate: () => boolean) {
-  for (let attempt = 0; attempt < 100; attempt++) {
-    if (predicate()) return
-    await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 10))
-    })
-  }
-  throw new Error('Timed out waiting for expected render')
-}
 
 function annualFilingSource(
   plan: Plan,
@@ -774,7 +762,7 @@ describe('PlanProvider', () => {
 
     await act(async () => {
       ;(container.querySelector('[data-testid="rename"]') as HTMLButtonElement).click()
-      await settle()
+      await sleep(AUTOSAVE_SETTLE_MS)
     })
     expect(container.querySelector('[data-testid="state"]')!.textContent).toBe('saved')
 
@@ -818,7 +806,7 @@ describe('PlanProvider', () => {
 
     await act(async () => {
       ;(container.querySelector('[data-testid="break"]') as HTMLButtonElement).click()
-      await settle()
+      await sleep(AUTOSAVE_SETTLE_MS)
     })
     expect(container.querySelector('[data-testid="state"]')!.textContent).toBe('invalid')
 
