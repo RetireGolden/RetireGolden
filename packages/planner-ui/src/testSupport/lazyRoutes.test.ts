@@ -18,8 +18,11 @@
  * what shows they name one file. Static text, not execution, so the guard
  * costs nothing and cannot itself be defeated by a warm module cache.
  */
+// @ts-expect-error -- node builtins in a node-env test; the app tsconfig omits node types
 import { readFileSync } from 'node:fs'
+// @ts-expect-error -- node builtins in a node-env test; the app tsconfig omits node types
 import { dirname, resolve } from 'node:path'
+// @ts-expect-error -- node builtins in a node-env test; the app tsconfig omits node types
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
