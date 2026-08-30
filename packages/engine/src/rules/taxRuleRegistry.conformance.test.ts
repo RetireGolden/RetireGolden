@@ -788,7 +788,7 @@ const RECORD_MODULE_FILE = /^(?:\.\.\/rules|\.)\/records\/([^/]+)\.ts$/u
 
 const recordModuleFileNames = Object.keys(engineSources)
   .map((path) => RECORD_MODULE_FILE.exec(path)?.[1])
-  .filter((name): name is string => name !== undefined && !name.endsWith('.test'))
+  .filter((name): name is string => name !== undefined)
   .sort()
 
 describe('tax rule registry conformance', () => {
@@ -800,7 +800,9 @@ describe('tax rule registry conformance', () => {
     // the file only has to exist, and `isRecordStore` in
     // coverageAttestations.conformance.test.ts exempts every records/*.ts from
     // the implementedBy check. So the directory itself is the authority here,
-    // and the list has to account for all of it. A glob prefix that stopped
+    // and the list has to account for all of it — including a stray
+    // records/*.test.ts, which would otherwise be invisible to this guard and
+    // exempt from attestation checking at once. A glob prefix that stopped
     // matching would empty the left side and fail this too, rather than pass
     // vacuously.
     expect(recordModuleFileNames).toEqual([...RECORD_MODULES.map(([name]) => name)].sort())
