@@ -25,17 +25,6 @@ export default defineConfig({
     // still opt into jsdom per-file with a `@vitest-environment` pragma; this
     // only removes the copy-pasted act preamble that used to sit next to it.
     setupFiles: ['./src/testSupport/vitestSetup.ts'],
-    server: {
-      deps: {
-        // The plan-export round-trip test drives the real @retiregolden/mcp.
-        // Inlining it makes Vite (not Node) resolve its `@retiregolden/engine`
-        // imports, so the alias above applies and BOTH sides of the comparison
-        // run the same engine SOURCE — one module instance, and no dependency
-        // on `packages/engine/dist` existing (CI's test job runs `pnpm install --frozen-lockfile` and
-        // nothing else, so it does not).
-        inline: ['@retiregolden/mcp'],
-      },
-    },
     coverage: {
       provider: 'v8',
       // Only package code: aliased engine sources must not dilute the report
