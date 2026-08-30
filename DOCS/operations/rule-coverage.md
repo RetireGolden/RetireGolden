@@ -84,8 +84,8 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | Engine source files | 236 |
 | Swept | 100.0% |
 | Grandfathered unswept baseline | 0 |
-| partial | 43 |
-| registered | 68 |
+| partial | 42 |
+| registered | 69 |
 | rule-free | 125 |
 | unswept | 0 |
 
@@ -112,7 +112,7 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | socialSecurity | 9 | 2 | 7 | 0 | 0 |
 | spending | 5 | 0 | 0 | 5 | 0 |
 | strategies | 7 | 3 | 4 | 0 | 0 |
-| tax | 7 | 3 | 3 | 1 | 0 |
+| tax | 7 | 2 | 4 | 1 | 0 |
 | testing | 2 | 0 | 0 | 2 | 0 |
 
 ## Unswept files
@@ -163,7 +163,6 @@ None.
 | strategies/accountEligibility.ts | 2026-08-25 | SECURE 2020 gate portion of S2 treat-as-own election timing not registered to this file |
 | strategies/optimizer.ts | 2026-08-24 | MILP prices brackets, IRMAA, ACA MAGI cap, RMD floors, §86 SS phase-in, LTCG; not registered here |
 | strategies/rothConversion.ts | 2026-08-24 | Bracket/IRMAA/ACA FPL/senior-deduction sizing via computeFederalTax; no record names this file |
-| tax/annualCharitableDeductionParameters.ts | 2026-08-24 | §170(b)(1)(I) 0.5% floor, §170(b)(1)(G) 60% limit, §68 thresholds/rate; only §170(p) cap record names this file |
 | tax/federalTax.ts | 2026-08-26 | implements §86 SS inclusion, NIIT, AMT screen, senior-deduction phase-out, LTCG stacking with records naming it, but §170(b)(1)(I)(ii) category waterfall is applied only in the ledger file its record names |
 | tax/medicare.ts | 2026-08-27 | Part B/IRMAA premium path and Part B late-enrollment absence registered (usc-42-1395r-*, cfr-20-418-1205-1230-*); post-pack premiumScale (healthcare-inflation stand-in) remains |
 
@@ -205,18 +204,18 @@ The JSON manifest (rule-coverage.json, version 4) is the machine contract: each 
 
 ## Quote fidelity
 
-Committed ledger generated at 2026-08-29T23:20:56.336Z over 1065 authority entries (0 fetched live, 305 from cache).
+Committed ledger generated at 2026-08-30T00:48:43.948Z over 1066 authority entries (0 fetched live, 306 from cache).
 
-3 serious, 45 advisory, 1017 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
+3 serious, 47 advisory, 1016 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
 not treated as a CI gate; how to read each verdict: DOCS/operations/quote-fidelity.md.
 
 | Verdict | Class | Count |
 | --- | --- | ---: |
-| ELISION-EXACT | ok | 64 |
+| ELISION-EXACT | ok | 65 |
 | ELISION-PUNCTUATION | advisory | 4 |
 | EXACT | ok | 740 |
-| PDF-NOT-VERIFIABLE | advisory | 5 |
-| PDF-WORD-LEVEL | ok | 213 |
+| PDF-NOT-VERIFIABLE | advisory | 7 |
+| PDF-WORD-LEVEL | ok | 211 |
 | PUNCTUATION | advisory | 36 |
 | UNFETCHABLE | serious | 3 |
 

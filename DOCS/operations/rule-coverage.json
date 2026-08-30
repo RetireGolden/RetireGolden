@@ -76,8 +76,8 @@
   "attestations": {
     "totalFiles": 236,
     "byStatus": {
-      "partial": 43,
-      "registered": 68,
+      "partial": 42,
+      "registered": 69,
       "rule-free": 125,
       "unswept": 0
     },
@@ -287,11 +287,6 @@
       "note": "Bracket/IRMAA/ACA FPL/senior-deduction sizing via computeFederalTax; no record names this file"
     },
     {
-      "path": "tax/annualCharitableDeductionParameters.ts",
-      "sweptOn": "2026-08-24",
-      "note": "§170(b)(1)(I) 0.5% floor, §170(b)(1)(G) 60% limit, §68 thresholds/rate; only §170(p) cap record names this file"
-    },
-    {
       "path": "tax/federalTax.ts",
       "sweptOn": "2026-08-26",
       "note": "implements §86 SS inclusion, NIIT, AMT screen, senior-deduction phase-out, LTCG stacking with records naming it, but §170(b)(1)(I)(ii) category waterfall is applied only in the ledger file its record names"
@@ -458,8 +453,8 @@
       "directory": "tax",
       "files": 7,
       "byStatus": {
-        "partial": 3,
-        "registered": 3,
+        "partial": 2,
+        "registered": 4,
         "rule-free": 1
       }
     },
@@ -7186,7 +7181,8 @@
       "verifiedOn": "2026-08-04",
       "dueOn": "2027-08-04",
       "implementedBy": [
-        "packages/engine/src/actions/annualQcdItemizedSection170Ledger.ts"
+        "packages/engine/src/actions/annualQcdItemizedSection170Ledger.ts",
+        "packages/engine/src/tax/annualCharitableDeductionParameters.ts"
       ],
       "implementations": [
         {
@@ -7195,6 +7191,15 @@
             {
               "name": "stageAnnualQcdItemizedSection170Ledger",
               "line": 374
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/annualCharitableDeductionParameters.ts",
+          "functions": [
+            {
+              "name": "annualCharitableDeductionParameters",
+              "line": 131
             }
           ]
         }
@@ -7367,6 +7372,7 @@
       "dueOn": "2027-08-04",
       "implementedBy": [
         "packages/engine/src/actions/annualQcdItemizedSection170Ledger.ts",
+        "packages/engine/src/tax/annualCharitableDeductionParameters.ts",
         "packages/engine/src/tax/federalTax.ts"
       ],
       "implementations": [
@@ -7376,6 +7382,15 @@
             {
               "name": "stageAnnualQcdItemizedSection170Ledger",
               "line": 374
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/annualCharitableDeductionParameters.ts",
+          "functions": [
+            {
+              "name": "annualCharitableDeductionParameters",
+              "line": 131
             }
           ]
         },
@@ -17275,16 +17290,17 @@
       "title": "Overall limitation on itemized deductions",
       "classification": "settled",
       "errorDirection": null,
-      "conventionRationale": "Publication 505 states the rate as 5.4 percent, which is a truncation of 2/37 (0.0540540...), not the rule. The engine computes the exact rational because the difference is roughly $5.41 per $100,000 of limitation base and this provision only bites at incomes where that is real money. Note also that the amended section has no exempt categories and no 80 percent cap, both features of the pre-2018 Pease rule, so logic ported from that era would carry forward carve-outs that no longer exist. The threshold figure itself is not cited here. A Rev. Proc. 2025-32 authority was removed on 2026-08-04 because its quotedText was a fluent prose sentence stating three bracket figures, and that document presents the brackets as tables -- the sentence appears nowhere in it, so the field whose whole purpose is verbatim operative language held a composed paraphrase. Nothing was lost by removing it: 68(a) above already defines the threshold as the point where the 37 percent bracket begins under section 1, and the indexed dollar amount comes from the parameter pack, which is how every other inflation-adjusted figure in this registry is sourced.",
+      "conventionRationale": "Publication 505 states the rate as 5.4 percent, which is a truncation of 2/37 (0.0540540...), not the rule. The engine computes the exact rational because the difference is roughly $5.41 per $100,000 of limitation base and this provision only bites at incomes where that is real money. Note also that the amended section has no exempt categories and no 80 percent cap, both features of the pre-2018 Pease rule, so logic ported from that era would carry forward carve-outs that no longer exist. The indexed thresholds are the starts of the 37 percent rows in Rev. Proc. 2025-32 section 4.01, quoted below. Its filing-status rows map directly to the parameter carrier: joint and surviving-spouse share one row, while head of household, unmarried individuals, and married filing separately each retain their own row. This preserves the same rate-table convention as irc-1-j-2-progressive-ordinary-rate-schedule while retaining every status-specific threshold required by section 68.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "annuallyIndexed",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-04",
-      "dueOn": "2026-12-02",
+      "verifiedOn": "2026-08-29",
+      "dueOn": "2026-12-27",
       "implementedBy": [
         "packages/engine/src/actions/annualSection68ItemizedDeduction.ts",
+        "packages/engine/src/tax/annualCharitableDeductionParameters.ts",
         "packages/engine/src/tax/federalTax.ts"
       ],
       "implementations": [
@@ -17294,6 +17310,15 @@
             {
               "name": "buildAnnualSection68ItemizedDeductionEvidence",
               "line": 282
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/annualCharitableDeductionParameters.ts",
+          "functions": [
+            {
+              "name": "annualCharitableDeductionParameters",
+              "line": 131
             }
           ]
         },
@@ -17353,6 +17378,11 @@
           "kind": "statute",
           "citation": "IRC 68(b)",
           "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section68&num=0&edition=prelim"
+        },
+        {
+          "kind": "irsNotice",
+          "citation": "Rev. Proc. 2025-32, section 4.01, Tables 1-4",
+          "url": "https://www.irs.gov/irb/2025-45_IRB"
         }
       ]
     },
@@ -30519,16 +30549,16 @@
     }
   ],
   "quoteFidelity": {
-    "generatedAt": "2026-08-29T23:20:56.336Z",
-    "entryCount": 1065,
+    "generatedAt": "2026-08-30T00:48:43.948Z",
+    "entryCount": 1066,
     "fetched": 0,
-    "cached": 305,
+    "cached": 306,
     "counts": {
-      "ELISION-EXACT": 64,
+      "ELISION-EXACT": 65,
       "ELISION-PUNCTUATION": 4,
       "EXACT": 740,
-      "PDF-NOT-VERIFIABLE": 5,
-      "PDF-WORD-LEVEL": 213,
+      "PDF-NOT-VERIFIABLE": 7,
+      "PDF-WORD-LEVEL": 211,
       "PUNCTUATION": 36,
       "UNFETCHABLE": 3
     }

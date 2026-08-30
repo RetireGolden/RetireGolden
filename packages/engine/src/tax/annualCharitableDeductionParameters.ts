@@ -19,8 +19,8 @@ export interface AnnualCharitableDeductionParametersProvenance {
   readonly section170Url: 'https://www.govinfo.gov/link/uscode/26/170'
   readonly amendingLawSourceId: 'pub-l-119-21'
   readonly amendingLawUrl: 'https://www.govinfo.gov/link/plaw/119/public/21'
-  readonly implementationSourceId: 'irs-publication-505-2026'
-  readonly implementationUrl: 'https://www.irs.gov/publications/p505'
+  readonly implementationSourceId: 'irs-rev-proc-2025-32'
+  readonly implementationUrl: 'https://www.irs.gov/pub/irs-drop/rp-25-32.pdf'
 }
 
 export interface AnnualCharitableDeductionParameters2026 {
@@ -117,8 +117,8 @@ const facts = Object.freeze({
     section170Url: 'https://www.govinfo.gov/link/uscode/26/170' as const,
     amendingLawSourceId: 'pub-l-119-21' as const,
     amendingLawUrl: 'https://www.govinfo.gov/link/plaw/119/public/21' as const,
-    implementationSourceId: 'irs-publication-505-2026' as const,
-    implementationUrl: 'https://www.irs.gov/publications/p505' as const,
+    implementationSourceId: 'irs-rev-proc-2025-32' as const,
+    implementationUrl: 'https://www.irs.gov/pub/irs-drop/rp-25-32.pdf' as const,
   }),
 }) satisfies ParametersWithoutEvidenceId
 

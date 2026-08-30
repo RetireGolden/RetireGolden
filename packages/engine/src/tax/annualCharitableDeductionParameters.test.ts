@@ -59,8 +59,8 @@ describe('annualCharitableDeductionParameters', () => {
       section170Url: 'https://www.govinfo.gov/link/uscode/26/170',
       amendingLawSourceId: 'pub-l-119-21',
       amendingLawUrl: 'https://www.govinfo.gov/link/plaw/119/public/21',
-      implementationSourceId: 'irs-publication-505-2026',
-      implementationUrl: 'https://www.irs.gov/publications/p505',
+      implementationSourceId: 'irs-rev-proc-2025-32',
+      implementationUrl: 'https://www.irs.gov/pub/irs-drop/rp-25-32.pdf',
     })
   })
 
