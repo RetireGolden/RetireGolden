@@ -935,7 +935,9 @@ additive with a no-op default, so plans saved before it stay byte-identical.
   once-rounded basis total across positive actions in canonical date/sequence/action/allocation order.
   Zero executions receive no ledger entry or character. Executed ordinary withdrawals from the owned
   non-Roth IRA pool stage as Form 8606 line 7 distribution candidates
-  (`form-8606-line-7-owned-ira-movement-staging`). Line 7 and line 8 remain distinct
+  (`form-8606-line-7-owned-ira-movement-staging`). The pool itself is owner-wide and
+  excludes inherited accounts, per filing person
+  (`irc-408-d-2-A-owner-wide-non-inherited-ira-pool`). Line 7 and line 8 remain distinct
   (`form-8606-lines-7-and-8-distinct-distribution-staging`); if their
   independently required rounding would recover more than the annual basis, classification fails closed
   instead of emitting contradictory evidence. The pure penalty-prerequisite boundary then considers only

@@ -11,16 +11,16 @@ The registry is the machine-checked chain from a rule to its implementation and 
 
 | Metric | Count |
 | --- | ---: |
-| Total rules | 415 |
+| Total rules | 416 |
 | Classification: approximated | 109 |
 | Classification: outOfScope | 73 |
-| Classification: settled | 228 |
+| Classification: settled | 229 |
 | Classification: unsettled | 5 |
 | Volatility: annuallyIndexed | 60 |
 | Volatility: awaitingGuidance | 11 |
-| Volatility: staticStatute | 338 |
+| Volatility: staticStatute | 339 |
 | Volatility: sunsetting | 6 |
-| Federal jurisdiction | 309 |
+| Federal jurisdiction | 310 |
 | State jurisdiction total | 106 |
 
 | State jurisdiction | Count |
@@ -84,8 +84,8 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | Engine source files | 236 |
 | Swept | 100.0% |
 | Grandfathered unswept baseline | 0 |
-| partial | 48 |
-| registered | 63 |
+| partial | 43 |
+| registered | 68 |
 | rule-free | 125 |
 | unswept | 0 |
 
@@ -94,7 +94,7 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | Directory | Files | Partial | Registered | Rule-free | Unswept |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | (root) | 3 | 0 | 0 | 3 | 0 |
-| actions | 74 | 20 | 28 | 26 | 0 |
+| actions | 74 | 15 | 33 | 26 | 0 |
 | allocation | 1 | 0 | 0 | 1 | 0 |
 | decisions | 19 | 2 | 2 | 15 | 0 |
 | insights | 22 | 2 | 3 | 17 | 0 |
@@ -126,19 +126,14 @@ None.
 | actions/aggregateRothConversionOwnerAllocation.ts | 2026-08-29 | same-owner pro-rata allocation long registered under irc-408-d-3-A-i; the RMD-before-conversion ordering it relies on is enforced upstream (resolveOwnerIraRmdSatisfaction), and this file consumes the post-RMD snapshot as a contract rather than enforcing it - that contract stays the residual |
 | actions/annualOwnedNonRothIraPoolCapacity.ts | 2026-08-24 | QCD pool restricted to donor-owned non-Roth IRAs; no record |
 | actions/annualQcdDerivedTaxCharacter.ts | 2026-08-29 | Owned-source eligibility arrives as typed AcceptedQcdSourceEligibilityEvidence - this module consumes what the QCD execution prerequisite evaluator enforces, and the 408(d)(8) source records are registered at that evaluator; the taxable/excludable/basis partition is registered under the composition-order and taxable-first records |
-| actions/annualQcdResidualForm8606.ts | 2026-08-25 | Residual line-7/line-8 pro-rata reconciliation; no record |
 | actions/annualRetirementPhysicalEventInventory.ts | 2026-08-24 | Inherited-RMD regime; owner-RMD start age; spouse-as-own transition; annuity/Form 8606 treatment; direct-trustee QCD origin; no record |
 | actions/beneficiaryTraditionalIraAnnualPlanApplication.ts | 2026-08-24 | Beneficiary-owned inherited traditional-IRA/death-year source gate; no record |
 | actions/beneficiaryTraditionalIraResidualRmdActionIdentity.ts | 2026-08-24 | Residual-RMD source restricted to beneficiary-owned inherited traditional IRA; no record |
-| actions/beneficiaryTraditionalIraResidualRmdAnnualRefinalization.ts | 2026-08-24 | Form 8606 line-7/line-8 residual rebuild and forced-zero line 8; no record |
-| actions/beneficiaryTraditionalIraWithdrawalCharacter.ts | 2026-08-24 | Inherited-IRA line-8 conversion/spousal-conversion refusal; no record |
-| actions/ownedNonRothIraAnnualCandidateTransaction.ts | 2026-08-29 | Owned traditional/SEP/SIMPLE IRA source scope remains unregistered; line-7 staging is registered where it is enforced (the movement stager), and this wrapper enforces no line semantics itself |
-| actions/ownedNonRothIraAnnualFilingEvidence.ts | 2026-08-29 | Prior-year contribution window covered; the January-1 opening-basis requirement is an engine convention (408(d)(2)(C) computes values as of the close of the year, so the calendar anchor here is architecture, not statute) and stays unregistered, as does the owner-wide non-inherited pool scope |
-| actions/ownedNonRothIraAnnualFilingSourceResolver.ts | 2026-08-29 | Filing source restricted to owned non-inherited traditional IRA pool; the scope claim has no record |
+| actions/beneficiaryTraditionalIraWithdrawalCharacter.ts | 2026-08-29 | The nonzero-line-8 refusal mixes two things the reviewers rightly split: for a non-spouse beneficiary it is the 408(d)(3)(C)(i) bar, registered at that record's own enforcers, and for a spouse beneficiary a conversion after electing ownership is lawful but unsupported - the refusal reason names exactly that, so the engine-scope half stays the residual here |
+| actions/ownedNonRothIraAnnualFilingEvidence.ts | 2026-08-29 | Prior-year contribution window covered and the ownedIraPool filter is now pinned by the pool-scope record; the January-1 opening-basis anchor stays an engine convention (408(d)(2)(C) computes values as of the close of the year) and is the sole residual |
 | actions/ownedNonRothIraAnnualPhysicalTransaction.ts | 2026-08-29 | Same-owner Roth destination and designated-Roth vehicle refusal registered under irc-408-d-3-A-i and irc-408A-d-3-B, and line-7/line-8 categorization under form-8606-lines-7-and-8-distinct-distribution-staging; QCD charitable-debit scope remains unregistered |
-| actions/ownedNonRothIraAnnualPlanCoordinator.ts | 2026-08-29 | Owner-wide pool excludes inherited IRAs; Form 8606 numerator/denominator and line-7/line-8 stacking; exact age-59½ threshold; no record |
-| actions/ownedNonRothIraAnnualPostCandidateEvidence.ts | 2026-08-29 | Contribution window covered; Form 8606 lines 1/4/6/7/9, owner-wide pool, and explicit zero line 8; no record |
-| actions/ownedNonRothIraMovementCandidate.ts | 2026-08-29 | Line-7 staging of executed owned-IRA withdrawals registered under form-8606-line-7-owned-ira-movement-staging; the owned traditional/SEP/SIMPLE source-scope claim remains unregistered |
+| actions/ownedNonRothIraAnnualPlanCoordinator.ts | 2026-08-29 | The owner-wide non-inherited pool filter and the out-of-pool line-8 refusal are registered under irc-408-d-2-A-owner-wide-non-inherited-ira-pool; the line-7/line-8 stacking composition and the exact age-59½ threshold representation remain the residuals |
+| actions/ownedNonRothIraAnnualPostCandidateEvidence.ts | 2026-08-29 | Pool completeness (every owned non-inherited sibling, employer/inherited/foreign refused) is registered under irc-408-d-2-A-owner-wide-non-inherited-ira-pool and the contribution window was already covered; the line 1/4/6/9 staging composition and the path's type-level explicit-zero line 8 remain the residuals |
 | actions/retirementActionCandidateIdentityAllocator.ts | 2026-08-29 | conversion source and destination identity registered under irc-408-d-3-A-i, the inherited-source refusal under irc-408-d-3-C-i, and the named-action designated-Roth refusal under irc-408A-d-3-B (conversionDestinationIssue kind gate); QCD source-IRA restrictions remain open |
 | actions/retirementActionManualReview.ts | 2026-08-29 | replacement source-owner and Roth-destination identity checks registered under irc-408-d-3-A-i; the type gate here does not discriminate a designated Roth (that vehicle refusal lives in the identity allocator), and the QCD source-owner clause remains open |
 | actions/rothConversionExecution.ts | 2026-08-29 | ordering and inherited-bar records name executeRothConversions; the positive-basis deferred-character branch publishes null character for the downstream annual 408(d)(2) pass to resolve, and that deferral plus the direct-vehicle gates remain the residual |
@@ -174,7 +169,7 @@ None.
 
 ## Re-verification due dates
 
-The 25 earliest due dates are shown below (415 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
+The 25 earliest due dates are shown below (416 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
 
 | Rule | Volatility | Verified on | Due on |
 | --- | --- | --- | --- |
@@ -210,18 +205,18 @@ The JSON manifest (rule-coverage.json, version 4) is the machine contract: each 
 
 ## Quote fidelity
 
-Committed ledger generated at 2026-08-29T22:51:26.881Z over 1063 authority entries (0 fetched live, 305 from cache).
+Committed ledger generated at 2026-08-29T23:20:56.336Z over 1065 authority entries (0 fetched live, 305 from cache).
 
-3 serious, 45 advisory, 1015 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
+3 serious, 45 advisory, 1017 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
 not treated as a CI gate; how to read each verdict: DOCS/operations/quote-fidelity.md.
 
 | Verdict | Class | Count |
 | --- | --- | ---: |
 | ELISION-EXACT | ok | 64 |
 | ELISION-PUNCTUATION | advisory | 4 |
-| EXACT | ok | 739 |
+| EXACT | ok | 740 |
 | PDF-NOT-VERIFIABLE | advisory | 5 |
-| PDF-WORD-LEVEL | ok | 212 |
+| PDF-WORD-LEVEL | ok | 213 |
 | PUNCTUATION | advisory | 36 |
 | UNFETCHABLE | serious | 3 |
 

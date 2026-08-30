@@ -247,6 +247,64 @@ describe('stageOwnedNonRothIraOrdinaryWithdrawalMovements', () => {
     })
   })
 
+  // The pool-scope record's discriminating pair: the source-evidence gate
+  // refuses anything that is not an owned traditional/SEP/SIMPLE IRA, so an
+  // inherited account can never enter the owner-wide basis pool through this
+  // stager. The rejected reading would stage it like any other source.
+  describeRule('irc-408-d-2-A-owner-wide-non-inherited-ira-pool', {
+    note: 'inherited sources are refused at the owned-pool gate',
+    readings: {
+      inheritedSourceRefused: 'RangeError',
+      inheritedAdmittedToOwnedPool: 'movementCandidateStaged',
+    },
+    accepted: 'inheritedSourceRefused',
+  }, ({ accepted }) => {
+    it('refuses an inherited source before any staging happens', () => {
+      const inheritedEvidence = { ...source('ira-one'), inheritanceStatus: 'inherited' } as never
+      const attempt = () => stageOwnedNonRothIraOrdinaryWithdrawalMovements({
+        ownerPersonId: asPersonId('owner'),
+        taxYear: 2030,
+        requests: [
+          withdrawal({
+            suffix: 'full',
+            executionDate: '2030-06-01',
+            sequence: 1,
+            allocations: [allocation('full', 'ira-one', 75)],
+          }),
+        ],
+        openingBalances: [{
+          accountId: asAccountId('ira-one'),
+          openingBalance: asUsdCents(100),
+        }],
+        sourceEvidence: [inheritedEvidence],
+      })
+      expect(attempt).toThrow(RangeError)
+      let name = ''
+      try { attempt() } catch (err) { name = (err as Error).constructor.name }
+      expect(name).toBe(accepted)
+      // The identical request with owned evidence stages, so the refusal is
+      // the gate discriminating on inheritance status, not a broken stager.
+      const owned = stageOwnedNonRothIraOrdinaryWithdrawalMovements({
+        ownerPersonId: asPersonId('owner'),
+        taxYear: 2030,
+        requests: [
+          withdrawal({
+            suffix: 'full',
+            executionDate: '2030-06-01',
+            sequence: 1,
+            allocations: [allocation('full', 'ira-one', 75)],
+          }),
+        ],
+        openingBalances: [{
+          accountId: asAccountId('ira-one'),
+          openingBalance: asUsdCents(100),
+        }],
+        sourceEvidence: [source('ira-one')],
+      })
+      expect(owned.status).toBe('movementCandidateStaged')
+    })
+  })
+
   it('stages same-source actions sequentially as full, partial, and all-zero candidates', () => {
     const result = stageOwnedNonRothIraOrdinaryWithdrawalMovements({
       ownerPersonId: asPersonId('owner'),

@@ -1,14 +1,14 @@
 {
-  "generatedAt": "2026-08-29T22:51:26.881Z",
-  "recordCount": 415,
+  "generatedAt": "2026-08-29T23:20:56.336Z",
+  "recordCount": 416,
   "urlCount": 305,
   "fetched": 0,
   "cached": 305,
-  "entryCount": 1063,
+  "entryCount": 1065,
   "counts": {
-    "EXACT": 739,
+    "EXACT": 740,
     "PUNCTUATION": 36,
-    "PDF-WORD-LEVEL": 212,
+    "PDF-WORD-LEVEL": 213,
     "ELISION-PUNCTUATION": 4,
     "ELISION-EXACT": 64,
     "UNFETCHABLE": 3,
@@ -593,6 +593,26 @@
       "host": "www.irs.gov",
       "url": "https://www.irs.gov/pub/irs-pdf/f8606.pdf",
       "quoteSha256": "47cb01854f22f0d6",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-408-d-2-A-owner-wide-non-inherited-ira-pool",
+      "citation": "IRC 408(d)(2)(A)-(B)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim",
+      "quoteSha256": "ca53c20097919053",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-408-d-2-A-owner-wide-non-inherited-ira-pool",
+      "citation": "Instructions for Form 8606 (2025)",
+      "host": "www.irs.gov",
+      "url": "https://www.irs.gov/pub/irs-pdf/i8606.pdf",
+      "quoteSha256": "804dbb2065287b8c",
       "verdict": "PDF-WORD-LEVEL",
       "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
       "diagnosis": null
