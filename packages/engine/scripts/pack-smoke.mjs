@@ -429,6 +429,18 @@ for (const alternateCase of [
       alternateCase,
   )
 }
+const deprecatedFlatTax = await import('@retiregolden/engine/projection/flatTax')
+const relocatedFlatTax = await import('@retiregolden/engine/testing/flatTax')
+assert.equal(
+  typeof deprecatedFlatTax.createFlatTaxCalculator,
+  'function',
+  'the deprecated projection/flatTax subpath must keep resolving for pinned consumers',
+)
+assert.equal(
+  deprecatedFlatTax.createFlatTaxCalculator,
+  relocatedFlatTax.createFlatTaxCalculator,
+  'the deprecated subpath must re-export the relocated test double, not a copy',
+)
 assert.equal(addUsdCents(asUsdCents(125), asUsdCents(75)), 200)
 assert.equal(planDollarsToLedgerCents(1.005), 101)
 assert.equal(ledgerCentsToPlanDollars(asUsdCents(101)), 1.01)
@@ -1516,6 +1528,30 @@ try {
   ), 'utf8')
   if (structuralDeclarations.includes('deriveActionStructuralId')) {
     throw new Error('internal structural hasher leaked into packed declarations')
+  }
+
+  // The deprecated projection/flatTax shim must keep BOTH halves of its
+  // subpath. The runtime half is asserted in smokeScript, but a stripped
+  // declaration is invisible there: the .js re-export still resolves and runs
+  // while the .d.ts silently degrades to `export {}`. stripInternal is on, and
+  // TypeScript treats a bare @internal token anywhere in an attached JSDoc
+  // comment as a real tag — prose mentioning the tag is enough to delete the
+  // declaration. Only reading the packed .d.ts catches that.
+  const deprecatedFlatTaxDeclarations = readFileSync(join(
+    work,
+    'node_modules',
+    '@retiregolden',
+    'engine',
+    'dist',
+    'projection',
+    'flatTax.d.ts',
+  ), 'utf8')
+  if (!deprecatedFlatTaxDeclarations.includes('createFlatTaxCalculator')) {
+    throw new Error(
+      'the deprecated projection/flatTax subpath lost its type declaration; ' +
+        'stripInternal removed it, so consumers pinned to that subpath keep a ' +
+        'working runtime import but no types',
+    )
   }
 
   writeFileSync(join(work, 'smoke.mjs'), smokeScript)
