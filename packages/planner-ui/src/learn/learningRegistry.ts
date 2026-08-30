@@ -1,11 +1,20 @@
 /**
  * Learning Center registry (V9 PR1).
  *
- * Articles are authored as structured TypeScript so prose, visuals (added in
- * PR2), and metadata live together, bundle for offline use, and stay type-safe.
- * This module owns the article metadata model, the category set, the topic
- * inventory, and small selectors used by the Learning Center pages.
+ * Articles are authored as structured TypeScript so prose, visuals, and
+ * metadata stay type-safe and bundle for offline use. This module owns the
+ * article metadata model, the category set, the topic inventory, and small
+ * selectors used by the Learning Center pages.
+ *
+ * Metadata and body are separate modules. Everything here — and every link,
+ * card, search, and category surface built on it — reads only the metadata in
+ * ./articleIndex, which is why the registry is light enough to sit on the
+ * landing critical path. An article's `blocks[]` body is a per-article
+ * dynamic import behind {@link getArticleBody}, fetched when its page renders.
  */
+
+import { hasArticleBody, loadArticleBody } from './articleBodies'
+import { ARTICLE_INDEX } from './articleIndex'
 
 export type LearningCategoryId =
   | 'start-here'
@@ -114,11 +123,25 @@ export type LearningArticle = {
   priority?: Priority
   /** Surfaced in the Learning Center home "Featured" strip. */
   featured?: boolean
-  /** Present once an article reaches `draft`/`ready`/`needs-review`. */
+  /**
+   * @deprecated Bodies no longer travel with metadata: the registry never
+   * populates this, so it is always `undefined` on an article from
+   * {@link getArticle} or {@link LEARNING_ARTICLES}. Await
+   * {@link getArticleBody} instead. Kept on the type so the published
+   * `@retiregolden/planner-ui/learn/learningRegistry` surface stays
+   * compatible, and so a caller that assembles its own article (tests,
+   * previews) can still carry blocks inline.
+   */
   blocks?: ArticleBlock[]
   /** When set, ArticleShell offers "Open this example in the planner". */
   exampleId?: string
 }
+
+/**
+ * An article's metadata: everything but the body. What ./articleIndex holds,
+ * and all any listing, link, card, or search surface needs.
+ */
+export type LearningArticleMeta = Omit<LearningArticle, 'blocks'>
 
 export type LearningCategory = {
   id: LearningCategoryId
@@ -205,232 +228,8 @@ export const KNOWN_PLANNER_ROUTES = [
   '/plan/:planId/report',
 ] as const
 
-// Articles live in ./content as pure data, keeping this module free of
-// JSX/content concerns.
-import { aboutRetireGoldenArticle } from './content/about-retiregolden'
-import { accountTypesOverviewArticle } from './content/account-types-overview'
-import { acaPremiumTaxCreditsAndMagiArticle } from './content/aca-premium-tax-credits-and-magi'
-import { appealingIrmaaSsa44Article } from './content/appealing-irmaa-ssa-44'
-import { afterTaxEstateArticle } from './content/after-tax-estate'
-import { agiMagiAndTaxableIncomeArticle } from './content/agi-magi-and-taxable-income'
-import { beneficiariesAccountTitlingArticle } from './content/beneficiaries-and-account-titling'
-import { breakEvenUsefulLensArticle } from './content/break-even-useful-lens'
-import { buildingRetirementSpendingBudgetArticle } from './content/building-a-retirement-spending-budget'
-import { colaInflationProtectionArticle } from './content/cola-and-inflation-protection'
-import { divorcedSpousalSurvivorRecordsArticle } from './content/divorced-spousal-and-survivor-records'
-import { dynamicSpendingGuardrailsArticle } from './content/dynamic-spending-guardrails'
-import { employerMatchAndContributionOrderArticle } from './content/employer-match-and-contribution-order'
-import { earningsTestBeforeFraArticle } from './content/earnings-test-before-fra'
-import { EXAMPLE_PLAN_ARTICLES } from './content/examplePlanArticles'
-import { feesExpenseRatiosCompoundingDragArticle } from './content/fees-expense-ratios-and-compounding-drag'
-import { fillingTaxBracketArticle } from './content/filling-a-tax-bracket-with-roth-conversions'
-import { healthcareAfter65Article } from './content/healthcare-after-65'
-import { healthcareBefore65Article } from './content/healthcare-before-65'
-import { historicalVsRandomReturnModelsArticle } from './content/historical-vs-random-return-models'
-import { howAssumptionsChangeAnswerArticle } from './content/how-assumptions-change-the-answer'
-import { howMuchCanISpendArticle } from './content/how-much-can-i-spend'
-import { howRetireGoldenChecksItsMathArticle } from './content/how-retiregolden-checks-its-math'
-import { howSocialSecurityIsTaxedArticle } from './content/how-social-security-is-taxed'
-import { howTheOptimizerThinksArticle } from './content/how-the-optimizer-thinks'
-import { hsasQualifiedMedicalExpensesArticle } from './content/hsas-and-qualified-medical-expenses'
-import { hsasAsRetirementAccountsArticle } from './content/hsas-as-retirement-accounts'
-import { optimizerAfterTaxEstateArticle } from './content/how-the-optimizer-values-after-tax-estate'
-import { howToReadProjectionArticle } from './content/how-to-read-a-retirement-projection'
-import { inflationRiskArticle } from './content/inflation-risk'
-import { inheritedIraTenYearRuleArticle } from './content/inherited-ira-10-year-rule'
-import { insuranceInYourRetirementPlanArticle } from './content/insurance-in-your-retirement-plan'
-import { irmaaTwoYearLookbackArticle } from './content/irmaa-two-year-lookback'
-import { longevityRiskArticle } from './content/longevity-risk'
-import { longTermCareCostsInsuranceArticle } from './content/long-term-care-costs-and-insurance'
-import { longTermCareInsuranceRiskTransferArticle } from './content/long-term-care-insurance-as-risk-transfer'
-import { medicarePartBVsPartDIrmaaArticle } from './content/medicare-part-b-vs-part-d-irmaa'
-import { mortalityWeightedSocialSecurityArticle } from './content/mortality-weighted-social-security'
-import { movingToRetireGoldenArticle } from './content/moving-to-retiregolden'
-import { seedYourPlanFromYourTaxReturnArticle } from './content/seed-your-plan-from-your-tax-return'
-import { marginalVsEffectiveTaxRateArticle } from './content/marginal-vs-effective-tax-rate'
-import { niitHighIncomeInvestmentTaxArticle } from './content/niit-high-income-investment-tax'
-import { ordinaryIncomeVsCapitalGainsArticle } from './content/ordinary-income-vs-capital-gains'
-import { payingConversionTaxesTaxableVsIraArticle } from './content/paying-conversion-taxes-taxable-vs-ira'
-import { piaAimeBendPointsArticle } from './content/pia-aime-and-bend-points'
-import { planningForCouplesAndSurvivorYearsArticle } from './content/planning-for-couples-and-survivor-years'
-import { plannerOverviewArticle } from './content/planner-overview'
-import { pensionsAndAnnuitiesArticle } from './content/pensions-and-annuities'
-import { permanentLifeInsurancePlanArticle } from './content/permanent-life-insurance-in-a-plan'
-import { privacyWhatStaysInYourBrowserArticle } from './content/privacy-what-stays-in-your-browser'
-import { qcdsQualifiedCharitableDistributionsArticle } from './content/qcds-qualified-charitable-distributions'
-import { readingResultsPageArticle } from './content/reading-the-results-page'
-import { readingSocialSecurityAnalysisPageArticle } from './content/reading-the-social-security-analysis-page'
-import { realEstateHomeEquityDebtArticle } from './content/real-estate-home-equity-and-debt'
-import { reportsCsvExportsAndSharingArticle } from './content/reports-csv-exports-and-sharing'
-import { fundedRatioArticle } from './content/funded-ratio'
-import { riskBasedGuardrailsArticle } from './content/risk-based-guardrails'
-import { socialSecurityBridgeArticle } from './content/social-security-bridge'
-import { tipsLaddersArticle } from './content/tips-ladders'
-import { rmdsRequiredMinimumDistributionsArticle } from './content/rmds-required-minimum-distributions'
-import { rothConversionBasicsArticle } from './content/roth-conversion-basics'
-import { rsusAndEsppArticle } from './content/rsus-and-espp'
-import { ruleOf55And72tArticle } from './content/rule-of-55-and-72t'
-import { sensitivityTestingWhatChangesAnswerArticle } from './content/sensitivity-testing-what-changes-the-answer'
-import { sequenceOfReturnsRiskArticle } from './content/sequence-of-returns-risk'
-import { socialSecurityClaimingAgeArticle } from './content/social-security-claiming-age-basics'
-import { socialSecurityTaxesVsBenefitsArticle } from './content/social-security-taxes-vs-benefits'
-import { ssdiAndRetirementPlanningArticle } from './content/ssdi-and-retirement-planning'
-import { spousalSurvivorBenefitsArticle } from './content/spousal-and-survivor-benefits'
-import { spendingProfilesAndRetirementSmileArticle } from './content/spending-profiles-and-the-retirement-smile'
-import { standardDeductionSeniorDeductionItemizingArticle } from './content/standard-deduction-senior-deduction-and-itemizing'
-import { stateIncomeTaxesRetirementArticle } from './content/state-income-taxes-in-retirement'
-import { stepUpInBasisArticle } from './content/step-up-in-basis'
-import { survivorPlanningForCouplesArticle } from './content/survivor-planning-for-couples'
-import { survivorSpendingInCouplePlansArticle } from './content/survivor-spending-in-couple-plans'
-import { taxableBrokerageBasisAndCapitalGainsArticle } from './content/taxable-brokerage-basis-and-capital-gains'
-import { taxCliffsBracketEdgesArticle } from './content/tax-cliffs-and-bracket-edges'
-import { taxLossGainHarvestingArticle } from './content/tax-loss-and-gain-harvesting'
-import { threeBigQuestionsSpendingTimeRiskArticle } from './content/three-big-questions-spending-time-risk'
-import { todaysDollarsArticle } from './content/todays-dollars-vs-future-dollars'
-import { traditionalVsRothContributionsArticle } from './content/traditional-vs-roth-contributions'
-import { troubleshootingSurprisingResultsArticle } from './content/troubleshooting-surprising-results'
-import { trustFundHaircutScenariosArticle } from './content/trust-fund-haircut-scenarios'
-import { understandingMonteCarloArticle } from './content/understanding-monte-carlo-success-rate'
-import { usingAssumptionsAndProvenanceArticle } from './content/using-assumptions-and-provenance'
-import { usingScenariosToCompareChoicesArticle } from './content/using-scenarios-to-compare-choices'
-import { whatChangesWhenYouMoveStatesArticle } from './content/what-changes-when-you-move-states'
-import { widowsPenaltyAndSurvivorBracketsArticle } from './content/widows-penalty-and-survivor-brackets'
-import { whatRetireGoldenModelsArticle } from './content/what-retiregolden-models'
-import { whatMonteCarloProvesArticle } from './content/what-monte-carlo-proves'
-import { whatRetirementHealthcareReallyCostsArticle } from './content/what-retirement-healthcare-really-costs'
-import { whereTheMoneyComesFromAndGoesArticle } from './content/where-the-money-comes-from-and-goes'
-import { withdrawalOrderBasicsArticle } from './content/withdrawal-order-basics'
-import { why95PercentIsNotGuaranteeArticle } from './content/why-95-percent-is-not-a-guarantee'
-import { rothConversionsRaiseOtherCostsArticle } from './content/why-roth-conversions-raise-other-costs'
-import { whySmallTaxCliffsCanMatterArticle } from './content/why-small-tax-cliffs-can-matter'
-import { whatIsFireArticle } from './content/what-is-fire'
-import { savingsRateBiggestLeverArticle } from './content/savings-rate-biggest-lever'
-import { fiNumberAndFourPercentRuleArticle } from './content/fi-number-and-four-percent-rule'
-import { howToModelAccumulationArticle } from './content/how-to-model-accumulation'
-import { understandingYourPlanAssumptionsArticle } from './content/understanding-your-plan-assumptions'
-import { assumptionGeneralInflationArticle } from './content/assumption-general-inflation'
-import { assumptionHealthcareInflationArticle } from './content/assumption-healthcare-inflation'
-import { assumptionInvestmentReturnsArticle } from './content/assumption-investment-returns'
-import { assumptionSocialSecurityColaArticle } from './content/assumption-social-security-cola'
-import { assumptionSocialSecurityTrustFundArticle } from './content/assumption-social-security-trust-fund'
-import { assumptionLongevityPlanningAgeArticle } from './content/assumption-longevity-planning-age'
-import { assumptionStateTaxOverrideArticle } from './content/assumption-state-tax-override'
-import { assumptionRecentMagiArticle } from './content/assumption-recent-magi'
-import { assumptionHeirTaxRateArticle } from './content/assumption-heir-tax-rate'
-
-/** Every article in registry order. */
-export const LEARNING_ARTICLES: LearningArticle[] = [
-  aboutRetireGoldenArticle,
-  howToReadProjectionArticle,
-  todaysDollarsArticle,
-  whatRetireGoldenModelsArticle,
-  howRetireGoldenChecksItsMathArticle,
-  readingResultsPageArticle,
-  whereTheMoneyComesFromAndGoesArticle,
-  understandingMonteCarloArticle,
-  rothConversionBasicsArticle,
-  fillingTaxBracketArticle,
-  optimizerAfterTaxEstateArticle,
-  marginalVsEffectiveTaxRateArticle,
-  rothConversionsRaiseOtherCostsArticle,
-  socialSecurityClaimingAgeArticle,
-  piaAimeBendPointsArticle,
-  breakEvenUsefulLensArticle,
-  spousalSurvivorBenefitsArticle,
-  ssdiAndRetirementPlanningArticle,
-  socialSecurityTaxesVsBenefitsArticle,
-  earningsTestBeforeFraArticle,
-  colaInflationProtectionArticle,
-  divorcedSpousalSurvivorRecordsArticle,
-  dynamicSpendingGuardrailsArticle,
-  riskBasedGuardrailsArticle,
-  tipsLaddersArticle,
-  socialSecurityBridgeArticle,
-  fundedRatioArticle,
-  buildingRetirementSpendingBudgetArticle,
-  spendingProfilesAndRetirementSmileArticle,
-  survivorSpendingInCouplePlansArticle,
-  howMuchCanISpendArticle,
-  trustFundHaircutScenariosArticle,
-  mortalityWeightedSocialSecurityArticle,
-  irmaaTwoYearLookbackArticle,
-  appealingIrmaaSsa44Article,
-  acaPremiumTaxCreditsAndMagiArticle,
-  agiMagiAndTaxableIncomeArticle,
-  healthcareBefore65Article,
-  healthcareAfter65Article,
-  whatRetirementHealthcareReallyCostsArticle,
-  hsasQualifiedMedicalExpensesArticle,
-  longTermCareCostsInsuranceArticle,
-  medicarePartBVsPartDIrmaaArticle,
-  withdrawalOrderBasicsArticle,
-  rmdsRequiredMinimumDistributionsArticle,
-  qcdsQualifiedCharitableDistributionsArticle,
-  widowsPenaltyAndSurvivorBracketsArticle,
-  payingConversionTaxesTaxableVsIraArticle,
-  ruleOf55And72tArticle,
-  inheritedIraTenYearRuleArticle,
-  accountTypesOverviewArticle,
-  traditionalVsRothContributionsArticle,
-  employerMatchAndContributionOrderArticle,
-  hsasAsRetirementAccountsArticle,
-  taxableBrokerageBasisAndCapitalGainsArticle,
-  pensionsAndAnnuitiesArticle,
-  realEstateHomeEquityDebtArticle,
-  rsusAndEsppArticle,
-  feesExpenseRatiosCompoundingDragArticle,
-  longTermCareInsuranceRiskTransferArticle,
-  permanentLifeInsurancePlanArticle,
-  insuranceInYourRetirementPlanArticle,
-  survivorPlanningForCouplesArticle,
-  afterTaxEstateArticle,
-  stepUpInBasisArticle,
-  beneficiariesAccountTitlingArticle,
-  sequenceOfReturnsRiskArticle,
-  whatMonteCarloProvesArticle,
-  historicalVsRandomReturnModelsArticle,
-  inflationRiskArticle,
-  longevityRiskArticle,
-  threeBigQuestionsSpendingTimeRiskArticle,
-  howAssumptionsChangeAnswerArticle,
-  planningForCouplesAndSurvivorYearsArticle,
-  whySmallTaxCliffsCanMatterArticle,
-  plannerOverviewArticle,
-  usingScenariosToCompareChoicesArticle,
-  readingSocialSecurityAnalysisPageArticle,
-  usingAssumptionsAndProvenanceArticle,
-  reportsCsvExportsAndSharingArticle,
-  privacyWhatStaysInYourBrowserArticle,
-  movingToRetireGoldenArticle,
-  seedYourPlanFromYourTaxReturnArticle,
-  troubleshootingSurprisingResultsArticle,
-  howTheOptimizerThinksArticle,
-  ordinaryIncomeVsCapitalGainsArticle,
-  standardDeductionSeniorDeductionItemizingArticle,
-  howSocialSecurityIsTaxedArticle,
-  niitHighIncomeInvestmentTaxArticle,
-  stateIncomeTaxesRetirementArticle,
-  whatChangesWhenYouMoveStatesArticle,
-  taxCliffsBracketEdgesArticle,
-  taxLossGainHarvestingArticle,
-  why95PercentIsNotGuaranteeArticle,
-  sensitivityTestingWhatChangesAnswerArticle,
-  whatIsFireArticle,
-  savingsRateBiggestLeverArticle,
-  fiNumberAndFourPercentRuleArticle,
-  howToModelAccumulationArticle,
-  understandingYourPlanAssumptionsArticle,
-  assumptionGeneralInflationArticle,
-  assumptionHealthcareInflationArticle,
-  assumptionInvestmentReturnsArticle,
-  assumptionSocialSecurityColaArticle,
-  assumptionSocialSecurityTrustFundArticle,
-  assumptionLongevityPlanningAgeArticle,
-  assumptionStateTaxOverrideArticle,
-  assumptionRecentMagiArticle,
-  assumptionHeirTaxRateArticle,
-  ...EXAMPLE_PLAN_ARTICLES,
-]
+/** Every article in registry order, metadata only. */
+export const LEARNING_ARTICLES: LearningArticle[] = ARTICLE_INDEX
 
 const ARTICLES_BY_SLUG = new Map(LEARNING_ARTICLES.map((a) => [a.slug, a]))
 
@@ -438,9 +237,26 @@ export function getArticle(slug: string): LearningArticle | undefined {
   return ARTICLES_BY_SLUG.get(slug)
 }
 
-/** An article is browsable as its own page only once it has real content. */
+/**
+ * The article's content blocks, fetched on first use.
+ *
+ * Resolves to `undefined` for a slug with no body module, which is the same
+ * "nothing to render" answer the old inline `blocks` gave as `undefined`.
+ */
+export function getArticleBody(slug: string): Promise<ArticleBlock[] | undefined> {
+  return loadArticleBody(slug)
+}
+
+/**
+ * An article is browsable as its own page only once it has real content.
+ *
+ * Content now means "has a body module", which is the metadata-only form of
+ * the old `blocks?.length > 0` check. An article assembled by a caller with
+ * inline blocks still counts, so the published behavior is unchanged.
+ */
 export function isReadable(article: LearningArticle): boolean {
-  return article.status === 'ready' && (article.blocks?.length ?? 0) > 0
+  if (article.status !== 'ready') return false
+  return (article.blocks?.length ?? 0) > 0 || hasArticleBody(article.slug)
 }
 
 export function getCategory(id: LearningCategoryId): LearningCategory | undefined {

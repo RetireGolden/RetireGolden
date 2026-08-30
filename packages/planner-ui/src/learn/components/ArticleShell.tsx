@@ -7,9 +7,12 @@
  * stay in ArticlePage but share {@link BackLink}.
  */
 
+import { Suspense, use } from 'react'
 import { Link, useLocation } from 'react-router'
 import { OpenExampleButton } from '../../planner/examples/OpenExampleButton'
-import { getCategory, type LearningArticle } from '../learningRegistry'
+import { RouteErrorBoundary } from '../../RouteErrorBoundary'
+import { RouteFallback } from '../../routes/RouteFallback'
+import { getArticleBody, getCategory, type LearningArticle } from '../learningRegistry'
 import { ArticleBody } from '../ArticleBody'
 import { RelatedArticles } from './RelatedArticles'
 import { SourceList } from './SourceList'
@@ -49,6 +52,39 @@ export function BackLink() {
   )
 }
 
+/**
+ * Everything below the article's header, awaited from its body chunk.
+ *
+ * Split out so only this region suspends: the kicker, title, promise, and
+ * example CTA come from metadata that is already loaded, and stay on screen
+ * while the chunk arrives. Related articles and the source footer are inside
+ * the boundary rather than siblings of it, so they appear with the body
+ * instead of painting under the skeleton and then being pushed down.
+ *
+ * Inline blocks on the article itself short-circuit the load, so an article a
+ * caller assembled by hand renders without suspending at all. `use` is the one
+ * hook React allows to be called conditionally, which is what makes that work.
+ */
+function ArticleContent({ article }: { article: LearningArticle }) {
+  const blocks = article.blocks ?? use(getArticleBody(article.slug)) ?? []
+  return (
+    <>
+      <div className="learn-article-body">
+        <ArticleBody blocks={blocks} />
+      </div>
+
+      <RelatedArticles slugs={article.relatedArticles} />
+
+      {/* The persistent app footer directly below already carries the
+          educational disclaimer, so the article foot no longer repeats it. */}
+      <footer className="learn-article-foot">
+        <SourceList urls={article.sourceUrls} />
+        <p className="muted small">Last reviewed {formatReviewed(article.lastReviewed)}.</p>
+      </footer>
+    </>
+  )
+}
+
 export function ArticleShell({ article }: { article: LearningArticle }) {
   const category = getCategory(article.category)
 
@@ -69,18 +105,15 @@ export function ArticleShell({ article }: { article: LearningArticle }) {
         </div>
       ) : null}
 
-      <div className="learn-article-body">
-        <ArticleBody blocks={article.blocks ?? []} />
-      </div>
-
-      <RelatedArticles slugs={article.relatedArticles} />
-
-      {/* The persistent app footer directly below already carries the
-          educational disclaimer, so the article foot no longer repeats it. */}
-      <footer className="learn-article-foot">
-        <SourceList urls={article.sourceUrls} />
-        <p className="muted small">Last reviewed {formatReviewed(article.lastReviewed)}.</p>
-      </footer>
+      {/* Suspense does not catch errors, so the boundary is here rather than
+          only at the route: a body chunk that fails to load leaves the reader
+          on this article with its title and back link, and keeps the
+          stale-chunk auto-reload backstop, instead of blanking the page. */}
+      <RouteErrorBoundary>
+        <Suspense fallback={<RouteFallback />}>
+          <ArticleContent key={article.slug} article={article} />
+        </Suspense>
+      </RouteErrorBoundary>
     </article>
   )
 }

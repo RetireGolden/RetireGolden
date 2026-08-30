@@ -49,7 +49,7 @@ Typical publication windows; verify the actual release each year. "Updates" poin
 | SPIA payout-rate planning table (annuitization sweep + purchase candidates) | Public quote aggregators (annuity.org life-only sheets, marketplace/insurer calculators) | Rates move with yields; refresh annually with the packs. Last re-anchored 2026-07-15. **Hard items for the next refresh:** replace the extrapolated age-85 anchor and the placeholder QLAC deferred rate with quoted rates | `engine/decisions/spiaQuotes.ts`, domain rules §19 |
 | HECM principal-limit factors + line/loan growth default | HUD HECM PLF tables (as summarized by reverse-mortgage references) | HUD revises factor tables occasionally; expected rates move with rates | `params/data/` `hecm` block, provenance id `hecm-plf`, domain rules §19 |
 | Actuarial longevity guidance | SSA period life table; Academy of Actuaries / SOA Longevity Illustrator | ~Annual / on table refresh | `longevity/`, domain rules §13, `assumption-longevity-planning-age` |
-| Learning Center rule-heavy articles | The article's own `sourceUrls` | Match each article's `reviewCadence` (`annual` for `currentYearSensitive`) | `learn/content/`, bump `lastReviewed` |
+| Learning Center rule-heavy articles | The article's own `sourceUrls` | Match each article's `reviewCadence` (`annual` for `currentYearSensitive`) | Prose in `learn/content/`; bump `lastReviewed` on the article's entry in `learn/articleIndex.ts` |
 | Competitive landscape (pricing, tiers, features) | Vendor sites | ~Annual or on change | `competitive-analysis` (private planning docs) |
 | Open-source oracle landscape | Project repos/releases | ~Annual | `open-source-landscape` (private planning docs) |
 

@@ -111,9 +111,13 @@ insight preview:
 
 ## Adding a Learning Center article
 
-Content is **structured TypeScript** under `packages/planner-ui/src/learn/content/` registered in `learningRegistry.ts` —
-not Markdown/MDX. Each article carries metadata (`slug`, `category`, `status`, `lastReviewed`,
-`reviewCadence`, `currentYearSensitive`, `sourceUrls`, `relatedPlannerRoutes`). Rule-heavy articles must set
+Content is **structured TypeScript**, not Markdown/MDX, and an article is two pieces in two files:
+its metadata (`slug`, `category`, `status`, `lastReviewed`, `reviewCadence`, `currentYearSensitive`,
+`sourceUrls`, `relatedPlannerRoutes`) as an entry in `packages/planner-ui/src/learn/articleIndex.ts`, and
+its `blocks[]` body as a module under `learn/content/` wired into the loader map in `learn/articleBodies.ts`.
+The split is what keeps article prose off the landing critical path
+([operations/bundle-budget.md](operations/bundle-budget.md)); `learn/articleIndex.test.ts` fails when the
+index and the body modules disagree. Rule-heavy articles must set
 `currentYearSensitive` and a `reviewCadence`, cite primary sources (IRS/SSA/CMS), and avoid hardcoding
 current-year dollars in evergreen prose. Follow the full style guide and topic inventory in
 [features/learning-center.md](features/learning-center.md). Link from the planner via `LearnLink` /

@@ -9,8 +9,11 @@ contextual links from the planner, and the body of educational content itself.
 
 **Code:** [packages/planner-ui/src/learn/](../../packages/planner-ui/src/learn/) — pages (`LearningCenterPage`,
 `ArticlePage`, `GlossaryPage`, `SourcesPage`), the article registry
-([learningRegistry.ts](../../packages/planner-ui/src/learn/learningRegistry.ts)), reusable blocks under
-`components/`, and ~100 articles authored as structured TypeScript under `content/`.
+([learningRegistry.ts](../../packages/planner-ui/src/learn/learningRegistry.ts)) over the metadata index
+([articleIndex.ts](../../packages/planner-ui/src/learn/articleIndex.ts)), reusable blocks under
+`components/`, and the article bodies authored as structured TypeScript under `content/`, reached through
+the per-article `import()` map in
+[articleBodies.ts](../../packages/planner-ui/src/learn/articleBodies.ts).
 
 This document is the **authoring standard**: the product stance, information
 architecture, the article style guide, the topic inventory, and how the planner
@@ -220,23 +223,29 @@ Initial category set:
 
 ### 7.1 File structure
 
-Articles are authored as **structured TypeScript** so prose, visuals, and metadata
-live together, bundle for offline use, and stay type-safe. The content lives under
-`packages/planner-ui/src/learn/`:
+Articles are authored as **structured TypeScript** so prose and visuals bundle for
+offline use and stay type-safe. Metadata and prose live **apart**: an article's
+metadata is an entry in `articleIndex.ts`, which is statically imported and rides the
+landing critical path, while its `blocks[]` body is a module under `content/` loaded
+on demand. Never put prose in the index — that coupling is exactly what
+[operations/bundle-budget.md](../operations/bundle-budget.md) exists to catch. The
+content lives under `packages/planner-ui/src/learn/`:
 
 ```text
 packages/planner-ui/src/learn/
   LearningCenterPage.tsx
   ArticlePage.tsx
   GlossaryPage.tsx
-  learningRegistry.ts
+  learningRegistry.ts     # types, categories, selectors
+  articleIndex.ts         # metadata for every article (static)
+  articleBodies.ts        # slug -> () => import('./content/…')
+  glossary.ts
   learn.css
-  content/
-    articles/
-      roth-conversion-basics.md
-      social-security-claiming-age.md
-      monte-carlo-success-rate.md
-    glossary.ts
+  content/                # bodies only: `export const blocks: ArticleBlock[]`
+    roth-conversion-basics.ts
+    social-security-claiming-age-basics.ts
+    understanding-monte-carlo-success-rate.ts
+    examplePlanBodies.ts
   components/
     ArticleShell.tsx
     ArticleFigure.tsx
@@ -249,9 +258,20 @@ packages/planner-ui/src/learn/
 The structured-TypeScript decision is settled: it avoids new MDX/Markdown build
 tooling and keeps every article type-checked against the registry.
 
+One authoring cost of loading bodies on demand: a body module under `content/` has
+no static importer, so an edit to article prose has nothing for the dev server's
+hot-update walk to follow. **Reload the browser to see a prose edit.** Metadata edits
+in `articleIndex.ts` are statically imported and behave normally. Cache-busting the
+dynamic import to fix this would mean building its specifier at runtime, which is
+precisely what would hide the import graph from the production bundler and undo the
+split — so the reload is the deliberate trade.
+
 ### 7.2 Article metadata
 
-Article metadata is defined in [learningRegistry.ts](../../packages/planner-ui/src/learn/learningRegistry.ts) (the source of truth):
+Article metadata is one entry per article in
+[articleIndex.ts](../../packages/planner-ui/src/learn/articleIndex.ts) (the source of truth), typed by
+`LearningArticleMeta` in [learningRegistry.ts](../../packages/planner-ui/src/learn/learningRegistry.ts).
+The `blocks[]` body is a separate module under `content/`, so it never travels with the metadata:
 
 ```ts
 type LearningArticle = {
