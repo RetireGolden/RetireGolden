@@ -387,11 +387,11 @@ try {
     }
   }
   // The consumer-side worker bundling is the whole reason this package ships
-  // the way it does — assert every worker chunk and the wasm actually landed.
-  require1(/monteCarlo\.worker-.*\.js$/, 'Monte Carlo worker chunk')
-  require1(/optimize\.worker-.*\.js$/, 'optimizer worker chunk')
-  require1(/spendingSolve\.worker-.*\.js$/, 'spending-solver worker chunk')
-  require1(/relocation\.worker-.*\.js$/, 'relocation worker chunk')
+  // the way it does — assert the worker chunk and the wasm actually landed.
+  // One entry serves all four channels (Monte Carlo, optimizer, spending
+  // solver, relocation): a bundler builds each worker entry separately, so a
+  // second entry here would mean a second copy of the engine core.
+  require1(/planner\.worker-.*\.js$/, 'planner worker chunk')
   require1(/\.wasm$/, 'HiGHS wasm asset')
   require1(/\.css$/, 'stylesheet')
 

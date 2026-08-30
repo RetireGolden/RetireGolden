@@ -7,13 +7,15 @@
 
 import type { OptimizeRequest, OptimizeResponse, OptimizeResult } from './messages'
 import { runOptimizeRequest } from './runOptimize'
+import { envelope, type PlannerWorkerEnvelope } from '../workers/channels'
 import { runWorkerRequest } from '../workers/run'
+import { spawnPlannerWorker } from '../workers/spawn'
 
 export function runOptimize(req: OptimizeRequest): Promise<OptimizeResult> {
   if (typeof Worker === 'undefined') return runOptimizeRequest(req)
-  return runWorkerRequest<OptimizeRequest, OptimizeResponse, OptimizeResult>({
-    request: req,
-    createWorker: () => new Worker(new URL('./optimize.worker.ts', import.meta.url), { type: 'module' }),
+  return runWorkerRequest<PlannerWorkerEnvelope<'optimize', OptimizeRequest>, OptimizeResponse, OptimizeResult>({
+    request: envelope('optimize', req),
+    createWorker: spawnPlannerWorker,
     interpret: (msg) =>
       msg.type === 'done' ? { kind: 'done', result: msg.result } : { kind: 'error', message: msg.message },
     errorLabel: 'Optimizer worker failed',

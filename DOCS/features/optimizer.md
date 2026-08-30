@@ -284,7 +284,8 @@ agree exactly:
 
 - **"How much can I spend?"** page on the Optimize rail
   ([planner/SpendingSolverPage.tsx](../../packages/planner-ui/src/planner/SpendingSolverPage.tsx)) — runs the solver in a
-  dedicated Web Worker ([optimize/spendingSolve.worker.ts](../../packages/planner-ui/src/optimize/spendingSolve.worker.ts)),
+  Web Worker on the `spendingSolve` channel ([optimize/spendingRunner.ts](../../packages/planner-ui/src/optimize/spendingRunner.ts)
+  over [workers/planner.worker.ts](../../packages/planner-ui/src/workers/planner.worker.ts)),
   shows the answer + evidence, and can add a scenario at the solved level.
 - **Insights `spending-headroom` detector**
   ([engine/insights/detectors/spendingHeadroom.ts](../../packages/engine/src/insights/detectors/spendingHeadroom.ts))

@@ -7,7 +7,9 @@
 
 import type { SpendingSolveRequest, SpendingSolveResponse, SpendingSolveResult } from './spendingMessages'
 import { runSpendingSolveRequest } from './runSpendingSolve'
+import { envelope, type PlannerWorkerEnvelope } from '../workers/channels'
 import { createWorkerRequestAbortError, runWorkerRequest } from '../workers/run'
+import { spawnPlannerWorker } from '../workers/spawn'
 
 export interface SpendingSolveRunOptions {
   signal?: AbortSignal
@@ -23,9 +25,13 @@ export function runSpendingSolve(
       return runSpendingSolveRequest(req)
     })
   }
-  return runWorkerRequest<SpendingSolveRequest, SpendingSolveResponse, SpendingSolveResult>({
-    request: req,
-    createWorker: () => new Worker(new URL('./spendingSolve.worker.ts', import.meta.url), { type: 'module' }),
+  return runWorkerRequest<
+    PlannerWorkerEnvelope<'spendingSolve', SpendingSolveRequest>,
+    SpendingSolveResponse,
+    SpendingSolveResult
+  >({
+    request: envelope('spendingSolve', req),
+    createWorker: spawnPlannerWorker,
     interpret: (msg) =>
       msg.type === 'done' ? { kind: 'done', result: msg.result } : { kind: 'error', message: msg.message },
     errorLabel: 'Spending solver worker failed',
