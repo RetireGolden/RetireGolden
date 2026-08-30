@@ -31,6 +31,40 @@ async function loadModule(name) {
   return import(pathToFileURL(path).href)
 }
 
+/**
+ * Whether `text` is a coverage shard this generator wrote, judged by the
+ * shard's own `kind` discriminator rather than by its file name. Unparseable
+ * content answers no, so the sweep below can only ever delete a file it
+ * positively recognises.
+ *
+ * Pure and text-taking so the engine suite can pin it without importing
+ * node:fs into `src/` — the engine's compile-time surface carries no node
+ * types, and its purity lint would reject the import besides.
+ */
+/** File contents, or null when it cannot be read — an unreadable file is not recognisably ours. */
+function readTextOrNull(path) {
+  try {
+    return readFileSync(path, 'utf8')
+  } catch {
+    return null
+  }
+}
+
+export function isGeneratedShardText(text) {
+  let parsed
+  try {
+    parsed = JSON.parse(text)
+  } catch {
+    return false
+  }
+  return (
+    typeof parsed === 'object' &&
+    parsed !== null &&
+    !Array.isArray(parsed) &&
+    parsed.kind === 'retiregolden.rules-coverage.shard'
+  )
+}
+
 async function main() {
   const [
     { TAX_RULE_REGISTRY, TAX_RULE_RECORD_MODULES, taxRuleDueOn },
@@ -71,8 +105,30 @@ async function main() {
     written.add(fileName)
     writeFileSync(join(shardDir, fileName), lf(shard.json), 'utf8')
   }
-  const removed = readdirSync(shardDir).filter((name) => name.endsWith('.json') && !written.has(name))
-  for (const name of removed) unlinkSync(join(shardDir, name))
+  // Only files this generator recognises as its OWN prior output are swept —
+  // a parsed `kind` of retiregolden.rules-coverage.shard. Deleting every
+  // unclaimed .json would let the report writer destroy a draft, a scratch
+  // file, or anything else somebody put in the directory, which is not a
+  // licence it should hold. Anything unrecognised is reported and left in
+  // place for a person to deal with.
+  const removed = []
+  const kept = []
+  for (const name of readdirSync(shardDir)) {
+    if (!name.endsWith('.json') || written.has(name)) continue
+    const full = join(shardDir, name)
+    const text = readTextOrNull(full)
+    if (text !== null && isGeneratedShardText(text)) {
+      unlinkSync(full)
+      removed.push(name)
+    } else {
+      kept.push(name)
+    }
+  }
+  if (kept.length > 0) {
+    console.warn(
+      'rules coverage: left ' + kept.length + ' unrecognized file(s) in ' + shardDir + ': ' + kept.join(', '),
+    )
+  }
 
   console.log(
     'rules coverage: ' + report.manifest.registry.total + ' rules, ' +

@@ -3,15 +3,16 @@ import {
   BASELINE_UNSWEPT,
   COVERAGE_ATTESTATIONS,
 } from './coverageAttestations.js'
-import { buildCoverageReport } from './coverageReport.js'
+import { buildCoverageReport, coverageShardPath } from './coverageReport.js'
 import {
   DEFAULT_REVERIFICATION_INTERVAL_DAYS,
   TAX_RULE_RECORD_MODULES,
   TAX_RULE_REGISTRY,
   taxRuleDueOn,
+  taxRuleIds,
   taxRulesDueForVerification,
 } from './taxRuleRegistry.js'
-import { buildDispatchPrompt } from '../../scripts/rules-dispatch.mjs'
+import { buildDispatchPrompt, coverageShardOf } from '../../scripts/rules-dispatch.mjs'
 
 const testSources = import.meta.glob('../**/*.test.{ts,mts,cts,tsx}', { query: '?raw', import: 'default', eager: true })
 
@@ -102,13 +103,15 @@ describe('dispatch tooling', () => {
       const lock = conflictLockLine(markdown)
       expect(lock).toContain('`' + modulePath + '`')
       expect(lock).toContain('`packages/engine/src/rules/taxRuleRegistry.ts`')
-      // The markdown summary's due-date table is cross-cutting, so it still
-      // collides between dispatches whose record modules never touch.
+      // Both generated ledger files stay in the lock. The markdown's due-date
+      // table is cross-cutting; the index is usually untouched but moves when a
+      // dispatch shifts a classification, a jurisdiction, or the quote-fidelity
+      // summary, and the lock's rule is to be too broad rather than too narrow.
       expect(lock).toContain('`DOCS/operations/rule-coverage.md`')
-      // The JSON ledger no longer does: this dispatch locks the shard for the
-      // module it edits, and nothing wider — not the index, not the directory.
+      expect(lock).toContain('`DOCS/operations/rule-coverage.json`')
+      // What the split narrowed is the per-rule payload: this dispatch locks
+      // the shard for the module it edits, not the whole shard directory.
       expect(lock).toContain('`DOCS/operations/rule-coverage/requiredMinimumDistributions.json`')
-      expect(lock).not.toContain('`DOCS/operations/rule-coverage.json`')
       expect(lock).not.toContain('`DOCS/operations/rule-coverage/`')
       expect(markdown).not.toContain('zero hits under `packages/engine/src/rules/`')
     })
@@ -148,6 +151,47 @@ describe('dispatch tooling', () => {
       const lock = conflictLockLine(markdown)
       expect(lock).toContain('`packages/engine/src/rules/records/`')
       expect(lock).toContain('`DOCS/operations/rule-coverage/`')
+    })
+
+    it('derives shard paths identically to the coverage generator, for every record module', () => {
+      // The lock names shard paths; `pnpm rules:coverage` writes them. Two
+      // spellings of one layout is exactly the shape that rots: rename the
+      // directory in coverageReport.ts and the lock would keep guarding a path
+      // nothing writes, so concurrent dispatches would stop colliding while
+      // still overwriting each other. Pinned per module, not on one sample.
+      for (const [moduleName] of TAX_RULE_RECORD_MODULES) {
+        const recordModulePath = 'packages/engine/src/rules/records/' + moduleName + '.ts'
+        expect(coverageShardOf(recordModulePath), moduleName)
+          .toBe('DOCS/operations/' + coverageShardPath(moduleName))
+      }
+    })
+
+    it('maps every rule id to the record module that actually registers it', () => {
+      // The dispatch used to attribute a rule to the last records file whose
+      // exports happened to contain the id. This binds the prompt's mapping to
+      // TAX_RULE_RECORD_MODULES for EVERY id, so a rule cannot be attributed to
+      // a module that does not hold it — which would lock the wrong shard and
+      // let a real collision through.
+      const expected = new Map<string, string>()
+      for (const [moduleName, records] of TAX_RULE_RECORD_MODULES) {
+        for (const ruleId of Object.keys(records)) {
+          expected.set(ruleId, 'packages/engine/src/rules/records/' + moduleName + '.ts')
+        }
+      }
+      expect(expected.size).toBe(taxRuleIds.length)
+      for (const ruleId of taxRuleIds) {
+        const modulePath = expected.get(ruleId)
+        expect(modulePath, ruleId).toBeDefined()
+        const markdown = buildDispatchPrompt({
+          asOf: '2026-12-01',
+          ruleIds: [ruleId],
+          registry: TAX_RULE_REGISTRY,
+          manifestRules: report.rules,
+          recordModuleOf: expected,
+        })
+        expect(markdown, ruleId).toContain('**Record module:** ' + modulePath)
+        expect(conflictLockLine(markdown), ruleId).toContain('`' + coverageShardOf(modulePath!) + '`')
+      }
     })
 
     it('throws on an unknown id', () => {

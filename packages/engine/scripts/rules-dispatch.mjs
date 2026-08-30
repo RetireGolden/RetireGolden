@@ -2,43 +2,61 @@ import { readdirSync, unlinkSync, writeFileSync } from 'node:fs'
 import { basename, dirname, join, resolve } from 'node:path'
 import { parseArgs } from 'node:util'
 import { testSourcesInGlobShape } from './rules-coverage.mjs'
-import { engineDir, loadModule, stripLeadingSeparators, todayUtcIso, validateAsOf } from './rule-tooling-shared.mjs'
+import { loadModule, stripLeadingSeparators, todayUtcIso, validateAsOf } from './rule-tooling-shared.mjs'
 
 const REGISTRY_FACADE_PATH = 'packages/engine/src/rules/taxRuleRegistry.ts'
 const RECORDS_DIR_PATH = 'packages/engine/src/rules/records'
 
 /**
- * Generated files a dispatch always rewrites, whatever rules it carries.
- * `pnpm rules:coverage` republishes the markdown summary from `verifiedOn` (its
- * due-date table is cross-cutting by construction), so it collides even between
- * dispatches whose record modules never touch. The JSON ledger no longer does:
- * its per-rule payloads live in per-module shards, and the index it names them
- * from carries only counts, which a re-verification does not move.
+ * Generated ledger files a dispatch can rewrite whatever rules it carries, so
+ * they stay in the lock for every handoff.
+ *
+ * The markdown summary always moves: `verifiedOn` feeds its due-date table,
+ * which is cross-cutting by construction. The JSON INDEX usually does not —
+ * the per-rule payloads live in per-module shards now — but it is not immune,
+ * and the lock's rule is to be too broad rather than too narrow. A dispatch
+ * that re-reads an authority and moves a `classification` or `jurisdiction`
+ * shifts the index's registry counts; running `pnpm verify:quotes` per the
+ * checklist moves its quote-fidelity summary; adding or retiring a record
+ * moves the totals and a shard's `ruleCount`. Two dispatches doing any of
+ * that concurrently would otherwise overwrite each other's index with no
+ * warning. What the split bought is that the 30k-line per-rule payload is no
+ * longer part of this — not that the index cannot move.
  */
 const COVERAGE_LEDGER_PATHS = [
   'DOCS/operations/rule-coverage.md',
+  'DOCS/operations/rule-coverage.json',
 ]
 
-/** Shard file for a record module path, mirroring coverageReport's layout. */
-function coverageShardOf(recordModulePath) {
+/**
+ * Shard file for a record module path. `coverageShardPath` in coverageReport.ts
+ * is the canonical layout and the only writer; this mirror exists because
+ * `buildDispatchPrompt` stays synchronous and dependency-free for its tests.
+ * `dispatchTooling.test.ts` pins the two against each other for every record
+ * module, so a rename cannot leave the lock naming a path nothing writes.
+ */
+export function coverageShardOf(recordModulePath) {
   const base = recordModulePath.slice(recordModulePath.lastIndexOf('/') + 1).replace(/\.ts$/u, '')
   return 'DOCS/operations/rule-coverage/' + base + '.json'
 }
 
 /**
- * Repo-relative record module path per rule id, read from the modules
- * themselves rather than from a hand-kept list, so a new module in
- * `records/` is mapped the moment it is spread into the registry.
+ * Repo-relative record module path per rule id, taken from
+ * `TAX_RULE_RECORD_MODULES` — the list published beside the registry spread
+ * that composes those very records.
+ *
+ * It used to walk `records/` and attribute a rule to the last file whose
+ * exports contained the id. That was a heuristic: a module gaining a second
+ * exported object with rule-shaped keys could silently reattribute a rule to
+ * the wrong module, and the lock would then guard the wrong shard. The
+ * published list has no such failure mode, and the conformance suite already
+ * fails when it drifts from the directory or from the spread.
  */
-async function loadRecordModuleOf() {
-  const recordsDir = join(engineDir, 'src', 'rules', 'records')
+function recordModuleOfFrom(recordModules) {
   const byRuleId = new Map()
-  for (const name of readdirSync(recordsDir).sort()) {
-    if (!name.endsWith('.ts') || name.endsWith('.test.ts')) continue
-    const module = await loadModule(join('records', name))
-    for (const exported of Object.values(module)) {
-      if (exported === null || typeof exported !== 'object') continue
-      for (const ruleId of Object.keys(exported)) byRuleId.set(ruleId, RECORDS_DIR_PATH + '/' + name)
+  for (const [moduleName, records] of recordModules) {
+    for (const ruleId of Object.keys(records)) {
+      byRuleId.set(ruleId, RECORDS_DIR_PATH + '/' + moduleName + '.ts')
     }
   }
   return byRuleId
@@ -330,7 +348,7 @@ async function main() {
     recordModules: TAX_RULE_RECORD_MODULES,
   })
 
-  const recordModuleOf = await loadRecordModuleOf()
+  const recordModuleOf = recordModuleOfFrom(TAX_RULE_RECORD_MODULES)
   const chunks = chunkRuleIds(ruleIds, chunkSize)
 
   if (chunks.length > 1 && !values.out) {

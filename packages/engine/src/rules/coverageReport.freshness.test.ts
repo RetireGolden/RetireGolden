@@ -15,7 +15,7 @@ import {
 } from './taxRuleRegistry.js'
 import committedJson from '../../../../DOCS/operations/rule-coverage.json?raw'
 import committedMarkdown from '../../../../DOCS/operations/rule-coverage.md?raw'
-import { testSourcesInGlobShape } from '../../scripts/rules-coverage.mjs'
+import { isGeneratedShardText, testSourcesInGlobShape } from '../../scripts/rules-coverage.mjs'
 
 // Vite requires the options to be inline object literals.
 const testSources = import.meta.glob('../**/*.test.{ts,mts,cts,tsx}', { query: '?raw', import: 'default', eager: true })
@@ -165,6 +165,35 @@ describe('rules coverage report artifacts', () => {
         recordModules: [],
       }),
     ).toThrow(/belongs to no record module/)
+  })
+
+  // The generator sweeps its shard directory so a renamed module cannot leave
+  // an orphan behind. That sweep must recognise its OWN output rather than
+  // deleting whatever .json it finds: a draft or scratch file somebody put
+  // there is not a report writer's to destroy.
+  it('recognises a generated shard by its kind, and nothing else', () => {
+    // A real shard the builder just produced, so the accepted case is the
+    // actual published text rather than a hand-written lookalike.
+    const realShard = report.shards.find(({ module }) => module === 'statesWest')
+    expect(realShard).toBeDefined()
+    expect(isGeneratedShardText(realShard!.json)).toBe(true)
+    // The index is NOT a shard: it carries the manifest kind, and sweeping it
+    // would delete the file naming every shard.
+    expect(isGeneratedShardText(report.json)).toBe(false)
+
+    for (const [label, text] of [
+      ['foreign kind', JSON.stringify({ kind: 'someone.elses.file', keep: true })],
+      ['no kind at all', JSON.stringify({ notes: 'a draft somebody parked here' })],
+      ['unparseable', '{ not json'],
+      ['empty', ''],
+      // Valid JSON that is not a plain object: `null` is the trap a bare
+      // typeof check would call an object and delete.
+      ['bare array', '[1, 2, 3]'],
+      ['json null', 'null'],
+      ['json string', '"retiregolden.rules-coverage.shard"'],
+    ] as const) {
+      expect(isGeneratedShardText(text), label).toBe(false)
+    }
   })
 
   // Binds the freshness test to the coverage script's glob walk, not only to the
