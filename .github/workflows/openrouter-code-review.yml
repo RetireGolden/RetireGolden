@@ -37,8 +37,6 @@
 # openai/gpt-5.6-luna. All other org repos stay single-lane. On a bump,
 # rewrite the lane and judge notes only when their respective defaults
 # actually change.
-# Since the .github#32 pin, multi-lane merges use openai/gpt-5.6-luna
-# as the judge; the two review lanes above are unchanged.
 
 name: OpenRouter code review
 
