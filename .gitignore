@@ -25,6 +25,7 @@ terminals/
 .claude/settings.local.json
 .codex-remote-attachments/
 .codex-artifacts/
+/.codex/
 .impeccable/
 
 # Workspace dependencies (pnpm virtual store + node_modules)

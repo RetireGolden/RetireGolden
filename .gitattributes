@@ -6,3 +6,7 @@ packages/planner-ui/src/report/goldens/** text eol=lf
 packages/planner-ui/src/data/*.fixture.json text eol=lf
 packages/engine/schema/plan.v*.json linguist-generated=true
 packages/engine/src/schema/plan.v*.generated.ts linguist-generated=true
+# High-churn generated operations ledgers; collapse in diffs and skip
+# automated review so PR context isn't spent re-reviewing machine output.
+DOCS/operations/rule-coverage.json linguist-generated=true
+DOCS/operations/quote-fidelity-ledger.json linguist-generated=true
