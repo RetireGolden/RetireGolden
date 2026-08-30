@@ -1,0 +1,960 @@
+{
+  "kind": "retiregolden.rules-coverage.shard",
+  "version": 5,
+  "module": "rothAccounts",
+  "rules": [
+    {
+      "id": "irc-402A-c-4-E-in-plan-roth-transfer-not-modeled",
+      "title": "Optional in-plan transfer of otherwise nondistributable amounts is not modeled",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": "This is a schema boundary, not a conversion result. traditionalAccountSchema and rothAccountSchema record only an employer account kind and an optional plan class; neither records a particular employer-plan identity, an in-plan-Roth feature election, or the restriction carried by a transferred amount. retirementActionRequestSchema and the separately persisted request union have no in-plan transfer arm. The vocabulary gates are asserted in model/plan.test.ts and actions/contract.test.ts; named Roth conversions separately refuse an employer designated Roth destination in actions/rothConversionExecution.test.ts.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2027-08-26",
+      "implementedBy": [
+        "packages/engine/src/actions/contract.ts",
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/strategies/accountEligibility.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/contract.ts",
+          "functions": [
+            {
+              "name": "persistedRetirementActionRequestSchema",
+              "line": 389
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "rothAccountSchema",
+              "line": 942
+            },
+            {
+              "name": "traditionalAccountSchema",
+              "line": 894
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/strategies/accountEligibility.ts",
+          "functions": [
+            {
+              "name": "evaluateConversion",
+              "line": 650
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 402A(c)(4)(E)(i)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402A&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 402A(c)(4)(E)(ii)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402A&num=0&edition=prelim"
+        },
+        {
+          "kind": "irsNotice",
+          "citation": "IRS Notice 2013-74, Q&A-3",
+          "url": "https://www.irs.gov/pub/irs-drop/n-13-74.pdf"
+        }
+      ]
+    },
+    {
+      "id": "irc-402A-e-1-A-plesa-optional-designated-roth-subaccount",
+      "title": "A PLESA is an optional designated-Roth subaccount of an employer plan",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": "This is a schema refusal, not a zero-dollar result: traditionalAccountSchema and rothAccountSchema have no PLESA subaccount, separate earnings, or plan-feature fields, and the retirement-action unions have no PLESA arm. The absent account vocabulary is pinned in model/plan.test.ts and the absent action vocabulary in actions/contract.test.ts. The enacting provision is SECURE 2.0 section 127(e)(1), not section 115.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "awaitingGuidance",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2026-11-24",
+      "implementedBy": [
+        "packages/engine/src/actions/contract.ts",
+        "packages/engine/src/model/plan.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/contract.ts",
+          "functions": [
+            {
+              "name": "persistedRetirementActionRequestSchema",
+              "line": 389
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "rothAccountSchema",
+              "line": 942
+            },
+            {
+              "name": "traditionalAccountSchema",
+              "line": 894
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 402A(e)(1)(A)(i)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402A&num=0&edition=prelim"
+        },
+        {
+          "kind": "legislativeHistory",
+          "citation": "P.L. 117-328, division T, title I, section 127(e)(1)",
+          "url": "https://www.govinfo.gov/content/pkg/PLAW-117publ328/pdf/PLAW-117publ328.pdf"
+        }
+      ]
+    },
+    {
+      "id": "irc-402A-e-3-A-plesa-participant-contribution-cap",
+      "title": "PLESA participant contributions stop at the indexed or sponsor-set lower cap",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": "The cap turns on a PLESA-only participant-contribution balance and a sponsor-selected lower cap. Neither field exists on traditionalAccountSchema or rothAccountSchema, and there is no PLESA contribution action; model/plan.test.ts and actions/contract.test.ts explicitly gate those vocabulary surfaces. Notice 2024-22 confirms that the lower sponsor amount is an independent statutory limb, not an inferred account limit.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "awaitingGuidance",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2026-11-24",
+      "implementedBy": [
+        "packages/engine/src/actions/contract.ts",
+        "packages/engine/src/model/plan.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/contract.ts",
+          "functions": [
+            {
+              "name": "persistedRetirementActionRequestSchema",
+              "line": 389
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "rothAccountSchema",
+              "line": 942
+            },
+            {
+              "name": "traditionalAccountSchema",
+              "line": 894
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 402A(e)(3)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402A&num=0&edition=prelim"
+        },
+        {
+          "kind": "irsNotice",
+          "citation": "IRS Notice 2024-22, section II.B",
+          "url": "https://www.irs.gov/pub/irs-drop/n-24-22.pdf"
+        }
+      ]
+    },
+    {
+      "id": "irc-402A-e-7-B-i-plesa-distribution-qualified-roth-treatment",
+      "title": "A PLESA distribution receives designated-Roth qualified-distribution treatment",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": "This rule requires the PLESA source, separately allocated earnings, and a PLESA withdrawal. The plan schema has none of those fields, and the action contract has no PLESA distribution kind; their absences are the schema and vocabulary gates in model/plan.test.ts and actions/contract.test.ts.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "awaitingGuidance",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2026-11-24",
+      "implementedBy": [
+        "packages/engine/src/actions/contract.ts",
+        "packages/engine/src/model/plan.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/contract.ts",
+          "functions": [
+            {
+              "name": "persistedRetirementActionRequestSchema",
+              "line": 389
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "rothAccountSchema",
+              "line": 942
+            },
+            {
+              "name": "traditionalAccountSchema",
+              "line": 894
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 402A(e)(7)(B)(i)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402A&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 402A(d)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402A&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-408A-c-2-roth-shares-the-section-219-ceiling",
+      "title": "Roth and traditional IRA contributions share one annual ceiling",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The engine expresses this by putting traditional and Roth IRAs owned by the same person into a single annual limit group rather than by ordering one before the other. Ordering would matter if the two ceilings differed, and under this section they do not.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2027-08-03",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/simulate.test.ts",
+          "line": 5434,
+          "note": null,
+          "tests": [
+            {
+              "title": "does not give a second ceiling to someone holding both IRA flavours",
+              "line": 5438
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 408A(c)(2)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/408A"
+        }
+      ]
+    },
+    {
+      "id": "irc-408A-c-3-roth-contribution-agi-phase-out",
+      "title": "The Roth contribution income phase-out is not modeled",
+      "classification": "approximated",
+      "errorDirection": "understatesTax",
+      "conventionRationale": "Recorded as an explicit gap rather than left silent, because the direction of the error is knowable: a high income household will show Roth contributions it could not actually make, and the overstatement grows with income. It is out of scope rather than settled because the reduction runs off adjusted gross income, which the projection computes after the contribution loop has already run.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-29",
+      "dueOn": "2026-12-27",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "rothAccountSchema",
+              "line": 942
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/simulateContributionsAndQcd.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/simulateContributionsAndQcd.approximation.test.ts",
+          "line": 169,
+          "note": null,
+          "tests": [
+            {
+              "title": "funds a Roth IRA for a single filer far above the phase-out range",
+              "line": 182
+            },
+            {
+              "title": "charges the same contribution at an income the phase-out does not reach",
+              "line": 193
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 408A(c)(3)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408A&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-408A-d-2-roth-qualified-distribution",
+      "title": "Roth qualified distribution and the five-taxable-year period",
+      "classification": "approximated",
+      "errorDirection": "bothDirections",
+      "conventionRationale": "Two independent errors sit under the single age test, and this record states both because neither covers the other. The five-taxable-year period is not modelled at all, and its absence under-taxes: a 62-year-old whose first Roth IRA was opened two years ago is shown tax-free earnings that the statute makes ordinary income and exposes to the 72(t) tax, which is exactly the case a conversion ladder started late in life produces. The attained-age-60 test is a second and separate error: it is the same annual proxy registered for the traditional path as irc-72-t-2-A-i-age-59-half-annual-proxy, appearing here as ROTH_QUALIFIED_AGE, and because attained age is the calendar-year age it runs both ways by up to about six months depending on the birth month rather than in a single direction. The five-year period cannot be recovered from account state the projection already holds, because 408A(d)(2)(B) runs it per individual from the first contribution to any Roth IRA rather than per account; closing this needs a household-level first-Roth-year fact, not a change to the withdrawal split. Until then nothing from this path is filing-grade on the taxability of Roth earnings.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2027-08-03",
+      "implementedBy": [
+        "packages/engine/src/strategies/rothBasis.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/strategies/rothBasis.ts",
+          "functions": [
+            {
+              "name": "ROTH_QUALIFIED_AGE",
+              "line": 23
+            },
+            {
+              "name": "splitRothWithdrawal",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/federalTaxAndRothBasis.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/federalTaxAndRothBasis.approximation.test.ts",
+          "line": 266,
+          "note": "earnings taxed inside the five-taxable-year period, past the age event",
+          "tests": [
+            {
+              "title": "treats earnings as tax-free inside the five-taxable-year period",
+              "line": 276
+            },
+            {
+              "title": "has nowhere to put the first-Roth-year fact that would change the answer",
+              "line": 294
+            },
+            {
+              "title": "runs the other way too, on the attained-age-60 proxy for 59.5",
+              "line": 312
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 408A(d)(2)(A)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/408A"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 408A(d)(2)(B)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/408A"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 408A(d)(1)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/408A"
+        }
+      ]
+    },
+    {
+      "id": "irc-408A-d-3-A-i-zero-basis-conversion-includible",
+      "title": "A zero-basis traditional-IRA conversion is wholly includible",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-25",
+      "dueOn": "2027-08-25",
+      "implementedBy": [
+        "packages/engine/src/actions/ownedNonRothIraWithdrawalCharacter.ts",
+        "packages/engine/src/actions/rothConversionExecution.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraWithdrawalCharacter.ts",
+          "functions": [
+            {
+              "name": "classifyOwnedNonRothIraAnnualWithdrawals",
+              "line": 248
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/rothConversionExecution.ts",
+          "functions": [
+            {
+              "name": "executeRothConversions",
+              "line": 928
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/actions/rothConversionExecution.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/actions/rothConversionExecution.test.ts",
+          "line": 1102,
+          "note": "proven zero aggregated traditional-IRA basis",
+          "tests": [
+            {
+              "title": "publishes the entire gross as taxable only when the basis numerator is proven zero",
+              "line": 1114
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 408A(d)(3)(A)(i)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408A&num=0&edition=prelim"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.408A-4, A-7(a)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.408A-4"
+        }
+      ]
+    },
+    {
+      "id": "irc-408A-d-3-B-conversion-destination-must-be-a-roth-ira",
+      "title": "A conversion must land in a Roth IRA, never a designated Roth account",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "Two choices sit under this record and only one of them is the engine’s. WHICH of an owner’s several Roth IRAs receives the dollars remains a convention -- the first in Plan order, arbitrary between two accounts of the same kind, exactly as the sibling record irc-408-d-3-A-i-conversion-benefits-the-distributee already states. WHETHER an employer designated Roth account may receive them is not a convention at all, because 402A(c)(4)(B) settles it. Where the engine did have to choose is what to do for an owner who holds both kinds with the designated Roth account earlier in Plan order, and it passes over that account rather than refusing the slice. Plan order is insertion order and nothing else in this codebase reads it as a preference, so refusing would let array position decide a five-figure answer: a household holding a Roth 401(k) at index 1 and a Roth IRA at index 3 would convert nothing, while the same household with the two swapped converted in full. Trimming is kept for the owner who genuinely has no lawful destination, and that owner is named. A second reason keeps designated Roth accounts out of the candidate set entirely: a pre-tax employer balance CAN reach a designated Roth account under 402A(c)(4), but only the one maintained under the same plan, and the Plan schema carries no plan-identity link between an employer traditional account and an employer Roth account -- kind ira against kind employer is the whole discriminant -- so the engine cannot establish \"such plan\" from its data even where the route exists. A Roth IRA is the only destination whose lawfulness this engine can verify. Reading the vehicle also files the conversion layer in the right basis pool: rothPoolKey aggregates an owner’s Roth IRAs under one key and gives each employer Roth account its own, so a layer credited to the wrong account would carry its 408A(d)(3)(F) five-year clock into a pool that later Roth withdrawals never read. What this record does NOT reach is whether the source balance was distributable in the first place; that is registered separately as irc-401-k-2-B-i-employer-plan-conversion-source-not-gated-by-distributability.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-05",
+      "dueOn": "2027-08-05",
+      "implementedBy": [
+        "packages/engine/src/actions/aggregateRothConversionOwnerAllocation.ts",
+        "packages/engine/src/actions/ownedNonRothIraAnnualPhysicalTransaction.ts",
+        "packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts",
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/strategies/accountEligibility.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/aggregateRothConversionOwnerAllocation.ts",
+          "functions": [
+            {
+              "name": "allocateAggregateRothConversionByOwner",
+              "line": 276
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraAnnualPhysicalTransaction.ts",
+          "functions": [
+            {
+              "name": "preparePlanOwnedNonRothIraAnnualPhysicalTransaction",
+              "line": 1455
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts",
+          "functions": [
+            {
+              "name": "conversionDestinationIssue",
+              "line": 338
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/strategies/accountEligibility.ts",
+          "functions": [
+            {
+              "name": "evaluateRetirementActionEligibility",
+              "line": 1140
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/conversionDestinationVehicle.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/conversionDestinationVehicle.test.ts",
+          "line": 221,
+          "note": "a Roth IRA sitting behind a designated Roth account in Plan order",
+          "tests": [
+            {
+              "title": "converts into the Roth IRA and leaves the designated Roth account alone",
+              "line": 249
+            },
+            {
+              "title": "names the Roth IRA on the destination credit, not the earlier Roth account",
+              "line": 258
+            },
+            {
+              "title": "recognises the income and says nothing, because nothing was refused",
+              "line": 273
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/conversionDestinationVehicle.test.ts",
+          "line": 294,
+          "note": "an owner whose only Roth is a designated Roth account",
+          "tests": [
+            {
+              "title": "converts nothing, and says the employer account is what stands in the way",
+              "line": 302
+            },
+            {
+              "title": "trims only the designated-Roth owner’s slice, and names them",
+              "line": 332
+            },
+            {
+              "title": "keeps the destination-less copy for a household holding no Roth at all",
+              "line": 361
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 408A(d)(3)(A), complete",
+          "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapD-partI-subpartA-sec408A.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 408A(d)(3)(B), complete",
+          "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapD-partI-subpartA-sec408A.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 408A(d)(3)(C)",
+          "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapD-partI-subpartA-sec408A.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 408A(b)",
+          "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapD-partI-subpartA-sec408A.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 402A(b)(2)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402A&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 402A(c)(4)(B)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402A&num=0&edition=prelim"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.408A-4, A-1(b), complete",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.408A-4"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 408A(c)(5)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408A&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 402A(c)(3)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402A&num=0&edition=prelim"
+        },
+        {
+          "kind": "irsNotice",
+          "citation": "Notice 2010-84, A-1",
+          "url": "https://www.irs.gov/irb/2010-51_IRB"
+        }
+      ]
+    },
+    {
+      "id": "irc-408A-d-3-F-roth-conversion-recapture",
+      "title": "Five-year recapture on a conversion layer tapped early",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "Each conversion runs its own clock, because 408A(d)(3)(F)(i)(II) begins the period with the taxable year of that contribution and not with the year the Roth was opened. That is why the layers are held separately and drawn oldest first, and it is why this record is distinct from the account-level five-year period in irc-408A-d-2-roth-qualified-distribution: one decides whether earnings are taxable, this one decides whether already-taxed conversion principal carries the additional tax. Two things about the surrounding code so this is not read as broader than it is. The period is counted in calendar years, which is exact for the calendar-year taxpayers the engine models and would not be for a fiscal-year taxpayer it does not. And the recapture lifts through the 72(t) exceptions themselves, so the 59.5 boundary applies to it; the engine uses its attained-age-60 proxy for that boundary, recorded under irc-408A-d-2-roth-qualified-distribution.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2027-08-03",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/strategies/rothBasis.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/strategies/rothBasis.ts",
+          "functions": [
+            {
+              "name": "ROTH_SEASONING_YEARS",
+              "line": 25
+            },
+            {
+              "name": "splitRothWithdrawal",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/strategies/rothBasis.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/strategies/rothBasis.test.ts",
+          "line": 274,
+          "note": null,
+          "tests": [
+            {
+              "title": "recaptures only so much of the conversion as was includible at the time",
+              "line": 287
+            },
+            {
+              "title": "applies 72(t) without taxing the conversion principal a second time",
+              "line": 293
+            },
+            {
+              "title": "runs the five-taxable-year period from the year of that conversion",
+              "line": 300
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 408A(d)(3)(F)(i)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/408A"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 408A(d)(3)(F)(ii)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/408A"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 408A(d)(3)(C)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/408A"
+        }
+      ]
+    },
+    {
+      "id": "irc-408A-d-4-B-converted-layer-taxable-portion-first",
+      "title": "A converted Roth layer must consume its taxable portion first",
+      "classification": "approximated",
+      "errorDirection": "understatesTax",
+      "conventionRationale": "DEFECT — no behavior change in this registry slice. `splitRothWithdrawal` computes each partial taxable take as take × taxableAmount / layer.amount, so it leaves 2,400 taxable principal after a 4,000 withdrawal from the 10,000/4,000 layer. Section 408A(d)(4)(B) instead allocates that withdrawal entirely to the taxable portion first. The 240 of additional tax that reading would have imposed is deferred only if the remaining taxable principal is tapped while still unseasoned and pre-59½; otherwise it is permanently omitted. The same pro-rata take lives in `applyConversionPrincipalDebt` and `assumedSeedConsequentialSpill` in this file — a fix must change those copies together. The fixture pins the current 160 produced value until a separately authorized implementation fix changes it.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-25",
+      "dueOn": "2027-08-25",
+      "implementedBy": [
+        "packages/engine/src/strategies/rothBasis.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/strategies/rothBasis.ts",
+          "functions": [
+            {
+              "name": "applyConversionPrincipalDebt",
+              "line": 167
+            },
+            {
+              "name": "assumedSeedConsequentialSpill",
+              "line": 228
+            },
+            {
+              "name": "splitRothWithdrawal",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/strategies/rothBasis.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/strategies/rothBasis.test.ts",
+          "line": 217,
+          "note": "the taxable portion of a conversion layer precedes its nontaxable portion",
+          "tests": [
+            {
+              "title": "prorates a conversion layer taxable portion across a partial withdrawal, diverging from the statute",
+              "line": 230
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 408A(d)(4)(B)(ii)(II), final sentence",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408A&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 408A(d)(3)(F)(i)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408A&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 72(t)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-408A-d-4-B-roth-distribution-ordering",
+      "title": "Roth withdrawals consume contributions, conversions, then earnings",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-25",
+      "dueOn": "2027-08-25",
+      "implementedBy": [
+        "packages/engine/src/strategies/rothBasis.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/strategies/rothBasis.ts",
+          "functions": [
+            {
+              "name": "splitRothWithdrawal",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/strategies/rothBasis.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/strategies/rothBasis.test.ts",
+          "line": 113,
+          "note": "regular contributions, conversion principal, then earnings",
+          "tests": [
+            {
+              "title": "consumes regular contributions before conversion principal",
+              "line": 137
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/strategies/rothBasis.test.ts",
+          "line": 147,
+          "note": "earnings reached last",
+          "tests": [
+            {
+              "title": "reaches earnings only after both basis pools are exhausted",
+              "line": 159
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/strategies/rothBasis.test.ts",
+          "line": 176,
+          "note": "qualified rollover contribution layers are first-in, first-out",
+          "tests": [
+            {
+              "title": "debits the oldest conversion layer before later conversion layers",
+              "line": 189
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 408A(d)(4)(B)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408A&num=0&edition=prelim"
+        },
+        {
+          "kind": "irsPublication",
+          "citation": "IRS Publication 590-B (2025), Ordering Rules for Distributions",
+          "url": "https://www.irs.gov/publications/p590b"
+        }
+      ]
+    },
+    {
+      "id": "irc-408A-d-4-B-same-year-conversion-aggregation",
+      "title": "Same-year Roth conversions are ordered in aggregate, taxable portion first",
+      "classification": "approximated",
+      "errorDirection": "understatesTax",
+      "conventionRationale": "DEFECT — no behavior change in this registry slice. Pub 590-B’s year-aggregate reading takes the year’s taxable conversion principal before any nontaxable principal from that year. The engine records one layer per named conversion action (projection/simulate.ts) and `splitRothWithdrawal` walks those layers in array order, so a nontaxable 2024 layer ahead of a taxable 2024 layer can be fully consumed first. On the fixture — two same-year $5,000 layers with the nontaxable one first, then a $5,000 draw at age 50 — year-aggregate taxable-first yields $500 of additional tax; array order yields $0. The per-contribution FIFO record cannot carry this gap because both layers share a year.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-25",
+      "dueOn": "2027-08-25",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/strategies/rothBasis.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/strategies/rothBasis.ts",
+          "functions": [
+            {
+              "name": "splitRothWithdrawal",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/strategies/rothBasis.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/strategies/rothBasis.test.ts",
+          "line": 247,
+          "note": "same-year nontaxable layer ahead of taxable layer understates 72(t)",
+          "tests": [
+            {
+              "title": "consumes a same-year nontaxable conversion layer before a later taxable one in array order",
+              "line": 260
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 408A(d)(4)(B)(ii)(II)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408A&num=0&edition=prelim"
+        },
+        {
+          "kind": "irsPublication",
+          "citation": "IRS Publication 590-B (2025), Ordering Rules for Distributions",
+          "url": "https://www.irs.gov/publications/p590b"
+        }
+      ]
+    }
+  ]
+}

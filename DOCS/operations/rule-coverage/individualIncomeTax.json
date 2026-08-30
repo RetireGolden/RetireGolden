@@ -1,0 +1,1463 @@
+{
+  "kind": "retiregolden.rules-coverage.shard",
+  "version": 5,
+  "module": "individualIncomeTax",
+  "rules": [
+    {
+      "id": "irc-1-j-2-progressive-ordinary-rate-schedule",
+      "title": "Ordinary rate schedule is marginal, and permanent after OBBBA",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "Two things about the 2026 tables are easy to get wrong from memory. First, the 37 percent bracket begins at the same figure for unmarried individuals and for heads of household ($640,600), while the married-filing-separately table diverges from the unmarried table only at the top, at $384,350. Second, OBBBA gave the boundaries of the 10 and 12 percent brackets one extra year of indexing by confining the 2017-base substitution in 1(j)(3)(B)(i) to brackets above 12 percent, so those two thresholds move on a different base than the rest of the table. The engine models only unmarried and married-filing-jointly, mapping every other status onto one of the two.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2026-12-01",
+      "implementedBy": [
+        "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/tax/federalTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/data/year2026.ts",
+          "functions": [
+            {
+              "name": "year2026",
+              "line": 16
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/federalTax.ts",
+          "functions": [
+            {
+              "name": "bracketTax",
+              "line": 303
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/federalTax.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/federalTax.test.ts",
+          "line": 1680,
+          "note": null,
+          "tests": [
+            {
+              "title": "taxes each bracket slice at its own rate",
+              "line": 1684
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 1(j)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 1(j)(2)(C)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1&num=0&edition=prelim"
+        },
+        {
+          "kind": "legislativeHistory",
+          "citation": "Amendment note to IRC 1, P.L. 119-21 sec. 70101(a)(1), (b)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1&num=0&edition=prelim"
+        },
+        {
+          "kind": "irsNotice",
+          "citation": "Rev. Proc. 2025-32, section 4.01, Table 3",
+          "url": "https://www.irs.gov/pub/irs-drop/rp-25-32.pdf"
+        }
+      ]
+    },
+    {
+      "id": "irc-1-j-3-B-rate-tables-adjusted-each-year",
+      "title": "The rate tables are re-prescribed every year, so a nominal projection must index them",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The same reasoning reaches the other annually adjusted figures the federal engine reads, each under its own provision: the basic standard deduction under 63(c)(7)(B)(ii), the age-65 addition under 63(c)(4) (which indexes the dollar amounts in subsection (f)), the maximum zero-rate and maximum 15-percent capital gain amounts under 1(j)(5)(C), and the AMT exemption, its phase-out threshold and the 28 percent rate threshold under 55(d)(4)(B) and 55(d)(3)(B). Their base years differ -- 2016, 2017, 2024, 2025, 2011 -- and so do their rounding steps, but none of that survives into the projection: the pack figure has already absorbed every adjustment through the pack year, so carrying it forward is one multiplication for all of them. Two approximations remain and are deliberate. The index is the plan assumed general inflation rather than the C-CPI-U of 1(f)(3), and the statutory rounding to a multiple of 50 or 100 dollars is not reproduced -- the same two liberties limitScale already takes with the contribution limits. What must not be swept along are the figures with no indexing provision at all: the section 86 provisional-income thresholds, the section 1411 thresholds, the section 121 exclusion, the section 1211(b) ordinary offset and the section 151(d)(5)(C) senior deduction are unindexed by design, and the SALT cap follows the explicit 164(b)(7) schedule rather than an index. Scaling any of those would be the mirror-image defect.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-29",
+      "dueOn": "2026-12-27",
+      "implementedBy": [
+        "packages/engine/src/params/index.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/index.ts",
+          "functions": [
+            {
+              "name": "indexFederalTaxPack",
+              "line": 102
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/federalTax.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/federalTax.test.ts",
+          "line": 1942,
+          "note": null,
+          "tests": [
+            {
+              "title": "prices nominal wages on the rate tables prescribed for that year",
+              "line": 1946
+            },
+            {
+              "title": "leaves a published year exactly as published",
+              "line": 1961
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 1(j)(3)(B)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 1(j)(5)(C)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 63(c)(7)(B)(ii)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section63&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 55(d)(4)(B)(i)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section55&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-151-d-5-C-iii-I-senior-deduction-per-individual-phase-out",
+      "title": "The senior deduction phase-out reduces the per-individual amount",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "sunsetting",
+      "effectiveFrom": 2026,
+      "effectiveThrough": 2028,
+      "verifiedOn": "2026-08-29",
+      "dueOn": "2027-01-26",
+      "implementedBy": [
+        "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/strategies/optimizer.ts",
+        "packages/engine/src/tax/federalTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/data/year2026.ts",
+          "functions": [
+            {
+              "name": "year2026",
+              "line": 16
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/strategies/optimizer.ts",
+          "functions": [
+            {
+              "name": "buildOptimizerModel",
+              "line": 536
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/federalTax.ts",
+          "functions": [
+            {
+              "name": "seniorDeductionAmount",
+              "line": 343
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/strategies/optimizer.test.ts",
+        "packages/engine/src/tax/federalTax.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/strategies/optimizer.test.ts",
+          "line": 461,
+          "note": "the slope the optimizer prices the clawback at",
+          "tests": [
+            {
+              "title": "puts the two readings 100,000 dollars apart for a couple",
+              "line": 486
+            },
+            {
+              "title": "skips a couple already past the per-individual exhaustion point",
+              "line": 494
+            },
+            {
+              "title": "claws back 6% for each qualified individual, not 6% for the return",
+              "line": 508
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/federalTax.test.ts",
+          "line": 1286,
+          "note": "the exact ledger amount",
+          "tests": [
+            {
+              "title": "reduces each qualified individual amount, not the combined total",
+              "line": 1291
+            },
+            {
+              "title": "exhausts two shares at the same modified AGI as one share",
+              "line": 1301
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 151(d)(5)(C)(i)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section151&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 151(d)(5)(C)(iii)(I)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section151&num=0&edition=prelim"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "Schedule 1-A (Form 1040) (2025), Part V, lines 32 to 37",
+          "url": "https://www.irs.gov/pub/irs-pdf/f1040s1a.pdf"
+        }
+      ]
+    },
+    {
+      "id": "irc-151-d-5-C-senior-deduction-not-indexed",
+      "title": "The senior deduction is a flat 6,000 dollars that never grows",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "This record exists because of the change that produced it. The engine now carries the annually indexed federal figures forward past the published pack, and the senior deduction is the figure most likely to be swept into that projection by a later reader: it sits in the same pack object as the standard deduction, is claimed by the same taxpayers in the same years, and is the one deduction in the group that has no cost-of-living clause. Indexing the 6,000 dollars, or the 75,000 dollar threshold, would overstate the deduction in exactly the years a 65-plus household is deciding how much to convert. The fixed threshold also means the phase-out bites harder each year in a nominal projection, which is a real effect of the drafting and must be preserved rather than smoothed away. The expiry is modeled from the same subparagraph: taxable years beginning before January 1, 2029 makes 2028 the last applicable year.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "sunsetting",
+      "effectiveFrom": 2025,
+      "effectiveThrough": 2028,
+      "verifiedOn": "2026-08-29",
+      "dueOn": "2027-01-26",
+      "implementedBy": [
+        "packages/engine/src/params/index.ts",
+        "packages/engine/src/tax/federalTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/index.ts",
+          "functions": [
+            {
+              "name": "indexFederalTaxPack",
+              "line": 102
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/federalTax.ts",
+          "functions": [
+            {
+              "name": "seniorDeductionAmount",
+              "line": 343
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/federalTax.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/federalTax.test.ts",
+          "line": 2022,
+          "note": null,
+          "tests": [
+            {
+              "title": "holds the amount and the phase-out threshold flat in a projected year",
+              "line": 2026
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 151(d)(5)(C)(i)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section151&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 151(d)(5)(C)(iii)(I)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section151&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 151(d)(4)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section151&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-163-h-3-E-i-pmi-qualified-residence-interest-restart",
+      "title": "Qualified mortgage-insurance premiums again count as qualified residence interest",
+      "classification": "approximated",
+      "errorDirection": "overstatesTax",
+      "conventionRationale": "What this is NOT is a typed refusal — `itemizedTotal` still emits a dollar figure that simply omits PMI, which is why this is approximated rather than outOfScope, the same shape as the medical-expense and §170(p) projection records. The fixture pins the produced total without the hypothesized premium until a separately authorized input and implementation fix closes the gap.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2027-08-26",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/tax/federalTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "itemizedDeductionsSchema",
+              "line": 1903
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/federalTax.ts",
+          "functions": [
+            {
+              "name": "itemizedTotal",
+              "line": 129
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/federalTax.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/federalTax.test.ts",
+          "line": 1170,
+          "note": "qualifying PMI omitted from itemized total for a household already itemizing",
+          "tests": [
+            {
+              "title": "omits qualifying PMI from the itemized total",
+              "line": 1188
+            },
+            {
+              "title": "ignores PMI however it is supplied under plausible field names",
+              "line": 1201
+            },
+            {
+              "title": "reaches the statutory deduction only when the premium is smuggled in as mortgage interest",
+              "line": 1215
+            },
+            {
+              "title": "overstates tax, by the deduction it cannot see at the marginal rate",
+              "line": 1225
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 163(h)(3)(E)(i)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section163&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 163(h)(3)(E)(ii)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section163&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 163(h)(3)(E)(iii)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section163&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 163(h)(3)(E)(iv)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section163&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 163(h)(3)(F)(i)(III)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section163&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 163, Editorial Notes, Effective Date of 2025 Amendment (P.L. 119-21 § 70108(b))",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section163&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-163-h-3-F-acquisition-indebtedness-limit",
+      "title": "Mortgage interest is limited to $750,000 of acquisition debt",
+      "classification": "approximated",
+      "errorDirection": "understatesTax",
+      "conventionRationale": "The error scales with the mortgage rather than with income: at $1.5 million of acquisition debt half the interest is disallowed, and a household paying $90,000 of interest would see $45,000 of deduction that does not exist. The grandfather in 163(h)(3)(F)(i)(IV) preserves the older $1,000,000 limit for debt incurred on or before December 15, 2017, so the engine cannot even apply a flat cap without knowing when the loan was taken out, which is why this is left unmodelled rather than approximated.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2027-08-03",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/tax/federalTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "itemizedDeductionsSchema",
+              "line": 1903
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/federalTax.ts",
+          "functions": [
+            {
+              "name": "itemizedTotal",
+              "line": 129
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/federalTaxAndRothBasis.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/federalTaxAndRothBasis.approximation.test.ts",
+          "line": 186,
+          "note": "interest on acquisition debt of $1.5M, twice the $750,000 limit",
+          "tests": [
+            {
+              "title": "deducts the whole interest figure with no principal limit applied",
+              "line": 198
+            },
+            {
+              "title": "ignores the acquisition-debt principal however it is supplied",
+              "line": 214
+            },
+            {
+              "title": "understates tax against the return that respects the cap",
+              "line": 233
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 163(h)(3)(F)(i)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section163&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 163(h)(3)(B)(ii)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section163&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-164-b-7-B-magi-phasedown",
+      "title": "High MAGI phases the SALT limitation down to no less than $10,000",
+      "classification": "approximated",
+      "errorDirection": "understatesTax",
+      "conventionRationale": "DEFECT — no behavior change in this registry slice. A research bot's 2026-08-26 change alert surfaced the OBBBA MAGI phasedown, and review verified that `saltCapForYear(pack, year)` takes only a pack and year while `itemizedTotal` applies that result without the phasedown. The calculator does compute MAGI for other rules, but neither function carries it into the SALT limitation. The fixture pins the current full-cap result until a separately authorized implementation fix changes it.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "sunsetting",
+      "effectiveFrom": 2026,
+      "effectiveThrough": 2029,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2027-01-23",
+      "implementedBy": [
+        "packages/engine/src/tax/federalTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/tax/federalTax.ts",
+          "functions": [
+            {
+              "name": "itemizedTotal",
+              "line": 129
+            },
+            {
+              "name": "saltCapForYear",
+              "line": 112
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/federalTax.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/federalTax.test.ts",
+          "line": 1084,
+          "note": "2026 MAGI $705,000 reaches the $10,000 SALT floor; mid-phase locks 30%",
+          "tests": [
+            {
+              "title": "keeps the full scheduled cap rather than applying the high-MAGI floor",
+              "line": 1116
+            },
+            {
+              "title": "keeps the full scheduled cap mid-phase rather than the 30% reduction",
+              "line": 1133
+            },
+            {
+              "title": "understates tax compared with the itemized return using the statutory floor",
+              "line": 1144
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 164(b)(6)(B)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section164&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 164(b)(7)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section164&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 164(b)(7)(B)(i)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section164&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 164(b)(7)(B)(ii)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section164&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 164(b)(7)(B)(ii)(II)-(III)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section164&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 164(b)(7)(B)(iii)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section164&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 164(b)(7)(B)(iv)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section164&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-164-b-7-salt-cap-schedule",
+      "title": "The SALT cap is a schedule and reverts to 10,000 in 2030",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The cap is halved for a married individual filing separately, which the projection cannot express because it collapses every filing status to single or married-filing-jointly. The high-income phase-out that OBBBA also added is not modelled either — that gap is registered separately as irc-164-b-7-B-magi-phasedown — so the cap here binds later than it would for a taxpayer above that threshold.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "sunsetting",
+      "effectiveFrom": 2025,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2027-01-01",
+      "implementedBy": [
+        "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/tax/federalTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/data/year2026.ts",
+          "functions": [
+            {
+              "name": "year2026",
+              "line": 16
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/federalTax.ts",
+          "functions": [
+            {
+              "name": "saltCapForYear",
+              "line": 112
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/federalTax.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/federalTax.test.ts",
+          "line": 1022,
+          "note": null,
+          "tests": [
+            {
+              "title": "drops the cap to ten thousand for years after 2029",
+              "line": 1026
+            },
+            {
+              "title": "compounds the one percent steps on the preceding year through 2029",
+              "line": 1042
+            },
+            {
+              "title": "does not carry the 2025 figure back before the schedule begins",
+              "line": 1057
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 164(b)(6)(B)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/164"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 164(b)(7)(A)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/164"
+        }
+      ]
+    },
+    {
+      "id": "irc-55-a-amt-is-the-excess-over-regular-tax",
+      "title": "AMT is the excess of tentative minimum tax over regular tax",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "Section 55(b)(1) states the breakpoint as $175,000 and it is inflation-adjusted; the 2026 pack carries 244,500. The record is annually indexed for that reason, and the statutory figure should not be read as the current one.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-28",
+      "dueOn": "2026-12-26",
+      "implementedBy": [
+        "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/tax/federalTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/data/year2026.ts",
+          "functions": [
+            {
+              "name": "year2026",
+              "line": 16
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/federalTax.ts",
+          "functions": [
+            {
+              "name": "computeFederalTax",
+              "line": 475
+            },
+            {
+              "name": "tentativeMinimumTax",
+              "line": 399
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/federalTax.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/federalTax.test.ts",
+          "line": 523,
+          "note": null,
+          "tests": [
+            {
+              "title": "owes nothing when the regular tax already exceeds the tentative amount",
+              "line": 527
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 55(a)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/55"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 55(b)(1)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/55"
+        }
+      ]
+    },
+    {
+      "id": "irc-55-b-3-amt-net-capital-gain-maximum-rate",
+      "title": "Preferential capital gain rates survive into the AMT",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The engine stacks the AMT preferential income on top of the AMT ordinary excess and applies the regular-tax breakpoints to that stack, which is the Form 6251 Part III construction. Two layers of 55(b)(3) are not modelled anywhere in this engine: the 25 percent layer for unrecaptured section 1250 gain in subparagraph (E) and, in the regular tax, the 28 percent collectibles rate. Both would raise tax, so their absence understates it for a taxpayer holding depreciated real property or collectibles.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2027-08-03",
+      "implementedBy": [
+        "packages/engine/src/tax/federalTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/tax/federalTax.ts",
+          "functions": [
+            {
+              "name": "tentativeMinimumTax",
+              "line": 399
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/federalTax.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/federalTax.test.ts",
+          "line": 1850,
+          "note": null,
+          "tests": [
+            {
+              "title": "caps the tentative minimum tax on capital gain at the preferential rates",
+              "line": 1854
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 55(b)(3)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section55&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 55(a)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section55&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-55-d-exemption-phase-out-rate",
+      "title": "The AMT exemption phases out at 50 percent from 2026",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "One authority per claim in the statement, because each claim rests on a different provision. 55(d)(2) carries the reduction formula and the not-below-zero floor; its 25 percent is the unmodified figure the substitution below replaces, so the two have to be read together. The codified 55(d)(4)(A)(ii) carries the rest: subclause (I) substitutes the 1,000,000 dollar threshold and subclause (IV) substitutes 50 percent for 25 percent. 55(d)(4)(B)(i) carries the indexing, and independently names the 1,000,000 dollar amount as the subparagraph (A)(ii)(I) amount. Paragraph (2)(A) is the joint-return figure and (B) is 50 percent of it, which is where the 500,000 dollar amount for an unmarried taxpayer comes from. The enrolled bill is kept beside it as the amending authority, because (IV) exists only because section 70107(c) added it and a reader tracing the 50 percent figure should be able to see the instruction that created it. Corrected 2026-08-04: an earlier version of this record said neither uscode.house.gov nor law.cornell.edu carried the amended text and cited the enrolled bill alone for that reason. That was true when the quote sweep ran and is no longer true -- uscode has since published the OBBBA text. A rationale that explains why a citation looks unusual has to be re-checked when the reason expires, or it becomes the next stale claim. Corrected again on the same day: this paragraph opened \"Two authorities\" after two more were added, so it failed its own instruction inside one commit. The count is now stated nowhere in this paragraph, because a number in prose beside a list is a second place to keep in step, and this one had already gone stale once. Extended on 2026-08-04: the statement keys the figures to filing status, and effectiveFrom keys the whole record to 2026, and neither was visible in what was quoted. Both were one clause away in spans already cited -- the chapeau continues into subparagraphs (A) and (B), which tie the amounts to paragraph (1)(A) and (1)(B), and section 70107 continues into subsection (d), which supplies the applicability date. The date deliberately stays in effectiveFrom rather than being added to the statement: a structured field already carries it, and restating it in prose would create exactly the second place to keep in step that this paragraph gave up its own count to avoid. The chapeau was widened in place. The enrolled bill could not be, because subsections (c) and (d) are not contiguous in the enrolled text: govinfo prints a codification annotation between them, and that annotation is the publisher speaking rather than Congress, so it cannot sit inside a quotedText. That left an elision or a split, and a split is better here -- each subsection is then quoted whole and verbatim, which is what a reader checking the citation expects to find, and neither quote depends on the checker honouring an ellipsis to read as accurate.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2026-12-02",
+      "implementedBy": [
+        "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/tax/federalTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/data/year2026.ts",
+          "functions": [
+            {
+              "name": "year2026",
+              "line": 16
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/federalTax.ts",
+          "functions": [
+            {
+              "name": "amtExemptionAmount",
+              "line": 384
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/federalTax.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/federalTax.test.ts",
+          "line": 542,
+          "note": null,
+          "tests": [
+            {
+              "title": "reduces the exemption by fifty cents per dollar above the threshold",
+              "line": 546
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 55(d)(2), phase-out chapeau and subparagraphs (A)-(B)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section55&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 55(d)(4)(B)(i), inflation adjustment",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section55&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 55(d)(4)(A)(ii), as amended by Pub. L. 119-21",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section55&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "Pub. L. 119-21, sec. 70107(c) (OBBBA)",
+          "url": "https://www.govinfo.gov/content/pkg/PLAW-119publ21/html/PLAW-119publ21.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "Pub. L. 119-21, sec. 70107(d) (OBBBA), effective date",
+          "url": "https://www.govinfo.gov/content/pkg/PLAW-119publ21/html/PLAW-119publ21.htm"
+        }
+      ]
+    },
+    {
+      "id": "irc-56-b-1-A-ii-state-and-local-taxes-disallowed-for-amt",
+      "title": "Deducted state and local taxes are an AMT add-back",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The add-back is the amount actually deducted, so the 164(b)(6) cap applies first and the AMT add-back is the capped figure rather than the taxes paid. Two refinements are unmodelled. 56(b)(1)(B) substitutes qualified housing interest for qualified residence interest, which can make part of a deducted mortgage interest amount an AMT add-back where the loan was not used to acquire, construct, or substantially improve the residence. And the final sentence of 56(b)(1)(A) preserves taxes allowable in computing adjusted gross income, which never arises in this engine because it deducts no above-the-line taxes.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2027-08-03",
+      "implementedBy": [
+        "packages/engine/src/tax/federalTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/tax/federalTax.ts",
+          "functions": [
+            {
+              "name": "computeFederalTax",
+              "line": 475
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/federalTax.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/federalTax.test.ts",
+          "line": 1816,
+          "note": null,
+          "tests": [
+            {
+              "title": "adds back capped state and local taxes but leaves charitable gifts alone",
+              "line": 1824
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 56(b)(1)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section56&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 56(b)(1)(B)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section56&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-56-b-1-D-section-151-deduction-disallowed-for-amt",
+      "title": "The senior deduction is a section 151 deduction disallowed for AMT",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "Section 63(b) was never amended to give the senior deduction a paragraph of its own, so a taxpayer who does not itemize can reach it only through 63(b)(2), the deduction for personal exemptions provided in section 151. A reading under which that phrase does not carry the senior deduction would deny the deduction to every non-itemizer, so the parallel phrase in 56(b)(1)(D) has to carry it as well. Form 6251 line 1a confirms both the result and its unconditional scope: it removes Schedule 1-A line 37, the senior deduction alone and not the rest of that schedule, from total deductions with no itemized-or-standard branch.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-29",
+      "dueOn": "2027-08-29",
+      "implementedBy": [
+        "packages/engine/src/tax/federalTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/tax/federalTax.ts",
+          "functions": [
+            {
+              "name": "computeFederalTax",
+              "line": 475
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/federalTax.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/federalTax.test.ts",
+          "line": 1391,
+          "note": null,
+          "tests": [
+            {
+              "title": "adds the senior deduction back on a return that itemizes",
+              "line": 1395
+            },
+            {
+              "title": "adds it back on a return that takes the standard deduction too",
+              "line": 1411
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 56(b)(1)(D)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section56&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 63(b)(2)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section63&num=0&edition=prelim"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "Form 6251 (2025), lines 1a and 1b",
+          "url": "https://www.irs.gov/pub/irs-pdf/f6251.pdf"
+        }
+      ]
+    },
+    {
+      "id": "irc-57-a-5-private-activity-bond-interest-amt-preference",
+      "title": "Private-activity-bond interest as an AMT preference item",
+      "classification": "approximated",
+      "errorDirection": "understatesTax",
+      "conventionRationale": "The plan model carries tax-exempt interest as a single annual amount with no issue-level detail, so identifying a specified private activity bond under 57(a)(5)(C) — an issue-date test with carve-outs for qualified 501(c)(3) bonds, certain housing bonds, refundings, and 2009–2010 issues — cannot be expressed in the input model. Treating the whole amount as non-preference matches the common diversified-fund case, and the omission is disclosed here rather than guessed per issue.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-07",
+      "dueOn": "2027-08-07",
+      "implementedBy": [
+        "packages/engine/src/tax/federalTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/tax/federalTax.ts",
+          "functions": [
+            {
+              "name": "amtPreferenceItems",
+              "line": 83
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/federalTax.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/federalTax.test.ts",
+          "line": 1903,
+          "note": null,
+          "tests": [
+            {
+              "title": "adds no tax-exempt interest to AMTI, even when it is all PAB interest",
+              "line": 1908
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 57(a)(5)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section57&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 57(a)(5)(C)(i)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section57&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-63-b-e-itemize-election-and-section-151-additivity",
+      "title": "Itemizing is an election; the section 151 deduction is additive",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "Nothing in section 63 requires the election to be the one that minimises tax; the engine assumes the taxpayer elects to itemize exactly when the itemized total exceeds the standard deduction, and compares against the standard deduction alone because the senior deduction is common to both branches. That assumption can be wrong in two directions the engine does not explore. Itemizing state and local taxes creates an AMT add-back that the standard deduction branch also creates but at a different amount, so the larger deduction is not always the lower total tax. And because the senior deduction is not an itemized deduction, it also escapes the section 68 overall limitation, which only bites on the itemized side.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2027-08-03",
+      "implementedBy": [
+        "packages/engine/src/tax/federalTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/tax/federalTax.ts",
+          "functions": [
+            {
+              "name": "computeFederalTax",
+              "line": 475
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/federalTax.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/federalTax.test.ts",
+          "line": 1759,
+          "note": null,
+          "tests": [
+            {
+              "title": "itemizes when larger and adds the senior deduction on top",
+              "line": 1767
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 63(e)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section63&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 63(b)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section63&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 63(d)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section63&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-63-c-2-joint-standard-deduction-doubles",
+      "title": "The joint standard deduction is 200 percent of the unmarried one",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "Section 63(c)(2)(B) gives a head of household its own figure -- 23,625 dollars as substituted by (c)(7) -- which is neither the unmarried amount nor twice it. The projection collapses every filing status to single or married-filing-jointly, so that third figure is unreachable and the doubling holds across everything the engine can express.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-29",
+      "dueOn": "2026-12-27",
+      "implementedBy": [
+        "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/tax/federalTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/data/year2026.ts",
+          "functions": [
+            {
+              "name": "year2026",
+              "line": 16
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/federalTax.ts",
+          "functions": [
+            {
+              "name": "computeFederalTax",
+              "line": 475
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/federalTax.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/federalTax.test.ts",
+          "line": 964,
+          "note": null,
+          "tests": [
+            {
+              "title": "keeps the joint amount at exactly twice the unmarried one",
+              "line": 968
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 63(c)(2)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section63&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 63(c)(7)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section63&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-63-c-7-B-ii-conformed-state-deduction-tracks-federal",
+      "title": "A state deduction defined by reference to the federal one moves when the federal one moves",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "This record is anchored federally because the proposition it settles is federal: it does not decide how a state adjusts a figure of its own, it keeps a borrowed federal figure equal to the federal figure, and it says what that federal figure comprises. The roster is deliberately no longer part of it. An earlier version named nine packs (AZ, CO, DC, IA, ID, MO, MT, ND, NM) and asserted that their law defines the state deduction by reference to the federal one, on the strength of two citations that are both federal and neither of which mentions any state -- a settled record whose disputed half rested on nothing. Research outside this record, resting on no authority carried here, reports two of the nine wrongly tagged: Arizona conforming in method rather than in amount, and the District of Columbia decoupled from the OBBBA increase. Neither is asserted here and neither can be, because confirming either needs an Arizona or a District of Columbia primary source and the conformance guard admits no publisher for either state; the pack corrections are separately decided work. The right long-term shape is a per-state record carrying that state’s own authority for its own conformity, one for each pack that claims to borrow the federal figure. That is a larger piece of work than this correction and is scoped as a follow-up, not attempted here. Three boundaries survive from the earlier version and are deliberate. State BRACKETS are not touched -- those are state dollar amounts under state law, some indexed, some fixed by statute, several on legislated rate ramps, and the per-state research to move any of them does not exist yet -- and neither are the state retirement-exclusion caps, which are likewise state figures (the Colorado 24,000 dollar pension subtraction is not indexed by Colorado law). A state that decouples from the federal amount loses the tag, keeps its own figure, and gets no age-65 addition from this path either; Maine and South Carolina did exactly that for 2026 and are untagged. And the scaling factor is the plan assumed general inflation rather than the C-CPI-U of section 1(f)(3), with the statutory rounding of the increase to the next lowest multiple of 50 dollars not reproduced -- the same two approximations indexFederalTaxPack already makes, and they must be the same ones, because a conformed copy indexed on any other basis would diverge from the federal figure it is a copy of.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2026-12-02",
+      "implementedBy": [
+        "packages/engine/src/params/index.ts",
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/params/state/index.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/index.ts",
+          "functions": [
+            {
+              "name": "indexFederalTaxPack",
+              "line": 102
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "CO",
+              "line": 234
+            },
+            {
+              "name": "DC",
+              "line": 276
+            },
+            {
+              "name": "IA",
+              "line": 378
+            },
+            {
+              "name": "ID",
+              "line": 328
+            },
+            {
+              "name": "MO",
+              "line": 513
+            },
+            {
+              "name": "MT",
+              "line": 537
+            },
+            {
+              "name": "NM",
+              "line": 593
+            },
+            {
+              "name": "states.ND",
+              "line": 637
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/index.ts",
+          "functions": [
+            {
+              "name": "conformStateStandardDeduction",
+              "line": 90
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.test.ts",
+          "line": 389,
+          "note": null,
+          "tests": [
+            {
+              "title": "measures nominal income against the federal deduction prescribed for that year",
+              "line": 393
+            },
+            {
+              "title": "leaves a published year exactly as published",
+              "line": 406
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 63(c)(7)(B)(ii)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/63"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 63(c)(7)(A)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/63"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 63(c)(1)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/63"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 63(c)(3)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/63"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 63(f)(1)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/63"
+        }
+      ]
+    },
+    {
+      "id": "irc-63-f-additional-standard-deduction-aged",
+      "title": "The age-65 standard deduction addition is per qualifying person",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The statute states 600 dollars, and 750 dollars for an unmarried individual who is not a surviving spouse; both are inflation-adjusted, and the 2026 pack carries 1,650 and 2,050. The test is attainment before the close of the taxable year, which the engine models as age attained in the calendar year -- equivalent except for a taxpayer born on January 1, whom the IRS treats as attaining age on the preceding December 31.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-29",
+      "dueOn": "2026-12-27",
+      "implementedBy": [
+        "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/params/index.ts",
+        "packages/engine/src/tax/federalTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/data/year2026.ts",
+          "functions": [
+            {
+              "name": "year2026",
+              "line": 16
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/index.ts",
+          "functions": [
+            {
+              "name": "age65StandardDeductionAddition",
+              "line": 379
+            },
+            {
+              "name": "standardDeduction",
+              "line": 387
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/federalTax.ts",
+          "functions": [
+            {
+              "name": "computeFederalTax",
+              "line": 475
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/federalTax.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/federalTax.test.ts",
+          "line": 1251,
+          "note": null,
+          "tests": [
+            {
+              "title": "takes the addition once for each person who has attained 65",
+              "line": 1255
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 63(f)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section63&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 63(f)(3)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section63&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-67-h-miscellaneous-itemized-permanently-disallowed",
+      "title": "Miscellaneous itemized deductions are permanently disallowed",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The provision moved. OBBBA added a new 67(g) defining educator expenses and redesignated the former 67(g) suspension as 67(h), while striking the January 1, 2026 expiry, so a citation to 67(g) now points at the wrong subsection. The engine builds its itemized total from state and local taxes, mortgage interest, and charitable gifts only, and offers no input channel for advisory or preparation fees. That absence is the correct answer rather than a gap, which is why this rule is registered as settled rather than out of scope.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2027-08-03",
+      "implementedBy": [
+        "packages/engine/src/tax/federalTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/tax/federalTax.ts",
+          "functions": [
+            {
+              "name": "itemizedTotal",
+              "line": 129
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/federalTax.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/federalTax.test.ts",
+          "line": 1787,
+          "note": null,
+          "tests": [
+            {
+              "title": "offers no channel by which a miscellaneous itemized deduction is allowed",
+              "line": 1791
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 67(h)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section67&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 67(b)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section67&num=0&edition=prelim"
+        },
+        {
+          "kind": "legislativeHistory",
+          "citation": "Amendment note to IRC 67, P.L. 119-21 sec. 70110(a), (b)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section67&num=0&edition=prelim"
+        }
+      ]
+    }
+  ]
+}

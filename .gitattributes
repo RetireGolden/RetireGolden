@@ -9,4 +9,5 @@ packages/engine/src/schema/plan.v*.generated.ts linguist-generated=true
 # High-churn generated operations ledgers; collapse in diffs and skip
 # automated review so PR context isn't spent re-reviewing machine output.
 DOCS/operations/rule-coverage.json linguist-generated=true
+DOCS/operations/rule-coverage/*.json linguist-generated=true
 DOCS/operations/quote-fidelity-ledger.json linguist-generated=true

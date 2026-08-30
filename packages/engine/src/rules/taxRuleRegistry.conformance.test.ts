@@ -3,6 +3,7 @@ import { describeRule } from './describeRule.js'
 import { declaredSymbolLinesOf, symbolAnchorLine, type DeclaredSymbol } from './symbolLines.js'
 import {
   DEFAULT_REVERIFICATION_INTERVAL_DAYS,
+  TAX_RULE_RECORD_MODULES,
   TAX_RULE_REGISTRY,
   taxRuleIds,
   taxRulesDueForVerification,
@@ -806,6 +807,22 @@ describe('tax rule registry conformance', () => {
     // matching would empty the left side and fail this too, rather than pass
     // vacuously.
     expect(recordModuleFileNames).toEqual([...RECORD_MODULES.map(([name]) => name)].sort())
+  })
+
+  it('keeps the registry\'s published module list identical to this one', () => {
+    // `TAX_RULE_RECORD_MODULES` ships beside the spread so the tooling can shard
+    // the coverage ledger and narrow the dispatch lock by module. It is a THIRD
+    // hand-kept copy of the same list, so it is pinned to the one above — which
+    // the directory guard has already checked against `records/` on disk — by
+    // name and by record-object identity. A module added to the registry export
+    // but not to the spread (or pointed at the wrong records object) would
+    // otherwise publish a shard that no longer matches what the registry holds.
+    expect([...TAX_RULE_RECORD_MODULES].map(([name]) => name).sort())
+      .toEqual([...RECORD_MODULES.map(([name]) => name)].sort())
+    const publishedByName = new Map(TAX_RULE_RECORD_MODULES.map(([name, records]) => [name, records]))
+    for (const [name, records] of RECORD_MODULES) {
+      expect(publishedByName.get(name), name).toBe(records)
+    }
   })
 
   it('registers each rule id in exactly one record module', () => {

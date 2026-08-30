@@ -6,6 +6,7 @@ import {
 import { buildCoverageReport } from './coverageReport.js'
 import {
   DEFAULT_REVERIFICATION_INTERVAL_DAYS,
+  TAX_RULE_RECORD_MODULES,
   TAX_RULE_REGISTRY,
   taxRuleDueOn,
   taxRulesDueForVerification,
@@ -24,9 +25,22 @@ const report = buildCoverageReport({
   // Dispatch prompts never publish deep-link lines; a constant keeps this
   // suite free of the AST resolver the freshness suite exercises for real.
   symbolLineFor: () => 1,
+  recordModules: TAX_RULE_RECORD_MODULES,
 })
 
 const PINNED_RULE_ID = 'usc-42-430-b-contribution-and-benefit-base'
+
+/**
+ * The single checklist line carrying the conflict lock. The assertions below
+ * are scoped to it rather than to the whole prompt: the prompt also *mentions*
+ * ledger paths in prose ("commit the refreshed ..."), and a whole-document
+ * `not.toContain` would read those as lock entries.
+ */
+function conflictLockLine(markdown: string): string {
+  const line = markdown.split('\n').find((candidate) => candidate.includes('require zero hits for any of '))
+  if (line === undefined) throw new Error('dispatch prompt has no conflict-lock line')
+  return line
+}
 
 describe('dispatch tooling', () => {
   describe('taxRuleDueOn', () => {
@@ -59,7 +73,7 @@ describe('dispatch tooling', () => {
         asOf: '2026-12-01',
         ruleIds: [ruleId],
         registry: TAX_RULE_REGISTRY,
-        manifestRules: report.manifest.rules,
+        manifestRules: report.rules,
       })
       const rule = TAX_RULE_REGISTRY[ruleId]
       expect(markdown).toContain('## ' + ruleId)
@@ -81,18 +95,59 @@ describe('dispatch tooling', () => {
         asOf: '2026-12-01',
         ruleIds: [ruleId],
         registry: TAX_RULE_REGISTRY,
-        manifestRules: report.manifest.rules,
+        manifestRules: report.rules,
         recordModuleOf: new Map([[ruleId, modulePath]]),
       })
       expect(markdown).toContain('**Record module:** ' + modulePath)
-      expect(markdown).toContain('require zero hits for any of ')
-      expect(markdown).toContain('`' + modulePath + '`')
-      expect(markdown).toContain('`packages/engine/src/rules/taxRuleRegistry.ts`')
-      // The refreshed coverage ledgers collide even between dispatches whose
-      // record modules never touch, so they are inside the lock.
-      expect(markdown).toContain('`DOCS/operations/rule-coverage.json`')
-      expect(markdown).toContain('`DOCS/operations/rule-coverage.md`')
+      const lock = conflictLockLine(markdown)
+      expect(lock).toContain('`' + modulePath + '`')
+      expect(lock).toContain('`packages/engine/src/rules/taxRuleRegistry.ts`')
+      // The markdown summary's due-date table is cross-cutting, so it still
+      // collides between dispatches whose record modules never touch.
+      expect(lock).toContain('`DOCS/operations/rule-coverage.md`')
+      // The JSON ledger no longer does: this dispatch locks the shard for the
+      // module it edits, and nothing wider — not the index, not the directory.
+      expect(lock).toContain('`DOCS/operations/rule-coverage/requiredMinimumDistributions.json`')
+      expect(lock).not.toContain('`DOCS/operations/rule-coverage.json`')
+      expect(lock).not.toContain('`DOCS/operations/rule-coverage/`')
       expect(markdown).not.toContain('zero hits under `packages/engine/src/rules/`')
+    })
+
+    it('locks no other module\'s coverage shard', () => {
+      // The regression this pins: a dispatch for an RMD rule must not make a
+      // concurrent western-state re-verification look like a conflict. Before
+      // the split both dispatches rewrote one 30k-line ledger, so every pair
+      // collided.
+      const markdown = buildDispatchPrompt({
+        asOf: '2026-12-01',
+        ruleIds: ['irc-4974-rmd-shortfall-excise-tax'],
+        registry: TAX_RULE_REGISTRY,
+        manifestRules: report.rules,
+        recordModuleOf: new Map([[
+          'irc-4974-rmd-shortfall-excise-tax',
+          'packages/engine/src/rules/records/requiredMinimumDistributions.ts',
+        ]]),
+      })
+      const lock = conflictLockLine(markdown)
+      for (const [moduleName] of TAX_RULE_RECORD_MODULES) {
+        if (moduleName === 'requiredMinimumDistributions') continue
+        expect(lock, moduleName).not.toContain('DOCS/operations/rule-coverage/' + moduleName + '.json')
+        expect(lock, moduleName).not.toContain('records/' + moduleName + '.ts`')
+      }
+    })
+
+    it('falls back to the whole records and shard directories when the module map is empty', () => {
+      // The fallback must stay too broad rather than too narrow: with no map,
+      // the dispatch cannot know which shard it will rewrite.
+      const markdown = buildDispatchPrompt({
+        asOf: '2026-12-01',
+        ruleIds: ['irc-4974-rmd-shortfall-excise-tax'],
+        registry: TAX_RULE_REGISTRY,
+        manifestRules: report.rules,
+      })
+      const lock = conflictLockLine(markdown)
+      expect(lock).toContain('`packages/engine/src/rules/records/`')
+      expect(lock).toContain('`DOCS/operations/rule-coverage/`')
     })
 
     it('throws on an unknown id', () => {
@@ -101,7 +156,7 @@ describe('dispatch tooling', () => {
           asOf: '2026-12-01',
           ruleIds: ['not-a-real-rule-id'],
           registry: TAX_RULE_REGISTRY,
-          manifestRules: report.manifest.rules,
+          manifestRules: report.rules,
         }),
       ).toThrow(/Unknown rule id/)
     })
@@ -112,7 +167,7 @@ describe('dispatch tooling', () => {
         asOf: '2026-12-01',
         ruleIds: [ruleId],
         registry: TAX_RULE_REGISTRY,
-        manifestRules: report.manifest.rules,
+        manifestRules: report.rules,
       })
       expect(markdown).toContain(
         'No discriminating fixtures: this rule is outOfScope and is enforced as a typed refusal',

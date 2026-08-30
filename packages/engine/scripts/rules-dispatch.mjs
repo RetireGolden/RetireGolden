@@ -9,13 +9,21 @@ const RECORDS_DIR_PATH = 'packages/engine/src/rules/records'
 
 /**
  * Generated files a dispatch always rewrites, whatever rules it carries.
- * `pnpm rules:coverage` republishes both from `verifiedOn`, so two dispatches
- * in flight collide here even when their record modules never touch.
+ * `pnpm rules:coverage` republishes the markdown summary from `verifiedOn` (its
+ * due-date table is cross-cutting by construction), so it collides even between
+ * dispatches whose record modules never touch. The JSON ledger no longer does:
+ * its per-rule payloads live in per-module shards, and the index it names them
+ * from carries only counts, which a re-verification does not move.
  */
 const COVERAGE_LEDGER_PATHS = [
   'DOCS/operations/rule-coverage.md',
-  'DOCS/operations/rule-coverage.json',
 ]
+
+/** Shard file for a record module path, mirroring coverageReport's layout. */
+function coverageShardOf(recordModulePath) {
+  const base = recordModulePath.slice(recordModulePath.lastIndexOf('/') + 1).replace(/\.ts$/u, '')
+  return 'DOCS/operations/rule-coverage/' + base + '.json'
+}
 
 /**
  * Repo-relative record module path per rule id, read from the modules
@@ -107,10 +115,17 @@ export function buildDispatchPrompt({ asOf, ruleIds, registry, manifestRules, re
 
   // The files this dispatch will actually edit, which is what another open PR
   // has to overlap for the two to collide. A rule whose module is unknown
-  // (a caller that passed no map) falls back to the whole records directory,
-  // so the check can only ever be too broad, never too narrow.
+  // (a caller that passed no map) falls back to the whole records directory
+  // and the whole shard directory, so the check can only ever be too broad,
+  // never too narrow.
+  const recordModulePaths = ids.map((id) => recordModuleOf.get(id) ?? null)
   const contendedPaths = [...new Set([
-    ...ids.map((id) => recordModuleOf.get(id) ?? RECORDS_DIR_PATH + '/'),
+    ...recordModulePaths.map((path) => path ?? RECORDS_DIR_PATH + '/'),
+    // Only the shards for the modules this dispatch edits: a re-verification of
+    // a western state rewrites rule-coverage/statesWest.json and leaves the
+    // other eighteen byte-identical, which is the whole point of the split.
+    ...recordModulePaths.map((path) =>
+      path === null ? 'DOCS/operations/rule-coverage/' : coverageShardOf(path)),
     REGISTRY_FACADE_PATH,
     ...COVERAGE_LEDGER_PATHS,
   ])].sort()
@@ -134,7 +149,7 @@ export function buildDispatchPrompt({ asOf, ruleIds, registry, manifestRules, re
     '2. Update the **registry record first** (`quotedText`, `authority`, `verifiedOn`, `effectiveFrom`/`effectiveThrough`, `classification` as facts require — `verifiedOn` must be bumped even when nothing changed) — including ADDING authority entries when a statement makes a claim the current quotes do not cover (sufficiency, not just fidelity: see `DOCS/operations/authority-sufficiency.md`). Set `verifiedOn` to the UTC date (YYYY-MM-DD) you finished re-reading the authorities.',
     '3. Rewrite or confirm the discriminating fixture **from the authority** (never from code; fixtures name two candidate readings with different values). `fixtureFiles` below lists the files whose `describeRule(<id>)` blocks are this rule\'s discriminating fixtures — those blocks are the contract; other tests in the same files are ordinary coverage.',
     '4. Only then change implementation until the fixture passes.',
-    '5. When the reading or behavior changed, update the DOCS/domain ground truth in the same PR (domain-rules-reference.md section and any feature doc that states the rule), citing the record id per repo convention — the generated coverage artifacts do not repair prose.',
+    '5. When the reading or behavior changed, update the DOCS/domain ground truth in the same PR (the section file under `DOCS/domain/domain-rules-reference/` — `domain-rules-reference.md` is only the index — and any feature doc that states the rule), citing the record id per repo convention — the generated coverage artifacts do not repair prose.',
     '',
     '## Verification checklist',
     '',
@@ -145,7 +160,7 @@ export function buildDispatchPrompt({ asOf, ruleIds, registry, manifestRules, re
     ),
     '- (network, manual; see `DOCS/operations/quote-fidelity.md`)',
     '- If any result moves: run `pnpm cases:diff`, review every delta, and add a `CHANGELOG.md` entry announcing the correction — corrections are announced, never silent.',
-    '- `pnpm rules:coverage` and commit the refreshed `DOCS/operations/rule-coverage.md` and `rule-coverage.json` (`verifiedOn` changes them)',
+    '- `pnpm rules:coverage` and commit the refreshed `DOCS/operations/rule-coverage.md` plus the per-module shard(s) under `DOCS/operations/rule-coverage/` that changed (`verifiedOn` moves them). The index `DOCS/operations/rule-coverage.json` holds only counts and normally does not move; commit it when it does.',
     '- Confirm no other open PR edits the files this dispatch touches: for each PR in `gh pr list --state open --limit 200 --json number -q .[].number`, run `gh pr diff <n> --name-only` and require zero hits for any of ' + contendedPaths.map((path) => '`' + path + '`').join(', ') + ' before pushing, excluding this branch\'s own PR. Only these paths — a rules PR editing a DIFFERENT record module merges cleanly alongside this one, and the tooling and conformance files under `packages/engine/src/rules/` hold no records at all.',
     '- One PR; review-bot findings fixed on the same branch',
     '',
@@ -258,7 +273,13 @@ async function main() {
   }
 
   const [
-    { TAX_RULE_REGISTRY, DEFAULT_REVERIFICATION_INTERVAL_DAYS, taxRuleDueOn, taxRulesDueForVerification },
+    {
+      TAX_RULE_REGISTRY,
+      TAX_RULE_RECORD_MODULES,
+      DEFAULT_REVERIFICATION_INTERVAL_DAYS,
+      taxRuleDueOn,
+      taxRulesDueForVerification,
+    },
     { COVERAGE_ATTESTATIONS, BASELINE_UNSWEPT },
     { buildCoverageReport },
   ] = await Promise.all([
@@ -306,6 +327,7 @@ async function main() {
     // pin must fail the conformance suite, not abort a handoff. The real
     // resolver lives in rules-coverage.mjs, the only publisher.
     symbolLineFor: () => 1,
+    recordModules: TAX_RULE_RECORD_MODULES,
   })
 
   const recordModuleOf = await loadRecordModuleOf()
@@ -326,7 +348,7 @@ async function main() {
       asOf,
       ruleIds: chunks[0],
       registry: TAX_RULE_REGISTRY,
-      manifestRules: report.manifest.rules,
+      manifestRules: report.rules,
       recordModuleOf,
     })
     if (values.out) {
@@ -346,7 +368,7 @@ async function main() {
       asOf,
       ruleIds: chunks[i],
       registry: TAX_RULE_REGISTRY,
-      manifestRules: report.manifest.rules,
+      manifestRules: report.rules,
       recordModuleOf,
     })
     writeFileSync(outPath, normalize(markdown), 'utf8')

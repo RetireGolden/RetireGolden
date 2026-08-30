@@ -1,0 +1,371 @@
+{
+  "kind": "retiregolden.rules-coverage.shard",
+  "version": 5,
+  "module": "transfersAndUnmodeledRegimes",
+  "rules": [
+    {
+      "id": "irc-199A-a-qualified-business-income-deduction-not-modeled",
+      "title": "The section 199A qualified business income deduction is not a modeled surface",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/tax/federalTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "incomeStreamSchema",
+              "line": 1553
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/federalTax.ts",
+          "functions": [
+            {
+              "name": "section68Reduction",
+              "line": 211
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 199A(a)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section199A&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 199A(b)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section199A&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 199A(e)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section199A&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 199A(i)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section199A&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 199A(i)(2)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section199A&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-2010-c-3-basic-exclusion-amount-not-modeled",
+      "title": "The 2026 basic exclusion amount is a chapter 11 credit base, not an income-tax deduction",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": "Transfer-tax computation, not income tax. tax/federalTax.ts returns chapter 1 income tax and never reads a basic exclusion amount. projection/compare.ts's heirTax and endingAfterTaxEstate discount inherited pre-tax balances at assumptions.heirTaxRatePct; that is an income-tax-basis estate metric, not the section 2001 tax or the section 2010 credit. The $15,000,000 figure is quote-carried from 2010(c)(3)(A); indexing does not begin until a decedent dying after 2026, so 2026 is the unindexed statutory year. Do not treat this record as the same tax base as irc-151-d-5-C-senior-deduction-not-indexed: that deduction is a chapter 1 subtraction of 6,000 dollars per qualified individual, and this credit is a chapter 11 exclusion. Portability of unused exclusion is a separate election and is registered at irc-2010-c-5-dsue-portability-election-not-modeled.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2026-12-25",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/params/types.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "planSchema",
+              "line": 2130
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/types.ts",
+          "functions": [
+            {
+              "name": "ParameterPack",
+              "line": 53
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 2010(a)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section2010&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 2010(c)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section2010&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 2010(c)(2)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section2010&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 2010(c)(3)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section2010&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 2010(c)(3)(B)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section2010&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 2010, Editorial Notes, Effective Date of 2025 Amendment",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section2010&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-2010-c-5-dsue-portability-election-not-modeled",
+      "title": "Deceased-spousal unused exclusion requires a timely estate-tax-return election",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": "The statute and the regulation share one absence surface: model/plan.ts has no Form 706, DSUE amount, or portability-election field, and neither tax/federalTax.ts nor projection/compare.ts computes estate tax. compare.ts's heirTax remains an assumed heir income-tax haircut, which is not a portable unused exclusion and does not become one when a spouse dies in the projection. The timely-filing mechanics of Treas. Reg. 20.2010-2(a) and (a)(1) are folded here rather than split from 2010(c)(5)(A). The $15,000,000 basic exclusion itself is irc-2010-c-3-basic-exclusion-amount-not-modeled.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "planSchema",
+              "line": 2130
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 2010(c)(5)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section2010&num=0&edition=prelim"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 20.2010-2(a)",
+          "url": "https://www.ecfr.gov/current/title-26/section-20.2010-2"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 20.2010-2(a)(1)",
+          "url": "https://www.ecfr.gov/current/title-26/section-20.2010-2"
+        }
+      ]
+    },
+    {
+      "id": "irc-2503-b-annual-gift-exclusion-not-modeled",
+      "title": "The annual gift-tax exclusion is a transfer-tax rule the engine does not compute",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": "This is a transfer-tax absence, not an income-tax approximation. tax/federalTax.ts computes chapter 1 income tax only. projection/compare.ts's heirTax is an assumed heir income-tax haircut on inherited pre-tax balances, not a chapter 12 gift tax. model/plan.ts has no gift, donee, or annual-exclusion field, and params/types.ts's federalTax pack has no gift-exclusion amount. The staged 2503 text still carries the statutory $10,000 base plus the 2503(b)(2) COLA; it does not publish a 2026 indexed dollar, so this record does not invent one. The 15-year / $35,000 529-to-Roth mechanics are a different Code section and live at irc-529-c-3-E-529-to-roth-rollover-not-modeled.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2026-12-25",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/params/types.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "planSchema",
+              "line": 2130
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/types.ts",
+          "functions": [
+            {
+              "name": "ParameterPack",
+              "line": 53
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 2503(b)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section2503&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 2503(b)(2)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section2503&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-529-c-3-E-529-to-roth-rollover-not-modeled",
+      "title": "A long-term 529-to-Roth rollover is not modeled",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": "This is a schema boundary, not a Roth-contribution result. accountUnionSchema's closed type set is taxable, equityComp, traditional, roth, hsa, cash, pension, annuity, property, and debt; there is no 529 or qualified-tuition-program member, which model/plan.test.ts already pins. retirementActionRequestSchema carries ordinary-withdrawal, Roth-conversion, QCD, and legacy aggregate arms, none of which carries a 529 source or rollover fact, so a 529-to-Roth rollover cannot be expressed as an action. The 15-year account-age test, the 5-year contribution seasoning, the annual 408A(c)(2) room, and the $35,000 lifetime cap share that one absence surface and are folded here rather than registered separately. The annual Roth IRA ceiling for ordinary Roth contributions remains the settled irc-408A-c-2-roth-shares-the-section-219-ceiling record; this record is only the 529(c)(3)(E) path. effectiveFrom is floored at 2026; the enacting applicability is distributions after December 31, 2023.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/actions/contract.ts",
+        "packages/engine/src/model/plan.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/contract.ts",
+          "functions": [
+            {
+              "name": "persistedRetirementActionRequestSchema",
+              "line": 389
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "accountUnionSchema",
+              "line": 1243
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 529(c)(3)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section529&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 529(c)(3)(E)(i)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section529&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 529(c)(3)(E)(ii)(I)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section529&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 529(c)(3)(E)(ii)(II)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section529&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "P.L. 117-328, division T, title I, section 126(d)",
+          "url": "https://www.govinfo.gov/content/pkg/PLAW-117publ328/pdf/PLAW-117publ328.pdf"
+        }
+      ]
+    },
+    {
+      "id": "usc-12-1715z-20-b-hecm-minimum-age-62",
+      "title": "A HECM borrower (or spouse) must be at least 62",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "First housing-law record in the registry, admitted on the same test as its Title 42 and POMS records: an engine gate whose refusal traces to an operative statutory clause. Two deliberate deviations from the clause itself: the screen requires the YOUNGEST member to be 62 where the statute is satisfied by either spouse - conservative, because the principal limit factor is keyed to the youngest age anyway and a candidate the statute would allow is merely not suggested - and age is measured at year granularity, so a member attaining 62 during the start year is treated as eligible for the suggestion a few months early. Neither deviation touches a tax figure; the card is a scenario suggestion.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-29",
+      "dueOn": "2027-08-29",
+      "implementedBy": [
+        "packages/engine/src/insights/detectors/hecmBufferCandidate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/insights/detectors/hecmBufferCandidate.ts",
+          "functions": [
+            {
+              "name": "hecmBufferCandidate",
+              "line": 15
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/insights/detectors/hecmBufferCandidate.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/insights/detectors/hecmBufferCandidate.test.ts",
+          "line": 36,
+          "note": "no HECM buffer candidate below age 62",
+          "tests": [
+            {
+              "title": "refuses at 61 and surfaces at 62 for an otherwise qualifying home",
+              "line": 44
+            },
+            {
+              "title": "holds the conservative youngest-member screen the record discloses",
+              "line": 50
+            },
+            {
+              "title": "pins the year-granularity admission the record disclosed",
+              "line": 66
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "12 U.S.C. 1715z-20(b)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title12-section1715z-20&num=0&edition=prelim"
+        }
+      ]
+    }
+  ]
+}

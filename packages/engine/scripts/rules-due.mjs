@@ -91,7 +91,7 @@ async function main() {
   }
 
   const [
-    { TAX_RULE_REGISTRY, DEFAULT_REVERIFICATION_INTERVAL_DAYS, taxRulesDueForVerification, taxRuleDueOn },
+    { TAX_RULE_REGISTRY, TAX_RULE_RECORD_MODULES, DEFAULT_REVERIFICATION_INTERVAL_DAYS, taxRulesDueForVerification, taxRuleDueOn },
     { COVERAGE_ATTESTATIONS, BASELINE_UNSWEPT },
     { buildCoverageReport },
   ] = await Promise.all([
@@ -112,6 +112,7 @@ async function main() {
     // operator is running mid-triage. rules-coverage.mjs, the publisher,
     // resolves for real.
     symbolLineFor: () => 1,
+    recordModules: TAX_RULE_RECORD_MODULES,
   })
   const totalRules = report.manifest.registry.total
 
@@ -122,7 +123,7 @@ async function main() {
     .sort((left, right) => right.daysOverdue - left.daysOverdue || compareStrings(left.id, right.id))
 
   const horizonEnd = isoDateAfterDays(asOf, horizonDays)
-  const upcoming = report.manifest.rules
+  const upcoming = report.rules
     .filter((rule) => !dueSet.has(rule.id) && rule.dueOn > asOf && rule.dueOn <= horizonEnd)
     .map((rule) => ({
       id: rule.id,
