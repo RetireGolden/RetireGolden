@@ -31,6 +31,7 @@ the parse cost that dominates on a low-end device is paid on the decompressed by
 | every other JS chunk | 260 KiB | 201 KiB (`PlanRoutes`) | Route and page chunks staying route-sized |
 | all JS together | 4400 KiB | 4022 KiB | "Many new chunks", not just one fat one |
 | one stylesheet / all CSS | 64 / 80 KiB | 45 / 52 KiB | The token layer |
+| landing critical path | 1100 KiB | 1012 KiB | Entry + every `modulepreload`: what a cold visit blocks on |
 | PWA precache | 4500 KiB | 4152 KiB | Install cost, and the offline guarantee's price |
 
 Each limit is the size measured when the budget landed plus roughly 10–25% headroom: ordinary feature
@@ -90,3 +91,7 @@ nothing on that page renders. Fixing it means separating each article's metadata
 across the ~110 modules in [`learn/content/`](../../packages/planner-ui/src/learn/content) and making the
 registry's article-body access asynchronous. That is a content-model change, not a packaging one, so it
 is deliberately out of scope for the budget work and tracked separately.
+
+Which is why the landing critical path is the one number the splits did **not** move: 1,035 kB before,
+1,036 kB after. Everything else got materially smaller; that row is a ratchet holding the line until the
+Learn content is split.

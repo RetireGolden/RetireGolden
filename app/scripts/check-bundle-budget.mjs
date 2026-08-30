@@ -88,6 +88,15 @@ const TOTAL_CSS_KIB = 80
  * see the workbox config in vite.config.ts.
  */
 const PRECACHE_KIB = 4500
+/**
+ * The landing critical path: the entry script plus everything index.html
+ * modulepreloads, which is what a cold first visit blocks on before anything
+ * renders. The most user-visible number here, and the one this budget mainly
+ * holds the line on — it did not improve in the split work, because
+ * `learningRegistry` is over half of it (bundle-budget.md, "Known, and not
+ * fixed here").
+ */
+const LANDING_PATH_KIB = 1100
 
 const kib = (bytes) => bytes / 1024
 const fmt = (n) => `${n.toFixed(1)} KiB`
@@ -102,6 +111,27 @@ function listAssets() {
     )
   }
   return names.map((name) => ({ name, bytes: statSync(join(assetsDir, name)).size }))
+}
+
+/** The entry script plus every chunk index.html modulepreloads. */
+function landingPathKiB() {
+  let html
+  try {
+    html = readFileSync(join(distDir, 'index.html'), 'utf8')
+  } catch {
+    return null
+  }
+  const names = new Set([...html.matchAll(/\/assets\/([\w.-]+\.js)/g)].map((m) => m[1]))
+  let total = 0
+  for (const name of names) {
+    try {
+      total += statSync(join(assetsDir, name)).size
+    } catch {
+      // A referenced file that isn't on disk is a build defect the rest of the
+      // pipeline will surface; don't turn it into a budget failure.
+    }
+  }
+  return { kiB: kib(total), files: names.size }
 }
 
 /** Sum the files the generated service worker lists in its precache manifest. */
@@ -179,6 +209,21 @@ function check() {
   rows.push({ label: `all CSS (${css.length} files)`, name: '', size: totalCss, max: TOTAL_CSS_KIB })
   if (totalCss > TOTAL_CSS_KIB) {
     failures.push(`all CSS is ${fmt(totalCss)}, over the ${fmt(TOTAL_CSS_KIB)} total budget`)
+  }
+
+  const landing = landingPathKiB()
+  if (landing) {
+    rows.push({
+      label: `landing critical path (${landing.files} files)`,
+      name: '',
+      size: landing.kiB,
+      max: LANDING_PATH_KIB,
+    })
+    if (landing.kiB > LANDING_PATH_KIB) {
+      failures.push(
+        `the landing critical path is ${fmt(landing.kiB)}, over the ${fmt(LANDING_PATH_KIB)} budget`,
+      )
+    }
   }
 
   const precache = precacheKiB()
