@@ -61,9 +61,9 @@ jobs:
   # `review / openrouter-first-pass-gate`.
   review:
     if: github.event_name == 'workflow_dispatch' || !github.event.pull_request.draft
-    # Central independent-review workflow pinned to the .github#33 merge commit
-    # (timeout salvage fix via action #19; independent gate unchanged).
-    uses: RetireGolden/.github/.github/workflows/openrouter-code-review.yml@e18e0f4944973febffadbc1b374fb755531d6bec # .github#33 (OpenRouter action #19, timeout salvage fix)
+    # Central independent-review workflow pinned to the .github#35 merge commit
+    # (oversized-diff fallback via action #20; independent gate unchanged).
+    uses: RetireGolden/.github/.github/workflows/openrouter-code-review.yml@f6aa157430509b5f6945b4fc2c9fafeeac4a7294 # .github#35 (OpenRouter action #20, oversized diff fallback)
     with:
       pr_number: ${{ inputs.pr_number || github.event.inputs.pr_number || github.event.pull_request.number }}
     secrets:
