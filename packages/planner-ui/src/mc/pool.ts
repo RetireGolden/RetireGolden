@@ -36,7 +36,12 @@ import {
   runMcRequest,
   runRiskBasedGuardrailRequest,
 } from './runRequest'
+import { envelope, type PlannerWorkerEnvelope } from '../workers/channels'
 import { runWorkerRequest } from '../workers/run'
+import { spawnPlannerWorker } from '../workers/spawn'
+
+/** Every Monte Carlo request kind rides the same worker channel. */
+type McEnvelope<TRequest> = PlannerWorkerEnvelope<'monteCarlo', TRequest>
 
 export interface MonteCarloRunOptions {
   startYear: number
@@ -99,9 +104,9 @@ function runInWorker(
   onProgress: (workerCompleted: number) => void,
   onSpawn?: (worker: Worker) => void,
 ): Promise<MonteCarloPathsResult> {
-  return runWorkerRequest<McWorkerRequest, McWorkerResponse, MonteCarloPathsResult>({
-    request: req,
-    createWorker: () => new Worker(new URL('./monteCarlo.worker.ts', import.meta.url), { type: 'module' }),
+  return runWorkerRequest<McEnvelope<McWorkerRequest>, McWorkerResponse, MonteCarloPathsResult>({
+    request: envelope('monteCarlo', req),
+    createWorker: spawnPlannerWorker,
     interpret: (msg) => {
       if (msg.type === 'progress') {
         onProgress(msg.completed)
@@ -116,9 +121,9 @@ function runInWorker(
 }
 
 function runFrontiersInWorker(req: FrontierWorkerRequest): Promise<FrontierWorkerResult> {
-  return runWorkerRequest<FrontierWorkerRequest, FrontierWorkerResponse, FrontierWorkerResult>({
-    request: req,
-    createWorker: () => new Worker(new URL('./monteCarlo.worker.ts', import.meta.url), { type: 'module' }),
+  return runWorkerRequest<McEnvelope<FrontierWorkerRequest>, FrontierWorkerResponse, FrontierWorkerResult>({
+    request: envelope('monteCarlo', req),
+    createWorker: spawnPlannerWorker,
     interpret: (msg) =>
       msg.type === 'frontiersDone' ? { kind: 'done', result: msg.result } : { kind: 'error', message: msg.message },
     errorLabel: 'Frontier worker failed',
@@ -126,9 +131,13 @@ function runFrontiersInWorker(req: FrontierWorkerRequest): Promise<FrontierWorke
 }
 
 function runHistoricalSuitesInWorker(req: HistoricalWorkerRequest): Promise<HistoricalStressSuiteViewResult> {
-  return runWorkerRequest<HistoricalWorkerRequest, HistoricalWorkerResponse, HistoricalStressSuiteViewResult>({
-    request: req,
-    createWorker: () => new Worker(new URL('./monteCarlo.worker.ts', import.meta.url), { type: 'module' }),
+  return runWorkerRequest<
+    McEnvelope<HistoricalWorkerRequest>,
+    HistoricalWorkerResponse,
+    HistoricalStressSuiteViewResult
+  >({
+    request: envelope('monteCarlo', req),
+    createWorker: spawnPlannerWorker,
     interpret: (msg) =>
       msg.type === 'historicalSuitesDone'
         ? { kind: 'done', result: msg.result }
@@ -220,9 +229,9 @@ export async function runRiskBasedGuardrailSolve(
     ltcShock: opts.ltcShock,
   }
   if (typeof Worker === 'undefined') return runRiskBasedGuardrailRequest(req)
-  return runWorkerRequest<RiskBasedWorkerRequest, RiskBasedWorkerResponse, RiskBasedGuardrailSolution>({
-    request: req,
-    createWorker: () => new Worker(new URL('./monteCarlo.worker.ts', import.meta.url), { type: 'module' }),
+  return runWorkerRequest<McEnvelope<RiskBasedWorkerRequest>, RiskBasedWorkerResponse, RiskBasedGuardrailSolution>({
+    request: envelope('monteCarlo', req),
+    createWorker: spawnPlannerWorker,
     interpret: (msg) => {
       if (msg.type === 'progress') return { kind: 'progress' }
       if (msg.type === 'riskBasedDone') return { kind: 'done', result: msg.result }

@@ -99,7 +99,10 @@ export default defineConfig({
   ],
   test: {
     environment: 'node',
-    include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+    // `scripts/` holds plain-Node build tooling (no TS build step), so its
+    // tests are .mjs alongside it — the bundle budget's parsers and
+    // fail-closed contract, which nothing else would catch.
+    include: ['src/**/*.test.ts', 'src/**/*.test.tsx', 'scripts/**/*.test.mjs'],
     // The app suite runs whole projections and optimizer tournaments, and CI
     // runs it under v8 coverage on runners measured at ~6x local runtime, so
     // ~6x slower (#230). Vitest's 5s default kept tipping marginal tests one

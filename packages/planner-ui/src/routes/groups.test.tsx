@@ -6,15 +6,16 @@
  */
 import 'fake-indexeddb/auto'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { act, isValidElement } from 'react'
+import { act, isValidElement, type ReactNode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { renderToString } from 'react-dom/server'
-import { MemoryRouter, useRoutes, type RouteObject } from 'react-router'
+import { MemoryRouter, Route, useRoutes, type RouteObject } from 'react-router'
 import { IDBFactory } from 'fake-indexeddb'
 
 import { _resetPlanStoreForTests, savePlan } from '../data/planStore'
 import { RouteErrorBoundary } from '../RouteErrorBoundary'
 import { plannerContentRoutes, plannerHomeRoutes, plannerWorkspaceRoutes } from './groups'
+import PlanRoutes from './PlanRoutes'
 import { createSamplePlan } from '../testSupport/samplePlan'
 import { waitFor, waitForText } from '../testSupport/settle'
 
@@ -135,6 +136,19 @@ describe('content group mounted alone', () => {
   })
 })
 
+/** Every `<Route>` in a rendered route tree, flattened, as `[path, element]`. */
+function routeElements(node: ReactNode, into: Array<[string, ReactNode]> = []): Array<[string, ReactNode]> {
+  if (Array.isArray(node)) {
+    for (const child of node) routeElements(child, into)
+    return into
+  }
+  if (!isValidElement(node)) return into
+  const props = node.props as { path?: string; element?: ReactNode; children?: ReactNode }
+  if (node.type === Route && typeof props.path === 'string') into.push([props.path, props.element])
+  if (props.children) routeElements(props.children, into)
+  return into
+}
+
 describe('lazy route elements', () => {
   it('each ships its own RouteErrorBoundary, so bare route-group hosts get stale-chunk recovery', () => {
     // A host mounting the groups without <PlannerApp/> has no outer boundary;
@@ -150,6 +164,42 @@ describe('lazy route elements', () => {
         `route ${path} wraps in RouteErrorBoundary`,
       ).toBe(true)
     }
+  })
+
+  it('the plan workspace wraps each lazy output screen too, so one bad chunk stays in the outlet', () => {
+    // PlanRoutes declares <Route> JSX rather than a RouteObject[], so the walk
+    // above cannot see inside it. Same contract, though: the Enter sections are
+    // eager and need no boundary, while every screen behind lazy() must keep
+    // its failure inside the outlet instead of blanking the workspace.
+    const lazyPaths = [
+      'assumptions-card',
+      'social-security-analysis',
+      'results',
+      'monte-carlo',
+      'scenarios',
+      'household-map',
+      'survivor',
+      'relocation',
+      'optimize',
+      'spending-solver',
+      'insights',
+      ':planId/report',
+    ]
+    const declared = new Map(routeElements(PlanRoutes()))
+
+    for (const path of lazyPaths) {
+      expect(declared.has(path), `PlanRoutes declares ${path}`).toBe(true)
+      const element = declared.get(path)
+      expect(
+        isValidElement(element) && element.type === RouteErrorBoundary,
+        `plan route ${path} wraps in RouteErrorBoundary`,
+      ).toBe(true)
+    }
+
+    // And the Enter sections deliberately do not — they are in the chunk the
+    // workspace already loaded, so a boundary there would guard nothing.
+    const household = declared.get('household')
+    expect(isValidElement(household) && household.type === RouteErrorBoundary).toBe(false)
   })
 })
 

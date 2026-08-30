@@ -8,7 +8,8 @@ Carlo never runs a second, simplified model, so a stochastic run can't diverge f
 **Code:** [engine/montecarlo/](../../packages/engine/src/montecarlo/) (`marketModels.ts`, `historicalReturns.ts`,
 `rng.ts`, `mortality.ts`, `ltcShock.ts`, `run.ts`, `sharedPaths.ts`, `frontiers.ts`,
 `historicalSuites.ts`); the Web Worker pool in
-[packages/planner-ui/src/mc/](../../packages/planner-ui/src/mc/) (`monteCarlo.worker.ts`, `pool.ts`); scenarios in
+[packages/planner-ui/src/mc/](../../packages/planner-ui/src/mc/) (`pool.ts`, `runRequest.ts`) over the planner's shared
+worker entry [workers/planner.worker.ts](../../packages/planner-ui/src/workers/planner.worker.ts); scenarios in
 [engine/scenarios/](../../packages/engine/src/scenarios/) and [engine/projection/compare.ts](../../packages/engine/src/projection/compare.ts);
 UI in [planner/MonteCarloPage.tsx](../../packages/planner-ui/src/planner/MonteCarloPage.tsx),
 [ScenariosPage.tsx](../../packages/planner-ui/src/planner/ScenariosPage.tsx), and

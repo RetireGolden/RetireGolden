@@ -26,8 +26,11 @@ consumable from plain Node or from bundlers that don't implement Vite
 semantics. The planner tree relies on features only a Vite-style build
 provides:
 
-- `new Worker(new URL('./x.worker.ts', import.meta.url), { type: 'module' })`
-  for the Monte Carlo pool, the optimizers, and relocation compare;
+- `new Worker(new URL('./planner.worker.ts', import.meta.url), { type: 'module' })`
+  — one worker entry serving the Monte Carlo pool, the optimizers, and
+  relocation compare, dispatched by the request's `channel` tag. Bundlers give
+  each worker *entry* its own build, so one entry is what keeps the shared
+  engine simulation core out of the output several times over;
 - `import wasmUrl from 'highs/runtime?url'` for the HiGHS LP-solver wasm;
 - `import.meta.glob`, `import.meta.env.DEV`, CSS and image imports.
 

@@ -1,6 +1,8 @@
 /**
  * Generic Web Worker request/response runner shared by the Monte Carlo pool
- * (src/mc/pool.ts) and the optimizer/spending solvers (src/optimize/). Spawns
+ * (src/mc/pool.ts), the optimizer/spending solvers (src/optimize/), and
+ * relocation compare (src/relocation/) — all of which run on the one worker
+ * entry in ./planner.worker.ts, tagged by channel (./channels.ts). Spawns
  * a worker, posts one request, resolves on the interpreted done-message,
  * rejects on an error message or worker error, and always terminates the
  * worker once settled.
@@ -23,8 +25,9 @@ export function createWorkerRequestAbortError(): Error {
 export function runWorkerRequest<TReq, TMsg, TResult>(options: {
   request: TReq
   /**
-   * Call sites keep the literal `new Worker(new URL('./x.worker.ts',
-   * import.meta.url), ...)` so the bundler can still see and split the chunk.
+   * Call sites pass `spawnPlannerWorker` (./spawn.ts), which holds the literal
+   * `new Worker(new URL('./planner.worker.ts', import.meta.url), ...)` the
+   * bundler matches to emit the worker chunk.
    */
   createWorker: () => Worker
   interpret: (msg: TMsg) => WorkerMessageOutcome<TResult>

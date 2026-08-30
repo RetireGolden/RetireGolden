@@ -1,6 +1,6 @@
+import { Suspense, type ReactNode } from 'react'
 import { Navigate, Route, Routes } from 'react-router'
 import { PlanWorkspace } from '../planner/PlanWorkspace'
-import { ReportPage } from '../planner/ReportPage'
 import {
   AccountsSection,
   AssumptionsSection,
@@ -11,20 +11,40 @@ import {
   SpendingSection,
   StrategySection,
 } from '../planner/sections'
-import { AssumptionsCardPage } from '../planner/AssumptionsCardPage'
 import { SocialSecuritySection } from '../planner/SocialSecuritySection'
-import { SsAnalysisPage } from '../planner/SsAnalysisPage'
-import { ResultsPage } from '../planner/ResultsPage'
-import { MonteCarloPage } from '../planner/MonteCarloPage'
-import { RelocationComparePage } from '../planner/RelocationComparePage'
-import { ScenariosPage } from '../planner/ScenariosPage'
-import { OptimizePage } from '../planner/OptimizePage'
-import { SpendingSolverPage } from '../planner/SpendingSolverPage'
-import { SurvivorTransitionPage } from '../planner/SurvivorTransitionPage'
-import { HouseholdMapPage } from '../householdMap/HouseholdMapPage'
-import { InsightsPage } from '../planner/insights/InsightsPage'
 import { EditableFieldset } from '../planner/EditableFieldset'
+import { RouteErrorBoundary } from '../RouteErrorBoundary'
+import { RouteFallback } from './RouteFallback'
+import {
+  AssumptionsCardPage,
+  HouseholdMapPage,
+  InsightsPage,
+  MonteCarloPage,
+  OptimizePage,
+  RelocationComparePage,
+  ReportPage,
+  ResultsPage,
+  ScenariosPage,
+  SpendingSolverPage,
+  SsAnalysisPage,
+  SurvivorTransitionPage,
+} from './planPages'
 import '../planner/planner.css'
+
+/**
+ * Same contract as routes/groups.tsx: a lazy page carries its own error
+ * boundary, not just Suspense, so the stale-chunk auto-reload backstop and a
+ * recoverable fallback apply per chunk (see ../staleChunkReload.ts). The
+ * workspace chrome around `<Outlet/>` stays mounted while the page loads —
+ * only the outlet area shows the skeleton.
+ */
+function suspended(children: ReactNode) {
+  return (
+    <RouteErrorBoundary>
+      <Suspense fallback={<RouteFallback />}>{children}</Suspense>
+    </RouteErrorBoundary>
+  )
+}
 
 export default function PlanRoutes() {
   return (
@@ -45,19 +65,19 @@ export default function PlanRoutes() {
         <Route path="spending" element={<EditableFieldset><SpendingSection /></EditableFieldset>} />
         <Route path="strategy" element={<EditableFieldset><StrategySection /></EditableFieldset>} />
         <Route path="assumptions" element={<EditableFieldset><AssumptionsSection /></EditableFieldset>} />
-        <Route path="assumptions-card" element={<AssumptionsCardPage />} />
-        <Route path="social-security-analysis" element={<SsAnalysisPage />} />
-        <Route path="results" element={<ResultsPage />} />
-        <Route path="monte-carlo" element={<MonteCarloPage />} />
-        <Route path="scenarios" element={<ScenariosPage />} />
-        <Route path="household-map" element={<HouseholdMapPage />} />
-        <Route path="survivor" element={<SurvivorTransitionPage />} />
-        <Route path="relocation" element={<RelocationComparePage />} />
-        <Route path="optimize" element={<OptimizePage />} />
-        <Route path="spending-solver" element={<SpendingSolverPage />} />
-        <Route path="insights" element={<InsightsPage />} />
+        <Route path="assumptions-card" element={suspended(<AssumptionsCardPage />)} />
+        <Route path="social-security-analysis" element={suspended(<SsAnalysisPage />)} />
+        <Route path="results" element={suspended(<ResultsPage />)} />
+        <Route path="monte-carlo" element={suspended(<MonteCarloPage />)} />
+        <Route path="scenarios" element={suspended(<ScenariosPage />)} />
+        <Route path="household-map" element={suspended(<HouseholdMapPage />)} />
+        <Route path="survivor" element={suspended(<SurvivorTransitionPage />)} />
+        <Route path="relocation" element={suspended(<RelocationComparePage />)} />
+        <Route path="optimize" element={suspended(<OptimizePage />)} />
+        <Route path="spending-solver" element={suspended(<SpendingSolverPage />)} />
+        <Route path="insights" element={suspended(<InsightsPage />)} />
       </Route>
-      <Route path=":planId/report" element={<ReportPage />} />
+      <Route path=":planId/report" element={suspended(<ReportPage />)} />
     </Routes>
   )
 }

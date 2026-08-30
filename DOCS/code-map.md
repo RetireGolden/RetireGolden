@@ -35,7 +35,7 @@ app/
 ├── package.json          deps + scripts; engines: node >= 20
 ├── eslint.config.js       flat config (the engine-purity rule lives in packages/engine/eslint.config.js)
 ├── index.html
-├── scripts/               local Node/Vite-backed tooling (`cases.mjs`, `owl-parity.mjs`, sitemap generator, license notices)
+├── scripts/               local Node/Vite-backed tooling (`cases.mjs`, `owl-parity.mjs`, `check-bundle-budget.mjs` + `bundleBudget.mjs`, sitemap generator, license notices)
 ├── public/                staticwebapp.config.json (SPA fallback), import-feature.json (no-store file-import incident switch), PWA manifest/icons
 ├── e2e/                   Playwright browser specs
 └── src/                   host source (below)
@@ -112,11 +112,11 @@ test files.
 | `data/` | Persistence: `planStoreContext.ts` + `PlanStoreProvider.tsx` (the host-implementable `PlanStore` seam and its store-generic `*Via` operations; demo records route to the browser store), `planStore.ts` (the IndexedDB implementation via `idb`, user vs demo filtering), `planOrigin.ts`, `planFormat.ts` (the v2 backup envelope — the stable `plan-format` subpath), `v2Backup.ts` (re-exports the envelope + storage-aware import normalization), `localStore.ts` (guarded localStorage + `STORAGE_KEYS`), `fedInvestClient.ts` (the opt-in FedInvest fetch + cache — the planner's only cross-origin network touch) |
 | `planner/` | The planner UI (see below) |
 | `report/` | Self-contained HTML report rendering and browser download helper |
-| `mc/` | Monte Carlo Web Worker: `monteCarlo.worker.ts`, `pool.ts`, `runRequest.ts`, `messages.ts` |
-| `optimize/` | Optimizer + spending-solver Web Workers: `optimize.worker.ts` (HiGHS-WASM), `spendingSolve.worker.ts`, `runOptimize.ts`, `runner.ts`, `spendingRunner.ts` |
-| `relocation/` | Relocation-compare Web Worker: `relocation.worker.ts`, `runRelocation.ts`, `runner.ts`, `messages.ts` (engine in `engine/projection/relocation.ts`) |
+| `mc/` | Monte Carlo off-thread work: `pool.ts`, `runRequest.ts`, `messages.ts` (the worker entry is shared — see `workers/`) |
+| `optimize/` | Optimizer + spending solver: `runOptimize.ts` (HiGHS-WASM), `runSpendingSolve.ts`, `runner.ts`, `spendingRunner.ts` |
+| `relocation/` | Relocation compare: `runRelocation.ts`, `runner.ts`, `messages.ts` (engine in `engine/projection/relocation.ts`) |
 | `householdMap/` | Household map (`/plan/:id/household-map`): `householdGraph.ts` (pure topology selector — typed nodes/edges, completeness, entered-value totals; engine *types* only), deterministic layered `layout.ts`, sanitized `mapViewModel.ts` (privacy-hide strips every dollar string), `HouseholdMapPage.tsx`; the hide toggle also masks the workspace KPI bar via `planner/privacyContext.tsx` ([features/household-map.md](features/household-map.md)) |
-| `workers/` | `run.ts` — the generic `runWorkerRequest` helper shared by `mc/`, `optimize/`, and `relocation/` |
+| `workers/` | The planner's **one** Web Worker entry, `planner.worker.ts`, dispatching on the `channel` tag in `channels.ts`; `spawn.ts` holds the single `new Worker(new URL(...))` literal and `run.ts` the generic `runWorkerRequest` helper shared by `mc/`, `optimize/`, and `relocation/`. Vite bundles each worker *entry* in its own build, so separate entries cannot share a chunk — one entry is what keeps the ~740 KB engine core out of the bundle four times over ([operations/bundle-budget.md](operations/bundle-budget.md)) |
 | `socialSecurity/` | SS analysis features on top of the engine's SS math: `expectedPv`, `breakEven`, `explain`, `ficaReturn`, `survivorSwitching`, `ssaStatementXml`, plus form storage/guards (the ledger-consumed math lives in the engine package) |
 | `longevity/` | Life-expectancy wizard: `model`, `factors`, `LongevityWizard.tsx`, `LongevityResults.tsx` (the SSA period table + types live in the engine package) |
 | `integration/` | Engine-adjacent tests that drive engine code through app harnesses (`useProjection`, the learning registry, the spending solver) |
@@ -174,7 +174,7 @@ hosts use the `importEnabled` / `importResolved` props. Omitted configuration pr
 | Local engine-regression manifests | `cases/caseRunner.ts`, `cases/caseDiff.ts`, `scripts/cases.mjs` |
 | Self-contained HTML reports | `report/reportHtml.ts` (renders the model), `report/downloadReport.ts`; UI buttons in `planner/ResultsPage.tsx`, `planner/ReportPage.tsx`, `planner/OptimizePage.tsx` |
 | The edition-neutral report data model | `report/reportModel.ts` (`buildReportModel`, stable block ids, JSON/CSV export; published as `@retiregolden/planner-ui/report-model`); goldens in `report/goldens/` |
-| Monte Carlo / optimizer entry points | `mc/monteCarlo.worker.ts` / `optimize/optimize.worker.ts` |
+| Monte Carlo / optimizer entry points | `mc/pool.ts` / `optimize/runner.ts`, both onto the shared `workers/planner.worker.ts` |
 | The Social Security PIA math | `engine: socialSecurity/piaFromEarnings.ts`, `socialSecurity/ssaWageData.ts` |
 | Learning Center articles + metadata | `learn/learningRegistry.ts`, `learn/content/` |
 | Assumption sources shown in the UI | `engine: params/provenance.ts`, `planner/ProvenancePanel.tsx`, `planner/AssumptionsCardPage.tsx`, `planner/provenanceLinks.ts` |
@@ -190,13 +190,14 @@ these across all three workspaces (engine, then planner-ui, then app); the same 
 | Command (repo root) | Does |
 |---------|------|
 | `pnpm dev` | Vite dev server (app) |
-| `pnpm build` | Engine `tsc -b`, planner-ui `tsc -b` (type check — the package ships source), then app `tsc -b && vite build` + sitemap generation → `app/dist/` |
+| `pnpm build` | Engine `tsc -b`, planner-ui `tsc -b` (type check — the package ships source), then app `tsc -b && vite build`, the bundle budget, and sitemap generation → `app/dist/` |
 | `pnpm test` | Vitest in every workspace (co-located `*.test.ts(x)`) |
 | `pnpm test:coverage` | Vitest with the coverage thresholds CI enforces (per workspace) |
 | `pnpm lint` | ESLint in every workspace (incl. the engine-purity rule) |
 | `pnpm cases` | Emit a stable exact-ledger case manifest (default: bundled example library) |
 | `pnpm cases:diff` | Compare two case manifests and exit nonzero on unexpected deltas |
 | `pnpm owl-parity` | Run the Owl parity oracle harness |
+| `pnpm bundle-budget` | Print `app/dist/` against the size budget without failing ([operations/bundle-budget.md](operations/bundle-budget.md)); the build runs the failing form |
 
 Package-only: `pnpm --filter @retiregolden/planner-ui benchmark:documents` prints the WS5 PDF
 text-extraction accuracy report (per-field precision/recall over a hand-built synthetic corpus; add
