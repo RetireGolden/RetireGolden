@@ -258,6 +258,14 @@ packages/planner-ui/src/learn/
 The structured-TypeScript decision is settled: it avoids new MDX/Markdown build
 tooling and keeps every article type-checked against the registry.
 
+One authoring cost of loading bodies on demand: a body module under `content/` has
+no static importer, so an edit to article prose has nothing for the dev server's
+hot-update walk to follow. **Reload the browser to see a prose edit.** Metadata edits
+in `articleIndex.ts` are statically imported and behave normally. Cache-busting the
+dynamic import to fix this would mean building its specifier at runtime, which is
+precisely what would hide the import graph from the production bundler and undo the
+split — so the reload is the deliberate trade.
+
 ### 7.2 Article metadata
 
 Article metadata is one entry per article in
