@@ -27,10 +27,15 @@ function GroupHost({ routes }: { routes: RouteObject[] }) {
 
 // Every chunk this file waits on is behind `lazy()`: `plan/*`, `examples`,
 // and — since the workspace output screens became lazy too — the `Results:`
-// destination the basename test navigates to. The static `PlanRoutes` import
-// above happens to warm the first, and the workspace render happens to warm
-// most of what Results needs; neither is a guarantee any of this file's own
-// ordering should rest on. Name all three — see ../testSupport/lazyRoutes.ts.
+// destination the basename test navigates to.
+//
+// `plan/*` is already safe: the static `PlanRoutes` import above is evaluated
+// before any test in this file runs, which is a real guarantee, though one
+// this file gets as a side effect of an import kept for the route-tree
+// assertion. `examples` has nothing warming it at all, and `Results:` rests
+// only on whatever the earlier workspace render happened to pull in first —
+// incidental warmth, not a guarantee. Naming all three keeps the reason
+// stated rather than inferred — see ../testSupport/lazyRoutes.ts.
 beforeAll(async () => {
   await preloadLazyRoutes('plan', 'examples', 'results')
 }, LAZY_ROUTE_PRELOAD_TIMEOUT_MS)

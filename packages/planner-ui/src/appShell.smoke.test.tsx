@@ -15,11 +15,17 @@ import type { PlanStore } from './data/planStoreContext'
 import { waitFor, waitForText } from './testSupport/settle'
 import { LAZY_ROUTE_PRELOAD_TIMEOUT_MS, preloadLazyRoutes } from './testSupport/lazyRoutes'
 
-// 'renders the examples page' mounts `/examples`, which is behind `lazy()`;
-// preload it so the cold chunk is not evaluated inside a 5 s test timeout —
-// see ./testSupport/lazyRoutes.ts.
+// Three waits in this file block on a `lazy()` chunk: 'Example library'
+// (`examples`), 'Import & migrate' (`import`), and the accounts poll for
+// 'Update balances from a broker CSV', which sits behind the workspace
+// (`plan`). Preload all three so no cold chunk is evaluated inside a test's
+// wait budget — see ./testSupport/lazyRoutes.ts.
+//
+// `/learn` is deliberately absent. That test asserts `document.title` right
+// after render and clicks a chrome link; it never waits on Learn's content,
+// so preloading it would buy nothing and cost a chunk evaluation.
 beforeAll(async () => {
-  await preloadLazyRoutes('examples')
+  await preloadLazyRoutes('examples', 'import', 'plan')
 }, LAZY_ROUTE_PRELOAD_TIMEOUT_MS)
 
 beforeEach(() => {

@@ -61,9 +61,13 @@ export interface WaitForOptions {
    *
    * It is deliberately NOT sized to cover a cold `lazy()` route chunk: that
    * graph takes seconds to evaluate the first time anything in a run imports
-   * it, which no honest poll budget fits inside a 5 s test. Tests that render
-   * a lazy route preload it in `beforeAll` instead (./lazyRoutes.ts), which
-   * is why raising this number is the wrong fix for such a timeout.
+   * it, which no honest poll budget fits inside a 5 s test. A file that waits
+   * on a lazy route makes that chunk warm before the wait instead — either by
+   * preloading it in `beforeAll` (./lazyRoutes.ts) or by importing the module
+   * statically, as learn.test.tsx does for LearnRoutes; a top-level import is
+   * evaluated before the file's tests run, so it settles the same question.
+   * Either way, raising this number is the wrong fix for such a timeout: it
+   * converts an ordering bug into a slower ordering bug.
    */
   readonly attempts?: number
   /** Real milliseconds handed to the scheduler between attempts. */

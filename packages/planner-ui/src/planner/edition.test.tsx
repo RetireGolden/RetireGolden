@@ -25,14 +25,6 @@ import { LAZY_ROUTE_PRELOAD_TIMEOUT_MS, preloadLazyRoutes } from '../testSupport
 let container: HTMLDivElement
 let root: Root
 
-// The workspace tests below mount `plan/*`, which is behind `lazy()`. Load
-// that chunk before the timed tests start, or whichever file reaches it first
-// in a run pays its cold evaluation inside a 5 s test timeout — see
-// ../testSupport/lazyRoutes.ts.
-beforeAll(async () => {
-  await preloadLazyRoutes('plan')
-}, LAZY_ROUTE_PRELOAD_TIMEOUT_MS)
-
 beforeEach(() => {
   globalThis.indexedDB = new IDBFactory()
   _resetPlanStoreForTests()
@@ -159,6 +151,17 @@ describe('PlannerEditionProvider overrides', () => {
 })
 
 describe('PlannerEdition in the plan workspace (route-group host)', () => {
+  // These are the only tests here that mount `plan/*`, which is behind
+  // `lazy()`; the Examples and Disclaimer cases above render statically
+  // imported pages. Load that chunk before the timed tests start, or
+  // whichever file reaches it first in a run pays its cold evaluation inside
+  // a 5 s test timeout — see ../testSupport/lazyRoutes.ts. Scoped to this
+  // describe rather than the file so a filtered run of the others does not
+  // pay for a chunk it never mounts.
+  beforeAll(async () => {
+    await preloadLazyRoutes('plan')
+  }, LAZY_ROUTE_PRELOAD_TIMEOUT_MS)
+
   it('defaults: breadcrumb, rail back link, and save tooltip carry the web copy', async () => {
     const sample = createSamplePlan()
     const saved = await savePlan(sample)
