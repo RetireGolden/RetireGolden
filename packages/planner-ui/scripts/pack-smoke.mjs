@@ -390,8 +390,22 @@ try {
   // the way it does — assert the worker chunk and the wasm actually landed.
   // One entry serves all four channels (Monte Carlo, optimizer, spending
   // solver, relocation): a bundler builds each worker entry separately, so a
-  // second entry here would mean a second copy of the engine core.
-  require1(/planner\.worker-.*\.js$/, 'planner worker chunk')
+  // second entry here would mean a second copy of the ~740 KiB engine core.
+  // Hence `exactly1` over any worker-shaped chunk, not just "at least one
+  // planner.worker": a second entry under any name has to fail here, since a
+  // consumer's build is where this package's worker story is actually proven.
+  const exactly1 = (pattern, label) => {
+    const matched = assets.filter((name) => pattern.test(name))
+    if (matched.length !== 1) {
+      throw new Error(
+        `pack smoke FAILED: expected exactly one ${label} in dist/assets, found ${matched.length}` +
+          `${matched.length ? ` (${matched.join(', ')})` : ''}. A second worker entry ships another copy ` +
+          'of the engine core — see DOCS/operations/bundle-budget.md.',
+      )
+    }
+  }
+  exactly1(/\.worker-.*\.js$/, 'Web Worker chunk')
+  require1(/^planner\.worker-.*\.js$/, 'planner worker chunk')
   require1(/\.wasm$/, 'HiGHS wasm asset')
   require1(/\.css$/, 'stylesheet')
 
