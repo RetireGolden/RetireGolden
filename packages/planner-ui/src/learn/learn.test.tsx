@@ -2,7 +2,7 @@
 import 'fake-indexeddb/auto'
 import { act } from 'react'
 import { createRoot } from 'react-dom/client'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderToString } from 'react-dom/server'
 import { MemoryRouter, Route, Routes, type InitialEntry, useNavigate } from 'react-router'
 import { App } from '../App.tsx'
@@ -11,9 +11,11 @@ import {
   KNOWN_PLANNER_ROUTES,
   LEARNING_ARTICLES,
   LEARNING_CATEGORIES,
+  type ArticleBlock,
   articlesInCategory,
   articlesForRoute,
   getArticle,
+  getArticleBody,
   isReadable,
   searchArticles,
 } from './learningRegistry'
@@ -42,6 +44,23 @@ beforeEach(() => {
   Object.defineProperty(window, 'scrollTo', { value: vi.fn(), writable: true })
 })
 
+/**
+ * Article bodies are dynamic imports now, so the content assertions below load
+ * them once up front and read from here. `bodyOf` returning `[]` for a slug
+ * with no body is what makes the "every ready article has content" assertion
+ * still discriminate.
+ */
+const BODIES = new Map<string, ArticleBlock[]>()
+
+beforeAll(async () => {
+  const loaded = await Promise.all(LEARNING_ARTICLES.map((a) => getArticleBody(a.slug)))
+  LEARNING_ARTICLES.forEach((a, i) => BODIES.set(a.slug, loaded[i] ?? []))
+})
+
+function bodyOf(slug: string): ArticleBlock[] {
+  return BODIES.get(slug) ?? []
+}
+
 async function renderAt(path: string, entry: InitialEntry = path): Promise<string> {
   const container = document.createElement('div')
   document.body.appendChild(container)
@@ -55,7 +74,11 @@ async function renderAt(path: string, entry: InitialEntry = path): Promise<strin
     )
   })
 
-  await waitFor(() => !container.querySelector('.route-loading'), { what: 'the lazy route chunk' })
+  // RouteFallback is what a suspended route or article body renders, so its
+  // absence is the signal that both the route chunk and the body chunk landed.
+  await waitFor(() => !container.querySelector('[role="status"][aria-label="Loading"]'), {
+    what: 'the lazy route and article body chunks',
+  })
 
   const html = container.innerHTML
   await act(async () => {
@@ -181,7 +204,7 @@ describe('learning registry integrity', () => {
   it('has the dynamic spending guardrails article with the current RetireGolden modeling boundary', () => {
     const article = getArticle('dynamic-spending-guardrails')
     expect(article ? isReadable(article) : false).toBe(true)
-    const content = JSON.stringify(article!.blocks ?? [])
+    const content = JSON.stringify(bodyOf('dynamic-spending-guardrails'))
     expect(content).toContain('models guardrails directly inside the same annual ledger')
     expect(article!.relatedPlannerRoutes).toContain('/plan/:planId/insights')
   })
@@ -328,7 +351,7 @@ describe('learning registry integrity', () => {
       expect(article ? isReadable(article) : false, slug).toBe(true)
       expect(article!.relatedPlannerRoutes.length, slug).toBeGreaterThan(0)
       expect(
-        article!.blocks?.some((block) => ['figure', 'formula', 'scenario', 'table'].includes(block.type)),
+        bodyOf(slug).some((block) => ['figure', 'formula', 'scenario', 'table'].includes(block.type)),
         `${slug} has a rich teaching block`,
       ).toBe(true)
     }
@@ -347,7 +370,7 @@ describe('learning registry integrity', () => {
       expect(article ? isReadable(article) : false, slug).toBe(true)
       expect(article!.relatedPlannerRoutes).toContain('/plan/:planId/spending')
       expect(
-        article!.blocks?.some((block) => ['figure', 'formula', 'scenario', 'table'].includes(block.type)),
+        bodyOf(slug).some((block) => ['figure', 'formula', 'scenario', 'table'].includes(block.type)),
         `${slug} has a rich teaching block`,
       ).toBe(true)
     }
@@ -369,7 +392,7 @@ describe('learning registry integrity', () => {
         expect.stringContaining('fidelity'),
       ]),
     )
-    const content = JSON.stringify(article!.blocks ?? [])
+    const content = JSON.stringify(bodyOf('what-retirement-healthcare-really-costs'))
     expect(content).toContain('$202.90')
     expect(content).toContain('$625')
     expect(content).toContain('3%')
@@ -387,7 +410,7 @@ describe('learning registry integrity', () => {
   it('uses the overview hub as an index to every assumption deep dive', () => {
     const hub = getArticle('understanding-your-plan-assumptions')
     expect(hub ? isReadable(hub) : false).toBe(true)
-    const content = JSON.stringify(hub!.blocks ?? [])
+    const content = JSON.stringify(bodyOf('understanding-your-plan-assumptions'))
     for (const slug of ASSUMPTION_DEEP_DIVES) {
       expect(content, `hub links ${slug}`).toContain(`/learn/${slug}`)
     }
@@ -395,8 +418,7 @@ describe('learning registry integrity', () => {
 
   it('gives every assumption deep dive a teaching block and watch-outs', () => {
     for (const slug of ASSUMPTION_DEEP_DIVES) {
-      const article = getArticle(slug)
-      const blocks = article?.blocks ?? []
+      const blocks = bodyOf(slug)
       expect(
         blocks.some((block) => ['figure', 'formula', 'scenario', 'table'].includes(block.type)),
         `${slug} has a rich teaching block`,
@@ -416,7 +438,9 @@ describe('learning registry integrity', () => {
       'where-the-money-comes-from-and-goes',
     )
     expect(
-      article!.blocks?.some((block) => ['figure', 'formula', 'scenario', 'table'].includes(block.type)),
+      bodyOf('where-the-money-comes-from-and-goes').some((block) =>
+        ['figure', 'formula', 'scenario', 'table'].includes(block.type),
+      ),
       'where-the-money-comes-from-and-goes has a rich teaching block',
     ).toBe(true)
   })
@@ -468,7 +492,7 @@ describe('learning registry integrity', () => {
     for (const a of LEARNING_ARTICLES.filter((x) => x.status === 'ready')) {
       expect(a.title.length, a.slug).toBeGreaterThan(0)
       expect(a.description.length, a.slug).toBeGreaterThan(0)
-      expect(a.blocks?.length ?? 0, a.slug).toBeGreaterThan(0)
+      expect(bodyOf(a.slug).length, a.slug).toBeGreaterThan(0)
     }
   })
 
@@ -488,7 +512,7 @@ describe('learning registry integrity', () => {
     // ":planId" and dead-end at "Plan not found". Plan-aware links belong in the
     // planner (via LearnLink), not baked into static article body content.
     for (const a of LEARNING_ARTICLES) {
-      const content = JSON.stringify(a.blocks ?? [])
+      const content = JSON.stringify(bodyOf(a.slug))
       expect(content.includes(':planId'), `${a.slug} embeds a :planId route pattern in its content`).toBe(false)
     }
   })
@@ -496,7 +520,7 @@ describe('learning registry integrity', () => {
   it('only references chart ids that exist in the chart registry', () => {
     const knownCharts = new Set<string>(LEARN_CHART_IDS)
     for (const a of LEARNING_ARTICLES) {
-      for (const block of a.blocks ?? []) {
+      for (const block of bodyOf(a.slug)) {
         if (block.type === 'figure' && block.chartId) {
           expect(knownCharts.has(block.chartId), `${a.slug} -> unknown chart ${block.chartId}`).toBe(true)
         }

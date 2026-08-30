@@ -7,9 +7,11 @@
  * stay in ArticlePage but share {@link BackLink}.
  */
 
+import { Suspense, use } from 'react'
 import { Link, useLocation } from 'react-router'
 import { OpenExampleButton } from '../../planner/examples/OpenExampleButton'
-import { getCategory, type LearningArticle } from '../learningRegistry'
+import { RouteFallback } from '../../routes/RouteFallback'
+import { getArticleBody, getCategory, type LearningArticle } from '../learningRegistry'
 import { ArticleBody } from '../ArticleBody'
 import { RelatedArticles } from './RelatedArticles'
 import { SourceList } from './SourceList'
@@ -49,6 +51,19 @@ export function BackLink() {
   )
 }
 
+/**
+ * The article's own content, awaited from its body chunk.
+ *
+ * Split out so only the body region suspends: the kicker, title, promise, and
+ * example CTA come from metadata that is already loaded, and stay on screen
+ * while the chunk arrives. Inline blocks on the article itself win, so an
+ * article a caller assembled by hand still renders.
+ */
+function AsyncArticleBody({ article }: { article: LearningArticle }) {
+  const loaded = use(getArticleBody(article.slug))
+  return <ArticleBody blocks={article.blocks ?? loaded ?? []} />
+}
+
 export function ArticleShell({ article }: { article: LearningArticle }) {
   const category = getCategory(article.category)
 
@@ -70,7 +85,9 @@ export function ArticleShell({ article }: { article: LearningArticle }) {
       ) : null}
 
       <div className="learn-article-body">
-        <ArticleBody blocks={article.blocks ?? []} />
+        <Suspense fallback={<RouteFallback />}>
+          <AsyncArticleBody key={article.slug} article={article} />
+        </Suspense>
       </div>
 
       <RelatedArticles slugs={article.relatedArticles} />
