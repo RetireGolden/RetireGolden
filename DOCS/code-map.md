@@ -34,7 +34,7 @@ app/
 ├── package.json          deps + scripts; engines: node >= 20
 ├── eslint.config.js       flat config (the engine-purity rule lives in packages/engine/eslint.config.js)
 ├── index.html
-├── scripts/               local Node/Vite-backed tooling (`cases.mjs`, `owl-parity.mjs`, sitemap generator, license notices)
+├── scripts/               local Node/Vite-backed tooling (`cases.mjs`, `owl-parity.mjs`, `check-bundle-budget.mjs`, sitemap generator, license notices)
 ├── public/                staticwebapp.config.json (SPA fallback), import-feature.json (no-store file-import incident switch), PWA manifest/icons
 ├── e2e/                   Playwright browser specs
 └── src/                   host source (below)
@@ -189,13 +189,14 @@ these across all three workspaces (engine, then planner-ui, then app); the same 
 | Command (repo root) | Does |
 |---------|------|
 | `pnpm dev` | Vite dev server (app) |
-| `pnpm build` | Engine `tsc -b`, planner-ui `tsc -b` (type check — the package ships source), then app `tsc -b && vite build` + sitemap generation → `app/dist/` |
+| `pnpm build` | Engine `tsc -b`, planner-ui `tsc -b` (type check — the package ships source), then app `tsc -b && vite build`, the bundle budget, and sitemap generation → `app/dist/` |
 | `pnpm test` | Vitest in every workspace (co-located `*.test.ts(x)`) |
 | `pnpm test:coverage` | Vitest with the coverage thresholds CI enforces (per workspace) |
 | `pnpm lint` | ESLint in every workspace (incl. the engine-purity rule) |
 | `pnpm cases` | Emit a stable exact-ledger case manifest (default: bundled example library) |
 | `pnpm cases:diff` | Compare two case manifests and exit nonzero on unexpected deltas |
 | `pnpm owl-parity` | Run the Owl parity oracle harness |
+| `pnpm bundle-budget` | Print `app/dist/` against the size budget without failing ([operations/bundle-budget.md](operations/bundle-budget.md)); the build runs the failing form |
 
 Package-only: `pnpm --filter @retiregolden/planner-ui benchmark:documents` prints the WS5 PDF
 text-extraction accuracy report (per-field precision/recall over a hand-built synthetic corpus; add
