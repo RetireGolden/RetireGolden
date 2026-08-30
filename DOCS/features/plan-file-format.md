@@ -4,8 +4,9 @@ RetireGolden's answer to lock-in fear is a documented, versioned, plain-JSON exp
 contract: what the file contains, what stays stable, and what the app guarantees when it reads one back.
 It backs the app's public sustainability and data-portability commitments and is
 enforced by tests (`packages/planner-ui/src/data/v2Backup.roundtrip.test.ts`, `packages/planner-ui/src/data/v2Backup.test.ts`,
-`packages/planner-ui/src/data/planForAi.roundtrip.test.ts`,
-`packages/engine/src/model/migrations.test.ts`, and the docs-consistency suite).
+`packages/planner-ui/src/data/planFormat.test.ts`, `packages/engine/src/model/migrations.test.ts`, and the
+docs-consistency suite). The single-plan export's round trip **through the MCP** is enforced in the
+MCP repo — see [The single-plan export](#the-single-plan-export) below.
 
 There are two wrappers around the same plan document: the **backup envelope** (every plan, for
 restore and moving between devices) and the **single-plan export** (one plan, for handing to an AI
@@ -80,10 +81,34 @@ schemaVersion, engineVersion })`. Two consequences of "honestly":
 
 The serializer is `serializeSinglePlan` in
 [`packages/planner-ui/src/data/planFormat.ts`](../../packages/planner-ui/src/data/planFormat.ts),
-published on the same `@retiregolden/planner-ui/plan-format` subpath as the backup envelope, and
-pinned end-to-end by `packages/planner-ui/src/data/planForAi.roundtrip.test.ts` — which feeds a real
-copied payload to the real `build_plan` and checks that the plan, the start year, and the projection
-come back unchanged.
+published on the same `@retiregolden/planner-ui/plan-format` subpath as the backup envelope.
+
+Its end-to-end guard — feeding a real copied payload to a real `build_plan` and checking that the
+plan, the start year and the projection come back unchanged — lives in the
+[RetireGolden-MCP](https://github.com/RetireGolden/RetireGolden-MCP) repo. As a **point-in-time
+pointer**, it moved there on 2026-08-30 as `tests/planForAiRoundtrip.test.ts`; that path is where to
+start looking, not a guarantee. Nothing in this tree can verify it, so if the filename does not
+resolve, search that repository rather than trusting it.
+
+**That guard lives there, not here, on purpose**: the MCP is the consumer of this payload, so it
+depends on `@retiregolden/planner-ui` and this repo depends on nothing of the MCP's.
+The arrow used to point both ways — this repo carried a dev dependency on the published
+`@retiregolden/mcp` — which meant a `build_plan` regression stayed invisible until an npm release
+carried it across. An **MCP-side** regression now fails in the pull request that causes it.
+
+The consequence for work in *this* repo is narrower than "no coverage", so be precise about what
+moved. The **producer** contract is still enforced here, by the `serializeSinglePlan` block in
+[`packages/planner-ui/src/data/planFormat.test.ts`](../../packages/planner-ui/src/data/planFormat.test.ts):
+that the document validates with the engine, that `startYear`, `schemaVersion` and `engineVersion`
+ride as siblings, that no `conventions` key is emitted, and that the output is bare parseable JSON.
+Those tests are load-bearing — do not weaken them on the assumption that the MCP guard covers this.
+
+What left is the **consumer** round trip: feeding a real copied payload to a real `build_plan` and
+checking that the plan, the start year and the projection come back unchanged. Nothing here exercises
+that, and a change to `serializeSinglePlan` will not reach the MCP guard until
+`@retiregolden/planner-ui` publishes and the MCP repo picks up the new version — so detection can land
+in a later, unrelated MCP pull request. Treat the serializer as a published contract and change it
+deliberately.
 
 Copying is a local action; pasting is not. The plan is your full finances in the clear (see
 [What the file is not](#what-the-file-is-not) below — it applies here identically), and whatever you

@@ -4,6 +4,26 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## 2026-08
 
+**2026-08-30**
+- Reversed the planner-UI / MCP dependency direction so all arrows point one
+  way. `@retiregolden/planner-ui` no longer dev-depends on the published
+  `@retiregolden/mcp`; the MCP depends on planner-UI, never the reverse. The
+  "Copy plan for your AI" round-trip guard moved with it, from
+  `packages/planner-ui/src/data/planForAi.roundtrip.test.ts` to
+  `tests/planForAiRoundtrip.test.ts` in RetireGolden-MCP (its PR #59), where it
+  runs against that repo's local adapter instead of a published tarball — so a
+  `build_plan` regression now fails in the pull request that causes it rather
+  than waiting for an npm release to carry it across. Dropping the dev
+  dependency also removed the eight sourcemap-resolution warnings
+  `@retiregolden/mcp`'s `dist` emitted on every planner-UI test run, and the
+  `server.deps.inline` block that existed only to serve that one test. The
+  **producer** side of the contract is still enforced here by the
+  `serializeSinglePlan` block in `packages/planner-ui/src/data/planFormat.test.ts`;
+  what left is the **consumer** round trip through a real `build_plan`, which
+  now reaches the guard only after planner-UI publishes and the MCP repo picks
+  up the new version. Recorded because that is a real detection delay, not a
+  free move: treat `serializeSinglePlan` as a published contract.
+
 **2026-08-29**
 - Replaced automatic standalone Grok PR review with the independent OpenRouter
   review workflow and stable `review / openrouter-first-pass-gate` context.
