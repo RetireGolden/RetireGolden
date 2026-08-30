@@ -74,6 +74,24 @@ export type LazyRouteName = keyof typeof loaders
 export const LAZY_ROUTE_PRELOAD_TIMEOUT_MS = 60_000
 
 /**
+ * How the Suspense fallback for a lazy route (`routes/RouteFallback.tsx`)
+ * identifies itself in the DOM, for tests that wait for a chunk to finish
+ * loading by watching the fallback disappear.
+ *
+ * It matches the fallback's accessible contract — the live region a screen
+ * reader announces — rather than a class added for tests, so the selector
+ * tracks something the app genuinely owes its users. `aria-label="Loading"`
+ * appears nowhere else in the package, so this cannot match a real page.
+ *
+ * Exported as one constant, and pinned by `routes/RouteFallback.test.tsx`,
+ * because the failure mode of getting it wrong is invisible: a wait on a
+ * selector nothing renders is satisfied on its first poll and silently
+ * guarantees nothing, which is how `learn.test.tsx` came to wait on a
+ * `.route-loading` element that never existed in this app.
+ */
+export const ROUTE_FALLBACK_SELECTOR = '[role="status"][aria-label="Loading"]'
+
+/**
  * Evaluate the named lazy route chunks now. Pass only what the file renders;
  * preloading the whole table would add every chunk's evaluation cost to
  * files that never mount it.

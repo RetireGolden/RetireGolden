@@ -24,6 +24,7 @@ import { GLOSSARY_TERMS } from './glossary'
 import { renderInline } from './inlineMarkdown'
 import { LEARN_CHART_IDS } from './components/charts'
 import { waitFor } from '../testSupport/settle'
+import { ROUTE_FALLBACK_SELECTOR } from '../testSupport/lazyRoutes'
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
 const CATEGORY_IDS = new Set(LEARNING_CATEGORIES.map((c) => c.id))
@@ -76,7 +77,14 @@ async function renderAt(path: string, entry: InitialEntry = path): Promise<strin
 
   // RouteFallback is what a suspended route or article body renders, so its
   // absence is the signal that both the route chunk and the body chunk landed.
-  await waitFor(() => !container.querySelector('[role="status"][aria-label="Loading"]'), {
+  //
+  // This used to poll for `.route-loading`, which no code in this package
+  // renders, so the wait was satisfied on its first attempt and the assertions
+  // below could have read the skeleton instead of the page. The selector is
+  // shared from ../testSupport/lazyRoutes.ts rather than spelled out here —
+  // a second copy is a second chance to get it silently wrong — and pinned by
+  // ../routes/RouteFallback.test.tsx.
+  await waitFor(() => !container.querySelector(ROUTE_FALLBACK_SELECTOR), {
     what: 'the lazy route and article body chunks',
   })
 
