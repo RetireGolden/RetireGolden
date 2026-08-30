@@ -1,0 +1,1740 @@
+{
+  "kind": "retiregolden.rules-coverage.shard",
+  "version": 5,
+  "module": "statesWest",
+  "rules": [
+    {
+      "id": "ak-stat-43-20-012-a-tax-does-not-apply-to-individuals",
+      "title": "Alaska’s net income tax does not apply to an individual",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:AK",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-05",
+      "dueOn": "2027-08-05",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "AK",
+              "line": 136
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 712,
+          "note": null,
+          "tests": [
+            {
+              "title": "leaves an Alaska individual outside the chapter that does impose a tax",
+              "line": 734
+            },
+            {
+              "title": "would carry the whole of it if the exclusion in 43.20.012(a) were not there",
+              "line": 739
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Alaska Stat. 43.20.012(a)",
+          "url": "https://www.akleg.gov/basis/statutes.asp?media=print&type=fetch&secEnd=43.20.030"
+        },
+        {
+          "kind": "statute",
+          "citation": "Alaska Stat. 43.20.011(e)",
+          "url": "https://www.akleg.gov/basis/statutes.asp?media=print&type=fetch&secEnd=43.20.030"
+        }
+      ]
+    },
+    {
+      "id": "ars-43-1011-a-9-flat-rate",
+      "title": "Arizona taxes individual income at a flat 2.5%",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:AZ",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2023,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-05",
+      "dueOn": "2027-08-05",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "states.AZ",
+              "line": 156
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxDetail",
+              "line": 145
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 1143,
+          "note": null,
+          "tests": [
+            {
+              "title": "charges one rate on the whole Arizona base",
+              "line": 1157
+            },
+            {
+              "title": "applies the same rate to a joint return, since the paragraph is status-blind",
+              "line": 1162
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "A.R.S. 43-1011(A)(9)",
+          "url": "https://www.azleg.gov/ars/43/01011.01.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "A.R.S. 43-243(D)",
+          "url": "https://www.azleg.gov/ars/43/00243.htm"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "2025 Arizona Form 140, line 46",
+          "url": "https://azdor.gov/sites/default/files/document/FORMS_INDIVIDUAL_2025_140Booklet.pdf"
+        }
+      ]
+    },
+    {
+      "id": "ars-43-1022-10-social-security-railroad-exclusion",
+      "title": "Arizona subtracts every federally taxable Social Security dollar",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:AZ",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2021,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-05",
+      "dueOn": "2027-08-05",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "states.AZ",
+              "line": 156
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 1219,
+          "note": null,
+          "tests": [
+            {
+              "title": "leaves a high-income Arizonan’s Social Security out of the state base",
+              "line": 1234
+            },
+            {
+              "title": "would pull the federally taxable share in if Arizona taxed it",
+              "line": 1238
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "A.R.S. 43-1022(10)",
+          "url": "https://www.azleg.gov/ars/43/01022.htm"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "2025 Arizona Form 140 instructions, Line 30",
+          "url": "https://azdor.gov/sites/default/files/document/FORMS_INDIVIDUAL_2025_140Booklet.pdf"
+        }
+      ]
+    },
+    {
+      "id": "ars-43-1022-2-government-pension-exclusion",
+      "title": "Arizona caps a civil-service pension subtraction at $2,500, and the pack exempts it in full",
+      "classification": "approximated",
+      "errorDirection": "understatesTax",
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:AZ",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2021,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-05",
+      "dueOn": "2027-08-05",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/params/state/types.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "PUBLIC_PENSION_OVERRIDES",
+              "line": 57
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/types.ts",
+          "functions": [
+            {
+              "name": "StateRetirementExclusion",
+              "line": 25
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "retirementExclusion",
+              "line": 40
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/stateTax.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
+          "line": 487,
+          "note": null,
+          "tests": [
+            {
+              "title": "exempts an ASRS pension Arizona taxes above $2,500",
+              "line": 506
+            },
+            {
+              "title": "reaches the statute’s figure only by capping the military exclusion too",
+              "line": 511
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "A.R.S. 43-1022(2)",
+          "url": "https://www.azleg.gov/ars/43/01022.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "A.R.S. 43-1022(2)(b)",
+          "url": "https://www.azleg.gov/ars/43/01022.htm"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "2025 Arizona Form 140 instructions, Line 29a",
+          "url": "https://azdor.gov/sites/default/files/document/FORMS_INDIVIDUAL_2025_140Booklet.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "2025 Arizona Form 140 instructions, Line 29a, out-of-state public pensions",
+          "url": "https://azdor.gov/sites/default/files/document/FORMS_INDIVIDUAL_2025_140Booklet.pdf"
+        }
+      ]
+    },
+    {
+      "id": "ars-43-1022-22-long-term-capital-gain-subtraction",
+      "title": "Arizona subtracts 25% of long-term gain on a post-2011 asset only",
+      "classification": "approximated",
+      "errorDirection": "understatesTax",
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:AZ",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2015,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-05",
+      "dueOn": "2027-08-05",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/params/state/types.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "AZ.capitalGainsTaxablePct",
+              "line": 170
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/types.ts",
+          "functions": [
+            {
+              "name": "StateTaxParams",
+              "line": 33
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/stateTax.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
+          "line": 527,
+          "note": null,
+          "tests": [
+            {
+              "title": "subtracts a quarter of a pre-2012 gain that Arizona taxes in full",
+              "line": 547
+            },
+            {
+              "title": "reaches the statute’s figure only for a household holding nothing bought since 2011",
+              "line": 552
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "A.R.S. 43-1022(22)",
+          "url": "https://www.azleg.gov/ars/43/01022.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "A.R.S. 43-1022(22)(c)",
+          "url": "https://www.azleg.gov/ars/43/01022.htm"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "2025 Arizona Form 140 instructions, Line 24",
+          "url": "https://azdor.gov/sites/default/files/document/FORMS_INDIVIDUAL_2025_140Booklet.pdf"
+        }
+      ]
+    },
+    {
+      "id": "ars-43-1022-26-uniformed-services-exclusion",
+      "title": "Arizona excludes uniformed-services retired and retainer pay in full",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:AZ",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2021,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-05",
+      "dueOn": "2027-08-05",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "PUBLIC_PENSION_OVERRIDES",
+              "line": 57
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            },
+            {
+              "name": "retirementExclusion",
+              "line": 40
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 1248,
+          "note": null,
+          "tests": [
+            {
+              "title": "takes the whole military pension out of an Arizona base",
+              "line": 1262
+            },
+            {
+              "title": "would tax all 45,000 of it if the public bucket carried no exclusion",
+              "line": 1267
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "A.R.S. 43-1022(26)",
+          "url": "https://www.azleg.gov/ars/43/01022.htm"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "2025 Arizona Form 140 instructions, Line 29b",
+          "url": "https://azdor.gov/sites/default/files/document/FORMS_INDIVIDUAL_2025_140Booklet.pdf"
+        }
+      ]
+    },
+    {
+      "id": "ars-43-1022-no-private-retirement-exclusion",
+      "title": "Arizona grants no exclusion for a private pension, annuity or IRA distribution",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:AZ",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2021,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-05",
+      "dueOn": "2027-08-05",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "states.AZ",
+              "line": 156
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            },
+            {
+              "name": "retirementExclusion",
+              "line": 40
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 1273,
+          "note": null,
+          "tests": [
+            {
+              "title": "taxes an Arizona IRA or private pension distribution in full",
+              "line": 1289
+            },
+            {
+              "title": "does not let the public bucket’s exclusion spill onto it",
+              "line": 1294
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "A.R.S. 43-1022",
+          "url": "https://www.azleg.gov/ars/43/01022.htm"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "2025 Arizona Form 140, line 29a",
+          "url": "https://azdor.gov/sites/default/files/document/FORMS_INDIVIDUAL_2025_140Booklet.pdf"
+        }
+      ]
+    },
+    {
+      "id": "ars-43-1023-e-age-65-exemption",
+      "title": "Arizona’s age-65 relief is a flat $2,100 exemption the pack does not model",
+      "classification": "approximated",
+      "errorDirection": "overstatesTax",
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:AZ",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2021,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-05",
+      "dueOn": "2027-08-05",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/params/state/index.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "states.AZ",
+              "line": 156
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/index.ts",
+          "functions": [
+            {
+              "name": "conformStateStandardDeduction",
+              "line": 90
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/stateTax.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
+          "line": 565,
+          "note": null,
+          "tests": [
+            {
+              "title": "gives a 65-year-old Arizonan no exemption at all",
+              "line": 581
+            },
+            {
+              "title": "reaches the statute’s figure only by shrinking the input, which is not a fix",
+              "line": 586
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "A.R.S. 43-1023(E)",
+          "url": "https://www.azleg.gov/ars/43/01023.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "A.R.S. 43-1022(1)",
+          "url": "https://www.azleg.gov/ars/43/01022.htm"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "2025 Arizona Form 140, line 38",
+          "url": "https://azdor.gov/sites/default/files/document/FORMS_INDIVIDUAL_2025_140Booklet.pdf"
+        }
+      ]
+    },
+    {
+      "id": "ars-43-1041-standard-deduction-published-amount",
+      "title": "Arizona’s standard deduction is its own amount, indexed in the federal manner",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:AZ",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2020,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-05",
+      "dueOn": "2026-12-03",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/params/state/index.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "states.AZ",
+              "line": 156
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/index.ts",
+          "functions": [
+            {
+              "name": "conformStateStandardDeduction",
+              "line": 90
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 1173,
+          "note": null,
+          "tests": [
+            {
+              "title": "deducts Arizona’s published amount and adds no federal age-65 amount",
+              "line": 1191
+            },
+            {
+              "title": "would take the federal figure and the federal age-65 addition if it were tagged",
+              "line": 1199
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "A.R.S. 43-1041(A)(1)",
+          "url": "https://www.azleg.gov/ars/43/01041.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "A.R.S. 43-1041(H)",
+          "url": "https://www.azleg.gov/ars/43/01041.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "A.R.S. 43-105(A)",
+          "url": "https://www.azleg.gov/ars/43/00105.htm"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "2025 Arizona Form 140A, line 18",
+          "url": "https://azdor.gov/sites/default/files/document/FORMS_INDIVIDUAL_2025_140Booklet.pdf"
+        }
+      ]
+    },
+    {
+      "id": "ca-rtc-17087-social-security-exclusion",
+      "title": "California does not apply IRC 86 to Social Security or Tier 1 Railroad benefits",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:CA",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "CA",
+              "line": 212
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 1637,
+          "note": null,
+          "tests": [
+            {
+              "title": "omits California Social Security from the taxable base",
+              "line": 1653
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Cal. Rev. & Tax. Code 17087(a)",
+          "url": "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=RTC&sectionNum=17087."
+        }
+      ]
+    },
+    {
+      "id": "co-crs-39-22-104-federal-base-and-pension-cap",
+      "title": "Colorado starts from federal taxable income but has a $20,000 pension-and-annuity tier at ages 55-64",
+      "classification": "approximated",
+      "errorDirection": "overstatesTax",
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:CO",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/params/state/index.ts",
+        "packages/engine/src/params/state/types.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "CO",
+              "line": 234
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/index.ts",
+          "functions": [
+            {
+              "name": "conformStateStandardDeduction",
+              "line": 90
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/types.ts",
+          "functions": [
+            {
+              "name": "StateRetirementExclusion",
+              "line": 25
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 1699,
+          "note": "age-55-through-64 pension-and-annuity limb",
+          "tests": [
+            {
+              "title": "pins the missing Colorado age-60 retirement subtraction",
+              "line": 1716
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Colo. Rev. Stat. 39-22-104(1.7)(c), (2)",
+          "url": "https://olls.info/crs/crs2026-title-39.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "Colo. Rev. Stat. 39-22-104(4)(f)(III)(A), (D)",
+          "url": "https://olls.info/crs/crs2026-title-39.htm"
+        }
+      ]
+    },
+    {
+      "id": "co-crs-39-22-104-social-security-inclusion",
+      "title": "Colorado fully subtracts federally taxable Social Security at age 65 and older",
+      "classification": "approximated",
+      "errorDirection": "overstatesTax",
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:CO",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/params/state/types.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "CO",
+              "line": 234
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/types.ts",
+          "functions": [
+            {
+              "name": "taxesSocialSecurity",
+              "line": 40
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 1731,
+          "note": "age-65 Social Security limb",
+          "tests": [
+            {
+              "title": "pins the Colorado age-65 Social Security subtraction the pack misses",
+              "line": 1748
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Colo. Rev. Stat. 39-22-104(4)(f)(III)(B)",
+          "url": "https://olls.info/crs/crs2026-title-39.htm"
+        }
+      ]
+    },
+    {
+      "id": "hi-hrs-235-7-pension-and-social-security",
+      "title": "Hawaii excludes every pension for past services, not only public pensions",
+      "classification": "approximated",
+      "errorDirection": "overstatesTax",
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:HI",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/params/state/types.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "PUBLIC_PENSION_OVERRIDES",
+              "line": 57
+            },
+            {
+              "name": "states.HI",
+              "line": 309
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/types.ts",
+          "functions": [
+            {
+              "name": "StateRetirementExclusion",
+              "line": 25
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 1915,
+          "note": null,
+          "tests": [
+            {
+              "title": "pins the unmodelled Hawaii private-pension exclusion",
+              "line": 1930
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Haw. Rev. Stat. 235-7(a)(2)",
+          "url": "https://files.hawaii.gov/tax/legal/hrs/hrs_235.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "Haw. Rev. Stat. 235-7(a)(3)",
+          "url": "https://files.hawaii.gov/tax/legal/hrs/hrs_235.pdf"
+        }
+      ]
+    },
+    {
+      "id": "id-code-63-3022-federal-standard-and-ss",
+      "title": "Idaho subtracts the federally included Social Security and Railroad amount",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:ID",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "ID",
+              "line": 328
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 1941,
+          "note": null,
+          "tests": [
+            {
+              "title": "deducts Idaho’s federally included Social Security amount",
+              "line": 1957
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Idaho Code 63-3022(l)",
+          "url": "https://legislature.idaho.gov/statutesrules/idstat/title63/t63ch30/sect63-3022/"
+        }
+      ]
+    },
+    {
+      "id": "mt-mca-15-30-2120-3-g-age-65-subtraction",
+      "title": "Montana subtracts $5,500 per taxpayer at 65, inflation-adjusted; the pack has no such knob",
+      "classification": "approximated",
+      "errorDirection": "overstatesTax",
+      "conventionRationale": "The record pins the $5,500 statutory floor rather than the department's inflation-adjusted figure for the tax year: the floor is in the quoted statute, while the adjusted amount is published administratively under 15-30-2120(7) and no primary source for the 2026 figure is staged. The floor understates the size of the overstatement, never the direction.",
+      "contraryReading": null,
+      "jurisdiction": "state:MT",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-29",
+      "dueOn": "2026-12-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "MT",
+              "line": 537
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 2347,
+          "note": "age-65 additional subtraction, 15-30-2120(3)(g) floor",
+          "tests": [
+            {
+              "title": "pins the missing Montana age-65 subtraction",
+              "line": 2367
+            },
+            {
+              "title": "grants nothing below 65 under either reading",
+              "line": 2372
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 2390,
+          "note": "per-taxpayer doubling for a couple both 65",
+          "tests": [
+            {
+              "title": "pins the missing per-taxpayer doubling for a couple both 65",
+              "line": 2408
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Mont. Code Ann. 15-30-2120(3)(g) (2025)",
+          "url": "https://mca.legmt.gov/bills/mca/title_0150/chapter_0300/part_0210/section_0200/0150-0300-0210-0200.html"
+        },
+        {
+          "kind": "statute",
+          "citation": "Mont. Code Ann. 15-30-2120(7)(a) (2025)",
+          "url": "https://mca.legmt.gov/bills/mca/title_0150/chapter_0300/part_0210/section_0200/0150-0300-0210-0200.html"
+        },
+        {
+          "kind": "statute",
+          "citation": "Mont. Code Ann. 15-30-2120(7)(b) (2025)",
+          "url": "https://mca.legmt.gov/bills/mca/title_0150/chapter_0300/part_0210/section_0200/0150-0300-0210-0200.html"
+        }
+      ]
+    },
+    {
+      "id": "mt-mca-15-30-2120-federal-taxable-income-base",
+      "title": "Montana starts from federal taxable income, so federally taxable Social Security stays in the base",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:MT",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-29",
+      "dueOn": "2027-08-29",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/params/state/index.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "MT",
+              "line": 537
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/index.ts",
+          "functions": [
+            {
+              "name": "conformStateStandardDeduction",
+              "line": 90
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 2303,
+          "note": null,
+          "tests": [
+            {
+              "title": "starts Montana from federal taxable income, so federally taxable Social Security stays in",
+              "line": 2322
+            },
+            {
+              "title": "would drop the benefit if Montana subtracted it the way a false flag does",
+              "line": 2328
+            },
+            {
+              "title": "carries the federal standard deduction with it, not a frozen state figure",
+              "line": 2334
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Mont. Code Ann. 15-30-2101(22) (2025)",
+          "url": "https://mca.legmt.gov/bills/mca/title_0150/chapter_0300/part_0210/section_0010/0150-0300-0210-0010.html"
+        },
+        {
+          "kind": "statute",
+          "citation": "Mont. Code Ann. 15-30-2120(1) (2025)",
+          "url": "https://mca.legmt.gov/bills/mca/title_0150/chapter_0300/part_0210/section_0200/0150-0300-0210-0200.html"
+        },
+        {
+          "kind": "statute",
+          "citation": "Mont. Code Ann. 15-30-2120(3) (2025)",
+          "url": "https://mca.legmt.gov/bills/mca/title_0150/chapter_0300/part_0210/section_0200/0150-0300-0210-0200.html"
+        },
+        {
+          "kind": "statute",
+          "citation": "Mont. Code Ann. 15-30-2110 (repealed) (2025)",
+          "url": "https://mca.legmt.gov/bills/mca/title_0150/chapter_0300/part_0210/section_0100/0150-0300-0210-0100.html"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Montana Department of Revenue, Updated Montana Wage Withholding Tables and MW-4 Now Available (2026)",
+          "url": "https://revenue.mt.gov/news/recent-news/2026-withholding-updates"
+        }
+      ]
+    },
+    {
+      "id": "nm-stat-7-2-5-14-social-security-and-federal-standard",
+      "title": "New Mexico applies an income-tested Social Security exemption",
+      "classification": "approximated",
+      "errorDirection": "understatesTax",
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:NM",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/params/state/index.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "NM",
+              "line": 593
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/index.ts",
+          "functions": [
+            {
+              "name": "conformStateStandardDeduction",
+              "line": 90
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 2487,
+          "note": null,
+          "tests": [
+            {
+              "title": "pins the high-income path where the blanket pack exclusion diverges from the source threshold",
+              "line": 2502
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "New Mexico Taxation and Revenue Department, Social Security Income Tax Exemption",
+          "url": "https://www.tax.newmexico.gov/social-security-income-tax-exemption/"
+        }
+      ]
+    },
+    {
+      "id": "nv-const-10-1-9-no-personal-income-tax",
+      "title": "Nevada may not tax the personal income of a natural person",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:NV",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2027-08-04",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "NV",
+              "line": 563
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 409,
+          "note": null,
+          "tests": [
+            {
+              "title": "leaves a Nevada retiree with no state base at all",
+              "line": 426
+            },
+            {
+              "title": "would carry the pension and IRA income under the narrower reading",
+              "line": 431
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Nev. Const. art. 10, sec. 1(9)",
+          "url": "https://www.leg.state.nv.us/const/nvconst.html"
+        }
+      ]
+    },
+    {
+      "id": "or-stat-316-054-social-security-exclusion",
+      "title": "Oregon subtracts federally taxable Social Security from federal taxable income",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:OR",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "OR",
+              "line": 691
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 2621,
+          "note": null,
+          "tests": [
+            {
+              "title": "subtracts federally taxable Social Security as ORS 316.054 directs",
+              "line": 2633
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Or. Rev. Stat. §316.054",
+          "url": "https://www.oregonlegislature.gov/bills_laws/ors/ors316.html"
+        }
+      ]
+    },
+    {
+      "id": "ut-code-59-10-114-social-security-tax-credit",
+      "title": "Utah taxes Social Security but offers a separate Social Security benefits credit",
+      "classification": "approximated",
+      "errorDirection": "overstatesTax",
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:UT",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "UT",
+              "line": 753
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 2598,
+          "note": null,
+          "tests": [
+            {
+              "title": "pins the unmodeled Utah Social Security benefits credit",
+              "line": 2614
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Utah State Tax Commission, 2025 TC-40A Supplemental Schedule Instructions, Social Security Benefits Credit (UCA §59-10-1042)",
+          "url": "https://incometax.utah.gov/tc-40a/"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Utah State Tax Commission, Tax Rates (2025)",
+          "url": "https://incometax.utah.gov/file-pay/tax-rates/"
+        }
+      ]
+    },
+    {
+      "id": "wa-dor-no-broad-individual-income-tax",
+      "title": "Washington has no broad individual income-tax figure in this pack",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:WA",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "WA",
+              "line": 789
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 2783,
+          "note": null,
+          "tests": [
+            {
+              "title": "keeps Washington out of the broad state-income-tax path",
+              "line": 2802
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Washington Department of Revenue, Capital gains tax",
+          "url": "https://dor.wa.gov/taxes-rates/other-taxes/capital-gains-tax"
+        },
+        {
+          "kind": "statute",
+          "citation": "Wash. Rev. Code §82.87.040(1)",
+          "url": "https://app.leg.wa.gov/RCW/default.aspx?cite=82.87.040"
+        }
+      ]
+    },
+    {
+      "id": "wa-rcw-82-87-capital-gains-excise",
+      "title": "Washington’s long-term capital-gains excise is absent from the state-tax surface",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:WA",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/params/types.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "planSchema",
+              "line": 2130
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "WA",
+              "line": 789
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/types.ts",
+          "functions": [
+            {
+              "name": "ParameterPack",
+              "line": 53
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxDetail",
+              "line": 145
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Wash. Rev. Code §82.87.040(1)",
+          "url": "https://app.leg.wa.gov/RCW/default.aspx?cite=82.87.040"
+        },
+        {
+          "kind": "statute",
+          "citation": "Wash. Rev. Code §82.87.050(3)",
+          "url": "https://app.leg.wa.gov/RCW/default.aspx?cite=82.87.050"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Washington Department of Revenue, Capital gains tax",
+          "url": "https://dor.wa.gov/taxes-rates/other-taxes/capital-gains-tax"
+        }
+      ]
+    },
+    {
+      "id": "wy-stat-39-12-101-no-state-or-local-income-tax",
+      "title": "Wyoming levies no income tax, and no local one is possible",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:WY",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-05",
+      "dueOn": "2027-08-05",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "WY",
+              "line": 826
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxDetail",
+              "line": 145
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 835,
+          "note": null,
+          "tests": [
+            {
+              "title": "leaves a Wyoming retiree with no state base at all",
+              "line": 854
+            },
+            {
+              "title": "would build a base if chapter 12 imposed as well as preempted",
+              "line": 859
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Wyo. Stat. § 39-12-101",
+          "url": "https://www.wyoleg.gov/statutes/compress/title39.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "Wyo. Const. art. 15, § 18",
+          "url": "https://sos.wyo.gov/Forms/Publications/WYConstitution.pdf"
+        }
+      ]
+    }
+  ]
+}

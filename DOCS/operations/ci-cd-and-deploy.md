@@ -49,6 +49,13 @@ PR only while it carries the **`run-ci` label**:
   the label lands on `main` unvalidated (the push-to-`main` run will still catch it, but after the fact).
 - **Semgrep is exempt**: it runs on every PR push regardless of the label, so the SAST required check is
   always a real result. It's a cheap CLI scan — the label gate covers the expensive pipeline only.
+- **The resolve gate is also exempt**: [`resolve-gate.yml`](../../.github/workflows/resolve-gate.yml)
+  runs ungated on PRs touching `pnpm-workspace.yaml`, `pnpm-lock.yaml`, or any `package.json` (plus
+  weekly and on dispatch). It deletes the lockfile and re-resolves from scratch, because every other
+  job's `--frozen-lockfile` install skips resolution and therefore the workspace supply-chain gates
+  (`trustPolicy`, `minimumReleaseAge`, `blockExoticSubdeps`); it also fails when a `trustPolicyExclude`
+  entry no longer appears in a fresh resolve, so stale exemptions surface instead of standing as
+  silent trust waivers. Like Semgrep, it's a ~1-minute job.
 - Both workflows also **cancel in-progress PR runs** when a newer commit is pushed (concurrency
   groups), so rapid-fire pushes only pay for the latest commit. Pushes to `main` are never cancelled,
   and unrelated label events never cancel a live pipeline.

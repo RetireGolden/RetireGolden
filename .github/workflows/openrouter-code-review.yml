@@ -28,15 +28,20 @@
 # verdict and publishes the review-loop ledger (follow-up rounds keep
 # continuity). Only files dropped entirely still force `partial`.
 # Rewrite this note ONLY if the dense-diff behavior actually changes.
+# Since the .github#35 pin (action v1.2.7 unchanged, action PR #20),
+# full-PR acquisition falls back to the runner's full-depth
+# `git diff base...head` when GitHub rejects a patch over 20,000 lines;
+# the complete patch then enters the same dense-diff packing above.
 #
 # The lane roster is decided per-repo INSIDE the reusable (keyed off
 # GITHUB_REPOSITORY, frozen at the pinned SHA below). This repo has run
 # x-ai/grok-4.6 + z-ai/glm-5.3-flash since the .github#24 pin; a pin
 # bump does not change those lanes unless it says so. As of .github#32,
 # the separate recall-safe judge that merges them defaults to
-# openai/gpt-5.6-luna. All other org repos stay single-lane. On a bump,
-# rewrite the lane and judge notes only when their respective defaults
-# actually change.
+# openai/gpt-5.6-luna. The .github#34 pin expands the requested roster
+# to the other product repos without changing this repo's lanes. On a
+# bump, rewrite the lane and judge notes only when their respective
+# defaults actually change.
 
 name: OpenRouter code review
 
@@ -61,9 +66,9 @@ jobs:
   # `review / openrouter-first-pass-gate`.
   review:
     if: github.event_name == 'workflow_dispatch' || !github.event.pull_request.draft
-    # Central independent-review workflow pinned to the .github#33 merge commit
-    # (timeout salvage fix via action #19; independent gate unchanged).
-    uses: RetireGolden/.github/.github/workflows/openrouter-code-review.yml@e18e0f4944973febffadbc1b374fb755531d6bec # .github#33 (OpenRouter action #19, timeout salvage fix)
+    # Central independent-review workflow pinned to the .github#35 merge commit
+    # (oversized-diff fallback via action v1.2.7/#20; independent gate unchanged).
+    uses: RetireGolden/.github/.github/workflows/openrouter-code-review.yml@f6aa157430509b5f6945b4fc2c9fafeeac4a7294 # .github#35 (OpenRouter action v1.2.7/#20, oversized diff fallback)
     with:
       pr_number: ${{ inputs.pr_number || github.event.inputs.pr_number || github.event.pull_request.number }}
     secrets:

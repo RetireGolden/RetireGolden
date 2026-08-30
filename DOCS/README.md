@@ -31,7 +31,7 @@ and a doc disagree, fix the doc to match the code.
 
 | Doc | What it covers |
 |-----|----------------|
-| [domain/domain-rules-reference.md](domain/domain-rules-reference.md) | The financial rules the engine encodes, with 2026 figures and sources |
+| [domain/domain-rules-reference.md](domain/domain-rules-reference.md) | The financial rules the engine encodes, with 2026 figures and sources — an index over one file per section in [domain/domain-rules-reference/](domain/domain-rules-reference/) |
 | [domain/state-tax-research/](domain/state-tax-research/) | Per-state income-tax research (all 50 states + DC) behind the state packs |
 
 ## Features — what each capability does and why (`features/`)

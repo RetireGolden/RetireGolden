@@ -1,0 +1,1835 @@
+{
+  "kind": "retiregolden.rules-coverage.shard",
+  "version": 5,
+  "module": "earlyDistributionsAndSepp",
+  "rules": [
+    {
+      "id": "irc-72-t-1-additional-tax-on-includible-portion",
+      "title": "The 10 percent additional tax falls on the includible portion",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The includible portion is whatever the annual section 408(d)(2) pro-rata calculation produces, so this rule sits downstream of the basis-recovery rule rather than restating it. That is also why the additional tax cannot be computed from the distribution alone.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2027-08-03",
+      "implementedBy": [
+        "packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts",
+          "functions": [
+            {
+              "name": "evaluateOwnedNonRothIraPenaltyPrerequisites",
+              "line": 820
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.test.ts",
+          "line": 1269,
+          "note": null,
+          "tests": [
+            {
+              "title": "charges the additional tax on the taxable half of a basis-bearing distribution",
+              "line": 1273
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 72(t)(1)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/72"
+        }
+      ]
+    },
+    {
+      "id": "irc-72-t-1-qualified-retirement-plan-scope",
+      "title": "Section 72(t) does not reach non-retirement withdrawal sources",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": "The executor represents the absence of the statutory predicate rather than computing a zero section 72(t) tax. Its one-cent cash fixture in actions/execution.test.ts makes both the notApplicable status and nonRetirementSource reason observable, while also proving that no penalty exposure enters the result.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-25",
+      "dueOn": "2027-08-25",
+      "implementedBy": [
+        "packages/engine/src/actions/execution.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/execution.ts",
+          "functions": [
+            {
+              "name": "evaluateRetirementActionSchedule",
+              "line": 1013
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 72(t)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 4974(c)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section4974&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-72-t-10-public-safety-early-age",
+      "title": "Age 50 or 25 years of service for qualified public safety employees",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-28",
+      "dueOn": "2027-08-28",
+      "implementedBy": [
+        "packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.ts",
+          "functions": [
+            {
+              "name": "evaluateTraditionalEmployerPlanPenaltyPrerequisite",
+              "line": 562
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 72(t)(10)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-72-t-2-A-i-age-59-half",
+      "title": "Age 59.5 exception to the early-distribution tax",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "No authority at any level defines when age 59.5 is attained: there is no section 1.72(t) regulation series, and the threshold appears throughout the regulations without ever being defined. The engine applies the six-calendar-months convention by analogy to Treas. Reg. 1.401(a)(9)-6(g)(1)(iv), which defines it for age 70.5 inside a defined-benefit provision addressed to something else. That analogy is universal industry practice but the IRS has never stated it for 59.5, and it carries the same unresolved month-end and leap-day edge as the age-70.5 rule - here against a 10 percent penalty rather than QCD eligibility.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-28",
+      "dueOn": "2027-08-28",
+      "implementedBy": [
+        "packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts",
+        "packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts",
+          "functions": [
+            {
+              "name": "evaluateOwnedNonRothIraPenaltyPrerequisites",
+              "line": 820
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.ts",
+          "functions": [
+            {
+              "name": "evaluateTraditionalEmployerPlanPenaltyPrerequisite",
+              "line": 562
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.test.ts",
+          "line": 420,
+          "note": null,
+          "tests": [
+            {
+              "title": "accepts a distribution taken exactly on the 59.5 threshold",
+              "line": 427
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 72(t)(2)(A)(i)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 72(t)(5)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-72-t-2-A-i-age-59-half-annual-proxy",
+      "title": "Age 59.5 modelled as an annual attained-age-60 threshold",
+      "classification": "approximated",
+      "errorDirection": "bothDirections",
+      "conventionRationale": "The direction of the error is knowable but it is not one-sided, and a reader who assumes it is will mis-state the exposure. Attained age here is the calendar-year age, the projection year minus the birth year, so the proxy waives from January 1 of the year the owner turns 60 while the statute waives from the date six calendar months after the 59th birthday. For a birthday in the first half of the year that statutory date falls in the preceding calendar year, so the proxy waives late and over-penalizes, by up to about six months at a January 1 birth. For a birthday in the second half it falls inside the same calendar year the proxy is already waiving, so the proxy waives early and under-penalizes, again by up to about six months at a December 31 birth. Only a July 1 birthday makes the two agree exactly. It is out of scope rather than settled because the annual projection carries an attained age and no distribution date, so there is no boundary to compare anything against. Two reachable paths therefore disagree about the same taxpayer: the exact-cent path in actions/ownedNonRothIraPenaltyPrerequisite.ts and actions/traditionalEmployerPlanPenaltyPrerequisite.ts computes the boundary as addCalendarMonths(dob, 714) with the month-end clamp and accepts equality, which is the reading registered as irc-72-t-2-A-i-age-59-half. Only that path is filing-relevant; a penalty figure produced from the annual proxy must not be reported as one.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2027-08-03",
+      "implementedBy": [
+        "packages/engine/src/strategies/accountEligibility.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/strategies/accountEligibility.ts",
+          "functions": [
+            {
+              "name": "traditionalWithdrawalPenaltyRate",
+              "line": 1422
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/accountEligibility.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/accountEligibility.approximation.test.ts",
+          "line": 166,
+          "note": "December birthday — a January draw six months before 59½",
+          "tests": [
+            {
+              "title": "places the statutory boundary at 2027-06-30, so a January 2027 draw precedes it",
+              "line": 178
+            },
+            {
+              "title": "waives the penalty on an owned IRA from attained age 60, not from 59½",
+              "line": 182
+            },
+            {
+              "title": "charges nothing on the projected 2027 draw, which the statute penalizes until June 30",
+              "line": 191
+            },
+            {
+              "title": "does charge the statutory rate in 2026, where the two readings agree",
+              "line": 200
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/rules/approximations/accountEligibility.approximation.test.ts",
+          "line": 218,
+          "note": "January birthday — a December draw six months after 59½",
+          "tests": [
+            {
+              "title": "places the statutory boundary at 2027-07-01, so a December 2027 draw follows it",
+              "line": 230
+            },
+            {
+              "title": "still penalizes an owned IRA in the year the owner passes 59½",
+              "line": 234
+            },
+            {
+              "title": "charges 10% on the projected 2027 draw, which the statute waives from July 1",
+              "line": 243
+            },
+            {
+              "title": "does reach the statutory rate in 2028, where the two readings agree",
+              "line": 251
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 72(t)(2)(A)(i)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 72(t)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-72-t-2-A-ii-death-beneficiary-exception",
+      "title": "Death exception to the early-distribution tax",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The engine reads this exception off the inherited marker on the account rather than off the identity of the person receiving the distribution. Those are the same test only for so long as an account a surviving spouse has elected to treat as their own stops being marked inherited. That election is registered separately as irc-408-d-3-C-ii-surviving-spouse-not-inherited and treas-reg-1-408-8-c-3-spouse-treated-as-owner; once it is made the spouse takes distributions in their own right and 72(t) applies to them normally, so a plan that left the marker in place would waive a tax that is actually due. The exact-cent beneficiary path is stricter than the marker proxy: beneficiaryTraditionalIraDeathPenalty.ts requires recipient death-beneficiary evidence with a death date on or before evaluation and refuses once spousal owner treatment has begun, and beneficiaryTraditionalIraAnnualSimulatorDelta.ts propagates that zero only when the upstream module produced it.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2027-08-03",
+      "implementedBy": [
+        "packages/engine/src/actions/beneficiaryTraditionalIraAnnualSimulatorDelta.ts",
+        "packages/engine/src/actions/beneficiaryTraditionalIraDeathPenalty.ts",
+        "packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts",
+        "packages/engine/src/strategies/accountEligibility.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/beneficiaryTraditionalIraAnnualSimulatorDelta.ts",
+          "functions": [
+            {
+              "name": "prepareBeneficiaryTraditionalIraAnnualSimulatorDelta",
+              "line": 567
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/beneficiaryTraditionalIraDeathPenalty.ts",
+          "functions": [
+            {
+              "name": "evaluateBeneficiaryTraditionalIraDeathPenalty",
+              "line": 296
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts",
+          "functions": [
+            {
+              "name": "evaluateOwnedNonRothIraPenaltyPrerequisites",
+              "line": 820
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/strategies/accountEligibility.ts",
+          "functions": [
+            {
+              "name": "traditionalWithdrawalPenaltyRate",
+              "line": 1422
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/actions/beneficiaryTraditionalIraDeathPenalty.test.ts",
+        "packages/engine/src/strategies/accountEligibility.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/actions/beneficiaryTraditionalIraDeathPenalty.test.ts",
+          "line": 260,
+          "note": "beneficiary traditional IRA death-penalty module",
+          "tests": [
+            {
+              "title": "publishes zero from the death path, not the 10 percent early rate",
+              "line": 274
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/strategies/accountEligibility.test.ts",
+          "line": 1551,
+          "note": null,
+          "tests": [
+            {
+              "title": "exempts an inherited account at every age the age test would penalize",
+              "line": 1558
+            },
+            {
+              "title": "does not borrow the Rule of 55, which an inherited employer account would fail",
+              "line": 1571
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 72(t)(2)(A)(ii)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 72(t)(5)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-72-t-2-A-iii-disability-exception",
+      "title": "Disability waives the 10 percent additional tax, not the income",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The statutory test is any substantial gainful activity, which is materially stricter than an occupation-specific disability determination of the kind a private policy uses. Section 72(m)(7) also requires the individual to furnish proof in such form and manner as the Secretary may require, which is why the engine takes a dated attestation with an evidence id rather than inferring disability from plan data.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2027-08-04",
+      "implementedBy": [
+        "packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts",
+        "packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts",
+          "functions": [
+            {
+              "name": "evaluateOwnedNonRothIraPenaltyPrerequisites",
+              "line": 820
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.ts",
+          "functions": [
+            {
+              "name": "evaluateTraditionalEmployerPlanPenaltyPrerequisite",
+              "line": 562
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.test.ts",
+          "line": 498,
+          "note": null,
+          "tests": [
+            {
+              "title": "keeps the distribution in income while waiving the additional tax",
+              "line": 502
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 72(t)(2)(A)(iii)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/72"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 72(m)(7)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/72"
+        }
+      ]
+    },
+    {
+      "id": "irc-72-t-2-A-iv-sepp-exception",
+      "title": "The substantially equal periodic payment exception itself",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2027-08-04",
+      "implementedBy": [
+        "packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts",
+        "packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts",
+          "functions": [
+            {
+              "name": "evaluateOwnedNonRothIraPenaltyPrerequisites",
+              "line": 820
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.ts",
+          "functions": [
+            {
+              "name": "reconcileOwnedNonRothIraSeppAnnualSchedule",
+              "line": 714
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.test.ts",
+          "line": 1368,
+          "note": null,
+          "tests": [
+            {
+              "title": "excepts nothing in a year that never completed the annual payment",
+              "line": 1388
+            },
+            {
+              "title": "reports the year incomplete rather than partly qualified",
+              "line": 1394
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 72(t)(2)(A)(iv)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim"
+        },
+        {
+          "kind": "irsNotice",
+          "citation": "IRS Notice 2022-6, section 2.02",
+          "url": "https://www.irs.gov/irb/2022-05_IRB"
+        }
+      ]
+    },
+    {
+      "id": "irc-72-t-2-A-v-rule-of-55",
+      "title": "Rule of 55 separation test",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The calendar-year form of the test is IRS administrative position rather than statutory text: 72(t)(2)(A)(v) says only \"after attainment of age 55\", which read literally would require the participant to have turned 55 before separating. The calendar-year gloss comes from Notice 87-13 Q&A-20 and is restated in Publication 575, the Form 5329 instructions, and the IRS exceptions chart. The engine follows the IRS position.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-28",
+      "dueOn": "2027-08-28",
+      "implementedBy": [
+        "packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.ts",
+          "functions": [
+            {
+              "name": "evaluateTraditionalEmployerPlanPenaltyPrerequisite",
+              "line": 562
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.test.ts",
+          "line": 245,
+          "note": null,
+          "tests": [
+            {
+              "title": "accepts separation before the birthday in the qualifying year",
+              "line": 258
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 72(t)(2)(A)(v)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 72(t)(3)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "Instructions for Form 5329, exception 01",
+          "url": "https://www.irs.gov/instructions/i5329"
+        }
+      ]
+    },
+    {
+      "id": "irc-72-t-2-A-v-rule-of-55-separation-proxy",
+      "title": "Rule of 55 modelled from the plan retirement age",
+      "classification": "approximated",
+      "errorDirection": "bothDirections",
+      "conventionRationale": "Unlike the two age proxies, this one errs in both directions and neither direction is bounded by a fixed number of months. It under-penalizes where the employer plan is one the owner left well before age 55, because the statute reaches only the plan maintained by the employer separated from and the code tests no employer identity at all: a 401(k) left behind at 40 is waived at the modelled retirement age like any other. It over-penalizes where the owner separates from an employer at or after 55 but keeps working elsewhere, because the waiver is withheld until the attained age reaches the modelled retirement age: an owner who left an employer at 56 and plans to retire at 62 is charged the tax on that abandoned plan for six years. It is approximated rather than settled because the plan model carries a single household retirement age and no employment history, so no separation date and no employer for the plan exist to test. Note that the crossing case the IRS calendar-year gloss addresses cannot arise here at all: retirementAge in this model is a calendar-year age, resolved as dobYear + retirementAge, so a separation during the year of attaining 55 is recorded as a retirement age of 55 and is waived — agreeing with the gloss, and erring permissively rather than restrictively against the strict statutory date. The engine does get the one structural limit right: 72(t)(3)(A) denies the exception to individual retirement plans, and the code waives only for an account of employer kind. The exact-date reading lives in actions/traditionalEmployerPlanPenaltyPrerequisite.ts.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2027-08-04",
+      "implementedBy": [
+        "packages/engine/src/strategies/accountEligibility.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/strategies/accountEligibility.ts",
+          "functions": [
+            {
+              "name": "traditionalWithdrawalPenaltyRate",
+              "line": 1422
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/accountEligibility.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/accountEligibility.approximation.test.ts",
+          "line": 330,
+          "note": "a plan left behind at 40, waived like the plan retired from",
+          "tests": [
+            {
+              "title": "waives the plan the owner left at 40, which 72(t)(2)(A)(v) does not reach",
+              "line": 345
+            },
+            {
+              "title": "cannot tell that plan from the plan actually separated from at 57",
+              "line": 351
+            },
+            {
+              "title": "does return the statutory rate for an IRA, where the two readings agree",
+              "line": 363
+            },
+            {
+              "title": "charges nothing on the projected employer-plan draw at 57",
+              "line": 367
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/rules/approximations/accountEligibility.approximation.test.ts",
+          "line": 385,
+          "note": "separated from the plan at 56 but still working elsewhere",
+          "tests": [
+            {
+              "title": "penalizes a plan separated from after 55 because the owner has not reached the modelled retirement age",
+              "line": 399
+            },
+            {
+              "title": "does waive once the retirement age is reached, where the two readings agree",
+              "line": 405
+            },
+            {
+              "title": "charges 10% on the projected draw at 58 from a plan the statute has already released",
+              "line": 414
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 72(t)(2)(A)(v)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 72(t)(3)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-72-t-2-J-plesa-withdrawal-early-distribution-exception",
+      "title": "A PLESA withdrawal is excepted from the section 72(t) additional tax",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": "The necessary distribution source and its section 402A(e) status cannot be represented. The absent PLESA account surface is tested in model/plan.test.ts; the absent withdrawal-action surface is tested in actions/contract.test.ts. This avoids treating an ordinary employer-plan withdrawal as proof of the PLESA exception.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "awaitingGuidance",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2026-11-24",
+      "implementedBy": [
+        "packages/engine/src/actions/contract.ts",
+        "packages/engine/src/model/plan.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/contract.ts",
+          "functions": [
+            {
+              "name": "persistedRetirementActionRequestSchema",
+              "line": 389
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "rothAccountSchema",
+              "line": 942
+            },
+            {
+              "name": "traditionalAccountSchema",
+              "line": 894
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 72(t)(2)(J)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim"
+        },
+        {
+          "kind": "irsNotice",
+          "citation": "IRS Notice 2024-22, section II.C",
+          "url": "https://www.irs.gov/pub/irs-drop/n-24-22.pdf"
+        }
+      ]
+    },
+    {
+      "id": "irc-72-t-3-B-sepp-separation",
+      "title": "Employer-plan SEPP must begin after separation from service",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2027-08-04",
+      "implementedBy": [
+        "packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.ts",
+          "functions": [
+            {
+              "name": "evaluateTraditionalEmployerPlanPenaltyPrerequisite",
+              "line": 562
+            },
+            {
+              "name": "seppSeriesBeginsAfterSeparation",
+              "line": 393
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.test.ts",
+          "line": 578,
+          "note": null,
+          "tests": [
+            {
+              "title": "does not qualify a SEPP election that starts before separation",
+              "line": 587
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 72(t)(3)(B)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-72-t-3-B-sepp-separation-annual-proxy",
+      "title": "Employer-plan SEPP separation modelled from the plan retirement age",
+      "classification": "approximated",
+      "errorDirection": "bothDirections",
+      "conventionRationale": "Registered as out of scope rather than settled for the same reason as the Rule of 55 proxy alongside it: the plan model carries one retirement age per person and no employment history, so there is no separation date and no employer for the plan to test. It errs in both directions. It under-refuses where the employer plan is one the participant left long ago, because the statute reaches only the plan of the employer separated from and no employer identity is tested. It under-refuses again inside the year of separation, because the projection resolves years rather than days and cannot see a series that began in March from a job left in September; the first year the wage model stops paying the participant is treated as a separated year throughout, which is the same convention that lets the Rule of 55 waive the penalty in that year. Both layers name that year by rounding the retirement age UP to an attained age, which is not a rounding preference but the only reading that agrees with the other two: wages are paid while attained age is below the retirement age and the Rule of 55 waives from the first attained age that is not, so a retirement age of 65.5 is paid for the year the participant attains 65 and separated from the year they attain 66. Rounding down would separate them in a year the plan still pays them wages. It over-refuses where a participant has genuinely separated but the plan states no retirement age, which is how the plan model spells someone with no wages to stop. The exact-date reading lives in actions/traditionalEmployerPlanPenaltyPrerequisite.ts, and both layers order the two events through the same seppSeriesBeginsAfterSeparation predicate. What is not a proxy is the structural limit: 72(t)(3)(B) does not reach individual retirement accounts, and the projection tests separation only for an account of employer kind.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2027-08-04",
+      "implementedBy": [
+        "packages/engine/src/actions/annualRetirementPhysicalEventInventory.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/annualRetirementPhysicalEventInventory.ts",
+          "functions": [
+            {
+              "name": "buildAnnualRetirementPhysicalEventInventory",
+              "line": 1323
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/seppHsaAndCharacter.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/seppHsaAndCharacter.approximation.test.ts",
+          "line": 251,
+          "note": "separated participant whose plan states no retirement age",
+          "tests": [
+            {
+              "title": "refuses the series because no retirement age stands in for the separation",
+              "line": 260
+            },
+            {
+              "title": "pays the same series the moment a retirement age is stated, on facts 72(t)(3)(B) does not mention",
+              "line": 272
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/rules/approximations/seppHsaAndCharacter.approximation.test.ts",
+          "line": 288,
+          "note": "still-paid participant past a stated retirement age",
+          "tests": [
+            {
+              "title": "excepts an employer-plan series for a participant the wage model is still paying",
+              "line": 297
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 72(t)(3)(B)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-72-t-4-sepp-modification-proof-window",
+      "title": "Absence of a disqualifying modification must be proven through the payment date",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "Section 72(t)(4) sets the consequence of a modification but no evidentiary standard for proving one did not happen, so the engine had to choose what suffices. It takes a dated attestation covering the payment and refuses anything earlier, because a proof running only to the start of the year cannot speak to a modification made in March. That is an engineering decision rather than a legal conclusion, and the attestation is not a test of the three events section 3.02(e) of Notice 2022-6 enumerates.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2027-08-04",
+      "implementedBy": [
+        "packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.ts",
+        "packages/engine/src/actions/ownedNonRothIraSeppCurrentPaymentCandidate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.ts",
+          "functions": [
+            {
+              "name": "reconcileOwnedNonRothIraSeppAnnualSchedule",
+              "line": 714
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraSeppCurrentPaymentCandidate.ts",
+          "functions": [
+            {
+              "name": "validateOwnedNonRothIraSeppCurrentPaymentCandidate",
+              "line": 442
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.test.ts",
+          "line": 1546,
+          "note": null,
+          "tests": [
+            {
+              "title": "refuses a payment its no-modification proof does not reach",
+              "line": 1566
+            },
+            {
+              "title": "names the insufficient modification evidence on the payment",
+              "line": 1572
+            },
+            {
+              "title": "reconciles once the proof reaches the payment date",
+              "line": 1577
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 72(t)(4)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-72-t-4-sepp-modification-recapture",
+      "title": "Retroactive recapture when a SEPP series is modified",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2027-08-04",
+      "implementedBy": [
+        "packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.ts",
+          "functions": [
+            {
+              "name": "evaluateTraditionalEmployerPlanPenaltyPrerequisite",
+              "line": 562
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 72(t)(4)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-72-t-5-sepp-participant-scope",
+      "title": "A SEPP series belongs to one participant and one source account",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2027-08-04",
+      "implementedBy": [
+        "packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.ts",
+        "packages/engine/src/actions/ownedNonRothIraSeppCurrentPaymentCandidate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.ts",
+          "functions": [
+            {
+              "name": "reconcileOwnedNonRothIraSeppAnnualSchedule",
+              "line": 714
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraSeppCurrentPaymentCandidate.ts",
+          "functions": [
+            {
+              "name": "validateOwnedNonRothIraSeppCurrentPaymentCandidate",
+              "line": 442
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.test.ts",
+          "line": 1403,
+          "note": null,
+          "tests": [
+            {
+              "title": "scores the series for the participant it belongs to, not the household",
+              "line": 1422
+            },
+            {
+              "title": "names the inventory member as foreign to this participant",
+              "line": 1428
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 72(t)(5)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim"
+        },
+        {
+          "kind": "irsNotice",
+          "citation": "IRS Notice 2022-6, section 3.02(f)",
+          "url": "https://www.irs.gov/irb/2022-05_IRB"
+        }
+      ]
+    },
+    {
+      "id": "irc-72-t-6-simple-two-year-rate",
+      "title": "SIMPLE IRA 25 percent rate during the initial two-year period",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2027-08-04",
+      "implementedBy": [
+        "packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts",
+          "functions": [
+            {
+              "name": "evaluateOwnedNonRothIraPenaltyPrerequisites",
+              "line": 820
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.test.ts",
+          "line": 645,
+          "note": null,
+          "tests": [
+            {
+              "title": "lets a 72(t)(2) exception zero the tax inside the two-year window",
+              "line": 654
+            },
+            {
+              "title": "applies 25 percent only where no exception reaches the distribution",
+              "line": 670
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 72(t)(6)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim"
+        },
+        {
+          "kind": "irsPublication",
+          "citation": "IRS SIMPLE IRA plan FAQs",
+          "url": "https://www.irs.gov/retirement-plans/retirement-plans-faqs-regarding-simple-ira-plans"
+        }
+      ]
+    },
+    {
+      "id": "notice-2022-6-3-01-annual-payment-completeness",
+      "title": "The annual payment is a yearly total, and annually is a floor on frequency",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2023,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2027-08-04",
+      "implementedBy": [
+        "packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.ts",
+          "functions": [
+            {
+              "name": "reconcileOwnedNonRothIraSeppAnnualSchedule",
+              "line": 714
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.test.ts",
+          "line": 1480,
+          "note": null,
+          "tests": [
+            {
+              "title": "measures the year by the total of every scheduled distribution",
+              "line": 1499
+            },
+            {
+              "title": "keeps all three distributions in the one reconciled series",
+              "line": 1506
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "irsNotice",
+          "citation": "IRS Notice 2022-6, section 3.01(a)",
+          "url": "https://www.irs.gov/irb/2022-05_IRB"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 72(t)(2)(A)(iv)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "notice-2022-6-3-01-b-level-amortization",
+      "title": "The fixed amortization method is a level payment, fixed for the series",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2023,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2027-08-04",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/strategies/sepp.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/strategies/sepp.ts",
+          "functions": [
+            {
+              "name": "seppAnnualAmount",
+              "line": 72
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/earlyAccess.test.ts",
+        "packages/engine/src/strategies/sepp.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/earlyAccess.test.ts",
+          "line": 167,
+          "note": "projection: the payment is fixed for the whole series",
+          "tests": [
+            {
+              "title": "repeats the first distribution year’s payment unchanged",
+              "line": 188
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/strategies/sepp.test.ts",
+          "line": 196,
+          "note": null,
+          "tests": [
+            {
+              "title": "amortizes the balance at the permitted rate over the permitted divisor",
+              "line": 221
+            },
+            {
+              "title": "is not the straight-line figure the rmd method produces in its first year",
+              "line": 225
+            },
+            {
+              "title": "does not amortize over a divisor the notice never permitted",
+              "line": 234
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "irsNotice",
+          "citation": "IRS Notice 2022-6, section 3.01(b)",
+          "url": "https://www.irs.gov/irb/2022-05_IRB"
+        },
+        {
+          "kind": "irsNotice",
+          "citation": "IRS Notice 2022-6, section 3.02(a)",
+          "url": "https://www.irs.gov/irb/2022-05_IRB"
+        }
+      ]
+    },
+    {
+      "id": "notice-2022-6-3-01-three-permitted-methods",
+      "title": "The three methods that produce a qualifying series",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The notice names the methods in prose, so the token spelling is an engineering choice, and the engine made it twice. The owned-IRA path spells them requiredMinimumDistribution, fixedAmortization, and fixedAnnuitization; the employer-plan path spells the first two rmd and amortization. Both admit exactly the three the notice names and reject everything else, so the vocabularies differ without the rule differing. A reader comparing the two evidence shapes should not read the shorter spellings as a narrower method set.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2023,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2027-08-04",
+      "implementedBy": [
+        "packages/engine/src/actions/ownedNonRothIraSeppCurrentPaymentCandidate.ts",
+        "packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraSeppCurrentPaymentCandidate.ts",
+          "functions": [
+            {
+              "name": "validateOwnedNonRothIraSeppCurrentPaymentCandidate",
+              "line": 442
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.ts",
+          "functions": [
+            {
+              "name": "evaluateTraditionalEmployerPlanPenaltyPrerequisite",
+              "line": 562
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.test.ts",
+          "line": 1434,
+          "note": null,
+          "tests": [
+            {
+              "title": "accepts the fixed annuitization method on the same footing as the others",
+              "line": 1454
+            },
+            {
+              "title": "accepts the required minimum distribution and fixed amortization methods",
+              "line": 1460
+            },
+            {
+              "title": "refuses a fourth method by name rather than reconciling it",
+              "line": 1465
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "irsNotice",
+          "citation": "IRS Notice 2022-6, section 3.01",
+          "url": "https://www.irs.gov/irb/2022-05_IRB"
+        },
+        {
+          "kind": "irsNotice",
+          "citation": "IRS Notice 2022-6, section 2.05",
+          "url": "https://www.irs.gov/irb/2022-05_IRB"
+        }
+      ]
+    },
+    {
+      "id": "notice-2022-6-3-02-a-permitted-life-expectancy-tables",
+      "title": "The three life expectancy tables a SEPP may be sized from",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The notice permits three tables and never says which to use, so the engine had to pick one. Single Life is chosen because the election carries no designated beneficiary: section 3.02(b) lets the Joint and Last Survivor Table be used only against an actual designated beneficiary of the account, and says that where there is none in a distribution year the Single Life Table is the table for that year. The Uniform Lifetime Table in Appendix A stays permitted and would shrink every payment on the same facts, because it is longer at every age (43.6 years at 55 against Single Life 31.6). That is the direction of this convention and it is worth stating plainly: Single Life is the shortest of the three, and the payment is the balance over the divisor, so the engine sizes the largest payment any permitted table would allow. What is not a convention is the exclusion of everything else: this engine previously divided by its SSA 2022 period table (longevity/ssaPeriod2022.ts), averaging the male and female columns, which produced 26.64 years at age 55 against the Single Life entry of 31.6 and so oversized every payment by about 19 percent beyond even the largest figure the notice allows.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2023,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2027-08-04",
+      "implementedBy": [
+        "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/params/index.ts",
+        "packages/engine/src/strategies/sepp.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/data/year2026.ts",
+          "functions": [
+            {
+              "name": "year2026",
+              "line": 16
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/index.ts",
+          "functions": [
+            {
+              "name": "singleLifeExpectancyYears",
+              "line": 160
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/strategies/sepp.ts",
+          "functions": [
+            {
+              "name": "seppAnnualAmount",
+              "line": 72
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/strategies/sepp.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/strategies/sepp.test.ts",
+          "line": 69,
+          "note": "the table must be one of the three the notice permits",
+          "tests": [
+            {
+              "title": "sizes the payment from a permitted table rather than the SSA period table",
+              "line": 92
+            },
+            {
+              "title": "carries the published Single Life divisor, not an approximation of it",
+              "line": 98
+            },
+            {
+              "title": "takes the birthday-age entry whole rather than interpolating between rows",
+              "line": 106
+            },
+            {
+              "title": "is unisex, so the SSA table cannot be recovered for either sex",
+              "line": 116
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/strategies/sepp.test.ts",
+          "line": 127,
+          "note": "direction: which permitted table sizes the larger payment",
+          "tests": [
+            {
+              "title": "pays the Single Life figure, which EXCEEDS the Uniform Lifetime figure",
+              "line": 162
+            },
+            {
+              "title": "reads the other permitted table off the same pack, so neither figure is a guess",
+              "line": 171
+            },
+            {
+              "title": "holds the same direction at every age both tables publish a row for",
+              "line": 178
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "irsNotice",
+          "citation": "IRS Notice 2022-6, section 3.02(a)",
+          "url": "https://www.irs.gov/irb/2022-05_IRB"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.401(a)(9)-9(b)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-9"
+        }
+      ]
+    },
+    {
+      "id": "notice-2022-6-3-02-c-interest-rate-ceiling",
+      "title": "Interest rate ceiling for the fixed amortization and fixed annuitization methods",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The authority fixes a ceiling, not a rate, so the engine had to pick one. It carries no section 1274(d) federal mid-term rate series, and 5 percent is the highest rate permitted without knowing that rate, so a flat 5 percent needs no feed and can never exceed the ceiling. A projection wanting a larger payment would have to source the mid-term rate for one of the two months immediately preceding the month the series begins. The engine source comment used to describe the ceiling as 120 percent of the mid-term rate, which is the superseded Rev. Rul. 2002-62 rule rather than the Notice 2022-6 rule; it was corrected to state both legs when this record was verified.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2023,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2027-08-04",
+      "implementedBy": [
+        "packages/engine/src/strategies/sepp.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/strategies/sepp.ts",
+          "functions": [
+            {
+              "name": "SEPP_AMORTIZATION_RATE_PCT",
+              "line": 54
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/strategies/sepp.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/strategies/sepp.test.ts",
+          "line": 242,
+          "note": null,
+          "tests": [
+            {
+              "title": "uses the 5% floor of the ceiling, which no rate environment can breach",
+              "line": 256
+            },
+            {
+              "title": "prices the series above what the superseded 120% ceiling would allow",
+              "line": 262
+            },
+            {
+              "title": "defaults to the ceiling floor rather than requiring a rate argument",
+              "line": 272
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "irsNotice",
+          "citation": "IRS Notice 2022-6, section 3.02(c)",
+          "url": "https://www.irs.gov/irb/2022-05_IRB"
+        },
+        {
+          "kind": "irsNotice",
+          "citation": "IRS Notice 2022-6, section 2.06",
+          "url": "https://www.irs.gov/irb/2022-05_IRB"
+        },
+        {
+          "kind": "irsNotice",
+          "citation": "IRS Notice 2022-6, sections 4 and 5",
+          "url": "https://www.irs.gov/irb/2022-05_IRB"
+        }
+      ]
+    },
+    {
+      "id": "notice-2022-6-3-02-d-account-balance-valuation-window",
+      "title": "Which account balance the first payment is calculated from",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The authority states a safe-harbour window, not a date, so the engine had to choose a point inside it. It takes the earliest, the prior December 31, because that is the only date in the window the annual projection actually holds a balance for: it resolves a year at a time and has no notion of the day the first distribution is paid. Choosing the earliest point also makes the choice the least favourable one available in a growing account, since a later date in the window carries more growth and would size a larger payment.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2023,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2027-08-04",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/earlyAccess.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/earlyAccess.test.ts",
+          "line": 134,
+          "note": null,
+          "tests": [
+            {
+              "title": "amortizes the balance at the opening of the valuation window",
+              "line": 158
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "irsNotice",
+          "citation": "IRS Notice 2022-6, section 3.02(d)",
+          "url": "https://www.irs.gov/irb/2022-05_IRB"
+        }
+      ]
+    },
+    {
+      "id": "notice-2022-6-3-02-e-1-projection-contribution-during-series",
+      "title": "The projection contributes to an account with a running SEPP series",
+      "classification": "approximated",
+      "errorDirection": "understatesTax",
+      "conventionRationale": "Left as it stands because the two available repairs are product decisions rather than engineering ones, and each is wrong in a way the engine cannot adjudicate. Refusing the contribution keeps the series intact but silently overrides a stated plan input, and would change every projection that carries both facts without telling the user which of their two instructions was dropped. Treating the series as modified is the statutory consequence, but it needs the 72(t)(4) recapture and the interest for the deferral period, which is machinery this engine does not have and which the modification-trigger record already reports as absent. A third option, computing as now and warning, still publishes a penalty-free series the statute has already busted. The decision belongs with the product: which of two contradictory instructions wins, and what the planner tells the user when it drops one. Note that the actions layer does not share this defect for its own reason rather than a better one, recorded under notice-2022-6-3-02-e-modification-trigger-detection: it consumes a caller attestation instead of deriving anything from account history.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2023,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2027-08-04",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/strategies/accountEligibility.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/strategies/accountEligibility.ts",
+          "functions": [
+            {
+              "name": "acceptsContributions",
+              "line": 1278
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/seppHsaAndCharacter.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/seppHsaAndCharacter.approximation.test.ts",
+          "line": 153,
+          "note": "penalty in the first year of a contributed-to series",
+          "tests": [
+            {
+              "title": "deposits into the SEPP account and still reports the series penalty-free",
+              "line": 162
+            },
+            {
+              "title": "admits the SEPP-elected account to the contribution pass on the sole inherited test",
+              "line": 175
+            },
+            {
+              "title": "charges no 72(t)(4) recapture in any later year of the contributed-to series",
+              "line": 186
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "irsNotice",
+          "citation": "IRS Notice 2022-6, section 3.02(e)(1)",
+          "url": "https://www.irs.gov/irb/2022-05_IRB"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 72(t)(4)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "notice-2022-6-3-02-e-modification-trigger-detection",
+      "title": "Events that modify a series are not detected by the engine",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2023,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2027-08-04",
+      "implementedBy": [
+        "packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.ts",
+        "packages/engine/src/actions/ownedNonRothIraSeppCurrentPaymentCandidate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.ts",
+          "functions": [
+            {
+              "name": "reconcileOwnedNonRothIraSeppAnnualSchedule",
+              "line": 714
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraSeppCurrentPaymentCandidate.ts",
+          "functions": [
+            {
+              "name": "validateOwnedNonRothIraSeppCurrentPaymentCandidate",
+              "line": 442
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "irsNotice",
+          "citation": "IRS Notice 2022-6, section 3.02(e)",
+          "url": "https://www.irs.gov/irb/2022-05_IRB"
+        }
+      ]
+    },
+    {
+      "id": "notice-2022-6-3-02-e-single-account-balance-scope",
+      "title": "The series runs against one account balance and is proven against every distribution from it",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2023,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2027-08-04",
+      "implementedBy": [
+        "packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts",
+        "packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts",
+          "functions": [
+            {
+              "name": "evaluateOwnedNonRothIraPenaltyPrerequisites",
+              "line": 820
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.ts",
+          "functions": [
+            {
+              "name": "reconcileOwnedNonRothIraSeppAnnualSchedule",
+              "line": 714
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.test.ts",
+          "line": 1511,
+          "note": null,
+          "tests": [
+            {
+              "title": "excepts nothing when the account made a distribution outside the series",
+              "line": 1534
+            },
+            {
+              "title": "names the inventory member that no scheduled payment answers",
+              "line": 1540
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "irsNotice",
+          "citation": "IRS Notice 2022-6, section 3.02(e)",
+          "url": "https://www.irs.gov/irb/2022-05_IRB"
+        },
+        {
+          "kind": "irsNotice",
+          "citation": "IRS Notice 2022-6, section 3.02(d)",
+          "url": "https://www.irs.gov/irb/2022-05_IRB"
+        }
+      ]
+    },
+    {
+      "id": "notice-2022-6-3-03-a-complete-depletion",
+      "title": "Exhausting the account is not a modification",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2023,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2027-08-04",
+      "implementedBy": [
+        "packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.ts",
+          "functions": [
+            {
+              "name": "reconcileOwnedNonRothIraSeppAnnualSchedule",
+              "line": 714
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "irsNotice",
+          "citation": "IRS Notice 2022-6, section 3.03(a)",
+          "url": "https://www.irs.gov/irb/2022-05_IRB"
+        }
+      ]
+    },
+    {
+      "id": "notice-2022-6-3-03-b-one-time-method-change",
+      "title": "One-time switch to the required minimum distribution method",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2023,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2027-08-04",
+      "implementedBy": [
+        "packages/engine/src/actions/ownedNonRothIraSeppCurrentPaymentCandidate.ts",
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/strategies/sepp.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraSeppCurrentPaymentCandidate.ts",
+          "functions": [
+            {
+              "name": "validateOwnedNonRothIraSeppCurrentPaymentCandidate",
+              "line": 442
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "seppElectionSchema",
+              "line": 457
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/strategies/sepp.ts",
+          "functions": [
+            {
+              "name": "seppAnnualAmount",
+              "line": 72
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "irsNotice",
+          "citation": "IRS Notice 2022-6, section 3.03(b)",
+          "url": "https://www.irs.gov/irb/2022-05_IRB"
+        }
+      ]
+    }
+  ]
+}

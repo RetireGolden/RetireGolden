@@ -1,0 +1,1137 @@
+{
+  "kind": "retiregolden.rules-coverage.shard",
+  "version": 5,
+  "module": "healthSavingsAccounts",
+  "rules": [
+    {
+      "id": "irc-223-a-hsa-contribution-deduction-reduces-agi",
+      "title": "Allowed HSA contributions reduce adjusted gross income",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The plan model has one HSA contribution stream and does not carry a separate employer-salary-reduction fact under section 106(d); the contribution allocator therefore applies the section 223(a) above-the-line treatment to the modeled HSA deposit. The contribution cap and the catch-up are registered separately. After this subtraction, simulate.ts writes the realized MAGI history that supplies the IRMAA lookback and passes the same reduced federal AGI into ACA MAGI assembly; the independent MAGI add-back composition is registered at irc-36B-d-2-B-aca-household-magi-composition and usc-42-1395r-i-4-a-magi-agi-plus-tax-exempt-interest.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/simulate.test.ts",
+          "line": 2349,
+          "note": null,
+          "tests": [
+            {
+              "title": "reduces realized MAGI and ACA household MAGI by the allowed HSA contribution",
+              "line": 2356
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 223(a)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section223&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 62(a), (a)(19)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section62&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-223-b-2-7-projection-coverage-proration-and-medicare",
+      "title": "HSA coverage tier, monthly proration, and Medicare entitlement",
+      "classification": "approximated",
+      "errorDirection": "understatesTax",
+      "conventionRationale": "Direction of error: permissive on all three counts, and they compound. A two-person household holding self-only coverage is given the family base, a taxpayer eligible for part of the year is given the whole of it, and a taxpayer already on Medicare is given a limit the statute sets at zero. Each excess is deducted rather than taxed and charged the section 4973 excise, so the error reaches both the income and the penalty. The coverage substitution is the one the plan model forces: a plan carries no coverage election, so household size is the only signal available, and the same substitution is what selects the family base for the 223(b)(5) division that is correctly applied. The other two are not forced. Eligibility months and Medicare entitlement are both derivable from the dates the engine already holds, and the annual granularity of the projection is the reason they are not applied rather than a missing fact. Superseded claim: this record previously said the ledger gives every owner in a two-person household a full family limit. It no longer does; 223(b)(5) division is implemented and covered by irc-223-b-5-hsa-family-limit-divided-between-spouses.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2026-12-02",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "hsaAccountSchema",
+              "line": 978
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/hsaLimitAndQcdOffset.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/hsaLimitAndQcdOffset.approximation.test.ts",
+          "line": 511,
+          "note": "Medicare entitlement",
+          "tests": [
+            {
+              "title": "allows a whole HSA limit to a taxpayer eight years into Medicare",
+              "line": 524
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 223(b)(2)(B)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section223&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 223(b)(7)",
+          "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapB-partVII-sec223.htm"
+        }
+      ]
+    },
+    {
+      "id": "irc-223-b-2-hsa-base-limits-2026",
+      "title": "The 2026 HSA base limits are 4,400 self-only and 8,750 family",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "Section 223(b)(2) supplies the self-only and family coverage categories, while Rev. Proc. 2025-19 publishes the inflation-adjusted 2026 dollar amounts. The projection reads those values from the versioned parameter pack; the age-55 catch-up and the monthly/Medicare limits are separate records.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": 2026,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2026-12-25",
+      "implementedBy": [
+        "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/data/year2026.ts",
+          "functions": [
+            {
+              "name": "year2026",
+              "line": 16
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/simulate.test.ts",
+          "line": 2277,
+          "note": null,
+          "tests": [
+            {
+              "title": "reads the 2026 self-only and family limits from the parameter pack",
+              "line": 2287
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 223(b)(2)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section223&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 223(b)(2)(B)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section223&num=0&edition=prelim"
+        },
+        {
+          "kind": "irsNotice",
+          "citation": "Rev. Proc. 2025-19, section 2.01(1)",
+          "url": "https://www.irs.gov/pub/irs-drop/rp-25-19.pdf"
+        }
+      ]
+    },
+    {
+      "id": "irc-223-b-3-hsa-catch-up-not-indexed",
+      "title": "The age-55 HSA catch-up is a flat 1,000 dollars and is not indexed",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The qualifying age is 55, which differs from the 50 used for elective deferrals and individual retirement accounts and from the 65 that ends the HSA additional tax. Nothing in the engine derives one from another, and the record exists partly so nobody later aligns them.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2027-08-04",
+      "implementedBy": [
+        "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/data/year2026.ts",
+          "functions": [
+            {
+              "name": "year2026",
+              "line": 16
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/simulate.test.ts",
+          "line": 1808,
+          "note": null,
+          "tests": [
+            {
+              "title": "keeps the catch-up flat while the base limit grows",
+              "line": 1812
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 223(b)(3)(A), (b)(3)(B)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/223"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 223(g)(1)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/223"
+        }
+      ]
+    },
+    {
+      "id": "irc-223-b-5-hsa-family-limit-divided-between-spouses",
+      "title": "Spouses share one family HSA limit but keep whole catch-ups",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "Two facts the statute turns on are absent from the plan model, and each is resolved toward the statutory default. The division by agreement under (5)(B)(ii) cannot be observed, so the engine takes the equal division the statute applies in its absence. Coverage election is likewise unmodelled: a two-person household is treated as having family coverage, which is already what selects the family base, and paragraph (5)(A) then makes that coverage apply to both spouses. Paragraph (5) opens on individuals who are married to each other, so the division is applied only where the two-person household is also a married one with both spouses living. Household size does not carry that fact by itself: the plan schema requires two people for a joint return but does not require a joint return of a two-person household, so an unmarried pair is representable. Each of them is then simply an eligible individual with family coverage under (b)(2)(B) whom paragraph (5) never reaches, and each keeps a whole family limit. A sole survivor keeps the undivided base for the same reason, having nobody left to divide with. The per-person contribution group key is retained rather than replaced by a household one precisely so the (b)(3) catch-up stays attached to the spouse who earned it.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2027-08-03",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/simulate.test.ts",
+          "line": 1854,
+          "note": null,
+          "tests": [
+            {
+              "title": "halves the family base between spouses but leaves each catch-up whole",
+              "line": 1862
+            },
+            {
+              "title": "leaves a one-person household on the undivided self-only limit",
+              "line": 1903
+            },
+            {
+              "title": "leaves an unmarried two-person household a whole family limit each",
+              "line": 1924
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 223(b)(5)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section223&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 223(b)(2)(B)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section223&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-223-b-7-medicare-part-a-retroactive-entitlement",
+      "title": "Retroactive Medicare enrollment can make HSA contributions excess",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": "This is narrower than, and not a duplicate of, irc-223-b-2-7-projection-coverage-proration-and-medicare: that approximated record documents the annual HSA coverage shortcut. The Part A entitlement/backdating fact itself is absent and cannot be inferred from age. model/plan.test.ts gates those missing HSA fields.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2027-08-26",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "hsaAccountSchema",
+              "line": 978
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 223(b)(7)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section223&num=0&edition=prelim"
+        },
+        {
+          "kind": "irsPublication",
+          "citation": "IRS Publication 969, Enrolled in Medicare",
+          "url": "https://www.irs.gov/publications/p969"
+        }
+      ]
+    },
+    {
+      "id": "irc-223-d-2-A-expense-reimbursable-once",
+      "title": "An expense is qualified only to the extent it is not already compensated",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2027-08-04",
+      "implementedBy": [
+        "packages/engine/src/actions/annualHsaReimbursementLedger.ts",
+        "packages/engine/src/actions/annualHsaWithdrawalCharacter.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/annualHsaReimbursementLedger.ts",
+          "functions": [
+            {
+              "name": "evaluateAnnualHsaReimbursementLedger",
+              "line": 309
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/annualHsaWithdrawalCharacter.ts",
+          "functions": [
+            {
+              "name": "classifyAnnualHsaWithdrawalCharacter",
+              "line": 266
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/actions/annualHsaReimbursementLedger.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/actions/annualHsaReimbursementLedger.test.ts",
+          "line": 490,
+          "note": null,
+          "tests": [
+            {
+              "title": "measures a claim against the remainder, not the original amount",
+              "line": 500
+            },
+            {
+              "title": "chains the remainder across allocations within the year",
+              "line": 519
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 223(d)(2)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section223&num=0&edition=prelim"
+        },
+        {
+          "kind": "irsNotice",
+          "citation": "IRS Notice 2004-50, A-39",
+          "url": "https://www.irs.gov/irb/2004-33_IRB"
+        }
+      ]
+    },
+    {
+      "id": "irc-223-d-2-A-qualified-expense-related-persons",
+      "title": "An HSA may reimburse the expenses of the beneficiary, spouse, and dependents",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2027-08-04",
+      "implementedBy": [
+        "packages/engine/src/actions/annualHsaReimbursementLedger.ts",
+        "packages/engine/src/actions/annualHsaWithdrawalCharacter.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/annualHsaReimbursementLedger.ts",
+          "functions": [
+            {
+              "name": "evaluateAnnualHsaReimbursementLedger",
+              "line": 309
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/annualHsaWithdrawalCharacter.ts",
+          "functions": [
+            {
+              "name": "classifyAnnualHsaWithdrawalCharacter",
+              "line": 266
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/actions/annualHsaReimbursementLedger.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/actions/annualHsaReimbursementLedger.test.ts",
+          "line": 400,
+          "note": null,
+          "tests": [
+            {
+              "title": "qualifies a distribution reimbursing the spouse of the account owner",
+              "line": 409
+            },
+            {
+              "title": "refuses a relationship claim that contradicts the patient identity",
+              "line": 420
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 223(d)(2)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section223&num=0&edition=prelim"
+        },
+        {
+          "kind": "irsNotice",
+          "citation": "IRS Notice 2004-2, A-26",
+          "url": "https://www.irs.gov/irb/2004-02_IRB"
+        }
+      ]
+    },
+    {
+      "id": "irc-223-f-1-hsa-qualified-medical-exclusion",
+      "title": "Qualified medical HSA distributions are excluded from income",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2027-08-04",
+      "implementedBy": [
+        "packages/engine/src/actions/annualHsaPenaltyEvaluation.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/annualHsaPenaltyEvaluation.ts",
+          "functions": [
+            {
+              "name": "evaluateAnnualHsaPenalty",
+              "line": 425
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/actions/annualHsaPenaltyEvaluation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/actions/annualHsaPenaltyEvaluation.test.ts",
+          "line": 220,
+          "note": null,
+          "tests": [
+            {
+              "title": "reports no taxable exposure for the qualified medical segment",
+              "line": 224
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 223(f)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section223&num=0&edition=prelim"
+        },
+        {
+          "kind": "irsPublication",
+          "citation": "IRS Publication 969",
+          "url": "https://www.irs.gov/publications/p969"
+        }
+      ]
+    },
+    {
+      "id": "irc-223-f-4-B-hsa-death-exception",
+      "title": "Death waives the HSA 20 percent additional tax",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2027-08-03",
+      "implementedBy": [
+        "packages/engine/src/actions/annualHsaPenaltyEvaluation.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/annualHsaPenaltyEvaluation.ts",
+          "functions": [
+            {
+              "name": "evaluateAnnualHsaPenalty",
+              "line": 425
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 223(f)(4)(B)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section223&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-223-f-4-B-hsa-disability-exception",
+      "title": "HSA disability waives the additional tax, not the inclusion",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The section 223(f)(1) qualified-medical exclusion sits in the same subsection and does remove inclusion, which makes the two easy to conflate. Section 72(m)(7) also requires the individual to furnish proof in such form and manner as the Secretary may require, which is why the engine models this as dated attestation evidence rather than inferring disability from plan data.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2027-08-03",
+      "implementedBy": [
+        "packages/engine/src/actions/annualHsaPenaltyEvaluation.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/annualHsaPenaltyEvaluation.ts",
+          "functions": [
+            {
+              "name": "evaluateSegment",
+              "line": 378
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/actions/annualHsaPenaltyEvaluation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/actions/annualHsaPenaltyEvaluation.test.ts",
+          "line": 315,
+          "note": null,
+          "tests": [
+            {
+              "title": "keeps the distribution in income while waiving the additional tax",
+              "line": 319
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 223(f)(4)(A)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/223"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 223(f)(4)(B)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/223"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 72(m)(7)",
+          "url": "https://www.law.cornell.edu/uscode/text/26/72"
+        }
+      ]
+    },
+    {
+      "id": "irc-223-f-4-C-hsa-age-65-annual-proxy",
+      "title": "HSA age-65 waiver modelled as a whole attained-age year",
+      "classification": "approximated",
+      "errorDirection": "understatesTax",
+      "conventionRationale": "This proxy errs in one direction only, which is the reason it is worth setting beside the age-59.5 proxy rather than dismissing the two together as a single rounding habit. Attained age here is the calendar-year age, the projection year minus the birth year, so the waiver switches on at January 1 of the year the account beneficiary turns 65 while the statute switches it on the day after the 65th birthday. The proxy is therefore never late and always early, so it under-penalizes: by one day at a January 1 birth, and by nearly a full year at a December 31 birth, where a non-qualified distribution taken in January bears nothing under the proxy and 20 percent of the includible amount under the statute. The age-59.5 proxy registered as irc-72-t-2-A-i-age-59-half-annual-proxy does not behave this way. The half-year offset there puts the statutory boundary on either side of the calendar boundary depending on the birth month, so that one errs both ways and is bounded by about six months each way, and assuming the two proxies share a sign gets the HSA exposure wrong. The exact-date reading is registered as irc-223-f-4-hsa-age-65-boundary and implemented in actions/annualHsaPenaltyEvaluation.ts, so here too two reachable paths disagree about the same account beneficiary and only the exact-date path is filing-relevant.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2027-08-03",
+      "implementedBy": [
+        "packages/engine/src/strategies/accountEligibility.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/strategies/accountEligibility.ts",
+          "functions": [
+            {
+              "name": "hsaNonQualifiedPenaltyRate",
+              "line": 1438
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/accountEligibility.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/accountEligibility.approximation.test.ts",
+          "line": 272,
+          "note": "December birthday — the whole year before the 65th birthday",
+          "tests": [
+            {
+              "title": "places the 65th birthday at 2027-12-31, so no 2027 distribution is after it",
+              "line": 284
+            },
+            {
+              "title": "waives the non-qualified penalty from attained age 65, not from the day after the birthday",
+              "line": 288
+            },
+            {
+              "title": "charges nothing on the projected 2027 draw, which the statute penalizes in full",
+              "line": 294
+            },
+            {
+              "title": "does charge the statutory rate in 2026, where the two readings agree",
+              "line": 303
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 223(f)(4)(C)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section223&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 223(f)(4)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section223&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-223-f-4-hsa-age-65-boundary",
+      "title": "Age-65 waiver of the HSA 20 percent additional tax",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2027-08-03",
+      "implementedBy": [
+        "packages/engine/src/actions/annualHsaPenaltyEvaluation.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/annualHsaPenaltyEvaluation.ts",
+          "functions": [
+            {
+              "name": "evaluateAnnualHsaPenalty",
+              "line": 425
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/actions/annualHsaPenaltyEvaluation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/actions/annualHsaPenaltyEvaluation.test.ts",
+          "line": 243,
+          "note": null,
+          "tests": [
+            {
+              "title": "still taxes a distribution taken on the 65th birthday itself",
+              "line": 250
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 223(f)(4)(C)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section223&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 72(t)(2)(A)(i), drafting contrast",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "Instructions for Form 8889, line 17b",
+          "url": "https://www.irs.gov/instructions/i8889"
+        }
+      ]
+    },
+    {
+      "id": "irc-4973-a-g-hsa-excess-contribution-excise",
+      "title": "Uncorrected HSA excess contributions incur the section 4973 excise",
+      "classification": "approximated",
+      "errorDirection": "understatesTax",
+      "conventionRationale": "DEFECT — no behavior change in this registration slice. The penalties sum in projection/simulate.ts includes early-withdrawal, Roth, HSA withdrawal, and RMD-shortfall terms but no 4973 HSA contribution term. The fixture posits a 1,000-dollar HSA contribution made while entitled to Medicare, derives 60 dollars as 1,000 × 0.06 with a year-end value of at least 1,000, and the observed engine penalty is 0 — no 4973 HSA term exists — pinned until a separately authorized implementation fix changes it.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-26",
+      "dueOn": "2027-08-26",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "hsaAccountSchema",
+              "line": 978
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/hsaLimitAndQcdOffset.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/hsaLimitAndQcdOffset.approximation.test.ts",
+          "line": 545,
+          "note": "Medicare-entitled HSA excess",
+          "tests": [
+            {
+              "title": "does not add the section 4973 HSA excise to YearResult.penalties",
+              "line": 558
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 4973(a)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section4973&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 4973(g)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section4973&num=0&edition=prelim"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "2025 Form 5329, Part VII, line 49",
+          "url": "https://www.irs.gov/pub/irs-pdf/f5329.pdf"
+        },
+        {
+          "kind": "irsPublication",
+          "citation": "IRS Publication 969, Excess contributions",
+          "url": "https://www.irs.gov/publications/p969"
+        }
+      ]
+    },
+    {
+      "id": "notice-2004-2-a-26-expense-incurred-after-hsa-established",
+      "title": "An expense incurred before the HSA existed is never reimbursable",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2027-08-04",
+      "implementedBy": [
+        "packages/engine/src/actions/annualHsaReimbursementLedger.ts",
+        "packages/engine/src/actions/annualHsaWithdrawalCharacter.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/annualHsaReimbursementLedger.ts",
+          "functions": [
+            {
+              "name": "evaluateAnnualHsaReimbursementLedger",
+              "line": 309
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/annualHsaWithdrawalCharacter.ts",
+          "functions": [
+            {
+              "name": "classifyAnnualHsaWithdrawalCharacter",
+              "line": 266
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/actions/annualHsaReimbursementLedger.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/actions/annualHsaReimbursementLedger.test.ts",
+          "line": 430,
+          "note": null,
+          "tests": [
+            {
+              "title": "refuses to reimburse an expense incurred before the HSA existed",
+              "line": 439
+            },
+            {
+              "title": "admits the same claim once establishment precedes the expense",
+              "line": 453
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "irsNotice",
+          "citation": "IRS Notice 2004-2, A-26",
+          "url": "https://www.irs.gov/irb/2004-02_IRB"
+        },
+        {
+          "kind": "irsNotice",
+          "citation": "IRS Notice 2008-59, A-38",
+          "url": "https://www.irs.gov/irb/2008-29_IRB"
+        }
+      ]
+    },
+    {
+      "id": "notice-2004-50-a-39-deferred-reimbursement-no-deadline",
+      "title": "There is no deadline for reimbursing a qualified medical expense",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2027-08-04",
+      "implementedBy": [
+        "packages/engine/src/actions/annualHsaReimbursementLedger.ts",
+        "packages/engine/src/actions/annualHsaWithdrawalCharacter.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/annualHsaReimbursementLedger.ts",
+          "functions": [
+            {
+              "name": "evaluateAnnualHsaReimbursementLedger",
+              "line": 309
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/annualHsaWithdrawalCharacter.ts",
+          "functions": [
+            {
+              "name": "classifyAnnualHsaWithdrawalCharacter",
+              "line": 266
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/actions/annualHsaReimbursementLedger.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/actions/annualHsaReimbursementLedger.test.ts",
+          "line": 470,
+          "note": null,
+          "tests": [
+            {
+              "title": "reimburses an expense incurred six tax years earlier",
+              "line": 478
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "irsNotice",
+          "citation": "IRS Notice 2004-50, A-39",
+          "url": "https://www.irs.gov/irb/2004-33_IRB"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 223(f)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section223&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "notice-2004-50-a-39-prior-section-213-deduction",
+      "title": "An expense already deducted under section 213 cannot also be reimbursed",
+      "classification": "approximated",
+      "errorDirection": "understatesTax",
+      "conventionRationale": "Approximated rather than out of scope because the engine does not refuse here; it returns a figure computed on the assumption that the expense was never deducted, which is precisely the assumption that flatters the taxpayer. There is no better convention available: assuming the expense was deducted would disqualify every reimbursement in a household that itemizes and would be wrong far more often. The missing input is a per-expense prior-deduction flag, which is a data question rather than a modelling one, and the engine should carry the flag before it carries an answer.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2027-08-04",
+      "implementedBy": [
+        "packages/engine/src/actions/annualHsaReimbursementLedger.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/annualHsaReimbursementLedger.ts",
+          "functions": [
+            {
+              "name": "evaluateAnnualHsaReimbursementLedger",
+              "line": 309
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/seppHsaAndCharacter.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/seppHsaAndCharacter.approximation.test.ts",
+          "line": 433,
+          "note": "nonqualified cents on a reimbursement of a deducted expense",
+          "tests": [
+            {
+              "title": "excludes the whole distribution though the expense was deducted last year",
+              "line": 442
+            },
+            {
+              "title": "cannot be told about the prior deduction at all",
+              "line": 450
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "irsNotice",
+          "citation": "IRS Notice 2004-50, A-39",
+          "url": "https://www.irs.gov/irb/2004-33_IRB"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 223(f)(6)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section223&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "notice-2008-59-a-41-hsa-establishment-date-per-account",
+      "title": "The HSA establishment date is per account, and relates back only on a test",
+      "classification": "approximated",
+      "errorDirection": "understatesTax",
+      "conventionRationale": "Approximated rather than out of scope because the relate-back test is not refused, it is skipped: the engine computes a qualified amount from the owner-level date and returns it. The per-person shape is right for the common case and wrong for a narrow one, which is what makes it worth recording rather than fixing in passing. Most households with two HSAs opened the second while still holding the first, or funded it by transfer, and in both of those cases the single owner-level date is exactly correct. The shape cannot express the failing case at all: the establishment record is keyed by person, the allocation names a source account, and nothing joins the two, so no caller can supply account-level dates even where they have them. Repairing it is a change to the evidence contract rather than to a calculation, which is why it is recorded here instead of patched.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2027-08-04",
+      "implementedBy": [
+        "packages/engine/src/actions/annualHsaReimbursementLedger.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/annualHsaReimbursementLedger.ts",
+          "functions": [
+            {
+              "name": "evaluateAnnualHsaReimbursementLedger",
+              "line": 309
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/seppHsaAndCharacter.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/seppHsaAndCharacter.approximation.test.ts",
+          "line": 551,
+          "note": "expense incurred between two establishment dates",
+          "tests": [
+            {
+              "title": "qualifies a distribution from the newer account against the older account date",
+              "line": 560
+            },
+            {
+              "title": "has no shape in which the two accounts could carry different dates",
+              "line": 573
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "irsNotice",
+          "citation": "IRS Notice 2008-59, A-41",
+          "url": "https://www.irs.gov/irb/2008-29_IRB"
+        },
+        {
+          "kind": "irsNotice",
+          "citation": "IRS Notice 2008-59, A-40",
+          "url": "https://www.irs.gov/irb/2008-29_IRB"
+        }
+      ]
+    }
+  ]
+}

@@ -52,7 +52,7 @@ pnpm dev
 
 ## CI/CD
 
-Nine GitHub Actions workflows: the SWA pipeline and both security scans run on pushes and pull requests to `main`; OpenRouter review and CLA enforcement run on PR activity; Grok Build review is manual emergency-only; the Owl parity oracle and the engine and planner-ui npm releases are triggered manually (the engine release also fires on `engine-v*` tags). Full setup notes: [DOCS/operations/ci-cd-and-deploy.md](DOCS/operations/ci-cd-and-deploy.md).
+Ten GitHub Actions workflows: the SWA pipeline and both security scans run on pushes and pull requests to `main`; OpenRouter review and CLA enforcement run on PR activity; the resolve gate re-resolves dependencies on manifest-touching PRs and weekly; Grok Build review is manual emergency-only; the Owl parity oracle and the engine and planner-ui npm releases are triggered manually (the engine release also fires on `engine-v*` tags). Full setup notes: [DOCS/operations/ci-cd-and-deploy.md](DOCS/operations/ci-cd-and-deploy.md).
 
 ### Azure Static Web Apps — build & deploy
 
@@ -91,6 +91,12 @@ Runs on every push and PR to `main`. Scans the repo with Semgrep's `p/default` r
 [`.github/workflows/zap.yml`](.github/workflows/zap.yml)
 
 Reusable workflow invoked by the Azure deploy job after a **PR preview** is live (production pushes are not scanned). Runs a passive ZAP baseline scan against the deployed URL and uploads HTML/JSON reports. **Only High-risk alerts fail the check** — lower severities are surfaced for review. Can also be triggered manually from the Actions tab with a custom `target_url`.
+
+### Resolve gate — dependency trust policy
+
+[`.github/workflows/resolve-gate.yml`](.github/workflows/resolve-gate.yml)
+
+Runs on PRs that touch `pnpm-workspace.yaml`, `pnpm-lock.yaml`, or any `package.json`, on a weekly schedule, and manually from the Actions tab. Every other CI job installs with `--frozen-lockfile`, which skips dependency resolution and with it the supply-chain gates in [`pnpm-workspace.yaml`](pnpm-workspace.yaml) (`trustPolicy`, `minimumReleaseAge`, `blockExoticSubdeps`). This workflow deletes the lockfile and re-resolves from scratch so those gates are actually exercised, and it fails when a `trustPolicyExclude` entry no longer appears in a fresh resolve — a stale exemption gets dropped instead of standing as a silent trust waiver. Like Semgrep, it is cheap and not gated behind the `run-ci` label.
 
 ### CLA enforcement
 

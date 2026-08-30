@@ -71,8 +71,10 @@ insight preview:
 
 ## Rules, citations, and currency
 
-- Every rule the engine encodes is documented in [domain/domain-rules-reference.md](domain/domain-rules-reference.md)
-  with its current-year figure and a **source URL**.
+- Every rule the engine encodes is documented in the domain rules reference — an index at
+  [domain/domain-rules-reference.md](domain/domain-rules-reference.md) over one file per section in
+  [domain/domain-rules-reference/](domain/domain-rules-reference/) — with its current-year figure and a
+  **source URL**. Edit the section file, not the index.
 - Parameter values carry **provenance** (`engine/params/provenance.ts`, shown via
   `planner/ProvenancePanel.tsx`) — source + date visible to the user.
 - Anything date-sensitive gets an entry in [maintenance-schedule.md](maintenance-schedule.md). Don't bake
@@ -119,8 +121,8 @@ current-year dollars in evergreen prose. Follow the full style guide and topic i
 
 ## Documentation
 
-Keep these docs **ground truth**. When you ship a feature, update the relevant `features/*` doc and
-[domain/domain-rules-reference.md](domain/domain-rules-reference.md) in the same change — describe what the
+Keep these docs **ground truth**. When you ship a feature, update the relevant `features/*` doc and the
+matching section under [domain/domain-rules-reference/](domain/domain-rules-reference/) in the same change — describe what the
 code does and why, not a plan to build it. If you find the docs and code disagree, fix the doc immediately
 to match the implementation. Do not trust a roadmap-style status line over the code — verify against the source (`packages/*/src`, `app/src`).
 Historical audits are preserved in git history.

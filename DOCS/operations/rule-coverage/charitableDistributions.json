@@ -1,0 +1,1681 @@
+{
+  "kind": "retiregolden.rules-coverage.shard",
+  "version": 5,
+  "module": "charitableDistributions",
+  "rules": [
+    {
+      "id": "form-1040-line-4b-and-form-8606-line-7-qcd-remainder",
+      "title": "A non-QCD charitable remainder does not create a line-8 conversion",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-25",
+      "dueOn": "2027-08-25",
+      "implementedBy": [
+        "packages/engine/src/actions/annualQcdResidualForm8606.ts",
+        "packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/annualQcdResidualForm8606.ts",
+          "functions": [
+            {
+              "name": "stageAnnualQcdResidualForm8606",
+              "line": 304
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts",
+          "functions": [
+            {
+              "name": "stageAnnualQcdTaxCharacterPostPass",
+              "line": 477
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/actions/annualQcdResidualForm8606.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/actions/annualQcdResidualForm8606.test.ts",
+          "line": 173,
+          "note": "non-QCD remainder enters line 7 and cannot create line 8",
+          "tests": [
+            {
+              "title": "rejoins the non-QCD remainder only with annual line-7 distributions",
+              "line": 181
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 408(d)(8)(B), flush text",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "Instructions for Form 1040 (2025), line 4a/4b Exception 3",
+          "url": "https://www.irs.gov/pub/irs-pdf/i1040gi.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "Instructions for Form 8606 (2025), Line 7",
+          "url": "https://www.irs.gov/pub/irs-pdf/i8606.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "Instructions for Form 8606 (2025), Line 8",
+          "url": "https://www.irs.gov/pub/irs-pdf/i8606.pdf"
+        }
+      ]
+    },
+    {
+      "id": "irc-408-d-8-A-annual-qcd-limit",
+      "title": "Annual QCD exclusion limit",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": 2026,
+      "verifiedOn": "2026-08-02",
+      "dueOn": "2026-11-30",
+      "implementedBy": [
+        "packages/engine/src/params/data/year2026.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/data/year2026.ts",
+          "functions": [
+            {
+              "name": "year2026",
+              "line": 16
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/actions/annualQcdTaxCharacterPostPass.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/actions/annualQcdTaxCharacterPostPass.test.ts",
+          "line": 338,
+          "note": null,
+          "tests": [
+            {
+              "title": "excludes only the indexed annual limit",
+              "line": 342
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "irsNotice",
+          "citation": "IRS Notice 2025-67",
+          "url": "https://www.irs.gov/pub/irs-drop/n-25-67.pdf"
+        }
+      ]
+    },
+    {
+      "id": "irc-408-d-8-A-named-qcd-limit-after-the-pack-year",
+      "title": "Named QCD in a tax year with no sourced exclusion limit",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-05",
+      "dueOn": "2026-12-03",
+      "implementedBy": [
+        "packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts",
+          "functions": [
+            {
+              "name": "stageAnnualQcdTaxCharacterPostPass",
+              "line": 477
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 408(d)(8)(A)",
+          "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapD-partI-subpartA-sec408.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 408(d)(8)(G)",
+          "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapD-partI-subpartA-sec408.htm"
+        },
+        {
+          "kind": "irsNotice",
+          "citation": "IRS Notice 2025-67",
+          "url": "https://www.irs.gov/pub/irs-drop/n-25-67.pdf"
+        }
+      ]
+    },
+    {
+      "id": "irc-408-d-8-A-post-70-half-deduction-offset",
+      "title": "Post-70.5 deductible IRA contributions reduce the excludable QCD",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The statute measures the offset against deductions allowed to the taxpayer, so it is an individual-level figure even on a joint return, and the engine tracks it per donor for that reason. The registered annual limit is likewise per taxpayer, which can read as though the two use different bases; they do not.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2027-08-03",
+      "implementedBy": [
+        "packages/engine/src/actions/annualQcdActionExecutionEvidence.ts",
+        "packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts",
+        "packages/engine/src/actions/qcdDeductibleContributionOffset.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/annualQcdActionExecutionEvidence.ts",
+          "functions": [
+            {
+              "name": "publishAnnualQcdActionExecutionEvidence",
+              "line": 318
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts",
+          "functions": [
+            {
+              "name": "stageAnnualQcdTaxCharacterPostPass",
+              "line": 477
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/qcdDeductibleContributionOffset.ts",
+          "functions": [
+            {
+              "name": "applyIrc408d8AContributionOffset",
+              "line": 52
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/actions/annualQcdTaxCharacterPostPass.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/actions/annualQcdTaxCharacterPostPass.test.ts",
+          "line": 259,
+          "note": null,
+          "tests": [
+            {
+              "title": "nets the prior reductions off the aggregate deductions",
+              "line": 263
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 408(d)(8)(A), flush sentence",
+          "url": "https://www.law.cornell.edu/uscode/text/26/408"
+        }
+      ]
+    },
+    {
+      "id": "irc-408-d-8-A-projection-household-qcd-aggregation",
+      "title": "Annual-ledger attribution of a household QCD scalar to its donors",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "TWO CONVENTIONS THE STATUTE DOES NOT SUPPLY, because the plan input is a household scalar and section 408(d)(8) speaks only of an individual’s gift. Neither affects how much the household may exclude; both decide which donor’s pool pays, and therefore which donor’s Form 8606 fraction moves. ATTRIBUTION. The routed half is charged in proportion to each owner’s share of the owned-IRA required distribution it is capped against, clamped at that owner’s own requirement so no share can reach past what Treas. Reg. 1.408-8(e)(2)(i) aggregates for them, with the last owner in sorted id order taking the rounding residue. The beyond-requirement half is charged exactly, at the account it drains, in the arm’s existing plan-account balance order. REALLOCATION. What one donor’s own limit refuses is offered to the other donors, in sorted owner id order, up to what each may still route — their unrouted requirement and their unspent limit. Sorted order rather than a second proportional pass because the scalar carries no donor intent to honour: nothing in the section says whose gift it is, so the tie is broken by the same stable key the residue rule already uses rather than by plan account ordering, which would make WHICH DONOR GIVES depend on how the accounts happen to be listed. THAT MUCH IS ORDER-FREE AND THE NEXT STEP IS NOT, which an earlier version of this sentence elided by stopping one clause too soon. Once an owner’s share is fixed, it is carved out of that owner’s own required distributions greedily in mutation order — plan account order — and each entry’s Form 8606 line-7 gross is rounded to cents on its own. Every entry the carve consumes whole lands on zero and one entry is left partly consumed, so which entry carries the fractional remainder moves with the account listing, and the SUM of the independently rounded grosses can differ by one cent: a household with three IRAs and a routed gift publishes a line-9 denominator of 62,666,600 or 62,666,601 cents depending on the permutation, and exactly one figure in all six with no gift at all. The bound is one cent on the year’s denominator and it is not removable without cost: the annual ledger carves in plan dollars at the commit site and the settlement matches an assumed character only when its gross agrees to the cent, so rounding the carve earlier would make the two arms disagree and stop the year settling at all. A one-cent denominator spread is smaller than the cent-level tolerance every settled fixture on this engine already asserts at; a year that stopped settling is not. Whatever no donor can route falls through to the beyond-requirement arm, which charges it against the same capacities; whatever that arm cannot place either is not given, because giving it would mean excluding dollars past a taxpayer’s limit. Every eligible donor takes the same indexed figure, because (A) states one amount and (G) indexes that one amount — nothing in the section makes it depend on the donor’s age, filing status, or which IRA gave.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-07",
+      "dueOn": "2026-12-05",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/simulateContributionsAndQcd.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/simulateContributionsAndQcd.approximation.test.ts",
+          "line": 370,
+          "note": "a couple giving more than one limit and less than two",
+          "tests": [
+            {
+              "title": "excludes a couple’s gift above one limit against their two limits",
+              "line": 385
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/rules/approximations/simulateContributionsAndQcd.approximation.test.ts",
+          "line": 403,
+          "note": "a single donor asking for more than their own limit",
+          "tests": [
+            {
+              "title": "still clamps one donor at one limit",
+              "line": 415
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/rules/approximations/simulateContributionsAndQcd.approximation.test.ts",
+          "line": 437,
+          "note": "an eligible donor beside an ineligible spouse",
+          "tests": [
+            {
+              "title": "funds a household gift only from the eligible donor",
+              "line": 453
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 408(d)(8)(A)",
+          "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapD-partI-subpartA-sec408.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 408(d)(8)(B)(ii)",
+          "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapD-partI-subpartA-sec408.htm"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.408-8(e)(2)(i)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.408-8"
+        }
+      ]
+    },
+    {
+      "id": "irc-408-d-8-A-projection-post-70-half-contribution-offset",
+      "title": "Reduction of the QCD exclusion by post-70.5 deductible IRA contributions",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "TWO CONVENTIONS THE STATUTE DOES NOT SUPPLY, because the aggregate arm is a household scalar and section 408(d)(8)(A) speaks only of an individual's deductions and gifts. DATA. The projection is the authority for years it simulates, so in-run traditional IRA contributions for years ending on or after the 70½ threshold year are counted and a declared fact for the same year is not added on top of them; years before the projection starts can be seen only through declared deductibleIraContributions, and those facts are themselves refused when they precede the threshold year. Roth, employer, and HSA deposits are omitted because they are not deductions allowed under section 219. LIMB (ii). The Plan records no sourced already-taken reductions. Reconstructing them from a pre-start named request amount would invent execution the run never performed. When that history is unprovable and section 219 is positive, both arms fail closed: the named arm refuses the gift, and the aggregate arm — whose gift has already moved — claims none of the exclusion and writes no guessed leftover into consumed. Zero consumed is used only when there is no section 219 total to have been reduced. LEFTOVER. The leftover after the reduction is ordinary income. A section 170 itemized deduction for those dollars is not booked on this arm — the household may enter itemized charitable separately — and that leftover does not lower MAGI. The named arm still fails closed when a scalar year has made its declared-fact history unprovable, because the two arms do not share one contribution ledger. PUBLICATION. YearResult.qcd is the physical gift so the owned-IRA source series can exact-rejoin overlay plus moving occurrences; shrinking it to the excludable remainder would break that settlement.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-17",
+      "dueOn": "2027-08-17",
+      "implementedBy": [
+        "packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts",
+        "packages/engine/src/actions/qcdDeductibleContributionOffset.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts",
+          "functions": [
+            {
+              "name": "stageAnnualQcdTaxCharacterPostPass",
+              "line": 477
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/qcdDeductibleContributionOffset.ts",
+          "functions": [
+            {
+              "name": "applyIrc408d8AContributionOffset",
+              "line": 52
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/hsaLimitAndQcdOffset.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/hsaLimitAndQcdOffset.approximation.test.ts",
+          "line": 161,
+          "note": "same-year §219 contribution swallows the gift",
+          "tests": [
+            {
+              "title": "sweeps a gift the statute offsets to nothing",
+              "line": 174
+            },
+            {
+              "title": "does not sweep the same gift when the contribution is Roth, not §219",
+              "line": 198
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/rules/approximations/hsaLimitAndQcdOffset.approximation.test.ts",
+          "line": 250,
+          "note": "Pub. 590-B Jim multi-year carryforward",
+          "tests": [
+            {
+              "title": "carries Jim’s unused §219 offset into the next gift year",
+              "line": 259
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/rules/approximations/hsaLimitAndQcdOffset.approximation.test.ts",
+          "line": 315,
+          "note": "pre-70½ contributions do not reduce the exclusion",
+          "tests": [
+            {
+              "title": "does not reduce a post-threshold gift by a contribution from a year that ended before 70½",
+              "line": 329
+            },
+            {
+              "title": "does reduce the same gift when the contribution is for the threshold year",
+              "line": 362
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/rules/approximations/hsaLimitAndQcdOffset.approximation.test.ts",
+          "line": 387,
+          "note": "pre-start named QCD makes limb (ii) unprovable",
+          "tests": [
+            {
+              "title": "does not claim the exclusion when a pre-start named QCD makes prior reductions unprovable",
+              "line": 419
+            },
+            {
+              "title": "applies the unused §219 when no pre-start gift has made limb (ii) unprovable",
+              "line": 441
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 408(d)(8)(A)",
+          "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapD-partI-subpartA-sec408.htm"
+        }
+      ]
+    },
+    {
+      "id": "irc-408-d-8-A-qcd-exclusion-composition-order",
+      "title": "Order of the QCD taxable trim, the annual limit, and the deduction offset",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2027-08-04",
+      "implementedBy": [
+        "packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts",
+          "functions": [
+            {
+              "name": "stageAnnualQcdTaxCharacterPostPass",
+              "line": 477
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/actions/annualQcdTaxCharacterPostPass.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/actions/annualQcdTaxCharacterPostPass.test.ts",
+          "line": 412,
+          "note": "The 408(d)(8)(B) taxable trim runs before the annual limit, not after it.",
+          "tests": [
+            {
+              "title": "limits what survives the taxable trim, not the gross distribution",
+              "line": 420
+            },
+            {
+              "title": "reproduces the contract's $100,000-pool worked example",
+              "line": 433
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/annualQcdTaxCharacterPostPass.test.ts",
+          "line": 461,
+          "note": "The post-70.5 offset reduces the already-limited amount, not the amount going into the limit.",
+          "tests": [
+            {
+              "title": "subtracts the deduction offset after the annual limit has bound",
+              "line": 469
+            },
+            {
+              "title": "floors the reduction at zero rather than going negative",
+              "line": 482
+            },
+            {
+              "title": "reproduces the contract's fully-taxable worked example",
+              "line": 494
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 408(d)(8)(A), both sentences",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 408(d)(8)(B), flush sentence",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 408(d)(8)(D)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-408-d-8-B-employer-plan-source-exclusion",
+      "title": "An employer-plan distribution is not a QCD source",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-25",
+      "dueOn": "2027-08-25",
+      "implementedBy": [
+        "packages/engine/src/actions/annualQcdDerivedTaxCharacter.ts",
+        "packages/engine/src/actions/annualQcdExecutionPrerequisite.ts",
+        "packages/engine/src/strategies/accountEligibility.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/annualQcdDerivedTaxCharacter.ts",
+          "functions": [
+            {
+              "name": "finalizeAnnualQcdDerivedTaxCharacter",
+              "line": 189
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/annualQcdExecutionPrerequisite.ts",
+          "functions": [
+            {
+              "name": "evaluateAnnualQcdExecutionPrerequisites",
+              "line": 817
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/strategies/accountEligibility.ts",
+          "functions": [
+            {
+              "name": "evaluateQcd",
+              "line": 826
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/actions/annualQcdActionExecutionEvidence.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/actions/annualQcdActionExecutionEvidence.test.ts",
+          "line": 361,
+          "note": null,
+          "tests": [
+            {
+              "title": "executes an IRA source and refuses an employer-plan source",
+              "line": 368
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 408(d)(8)(B)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 7701(a)(37)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section7701&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-408-d-8-B-i-qualified-recipient",
+      "title": "A QCD recipient must be a qualified direct charity recipient",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-25",
+      "dueOn": "2027-08-25",
+      "implementedBy": [
+        "packages/engine/src/actions/annualQcdExecutionPrerequisite.ts",
+        "packages/engine/src/strategies/accountEligibility.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/annualQcdExecutionPrerequisite.ts",
+          "functions": [
+            {
+              "name": "evaluateAnnualQcdExecutionPrerequisites",
+              "line": 817
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/strategies/accountEligibility.ts",
+          "functions": [
+            {
+              "name": "evaluateQcd",
+              "line": 826
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/actions/annualQcdActionExecutionEvidence.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/actions/annualQcdActionExecutionEvidence.test.ts",
+          "line": 381,
+          "note": "DAF / supporting organization",
+          "tests": [
+            {
+              "title": "executes an attested public charity and refuses without the no-DAF attestation",
+              "line": 389
+            },
+            {
+              "title": "refuses an explicitly designated donor-advised fund even with affirmative attestations",
+              "line": 403
+            },
+            {
+              "title": "refuses an explicitly designated supporting organization even with affirmative attestations",
+              "line": 412
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/annualQcdActionExecutionEvidence.test.ts",
+          "line": 422,
+          "note": "direct-from-custodian attestation",
+          "tests": [
+            {
+              "title": "refuses a QCD without the direct-from-custodian attestation",
+              "line": 430
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/annualQcdActionExecutionEvidence.test.ts",
+          "line": 443,
+          "note": "eligible-organization attestation",
+          "tests": [
+            {
+              "title": "refuses a QCD without the eligible-organization attestation",
+              "line": 451
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 408(d)(8)(B)(i)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 170(b)(1)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-408-d-8-B-ii-age-70-half",
+      "title": "Date a donor attains age 70.5 for QCD eligibility",
+      "classification": "unsettled",
+      "errorDirection": null,
+      "conventionRationale": "The six-calendar-months sentence survives, but only in a provision written for something else: T.D. 10001 removed it from Treas. Reg. 1.401(a)(9)-2 and it now sits in 1.401(a)(9)-6(g)(1)(iv), a defined-benefit actuarial-increase rule. It has also been dropped from current IRS publications and survives there only in Publication 575 (2019). So the convention is sourced, but not from any provision addressed to IRC 408(d)(8)(B)(ii). What no source resolves at any level is a month-end or leap-day birth: no IRS guidance, ruling, case, publication example, or practitioner source addresses what \"six calendar months after\" means when the target day does not exist. The month-end clamp is chosen because it matches 29 CFR 4000.43, the one federal regulation resolving this class of problem, and because it is the prevailing practitioner convention. That regulation governs PBGC filings under ERISA Title IV and the IRS has never adopted it here, so the clamp is an engineering convention and not a legal conclusion. It errs permissive: for an August 31 birth it falls up to three days before a roll-forward reading, and a QCD taken in that window would not be a QCD at all. The date is load-bearing twice, because the SECURE 1.0 offset in 408(d)(8)(A) also keys the sweep of section 219 deductions to it.",
+      "contraryReading": "A two-step computation (70th anniversary, then six months) diverges from the one-step 846-month form for a 29 February birth, because the 70th anniversary of a leap-day birth never falls in a leap year. For a 1956-02-29 birth the defensible answers are 2026-08-28 (clamped anniversary plus six months), 2026-08-29 (one step), and 2026-09-01 (rolled anniversary plus six months): five days apart, with nothing selecting among them.",
+      "jurisdiction": "federal",
+      "volatility": "awaitingGuidance",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-05",
+      "dueOn": "2026-11-03",
+      "implementedBy": [
+        "packages/engine/src/actions/annualQcdActionExecutionEvidence.ts",
+        "packages/engine/src/actions/annualQcdExecutionPrerequisite.ts",
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/strategies/accountEligibility.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/annualQcdActionExecutionEvidence.ts",
+          "functions": [
+            {
+              "name": "publishAnnualQcdActionExecutionEvidence",
+              "line": 318
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/annualQcdExecutionPrerequisite.ts",
+          "functions": [
+            {
+              "name": "evaluateAnnualQcdExecutionPrerequisites",
+              "line": 817
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "personSchema",
+              "line": 154
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/strategies/accountEligibility.ts",
+          "functions": [
+            {
+              "name": "evaluateQcd",
+              "line": 826
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/actions/annualQcdActionExecutionEvidence.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/actions/annualQcdActionExecutionEvidence.test.ts",
+          "line": 502,
+          "note": "month-end birth",
+          "tests": [
+            {
+              "title": "clamps a nonexistent target day to the last day of that month",
+              "line": 507
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/annualQcdActionExecutionEvidence.test.ts",
+          "line": 528,
+          "note": "leap-day birth",
+          "tests": [
+            {
+              "title": "adds 846 months in one step rather than clamping the 70th anniversary first",
+              "line": 537
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 408(d)(8)(B)(ii)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.401(a)(9)-6(g)(1)(iv) (relocated from 1.401(a)(9)-2 A-3 by T.D. 10001)",
+          "url": "https://www.law.cornell.edu/cfr/text/26/1.401(a)(9)-6"
+        },
+        {
+          "kind": "irsPublication",
+          "citation": "IRS Publication 575 (2019)",
+          "url": "https://www.irs.gov/pub/irs-prior/p575--2019.pdf"
+        }
+      ]
+    },
+    {
+      "id": "irc-408-d-8-B-ii-projection-annual-age-proxy",
+      "title": "Annual-ledger stand-in for the age 70.5 QCD date",
+      "classification": "approximated",
+      "errorDirection": "understatesTax",
+      "conventionRationale": "Direction of error: uniformly permissive, by up to twelve months, and the same sign for every birth month. The ledger reads the birth month rather than rounding to the calendar age — a donor born in months 1 through 6 is admitted in the year the calendar age is 70, and one born in months 7 through 12 in the year it is 71 — so the year the half-birthday falls in is always the year eligibility is granted. What annual granularity cannot express is where in that year it starts: a January-born donor is treated as eligible from 1 January though 70.5 arrives in July, and a December-born donor from the following 1 January though 70.5 arrives that June. There is no offsetting restrictive case, because no birth month puts the half-birthday in a year the ledger refuses. Superseded claim: this record previously said the ledger gates on a calendar age of at least 71 and so denies the whole crossing year, erring restrictively. That gate was replaced when the pre-RMD window was opened, and the argument that the permissive half was harmless — that no QCD could arise before the applicable age anyway, since a positive RMD was required — fell with the condition it rested on. The threshold date itself is the subject of irc-408-d-8-B-ii-age-70-half, whose leap-day and month-end convention is an engineering decision; this record is only about the annual proxy layered on top of it.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2027-08-04",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/hsaLimitAndQcdOffset.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/hsaLimitAndQcdOffset.approximation.test.ts",
+          "line": 468,
+          "note": "when in the crossing year eligibility starts",
+          "tests": [
+            {
+              "title": "admits a donor from 1 January of the year they cross 70.5 in December",
+              "line": 481
+            },
+            {
+              "title": "refuses a donor whose half-birthday falls in the following year",
+              "line": 496
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 408(d)(8)(B)(ii)",
+          "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapD-partI-subpartA-sec408.htm"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.401(a)(9)-6(g)(1)(iv)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-6"
+        }
+      ]
+    },
+    {
+      "id": "irc-408-d-8-B-ongoing-sep-simple-source-exclusion",
+      "title": "An ongoing SEP or SIMPLE IRA is not a QCD source",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-25",
+      "dueOn": "2027-08-25",
+      "implementedBy": [
+        "packages/engine/src/actions/annualQcdDerivedTaxCharacter.ts",
+        "packages/engine/src/actions/annualQcdExecutionPrerequisite.ts",
+        "packages/engine/src/strategies/accountEligibility.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/annualQcdDerivedTaxCharacter.ts",
+          "functions": [
+            {
+              "name": "finalizeAnnualQcdDerivedTaxCharacter",
+              "line": 189
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/annualQcdExecutionPrerequisite.ts",
+          "functions": [
+            {
+              "name": "evaluateAnnualQcdExecutionPrerequisites",
+              "line": 817
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/strategies/accountEligibility.ts",
+          "functions": [
+            {
+              "name": "evaluateQcd",
+              "line": 826
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/actions/annualQcdActionExecutionEvidence.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/actions/annualQcdActionExecutionEvidence.test.ts",
+          "line": 317,
+          "note": "inactive SEP",
+          "tests": [
+            {
+              "title": "executes a QCD from an inactive SEP IRA under Notice 2007-7",
+              "line": 325
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/annualQcdActionExecutionEvidence.test.ts",
+          "line": 336,
+          "note": "ongoing SEP",
+          "tests": [
+            {
+              "title": "does not execute a QCD from a SEP IRA whose activity is unknown",
+              "line": 344
+            },
+            {
+              "title": "does not execute a QCD from an ongoing SEP IRA",
+              "line": 351
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 408(d)(8)(B)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim"
+        },
+        {
+          "kind": "irsNotice",
+          "citation": "IRS Notice 2007-7, Q&A-36",
+          "url": "https://www.irs.gov/pub/irs-drop/n-07-07.pdf"
+        },
+        {
+          "kind": "irsPublication",
+          "citation": "IRS Publication 590-B (2025), Qualified charitable distributions (QCDs)",
+          "url": "https://www.irs.gov/publications/p590b"
+        }
+      ]
+    },
+    {
+      "id": "irc-408-d-8-D-projection-qcd-after-pro-rata",
+      "title": "Annual-ledger ordering of the QCD against pro-rata basis recovery",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "Two engineering conventions survive inside the corrected arm, because this arm’s gift is a household scalar the statute has no way to read. FIRST, ATTRIBUTION. Section 408(d)(8)(D) measures against ONE individual’s plans, and every owner has their own Form 8606 denominator, so the scalar has to be charged to owners before it can be measured. The part routed out of the required distribution is charged in proportion to each owner’s share of the owned-IRA required-distribution total the gift is already capped against; the part taken beyond the requirement is charged exactly, at the account it drains. Nothing in the authority selects a proportion, but every owner carrying an owned-IRA required distribution has reached the applicable age, which is above 70 and a half in every year the parameter pack covers, so no share of the gift can land on an IRA that could not lawfully have funded it under 408(d)(8)(B)(ii). SECOND, THE EXCESS. A gift larger than the owner’s whole aggregate includible amount is not a QCD in the excess, and that excess is an ordinary distribution which stays in the denominator, stays on line 7, and recovers basis. Where the year has both a routed and a beyond-requirement gift, the engine charges the excess against the routed half first. No authority orders them; the ordering is chosen because those dollars are already inside the year’s required-distribution gross and its line-7 gross, so the treatment needs no separate income term and the household’s reported income is identical either way. CORRECTION HISTORY. The figures this record carried while it was approximated were: on a $10,000 required distribution from an IRA that is 20 percent basis with a $5,000 gift, $3,000 of income and $2,000 of basis consumed, against a statutory $4,000 and $1,000 stated at the time; and on a $1,000,000 IRA carrying $200,000 of basis, a 76-year-old with a $42,194.09 requirement giving $40,000, $0 of income and $8,438.82 of basis consumed, against a statutory $1,755.27 and $438.82 stated at the time. THE STATUTORY FIGURES THEMSELVES WERE ALSO WRONG, and were corrected on 2026-08-07 when they were re-derived rather than inherited: both applied the UNREDUCED basis fraction to the residual distribution, which keeps the gift in the pro-rata denominator it has just been held to leave. The Form 8606 line-7 instructions exclude a QCD by name and line 6 is already net of it, so the denominator is the pre-distribution pool less the qualified gift. The corrected statutory answers, which the engine now produces and both fixtures pin, are $3,980.77 of income with $1,019.23 of basis on the first shape (53,000 / 260,000) and $1,736.99 of income with $457.10 of basis on the second (200,000 / 960,000).",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-07",
+      "dueOn": "2027-08-07",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.qcdAggregateIncludible.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/simulate.qcdAggregateIncludible.test.ts",
+          "line": 163,
+          "note": "the ordering, with the aggregate ceiling not yet binding",
+          "tests": [
+            {
+              "title": "taxes only the requirement the household kept, at the reduced denominator",
+              "line": 182
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.qcdAggregateIncludible.test.ts",
+          "line": 223,
+          "note": "the ceiling the exclusion is measured against",
+          "tests": [
+            {
+              "title": "excludes the whole gift and taxes the residual at the reduced denominator",
+              "line": 239
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.qcdAggregateIncludible.test.ts",
+          "line": 292,
+          "note": "a gift that runs past the aggregate includible amount",
+          "tests": [
+            {
+              "title": "qualifies only the pre-tax pool and turns the rest of the year into basis",
+              "line": 307
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 408(d)(8)(D)",
+          "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapD-partI-subpartA-sec408.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 408(d)(8)(B), flush text",
+          "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapD-partI-subpartA-sec408.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 408(d)(2)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "Instructions for Form 8606 (2025), Line 7",
+          "url": "https://www.irs.gov/pub/irs-pdf/i8606.pdf"
+        }
+      ]
+    },
+    {
+      "id": "irc-408-d-8-D-qcd-taxable-first",
+      "title": "A QCD is drawn from pre-tax dollars first",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-02",
+      "dueOn": "2027-08-02",
+      "implementedBy": [
+        "packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts",
+        "packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts",
+          "functions": [
+            {
+              "name": "stageAnnualQcdTaxCharacterPostPass",
+              "line": 477
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts",
+          "functions": [
+            {
+              "name": "validateOwnedNonRothIraRuntimeSourceSeries",
+              "line": 2465
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/actions/annualQcdTaxCharacterPostPass.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/actions/annualQcdTaxCharacterPostPass.test.ts",
+          "line": 350,
+          "note": null,
+          "tests": [
+            {
+              "title": "caps the QCD at aggregate pre-tax dollars and leaves the rest to basis",
+              "line": 358
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 408(d)(8)(D)",
+          "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapD-partI-subpartA-sec408.htm"
+        },
+        {
+          "kind": "irsPublication",
+          "citation": "IRS Publication 590-B (2025), Are Distributions Taxable?",
+          "url": "https://www.irs.gov/publications/p590b"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "Instructions for Form 8606 (2025), Line 7",
+          "url": "https://www.irs.gov/pub/irs-pdf/i8606.pdf"
+        }
+      ]
+    },
+    {
+      "id": "irc-408-d-8-E-excluded-qcd-no-section-170-double-benefit",
+      "title": "An excluded QCD cannot also produce a section 170 deduction",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-25",
+      "dueOn": "2027-08-25",
+      "implementedBy": [
+        "packages/engine/src/actions/annualQcdDeductionTreatmentCoordinator.ts",
+        "packages/engine/src/actions/annualQcdDerivedTaxCharacter.ts",
+        "packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/annualQcdDeductionTreatmentCoordinator.ts",
+          "functions": [
+            {
+              "name": "coordinateAnnualQcdDeductionTreatment",
+              "line": 237
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/annualQcdDerivedTaxCharacter.ts",
+          "functions": [
+            {
+              "name": "finalizeAnnualQcdDerivedTaxCharacter",
+              "line": 189
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts",
+          "functions": [
+            {
+              "name": "stageAnnualQcdTaxCharacterPostPass",
+              "line": 477
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/actions/annualQcdActionExecutionEvidence.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/actions/annualQcdActionExecutionEvidence.test.ts",
+          "line": 464,
+          "note": null,
+          "tests": [
+            {
+              "title": "lets the non-excluded portion proceed to section 170 treatment",
+              "line": 471
+            },
+            {
+              "title": "pins notApplicable treatment on a wholly excluded QCD",
+              "line": 484
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 408(d)(8)(E)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 170(a)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-408-d-8-F-i-split-interest-direct-payment",
+      "title": "A split-interest QCD must be paid directly to the entity and carry a nonassignable income interest",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/actions/annualQcdExecutionPrerequisite.ts",
+        "packages/engine/src/actions/annualRetirementActionPublication.ts",
+        "packages/engine/src/strategies/accountEligibility.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/annualQcdExecutionPrerequisite.ts",
+          "functions": [
+            {
+              "name": "evaluateAnnualQcdExecutionPrerequisites",
+              "line": 817
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/annualRetirementActionPublication.ts",
+          "functions": [
+            {
+              "name": "publishAnnualRetirementActions",
+              "line": 2055
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/strategies/accountEligibility.ts",
+          "functions": [
+            {
+              "name": "evaluateQcd",
+              "line": 826
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 408(d)(8)(F)(i)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 408(d)(8)(F)(ii)(I)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 408(d)(8)(F)(ii)(II)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 408(d)(8)(F)(ii)(III)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 408(d)(8)(F)(iv)(II)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-408-d-8-F-split-interest-sublimit",
+      "title": "One-time split-interest entity QCD sublimit",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": 2026,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2026-12-01",
+      "implementedBy": [
+        "packages/engine/src/actions/annualQcdExecutionPrerequisite.ts",
+        "packages/engine/src/strategies/accountEligibility.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/annualQcdExecutionPrerequisite.ts",
+          "functions": [
+            {
+              "name": "evaluateAnnualQcdExecutionPrerequisites",
+              "line": 817
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/strategies/accountEligibility.ts",
+          "functions": [
+            {
+              "name": "evaluateQcd",
+              "line": 826
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "irsNotice",
+          "citation": "IRS Notice 2025-67",
+          "url": "https://www.irs.gov/pub/irs-drop/n-25-67.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "Instructions for Form 1040 (2025), line 4a/4b Exception 3",
+          "url": "https://www.irs.gov/pub/irs-pdf/i1040gi.pdf"
+        }
+      ]
+    },
+    {
+      "id": "irc-408-d-8-beneficiary-ira-source",
+      "title": "Inherited IRA as a QCD source",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2027-08-03",
+      "implementedBy": [
+        "packages/engine/src/actions/annualQcdExecutionPrerequisite.ts",
+        "packages/engine/src/actions/annualQcdPhysicalExecution.ts",
+        "packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts",
+        "packages/engine/src/strategies/accountEligibility.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/annualQcdExecutionPrerequisite.ts",
+          "functions": [
+            {
+              "name": "evaluateAnnualQcdExecutionPrerequisites",
+              "line": 817
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/annualQcdPhysicalExecution.ts",
+          "functions": [
+            {
+              "name": "stageAnnualQcdPhysicalExecution",
+              "line": 512
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts",
+          "functions": [
+            {
+              "name": "validateOwnedNonRothIraRuntimeSourceSeries",
+              "line": 2465
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/strategies/accountEligibility.ts",
+          "functions": [
+            {
+              "name": "evaluateQcd",
+              "line": 826
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "irsNotice",
+          "citation": "IRS Notice 2007-7, Q&A-37",
+          "url": "https://www.irs.gov/pub/irs-drop/n-07-07.pdf"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.408-8(e)(2)(i)",
+          "url": "https://www.law.cornell.edu/cfr/text/26/1.408-8"
+        }
+      ]
+    },
+    {
+      "id": "irc-408-d-8-includible-qcd-basis",
+      "title": "Basis treatment of a QCD that is only partly excludable",
+      "classification": "unsettled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": "The Form 1040 instructions direct the filer to enter \"the part that is not a QCD\" on line 4b and treat \"QCD\" as the capped amount, which would route the over-limit excess to Form 8606 line 7 and give it pro-rata basis. No regulation, ruling, or IRS example addresses a partly-excludable QCD from an IRA that also carries basis. The readings differ in current-year taxable income and in whether basis is consumed or preserved; the engine takes the statutory reading, which is also the conservative one.",
+      "jurisdiction": "federal",
+      "volatility": "awaitingGuidance",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-02",
+      "dueOn": "2026-10-31",
+      "implementedBy": [
+        "packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts",
+          "functions": [
+            {
+              "name": "stageAnnualQcdTaxCharacterPostPass",
+              "line": 477
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/actions/annualQcdTaxCharacterPostPass.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/actions/annualQcdTaxCharacterPostPass.test.ts",
+          "line": 367,
+          "note": null,
+          "tests": [
+            {
+              "title": "keeps the includible excess inside the QCD and discloses the reading",
+              "line": 375
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 408(d)(8)(E)",
+          "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapD-partI-subpartA-sec408.htm"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "Instructions for Form 1040 (2025), line 4a/4b Exception 3",
+          "url": "https://www.irs.gov/pub/irs-pdf/i1040gi.pdf"
+        }
+      ]
+    },
+    {
+      "id": "irc-408-d-8-roth-ira-source",
+      "title": "Roth IRA as a QCD source",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2027-08-03",
+      "implementedBy": [
+        "packages/engine/src/actions/annualQcdExecutionPrerequisite.ts",
+        "packages/engine/src/actions/annualQcdPhysicalExecution.ts",
+        "packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts",
+        "packages/engine/src/strategies/accountEligibility.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/annualQcdExecutionPrerequisite.ts",
+          "functions": [
+            {
+              "name": "evaluateAnnualQcdExecutionPrerequisites",
+              "line": 817
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/annualQcdPhysicalExecution.ts",
+          "functions": [
+            {
+              "name": "stageAnnualQcdPhysicalExecution",
+              "line": 512
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts",
+          "functions": [
+            {
+              "name": "validateOwnedNonRothIraRuntimeSourceSeries",
+              "line": 2465
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/strategies/accountEligibility.ts",
+          "functions": [
+            {
+              "name": "evaluateQcd",
+              "line": 826
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "irsNotice",
+          "citation": "IRS Notice 2007-7, Q&A-36",
+          "url": "https://www.irs.gov/pub/irs-drop/n-07-07.pdf"
+        }
+      ]
+    },
+    {
+      "id": "irc-72-t-1-qcd-not-early-distribution-exception",
+      "title": "A QCD does not create an under-59.5 penalty exception",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-25",
+      "dueOn": "2027-08-25",
+      "implementedBy": [
+        "packages/engine/src/actions/annualQcdActionExecutionEvidence.ts",
+        "packages/engine/src/actions/annualQcdExecutionPrerequisite.ts",
+        "packages/engine/src/strategies/accountEligibility.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/annualQcdActionExecutionEvidence.ts",
+          "functions": [
+            {
+              "name": "publishAnnualQcdActionExecutionEvidence",
+              "line": 318
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/annualQcdExecutionPrerequisite.ts",
+          "functions": [
+            {
+              "name": "evaluateAnnualQcdExecutionPrerequisites",
+              "line": 817
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/strategies/accountEligibility.ts",
+          "functions": [
+            {
+              "name": "evaluateQcd",
+              "line": 826
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 72(t)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 72(t)(2)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 72(t)(2)(A)(i)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 408(d)(8)(B)(ii)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "treas-reg-1-408-8-g-projection-named-qcd-beyond-rmd",
+      "title": "Named QCD modelled as beyond the required distribution",
+      "classification": "approximated",
+      "errorDirection": "overstatesTax",
+      "conventionRationale": "Direction of error: restrictive, by the amount of the required distribution the gift could have satisfied, and the balance sheet is drawn down by that same amount again. A donor with a $21,097 required distribution who schedules a $20,000 gift intends to give $20,000 out of the requirement and take $1,097 in cash: $1,097 of ordinary income and $21,097 out of the IRA. The projection distributes all $21,097 in cash first and then debits the gift separately: $21,097 of ordinary income and $41,097 out of the IRA. Ordinary income is overstated by the satisfiable amount and the IRA is understated by it, so the error compounds through every figure that reads either. The cause is ordering, not missing facts. The gift settles at phase rank 6 and the forced distributions at rank 3, and the ranks are themselves statutory: Treas. Reg. 1.408A-4 A-6(b) forbids a conversion from absorbing an unsatisfied requirement, which puts the gift ahead of the conversions, and 1.408-8(b)(3) satisfies the requirement in the order distributions actually occur, which is what makes an earlier cash distribution irrevocable. The retirement path is an RMD reserve: hold a scheduled same-year gift amount out of the forced cash distribution before rank 3 runs, which is the shape the plan already contemplates for conversion-linked withdrawals. Until it lands the executed record states the coordination truthfully rather than omitting it - `rmdSatisfiedAmount` is zero and the typed `coordination` field says the requirement had already been distributed before the gift.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-05",
+      "dueOn": "2027-08-05",
+      "implementedBy": [
+        "packages/engine/src/actions/annualQcdExecution.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/annualQcdExecution.ts",
+          "functions": [
+            {
+              "name": "executeAnnualQcds",
+              "line": 524
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/simulateContributionsAndQcd.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/simulateContributionsAndQcd.approximation.test.ts",
+          "line": 632,
+          "note": "a scheduled gift cannot displace cash already distributed",
+          "tests": [
+            {
+              "title": "taxes the whole required distribution beside an excluded gift",
+              "line": 646
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.408-8(g)(1)",
+          "url": "https://www.law.cornell.edu/cfr/text/26/1.408-8"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.408-8(b)(3)",
+          "url": "https://www.law.cornell.edu/cfr/text/26/1.408-8"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 408(d)(8)(A)",
+          "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapD-partI-subpartA-sec408.htm"
+        }
+      ]
+    }
+  ]
+}

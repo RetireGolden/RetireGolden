@@ -1,0 +1,1088 @@
+{
+  "kind": "retiregolden.rules-coverage.shard",
+  "version": 5,
+  "module": "medicareAndHealthCoverage",
+  "rules": [
+    {
+      "id": "cfr-20-418-1205-1230-irmaa-life-change-redetermination",
+      "title": "IRMAA life-changing-event evidence and redetermination request is not modeled",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": "Keep outOfScope because the remaining claim is genuinely an absent administrative redetermination-request surface, not a mispriced MAGI. The planning toggles and min lookback are accepted Plan/simulate behavior already disclosed on the sibling lookback record; model/plan.ts and simulate.ts still have no fields or results for event-category evidence, supporting documentation, or a filed redetermination request under 418.1230. This record deliberately does not re-settle the SSA-44 lookback math.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/tax/medicare.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "healthcareConfigSchema",
+              "line": 1707
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/medicare.ts",
+          "functions": [
+            {
+              "name": "medicareAnnualPremiumPerPerson",
+              "line": 28
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 418.1205",
+          "url": "https://www.ecfr.gov/current/title-20/section-418.1205"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 418.1230(a)",
+          "url": "https://www.ecfr.gov/current/title-20/section-418.1230"
+        },
+        {
+          "kind": "agencyGuidance",
+          "citation": "POMS HI 01120.000, New Initial Determinations Using Beneficiary Information, table of contents",
+          "url": "https://secure.ssa.gov/poms.nsf/lnx/0601120000"
+        }
+      ]
+    },
+    {
+      "id": "irc-162-l-1-self-employed-health-insurance-not-modeled",
+      "title": "Self-employed health insurance is not an above-the-line deduction surface",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "acaYearContractSchema",
+              "line": 1621
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 162(l)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section162&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 162(l)(2)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section162&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-213-a-medical-expense-deduction",
+      "title": "Medical expense deduction above 7.5 percent of AGI",
+      "classification": "approximated",
+      "errorDirection": "overstatesTax",
+      "conventionRationale": "This is the highest-value omission in the itemized set for this engine audience, because the deduction is largest exactly when income is drawn down to pay care costs. It also interacts with the itemize election: a year of heavy medical spending can flip a household from the standard deduction to itemizing, which the engine cannot see, so the error is not confined to households that already itemize. IRC 213(b), 213(d)(9), and 213(d)(10) are folded onto this record as input-granularity, not separate approximations: there is no drug, cosmetic, or LTC-premium tax input on which those filters could run. Omitting the whole deduction overstates tax whenever any qualifying medical remains after those filters; the filters never reverse the sign, because they only reduce the statutory deduction toward the engine's zero. The produced pin is the existing describeRule fixture (statute 124,000 versus engineOmitsMedicalEntirely 59,000). The annually restated 2026 attained-age caps live on the companion record irc-213-d-10-eligible-ltc-premium-caps-2026.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/tax/federalTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "itemizedDeductionsSchema",
+              "line": 1903
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/federalTax.ts",
+          "functions": [
+            {
+              "name": "itemizedTotal",
+              "line": 129
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/federalTaxAndRothBasis.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/federalTaxAndRothBasis.approximation.test.ts",
+          "line": 92,
+          "note": "deductible medical above the 7.5% floor for a household already itemizing",
+          "tests": [
+            {
+              "title": "omits deductible medical expenses from the itemized total",
+              "line": 107
+            },
+            {
+              "title": "ignores unreimbursed medical costs however they are supplied",
+              "line": 123
+            },
+            {
+              "title": "reaches the statutory deduction only when the medical amount is smuggled in as another itemized dollar",
+              "line": 134
+            },
+            {
+              "title": "overstates tax, by the deduction it cannot see at the marginal rate",
+              "line": 146
+            },
+            {
+              "title": "cannot see the election flip a heavy medical year forces",
+              "line": 158
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 213(a)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section213&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 67(b)(5)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section67&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 213(b)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section213&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 213(d)(9)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section213&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 213(d)(1), flush",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section213&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 213(d)(10)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section213&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 213(d)(10)(B)(i)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section213&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-213-d-10-eligible-ltc-premium-caps-2026",
+      "title": "2026 eligible long-term care premium attained-age caps",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": "The 2026 attained-age caps ($500 / $930 / $1,860 / $4,960 / $6,200) are read from the revenue procedure’s table rather than rewritten into quotedText. The quotation carries the introducing sentence; the table rows are not linearized into prose. Companion to irc-213-a-medical-expense-deduction, which folds the missing medical-input filter without publishing these dollars on a staticStatute record.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": 2026,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2026-12-25",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/tax/federalTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "itemizedDeductionsSchema",
+              "line": 1903
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/federalTax.ts",
+          "functions": [
+            {
+              "name": "itemizedTotal",
+              "line": 129
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "irsNotice",
+          "citation": "Rev. Proc. 2025-32, section 4.27",
+          "url": "https://www.irs.gov/pub/irs-drop/rp-25-32.pdf"
+        }
+      ]
+    },
+    {
+      "id": "irc-36B-c-1-A-applicable-taxpayer-range",
+      "title": "The premium credit band includes both 100 and 400 percent",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The enhanced credits that suspended the 400 percent ceiling expired at the end of 2025, so the cliff is live again for 2026. The engine also treats the below-100-percent exception pathways as out of scope rather than modelling them, which is why the floor is a hard cutoff here.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "sunsetting",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-29",
+      "dueOn": "2027-01-26",
+      "implementedBy": [
+        "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/tax/aca.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/data/year2026.ts",
+          "functions": [
+            {
+              "name": "year2026",
+              "line": 16
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/aca.ts",
+          "functions": [
+            {
+              "name": "acaEconomicPremiumByMonth",
+              "line": 172
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/aca.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/aca.test.ts",
+          "line": 64,
+          "note": null,
+          "tests": [
+            {
+              "title": "keeps a household at exactly 400 percent inside the band",
+              "line": 68
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 36B(c)(1)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section36B&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-36B-d-2-B-aca-household-magi-composition",
+      "title": "What enters ACA household modified adjusted gross income",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-07",
+      "dueOn": "2027-08-07",
+      "implementedBy": [
+        "packages/engine/src/tax/aca.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/tax/aca.ts",
+          "functions": [
+            {
+              "name": "buildAcaHouseholdMagi",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/aca.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/aca.test.ts",
+          "line": 210,
+          "note": null,
+          "tests": [
+            {
+              "title": "adds tax-exempt interest to household MAGI alongside the other add-backs",
+              "line": 214
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 36B(d)(2)(B)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section36B&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "rev-proc-2025-25-aca-applicable-percentage-2026",
+      "title": "ACA applicable percentage table for 2026",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The engine interpolates linearly between the published breakpoints. The revenue procedure gives an initial and a final percentage per band rather than a formula, and linear interpolation is the construction that reproduces both endpoints of every band. Section 3.01 presents those percentages as a table, so the quotation carries only the sentence introducing it; the bands and rates are stated above in this record rather than rewritten into prose and attributed to the revenue procedure.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": 2026,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2026-12-02",
+      "implementedBy": [
+        "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/tax/aca.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/data/year2026.ts",
+          "functions": [
+            {
+              "name": "year2026",
+              "line": 16
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/aca.ts",
+          "functions": [
+            {
+              "name": "acaApplicablePct",
+              "line": 132
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/aca.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/aca.test.ts",
+          "line": 23,
+          "note": null,
+          "tests": [
+            {
+              "title": "steps to the 133 band at exactly 133 percent of the poverty line",
+              "line": 27
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "irsNotice",
+          "citation": "Rev. Proc. 2025-25, section 3.01",
+          "url": "https://www.irs.gov/pub/irs-drop/rp-25-25.pdf"
+        }
+      ]
+    },
+    {
+      "id": "usc-42-1395p-enrollment-periods",
+      "title": "Part B initial, general, and special enrollment periods are not modeled",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": "Absence surface is model/plan.ts and projection/simulate.ts: healthcareConfigSchema and person demographics have no IEP/GEP/SEP election or enrollment month, and simulate.ts derives Medicare months solely from attained age 65 (and birth month in the attainment year). This record is the enrollment-period umbrella; the separate Part B late-enrollment premium increase is registered at usc-42-1395r-b-part-b-late-enrollment-penalty.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "healthcareConfigSchema",
+              "line": 1707
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 1395p(d)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section1395p&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 1395p(e)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section1395p&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 1395p(i)(3)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section1395p&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "usc-42-1395r-a-3-part-b-standard-premium",
+      "title": "The standard Part B premium is half the aged actuarial rate plus a repayment amount",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The repayment amount rides on the standard premium but is not part of the income-related scaling, so deriving a tier premium as the standard premium times the applicable percentage over 25 reproduces the promulgated table only to within a few cents. That residual is accepted as planning-grade rather than carrying a separate per-tier premium table. The Federal Register determination is registered under the regulation authority kind because the enum has no member for an agency determination published in the Federal Register, and adding one is a schema decision rather than a research finding; the choice is named here rather than left silent.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2026-12-01",
+      "implementedBy": [
+        "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/params/index.ts",
+        "packages/engine/src/tax/medicare.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/data/year2026.ts",
+          "functions": [
+            {
+              "name": "year2026",
+              "line": 16
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/index.ts",
+          "functions": [
+            {
+              "name": "partBMonthlyPremium",
+              "line": 351
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/medicare.ts",
+          "functions": [
+            {
+              "name": "medicareAnnualPremiumPerPerson",
+              "line": 28
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/params/params.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/params/params.test.ts",
+          "line": 356,
+          "note": "The twenty cents between them is the repayment amount, which the promulgated figure carries and a re-derivation from the actuarial rate drops.",
+          "tests": [
+            {
+              "title": "carries the promulgated premium rather than half the actuarial rate",
+              "line": 363
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "42 USC 1395r(a)(1), (a)(3)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section1395r&num=0&edition=prelim"
+        },
+        {
+          "kind": "regulation",
+          "citation": "CMS, Medicare Part B Monthly Actuarial Rates, Premium Rates, and Annual Deductible Beginning January 1, 2026, 90 FR 52063 (Nov. 19, 2025)",
+          "url": "https://www.govinfo.gov/content/pkg/FR-2025-11-19/html/2025-20251.htm"
+        }
+      ]
+    },
+    {
+      "id": "usc-42-1395r-b-part-b-late-enrollment-penalty",
+      "title": "Part B late-enrollment premium increase is not modeled",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": "Absence surface is model/plan.ts, tax/medicare.ts, and the pack Medicare table: simulate.ts starts Part B months from attained age 65 with no enrollment-election fact, and medicareAnnualPremiumPerPerson multiplies the pack standard premium by the IRMAA applicable-percentage scale only. A late-enrollee history is not expressible, so there is no mispriced penalty figure to approximate — only the absent increase.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/tax/medicare.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "healthcareConfigSchema",
+              "line": 1707
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/data/year2026.ts",
+          "functions": [
+            {
+              "name": "year2026",
+              "line": 16
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/medicare.ts",
+          "functions": [
+            {
+              "name": "medicareAnnualPremiumPerPerson",
+              "line": 28
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 1395r(b)",
+          "url": "https://www.law.cornell.edu/uscode/text/42/1395r"
+        }
+      ]
+    },
+    {
+      "id": "usc-42-1395r-i-4-a-i-irmaa-magi-foreign-exclusion-addback",
+      "title": "IRMAA MAGI without-regard addback is omitted from the lookback feed",
+      "classification": "approximated",
+      "errorDirection": "understatesTax",
+      "conventionRationale": "Matches the shipped usc-42-1395r-* premium-direction pattern: understatesTax names fisc exposure that includes the Medicare premium surcharge (the type’s fisc referent already spans that channel; the statement’s premium understatement is the same sign).",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/simulate.test.ts",
+          "line": 4068,
+          "note": "foreign-exclusion addback raises ACA MAGI but not IRMAA magiHistory",
+          "tests": [
+            {
+              "title": "raises ACA household MAGI by the known foreign-exclusion addback without moving IRMAA MAGI history",
+              "line": 4077
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 1395r(i)(4)(A)(i)",
+          "url": "https://www.law.cornell.edu/uscode/text/42/1395r"
+        }
+      ]
+    },
+    {
+      "id": "usc-42-1395r-i-4-a-magi-agi-plus-tax-exempt-interest",
+      "title": "IRMAA MAGI tax-exempt-interest addback",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/simulate.test.ts",
+          "line": 4011,
+          "note": null,
+          "tests": [
+            {
+              "title": "carries known tax-exempt interest into later IRMAA MAGI without taxing it as ordinary income",
+              "line": 4018
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 1395r(i)(4)(A)",
+          "url": "https://www.law.cornell.edu/uscode/text/42/1395r"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 1395r(i)(4)(A)(ii)",
+          "url": "https://www.law.cornell.edu/uscode/text/42/1395r"
+        }
+      ]
+    },
+    {
+      "id": "usc-42-1395r-i-4-b-two-year-magi-lookback",
+      "title": "IRMAA uses modified AGI from the second preceding tax year",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The quoted text is expressly subject to clause (ii) and subparagraph (C). The engine’s opt-in SSA-44 path (`expenses.healthcare.ssa44`) can select the more-recent year−1 MAGI after a qualifying event, but that (C) exception surface is a queued residual with no registry record of its own rather than a claim settled here.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/simulate.test.ts",
+          "line": 3954,
+          "note": null,
+          "tests": [
+            {
+              "title": "raises Medicare premiums two years after an income spike",
+              "line": 3961
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 1395r(i)(4)(B)(i)",
+          "url": "https://www.law.cornell.edu/uscode/text/42/1395r"
+        }
+      ]
+    },
+    {
+      "id": "usc-42-1395r-i-5-C-top-irmaa-threshold-frozen",
+      "title": "The top IRMAA threshold is frozen through 2027, then indexed off a later base",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "Three things are decided here rather than dictated. First, the index: the resumed adjustment is measured on the plan assumed general inflation rather than the consumer price index the statute names, which is the same stand-in the lower rows already take, and the pack year of 2026 is what makes the general inflation series readable at the August 2026 base period without an offset. Second, the rounding: (i)(5)(B) rounds a dollar amount increased under subparagraph (C) to the nearest 1,000, and that is reproduced for the top row. The identical rounding (i)(5)(B) applies to the (i)(5)(A) adjustment of the four lower rows is not reproduced, which is pre-existing behaviour and is named here rather than left as a silent asymmetry between two branches of one function. Third, the Federal Register determination that publishes the table is registered under the regulation authority kind. It is neither a statute nor an IRS notice, and the enum has no member for an agency determination published in the Federal Register; introducing one is a schema decision rather than a research finding, so the nearest existing member is used and the choice is named rather than left silent.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2019,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-03",
+      "dueOn": "2026-12-01",
+      "implementedBy": [
+        "packages/engine/src/insights/detectors/irmaaTierEdge.ts",
+        "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/params/index.ts",
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/tax/medicare.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/insights/detectors/irmaaTierEdge.ts",
+          "functions": [
+            {
+              "name": "irmaaTierEdge",
+              "line": 35
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/data/year2026.ts",
+          "functions": [
+            {
+              "name": "year2026",
+              "line": 16
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/index.ts",
+          "functions": [
+            {
+              "name": "IRMAA_TOP_TIER_FROZEN_THROUGH_YEAR",
+              "line": 248
+            },
+            {
+              "name": "irmaaTierThreshold",
+              "line": 274
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/medicare.ts",
+          "functions": [
+            {
+              "name": "medicareAnnualPremiumPerPerson",
+              "line": 28
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/params/params.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/params/params.test.ts",
+          "line": 249,
+          "note": "Values are the top-tier MAGI floor for a single filer in a 2032 premium year at 2 percent inflation.",
+          "tests": [
+            {
+              "title": "resumes indexing after 2027 from a base one year behind the general one",
+              "line": 264
+            },
+            {
+              "title": "separates the three readings by the tier a household lands in",
+              "line": 275
+            },
+            {
+              "title": "holds the top tier still for every premium year through 2027",
+              "line": 282
+            },
+            {
+              "title": "never stops indexing the rows beneath the top one",
+              "line": 290
+            },
+            {
+              "title": "carves out the 150 percent joint figure with the individual one",
+              "line": 301
+            },
+            {
+              "title": "keeps rounding the top row once a post-freeze pack carries it forward",
+              "line": 319
+            },
+            {
+              "title": "refuses a pack year that cannot measure from the August 2026 base",
+              "line": 336
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "42 USC 1395r(i)(5)(A), (i)(5)(B), (i)(5)(C)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section1395r&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 USC 1395r(i)(3)(C)(ii)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section1395r&num=0&edition=prelim"
+        },
+        {
+          "kind": "regulation",
+          "citation": "CMS, Medicare Part B Monthly Actuarial Rates, Premium Rates, and Annual Deductible Beginning January 1, 2026, 90 FR 52063 (Nov. 19, 2025)",
+          "url": "https://www.govinfo.gov/content/pkg/FR-2025-11-19/html/2025-20251.htm"
+        }
+      ]
+    },
+    {
+      "id": "usc-42-1395r-i-irmaa-applicable-percentage",
+      "title": "IRMAA raises the beneficiary share of cost from 25 percent",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The statute expresses the result as an adjustment amount, the applicable percentage minus 25 percentage points; the engine computes the whole premium as the standard one times the applicable percentage over 25. Those are the same quantity written from different ends, which is why no explicit 25-point subtraction appears in the code.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2026-12-02",
+      "implementedBy": [
+        "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/tax/medicare.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/data/year2026.ts",
+          "functions": [
+            {
+              "name": "year2026",
+              "line": 16
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/medicare.ts",
+          "functions": [
+            {
+              "name": "medicareAnnualPremiumPerPerson",
+              "line": 28
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/medicare.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/medicare.test.ts",
+          "line": 25,
+          "note": null,
+          "tests": [
+            {
+              "title": "scales the standard premium by the applicable percentage over 25",
+              "line": 29
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 1395r(i)(3)(A)",
+          "url": "https://www.law.cornell.edu/uscode/text/42/1395r"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 1395r(i)(4)",
+          "url": "https://www.law.cornell.edu/uscode/text/42/1395r"
+        }
+      ]
+    },
+    {
+      "id": "usc-42-1395w-113-b-pl-117-169-part-d-penalty-and-cost-sharing",
+      "title": "Part D late-enrollment and drug-cost rules are not modeled",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": "healthcareConfigSchema admits a generic medicareExtrasMonthlyPerPerson amount, but it is a user-entered aggregate expense rather than a Part D result. model/plan.ts and params/types.ts have no accepted fields for uncovered months, a national base beneficiary premium, a PDP or MA-PD plan, drug claims, a covered insulin product, negotiated or maximum-fair prices, or incurred cost sharing; simulate.ts consequently cannot derive a late penalty, annual threshold, or product-level copayment. The annual-index formula cannot by itself establish the 2026 dollar amount without the missing annual percentage determination, while the 2026 insulin ceiling is fully stated in the enacted text.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-29",
+      "dueOn": "2026-12-27",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/params/types.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "healthcareConfigSchema",
+              "line": 1707
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/types.ts",
+          "functions": [
+            {
+              "name": "ParameterPack",
+              "line": 53
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 770
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 1395w-113(b)(3)(A)-(B)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section1395w-113&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 1395w-113(b)(3)(B)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section1395w-113&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "P.L. 117-169, section 11201(a)(1)(A)",
+          "url": "https://www.govinfo.gov/content/pkg/PLAW-117publ169/pdf/PLAW-117publ169.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "P.L. 117-169, section 11201(a)(3)(B)(i)(III)",
+          "url": "https://www.govinfo.gov/content/pkg/PLAW-117publ169/pdf/PLAW-117publ169.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "P.L. 117-169, section 11406(a), adding 1860D-2(b)(9)(B)(ii)",
+          "url": "https://www.govinfo.gov/content/pkg/PLAW-117publ169/pdf/PLAW-117publ169.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "P.L. 117-169, section 11406(a), adding 1860D-2(b)(9)(D)",
+          "url": "https://www.govinfo.gov/content/pkg/PLAW-117publ169/pdf/PLAW-117publ169.pdf"
+        }
+      ]
+    }
+  ]
+}

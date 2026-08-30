@@ -1,0 +1,935 @@
+{
+  "kind": "retiregolden.rules-coverage.shard",
+  "version": 5,
+  "module": "statesNortheast",
+  "rules": [
+    {
+      "id": "ct-cgs-12-701-20-b-social-security-retirement",
+      "title": "Connecticut’s Social Security and pension subtractions are income-tested",
+      "classification": "approximated",
+      "errorDirection": "bothDirections",
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:CT",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/params/state/types.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "CT",
+              "line": 242
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/types.ts",
+          "functions": [
+            {
+              "name": "StateRetirementExclusion",
+              "line": 25
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 1796,
+          "note": "low-income Social Security limb",
+          "tests": [
+            {
+              "title": "pins the pack’s failure to subtract the low-income federally taxable benefit",
+              "line": 1812
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 1828,
+          "note": "high-income pension limb",
+          "tests": [
+            {
+              "title": "pins the pack’s unconditional pension exclusion above the statutory schedule",
+              "line": 1844
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Conn. Gen. Stat. 12-701(a)(20)(B)(x)(III)",
+          "url": "https://www.cga.ct.gov/current/pub/chap_229.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "Conn. Gen. Stat. 12-701(a)(20)(B)(xxi), table 32",
+          "url": "https://www.cga.ct.gov/current/pub/chap_229.htm"
+        }
+      ]
+    },
+    {
+      "id": "ma-gen-laws-ch62-s2-public-pension-exclusion",
+      "title": "Massachusetts deducts contributory public and uniformed-services retirement, not every public pension",
+      "classification": "approximated",
+      "errorDirection": "understatesTax",
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:MA",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "PUBLIC_PENSION_OVERRIDES",
+              "line": 57
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            },
+            {
+              "name": "retirementExclusion",
+              "line": 40
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/stateTax.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
+          "line": 1210,
+          "note": null,
+          "tests": [
+            {
+              "title": "exempts a noncontributory public pension the statute leaves in",
+              "line": 1229
+            },
+            {
+              "title": "taxes a private IRA of the same amount, which is the other bucket",
+              "line": 1238
+            },
+            {
+              "title": "reaches the statute once the public override is dropped",
+              "line": 1248
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Mass. Gen. Laws ch. 62, §2(a)(2)",
+          "url": "https://malegislature.gov/Laws/GeneralLaws/PartI/TitleIX/Chapter62/Section2"
+        },
+        {
+          "kind": "statute",
+          "citation": "Mass. Gen. Laws ch. 62, §2(a)(2)(E)",
+          "url": "https://malegislature.gov/Laws/GeneralLaws/PartI/TitleIX/Chapter62/Section2"
+        }
+      ]
+    },
+    {
+      "id": "ma-gen-laws-ch62-s2-social-security",
+      "title": "Massachusetts deducts Social Security included in federal gross income",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:MA",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "states.MA",
+              "line": 443
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 2236,
+          "note": null,
+          "tests": [
+            {
+              "title": "deducts Social Security included in federal gross income",
+              "line": 2250
+            },
+            {
+              "title": "would leave the federally taxable share in if the deduction were dropped",
+              "line": 2255
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Mass. Gen. Laws ch. 62, §2(a)(2)(H)",
+          "url": "https://malegislature.gov/Laws/GeneralLaws/PartI/TitleIX/Chapter62/Section2"
+        },
+        {
+          "kind": "statute",
+          "citation": "Mass. Gen. Laws ch. 62, §2(a)(2)",
+          "url": "https://malegislature.gov/Laws/GeneralLaws/PartI/TitleIX/Chapter62/Section2"
+        }
+      ]
+    },
+    {
+      "id": "mrs-36-5124-c-1-b-decoupled-standard-deduction",
+      "title": "Maine’s standard deduction decoupled from the federal figure in 2026",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:ME",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2027-08-04",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/params/state/index.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "ME",
+              "line": 405
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/index.ts",
+          "functions": [
+            {
+              "name": "conformStateStandardDeduction",
+              "line": 90
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 673,
+          "note": null,
+          "tests": [
+            {
+              "title": "holds Maine’s deduction still as the federal figure is projected upward",
+              "line": 680
+            },
+            {
+              "title": "would inflate it every projected year if it were tagged as conforming",
+              "line": 687
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "36 M.R.S. 5124-C(1-B)",
+          "url": "https://legislature.maine.gov/statutes/36/title36sec5124-C.html"
+        },
+        {
+          "kind": "statute",
+          "citation": "36 M.R.S. 5124-C(1-B)(A)",
+          "url": "https://legislature.maine.gov/statutes/36/title36sec5124-C.html"
+        },
+        {
+          "kind": "statute",
+          "citation": "36 M.R.S. 5124-C(1-B)(B)",
+          "url": "https://legislature.maine.gov/statutes/36/title36sec5124-C.html"
+        },
+        {
+          "kind": "statute",
+          "citation": "36 M.R.S. 5124-C(1-A)",
+          "url": "https://legislature.maine.gov/statutes/36/title36sec5124-C.html"
+        }
+      ]
+    },
+    {
+      "id": "nh-rsa-77-taxation-of-incomes-repealed",
+      "title": "New Hampshire’s Taxation of Incomes chapter is gone from 2025",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:NH",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2025,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "NH",
+              "line": 568
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 2453,
+          "note": null,
+          "tests": [
+            {
+              "title": "leaves a New Hampshire retiree with no state base at all",
+              "line": 2474
+            },
+            {
+              "title": "would build a base if Chapter 77 were still in force",
+              "line": 2479
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "N.H. Rev. Stat. Ann. ch. 77 (repealed), chapter heading",
+          "url": "https://www.gencourt.state.nh.us/rsa/html/V/77/77-mrg.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "N.H. Rev. Stat. Ann. ch. 77 (repealed), compiler’s note",
+          "url": "https://www.gencourt.state.nh.us/rsa/html/V/77/77-mrg.htm"
+        }
+      ]
+    },
+    {
+      "id": "nj-stat-54a-6-10-retirement-income-exclusion",
+      "title": "New Jersey's pension exclusion is age-62, per-return, and AGI-capped; the pack is a flat $50,000",
+      "classification": "approximated",
+      "errorDirection": "bothDirections",
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:NJ",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2021,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "NJ",
+              "line": 574
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            },
+            {
+              "name": "retirementExclusion",
+              "line": 40
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/stateTax.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
+          "line": 1095,
+          "note": null,
+          "tests": [
+            {
+              "title": "grants a $50,000 subtraction to a household over the $150,000 AGI ceiling",
+              "line": 1112
+            },
+            {
+              "title": "reaches the statute once the cap is withheld",
+              "line": 1118
+            },
+            {
+              "title": "under-excludes a single filer below $100,000 of income, in the other direction",
+              "line": 1126
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "N.J.S.A. 54A:6-10(b)(1), as amended by P.L.2021, c.129",
+          "url": "https://pub.njleg.gov/bills/2020/AL21/129_.HTM"
+        },
+        {
+          "kind": "statute",
+          "citation": "N.J.S.A. 54A:6-10(b)(1), as amended by P.L.2021, c.129 (age and qualifying payments)",
+          "url": "https://pub.njleg.gov/bills/2020/AL21/129_.HTM"
+        },
+        {
+          "kind": "statute",
+          "citation": "N.J.S.A. 54A:6-10(b)(2), as amended by P.L.2021, c.129",
+          "url": "https://pub.njleg.gov/bills/2020/AL21/129_.HTM"
+        },
+        {
+          "kind": "statute",
+          "citation": "N.J.S.A. 54A:6-10(b)(1), as amended by P.L.2021, c.129 (phase-down)",
+          "url": "https://pub.njleg.gov/bills/2020/AL21/129_.HTM"
+        }
+      ]
+    },
+    {
+      "id": "ny-tax-612-c-3-a-pension-annuity-exclusion",
+      "title": "New York’s $20,000 pension exclusion requires attaining 59½",
+      "classification": "approximated",
+      "errorDirection": "understatesTax",
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:NY",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2027-08-04",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "states.NY",
+              "line": 608
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            },
+            {
+              "name": "retirementExclusion",
+              "line": 40
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/stateTax.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
+          "line": 284,
+          "note": null,
+          "tests": [
+            {
+              "title": "grants a 59-year-old the $20,000 subtraction half a year early",
+              "line": 301
+            },
+            {
+              "title": "withholds it once the gate is raised past the incomplete year",
+              "line": 306
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "N.Y. Tax Law 612(c)(3-a)",
+          "url": "https://www.nysenate.gov/legislation/laws/TAX/612"
+        },
+        {
+          "kind": "statute",
+          "citation": "N.Y. Tax Law 612(c)(3-a), second sentence",
+          "url": "https://www.nysenate.gov/legislation/laws/TAX/612"
+        },
+        {
+          "kind": "statute",
+          "citation": "N.Y. Tax Law 612(c)",
+          "url": "https://www.nysenate.gov/legislation/laws/TAX/612"
+        }
+      ]
+    },
+    {
+      "id": "pa-pit-no-capital-loss-carryforward",
+      "title": "A Pennsylvania capital loss is recognized only in its own year",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:PA",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-29",
+      "dueOn": "2027-08-29",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "PA",
+              "line": 706
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 367,
+          "note": null,
+          "tests": [
+            {
+              "title": "taxes the realized gain and ignores the prior-year carryforward",
+              "line": 391
+            },
+            {
+              "title": "would tax only the netted gain under federal conformity",
+              "line": 395
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "61 Pa. Code 103.13(a)",
+          "url": "https://www.pacodeandbulletin.gov/Display/pacode?file=/secure/pacode/data/061/chapter103/s103.13.html"
+        },
+        {
+          "kind": "regulation",
+          "citation": "61 Pa. Code 103.13(e)",
+          "url": "https://www.pacodeandbulletin.gov/Display/pacode?file=/secure/pacode/data/061/chapter103/s103.13.html"
+        }
+      ]
+    },
+    {
+      "id": "pa-pit-retirement-benefits-not-compensation",
+      "title": "Pennsylvania does not tax a retired employee’s plan distributions",
+      "classification": "approximated",
+      "errorDirection": "bothDirections",
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:PA",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2027-08-04",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "PA",
+              "line": 706
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            },
+            {
+              "name": "retirementExclusion",
+              "line": 40
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/stateTax.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
+          "line": 223,
+          "note": null,
+          "tests": [
+            {
+              "title": "charges a retired 58-year-old Pennsylvania tax the regulation does not",
+              "line": 242
+            },
+            {
+              "title": "exempts the same distribution once the gate reaches the retiree",
+              "line": 247
+            },
+            {
+              "title": "still charges a Pennsylvanian who has not retired at all, in the other direction",
+              "line": 256
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "61 Pa. Code 101.6(c)(8)(iii)(A)",
+          "url": "https://www.pacodeandbulletin.gov/Display/pacode?file=/secure/pacode/data/061/chapter101/s101.6.html"
+        },
+        {
+          "kind": "regulation",
+          "citation": "61 Pa. Code 101.6(c)(8)(i)",
+          "url": "https://www.pacodeandbulletin.gov/Display/pacode?file=/secure/pacode/data/061/chapter101/s101.6.html"
+        }
+      ]
+    },
+    {
+      "id": "ri-gen-laws-44-30-12-social-security-and-pension-modification",
+      "title": "Rhode Island limits Social Security and pension modifications by age, AGI, and year",
+      "classification": "approximated",
+      "errorDirection": "bothDirections",
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:RI",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "RI",
+              "line": 715
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            },
+            {
+              "name": "retirementExclusion",
+              "line": 40
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 2641,
+          "note": "Social Security AGI threshold limb",
+          "tests": [
+            {
+              "title": "pins the low-AGI age-qualified Social Security modification",
+              "line": 2656
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 2663,
+          "note": "pension ceiling limb",
+          "tests": [
+            {
+              "title": "pins the current pension ceiling rather than the stale pack cap",
+              "line": 2682
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 2689,
+          "note": "pension AGI-threshold limb",
+          "tests": [
+            {
+              "title": "pins the opposite direction when the pension AGI test disallows any modification",
+              "line": 2709
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "R.I. Gen. Laws §44-30-1(a)",
+          "url": "https://webserver.rilegislature.gov/Statutes/TITLE44/44-30/44-I/44-30-1.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "R.I. Gen. Laws §44-30-12(c)(8)(i)",
+          "url": "https://webserver.rilegislature.gov/Statutes/TITLE44/44-30/44-II/44-30-12.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "R.I. Gen. Laws §44-30-12(c)(8)(ii)",
+          "url": "https://webserver.rilegislature.gov/Statutes/TITLE44/44-30/44-II/44-30-12.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "R.I. Gen. Laws §44-30-12(c)(9)(i)",
+          "url": "https://webserver.rilegislature.gov/Statutes/TITLE44/44-30/44-II/44-30-12.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "R.I. Gen. Laws §44-30-12(c)(9)(i)(A)",
+          "url": "https://webserver.rilegislature.gov/Statutes/TITLE44/44-30/44-II/44-30-12.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "R.I. Gen. Laws §44-30-12(c)(9)(i)(B)",
+          "url": "https://webserver.rilegislature.gov/Statutes/TITLE44/44-30/44-II/44-30-12.htm"
+        }
+      ]
+    },
+    {
+      "id": "vt-stat-32-5830e-social-security-inclusion",
+      "title": "Vermont excludes federally taxable Social Security only below AGI thresholds",
+      "classification": "approximated",
+      "errorDirection": "overstatesTax",
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:VT",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-27",
+      "dueOn": "2027-08-27",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "VT",
+              "line": 759
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 75
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 2716,
+          "note": null,
+          "tests": [
+            {
+              "title": "pins Vermont's complete low-AGI Social Security exclusion",
+              "line": 2729
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "32 V.S.A. §5830e(a)(1)(A)",
+          "url": "https://legislature.vermont.gov/statutes/section/32/151/05830e"
+        },
+        {
+          "kind": "statute",
+          "citation": "32 V.S.A. §5830e(a)(1)",
+          "url": "https://legislature.vermont.gov/statutes/section/32/151/05830e"
+        },
+        {
+          "kind": "statute",
+          "citation": "32 V.S.A. §5830e(a)(1)(B)",
+          "url": "https://legislature.vermont.gov/statutes/section/32/151/05830e"
+        },
+        {
+          "kind": "statute",
+          "citation": "32 V.S.A. §5830e(a)(1)(C)",
+          "url": "https://legislature.vermont.gov/statutes/section/32/151/05830e"
+        },
+        {
+          "kind": "statute",
+          "citation": "32 V.S.A. §5830e(a)(2)(A)",
+          "url": "https://legislature.vermont.gov/statutes/section/32/151/05830e"
+        },
+        {
+          "kind": "statute",
+          "citation": "32 V.S.A. §5830e(a)(2)",
+          "url": "https://legislature.vermont.gov/statutes/section/32/151/05830e"
+        },
+        {
+          "kind": "statute",
+          "citation": "32 V.S.A. §5830e(a)(2)(B)",
+          "url": "https://legislature.vermont.gov/statutes/section/32/151/05830e"
+        },
+        {
+          "kind": "statute",
+          "citation": "32 V.S.A. §5830e(a)(2)(C)",
+          "url": "https://legislature.vermont.gov/statutes/section/32/151/05830e"
+        },
+        {
+          "kind": "statute",
+          "citation": "32 V.S.A. §5811(21)(B)(iv)",
+          "url": "https://legislature.vermont.gov/statutes/section/32/151/05811"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Vermont Department of Taxes, Social Security Exemption",
+          "url": "https://tax.vermont.gov/individuals/income-tax-returns/social-security-exemption"
+        }
+      ]
+    }
+  ]
+}
