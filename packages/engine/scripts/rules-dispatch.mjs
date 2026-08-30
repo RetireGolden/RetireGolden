@@ -82,7 +82,7 @@ export function buildDispatchPrompt({ asOf, ruleIds, registry, manifestRules }) 
     '- Create a worktree/branch from `origin/main`.',
     '- Enable Corepack and use pnpm (`corepack enable`).',
     '- Read `AGENTS.md` first.',
-    '- The rule registry lives at `packages/engine/src/rules/taxRuleRegistry.ts`; each rule below is one record keyed by its id.',
+    '- The rule registry is composed in `packages/engine/src/rules/taxRuleRegistry.ts` from the per-domain modules in `packages/engine/src/rules/records/`; each rule below is one record keyed by its id, in exactly one of those modules (`git grep -n "\'<id>\': {" packages/engine/src/rules/records` finds it).',
     '',
     '## The binding edit order',
     '',
@@ -104,7 +104,7 @@ export function buildDispatchPrompt({ asOf, ruleIds, registry, manifestRules }) 
     '- (network, manual; see `DOCS/operations/quote-fidelity.md`)',
     '- If any result moves: run `pnpm cases:diff`, review every delta, and add a `CHANGELOG.md` entry announcing the correction — corrections are announced, never silent.',
     '- `pnpm rules:coverage` and commit the refreshed `DOCS/operations/rule-coverage.md` and `rule-coverage.json` (`verifiedOn` changes them)',
-    '- Confirm no other open PR changes the registry file: for each PR in `gh pr list --state open --limit 200 --json number -q .[].number`, run `gh pr diff <n> --name-only` and require zero hits for `taxRuleRegistry.ts` before pushing, excluding this branch\'s own PR.',
+    '- Confirm no other open PR changes the registry file: for each PR in `gh pr list --state open --limit 200 --json number -q .[].number`, run `gh pr diff <n> --name-only` and require zero hits under `packages/engine/src/rules/` before pushing, excluding this branch\'s own PR.',
     '- One PR; review-bot findings fixed on the same branch',
     '',
   ]

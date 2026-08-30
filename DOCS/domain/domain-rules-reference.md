@@ -5,8 +5,10 @@ The financial rules the RetireGolden engine encodes, with current (tax year 2026
 Legal baseline: the **One Big Beautiful Bill Act (OBBBA, July 2025)** made the TCJA rate structure permanent and added the senior deduction, so 2026 brackets are stable current law rather than a sunset cliff.
 
 **The rule registry is the machine-checked chain; this document is the human map.**
-[`packages/engine/src/rules/taxRuleRegistry.ts`](../../packages/engine/src/rules/taxRuleRegistry.ts) holds one
-typed, frozen record per statutory rule the engine implements: the authority with its operative language quoted
+[`packages/engine/src/rules/records/`](../../packages/engine/src/rules/records) holds one
+typed, frozen record per statutory rule the engine implements, in per-domain modules that
+[`taxRuleRegistry.ts`](../../packages/engine/src/rules/taxRuleRegistry.ts) composes into the frozen
+registry. Each record carries the authority with its operative language quoted
 rather than paraphrased, the reading taken, the jurisdiction, the date last verified, and the engine sources
 implementing it. Every `settled` rule must be covered by a fixture that discriminates between candidate readings,
 and `taxRuleRegistry.conformance.test.ts` enforces that. **Convention: where a rule has a record, cite the record

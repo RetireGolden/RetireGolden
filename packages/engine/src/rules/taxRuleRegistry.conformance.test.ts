@@ -12,6 +12,53 @@ import {
   type TaxRuleVolatility,
   type UsStateCode,
 } from './taxRuleRegistry.js'
+import { annuityRecords } from './records/annuities.js'
+import { charitableDeductionRecords } from './records/charitableDeductions.js'
+import { charitableDistributionRecords } from './records/charitableDistributions.js'
+import { contributionAndDeferralLimitRecords } from './records/contributionAndDeferralLimits.js'
+import { earlyDistributionAndSeppRecords } from './records/earlyDistributionsAndSepp.js'
+import { healthSavingsAccountRecords } from './records/healthSavingsAccounts.js'
+import { individualIncomeTaxRecords } from './records/individualIncomeTax.js'
+import { investmentIncomeAndBasisRecords } from './records/investmentIncomeAndBasis.js'
+import { iraBasisAndRolloverRecords } from './records/iraBasisAndRollovers.js'
+import { medicareAndHealthCoverageRecords } from './records/medicareAndHealthCoverage.js'
+import { requiredMinimumDistributionRecords } from './records/requiredMinimumDistributions.js'
+import { rothAccountRecords } from './records/rothAccounts.js'
+import { socialSecurityRecords } from './records/socialSecurity.js'
+import { midwestStateRecords } from './records/statesMidwest.js'
+import { northeastStateRecords } from './records/statesNortheast.js'
+import { southAtlanticStateRecords } from './records/statesSouthAtlantic.js'
+import { southCentralStateRecords } from './records/statesSouthCentral.js'
+import { westStateRecords } from './records/statesWest.js'
+import { transferAndUnmodeledRegimeRecords } from './records/transfersAndUnmodeledRegimes.js'
+
+/**
+ * Every module `taxRuleRegistry.ts` spreads into the registry, imported
+ * directly so the duplicate-key guard below can count each one's keys. Spread
+ * silently lets a later duplicate win, so the registry alone cannot show that a
+ * rule id was registered twice; only the parts can.
+ */
+const RECORD_MODULES: readonly (readonly [string, Readonly<Record<string, unknown>>])[] = [
+  ['charitableDeductions', charitableDeductionRecords],
+  ['charitableDistributions', charitableDistributionRecords],
+  ['iraBasisAndRollovers', iraBasisAndRolloverRecords],
+  ['requiredMinimumDistributions', requiredMinimumDistributionRecords],
+  ['rothAccounts', rothAccountRecords],
+  ['earlyDistributionsAndSepp', earlyDistributionAndSeppRecords],
+  ['annuities', annuityRecords],
+  ['contributionAndDeferralLimits', contributionAndDeferralLimitRecords],
+  ['healthSavingsAccounts', healthSavingsAccountRecords],
+  ['medicareAndHealthCoverage', medicareAndHealthCoverageRecords],
+  ['socialSecurity', socialSecurityRecords],
+  ['investmentIncomeAndBasis', investmentIncomeAndBasisRecords],
+  ['individualIncomeTax', individualIncomeTaxRecords],
+  ['transfersAndUnmodeledRegimes', transferAndUnmodeledRegimeRecords],
+  ['statesNortheast', northeastStateRecords],
+  ['statesMidwest', midwestStateRecords],
+  ['statesSouthAtlantic', southAtlanticStateRecords],
+  ['statesSouthCentral', southCentralStateRecords],
+  ['statesWest', westStateRecords],
+]
 
 /**
  * Coverage is discovered by scanning sources rather than recorded at runtime,
@@ -732,6 +779,16 @@ const implementationEntries: readonly (readonly [string, ImplementedRule])[] =
   taxRuleIds.map((ruleId) => [ruleId, TAX_RULE_REGISTRY[ruleId]] as const)
 
 describe('tax rule registry conformance', () => {
+  it('registers each rule id in exactly one record module', () => {
+    // Object spread lets a later duplicate key overwrite an earlier one, and
+    // the losing record then vanishes from TAX_RULE_REGISTRY with no compile
+    // error and nothing naming it. Counting keys module by module catches that:
+    // if two modules register the same id, the parts sum to more than the whole.
+    const perModule = RECORD_MODULES.map(([name, records]) => [name, Object.keys(records).length] as const)
+    const total = perModule.reduce((sum, [, count]) => sum + count, 0)
+    expect({ total, perModule }).toEqual({ total: taxRuleIds.length, perModule })
+  })
+
   it('covers every settled rule with a discriminating fixture', () => {
     const uncovered = taxRuleIds.filter((ruleId) =>
       TAX_RULE_REGISTRY[ruleId].classification === 'settled' && !claimedRuleIds.has(ruleId))

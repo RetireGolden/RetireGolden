@@ -59,6 +59,9 @@
  * Full documentation, including how to read each verdict:
  * DOCS/operations/quote-fidelity.md
  */
+// Side-effect import: registers the `./x.js` -> `./x.ts` resolve hook that lets
+// loadRegistry below read the registry source without a prior build.
+import './typescript-source-resolution.mjs'
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
