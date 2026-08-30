@@ -13,3 +13,20 @@ linkWorkspacePackages: true
 blockExoticSubdeps: true
 minimumReleaseAge: 10080
 trustPolicy: no-downgrade
+
+# no-downgrade compares trust evidence by publish date, not semver, so a
+# version published after a provenance-bearing sibling reads as a downgrade
+# even when nothing was taken over. Two lockfile pins are false positives of
+# that kind and fail every non-frozen resolve (ERR_PNPM_TRUST_DOWNGRADE):
+# - @trickfilm400/rollup-plugin-off-main-thread@3.0.0-pre1: workbox-build
+#   (via vite-plugin-pwa) pins ^3.0.0-pre1; the 3.x prereleases were
+#   published without the provenance that 2.x had and 4.x restored, and
+#   nothing in workbox's range carries provenance. Drop once workbox
+#   depends on a provenance-bearing release.
+# - semver@6.3.1: the 6.x backport (2023-07) postdates provenance-bearing
+#   7.5.x; Babel tooling still pins ^6.3.1.
+# Exact versions only — both are integrity-pinned in pnpm-lock.yaml, and
+# any other version of either package stays gated.
+trustPolicyExclude:
+  - '@trickfilm400/rollup-plugin-off-main-thread@3.0.0-pre1'
+  - 'semver@6.3.1'
