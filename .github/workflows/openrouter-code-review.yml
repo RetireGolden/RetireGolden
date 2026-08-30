@@ -60,9 +60,9 @@ jobs:
   # `review / openrouter-first-pass-gate`.
   review:
     if: github.event_name == 'workflow_dispatch' || !github.event.pull_request.draft
-    # Central independent-review workflow pinned to the .github#31 merge commit
-    # (reviewed OpenRouter action #17 plus the stable independent gate).
-    uses: RetireGolden/.github/.github/workflows/openrouter-code-review.yml@e9f8f78d1ce8a1655e7dd2ea78ae52b56ad117b2 # .github#31 (OpenRouter action #17, v1.2.7 review fixes)
+    # Central independent-review workflow pinned to the .github#32 merge commit
+    # (benchmark-selected Luna judge via action #18; independent gate unchanged).
+    uses: RetireGolden/.github/.github/workflows/openrouter-code-review.yml@f2f8a381cf8bfd9446dfcd7d340db6a955848609 # .github#32 (OpenRouter action #18, Luna judge default)
     with:
       pr_number: ${{ inputs.pr_number || github.event.inputs.pr_number || github.event.pull_request.number }}
     secrets:
