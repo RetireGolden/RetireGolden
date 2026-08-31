@@ -72,7 +72,7 @@
           "functions": [
             {
               "name": "capitalGainsTaxStacked",
-              "line": 366
+              "line": 368
             }
           ]
         }
@@ -212,11 +212,11 @@
           "functions": [
             {
               "name": "capitalGainsTaxStacked",
-              "line": 366
+              "line": 368
             },
             {
               "name": "computeFederalTax",
-              "line": 475
+              "line": 477
             }
           ]
         }
@@ -287,7 +287,7 @@
           "functions": [
             {
               "name": "capitalGainsTaxStacked",
-              "line": 366
+              "line": 368
             }
           ]
         }
@@ -501,7 +501,7 @@
           "functions": [
             {
               "name": "computeFederalTax",
-              "line": 475
+              "line": 477
             }
           ]
         }
@@ -576,7 +576,7 @@
           "functions": [
             {
               "name": "applyCapitalLossCarryforward",
-              "line": 448
+              "line": 450
             }
           ]
         }
@@ -804,7 +804,7 @@
           "functions": [
             {
               "name": "applyCapitalLossCarryforward",
-              "line": 448
+              "line": 450
             }
           ]
         }
@@ -855,7 +855,7 @@
           "functions": [
             {
               "name": "applyCapitalLossCarryforward",
-              "line": 448
+              "line": 450
             }
           ]
         }
@@ -921,7 +921,7 @@
           "functions": [
             {
               "name": "applyCapitalLossCarryforward",
-              "line": 448
+              "line": 450
             }
           ]
         }
@@ -982,7 +982,7 @@
           "functions": [
             {
               "name": "computeFederalTax",
-              "line": 475
+              "line": 477
             }
           ]
         }
@@ -1106,7 +1106,7 @@
           "functions": [
             {
               "name": "computeFederalTax",
-              "line": 475
+              "line": 477
             }
           ]
         }
@@ -1162,7 +1162,7 @@
           "functions": [
             {
               "name": "computeFederalTax",
-              "line": 475
+              "line": 477
             }
           ]
         }
@@ -1218,7 +1218,7 @@
           "functions": [
             {
               "name": "computeFederalTax",
-              "line": 475
+              "line": 477
             }
           ]
         }
@@ -1283,7 +1283,7 @@
           "functions": [
             {
               "name": "computeFederalTax",
-              "line": 475
+              "line": 477
             }
           ]
         }

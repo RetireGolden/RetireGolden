@@ -8,16 +8,21 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 - Moved the flat-rate tax stub out of the projection engine and into the
   testing-support surface, without breaking anyone. The body moved from
   `packages/engine/src/projection/flatTax.ts` to
-  `packages/engine/src/testing/flatTax.ts`; the old path is now a deprecated
-  re-export, so `@retiregolden/engine/projection/flatTax` still resolves and
-  still exports the same `createFlatTaxCalculator`. No consumer breaks. All 89
-  in-repo importers (85 engine test files, 4 planner-UI test files) moved to
+  `packages/engine/src/testing/flatTax.ts`; the old path now re-declares it as
+  a deprecated alias, so `@retiregolden/engine/projection/flatTax` still
+  resolves and still exports the same `createFlatTaxCalculator` — the identical
+  function object, not a copy. No consumer breaks. All 89 in-repo importers (85
+  engine test files, 4 planner-UI test files) moved to
   `@retiregolden/engine/testing/flatTax`, leaving the old subpath with no
   in-repo consumers — it exists purely for external code pinned to it. The
-  arithmetic is untouched and no fixture's expected dollar changed. A new
-  pack-smoke assertion now proves both subpaths resolve and yield the *same*
-  function object, so the compatibility promise is enforced rather than merely
-  commented. Removal is deferred to a future major and is **not** scheduled;
+  arithmetic is untouched and no fixture's expected dollar changed. The alias
+  shape is deliberate: TypeScript does not report a `@deprecated` tag attached
+  to a bare `export { x } from` re-export, so that shape would have shipped a
+  marker no consumer ever sees; the alias reports at both the import and the
+  call site. Pack-smoke now proves both subpaths resolve, yield the same
+  function object, and stay nameable from a compiled consumer, so the
+  compatibility promise is enforced rather than merely commented. Removal is
+  deferred to a future major and is **not** scheduled;
   when it happens it must be done by adding an exact `"./projection/flatTax":
   null` exports key, which wins over the `./projection/*` pattern — never by
   deleting that wildcard, which would take down every other projection subpath

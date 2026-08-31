@@ -80,7 +80,7 @@ type-checks against the real `dist/` through a project reference). No React/DOM/
 | `spending/` | Spending layers, guardrails, flexible goals, ABW, and shape presets (`layers.ts`, `guardrails.ts`, `flexibleGoals.ts`, `abw.ts`, `shapePresets.ts`) |
 | `insights/` | Insight detectors + registry (`runInsights.ts`, `detectors/`) surfaced on the planner Insights page |
 | `scenarios/` | `scenarios.ts`, `taxStrategyEvaluation.ts` (shared TaxStrategyEvaluation evidence contract for the Advisor tax cockpit), `taxStrategyEvaluationRegistryCheck.ts` (opt-in registry validation for limitation refs) |
-| `testing/` | Test fixtures and deterministic doubles shared with the app and planner-UI suites, exported as `@retiregolden/engine/testing/*` |
+| `testing/` | Test fixtures and deterministic doubles (`planFixtures.ts`, `money.ts`, `flatTax.ts`) consumed by the planner-UI suites, exported as `@retiregolden/engine/testing/*` |
 
 ## `packages/planner-ui/` — `@retiregolden/planner-ui`, the planner UI
 

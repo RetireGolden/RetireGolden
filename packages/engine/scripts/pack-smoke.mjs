@@ -1464,6 +1464,16 @@ import type {
   SimulateOptions,
 } from '@retiregolden/engine/projection/simulate'
 import type { ActionId } from '@retiregolden/engine/actions/identity'
+import type { TaxCalculator } from '@retiregolden/engine/projection/types'
+import { createFlatTaxCalculator as deprecatedFlatTax } from '@retiregolden/engine/projection/flatTax'
+import { createFlatTaxCalculator as relocatedFlatTax } from '@retiregolden/engine/testing/flatTax'
+
+// The deprecated projection/flatTax subpath has to stay NAMEABLE, not merely
+// resolvable at runtime. If stripInternal ever deletes its declaration, the
+// packed .js keeps working and every runtime assertion still passes, while
+// this import fails to compile — the only place that break is visible.
+export const flatTaxDoubles: readonly TaxCalculator[] =
+  [deprecatedFlatTax(12), relocatedFlatTax(12)]
 
 // The option, spelled out the way a consumer would have to spell it.
 const filingStatus: AnnualLiabilityRunTaxInputValue =
@@ -1532,11 +1542,20 @@ try {
 
   // The deprecated projection/flatTax shim must keep BOTH halves of its
   // subpath. The runtime half is asserted in smokeScript, but a stripped
-  // declaration is invisible there: the .js re-export still resolves and runs
-  // while the .d.ts silently degrades to `export {}`. stripInternal is on, and
-  // TypeScript treats a bare @internal token anywhere in an attached JSDoc
-  // comment as a real tag — prose mentioning the tag is enough to delete the
-  // declaration. Only reading the packed .d.ts catches that.
+  // declaration is invisible there: the .js still resolves and runs while the
+  // .d.ts silently degrades to `export {}`. stripInternal is on, and the
+  // declaration emitter drops any export whose leading comment merely CONTAINS
+  // the internal-only tag as a substring (a raw `comment.includes(...)`, no tag
+  // parsing, no word boundary) — so prose mentioning the tag is enough to
+  // delete the declaration. types-smoke.ts below imports the subpath by name
+  // and is the authoritative check; this read gives that failure a diagnosis
+  // instead of a bare TS2305.
+  //
+  // Comments are stripped BEFORE looking for the symbol. The file-header JSDoc
+  // survives stripInternal even when the declaration under it is deleted, so a
+  // whole-file substring test would pass on a `export {};` artifact as soon as
+  // any surviving comment happened to spell the identifier — which is exactly
+  // the header where this file's rules are written down.
   const deprecatedFlatTaxDeclarations = readFileSync(join(
     work,
     'node_modules',
@@ -1546,7 +1565,10 @@ try {
     'projection',
     'flatTax.d.ts',
   ), 'utf8')
-  if (!deprecatedFlatTaxDeclarations.includes('createFlatTaxCalculator')) {
+  const deprecatedFlatTaxCode = deprecatedFlatTaxDeclarations
+    .replace(/\/\*[\s\S]*?\*\//gu, '')
+    .replace(/^[^\S\n]*\/\/.*$/gmu, '')
+  if (!deprecatedFlatTaxCode.includes('createFlatTaxCalculator')) {
     throw new Error(
       'the deprecated projection/flatTax subpath lost its type declaration; ' +
         'stripInternal removed it, so consumers pinned to that subpath keep a ' +
