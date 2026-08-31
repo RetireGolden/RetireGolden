@@ -506,17 +506,21 @@ async function commandReach(argv) {
   const recorder = new ReachRecorder(entries)
   let report
   try {
+    // Debugger.enable must settle before the engine is imported; otherwise
+    // `scriptParsed` can miss the compiled scripts and arm() would report
+    // them as never loaded.
+    await recorder.enable()
     const engine = await loadEngine()
-    recorder.arm()
+    await recorder.arm()
     for (const member of members) {
       for (const mode of modes) {
         runMember(engine, member, mode)
       }
-      recorder.take(member.id)
+      await recorder.take(member.id)
     }
     report = recorder.report()
   } finally {
-    recorder.close()
+    await recorder.close()
   }
   report.corpus = opts.corpus
   report.engineSrc = src

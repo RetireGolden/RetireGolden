@@ -54,7 +54,7 @@
  * report rather than printing line numbers that have quietly drifted.
  */
 import { readFileSync } from 'node:fs'
-import { Session } from 'node:inspector'
+import { Session } from 'node:inspector/promises'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
 /** @typedef {{ id: string, label: string, file: string, lines: [number, number] }} SpecEntry */
@@ -120,7 +120,17 @@ export class ReachRecorder {
     this.session.on('Debugger.scriptParsed', (message) => {
       if (this.sources.has(message.params.url)) this.scriptIds.set(message.params.url, message.params.scriptId)
     })
-    this.post('Debugger.enable')
+  }
+
+  /**
+   * Turn the Debugger domain on and wait for the inspector to ack. Must
+   * complete BEFORE `loadEngine()` so `scriptParsed` names every compiled
+   * script. `node:inspector` Session.post with a callback does not wait and
+   * does not return a Promise; this uses `node:inspector/promises` so a late
+   * result cannot be read as empty coverage.
+   */
+  async enable() {
+    await this.post('Debugger.enable')
   }
 
   /**
@@ -128,14 +138,18 @@ export class ReachRecorder {
    * counting. Call AFTER the engine has been imported (that is when
    * `scriptParsed` fires) and BEFORE the first corpus member runs.
    */
-  arm() {
+  async arm() {
     for (const [url, source] of this.sources) {
       const scriptId = this.scriptIds.get(url)
       if (scriptId === undefined) {
         this.offsetsVerified.set(url, { ok: false, why: 'the file was never loaded by the engine' })
         continue
       }
-      const { scriptSource } = this.post('Debugger.getScriptSource', { scriptId })
+      const payload = await this.post('Debugger.getScriptSource', { scriptId })
+      if (payload == null || typeof payload.scriptSource !== 'string') {
+        throw new Error(`equivalence reach: Debugger.getScriptSource returned no source for ${url}`)
+      }
+      const { scriptSource } = payload
       const fileRows = source.text.split('\n')
       const v8Rows = scriptSource.split('\n')
       let mismatched = 0
@@ -155,22 +169,21 @@ export class ReachRecorder {
         trailingBytesPastFile: scriptSource.length - source.text.length,
       })
     }
-    this.post('Debugger.disable')
-    this.post('Profiler.enable')
-    this.post('Profiler.startPreciseCoverage', { callCount: true, detailed: true })
+    await this.post('Debugger.disable')
+    await this.post('Profiler.enable')
+    await this.post('Profiler.startPreciseCoverage', { callCount: true, detailed: true })
     this.armed = true
   }
 
-  /** @param {string} method @param {object} [params] */
-  post(method, params) {
-    let error = null
-    let value = null
-    this.session.post(method, params, (err, result) => {
-      error = err
-      value = result
-    })
-    if (error !== null) throw error
-    return value
+  /**
+   * Wait for the inspector result. Never return on the same tick as the
+   * dispatch: a null/partial payload would look like "no hits" and a green
+   * REACHED built from that is worse than a throw.
+   * @param {string} method
+   * @param {object} [params]
+   */
+  async post(method, params) {
+    return this.session.post(method, params)
   }
 
   /**
@@ -178,8 +191,12 @@ export class ReachRecorder {
    * `takePreciseCoverage` resets V8's counters, so each take is a delta.
    * @param {string} label
    */
-  take(label) {
-    const { result } = this.post('Profiler.takePreciseCoverage')
+  async take(label) {
+    const payload = await this.post('Profiler.takePreciseCoverage')
+    if (payload == null || !Array.isArray(payload.result)) {
+      throw new Error('equivalence reach: Profiler.takePreciseCoverage returned no result')
+    }
+    const { result } = payload
     for (const script of result) {
       const source = this.sources.get(script.url)
       if (source === undefined) continue
@@ -205,11 +222,11 @@ export class ReachRecorder {
     }
   }
 
-  close() {
+  async close() {
     try {
       if (this.armed) {
-        this.post('Profiler.stopPreciseCoverage')
-        this.post('Profiler.disable')
+        await this.post('Profiler.stopPreciseCoverage')
+        await this.post('Profiler.disable')
       }
     } finally {
       this.session.disconnect()
