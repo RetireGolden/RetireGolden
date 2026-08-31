@@ -2390,9 +2390,14 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
 
     // Pass 2: other non-SS streams. The phase itself lives in
     // `internal/otherIncomeStreams.ts`; folding row by row, in row order, is
-    // load-bearing here — recurring and one-time rows interleave in plan order
-    // and both reach `ordinaryIncome`, which wages and taxable yield above have
-    // already made non-zero, and IEEE-754 addition is not associative.
+    // load-bearing here — recurring and one-time rows interleave in plan order,
+    // both reach `ordinaryIncome`, and IEEE-754 addition is not associative.
+    // That accumulator has exactly two earlier writers in the year, the
+    // distributed-yield pass above and pass 1 wages, and BOTH ARE OPTIONAL: a
+    // plan with neither enters this loop at zero. (Measured over the phase-3
+    // differential corpus: zero at entry in 3990 of 6336 year-runs.) So
+    // PRE-SUMMING the rows moves the number wherever that base is non-zero, and
+    // RE-ORDERING them can move it from three addends up, base or no base.
     for (const row of otherIncomeStreams({ incomes: plan.incomes, year, anyAlive, inflFactor })) {
       if (row.kind === 'recurring') {
         incomes.recurring += row.amount

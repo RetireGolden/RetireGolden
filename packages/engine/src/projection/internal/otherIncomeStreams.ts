@@ -22,12 +22,15 @@
  * caller folds them in.
  *
  * WHAT IT REFUSES: it will not sum across rows. The caller's `ordinaryIncome`
- * is already non-zero whenever the year has wages or distributed taxable yield
- * — both land in it earlier in the same year — and IEEE-754 addition is not
- * associative, so `ordinaryIncome += a; ordinaryIncome += b` is not in general
- * equal to `ordinaryIncome += (a + b)`. Returning rows and letting the caller
- * fold them one at a time keeps every floating-point operation identical and
- * identically ordered to the inlined phase this replaces. It also refuses to
+ * MAY already be non-zero when this phase runs — its only earlier writers in
+ * the year are the distributed-yield pass and pass 1 wages, and a plan can
+ * carry neither (measured over the phase-3 differential corpus: non-zero at
+ * entry in 2346 of 6336 year-runs, zero in the other 3990). Where it is
+ * non-zero, IEEE-754 addition is not associative and
+ * `ordinaryIncome += a; ordinaryIncome += b` is not in general equal to
+ * `ordinaryIncome += (a + b)`. Returning rows and letting the caller fold them
+ * one at a time keeps every floating-point operation identical and identically
+ * ordered to the inlined phase this replaces, at every base. It also refuses to
  * touch the ledger: `incomes.recurring`, `incomes.oneTime`, `ordinaryIncome`
  * and `oneTimeGains` stay in `simulatePlan`'s year scope, and the two recorders
  * are called by the caller, per row.
@@ -104,17 +107,41 @@ export interface OtherIncomeStreamYearInput {
  * recomputed, and handed to the caller to publish UNREBUILT — that sharing is
  * what makes the delegation test's object-identity assertion possible.
  *
- * THE PAYLOAD IS BUILT EAGERLY, and that is the one thing this file does that
- * the inlined phase did not. The inlined phase passed the literal straight to
- * `yearSites?.recordRecurringIncome({ … })`, and optional chaining does not
+ * THE PAYLOAD IS BUILT EAGERLY, and on the default path that is an allocation
+ * the inlined phase did not make. The inlined phase passed the literal straight
+ * to `yearSites?.recordRecurringIncome({ … })`, and optional chaining does not
  * evaluate a call's arguments when the receiver is nullish — so under default
  * options, where `yearSites` is null (every product projection, and every
  * `simulatePlan` re-entry inside Monte Carlo, the optimizer and the spending
  * solver), the object was never constructed at all. Here it is constructed for
  * every contributing row whether or not a sink will consume it. No projection
- * number moves; what changes is that a reader profiling allocation on the hot
- * path should find this named rather than infer it. Building it lazily would
- * reintroduce the branch the extraction removed, so it stays eager.
+ * number moves.
+ *
+ * IT IS NOT THE ONLY NEW ALLOCATION HERE. A pure helper has to return rows, so
+ * the row objects and the array are new on the default path too, and no
+ * arrangement of a pure helper avoids them. Measured on this phase in
+ * isolation, at 40M rows per sample: 8.7-8.9 ns per contributing row as
+ * written, against 5.1-5.3 ns for a variant that keeps the row but rebuilds the
+ * payload back at the call site under the same optional chaining. So the eager
+ * payload is ~3.5 ns per row, about 40% of what this phase costs; the residual
+ * 5 ns is the loop the inlined phase also ran, plus the rows and array that
+ * being a helper requires. End to end even the 3.5 ns does not surface: across
+ * the phase-3 differential corpus this phase yields 0.491 rows per projected
+ * year, so a 40-year projection carries ~20 of these objects, and on a
+ * purpose-built plan running ~80 pass-2 rows a year (~160x the corpus rate) the
+ * two trees timed the same to within run-to-run noise, the lazy one slower in
+ * half the rounds.
+ *
+ * SO IT STAYS EAGER, and the reason is the guard rather than the nanoseconds.
+ * The row OWNS its payload, which is what lets
+ * `simulate.otherIncomeStreamsDelegation.test.ts` assert with `toBe` that the
+ * object reaching the ledger IS this one — the only check in the repository
+ * that separates real delegation from a caller which invokes the helper for
+ * effect and then records its own byte-identical rebuild. Making the payload
+ * conditional would take that away: `record` would be present only when an
+ * input flag agreed with the caller's `yearSites`, an invariant no type can
+ * check and a silently dropped ledger line whenever it did not. That is a worse
+ * trade than 3.5 ns per row.
  *
  * IF A THIRD KIND IS EVER ADDED HERE, GO AND LOOK AT THE CALLER. `simulate.ts`
  * tests `row.kind === 'oneTime'` on its second arm rather than falling through

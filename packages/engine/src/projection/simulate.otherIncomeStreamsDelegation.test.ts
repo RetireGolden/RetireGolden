@@ -25,7 +25,7 @@
  *
  * CALIBRATION — every guard below was proved to discriminate by injecting the
  * defect it exists for and recording WHICH named tests failed. Measured over
- * this file and the helper's own unit tests together (28 tests), on an
+ * this file and the helper's own unit tests together (29 tests), on an
  * out-of-tree copy of this package, so the worktree was never written to:
  *
  *   orphan (call site re-inlined, helper uncalled)   8 fail — G1, G2, G3, G4a,
@@ -44,7 +44,7 @@
  *   `anyAlive` gate applied to one-time rows too     G6 by name at the first
  *                                                    post-death year, and with
  *                                                    it G3, G4a, G4b, G5, G7
- *   helper rewritten as a generator                  25 of the 28 fail. G3 by
+ *   helper rewritten as a generator                  26 of the 29 fail. G3 by
  *                                                    name, `rows are not a
  *                                                    materialized array`; a
  *                                                    generator is not an array
@@ -87,17 +87,20 @@
  * difference is worth stating rather than implying. Income pass 2 writes four
  * year-scoped accumulators and only ONE of them can carry an association guard:
  *
- *   - `ordinaryIncome` is LIVE. Wages (pass 1) and distributed taxable yield
- *     both land in it earlier in the same year, so it is already non-zero when
- *     this phase folds into it, and `B + a + b` genuinely differs from
- *     `B + (a + b)` in IEEE-754. G4a is the one real association guard here.
- *     Its liveness is FIXTURE-DEPENDENT, not unconditional — this fixture has
- *     wages, and a plan with neither wages nor taxable yield would leave the
- *     accumulator zero-based and the guard blind. (Measured over the
+ *   - `ordinaryIncome` is LIVE ON THIS FIXTURE, and only on a fixture like it.
+ *     Its two earlier writers in the year are the distributed-yield pass and
+ *     pass 1 wages, and BOTH ARE OPTIONAL; this plan has wages, so the
+ *     accumulator is non-zero when the phase folds into it and `B + a + b`
+ *     genuinely differs from `B + (a + b)` in IEEE-754. G4a is the one real
+ *     association guard here, and its liveness is FIXTURE-DEPENDENT rather than
+ *     a property of the engine — a plan with neither wages nor taxable yield
+ *     enters zero-based and leaves the guard blind. (Measured over the
  *     differential corpus: `ordinaryIncome` is zero at phase entry in 3990 of
  *     6336 year-runs.) That is why G4a COUNTS the years that actually separate
  *     the two associations and asserts the count is non-zero, rather than
- *     assuming the property holds.
+ *     assuming the property holds — and why its fold base goes through
+ *     `ordinaryFoldBase`, which pins the no-taxable-yield half of the premise
+ *     instead of leaving it to this paragraph.
  *   - `oneTimeGains` is ZERO-BASED. It is declared 0 each year and this phase
  *     is its FIRST writer; the disposition fold is far downstream. `0 + a + b`
  *     IS `0 + (a + b)`, so G4b's exact match proves SELECTION and PER-ROW
@@ -118,7 +121,7 @@
  * the loss. G1 pins that the call HAPPENS, not what comes back. Measured: a
  * one-line `if (year === 2040) return rows` at the top of the helper failed
  * NOTHING in this file, and nothing in the helper's own unit tests either —
- * they happen to exercise 2030, where the same injection fails 15 of them.
+ * they happen to exercise 2030, where the same injection fails 16 of them.
  * G7 is the answer to that, and it is the only guard here whose expectations
  * are derived from the fixture rather than from the helper's output.
  *
@@ -250,7 +253,7 @@ import { createEmptyPlan, parsePlan, type Account, type IncomeStream, type Plan 
 import { productionTaxCalculator } from '../testing/planFixtures.js'
 import { cashFlowLineIds } from './annualCashFlowIds.js'
 import { simulatePlan } from './simulate.js'
-import type { TaxCalculator, TaxYearInput } from './types.js'
+import type { TaxCalculator, TaxYearInput, YearResult } from './types.js'
 
 let counter = 0
 const START_YEAR = 2026
@@ -471,13 +474,51 @@ function rowsFor(
   return rows
 }
 
-/** The one value every tax evaluation in a year saw, or a failure if they disagree. */
+/**
+ * The one value the year's tax evaluation saw.
+ *
+ * "The one" is a property of THIS FIXTURE, not a guarantee the engine makes,
+ * and saying so is the difference between a pin and an assumption. `simulate.ts`
+ * has a SECOND `taxCalculator.compute` call site, inside `taxOf` — the
+ * Roth-conversion safety-net trimmer — which runs a baseline evaluation and
+ * then up to three more in the SAME year as it shrinks the conversion, each of
+ * the three at a different `ordinaryIncome`. It is gated behind a desired
+ * conversion above a cent, and this plan takes `createEmptyPlan`'s
+ * `rothConversion: { mode: 'none' }` and never overrides it, so nothing ever
+ * asks for one. MEASURED on this fixture rather than argued: 35 evaluations
+ * across 35 projected years — exactly one per year — in default and capture
+ * modes alike.
+ *
+ * So the COUNT is what is asserted, rather than the values merely agreeing. If
+ * a later fixture change opened the conversion path, this fails by name here
+ * instead of quietly handing back whichever evaluation happened to be first,
+ * and whoever makes that change has to say which evaluation they meant.
+ */
 function soleTaxInput<K extends keyof TaxYearInput>(year: number, key: K): TaxYearInput[K] {
   const calls = taxInputs.filter((input) => input.year === year)
-  expect(calls.length, `no tax evaluation recorded for ${year}`).toBeGreaterThan(0)
-  const distinct = [...new Set(calls.map((call) => call[key]))]
-  expect(distinct, `every ${String(key)} evaluation in ${year} must agree`).toHaveLength(1)
-  return distinct[0]!
+  expect(calls.length, `${year} must be evaluated for tax exactly once — see soleTaxInput`).toBe(1)
+  return calls[0]![key]
+}
+
+/**
+ * The `ordinaryIncome` this year's pass-2 fold starts from, with G4a's and
+ * G4c's premise CHECKED rather than left in a comment.
+ *
+ * `simulate.ts` has exactly two writers of `ordinaryIncome` ahead of this phase:
+ * the distributed-yield pass (`ordinaryIncome += interest + ordinaryDividends`)
+ * and pass 1 wages. So on a plan that distributes no taxable yield the base IS
+ * `year.incomes.wages` — and this plan holds one cash account and nothing that
+ * distributes. That is a fixture fact rather than a law: give the fixture a
+ * taxable account and `base` silently becomes too small, G4a would compare
+ * against the wrong number, and the `toBe` it does on the year's tax input
+ * would fail somewhere unrelated-looking. Pinning the two yield legs at zero
+ * makes that failure arrive here, by name, saying what actually broke.
+ */
+function ordinaryFoldBase(year: YearResult): number {
+  const where = `${year.year} — G4a/G4c derive the fold base from wages alone`
+  expect(year.incomes.taxableInterest, `taxable interest ${where}`).toBe(0)
+  expect(year.incomes.ordinaryDividends, `ordinary dividends ${where}`).toBe(0)
+  return year.incomes.wages
 }
 
 /** The ordinary legs of a year's rows, in row order. Treatment routing included. */
@@ -637,8 +678,9 @@ describe('simulatePlan delegates income pass 2 (other non-SS streams)', () => {
       // Re-derived from PUBLISHED output per year rather than trusted from the
       // fixture constant: wages are this fixture's only other ordinary income,
       // and they taper (the stream stops at WAGE_END_AGE), so the base is a
-      // series, not a constant.
-      const base = year.incomes.wages
+      // series, not a constant. `ordinaryFoldBase` checks the "only other"
+      // half of that sentence instead of asserting it.
+      const base = ordinaryFoldBase(year)
       const legs = ordinaryLegs(rowsFor(byYear, year.year))
       let rowByRow = base
       let summed = 0
@@ -689,7 +731,7 @@ describe('simulatePlan delegates income pass 2 (other non-SS streams)', () => {
     const { result, byYear } = run()
     let yearsThatDiscriminateGrouping = 0
     for (const year of result.years) {
-      const base = year.incomes.wages
+      const base = ordinaryFoldBase(year)
       const rows = rowsFor(byYear, year.year)
       let rowByRow = base
       for (const leg of ordinaryLegs(rows)) rowByRow += leg

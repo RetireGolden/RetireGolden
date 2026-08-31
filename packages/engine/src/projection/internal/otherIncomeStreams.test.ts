@@ -57,9 +57,15 @@ function input(over: Partial<OtherIncomeStreamYearInput> = {}): OtherIncomeStrea
 }
 
 describe('otherIncomeStreams — selection', () => {
+  // BOTH neighbouring passes are present, and that is the point rather than
+  // thoroughness for its own sake. Wages (pass 1) and Social Security (pass 3)
+  // are the only other `plan.incomes` kinds, each is already folded into
+  // `incomes.wages` / `incomes.socialSecurity` by its own pass, and a row
+  // emitted here for either would be counted a SECOND time — into
+  // `incomes.recurring` or `incomes.oneTime`, and into `ordinaryIncome` on top
+  // of whatever tax treatment its own pass applied. Asserting the id list
+  // rather than the length is what makes the wrong stream nameable.
   it('skips the passes it does not own', () => {
-    // Wages are pass 1 and Social Security is pass 3. Both are in `plan.incomes`
-    // and both must fall straight through this phase.
     const rows = otherIncomeStreams(
       input({
         incomes: [
@@ -70,6 +76,14 @@ describe('otherIncomeStreams — selection', () => {
             annualGross: 90_000,
             endAge: null,
             realGrowthPct: 0,
+          },
+          {
+            type: 'socialSecurity',
+            id: 'ss',
+            personId: 'p1',
+            piaMonthly: 2_400,
+            earnings: null,
+            claimAge: { years: 67, months: 0 },
           },
           recurring(),
         ],
@@ -156,7 +170,13 @@ describe('otherIncomeStreams — amounts', () => {
     expect(rows[0]!.amount).toBe(25_000)
   })
 
-  it('returns a zero-amount row rather than filtering it out', () => {
+  // THE ZERO-AMOUNT CONTRACT, asserted for BOTH kinds. It is the one rule whose
+  // violation is invisible in every projection number: a skipped zero row
+  // changes no total (`+= 0` is exact) and only moves the recorder CALL count,
+  // so nothing downstream of the sink can see it. Each branch has to be pinned
+  // on its own — they are separate arms of the loop, and the recurring case
+  // alone would pass a one-time branch that had learned to skip zero.
+  it('returns a zero-amount recurring row rather than filtering it out', () => {
     // Dropping it here would leave every projection number identical while
     // changing the recorder call count. The sink, not this module, decides.
     const rows = otherIncomeStreams(
@@ -166,6 +186,19 @@ describe('otherIncomeStreams — amounts', () => {
       ['zero', 0],
       ['paid', 10_000],
     ])
+  })
+
+  it('returns a zero-amount one-time row rather than filtering it out', () => {
+    const rows = otherIncomeStreams(
+      input({ incomes: [oneTime({ id: 'zero', amount: 0 }), oneTime({ id: 'paid' })] }),
+    )
+    expect(rows.map((r) => [r.record.incomeStreamId, r.amount])).toEqual([
+      ['zero', 0],
+      ['paid', 25_000],
+    ])
+    // The payload goes to the sink too, zero and all — `skipNonPositive` is the
+    // sink's rule to apply, and it cannot apply it to a row it never receives.
+    expect(rows[0]!.record.amount).toBe(0)
   })
 })
 
