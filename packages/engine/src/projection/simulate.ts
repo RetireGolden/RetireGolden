@@ -2398,7 +2398,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         incomes.recurring += row.amount
         if (row.taxTreatment === 'ordinary') ordinaryIncome += row.amount
         yearSites?.recordRecurringIncome(row.record)
-      } else {
+      } else if (row.kind === 'oneTime') {
         incomes.oneTime += row.amount
         if (row.taxTreatment === 'ordinary') ordinaryIncome += row.amount
         if (row.taxTreatment === 'capitalGain') oneTimeGains += row.amount

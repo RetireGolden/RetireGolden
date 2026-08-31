@@ -103,6 +103,26 @@ export interface OtherIncomeStreamYearInput {
  * payload, built from the same `amount` double as the row's own scalar, never
  * recomputed, and handed to the caller to publish UNREBUILT — that sharing is
  * what makes the delegation test's object-identity assertion possible.
+ *
+ * THE PAYLOAD IS BUILT EAGERLY, and that is the one thing this file does that
+ * the inlined phase did not. The inlined phase passed the literal straight to
+ * `yearSites?.recordRecurringIncome({ … })`, and optional chaining does not
+ * evaluate a call's arguments when the receiver is nullish — so under default
+ * options, where `yearSites` is null (every product projection, and every
+ * `simulatePlan` re-entry inside Monte Carlo, the optimizer and the spending
+ * solver), the object was never constructed at all. Here it is constructed for
+ * every contributing row whether or not a sink will consume it. No projection
+ * number moves; what changes is that a reader profiling allocation on the hot
+ * path should find this named rather than infer it. Building it lazily would
+ * reintroduce the branch the extraction removed, so it stays eager.
+ *
+ * IF A THIRD KIND IS EVER ADDED HERE, GO AND LOOK AT THE CALLER. `simulate.ts`
+ * tests `row.kind === 'oneTime'` on its second arm rather than falling through
+ * on `else`, so an unrecognised kind is SKIPPED — which is what the inlined
+ * phase did with a stream that was neither `recurring` nor `oneTime`. That is
+ * deliberate, and TypeScript will not flag the omission for you: a bare `else`
+ * stays assignable, and would quietly fold a new kind into `incomes.oneTime`,
+ * `oneTimeGains` and the one-time recorder.
  */
 export type OtherIncomeStreamRow =
   | {

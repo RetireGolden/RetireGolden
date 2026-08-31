@@ -10,11 +10,11 @@
  * orphaned helper — and that was measured rather than assumed. Reverting the
  * call site to the inlined arithmetic, leaving the helper present in the tree
  * but never called, reproduced the baseline dump BYTE FOR BYTE (same file
- * sha256 over all 256 corpus entries, zero moved leaves) and left 5480 engine
- * tests passing; the only behavioural failures anywhere in the repository were
- * seven of the eight tests in this file. Nothing else observes the call. This
- * file does, with the real implementation still running, so no number changes;
- * only the fact of the call is asserted.
+ * sha256 over all 256 corpus entries, zero moved leaves); the only behavioural
+ * failures anywhere in the repository were in this file — eight of its nine
+ * tests, with only G6 surviving. Nothing else observes the call. This file
+ * does, with the real implementation still running, so no number changes; only
+ * the fact of the call is asserted.
  *
  * (One honest footnote on that measurement. A faithful orphan must also delete
  * the helper's import, or `noUnusedLocals` rejects it for an unrelated reason —
@@ -24,31 +24,58 @@
  * shards. It is not what makes the orphan visible; this file is.)
  *
  * CALIBRATION — every guard below was proved to discriminate by injecting the
- * defect it exists for and recording which assertion fired. Measured, in this
- * worktree, against this fixture:
+ * defect it exists for and recording WHICH named tests failed. Measured over
+ * this file and the helper's own unit tests together (28 tests), on an
+ * out-of-tree copy of this package, so the worktree was never written to:
  *
- *   orphan (call site re-inlined, helper uncalled)  G1 and G3 fail; the dump is
- *                                                   byte-identical
- *   half-orphan (helper called for effect, verbatim  ONLY G3's `toBe` identity
- *   inline copy folded, payloads rebuilt)            fails — the rebuilt record
- *                                                    is field-for-field equal
- *   re-associated ordinary fold                      G4a fails, last bit:
- *                                                    240778.57751471872 vs
- *                                                    …875
- *   rows grouped by kind                             G3 (wrong recorder), G4a
- *                                                    and G4c fail
- *   `anyAlive` gate applied to one-time rows too     G6 fails by name, at the
- *                                                    first post-death year
- *   helper rewritten as a generator                  G3 fails `rows are not a
- *                                                    materialized array`
- *   array appended to after it was returned          G3 fails `rows grew after
- *                                                    the call returned`
+ *   orphan (call site re-inlined, helper uncalled)   8 fail — G1, G2, G3, G4a,
+ *                                                    G4b, G4c, G5, G7. Only G6
+ *                                                    survives, and the dump is
+ *                                                    byte-identical throughout
+ *   half-orphan (helper called for effect, verbatim  1 fails — ONLY G3's `toBe`
+ *   inline copy folded, payloads rebuilt)            identity line; the rebuilt
+ *                                                    record is field-for-field
+ *                                                    equal to the real one
+ *   re-associated ordinary fold                      G4a, on the last bit
+ *                                                    (240778.57751471872
+ *                                                    against …875), and G4c
+ *   rows grouped by kind                             G3 (wrong recorder), G4a,
+ *                                                    G4c
+ *   `anyAlive` gate applied to one-time rows too     G6 by name at the first
+ *                                                    post-death year, and with
+ *                                                    it G3, G4a, G4b, G5, G7
+ *   helper rewritten as a generator                  25 of the 28 fail. G3 by
+ *                                                    name, `rows are not a
+ *                                                    materialized array`; a
+ *                                                    generator is not an array
+ *                                                    anywhere, so nearly
+ *                                                    everything goes with it
+ *   returned array appended to during the NEXT call  5 fail. G3 by name, `rows
+ *                                                    grew after the call
+ *                                                    returned` (7 against 6),
+ *                                                    plus G4a, G5, G7 and the
+ *                                                    helper's own `holds no
+ *                                                    state between calls`
+ *   helper's record mutated in place after publish   G3 and G5 both, on the
+ *                                                    two different readings G5
+ *                                                    describes
+ *   caller rebuilds `inflFactor` from the plan's     G2, and G2 alone
+ *   flat assumption instead of the market path
+ *   helper returns no rows for one year (2040)       G7, and G7 alone
  *
- * The last two are why `Array.isArray` and `rowCountAtCall` are BOTH present
- * and neither is redundant: measured, with `Array.isArray` disabled, the count
- * check does NOT catch a generator (both reads are `undefined`, so it passes),
- * and the growth case passes `Array.isArray` because the value is still an
- * array. Each catches exactly what the other misses.
+ * THE LAST TWO ROWS ARE THE TWO DEFECTS THIS FILE DID NOT CATCH when it was
+ * first written. Measured against that version, each of them passed all 27 of
+ * its tests — this file's eight plus the helper's nineteen, nothing failing
+ * anywhere. G2's market-path run and G7 exist because of that measurement, not
+ * in anticipation of it. Three other rows above were understated in the same
+ * version — the orphan, the re-association and the gate flip each fail more
+ * tests than it claimed — and every count here is the re-measured one.
+ *
+ * `Array.isArray` and `rowCountAtCall` are BOTH present in G3 and neither is
+ * redundant. A generator's `rows.length` and its `rowCountAtCall` are both
+ * `undefined`, so the count line passes it; a grown array is still an array, so
+ * `Array.isArray` passes that. Each line catches exactly what the other misses,
+ * and above, each of the two injections fails through its own line by name.
  *
  * Matching numbers alone cannot pin that call. A `simulate.ts` that invokes the
  * helper for effect and then folds its own verbatim inline copy, recording its
@@ -75,10 +102,25 @@
  *     is its FIRST writer; the disposition fold is far downstream. `0 + a + b`
  *     IS `0 + (a + b)`, so G4b's exact match proves SELECTION and PER-ROW
  *     VALUES and nothing whatsoever about association. (Measured: zero at phase
- *     entry in all 2112 year-runs of the differential corpus.)
+ *     entry in all 6336 year-runs of the differential corpus — the same
+ *     denominator the `ordinaryIncome` reading above uses.)
  *   - `incomes.recurring` and `incomes.oneTime` are ZERO-BASED for the same
  *     reason — this phase is each one's only writer. G5 pins their selection
  *     and values; it cannot pin association either.
+ *
+ * WHERE THE EXPECTED VALUES COME FROM, which bounds what any of this proves.
+ * G3, G4a, G4b, G4c and G5 all build their expectations out of the rows the
+ * helper returned on that same run. That makes them exact checks of what the
+ * caller DID with the rows it was handed, and it makes them blind to a helper
+ * that hands over FEWER rows than it should: an early-out returning nothing for
+ * some year loses that year's entire pass-2 contribution to all four
+ * accumulators and both recorders, and every one of those guards agrees with
+ * the loss. G1 pins that the call HAPPENS, not what comes back. Measured: a
+ * one-line `if (year === 2040) return rows` at the top of the helper failed
+ * NOTHING in this file, and nothing in the helper's own unit tests either —
+ * they happen to exercise 2030, where the same injection fails 15 of them.
+ * G7 is the answer to that, and it is the only guard here whose expectations
+ * are derived from the fixture rather than from the helper's output.
  *
  * WHAT IS AND IS NOT CAUGHT BY THE PERMUTATION GUARD. Recurring and one-time
  * rows INTERLEAVE in `plan.incomes` order and both reach `ordinaryIncome`, so a
@@ -254,6 +296,35 @@ const RECURRING_UNTAXED = 4_321.09
 /** Recorded, then dropped by the sink. See the filter-rule note in the header. */
 const ZERO_STREAM_ID = 'rec-zero'
 
+/** The plan's deterministic inflation assumption, used when no market path is supplied. */
+const FLAT_INFLATION_PCT = 2.5
+
+/**
+ * A deliberately NON-FLAT realized inflation path, one rate per projected year.
+ * No entry equals `FLAT_INFLATION_PCT`, which is the whole point: with no
+ * series supplied, `inflRateAt` returns the plan's flat assumption every year,
+ * so the cumulative factor a correct caller passes and the factor a defective
+ * caller would rebuild from `assumptions.inflationPct` agree to within a last
+ * bit and the substitution hides. On this path they diverge visibly. See G2.
+ */
+const INFLATION_PATH: readonly number[] = Array.from(
+  { length: END_YEAR - START_YEAR + 1 },
+  (_unused, i) => [0.8, 6.4, 3.1, 1.3, 9.2][i % 5]!,
+)
+
+/**
+ * `simulate.ts`'s `cumInfl`, rebuilt here from the same series in the same
+ * order: index 0 is 1, and each entry multiplies in that year's realized rate,
+ * left to right. `inflFactorFrom(startYear, year)` is exactly
+ * `cumInfl[year - startYear]`, so these are `toBe`-comparable doubles rather
+ * than an approximation of them.
+ */
+function expectedInflFactors(path: readonly number[]): number[] {
+  const factors = [1]
+  for (let i = 0; i < path.length; i++) factors.push(factors[i]! * (1 + path[i]! / 100))
+  return factors
+}
+
 const taxInputs: TaxYearInput[] = []
 
 /** The production federal+state stack, with every input kept. */
@@ -279,7 +350,7 @@ function plan(): Plan {
   }
   p.household.filingStatus = 'single'
   p.household.state = 'KY'
-  p.assumptions.inflationPct = 2.5
+  p.assumptions.inflationPct = FLAT_INFLATION_PCT
   p.assumptions.defaultReturnPct = 0
   p.assumptions.healthcareExtraInflationPct = 0
   const cash: Account = {
@@ -368,7 +439,7 @@ function plan(): Plan {
   return parsed.plan
 }
 
-function run(options: { capture?: boolean } = {}) {
+function run(options: { capture?: boolean; market?: { inflationPct: number[] } } = {}) {
   seam.events.length = 0
   taxInputs.length = 0
   const result = simulatePlan(plan(), {
@@ -376,6 +447,7 @@ function run(options: { capture?: boolean } = {}) {
     horizonEndYear: END_YEAR,
     taxCalculator: recordingTaxCalculator(),
     ...(options.capture === true ? { captureAnnualCashFlow: true } : {}),
+    ...(options.market !== undefined ? { market: options.market } : {}),
   })
   const phases = seam.events.filter((e): e is Extract<SeamEvent, { kind: 'phase' }> => e.kind === 'phase')
   const byYear = new Map<number, readonly OtherIncomeStreamRow[]>()
@@ -456,15 +528,43 @@ describe('simulatePlan delegates income pass 2 (other non-SS streams)', () => {
     expect(aliveAt(FIRST_DEAD_YEAR)).toBe(false)
     expect(aliveAt(END_YEAR)).toBe(false)
     // `inflFactor` is the year's live cumulative factor: 1 in the start year and
-    // strictly increasing under a positive inflation assumption. A caller that
-    // hoisted it, or substituted the plan's flat rate for the market path,
-    // would not produce this series.
+    // strictly increasing under a positive inflation assumption. That catches a
+    // HOISTED factor — a constant is not strictly increasing.
+    //
+    // It does NOT catch a flat RECONSTRUCTION, and this guard used to claim it
+    // did. On a run with no market series, `inflRateAt` returns the plan's own
+    // assumption every year, so `inflFactorFrom` already IS that assumption
+    // compounded; substituting `Math.pow(1 + inflationPct / 100, year -
+    // startYear)` at the call site moves published money in the last bit and
+    // still produces a series that is 1 at the start and strictly increasing.
+    // Measured: with only the assertions above, that substitution passed this
+    // whole file. The market-path run below is what catches it.
     expect(phases[0]!.input.inflFactor).toBe(1)
     for (let i = 1; i < phases.length; i++) {
       expect(phases[i]!.input.inflFactor, `inflFactor ${phases[i]!.input.year}`).toBeGreaterThan(
         phases[i - 1]!.input.inflFactor,
       )
     }
+    // THE MARKET PATH, pinned value by value. Under a supplied realized series
+    // the flat reconstruction is not a last-bit difference but a different
+    // number, so this separates "passed the year's live factor" from "rebuilt
+    // something factor-shaped".
+    const { phases: marketPhases } = run({ market: { inflationPct: [...INFLATION_PATH] } })
+    const want = expectedInflFactors(INFLATION_PATH)
+    expect(marketPhases.length).toBe(END_YEAR - START_YEAR + 1)
+    let yearsWhereFlatWouldDiffer = 0
+    for (const phase of marketPhases) {
+      const n = phase.input.year - START_YEAR
+      expect(phase.input.inflFactor, `inflFactor ${phase.input.year} on the market path`).toBe(want[n]!)
+      if (!Object.is(want[n]!, Math.pow(1 + FLAT_INFLATION_PCT / 100, n))) yearsWhereFlatWouldDiffer++
+    }
+    // The discrimination is counted, not assumed: if the path above were ever
+    // flattened back to the plan's assumption this guard would go quiet, and it
+    // says so instead.
+    expect(
+      yearsWhereFlatWouldDiffer,
+      'the market path no longer differs from the plan’s flat assumption, so this guard proves nothing',
+    ).toBeGreaterThan(0)
   })
 
   // G3 — THE OBJECT-IDENTITY ASSERTION (defeats the HALF-ORPHANED duplicate).
@@ -655,8 +755,11 @@ describe('simulatePlan delegates income pass 2 (other non-SS streams)', () => {
         const line = cashFlow!.sourceLines.find((l) => l.id === lineId)
         if (row.amount > 0) {
           // Reads the PUBLISHED amount, so it catches an in-place mutation of
-          // the helper's record — the one residual G3's identity check cannot
-          // reach, because there both sides are the same object.
+          // the helper's record after the caller handed it over. G3's `toBe`
+          // IDENTITY line alone cannot see that — there both sides are the same
+          // object — but G3's row-vs-record comparison two lines below it can,
+          // and measured, both guards fail on that injection. This is a second
+          // and independent reading of the same defect, not the only one.
           expect(line?.amountPlanDollars, `${year.year} ${row.record.incomeStreamId}`).toBe(row.amount)
           publishedRows++
         } else {
@@ -692,5 +795,56 @@ describe('simulatePlan delegates income pass 2 (other non-SS streams)', () => {
       expect(year.incomes.recurring, `incomes.recurring ${year.year}`).toBe(0)
       expect(year.incomes.oneTime, `incomes.oneTime ${year.year}`).toBeGreaterThan(0)
     }
+  })
+
+  // G7 — THE ONLY GUARD HERE WHOSE EXPECTATION DOES NOT COME FROM THE HELPER.
+  // G3, G4a, G4b, G4c and G5 all build their expected values out of the rows
+  // the helper returned, which makes them self-consistent under a helper that
+  // silently UNDER-PRODUCES: one early-out that returns no rows for some year
+  // loses that year's whole pass-2 contribution to all four accumulators and
+  // both recorders, and every one of those guards agrees with it. (Measured on
+  // the pristine file: a one-line `if (year === 2040) return rows` at the top
+  // of the helper failed nothing in this file at all.) G1 pins that the call
+  // HAPPENS but says nothing about what comes back; G6 catches it only in the
+  // years its two boundaries happen to read.
+  //
+  // So this guard states the fixture's own schedule and holds the projection to
+  // it. Every expectation below is derived from `plan()` above by counting, and
+  // two of the three read PUBLISHED output without consulting the seam at all.
+  it('pays the fixture’s whole pass-2 schedule every year, on a fixture-derived expectation', () => {
+    const { result, byYear } = run()
+    // By construction of `plan()`:
+    //   START_YEAR        every window opens at START_YEAR + 1     0 rows
+    //   alive years       once-YYYY + gain-YYYY + the four
+    //                     recurring streams (inflated, flat,
+    //                     zero-amount, untaxed)                    6 rows
+    //   post-death years  `anyAlive` gates the four recurring
+    //                     streams off; both one-time streams pay   2 rows
+    const expectedRowCount = (year: number): number => (year === START_YEAR ? 0 : year < FIRST_DEAD_YEAR ? 6 : 2)
+    for (const year of result.years) {
+      const y = year.year
+      expect(rowsFor(byYear, y).length, `row count ${y}`).toBe(expectedRowCount(y))
+      // PUBLISHED, and exact: both one-time streams pay every year from
+      // START_YEAR + 1 on, a one-time amount is never inflation-adjusted, and
+      // this phase is the only writer of `incomes.oneTime` (simulate.ts).
+      // Folding starts from 0, so the sum is the two constants and nothing else.
+      expect(year.incomes.oneTime, `incomes.oneTime ${y}`).toBe(
+        y === START_YEAR ? 0 : ONE_TIME_ORDINARY + ONE_TIME_CAPITAL_GAIN,
+      )
+      // PUBLISHED, as a floor rather than a value: the inflated leg makes the
+      // exact total path-dependent, but the two flat legs are unconditional
+      // while the household lives, so anything at or below their sum means a
+      // recurring row went missing.
+      if (y === START_YEAR || y >= FIRST_DEAD_YEAR) {
+        expect(year.incomes.recurring, `incomes.recurring ${y}`).toBe(0)
+      } else {
+        expect(year.incomes.recurring, `incomes.recurring ${y}`).toBeGreaterThan(RECURRING_FLAT + RECURRING_UNTAXED)
+      }
+    }
+    // The horizon itself, so a projection that simply stopped early cannot pass
+    // by having no years left to disagree about.
+    expect(result.years.map((y) => y.year)).toEqual(
+      Array.from({ length: END_YEAR - START_YEAR + 1 }, (_unused, i) => START_YEAR + i),
+    )
   })
 })
