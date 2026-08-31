@@ -74,10 +74,14 @@
  *
  * FOUR THINGS THE LIFT DELIBERATELY DID NOT IMPROVE:
  *
- *   (a) THE TWO BARE NON-NULL ASSERTIONS STAY. `parsePlan` validates that a
- *       wages stream's `personId` names a real person, but `simulatePlan`
- *       accepts a raw `Plan`, so an unvalidated plan must keep throwing rather
- *       than being defensively skipped. Being eager changes WHEN it throws:
+ *   (a) THE BARE NON-NULL PERSON LOOKUP STAYS. Exactly ONE non-null assertion
+ *       moved with this phase — `personById.get(stream.personId)!`. The other
+ *       person lookup reads `stateOf(...)`, whose own `!` lives in the caller's
+ *       definition of `stateOf` in `simulate.ts` and did not move; neither
+ *       lookup was made defensive. `parsePlan` validates that a wages stream's
+ *       `personId` names a real person, but `simulatePlan` accepts a raw
+ *       `Plan`, so an unvalidated plan must keep throwing rather than being
+ *       defensively skipped. Being eager changes WHEN it throws:
  *       the helper throws before the caller folds streams 1..k-1, where the
  *       inlined loop folded those first and threw afterwards. Nothing observes
  *       the difference — the throw escapes `simulatePlan` either way — but it
@@ -90,12 +94,19 @@
  *       corpus member is built on it, and collapsing the null case to zero
  *       moved 4 of 308 entries.
  *   (c) `stream.realGrowthPct ?? 0` STAYS VERBATIM AND IS UNREACHABLE THROUGH
- *       `parsePlan`. The schema gives `realGrowthPct` a default of 0, so a
- *       parsed plan always carries a number. Measured: 0 of 77 corpus members
- *       and 0 of 400 generated fuzz plans reach the `??` fallback. The
- *       differential dump cannot protect this branch; it is kept because the
- *       inlined phase had it and this is a behaviour-preserving refactor, not
- *       because anything exercises it.
+ *       `parsePlan`. The schema gives `realGrowthPct` a default of 0
+ *       (`model/plan.ts`), so a parsed plan always carries a number. The two
+ *       kinds of evidence for that are kept apart rather than both labelled
+ *       "measured". MEASURED, by an instrumented engine copy that counted the
+ *       fallback per row: 0 of 77 differential-corpus members reach it. BY
+ *       CONSTRUCTION, not by measurement: the 400 generated fuzz plans cannot
+ *       reach it either, because the generator always assigns a numeric
+ *       `realGrowthPct` and every candidate then goes through `parsePlan`. So
+ *       the differential dump cannot protect this branch. The helper's own
+ *       unit test can and does, by handing it an unparsed stream with the
+ *       field absent — which is available to a unit test precisely because the
+ *       helper takes a raw `IncomeStream`. It is kept because the inlined
+ *       phase had it and this is a behaviour-preserving refactor.
  *   (d) THE ARITHMETIC KEEPS ITS OPERAND ORDER. `Math.pow(1 + x / 100, n)` and
  *       `annualGross * raiseFactor * inflFactor` are lifted as written.
  *       Multiplication is not associative in IEEE-754 either: re-bracketing
@@ -166,44 +177,64 @@ export interface WageIncomeYearInput {
  * THE PAYLOAD IS BUILT EAGERLY, and on the default path that is an allocation
  * the inlined phase did not make. The inlined phase passed the literal straight
  * to `yearSites?.recordWages({ … })`, and optional chaining does not evaluate a
- * call's arguments when the receiver is nullish — so under default options,
- * where `yearSites` is null (every product projection, and every `simulatePlan`
- * re-entry inside Monte Carlo, the optimizer and the spending solver), the
- * object was never constructed at all. Here it is constructed for every paying
- * row whether or not a sink will consume it. No projection number moves.
+ * call's arguments when the receiver is nullish — so wherever `yearSites` is
+ * null the object was never constructed at all. That is NOT every product
+ * projection, and the difference is worth stating rather than rounding off:
+ * the app's Results page asks for the ledger (`captureAnnualCashFlow: true`,
+ * `planner-ui/src/planner/ResultsPage.tsx`), so it built these payloads before
+ * this change too. What the default path does cover is every projection that
+ * does NOT ask for the cash-flow ledger, and every `simulatePlan` re-entry
+ * inside Monte Carlo, the optimizer and the spending solver. On those paths the
+ * object is now constructed for every paying row whether or not a sink will
+ * consume it. No projection number moves.
  *
  * IT IS NOT THE ONLY NEW ALLOCATION HERE. A pure helper has to return rows, so
  * the row objects and the array are new on the default path too, and no
- * arrangement of a pure helper avoids them. Measured at 40M rows per sample,
- * over three interleaved runs of four rounds each, with the caller's four folds
- * present in BOTH arms so that only the payload differs: 31.4-33.1 ns per
- * paying row as written, against 29.7-30.4 ns for a variant whose rows carry no
- * payload and whose caller rebuilds the literal inside
- * `yearSites?.recordWages({ … })` under the same optional chaining. The two
- * ranges do not overlap across twelve samples, so the eager payload does cost
- * something real: about 1.9 ns per row at the medians. The ABSOLUTE figures are
+ * arrangement of a pure helper avoids them. The cost was benchmarked at 40M
+ * rows per sample, four rounds per arm, the arms interleaved, with the caller's
+ * four folds present in BOTH arms so that only the payload differs: the shape
+ * shipped here, against a variant whose rows carry no payload and whose caller
+ * rebuilds the literal inside `yearSites?.recordWages({ … })` under the same
+ * optional chaining.
+ *
+ * WHAT REPEATS, AND WHAT DOES NOT — because the effect turns out to be about
+ * the size of the harness's own noise, and an earlier draft of this comment
+ * overstated it. Across six repeat runs on one machine the eager arm was the
+ * slower of the two on both the minimum and the median of its four rounds every
+ * time — direction 6 of 6 — by 1.3 to 3.4 ns per row taken minimum to minimum,
+ * absolute levels spanning 30-36 ns. What does NOT hold is a clean separation:
+ * the two arms' ranges overlapped in 5 of those 6 runs, and two reviewers
+ * re-running this same harness on other machines saw them overlap in every
+ * session, with the lazy arm slower on average in one of them. So the reading is a
+ * direction that repeats here and a magnitude of a couple of nanoseconds a row
+ * treated as an UPPER bound, not a settled constant. The ABSOLUTE figures are
  * dominated by work this phase does either way — a person lookup and a state
  * lookup per stream, and a map get-and-set per row — so they are not comparable
  * to the sibling pass-2 helper's, whose loop does none of that.
  *
  * END TO END IT DOES NOT SURFACE, and the honest form of that claim is an
- * arithmetic prediction from the measured per-row cost rather than a win/loss
- * tally. Across the 77-member differential corpus this phase yields 0.2754 rows
- * per projected year, so a 40-year projection carries about 11 of these objects
- * — around 20 nanoseconds. Even on a plan running 80 wage rows a year, roughly
- * 290x the corpus rate, 3200 rows at ~1.9 ns is about 6 microseconds spread
- * across a whole projection.
+ * arithmetic prediction from that upper bound rather than a win/loss tally.
+ * Across the 77-member differential corpus this phase yields 0.2754 rows per
+ * projected year, so a 40-year projection carries about 11 of these objects —
+ * 14 to 37 nanoseconds at the measured band. Even on a plan running 80 wage
+ * rows a year, roughly 290x the corpus rate, 3200 rows at 1.3-3.4 ns is 4 to 11
+ * microseconds spread across a whole projection.
  *
  * SO IT STAYS EAGER — but NOT because laziness necessarily costs the guard.
  * `internal/otherIncomeStreams.ts` records the measurement that a memoizing
  * accessor on the row's prototype keeps the identity assertion while building
- * zero payloads on the default path. That shape is available here for the same
- * reasons and is declined for the same ones, and they are judgement rather than
- * measurement: rows would stop being plain object literals in a file whose
- * whole value is being an obviously-pure extraction, and the identity assertion
- * would start holding because an accessor keeps memoizing rather than because
- * the row owns one object. At ~3.4 ns per row on 0.2754 rows per year, that
- * trade is not worth making yet.
+ * zero payloads on the default path. NO ACCESSOR ARM WAS BUILT OR TIMED FOR
+ * THIS PHASE — the harness above has exactly two arms — so what an accessor
+ * would save on THIS loop is not measured here, and the only accessor
+ * measurement in the repo is the sibling's, on a different loop. The shape is
+ * available here for the same reasons and is declined for the same ones, and
+ * they are judgement rather than measurement: rows would stop being plain
+ * object literals in a file whose whole value is being an obviously-pure
+ * extraction, and the identity assertion would start holding because an
+ * accessor keeps memoizing rather than because the row owns one object. What
+ * IS bounded is the prize: no lazy shape can save more than the eager payload's
+ * whole cost, and that is the couple of nanoseconds a row measured above, on
+ * 0.2754 rows per projected year. That trade is not worth making yet.
  */
 export interface WageIncomeRow {
   /** `stream.personId` — the key the caller folds `wagesByPerson` on. */

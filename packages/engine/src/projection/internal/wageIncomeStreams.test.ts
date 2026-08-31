@@ -115,11 +115,14 @@ describe('wageIncomeStreams — selection', () => {
     expect(rows.map((r) => r.personId)).toEqual(['p1', 'p2', 'p1'])
   })
 
-  // ROWS ARE KEYED BY POSITION, NEVER BY STREAM ID. `parsePlan` raises on
-  // duplicate account, person and action ids, but income-stream ids are not
-  // checked for uniqueness, so two wage streams can share one id. Any
-  // map-by-id, here or in a caller reconciling these rows, would collapse them
-  // and silently halve the year's wages.
+  // ROWS ARE KEYED BY POSITION, NEVER BY STREAM ID. `parsePlan` raises
+  // UNCONDITIONALLY only on duplicate retirement-action ids; duplicate account
+  // and person ids raise only when a retirement action references them
+  // (`model/plan.ts`) — the same conditional rule the two-lookups tests at the
+  // bottom of this file depend on. Income-stream ids are not checked for
+  // uniqueness at all, so two wage streams can share one id. Any map-by-id,
+  // here or in a caller reconciling these rows, would collapse them and
+  // silently halve the year's wages.
   it('returns one row per stream even when two streams share an id', () => {
     const rows = wageIncomeStreams(
       input({ incomes: [wages({ id: 'dup', annualGross: 10 }), wages({ id: 'dup', annualGross: 20 })] }),
@@ -202,6 +205,29 @@ describe('wageIncomeStreams — the amount', () => {
       input({ incomes: [wages({ annualGross: 90_000, realGrowthPct: 4 })], year: START_YEAR, inflFactor: 1 }),
     )
     expect(rows[0]!.amount).toBe(90_000)
+  })
+
+  // THE `?? 0` FALLBACK, WHICH IS THE ONE SUB-BRANCH THE DIFFERENTIAL DUMP
+  // CANNOT REACH. `model/plan.ts` declares `realGrowthPct: pct.default(0)` over
+  // a non-nullable number, so no plan that has been through `parsePlan` can
+  // carry `undefined` there — measured, 0 of 77 corpus members reach it, and
+  // the fuzz generator cannot produce it by construction. `simulatePlan` takes
+  // a raw `Plan` though, and this helper takes a raw `IncomeStream`, so the
+  // branch IS reachable from here. It is pinned by this test and by nothing
+  // else in the phase.
+  it('treats a missing realGrowthPct as no real raise at all', () => {
+    const rows = wageIncomeStreams(
+      input({
+        incomes: [wages({ annualGross: 137_777.77, realGrowthPct: undefined as unknown as number })],
+        year: 2039,
+        inflFactor: 1.3448888,
+      }),
+    )
+    // Raise factor exactly 1 over 13 elapsed years: gross × 1 × inflFactor.
+    expect(rows[0]!.amount).toBe(137_777.77 * 1 * 1.3448888)
+    // Not vacuous — 13 elapsed years is long enough that any non-zero default
+    // would land somewhere else.
+    expect(rows[0]!.amount).not.toBe(137_777.77 * Math.pow(1 + 0.01 / 100, 2039 - START_YEAR) * 1.3448888)
   })
 
   it('compounds the real raise over elapsed years, not calendar years', () => {

@@ -17,8 +17,8 @@
  * number changes; only the fact of the call is asserted.
  *
  * (Two honest footnotes on that measurement, because the count above has a
- * denominator. It was taken on an out-of-tree copy of the package, where 5440
- * of the engine's 5528 tests run: seven test files read repository paths and
+ * denominator. It was taken on an out-of-tree copy of the package, where 5441
+ * of the engine's 5529 tests run: seven test files read repository paths and
  * cannot be collected from a copy at all, and they fail to load identically on
  * an UN-injected copy, so they are excluded in both directions rather than
  * counted as orphan damage. One of those seven is the coverage-shard freshness
@@ -31,7 +31,7 @@
  *
  * CALIBRATION — every guard below was proved to discriminate by injecting the
  * defect it exists for and recording WHICH named tests failed. Measured over
- * this file and the helper's own unit tests together (31 tests), on an
+ * this file and the helper's own unit tests together (32 tests), on an
  * out-of-tree copy of this package, so the worktree was never written to. Every
  * count is the measured one, not a prediction:
  *
@@ -56,7 +56,12 @@
  *                                                   the helper's unit tests
  *   helper returns no rows for one IN-HORIZON year  1 fails — G7, and G7 alone
  *   (2035, where the fixture pays five streams)
- *   helper rewritten to return a generator          26 fail. G3 by name, `rows
+ *   the same early-out on 2034, a year G6 DOES    2 fail — G6 and G7. This is
+ *   spot-check                                    what shows G6 is an
+ *                                                 independent under-production
+ *                                                 guard at its four gate years,
+ *                                                 not merely a gate check
+ *   helper rewritten to return a generator          27 fail. G3 by name, `rows
  *                                                   are not a materialized
  *                                                   array`
  *   returned array appended to during the next call 5 fail. G3 by name, `rows
@@ -89,8 +94,20 @@
  *                                                   differential corpus does —
  *                                                   4 of 308 entries move, in
  *                                                   its one duplicate-id member
+ *   `?? 0` fallback given a different default       1 fails — the helper's own
+ *   (`?? 0.01`), and the fallback dropped entirely  `treats a missing
+ *   (`stream.realGrowthPct!`)                       realGrowthPct as no real
+ *                                                   raise at all`, and that
+ *                                                   test alone, on both. That
+ *                                                   is the ONE sub-branch the
+ *                                                   corpus dump provably
+ *                                                   cannot reach: `parsePlan`
+ *                                                   defaults the field, so no
+ *                                                   parsed plan carries
+ *                                                   `undefined` there
  *
- * THE LAST ROW IS A MEASURED BLIND SPOT, recorded rather than left implicit.
+ * THE MAP-BACKED-`stateOf` ROW IS A MEASURED BLIND SPOT, recorded rather than
+ * left implicit.
  * The helper's own unit tests pin that it resolves the stop age through
  * `personById` and the year state through `stateOf`, in both directions; what
  * no test in this pair can see is a CALLER that hands over a `stateOf` with the
@@ -147,11 +164,22 @@
  * that hands over FEWER rows than it should: an early-out returning nothing for
  * some year loses that year's entire wage contribution to both accumulators,
  * the map and the recorder, and every one of those guards agrees with the loss.
- * G1 pins that the call HAPPENS, not what comes back. G7 is the answer, and it
- * is the only guard here whose expectations are derived from the fixture rather
- * than from the helper's output — a hand-written schedule of which streams are
- * open in which year, and the exact published `incomes.wages` folded from the
- * fixture's own constants.
+ * G1 pins that the call HAPPENS, not what comes back. G7 is the answer: a
+ * hand-written schedule of which streams are open in which year, and the exact
+ * published `incomes.wages` folded from the fixture's own constants.
+ *
+ * G7 IS THE ONLY GUARD THAT HOLDS EVERY PROJECTED YEAR TO THAT SCHEDULE — but
+ * it is NOT the only fixture-derived guard here, and an earlier draft of this
+ * comment claimed it was. G6 builds its whole expectation from `STREAMS`,
+ * `openStreamIdsIn`, `foldWages` and `expectedInflFactors`, reads only
+ * PUBLISHED output and never touches the seam; G8 likewise checks published
+ * output against a fixture constant. That is why both survive the orphan
+ * above, where the other eight fail. It also makes G6 an independent
+ * under-production guard at the years its four gate checks touch, not merely a
+ * gate check — measured, by injecting an early-out into the helper on an
+ * out-of-tree copy: no rows for 2034 fails G6 AND G7 (2 of 32 tests), while
+ * the same early-out at 2035, a year G6 does not touch, fails G7 alone (1 of
+ * 32). The division of labour is coverage, not kind: G7 holds all 35 years.
  *
  * G7'S REACH IS THE FIXTURE'S REACH, and no wider. It covers the 35 years
  * 2026-2060 that this plan simulates, and the six wage-stream shapes it
@@ -828,6 +856,13 @@ describe('simulatePlan delegates income pass 1 (wages)', () => {
   // each with a counterfactual so it cannot pass vacuously. A caller that
   // applied only one of the gates, or read the stop age from the wrong place,
   // fails the year where that gate first bites.
+  //
+  // Its expectations are FIXTURE-DERIVED — `STREAMS`, `openStreamIdsIn`,
+  // `foldWages`, `expectedInflFactors` — and it never reads the seam, which is
+  // why it survives the orphan and why it also catches UNDER-PRODUCTION at the
+  // years its four gate checks touch (measured: an early-out returning no rows
+  // for 2034 fails this test as well as G7). G7 is the year-complete version of
+  // that same argument; this one is the named-gate version.
   it('closes a stream at its endAge, at the retirementAge fallback, and at death', () => {
     const { result } = run()
     const factors = expectedInflFactors(FLAT_PATH)
@@ -864,19 +899,25 @@ describe('simulatePlan delegates income pass 1 (wages)', () => {
     expect(publishedAt(2045)).toBeGreaterThan(0)
   })
 
-  // G7 — THE ONLY GUARD HERE WHOSE EXPECTATION DOES NOT COME FROM THE HELPER.
-  // G3, G4a, G4b, G4c and G5 all build their expected values out of the rows
-  // the helper returned, which makes them self-consistent under a helper that
-  // silently UNDER-PRODUCES: one early-out returning no rows for some year
-  // loses that year's whole wage contribution to both accumulators, the map and
-  // the recorder, and every one of those guards agrees with it. G1 pins that
-  // the call HAPPENS but says nothing about what comes back.
+  // G7 — THE ONLY GUARD THAT HOLDS EVERY PROJECTED YEAR TO A FIXTURE-DERIVED
+  // SCHEDULE. G3, G4a, G4b, G4c and G5 all build their expected values out of
+  // the rows the helper returned, which makes them self-consistent under a
+  // helper that silently UNDER-PRODUCES: one early-out returning no rows for
+  // some year loses that year's whole wage contribution to both accumulators,
+  // the map and the recorder, and every one of those guards agrees with it. G1
+  // pins that the call HAPPENS but says nothing about what comes back.
   //
   // So this guard states the fixture's own schedule and holds the projection to
   // it. Both expectations come from `STREAMS` and `openStreamIdsIn` above, and
   // the second reads PUBLISHED output without consulting the seam at all. Its
   // reach is the fixture's reach: the 35 years 2026-2060, and these six stream
   // shapes.
+  //
+  // NOT the only fixture-derived guard, though it is the only year-complete
+  // one. G6 below is built from the same constants and catches the same defect
+  // class at the years its four gate checks touch — measured, an early-out
+  // returning no rows for 2034 fails G6 and G7, while the same early-out at
+  // 2035 fails G7 alone.
   it('pays the fixture’s whole pass-1 schedule every year, on a fixture-derived expectation', () => {
     for (const market of [null, INFLATION_PATH] as const) {
       const { result, byYear } = run(market === null ? {} : { market: { inflationPct: [...market] } })
