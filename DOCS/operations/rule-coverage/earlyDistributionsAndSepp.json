@@ -802,6 +802,7 @@
       "dueOn": "2027-08-04",
       "implementedBy": [
         "packages/engine/src/actions/annualRetirementPhysicalEventInventory.ts",
+        "packages/engine/src/projection/internal/annualSeppDistributions.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
@@ -815,11 +816,20 @@
           ]
         },
         {
+          "path": "packages/engine/src/projection/internal/annualSeppDistributions.ts",
+          "functions": [
+            {
+              "name": "annualSeppDistributions",
+              "line": 87
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 756
+              "line": 758
             }
           ]
         }
@@ -1173,16 +1183,26 @@
       "verifiedOn": "2026-08-04",
       "dueOn": "2027-08-04",
       "implementedBy": [
+        "packages/engine/src/projection/internal/annualSeppDistributions.ts",
         "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/strategies/sepp.ts"
       ],
       "implementations": [
         {
+          "path": "packages/engine/src/projection/internal/annualSeppDistributions.ts",
+          "functions": [
+            {
+              "name": "annualSeppDistributions",
+              "line": 87
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 756
+              "line": 758
             }
           ]
         },
@@ -1509,15 +1529,25 @@
       "verifiedOn": "2026-08-04",
       "dueOn": "2027-08-04",
       "implementedBy": [
+        "packages/engine/src/projection/internal/annualSeppDistributions.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
+        {
+          "path": "packages/engine/src/projection/internal/annualSeppDistributions.ts",
+          "functions": [
+            {
+              "name": "annualSeppDistributions",
+              "line": 87
+            }
+          ]
+        },
         {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 756
+              "line": 758
             }
           ]
         }
@@ -1560,16 +1590,26 @@
       "verifiedOn": "2026-08-04",
       "dueOn": "2027-08-04",
       "implementedBy": [
+        "packages/engine/src/projection/internal/annualSeppDistributions.ts",
         "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/strategies/accountEligibility.ts"
       ],
       "implementations": [
         {
+          "path": "packages/engine/src/projection/internal/annualSeppDistributions.ts",
+          "functions": [
+            {
+              "name": "annualSeppDistributions",
+              "line": 87
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 756
+              "line": 758
             }
           ]
         },
