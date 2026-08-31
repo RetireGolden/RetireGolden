@@ -183,7 +183,7 @@ import {
 } from '../actions/structuralId.js'
 import { seppSeriesBeginsAfterSeparation } from '../actions/traditionalEmployerPlanPenaltyPrerequisite.js'
 import { type SimulatorAnnualRetirementRuntimeOccurrence } from './annualRetirementRuntimeJournal.js'
-import type { SimulatorAnnualPassStateBindings } from './annualPassTransaction.js'
+import type { SimulatorAnnualPassDeferredFirstRmd, SimulatorAnnualPassStateBindings } from './annualPassTransaction.js'
 import {
   captureOwnedNonRothIraAnnualAttemptStateEvidence,
   ownedNonRothIraAnnualSettlementRollbackDisqualification,
@@ -1329,12 +1329,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
 
   const years: YearResult[] = []
   /** First-distribution-calendar-year amounts elected into the following RBD year. */
-  const deferredFirstRmdByApplicablePlan = new Map<string, {
-    applicablePlan: RmdApplicablePlan
-    distributionCalendarYear: number
-    dueYear: number
-    requiredAmount: number
-  }>()
+  const deferredFirstRmdByApplicablePlan =
+    new Map<string, SimulatorAnnualPassDeferredFirstRmd>()
   // Owned-IRA annual settlement disposition. A rolled-back year commits no
   // carryforward, so the exact-cent figure the replay derived for that owner is
   // discarded and the owner keeps whatever the legacy fallback pass wrote. When
@@ -10961,6 +10957,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       allocationTrack,
       seppAmortAmount,
       magiHistory,
+      deferredFirstRmdByApplicablePlan,
       namedQcdOffsetConsumedByDonor,
       namedQcdOffsetHistoryUnprovable,
       warnings,

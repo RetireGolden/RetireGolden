@@ -107,6 +107,7 @@ function state(plan?: Readonly<Plan>): SimulatorAnnualPassStateBindings {
     allocationTrack: new Map(),
     seppAmortAmount: new Map(),
     magiHistory: new Map(),
+    deferredFirstRmdByApplicablePlan: new Map(),
     namedQcdOffsetConsumedByDonor: new Map(),
     namedQcdOffsetHistoryUnprovable: new Set(),
     warnings: new Set(['baseline']),
@@ -143,6 +144,9 @@ function stateBytes(value: SimulatorAnnualPassStateBindings): string {
     allocationTrack: [...value.allocationTrack],
     seppAmortAmount: [...value.seppAmortAmount],
     magiHistory: [...value.magiHistory],
+    deferredFirstRmdByApplicablePlan: [
+      ...value.deferredFirstRmdByApplicablePlan,
+    ],
     namedQcdOffsetConsumedByDonor: [...value.namedQcdOffsetConsumedByDonor],
     namedQcdOffsetHistoryUnprovable: [...value.namedQcdOffsetHistoryUnprovable],
     warnings: [...value.warnings],

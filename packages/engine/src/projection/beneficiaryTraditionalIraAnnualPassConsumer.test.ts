@@ -284,6 +284,7 @@ function state(): { bindings: SimulatorAnnualPassStateBindings; scalars: Scalars
       propertyValues: new Map(), hecmStates: new Map(),
       insuranceCashValues: new Map(), allocationTrack: new Map(),
       seppAmortAmount: new Map(), magiHistory: new Map(),
+      deferredFirstRmdByApplicablePlan: new Map(),
       namedQcdOffsetConsumedByDonor: new Map(),
       namedQcdOffsetHistoryUnprovable: new Set(), warnings: new Set(),
       unassignedCash: binding(scalars, 'unassignedCash'),
@@ -346,6 +347,9 @@ function stateBytes(value: SimulatorAnnualPassStateBindings): string {
     hecm: [...value.hecmStates], insurance: [...value.insuranceCashValues],
     allocation: [...value.allocationTrack], sepp: [...value.seppAmortAmount],
     magi: [...value.magiHistory],
+    deferredFirstRmdByApplicablePlan: [
+      ...value.deferredFirstRmdByApplicablePlan,
+    ],
     qcdOffsetConsumed: [...value.namedQcdOffsetConsumedByDonor],
     qcdOffsetUnprovable: [...value.namedQcdOffsetHistoryUnprovable],
     warnings: [...value.warnings],
@@ -391,6 +395,12 @@ function mutateAll(value: SimulatorAnnualPassStateBindings): void {
   })
   value.seppAmortAmount.set('x', 1)
   value.magiHistory.set(2029, 1)
+  value.deferredFirstRmdByApplicablePlan.set('x', {
+    applicablePlan: { kind: 'ownedTraditionalIras', payeePersonId: 'x' },
+    distributionCalendarYear: 2029,
+    dueYear: 2030,
+    requiredAmount: 1,
+  })
   value.warnings.add('x')
   for (const scalar of [
     value.unassignedCash, value.priorYearPortfolioReturnPct,
