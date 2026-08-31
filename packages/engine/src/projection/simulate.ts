@@ -68,6 +68,7 @@ import { annualRebalanceToTarget } from './internal/annualRebalanceToTarget.js'
 import { annualPermanentLifeTransitions } from './internal/annualPermanentLifeTransitions.js'
 import { annualPropertyCarryingCosts } from './internal/annualPropertyCarryingCosts.js'
 import { annualSeppDistributions } from './internal/annualSeppDistributions.js'
+import { annualSocialSecurity } from './internal/annualSocialSecurity.js'
 import { annualSnapshot } from './internal/annualSnapshot.js'
 import { annualExpenseSummary } from './internal/annualExpenseSummary.js'
 import { distributedTaxableYieldRows } from './internal/distributedTaxableYieldRows.js'
@@ -92,9 +93,6 @@ import {
   type RmdShortfallExciseResult,
   type RmdShortfallReliefElection,
 } from '../rmd/rmdShortfallExcise.js'
-import { claimFactor, spousalBenefitFactor, type ClaimAge } from '../socialSecurity/claimFactor.js'
-import { bestMaritalBenefit } from '../socialSecurity/maritalBenefits.js'
-import { capAuxiliaryForFamilyMaximum, claimAgeTotalMonths } from '../socialSecurity/familyMaximum.js'
 import { sizeRothConversion } from '../strategies/rothConversion.js'
 import {
   ROTH_QUALIFIED_AGE,
@@ -221,15 +219,12 @@ import type {
 } from '../actions/conversionTaxFundingEvidence.js'
 import { deriveOwnedNonRothIraReplayAllocationIdentity } from
   '../internal/ownedNonRothIraReplayIdentity.js'
-import { effectiveBirthYear, fraForBirthYear, fraTotalMonths, survivorFraForBirthYear } from '../socialSecurity/nra.js'
 import {
   computePiaFromEarnings,
   isPiaFromEarningsError,
   piaInputFromEarnings,
   resolveEarningsProjection,
 } from '../socialSecurity/piaFromEarnings.js'
-import { survivorBenefitMonthly } from '../socialSecurity/survivorBenefit.js'
-import { inSsdiWindow, ssdiMonthlyBenefit, ssdiSuspendedBySga } from '../socialSecurity/disability.js'
 import { attributeShortfall } from '../spending/layers.js'
 import { ABW_DEFAULTS, abwExpectedRealReturnPct } from '../spending/abw.js'
 import { jointSurvivalPercentileAge, survivalPercentileAge } from '../montecarlo/survival.js'
@@ -265,8 +260,6 @@ import {
   type YearResult,
   type YearWithdrawals,
   type InheritedAccountYearEvidence,
-  type SocialSecurityBenefitSource,
-  type SocialSecurityStreamActivity,
   type QualifiedAnnuityPaymentActivity,
   type YearCashFlowTransferEndpoint,
 } from './types.js'
@@ -568,17 +561,6 @@ function dobParts(person: Person): { y: number; m: number; d: number } {
     m: Number(person.dob.slice(5, 7)),
     d: Number(person.dob.slice(8, 10)),
   }
-}
-
-function claimAgeFromTotalMonths(totalMonths: number): ClaimAge {
-  return { years: Math.floor(totalMonths / 12), months: totalMonths % 12 }
-}
-
-/** Annual-ledger approximation: a same-year claim pays only months after the claim month. */
-function payableMonthsAtAge(ageAttained: number, claimAge: ClaimAge): number {
-  if (ageAttained < claimAge.years) return 0
-  if (ageAttained > claimAge.years) return 12
-  return Math.max(0, 12 - claimAge.months)
 }
 
 const SEQUENTIAL_ORDER = ['cash', 'taxable', 'equityComp', 'traditional', 'roth', 'hsa'] as const
@@ -1485,13 +1467,6 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
   // credited back at FRA by recomputing the benefit as if claimed that many
   // months later. Accumulated across the pre-FRA years (persists across the loop).
   const withheldMonthsByPerson = new Map<string, number>()
-  const creditedClaimAgeFor = (person: Person, claimAge: ClaimAge, ageAttained: number, capMonths: number): ClaimAge => {
-    const originalMonths = claimAgeTotalMonths(claimAge)
-    if (originalMonths >= capMonths || ageAttained < Math.floor(capMonths / 12)) return claimAge
-    const credited = Math.min(capMonths, originalMonths + (withheldMonthsByPerson.get(person.id) ?? 0))
-    return claimAgeFromTotalMonths(credited)
-  }
-
   // WS4 inherited-IRA regime cache: classify each inherited account ONCE per
   // simulation. Regime law lives only in strategies/inheritedIra.ts — simulate
   // never re-derives a divisor, deadline, or row. Path:
@@ -2348,9 +2323,9 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     }
 
     // Pass 3: Social Security. Benefits are computed for everyone (a deceased
-    // spouse's hypothetical benefit drives the survivor step-up), then the
-    // earnings test withholds from living workers, then survivors step up to
-    // max(own, deceased's) — the v1 couples simplification of survivor rules.
+    // spouse's hypothetical benefit drives the survivor step-up), survivors
+    // step up to max(own, deceased's) under the v1 couples simplification, and
+    // then the earnings test withholds from living workers' resulting benefit.
     const ssColaFactor =
       plan.assumptions.ssCola.mode === 'matchInflation'
         ? inflFactorFrom(startYear, year)
@@ -2359,413 +2334,30 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       plan.assumptions.ssHaircut && year >= plan.assumptions.ssHaircut.fromYear
         ? 1 - plan.assumptions.ssHaircut.cutPct / 100
         : 1
-    const ssOwnByPerson = new Map<string, number>()
-    const ssActualMonthlyByPerson = new Map<string, number>()
-    /** PIA + claim age + stream id per SS-claiming person, for the spousal top-up below. */
-    const ssStreamByPerson = new Map<string, {
-      pia: number
-      claimAge: { years: number; months: number }
-      streamId: string
-    }>()
-    /**
-     * Parallel per-stream publication state (does not affect computation).
-     * Amounts here are pre-withholding until the earnings-test pass scales them.
-     */
-    const ssStreamPub = new Map<string, {
-      personId: string
-      streamId: string
-      source: SocialSecurityBenefitSource
-      preWithholdingAnnual: number
-      claimInForce: boolean
-    }>()
-    const ensureSsStreamPub = (streamId: string, personId: string) => {
-      let entry = ssStreamPub.get(streamId)
-      if (entry === undefined) {
-        entry = {
-          personId,
-          streamId,
-          source: 'none',
-          preWithholdingAnnual: 0,
-          claimInForce: false,
-        }
-        ssStreamPub.set(streamId, entry)
-      }
-      return entry
+    const socialSecurity = annualSocialSecurity({
+      incomes: plan.incomes,
+      people,
+      personById,
+      stateOf,
+      resolvedPiaByStreamId,
+      wagesByPerson,
+      withheldMonthsByPerson,
+      year,
+      ssColaFactor,
+      ssHaircutFactor,
+      pack,
+      limitGrowth,
+    })
+    incomes.socialSecurity = socialSecurity.socialSecurity
+    for (const write of socialSecurity.withheldMonthWrites) {
+      withheldMonthsByPerson.set(write.personId, write.value)
     }
-    /** Per-person SSDI info this year (onset age + the pre-SGA annual benefit), for SGA gating + reporting. */
-    const ssdiByPerson = new Map<string, { onsetAge: number; benefit: number; fraYears: number }>()
-    for (const stream of plan.incomes) {
-      if (stream.type !== 'socialSecurity') continue
-      const pia = resolvedPiaByStreamId.get(stream.id)
-      if (pia === undefined) continue // warned during resolution
-      // Last stream written wins — the sim's precedence for spousal/survivor gates.
-      ssStreamByPerson.set(stream.personId, {
-        pia,
-        claimAge: stream.claimAge,
-        streamId: stream.id,
-      })
-      const streamPub = ensureSsStreamPub(stream.id, stream.personId)
-      const person = personById.get(stream.personId)!
-      const s = stateOf(stream.personId)
-      const { y, m, d } = dobParts(person)
-      const fra = fraForBirthYear(effectiveBirthYear(y, m, d))
-
-      // SSDI path: a disabled worker receives their full PIA (no early-retirement
-      // reduction) from the onset age, gated by SGA pre-FRA, converting to the
-      // retirement benefit at FRA at the same dollar amount (no delayed credits).
-      // SSDI cannot start at/after FRA (it would have already converted), so an
-      // onsetAge >= FRA is treated as invalid — fall through to normal retirement.
-      // Observation: publish source 'ssdi' only while age < FRA; from the FRA year
-      // onward the same dollars are own-retirement (§202(a) conversion — no
-      // application). Milestone detectors that key on source must not treat that
-      // conversion as a filing decision.
-      const onsetAge = stream.disability?.onsetAge
-      if (onsetAge !== undefined && onsetAge < fra.years) {
-        if (s.ageAttained >= onsetAge) {
-          const monthly = ssdiMonthlyBenefit(pia)
-          const annual = monthly * 12 * ssColaFactor * ssHaircutFactor
-          // Computation maps stay populated for deceased workers so the
-          // survivor pass can read the deceased's actual monthly benefit.
-          // Per-stream publication is alive-only: a deceased-year row is
-          // not-payable (source none / claimInForce false / zero amounts),
-          // not "withheld to $0".
-          ssOwnByPerson.set(stream.personId, (ssOwnByPerson.get(stream.personId) ?? 0) + annual)
-          ssActualMonthlyByPerson.set(stream.personId, (ssActualMonthlyByPerson.get(stream.personId) ?? 0) + monthly)
-          ssdiByPerson.set(stream.personId, { onsetAge, benefit: annual, fraYears: fra.years })
-          if (s.alive) {
-            streamPub.claimInForce = true
-            streamPub.preWithholdingAnnual += annual
-            streamPub.source = s.ageAttained >= fra.years ? 'own-retirement' : 'ssdi'
-          }
-        }
-        continue // SSDI replaces the retirement-claim path for this stream
-      }
-
-      const payableMonths = payableMonthsAtAge(s.ageAttained, stream.claimAge)
-      if (payableMonths <= 0) continue
-      // From FRA on, credit any months the earnings test withheld earlier by
-      // treating the benefit as if claimed that many months later (capped at FRA).
-      const fraMonths = fraTotalMonths(fra)
-      const claimForFactor = creditedClaimAgeFor(person, stream.claimAge, s.ageAttained, fraMonths)
-      const factor = claimFactor(y, m, d, claimForFactor)
-      const monthly = pia * factor
-      let annual = monthly * payableMonths * ssColaFactor
-      annual *= ssHaircutFactor
-      // Computation maps stay populated for deceased workers (survivor anchors).
-      // Gate pay-site publication on alive — deceased-year rows stay not-payable.
-      ssOwnByPerson.set(stream.personId, (ssOwnByPerson.get(stream.personId) ?? 0) + annual)
-      ssActualMonthlyByPerson.set(stream.personId, (ssActualMonthlyByPerson.get(stream.personId) ?? 0) + monthly)
-      if (s.alive) {
-        streamPub.claimInForce = true
-        streamPub.preWithholdingAnnual += annual
-        // Per-stream source is recorded at this stream's own pay site (plan order
-        // must not change published stream sources).
-        streamPub.source = 'own-retirement'
-      }
-    }
-
-    // Marital-history menu: a divorced-spousal or survivor benefit on a *former*
-    // spouse's record. A person receives the larger of their own benefit and the
-    // best eligible such benefit, at their claim age. Divorced-spousal needs a
-    // currently-unmarried claimant; survivor is governed by remarriage rules.
-    // Runs before the earnings test so that benefit is withheld too (SSA applies
-    // the earnings test to dependent/survivor benefits, not just retirement).
-    const householdIsSingle = people.length === 1
-    for (const stream of plan.incomes) {
-      if (stream.type !== 'socialSecurity') continue
-      if (!stream.formerSpouses || stream.formerSpouses.length === 0) continue
-      const s = stateOf(stream.personId)
-      const payableMonths = payableMonthsAtAge(s.ageAttained, stream.claimAge)
-      if (!s.alive || payableMonths <= 0) continue
-      const claimant = personById.get(stream.personId)!
-      const { y, m, d } = dobParts(claimant)
-      const retirementFraMonths = fraTotalMonths(fraForBirthYear(effectiveBirthYear(y, m, d)))
-      const survivorFraMonths = fraTotalMonths(survivorFraForBirthYear(effectiveBirthYear(y, m, d)))
-      const best = bestMaritalBenefit(stream.formerSpouses, {
-        claimantDob: { year: y, month: m, day: d },
-        claimantClaimAge: creditedClaimAgeFor(claimant, stream.claimAge, s.ageAttained, retirementFraMonths),
-        claimantSurvivorClaimAge: creditedClaimAgeFor(claimant, stream.claimAge, s.ageAttained, survivorFraMonths),
-        claimantAge: s.ageAttained,
-        year,
-        claimantIsSingle: householdIsSingle,
-      })
-      if (best) {
-        const annual = best.monthly * payableMonths * ssColaFactor * ssHaircutFactor
-        if (annual > (ssOwnByPerson.get(stream.personId) ?? 0)) {
-          ssOwnByPerson.set(stream.personId, annual)
-          const maritalSource: SocialSecurityBenefitSource =
-            best.kind === 'survivor' ? 'survivor' : 'spousal'
-          // Publication only: former-spouse aux replaces this stream's amount
-          // and zeros sibling streams so published amounts stay person-faithful.
-          // Ensure a pub entry even when own PIA was unresolved (null PIA and no
-          // usable earnings) — aux still pays on the former-spouse record.
-          const paying = ensureSsStreamPub(stream.id, stream.personId)
-          paying.preWithholdingAnnual = annual
-          paying.source = maritalSource
-          paying.claimInForce = true
-          for (const entry of ssStreamPub.values()) {
-            if (entry.personId !== stream.personId || entry.streamId === stream.id) continue
-            entry.preWithholdingAnnual = 0
-            entry.source = 'none'
-          }
-        }
-      }
-    }
-
-    // Spousal top-up: while both spouses are alive and both have claimed, the
-    // lower earner receives max(own, 50% of the higher earner's PIA reduced for
-    // the lower earner's claim age). Runs before the earnings test so auxiliary
-    // benefits can be withheld, and caps the current-spouse auxiliary to the room
-    // left under the worker's retirement/survivor family maximum.
-    if (people.length === 2) {
-      const [a, b] = people
-      const aSs = ssStreamByPerson.get(a!.id)
-      const bSs = ssStreamByPerson.get(b!.id)
-      if (aSs && bSs) {
-        const higher = aSs.pia >= bSs.pia ? { p: a!, ss: aSs } : { p: b!, ss: bSs }
-        const lower = aSs.pia >= bSs.pia ? { p: b!, ss: bSs } : { p: a!, ss: aSs }
-        const lowerState = stateOf(lower.p.id)
-        const higherState = stateOf(higher.p.id)
-        const lowerPayableMonths = payableMonthsAtAge(lowerState.ageAttained, lower.ss.claimAge)
-        const higherPayableMonths = payableMonthsAtAge(higherState.ageAttained, higher.ss.claimAge)
-        const spousalPayableMonths = Math.min(lowerPayableMonths, higherPayableMonths)
-        if (lowerState.alive && higherState.alive && spousalPayableMonths > 0) {
-          const { y, m, d } = dobParts(lower.p)
-          const lowerFraMonths = fraTotalMonths(fraForBirthYear(effectiveBirthYear(y, m, d)))
-          const spousalClaimAge = creditedClaimAgeFor(lower.p, lower.ss.claimAge, lowerState.ageAttained, lowerFraMonths)
-          const rawSpousalMonthly = 0.5 * higher.ss.pia * spousalBenefitFactor(y, m, d, spousalClaimAge)
-
-          const higherDob = dobParts(higher.p)
-          const workerActualMonthly =
-            ssActualMonthlyByPerson.get(higher.p.id) ??
-            higher.ss.pia *
-              claimFactor(
-                higherDob.y,
-                higherDob.m,
-                higherDob.d,
-                creditedClaimAgeFor(
-                  higher.p,
-                  higher.ss.claimAge,
-                  higherState.ageAttained,
-                  fraTotalMonths(fraForBirthYear(effectiveBirthYear(higherDob.y, higherDob.m, higherDob.d))),
-                ),
-              )
-          // Only the auxiliary excess (spousal rate above the lower earner's own
-          // benefit) is paid on the higher earner's record, so only that excess is
-          // subject to the worker's family maximum. The lower earner's own benefit
-          // is on their own record and is preserved, then the capped excess is added.
-          const lowerOwnMonthly = ssActualMonthlyByPerson.get(lower.p.id) ?? 0
-          const excessSpousalMonthly = Math.max(0, rawSpousalMonthly - lowerOwnMonthly)
-          const cappedExcessMonthly = capAuxiliaryForFamilyMaximum({
-            workerPiaMonthly: higher.ss.pia,
-            workerActualMonthly,
-            workerDob: { year: higherDob.y, month: higherDob.m, day: higherDob.d },
-            auxiliaryMonthly: excessSpousalMonthly,
-          })
-          const spousalTotalMonthly = lowerOwnMonthly + cappedExcessMonthly
-          const spousalAnnual = spousalTotalMonthly * spousalPayableMonths * ssColaFactor * ssHaircutFactor
-          const own = ssOwnByPerson.get(lower.p.id) ?? 0
-          if (spousalAnnual > own) {
-            ssOwnByPerson.set(lower.p.id, spousalAnnual)
-            // Publication only: current-spouse aux keys off the gate stream.
-            const gateStreamId = lower.ss.streamId
-            for (const entry of ssStreamPub.values()) {
-              if (entry.personId !== lower.p.id) continue
-              if (entry.streamId === gateStreamId) {
-                entry.preWithholdingAnnual = spousalAnnual
-                entry.source = 'spousal'
-                entry.claimInForce = true
-              } else {
-                entry.preWithholdingAnnual = 0
-                entry.source = 'none'
-              }
-            }
-          }
-        }
-      }
-    }
-
-    // Survivor step-up before the earnings test, then the withholding pass below
-    // can reduce survivor benefits for a working survivor before FRA. The
-    // survivor keeps the larger of their own benefit and the deceased's benefit,
-    // computed with full precision: the survivor base is the deceased's actual
-    // monthly benefit, RIB-LIM floors it at 82.5% of the deceased's PIA when the
-    // deceased claimed early, and the early-claim widow(er) reduction applies to
-    // the survivor's credited claim age.
-    if (people.length === 2) {
-      const [a, b] = people
-      for (const [deceased, survivor] of [
-        [a!, b!],
-        [b!, a!],
-      ] as const) {
-        const survivorState = stateOf(survivor.id)
-        if (stateOf(deceased.id).alive || !survivorState.alive) continue
-        const survivorStream = ssStreamByPerson.get(survivor.id)
-        const deceasedPia = ssStreamByPerson.get(deceased.id)?.pia
-        const deceasedActualMonthly = ssActualMonthlyByPerson.get(deceased.id) ?? 0
-        if (!survivorStream || deceasedPia === undefined || deceasedActualMonthly <= 0) continue
-        const payableMonths = payableMonthsAtAge(survivorState.ageAttained, survivorStream.claimAge)
-        if (payableMonths <= 0) continue
-        const ownBenefit = ssOwnByPerson.get(survivor.id) ?? 0
-        const { y, m, d } = dobParts(survivor)
-        const survivorFraMonths = fraTotalMonths(survivorFraForBirthYear(effectiveBirthYear(y, m, d)))
-        const survivorClaimAge = creditedClaimAgeFor(survivor, survivorStream.claimAge, survivorState.ageAttained, survivorFraMonths)
-        const survivorAnnual =
-          survivorBenefitMonthly({
-            deceasedPiaMonthly: deceasedPia,
-            deceasedActualMonthly,
-            survivorClaimAge,
-            survivorFraMonths,
-          }) *
-          payableMonths *
-          ssColaFactor *
-          ssHaircutFactor
-        if (survivorAnnual > ownBenefit) {
-          ssOwnByPerson.set(survivor.id, survivorAnnual)
-          // Publication only: survivor step-up keys off the gate stream.
-          const gateStreamId = survivorStream.streamId
-          for (const entry of ssStreamPub.values()) {
-            if (entry.personId !== survivor.id) continue
-            if (entry.streamId === gateStreamId) {
-              entry.preWithholdingAnnual = survivorAnnual
-              entry.source = 'survivor'
-              entry.claimInForce = true
-            } else {
-              entry.preWithholdingAnnual = 0
-              entry.source = 'none'
-            }
-          }
-        }
-      }
-    }
-
-    // Earnings test: claiming before FRA while working withholds benefits
-    // ($1 per $2 below FRA; $1 per $3 in the FRA calendar year — annual
-    // approximation). Withheld whole months accumulate and are credited back at
-    // FRA above (the benefit is recomputed as if claimed that many months later).
-    // SSDI recipients are gated by Substantial Gainful Activity instead (SSA
-    // replaces the retirement earnings test with SGA for disabled workers).
-    let ssEarningsTestWithheld = 0
-    let ssdiPaid = 0
-    for (const [personId, benefit] of ssOwnByPerson) {
-      const s = stateOf(personId)
-      if (!s.alive || benefit <= 0) continue
-      const ssdi = ssdiByPerson.get(personId)
-      if (ssdi) {
-        // SSDI recipient: SGA gates the pre-FRA window only (post-FRA it has
-        // converted to retirement; before onset no benefit is paid). No ARF.
-        let paid = benefit
-        if (inSsdiWindow(s.ageAttained, ssdi.onsetAge, ssdi.fraYears)) {
-          const wages = wagesByPerson.get(personId) ?? 0
-          const annualSga = pack.socialSecurity.sgaMonthlyNonBlind * 12 * limitGrowth
-          if (wages > 0 && ssdiSuspendedBySga(wages, annualSga)) {
-            paid = 0
-            ssOwnByPerson.set(personId, 0)
-            warnings.add(
-              'Earnings above Substantial Gainful Activity (SGA) suspended Social Security disability (SSDI) for a working year.',
-            )
-          }
-        }
-        ssdiPaid += paid
-        continue // no retirement earnings test for SSDI recipients
-      }
-      const wages = wagesByPerson.get(personId) ?? 0
-      if (wages <= 0) continue
-      const person = personById.get(personId)!
-      const { y, m, d } = dobParts(person)
-      const fraYears = fraForBirthYear(effectiveBirthYear(y, m, d)).years
-      let withheld = 0
-      if (s.ageAttained < fraYears) {
-        withheld = Math.max(0, (wages - pack.socialSecurity.earningsTestBelowFraAnnual * limitGrowth) / 2)
-      } else if (s.ageAttained === fraYears) {
-        withheld = Math.max(0, (wages - pack.socialSecurity.earningsTestFraYearAnnual * limitGrowth) / 3)
-      }
-      withheld = Math.min(withheld, benefit)
-      if (withheld > 0) {
-        ssOwnByPerson.set(personId, benefit - withheld)
-        ssEarningsTestWithheld += withheld
-        // Whole months of benefit withheld this year (annual approximation),
-        // credited back at FRA. COLA cancels in the ratio. Capped at the months
-        // actually payable this year — the first claim year is prorated when the
-        // claim starts mid-year, so it has fewer than 12 payable months.
-        const claimAge = ssStreamByPerson.get(personId)?.claimAge
-        const payableMonths = claimAge ? payableMonthsAtAge(s.ageAttained, claimAge) : 12
-        const monthsWithheld = Math.min(payableMonths, Math.round((withheld / benefit) * payableMonths))
-        withheldMonthsByPerson.set(personId, (withheldMonthsByPerson.get(personId) ?? 0) + monthsWithheld)
-        warnings.add(
-          'The earnings test withheld benefits for working early claimants; withheld months are credited back at full retirement age (annual approximation).',
-        )
-      }
-    }
-
-    // Sum the living household's post-withholding Social Security benefits.
-    for (const [personId, benefit] of ssOwnByPerson) {
-      if (stateOf(personId).alive) incomes.socialSecurity += benefit
-    }
-
-    // Published per-stream SS activity (one-source-of-truth for detectors).
-    // claimInForce / preWithholdingAnnual are already frozen from the pay sites
-    // above; annualAmount is scaled to the post-withholding person total so the
-    // published stream amounts remain faithful to incomes.socialSecurity.
-    const postWithholdingByPerson = new Map<string, number>()
-    for (const person of people) {
-      postWithholdingByPerson.set(
-        person.id,
-        stateOf(person.id).alive ? (ssOwnByPerson.get(person.id) ?? 0) : 0,
-      )
-    }
-    const preWithholdingSumByPerson = new Map<string, number>()
-    for (const entry of ssStreamPub.values()) {
-      preWithholdingSumByPerson.set(
-        entry.personId,
-        (preWithholdingSumByPerson.get(entry.personId) ?? 0) + entry.preWithholdingAnnual,
-      )
-    }
-    // One row per configured socialSecurity stream (including unresolved
-    // streams with no usable PIA/earnings). Truly unmodeled streams publish
-    // empty not-payable rows; when the former-spouse pass still pays a
-    // positive spousal/survivor benefit through an unresolved stream, publish
-    // those paid amounts/source (empty only when nothing pays).
-    const socialSecurityStreams: SocialSecurityStreamActivity[] = []
-    for (const stream of plan.incomes) {
-      if (stream.type !== 'socialSecurity') continue
-      const resolved = resolvedPiaByStreamId.get(stream.id) !== undefined
-      const entry = ssStreamPub.get(stream.id)
-      if (!resolved) {
-        const auxPaid =
-          entry !== undefined &&
-          (entry.source === 'spousal' || entry.source === 'survivor') &&
-          (entry.preWithholdingAnnual > 0 || entry.claimInForce)
-        if (!auxPaid) {
-          socialSecurityStreams.push({
-            personId: stream.personId,
-            streamId: stream.id,
-            source: 'none',
-            annualAmount: 0,
-            claimInForce: false,
-            preWithholdingAnnual: 0,
-            isSpousalSurvivorGateStream: false,
-          })
-          continue
-        }
-      }
-      const pub = entry ?? ensureSsStreamPub(stream.id, stream.personId)
-      const gateStreamId = ssStreamByPerson.get(stream.personId)?.streamId
-      const preSum = preWithholdingSumByPerson.get(stream.personId) ?? 0
-      const post = postWithholdingByPerson.get(stream.personId) ?? 0
-      const annualAmount = preSum > 0
-        ? pub.preWithholdingAnnual * (post / preSum)
-        : 0
-      socialSecurityStreams.push({
-        personId: stream.personId,
-        streamId: stream.id,
-        source: pub.source,
-        annualAmount,
-        claimInForce: pub.claimInForce,
-        preWithholdingAnnual: pub.preWithholdingAnnual,
-        isSpousalSurvivorGateStream: gateStreamId === stream.id,
-      })
-    }
+    for (const warning of socialSecurity.warnings) warnings.add(warning)
+    const {
+      socialSecurityStreams,
+      ssEarningsTestWithheld,
+      ssdiPaid,
+    } = socialSecurity
 
     /** Qualified annuity payments actually paid this year (published fact). */
     const qualifiedAnnuityPayments: QualifiedAnnuityPaymentActivity[] = []

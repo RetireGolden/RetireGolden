@@ -1,0 +1,69 @@
+{
+  "schema": "retiregolden.equivalence-reach-spec/1",
+  "name": "simulate-social-security-boundary",
+  "why": "Measured reach for the annual Social Security phase extracted from simulatePlan. Nine dedicated L block members exercise own-retirement, current/former-spouse, survivor, SSDI, earnings-test, publication-order, duplicate-ID, and floating-point hazards in all four equivalence modes. Entries split the large helper into its semantic passes so any cold whole line names the missing corpus behavior rather than hiding inside one aggregate count; the paired callsite entry measures annual scalar selection and effect consumption.",
+  "entries": [
+    {
+      "id": "A1.dob-parts",
+      "label": "date-of-birth decomposition shared by Social Security calculations",
+      "file": "projection/internal/annualSocialSecurity.ts",
+      "lines": [51, 57]
+    },
+    {
+      "id": "A2.claim-age-months",
+      "label": "credited total-month claim age reconstruction",
+      "file": "projection/internal/annualSocialSecurity.ts",
+      "lines": [59, 61]
+    },
+    {
+      "id": "A3.payable-months",
+      "label": "claim-year payable-month boundaries",
+      "file": "projection/internal/annualSocialSecurity.ts",
+      "lines": [63, 67]
+    },
+    {
+      "id": "A4.own-and-ssdi-pay-sites",
+      "label": "credited claim age, own-retirement and SSDI pay sites",
+      "file": "projection/internal/annualSocialSecurity.ts",
+      "lines": [72, 178]
+    },
+    {
+      "id": "B.former-spouse",
+      "label": "former-spouse divorced and survivor replacement menu",
+      "file": "projection/internal/annualSocialSecurity.ts",
+      "lines": [180, 216]
+    },
+    {
+      "id": "C.current-spouse",
+      "label": "current-spouse top-up and worker family-maximum cap",
+      "file": "projection/internal/annualSocialSecurity.ts",
+      "lines": [218, 279]
+    },
+    {
+      "id": "D.survivor",
+      "label": "current-household survivor step-up and stream publication",
+      "file": "projection/internal/annualSocialSecurity.ts",
+      "lines": [281, 325]
+    },
+    {
+      "id": "E.withholding",
+      "label": "SSDI SGA gate, retirement earnings test, withheld-month writes and warnings",
+      "file": "projection/internal/annualSocialSecurity.ts",
+      "lines": [327, 375]
+    },
+    {
+      "id": "F.publication",
+      "label": "living-household total and ordered per-stream publication",
+      "file": "projection/internal/annualSocialSecurity.ts",
+      "lines": [377, 445],
+      "note": "The full-corpus report's four cold sub-line regions are defensive invariants, not unmodeled plan behavior: every payable auxiliary writes a positive pre-withholding amount along with claimInForce; every resolved stream creates its publication row before any early continue; the pre-withholding fold creates a key for every publication row; and the post-withholding map is seeded for every schema-valid person before stream publication."
+    },
+    {
+      "id": "G.callsite",
+      "label": "annual Social Security scalar selection, helper invocation and effect consumption",
+      "file": "projection/simulate.ts",
+      "lines": [2332, 2364]
+    }
+  ],
+  "readingTheCounts": "A member count proves that at least one line in the named range executed. The reach command additionally fails on any cold executable whole line inside a reached range. JavaScript line coverage cannot distinguish every nullish, ternary, optional-chain, or compound-condition operand sharing a physical line, so cold sub-line regions must be reported and explained alongside focused helper/delegation guards."
+}
