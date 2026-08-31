@@ -1605,6 +1605,70 @@ try {
     [require.resolve('typescript/bin/tsc'), '-p', 'tsconfig.smoke.json'],
     { cwd: work, stdio: 'inherit' },
   )
+
+  // The deprecation marker has to be REPORTED to a consumer, not merely
+  // present in the packed text. Nothing above can see that difference:
+  // `tsc` never emits deprecation, which is a *suggestion* diagnostic raised
+  // by the language service, and a text search for the tag is vacuous here
+  // twice over — the shim's file header discusses the tag in prose, and the
+  // declaration emitter copies the JSDoc through verbatim even for the bare
+  // `export { x } from './y.js'` form that reports nothing.
+  //
+  // So the alias in src/projection/flatTax.ts could be "cleaned up" into a
+  // re-export and every other check in this file would stay green while the
+  // marker went dark for every consumer. This asks the language service the
+  // question a consumer's editor asks, against the packed declarations.
+  const ts = require('typescript')
+  const smokeEntry = join(work, 'types-smoke.ts')
+  const languageServiceHost = {
+    getScriptFileNames: () => [smokeEntry],
+    getScriptVersion: () => '1',
+    getScriptSnapshot: (name) => {
+      const contents = ts.sys.readFile(name)
+      return contents === undefined ? undefined : ts.ScriptSnapshot.fromString(contents)
+    },
+    getCurrentDirectory: () => work,
+    getCompilationSettings: () => ({
+      target: ts.ScriptTarget.ES2023,
+      module: ts.ModuleKind.NodeNext,
+      moduleResolution: ts.ModuleResolutionKind.NodeNext,
+      strict: true,
+      noEmit: true,
+      skipLibCheck: true,
+    }),
+    getDefaultLibFileName: (options) => ts.getDefaultLibFilePath(options),
+    fileExists: ts.sys.fileExists,
+    readFile: ts.sys.readFile,
+    readDirectory: ts.sys.readDirectory,
+    directoryExists: ts.sys.directoryExists,
+    getDirectories: ts.sys.getDirectories,
+  }
+  const suggestions = ts
+    .createLanguageService(languageServiceHost, ts.createDocumentRegistry())
+    .getSuggestionDiagnostics(smokeEntry)
+  const smokeText = readFileSync(smokeEntry, 'utf8')
+  const deprecations = suggestions.filter((diagnostic) => diagnostic.reportsDeprecated)
+  // types-smoke.ts imports the same symbol from both subpaths. Only the
+  // deprecated one may be flagged: if testing/flatTax started reporting too,
+  // this check would pass for the wrong reason and the relocation target
+  // would be telling consumers to stop using it.
+  const flagged = new Set(deprecations.map((d) => smokeText.slice(d.start, d.start + d.length)))
+  if (!flagged.has('deprecatedFlatTax')) {
+    throw new Error(
+      'the deprecated projection/flatTax subpath no longer REPORTS its deprecation to consumers. ' +
+        'The packed .d.ts may still contain the tag text — that is not the same thing. Either the ' +
+        'tag was dropped from the export JSDoc, or the re-declared alias in ' +
+        'src/projection/flatTax.ts was collapsed back into `export { x } from \'./y.js\'`, which ' +
+        'TypeScript does not report when the target is not itself deprecated. ' +
+        'Deprecations actually reported: ' + (JSON.stringify([...flagged]) || 'none'),
+    )
+  }
+  if (flagged.has('relocatedFlatTax')) {
+    throw new Error(
+      'testing/flatTax reports a deprecation, but it is the relocation TARGET; ' +
+        'the projection/flatTax deprecation notice points consumers at it',
+    )
+  }
   console.log('pack smoke OK: the published option types compile from the packed declarations')
 } finally {
   try {

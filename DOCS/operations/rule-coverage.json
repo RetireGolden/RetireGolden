@@ -294,7 +294,7 @@
     {
       "path": "testing/flatTax.ts",
       "sweptOn": "2026-08-30",
-      "note": "flat-rate test double whose only importers are test files, so the IRC 86 85 percent inclusion it applies never reaches a user-facing number; kept partial rather than rule-free so the claim stays visible if the file ever gains a production consumer"
+      "note": "flat-rate test double injected only by test suites - the sole non-test importers are the deprecated projection/flatTax shim that republishes it on the published subpath and the pack-smoke script that verifies that subpath - so the IRC 86 85 percent inclusion it applies reaches no RetireGolden surface; kept partial rather than rule-free so the claim stays visible if the file ever gains a production consumer"
     }
   ],
   "directoryRollup": [

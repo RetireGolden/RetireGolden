@@ -25,8 +25,13 @@
  *    working — a silent type-only break of the exact subpath this file exists
  *    to preserve.
  *
- * `scripts/pack-smoke.mjs` enforces both halves: it compiles a consumer that
- * imports this subpath by name, and reads the packed declaration file directly.
+ * `scripts/pack-smoke.mjs` enforces both. For (2) it reads the packed
+ * declaration file and compiles a consumer that imports this subpath by name,
+ * so a deleted declaration fails the pack. For (1) it asks the TypeScript
+ * language service whether that consumer is actually TOLD the symbol is
+ * deprecated: the tag surviving in the packed text proves nothing, because the
+ * declaration emitter copies the same JSDoc through for the re-export form
+ * that reports nothing at all.
  */
 
 import { createFlatTaxCalculator as flatTaxDouble } from '../testing/flatTax.js'

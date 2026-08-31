@@ -74,10 +74,10 @@ Shared helpers are intentionally thin: [`packages/engine/src/testing/money.ts`](
 [`packages/engine/src/testing/planFixtures.ts`](../packages/engine/src/testing/planFixtures.ts) (minimal
 plan builders). Fixture builders reduce schema boilerplate only — they must not hide business logic or
 assumptions. The flat-rate tax double
-[`packages/engine/src/testing/flatTax.ts`](../packages/engine/src/testing/flatTax.ts) is a deliberate
-exception in kind, not to that rule: it is a test double rather than a fixture builder, its arithmetic is
-openly not statute, and it must never stand in as an oracle for tax correctness — federal tax expectations
-come from the sources named above.
+[`packages/engine/src/testing/flatTax.ts`](../packages/engine/src/testing/flatTax.ts) differs in kind
+rather than being an exception to that rule: it is a test double rather than a fixture builder, and it
+hides nothing — its arithmetic is openly not statute. It must never stand in as an oracle for tax
+correctness; federal tax expectations come from the sources named above.
 
 ## The layers of protection
 

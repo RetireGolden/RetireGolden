@@ -137,9 +137,10 @@ because the engine ships into browser bundles where there is no package.json to
 read. The MCP's `build_plan` accepts this value back as `engineVersion` and warns
 when a document was exported under a different engine than the one running.
 
-Test fixtures and deterministic test doubles used by the RetireGolden apps' own suites ship under
-`@retiregolden/engine/testing/*` — framework-free (no vitest or other
-test-runner dependency), but not part of the supported runtime API.
+Test fixtures and deterministic test doubles used by the engine's own suites, and
+by those of the planner-UI package, ship under `@retiregolden/engine/testing/*` —
+framework-free (no vitest or other test-runner dependency), but not part of the
+supported runtime API.
 
 ## Layout
 

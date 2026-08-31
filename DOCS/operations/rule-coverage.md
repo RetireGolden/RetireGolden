@@ -164,7 +164,7 @@ None.
 | strategies/rothConversion.ts | 2026-08-24 | Bracket/IRMAA/ACA FPL/senior-deduction sizing via computeFederalTax; no record names this file |
 | tax/federalTax.ts | 2026-08-26 | implements §86 SS inclusion, NIIT, AMT screen, senior-deduction phase-out, LTCG stacking with records naming it, but §170(b)(1)(I)(ii) category waterfall is applied only in the ledger file its record names |
 | tax/medicare.ts | 2026-08-27 | Part B/IRMAA premium path and Part B late-enrollment absence registered (usc-42-1395r-*, cfr-20-418-1205-1230-*); post-pack premiumScale (healthcare-inflation stand-in) remains |
-| testing/flatTax.ts | 2026-08-30 | flat-rate test double whose only importers are test files, so the IRC 86 85 percent inclusion it applies never reaches a user-facing number; kept partial rather than rule-free so the claim stays visible if the file ever gains a production consumer |
+| testing/flatTax.ts | 2026-08-30 | flat-rate test double injected only by test suites - the sole non-test importers are the deprecated projection/flatTax shim that republishes it on the published subpath and the pack-smoke script that verifies that subpath - so the IRC 86 85 percent inclusion it applies reaches no RetireGolden surface; kept partial rather than rule-free so the claim stays visible if the file ever gains a production consumer |
 
 ## Coverage shards
 
