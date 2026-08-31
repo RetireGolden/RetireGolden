@@ -51,7 +51,6 @@ import {
   accountAllocation,
   blendedTaxableYield,
   driftWeights,
-  rebalanceTurnoverFraction,
   resolveAssetClassParams,
   targetWeightsAt,
 } from '../allocation/assetClasses.js'
@@ -64,6 +63,7 @@ import {
 import { createAnnualCashFlowYearSites, type AnnualCashFlowYearSites } from './annualCashFlowYearSites.js'
 import { annuityExclusionMultiple, annuityPayoutForm, annuityPayoutFraction } from './annuityForms.js'
 import { buildLadder } from '../ladder/ladderMath.js'
+import { annualRebalanceToTarget } from './internal/annualRebalanceToTarget.js'
 import { tipsLadderAnnualCashFlows, type TipsLadderState } from './internal/tipsLadderAnnualCashFlow.js'
 import { fixedAssetDispositions } from './internal/fixedAssetDispositions.js'
 import { otherIncomeStreams } from './internal/otherIncomeStreams.js'
@@ -1765,31 +1765,21 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // machinery as withdrawals (basis rises by the realized gain: sold basis
     // leaves, the reinvested proceeds enter at market); traditional/Roth/HSA
     // rebalances are tax-free. rebalancing: 'none' opts out — weights drift.
+    // The phase itself lives in `internal/annualRebalanceToTarget.ts`; it
+    // returns one row per `balances` entry, in `balances` order, and that order
+    // is load-bearing twice — it is the fold order of `rebalanceRealizedGains`
+    // and the published order of the rebalancing capital-gain metadata lines.
     let rebalanceRealizedGains = 0
-    if (year > startYear) {
-      for (const state of balances) {
-        const track = allocationTrack.get(state.account.id)
-        if (!track || track.policy.rebalancing === 'none') continue
-        const target = targetWeightsAt(track.policy, year)
-        const turnover = rebalanceTurnoverFraction(track.weights, target)
-        if (turnover > 1e-9 && state.account.type === 'taxable' && state.balance > 0) {
-          // Normalized floating-point weights can sum a few ulps above 1.
-          // Keep the strict sale helper strict and contain that noise here.
-          const sellAmount = Math.min(state.balance, Math.max(0, turnover * state.balance))
-          const sale = aggregateBasisSale({
-            openingFairMarketValue: state.balance,
-            openingCostBasis: state.costBasis,
-            saleProceeds: sellAmount,
-          })
-          rebalanceRealizedGains += sale.realizedCapitalGainOrLoss
-          yearSites?.recordRebalancingGain({
-            accountId: state.account.id,
-            realizedCapitalGainOrLoss: sale.realizedCapitalGainOrLoss,
-          })
-          state.costBasis = sale.remainingCostBasis + sellAmount
-        }
-        track.weights = target
+    const rebalanceRows = annualRebalanceToTarget({ states: balances, allocationTrack, year, startYear })
+    for (let i = 0; i < balances.length; i++) {
+      const row = rebalanceRows[i]!
+      if (row.kind === 'none') continue
+      if (row.kind === 'sale') {
+        rebalanceRealizedGains += row.realizedCapitalGainOrLoss
+        yearSites?.recordRebalancingGain(row.record)
+        balances[i]!.costBasis = row.closingCostBasis
       }
+      allocationTrack.get(row.accountId)!.weights = row.targetWeights
     }
 
     /** Contract-value credits, held back so the phase runs contiguously. */
