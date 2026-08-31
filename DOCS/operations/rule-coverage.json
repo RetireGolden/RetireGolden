@@ -389,11 +389,11 @@
     },
     {
       "directory": "projection",
-      "files": 37,
+      "files": 38,
       "byStatus": {
         "partial": 7,
         "registered": 3,
-        "rule-free": 27
+        "rule-free": 28
       }
     },
     {
