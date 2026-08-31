@@ -224,10 +224,19 @@ describe('coordinated draw policy (Pfau direction fixture)', () => {
   })
 
   it('counts an open coordinated line once when unreferenced property ids are duplicated', () => {
-    // Duplicate account ids remain valid when no retirement action or other
-    // identity-resolving contract references them. HECM state is keyed by id,
-    // however, so these two property rows share one $40k line rather than
-    // creating two lines. The 2026 loss makes that one line eligible in 2027.
+    // Independent repository-model worksheet. `DOCS/features/README.md`
+    // defines a HECM line as a coordinated buffer after a down-market year;
+    // `DOCS/features/year-cash-flow.md` requires accepted draws to publish as
+    // property-attributed `loanProceeds`, paired economically with debt.
+    //
+    //   home1: 40% × $100,000 = $40,000 line capacity. Its duplicate row
+    //          shares that one id-keyed line and adds no second capacity.
+    //   home2: 10% × $100,000 = $10,000 independent line capacity.
+    //   accepted loan proceeds / debt increase: $40,000 + $10,000 = $50,000.
+    //   remaining portfolio funding: $70,000 spending − $50,000 = $20,000.
+    //
+    // The distinct second line also distinguishes per-line-id admission from
+    // an incorrect plan-wide "first coordinated line only" boolean.
     const plan = basePlan(63)
     plan.expenses.baseAnnual = 70_000
     const sharedLine = home({
@@ -237,6 +246,17 @@ describe('coordinated draw policy (Pfau direction fixture)', () => {
       upfrontCostPct: 0,
       drawPolicy: 'coordinated',
     }, 100_000)
+    const distinctLine = {
+      ...home({
+        openYear: 2025,
+        principalLimitPct: 10,
+        growthRatePct: 0,
+        upfrontCostPct: 0,
+        drawPolicy: 'coordinated',
+      }, 100_000),
+      id: 'home2',
+      name: 'Independent second HECM line',
+    }
     plan.accounts = [
       {
         type: 'taxable',
@@ -250,10 +270,16 @@ describe('coordinated draw policy (Pfau direction fixture)', () => {
       },
       sharedLine,
       { ...sharedLine, name: 'Duplicate property row sharing the HECM line' },
+      distinctLine,
     ]
     const parsed = parsePlan(plan)
     expect(parsed.ok).toBe(true)
     if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+    expect(
+      parsed.plan.accounts
+        .filter((account) => account.type === 'property')
+        .map((account) => account.id),
+    ).toEqual(['home1', 'home1', 'home2'])
 
     const result = simulatePlan(parsed.plan, {
       startYear: 2026,
@@ -267,12 +293,30 @@ describe('coordinated draw policy (Pfau direction fixture)', () => {
       (line) => line.kind === 'hecmCoordinatedDraw',
     )
 
-    expect(year.hecmDraw).toBe(40_000)
-    expect(year.hecmLoanBalance).toBe(40_000)
-    expect(year.withdrawals.total).toBe(30_000)
+    expect(year.hecmDraw).toBe(50_000)
+    expect(year.hecmLoanBalance).toBe(50_000)
+    expect(year.withdrawals.total).toBe(20_000)
     expect(year.shortfall).toBe(0)
-    expect(coordinatedSources).toHaveLength(1)
-    expect(coordinatedSources[0]!.amountPlanDollars).toBe(40_000)
+    expect(coordinatedSources).toEqual([
+      {
+        id: 'source:hecmCoordinatedDraw:home1',
+        kind: 'hecmCoordinatedDraw',
+        role: 'loanProceeds',
+        amountPlanDollars: 40_000,
+        identities: [
+          { entityKind: 'propertyAccount', propertyAccountId: 'home1' },
+        ],
+      },
+      {
+        id: 'source:hecmCoordinatedDraw:home2',
+        kind: 'hecmCoordinatedDraw',
+        role: 'loanProceeds',
+        amountPlanDollars: 10_000,
+        identities: [
+          { entityKind: 'propertyAccount', propertyAccountId: 'home2' },
+        ],
+      },
+    ])
     expect(year.cashFlow!.reconciliation.cash.differencePlanDollars).toBe(0)
     expect(year.cashFlow!.reconciliation.status).toBe('reconciled')
   })
