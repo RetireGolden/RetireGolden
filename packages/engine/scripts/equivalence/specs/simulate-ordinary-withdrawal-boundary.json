@@ -59,21 +59,21 @@
       "id": "M.callsite.invoke",
       "label": "ordinary-withdrawal boundary invocation and cardinality validation",
       "file": "projection/simulate.ts",
-      "lines": [6801, 6821],
-      "note": "The cardinality throw on lines 6822-6823 is excluded: the helper maps the exact supplied balances array to one operation per element; focused delegation tests pin the invariant."
+      "lines": [6393, 6413],
+      "note": "The cardinality throw on lines 6414-6415 is excluded: the helper maps the exact supplied balances array to one operation per element; focused delegation tests pin the invariant."
     },
     {
       "id": "M.callsite.selectOperation",
       "label": "ordinary-withdrawal positional operation selection",
       "file": "projection/simulate.ts",
-      "lines": [6824, 6828],
-      "note": "The position-mismatch throw on lines 6829-6830 is excluded: the helper emits operations by mapping the same balance positions and copies each source account id; focused delegation tests pin the invariant."
+      "lines": [6416, 6420],
+      "note": "The position-mismatch throw on lines 6421-6422 is excluded: the helper emits operations by mapping the same balance positions and copies each source account id; focused delegation tests pin the invariant."
     },
     {
       "id": "M.callsite.apply",
       "label": "ordinary-withdrawal basis and balance mutation",
       "file": "projection/simulate.ts",
-      "lines": [6831, 6835]
+      "lines": [6423, 6427]
     }
   ],
   "readingTheCounts": "A member count proves that at least one line in the named range executed. The reach command additionally fails on any cold executable whole line inside a reached range. JavaScript line coverage cannot distinguish every ternary, nullish, optional-chain, or compound-condition operand sharing one physical line, so the report's cold sub-line regions and focused helper/delegation tests must be read alongside this differential proof."
