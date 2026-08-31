@@ -1,0 +1,80 @@
+{
+  "schema": "retiregolden.equivalence-reach-spec/1",
+  "name": "simulate-ordinary-withdrawal-boundary",
+  "why": "Measured reach for the exact-cent annual ordinary-withdrawal transaction boundary extracted from simulatePlan. The helper entry pins the complete executable helper body: Plan-number snapshots, exact-cent execution, fact-removal retries, aggregate totals, and positional closing writes. The paired callsite entry pins complete caller consumption. Four dedicated block-M members run in all four equivalence modes and discriminate normal mixed-source execution, aggregate Plan-boundary failure, unrepresentable closing balance, and both missing opening and unrepresentable closing taxable-basis evidence.",
+  "entries": [
+    {
+      "id": "M.helper.openingBalances",
+      "label": "ordinary source selection and opening-balance snapshots",
+      "file": "projection/internal/annualOrdinaryWithdrawalBoundary.ts",
+      "lines": [104, 123]
+    },
+    {
+      "id": "M.helper.openingBalanceAdapter",
+      "label": "lossless opening-balance adaptation and omission",
+      "file": "projection/internal/annualOrdinaryWithdrawalBoundary.ts",
+      "lines": [126, 135]
+    },
+    {
+      "id": "M.helper.taxableSelection",
+      "label": "taxable source and tax-unit selection",
+      "file": "projection/internal/annualOrdinaryWithdrawalBoundary.ts",
+      "lines": [139, 152],
+      "note": "The null-tax-unit ternary on line 138 is excluded: validated annual simulation constructs a tax unit whenever individually owned taxable evidence can be published, while focused helper tests cover the structural null input. Lines 153-155 are the multiline equal/greater comparator operands; block M reaches deterministic sorting with distinct ids, and their exclusion avoids misreporting formatting branches as cold production statements."
+    },
+    {
+      "id": "M.helper.taxableEvidence",
+      "label": "taxable opening-basis, ownership, tax-unit, and person evidence",
+      "file": "projection/internal/annualOrdinaryWithdrawalBoundary.ts",
+      "lines": [157, 220],
+      "note": "Block M reaches valid taxable evidence, invalid opening-basis omission, ordinary person evidence, and the legacy aggregate no-person arm. V8 reports the non-member owner and QCD-donor operands as cold sub-line regions: the annual call gives this helper ordinary/legacy execution requests, while owner-membership failure is a supported defensive structural input covered by helper tests."
+    },
+    {
+      "id": "M.helper.executeRetry",
+      "label": "exact-cent execution, aggregate totals, and fact-removal retries",
+      "file": "projection/internal/annualOrdinaryWithdrawalBoundary.ts",
+      "lines": [222, 289],
+      "note": "Block M reaches normal execution, every nonzero total class, aggregate Plan-boundary failure, unrepresentable closing balance, unrepresentable closing basis, and both opening-balance and taxable-basis filtering on retry."
+    },
+    {
+      "id": "M.helper.taxableClosingMap",
+      "label": "committed taxable closing-basis map",
+      "file": "projection/internal/annualOrdinaryWithdrawalBoundary.ts",
+      "lines": [291, 297]
+    },
+    {
+      "id": "M.helper.operations",
+      "label": "positional none/write operation derivation",
+      "file": "projection/internal/annualOrdinaryWithdrawalBoundary.ts",
+      "lines": [299, 309],
+      "note": "The paired-basis throw on lines 310-311 is excluded because executeOrdinaryWithdrawals emits a taxable basis record for every committed taxable balance movement; the invariant is covered directly by focused tests."
+    },
+    {
+      "id": "M.helper.operationsAndReturn",
+      "label": "taxable/equity basis writes and complete boundary result",
+      "file": "projection/internal/annualOrdinaryWithdrawalBoundary.ts",
+      "lines": [312, 340]
+    },
+    {
+      "id": "M.callsite.invoke",
+      "label": "ordinary-withdrawal boundary invocation and cardinality validation",
+      "file": "projection/simulate.ts",
+      "lines": [6801, 6821],
+      "note": "The cardinality throw on lines 6822-6823 is excluded: the helper maps the exact supplied balances array to one operation per element; focused delegation tests pin the invariant."
+    },
+    {
+      "id": "M.callsite.selectOperation",
+      "label": "ordinary-withdrawal positional operation selection",
+      "file": "projection/simulate.ts",
+      "lines": [6824, 6828],
+      "note": "The position-mismatch throw on lines 6829-6830 is excluded: the helper emits operations by mapping the same balance positions and copies each source account id; focused delegation tests pin the invariant."
+    },
+    {
+      "id": "M.callsite.apply",
+      "label": "ordinary-withdrawal basis and balance mutation",
+      "file": "projection/simulate.ts",
+      "lines": [6831, 6835]
+    }
+  ],
+  "readingTheCounts": "A member count proves that at least one line in the named range executed. The reach command additionally fails on any cold executable whole line inside a reached range. JavaScript line coverage cannot distinguish every ternary, nullish, optional-chain, or compound-condition operand sharing one physical line, so the report's cold sub-line regions and focused helper/delegation tests must be read alongside this differential proof."
+}

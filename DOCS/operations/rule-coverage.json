@@ -394,11 +394,11 @@
     },
     {
       "directory": "projection",
-      "files": 53,
+      "files": 54,
       "byStatus": {
         "partial": 8,
         "registered": 6,
-        "rule-free": 39
+        "rule-free": 40
       }
     },
     {

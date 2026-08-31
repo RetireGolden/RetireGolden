@@ -15,6 +15,7 @@
  *   J  annual expense boundaries
  *   K  annual SEPP distributions
  *   L  annual Social Security pass
+ *   M  exact-cent annual ordinary-withdrawal boundary
  *   S  shared: whole-corpus holes found by measurement (see `blockS`)
  *
  * A, B, C and E are the earlier "simulate batch" extraction. Block D's phase
@@ -25,6 +26,8 @@
  * reach spec. In `simulate-expense-sepp-boundaries.json`, block J's expense
  * members measure entries A through D and block K's SEPP members measure entry
  * E; the entry letters identify extracted boundaries, not corpus block names.
+ * Blocks J through M each have a phase-specific reach spec beside the earlier
+ * batch instruments.
  *
  * The 29 curated example plans exercise A, D and E's growth leg incidentally,
  * but NONE of them carries a HECM line or a pension lump-sum election — grepped,
@@ -205,6 +208,29 @@ function pension(id, extra = {}) {
 
 function wages(id, personId, annualGross, extra = {}) {
   return { type: 'wages', id, personId, annualGross, endAge: null, realGrowthPct: 0, ...extra }
+}
+
+function ordinaryWithdrawal(id, sequence, allocations, extra = {}) {
+  const requestedAmount = allocations.reduce(
+    (total, allocation) => total + allocation.requestedAmount,
+    0,
+  )
+  return {
+    actionId: id,
+    kind: 'ordinaryWithdrawal',
+    personId: 'p1',
+    year: START_YEAR,
+    executionSequence: sequence,
+    requestedAmount,
+    allocations: allocations.map((allocation, index) => ({
+      allocationId: `${id}-allocation-${index + 1}`,
+      sourceAccountId: allocation.sourceAccountId,
+      requestedAmount: allocation.requestedAmount,
+    })),
+    purpose: { kind: 'spending' },
+    provenance: { source: 'manual' },
+    ...extra,
+  }
 }
 
 function socialSecurity(id, personId, piaMonthly, claimYears, extra = {}) {
@@ -1758,6 +1784,181 @@ function blockL() {
 }
 
 // ---------------------------------------------------------------------------
+// M — exact-cent annual ordinary-withdrawal boundary
+// ---------------------------------------------------------------------------
+
+function blockM() {
+  const out = []
+
+  {
+    // Four ordered actions span every supported non-retirement source class,
+    // and the second taxable action observes the first sale's exact closing
+    // basis. The source ids are deliberately out of Plan order so immutable
+    // opening-snapshot sorting, every nonzero annual total, and every final
+    // write kind are observable together.
+    const plan = singlePersonPlan({ dob: '1970-03-15', planningAge: 75 })
+    plan.assumptions.defaultReturnPct = 0
+    plan.accounts = [
+      taxable('m1-taxable', 10, 4, { annualReturnPct: 0 }),
+      cash('m1-cash', 10, { annualReturnPct: 0, ownerPersonId: 'p1' }),
+      equityComp('m1-equity', 10, 4, { annualReturnPct: 0 }),
+    ]
+    plan.expenses.baseAnnual = 7.77
+    plan.expenses.oneTimeGoals = [{
+      id: 'm1-follow-on-liquidation',
+      label: 'force remaining basis into the following-year ledger',
+      year: START_YEAR + 1,
+      amount: 30,
+      classification: 'required',
+    }]
+    plan.strategies.retirementActions = [
+      ordinaryWithdrawal('m1-cash-action', 1, [
+        { sourceAccountId: 'm1-cash', requestedAmount: 111 },
+      ]),
+      ordinaryWithdrawal('m1-equity-action', 2, [
+        { sourceAccountId: 'm1-equity', requestedAmount: 222 },
+      ], { executionDate: `${START_YEAR}-06-15` }),
+      ordinaryWithdrawal('m1-taxable-first', 3, [
+        { sourceAccountId: 'm1-taxable', requestedAmount: 333 },
+      ]),
+      ordinaryWithdrawal('m1-taxable-second', 4, [
+        { sourceAccountId: 'm1-taxable', requestedAmount: 111 },
+      ]),
+    ]
+    out.push(
+      member(
+        'm1-orderedMixedSourceActions',
+        'M: ordered multi-account cash, equity-compensation and sequential taxable actions; every total and final write channel is nonzero',
+        plan,
+        { horizonEndYear: START_YEAR + 1 },
+      ),
+    )
+  }
+
+  {
+    // Each source is individually representable by the exact-cent ledger, but
+    // their annual sum is not losslessly representable as one Plan number. The
+    // first execution therefore reaches the aggregate boundary failure, after
+    // which both facts are removed and the independent retry fails closed.
+    const firstDollars = 90_071_992_547_409.9
+    const secondDollars = 90_071_992_547_409.89
+    const plan = singlePersonPlan({ dob: '1970-03-15', planningAge: 75 })
+    plan.assumptions.defaultReturnPct = 0
+    plan.accounts = [
+      cash('m2-aggregate-a', firstDollars, { annualReturnPct: 0, ownerPersonId: 'p1' }),
+      cash('m2-aggregate-b', secondDollars, { annualReturnPct: 0, ownerPersonId: 'p1' }),
+    ]
+    plan.strategies.retirementActions = [
+      ordinaryWithdrawal('m2-aggregate-a-full', 1, [
+        {
+          sourceAccountId: 'm2-aggregate-a',
+          requestedAmount: 9_007_199_254_740_990,
+        },
+      ]),
+      ordinaryWithdrawal('m2-aggregate-b-full', 2, [
+        {
+          sourceAccountId: 'm2-aggregate-b',
+          requestedAmount: 9_007_199_254_740_989,
+        },
+      ]),
+    ]
+    plan.incomes = [wages('m2-observable-wages', 'p1', 1.23)]
+    out.push(
+      member(
+        'm2-aggregatePlanBoundaryRetry',
+        'M: individually representable exact-cent cash actions whose annual aggregate cannot cross the Plan-number boundary and is retried without both sources',
+        plan,
+        { horizonEndYear: START_YEAR },
+      ),
+    )
+  }
+
+  {
+    // The opening balance itself is ledger-representable. Subtracting three
+    // cents produces exact closing cents whose Plan-number spelling rounds back
+    // to a different cent, so the first execution is discarded and retried
+    // without that balance fact.
+    const plan = singlePersonPlan({ dob: '1970-03-15', planningAge: 75 })
+    plan.assumptions.defaultReturnPct = 0
+    plan.accounts = [
+      cash('m3-closing-balance', 90_071_992_547_409.9, {
+        annualReturnPct: 0,
+        ownerPersonId: 'p1',
+      }),
+    ]
+    plan.strategies.retirementActions = [
+      ordinaryWithdrawal('m3-three-cent-close', 1, [
+        { sourceAccountId: 'm3-closing-balance', requestedAmount: 3 },
+      ]),
+    ]
+    plan.incomes = [wages('m3-observable-wages', 'p1', 2.34)]
+    out.push(
+      member(
+        'm3-unrepresentableClosingBalanceRetry',
+        'M: representable opening cash balance whose three-cent debit creates an unrepresentable closing Plan balance and forces a fact-removal retry',
+        plan,
+        { horizonEndYear: START_YEAR },
+      ),
+    )
+  }
+
+  {
+    // m4-basis-omitted cannot enter the opening taxable snapshot at all. The
+    // other taxable account can enter, but a three-cent sale recovers a large
+    // exact basis amount and leaves 9,004,497,094,964,568 cents, which a Plan
+    // number spells one cent higher. Its first attempt therefore reaches the
+    // closing-basis retry while the valid cash action proves unrelated movement
+    // survives both kinds of missing basis evidence. A fourth ordinary action
+    // has an out-of-range opening balance, and a migrated aggregate request
+    // reaches the execution-set branch that carries no person-alive evidence.
+    const plan = singlePersonPlan({ dob: '1970-03-15', planningAge: 75 })
+    plan.assumptions.defaultReturnPct = 0
+    plan.accounts = [
+      taxable('m4-basis-omitted', 100, 90_071_992_547_410, { annualReturnPct: 0 }),
+      taxable('m4-basis-closing', 100, 90_071_992_547_409.9, { annualReturnPct: 0 }),
+      cash('m4-independent-cash', 10, { annualReturnPct: 0, ownerPersonId: 'p1' }),
+      cash('m4-opening-balance-omitted', 90_071_992_547_410, {
+        annualReturnPct: 0,
+        ownerPersonId: 'p1',
+      }),
+    ]
+    plan.expenses.baseAnnual = 1
+    plan.strategies.retirementActions = [
+      ordinaryWithdrawal('m4-cash-survives', 1, [
+        { sourceAccountId: 'm4-independent-cash', requestedAmount: 100 },
+      ]),
+      ordinaryWithdrawal('m4-missing-opening-basis', 2, [
+        { sourceAccountId: 'm4-basis-omitted', requestedAmount: 3 },
+      ]),
+      ordinaryWithdrawal('m4-unrepresentable-closing-basis', 3, [
+        { sourceAccountId: 'm4-basis-closing', requestedAmount: 3 },
+      ]),
+      ordinaryWithdrawal('m4-missing-opening-balance', 4, [
+        { sourceAccountId: 'm4-opening-balance-omitted', requestedAmount: 100 },
+      ]),
+      {
+        actionId: 'm4-legacy-aggregate',
+        kind: 'legacyAggregateWithdrawal',
+        year: START_YEAR,
+        requestedAmount: 100,
+        legacyCategory: 'cash',
+        provenance: { source: 'migration' },
+      },
+    ]
+    out.push(
+      member(
+        'm4-missingAndUnrepresentableBasisEvidence',
+        'M: invalid opening balance/basis omission plus unrepresentable exact closing basis retry, while an independent cash action still commits and a legacy aggregate carries no person evidence',
+        plan,
+        { horizonEndYear: START_YEAR },
+      ),
+    )
+  }
+
+  return out
+}
+
+// ---------------------------------------------------------------------------
 // S — shared blind spots, owned by no single block
 // ---------------------------------------------------------------------------
 
@@ -1838,6 +2039,7 @@ export async function blockMembers() {
     ...blockJ(),
     ...blockK(),
     ...blockL(),
+    ...blockM(),
     ...blockS(),
   ]
 }
