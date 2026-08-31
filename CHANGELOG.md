@@ -4,6 +4,49 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## 2026-08
 
+**2026-08-31**
+- Released **`@retiregolden/engine` 0.2.0** — the first **minor** bump in the
+  0.1.x line, and deliberately not a patch. Plan schema v5 (PR #382) added a
+  **required** `inflationAdjusted` boolean to a one-time income stream, which
+  breaks a `^0.1.x` consumer in two ways: a TypeScript caller constructing a
+  `oneTime` income literal stops compiling, and a caller handing `parsePlan` a
+  v4-shaped plan object gets a validation failure unless it routes through
+  `migratePlanToCurrent` first. Stored documents are unaffected — migrating them
+  is exactly what the v4 → v5 step is for. The repository's usual discipline of
+  shipping engine changes as patches exists to keep additive exports inside the
+  `^0.1.0` range consumers declare (see the 0.1.3 and 0.1.5 entries); that
+  reasoning does not apply here, because shipping a breaking change as 0.1.13
+  would silently break every caret consumer on its next resolve, which is the
+  one thing the caret is supposed to promise against.
+- **The planner-ui range moves in the same commit, and it has to.**
+  `linkWorkspacePackages: true` still honours the declared range, so leaving
+  `@retiregolden/planner-ui` on `^0.1.12` while the workspace engine reads
+  0.2.0 stops pnpm linking the checkout and silently resolves the *published*
+  v4 engine instead — measured: the lockfile flips from `link:../engine` to
+  `version: 0.1.12`. planner-ui source requires v5, so that state is broken, and
+  `workspace:` protocol is not an option here (see `pnpm-workspace.yaml`: these
+  packages ship via `npm publish`, which does not rewrite it). The two version
+  edits are therefore one atomic change, not the usual split.
+- **No release window to manage, because the pack-smoke already anticipated
+  this.** planner-ui's smoke test normally resolves its declared engine minimum
+  from the registry, which would fail here — 0.2.0 does not exist on npm yet.
+  Its `auto` mode detects exactly that and packs the LOCAL engine instead,
+  asserting the local package version equals the declared minimum before it
+  does. Verified by running it: `packing the exact local engine minimum 0.2.0
+  ... pack smoke OK ... against local minimum 0.2.0`. So `main` stays green
+  between this merge and the publish, and the check flips back to resolving
+  from the registry once 0.2.0 is live, with nothing to change. The currently
+  published planner-ui 0.9.0 is unaffected and internally consistent — it was
+  built against the v4 engine and resolves one.
+- **planner-ui is not re-released here.** Its `^0.2.0` range ships whenever it
+  next publishes; nothing about the currently published 0.9.0 changes.
+- **Downstream to coordinate:** the RetireGolden MCP reads the shipped Plan JSON
+  Schema, so `describe_plan_schema` reports **v5** once it picks this up, and
+  `build_plan` must author `inflationAdjusted` on a one-time income. The
+  historical `schema/plan.v1.json` … `plan.v4.json` artifacts remain shipped at
+  their versioned subpaths, so a consumer pinned to an older document shape can
+  still read the schema it was written against.
+
 **2026-08-30**
 - Moved the flat-rate tax stub out of the projection engine and into the
   testing-support surface, without breaking anyone. The body moved from
