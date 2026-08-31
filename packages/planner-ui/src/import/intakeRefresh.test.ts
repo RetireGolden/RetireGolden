@@ -42,7 +42,7 @@ function addCurrentFacts(plan: Plan): void {
       inflationAdjusted: true,
       taxTreatment: 'ordinary',
     },
-    { type: 'oneTime', id: nextId(), label: 'Business sale', year: 2030, amount: 300_000, taxTreatment: 'capitalGain' },
+    { type: 'oneTime', id: nextId(), label: 'Business sale', year: 2030, inflationAdjusted: false, amount: 300_000, taxTreatment: 'capitalGain' },
     {
       type: 'socialSecurity',
       id: nextId(),
@@ -70,7 +70,7 @@ function addIncomingFacts(plan: Plan): ImportReviewItem[] {
       inflationAdjusted: false,
       taxTreatment: 'none',
     },
-    { type: 'oneTime', id: nextId(), label: 'Business SALE!', year: 2030, amount: 450_000, taxTreatment: 'none' },
+    { type: 'oneTime', id: nextId(), label: 'Business SALE!', year: 2030, inflationAdjusted: false, amount: 450_000, taxTreatment: 'none' },
     {
       type: 'socialSecurity',
       id: nextId(),
@@ -249,7 +249,7 @@ describe('existing-plan intake refresh', () => {
         inflationAdjusted: true,
         taxTreatment: 'ordinary',
       },
-      { type: 'oneTime', id: nextId(), label: 'Sale', year: 2030, amount: 50_000, taxTreatment: 'ordinary' },
+      { type: 'oneTime', id: nextId(), label: 'Sale', year: 2030, inflationAdjusted: false, amount: 50_000, taxTreatment: 'ordinary' },
       { type: 'wages', id: nextId(), personId: owner, annualGross: 50_000, endAge: null, realGrowthPct: 0 },
     )
     incoming.incomes.push(
@@ -263,7 +263,7 @@ describe('existing-plan intake refresh', () => {
         inflationAdjusted: true,
         taxTreatment: 'ordinary',
       },
-      { type: 'oneTime', id: nextId(), label: 'Sale', year: 2031, amount: 50_000, taxTreatment: 'ordinary' },
+      { type: 'oneTime', id: nextId(), label: 'Sale', year: 2031, inflationAdjusted: false, amount: 50_000, taxTreatment: 'ordinary' },
       { type: 'wages', id: nextId(), personId: incomingOwner, annualGross: 50_000, endAge: null, realGrowthPct: 0 },
     )
     incoming.household.people[0]!.dob = '1980-01-01'
@@ -301,6 +301,7 @@ describe('existing-plan intake refresh', () => {
         id: nextId(),
         label: '\u58f2\u5374\u76ca\uff12\uff10\uff13\uff10',
         year: 2030,
+        inflationAdjusted: false,
         amount: 50_000,
         taxTreatment: 'ordinary',
       },
@@ -321,6 +322,7 @@ describe('existing-plan intake refresh', () => {
         id: nextId(),
         label: '\u58f2\u5374\u76ca2030',
         year: 2030,
+        inflationAdjusted: false,
         amount: 55_000,
         taxTreatment: 'ordinary',
       },

@@ -444,11 +444,11 @@ assert.equal(
 assert.equal(addUsdCents(asUsdCents(125), asUsdCents(75)), 200)
 assert.equal(planDollarsToLedgerCents(1.005), 101)
 assert.equal(ledgerCentsToPlanDollars(asUsdCents(101)), 1.01)
-assert.equal(CURRENT_PLAN_SCHEMA_VERSION, 4)
+assert.equal(CURRENT_PLAN_SCHEMA_VERSION, 5)
 assert.ok(packForYear(2026) && typeof packForYear(2026) === 'object')
 
-assert.equal(PLAN_SCHEMA_VERSION, 4)
-assert.equal(planJsonSchema.properties.schemaVersion.const, 4)
+assert.equal(PLAN_SCHEMA_VERSION, 5)
+assert.equal(planJsonSchema.properties.schemaVersion.const, 5)
 assert.ok(String(planJsonSchema.$id).includes('/v' + PLAN_SCHEMA_VERSION + '.json'), 'schema carries a versioned $id')
 assert.deepEqual(shippedSchema, planJsonSchema, 'offline JSON artifact matches the exported constant')
 assert.ok(

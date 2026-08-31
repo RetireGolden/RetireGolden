@@ -123,7 +123,7 @@ A plan is the complete household model: `household` (people, filing status, stat
 IndexedDB reads, JSON imports, and migration output, so there is no separate (drifting) file spec.
 Field-level semantics are documented inline on the schema as doc comments.
 
-`schemaVersion` is currently **4**. Plan v3 added the optional
+`schemaVersion` is currently **5**. Plan v3 added the optional
 `retirementActionEligibilityFacts` root for explicitly authored IRA
 classification, action-year SEP/SIMPLE activity, and deductible-IRA
 contribution evidence. Deductible-contribution records use `amountCents`, a
@@ -140,6 +140,23 @@ state. A v3 → v4 migration does not invent this evidence and strips a
 same-named root smuggled into an older document. Because the records bind the
 Plan ID, any copy/import operation that re-keys a plan discards them; an import
 that preserves Plan identity preserves them exactly.
+
+Plan v5 adds the **required** `inflationAdjusted` boolean to a one-time income
+stream, the election a recurring stream always carried. True reads `amount` as
+today's dollars and grows it to `year`, the same way `expenses.oneTimeGoals`
+already worked; false takes it as dollars of `year` itself, which is what every
+pre-v5 plan got with no way to say otherwise.
+
+**The v4 → v5 migration writes `false`, and that is the only value that
+preserves a stored plan's numbers.** Writing `true` would silently restate every
+future windfall in every saved file on the first load after upgrading. The
+editor authors NEW streams `true` instead, matching how the same person enters a
+one-time spending goal — so the migrated default and the authored default differ
+on purpose, and the field is required rather than optional because no single
+default is right for both. The migration also rewrites saved scenarios: `incomes`
+is an editable patch root, so a stored scenario can hold a whole v4 income array,
+and both an operation's `value` and its `before` are migrated (migrating only the
+first would leave every income-touching scenario reading as conflicted).
 
 Scenario entries written by older versions continue to carry a loose deep-override object in `patch`.
 The plan schema still accepts and preserves that representation. A newer scenario may carry the

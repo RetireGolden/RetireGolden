@@ -384,6 +384,7 @@ function plan(): Plan {
       id: `gain-${START_YEAR + i}`,
       label: 'Partnership distribution',
       year: START_YEAR + i,
+      inflationAdjusted: false,
       amount: ONE_TIME_GAIN,
       taxTreatment: 'capitalGain' as const,
     })),

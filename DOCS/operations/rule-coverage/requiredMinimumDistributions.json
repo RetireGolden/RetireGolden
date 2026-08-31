@@ -760,12 +760,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.annualCashFlow.transfer.test.ts",
-          "line": 813,
+          "line": 815,
           "note": "pension lump-sum past RBD",
           "tests": [
             {
               "title": "credits the entire pension lump-sum offer as a tax-free rollover past the RBD",
-              "line": 830
+              "line": 832
             }
           ]
         }
@@ -1625,7 +1625,7 @@
           "functions": [
             {
               "name": "migratePlanToCurrent",
-              "line": 1002
+              "line": 1128
             }
           ]
         },
@@ -1737,7 +1737,7 @@
           "functions": [
             {
               "name": "migratePlanToCurrent",
-              "line": 1002
+              "line": 1128
             }
           ]
         },

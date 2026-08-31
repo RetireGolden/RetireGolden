@@ -124,16 +124,28 @@ Post-death years are ordinary rather than exotic: a stochastic-longevity Monte C
 die decades before the horizon, and an explicit `horizonEndYear` runs past the last planning age
 by construction.
 
-**Units — a one-time income amount is not inflated; its spending mirror image is.** A
-recurring stream carries an explicit inflation election (`inflationAdjusted`, on by default in
-the editor) and is entered in today's dollars when it is set. A one-time income's `amount` has
-no such election and is never inflated: it is read as dollars of its own event year, and the
-editor's `Amount` field says nothing either way. That does not match its mirror image —
-`expenses.oneTimeGoals[].amount` is today's dollars and *is* inflated to the goal year — so a
-$100k windfall and a $100k goal in the same future year are not the same real amount. This
-paragraph records what the engine does today; whether it is the intended rule is an open
-decision, not something the code's silence settles. See the note in
-[engine/projection/internal/otherIncomeStreams.ts](../../packages/engine/src/projection/internal/otherIncomeStreams.ts).
+**Units — both income kinds carry the same inflation election.** `inflationAdjusted` on a
+recurring or one-time stream means the amount is entered in **today's dollars** and grown to
+the year it pays; off means it is entered in **that year's dollars** and taken as written. The
+amount's own field label says which reading is in force ("Amount (today's $)" against "Amount
+(2050 $)") rather than leaving the user to guess.
+
+**Which reading a one-time stream has depends on where the plan came from, and the two differ.**
+A stream authored in the editor since plan schema v5 has the election **on**, and only then does
+it read the same way as its mirror image on the spending side: `expenses.oneTimeGoals[].amount`
+is always today's dollars and is always inflated to the goal year, so an on-election $100k
+windfall and a $100k goal in the same future year are the same real amount. A stream in a plan
+**migrated from v4 has the election off** and keeps its nominal amount, so the same pairing in a
+migrated file is *not* the same real amount until someone turns the election on. Goals never
+carried an election either way.
+
+That split is deliberate. Before v5 a one-time amount had no election and was never inflated, so
+**the v4 → v5 migration writes `false`**: it is the only value that reprojects an existing file
+to the numbers its owner last saw, and writing `true` would silently restate every stored
+windfall upward on first load. The editor authors *new* streams **on** because that is what
+someone entering a future amount alongside a goal means. The field is required rather than
+optional precisely because no single default is right for both cases. See
+[plan-file-format.md](plan-file-format.md) for the migration contract.
 
 **TIPS income floor** (`plan.incomeFloor`, `engine/ladder/`, Income floor page): TIPS ladders as plan
 artifacts delivering a level real income over a calendar window — an essential-spending floor or a

@@ -483,7 +483,13 @@ function incomeLabel(plan: Plan, s: IncomeStream): string {
   return s.label
 }
 
-function incomeDetail(s: IncomeStream): string {
+/**
+ * One income row as the report prints it. Exported because `ReportPage.tsx`
+ * renders the same table and carried a byte-identical private copy, which is
+ * how the two drifted: the one-time branch gained its inflation election here
+ * and would have kept printing bare `$X in YEAR` there.
+ */
+export function incomeDetail(s: IncomeStream): string {
   switch (s.type) {
     case 'wages':
       return `${fmtMoney(s.annualGross)}/yr until ${s.endAge ?? 'retirement'}`
@@ -492,7 +498,11 @@ function incomeDetail(s: IncomeStream): string {
     case 'recurring':
       return `${fmtMoney(s.annualAmount)}/yr${s.inflationAdjusted ? ', inflation-adjusted' : ''}`
     case 'oneTime':
-      return `${fmtMoney(s.amount)} in ${s.year}`
+      // Mirrors the recurring row above rather than inventing a second
+      // vocabulary: without this the report prints "$100,000 in 2040" for a
+      // stream the engine grows along the inflation path, which reads as 2040
+      // dollars and is the same silent-units defect the editor label closes.
+      return `${fmtMoney(s.amount)} in ${s.year}${s.inflationAdjusted ? ', inflation-adjusted' : ''}`
   }
 }
 

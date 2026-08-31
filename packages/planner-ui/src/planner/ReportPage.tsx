@@ -24,7 +24,7 @@ import type { Account, IncomeStream, Plan } from '@retiregolden/engine/model/pla
 import type { YearResult } from '@retiregolden/engine/projection/types'
 import { downloadStandaloneReport } from '../report/downloadReport'
 import { useReportBranding } from '../report/brandingContext'
-import { buildInheritedSchedules } from '../report/reportModel'
+import { buildInheritedSchedules, incomeDetail } from '../report/reportModel'
 import { acaLedgerSummary, acaReportStatus } from './acaReportStatus'
 import { PlanProvider } from './PlanContext'
 import { usePlan } from './planContextCore'
@@ -76,19 +76,6 @@ function incomeLabel(plan: Plan, s: IncomeStream): string {
   if (s.type === 'wages') return `Wages: ${ownerName(plan, s.personId)}`
   if (s.type === 'socialSecurity') return `Social Security: ${ownerName(plan, s.personId)}`
   return s.label
-}
-
-function incomeDetail(s: IncomeStream): string {
-  switch (s.type) {
-    case 'wages':
-      return `${fmtMoney(s.annualGross)}/yr until ${s.endAge ?? 'retirement'}`
-    case 'socialSecurity':
-      return `${s.piaMonthly !== null ? `${fmtMoney(s.piaMonthly)}/mo PIA` : 'from earnings record'}, claim ${s.claimAge.years}y${s.claimAge.months ? ` ${s.claimAge.months}m` : ''}`
-    case 'recurring':
-      return `${fmtMoney(s.annualAmount)}/yr${s.inflationAdjusted ? ', inflation-adjusted' : ''}`
-    case 'oneTime':
-      return `${fmtMoney(s.amount)} in ${s.year}`
-  }
 }
 
 function conversionSummary(plan: Plan): string {

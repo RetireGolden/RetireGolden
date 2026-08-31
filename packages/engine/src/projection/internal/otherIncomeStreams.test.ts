@@ -5,8 +5,8 @@
  * restating its implementation. What is pinned here is what the module owns:
  * which streams contribute in a given year (the recurring window, the
  * survivorship gate, the one-time year match), what each contributing stream
- * pays (the inflation election, and the one-time amount's deliberate lack of
- * one), how the amount is routed for tax, and — the part the delegation test
+ * pays (the inflation election, which since plan schema v5 both kinds carry),
+ * how the amount is routed for tax, and — the part the delegation test
  * deliberately cannot check — that rows come back in `plan.incomes` ORDER and
  * are keyed by POSITION rather than by stream id.
  *
@@ -40,6 +40,7 @@ function oneTime(over: Partial<Extract<IncomeStream, { type: 'oneTime' }>> = {})
     id: 'once',
     label: 'Windfall',
     year: YEAR,
+    inflationAdjusted: false,
     amount: 25_000,
     taxTreatment: 'ordinary',
     ...over,
@@ -169,11 +170,35 @@ describe('otherIncomeStreams — amounts', () => {
     expect(rows.map((r) => r.amount)).toEqual([15_000, 10_000])
   })
 
-  // THE SECOND ASYMMETRY. A one-time amount is never inflated, whatever the
-  // year and whatever the factor.
-  it('never inflates a one-time amount', () => {
-    const rows = otherIncomeStreams(input({ inflFactor: 3.7, incomes: [oneTime()] }))
-    expect(rows[0]!.amount).toBe(25_000)
+  // The SAME election on the one-time arm, which before plan schema v5 did not
+  // exist: an amount was never inflated and the author could not say otherwise.
+  it('scales an inflation-adjusted one-time amount and leaves an un-adjusted one alone', () => {
+    const rows = otherIncomeStreams(
+      input({
+        inflFactor: 1.5,
+        incomes: [
+          oneTime({ id: 'adj', inflationAdjusted: true }),
+          oneTime({ id: 'flat', inflationAdjusted: false }),
+        ],
+      }),
+    )
+    expect(rows.map((r) => r.amount)).toEqual([37_500, 25_000])
+  })
+
+  // The election reaches the LEDGER PAYLOAD too, not just the row's scalar.
+  // They are the same double by construction (`record.amount` is assigned from
+  // `amount`), and this is what pins that they stay so — a rebuild at the
+  // record site that forgot the factor would leave every projection total
+  // right and every published ledger line wrong.
+  it('carries the elected amount into the record on both kinds', () => {
+    const rows = otherIncomeStreams(
+      input({
+        inflFactor: 1.5,
+        incomes: [oneTime({ inflationAdjusted: true }), recurring({ inflationAdjusted: true })],
+      }),
+    )
+    for (const row of rows) expect(row.record.amount).toBe(row.amount)
+    expect(rows.map((r) => r.record.amount)).toEqual([37_500, 15_000])
   })
 
   // THE ZERO-AMOUNT CONTRACT, asserted for BOTH kinds. It is the one rule whose

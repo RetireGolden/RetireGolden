@@ -506,11 +506,137 @@ export const migratePlanV3ToV4: MigrationStep = (raw) => {
   return withoutAnnualTaxFacts
 }
 
+/**
+ * A v4 one-time income stream, recognised structurally: `type: 'oneTime'` with
+ * no own `inflationAdjusted`. Nothing else in the plan model uses that `type`
+ * literal, and this only ever runs against an `incomes` array (the plan's, or a
+ * scenario operation's value below), so it cannot reach a look-alike elsewhere.
+ * An object that ALREADY carries the key is left exactly as it is — a v4
+ * document should not have one, and inventing a value over a present one would
+ * be a repair rather than a migration.
+ */
+function addOneTimeInflationElection(incomes: unknown): unknown {
+  if (!Array.isArray(incomes)) return incomes
+  let changed = false
+  const migrated = incomes.map((stream) => {
+    if (typeof stream !== 'object' || stream === null || Array.isArray(stream)) return stream
+    const record = stream as Record<string, unknown>
+    if (record['type'] !== 'oneTime') return stream
+    if (Object.prototype.hasOwnProperty.call(record, 'inflationAdjusted')) return stream
+    changed = true
+    return { ...record, inflationAdjusted: false }
+  })
+  return changed ? migrated : incomes
+}
+
+/**
+ * The same election, applied to whatever a stored scenario carries. `incomes`
+ * is an editable patch root (`scenarios/patch.ts`), so a saved scenario can
+ * hold a whole v4 `incomes` array and would fail to re-parse against v5 once
+ * the plan around it had moved.
+ *
+ * Two shapes reach here. A canonical v1 envelope carries RFC 6901 operations,
+ * and both legs of one matter: `value` is what the scenario would write, and
+ * `before` is what conflict detection compares against the live plan — migrate
+ * only the first and every stored scenario touching income would read as
+ * conflicted. A legacy loose patch is a deep override object with `incomes` at
+ * its root. Anything else is returned untouched.
+ */
+function migrateScenarioOneTimeIncomes(scenarios: unknown): unknown {
+  if (!Array.isArray(scenarios)) return scenarios
+  let changedAny = false
+  const migratedScenarios = scenarios.map((scenario) => {
+    if (typeof scenario !== 'object' || scenario === null || Array.isArray(scenario)) return scenario
+    const scenarioRecord = scenario as Record<string, unknown>
+    const patch = scenarioRecord['patch']
+    if (typeof patch !== 'object' || patch === null || Array.isArray(patch)) return scenario
+    const patchRecord = patch as Record<string, unknown>
+
+    // A path is an income-array pointer when it is `/incomes` itself or a
+    // segment below it; `/incomeFloor` shares a prefix and must not match.
+    const underIncomes = (path: unknown): boolean =>
+      typeof path === 'string' && (path === '/incomes' || path.startsWith('/incomes/'))
+    // A pointer at or above the array holds streams; one BELOW an index (say
+    // `/incomes/2/amount`) holds a leaf, and wrapping it would be wrong.
+    const atStreamLevel = (path: unknown): boolean =>
+      path === '/incomes' || (typeof path === 'string' && /^\/incomes\/\d+$/.test(path))
+    const migrateOperationValue = (path: unknown, value: unknown): unknown => {
+      if (!underIncomes(path) || !atStreamLevel(path)) return value
+      if (path === '/incomes') return addOneTimeInflationElection(value)
+      const [single] = addOneTimeInflationElection([value]) as unknown[]
+      return single
+    }
+
+    const operations = patchRecord['operations']
+    if (Array.isArray(operations)) {
+      let changedOperations = false
+      const migratedOperations = operations.map((operation) => {
+        if (typeof operation !== 'object' || operation === null || Array.isArray(operation)) return operation
+        const operationRecord = operation as Record<string, unknown>
+        const path = operationRecord['path']
+        if (!underIncomes(path)) return operation
+        let next = operationRecord
+        if (Object.prototype.hasOwnProperty.call(next, 'value')) {
+          const value = migrateOperationValue(path, next['value'])
+          if (value !== next['value']) next = { ...next, value }
+        }
+        const before = next['before']
+        if (
+          typeof before === 'object' &&
+          before !== null &&
+          !Array.isArray(before) &&
+          (before as Record<string, unknown>)['present'] === true
+        ) {
+          const beforeRecord = before as Record<string, unknown>
+          const value = migrateOperationValue(path, beforeRecord['value'])
+          if (value !== beforeRecord['value']) next = { ...next, before: { ...beforeRecord, value } }
+        }
+        if (next === operationRecord) return operation
+        changedOperations = true
+        return next
+      })
+      if (!changedOperations) return scenario
+      changedAny = true
+      return { ...scenarioRecord, patch: { ...patchRecord, operations: migratedOperations } }
+    }
+
+    const legacyIncomes = patchRecord['incomes']
+    if (legacyIncomes === undefined) return scenario
+    const migratedIncomes = addOneTimeInflationElection(legacyIncomes)
+    if (migratedIncomes === legacyIncomes) return scenario
+    changedAny = true
+    return { ...scenarioRecord, patch: { ...patchRecord, incomes: migratedIncomes } }
+  })
+  return changedAny ? migratedScenarios : scenarios
+}
+
+/**
+ * Pure v4 -> v5 migration. Schema v5 gives a one-time income stream the
+ * inflation election a recurring stream always had, and the editor authors NEW
+ * one-time streams with it on — today's dollars, matching how the same user
+ * enters a one-time spending goal.
+ *
+ * A STORED plan gets `false`, and that choice is the whole point of the
+ * migration. Before v5 a one-time amount was never inflated, so `false` is the
+ * only value that reprojects an existing plan to the numbers its owner last
+ * saw; `true` would silently restate every future windfall upward on load. The
+ * asymmetry between the migrated default and the authored default is
+ * deliberate and is the reason the field is required rather than optional with
+ * one default serving both.
+ */
+export const migratePlanV4ToV5: MigrationStep = (raw) => {
+  const incomes = addOneTimeInflationElection(raw['incomes'])
+  const scenarios = migrateScenarioOneTimeIncomes(raw['scenarios'])
+  if (incomes === raw['incomes'] && scenarios === raw['scenarios']) return raw
+  return { ...raw, incomes, scenarios }
+}
+
 /** Keyed by the version the step migrates FROM. */
 const defaultRegistry: Record<number, MigrationStep> = {
   1: migratePlanV1ToV2,
   2: migratePlanV2ToV3,
   3: migratePlanV3ToV4,
+  4: migratePlanV4ToV5,
 }
 
 /**
