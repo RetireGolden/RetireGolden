@@ -113,9 +113,11 @@ export const investmentIncomeAndBasisRecords = {
     implementedBy: [
       'packages/engine/src/tax/federalTax.ts',
       'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/projection/internal/distributedTaxableYieldRows.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/internal/distributedTaxableYieldRows.ts#distributedTaxableYieldRows',
       'packages/engine/src/tax/federalTax.ts#computeFederalTax',
     ],
   },
@@ -840,7 +842,7 @@ export const investmentIncomeAndBasisRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The absence surface spans model/plan.ts and projection/simulate.ts. taxableAccountSchema.interestYieldPct is a generic current-year yield and simulate.ts immediately adds that yield to ordinary income; neither surface identifies a savings bond, redemption or maturity date, accounting method, or the section 454 election that would select current inclusion. Treating generic interest as a savings bond would conflate an ordinary brokerage yield with a deferred savings-bond obligation.',
+      'The absence surface spans model/plan.ts, projection/internal/distributedTaxableYieldRows.ts, and projection/simulate.ts. taxableAccountSchema.interestYieldPct is a generic current-year yield; distributedTaxableYieldRows prices it for the current year, and simulate.ts immediately adds the returned interest to ordinary income. None of those surfaces identifies a savings bond, redemption or maturity date, accounting method, or the section 454 election that would select current inclusion. Treating generic interest as a savings bond would conflate an ordinary brokerage yield with a deferred savings-bond obligation.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -861,10 +863,12 @@ export const investmentIncomeAndBasisRecords = {
     verifiedOn: '2026-08-27',
     implementedBy: [
       'packages/engine/src/model/plan.ts',
+      'packages/engine/src/projection/internal/distributedTaxableYieldRows.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/model/plan.ts#taxableAccountSchema',
+      'packages/engine/src/projection/internal/distributedTaxableYieldRows.ts#distributedTaxableYieldRows',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
