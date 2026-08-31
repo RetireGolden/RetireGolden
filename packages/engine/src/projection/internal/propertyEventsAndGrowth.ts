@@ -35,7 +35,7 @@
  * the reason it is the hardest of its batch. `internal/fixedAssetDispositions.ts`
  * needed only a MEMBERSHIP shadow — a set of the ids whose line it had already
  * closed. This phase needs a NUMERIC one, on both maps, because THREE separate
- * read-after-write channels cross iterations of the inlined loop. Account ids
+ * read-after-write channels cross iterations of the loop. Account ids
  * are not globally unique in a valid `Plan`: `model/plan.ts` raises `duplicate
  * account id` only when a retirement action references the id, so two property
  * accounts may legally share one, and all three channels are then live.
@@ -45,15 +45,14 @@
  *      10% inflation: 121000.00000000003 after one year (100000 x 1.1 x 1.1)
  *      against 110000.00000000001 for a single row. An eager helper reading a
  *      pre-loop snapshot would give the second row the wrong base.
- *   2. The HECM line's NUMBERS — compounded once per PROPERTY ROW, and the
- *      non-recourse payoff clamp reads the running `loanBalance`. MEASURED on
- *      the same duplicate-id pair with `upfrontCostPct` 10, `growthRatePct` 15,
- *      0% inflation and a legacy sale: ordering the rows [no-sale, sale] yields
- *      2027 cash 569,921.65 and [sale, no-sale] yields 571,905.40 — a 1,983.75
- *      delta that is exactly the growth the first row applied before the
- *      second row's clamp read the balance. A third duplicate row moves it a
- *      further 4,904.821875, matching 15,208.75 x 1.15^2 - 15,208.75 to the
- *      cent. This is why a membership shadow is not sufficient.
+ *   2. The HECM line's NUMBERS — compounded once per OPEN LINE ID per year,
+ *      while the non-recourse payoff clamp reads the running `loanBalance`.
+ *      Duplicate unreferenced account ids are parse-valid, but the line map is
+ *      keyed by id, so a second property row is not a second HECM line and must
+ *      not apply a second annual multiplier. If an earlier row has already
+ *      accrued the line, however, a later same-id sale must see that accrued
+ *      balance. This is why both a numeric shadow and an accrued-id set are
+ *      required.
  *   3. The line's DELETION, observed INTRA-iteration: `hecmStates.delete(id)`
  *      is re-read seventeen lines later by the same iteration's growth lookup,
  *      so a legacy sale suppresses that row's own line growth. Stated honestly:
@@ -123,8 +122,8 @@ export interface LegacyPropertySaleDeposit {
 export interface PropertyEventYearInput {
   /**
    * `plan.accounts`. Iteration order is load-bearing three ways at once: the
-   * `deposit` order, the value-compounding order, and the line-compounding
-   * order.
+   * `deposit` order, the value-compounding order, and the order in which a
+   * same-id HECM line is accrued or closed.
    */
   readonly accounts: readonly Readonly<Account>[]
   /** The projected calendar year. */
@@ -161,7 +160,7 @@ export interface PropertyEventRow {
   readonly deposit: number | null
   /** The id whose HECM line this sale closes, or null. Driven by the line EXISTING. */
   readonly closesHecmForAccountId: string | null
-  /** The multiplier for a line still open after this row, or null. */
+  /** The multiplier for a line still open and not yet accrued this year, or null. */
   readonly hecmGrowth: number | null
   /** The ledger row to publish, or null. Built only on the publish path. */
   readonly record: LegacyPropertySaleDeposit | null
@@ -184,6 +183,9 @@ export function propertyEventsAndGrowth(
   // `null` means "deleted during this call"; a missing key means "not touched
   // yet", which is seeded lazily from `hecmStates`.
   const shadowLines = new Map<string, MutableHecmLine | null>()
+  // A HECM state is one actual line keyed by account id. A parse-valid second
+  // property row sharing that id must not apply a second annual accrual.
+  const accruedLineIds = new Set<string>()
   const lineFor = (accountId: string): MutableHecmLine | null => {
     if (shadowLines.has(accountId)) return shadowLines.get(accountId) ?? null
     const live = hecmStates.get(accountId)
@@ -224,10 +226,11 @@ export function propertyEventsAndGrowth(
     shadowValues.set(accountId, value)
     const openLine = lineFor(accountId)
     let hecmGrowth: number | null = null
-    if (openLine && account.hecm) {
+    if (openLine && account.hecm && !accruedLineIds.has(accountId)) {
       hecmGrowth = 1 + account.hecm.growthRatePct / 100
       openLine.principalLimit *= hecmGrowth
       openLine.loanBalance *= hecmGrowth
+      accruedLineIds.add(accountId)
     }
     rows.push({ propertyAccountId: accountId, value, deposit, closesHecmForAccountId, hecmGrowth, record })
   }

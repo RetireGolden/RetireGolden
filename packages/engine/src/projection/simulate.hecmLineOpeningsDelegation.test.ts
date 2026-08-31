@@ -349,12 +349,10 @@ describe('simulatePlan delegates the HECM line open', () => {
     const { result, phases } = run(validatePlan(plan))
     noDrawsHappened(result)
     expect(phases[0]?.rows.length).toBe(1)
-    // FIRST account's upfront percentage, SECOND account's value — and TWO
-    // growth multiplications in the one year, because the property-events phase
-    // walks `plan.accounts` and both rows resolve to the same open line. That
-    // double-growth is outside this phase and unchanged by this extraction; it
-    // is spelled out here so the number is not misread as this phase's doing.
-    expect(yearOf(result, START_YEAR).hecmLoanBalance).toBe(expectedLoanBalance(2, 275_000, 2))
+    // FIRST account's upfront percentage, SECOND account's value — and ONE
+    // annual growth multiplication on the single line keyed by this id. The
+    // second property row is not a second HECM state.
+    expect(yearOf(result, START_YEAR).hecmLoanBalance).toBe(expectedLoanBalance(2, 275_000, 1))
   })
 
   // G4 — THE ONE ORDER-SENSITIVE THING THIS PHASE CONTROLS, and its limit. The

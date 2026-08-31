@@ -47,8 +47,8 @@ byte-identical projection.
   - **Line size:** the user's lender-quoted `principalLimitPct`, else the pack's published principal-limit
     factors (HUD PLF tables at a 5.875% expected rate, 2026: 35.1% of value at 62 → 61.4% at 90, youngest
     borrower's age, provenance id `hecm-plf`). A warning fires if modeled before 62.
-  - **Growth:** the principal limit and the loan balance both compound at `growthRatePct` (note rate +
-    0.5% MIP; default 7.5%) — the unused line grows regardless of home value. `upfrontCostPct` finances
+  - **Growth:** once per projected year, each open line's principal limit and loan balance both compound at
+    `growthRatePct` (note rate + 0.5% MIP; default 7.5%) — the unused line grows regardless of home value. `upfrontCostPct` finances
     origination/closing/initial-MIP into the loan at open.
   - **Draw policies:** `coordinated` draws for spending in the year after a negative market return
     (Monte Carlo / market-series behavior — deterministic runs have no down years); `lastResort` draws only
