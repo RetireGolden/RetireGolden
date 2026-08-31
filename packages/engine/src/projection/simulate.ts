@@ -65,6 +65,7 @@ import { createAnnualCashFlowYearSites, type AnnualCashFlowYearSites } from './a
 import { annuityExclusionMultiple, annuityPayoutForm, annuityPayoutFraction } from './annuityForms.js'
 import { buildLadder } from '../ladder/ladderMath.js'
 import { tipsLadderAnnualCashFlows, type TipsLadderState } from './internal/tipsLadderAnnualCashFlow.js'
+import { fixedAssetDispositions } from './internal/fixedAssetDispositions.js'
 import { stateParamsFor } from '../params/state/index.js'
 import type { ParameterPack } from '../params/types.js'
 import { requiredMinimumDistribution } from '../rmd/rmd.js'
@@ -119,7 +120,6 @@ import {
   type NonpersistedOwnerIraRmdSatisfactionEvidence,
 } from '../strategies/accountEligibility.js'
 import { openIraProRataYear, splitIraDistribution, type IraProRataYear } from '../strategies/iraBasis.js'
-import { propertySaleTax } from '../tax/propertySale.js'
 import { ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS } from './moneyTolerance.js'
 import {
   aggregateBasisSale,
@@ -3751,47 +3751,25 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     }
 
     // --- fixed-asset dispositions (step 6) ----------------------------------
-    // With a cost basis on a property account, this year's planned sale is
-    // priced exactly — selling costs, §121 primary-residence exclusion, and
-    // depreciation recapture — and its gains join the year's tax base up
-    // front. Net proceeds enter the cash flow (so the sale can fund its own
-    // tax), and the property-events block below zeroes the value without the
-    // legacy tax-free deposit. Without a cost basis the legacy
-    // expectedNetProceeds path is untouched.
+    // The phase lives in `internal/fixedAssetDispositions.ts`, which says which
+    // accounts sell and what each sale hands back. Folding row by row, in row
+    // order, is load-bearing: `ordinaryIncome` and `oneTimeGains` are both
+    // already non-zero here and IEEE-754 addition is not associative.
     let propertySaleProceedsTotal = 0
-    for (const account of plan.accounts) {
-      if (account.type !== 'property' || account.plannedSaleYear !== year || account.costBasis === undefined) continue
-      const value = propertyValues.get(account.id) ?? 0
-      if (value <= 0) continue
-      // Match the property-events block: the sale year's inflation growth
-      // accrues before the sale.
-      const sale = propertySaleTax({
-        salePrice: value * (1 + inflRateAt(year)),
-        costBasis: account.costBasis,
-        sellingCostPct: account.sellingCostPct,
-        primaryResidence: account.primaryResidence,
-        depreciationRecapture: account.depreciationRecapture,
-        filingStatus: taxFilingStatusForYear,
-        pack,
-      })
-      ordinaryIncome += sale.ordinaryGain
-      oneTimeGains += sale.capitalGain
-      // A HECM on the sold home is repaid from the proceeds, non-recourse:
-      // the payoff never exceeds what the sale nets, and the line closes.
-      // (Loan repayment does not change the taxable gain computed above.)
-      const hecmState = hecmStates.get(account.id)
-      let hecmPayoff = 0
-      if (hecmState) {
-        hecmPayoff = Math.min(hecmState.loanBalance, Math.max(0, sale.netProceeds))
-        hecmStates.delete(account.id)
-      }
-      propertySaleProceedsTotal += sale.netProceeds - hecmPayoff
-      yearSites?.recordPropertySaleProceeds({
-        propertyAccountId: account.id,
-        netProceedsAfterHecm: sale.netProceeds - hecmPayoff,
-        ordinaryGain: sale.ordinaryGain,
-        capitalGain: sale.capitalGain,
-      })
+    for (const row of fixedAssetDispositions({
+      accounts: plan.accounts,
+      year,
+      propertyValues,
+      inflRateAt,
+      filingStatus: taxFilingStatusForYear,
+      pack,
+      hecmStates,
+    })) {
+      ordinaryIncome += row.ordinaryGain
+      oneTimeGains += row.capitalGain
+      if (row.closesHecmForAccountId !== null) hecmStates.delete(row.closesHecmForAccountId)
+      propertySaleProceedsTotal += row.netProceedsAfterHecm
+      yearSites?.recordPropertySaleProceeds(row.record)
     }
 
     // --- contributions & employer match --------------------
