@@ -1,8 +1,10 @@
 /** @vitest-environment jsdom */
 /**
- * Computed-style / cascade proof that Getting started is a 2×2 and Import
- * stays auto-fill. String-slicing `.home-paths-grid` is not enough:
- * `.plan-grid` used to restore auto-fill later at the same specificity.
+ * Computed-style / cascade proof that Getting started and Import both
+ * land on the same 2×2. String-slicing `.home-paths-grid` is not enough:
+ * `.plan-grid` used to restore auto-fill later at the same specificity,
+ * and Import used to miss the 2-column rule because it had no `.home-paths`
+ * wrapper (#342).
  */
 
 import { afterEach, describe, expect, it } from 'vitest'
@@ -85,8 +87,11 @@ describe('Getting started / Import grid cascade', () => {
     expect(cols).not.toMatch(/auto-fill/)
   })
 
-  it('ImportPage source cards computed tracks stay auto-fill', () => {
+  it('ImportPage source cards computed tracks are 2 columns, not auto-fill', () => {
     injectPlannerCss()
+    // Exact Import landing markup: the two grid classes, no `.home-paths`
+    // ancestor. This assertion failed on main when the winning rule was
+    // `.home-paths .home-paths-grid.plan-grid`.
     const grid = document.createElement('div')
     grid.className = 'plan-grid home-paths-grid'
     document.body.appendChild(grid)
@@ -94,7 +99,7 @@ describe('Getting started / Import grid cascade', () => {
     const fromCascade = cascadedGridTemplateColumns(grid)
     const fromComputed = getComputedStyle(grid).gridTemplateColumns
     const cols = fromCascade ?? fromComputed
-    expect(cols, `cascade="${fromCascade}" computed="${fromComputed}"`).toMatch(/auto-fill/)
-    expect(cols).not.toMatch(/repeat\(2/)
+    expect(cols, `cascade="${fromCascade}" computed="${fromComputed}"`).toMatch(/repeat\(2|1fr 1fr/)
+    expect(cols).not.toMatch(/auto-fill/)
   })
 })

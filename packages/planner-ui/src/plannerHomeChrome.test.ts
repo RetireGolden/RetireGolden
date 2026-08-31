@@ -2,8 +2,9 @@
  * First-run planner-home chrome (#297): selected theme must not share the
  * primary-CTA gold fill, shell skip-to-content sits in flow when focused,
  * workspace skip stays out of the two-column grid, and Getting started is a
- * real 2×2 that beats `.plan-grid` auto-fill. Import source cards stay
- * auto-fill.
+ * real 2×2 that beats `.plan-grid` auto-fill. Import source cards share
+ * that same 2×2 — they used to stay auto-fill because the winning rule
+ * required a `.home-paths` wrapper Import never had (#342).
  */
 
 import { describe, expect, it } from 'vitest'
@@ -48,12 +49,16 @@ function winningDeclaration(css: string, className: string, property: string, an
   </body></html>`
   // Cascade in this helper: last matching rule of highest specificity wins.
   // Used when jsdom computed-style is unavailable (this file is node-env).
+  // Strip comments first — a comment glued onto the next selector used to
+  // look like a descendant combinator, so a no-ancestor query skipped the
+  // 2-column rule and reported `.plan-grid` auto-fill as the winner.
+  const stripped = css.replace(/\/\*[\s\S]*?\*\//g, '')
   const ruleRe = /([^{}]+)\{([^{}]+)\}/g
   let match: RegExpExecArray | null
   let bestSpec = -1
   let bestValue: string | null = null
   const targetClasses = new Set(className.split(/\s+/))
-  while ((match = ruleRe.exec(css)) !== null) {
+  while ((match = ruleRe.exec(stripped)) !== null) {
     const selectors = match[1]!.split(',').map((s) => s.trim())
     const body = match[2]!
     const prop = body.match(new RegExp(`${property}\\s*:\\s*([^;]+)`))
@@ -123,7 +128,7 @@ describe('planner home chrome (#297)', () => {
     expect(block).toMatch(/flex-direction:\s*column/)
   })
 
-  it('Getting started 2×2 beats later .plan-grid auto-fill; Import stays auto-fill', () => {
+  it('Getting started and Import landings share the 2×2 that beats later .plan-grid auto-fill', () => {
     const homeCols = winningDeclaration(
       plannerCss,
       'home-paths-grid plan-grid',
@@ -133,19 +138,31 @@ describe('planner home chrome (#297)', () => {
     expect(homeCols, 'home Getting started winning track list').toMatch(/repeat\(2/)
     expect(homeCols).not.toMatch(/auto-fill/)
 
+    // ImportPage markup is `plan-grid home-paths-grid` with no `.home-paths`
+    // wrapper. The 2-column rule must still win — requiring the wrapper is
+    // the #342 bug (four 298px auto-fill tracks at the hosted-Free width).
     const importCols = winningDeclaration(
       plannerCss,
       'plan-grid home-paths-grid',
       'grid-template-columns',
     )
-    expect(importCols, 'ImportPage winning track list').toMatch(/auto-fill/)
-    expect(importCols).not.toMatch(/repeat\(2/)
+    expect(importCols, 'ImportPage winning track list').toMatch(/repeat\(2/)
+    expect(importCols).not.toMatch(/auto-fill/)
 
     // The override must appear after `.plan-grid` so a same-specificity tie
-    // cannot restore the 3+1 rag this PR exists to remove.
+    // cannot restore auto-fill, and it must not require `.home-paths`.
     const planGridAt = plannerCss.indexOf('\n.plan-grid {')
-    const overrideAt = plannerCss.indexOf('.home-paths .home-paths-grid.plan-grid')
+    const overrideAt = plannerCss.indexOf('.home-paths-grid.plan-grid {')
     expect(planGridAt).toBeGreaterThanOrEqual(0)
     expect(overrideAt).toBeGreaterThan(planGridAt)
+    expect(plannerCss).not.toMatch(/\.home-paths\s+\.home-paths-grid\.plan-grid/)
+  })
+
+  it('Import step back control sits with the h2, not item-row-head space-between', () => {
+    const block = extractBlock(plannerCss, '.import-source-head {')
+    expect(block).toMatch(/display:\s*flex/)
+    expect(block).toMatch(/flex-wrap:\s*wrap/)
+    expect(block).not.toMatch(/space-between/)
+    expect(block).not.toMatch(/justify-content:\s*flex-end/)
   })
 })
