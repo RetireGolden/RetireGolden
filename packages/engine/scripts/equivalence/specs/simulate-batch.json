@@ -1,0 +1,161 @@
+{
+  "schema": "retiregolden.equivalence-reach-spec/1",
+  "name": "simulate-batch",
+  "why": "The four annual phases extracted in the simulate-batch slice, plus the sub-arms whose reach cannot be assumed. REPOINTED after the extractions landed: every range now names the extracted helper under projection/internal/, not the removed inlined block in projection/simulate.ts, and one entry (B.application) names the call site because that arm stayed there. Block D - income pass 1, wages - was REMOVED when this branch merged origin/main. That phase was extracted concurrently and independently on main as projection/internal/wageIncomeStreams.ts; this slice's duplicate helper was withdrawn rather than kept, and main's version is not this spec's to prove. The surviving ids A, B, C and E were left as they are rather than renumbered, so reach output stays comparable with the runs taken before the merge. Line numbers are against the working tree and MUST be re-checked before reuse (all sixteen were re-checked line by line during that merge and none needed correcting: the merge left the four helper files byte-identical, and in projection/simulate.ts it changed only the import block and the wages call site - the import edit is line-count-neutral, one import removed and one added, and the call site sits below the B.application range, so no range shifted) - a stale range silently reports the wrong code as reached, which is exactly what the first version of this file would have started doing the moment the first phase moved.",
+  "entries": [
+    {
+      "id": "A",
+      "label": "annual rebalance to target (start-of-year trade)",
+      "file": "projection/internal/annualRebalanceToTarget.ts",
+      "lines": [
+        178,
+        212
+      ],
+      "note": "a member's count here is LOOP-HEADER iterations, not phase work: V8 attributes straight-line code after a conditional `continue` to the enclosing block, so this range reports every plan the loop iterates over at all. Read the sub-entries and the cold regions for what the phase body actually did."
+    },
+    {
+      "id": "A.saleArm",
+      "label": "A: taxable sale through aggregateBasisSale (turnover > 1e-9, taxable, balance > 0)",
+      "file": "projection/internal/annualRebalanceToTarget.ts",
+      "lines": [
+        189,
+        210
+      ]
+    },
+    {
+      "id": "A.ledger",
+      "label": "A: the rebalancing-gain ledger payload the caller publishes",
+      "file": "projection/internal/annualRebalanceToTarget.ts",
+      "lines": [
+        204,
+        207
+      ],
+      "note": "SHAPE CHANGED WITH THE EXTRACTION: inlined, this literal was an argument to an optional-chained recorder call and was built on cashFlow modes ONLY. The row owns it now, so it is built on every sale row in every mode. A count here is therefore no longer evidence that a cashFlow mode ran."
+    },
+    {
+      "id": "A.retarget",
+      "label": "A: the non-taxable / no-trade retarget row",
+      "file": "projection/internal/annualRebalanceToTarget.ts",
+      "lines": [
+        211,
+        211
+      ]
+    },
+    {
+      "id": "B",
+      "label": "pension lump-sum rollover",
+      "file": "projection/internal/pensionLumpSumRollovers.ts",
+      "lines": [
+        158,
+        189
+      ],
+      "note": "a member's count here is LOOP-HEADER iterations, not phase work: V8 attributes straight-line code after a conditional `continue` to the enclosing block, so this range reports every plan the loop iterates over at all. Read the sub-entries and the cold regions for what the phase body actually did."
+    },
+    {
+      "id": "B.row",
+      "label": "B: the elected row and its ledger payload",
+      "file": "projection/internal/pensionLumpSumRollovers.ts",
+      "lines": [
+        175,
+        188
+      ],
+      "note": "RENAMED from B.credit and repointed. The credit itself no longer lives in the phase: `target.balance += amount` and the before/after capture stay at the call site, because two pensions may elect into one account in the same year and the second before-balance is the first after-balance."
+    },
+    {
+      "id": "B.occurrence",
+      "label": "B: the runtime-occurrence gate (amount > 0 and a traditional destination)",
+      "file": "projection/internal/pensionLumpSumRollovers.ts",
+      "lines": [
+        169,
+        174
+      ],
+      "note": "the aggregated-IRA gate is now a FLAG computed on line 172 inside this same region, so V8 line coverage can no longer separate the two gates here. B.application points at the caller-side branch that consumes the flag, which is where the separation is now observable."
+    },
+    {
+      "id": "B.application",
+      "label": "B: the aggregated-IRA credit application, applied at the call site",
+      "file": "projection/simulate.ts",
+      "lines": [
+        2009,
+        2020
+      ]
+    },
+    {
+      "id": "C",
+      "label": "HECM line open",
+      "file": "projection/internal/hecmLineOpenings.ts",
+      "lines": [
+        149,
+        170
+      ],
+      "note": "a member's count here is LOOP-HEADER iterations, not phase work: V8 attributes straight-line code after a conditional `continue` to the enclosing block, so this range reports every plan the loop iterates over at all. Read the sub-entries and the cold regions for what the phase body actually did."
+    },
+    {
+      "id": "C.warning",
+      "label": "C: the under-62 borrower warning",
+      "file": "projection/internal/hecmLineOpenings.ts",
+      "lines": [
+        156,
+        159
+      ]
+    },
+    {
+      "id": "C.open",
+      "label": "C: the principal-limit / loan-balance computation and the row",
+      "file": "projection/internal/hecmLineOpenings.ts",
+      "lines": [
+        160,
+        169
+      ],
+      "note": "SAME ARTIFACT AS BEFORE: this range follows four `continue` statements carrying the five guards, and carries no brace of its own, so its count is the enclosing loop count. Members that genuinely open a line are the blocks:c* members plus any example with a HECM (there are none)."
+    },
+    {
+      "id": "E",
+      "label": "property events + growth",
+      "file": "projection/internal/propertyEventsAndGrowth.ts",
+      "lines": [
+        197,
+        233
+      ],
+      "note": "a member's count here is LOOP-HEADER iterations, not phase work: V8 attributes straight-line code after a conditional `continue` to the enclosing block, so this range reports every plan the loop iterates over at all. Read the sub-entries and the cold regions for what the phase body actually did."
+    },
+    {
+      "id": "E.saleYear",
+      "label": "E: the planned-sale-year branch (post-growth value above zero)",
+      "file": "projection/internal/propertyEventsAndGrowth.ts",
+      "lines": [
+        207,
+        223
+      ]
+    },
+    {
+      "id": "E.legacySale",
+      "label": "E: the legacy tax-free expectedNetProceeds path (no cost basis)",
+      "file": "projection/internal/propertyEventsAndGrowth.ts",
+      "lines": [
+        208,
+        221
+      ]
+    },
+    {
+      "id": "E.legacyLedgerRow",
+      "label": "E: the legacy-sale ledger payload (cashFlow modes only)",
+      "file": "projection/internal/propertyEventsAndGrowth.ts",
+      "lines": [
+        218,
+        220
+      ],
+      "note": "unlike A.ledger, this one is STILL cashFlow-only: the payload is gated on a non-null surplusDestination, and the call site passes that field only when the ledger array the payload feeds is itself non-null - the same condition the inlined phase gated its object literal on."
+    },
+    {
+      "id": "E.hecmGrowth",
+      "label": "E: an open line compounding at its own growth rate",
+      "file": "projection/internal/propertyEventsAndGrowth.ts",
+      "lines": [
+        227,
+        231
+      ]
+    }
+  ],
+  "readingTheCounts": "'members that reach it' counts corpus members whose peak line count inside the range is non-zero. V8 block coverage splits at braces and at branch bodies, not at every statement, so a range that is straight-line code after a `continue` inherits the enclosing block's count and OVER-reports. Entries that do are marked with a note. Cold regions do not have this problem: a zero-count range is an untaken branch, exactly."
+}

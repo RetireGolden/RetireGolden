@@ -1474,12 +1474,12 @@ export const requiredMinimumDistributionRecords = {
   'irc-402-c-4-B-rmd-not-eligible-rollover-distribution': {
     title: 'Required distributions are not eligible rollover distributions',
     statement:
-      'A distribution is an eligible rollover distribution only to the extent it is not required under §401(a)(9). For an IRA, the regulation likewise treats the required-minimum-distribution portion as not eligible for rollover. The engine\'s implemented pension lump-sum path in projection/simulate.ts credits the entire lumpSumElection offer to the traditional account as a tax-free direct rollover with no 402(c)(4)(B) carve-out, even when the participant is past the required beginning date, so the required-distribution portion is rolled anyway and current-year tax is deferred.',
+      'A distribution is an eligible rollover distribution only to the extent it is not required under §401(a)(9). For an IRA, the regulation likewise treats the required-minimum-distribution portion as not eligible for rollover. The engine\'s implemented pension lump-sum path (projection/internal/pensionLumpSumRollovers.ts selects the electing pensions and reports the offer amount; projection/simulate.ts applies the credit) moves the entire lumpSumElection offer to the traditional account as a tax-free direct rollover with no 402(c)(4)(B) carve-out, even when the participant is past the required beginning date, so the required-distribution portion is rolled anyway and current-year tax is deferred.',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'understatesTax',
     conventionRationale:
-      'DEFECT — no behavior change in this registry slice. projection/simulate.ts\'s pension lump-sum rollover (model/plan.ts validates the election into an owned traditional account) credits the entire lumpSumOffer.amount as a tax-free direct rollover. Section 402(c)(4)(B) excludes the §401(a)(9)-required portion from the eligible-rollover-distribution definition; on the fixture an owner past the RBD with a 237,000 offer has a 10,000 RMD portion (237,000 ÷ Uniform Lifetime 23.7 at age 76) that should stay taxable and only 227,000 should roll. The engine rolls the full 237,000 and pays no taxable pension income in the election year. The fixture pins the produced zero taxable pension income and bounds the rolled balance above the eligible 227,000 until a separately authorized implementation fix changes it.',
+      'DEFECT — no behavior change in this registry slice. projection/simulate.ts\'s pension lump-sum rollover phase (model/plan.ts validates the election into an owned traditional account; projection/internal/pensionLumpSumRollovers.ts selects and sizes it and projection/simulate.ts credits it) moves the entire lumpSumOffer.amount as a tax-free direct rollover. Section 402(c)(4)(B) excludes the §401(a)(9)-required portion from the eligible-rollover-distribution definition; on the fixture an owner past the RBD with a 237,000 offer has a 10,000 RMD portion (237,000 ÷ Uniform Lifetime 23.7 at age 76) that should stay taxable and only 227,000 should roll. The engine rolls the full 237,000 and pays no taxable pension income in the election year. The fixture pins the produced zero taxable pension income and bounds the rolled balance above the eligible 227,000 until a separately authorized implementation fix changes it.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -1506,11 +1506,13 @@ export const requiredMinimumDistributionRecords = {
     verifiedOn: '2026-08-25',
     implementedBy: [
       'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/projection/internal/pensionLumpSumRollovers.ts',
       'packages/engine/src/model/plan.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/model/plan.ts#pensionSchema',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/internal/pensionLumpSumRollovers.ts#pensionLumpSumRollovers',
     ],
   },
 

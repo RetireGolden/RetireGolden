@@ -51,11 +51,10 @@ import {
   accountAllocation,
   blendedTaxableYield,
   driftWeights,
-  rebalanceTurnoverFraction,
   resolveAssetClassParams,
   targetWeightsAt,
 } from '../allocation/assetClasses.js'
-import { packForYear, LATEST_PACK_YEAR, hecmPrincipalLimitFactorPct, EMBEDDED_REAL_YIELD_CURVE, irmaaTierThreshold, rmdStartAgeForBirthYear } from '../params/index.js'
+import { packForYear, LATEST_PACK_YEAR, EMBEDDED_REAL_YIELD_CURVE, irmaaTierThreshold, rmdStartAgeForBirthYear } from '../params/index.js'
 import { assembleYearCashFlow, type AnnualCashFlowPenaltySnapshot } from './annualCashFlowCapture.js'
 import {
   collidingEncodedCashFlowSegments,
@@ -64,6 +63,10 @@ import {
 import { createAnnualCashFlowYearSites, type AnnualCashFlowYearSites } from './annualCashFlowYearSites.js'
 import { annuityExclusionMultiple, annuityPayoutForm, annuityPayoutFraction } from './annuityForms.js'
 import { buildLadder } from '../ladder/ladderMath.js'
+import { annualRebalanceToTarget } from './internal/annualRebalanceToTarget.js'
+import { hecmLineOpenings } from './internal/hecmLineOpenings.js'
+import { propertyEventsAndGrowth } from './internal/propertyEventsAndGrowth.js'
+import { pensionLumpSumRollovers } from './internal/pensionLumpSumRollovers.js'
 import { tipsLadderAnnualCashFlows, type TipsLadderState } from './internal/tipsLadderAnnualCashFlow.js'
 import { fixedAssetDispositions } from './internal/fixedAssetDispositions.js'
 import { otherIncomeStreams } from './internal/otherIncomeStreams.js'
@@ -1766,31 +1769,21 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // machinery as withdrawals (basis rises by the realized gain: sold basis
     // leaves, the reinvested proceeds enter at market); traditional/Roth/HSA
     // rebalances are tax-free. rebalancing: 'none' opts out — weights drift.
+    // The phase itself lives in `internal/annualRebalanceToTarget.ts`; it
+    // returns one row per `balances` entry, in `balances` order, and that order
+    // is load-bearing twice — it is the fold order of `rebalanceRealizedGains`
+    // and the published order of the rebalancing capital-gain metadata lines.
     let rebalanceRealizedGains = 0
-    if (year > startYear) {
-      for (const state of balances) {
-        const track = allocationTrack.get(state.account.id)
-        if (!track || track.policy.rebalancing === 'none') continue
-        const target = targetWeightsAt(track.policy, year)
-        const turnover = rebalanceTurnoverFraction(track.weights, target)
-        if (turnover > 1e-9 && state.account.type === 'taxable' && state.balance > 0) {
-          // Normalized floating-point weights can sum a few ulps above 1.
-          // Keep the strict sale helper strict and contain that noise here.
-          const sellAmount = Math.min(state.balance, Math.max(0, turnover * state.balance))
-          const sale = aggregateBasisSale({
-            openingFairMarketValue: state.balance,
-            openingCostBasis: state.costBasis,
-            saleProceeds: sellAmount,
-          })
-          rebalanceRealizedGains += sale.realizedCapitalGainOrLoss
-          yearSites?.recordRebalancingGain({
-            accountId: state.account.id,
-            realizedCapitalGainOrLoss: sale.realizedCapitalGainOrLoss,
-          })
-          state.costBasis = sale.remainingCostBasis + sellAmount
-        }
-        track.weights = target
+    const rebalanceRows = annualRebalanceToTarget({ states: balances, allocationTrack, year, startYear })
+    for (let i = 0; i < balances.length; i++) {
+      const row = rebalanceRows[i]!
+      if (row.kind === 'none') continue
+      if (row.kind === 'sale') {
+        rebalanceRealizedGains += row.realizedCapitalGainOrLoss
+        yearSites?.recordRebalancingGain(row.record)
+        balances[i]!.costBasis = row.closingCostBasis
       }
+      allocationTrack.get(row.accountId)!.weights = row.targetWeights
     }
 
     /** Contract-value credits, held back so the phase runs contiguously. */
@@ -1982,54 +1975,46 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // tax-free direct rollover into the named traditional account in the
     // election year (external plan money — nothing leaves another account),
     // and the pension income stream never pays (skipped in the income block).
-    for (const account of plan.accounts) {
-      if (account.type !== 'pension' || !account.lumpSumElection || !account.lumpSumOffer) continue
-      if (account.lumpSumOffer.electionYear !== year) continue
-      const target = balances.find((b) => b.account.id === account.lumpSumElection!.rolloverAccountId)
-      if (!target) continue
+    // The phase itself lives in `internal/pensionLumpSumRollovers.ts`: it owns
+    // the selection, the target resolution and its skip, the offer amount, the
+    // occurrence key and both publication gates. The credit stays here, because
+    // two pensions may elect into ONE account in the same year and the second
+    // application's before-balance is the first one's after-balance — so the
+    // running balance must be read and written by the loop that mutates it.
+    //
+    // The credit reaches the optimizer through the occurrence recorded below,
+    // not through a mutation-site capture like the two purchases: the occurrence
+    // covers every case this line can reach, because `rolloverAccountId` is
+    // validated as an existing OWNED TRADITIONAL account (`model/plan.ts`, "a
+    // pension lump sum must roll over into an existing traditional account you
+    // own (not an inherited IRA)"), so `row.runtime` can never be null where the
+    // balance moved, and the account it resolves is always an owned one. An
+    // offer of zero moves nothing and reports nothing.
+    for (const row of pensionLumpSumRollovers({ accounts: plan.accounts, year, balances, runtimeOccurrenceKey })) {
+      const target = balances[row.destinationIndex]!
       const targetBalanceBefore = target.balance
-      target.balance += account.lumpSumOffer.amount
-      yearSites?.recordPensionRollover({
-        pensionAccountId: account.id,
-        destinationAccountId: target.account.id,
-        ownerPersonId: target.account.ownerPersonId ?? null,
-        amount: account.lumpSumOffer.amount,
-      })
-      // This credit reaches the optimizer through the occurrence recorded just
-      // below, not through a mutation-site capture like the two purchases: the
-      // occurrence covers every case this line can reach, because
-      // `rolloverAccountId` is validated as an existing OWNED TRADITIONAL
-      // account (`model/plan.ts`, "a pension lump sum must roll over into an
-      // existing traditional account you own (not an inherited IRA)"), so the
-      // `type === 'traditional'` gate below can never be false where the balance
-      // moved, and the account it resolves is always an owned one. An offer of
-      // zero moves nothing and reports nothing.
-      if (account.lumpSumOffer.amount > 0 && target.account.type === 'traditional') {
-        const kind = 'rolloverInflow' as const
-        const producerOccurrenceKey = runtimeOccurrenceKey(
-          kind,
-          account.id,
-          target.account.id,
-        )
+      target.balance += row.amount
+      yearSites?.recordPensionRollover(row.record)
+      if (row.runtime !== null) {
         recordAnnualRetirementRuntimeOccurrence({
-          producerOccurrenceKey,
-          kind,
-          grossAmountPlanDollars: account.lumpSumOffer.amount,
-          ownerPersonId: target.account.ownerPersonId,
-          sourceAccountId: target.account.id,
+          producerOccurrenceKey: row.runtime.producerOccurrenceKey,
+          kind: 'rolloverInflow',
+          grossAmountPlanDollars: row.amount,
+          ownerPersonId: row.ownerPersonId,
+          sourceAccountId: row.destinationAccountId,
           executionDate: null,
           executionSequence: null,
           movementAuthorityId: null,
         })
-        if (isAggregatedIra(target.account)) {
+        if (row.runtime.creditsAggregatedIra) {
           recordAnnualRetirementRuntimeApplication({
             applicationKind: 'credit',
-            producerOccurrenceKey,
+            producerOccurrenceKey: row.runtime.producerOccurrenceKey,
             simulatorPhase: 'pensionLumpSumRollover',
-            ownerPersonId: target.account.ownerPersonId,
-            sourceAccountId: target.account.id,
+            ownerPersonId: row.ownerPersonId,
+            sourceAccountId: row.destinationAccountId,
             sourceBalanceBeforePlanDollars: targetBalanceBefore,
-            creditedAmountPlanDollars: account.lumpSumOffer.amount,
+            creditedAmountPlanDollars: row.amount,
             sourceBalanceAfterPlanDollars: target.balance,
           })
         }
@@ -2042,21 +2027,22 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // borrower's age); financed upfront costs start the loan balance. A line
     // dated before the projection opens in the first projection year at
     // today's value (its pre-projection growth is not reconstructed).
-    for (const account of plan.accounts) {
-      if (account.type !== 'property' || !account.hecm) continue
-      if (year !== Math.max(account.hecm.openYear, startYear)) continue
-      if (hecmStates.has(account.id)) continue
-      const value = propertyValues.get(account.id) ?? 0
-      if (value <= 0) continue
-      const youngestAge = Math.min(...people.map((p) => year - dobYear(p)))
-      if (youngestAge < 62) {
-        warnings.add('A HECM line of credit was modeled before the youngest borrower turns 62 (real HECMs require age 62+).')
-      }
-      const plfPct = account.hecm.principalLimitPct ?? hecmPrincipalLimitFactorPct(pack, youngestAge)
-      hecmStates.set(account.id, {
-        principalLimit: (plfPct / 100) * value,
-        loanBalance: ((account.hecm.upfrontCostPct ?? 0) / 100) * value,
-      })
+    // The phase itself lives in `internal/hecmLineOpenings.ts`; the warning and
+    // the map write interleave in ONE loop here, exactly as they did inline,
+    // because `warnings` is a Set spread into the result and `hecmStates` is
+    // insertion-ordered, so both positions are observable.
+    for (const row of hecmLineOpenings({
+      accounts: plan.accounts,
+      year,
+      startYear,
+      propertyValues,
+      openHecmLines: hecmStates,
+      people,
+      dobYear,
+      pack,
+    })) {
+      if (row.warning !== null) warnings.add(row.warning)
+      hecmStates.set(row.propertyAccountId, row.state)
     }
 
     // --- TIPS-ladder purchase funding ---------------------------------------
@@ -10132,41 +10118,35 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     if (shortfallAfterHecm > EPSILON && depletionYear === null) depletionYear = year
 
     // --- property events + growth ------------------------------------------
-    for (const account of plan.accounts) {
-      if (account.type !== 'property') continue
-      let value = propertyValues.get(account.id) ?? 0
-      value *= 1 + inflRateAt(year)
-      if (account.plannedSaleYear === year && value > 0) {
-        // Exact-taxed sales (costBasis set) already deposited their net
-        // proceeds through the year's cash flow above; the legacy tax-free
-        // expectedNetProceeds path deposits here — net of any HECM payoff,
-        // which is non-recourse (never more than the sale nets).
-        if (account.costBasis === undefined) {
-          const proceeds = account.expectedNetProceeds ?? value
-          const line = hecmStates.get(account.id)
-          const hecmPayoff = line ? Math.min(line.loanBalance, Math.max(0, proceeds)) : 0
-          if (line) hecmStates.delete(account.id)
-          const amount = proceeds - hecmPayoff
-          deposit(amount)
-          if (amount > 0) {
-            legacyPropertySaleDeposits?.push({
-              propertyAccountId: account.id,
-              amount,
-              destination: surplusDestination!,
-            })
-          }
-        }
-        value = 0
-      }
-      propertyValues.set(account.id, value)
-      // An open line compounds at the line's growth rate on both sides: the
-      // unused principal limit grows regardless of home value (the buffer-
-      // asset property), and the loan balance accrues rate + MIP.
-      const line = hecmStates.get(account.id)
-      if (line && account.hecm) {
-        const growth = 1 + account.hecm.growthRatePct / 100
-        line.principalLimit *= growth
-        line.loanBalance *= growth
+    // The phase itself lives in `internal/propertyEventsAndGrowth.ts`. It owns
+    // the growth, the legacy tax-free sale and the line accrual; this loop owns
+    // every write, applied per row in the same statement order the inlined
+    // phase used (close the line, deposit, publish, write the value back, then
+    // compound what is left open). `plan.accounts` order is load-bearing three
+    // ways at once — deposit order, value compounding and line compounding —
+    // and the helper carries a private numeric shadow of both maps so a second
+    // property account sharing an id sees exactly what it saw inline.
+    for (const row of propertyEventsAndGrowth({
+      accounts: plan.accounts,
+      year,
+      propertyValues,
+      inflRateAt,
+      hecmStates,
+      // Gated on the ARRAY this payload feeds, which is what the inlined phase
+      // gated on: it built its literal inside `legacyPropertySaleDeposits?.push(
+      // { … })`. Both are assigned in the same `if (publishCashFlow)` block, so
+      // this is a no-op today; writing it this way makes the payload's laziness
+      // hold by construction rather than by that coincidence.
+      surplusDestination: legacyPropertySaleDeposits === null ? null : surplusDestination,
+    })) {
+      if (row.closesHecmForAccountId !== null) hecmStates.delete(row.closesHecmForAccountId)
+      if (row.deposit !== null) deposit(row.deposit)
+      if (row.record !== null) legacyPropertySaleDeposits?.push(row.record)
+      propertyValues.set(row.propertyAccountId, row.value)
+      if (row.hecmGrowth !== null) {
+        const line = hecmStates.get(row.propertyAccountId)!
+        line.principalLimit *= row.hecmGrowth
+        line.loanBalance *= row.hecmGrowth
       }
     }
 

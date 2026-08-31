@@ -140,6 +140,52 @@ recompute the worksheet without reverse-engineering the app.
   (see [external-oracles.md](external-oracles.md)).
 - Do not chase 100% global coverage before the high-impact calculation tests are in place.
 
+## Refactors that must not move a number
+
+A refactor with no intended behavior change is the opposite problem from a calculation change: there is no
+new expected value to derive, and a passing suite is not evidence.
+[`packages/engine/src/projection/simulate.ts`](../packages/engine/src/projection/simulate.ts) is being broken
+up one annual phase at a time, and a helper that silently under-produced rows once passed all 5,495 tests in
+the suite. The instrument for that job is
+[`packages/engine/scripts/equivalence.mjs`](../packages/engine/scripts/equivalence.mjs) — the engine compared
+against **itself** across two source trees.
+
+It is deliberately **not** an oracle. Per [the expected-value rule](#the-expected-value-rule) the app is never
+its own oracle; this tool can say "nothing moved" and can never say "this is right". Keep that wording in
+commit messages and PR bodies.
+
+The workflow is four commands, run from the repository root:
+
+```
+node packages/engine/scripts/equivalence.mjs corpus  --name full --out <dir>/corpus.json
+node packages/engine/scripts/equivalence.mjs capture --corpus <dir>/corpus.json --out <dir>/base.json --engine-src <baseline tree>/packages/engine/src
+node packages/engine/scripts/equivalence.mjs capture --corpus <dir>/corpus.json --out <dir>/head.json --engine-src <changed tree>/packages/engine/src
+node packages/engine/scripts/equivalence.mjs compare --base <dir>/base.json --head <dir>/head.json
+node packages/engine/scripts/equivalence.mjs reach   --corpus <dir>/corpus.json --spec <spec>.json
+```
+
+`--out` is mandatory for `corpus` and `capture` and never defaults inside the repository: the `full` dump is
+71 MB. Point `--engine-src` at a `git archive <sha>` directory rather than at a live worktree — a capture
+reads `git status` once, at the start, so another session writing to that tree mid-run yields a manifest that
+looks clean while some of the numbers came from different bytes.
+
+**Two things a PASS does not prove**, and each needs its own guard:
+
+- **Object identity.** A caller that publishes a field-for-field rebuild of a helper's payload dumps
+  identically to one that publishes the helper's own object — and a byte-identical dump passes a helper that
+  is never called at all. That is a delegation test's `toBe`, not this tool's job.
+- **Branches the corpus never runs.** `reach` is what closes that, using V8 precise coverage over named line
+  ranges. It fails on an unreached entry and on a cold line inside a reached one; it reports, but does not
+  fail, an untaken sub-line branch, because an untaken defensive `?? 0` arm is a legitimate steady state. So a
+  green `reach` means "every line of every named range ran", never "every branch inside them was taken" — and
+  never that a constant's neighborhood was straddled, which stays a unit test's job.
+
+[`scripts/equivalence/specs/simulate-batch.json`](../packages/engine/scripts/equivalence/specs/simulate-batch.json)
+is the worked example of a spec, and
+[`scripts/equivalence/corpus/blocks.mjs`](../packages/engine/scripts/equivalence/corpus/blocks.mjs) of a
+purpose-built corpus tier — each member names in `covers` the branch or hazard it exists to reach, which
+`reach` then turns into a measured hit count instead of a claim.
+
 ## When a calculation changes
 
 Every change to a calculated rule carries this checklist:

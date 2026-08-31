@@ -189,8 +189,8 @@ export function driftWeights(weights: number[], ratesPct: number[]): number[] {
   return total > 0 ? grown.map((v) => v / total) : weights
 }
 
-/** Fraction of the account sold to move current → target (Σ overweight). */
-export function rebalanceTurnoverFraction(current: number[], target: number[]): number {
+/** Fraction of the account sold to move current → target (Σ overweight). Reads both, writes neither. */
+export function rebalanceTurnoverFraction(current: readonly number[], target: readonly number[]): number {
   let turnover = 0
   for (let i = 0; i < current.length; i++) {
     turnover += Math.max(0, (current[i] ?? 0) - (target[i] ?? 0))

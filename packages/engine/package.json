@@ -305,6 +305,7 @@
     "build": "tsc -b tsconfig.build.json",
     "generate:schema": "pnpm run build && node scripts/generate-schema.mjs",
     "generate:version": "node scripts/generate-version.mjs",
+    "equivalence": "node scripts/equivalence.mjs",
     "rules:coverage": "node scripts/rules-coverage.mjs",
     "rules:due": "node scripts/rules-due.mjs",
     "rules:dispatch": "node scripts/rules-dispatch.mjs",
