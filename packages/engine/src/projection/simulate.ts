@@ -65,6 +65,7 @@ import { annuityExclusionMultiple, annuityPayoutForm, annuityPayoutFraction } fr
 import { buildLadder } from '../ladder/ladderMath.js'
 import { annualRebalanceToTarget } from './internal/annualRebalanceToTarget.js'
 import { hecmLineOpenings } from './internal/hecmLineOpenings.js'
+import { wageIncome } from './internal/wageIncome.js'
 import { pensionLumpSumRollovers } from './internal/pensionLumpSumRollovers.js'
 import { tipsLadderAnnualCashFlows, type TipsLadderState } from './internal/tipsLadderAnnualCashFlow.js'
 import { fixedAssetDispositions } from './internal/fixedAssetDispositions.js'
@@ -2354,23 +2355,18 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       })
     }
 
-    // Pass 1: wages (must precede Social Security for the earnings test).
-    for (const stream of plan.incomes) {
-      if (stream.type !== 'wages') continue
-      const person = personById.get(stream.personId)!
-      const s = stateOf(stream.personId)
-      const stopAge = stream.endAge ?? person.retirementAge
-      if (!s.alive || (stopAge !== null && s.ageAttained >= stopAge)) continue
-      const raiseFactor = Math.pow(1 + (stream.realGrowthPct ?? 0) / 100, year - startYear)
-      const amount = stream.annualGross * raiseFactor * inflFactor
-      incomes.wages += amount
-      ordinaryIncome += amount
-      wagesByPerson.set(stream.personId, (wagesByPerson.get(stream.personId) ?? 0) + amount)
-      yearSites?.recordWages({
-        incomeStreamId: stream.id,
-        personId: stream.personId,
-        amount,
-      })
+    // Pass 1: wages (must precede Social Security for the earnings test) — the
+    // placement is load-bearing here rather than inside the helper:
+    // `wagesByPerson` must be complete before pass 3 runs the earnings test and
+    // the SSDI substantial-gainful-activity gate. The phase itself lives in
+    // `internal/wageIncome.ts`; folding row by row, in row order, matters
+    // because `ordinaryIncome` may already be non-zero (the distributed-yield
+    // pass writes it above) and IEEE-754 addition is not associative.
+    for (const row of wageIncome({ incomes: plan.incomes, year, startYear, inflFactor, personById, peopleStates })) {
+      incomes.wages += row.amount
+      ordinaryIncome += row.amount
+      wagesByPerson.set(row.personId, (wagesByPerson.get(row.personId) ?? 0) + row.amount)
+      yearSites?.recordWages(row.record)
     }
 
     // Pass 2: other non-SS streams. The phase itself lives in
