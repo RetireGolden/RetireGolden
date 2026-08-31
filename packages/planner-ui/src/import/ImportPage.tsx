@@ -8,7 +8,7 @@
  * parsed in the browser; no file leaves the device.
  */
 
-import { useRef, useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 
 import { savePlanVia, usePlanStore } from '../data/planStoreContext'
@@ -132,6 +132,18 @@ function EnabledImportPage() {
   // Bumped on every reset/source switch so an async completion from a previous
   // selection (a file still being read/hashed) cannot install a stale draft.
   const importEpoch = useRef(0)
+  // The card the user opened — restored to keyboard focus when they come back
+  // via "Choose a different source". Without this, unmounting the step button
+  // leaves focus on the last card in DOM order.
+  const lastOpenedSource = useRef<SourceId | null>(null)
+  const sourceCardRefs = useRef<Partial<Record<SourceId, HTMLButtonElement | null>>>({})
+
+  useLayoutEffect(() => {
+    if (source !== null) return
+    const id = lastOpenedSource.current
+    if (!id) return
+    sourceCardRefs.current[id]?.focus()
+  }, [source])
 
   const reset = () => {
     importEpoch.current++
@@ -143,8 +155,14 @@ function EnabledImportPage() {
   }
 
   const chooseSource = (id: SourceId) => {
+    lastOpenedSource.current = id
     reset()
     setSource(id)
+  }
+
+  const chooseDifferentSource = () => {
+    reset()
+    setSource(null)
   }
 
   const handleFile = async (file: File) => {
@@ -314,7 +332,16 @@ function EnabledImportPage() {
       {!source ? (
         <div className="plan-grid home-paths-grid">
           {SOURCES.map((s) => (
-            <button key={s.id} type="button" className="home-path-card plan-card" onClick={() => chooseSource(s.id)}>
+            <button
+              key={s.id}
+              type="button"
+              className="home-path-card plan-card"
+              data-source={s.id}
+              ref={(el) => {
+                sourceCardRefs.current[s.id] = el
+              }}
+              onClick={() => chooseSource(s.id)}
+            >
               <span className="home-path-card-title">{s.title}</span>
               <span className="home-path-card-desc">{s.desc}</span>
             </button>
@@ -322,16 +349,9 @@ function EnabledImportPage() {
         </div>
       ) : (
         <div className="card">
-          <div className="item-row-head">
+          <div className="import-source-head">
             <h2>{SOURCES.find((s) => s.id === source)!.title}</h2>
-            <button
-              type="button"
-              className="btn-ghost"
-              onClick={() => {
-                reset()
-                setSource(null)
-              }}
-            >
+            <button type="button" className="btn btn-secondary" onClick={chooseDifferentSource}>
               Choose a different source
             </button>
           </div>
