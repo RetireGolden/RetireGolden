@@ -682,12 +682,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.test.ts",
-          "line": 4099,
+          "line": 4161,
           "note": "foreign-exclusion addback raises ACA MAGI but not IRMAA magiHistory",
           "tests": [
             {
               "title": "raises ACA household MAGI by the known foreign-exclusion addback without moving IRMAA MAGI history",
-              "line": 4108
+              "line": 4170
             }
           ]
         }
@@ -733,12 +733,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.test.ts",
-          "line": 4042,
+          "line": 4104,
           "note": null,
           "tests": [
             {
               "title": "carries known tax-exempt interest into later IRMAA MAGI without taxing it as ordinary income",
-              "line": 4049
+              "line": 4111
             }
           ]
         }
@@ -789,12 +789,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.test.ts",
-          "line": 3985,
+          "line": 4047,
           "note": null,
           "tests": [
             {
               "title": "raises Medicare premiums two years after an income spike",
-              "line": 3992
+              "line": 4054
             }
           ]
         }
