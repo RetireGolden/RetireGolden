@@ -65,6 +65,7 @@ import { annuityExclusionMultiple, annuityPayoutForm, annuityPayoutFraction } fr
 import { buildLadder } from '../ladder/ladderMath.js'
 import { annualRebalanceToTarget } from './internal/annualRebalanceToTarget.js'
 import { hecmLineOpenings } from './internal/hecmLineOpenings.js'
+import { propertyEventsAndGrowth } from './internal/propertyEventsAndGrowth.js'
 import { wageIncome } from './internal/wageIncome.js'
 import { pensionLumpSumRollovers } from './internal/pensionLumpSumRollovers.js'
 import { tipsLadderAnnualCashFlows, type TipsLadderState } from './internal/tipsLadderAnnualCashFlow.js'
@@ -10108,41 +10109,30 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     if (shortfallAfterHecm > EPSILON && depletionYear === null) depletionYear = year
 
     // --- property events + growth ------------------------------------------
-    for (const account of plan.accounts) {
-      if (account.type !== 'property') continue
-      let value = propertyValues.get(account.id) ?? 0
-      value *= 1 + inflRateAt(year)
-      if (account.plannedSaleYear === year && value > 0) {
-        // Exact-taxed sales (costBasis set) already deposited their net
-        // proceeds through the year's cash flow above; the legacy tax-free
-        // expectedNetProceeds path deposits here — net of any HECM payoff,
-        // which is non-recourse (never more than the sale nets).
-        if (account.costBasis === undefined) {
-          const proceeds = account.expectedNetProceeds ?? value
-          const line = hecmStates.get(account.id)
-          const hecmPayoff = line ? Math.min(line.loanBalance, Math.max(0, proceeds)) : 0
-          if (line) hecmStates.delete(account.id)
-          const amount = proceeds - hecmPayoff
-          deposit(amount)
-          if (amount > 0) {
-            legacyPropertySaleDeposits?.push({
-              propertyAccountId: account.id,
-              amount,
-              destination: surplusDestination!,
-            })
-          }
-        }
-        value = 0
-      }
-      propertyValues.set(account.id, value)
-      // An open line compounds at the line's growth rate on both sides: the
-      // unused principal limit grows regardless of home value (the buffer-
-      // asset property), and the loan balance accrues rate + MIP.
-      const line = hecmStates.get(account.id)
-      if (line && account.hecm) {
-        const growth = 1 + account.hecm.growthRatePct / 100
-        line.principalLimit *= growth
-        line.loanBalance *= growth
+    // The phase itself lives in `internal/propertyEventsAndGrowth.ts`. It owns
+    // the growth, the legacy tax-free sale and the line accrual; this loop owns
+    // every write, applied per row in the same statement order the inlined
+    // phase used (close the line, deposit, publish, write the value back, then
+    // compound what is left open). `plan.accounts` order is load-bearing three
+    // ways at once — deposit order, value compounding and line compounding —
+    // and the helper carries a private numeric shadow of both maps so a second
+    // property account sharing an id sees exactly what it saw inline.
+    for (const row of propertyEventsAndGrowth({
+      accounts: plan.accounts,
+      year,
+      propertyValues,
+      inflRateAt,
+      hecmStates,
+      surplusDestination,
+    })) {
+      if (row.closesHecmForAccountId !== null) hecmStates.delete(row.closesHecmForAccountId)
+      if (row.deposit !== null) deposit(row.deposit)
+      if (row.record !== null) legacyPropertySaleDeposits?.push(row.record)
+      propertyValues.set(row.propertyAccountId, row.value)
+      if (row.hecmGrowth !== null) {
+        const line = hecmStates.get(row.propertyAccountId)!
+        line.principalLimit *= row.hecmGrowth
+        line.loanBalance *= row.hecmGrowth
       }
     }
 
