@@ -3495,10 +3495,10 @@ describe('objective-mode tournament (sustainable-spending plan, Step 5)', () => 
       moneyLastsYearsDelta: veto.vetoedValidation.moneyLastsYearsDelta,
     })
     // Runs a full tournament plus local-search refinement, which is the
-    // slowest single case in this suite. It fits comfortably in the default
-    // 5s locally but exceeds it on a cold CI runner under coverage
-    // instrumentation, so it gets explicit headroom rather than being made to
-    // measure less.
+    // slowest single case in this suite: comfortable locally, but slow on a
+    // cold CI runner under coverage instrumentation. It relies on this
+    // suite's 30s default (vitest.config.ts) rather than a per-test override,
+    // and is deliberately not made to measure less.
   })
 
   it('keeps an identity-withheld MILP schedule in policy ranking and preserves its diagnostics', async () => {

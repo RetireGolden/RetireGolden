@@ -81,9 +81,12 @@ describe('solveRiskBasedGuardrails', () => {
   })
 
 
-  // Two full solves back to back — comfortably under the default 5s locally,
-  // but over it on CI's 2-core runners when heavy suites run concurrently.
-  it('is deterministic for the same plan, seed, and model', { timeout: 20_000 }, () => {
+  // Two full solves back to back, and the slowest case in this file: measured
+  // at 14.5s on a CI runner under coverage, against this suite's 30s default
+  // (vitest.config.ts). It carried its own 20s cap, which pre-dated that
+  // default and left about five seconds of headroom on the very case that
+  // needed the most.
+  it('is deterministic for the same plan, seed, and model', () => {
     const a = solveRiskBasedGuardrails(basePlan(), opts)
     const b = solveRiskBasedGuardrails(basePlan(), opts)
     expect(b).toEqual(a)
