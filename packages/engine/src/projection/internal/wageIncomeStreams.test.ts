@@ -90,7 +90,7 @@ describe('wageIncomeStreams — selection', () => {
         incomes: [
           { type: 'socialSecurity', id: 'ss', personId: 'p1', piaMonthly: 3_000, earnings: null, claimAge: { years: 67, months: 0 } },
           { type: 'recurring', id: 'rec', label: 'Rental', annualAmount: 10_000, startYear: null, endYear: null, inflationAdjusted: false, taxTreatment: 'ordinary' },
-          { type: 'oneTime', id: 'once', label: 'Windfall', year: YEAR, amount: 25_000, taxTreatment: 'ordinary' },
+          { type: 'oneTime', id: 'once', label: 'Windfall', year: YEAR, inflationAdjusted: false, amount: 25_000, taxTreatment: 'ordinary' },
           wages({ id: 'w-only' }),
         ],
       }),
