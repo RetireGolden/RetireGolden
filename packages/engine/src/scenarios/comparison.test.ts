@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { asAccountId, asActionId, asAllocationId, asPersonId } from '../actions/identity.js'
 import { asPositiveUsdCents } from '../actions/money.js'
-import { createFlatTaxCalculator } from '../projection/flatTax.js'
+import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import { simulatePlan } from '../projection/simulate.js'
 import { createFederalTaxCalculator } from '../tax/federalTax.js'
 import {

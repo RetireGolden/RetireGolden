@@ -125,8 +125,11 @@ export interface TaxYearInput {
 }
 
 /**
- * Pluggable tax computation. V1 ships a flat placeholder; the real federal
- * engine (roadmap V2) implements the same interface.
+ * Pluggable tax computation, supplied by the caller — this package exports the
+ * pieces but no composed default. RetireGolden builds one by combining
+ * createFederalTaxCalculator() with createStateTaxCalculator() through
+ * combineTaxCalculators(); test suites inject deterministic doubles through the
+ * same interface.
  */
 export interface TaxCalculator {
   compute(input: TaxYearInput): number

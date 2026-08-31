@@ -7,7 +7,7 @@
  */
 import { describe, expect, it } from 'vitest'
 
-import { createFlatTaxCalculator } from './flatTax.js'
+import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import { abwAnnualPayment } from '../spending/abw.js'
 import { survivalPercentileAge } from '../montecarlo/survival.js'
 import {

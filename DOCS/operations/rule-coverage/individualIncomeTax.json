@@ -35,7 +35,7 @@
           "functions": [
             {
               "name": "bracketTax",
-              "line": 303
+              "line": 305
             }
           ]
         }
@@ -201,7 +201,7 @@
           "functions": [
             {
               "name": "seniorDeductionAmount",
-              "line": 343
+              "line": 345
             }
           ]
         }
@@ -296,7 +296,7 @@
           "functions": [
             {
               "name": "seniorDeductionAmount",
-              "line": 343
+              "line": 345
             }
           ]
         }
@@ -367,7 +367,7 @@
           "functions": [
             {
               "name": "itemizedTotal",
-              "line": 129
+              "line": 131
             }
           ]
         }
@@ -465,7 +465,7 @@
           "functions": [
             {
               "name": "itemizedTotal",
-              "line": 129
+              "line": 131
             }
           ]
         }
@@ -529,11 +529,11 @@
           "functions": [
             {
               "name": "itemizedTotal",
-              "line": 129
+              "line": 131
             },
             {
               "name": "saltCapForYear",
-              "line": 112
+              "line": 114
             }
           ]
         }
@@ -632,7 +632,7 @@
           "functions": [
             {
               "name": "saltCapForYear",
-              "line": 112
+              "line": 114
             }
           ]
         }
@@ -706,11 +706,11 @@
           "functions": [
             {
               "name": "computeFederalTax",
-              "line": 475
+              "line": 477
             },
             {
               "name": "tentativeMinimumTax",
-              "line": 399
+              "line": 401
             }
           ]
         }
@@ -766,7 +766,7 @@
           "functions": [
             {
               "name": "tentativeMinimumTax",
-              "line": 399
+              "line": 401
             }
           ]
         }
@@ -832,7 +832,7 @@
           "functions": [
             {
               "name": "amtExemptionAmount",
-              "line": 384
+              "line": 386
             }
           ]
         }
@@ -903,7 +903,7 @@
           "functions": [
             {
               "name": "computeFederalTax",
-              "line": 475
+              "line": 477
             }
           ]
         }
@@ -959,7 +959,7 @@
           "functions": [
             {
               "name": "computeFederalTax",
-              "line": 475
+              "line": 477
             }
           ]
         }
@@ -1024,7 +1024,7 @@
           "functions": [
             {
               "name": "amtPreferenceItems",
-              "line": 83
+              "line": 85
             }
           ]
         }
@@ -1080,7 +1080,7 @@
           "functions": [
             {
               "name": "computeFederalTax",
-              "line": 475
+              "line": 477
             }
           ]
         }
@@ -1151,7 +1151,7 @@
           "functions": [
             {
               "name": "computeFederalTax",
-              "line": 475
+              "line": 477
             }
           ]
         }
@@ -1364,7 +1364,7 @@
           "functions": [
             {
               "name": "computeFederalTax",
-              "line": 475
+              "line": 477
             }
           ]
         }
@@ -1420,7 +1420,7 @@
           "functions": [
             {
               "name": "itemizedTotal",
-              "line": 129
+              "line": 131
             }
           ]
         }

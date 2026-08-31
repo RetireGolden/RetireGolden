@@ -4,7 +4,7 @@ import { asPlanId } from '../actions/identity.js'
 import { planDollarsToLedgerCents } from '../actions/planBalanceAdapter.js'
 import type { Account, Plan } from '../model/plan.js'
 import { singlePersonPlan, traditionalAccount, validatePlan } from '../testing/planFixtures.js'
-import { createFlatTaxCalculator } from './flatTax.js'
+import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import {
   beginSimulatorAnnualRetirementRuntimeJournal,
   recordSimulatorAnnualRetirementRuntimeOccurrence,

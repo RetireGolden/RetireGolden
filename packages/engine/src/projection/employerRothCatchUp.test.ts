@@ -4,7 +4,7 @@ import { createEmptyPlan, parsePlan, type Account, type IncomeStream, type Plan 
 import { packForYear } from '../params/index.js'
 import { describeRule } from '../rules/describeRule.js'
 import { createFederalTaxCalculator } from '../tax/federalTax.js'
-import { createFlatTaxCalculator } from './flatTax.js'
+import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import {
   allocateEmployerElectiveDeferrals,
   employerMatchElectiveBase,

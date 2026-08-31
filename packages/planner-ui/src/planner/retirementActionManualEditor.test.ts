@@ -13,7 +13,7 @@ import {
   reviewAndReplaceRetirementActionManually,
 } from '@retiregolden/engine/actions/retirementActionManualReview'
 import type { Plan } from '@retiregolden/engine/model/plan'
-import { createFlatTaxCalculator } from '@retiregolden/engine/projection/flatTax'
+import { createFlatTaxCalculator } from '@retiregolden/engine/testing/flatTax'
 import { simulatePlan } from '@retiregolden/engine/projection/simulate'
 import {
   couplePlan,

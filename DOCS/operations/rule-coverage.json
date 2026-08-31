@@ -74,11 +74,11 @@
     }
   },
   "attestations": {
-    "totalFiles": 265,
+    "totalFiles": 266,
     "byStatus": {
       "partial": 42,
       "registered": 88,
-      "rule-free": 135,
+      "rule-free": 136,
       "unswept": 0
     },
     "sweptPct": 100,
@@ -227,11 +227,6 @@
       "note": "after-tax estate haircuts incl. taxable step-up registered (irc-1014-a-1-basis-at-death-fair-market-value); Form 8606 basis exclusion, spousal rollover, HSA non-spouse income remain"
     },
     {
-      "path": "projection/flatTax.ts",
-      "sweptOn": "2026-08-29",
-      "note": "V1 placeholder whose only importers are test files, so the IRC 86 85 percent inclusion it computes never reaches a user-facing number; kept partial rather than rule-free so the claim stays visible if the file ever gains a production consumer"
-    },
-    {
       "path": "projection/optimizePlan.ts",
       "sweptOn": "2026-08-27",
       "note": "Flat 15% LTCG LP rate registered (irc-1-h-optimizer-flat-fifteen-percent-preferential-rate); other optimizer linearizations remain unregistered"
@@ -295,6 +290,11 @@
       "path": "tax/medicare.ts",
       "sweptOn": "2026-08-27",
       "note": "Part B/IRMAA premium path and Part B late-enrollment absence registered (usc-42-1395r-*, cfr-20-418-1205-1230-*); post-pack premiumScale (healthcare-inflation stand-in) remains"
+    },
+    {
+      "path": "testing/flatTax.ts",
+      "sweptOn": "2026-08-30",
+      "note": "flat-rate test double injected only by test suites - the sole non-test importers are the deprecated projection/flatTax shim that republishes it on the published subpath and the pack-smoke script that verifies that subpath - so no RetireGolden code path injects it outside tests and the IRC 86 85 percent inclusion it applies never reaches a user-facing number; it is published, at testing/flatTax and through the deprecated projection/flatTax subpath, so an external consumer can call it directly; kept partial rather than rule-free so the claim stays visible if the file ever gains a production consumer"
     }
   ],
   "directoryRollup": [
@@ -391,9 +391,9 @@
       "directory": "projection",
       "files": 34,
       "byStatus": {
-        "partial": 8,
+        "partial": 7,
         "registered": 2,
-        "rule-free": 24
+        "rule-free": 25
       }
     },
     {
@@ -460,8 +460,9 @@
     },
     {
       "directory": "testing",
-      "files": 2,
+      "files": 3,
       "byStatus": {
+        "partial": 1,
         "rule-free": 2
       }
     }

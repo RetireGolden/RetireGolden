@@ -11,7 +11,7 @@ import {
   CASH_FLOW_CASH_IDENTITY_TOLERANCE_PLAN_DOLLARS,
   CASH_FLOW_RECONCILIATION_TOLERANCE_PLAN_DOLLARS,
 } from './annualCashFlowCapture.js'
-import { createFlatTaxCalculator } from './flatTax.js'
+import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import { simulatePlan } from './simulate.js'
 
 const START_YEAR = 2026

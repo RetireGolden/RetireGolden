@@ -1,5 +1,7 @@
 /**
- * Federal income tax (planning-grade), replacing the V1 flat placeholder.
+ * Federal income tax (planning-grade). This is the real calculator callers
+ * inject; the flat-rate double at `testing/flatTax.ts` is a test fixture, not a
+ * predecessor still awaiting replacement.
  *
  * Computation order per year:
  *   1. Taxable Social Security via provisional income (unindexed thresholds)

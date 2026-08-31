@@ -4,7 +4,7 @@ import { asAccountId, asActionId, asAllocationId, asPersonId } from '../actions/
 import { asPositiveUsdCents } from '../actions/money.js'
 import { maximizeAfterTaxEstate } from '../decisions/objectives.js'
 import type { RankedDecision } from '../decisions/tournament.js'
-import { createFlatTaxCalculator } from '../projection/flatTax.js'
+import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import { simulatePlan } from '../projection/simulate.js'
 import type { YearResult } from '../projection/types.js'
 import {

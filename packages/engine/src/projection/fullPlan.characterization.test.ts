@@ -15,7 +15,7 @@ import {
   traditionalAccount,
 } from '../testing/planFixtures.js'
 import { compareLtcStress, summarizeProjection } from './compare.js'
-import { createFlatTaxCalculator } from './flatTax.js'
+import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import { optimizePlan, withOptimizedConversions } from './optimizePlan.js'
 import type { ProjectionResult, YearResult } from './types.js'
 

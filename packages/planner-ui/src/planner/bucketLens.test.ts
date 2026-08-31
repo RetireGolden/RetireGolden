@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { bucketLens, BUCKET_PRESETS, netPortfolioNeed } from './bucketLens'
-import { createFlatTaxCalculator } from '@retiregolden/engine/projection/flatTax'
+import { createFlatTaxCalculator } from '@retiregolden/engine/testing/flatTax'
 import {
   cashAccount,
   recurringOrdinaryIncome,

@@ -5,6 +5,40 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 ## 2026-08
 
 **2026-08-30**
+- Moved the flat-rate tax stub out of the projection engine and into the
+  testing-support surface, without breaking anyone. The body moved from
+  `packages/engine/src/projection/flatTax.ts` to
+  `packages/engine/src/testing/flatTax.ts`; the old path now re-declares it as
+  a deprecated alias, so `@retiregolden/engine/projection/flatTax` still
+  resolves and still exports the same `createFlatTaxCalculator` — the identical
+  function object, not a copy. No consumer breaks. All 89 in-repo importers (85
+  engine test files, 4 planner-UI test files) moved to
+  `@retiregolden/engine/testing/flatTax`, leaving the old subpath with no
+  in-repo product or test consumers — the only in-repo code that still names it
+  is the pack-smoke guard that keeps it honest; it exists for external code
+  pinned to it. The arithmetic is untouched and no fixture's expected dollar
+  changed. The alias shape is deliberate: TypeScript does not report a
+  `@deprecated` tag attached to a bare `export { x } from` re-export, so that
+  shape would have shipped a marker no consumer ever sees; the alias reports at
+  both the import and the call site. Pack-smoke now proves both subpaths
+  resolve, yield the same function object, stay nameable from a compiled
+  consumer, and that the deprecation is actually reported to that consumer by
+  the TypeScript language service — so the alias shape above is enforced rather
+  than merely explained, and the compatibility promise with it. Removal is
+  deferred to a future major and is **not** scheduled; when it happens it must
+  be done by adding an exact `"./projection/flatTax": null` exports key, which
+  wins over the `./projection/*` pattern — never by deleting that wildcard,
+  which would take down every other projection subpath including
+  `projection/simulate` — and the pack-smoke guard above has to come out in the
+  same change, since it consumes the subpath it protects.
+- Corrected stale roadmap framing that outlived the work it described. The stub
+  called itself a "V1 placeholder" awaiting replacement "in roadmap phase V2",
+  and the `TaxCalculator` interface said the same. The real federal engine
+  shipped long ago, and nothing is queued to replace this file — it is the
+  permanent, deliberate test double for those 89 suites. Both comments now say
+  so. The interface's comment mattered most: it is re-exported through the
+  public `projection/types.js` façade and emitted into the shipped `.d.ts`, so
+  consumers were reading the outdated claim in editor tooltips.
 - Reversed the planner-UI / MCP dependency direction so all arrows point one
   way. `@retiregolden/planner-ui` no longer dev-depends on the published
   `@retiregolden/mcp`; the MCP depends on planner-UI, never the reverse. The

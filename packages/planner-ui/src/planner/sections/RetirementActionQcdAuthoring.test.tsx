@@ -9,7 +9,7 @@ import { parseRetirementActionRequest } from '@retiregolden/engine/actions/contr
 import { createActionReason } from '@retiregolden/engine/actions/reasons'
 import { asUsdCents } from '@retiregolden/engine/actions/money'
 import { parsePlan, type Plan } from '@retiregolden/engine/model/plan'
-import { createFlatTaxCalculator } from '@retiregolden/engine/projection/flatTax'
+import { createFlatTaxCalculator } from '@retiregolden/engine/testing/flatTax'
 import { simulatePlan } from '@retiregolden/engine/projection/simulate'
 
 import { PlanCtx } from '../planContextCore'

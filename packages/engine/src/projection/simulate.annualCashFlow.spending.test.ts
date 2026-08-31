@@ -15,7 +15,7 @@ import {
   traditionalAccount,
 } from '../testing/planFixtures.js'
 import { expectMoney } from '../testing/money.js'
-import { createFlatTaxCalculator } from './flatTax.js'
+import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import { simulatePlan } from './simulate.js'
 import type { YearCashFlowUseLine, YearResult } from './types.js'
 

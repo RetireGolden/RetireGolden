@@ -81,12 +81,12 @@ The registry is the machine-checked chain from a rule to its implementation and 
 
 | Metric | Value |
 | --- | ---: |
-| Engine source files | 265 |
+| Engine source files | 266 |
 | Swept | 100.0% |
 | Grandfathered unswept baseline | 0 |
 | partial | 42 |
 | registered | 88 |
-| rule-free | 135 |
+| rule-free | 136 |
 | unswept | 0 |
 
 ## Per-directory rollup
@@ -104,7 +104,7 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | model | 3 | 3 | 0 | 0 | 0 |
 | montecarlo | 11 | 1 | 0 | 10 | 0 |
 | params | 8 | 0 | 6 | 2 | 0 |
-| projection | 34 | 8 | 2 | 24 | 0 |
+| projection | 34 | 7 | 2 | 25 | 0 |
 | rmd | 4 | 1 | 3 | 0 | 0 |
 | rules | 25 | 0 | 20 | 5 | 0 |
 | scenarios | 9 | 0 | 0 | 9 | 0 |
@@ -113,7 +113,7 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | spending | 5 | 0 | 0 | 5 | 0 |
 | strategies | 7 | 3 | 4 | 0 | 0 |
 | tax | 7 | 2 | 4 | 1 | 0 |
-| testing | 2 | 0 | 0 | 2 | 0 |
+| testing | 3 | 1 | 0 | 2 | 0 |
 
 ## Unswept files
 
@@ -151,7 +151,6 @@ None.
 | montecarlo/mortality.ts | 2026-08-29 | Derives q(x) from the period life table registered at longevity/ssaPeriod2022.ts (ssa-table-4c6-period-life-table-vintage); the e(x)-to-q(x) derivation itself is engine math with no separate statutory claim, and this consumer is deliberately not pinned |
 | projection/annualCashFlowCapture.ts | 2026-08-29 | Form 8606 basis, QCD exclusion, annuity and penalty character composition; assembly composes results computed and registered elsewhere and enforces none of them, so no record names it |
 | projection/compare.ts | 2026-08-27 | after-tax estate haircuts incl. taxable step-up registered (irc-1014-a-1-basis-at-death-fair-market-value); Form 8606 basis exclusion, spousal rollover, HSA non-spouse income remain |
-| projection/flatTax.ts | 2026-08-29 | V1 placeholder whose only importers are test files, so the IRC 86 85 percent inclusion it computes never reaches a user-facing number; kept partial rather than rule-free so the claim stays visible if the file ever gains a production consumer |
 | projection/optimizePlan.ts | 2026-08-27 | Flat 15% LTCG LP rate registered (irc-1-h-optimizer-flat-fifteen-percent-preferential-rate); other optimizer linearizations remain unregistered |
 | projection/optimizerAggregateConversionPromotion.ts | 2026-08-29 | same-owner trim registered under irc-408-d-3-A-i and the distributability predicate under irc-401-k-2-B-i; RMD-first ordering is an upstream snapshot contract enforced at resolveOwnerIraRmdSatisfaction, not here, and stays the residual |
 | projection/ownedIraAnnualPhysicalTransactionInputs.ts | 2026-08-29 | Form 8606 line-7/8 and QCD staging semantics; the input builder carries one combined distribution bucket, so it does not enforce the line-7-versus-8 split; no record |
@@ -165,6 +164,7 @@ None.
 | strategies/rothConversion.ts | 2026-08-24 | Bracket/IRMAA/ACA FPL/senior-deduction sizing via computeFederalTax; no record names this file |
 | tax/federalTax.ts | 2026-08-26 | implements §86 SS inclusion, NIIT, AMT screen, senior-deduction phase-out, LTCG stacking with records naming it, but §170(b)(1)(I)(ii) category waterfall is applied only in the ledger file its record names |
 | tax/medicare.ts | 2026-08-27 | Part B/IRMAA premium path and Part B late-enrollment absence registered (usc-42-1395r-*, cfr-20-418-1205-1230-*); post-pack premiumScale (healthcare-inflation stand-in) remains |
+| testing/flatTax.ts | 2026-08-30 | flat-rate test double injected only by test suites - the sole non-test importers are the deprecated projection/flatTax shim that republishes it on the published subpath and the pack-smoke script that verifies that subpath - so no RetireGolden code path injects it outside tests and the IRC 86 85 percent inclusion it applies never reaches a user-facing number; it is published, at testing/flatTax and through the deprecated projection/flatTax subpath, so an external consumer can call it directly; kept partial rather than rule-free so the claim stays visible if the file ever gains a production consumer |
 
 ## Coverage shards
 

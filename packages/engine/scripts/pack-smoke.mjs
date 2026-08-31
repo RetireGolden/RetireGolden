@@ -429,6 +429,18 @@ for (const alternateCase of [
       alternateCase,
   )
 }
+const deprecatedFlatTax = await import('@retiregolden/engine/projection/flatTax')
+const relocatedFlatTax = await import('@retiregolden/engine/testing/flatTax')
+assert.equal(
+  typeof deprecatedFlatTax.createFlatTaxCalculator,
+  'function',
+  'the deprecated projection/flatTax subpath must keep resolving for pinned consumers',
+)
+assert.equal(
+  deprecatedFlatTax.createFlatTaxCalculator,
+  relocatedFlatTax.createFlatTaxCalculator,
+  'the deprecated subpath must re-export the relocated test double, not a copy',
+)
 assert.equal(addUsdCents(asUsdCents(125), asUsdCents(75)), 200)
 assert.equal(planDollarsToLedgerCents(1.005), 101)
 assert.equal(ledgerCentsToPlanDollars(asUsdCents(101)), 1.01)
@@ -1452,6 +1464,16 @@ import type {
   SimulateOptions,
 } from '@retiregolden/engine/projection/simulate'
 import type { ActionId } from '@retiregolden/engine/actions/identity'
+import type { TaxCalculator } from '@retiregolden/engine/projection/types'
+import { createFlatTaxCalculator as deprecatedFlatTax } from '@retiregolden/engine/projection/flatTax'
+import { createFlatTaxCalculator as relocatedFlatTax } from '@retiregolden/engine/testing/flatTax'
+
+// The deprecated projection/flatTax subpath has to stay NAMEABLE, not merely
+// resolvable at runtime. If stripInternal ever deletes its declaration, the
+// packed .js keeps working and every runtime assertion still passes, while
+// this import fails to compile — the only place that break is visible.
+export const flatTaxDoubles: readonly TaxCalculator[] =
+  [deprecatedFlatTax(12), relocatedFlatTax(12)]
 
 // The option, spelled out the way a consumer would have to spell it.
 const filingStatus: AnnualLiabilityRunTaxInputValue =
@@ -1518,8 +1540,46 @@ try {
     throw new Error('internal structural hasher leaked into packed declarations')
   }
 
+  // The deprecated projection/flatTax shim must keep BOTH halves of its
+  // subpath. The runtime half is asserted in smokeScript, but a stripped
+  // declaration is invisible there: the .js still resolves and runs while the
+  // .d.ts silently degrades to `export {}`. stripInternal is on, and the
+  // declaration emitter drops any export whose leading comment merely CONTAINS
+  // the internal-only tag as a substring (a raw `comment.includes(...)`, no tag
+  // parsing, no word boundary) — so prose mentioning the tag is enough to
+  // delete the declaration. types-smoke.ts below imports the subpath by name
+  // and is the authoritative check; this read gives that failure a diagnosis
+  // instead of a bare TS2305.
+  //
+  // Comments are stripped BEFORE looking for the symbol. The file-header JSDoc
+  // survives stripInternal even when the declaration under it is deleted, so a
+  // whole-file substring test would pass on a `export {};` artifact as soon as
+  // any surviving comment happened to spell the identifier — which is exactly
+  // the header where this file's rules are written down.
+  const deprecatedFlatTaxDeclarations = readFileSync(join(
+    work,
+    'node_modules',
+    '@retiregolden',
+    'engine',
+    'dist',
+    'projection',
+    'flatTax.d.ts',
+  ), 'utf8')
+  const deprecatedFlatTaxCode = deprecatedFlatTaxDeclarations
+    .replace(/\/\*[\s\S]*?\*\//gu, '')
+    .replace(/^[^\S\n]*\/\/.*$/gmu, '')
+  if (!deprecatedFlatTaxCode.includes('createFlatTaxCalculator')) {
+    throw new Error(
+      'the deprecated projection/flatTax subpath lost its type declaration; ' +
+        'stripInternal removed it, so consumers pinned to that subpath keep a ' +
+        'working runtime import but no types',
+    )
+  }
+
   writeFileSync(join(work, 'smoke.mjs'), smokeScript)
   execFileSync(process.execPath, ['smoke.mjs'], { cwd: work, stdio: 'inherit' })
+
+  const ts = require('typescript')
 
   // Types are erased, so every import above would pass against declarations
   // that resolve to nothing. This compiles a consumer-shaped file against the
@@ -1528,7 +1588,13 @@ try {
   // published option's payload can actually be NAMED by the consumer it is
   // handed to, rather than merely received.
   writeFileSync(join(work, 'types-smoke.ts'), typesSmokeSource)
-  writeFileSync(join(work, 'tsconfig.smoke.json'), JSON.stringify({
+  // Declared once, then used twice: `tsc` compiles under it here, and the
+  // language service below reads the same object through
+  // `parseJsonConfigFileContent`. A hand-rolled second copy could drift into a
+  // program that cannot resolve the packed subpath — and a program that
+  // resolves nothing reports no deprecation either, which would trip the
+  // marker check below and blame a perfectly healthy shim.
+  const smokeTsconfig = {
     compilerOptions: {
       target: 'es2023',
       lib: ['ES2023'],
@@ -1541,12 +1607,86 @@ try {
       noUnusedLocals: true,
     },
     files: ['types-smoke.ts'],
-  }))
+  }
+  writeFileSync(join(work, 'tsconfig.smoke.json'), JSON.stringify(smokeTsconfig))
   execFileSync(
     process.execPath,
     [require.resolve('typescript/bin/tsc'), '-p', 'tsconfig.smoke.json'],
     { cwd: work, stdio: 'inherit' },
   )
+
+  // The deprecation marker has to be REPORTED to a consumer, not merely
+  // present in the packed text. Nothing above can see that difference:
+  // `tsc` never emits deprecation, which is a *suggestion* diagnostic raised
+  // by the language service, and a text search for the tag is vacuous here
+  // twice over — the shim's file header discusses the tag in prose, and the
+  // declaration emitter copies the JSDoc through verbatim even for the bare
+  // `export { x } from './y.js'` form that reports nothing.
+  //
+  // So the alias in src/projection/flatTax.ts could be "cleaned up" into a
+  // re-export and every other check in this file would stay green while the
+  // marker went dark for every consumer. This asks the language service the
+  // question a consumer's editor asks, against the packed declarations.
+  const smokeCompilation = ts.parseJsonConfigFileContent(smokeTsconfig, ts.sys, work)
+  const smokeEntry = smokeCompilation.fileNames[0]
+  const languageServiceHost = {
+    getScriptFileNames: () => smokeCompilation.fileNames,
+    getScriptVersion: () => '1',
+    getScriptSnapshot: (name) => {
+      const contents = ts.sys.readFile(name)
+      return contents === undefined ? undefined : ts.ScriptSnapshot.fromString(contents)
+    },
+    getCurrentDirectory: () => work,
+    getCompilationSettings: () => smokeCompilation.options,
+    getDefaultLibFileName: (options) => ts.getDefaultLibFilePath(options),
+    fileExists: ts.sys.fileExists,
+    readFile: ts.sys.readFile,
+    readDirectory: ts.sys.readDirectory,
+    directoryExists: ts.sys.directoryExists,
+    getDirectories: ts.sys.getDirectories,
+  }
+  const languageService = ts.createLanguageService(languageServiceHost, ts.createDocumentRegistry())
+  const suggestions = languageService.getSuggestionDiagnostics(smokeEntry)
+  const smokeText = readFileSync(smokeEntry, 'utf8')
+  const deprecations = suggestions.filter((diagnostic) => diagnostic.reportsDeprecated)
+  // types-smoke.ts imports the same symbol from both subpaths. Only the
+  // deprecated one may be flagged: if testing/flatTax started reporting too,
+  // this check would pass for the wrong reason and the relocation target
+  // would be telling consumers to stop using it.
+  const flagged = new Set(deprecations.map((d) => smokeText.slice(d.start, d.start + d.length)))
+  if (!flagged.has('deprecatedFlatTax')) {
+    // A language-service program that failed to build reports no deprecation
+    // either, so that state is indistinguishable from a dropped marker unless
+    // it is asked about separately. `tsc` already compiled this same file
+    // under these same options, so this should be unreachable — but if the
+    // service ever disagrees with the compiler, say which failure this is
+    // instead of accusing the shim of something it did not do.
+    const semantic = languageService.getSemanticDiagnostics(smokeEntry)
+    if (semantic.length > 0) {
+      throw new Error(
+        'the pack-smoke language-service program did not compile, so its silence about ' +
+          'deprecation proves nothing about the shim. Fix this first; the marker check ' +
+          'below cannot run until the consumer program resolves. Semantic errors: ' +
+          semantic
+            .map((diagnostic) => ts.flattenDiagnosticMessageText(diagnostic.messageText, ' '))
+            .join(' | '),
+      )
+    }
+    throw new Error(
+      'the deprecated projection/flatTax subpath no longer REPORTS its deprecation to consumers. ' +
+        'The packed .d.ts may still contain the tag text — that is not the same thing. Either the ' +
+        'tag was dropped from the export JSDoc, or the re-declared alias in ' +
+        'src/projection/flatTax.ts was collapsed back into `export { x } from \'./y.js\'`, which ' +
+        'TypeScript does not report when the target is not itself deprecated. ' +
+        'Deprecations actually reported: ' + (JSON.stringify([...flagged]) || 'none'),
+    )
+  }
+  if (flagged.has('relocatedFlatTax')) {
+    throw new Error(
+      'testing/flatTax reports a deprecation, but it is the relocation TARGET; ' +
+        'the projection/flatTax deprecation notice points consumers at it',
+    )
+  }
   console.log('pack smoke OK: the published option types compile from the packed declarations')
 } finally {
   try {

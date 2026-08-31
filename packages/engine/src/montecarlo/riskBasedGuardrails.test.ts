@@ -8,7 +8,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { createEmptyPlan, parsePlan, type Account, type Plan } from '../model/plan.js'
-import { createFlatTaxCalculator } from '../projection/flatTax.js'
+import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import { solveRiskBasedGuardrails, startingInvestableOf } from './riskBasedGuardrails.js'
 
 let counter = 0

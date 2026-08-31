@@ -1,16 +1,45 @@
-import type { TaxCalculator, TaxYearInput } from './types.js'
+/**
+ * Deprecated location. The flat-rate tax double moved to
+ * `@retiregolden/engine/testing/flatTax`; this module forwards to it so the
+ * published `@retiregolden/engine/projection/flatTax` subpath keeps resolving
+ * for consumers pinned to it.
+ *
+ * Two shapes below are load-bearing and must survive edits.
+ *
+ * 1. The export is a re-declared alias, not `export { x } from './y.js'`.
+ *    TypeScript does not report a `@deprecated` tag attached to a bare
+ *    re-export whose target is not itself deprecated, so that shape ships a
+ *    marker no consumer ever sees — verified against this repo's TypeScript:
+ *    the re-export form produces zero suggestion diagnostics, while the alias
+ *    form reports `'createFlatTaxCalculator' is deprecated` at both the import
+ *    and the call site. The alias forwards the identical function object, so
+ *    the runtime is unchanged.
+ *
+ * 2. Do not write the internal-only JSDoc tag in this file's comments — not as
+ *    a tag, not inside backticks, not embedded in a longer word. `stripInternal`
+ *    is on in tsconfig.build.json, and TypeScript's declaration emitter deletes
+ *    any export whose leading comment merely CONTAINS that substring: the check
+ *    is a raw `comment.includes(...)` over the comment range, with no tag
+ *    parsing and no word-boundary test. The declaration would vanish from
+ *    `dist/projection/flatTax.d.ts` while `dist/projection/flatTax.js` kept
+ *    working — a silent type-only break of the exact subpath this file exists
+ *    to preserve.
+ *
+ * `scripts/pack-smoke.mjs` enforces both. For (2) it reads the packed
+ * declaration file and compiles a consumer that imports this subpath by name,
+ * so a deleted declaration fails the pack. For (1) it asks the TypeScript
+ * language service whether that consumer is actually TOLD the symbol is
+ * deprecated: the tag surviving in the packed text proves nothing, because the
+ * declaration emitter copies the same JSDoc through for the re-export form
+ * that reports nothing at all.
+ */
+
+import { createFlatTaxCalculator as flatTaxDouble } from '../testing/flatTax.js'
 
 /**
- * V1 placeholder: one flat effective rate over all income, with 85% of Social
- * Security included (the statutory maximum taxable share). Replaced by the
- * real federal engine in roadmap phase V2 — do not add precision here.
+ * @deprecated Import `createFlatTaxCalculator` from
+ * `@retiregolden/engine/testing/flatTax` instead. Kept so the published
+ * `projection/flatTax` subpath stays compatible; removal is deferred to a
+ * future major version and is not scheduled.
  */
-export function createFlatTaxCalculator(effectiveRatePct: number): TaxCalculator {
-  const rate = effectiveRatePct / 100
-  return {
-    compute(input: TaxYearInput): number {
-      const base = input.ordinaryIncome + input.capitalGains + (input.qualifiedDividends ?? 0) + 0.85 * input.ssBenefits
-      return Math.max(0, base * rate)
-    },
-  }
-}
+export const createFlatTaxCalculator = flatTaxDouble

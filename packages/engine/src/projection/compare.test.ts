@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { createEmptyPlan, parsePlan, type Plan } from '../model/plan.js'
 import { createFederalTaxCalculator } from '../tax/federalTax.js'
-import { createFlatTaxCalculator } from './flatTax.js'
+import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import { compareRothConversion, summarizeProjection } from './compare.js'
 import { simulatePlan } from './simulate.js'
 

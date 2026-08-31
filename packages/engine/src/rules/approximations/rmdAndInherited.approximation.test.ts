@@ -26,7 +26,7 @@ import { expect, it } from 'vitest'
 import { describeRule } from '../describeRule.js'
 
 import { packForYear } from '../../params/index.js'
-import { createFlatTaxCalculator } from '../../projection/flatTax.js'
+import { createFlatTaxCalculator } from '../../testing/flatTax.js'
 import { simulatePlan } from '../../projection/simulate.js'
 import { inheritedForcedAmount } from '../../strategies/inheritedIra.js'
 import { requiredMinimumDistribution } from '../../rmd/rmd.js'

@@ -9,7 +9,7 @@ import {
   PARAMETER_DATA_AS_OF,
   PARAMETER_DATA_BASIS,
 } from '../params/index.js'
-import { createFlatTaxCalculator } from '../projection/flatTax.js'
+import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import { TAX_RULE_REGISTRY } from '../rules/taxRuleRegistry.js'
 import {
   cashAccount,

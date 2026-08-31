@@ -9,7 +9,7 @@ import { describe, expect, it } from 'vitest'
 
 import { createEmptyPlan, parsePlan, type Account, type Plan } from '../model/plan.js'
 import { setAcaYearContract } from '../testing/planFixtures.js'
-import { createFlatTaxCalculator } from './flatTax.js'
+import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import { simulatePlan, type SimulateOptions } from './simulate.js'
 
 let counter = 0

@@ -5,7 +5,7 @@ import { asAccountId, asActionId, asAllocationId, asPersonId } from '../../actio
 import { asPositiveUsdCents, asUsdCents } from '../../actions/money.js'
 import { createEmptyPlan, parsePlan, type Account, type IncomeStream, type Plan } from '../../model/plan.js'
 import { packForYear } from '../../params/index.js'
-import { createFlatTaxCalculator } from '../../projection/flatTax.js'
+import { createFlatTaxCalculator } from '../../testing/flatTax.js'
 import { simulatePlan } from '../../projection/simulate.js'
 import { describeRule } from '../describeRule.js'
 
