@@ -66,6 +66,7 @@ import { annuityExclusionMultiple, annuityPayoutForm, annuityPayoutFraction } fr
 import { buildLadder } from '../ladder/ladderMath.js'
 import { tipsLadderAnnualCashFlows, type TipsLadderState } from './internal/tipsLadderAnnualCashFlow.js'
 import { fixedAssetDispositions } from './internal/fixedAssetDispositions.js'
+import { otherIncomeStreams } from './internal/otherIncomeStreams.js'
 import { stateParamsFor } from '../params/state/index.js'
 import type { ParameterPack } from '../params/types.js'
 import { requiredMinimumDistribution } from '../rmd/rmd.js'
@@ -2387,29 +2388,31 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       })
     }
 
-    // Pass 2: other non-SS streams.
-    for (const stream of plan.incomes) {
-      if (stream.type === 'recurring') {
-        if ((stream.startYear !== null && year < stream.startYear) || (stream.endYear !== null && year > stream.endYear)) continue
-        if (!anyAlive) continue
-        const amount = stream.annualAmount * (stream.inflationAdjusted ? inflFactor : 1)
-        incomes.recurring += amount
-        if (stream.taxTreatment === 'ordinary') ordinaryIncome += amount
-        yearSites?.recordRecurringIncome({
-          incomeStreamId: stream.id,
-          amount,
-          taxTreatment: stream.taxTreatment,
-        })
-      } else if (stream.type === 'oneTime') {
-        if (stream.year !== year) continue
-        incomes.oneTime += stream.amount
-        if (stream.taxTreatment === 'ordinary') ordinaryIncome += stream.amount
-        if (stream.taxTreatment === 'capitalGain') oneTimeGains += stream.amount
-        yearSites?.recordOneTimeIncome({
-          incomeStreamId: stream.id,
-          amount: stream.amount,
-          taxTreatment: stream.taxTreatment,
-        })
+    // Pass 2: other non-SS streams. The phase itself lives in
+    // `internal/otherIncomeStreams.ts`; folding row by row, in row order, is
+    // load-bearing here — recurring and one-time rows interleave in plan order,
+    // both reach `ordinaryIncome`, and IEEE-754 addition is not associative.
+    // That accumulator has exactly two earlier writers in the year, the
+    // distributed-yield pass above and pass 1 wages, and BOTH ARE OPTIONAL: a
+    // plan with neither enters this loop at zero. (Measured over the phase-3
+    // differential corpus: zero at entry in 3990 of 6336 year-runs.) That base
+    // is what makes the fold order observable, and the two hazards have
+    // DIFFERENT thresholds. PRE-SUMMING is exact at a zero base — folding row
+    // by row IS pre-summing there — and CAN move the number once the base is
+    // non-zero: measured, it does in 41 of the 250 default-mode corpus
+    // year-runs that fold two or more ordinary rows, and not in the other 209.
+    // RE-ORDERING can move it from TWO addends up once the base is non-zero,
+    // and from three up even at a zero base.
+    for (const row of otherIncomeStreams({ incomes: plan.incomes, year, anyAlive, inflFactor })) {
+      if (row.kind === 'recurring') {
+        incomes.recurring += row.amount
+        if (row.taxTreatment === 'ordinary') ordinaryIncome += row.amount
+        yearSites?.recordRecurringIncome(row.record)
+      } else if (row.kind === 'oneTime') {
+        incomes.oneTime += row.amount
+        if (row.taxTreatment === 'ordinary') ordinaryIncome += row.amount
+        if (row.taxTreatment === 'capitalGain') oneTimeGains += row.amount
+        yearSites?.recordOneTimeIncome(row.record)
       }
     }
 
