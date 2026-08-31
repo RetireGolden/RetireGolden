@@ -923,9 +923,17 @@ describe('simulatePlan delegates income pass 2 (other non-SS streams)', () => {
       const y = year.year
       expect(rowsFor(byYear, y).length, `row count ${y}`).toBe(expectedRowCount(y))
       // PUBLISHED, and exact: both one-time streams pay every LIVING year from
-      // START_YEAR + 1 on, a one-time amount is never inflation-adjusted, and
-      // this phase is the only writer of `incomes.oneTime` (simulate.ts).
-      // Folding starts from 0, so the sum is the two constants and nothing else.
+      // START_YEAR + 1 on, this phase is the only writer of `incomes.oneTime`
+      // (simulate.ts), and folding starts from 0 — so the sum is the two
+      // constants and nothing else.
+      //
+      // WHAT MAKES IT EXACT IS THE FIXTURE, NOT THE ENGINE. Since plan schema
+      // v5 a one-time amount IS inflated when the stream elects it, so this
+      // equality holds only because `oneTimes()` builds them with
+      // `inflationAdjusted: false`. Flip that and the sum becomes
+      // path-dependent and this reads as a regression when nothing regressed —
+      // see the note at the fixture. The election's own arithmetic belongs to
+      // the helper's unit tests.
       expect(year.incomes.oneTime, `incomes.oneTime ${y}`).toBe(
         y === START_YEAR || y >= FIRST_DEAD_YEAR ? 0 : ONE_TIME_ORDINARY + ONE_TIME_CAPITAL_GAIN,
       )
