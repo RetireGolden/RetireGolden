@@ -249,16 +249,35 @@ describe('wageIncomeStreams — the amount', () => {
 })
 
 describe('wageIncomeStreams — the row and its ledger payload', () => {
-  // The record must SHARE the row's double rather than recompute it. That
-  // sharing is what lets the delegation test assert with `toBe` that the object
-  // reaching the ledger is this one.
-  it('builds the record from the row’s own amount and ids', () => {
+  // WHAT AN AMOUNT COMPARISON CAN AND CANNOT SHOW, said plainly because an
+  // earlier version of this test was named for the stronger claim. Comparing
+  // `record.amount` with `row.amount` — by `toBe`, which is `Object.is` — is a
+  // VALUE check and nothing more: equal doubles are indistinguishable in
+  // JavaScript, so a record whose amount had been RECOMPUTED by the same
+  // `annualGross * raiseFactor * inflFactor` expression would satisfy it too.
+  // Number identity is not observable; that is why the identity half below is
+  // asserted on the record OBJECT, which is.
+  //
+  // The value check still earns its place — it fails on a record built from a
+  // DIFFERENT double, a re-bracketed product or a rounded one — and it is what
+  // makes the caller's fold and the ledger line it publishes statements about
+  // ONE number rather than two. What makes the delegation test's `toBe` on the
+  // record work is the CALLER publishing this object unrebuilt, which that test
+  // asserts and this one cannot.
+  it('gives each row its own record, carrying the row’s amount and ids', () => {
     const rows = wageIncomeStreams(input({ incomes: [wages({ id: 'w-x', personId: 'p1', annualGross: 137_777.77 })] }))
     const row = rows[0]!
-    expect(Object.is(row.record.amount, row.amount)).toBe(true)
+    expect(row.record.amount, 'the record amount is not the row amount').toBe(row.amount)
     expect(row.record.incomeStreamId).toBe('w-x')
     expect(row.record.personId).toBe('p1')
     expect(row.personId).toBe('p1')
+    // ONE RECORD PER ROW, which IS identity-bearing and which the delegation
+    // test's positional `toBe` comparison leans on: two rows sharing a single
+    // record object would let a caller publish that one object twice and still
+    // match both rows.
+    const two = wageIncomeStreams(input({ incomes: [wages({ id: 'a' }), wages({ id: 'b' })] }))
+    expect(two.length).toBe(2)
+    expect(two[0]!.record).not.toBe(two[1]!.record)
   })
 
   // EAGERNESS is what makes the delegation test's positional attribution of

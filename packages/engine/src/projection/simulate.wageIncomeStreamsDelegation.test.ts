@@ -106,6 +106,19 @@
  *                                                   parsed plan carries
  *                                                   `undefined` there
  *
+ * EVERY COUNT ABOVE PREDATES THIS REVIEW ROUND, and the denominators say so
+ * rather than being quietly carried forward. Both measurements — the orphan run
+ * in the opening paragraph and the calibration table — were taken when this file
+ * held TEN guards and the helper held 22 unit tests, which is where "eight of
+ * its ten tests" and "32 tests" come from. Two things changed afterwards, in
+ * answer to review: G8b was added here, so the file now holds eleven guards and
+ * G8b appears in none of the failure lists above; and the helper's record test
+ * was renamed and given a second assertion. Neither is in any count above and
+ * nothing above was re-measured with them present. The two named helper tests
+ * the table cites — `treats a missing realGrowthPct as no real raise at all` and
+ * `returns a materialized array` — are untouched. What WAS measured for G8b is a
+ * single injection, recorded at G8b itself.
+ *
  * THE MAP-BACKED-`stateOf` ROW IS A MEASURED BLIND SPOT, recorded rather than
  * left implicit.
  * The helper's own unit tests pin that it resolves the stop age through
@@ -155,7 +168,8 @@
  *     sum to the same 0. Injecting that pre-sum moved 0 of 308 corpus entries
  *     and fails nothing here. G8 pins that the map is POPULATED, for the right
  *     person, in the right years — not the association of its fold, which
- *     cannot be pinned by anything.
+ *     cannot be pinned by anything. G8b pins the fixture sizing that lets G8's
+ *     population check separate a PARTIAL fold from a complete one.
  *
  * WHERE THE EXPECTED VALUES COME FROM, which bounds what any of this proves.
  * G3, G4a, G4b, G4c and G5 all build their expectations out of the rows the
@@ -334,6 +348,8 @@ const QUIET_YEAR = 2050
  * earnings-test threshold in Pat's first three claimed years; each ALONE falls
  * below it. That is what makes G8 catch a caller which folds only one of a
  * person's rows into `wagesByPerson`, and not merely one which folds none.
+ * Neither half is trusted from these constants: G8 asserts the first, and G8b
+ * asserts the second by re-running the fixture one Pat stream at a time.
  */
 const STREAMS = [
   { id: 'w-pat-main', personId: PAT.id, gross: 137_777.77, endAge: 62, growthPct: 1.3 },
@@ -443,7 +459,13 @@ function recordingTaxCalculator(): TaxCalculator {
   }
 }
 
-function plan(): Plan {
+/**
+ * The fixture. `onlyWageStreamIds` keeps just the named wage streams and drops
+ * the rest; every other part of the plan — both people, the accounts, Pat's
+ * Social Security stream — is untouched. It exists for G8b, which needs Pat
+ * carrying ONE wage stream, and no caller of `plan()` passes it otherwise.
+ */
+function plan(options: { readonly onlyWageStreamIds?: readonly string[] } = {}): Plan {
   const p = createEmptyPlan({ newId: () => `delegation-${++counter}`, now: () => new Date('2026-06-11T00:00:00.000Z') })
   p.household.people = [
     {
@@ -501,7 +523,8 @@ function plan(): Plan {
     annualContribution: 0,
   }
   p.accounts = [cash, brokerage]
-  const wageStreams: IncomeStream[] = STREAMS.map((s) => ({
+  const keep = options.onlyWageStreamIds
+  const wageStreams: IncomeStream[] = STREAMS.filter((s) => keep === undefined || keep.includes(s.id)).map((s) => ({
     type: 'wages',
     id: s.id,
     personId: s.personId,
@@ -529,10 +552,14 @@ function plan(): Plan {
   return parsed.plan
 }
 
-function run(options: { capture?: boolean; market?: { inflationPct: number[] } } = {}) {
+function run(
+  options: { capture?: boolean; market?: { inflationPct: number[] }; onlyWageStreamIds?: readonly string[] } = {},
+) {
   seam.events.length = 0
   taxInputs.length = 0
-  const result = simulatePlan(plan(), {
+  const fixture =
+    options.onlyWageStreamIds === undefined ? plan() : plan({ onlyWageStreamIds: options.onlyWageStreamIds })
+  const result = simulatePlan(fixture, {
     startYear: START_YEAR,
     horizonEndYear: END_YEAR,
     taxCalculator: recordingTaxCalculator(),
@@ -914,7 +941,7 @@ describe('simulatePlan delegates income pass 1 (wages)', () => {
   // shapes.
   //
   // NOT the only fixture-derived guard, though it is the only year-complete
-  // one. G6 below is built from the same constants and catches the same defect
+  // one. G6 above is built from the same constants and catches the same defect
   // class at the years its four gate checks touch — measured, an early-out
   // returning no rows for 2034 fails G6 and G7, while the same early-out at
   // 2035 fails G7 alone.
@@ -955,6 +982,11 @@ describe('simulatePlan delegates income pass 1 (wages)', () => {
   // fold, and nothing can — the map is rebuilt empty each year, so a person's
   // first row folds onto 0 and pre-summing is exactly equivalent (measured: the
   // pre-sum injection moved 0 of 308 differential-corpus entries).
+  //
+  // The "each alone falls below" half is a FIXTURE SIZING fact, not something
+  // this test observes — every assertion here is satisfied by a single Pat
+  // stream large enough on its own. G8b, the test that follows this one, is
+  // what holds the fixture to that sizing.
   it('feeds each person’s own wage total to the Social Security earnings test', () => {
     const { result } = run()
     let withheldYears = 0
@@ -973,5 +1005,60 @@ describe('simulatePlan delegates income pass 1 (wages)', () => {
     expect(withheldYears, 'the fixture no longer withholds against wages in any year').toBe(
       EARNINGS_TEST_YEARS.length,
     )
+  })
+
+  // G8b — G8'S PREMISE, PINNED. G8 above reads only that
+  // `ssEarningsTestWithheld` is non-zero in `EARNINGS_TEST_YEARS`, and ONE of
+  // Pat's two open streams could produce that on its own. Were it ever sized to,
+  // a caller that folded only one of Pat's rows into `wagesByPerson` would leave
+  // G8 green — G8 catches the partial fold only because NEITHER stream alone
+  // clears the indexed exempt amount in those years. That is a property of the
+  // fixture's constants, so it is asserted here rather than left in a comment.
+  //
+  // THE COUNTERFACTUAL IS RUN, NOT COMPUTED. Nothing here restates the exempt
+  // amount or the withholding formula; the same fixture is re-run with only ONE
+  // wage stream in `plan.incomes` and the engine's own earnings test answers.
+  // That run puts exactly the same double in Pat's map entry that a one-row fold
+  // would leave there, because a row's amount is `annualGross * raiseFactor *
+  // inflFactor` and reads no other stream. Nothing else feeding the test moves
+  // either: the exempt amount is `limitScale(pack, isStandIn, year)` times a
+  // parameter-pack constant, and Pat's benefit is built from `piaMonthly` and
+  // the claim age — the stream sets `earnings: null`, so no wage record feeds
+  // it. A wage stream touches none of them.
+  //
+  // Like G6 and G8, this reads PUBLISHED output only and never the seam.
+  //
+  // MEASURED, by making exactly the edit this guard exists to catch: lifting
+  // `w-pat-side` alone, from 14_111.11 to a flat 30_000, so that Pat's side
+  // stream clears the exempt amount with no help from the tail stream. All TEN
+  // guards above stayed green — G8 included, which is the whole point — and this
+  // one failed by name at the first year it checks:
+  //
+  //   w-pat-side alone withholds in 2038 … expected 3711.8931549197805 to be +0
+  //
+  // The assertion aborts there, so 2038 is what was OBSERVED; 2039 and 2040 were
+  // never reached on that run. That is the whole of the G8b measurement — one
+  // injection, this file only.
+  it('sizes each of Pat’s streams to fall under the earnings-test exempt amount alone', () => {
+    const factors = expectedInflFactors(FLAT_PATH)
+    for (const streamId of ['w-pat-side', 'w-pat-tail'] as const) {
+      const { result } = run({ onlyWageStreamIds: [streamId] })
+      for (const year of EARNINGS_TEST_YEARS) {
+        const published = result.years.find((y) => y.year === year)
+        if (published === undefined) throw new Error(`the projection published no year ${year}`)
+        // NOT VACUOUS. The stream is the plan's only wage stream, so this
+        // zero-based fold is its amount alone, and it really is paying in this
+        // year — the zero below therefore means "under the exempt amount" and
+        // not "no wages to test".
+        expect(published.incomes.wages, `${streamId} pay in ${year}`).toBe(
+          expectedStreamAmount(streamId, year, factors),
+        )
+        expect(published.incomes.wages, `${streamId} pay in ${year}`).toBeGreaterThan(0)
+        expect(
+          published.ssEarningsTestWithheld,
+          `${streamId} alone withholds in ${year} — G8 can no longer catch a partial wagesByPerson fold`,
+        ).toBe(0)
+      }
+    }
   })
 })
