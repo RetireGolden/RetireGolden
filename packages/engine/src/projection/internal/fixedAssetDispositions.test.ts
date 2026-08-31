@@ -6,9 +6,9 @@
  * re-derived here: it belongs to `tax/propertySale.ts#propertySaleTax`, which
  * has its own citable-source tests. What is pinned here is what this module
  * actually owns — which accounts sell, how a HECM line is repaid and closed,
- * that the ledger payload shares the row's own computed values, that the
- * inflation lookup is called per row rather than hoisted, and that nothing
- * the caller handed in is mutated.
+ * that the ledger payload carries the row's own values, that the inflation
+ * lookup is called per row rather than hoisted, and that nothing the caller
+ * handed in is mutated.
  */
 import { describe, expect, it } from 'vitest'
 
@@ -127,11 +127,17 @@ describe('fixedAssetDispositions — HECM repayment and closure', () => {
 })
 
 describe('fixedAssetDispositions — the ledger payload', () => {
-  it('shares the row’s own computed values rather than recomputing them', () => {
+  it('carries the row’s own values, exactly, into the ledger payload', () => {
     const rows = fixedAssetDispositions(input({ hecmStates: new Map([['home', { loanBalance: 100_000 }]]) }))
     const row = rows[0]!
-    // `toBe`, not `toBeCloseTo`: the point is that one computation feeds both,
-    // so the two can never drift apart in the last bits.
+    // `toBe`, not `toBeCloseTo`: the record must carry the row's exact doubles,
+    // not a rounded or re-derived approximation. Be exact about what that does
+    // NOT establish. It cannot show that one computation feeds both: a verbatim
+    // re-evaluation of the same expression on the same operands yields the
+    // identical double, and rebuilding the record's `netProceedsAfterHecm` as
+    // `sale.netProceeds - hecmPayoff` keeps this test green and moves nothing
+    // in the differential oracle (measured). Sharing the computed value is a
+    // convention this module keeps, not a property this assertion tests.
     expect(row.record.propertyAccountId).toBe(row.propertyAccountId)
     expect(row.record.netProceedsAfterHecm).toBe(row.netProceedsAfterHecm)
     expect(row.record.ordinaryGain).toBe(row.ordinaryGain)

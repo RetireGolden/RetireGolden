@@ -108,7 +108,9 @@ export interface FixedAssetDispositionRow {
   /**
    * The ledger payload for this sale. Built from the same computed values as
    * the row's own scalars, never recomputed, and handed to the caller to
-   * publish unrebuilt.
+   * publish unrebuilt. That sharing is how this module is written; the unit
+   * test compares the two by value, which cannot tell a shared local from a
+   * re-evaluation of the same expression.
    */
   readonly record: RecordedPropertySale
 }
@@ -140,6 +142,12 @@ export function fixedAssetDispositions(
     // A HECM on the sold home is repaid from the proceeds, non-recourse:
     // the payoff never exceeds what the sale nets, and the line closes.
     // (Loan repayment does not change the taxable gain computed above.)
+    // The `Math.max(0, ...)` floor inside that clamp is defensive and is not
+    // reachable through a validated `Plan`: `model/plan.ts` caps
+    // `sellingCostPct` at 25, so `propertySaleTax` never returns a negative
+    // `netProceeds`. Removing the floor alone moves ZERO oracle entries and
+    // fails no test; it is kept verbatim from the inlined phase rather than
+    // tidied away. The `Math.min` around it is the load-bearing half.
     const hecmState = closed.has(account.id) ? undefined : hecmStates.get(account.id)
     let hecmPayoff = 0
     let closesHecmForAccountId: string | null = null

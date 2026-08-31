@@ -33,21 +33,32 @@
  *     added each total once. Both guards additionally COUNT the years that
  *     really separate the two associations and assert that count is non-zero,
  *     so neither can go quietly vacuous if the fixture's numbers ever shift.
- *   - `propertySaleProceedsTotal` starts at ZERO each year, and `0 + a + b` IS
- *     `0 + (a + b)`. For it the exact match pins the row SELECTION and the
- *     per-row VALUES, but cannot tell row-by-row folding from summing across
- *     rows first. That is not a hole this guard is missing: folding into a
- *     zero-based accumulator is provably bit-identical either way, so there is
- *     no regression to catch. It is not described here as an association guard.
+ *   - `propertySaleProceedsTotal` is NOT asserted anywhere in this file. Two
+ *     different things are true of it and only one of them is a non-issue. Its
+ *     ASSOCIATION is uncatchable and nothing is missing there: it starts at
+ *     ZERO each year, and `0 + a + b` IS `0 + (a + b)`, so summing across rows
+ *     first is bit-identical. Its PRESENCE is a real regression that this file
+ *     does NOT catch — deleting the caller's one `propertySaleProceedsTotal`
+ *     fold leaves all 18 tests this extraction adds green, and fails only the
+ *     pre-existing `projection/accountDepth`, `annualCashFlow.propertyHecm`
+ *     and `annualCashFlow.sources` suites (measured). What this file does pin
+ *     for those rows is their SELECTION and their per-row VALUES, in G5, from
+ *     the published ledger rather than from the total.
  *
  * TWO SALES IN ONE YEAR. The fixture needs a year that folds more than one
  * row, or the association check has nothing to bite on. Note what that does
  * not buy: re-ORDERING the rows is a permutation, not a re-association, and
- * permuting these addends changes no bits. The caller does fold in row order,
- * and `internal/fixedAssetDispositions.ts` says why it must; what this file
- * pins is association, not permutation. (The differential oracle does see one
- * consequence of order: two rows sharing a property account id collide on one
- * ledger line ID, and the published line lists are STABLY sorted.)
+ * these guards do not catch one. Do not read that as a licence to reorder. In
+ * IEEE-754 a permutation CAN change the last bit whenever the accumulator is
+ * non-zero, because `(B + a) + b` and `(B + b) + a` are different computations;
+ * it is only THIS fixture's ordinary addends that land on the same double
+ * either way (measured: `(70000 + 35000.01) + 55000.04` and
+ * `(70000 + 55000.04) + 35000.01` are both 160000.05000000002). Row ORDER is
+ * pinned elsewhere — reversing the helper's returned rows fails three of the
+ * helper's own unit tests in `internal/fixedAssetDispositions.test.ts`. (The
+ * differential oracle sees one consequence of order too: two rows sharing a
+ * property account id collide on one ledger line ID and the published line
+ * lists are STABLY sorted, so reversing rows moved exactly one corpus entry.)
  *
  * The property account IDs deliberately contain a character the line-ID
  * grammar has to percent-escape (`DOCS/features/year-cash-flow.md`, Stable
@@ -362,9 +373,11 @@ describe('simulatePlan delegates the fixed-asset disposition phase', () => {
     expect([...byYear.keys()].sort((a, b) => a - b)).toEqual(result.years.map((y) => y.year))
   })
 
-  // G2 — the input is the year's real state, not a re-derived copy.
-  it('passes the year’s accounts and scalars, not a re-derived copy', () => {
+  // G2 — the input is the year's real state: the right values, and the
+  // simulator's own live maps rather than per-call rebuilds.
+  it('passes the year’s real state, and its live maps by reference', () => {
     const { phases } = run()
+    expect(phases.length).toBeGreaterThan(1)
     const first = phases[0]!.input
     expect(first.accounts.map((a) => a.id)).toEqual([
       'cash1',
@@ -385,6 +398,17 @@ describe('simulatePlan delegates the fixed-asset disposition phase', () => {
     // The open HECM line is still in the map when its own sale year arrives.
     const hecmYear = phases.find((p) => p.input.year === HECM_SALE_YEAR)!
     expect(hecmYear.hecmBalancesAtCall.get(HECM_HOME)!).toBeGreaterThan(0)
+    // The two maps cross the seam BY REFERENCE — the simulator's own, declared
+    // once outside the year loop, not a snapshot rebuilt per call. Without this
+    // a caller that handed the helper `new Map(propertyValues)` each year
+    // satisfied every other assertion in this file (measured). Be exact about
+    // what it buys: it is a STRUCTURAL pin, not a numeric one — such a copy
+    // carries identical contents, so no projection number would move — and it
+    // is also what lets the snapshots above be read as what the call saw.
+    // `accounts` and `inflRateAt` are deliberately NOT pinned by identity: a
+    // copied array or a re-wrapped lookup cannot change a number.
+    expect(phases[1]!.input.propertyValues).toBe(phases[0]!.input.propertyValues)
+    expect(phases[1]!.input.hecmStates).toBe(phases[0]!.input.hecmStates)
   })
 
   // G3 — THE OBJECT-IDENTITY ASSERTION (defeats the HALF-ORPHANED duplicate).
@@ -523,10 +547,10 @@ describe('simulatePlan delegates the fixed-asset disposition phase', () => {
   // G3 cannot reach: this reads the PUBLISHED report rather than the seam.
   //
   // The year's proceeds TOTAL is not itself a published field, so what is
-  // pinned here is stronger and narrower: every row's own published amount and
-  // gain character, `toBe`-exact. (Even a published total could not separate
-  // row-by-row folding from summing first — `propertySaleProceedsTotal` starts
-  // at zero each year, and `0 + a + b` IS `0 + (a + b)`.)
+  // pinned here is narrower and exact: every row's own published amount and
+  // gain character, `toBe`-exact. It pins nothing about the caller's
+  // `propertySaleProceedsTotal` fold, whose presence and association are both
+  // discussed in the file header.
   it('publishes each row’s amount and gain character to the ledger', () => {
     const { result, byYear } = run({ capture: true })
     let rowsPublished = 0
