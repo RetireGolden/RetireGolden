@@ -23,7 +23,7 @@ import { exampleMembers, examplesTierAvailable, examplesTierLocation } from './e
 /** @type {Record<string, { why: string, tiers: readonly string[] }>} */
 export const CORPORA = {
   full: {
-    why: 'everything: the curated examples plus the simulate-batch phase members',
+    why: 'everything: the 29 curated examples plus all purpose-built extraction and blind-spot block members',
     tiers: ['examples', 'blocks'],
   },
   examples: {
@@ -31,7 +31,7 @@ export const CORPORA = {
     tiers: ['examples'],
   },
   blocks: {
-    why: 'the simulate-batch phase members plus the shared blind-spot members — needs no planner-ui checkout',
+    why: 'all purpose-built extraction and shared blind-spot members — needs no planner-ui checkout',
     tiers: ['blocks'],
   },
 }
