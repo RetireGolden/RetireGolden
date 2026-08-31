@@ -130,14 +130,20 @@ describe('otherIncomeStreams — selection', () => {
     expect(at(YEAR + 1)).toBe(0)
   })
 
-  // THE GATE ASYMMETRY — behaviour to preserve, not a bug to fix. A recurring
-  // stream stops when the household dies; a one-time stream in a post-death
-  // year still pays. Both halves are asserted, because a helper that gated
-  // both would pass the first half alone.
-  it('stops recurring streams once no one is alive, but still pays one-time streams', () => {
-    const rows = otherIncomeStreams(input({ anyAlive: false, incomes: [recurring(), oneTime()] }))
-    expect(rows.map((r) => r.kind)).toEqual(['oneTime'])
-    expect(rows[0]!.amount).toBe(25_000)
+  // THE SURVIVORSHIP GATE. The ledger has no post-household cash-flow path
+  // (domain rules reference §19), so once nobody is alive NEITHER kind pays.
+  // The alive reading is asserted from the SAME `incomes` array in the same
+  // test, so a helper that returned nothing for any reason at all cannot pass
+  // the dead half by being vacuously empty — which is exactly how the previous
+  // version of this test could be satisfied while the one-time arm was
+  // ungated.
+  it('pays nothing of either kind once no one is alive', () => {
+    const incomes = [recurring(), oneTime()]
+    expect(otherIncomeStreams(input({ anyAlive: true, incomes })).map((r) => r.kind)).toEqual([
+      'recurring',
+      'oneTime',
+    ])
+    expect(otherIncomeStreams(input({ anyAlive: false, incomes }))).toEqual([])
   })
 
   it('applies the survivorship gate independently of the window', () => {

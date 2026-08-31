@@ -36,12 +36,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.test.ts",
-          "line": 2956,
+          "line": 3049,
           "note": "RMD-shortfall excise remains outside AGI, taxable income, and MAGI",
           "tests": [
             {
               "title": "keeps a chapter 43 RMD-shortfall excise out of the income-tax base",
-              "line": 2972
+              "line": 3065
             }
           ]
         }
@@ -2211,12 +2211,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.test.ts",
-          "line": 5498,
+          "line": 5591,
           "note": null,
           "tests": [
             {
               "title": "computes the RMD on the untouched prior year-end balance",
-              "line": 5502
+              "line": 5595
             }
           ]
         }
@@ -2587,16 +2587,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.test.ts",
-          "line": 2571,
+          "line": 2664,
           "note": null,
           "tests": [
             {
               "title": "takes an emptied IRA share from the owner other IRAs, not from the employer plan",
-              "line": 2579
+              "line": 2672
             },
             {
               "title": "never reaches into the other spouse IRAs to cover a shortfall",
-              "line": 2628
+              "line": 2721
             }
           ]
         }
@@ -2814,12 +2814,12 @@
         },
         {
           "path": "packages/engine/src/projection/simulate.test.ts",
-          "line": 5555,
+          "line": 5648,
           "note": null,
           "tests": [
             {
               "title": "satisfies the whole RMD before any dollar becomes a conversion",
-              "line": 5559
+              "line": 5652
             }
           ]
         }

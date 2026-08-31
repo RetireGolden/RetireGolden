@@ -41,9 +41,25 @@
  *                                                    against …875), and G4c
  *   rows grouped by kind                             G3 (wrong recorder), G4a,
  *                                                    G4c
- *   `anyAlive` gate applied to one-time rows too     G6 by name at the first
- *                                                    post-death year, and with
- *                                                    it G3, G4a, G4b, G5, G7
+ *   `anyAlive` gate REMOVED from the one-time arm    5 fail, and ONLY these 5:
+ *   — the defect this projection actually had until  G6 and G7 here, the
+ *   the gate was hoisted above both arms             helper's `pays nothing of
+ *                                                    either kind once no one is
+ *                                                    alive`, and BOTH of
+ *                                                    simulate.test.ts's
+ *                                                    `income survivorship`
+ *                                                    cases. G3, G4a, G4b, G5
+ *                                                    all PASS, and that is the
+ *                                                    self-consistency trap G7's
+ *                                                    own note describes from
+ *                                                    the other direction: they
+ *                                                    build their expected
+ *                                                    values out of the rows the
+ *                                                    helper returned, so a
+ *                                                    helper that returns rows it
+ *                                                    should not carries them
+ *                                                    along with it. Only the
+ *                                                    fixture-derived guards bite
  *   helper rewritten as a generator                  26 of the 29 fail. G3 by
  *                                                    name, `rows are not a
  *                                                    materialized array`; a
@@ -269,7 +285,7 @@ const END_YEAR = 2060
  * dob 1976 ⇒ age 50 in `START_YEAR`. Wages stop at `WAGE_END_AGE` and the
  * household dies after `PLANNING_AGE`, so the horizon contains three regimes:
  * years with wages (where the association guard is live), years alive without
- * wages, and post-death years (where recurring stops and one-time still pays).
+ * wages, and post-death years (where the phase pays nothing of either kind).
  */
 const WAGE_END_AGE = 80
 const PLANNING_AGE = 82
@@ -579,7 +595,7 @@ describe('simulatePlan delegates income pass 2 (other non-SS streams)', () => {
       // what the check proves.
       expect(phase.streamIdsAtCall, `stream list for ${phase.input.year}`).toEqual(planIds)
     }
-    // `anyAlive` tracks the household, and gates recurring streams only (G6).
+    // `anyAlive` tracks the household, and gates the whole phase (G6).
     const aliveAt = (year: number): boolean => {
       const phase = phases.find((p) => p.input.year === year)
       if (phase === undefined) throw new Error(`no otherIncomeStreams call was recorded for ${year}`)
@@ -837,25 +853,33 @@ describe('simulatePlan delegates income pass 2 (other non-SS streams)', () => {
     ).toBeGreaterThan(0)
   })
 
-  // G6 — THE GATE ASYMMETRY, observed from PUBLISHED output rather than the
-  // seam. Recurring streams stop when the household dies; one-time streams have
-  // no such gate and still pay. Both halves matter: a caller that gated both
-  // would pass the first alone.
-  it('stops recurring income after the household dies while one-time income still pays', () => {
+  // G6 — THE SURVIVORSHIP GATE, observed from PUBLISHED output rather than the
+  // seam. NEITHER kind pays once the household has died: the ledger has no
+  // post-household cash-flow path (domain rules reference §19). This is the
+  // guard that would catch a regression to the ungated one-time arm this
+  // projection used to have — an arm that paid a windfall into a year with
+  // nobody left to receive it, and into the estate figure with it.
+  //
+  // The last LIVING year is asserted in the same test, and that half is what
+  // stops the dead half passing vacuously: a projection that paid no pass-2
+  // income anywhere at all would satisfy every `toBe(0)` below and fail here.
+  it('stops both recurring and one-time income once the household has died', () => {
     const { result } = run()
     const yearOf = (year: number) => {
       const found = result.years.find((y) => y.year === year)
       if (found === undefined) throw new Error(`the projection published no year ${year}`)
       return found
     }
-    // Alive: both kinds paying.
+    // Alive: both kinds paying, so the readings below are about the gate.
     expect(yearOf(FIRST_DEAD_YEAR - 1).incomes.recurring).toBeGreaterThan(0)
     expect(yearOf(FIRST_DEAD_YEAR - 1).incomes.oneTime).toBeGreaterThan(0)
-    // Dead: recurring stops dead, one-time keeps paying.
+    // Dead: both stop. The fixture carries a one-time stream in EVERY year
+    // through END_YEAR, so each post-death year below is a year that would
+    // have paid one.
     for (const year of result.years) {
       if (year.year < FIRST_DEAD_YEAR) continue
       expect(year.incomes.recurring, `incomes.recurring ${year.year}`).toBe(0)
-      expect(year.incomes.oneTime, `incomes.oneTime ${year.year}`).toBeGreaterThan(0)
+      expect(year.incomes.oneTime, `incomes.oneTime ${year.year}`).toBe(0)
     }
   })
 
@@ -880,18 +904,25 @@ describe('simulatePlan delegates income pass 2 (other non-SS streams)', () => {
     //   alive years       once-YYYY + gain-YYYY + the four
     //                     recurring streams (inflated, flat,
     //                     zero-amount, untaxed)                    6 rows
-    //   post-death years  `anyAlive` gates the four recurring
-    //                     streams off; both one-time streams pay   2 rows
-    const expectedRowCount = (year: number): number => (year === START_YEAR ? 0 : year < FIRST_DEAD_YEAR ? 6 : 2)
+    //   post-death years  `anyAlive` gates the WHOLE phase off     0 rows
+    //
+    // Note what that last regime now costs this guard, since it is the one
+    // that changed when the one-time arm was gated: post-death years expect
+    // ZERO rows, so they no longer discriminate an UNDER-producing helper —
+    // returning nothing there is now correct. G7's bite lives entirely in the
+    // six-row alive regime; G6 is what holds the post-death years, and it
+    // holds them against OVER-production.
+    const expectedRowCount = (year: number): number =>
+      year === START_YEAR || year >= FIRST_DEAD_YEAR ? 0 : 6
     for (const year of result.years) {
       const y = year.year
       expect(rowsFor(byYear, y).length, `row count ${y}`).toBe(expectedRowCount(y))
-      // PUBLISHED, and exact: both one-time streams pay every year from
+      // PUBLISHED, and exact: both one-time streams pay every LIVING year from
       // START_YEAR + 1 on, a one-time amount is never inflation-adjusted, and
       // this phase is the only writer of `incomes.oneTime` (simulate.ts).
       // Folding starts from 0, so the sum is the two constants and nothing else.
       expect(year.incomes.oneTime, `incomes.oneTime ${y}`).toBe(
-        y === START_YEAR ? 0 : ONE_TIME_ORDINARY + ONE_TIME_CAPITAL_GAIN,
+        y === START_YEAR || y >= FIRST_DEAD_YEAR ? 0 : ONE_TIME_ORDINARY + ONE_TIME_CAPITAL_GAIN,
       )
       // PUBLISHED, as a floor rather than a value: the inflated leg makes the
       // exact total path-dependent, but the two flat legs are unconditional
