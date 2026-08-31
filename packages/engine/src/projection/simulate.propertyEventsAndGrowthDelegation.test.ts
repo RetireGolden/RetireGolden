@@ -9,8 +9,9 @@
  * oracle, and this is not one). Identical output is that dump's PASS condition,
  * so it cannot see an orphaned helper. It is worth saying how thin the existing
  * coverage of this phase was, because it explains the shape of G3: deleting
- * `line.principalLimit *= growth` outright passed the ENTIRE engine suite —
- * 286 files, 5,502 tests, measured before this work began — and deleting the
+ * `line.principalLimit *= growth` outright passed every test in the repository
+ * except the ones this work adds — measured on this tree with the eleven new
+ * files held back, 285 files / 5,499 tests, all green — and deleting the
  * property value growth failed exactly one test, and that one a neighbouring
  * phase's seam guard rather than a behavioural check.
  *

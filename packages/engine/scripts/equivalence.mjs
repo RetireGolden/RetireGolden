@@ -27,8 +27,33 @@
  *     called at all — measured on phase 3, not assumed. Delegation and identity
  *     are a delegation test's job (`toBe`), never this tool's.
  *   - branches the corpus does not execute. That is what `reach` is for, and
- *     its output names the cold lines rather than leaving them implied.
+ *     its output names the cold lines rather than leaving them implied. Read
+ *     `reach`'s verdict precisely: it FAILS on a spec entry no member reaches
+ *     and on a spec entry containing a line no member executed, and it reports
+ *     but does not fail an untaken SUB-LINE branch (a cold region), because an
+ *     untaken defensive `?? 0` arm is a legitimate steady state. A green
+ *     `reach` therefore means "every line of every named range ran", never
+ *     "every branch inside them was taken".
  *   - anything downstream of a mode the capture did not run. See `modes.mjs`.
+ *   - a constant whose neighbourhood the corpus does not straddle. Reaching the
+ *     line that reads `youngestAge < 62` is not the same as having a borrower
+ *     aged 61 and one aged 62; that is a unit test's job, and this tool will
+ *     report IDENTICAL for a threshold moved past every member. Measured on
+ *     block C, which is why `internal/hecmLineOpenings.test.ts` pins that
+ *     constant from both sides.
+ *
+ * CAPTURE FROM AN IMMUTABLE TREE. `describeTree()` samples `git status` once,
+ * at the start of a capture. A worktree another session writes to DURING the
+ * run therefore yields a manifest that says `observed <sha>` with no DIRTY flag
+ * while some of the numbers came from different bytes — and that is the one
+ * failure mode that makes a byte-identical PASS meaningless. It is not
+ * hypothetical: 11 of ~436 captures taken from this shared worktree during
+ * review deviated, in two windows that coincide with source-file writes by
+ * another process, while ~316 interleaved captures of the same commit
+ * materialized by `git archive` never deviated once. So point `--engine-src` at
+ * a `git archive <sha>` directory (`--engine-label <sha>` records the
+ * provenance as `declared`), or at minimum run the capture twice and require
+ * the same `dumpSha256`.
  *
  * COMMANDS
  *   corpus  --name <corpus> --out <corpus.json> [--engine-src <dir>]
@@ -40,16 +65,21 @@
  *   list
  *
  * EXIT CODES
- *   0  identical / every spec entry reached
- *   1  any difference, or a spec entry no corpus member reaches
- *   2  usage error, or INCOMPARABLE inputs — two dumps whose schema, corpus
- *      hash or mode list disagree are refused rather than compared. The
- *      throwaway comparator this replaced matched on member/mode and printed
- *      `MISSING` for the rest, which is a false-negative generator.
+ *   0  identical / every spec entry reached with no cold line inside it
+ *   1  any difference, or a spec entry no corpus member reaches, or a spec
+ *      entry that IS reached but contains a line no member ever executed
+ *   2  usage error, INCOMPARABLE inputs — two dumps whose schema, corpus hash
+ *      or mode list disagree are refused rather than compared; the throwaway
+ *      comparator this replaced matched on member/mode and printed `MISSING`
+ *      for the rest, which is a false-negative generator — or a CORRUPT dump,
+ *      one whose stored per-entry `sha256` does not re-derive from that
+ *      entry's own `value`.
  *
- * `--out` is required everywhere. Nothing defaults to a path inside the
- * repository, so a 46 MB dump can never be staged by accident and `.gitignore`
- * needs no new entry.
+ * `--out` is required for `corpus` and `capture`, the two commands that write
+ * a large file, and optional for `reach`. Nothing defaults to a path inside
+ * the repository, so a dump — 71 MB for the `full` corpus, 46 MB for
+ * `examples` and 25 MB for `blocks` — can never be staged by accident and
+ * `.gitignore` needs no new entry.
  *
  * Run from anywhere: `node packages/engine/scripts/equivalence.mjs …`, or
  * `pnpm --filter @retiregolden/engine equivalence …`.
@@ -95,8 +125,10 @@ Usage:
 Corpora: ${CORPUS_NAMES.join(', ')}
 Modes:   ${MODE_IDS.join(', ')}
 
-Exit: 0 identical / all reached  ·  1 a difference or an unreached spec entry  ·  2 usage or incomparable inputs.
---out is mandatory: a dump is large and must never land inside the repository by default.`
+Exit: 0 identical / all reached with no cold lines  ·  1 a difference, an unreached spec entry, or a
+      cold line inside a reached one  ·  2 usage, incomparable inputs, or a corrupt dump.
+--out is mandatory for corpus and capture (optional for reach): a dump is large and must never land
+inside the repository by default.`
 }
 
 class UsageError extends Error {}
@@ -380,6 +412,33 @@ function commandCompare(argv) {
   console.log(`      file sha256 ${headSha}   engine ${describe(headManifest)}`)
   console.log(`(a) file hashes ${baseSha === headSha ? 'IDENTICAL' : 'DIFFER'}`)
 
+  // A dump's stored per-entry hash is RE-DERIVED from that entry's own value
+  // before either is trusted, exactly as `loadCorpusFile` re-derives a corpus
+  // hash. Without this the walk below is skipped for any entry whose stored
+  // hashes happen to agree, which is precisely the entry a hand-edited value
+  // would produce: the verdict would still be DIFFERENT (the whole-file hashes
+  // disagree) but the operator would be shown an empty mismatch report — the
+  // tool's entire diagnostic value, missing exactly when something is wrong.
+  const corrupt = []
+  for (const [label, dump] of [['base', base], ['head', head]]) {
+    for (const entry of dump.entries) {
+      const derived = sha256(JSON.stringify(entry.value))
+      if (derived !== entry.sha256) {
+        corrupt.push(
+          `${label} entry ${entry.member}/${entry.mode}: stored ${String(entry.sha256).slice(0, 16)}, ` +
+            `value hashes to ${derived.slice(0, 16)}`,
+        )
+      }
+    }
+  }
+  if (corrupt.length > 0) {
+    console.error('CORRUPT DUMP — refusing to compare:')
+    for (const reason of corrupt.slice(0, 12)) console.error(`  ${reason}`)
+    if (corrupt.length > 12) console.error(`  ... ${corrupt.length - 12} more`)
+    return 2
+  }
+  console.log(`(a2) per-entry hashes re-derived from their values: ${base.entries.length * 2} checked, 0 corrupt`)
+
   console.log('\n(b) per-entry structural walk')
   let moved = 0
   const movedMembers = new Set()
@@ -477,10 +536,20 @@ async function commandReach(argv) {
     )
   }
 
+  // A REACHED verdict is LINE-EXECUTED, not branch-taken: `totalHits` sums the
+  // per-member PEAK line count anywhere in the range, so a multi-line entry
+  // whose gate line runs for every member reports REACHED even if its body
+  // never ran once. Cold LINES are what close that hole, and they are counted
+  // into the exit code rather than being printed under a verdict that
+  // contradicts them. Cold REGIONS are deliberately NOT fatal: an untaken
+  // defensive `?? 0` arm is a legitimate steady state, and six spec entries
+  // here have one.
   let unreached = 0
+  let withColdLines = 0
   for (const entry of report.entries) {
     const status = entry.totalHits > 0 ? 'REACHED' : 'NOT REACHED'
     if (entry.totalHits === 0) unreached++
+    if (entry.coldLines.length > 0) withColdLines++
     console.log(`\n${entry.id}  ${status}   ${entry.label}`)
     console.log(`  lines ${entry.lines[0]}-${entry.lines[1]}  members that reach it: ${entry.labelsThatReach}/${entry.labelsTotal}  Σ per-member peak line count: ${entry.totalHits}`)
     if (entry.note !== undefined) console.log(`  NOTE: ${entry.note}`)
@@ -499,8 +568,12 @@ async function commandReach(argv) {
     writeFileSync(opts.out, JSON.stringify(report, null, 2), 'utf8')
     console.log(`\nwritten ${opts.out}`)
   }
-  console.log(`\nspec entries: ${report.entries.length}   unreached: ${unreached}`)
-  return unreached === 0 ? 0 : 1
+  console.log(
+    `\nspec entries: ${report.entries.length}   unreached: ${unreached}   ` +
+      `entries with cold lines: ${withColdLines}   ` +
+      `entries with a cold region (reported, not fatal): ${report.entries.filter((e) => e.coldRegions.length > 0).length}`,
+  )
+  return unreached === 0 && withColdLines === 0 ? 0 : 1
 }
 
 // ---------------------------------------------------------------------------

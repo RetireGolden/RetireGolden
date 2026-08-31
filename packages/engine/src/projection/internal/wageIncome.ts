@@ -59,10 +59,16 @@
  * OPERAND ORDER IS LOAD-BEARING. `annualGross * raiseFactor * inflFactor`
  * evaluates left to right; re-grouping it as `annualGross * (raiseFactor *
  * inflFactor)` while tidying is a different double. Measured: that exact
- * re-association moves 52 of the 228 entries in the differential corpus, and
- * every existing wages test in the repository uses `toBeCloseTo` and passes
- * either way. The defensive `?? 0` on `realGrowthPct` is kept verbatim even
- * though `model/plan.ts` defaults it.
+ * re-association moves 52 of the 232 entries in the differential corpus, while
+ * no PRE-EXISTING test in the repository fails. Not because the matchers are
+ * all tolerant — `simulate.test.ts:188`, `earlyAccess.test.ts:346`,
+ * `simulate.annualCashFlow.captureOff.test.ts:141` and
+ * `seppHsaAndCharacter.approximation.test.ts:266` assert `incomes.wages` with
+ * an exact `toBe` — but because those fixtures sit on values where the two
+ * groupings land on the same double. The only two tests that fail under it are
+ * the ones added with this extraction: `internal/wageIncome.test.ts` and
+ * `simulate.wageIncomeDelegation.test.ts`. The defensive `?? 0` on
+ * `realGrowthPct` is kept verbatim even though `model/plan.ts` defaults it.
  *
  * IT ALLOCATES MORE THAN THE INLINED PHASE DID, on the default path. The
  * `RecordedWage` literal used to be built INSIDE `yearSites?.recordWages({ … })`,

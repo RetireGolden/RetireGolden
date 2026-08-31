@@ -1,12 +1,14 @@
 /**
  * Purpose-built corpus members for the five `simulate.ts` annual phases being
- * extracted in the "simulate batch" slice:
+ * extracted in the "simulate batch" slice, plus the blind spots that belong to
+ * the corpus itself rather than to any one phase:
  *
  *   A  annual rebalance to target (start-of-year trade)
  *   B  pension lump-sum rollover
  *   C  HECM line open
  *   D  income pass 1 — wages
  *   E  property events + growth
+ *   S  shared: whole-corpus holes found by measurement (see `blockS`)
  *
  * The 29 curated example plans exercise A, D and E's growth leg incidentally,
  * but NONE of them carries a HECM line or a pension lump-sum election — grepped,
@@ -593,8 +595,66 @@ function blockE() {
   return out
 }
 
+// ---------------------------------------------------------------------------
+// S — shared blind spots, owned by no single block
+// ---------------------------------------------------------------------------
+
+/**
+ * Members that exist because the CORPUS was measured blind, not because one of
+ * the five phases needs them. The corpus is the durable half of this tool, and
+ * a hole in it produces a meaningless IDENTICAL for as long as it stays open.
+ *
+ * MEASURED, which is why this section exists at all: every other member here
+ * ends its horizon at the household's own planning age, so no member simulates
+ * a year after the last death. `origin/main` changed exactly that gate while
+ * this work was in flight (PR #381, "Stop paying one-time income after the last
+ * household death"), and the whole 57-member corpus produced the SAME dump
+ * sha256 on both sides of it — ed0fb0bb…1382ae before and after — on a change
+ * that moves $250,000 on a discriminating plan.
+ */
+function blockS() {
+  const out = []
+
+  {
+    // `deathAgeByPersonId` kills the only person at 65 (2031) while
+    // `horizonEndYear` keeps simulating to 2040, so nine post-death years are
+    // actually projected. Both arms of the survivorship gate are live: the
+    // recurring stream spans the death, one lump lands before it and one after.
+    const plan = shell()
+    plan.assumptions.inflationPct = 2
+    plan.accounts = [
+      taxable('tax-s1', 200_000, 120_000, { interestYieldPct: 2 }),
+      qualified('traditional', 'ira-s1', 300_000),
+    ]
+    plan.incomes = [
+      {
+        type: 'recurring',
+        id: 'rent-s1',
+        label: 'rent',
+        annualAmount: 24_000,
+        startYear: START_YEAR,
+        endYear: START_YEAR + 14,
+        inflationAdjusted: true,
+        taxTreatment: 'ordinary',
+      },
+      { type: 'oneTime', id: 'lump-alive', label: 'lump while alive', year: START_YEAR + 3, amount: 40_000, taxTreatment: 'ordinary' },
+      { type: 'oneTime', id: 'lump-dead', label: 'lump after death', year: START_YEAR + 8, amount: 250_000, taxTreatment: 'ordinary' },
+    ]
+    out.push(
+      member(
+        's1-postDeathIncomeGate',
+        'S: nine simulated years after the last household death — the anyAlive gate on both income arms',
+        plan,
+        { horizonEndYear: START_YEAR + 14, deathAgeByPersonId: { p1: 65 } },
+      ),
+    )
+  }
+
+  return out
+}
+
 /** @returns {Promise<object[]>} every member in this tier, in a stable order. */
 export async function blockMembers() {
   fixtures = await import('@retiregolden/engine/testing/planFixtures')
-  return [...blockA(), ...blockB(), ...blockC(), ...blockD(), ...blockE()]
+  return [...blockA(), ...blockB(), ...blockC(), ...blockD(), ...blockE(), ...blockS()]
 }

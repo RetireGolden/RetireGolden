@@ -151,16 +151,23 @@ describe('hecmLineOpenings — the arithmetic', () => {
 })
 
 describe('hecmLineOpenings — the age-62 warning', () => {
+  const WARNING =
+    'A HECM line of credit was modeled before the youngest borrower turns 62 (real HECMs require age 62+).'
+
   it('reports the warning when the youngest borrower is under 62 at open', () => {
     const [row] = call([property('home', { principalLimitPct: 40 })], { people: [OLD, YOUNG] })
-    expect(row!.warning).toBe(
-      'A HECM line of credit was modeled before the youngest borrower turns 62 (real HECMs require age 62+).',
-    )
+    expect(row!.warning).toBe(WARNING)
   })
 
-  it('reports no warning at exactly 62, and none above it', () => {
-    const exactly62 = person('p3', `${START_YEAR - 62}-01-01`)
-    expect(call([property('home', { principalLimitPct: 40 })], { people: [exactly62] })[0]!.warning).toBeNull()
+  // The threshold pinned from BOTH sides, on adjacent ages, because nothing
+  // else in the repository pins it at all: the differential dump is blind to it
+  // (measured — moving the constant to 61 reproduces the baseline dump sha over
+  // every corpus entry, since no member has a borrower aged 61 in an open
+  // year), and every other assertion here sits ten-plus years away from 62.
+  it('warns at 61 and not at 62 — the constant, from both sides', () => {
+    const at = (age: number) => [person(`p-${age}`, `${START_YEAR - age}-01-01`)]
+    expect(call([property('home', { principalLimitPct: 40 })], { people: at(61) })[0]!.warning).toBe(WARNING)
+    expect(call([property('home', { principalLimitPct: 40 })], { people: at(62) })[0]!.warning).toBeNull()
     expect(call([property('home', { principalLimitPct: 40 })], { people: [OLD] })[0]!.warning).toBeNull()
   })
 })

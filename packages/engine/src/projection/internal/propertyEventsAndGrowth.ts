@@ -73,10 +73,14 @@
  * `legacyPropertySaleDeposits?.push({ … })`, and that array is null unless the
  * cash-flow capture is on — so on the default path (every product projection,
  * and every `simulatePlan` re-entry inside Monte Carlo, the optimizer and the
- * spending solver) the object was never constructed. `surplusDestination` is
- * null on exactly the same path, and `record` is gated on it being non-null, so
- * the helper builds the payload only where the inlined phase did. The new
- * allocations are the rows and the array, which any pure helper requires.
+ * spending solver) the object was never constructed. `record` is gated on
+ * `surplusDestination` being non-null, and the CALLER passes that field only
+ * when the array itself is non-null — deliberately, and not because the two
+ * happen to be assigned in the same `if (publishCashFlow)` block. That
+ * coincidence is true today and nothing enforces it; the call site's ternary
+ * is what makes "the payload exists exactly where the array does" hold by
+ * construction. The new allocations are the rows and the array, which any pure
+ * helper requires.
  *
  * `deposit: number | null` rather than a bare number is deliberate. The inlined
  * phase called `deposit(amount)` UNCONDITIONALLY for a legacy-path sale — the
@@ -137,9 +141,10 @@ export interface PropertyEventYearInput {
   /** Open HECM lines by property account id. ReadonlyMap; see the shadow rule. */
   readonly hecmStates: ReadonlyMap<string, PropertyEventHecmLine>
   /**
-   * The year's post-solve surplus destination, or null off the cash-flow
-   * publish path. `record` is gated on this, which is what keeps the payload
-   * exactly as lazy as it was inlined.
+   * The year's post-solve surplus destination, or null when the caller has no
+   * ledger array for the payload to land in. `record` is gated on this, which
+   * is what keeps the payload exactly as lazy as it was inlined — so a caller
+   * that holds a destination but no array must pass null here.
    */
   readonly surplusDestination: YearCashFlowTransferEndpoint | null
 }

@@ -31,7 +31,7 @@ export const CORPORA = {
     tiers: ['examples'],
   },
   blocks: {
-    why: 'the simulate-batch phase members only — needs no planner-ui checkout',
+    why: 'the simulate-batch phase members plus the shared blind-spot members — needs no planner-ui checkout',
     tiers: ['blocks'],
   },
 }

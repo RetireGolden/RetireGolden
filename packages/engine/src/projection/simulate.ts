@@ -10123,7 +10123,12 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       propertyValues,
       inflRateAt,
       hecmStates,
-      surplusDestination,
+      // Gated on the ARRAY this payload feeds, which is what the inlined phase
+      // gated on: it built its literal inside `legacyPropertySaleDeposits?.push(
+      // { … })`. Both are assigned in the same `if (publishCashFlow)` block, so
+      // this is a no-op today; writing it this way makes the payload's laziness
+      // hold by construction rather than by that coincidence.
+      surplusDestination: legacyPropertySaleDeposits === null ? null : surplusDestination,
     })) {
       if (row.closesHecmForAccountId !== null) hecmStates.delete(row.closesHecmForAccountId)
       if (row.deposit !== null) deposit(row.deposit)

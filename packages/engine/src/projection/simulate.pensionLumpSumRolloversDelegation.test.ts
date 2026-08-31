@@ -65,9 +65,20 @@
  * WHOLE-LOG ACCOUNTING NEEDS A MARKER HERE, not position. `recordPensionRollover`
  * has exactly one call site in the tree, so the LEDGER events can be attributed
  * positionally. The two runtime recorders cannot: they are called from about
- * twenty other blocks in the same year. Two literals are exclusive to this
- * phase — grepped, not assumed — and those are what G3 filters on:
- * `kind: 'rolloverInflow'` and `simulatorPhase: 'pensionLumpSumRollover'`.
+ * twenty other blocks in the same year. So G3 filters on two literals — grepped,
+ * and reported as the grep came back rather than as it was hoped:
+ *   - `kind: 'rolloverInflow'` is emitted at exactly ONE non-test site,
+ *     `simulate.ts:2001`, which is this phase's own.
+ *   - `simulatorPhase: 'pensionLumpSumRollover'` appears at TWO:
+ *     `simulate.ts:2013`, and
+ *     `internal/ownedNonRothIraRuntimeSourceSeries.ts#applicationShape`. That
+ *     second site predates this work and emits nothing — it is a `kind` ->
+ *     descriptor classifier (`case 'rolloverInflow': return { …,
+ *     simulatorPhase: 'pensionLumpSumRollover', … }`) that LABELS this phase's
+ *     applications rather than producing a competing record.
+ * Filtering published applications on that field is therefore still exact: the
+ * classifier can only ever tag a record whose `kind` this phase already
+ * selected. "Exclusive to this phase" was simply the wrong word for it.
  */
 import { describe, expect, it, vi } from 'vitest'
 

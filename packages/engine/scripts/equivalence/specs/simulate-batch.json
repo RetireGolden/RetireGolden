@@ -1,7 +1,7 @@
 {
   "schema": "retiregolden.equivalence-reach-spec/1",
   "name": "simulate-batch",
-  "why": "The five annual phases extracted in the simulate-batch slice, plus the sub-arms whose reach cannot be assumed. REPOINTED after the extractions landed: every range now names the extracted helper under projection/internal/, not the removed inlined block in projection/simulate.ts, and one entry (B.application) names the call site because that arm stayed there. Line numbers are against the working tree and MUST be re-checked before reuse - a stale range silently reports the wrong code as reached, which is exactly what the first version of this file would have started doing the moment the first phase moved.",
+  "why": "The five annual phases extracted in the simulate-batch slice, plus the sub-arms whose reach cannot be assumed. REPOINTED after the extractions landed: every range now names the extracted helper under projection/internal/, not the removed inlined block in projection/simulate.ts, and one entry (B.application) names the call site because that arm stayed there. Line numbers are against the working tree and MUST be re-checked before reuse (they were last re-checked, and seven of them corrected, when the review pass edited two helper headers and the block-E call site) - a stale range silently reports the wrong code as reached, which is exactly what the first version of this file would have started doing the moment the first phase moved.",
   "entries": [
     {
       "id": "A",
@@ -114,8 +114,8 @@
       "label": "income pass 1 - wages",
       "file": "projection/internal/wageIncome.ts",
       "lines": [
-        141,
-        159
+        147,
+        165
       ],
       "note": "a member's count here is LOOP-HEADER iterations, not phase work: V8 attributes straight-line code after a conditional `continue` to the enclosing block, so this range reports every plan the loop iterates over at all. Read the sub-entries and the cold regions for what the phase body actually did."
     },
@@ -124,8 +124,8 @@
       "label": "D: a wages stream that actually pays this year",
       "file": "projection/internal/wageIncome.ts",
       "lines": [
-        147,
-        158
+        153,
+        164
       ]
     },
     {
@@ -133,8 +133,8 @@
       "label": "property events + growth",
       "file": "projection/internal/propertyEventsAndGrowth.ts",
       "lines": [
-        192,
-        228
+        197,
+        233
       ],
       "note": "a member's count here is LOOP-HEADER iterations, not phase work: V8 attributes straight-line code after a conditional `continue` to the enclosing block, so this range reports every plan the loop iterates over at all. Read the sub-entries and the cold regions for what the phase body actually did."
     },
@@ -143,8 +143,8 @@
       "label": "E: the planned-sale-year branch (post-growth value above zero)",
       "file": "projection/internal/propertyEventsAndGrowth.ts",
       "lines": [
-        202,
-        218
+        207,
+        223
       ]
     },
     {
@@ -152,8 +152,8 @@
       "label": "E: the legacy tax-free expectedNetProceeds path (no cost basis)",
       "file": "projection/internal/propertyEventsAndGrowth.ts",
       "lines": [
-        203,
-        216
+        208,
+        221
       ]
     },
     {
@@ -161,18 +161,18 @@
       "label": "E: the legacy-sale ledger payload (cashFlow modes only)",
       "file": "projection/internal/propertyEventsAndGrowth.ts",
       "lines": [
-        213,
-        215
+        218,
+        220
       ],
-      "note": "unlike A.ledger, this one is STILL cashFlow-only: the payload is gated on a non-null surplusDestination, which is null on exactly the path where the inlined phase never built the object either."
+      "note": "unlike A.ledger, this one is STILL cashFlow-only: the payload is gated on a non-null surplusDestination, and the call site passes that field only when the ledger array the payload feeds is itself non-null - the same condition the inlined phase gated its object literal on."
     },
     {
       "id": "E.hecmGrowth",
       "label": "E: an open line compounding at its own growth rate",
       "file": "projection/internal/propertyEventsAndGrowth.ts",
       "lines": [
-        222,
-        226
+        227,
+        231
       ]
     }
   ],

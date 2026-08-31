@@ -31,9 +31,15 @@
  *     market-path branch should carry a literal inflation/return series
  *     instead, which is deterministic.
  *
- * Each mode declares a `channelSize` so "this mode opened its channel" is
- * CHECKED per entry rather than assumed. A mode silently contributing nothing
- * is exactly as invisible as the defects it exists to catch.
+ * Each mode that OPENS a channel declares a `channelSize`, so "this mode opened
+ * its channel" is CHECKED per entry rather than assumed. A mode silently
+ * contributing nothing is exactly as invisible as the defects it exists to
+ * catch. Three of the four are checked: `cashFlow` counts the published
+ * `year.cashFlow` line ids across the projection, `optimizerProbe` and
+ * `counterfactual` count what landed in their out-of-result sink. `default`
+ * declares `null` and is the one mode with nothing to check — its channel IS
+ * the `ProjectionResult` every other mode also carries, and an empty one is
+ * not a thing this tool can distinguish from a plan with no years.
  */
 
 /** @typedef {{ result: unknown, optimizerProbes: unknown[] | null, counterfactualReadings: unknown[] | null }} RunOutput */
@@ -59,7 +65,10 @@ export const MODES = [
     id: 'cashFlow',
     why: 'the annual cash-flow ledger: recorder calls, skipNonPositive drops, line ids and order',
     extraOptions: () => ({ captureAnnualCashFlow: true }),
-    channelSize: () => null,
+    // The published ledger itself, counted: if `captureAnnualCashFlow` ever
+    // stopped being honoured this would fall to 0 and the member would land in
+    // `emptyChannels` instead of looking green while contributing nothing.
+    channelSize: (out) => publishedCashFlowLines(out.result),
   },
   {
     id: 'optimizerProbe',
@@ -86,6 +95,28 @@ export const MODES = [
     channelSize: (out) => (out.counterfactualReadings === null ? 0 : out.counterfactualReadings.length),
   },
 ]
+
+/**
+ * Every `year.cashFlow` line id published across a projection. Counts the three
+ * line arrays only — `reconciliation` is a single object present on every
+ * captured year, so including it would make an empty ledger look non-empty.
+ * @param {unknown} result a ProjectionResult
+ * @returns {number}
+ */
+function publishedCashFlowLines(result) {
+  const years = /** @type {{ years?: unknown }} */ (result)?.years
+  if (!Array.isArray(years)) return 0
+  let lines = 0
+  for (const year of years) {
+    const cashFlow = year?.cashFlow
+    if (cashFlow === undefined || cashFlow === null) continue
+    lines +=
+      (cashFlow.sourceLines?.length ?? 0) +
+      (cashFlow.useLines?.length ?? 0) +
+      (cashFlow.transferLines?.length ?? 0)
+  }
+  return lines
+}
 
 export const MODE_IDS = MODES.map((mode) => mode.id)
 

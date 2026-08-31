@@ -112,7 +112,13 @@ describe('annualRebalanceToTarget — selection and row shape', () => {
     expect(rows.map((r) => r.kind)).toEqual(['retarget', 'retarget'])
   })
 
-  it('retargets without selling when turnover is at or below the 1e-9 gate', () => {
+  // Two-sided, so it pins WHERE the gate is rather than only that something
+  // below it does not sell. `rebalanceTurnoverFraction` sums the positive
+  // overweights, so a vector drifted by d in one class has turnover exactly d.
+  // The third track sits between 1e-9 and 1e-8: widening the gate to 1e-8 turns
+  // its `sale` into a `retarget` and fails here. Neither the differential dump
+  // nor any other test in the repository discriminates that constant — measured.
+  it('sells just above the 1e-9 turnover gate and retargets at or below it', () => {
     // Weights already AT target: turnover is exactly 0.
     const atTarget: AnnualRebalanceTrack = {
       policy: staticPolicy('annual'),
@@ -123,13 +129,22 @@ describe('annualRebalanceToTarget — selection and row shape', () => {
       policy: staticPolicy('annual'),
       weights: [0.5 + 5e-10, 0, 0.5 - 5e-10, 0],
     }
+    // Drifted by 5e-9: turnover 5e-9, ABOVE 1e-9 and below 1e-8.
+    const justOverTheGate: AnnualRebalanceTrack = {
+      policy: staticPolicy('annual'),
+      weights: [0.5 + 5e-9, 0, 0.5 - 5e-9, 0],
+    }
     const rows = annualRebalanceToTarget({
-      states: [state('a', 'taxable', 200_000, 100_000), state('b', 'taxable', 200_000, 100_000)],
-      allocationTrack: trackMap(['a', atTarget], ['b', barelyDrifted]),
+      states: [
+        state('a', 'taxable', 200_000, 100_000),
+        state('b', 'taxable', 200_000, 100_000),
+        state('c', 'taxable', 200_000, 100_000),
+      ],
+      allocationTrack: trackMap(['a', atTarget], ['b', barelyDrifted], ['c', justOverTheGate]),
       year: YEAR,
       startYear: START_YEAR,
     })
-    expect(rows.map((r) => r.kind)).toEqual(['retarget', 'retarget'])
+    expect(rows.map((r) => r.kind)).toEqual(['retarget', 'retarget', 'sale'])
   })
 })
 
