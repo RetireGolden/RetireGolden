@@ -12,25 +12,44 @@
  * `simulate.ownedNonRothIraAnnualSettlement.test.ts`: the real implementation
  * still runs, so no number changes; only the fact of the call is asserted.
  *
+ * Matching numbers alone cannot pin that call. A `simulate.ts` that invokes
+ * the helper for effect and then folds its own verbatim inline copy, publishing
+ * its own byte-identical records, is numerically indistinguishable from real
+ * delegation. So the record test below asserts the published record IS the
+ * helper's own object (`toBe`), not merely one that looks like it. Without that
+ * identity check the extraction could quietly stop being load-bearing while
+ * every suite in the repository stayed green, and the two copies of the money
+ * math would then be free to drift apart.
+ *
  * The FOLD is checked as well as the call, on all four accumulators the phase
  * feeds — `incomes.tipsLadder`, `ladderValueTotal`, `ladderTaxableInterest` and
- * `ordinaryIncome` — always with `toBe`, never `toBeCloseTo`. The caller folds
- * row by row precisely so that IEEE-754 addition order is preserved, and an
- * exact match is what shows it still does.
+ * `ordinaryIncome` — always with `toBe`, never `toBeCloseTo`. What an exact
+ * match PROVES is not the same for all four, and the difference is worth
+ * stating rather than implying:
  *
- * Two of those accumulators need the fixture to be built a particular way, or
- * the assertion is satisfiable by arithmetic the extraction forbids:
+ *   - `ordinaryIncome` is the ONLY accumulator whose fold ORDER is observable,
+ *     and only because it is already non-zero when this phase runs — wages,
+ *     yield, and other income have landed in it first. For it, `B + t1 + t2`
+ *     and `B + (t1 + t2)` genuinely differ in IEEE-754, so the exact match
+ *     rules out a caller that summed the taxable legs across ladders and added
+ *     the total once. The fixture carries a flat ordinary income stream for
+ *     exactly this reason, and the taxable-fold test asserts that at least one
+ *     year really does separate the two associations, so the guard cannot go
+ *     quietly vacuous if the ladder numbers ever shift.
+ *   - `incomes.tipsLadder`, `ladderValueTotal` and `ladderTaxableInterest` all
+ *     start at ZERO each year, and `0 + t1 + t2` IS `0 + (t1 + t2)`. For these
+ *     three the exact match pins the row SELECTION and the per-row VALUES, but
+ *     cannot tell row-by-row folding from summing across ladders first. That is
+ *     not a hole this guard is missing: folding into a zero-based accumulator is
+ *     provably bit-identical either way, so there is no regression to catch.
  *
- *   - TWO OVERLAPPING LADDERS. A year whose totals fold a single row cannot
- *     tell row-by-row folding from summing first.
- *   - ORDINARY INCOME THAT IS ALREADY NON-ZERO. `ladderTaxableInterest` starts
- *     at zero, and `0 + t1 + t2` IS `0 + (t1 + t2)` in IEEE-754 — folding into
- *     it can never discriminate. `ordinaryIncome` is the accumulator that can,
- *     and only because wages, yield, and other income have already landed in
- *     it. The fixture therefore carries a flat ordinary income stream, and the
- *     taxable-fold test below asserts that at least one year actually
- *     distinguishes the two associations, so the guard cannot quietly go
- *     vacuous if the ladder numbers ever shift.
+ * TWO OVERLAPPING LADDERS. The fixture needs years that fold more than one row,
+ * or the association check has nothing to bite on. Note what that does not buy:
+ * re-ORDERING the rows (folding back to front) is a permutation, not a
+ * re-association, and no year in this fixture separates it — permuting these
+ * addends changes no bits. The caller does fold in row order, and
+ * `internal/tipsLadderAnnualCashFlow.ts` says why it must; but what this file
+ * pins is association, not permutation.
  *
  * The ladder IDs deliberately contain a character the line-ID grammar has to
  * percent-escape (`DOCS/features/year-cash-flow.md`, Stable line IDs; Plan IDs
@@ -309,12 +328,19 @@ describe('simulatePlan delegates the TIPS-ladder annual cash-flow phase', () => 
    * recorder. It is checked three ways, because the payload is what the
    * cash-flow report is built from:
    *
-   *   (a) at the seam, field for field and unfiltered — every flow row's record
-   *       reaches the sink, in row order, with all five fields intact. A caller
-   *       that rebuilt the DTO with zeros, or dropped a leg, fails here;
+   *   (a) at the seam: the recorder is handed the helper's OWN record object,
+   *       unrebuilt, unfiltered, and in row order. Identity (`toBe`) is the
+   *       load-bearing assertion — it is what a caller folding its own inline
+   *       copy fails. The five field comparisons alongside it catch a rebuilt
+   *       DTO carrying wrong values; note they cannot catch a leg dropped by
+   *       MUTATING the helper's record in place, since both sides are then the
+   *       same object. That case is caught by the counters in (b) and (c),
+   *       which read the published report rather than the seam;
    *   (b) in the published source lines, whose amount is the row's cash and
    *       whose `returnOfBasis` character is its maturing principal;
    *   (c) in the published phantom-OID metadata, whose amount is its accretion.
+   *       Checked over EVERY flow row, not just the cash-positive ones, because
+   *       the sink's keep-rule is broader than the source-line rule.
    *
    * Emission order is deliberately not asserted: `annualCashFlowCapture` sorts
    * every line list by line ID before publishing, so order is not observable
@@ -341,6 +367,11 @@ describe('simulatePlan delegates the TIPS-ladder annual cash-flow phase', () => 
       expect(followed.length, `${where} count`).toBe(expected.length)
       for (const [k, want] of expected.entries()) {
         const got = followed[k]!
+        // THE load-bearing assertion: the caller passes the helper's row record
+        // straight through. A simulate.ts that called the helper for effect and
+        // recorded its own byte-identical rebuild would satisfy every field
+        // comparison below, and every other suite in the repo, but not this.
+        expect(got, `${where} [${k}] is not the helper's own record object`).toBe(want)
         expect(got.ladderId, `${where} [${k}] ladderId`).toBe(want.ladderId)
         expect(got.cash, `${where} [${k}] cash`).toBe(want.cash)
         expect(got.coupons, `${where} [${k}] coupons`).toBe(want.coupons)
@@ -353,20 +384,21 @@ describe('simulatePlan delegates the TIPS-ladder annual cash-flow phase', () => 
 
     // (b) and (c): the same payload, as the report publishes it.
     let checkedYears = 0
-    let yearsWithReturnOfBasis = 0
-    let yearsWithPhantomOid = 0
+    let rowsWithReturnOfBasis = 0
+    let rowsWithPhantomOid = 0
     for (const year of result.years) {
+      const flowRecords = (byYear.get(year.year) ?? []).flatMap((row) =>
+        row.kind === 'flow' ? [row.record] : [],
+      )
       // `cash > 0` is the SOURCE-LINE rule, not the sink's. The sink keeps a
       // row when any of the four legs is positive — deliberately, so an
       // accretion-only row can still carry phantom-OID metadata — and
       // `annualCashFlowCapture` then omits a source line for any kept row with
       // `cash <= 0`. Composed, a `tipsLadderCash` source line exists exactly
       // when cash is positive, which is what this list is compared against.
-      // The metadata path, which the broader keep-rule governs, is checked
-      // below and is fed by part (a)'s unfiltered record stream.
-      const expected = (byYear.get(year.year) ?? []).flatMap((row) =>
-        row.kind === 'flow' && row.record.cash > 0 ? [row.record] : [],
-      )
+      // The metadata path is governed by the broader keep-rule, so it is walked
+      // separately below over every flow row rather than over this subset.
+      const expected = flowRecords.filter((record) => record.cash > 0)
       const published = (year.cashFlow?.sourceLines ?? []).filter((line) => line.kind === 'tipsLadderCash')
       expect(published.map((line) => line.id).sort(), `line ids ${year.year}`).toEqual(
         expected.map((record) => cashFlowLineIds.sourceTipsLadderCash(record.ladderId)).sort(),
@@ -381,12 +413,19 @@ describe('simulatePlan delegates the TIPS-ladder annual cash-flow phase', () => 
           expect(line?.taxCharacter, `${where} returnOfBasis`).toEqual([
             { kind: 'returnOfBasis', amountPlanDollars: record.maturingPrincipal },
           ])
-          yearsWithReturnOfBasis++
+          rowsWithReturnOfBasis++
         } else {
           expect(line?.taxCharacter, `${where} no returnOfBasis`).toBeUndefined()
         }
-        // Accretion is the phantom OID a taxable holder reports with no cash to
-        // pay it, published as standalone tax-character metadata.
+      }
+
+      // (c) Accretion is the phantom OID a taxable holder reports with no cash
+      // to pay it, published as standalone tax-character metadata. This walks
+      // EVERY flow row: the sink keeps a row when any leg is non-zero, so an
+      // accretion-only row is published here even though it gets no source
+      // line, and `relatedLineId` is emitted only when it does have one.
+      for (const record of flowRecords) {
+        const where = `${record.ladderId} ${year.year}`
         const oid = (year.cashFlow?.taxCharacterMetadata ?? []).find(
           (entry) => entry.id === cashFlowLineIds.metadataTipsPhantomOid(record.ladderId),
         )
@@ -395,10 +434,14 @@ describe('simulatePlan delegates the TIPS-ladder annual cash-flow phase', () => 
             kind: 'tipsPhantomOidIncome',
             amountPlanDollars: record.accretion,
           })
-          expect(oid?.relatedLineId, `${where} phantom OID relatedLineId`).toBe(
-            cashFlowLineIds.sourceTipsLadderCash(record.ladderId),
-          )
-          yearsWithPhantomOid++
+          if (record.cash > 0) {
+            expect(oid?.relatedLineId, `${where} phantom OID relatedLineId`).toBe(
+              cashFlowLineIds.sourceTipsLadderCash(record.ladderId),
+            )
+          } else {
+            expect(oid?.relatedLineId, `${where} phantom OID has no source line`).toBeUndefined()
+          }
+          rowsWithPhantomOid++
         } else {
           expect(oid, `${where} no phantom OID`).toBeUndefined()
         }
@@ -406,7 +449,9 @@ describe('simulatePlan delegates the TIPS-ladder annual cash-flow phase', () => 
       if (expected.length > 0) checkedYears++
     }
     expect(checkedYears).toBeGreaterThan(4)
-    expect(yearsWithReturnOfBasis).toBeGreaterThan(4)
-    expect(yearsWithPhantomOid).toBeGreaterThan(4)
+    // Counted per RECORD, not per year: these bound how many ladder-rows the
+    // fixture actually pushed through each published path.
+    expect(rowsWithReturnOfBasis).toBeGreaterThan(4)
+    expect(rowsWithPhantomOid).toBeGreaterThan(4)
   })
 })
