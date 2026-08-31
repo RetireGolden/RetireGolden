@@ -41,14 +41,14 @@
  *                                                    against …875), and G4c
  *   rows grouped by kind                             G3 (wrong recorder), G4a,
  *                                                    G4c
- *   `anyAlive` gate REMOVED from the one-time arm    4 fail, and ONLY these 4:
+ *   `anyAlive` gate REMOVED from the one-time arm    5 fail, and ONLY these 5:
  *   — the defect this projection actually had until  G6 and G7 here, the
  *   the gate was hoisted above both arms             helper's `pays nothing of
  *                                                    either kind once no one is
- *                                                    alive`, and simulate.test
- *                                                    .ts's `skips one-time
- *                                                    income once everyone has
- *                                                    died`. G3, G4a, G4b and G5
+ *                                                    alive`, and BOTH of
+ *                                                    simulate.test.ts's
+ *                                                    `income survivorship`
+ *                                                    cases. G3, G4a, G4b, G5
  *                                                    all PASS, and that is the
  *                                                    self-consistency trap G7's
  *                                                    own note describes from

@@ -99,19 +99,30 @@ earnings test, and an optional trust-fund haircut toggle (~17% from 2034, user-a
 **not modeled** — repealed January 2025. Pensions/annuities per §2; rental; one-time events
 (inheritance, sale proceeds). Full detail: [social-security.md](social-security.md).
 
-**Survivorship — nothing is paid after the last household death.** The ledger has no
-post-household cash-flow path at all
-([domain rules §19](../domain/domain-rules-reference/19-annuity-payout-forms-the-annuitization-sweep.md)),
-and every flow obeys it in both directions. Wages stop at their own earner's death. Recurring
-and one-time streams carry no person link ([household-map.md](household-map.md)), so they stop
-when the *household* does, not when any one person does. TIPS ladder cash stops and unmatured
-principal freezes into the estate. On the spending side, one-time goals are skipped and
-lifestyle spending scales to zero. The rule is accepted where it costs the plan money too: a
-period-certain annuity's remaining guaranteed payments — which a real contract would pay a
-beneficiary or the estate — are not paid either, and §19 records that understatement rather
-than making an exception for it. Post-death years are ordinary rather than exotic: a
-stochastic-longevity Monte Carlo path can die decades before the horizon, and an explicit
-`horizonEndYear` runs past the last planning age by construction.
+**Survivorship — the household stops being paid at the last death; the portfolio does not stop
+settling.** The rule
+([domain rules §19](../domain/domain-rules-reference/19-annuity-payout-forms-the-annuitization-sweep.md))
+is that there is no post-household cash-flow path, and its scope is flows **to and from the
+household**, not every number in the year.
+
+*Gated on survivorship.* Wages stop at their own earner's death. Recurring and one-time income
+streams carry no person link ([household-map.md](household-map.md)), so they stop when the
+*household* does, not when any one person does. TIPS ladder cash stops and unmatured principal
+freezes into the estate. On the spending side, one-time goals are skipped and lifestyle
+spending scales to zero. The rule is held even where it costs the plan money: a period-certain
+annuity's remaining guaranteed payments, which a real contract would pay a beneficiary or the
+estate, are not paid either, and §19 records that understatement rather than excepting it.
+
+*Not gated, and deliberately so.* Assets the estate still holds keep settling to the horizon.
+Distributed taxable-account yield still accrues, a planned property sale in a post-death year
+still closes, and scheduled debt service still runs. These are movements of a portfolio that
+outlives the household, not payments to it, so reading §19 as "no number moves after the last
+death" would be wrong. If you are adding a flow, the question the rule asks is whether a living
+person is on one end of it.
+
+Post-death years are ordinary rather than exotic: a stochastic-longevity Monte Carlo path can
+die decades before the horizon, and an explicit `horizonEndYear` runs past the last planning age
+by construction.
 
 **Units — a one-time income amount is not inflated; its spending mirror image is.** A
 recurring stream carries an explicit inflation election (`inflationAdjusted`, on by default in

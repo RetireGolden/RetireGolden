@@ -68,9 +68,11 @@ estate-recovery modeling for the HECM; HECM servicing set-asides and T&I default
 period-certain and joint exclusion multiples are planning-grade approximations of Pub 939 Tables III/VI/VIA
 (method-checked, not table-reproduced); if the whole household dies inside a period-certain guarantee window,
 the remaining certain payments a real contract would pay a beneficiary/estate are not modeled (no
-post-household cash-flow path — the same rule stops wages, recurring and one-time income streams, TIPS
-ladder cash, one-time spending goals and lifestyle spending after the last death, and it applies to this
-ledger as a whole rather than to annuities alone; see
+post-household cash-flow path — the same rule stops recurring and one-time income streams, TIPS ladder
+cash, one-time spending goals and lifestyle spending after the last death, and stops wages at their own
+earner's death; it scopes flows to and from the HOUSEHOLD rather than annuities alone, and does not gate
+a portfolio that outlives it (distributed taxable yield, a planned property sale and scheduled debt
+service all still settle in a post-death year); see
 [features/README.md §3](../../features/README.md#3-income-streams)); the per-account estate breakdown covers investable classes only — property
 net of the (non-recourse-capped) HECM loan rides through net worth without a breakdown row.
 

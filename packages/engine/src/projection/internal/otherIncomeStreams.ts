@@ -46,13 +46,20 @@
  *
  * SURVIVORSHIP: NOTHING IS PAID AFTER THE LAST DEATH. Both arms are gated on
  * `anyAlive`, and that is not this phase's own rule. The ledger has no
- * post-household cash-flow path at all — recorded as a documented simplification
- * in the domain rules reference (§19, which accepts a KNOWN understatement of a
+ * post-household cash-flow path — recorded as a documented simplification in
+ * the domain rules reference (§19, which accepts a KNOWN understatement of a
  * period-certain annuity's estate value rather than pay past the household) and
- * stated for income streams in DOCS/features/README.md §3. Every other
- * household flow obeys it: one-time spending GOALS are skipped
- * (`simulate.test.ts`), TIPS ladder cash stops (`incomeFloor.test.ts`), wages
- * stop at each person's own death, and lifestyle spending scales to zero.
+ * stated for income streams in DOCS/features/README.md §3. Every other HOUSEHOLD
+ * flow obeys it: one-time spending GOALS are skipped (`simulate.test.ts`), TIPS
+ * ladder cash stops (`incomeFloor.test.ts`), wages stop at each person's own
+ * death, and lifestyle spending scales to zero.
+ *
+ * READ THE SCOPE PRECISELY, because it is narrower than "no number moves". The
+ * rule covers flows TO AND FROM THE HOUSEHOLD. A portfolio that outlives it
+ * keeps settling: distributed taxable-account yield still accrues, a planned
+ * property sale in a post-death year still closes, and scheduled debt service
+ * still runs, none of them gated. The question the rule asks of a new flow is
+ * whether a living person is on one end of it.
  *
  * Before the gate was hoisted here, the one-time arm alone had NONE, and paid a
  * windfall into a year with nobody left to receive it — and into the estate

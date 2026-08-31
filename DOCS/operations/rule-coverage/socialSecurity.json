@@ -198,12 +198,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.test.ts",
-          "line": 479,
+          "line": 572,
           "note": null,
           "tests": [
             {
               "title": "cannot distinguish protected first and ninth trial-work months from annual SGA",
-              "line": 493
+              "line": 586
             }
           ]
         }
@@ -274,12 +274,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.test.ts",
-          "line": 510,
+          "line": 603,
           "note": null,
           "tests": [
             {
               "title": "cannot distinguish January-only EPE from every-month SGA on annual wages",
-              "line": 524
+              "line": 617
             }
           ]
         }
@@ -559,12 +559,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.test.ts",
-          "line": 965,
+          "line": 1058,
           "note": null,
           "tests": [
             {
               "title": "cannot preserve a grace-year non-service-month benefit from annual wages alone",
-              "line": 979
+              "line": 1072
             }
           ]
         }
@@ -1043,12 +1043,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.test.ts",
-          "line": 900,
+          "line": 993,
           "note": null,
           "tests": [
             {
               "title": "rounds annual withholding to one ARF crediting month per year",
-              "line": 908
+              "line": 1001
             }
           ]
         }
@@ -1286,23 +1286,23 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.test.ts",
-          "line": 393,
+          "line": 486,
           "note": "claimAge gate",
           "tests": [
             {
               "title": "does not start the SSDI spouse auxiliary before the worker reaches claimAge",
-              "line": 402
+              "line": 495
             }
           ]
         },
         {
           "path": "packages/engine/src/projection/simulate.test.ts",
-          "line": 429,
+          "line": 522,
           "note": "425(a) suspension limb",
           "tests": [
             {
               "title": "zeros only the SSDI worker when wages exceed annual SGA, leaving the spouse paid",
-              "line": 439
+              "line": 532
             }
           ]
         }
@@ -1695,16 +1695,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.test.ts",
-          "line": 1099,
+          "line": 1192,
           "note": null,
           "tests": [
             {
               "title": "steps the survivor up to the deceased spouse’s larger benefit without adding both",
-              "line": 1107
+              "line": 1200
             },
             {
               "title": "keeps the survivor’s own larger benefit when the deceased’s amount is smaller",
-              "line": 1134
+              "line": 1227
             }
           ]
         }
@@ -1857,16 +1857,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.test.ts",
-          "line": 578,
+          "line": 671,
           "note": null,
           "tests": [
             {
               "title": "deems own filed so year-one benefit is the own amount, not restricted spouse-only",
-              "line": 585
+              "line": 678
             },
             {
               "title": "exposes exactly one claimAge and no restricted-application vocabulary on the SS stream",
-              "line": 608
+              "line": 701
             }
           ]
         }
@@ -2135,12 +2135,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.test.ts",
-          "line": 357,
+          "line": 450,
           "note": null,
           "tests": [
             {
               "title": "uses the retirement/survivor maximum for an SSDI worker and spouse",
-              "line": 365
+              "line": 458
             }
           ]
         }
@@ -2186,12 +2186,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.test.ts",
-          "line": 917,
+          "line": 1010,
           "note": "shares the ARF observable",
           "tests": [
             {
               "title": "collapses the charging sequence into the annual ratio",
-              "line": 926
+              "line": 1019
             }
           ]
         }
@@ -2247,12 +2247,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.test.ts",
-          "line": 741,
+          "line": 834,
           "note": null,
           "tests": [
             {
               "title": "withholds half the excess for a beneficiary under FRA all year",
-              "line": 745
+              "line": 838
             }
           ]
         }
@@ -2521,12 +2521,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.test.ts",
-          "line": 1078,
+          "line": 1171,
           "note": null,
           "tests": [
             {
               "title": "does not recompute a higher PIA from post-FRA covered wages",
-              "line": 1086
+              "line": 1179
             }
           ]
         }
@@ -2758,12 +2758,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.test.ts",
-          "line": 320,
+          "line": 413,
           "note": null,
           "tests": [
             {
               "title": "pays nothing before onset and the full PIA afterward when claimAge precedes onsetAge",
-              "line": 328
+              "line": 421
             }
           ]
         }
@@ -2829,23 +2829,23 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.test.ts",
-          "line": 211,
+          "line": 304,
           "note": "integer FRA 67 cohort",
           "tests": [
             {
               "title": "pays the full PIA during SSDI, at FRA, and in the first post-FRA year",
-              "line": 219
+              "line": 312
             }
           ]
         },
         {
           "path": "packages/engine/src/projection/simulate.test.ts",
-          "line": 242,
+          "line": 335,
           "note": "1959 FRA 66y10m cohort",
           "tests": [
             {
               "title": "observes the unreduced PIA for a 66y10m FRA cohort around fra.years",
-              "line": 250
+              "line": 343
             }
           ]
         }
@@ -2911,12 +2911,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.test.ts",
-          "line": 287,
+          "line": 380,
           "note": null,
           "tests": [
             {
               "title": "pays a full onset-year SSDI benefit where the waiting period leaves at most seven months",
-              "line": 295
+              "line": 388
             }
           ]
         }
