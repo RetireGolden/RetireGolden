@@ -36,12 +36,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.test.ts",
-          "line": 2956,
+          "line": 2987,
           "note": "RMD-shortfall excise remains outside AGI, taxable income, and MAGI",
           "tests": [
             {
               "title": "keeps a chapter 43 RMD-shortfall excise out of the income-tax base",
-              "line": 2972
+              "line": 3003
             }
           ]
         }
@@ -2211,12 +2211,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.test.ts",
-          "line": 5498,
+          "line": 5529,
           "note": null,
           "tests": [
             {
               "title": "computes the RMD on the untouched prior year-end balance",
-              "line": 5502
+              "line": 5533
             }
           ]
         }
@@ -2814,12 +2814,12 @@
         },
         {
           "path": "packages/engine/src/projection/simulate.test.ts",
-          "line": 5555,
+          "line": 5586,
           "note": null,
           "tests": [
             {
               "title": "satisfies the whole RMD before any dollar becomes a conversion",
-              "line": 5559
+              "line": 5590
             }
           ]
         }

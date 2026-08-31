@@ -36,12 +36,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.test.ts",
-          "line": 5373,
+          "line": 5404,
           "note": null,
           "tests": [
             {
               "title": "holds a low earner to compensation rather than to the dollar limit",
-              "line": 5377
+              "line": 5408
             }
           ]
         }
@@ -173,12 +173,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.test.ts",
-          "line": 5452,
+          "line": 5483,
           "note": null,
           "tests": [
             {
               "title": "projects the age-50 catch-up instead of holding it flat",
-              "line": 5456
+              "line": 5487
             }
           ]
         }
@@ -224,12 +224,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.test.ts",
-          "line": 5391,
+          "line": 5422,
           "note": null,
           "tests": [
             {
               "title": "lets a non-earning spouse draw on the earner’s compensation, up to the combined total",
-              "line": 5395
+              "line": 5426
             }
           ]
         }
@@ -275,12 +275,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.test.ts",
-          "line": 5413,
+          "line": 5444,
           "note": null,
           "tests": [
             {
               "title": "gives a retiree living on a pension no contribution room",
-              "line": 5417
+              "line": 5448
             }
           ]
         }

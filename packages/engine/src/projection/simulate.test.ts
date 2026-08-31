@@ -2711,6 +2711,37 @@ describe('RMDs', () => {
     expect(result.years.find((y) => y.year === 2056)!.expenses.oneTimeGoals).toBe(0) // post-death: not charged
   })
 
+  // The income-side counterpart of the goal rule above, and it belongs beside
+  // it: the ledger has no post-household cash-flow path (domain rules
+  // reference §19, which would rather understate a period-certain annuity's
+  // estate value than pay past the household). A one-time income stream used
+  // to be the sole exception — it had no survivorship gate at all and paid a
+  // windfall into a year with nobody left to receive it, and into the estate
+  // figure with it. Both readings are asserted from ONE plan, so the
+  // post-death zero cannot pass by the stream simply never paying.
+  it('skips one-time income once everyone has died on an extended horizon', () => {
+    const plan = basePlan() // single person p1, born 1966
+    plan.expenses.baseAnnual = 0
+    plan.incomes = [
+      { type: 'oneTime', id: 'alive', label: 'Sale while living', year: 2040, amount: 100_000, taxTreatment: 'ordinary' },
+      { type: 'oneTime', id: 'dead', label: 'Sale after death', year: 2056, amount: 100_000, taxTreatment: 'ordinary' },
+    ]
+    plan.accounts = [cash(500_000)]
+    const result = simulatePlan(validate(plan), {
+      startYear: 2026,
+      taxCalculator: noTax,
+      deathAgeByPersonId: { p1: 80 }, // dies at 80 (2046)
+      horizonEndYear: 2066, // run to age 100, as a stochastic-longevity grid does
+    })
+    const yearOf = (year: number) => result.years.find((y) => y.year === year)!
+    expect(yearOf(2040).incomes.oneTime).toBe(100_000) // alive: paid in full
+    expect(yearOf(2056).incomes.oneTime).toBe(0) // post-death: not paid
+    // …and it does not reach the estate by another route either: with no
+    // spending, no return and no other flow after death, net worth is flat
+    // across the year the ungated stream used to pay in.
+    expect(yearOf(2066).netWorth).toBe(yearOf(2055).netWorth)
+  })
+
   it('treats RMD income as taxable ordinary income', () => {
     const flat10 = createFlatTaxCalculator(10)
     const result = simulatePlan(validate(rmdPlan()), { startYear: 2026, taxCalculator: flat10 })

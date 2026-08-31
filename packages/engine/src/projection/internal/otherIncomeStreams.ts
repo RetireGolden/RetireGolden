@@ -44,15 +44,38 @@
  * map, no `BalanceState` and no cross-year object, and nothing it writes inside
  * the loop is read back inside the loop.
  *
- * TWO ASYMMETRIES THAT LOOK LIKE BUGS AND ARE PRESERVED ANYWAY. This is a
- * behaviour-preserving refactor, so both survive exactly as they were:
+ * SURVIVORSHIP: NOTHING IS PAID AFTER THE LAST DEATH. Both arms are gated on
+ * `anyAlive`, and that is not this phase's own rule. The ledger has no
+ * post-household cash-flow path at all — recorded as a documented simplification
+ * in the domain rules reference (§19, which accepts a KNOWN understatement of a
+ * period-certain annuity's estate value rather than pay past the household) and
+ * stated for income streams in DOCS/features/README.md §3. Every other
+ * household flow obeys it: one-time spending GOALS are skipped
+ * (`simulate.test.ts`), TIPS ladder cash stops (`incomeFloor.test.ts`), wages
+ * stop at each person's own death, and lifestyle spending scales to zero.
  *
- *   - A recurring stream STOPS when the household dies (`anyAlive`); a one-time
- *     stream has no such gate and PAYS OUT in a post-death year. (Measured
- *     reachable: 6 one-time rows in the differential corpus are paid after the
- *     last death.)
- *   - A recurring stream may be inflation-adjusted; a one-time stream's amount
- *     is NEVER inflated, whatever the year.
+ * Before the gate was hoisted here, the one-time arm alone had NONE, and paid a
+ * windfall into a year with nobody left to receive it — and into the estate
+ * figure with it. Of the income streams, it was the only one that did not obey
+ * §19. How reachable that was, measured over a 24-plan corpus: a plain
+ * deterministic projection NEVER reached it (0 of 24 moved, and the same corpus
+ * moves 18 of 24 under a 1e-12 perturbation, so that zero is a result rather
+ * than a vacuum) — the default horizon ends at the last living year, so
+ * `anyAlive` is true in every year of it. Every other channel reached it:
+ * 16 of 24 on an extended horizon, 20 of 24 with an early death on one, and
+ * 24 of 24 on a seeded stochastic-longevity Monte Carlo, where paths routinely
+ * die decades before the fixed grid ends. See `DOCS/features/year-cash-flow.md`.
+ *
+ * The gate is the HOUSEHOLD one rather than per-person because neither stream
+ * kind carries a `personId` (`DOCS/features/household-map.md`) — there is no
+ * person to gate it against. Wages, which do, gate on their own owner.
+ *
+ * ONE ASYMMETRY REMAINS, AND IT IS NOT SETTLED: a recurring stream may be
+ * inflation-adjusted, a one-time stream's `amount` never is.
+ * `oneTimeIncomeSchema` carries no `inflationAdjusted` election at all, while
+ * its mirror image `oneTimeGoalSchema.amount` is documented as today's dollars
+ * and IS inflated to the goal year. Tracked as its own decision rather than
+ * settled here; see DOCS/features/README.md §3.
  *
  * THREE RULES THAT ARE EASY TO GET WRONG IN THE SAFE-LOOKING DIRECTION:
  *
@@ -90,7 +113,11 @@ export interface OtherIncomeStreamYearInput {
   readonly incomes: readonly Readonly<IncomeStream>[]
   /** The projected calendar year. */
   readonly year: number
-  /** Whether any household member is alive. Gates RECURRING streams only. */
+  /**
+   * Whether any household member is alive. Gates the WHOLE phase: false pays
+   * nothing of either kind, because the ledger has no post-household cash-flow
+   * path (domain rules reference §19).
+   */
   readonly anyAlive: boolean
   /**
    * `inflFactorFrom(startYear, year)`, already computed by the caller and
@@ -200,10 +227,13 @@ export function otherIncomeStreams(
 ): readonly OtherIncomeStreamRow[] {
   const { incomes, year, anyAlive, inflFactor } = input
   const rows: OtherIncomeStreamRow[] = []
+  // No post-household cash-flow path (domain rules reference §19): once nobody
+  // is alive this phase pays nothing at all, so the gate is hoisted out of the
+  // arms rather than repeated in each.
+  if (!anyAlive) return rows
   for (const stream of incomes) {
     if (stream.type === 'recurring') {
       if ((stream.startYear !== null && year < stream.startYear) || (stream.endYear !== null && year > stream.endYear)) continue
-      if (!anyAlive) continue
       const amount = stream.annualAmount * (stream.inflationAdjusted ? inflFactor : 1)
       rows.push({
         kind: 'recurring',
