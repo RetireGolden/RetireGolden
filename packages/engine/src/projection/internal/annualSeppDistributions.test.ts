@@ -208,12 +208,31 @@ describe('annualSeppDistributions — annual separation and numeric order', () =
       kind: 'employer',
       sepp: { startAge: 57, method: 'rmd' },
     })
-    const result = call([balance(employer)], {
+    const refusedLastWageYear = call([balance(employer)], {
       year: 2027,
       resolveOwnerState: () => ({ alive: true, ageAttained: 57 }),
       resolveOwnerRetirementAge: () => 57.5,
     })
-    expect(result.total).toBe(0)
+    expect(refusedLastWageYear.total).toBe(0)
+
+    const firstSeparatedYearEmployer = traditional('first-separated-year-plan', {
+      kind: 'employer',
+      sepp: { startAge: 58, method: 'rmd' },
+    })
+    const acceptedFirstSeparatedYear = call([balance(firstSeparatedYearEmployer)], {
+      year: 2028,
+      resolveOwnerState: () => ({ alive: true, ageAttained: 58 }),
+      resolveOwnerRetirementAge: () => 57.5,
+    })
+    const acceptedRow = distributions(acceptedFirstSeparatedYear)[0]!
+    const expected = seppAnnualAmount(
+      pack,
+      'rmd',
+      firstSeparatedYearEmployer.balance,
+      58,
+    )
+    expect(acceptedRow.take).toBe(expected)
+    expect(acceptedFirstSeparatedYear.total).toBe(expected)
   })
 
   it('preserves row order and the exact left-to-right total fold', () => {

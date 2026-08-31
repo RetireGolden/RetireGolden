@@ -29,7 +29,8 @@
  * the five blocks by never running them. Each member names the branch or hazard
  * it exists to reach in `covers`, and
  * `scripts/equivalence/specs/simulate-batch.json` and
- * `scripts/equivalence/specs/simulate-small-annual-boundaries.json` are the
+ * `scripts/equivalence/specs/simulate-small-annual-boundaries.json` and
+ * `scripts/equivalence/specs/simulate-expense-sepp-boundaries.json` are the
  * line-range specs that turn those claims into measured hit counts
  * (`equivalence.mjs reach`).
  *
