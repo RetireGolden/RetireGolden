@@ -62,6 +62,7 @@ import {
 import { createAnnualCashFlowYearSites, type AnnualCashFlowYearSites } from './annualCashFlowYearSites.js'
 import { annuityExclusionMultiple, annuityPayoutForm, annuityPayoutFraction } from './annuityForms.js'
 import { buildLadder } from '../ladder/ladderMath.js'
+import { annualOrdinaryWithdrawalBoundary } from './internal/annualOrdinaryWithdrawalBoundary.js'
 import { annualInsurancePremiumRows } from './internal/annualInsurancePremiumRows.js'
 import { annualLifestyleLayers } from './internal/annualLifestyleLayers.js'
 import { annualRebalanceToTarget } from './internal/annualRebalanceToTarget.js'
@@ -141,13 +142,11 @@ import {
   asPersonId,
   asUsdCents,
   assessConversionLinkedWithdrawalGroups,
-  assessOrdinaryWithdrawalPlanBoundary,
   authorizeConversionLinkedWithdrawalGroups,
   evaluateAnnualQcdExecutionPrerequisites,
   evaluateRetirementActionSchedule,
   executeAnnualQcds,
   executeConversionLinkedWithdrawalGroups,
-  executeOrdinaryWithdrawals,
   executeRothConversions,
   ledgerCentsToPlanDollars,
   ordinaryWithdrawalPublicationEligibility,
@@ -169,12 +168,10 @@ import {
   type ConversionLinkedWithdrawalGroupMovementInput,
   type ExecuteAnnualQcdsResult,
   type ExecuteConversionLinkedWithdrawalGroupsResult,
-  type ExecuteOrdinaryWithdrawalsResult,
   type ExecuteRothConversionsResult,
   type PersonId,
   type QualifiedCharitableDistributionRequest,
   type RetirementActionRequest,
-  type TaxableAccountOpeningSnapshot,
 } from '../actions/index.js'
 import {
   allocateAggregateRothConversionByOwner,
@@ -6370,7 +6367,6 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         )
       }
     }
-    let retirementActionExecution: ExecuteOrdinaryWithdrawalsResult | undefined
     let rothConversionActionExecution: ExecuteRothConversionsResult | undefined
     /**
      * Dollars a named request actually converted this year. Held apart from
@@ -6394,238 +6390,40 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
      */
     const ownedRothAssumedBasisConsequentialByOwner = new Map<string, number>()
     const employerRothAssumedBasisConsequentialByAccount = new Map<string, number>()
-    let retirementActionCash = 0
-    let retirementActionEquityCompensation = 0
-    let retirementActionOrdinaryIncome = 0
-    let retirementActionProceeds = 0
-    let retirementActionTaxableProceeds = 0
-    let retirementActionCapitalGainOrLoss = 0
-    if (currentYearOrdinaryExecutionActions.length > 0) {
-      const ordinarySourceAccountIds = new Set<string>(
-        currentYearOrdinaryActions.flatMap((request) =>
-          request.allocations.map((allocation) => allocation.sourceAccountId),
-        ),
-      )
-      let openingBalances = [...balances]
-        .filter((state) => ordinarySourceAccountIds.has(state.account.id))
-        .sort((left, right) =>
-          left.account.id < right.account.id ? -1 : left.account.id > right.account.id ? 1 : 0,
-        )
-        .flatMap((state) => {
-          try {
-            return [{
-              accountId: asAccountId(state.account.id),
-              openingBalance: planDollarsToLedgerCents(state.balance),
-            }]
-          } catch {
-            // A schema-valid Plan balance can exceed the exact-cent ledger's
-            // safe range. Omit it so the executor reports required facts
-            // missing instead of aborting the whole projection.
-            return []
-          }
-        })
-      const taxUnitMembers = annualActionTaxUnit?.members ?? null
-      const taxUnitId = annualActionTaxUnit?.taxUnitId ?? null
-      const taxUnitEvidenceId = annualActionTaxUnit?.taxUnitEvidenceId ?? null
-      const stateFilingStatusId = annualActionTaxUnit?.stateFilingStatusId ?? null
-      let taxableAccountSnapshots: TaxableAccountOpeningSnapshot[] =
-        taxUnitMembers === null ||
-        taxUnitId === null ||
-        taxUnitEvidenceId === null ||
-        stateFilingStatusId === null
-          ? []
-          : [...balances]
-            .filter(
-              (state): state is BalanceState & {
-                account: Extract<Account, { type: 'taxable' }> & {
-                  ownerPersonId: string
-                }
-              } =>
-                ordinarySourceAccountIds.has(state.account.id) &&
-                state.account.type === 'taxable' &&
-                state.account.ownerPersonId !== null,
-            )
-            .sort((left, right) =>
-              left.account.id < right.account.id
-                ? -1
-                : left.account.id > right.account.id
-                  ? 1
-                  : 0,
-            )
-            .flatMap((state) => {
-              try {
-                const accountId = asAccountId(state.account.id)
-                const ownerPersonId = asPersonId(state.account.ownerPersonId)
-                if (!taxUnitMembers.includes(ownerPersonId)) return []
-                return [{
-                  accountId,
-                  openingCostBasis: planDollarsToLedgerCents(state.costBasis),
-                  ownership: {
-                    accountOwnerPersonIds: [ownerPersonId],
-                    accountOwnershipEvidenceId:
-                      `projection-account-ownership:${JSON.stringify([
-                        accountId,
-                        ownerPersonId,
-                        year,
-                        filingStatusForYear,
-                        taxUnitMembers,
-                      ])}`,
-                    beneficialOwnershipShare: {
-                      representation: 'exactRational',
-                      numerator: 1,
-                      denominator: 1,
-                      intermediateArithmetic: 'bigintRational',
-                    },
-                    attributionEvidenceId:
-                      `projection-taxable-attribution:${JSON.stringify([
-                        accountId,
-                        ownerPersonId,
-                        year,
-                        filingStatusForYear,
-                        taxUnitMembers,
-                      ])}`,
-                  },
-                  taxUnit: {
-                    taxUnitId,
-                    taxUnitMemberPersonIds: taxUnitMembers,
-                    federalFilingStatus: filingStatusForYear,
-                    stateFilingStatusId,
-                    taxUnitEvidenceId,
-                    taxYear: year,
-                  },
-                }]
-              } catch {
-                // Keep a valid balance visible while omitting invalid basis
-                // evidence so taxable movement fails closed and explains why.
-                return []
-              }
-            })
-      const personAliveEvidence = currentYearOrdinaryExecutionActions.flatMap(
-        (request): NonpersistedActionPersonAliveEvidence[] => {
-          if (
-            request.kind === 'legacyAggregateWithdrawal' ||
-            request.kind === 'legacyAggregateRothConversion' ||
-            request.kind === 'legacyAggregateQcd'
-          ) {
-            return []
-          }
-          const personId =
-            request.kind === 'qcd' ? request.donorPersonId : request.personId
-          return [actionPersonAliveEvidence(
-            request.actionId,
-            personId,
-            request.executionDate ?? null,
-          )]
-        },
-      )
-      while (true) {
-        retirementActionExecution = executeOrdinaryWithdrawals({
-          year,
-          plan: passPlan,
-          requests: currentYearOrdinaryExecutionActions,
-          openingBalances,
-          taxableAccountSnapshots,
-          runtimeEvidence: {
-            personAliveEvidence,
-            conversionLinkedWithdrawalGroups,
-          },
-        })
-        const boundary = assessOrdinaryWithdrawalPlanBoundary(
-          retirementActionExecution,
-        )
-        const unrepresentableClosingBalanceAccountIds = new Set(
-          boundary.unrepresentableClosingBalanceAccountIds.map(String),
-        )
-        const unrepresentableClosingBasisAccountIds = new Set(
-          boundary.unrepresentableClosingBasisAccountIds.map(String),
-        )
-        const aggregateFailureSourceAccountIds = new Set(
-          boundary.aggregateFailureSourceAccountIds.map(String),
-        )
-        if (boundary.totals.cash !== null) {
-          retirementActionCash = boundary.totals.cash
-        }
-        if (boundary.totals.equityCompensation !== null) {
-          retirementActionEquityCompensation =
-            boundary.totals.equityCompensation
-        }
-        if (boundary.totals.taxableProceeds !== null) {
-          retirementActionTaxableProceeds = boundary.totals.taxableProceeds
-        }
-        if (boundary.totals.proceeds !== null) {
-          retirementActionProceeds = boundary.totals.proceeds
-        }
-        if (boundary.totals.capitalGainOrLoss !== null) {
-          retirementActionCapitalGainOrLoss =
-            boundary.totals.capitalGainOrLoss
-        }
-        if (
-          unrepresentableClosingBalanceAccountIds.size === 0 &&
-          unrepresentableClosingBasisAccountIds.size === 0 &&
-          aggregateFailureSourceAccountIds.size === 0
-        ) {
-          break
-        }
-
-        // The action ledger is exact-cent while Plan balances are numbers. If
-        // a closing value or annual aggregate cannot cross that boundary
-        // losslessly, rerun without the affected fact source. Independent
-        // actions whose sources remain available may still execute.
-        const unavailableBalanceAccountIds = new Set([
-          ...unrepresentableClosingBalanceAccountIds,
-          ...aggregateFailureSourceAccountIds,
-        ])
-        openingBalances = openingBalances.filter(
-          (snapshot) =>
-            !unavailableBalanceAccountIds.has(String(snapshot.accountId)),
-        )
-        taxableAccountSnapshots = taxableAccountSnapshots.filter(
-          (snapshot) =>
-            !unavailableBalanceAccountIds.has(String(snapshot.accountId)) &&
-            !unrepresentableClosingBasisAccountIds.has(
-              String(snapshot.accountId),
-            ),
-        )
+    const ordinaryWithdrawalBoundary = annualOrdinaryWithdrawalBoundary({
+      year,
+      plan: passPlan,
+      ordinaryActions: currentYearOrdinaryActions,
+      executionRequests: currentYearOrdinaryExecutionActions,
+      balances,
+      taxUnit: annualActionTaxUnit,
+      conversionLinkedWithdrawalGroups,
+      actionPersonAliveEvidence,
+    })
+    const retirementActionExecution = ordinaryWithdrawalBoundary.execution
+    const retirementActionCash = ordinaryWithdrawalBoundary.totals.cash
+    const retirementActionEquityCompensation =
+      ordinaryWithdrawalBoundary.totals.equityCompensation
+    const retirementActionOrdinaryIncome = retirementActionEquityCompensation
+    const retirementActionProceeds = ordinaryWithdrawalBoundary.totals.proceeds
+    const retirementActionTaxableProceeds =
+      ordinaryWithdrawalBoundary.totals.taxableProceeds
+    const retirementActionCapitalGainOrLoss =
+      ordinaryWithdrawalBoundary.totals.capitalGainOrLoss
+    if (ordinaryWithdrawalBoundary.balanceOperations.length !== balances.length) {
+      throw new Error('Ordinary-withdrawal balance operations lost cardinality')
+    }
+    for (const [index, operation] of
+      ordinaryWithdrawalBoundary.balanceOperations.entries()) {
+      if (operation.kind === 'none') continue
+      const state = balances[index]
+      if (state === undefined || state.account.id !== operation.accountId) {
+        throw new Error('Ordinary-withdrawal balance operation lost its position')
       }
-
-      if (retirementActionExecution.committed) {
-        const closingCentsByAccountId = new Map(
-          retirementActionExecution.balances
-            .filter((snapshot) => snapshot.closingBalance !== snapshot.openingBalance)
-            .map((snapshot) => [String(snapshot.accountId), snapshot.closingBalance]),
-        )
-        const closingTaxableBasisCentsByAccountId = new Map(
-          retirementActionExecution.taxableBases.map((snapshot) => [
-            String(snapshot.accountId),
-            snapshot.closingCostBasis,
-          ]),
-        )
-        for (const state of balances) {
-          const closingCents = closingCentsByAccountId.get(state.account.id)
-          if (closingCents !== undefined) {
-            const closingBalance = ledgerCentsToPlanDollars(closingCents)
-            if (state.account.type === 'taxable') {
-              const closingBasisCents =
-                closingTaxableBasisCentsByAccountId.get(state.account.id)
-              if (closingBasisCents === undefined) {
-                throw new Error(
-                  'Committed taxable closing balance lost its paired basis',
-                )
-              }
-              state.costBasis = ledgerCentsToPlanDollars(closingBasisCents)
-            } else if (state.account.type === 'equityComp' && state.balance > 0) {
-              const executed = state.balance - closingBalance
-              const basisRatio = Math.min(1, state.costBasis / state.balance)
-              state.costBasis = Math.max(
-                0,
-                state.costBasis - executed * basisRatio,
-              )
-            }
-            state.balance = closingBalance
-          }
-        }
+      if (operation.closingCostBasis !== null) {
+        state.costBasis = operation.closingCostBasis
       }
-      retirementActionOrdinaryIncome = retirementActionEquityCompensation
+      state.balance = operation.closingBalance
     }
 
     // Named conversions do not inherit the legacy aggregate strategy's
