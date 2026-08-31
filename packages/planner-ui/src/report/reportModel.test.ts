@@ -110,6 +110,32 @@ describe('buildReportModel', () => {
     expect(model.blocks['disclosures'].statements).toContain(REPORT_EDUCATIONAL_DISCLAIMER)
   })
 
+  // The report is the OTHER surface that can hide the units, and it hid them
+  // until schema v5's election reached it. `$100,000 in 2040` reads as 2040
+  // dollars; on an inflation-adjusted stream the engine grows the amount along
+  // the plan's inflation path instead, so the printed figure is not what the
+  // year pays. The recurring row already carried `, inflation-adjusted`, and
+  // the one-time row now reads the same way rather than a second vocabulary.
+  //
+  // Both readings come from one model so the marked case cannot pass by the
+  // suffix being unconditional.
+  it('marks an inflation-adjusted one-time income on the report, and leaves a nominal one unmarked', () => {
+    const plan = fixturePlan((draft) => {
+      draft.incomes = [
+        { type: 'oneTime', id: 'elected', label: 'Inheritance', year: 2040, inflationAdjusted: true, amount: 100_000, taxTreatment: 'none' },
+        { type: 'oneTime', id: 'nominal', label: 'Boat sale', year: 2040, inflationAdjusted: false, amount: 100_000, taxTreatment: 'none' },
+      ]
+    })
+    const rows = modelFor(plan).blocks['income-sources'].rows
+    const detailOf = (id: string): string => {
+      const row = rows.find((candidate) => candidate.id === id)
+      if (row === undefined) throw new Error(`the report published no income row ${id}`)
+      return row.detail
+    }
+    expect(detailOf('elected')).toBe(`${fmtMoney(100_000)} in 2040, inflation-adjusted`)
+    expect(detailOf('nominal')).toBe(`${fmtMoney(100_000)} in 2040`)
+  })
+
   it('reports exact ACA ledger economics when annual contracts override a zero legacy premium', () => {
     const plan = fixturePlan((candidate) => {
       candidate.incomes = [recurringOrdinaryIncome('income', 30_000, 2026)]
