@@ -44,11 +44,19 @@ import type { RecordedTipsLadderCash } from '../annualCashFlowYearSites.js'
  * rather than asserted in prose. `scale` is the one exception: it is < 1 when a
  * purchase-year funding account could not cover the full quoted cost, and the
  * simulator's purchase-funding block writes it once — this module only reads it.
+ *
+ * `rungs` is readonly all the way down — a readonly ARRAY of readonly rungs —
+ * not merely a readonly binding to a mutable array. A shallow `readonly rungs:
+ * LadderRung[]` still type-checks `ls.rungs.push(...)` and `ls.rungs[i].face =
+ * x`, and the rung set is shared across every year of the projection and across
+ * the optimizer's and Monte Carlo's repeated re-entry into `simulatePlan`
+ * against the same `Plan`: a write here would silently corrupt later years of
+ * the same run and every subsequent run. The compiler now rejects both.
  */
 export interface TipsLadderState {
   readonly id: string
   readonly anchorYear: number
-  readonly rungs: LadderRung[]
+  readonly rungs: readonly Readonly<LadderRung>[]
   readonly costReal: number
   readonly purchase: { year: number; fundingAccountId: string } | undefined
   scale: number

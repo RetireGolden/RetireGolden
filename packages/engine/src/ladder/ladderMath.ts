@@ -150,8 +150,14 @@ export interface LadderRealFlows {
   outstandingFace: number
 }
 
-/** Real cash flows of a rung set in the year at `offset` (>= 1) from the anchor. */
-export function ladderRealFlowsAtOffset(rungs: LadderRung[], offset: number): LadderRealFlows {
+/**
+ * Real cash flows of a rung set in the year at `offset` (>= 1) from the anchor.
+ *
+ * The rung set is `readonly` because this function only reads it, which lets a
+ * caller hold its rungs in a deeply-readonly field and still ask this question
+ * without a cast. Widening only: a mutable `LadderRung[]` still satisfies it.
+ */
+export function ladderRealFlowsAtOffset(rungs: readonly Readonly<LadderRung>[], offset: number): LadderRealFlows {
   let coupons = 0
   let maturingPrincipal = 0
   let outstandingFace = 0
@@ -164,8 +170,11 @@ export function ladderRealFlowsAtOffset(rungs: LadderRung[], offset: number): La
   return { coupons, maturingPrincipal, outstandingFace }
 }
 
-/** Total face (real $) still outstanding AFTER the year at `offset` completes. */
-export function ladderRemainingFace(rungs: LadderRung[], offset: number): number {
+/**
+ * Total face (real $) still outstanding AFTER the year at `offset` completes.
+ * `readonly` for the same reason as `ladderRealFlowsAtOffset` above.
+ */
+export function ladderRemainingFace(rungs: readonly Readonly<LadderRung>[], offset: number): number {
   let face = 0
   for (const rung of rungs) if (rung.maturityOffset > offset) face += rung.face
   return face
