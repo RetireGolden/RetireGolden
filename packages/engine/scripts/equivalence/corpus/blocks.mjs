@@ -12,6 +12,8 @@
  *   G  TIPS-ladder purchase funding
  *   H  permanent-life transitions + annual snapshot
  *   I  per-entity published facts
+ *   J  annual expense boundaries
+ *   K  annual SEPP distributions
  *   S  shared: whole-corpus holes found by measurement (see `blockS`)
  *
  * A, B, C and E are the earlier "simulate batch" extraction. Block D's phase
@@ -1017,6 +1019,380 @@ function blockI() {
 }
 
 // ---------------------------------------------------------------------------
+// J — annual expense boundaries
+// ---------------------------------------------------------------------------
+
+function blockJ() {
+  const out = []
+
+  {
+    // Duplicate phase ages deliberately rely on stable sort: the later age-60
+    // row wins after the earlier one, despite a future phase appearing first
+    // in plan order. The bounded deaths then expose couple, survivor and
+    // nobody-alive scaling without changing the persisted longevity inputs.
+    const plan = couplePlan({ p1PlanningAge: 90, p2PlanningAge: 90 })
+    plan.assumptions.inflationPct = 2.375
+    plan.accounts = [cash('expense-lifestyle-cash', 2_000_000)]
+    plan.expenses.baseAnnual = 54_321.09
+    plan.expenses.requiredAnnual = 32_109.87
+    plan.expenses.idealAnnual = 4_321.09
+    plan.expenses.excessAnnual = 321.09
+    plan.expenses.survivorSpendingPct = 63.25
+    plan.expenses.phases = [
+      { fromAge: 65, multiplier: 0.8125 },
+      { fromAge: 60, multiplier: 1.375 },
+      { fromAge: 60, multiplier: 1.0625 },
+    ]
+    out.push(
+      member(
+        'j1-fixedLifestylePhasesAndDeaths',
+        'J: fixed lifestyle optional layers, stable unsorted/duplicate phases, inflation, couple/survivor/no-survivor gates',
+        plan,
+        { horizonEndYear: START_YEAR + 8, deathAgeByPersonId: { p1: 66, p2: 67 } },
+      ),
+    )
+  }
+
+  {
+    // ABW folds these deliberately nonuniform balances in account order and
+    // recomputes against a shrinking explicit planning-age horizon each year.
+    // The legacy lifestyle stack is nonzero so an extraction that accidentally
+    // adds rather than replaces it is visible in the complete dump.
+    const plan = shell(72)
+    plan.accounts = [
+      taxable('abw-z-taxable', 10_000_000_000_000_000, 7_000_000_000_000_000),
+      cash('abw-a-cash', 1),
+      qualified('traditional', 'abw-m-traditional', 1),
+    ]
+    plan.expenses.baseAnnual = 98_765.43
+    plan.expenses.requiredAnnual = 45_678.9
+    plan.expenses.idealAnnual = 5_432.1
+    plan.expenses.excessAnnual = 543.21
+    plan.expenses.phases = [{ fromAge: 60, multiplier: 1.75 }]
+    plan.expenses.spendingPolicy = {
+      mode: 'abw',
+      abw: {
+        returnSource: 'fixed',
+        fixedRealReturnPct: 4.125,
+        horizon: 'planningAge',
+        tiltPct: -1.375,
+      },
+    }
+    out.push(
+      member(
+        'j2-abwOrderedPortfolioAndHorizon',
+        'J: ABW ordered nonzero portfolio fold, explicit real return/tilt/planning-age horizon, fixed-stack replacement and all-dead zero gate',
+        plan,
+        { horizonEndYear: START_YEAR + 4, deathAgeByPersonId: { p1: 63 } },
+      ),
+    )
+  }
+
+  {
+    // Policy order is intentionally not id order. Permanent-life premiums key
+    // off insured; LTC premiums key off owner. p1 dies first, while p2 remains
+    // alive long enough for an until-age row to charge and then stop.
+    const plan = couplePlan({ p1PlanningAge: 90, p2PlanningAge: 90 })
+    plan.accounts = [cash('expense-premium-cash', 20_000_000_000_000_000)]
+    plan.insurance = [
+      permanentLife('premium-z-lifetime', 'p2', {
+        annualPremium: 10_000_000_000_000_000,
+        premiumMode: 'lifetime',
+      }),
+      ltc('premium-owner-lifetime', 'p1'),
+      permanentLife('premium-paid-up', 'p1', {
+        annualPremium: 777_777.77,
+        premiumMode: 'paidUp',
+      }),
+      permanentLife('premium-a-until-age', 'p2', {
+        annualPremium: 1,
+        premiumMode: 'untilAge',
+        premiumEndAge: 62,
+      }),
+    ]
+    plan.insurance[1].annualPremium = 1
+    plan.insurance[1].premiumMode = 'lifetime'
+    out.push(
+      member(
+        'j3-premiumModesSubjectsAndOrder',
+        'J: ordered lifetime/paid-up/until-age premiums, LTC owner vs life insured, subject death and stop-age gates',
+        plan,
+        { horizonEndYear: START_YEAR + 3, deathAgeByPersonId: { p1: 60, p2: 62 } },
+      ),
+    )
+  }
+
+  {
+    // Two rows share `property-dup`; the helper row fold must retain plan order
+    // rather than collapsing by id. The large-first-plus-three-small amounts
+    // make that order observable in the aggregate even though cash-flow lines
+    // are sorted downstream. Sale boundaries, omitted cost fields, inflation,
+    // survivor and all-dead years are all live.
+    const plan = couplePlan({ p1PlanningAge: 90, p2PlanningAge: 90 })
+    plan.assumptions.inflationPct = 7.125
+    plan.accounts = [
+      property('property-z-open', 500_000, {
+        propertyTaxAnnual: 10_000_000_000_000_000,
+      }),
+      property('property-dup', 300_000, {
+        insuranceAnnual: 1,
+        plannedSaleYear: START_YEAR + 2,
+      }),
+      {
+        ...property('property-dup', 200_000, {
+          propertyTaxAnnual: 1,
+        }),
+        name: 'property-dup-second',
+      },
+      property('property-a-sells-next', 125_000, {
+        propertyTaxAnnual: 0.5,
+        insuranceAnnual: 0.5,
+        plannedSaleYear: START_YEAR + 1,
+      }),
+      property('property-already-sold', 75_000, {
+        propertyTaxAnnual: 999_999,
+        insuranceAnnual: 999_999,
+        plannedSaleYear: START_YEAR,
+      }),
+      cash('expense-property-cash', 20_000_000_000_000_000),
+    ]
+    out.push(
+      member(
+        'j4-propertyCostsSalesDuplicatesAndDeaths',
+        'J: ordered inflated property tax/insurance rows, sale-year skips, omitted-zero operands, duplicate ids, survivor and all-dead gates',
+        plan,
+        { horizonEndYear: START_YEAR + 2, deathAgeByPersonId: { p1: 60, p2: 61 } },
+      ),
+    )
+  }
+
+  {
+    // One year makes every monetary YearExpenses channel positive. Gross care
+    // and the LTC benefit are intentionally almost equal, so the net-care and
+    // total folds preserve their cancellation-sensitive subtraction order.
+    const plan = shell(90)
+    plan.assumptions.inflationPct = 1.875
+    plan.accounts = [
+      cash('expense-summary-cash', 5_000_000_000),
+      debt('expense-summary-debt', 25_000.125, {
+        interestPct: 1.75,
+        monthlyPayment: 123.45625,
+      }),
+      property('expense-summary-property', 350_000, {
+        propertyTaxAnnual: 4_321.0625,
+        insuranceAnnual: 987.03125,
+      }),
+    ]
+    plan.expenses.baseAnnual = 54_321.125
+    plan.expenses.requiredAnnual = 21_234.0625
+    plan.expenses.idealAnnual = 4_321.03125
+    plan.expenses.excessAnnual = 432.0078125
+    plan.expenses.healthcare.pre65MonthlyPremiumPerPerson = 123.45625
+    plan.expenses.oneTimeGoals = [
+      { id: 'summary-goal-required', label: 'required', year: START_YEAR, amount: 2_000.125, classification: 'required' },
+      { id: 'summary-goal-target', label: 'target', year: START_YEAR, amount: 1_000.0625, classification: 'target' },
+      { id: 'summary-goal-ideal', label: 'ideal', year: START_YEAR, amount: 500.03125, classification: 'ideal' },
+      { id: 'summary-goal-excess', label: 'excess', year: START_YEAR, amount: 250.015625, classification: 'excess' },
+    ]
+    plan.insurance = [
+      ltc('summary-ltc', 'p1'),
+      permanentLife('summary-life', 'p1', {
+        annualPremium: 321.015625,
+        premiumMode: 'lifetime',
+      }),
+    ]
+    plan.insurance[0].annualPremium = 654.03125
+    plan.insurance[0].premiumMode = 'lifetime'
+    plan.insurance[0].benefitMonthly = 83_333_333.33416666
+    plan.careEvents = [
+      {
+        id: 'summary-care',
+        personId: 'p1',
+        startAge: 60,
+        durationYears: 1,
+        annualCost: 1_000_000_000.03,
+      },
+    ]
+    out.push(
+      member(
+        'j5-allExpenseSummaryChannels',
+        'J: every monetary expense summary channel nonzero, all four goal/lifestyle layers, cancellation-sensitive net LTC fold',
+        plan,
+        { horizonEndYear: START_YEAR },
+      ),
+    )
+  }
+
+  return out
+}
+
+// ---------------------------------------------------------------------------
+// K — annual SEPP distributions
+// ---------------------------------------------------------------------------
+
+function blockK() {
+  const out = []
+
+  {
+    // Two basis-bearing owned IRAs distribute in reverse lexical account order;
+    // their applications feed the deferred Form 8606 settlement. A third
+    // amortization election is initially inactive, then enters the series in a
+    // later year and retains its first-year amount in the cache thereafter.
+    const plan = singlePersonPlan({
+      dob: '1970-03-15',
+      planningAge: 75,
+      retirementAge: 65,
+    })
+    plan.assumptions.defaultReturnPct = 0
+    plan.accounts = [
+      cash('sepp-basis-cash', 1_000_000),
+      qualified('traditional', 'sepp-z-rmd', 1_000_000_000.125, {
+        annualReturnPct: 0,
+        nondeductibleBasis: 100_000_000.03125,
+        sepp: { startAge: 56, method: 'rmd' },
+      }),
+      qualified('traditional', 'sepp-a-amort', 500_000.0625, {
+        annualReturnPct: 5,
+        nondeductibleBasis: 50_000.015625,
+        sepp: { startAge: 56, method: 'amortization' },
+      }),
+      qualified('traditional', 'sepp-m-late-entry', 250_000.03125, {
+        annualReturnPct: 3,
+        sepp: { startAge: 58, method: 'amortization' },
+      }),
+    ]
+    out.push(
+      member(
+        'k1-basisOrderedReentryAndAmortCache',
+        'K: ordered multiple owned-IRA SEPP rows, pro-rata basis applications, inactive-to-active re-entry and fixed amortization cache',
+        plan,
+        { horizonEndYear: START_YEAR + 4 },
+      ),
+    )
+  }
+
+  {
+    // p1 works through attained age 57 and first separates at 58; p2 has no
+    // modeled separation. The rows expose inactive, refused, accepted and
+    // IRA-during-employment arms without changing household facts mid-run.
+    const plan = couplePlan({
+      p1Dob: '1970-03-15',
+      p2Dob: '1970-07-20',
+      p1PlanningAge: 75,
+      p2PlanningAge: 75,
+      p1RetirementAge: 57.5,
+      p2RetirementAge: null,
+    })
+    plan.accounts = [
+      cash('sepp-employer-cash', 1_000_000),
+      qualified('traditional', 'sepp-z-employer-too-early', 300_000, {
+        ownerPersonId: 'p1',
+        kind: 'employer',
+        sepp: { startAge: 57, method: 'rmd' },
+      }),
+      qualified('traditional', 'sepp-a-employer-separated', 400_000, {
+        ownerPersonId: 'p1',
+        kind: 'employer',
+        sepp: { startAge: 58, method: 'rmd' },
+      }),
+      qualified('traditional', 'sepp-m-employer-no-separation', 500_000, {
+        ownerPersonId: 'p2',
+        kind: 'employer',
+        sepp: { startAge: 56, method: 'rmd' },
+      }),
+      qualified('traditional', 'sepp-b-ira-while-employed', 600_000, {
+        ownerPersonId: 'p2',
+        kind: 'ira',
+        sepp: { startAge: 56, method: 'rmd' },
+      }),
+    ]
+    plan.incomes = [wages('sepp-employer-wages', 'p1', 123_456.78)]
+    out.push(
+      member(
+        'k2-employerSeparationBoundaries',
+        'K: employer SEPP inactive/refused/accepted after fractional-age separation, missing separation, and IRA while employed',
+        plan,
+        { horizonEndYear: START_YEAR + 2 },
+      ),
+    )
+  }
+
+  {
+    // The surviving spouse remains on the inherited path through 2027. The
+    // explicit 2028 S2 election changes the exact same account into an owned
+    // IRA, at which point its already-age-active SEPP may first distribute.
+    const plan = singlePersonPlan({ dob: '1970-06-15', planningAge: 80 })
+    plan.accounts = [
+      cash('sepp-s2-cash', 1_000_000),
+      qualified('traditional', 'sepp-s2-inherited', 500_000.125, {
+        inherited: {
+          ownerDeathYear: 2024,
+          decedentHadStartedRmds: true,
+          beneficiary: {
+            beneficiaryClass: 'designated-individual',
+            edbCategory: 'surviving-spouse',
+            beneficiaryBirthYear: 1970,
+            soleBeneficiary: true,
+            ownerBirthYear: 1945,
+            election: 'treat-as-own',
+            spouseUnlimitedWithdrawalRight: true,
+            treatAsOwnElectionYear: START_YEAR + 2,
+            ownerYearOfDeathRmdSatisfied: true,
+            provenance: { source: 'equivalence corpus', asOf: '2026-08-31' },
+          },
+        },
+        sepp: { startAge: 56, method: 'rmd' },
+      }),
+    ]
+    out.push(
+      member(
+        'k3-spouseTreatAsOwnPrePostElection',
+        'K: inherited S2 account blocks SEPP before the treat-as-own year and distributes after the identity flip',
+        plan,
+        { horizonEndYear: START_YEAR + 3 },
+      ),
+    )
+  }
+
+  {
+    // Duplicate ids are valid when no retirement action references them. The
+    // opening-balance map takes the later sub-cent row, so the earlier large
+    // row seeds a sub-cent amortization amount into the shared id cache. The
+    // later row then grows 999% annually: by year three, recomputing from its
+    // current opening balance would produce a ledger-visible payment, while
+    // the correctly reused first-year cache remains sub-cent. Reversing row
+    // order or dropping the cache therefore changes complete output.
+    const plan = singlePersonPlan({ dob: '1970-03-15', planningAge: 75 })
+    plan.accounts = [
+      cash('sepp-subcent-cash', 1_000_000),
+      qualified('traditional', 'sepp-shared-cache', 750_000, {
+        sepp: { startAge: 56, method: 'amortization' },
+      }),
+      {
+        ...qualified('traditional', 'sepp-shared-cache', 0.004, {
+          annualReturnPct: 999,
+          sepp: { startAge: 56, method: 'amortization' },
+        }),
+        name: 'sepp-shared-cache-subcent',
+      },
+    ]
+    // Keep the cash-flow capture channel nonempty while every SEPP occurrence
+    // remains suppressed by the exact-cent gate.
+    plan.incomes = [wages('sepp-subcent-observable-wages', 'p1', 1_234.5)]
+    out.push(
+      member(
+        'k4-subCentDuplicateAmortCacheOrder',
+        'K: sub-cent first-year cache remains suppressed after duplicate-id opening balance grows past a recomputed ledger cent; order/cache alias is observable',
+        plan,
+        { horizonEndYear: START_YEAR + 2 },
+      ),
+    )
+  }
+
+  return out
+}
+
+// ---------------------------------------------------------------------------
 // S — shared blind spots, owned by no single block
 // ---------------------------------------------------------------------------
 
@@ -1094,6 +1470,8 @@ export async function blockMembers() {
     ...blockG(),
     ...blockH(),
     ...blockI(),
+    ...blockJ(),
+    ...blockK(),
     ...blockS(),
   ]
 }

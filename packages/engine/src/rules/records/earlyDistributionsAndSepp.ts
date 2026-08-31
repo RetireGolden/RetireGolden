@@ -804,8 +804,10 @@ export const earlyDistributionAndSeppRecords = {
     implementedBy: [
       'packages/engine/src/strategies/sepp.ts',
       'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/projection/internal/annualSeppDistributions.ts',
     ],
     implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualSeppDistributions.ts#annualSeppDistributions',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/strategies/sepp.ts#seppAnnualAmount',
     ],
@@ -832,8 +834,12 @@ export const earlyDistributionAndSeppRecords = {
     effectiveFrom: 2023,
     effectiveThrough: null,
     verifiedOn: '2026-08-04',
-    implementedBy: ['packages/engine/src/projection/simulate.ts'],
+    implementedBy: [
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/projection/internal/annualSeppDistributions.ts',
+    ],
     implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualSeppDistributions.ts#annualSeppDistributions',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
@@ -867,9 +873,11 @@ export const earlyDistributionAndSeppRecords = {
     verifiedOn: '2026-08-04',
     implementedBy: [
       'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/projection/internal/annualSeppDistributions.ts',
       'packages/engine/src/strategies/accountEligibility.ts',
     ],
     implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualSeppDistributions.ts#annualSeppDistributions',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/strategies/accountEligibility.ts#acceptsContributions',
     ],
@@ -898,10 +906,12 @@ export const earlyDistributionAndSeppRecords = {
     verifiedOn: '2026-08-04',
     implementedBy: [
       'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/projection/internal/annualSeppDistributions.ts',
       'packages/engine/src/actions/annualRetirementPhysicalEventInventory.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/actions/annualRetirementPhysicalEventInventory.ts#buildAnnualRetirementPhysicalEventInventory',
+      'packages/engine/src/projection/internal/annualSeppDistributions.ts#annualSeppDistributions',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },

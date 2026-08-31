@@ -62,9 +62,14 @@ import {
 import { createAnnualCashFlowYearSites, type AnnualCashFlowYearSites } from './annualCashFlowYearSites.js'
 import { annuityExclusionMultiple, annuityPayoutForm, annuityPayoutFraction } from './annuityForms.js'
 import { buildLadder } from '../ladder/ladderMath.js'
+import { annualInsurancePremiumRows } from './internal/annualInsurancePremiumRows.js'
+import { annualLifestyleLayers } from './internal/annualLifestyleLayers.js'
 import { annualRebalanceToTarget } from './internal/annualRebalanceToTarget.js'
 import { annualPermanentLifeTransitions } from './internal/annualPermanentLifeTransitions.js'
+import { annualPropertyCarryingCosts } from './internal/annualPropertyCarryingCosts.js'
+import { annualSeppDistributions } from './internal/annualSeppDistributions.js'
 import { annualSnapshot } from './internal/annualSnapshot.js'
+import { annualExpenseSummary } from './internal/annualExpenseSummary.js'
 import { distributedTaxableYieldRows } from './internal/distributedTaxableYieldRows.js'
 import { hecmLineOpenings } from './internal/hecmLineOpenings.js'
 import { propertyEventsAndGrowth } from './internal/propertyEventsAndGrowth.js'
@@ -98,7 +103,6 @@ import {
   splitRothWithdrawal,
   type RothBasisState,
 } from '../strategies/rothBasis.js'
-import { seppActive, seppAnnualAmount } from '../strategies/sepp.js'
 import {
   classifyInheritedRegime,
   inheritedForcedAmount,
@@ -185,7 +189,6 @@ import {
   compareUtf16CodeUnits,
   deriveActionStructuralId,
 } from '../actions/structuralId.js'
-import { seppSeriesBeginsAfterSeparation } from '../actions/traditionalEmployerPlanPenaltyPrerequisite.js'
 import { type SimulatorAnnualRetirementRuntimeOccurrence } from './annualRetirementRuntimeJournal.js'
 import type { SimulatorAnnualPassDeferredFirstRmd, SimulatorAnnualPassStateBindings } from './annualPassTransaction.js'
 import {
@@ -227,8 +230,8 @@ import {
 } from '../socialSecurity/piaFromEarnings.js'
 import { survivorBenefitMonthly } from '../socialSecurity/survivorBenefit.js'
 import { inSsdiWindow, ssdiMonthlyBenefit, ssdiSuspendedBySga } from '../socialSecurity/disability.js'
-import { attributeShortfall, splitAnnualSpendingLayers } from '../spending/layers.js'
-import { ABW_DEFAULTS, abwAnnualPayment, abwExpectedRealReturnPct } from '../spending/abw.js'
+import { attributeShortfall } from '../spending/layers.js'
+import { ABW_DEFAULTS, abwExpectedRealReturnPct } from '../spending/abw.js'
 import { jointSurvivalPercentileAge, survivalPercentileAge } from '../montecarlo/survival.js'
 import {
   nextBalanceGuardrailMultiplier,
@@ -256,7 +259,6 @@ import {
   type SimulatorRetirementRuntimeApplication,
   type TaxCalculator,
   type TaxYearInput,
-  type YearExpenses,
   type YearAcaResult,
   type AcaSupportCode,
   type YearIncomes,
@@ -3003,55 +3005,25 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       incomes.taxExemptInterest
 
     // --- expenses ---------------------------------------------------------
-    const primaryAge = stateOf(primary.id).ageAttained
-    let phaseMultiplier = 1
-    for (const phase of [...plan.expenses.phases].sort((a, b) => a.fromAge - b.fromAge)) {
-      if (primaryAge >= phase.fromAge) phaseMultiplier = phase.multiplier
-    }
-    // Survivor years (exactly one member of a multi-person household alive)
-    // scale base + phase spending by the plan's survivor percentage. One-time
-    // goals and the separately-modeled healthcare/debt/property costs are not
-    // scaled — they carry their own person- or account-level lifecycles.
-    const survivorSpendingFactor =
-      peopleStates.length > 1 && aliveCount === 1 ? (plan.expenses.survivorSpendingPct ?? 100) / 100 : 1
-    // Split the annual lifestyle target into required, target, ideal, and excess
-    // layers. Absent optional fields keep older plans on the exact old shape:
-    // baseAnnual is the target lifestyle, with no annual upside layers.
-    const lifestyleScale = anyAlive ? inflFactor * phaseMultiplier * survivorSpendingFactor : 0
-    let scaledTargetLifestyle = plan.expenses.baseAnnual * lifestyleScale
-    const requiredAnnualToday = Math.min(
-      plan.expenses.requiredAnnual ?? plan.expenses.baseAnnual,
-      plan.expenses.baseAnnual,
-    )
-    let requiredLifestyleNominal = requiredAnnualToday * lifestyleScale
-    let idealLifestyleNominal = (plan.expenses.idealAnnual ?? 0) * lifestyleScale
-    let excessLifestyleNominal = (plan.expenses.excessAnnual ?? 0) * lifestyleScale
-    if (abwActive) {
-      // ABW replaces the whole recurring lifestyle stack: baseAnnual, phases,
-      // survivor scaling, and the required/ideal/excess layers are ignored and
-      // the target is the amortized payment from the actual start-of-year
-      // portfolio (nominal — the payment ratio is inflation-invariant, see
-      // engine/spending/abw.ts). Healthcare, debt, property, insurance, and
-      // one-time goals stay separately modeled on top.
-      let startPortfolio = 0
-      for (const b of balances) startPortfolio += startOfYearBalance.get(b.account.id) ?? 0
-      scaledTargetLifestyle = anyAlive
-        ? abwAnnualPayment(startPortfolio, abwRealReturnPct, abwTiltPct, abwHorizonYear - year + 1)
-        : 0
-      requiredLifestyleNominal = 0
-      idealLifestyleNominal = 0
-      excessLifestyleNominal = 0
-    }
     const {
       requiredLifestyle,
       targetLifestyle,
       idealLifestyle,
       excessLifestyle,
-    } = splitAnnualSpendingLayers({
-      baseAnnualNominal: scaledTargetLifestyle,
-      requiredAnnualNominal: requiredLifestyleNominal,
-      idealAnnualNominal: idealLifestyleNominal,
-      excessAnnualNominal: excessLifestyleNominal,
+    } = annualLifestyleLayers({
+      expenses: plan.expenses,
+      primaryAge: stateOf(primary.id).ageAttained,
+      peopleStateCount: peopleStates.length,
+      aliveCount,
+      anyAlive,
+      inflFactor,
+      abwActive,
+      abwRealReturnPct,
+      abwTiltPct,
+      abwHorizonYear,
+      year,
+      balances,
+      startOfYearBalance,
     })
     let debtService = 0
     for (const account of plan.accounts) {
@@ -3373,20 +3345,12 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // Insurance premiums: level (fixed nominal), charged while the insured/owner
     // is alive. paidUp charges nothing; untilAge stops at premiumEndAge.
     let insurancePremiums = 0
-    for (const policy of plan.insurance) {
-      if (policy.premiumMode === 'paidUp') continue
-      const subjectId = policy.kind === 'ltc' ? policy.owner : policy.insured
-      const s = stateOf(subjectId)
-      if (!s.alive) continue
-      if (policy.premiumMode === 'untilAge' && policy.premiumEndAge !== undefined && s.ageAttained >= policy.premiumEndAge) {
-        continue
-      }
-      insurancePremiums += policy.annualPremium
-      yearSites?.recordInsurancePremium({
-        policyId: policy.id,
-        subjectPersonId: subjectId,
-        amount: policy.annualPremium,
-      })
+    for (const row of annualInsurancePremiumRows({
+      policies: plan.insurance,
+      resolveSubject: stateOf,
+    })) {
+      insurancePremiums += row.amount
+      yearSites?.recordInsurancePremium(row.record)
     }
 
     // LTC care episodes: a deterministic late-life cost spike, additive to
@@ -3459,18 +3423,14 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // payment the debt account deliberately excludes. Today's dollars, inflated;
     // skipped from the sale year on, and (like base spending) once nobody is alive.
     let propertyCosts = 0
-    if (anyAlive) {
-      for (const account of plan.accounts) {
-        if (account.type !== 'property') continue
-        if (account.plannedSaleYear !== null && year >= account.plannedSaleYear) continue
-        const amount = ((account.propertyTaxAnnual ?? 0) + (account.insuranceAnnual ?? 0)) * inflFactor
-        propertyCosts += amount
-        yearSites?.recordPropertyCosts({
-          accountId: account.id,
-          ownerPersonId: account.ownerPersonId ?? null,
-          amount,
-        })
-      }
+    for (const row of annualPropertyCarryingCosts({
+      accounts: plan.accounts,
+      year,
+      anyAlive,
+      inflFactor,
+    })) {
+      propertyCosts += row.amount
+      yearSites?.recordPropertyCosts(row.record)
     }
 
     // System-computed costs are required by default: a plan must never report
@@ -3647,40 +3607,40 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       }
     }
 
-    const baseSpending = requiredLifestyle + targetLifestyleFunded + idealLifestyleFunded + excessLifestyleFunded
     // Base layers are funding-consistent (they exclude skipped goals) so the
     // shortfall attribution below stays clean; skipped goals are folded back into
     // the *reported* required/target totals and the shortfalls as explicit deltas.
-    let requiredSpendingBase = systemRequired + requiredLifestyle + requiredGoalsFunded
-    let targetSpendingBase = systemRequired + requiredLifestyle + targetLifestyle + targetGoalsFunded + requiredGoalsFunded
-    const idealSpendingBase = idealLifestyle + idealGoalsFunded
-    const excessSpendingBase = excessLifestyle + excessGoalsFunded
-
-    const expenses: YearExpenses = {
-      baseSpending,
-      oneTimeGoals: oneTimeGoalsFunded,
+    const expenseSummary = annualExpenseSummary({
+      requiredLifestyle,
+      targetLifestyle,
+      targetLifestyleFunded,
+      idealLifestyle,
+      idealLifestyleFunded,
+      excessLifestyle,
+      excessLifestyleFunded,
+      systemRequired,
+      oneTimeGoalsFunded,
+      requiredGoalsFunded,
+      targetGoalsFunded,
+      idealGoalsFunded,
+      excessGoalsFunded,
+      skippedRequiredNominal,
+      skippedTargetNominal,
+      skippedIdealNominal,
+      skippedExcessNominal,
       debtService,
       propertyCosts,
       healthcare,
       insurancePremiums,
       careCost,
       ltcBenefit,
-      requiredSpending: requiredSpendingBase + skippedRequiredNominal,
-      targetSpending: targetSpendingBase + skippedTargetNominal + skippedRequiredNominal,
-      idealSpending: idealSpendingBase + skippedIdealNominal,
-      excessSpending: excessSpendingBase + skippedExcessNominal,
-      intendedSpending:
-        targetSpendingBase +
-        idealSpendingBase +
-        excessSpendingBase +
-        skippedTargetNominal +
-        skippedRequiredNominal +
-        skippedIdealNominal +
-        skippedExcessNominal,
-      guardrailFactor: discretionaryMultiplier,
-      total:
-        baseSpending + oneTimeGoalsFunded + debtService + propertyCosts + healthcare + insurancePremiums + careCost - ltcBenefit,
-    }
+      discretionaryMultiplier,
+    })
+    const expenses = expenseSummary.expenses
+    let requiredSpendingBase = expenseSummary.requiredSpendingBase
+    let targetSpendingBase = expenseSummary.targetSpendingBase
+    const idealSpendingBase = expenseSummary.idealSpendingBase
+    const excessSpendingBase = expenseSummary.excessSpendingBase
 
     // --- fixed-asset dispositions (step 6) ----------------------------------
     // The phase lives in `internal/fixedAssetDispositions.ts`, which says which
@@ -4913,118 +4873,66 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // A substantially-equal periodic payment is taken like an RMD — outside the
     // need-based withdrawal flow, so it never attracts the early-withdrawal
     // penalty — and is taxable ordinary income that also supplies spending cash.
-    let seppTotal = 0
-    for (const state of balances) {
-      if (state.account.type !== 'traditional' || !state.account.sepp) continue
-      // Year-aware inherited gate (mirrors owner-RMD gates above): pre-flip S2
-      // stays on the inherited path; post-election the account is the spouse's
-      // own IRA and an active SEPP series distributes from it.
-      if (
-        state.account.inherited !== undefined &&
-        !isTreatAsOwnEffective(state.account, year)
-      ) continue
-      const ownerId = state.account.ownerPersonId ?? primary.id
-      const ownerState = stateOf(ownerId)
-      if (!ownerState.alive) continue
-      const election = state.account.sepp
-      if (!seppActive(election.startAge, ownerState.ageAttained)) continue
-      // IRC 72(t)(3)(B): from an employer plan the series is excepted only if it
-      // BEGINS AFTER the participant separates from service; the requirement
-      // pointedly does not reach IRAs, so an IRA series may begin during
-      // employment. The projection has no separation date and no employer
-      // identity, so it orders calendar years rather than days, using the same
-      // retirement-age proxy for separation that the Rule of 55 test below
-      // uses: the participant is modelled as separated for the whole of the
-      // FIRST YEAR THE WAGE MODEL STOPS PAYING THEM, so the separation ordinal
-      // is that year's first day and the series ordinal is the last day of the
-      // year it begins. That year is the attained age Math.ceil rounds the
-      // retirement age up to, because wages run while attained age is below the
-      // retirement age (Pass 1 above) and the Rule of 55 waives from the first
-      // attained age that is not: for a retirement age of 65.5 the plan pays
-      // them for the year they attain 65 and separates them in the year they
-      // attain 66. Reading the fraction DOWN would separate them in a year they
-      // are still paid. A plan with no retirement age states no separation at
-      // all, so no employer-plan series can begin after one. Residual error
-      // both ways: irc-72-t-3-B-sepp-separation-annual-proxy.
-      if (state.account.kind === 'employer') {
-        const ownerRetirementAge = personById.get(ownerId)!.retirementAge
-        if (ownerRetirementAge === null) continue
-        const birthYear = year - ownerState.ageAttained
-        const separatedFrom = `${birthYear + Math.ceil(ownerRetirementAge)}-01-01`
-        const seriesBegunBy = `${birthYear + election.startAge}-12-31`
-        if (!seppSeriesBeginsAfterSeparation(seriesBegunBy, separatedFrom)) continue
+    const seppPlan = annualSeppDistributions({
+      balances,
+      year,
+      primaryPersonId: primary.id,
+      resolveOwnerState: stateOf,
+      resolveOwnerRetirementAge: (ownerPersonId) =>
+        personById.get(ownerPersonId)!.retirementAge,
+      startOfYearBalance,
+      amortizationAmountByAccountId: seppAmortAmount,
+      pack,
+    })
+    const seppTotal = seppPlan.total
+    for (const operation of seppPlan.operations) {
+      if (operation.kind === 'amortizationCacheWrite') {
+        seppAmortAmount.set(operation.accountId, operation.amount)
+        continue
       }
-      const startBalance = startOfYearBalance.get(state.account.id) ?? 0
-      let amount: number
-      if (election.method === 'amortization') {
-        // Fixed for the series: compute once from the first SEPP year's balance.
-        // Notice 2022-6 section 3.02(d) treats the account balance as reasonably
-        // determined if it is the balance on any date from December 31 of the
-        // year before the first distribution through the date of that
-        // distribution, and the start-of-year balance opens exactly that window.
-        let fixed = seppAmortAmount.get(state.account.id)
-        if (fixed === undefined) {
-          fixed = seppAnnualAmount(pack, 'amortization', startBalance, ownerState.ageAttained)
-          seppAmortAmount.set(state.account.id, fixed)
-        }
-        amount = fixed
-      } else {
-        amount = seppAnnualAmount(pack, 'rmd', startBalance, ownerState.ageAttained)
-      }
-      const take = Math.min(amount, state.balance)
-      // The same discharge the required-distribution block above applies, for
-      // the same reason: a series payment the exact-cent ledger records as zero
-      // moves nothing, so it publishes no occurrence and adds nothing to
-      // `seppTotal`. A 72(t) series against a sub-cent balance is reachable by
-      // exactly the route the RMD one is -- any earlier movement that drained
-      // the account to a residue the ledger cannot express.
-      if (take <= 0 || planDollarsMoveNoLedgerCent(take)) continue
-      const sourceBalanceBefore = state.balance
-      state.balance -= take
+
+      const state = balances[operation.balanceIndex]!
+      state.balance = operation.sourceBalanceAfter
       const kind = 'automaticSeppDistribution' as const
-      const producerOccurrenceKey = runtimeOccurrenceKey(kind, state.account.id)
+      const producerOccurrenceKey = runtimeOccurrenceKey(kind, operation.accountId)
       recordAnnualRetirementRuntimeOccurrence({
         producerOccurrenceKey,
         kind,
-        grossAmountPlanDollars: take,
-        ownerPersonId: state.account.ownerPersonId,
-        sourceAccountId: state.account.id,
+        grossAmountPlanDollars: operation.take,
+        ownerPersonId: operation.ownerPersonId,
+        sourceAccountId: operation.accountId,
         executionDate: null,
         executionSequence: null,
         movementAuthorityId: null,
       })
       let ownedIraApplication:
         SimulatorRetirementRuntimeApplication | null = null
-      if (isAggregatedIra(state.account)) {
+      if (operation.recordsOwnedIraApplication) {
         ownedIraApplication = recordAnnualRetirementRuntimeApplication({
           applicationKind: 'debit',
           producerOccurrenceKey,
           simulatorPhase: 'automaticSeppDistribution',
-          ownerPersonId: state.account.ownerPersonId,
-          sourceAccountId: state.account.id,
-          sourceBalanceBeforePlanDollars: sourceBalanceBefore,
-          appliedAmountPlanDollars: take,
-          sourceBalanceAfterPlanDollars: state.balance,
+          ownerPersonId: operation.ownerPersonId,
+          sourceAccountId: operation.accountId,
+          sourceBalanceBeforePlanDollars: operation.sourceBalanceBefore,
+          appliedAmountPlanDollars: operation.take,
+          sourceBalanceAfterPlanDollars: operation.sourceBalanceAfter,
         })
       }
-      seppTotal += take
-      seppByAccountId?.set(state.account.id, {
-        ownerPersonId: state.account.ownerPersonId ?? null,
-        take,
+      seppByAccountId?.set(operation.accountId, {
+        ownerPersonId: operation.ownerPersonId,
+        take: operation.take,
       })
-      // Pro-rata return of basis on IRA SEPP distributions (step 5), deferred
-      // for the same reason the required distribution above is: the year's
-      // pro-rata denominator is not settled until the charitable gift is.
       if (
-        state.account.kind === 'ira' &&
+        operation.defersIraCharacter &&
         ownedIraApplication?.applicationKind === 'debit'
       ) {
         deferredSeppDistributions.push({
-          ownerId,
-          amount: take,
+          ownerId: operation.characterOwnerPersonId,
+          amount: operation.take,
           occurrenceKind: kind,
           producerOccurrenceKey,
-          sourceAccountId: state.account.id,
+          sourceAccountId: operation.accountId,
           mutationOrdinal: ownedIraApplication.mutationOrdinal,
         })
       }

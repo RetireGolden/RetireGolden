@@ -25,7 +25,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 756
+              "line": 758
             }
           ]
         }
@@ -92,7 +92,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 756
+              "line": 758
             }
           ]
         },
@@ -164,7 +164,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 756
+              "line": 758
             }
           ]
         },
@@ -229,7 +229,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 756
+              "line": 758
             }
           ]
         }
@@ -291,7 +291,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 756
+              "line": 758
             }
           ]
         },
@@ -489,7 +489,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 756
+              "line": 758
             }
           ]
         },
@@ -569,7 +569,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 756
+              "line": 758
             }
           ]
         },
@@ -657,7 +657,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 756
+              "line": 758
             }
           ]
         },
@@ -759,7 +759,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 756
+              "line": 758
             }
           ]
         }
@@ -821,7 +821,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 756
+              "line": 758
             }
           ]
         },
@@ -886,7 +886,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 756
+              "line": 758
             }
           ]
         }
@@ -938,7 +938,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 756
+              "line": 758
             }
           ]
         },
@@ -1071,7 +1071,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 756
+              "line": 758
             }
           ]
         },
@@ -1304,7 +1304,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 756
+              "line": 758
             }
           ]
         },
@@ -1395,7 +1395,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 756
+              "line": 758
             }
           ]
         },
@@ -1657,7 +1657,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 756
+              "line": 758
             }
           ]
         }
@@ -1769,7 +1769,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 756
+              "line": 758
             }
           ]
         }
@@ -1846,7 +1846,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 756
+              "line": 758
             }
           ]
         }
@@ -1926,7 +1926,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 756
+              "line": 758
             }
           ]
         }
@@ -1993,7 +1993,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 756
+              "line": 758
             }
           ]
         },
@@ -2127,7 +2127,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 756
+              "line": 758
             }
           ]
         },
@@ -2201,7 +2201,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 756
+              "line": 758
             }
           ]
         },
@@ -2397,7 +2397,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 756
+              "line": 758
             }
           ]
         },
@@ -2499,7 +2499,8 @@
       "dueOn": "2027-08-03",
       "implementedBy": [
         "packages/engine/src/actions/beneficiarySpousalElectionStatus.ts",
-        "packages/engine/src/actions/beneficiaryTraditionalIraDeathPenalty.ts"
+        "packages/engine/src/actions/beneficiaryTraditionalIraDeathPenalty.ts",
+        "packages/engine/src/projection/internal/annualSeppDistributions.ts"
       ],
       "implementations": [
         {
@@ -2517,6 +2518,15 @@
             {
               "name": "evaluateBeneficiaryTraditionalIraDeathPenalty",
               "line": 296
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/annualSeppDistributions.ts",
+          "functions": [
+            {
+              "name": "annualSeppDistributions",
+              "line": 87
             }
           ]
         }
@@ -2586,7 +2596,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 756
+              "line": 758
             }
           ]
         }
@@ -2695,6 +2705,7 @@
       "dueOn": "2027-08-05",
       "implementedBy": [
         "packages/engine/src/actions/planBalanceAdapter.ts",
+        "packages/engine/src/projection/internal/annualSeppDistributions.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
@@ -2708,11 +2719,20 @@
           ]
         },
         {
+          "path": "packages/engine/src/projection/internal/annualSeppDistributions.ts",
+          "functions": [
+            {
+              "name": "annualSeppDistributions",
+              "line": 87
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 756
+              "line": 758
             }
           ]
         }
@@ -2788,7 +2808,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 756
+              "line": 758
             }
           ]
         },
@@ -2885,7 +2905,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 756
+              "line": 758
             }
           ]
         },
@@ -2942,7 +2962,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 756
+              "line": 758
             }
           ]
         },
@@ -3003,7 +3023,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 756
+              "line": 758
             }
           ]
         },
@@ -3064,7 +3084,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 756
+              "line": 758
             }
           ]
         },
