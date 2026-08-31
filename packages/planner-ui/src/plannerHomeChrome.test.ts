@@ -49,12 +49,16 @@ function winningDeclaration(css: string, className: string, property: string, an
   </body></html>`
   // Cascade in this helper: last matching rule of highest specificity wins.
   // Used when jsdom computed-style is unavailable (this file is node-env).
+  // Strip comments first — a comment glued onto the next selector used to
+  // look like a descendant combinator, so a no-ancestor query skipped the
+  // 2-column rule and reported `.plan-grid` auto-fill as the winner.
+  const stripped = css.replace(/\/\*[\s\S]*?\*\//g, '')
   const ruleRe = /([^{}]+)\{([^{}]+)\}/g
   let match: RegExpExecArray | null
   let bestSpec = -1
   let bestValue: string | null = null
   const targetClasses = new Set(className.split(/\s+/))
-  while ((match = ruleRe.exec(css)) !== null) {
+  while ((match = ruleRe.exec(stripped)) !== null) {
     const selectors = match[1]!.split(',').map((s) => s.trim())
     const body = match[2]!
     const prop = body.match(new RegExp(`${property}\\s*:\\s*([^;]+)`))
@@ -148,7 +152,7 @@ describe('planner home chrome (#297)', () => {
     // The override must appear after `.plan-grid` so a same-specificity tie
     // cannot restore auto-fill, and it must not require `.home-paths`.
     const planGridAt = plannerCss.indexOf('\n.plan-grid {')
-    const overrideAt = plannerCss.indexOf('.home-paths-grid.plan-grid')
+    const overrideAt = plannerCss.indexOf('.home-paths-grid.plan-grid {')
     expect(planGridAt).toBeGreaterThanOrEqual(0)
     expect(overrideAt).toBeGreaterThan(planGridAt)
     expect(plannerCss).not.toMatch(/\.home-paths\s+\.home-paths-grid\.plan-grid/)

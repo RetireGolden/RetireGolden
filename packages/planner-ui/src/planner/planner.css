@@ -307,11 +307,11 @@
   margin: 1.25rem 0;
 }
 
-/* After `.plan-grid` and more specific, so Getting started on `/` and the
-   Import landing on `/import` share the same 2×2. The rule does not depend
-   on a page-specific `.home-paths` wrapper — Import never had one, which
-   is why its four cards used to sit in one auto-fill row. */
 .home-paths-grid.plan-grid {
+  /* After `.plan-grid` and more specific, so Getting started on `/` and the
+     Import landing on `/import` share the same 2×2. The rule does not depend
+     on a page-specific `.home-paths` wrapper — Import never had one, which
+     is why its four cards used to sit in one auto-fill row. */
   grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: stretch;
 }
