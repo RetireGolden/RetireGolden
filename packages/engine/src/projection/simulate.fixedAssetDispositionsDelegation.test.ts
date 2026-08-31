@@ -90,18 +90,24 @@ import type {
  *   2. `simulate.ts` has exactly ONE call to the helper and exactly ONE call to
  *      `recordPropertySaleProceeds` (grep: they are its only occurrences), and
  *      the second is inside the `for…of` over the first's returned array.
- *   3. `recordPropertySaleProceeds` is a sink, not a re-entry point: it pushes
- *      onto a private array in `annualCashFlowYearSites.ts` and calls nothing.
+ *   3. `recordPropertySaleProceeds` is a sink, not a re-entry point. It calls
+ *      one module-local numeric predicate (`skipNonPositive`) and then either
+ *      drops the row or pushes it onto a private array in
+ *      `annualCashFlowYearSites.ts` — the drop is why an all-zero record never
+ *      reaches the ledger. What the attribution needs is not "it calls
+ *      nothing", which is false, but that it never calls back into the phase.
  *
  * Given (1)-(3) the events for one call are a contiguous run: the `phase`, then
  * that call's records, then nothing else until the next `phase`. None of the
  * three is taken on trust, but they are not all pinned the same way, and the
  * difference is worth stating rather than implying:
  *
- *   - (1) is pinned STRUCTURALLY, by `rowCountAtCall` below and the
- *     `Array.isArray` check in G3. Turning the helper into a generator and
+ *   - (1) is pinned STRUCTURALLY, by two checks in G3 that catch DIFFERENT
+ *     shapes rather than the same one twice. `Array.isArray` catches a return
+ *     that is not an array at all: rewriting the helper as a generator and
  *     letting the caller drive it lazily fails `rows are not a materialized
- *     array` by name (measured).
+ *     array` by name (measured — and it is that check alone that fires; see
+ *     `rowCountAtCall` below for why the count cannot catch a generator).
  *   - (2) and (3) are pinned by their observable CONSEQUENCE, not by anything
  *     that reads `simulate.ts`. G3 requires each call's run to hold exactly
  *     that call's rows, and its whole-log accounting requires every record to
@@ -119,10 +125,15 @@ type SeamEvent =
       readonly input: FixedAssetDispositionYearInput
       readonly rows: readonly FixedAssetDispositionRow[]
       /**
-       * `rows.length` read the instant the helper returned. It is compared with
-       * `rows.length` after the run: a helper that streamed rows to the caller
-       * while the caller recorded them — the one shape that would actually
-       * interleave the two event kinds — would have grown the array in between.
+       * `rows.length` read the instant the helper returned, compared with
+       * `rows.length` after the run. Narrower than the `Array.isArray` check
+       * beside it, and worth being exact about rather than crediting both with
+       * the same reach: a generator makes BOTH reads `undefined`, so it passes
+       * here and is caught only by `Array.isArray`. What this catches is the
+       * residual array-backed case: a helper that returns an array it keeps a
+       * reference to and appends to while the caller is already iterating it.
+       * That shape stays an array, so `Array.isArray` passes it and only this
+       * line fires — measured, as `rows grew after the call returned`.
        */
       readonly rowCountAtCall: number
       /**
@@ -465,8 +476,12 @@ describe('simulatePlan delegates the fixed-asset disposition phase', () => {
       if (phase === undefined) throw new Error(`no fixedAssetDispositions call was recorded for ${year}`)
       return phase
     }
-    // A missing value reads as `undefined` here, which fails the comparison by
-    // name rather than as a bare TypeError from a non-null assertion.
+    // The `!` these two `get` calls used to carry was type-level only, and the
+    // note that replaced it overclaimed: measured, a missing KEY fails
+    // identically with or without it, as vitest's `actual value must be number
+    // or bigint, received "undefined"`. What the rewrite actually buys is the
+    // LOOKUP — `phaseFor` names the year it could not find instead of
+    // dereferencing `undefined`, and the same goes for `rowsFor`/`balanceIn`.
     expect(phaseFor(TWO_SALE_YEAR).propertyValuesAtCall.get(SALE_A)).toBeGreaterThan(480_000)
     // The open HECM line is still in the map when its own sale year arrives.
     expect(phaseFor(HECM_SALE_YEAR).hecmBalancesAtCall.get(HECM_HOME)).toBeGreaterThan(0)
@@ -496,7 +511,10 @@ describe('simulatePlan delegates the fixed-asset disposition phase', () => {
       // PREMISE (1) of the attribution, checked rather than assumed: the helper
       // handed back a materialized array, complete at the moment it returned.
       // A lazy or streaming return is the only structure that could interleave
-      // a record between two of this call's own rows, and it fails here.
+      // a record between two of this call's own rows, and the two lines below
+      // split that job: `Array.isArray` catches the non-array (generator) form,
+      // the count catches an array grown after return. A generator PASSES the
+      // count — both reads are `undefined` — so neither line is redundant.
       expect(Array.isArray(event.rows), `year ${event.input.year} rows are not a materialized array`).toBe(true)
       expect(event.rows.length, `year ${event.input.year} rows grew after the call returned`).toBe(
         event.rowCountAtCall,
