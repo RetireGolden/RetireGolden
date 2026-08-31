@@ -873,11 +873,9 @@ export const earlyDistributionAndSeppRecords = {
     verifiedOn: '2026-08-04',
     implementedBy: [
       'packages/engine/src/projection/simulate.ts',
-      'packages/engine/src/projection/internal/annualSeppDistributions.ts',
       'packages/engine/src/strategies/accountEligibility.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/projection/internal/annualSeppDistributions.ts#annualSeppDistributions',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/strategies/accountEligibility.ts#acceptsContributions',
     ],
