@@ -19,7 +19,8 @@ export interface Mismatch {
 /**
  * Losslessly encode an arbitrary result tree. Distinguishes `-0`, `NaN`,
  * `±Infinity`, present-but-`undefined`, key order, Map/Set insertion order and
- * array length; throws on functions, symbols and cycles.
+ * array length; throws on functions, symbol values, symbol-keyed or
+ * non-enumerable own properties, and cycles.
  */
 export declare function encode(value: unknown, path?: string, seen?: Set<object>): Encoded
 

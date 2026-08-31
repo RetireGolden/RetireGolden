@@ -158,10 +158,8 @@ The workflow is four commands, run from the repository root:
 
 ```
 node packages/engine/scripts/equivalence.mjs corpus  --name full --out <dir>/corpus.json
-node packages/engine/scripts/equivalence.mjs capture --corpus <dir>/corpus.json --out <dir>/base.json
-                                                    --engine-src <baseline tree>/packages/engine/src
-node packages/engine/scripts/equivalence.mjs capture --corpus <dir>/corpus.json --out <dir>/head.json
-                                                    --engine-src <changed tree>/packages/engine/src
+node packages/engine/scripts/equivalence.mjs capture --corpus <dir>/corpus.json --out <dir>/base.json --engine-src <baseline tree>/packages/engine/src
+node packages/engine/scripts/equivalence.mjs capture --corpus <dir>/corpus.json --out <dir>/head.json --engine-src <changed tree>/packages/engine/src
 node packages/engine/scripts/equivalence.mjs compare --base <dir>/base.json --head <dir>/head.json
 node packages/engine/scripts/equivalence.mjs reach   --corpus <dir>/corpus.json --spec <spec>.json
 ```

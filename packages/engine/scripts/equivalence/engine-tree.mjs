@@ -228,7 +228,16 @@ function git(dir, args) {
 export function describeTree(dir, declaredLabel = null) {
   const src = normalizeDir(dir)
   const observed = git(src, ['rev-parse', 'HEAD'])
-  if (observed === null) {
+  // `git -C <dir> rev-parse` walks UP to the first `.git`. An archive extracted
+  // *inside* another checkout therefore reports that parent as `observed` even
+  // though these bytes are not the worktree. Fail closed: only trust a SHA when
+  // the discovered repo actually tracks this tree (`projection/simulate.ts` is
+  // the file `configureEngineTree` already requires). A real worktree passes;
+  // an archive under /tmp or under `<repo>/tmp-archive-…` does not — `ls-files`
+  // looks at the parent index and the path is untracked. Do not use "git root
+  // is outside src": that is true of every normal `packages/engine/src` too.
+  const tracked = git(src, ['ls-files', '--error-unmatch', '--', 'projection/simulate.ts'])
+  if (observed === null || tracked === null) {
     return {
       src,
       gitSha: declaredLabel,

@@ -102,6 +102,7 @@ import { CORPORA, CORPUS_NAMES, buildCorpus, examplesTierLocation } from './equi
 
 const SCHEMA = 'retiregolden.equivalence-dump/1'
 const CORPUS_SCHEMA = 'retiregolden.equivalence-corpus/1'
+const REACH_SPEC_SCHEMA = 'retiregolden.equivalence-reach-spec/1'
 
 const scriptDir = dirname(fileURLToPath(import.meta.url))
 const engineDir = resolve(scriptDir, '..')
@@ -132,6 +133,15 @@ inside the repository by default.`
 }
 
 class UsageError extends Error {}
+
+/** Operator `--modes` typos must hit the UsageError path, not a raw stack. */
+function modesFromFlag(flag) {
+  try {
+    return selectModes(flag.split(',').map((id) => id.trim()).filter((id) => id !== ''))
+  } catch (error) {
+    throw new UsageError(error instanceof Error ? error.message : String(error))
+  }
+}
 
 function takeValue(argv, i, name) {
   const value = argv[i + 1]
@@ -261,7 +271,7 @@ async function commandCapture(argv) {
     },
     required: ['corpus', 'out'],
   })
-  const modes = selectModes(opts.modes.split(',').map((id) => id.trim()).filter((id) => id !== ''))
+  const modes = modesFromFlag(opts.modes)
   const { corpus, sha, members } = loadCorpusFile(opts.corpus, opts.member)
   const src = configureEngineTree(opts.engineSrc)
   const engine = await loadEngine()
@@ -491,16 +501,18 @@ async function commandReach(argv) {
     },
     required: ['corpus', 'spec'],
   })
-  const modes = selectModes(opts.modes.split(',').map((id) => id.trim()).filter((id) => id !== ''))
+  const modes = modesFromFlag(opts.modes)
   const { members } = loadCorpusFile(opts.corpus, opts.member)
   const src = configureEngineTree(opts.engineSrc)
 
   const spec = readJson(opts.spec)
+  if (spec.schema !== REACH_SPEC_SCHEMA) {
+    throw new UsageError(`${opts.spec} is not a ${REACH_SPEC_SCHEMA} spec (found "${spec.schema}")`)
+  }
   const entries = spec.entries.map((entry) => ({
     ...entry,
     file: resolve(src, entry.file).split('\\').join('/'),
   }))
-  // Coverage starts BEFORE the engine is imported, so a module's top-level
   // The recorder attaches its debugger BEFORE the engine is imported (that is
   // when `scriptParsed` names the compiled script), verifies offsets, and only
   // then starts counting — so no count here belongs to module top-level work.

@@ -69,6 +69,19 @@ describe('equivalence encoder: distinctions JSON.stringify loses', () => {
     expect(differs(new Set(['a', 'b']), new Set(['b', 'a']))).toHaveLength(2)
   })
 
+  it('encodes bigint as a tagged decimal, which JSON.stringify cannot serialize', () => {
+    // Counterfactual liability is an exact rational in minor units. Pin the
+    // encoder helper, not a product result: the engine does not publish bigint
+    // on ProjectionResult, and inventing one there would not discriminate the
+    // arm. Dropping `if (t === 'bigint')` would throw inside Object.keys
+    // (bigint is not coercible to an object) or, if "fixed" by skipping, lose
+    // the channel JSON.stringify cannot represent at all.
+    expect(() => JSON.stringify(1n)).toThrow(/BigInt/u)
+    expect(viaDump(1n)).toEqual(['b', '1'])
+    expect(viaDump(-2n)).toEqual(['b', '-2'])
+    expect(differs(1n, 2n)).toHaveLength(1)
+  })
+
   it('separates Map insertion order and Map keys', () => {
     expect(differs(new Map([['a', 1], ['b', 2]]), new Map([['b', 2], ['a', 1]]))).toHaveLength(2)
     expect(differs(new Map([['a', 1]]), new Map([['a', 2]]))).toEqual([
@@ -128,6 +141,19 @@ describe('equivalence encoder: fails loudly rather than flattening', () => {
 
   it('throws on a symbol', () => {
     expect(() => encode({ s: Symbol('x') })).toThrow(/unencodable symbol/u)
+  })
+
+  it('throws on a symbol-keyed own property instead of dropping it', () => {
+    const hidden = { [Symbol('channel')]: 1, visible: 2 }
+    expect(JSON.stringify(hidden)).toBe('{"visible":2}')
+    expect(() => encode(hidden)).toThrow(/symbol-keyed own property at \$/u)
+  })
+
+  it('throws on a non-enumerable own property instead of dropping it', () => {
+    const hidden: Record<string, unknown> = { visible: 1 }
+    Object.defineProperty(hidden, 'dropped', { value: 2, enumerable: false })
+    expect(JSON.stringify(hidden)).toBe('{"visible":1}')
+    expect(() => encode(hidden)).toThrow(/non-enumerable own property "dropped" at \$/u)
   })
 
   it('throws on a cycle instead of recursing forever', () => {

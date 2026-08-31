@@ -26,7 +26,9 @@
  *   Map / Set              -> ["m", ...] / ["s", ...] in insertion order
  *   Date                   -> ["d", iso]
  * Anything else throws, so an unexpected value type fails loudly instead of
- * being silently flattened.
+ * being silently flattened. Symbol-keyed and non-enumerable own properties
+ * are refused rather than dropped: `Object.keys` cannot see them, and a dump
+ * that omitted them would still hash IDENTICAL.
  *
  * NOT observable through this encoder, stated so nobody claims otherwise:
  * object IDENTITY. Two structurally equal objects encode identically, so a
@@ -89,6 +91,16 @@ export function encode(value, path = '$', seen = new Set()) {
       let i = 0
       for (const v of obj) out.push(encode(v, `${path}{${i++}}`, seen))
       return out
+    }
+    const symbols = Object.getOwnPropertySymbols(obj)
+    if (symbols.length > 0) {
+      throw new Error(`equivalence encoder: symbol-keyed own property at ${path}`)
+    }
+    for (const key of Object.getOwnPropertyNames(obj)) {
+      const desc = Object.getOwnPropertyDescriptor(obj, key)
+      if (desc !== undefined && !desc.enumerable) {
+        throw new Error(`equivalence encoder: non-enumerable own property ${JSON.stringify(key)} at ${path}`)
+      }
     }
     const out = ['o']
     for (const key of Object.keys(obj)) {
