@@ -1,0 +1,177 @@
+{
+  "schema": "retiregolden.equivalence-reach-spec/1",
+  "name": "simulate-batch",
+  "why": "The five annual phases extracted in the simulate-batch slice, plus the sub-arms whose reach cannot be assumed. Line numbers are against packages/engine/src/projection/simulate.ts at f1b4ab59 and MUST be re-checked before reuse — the file is being edited one phase at a time, and a stale range silently reports the wrong code as reached.",
+  "entries": [
+    {
+      "id": "A",
+      "label": "annual rebalance to target (start-of-year trade)",
+      "file": "projection/simulate.ts",
+      "lines": [
+        1768,
+        1793
+      ],
+      "note": "a member's count here is LOOP-HEADER iterations, not phase work: V8 attributes straight-line code after a conditional `continue` to the enclosing block, so this range reports every plan that owns an account or an income stream. Read the sub-entries and the cold regions for what the phase body actually did."
+    },
+    {
+      "id": "A.saleArm",
+      "label": "A: taxable sale through aggregateBasisSale (turnover > 1e-9, taxable, balance > 0)",
+      "file": "projection/simulate.ts",
+      "lines": [
+        1778,
+        1789
+      ]
+    },
+    {
+      "id": "A.ledger",
+      "label": "A: the rebalancing-gain ledger payload (cashFlow modes only)",
+      "file": "projection/simulate.ts",
+      "lines": [
+        1785,
+        1788
+      ]
+    },
+    {
+      "id": "A.retarget",
+      "label": "A: the unconditional weight retarget, including the non-taxable accounts",
+      "file": "projection/simulate.ts",
+      "lines": [
+        1791,
+        1791
+      ]
+    },
+    {
+      "id": "B",
+      "label": "pension lump-sum rollover",
+      "file": "projection/simulate.ts",
+      "lines": [
+        1984,
+        2036
+      ],
+      "note": "a member's count here is LOOP-HEADER iterations, not phase work: V8 attributes straight-line code after a conditional `continue` to the enclosing block, so this range reports every plan that owns an account or an income stream. Read the sub-entries and the cold regions for what the phase body actually did."
+    },
+    {
+      "id": "B.credit",
+      "label": "B: the resolved-target credit and the ledger payload",
+      "file": "projection/simulate.ts",
+      "lines": [
+        1989,
+        1996
+      ],
+      "note": "SAME ARTIFACT as the block-level entry: these lines sit after two `continue` guards with no brace of their own, so their count is the loop's. Members that genuinely credit a rollover are the four blocks:b* members; B.occurrence (3) and B.application (2) are the honest counts."
+    },
+    {
+      "id": "B.occurrence",
+      "label": "B: the rolloverInflow occurrence (amount > 0 AND destination traditional)",
+      "file": "projection/simulate.ts",
+      "lines": [
+        2007,
+        2022
+      ]
+    },
+    {
+      "id": "B.application",
+      "label": "B: the aggregated-IRA credit application (isAggregatedIra) — a strictly narrower gate",
+      "file": "projection/simulate.ts",
+      "lines": [
+        2024,
+        2033
+      ]
+    },
+    {
+      "id": "C",
+      "label": "HECM line open",
+      "file": "projection/simulate.ts",
+      "lines": [
+        2044,
+        2059
+      ],
+      "note": "a member's count here is LOOP-HEADER iterations, not phase work: V8 attributes straight-line code after a conditional `continue` to the enclosing block, so this range reports every plan that owns an account or an income stream. Read the sub-entries and the cold regions for what the phase body actually did."
+    },
+    {
+      "id": "C.warning",
+      "label": "C: the under-62 borrower warning",
+      "file": "projection/simulate.ts",
+      "lines": [
+        2051,
+        2053
+      ]
+    },
+    {
+      "id": "C.open",
+      "label": "C: the principal-limit / loan-balance computation and the map write",
+      "file": "projection/simulate.ts",
+      "lines": [
+        2054,
+        2058
+      ],
+      "note": "SAME ARTIFACT: this range follows five `continue` guards and carries no brace of its own. Members that genuinely open a line are the blocks:c* members plus any example with a HECM (there are none); C.warning is the one sub-arm V8 splits here."
+    },
+    {
+      "id": "D",
+      "label": "income pass 1: wages",
+      "file": "projection/simulate.ts",
+      "lines": [
+        2373,
+        2389
+      ],
+      "note": "a member's count here is LOOP-HEADER iterations, not phase work: V8 attributes straight-line code after a conditional `continue` to the enclosing block, so this range reports every plan that owns an account or an income stream. Read the sub-entries and the cold regions for what the phase body actually did."
+    },
+    {
+      "id": "D.contributing",
+      "label": "D: a contributing wage row — amount, three folds, one recorder call",
+      "file": "projection/simulate.ts",
+      "lines": [
+        2379,
+        2388
+      ]
+    },
+    {
+      "id": "E",
+      "label": "property events + growth",
+      "file": "projection/simulate.ts",
+      "lines": [
+        10130,
+        10166
+      ],
+      "note": "a member's count here is LOOP-HEADER iterations, not phase work: V8 attributes straight-line code after a conditional `continue` to the enclosing block, so this range reports every plan that owns an account or an income stream. Read the sub-entries and the cold regions for what the phase body actually did."
+    },
+    {
+      "id": "E.saleYear",
+      "label": "E: the planned-sale gate on the POST-growth value",
+      "file": "projection/simulate.ts",
+      "lines": [
+        10135,
+        10155
+      ]
+    },
+    {
+      "id": "E.legacySale",
+      "label": "E: the legacy tax-free arm (costBasis undefined) — proceeds, HECM payoff, deposit",
+      "file": "projection/simulate.ts",
+      "lines": [
+        10139,
+        10153
+      ]
+    },
+    {
+      "id": "E.legacyLedgerRow",
+      "label": "E: the legacyPropertySaleDeposits row (cashFlow modes only, amount > 0)",
+      "file": "projection/simulate.ts",
+      "lines": [
+        10147,
+        10151
+      ]
+    },
+    {
+      "id": "E.hecmGrowth",
+      "label": "E: the still-open line compounding on both sides",
+      "file": "projection/simulate.ts",
+      "lines": [
+        10160,
+        10165
+      ]
+    }
+  ],
+  "readingTheCounts": "'members that reach it' counts corpus members whose peak line count inside the range is non-zero. V8 block coverage splits at braces and at branch bodies, not at every statement, so a range that is straight-line code after a `continue` inherits the enclosing block's count and OVER-reports. Entries that do are marked with a note. Cold regions do not have this problem: a zero-count range is an untaken branch, exactly."
+}
