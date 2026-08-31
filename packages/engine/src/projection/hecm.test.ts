@@ -223,6 +223,60 @@ describe('coordinated draw policy (Pfau direction fixture)', () => {
     for (const y of result.years.slice(0, 5)) expect(y.hecmDraw).toBe(0)
   })
 
+  it('counts an open coordinated line once when unreferenced property ids are duplicated', () => {
+    // Duplicate account ids remain valid when no retirement action or other
+    // identity-resolving contract references them. HECM state is keyed by id,
+    // however, so these two property rows share one $40k line rather than
+    // creating two lines. The 2026 loss makes that one line eligible in 2027.
+    const plan = basePlan(63)
+    plan.expenses.baseAnnual = 70_000
+    const sharedLine = home({
+      openYear: 2025,
+      principalLimitPct: 40,
+      growthRatePct: 0,
+      upfrontCostPct: 0,
+      drawPolicy: 'coordinated',
+    }, 100_000)
+    plan.accounts = [
+      {
+        type: 'taxable',
+        id: 'brok1',
+        name: 'Brokerage',
+        ownerPersonId: null,
+        annualReturnPct: null,
+        balance: 1_000_000,
+        costBasis: 1_000_000,
+        annualContribution: 0,
+      },
+      sharedLine,
+      { ...sharedLine, name: 'Duplicate property row sharing the HECM line' },
+    ]
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(true)
+    if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+
+    const result = simulatePlan(parsed.plan, {
+      startYear: 2026,
+      horizonEndYear: 2027,
+      taxCalculator: noTax,
+      market: { returnShockPct: [-10, 0] },
+      captureAnnualCashFlow: true,
+    })
+    const year = result.years.find((candidate) => candidate.year === 2027)!
+    const coordinatedSources = year.cashFlow!.sourceLines.filter(
+      (line) => line.kind === 'hecmCoordinatedDraw',
+    )
+
+    expect(year.hecmDraw).toBe(40_000)
+    expect(year.hecmLoanBalance).toBe(40_000)
+    expect(year.withdrawals.total).toBe(30_000)
+    expect(year.shortfall).toBe(0)
+    expect(coordinatedSources).toHaveLength(1)
+    expect(coordinatedSources[0]!.amountPlanDollars).toBe(40_000)
+    expect(year.cashFlow!.reconciliation.cash.differencePlanDollars).toBe(0)
+    expect(year.cashFlow!.reconciliation.status).toBe('reconciled')
+  })
+
   it('a mildly negative shock in a positive-return year does not trigger a coordinated draw', () => {
     // −1 shock on a +6% expected return is still a +5% portfolio year: the
     // coordinated policy keys on the realized portfolio return, not the raw

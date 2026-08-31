@@ -8230,12 +8230,17 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     const coordinatedHecmAccounts: Extract<Account, { type: 'property' }>[] = []
     let coordinatedHecmCapacity = 0
     if (anyAlive && year > startYear && priorYearPortfolioReturnPct < 0) {
+      // Unreferenced duplicate account ids are valid, but `hecmStates` is keyed
+      // by id: every matching property row therefore points at the same line.
+      const admittedHecmLineIds = new Set<string>()
       for (const account of plan.accounts) {
         if (account.type !== 'property' || account.hecm?.drawPolicy !== 'coordinated') continue
+        if (admittedHecmLineIds.has(account.id)) continue
         const line = hecmStates.get(account.id)
         if (!line) continue
         const available = Math.max(0, line.principalLimit - line.loanBalance)
         if (available <= 0) continue
+        admittedHecmLineIds.add(account.id)
         coordinatedHecmAccounts.push(account)
         coordinatedHecmCapacity += available
       }
