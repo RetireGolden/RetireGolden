@@ -231,11 +231,13 @@ export const socialSecurityRecords = {
     effectiveThrough: null,
     verifiedOn: '2026-08-04',
     implementedBy: [
+      'packages/engine/src/projection/internal/annualSocialSecurity.ts',
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/params/data/year2026.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/params/data/year2026.ts#year2026',
+      'packages/engine/src/projection/internal/annualSocialSecurity.ts#annualSocialSecurity',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
@@ -262,10 +264,12 @@ export const socialSecurityRecords = {
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
     implementedBy: [
+      'packages/engine/src/projection/internal/annualSocialSecurity.ts',
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/socialSecurity/claimFactor.ts',
     ],
     implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualSocialSecurity.ts#annualSocialSecurity',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/socialSecurity/claimFactor.ts#spousalBenefitFactor',
     ],
@@ -406,10 +410,12 @@ export const socialSecurityRecords = {
     verifiedOn: '2026-08-26',
     implementedBy: [
       'packages/engine/src/model/plan.ts',
+      'packages/engine/src/projection/internal/annualSocialSecurity.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/model/plan.ts#socialSecurityIncomeSchema',
+      'packages/engine/src/projection/internal/annualSocialSecurity.ts#annualSocialSecurity',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
@@ -490,10 +496,12 @@ export const socialSecurityRecords = {
     verifiedOn: '2026-08-26',
     implementedBy: [
       'packages/engine/src/model/plan.ts',
+      'packages/engine/src/projection/internal/annualSocialSecurity.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/model/plan.ts#socialSecurityIncomeSchema',
+      'packages/engine/src/projection/internal/annualSocialSecurity.ts#annualSocialSecurity',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
@@ -869,8 +877,12 @@ export const socialSecurityRecords = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-26',
-    implementedBy: ['packages/engine/src/socialSecurity/survivorBenefit.ts'],
+    implementedBy: [
+      'packages/engine/src/projection/internal/annualSocialSecurity.ts',
+      'packages/engine/src/socialSecurity/survivorBenefit.ts',
+    ],
     implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualSocialSecurity.ts#annualSocialSecurity',
       'packages/engine/src/socialSecurity/survivorBenefit.ts#survivorBenefitMonthly',
     ],
   },
@@ -902,8 +914,12 @@ export const socialSecurityRecords = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-26',
-    implementedBy: ['packages/engine/src/projection/simulate.ts'],
+    implementedBy: [
+      'packages/engine/src/projection/internal/annualSocialSecurity.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
     implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualSocialSecurity.ts#annualSocialSecurity',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
@@ -948,10 +964,12 @@ export const socialSecurityRecords = {
     effectiveThrough: null,
     verifiedOn: '2026-08-27',
     implementedBy: [
+      'packages/engine/src/projection/internal/annualSocialSecurity.ts',
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/socialSecurity/claimFactor.ts',
     ],
     implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualSocialSecurity.ts#annualSocialSecurity',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/socialSecurity/claimFactor.ts#claimFactor',
     ],
@@ -978,8 +996,12 @@ export const socialSecurityRecords = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-27',
-    implementedBy: ['packages/engine/src/projection/simulate.ts'],
+    implementedBy: [
+      'packages/engine/src/projection/internal/annualSocialSecurity.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
     implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualSocialSecurity.ts#annualSocialSecurity',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
@@ -1025,11 +1047,13 @@ export const socialSecurityRecords = {
     verifiedOn: '2026-08-27',
     implementedBy: [
       'packages/engine/src/model/plan.ts',
+      'packages/engine/src/projection/internal/annualSocialSecurity.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/model/plan.ts#socialSecurityIncomeSchema',
       'packages/engine/src/model/plan.ts#wagesIncomeSchema',
+      'packages/engine/src/projection/internal/annualSocialSecurity.ts#annualSocialSecurity',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
@@ -1244,9 +1268,11 @@ export const socialSecurityRecords = {
     verifiedOn: '2026-08-27',
     implementedBy: [
       'packages/engine/src/socialSecurity/familyMaximum.ts',
+      'packages/engine/src/projection/internal/annualSocialSecurity.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualSocialSecurity.ts#annualSocialSecurity',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/socialSecurity/familyMaximum.ts#capAuxiliaryForFamilyMaximum',
       'packages/engine/src/socialSecurity/familyMaximum.ts#familyMaximumMonthlyFromPia',
@@ -1288,9 +1314,11 @@ export const socialSecurityRecords = {
     verifiedOn: '2026-08-27',
     implementedBy: [
       'packages/engine/src/socialSecurity/familyMaximum.ts',
+      'packages/engine/src/projection/internal/annualSocialSecurity.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualSocialSecurity.ts#annualSocialSecurity',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/socialSecurity/familyMaximum.ts#capAuxiliaryForFamilyMaximum',
     ],
@@ -1392,10 +1420,12 @@ export const socialSecurityRecords = {
     implementedBy: [
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/socialSecurity/disability.ts',
+      'packages/engine/src/projection/internal/annualSocialSecurity.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/model/plan.ts#socialSecurityIncomeSchema',
+      'packages/engine/src/projection/internal/annualSocialSecurity.ts#annualSocialSecurity',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/socialSecurity/disability.ts#ssdiSuspendedBySga',
     ],
@@ -1437,10 +1467,12 @@ export const socialSecurityRecords = {
     implementedBy: [
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/socialSecurity/disability.ts',
+      'packages/engine/src/projection/internal/annualSocialSecurity.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/model/plan.ts#socialSecurityIncomeSchema',
+      'packages/engine/src/projection/internal/annualSocialSecurity.ts#annualSocialSecurity',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/socialSecurity/disability.ts#ssdiSuspendedBySga',
     ],
@@ -1545,9 +1577,11 @@ export const socialSecurityRecords = {
     verifiedOn: '2026-08-27',
     implementedBy: [
       'packages/engine/src/socialSecurity/disability.ts',
+      'packages/engine/src/projection/internal/annualSocialSecurity.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualSocialSecurity.ts#annualSocialSecurity',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/socialSecurity/disability.ts#inSsdiWindow',
     ],
@@ -1588,10 +1622,12 @@ export const socialSecurityRecords = {
     verifiedOn: '2026-08-27',
     implementedBy: [
       'packages/engine/src/model/plan.ts',
+      'packages/engine/src/projection/internal/annualSocialSecurity.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/model/plan.ts#socialSecurityIncomeSchema',
+      'packages/engine/src/projection/internal/annualSocialSecurity.ts#annualSocialSecurity',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
@@ -1631,9 +1667,11 @@ export const socialSecurityRecords = {
     verifiedOn: '2026-08-27',
     implementedBy: [
       'packages/engine/src/socialSecurity/disability.ts',
+      'packages/engine/src/projection/internal/annualSocialSecurity.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualSocialSecurity.ts#annualSocialSecurity',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/socialSecurity/disability.ts#ssdiMonthlyBenefit',
     ],
@@ -1802,10 +1840,12 @@ export const socialSecurityRecords = {
     verifiedOn: '2026-08-03',
     implementedBy: [
       'packages/engine/src/params/data/year2026.ts',
+      'packages/engine/src/projection/internal/annualSocialSecurity.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/params/data/year2026.ts#year2026',
+      'packages/engine/src/projection/internal/annualSocialSecurity.ts#annualSocialSecurity',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
@@ -1839,10 +1879,12 @@ export const socialSecurityRecords = {
     implementedBy: [
       'packages/engine/src/params/data/year2026.ts',
       'packages/engine/src/socialSecurity/disability.ts',
+      'packages/engine/src/projection/internal/annualSocialSecurity.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/params/data/year2026.ts#year2026',
+      'packages/engine/src/projection/internal/annualSocialSecurity.ts#annualSocialSecurity',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/socialSecurity/disability.ts#ssdiSuspendedBySga',
     ],

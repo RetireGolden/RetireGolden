@@ -14,6 +14,7 @@
  *   I  per-entity published facts
  *   J  annual expense boundaries
  *   K  annual SEPP distributions
+ *   L  annual Social Security pass
  *   S  shared: whole-corpus holes found by measurement (see `blockS`)
  *
  * A, B, C and E are the earlier "simulate batch" extraction. Block D's phase
@@ -201,6 +202,18 @@ function pension(id, extra = {}) {
 
 function wages(id, personId, annualGross, extra = {}) {
   return { type: 'wages', id, personId, annualGross, endAge: null, realGrowthPct: 0, ...extra }
+}
+
+function socialSecurity(id, personId, piaMonthly, claimYears, extra = {}) {
+  return {
+    type: 'socialSecurity',
+    id,
+    personId,
+    piaMonthly,
+    earnings: null,
+    claimAge: { years: claimYears, months: 0 },
+    ...extra,
+  }
 }
 
 /** 50/50 US stocks / bonds, rebalanced annually — drifts, so turnover is real. */
@@ -1393,6 +1406,354 @@ function blockK() {
 }
 
 // ---------------------------------------------------------------------------
+// L — annual Social Security pass
+// ---------------------------------------------------------------------------
+
+function blockL() {
+  const out = []
+
+  {
+    // Three payable streams for one person make the left-to-right benefit and
+    // publication folds observable. The two $0.50 PIAs are individually below
+    // the ULP after the huge stream but cross it when pre-summed. All three
+    // claim midyear; a fixed COLA and a later haircut exercise both annual
+    // scalars. The unresolved fourth stream must still publish an empty row.
+    const plan = singlePersonPlan({ dob: '1964-06-15', planningAge: 75 })
+    plan.assumptions.ssCola = { mode: 'fixed', annualPct: 0.125 }
+    plan.assumptions.ssHaircut = { fromYear: START_YEAR + 1, cutPct: 17.5 }
+    plan.accounts = [cash('ss-own-cash', 200_000_000_000_000_000)]
+    plan.incomes = [
+      {
+        type: 'recurring',
+        id: 'ss-own-non-ss-skip',
+        label: 'non-SS loop sentinel',
+        annualAmount: 1,
+        startYear: START_YEAR,
+        endYear: START_YEAR + 2,
+        inflationAdjusted: false,
+        taxTreatment: 'none',
+      },
+      socialSecurity('ss-own-z-huge', 'p1', 10_000_000_000_000_000, 62, {
+        claimAge: { years: 62, months: 6 },
+      }),
+      socialSecurity('ss-own-duplicate-small', 'p1', 0.5, 62, {
+        claimAge: { years: 62, months: 6 },
+      }),
+      socialSecurity('ss-own-duplicate-small', 'p1', 0.5, 62, {
+        claimAge: { years: 62, months: 6 },
+      }),
+      socialSecurity('ss-own-unresolved', 'p1', null, 62, {
+        claimAge: { years: 62, months: 6 },
+      }),
+    ]
+    out.push(
+      member(
+        'l1-ownOrderedFpPublication',
+        'L: ordered same-person own benefits and duplicate-ID stream publication, midyear claim, fixed COLA, haircut transition, unresolved empty row',
+        plan,
+        { horizonEndYear: START_YEAR + 2 },
+      ),
+    )
+  }
+
+  {
+    // Both 70-year-olds claim at the age-70 ceiling. The low earner keeps their own
+    // delayed benefit plus only the room remaining under the high worker's
+    // family maximum. Stream order is deliberately high then low, not person
+    // order; matching-inflation COLA changes the second year's exact fold.
+    const plan = couplePlan({
+      p1Dob: '1956-06-15',
+      p2Dob: '1956-06-15',
+      p1PlanningAge: 85,
+      p2PlanningAge: 85,
+    })
+    plan.assumptions.inflationPct = 3.125
+    plan.assumptions.ssCola = { mode: 'matchInflation', annualPct: 9.99 }
+    plan.accounts = [cash('ss-spousal-cash', 5_000_000)]
+    plan.incomes = [
+      socialSecurity('ss-spousal-z-high', 'p2', 1_000, 70, {
+        claimAge: { years: 70, months: 0 },
+      }),
+      socialSecurity('ss-spousal-a-low', 'p1', 100, 70, {
+        claimAge: { years: 70, months: 0 },
+      }),
+    ]
+    out.push(
+      member(
+        'l2-currentSpouseFamilyMaximum',
+        'L: current-spouse age-70 top-up, worker family-maximum cap, high/low stream order and match-inflation COLA',
+        plan,
+        { horizonEndYear: START_YEAR + 1 },
+      ),
+    )
+  }
+
+  {
+    // p2 is already deceased in the first projected year, but their stream is
+    // still computed as the survivor anchor and published not-payable. p1's
+    // survivor step-up is fully withheld while working, then the accumulated
+    // whole months are credited at FRA when wages stop.
+    const plan = couplePlan({
+      p1Dob: '1964-06-15',
+      p2Dob: '1959-06-15',
+      p1PlanningAge: 90,
+      p2PlanningAge: 65,
+      p1RetirementAge: 67,
+    })
+    plan.accounts = [cash('ss-survivor-cash', 5_000_000)]
+    plan.incomes = [
+      wages('ss-survivor-wages', 'p1', 200_000),
+      socialSecurity('ss-survivor-sibling-own', 'p1', 0, 62),
+      socialSecurity('ss-survivor-a-own', 'p1', 1_000, 62),
+      socialSecurity('ss-survivor-z-deceased', 'p2', 3_000, 62),
+    ]
+    out.push(
+      member(
+        'l3-survivorWithholdingAndCredit',
+        'L: deceased computation anchor, early survivor step-up, sibling publication zeroing, living/dead publication, full earnings withholding and FRA month credit',
+        plan,
+        { startYear: START_YEAR - 1, horizonEndYear: START_YEAR + 5 },
+      ),
+    )
+  }
+
+  {
+    // The resolved own stream is successively beaten by an unresolved-PIA
+    // divorced-spousal stream and then an unresolved-PIA former-spouse survivor
+    // stream. The final low former-spouse candidate does not beat the survivor;
+    // an ineligible short-marriage row yields no best benefit at all. This also
+    // exercises sibling publication zeroing and both marital source tags.
+    const plan = singlePersonPlan({ dob: '1964-07-01', planningAge: 85 })
+    plan.accounts = [cash('ss-former-cash', 2_000_000)]
+    plan.incomes = [
+      socialSecurity('ss-former-own', 'p1', 800, 62, {
+        claimAge: { years: 62, months: 6 },
+      }),
+      socialSecurity('ss-former-divorced', 'p1', null, 62, {
+        claimAge: { years: 62, months: 6 },
+        formerSpouses: [{
+          id: 'ss-ex-divorced',
+          relationship: 'divorced',
+          dob: '1958-01-01',
+          piaMonthly: 3_000,
+          marriageYears: 15,
+          remarriedAtAge: null,
+        }],
+      }),
+      socialSecurity('ss-former-survivor', 'p1', null, 62, {
+        claimAge: { years: 62, months: 6 },
+        formerSpouses: [{
+          id: 'ss-ex-deceased',
+          relationship: 'deceased',
+          dob: '1958-01-01',
+          piaMonthly: 4_000,
+          marriageYears: 15,
+          remarriedAtAge: 61,
+          deceasedClaimAge: { years: 62, months: 0 },
+        }],
+      }),
+      socialSecurity('ss-former-lower-candidate', 'p1', null, 62, {
+        claimAge: { years: 62, months: 6 },
+        formerSpouses: [{
+          id: 'ss-ex-lower',
+          relationship: 'divorced',
+          dob: '1958-01-01',
+          piaMonthly: 500,
+          marriageYears: 12,
+          remarriedAtAge: null,
+        }],
+      }),
+      socialSecurity('ss-former-ineligible', 'p1', null, 62, {
+        claimAge: { years: 62, months: 6 },
+        formerSpouses: [{
+          id: 'ss-ex-short-marriage',
+          relationship: 'divorced',
+          dob: '1958-01-01',
+          piaMonthly: 9_000,
+          marriageYears: 5,
+          remarriedAtAge: null,
+        }],
+      }),
+      socialSecurity('ss-former-future-claim', 'p1', null, 70, {
+        formerSpouses: [{
+          id: 'ss-ex-future-claim',
+          relationship: 'divorced',
+          dob: '1958-01-01',
+          piaMonthly: 9_000,
+          marriageYears: 15,
+          remarriedAtAge: null,
+        }],
+      }),
+    ]
+    out.push(
+      member(
+        'l4-formerSpouseReplacementMenu',
+        'L: sequential divorced/survivor replacements through unresolved streams, future/lower/no-best candidates and sibling publication zeroing',
+        plan,
+        { horizonEndYear: START_YEAR },
+      ),
+    )
+  }
+
+  {
+    // Both people are pre-onset in 2024 and enter SSDI in 2025. p1's wages
+    // exceed SGA and suspend only that benefit; p2 remains payable. At FRA the
+    // same full-PIA dollars convert to own-retirement and the SGA gate stands
+    // down, then remain payable in the first post-FRA year.
+    const plan = couplePlan({
+      p1Dob: '1960-06-15',
+      p2Dob: '1960-06-15',
+      p1PlanningAge: 80,
+      p2PlanningAge: 80,
+      p1RetirementAge: 67,
+      p2RetirementAge: null,
+    })
+    plan.accounts = [cash('ss-ssdi-cash', 2_000_000)]
+    plan.incomes = [
+      wages('ss-ssdi-wages', 'p1', 60_000),
+      socialSecurity('ss-ssdi-z-suspended', 'p1', 2_000, 67, {
+        disability: { onsetAge: 65 },
+      }),
+      socialSecurity('ss-ssdi-a-paid', 'p2', 1_500, 67, {
+        disability: { onsetAge: 65 },
+      }),
+    ]
+    out.push(
+      member(
+        'l5-ssdiOnsetSgaAndFraConversion',
+        'L: SSDI pre-onset, paid and SGA-suspended workers, FRA source conversion, first post-FRA year and no retirement earnings test',
+        plan,
+        { startYear: START_YEAR - 2, horizonEndYear: START_YEAR + 2 },
+      ),
+    )
+  }
+
+  {
+    // A month-six age-62 claim is fully withheld for several pre-FRA years;
+    // only payable months can be credited in the first year. Wages continue
+    // through the FRA calendar year so the distinct $1-for-$3 threshold arm
+    // executes, then stop in the first post-FRA year.
+    const plan = singlePersonPlan({
+      dob: '1964-06-15',
+      planningAge: 80,
+      retirementAge: 68,
+    })
+    plan.accounts = [cash('ss-earnings-cash', 2_000_000)]
+    plan.incomes = [
+      wages('ss-earnings-wages', 'p1', 200_000),
+      socialSecurity('ss-earnings-claim', 'p1', 3_000, 62, {
+        claimAge: { years: 62, months: 6 },
+      }),
+    ]
+    out.push(
+      member(
+        'l6-earningsTestFraLifecycle',
+        'L: partial first claim year, below-FRA and FRA-year earnings tests, payable-month credit cap, credited claim factor and post-FRA stand-down',
+        plan,
+        { horizonEndYear: START_YEAR + 6 },
+      ),
+    )
+  }
+
+  {
+    // The high earner's SSDI gate is valid but still pre-onset, so their
+    // resolved stream supplies the current-spouse comparison PIA without an
+    // actual-monthly cache entry. That makes the worker-benefit fallback
+    // observable. Two resolved low-earner streams make replacement zero the
+    // non-gate sibling while publishing the spousal amount on the last stream.
+    const plan = couplePlan({
+      p1Dob: '1964-06-15',
+      p2Dob: '1964-06-15',
+      p1PlanningAge: 85,
+      p2PlanningAge: 85,
+    })
+    plan.accounts = [cash('ss-spousal-fallback-cash', 2_000_000)]
+    plan.incomes = [
+      socialSecurity('ss-spousal-fallback-sibling', 'p1', 0, 62, {
+        disability: { onsetAge: 65 },
+      }),
+      socialSecurity('ss-spousal-fallback-worker', 'p2', 1_000, 62, {
+        disability: { onsetAge: 65 },
+      }),
+      socialSecurity('ss-spousal-fallback-gate', 'p1', 100, 62, {
+        disability: { onsetAge: 65 },
+      }),
+    ]
+    out.push(
+      member(
+        'l7-currentSpouseWorkerFallback',
+        'L: current-spouse worker actual-monthly fallback from a pre-onset SSDI gate and resolved sibling publication zeroing',
+        plan,
+        { horizonEndYear: START_YEAR },
+      ),
+    )
+  }
+
+  {
+    // With no resolved own PIA, the former-spouse candidate starts from zero.
+    // Wages then fully withhold it, and the missing resolved gate makes the
+    // earnings-credit approximation use its explicit 12-month fallback.
+    const plan = singlePersonPlan({
+      dob: '1964-06-15',
+      planningAge: 85,
+      retirementAge: 67,
+    })
+    plan.accounts = [cash('ss-former-only-cash', 2_000_000)]
+    plan.incomes = [
+      wages('ss-former-only-wages', 'p1', 200_000),
+      socialSecurity('ss-former-only-benefit', 'p1', null, 62, {
+        formerSpouses: [{
+          id: 'ss-former-only-ex',
+          relationship: 'divorced',
+          dob: '1958-01-01',
+          piaMonthly: 3_000,
+          marriageYears: 15,
+          remarriedAtAge: null,
+        }],
+      }),
+    ]
+    out.push(
+      member(
+        'l8-formerOnlyMissingOwnGate',
+        'L: former-spouse benefit without a resolved own gate, zero baseline, full withholding and 12-month earnings-credit fallback',
+        plan,
+        { horizonEndYear: START_YEAR },
+      ),
+    )
+  }
+
+  {
+    // The survivor is pre-onset on a valid SSDI stream, so it supplies a gate
+    // without own dollars. The first year is pre-claim and the next is payable:
+    // together they exercise both the survivor payable-month rejection and the
+    // missing-own baseline before the deceased worker's benefit replaces it.
+    const plan = couplePlan({
+      p1Dob: '1964-06-15',
+      p2Dob: '1959-06-15',
+      p1PlanningAge: 85,
+      p2PlanningAge: 65,
+    })
+    plan.accounts = [cash('ss-survivor-gate-cash', 2_000_000)]
+    plan.incomes = [
+      socialSecurity('ss-survivor-gate', 'p1', 500, 62, {
+        disability: { onsetAge: 65 },
+      }),
+      socialSecurity('ss-survivor-gate-deceased', 'p2', 3_000, 62),
+    ]
+    out.push(
+      member(
+        'l9-survivorPreOnsetGate',
+        'L: deceased survivor anchor with a pre-onset SSDI gate, pre-claim rejection and missing-own replacement baseline',
+        plan,
+        { startYear: START_YEAR - 1, horizonEndYear: START_YEAR },
+      ),
+    )
+  }
+
+  return out
+}
+
+// ---------------------------------------------------------------------------
 // S — shared blind spots, owned by no single block
 // ---------------------------------------------------------------------------
 
@@ -1472,6 +1833,7 @@ export async function blockMembers() {
     ...blockI(),
     ...blockJ(),
     ...blockK(),
+    ...blockL(),
     ...blockS(),
   ]
 }
