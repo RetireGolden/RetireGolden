@@ -1579,6 +1579,8 @@ try {
   writeFileSync(join(work, 'smoke.mjs'), smokeScript)
   execFileSync(process.execPath, ['smoke.mjs'], { cwd: work, stdio: 'inherit' })
 
+  const ts = require('typescript')
+
   // Types are erased, so every import above would pass against declarations
   // that resolve to nothing. This compiles a consumer-shaped file against the
   // installed tarball with the repo's own TypeScript — no registry fetch, so
@@ -1586,7 +1588,13 @@ try {
   // published option's payload can actually be NAMED by the consumer it is
   // handed to, rather than merely received.
   writeFileSync(join(work, 'types-smoke.ts'), typesSmokeSource)
-  writeFileSync(join(work, 'tsconfig.smoke.json'), JSON.stringify({
+  // Declared once, then used twice: `tsc` compiles under it here, and the
+  // language service below reads the same object through
+  // `parseJsonConfigFileContent`. A hand-rolled second copy could drift into a
+  // program that cannot resolve the packed subpath — and a program that
+  // resolves nothing reports no deprecation either, which would trip the
+  // marker check below and blame a perfectly healthy shim.
+  const smokeTsconfig = {
     compilerOptions: {
       target: 'es2023',
       lib: ['ES2023'],
@@ -1599,7 +1607,8 @@ try {
       noUnusedLocals: true,
     },
     files: ['types-smoke.ts'],
-  }))
+  }
+  writeFileSync(join(work, 'tsconfig.smoke.json'), JSON.stringify(smokeTsconfig))
   execFileSync(
     process.execPath,
     [require.resolve('typescript/bin/tsc'), '-p', 'tsconfig.smoke.json'],
@@ -1618,24 +1627,17 @@ try {
   // re-export and every other check in this file would stay green while the
   // marker went dark for every consumer. This asks the language service the
   // question a consumer's editor asks, against the packed declarations.
-  const ts = require('typescript')
-  const smokeEntry = join(work, 'types-smoke.ts')
+  const smokeCompilation = ts.parseJsonConfigFileContent(smokeTsconfig, ts.sys, work)
+  const smokeEntry = smokeCompilation.fileNames[0]
   const languageServiceHost = {
-    getScriptFileNames: () => [smokeEntry],
+    getScriptFileNames: () => smokeCompilation.fileNames,
     getScriptVersion: () => '1',
     getScriptSnapshot: (name) => {
       const contents = ts.sys.readFile(name)
       return contents === undefined ? undefined : ts.ScriptSnapshot.fromString(contents)
     },
     getCurrentDirectory: () => work,
-    getCompilationSettings: () => ({
-      target: ts.ScriptTarget.ES2023,
-      module: ts.ModuleKind.NodeNext,
-      moduleResolution: ts.ModuleResolutionKind.NodeNext,
-      strict: true,
-      noEmit: true,
-      skipLibCheck: true,
-    }),
+    getCompilationSettings: () => smokeCompilation.options,
     getDefaultLibFileName: (options) => ts.getDefaultLibFilePath(options),
     fileExists: ts.sys.fileExists,
     readFile: ts.sys.readFile,
@@ -1643,9 +1645,8 @@ try {
     directoryExists: ts.sys.directoryExists,
     getDirectories: ts.sys.getDirectories,
   }
-  const suggestions = ts
-    .createLanguageService(languageServiceHost, ts.createDocumentRegistry())
-    .getSuggestionDiagnostics(smokeEntry)
+  const languageService = ts.createLanguageService(languageServiceHost, ts.createDocumentRegistry())
+  const suggestions = languageService.getSuggestionDiagnostics(smokeEntry)
   const smokeText = readFileSync(smokeEntry, 'utf8')
   const deprecations = suggestions.filter((diagnostic) => diagnostic.reportsDeprecated)
   // types-smoke.ts imports the same symbol from both subpaths. Only the
@@ -1654,6 +1655,23 @@ try {
   // would be telling consumers to stop using it.
   const flagged = new Set(deprecations.map((d) => smokeText.slice(d.start, d.start + d.length)))
   if (!flagged.has('deprecatedFlatTax')) {
+    // A language-service program that failed to build reports no deprecation
+    // either, so that state is indistinguishable from a dropped marker unless
+    // it is asked about separately. `tsc` already compiled this same file
+    // under these same options, so this should be unreachable — but if the
+    // service ever disagrees with the compiler, say which failure this is
+    // instead of accusing the shim of something it did not do.
+    const semantic = languageService.getSemanticDiagnostics(smokeEntry)
+    if (semantic.length > 0) {
+      throw new Error(
+        'the pack-smoke language-service program did not compile, so its silence about ' +
+          'deprecation proves nothing about the shim. Fix this first; the marker check ' +
+          'below cannot run until the consumer program resolves. Semantic errors: ' +
+          semantic
+            .map((diagnostic) => ts.flattenDiagnosticMessageText(diagnostic.messageText, ' '))
+            .join(' | '),
+      )
+    }
     throw new Error(
       'the deprecated projection/flatTax subpath no longer REPORTS its deprecation to consumers. ' +
         'The packed .d.ts may still contain the tag text — that is not the same thing. Either the ' +

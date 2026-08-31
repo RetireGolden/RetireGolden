@@ -14,19 +14,23 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   function object, not a copy. No consumer breaks. All 89 in-repo importers (85
   engine test files, 4 planner-UI test files) moved to
   `@retiregolden/engine/testing/flatTax`, leaving the old subpath with no
-  in-repo consumers — it exists purely for external code pinned to it. The
-  arithmetic is untouched and no fixture's expected dollar changed. The alias
-  shape is deliberate: TypeScript does not report a `@deprecated` tag attached
-  to a bare `export { x } from` re-export, so that shape would have shipped a
-  marker no consumer ever sees; the alias reports at both the import and the
-  call site. Pack-smoke now proves both subpaths resolve, yield the same
-  function object, and stay nameable from a compiled consumer, so the
-  compatibility promise is enforced rather than merely commented. Removal is
-  deferred to a future major and is **not** scheduled;
-  when it happens it must be done by adding an exact `"./projection/flatTax":
-  null` exports key, which wins over the `./projection/*` pattern — never by
-  deleting that wildcard, which would take down every other projection subpath
-  including `projection/simulate`.
+  in-repo product or test consumers — the only in-repo code that still names it
+  is the pack-smoke guard that keeps it honest; it exists for external code
+  pinned to it. The arithmetic is untouched and no fixture's expected dollar
+  changed. The alias shape is deliberate: TypeScript does not report a
+  `@deprecated` tag attached to a bare `export { x } from` re-export, so that
+  shape would have shipped a marker no consumer ever sees; the alias reports at
+  both the import and the call site. Pack-smoke now proves both subpaths
+  resolve, yield the same function object, stay nameable from a compiled
+  consumer, and that the deprecation is actually reported to that consumer by
+  the TypeScript language service — so the alias shape above is enforced rather
+  than merely explained, and the compatibility promise with it. Removal is
+  deferred to a future major and is **not** scheduled; when it happens it must
+  be done by adding an exact `"./projection/flatTax": null` exports key, which
+  wins over the `./projection/*` pattern — never by deleting that wildcard,
+  which would take down every other projection subpath including
+  `projection/simulate` — and the pack-smoke guard above has to come out in the
+  same change, since it consumes the subpath it protects.
 - Corrected stale roadmap framing that outlived the work it described. The stub
   called itself a "V1 placeholder" awaiting replacement "in roadmap phase V2",
   and the `TaxCalculator` interface said the same. The real federal engine
