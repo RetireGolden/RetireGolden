@@ -70,12 +70,19 @@
  * kind carries a `personId` (`DOCS/features/household-map.md`) — there is no
  * person to gate it against. Wages, which do, gate on their own owner.
  *
- * ONE ASYMMETRY REMAINS, AND IT IS NOT SETTLED: a recurring stream may be
- * inflation-adjusted, a one-time stream's `amount` never is.
- * `oneTimeIncomeSchema` carries no `inflationAdjusted` election at all, while
- * its mirror image `oneTimeGoalSchema.amount` is documented as today's dollars
- * and IS inflated to the goal year. Tracked as its own decision rather than
- * settled here; see DOCS/features/README.md §3.
+ * INFLATION: BOTH KINDS CARRY THE SAME ELECTION, and until plan schema v5 only
+ * one did. A one-time `amount` was never inflated, whatever year it landed in,
+ * while its mirror image on the spending side — `oneTimeGoalSchema.amount` —
+ * was documented as today's dollars and WAS inflated to the goal year. A $100k
+ * windfall and a $100k goal in the same future year were not the same real
+ * amount, and the editor's `Amount` field said nothing either way.
+ *
+ * `oneTimeIncomeSchema.inflationAdjusted` closes that, and the two defaults
+ * around it differ ON PURPOSE. `migratePlanV4ToV5` writes FALSE onto every
+ * stored plan, the only value that reprojects it to the numbers its owner last
+ * saw; the editor authors new streams TRUE, matching how the same user enters a
+ * one-time goal. Neither default is right for the other's case, which is why
+ * the field is required rather than optional. See DOCS/features/README.md §3.
  *
  * THREE RULES THAT ARE EASY TO GET WRONG IN THE SAFE-LOOKING DIRECTION:
  *
@@ -247,13 +254,14 @@ export function otherIncomeStreams(
       })
     } else if (stream.type === 'oneTime') {
       if (stream.year !== year) continue
+      const amount = stream.amount * (stream.inflationAdjusted ? inflFactor : 1)
       rows.push({
         kind: 'oneTime',
-        amount: stream.amount,
+        amount,
         taxTreatment: stream.taxTreatment,
         record: {
           incomeStreamId: stream.id,
-          amount: stream.amount,
+          amount,
           taxTreatment: stream.taxTreatment,
         },
       })

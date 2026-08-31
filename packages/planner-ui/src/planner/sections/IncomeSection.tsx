@@ -27,7 +27,10 @@ function makeIncome(type: IncomeStream['type'], personId: string): IncomeStream 
     case 'recurring':
       return { type, id: newId(), label: 'Rental income', annualAmount: 0, startYear: null, endYear: null, inflationAdjusted: true, taxTreatment: 'ordinary' }
     case 'oneTime':
-      return { type, id: newId(), label: 'Inheritance', year: new Date().getFullYear() + 1, amount: 0, taxTreatment: 'none' }
+      // `inflationAdjusted: true` on a NEWLY authored stream, matching how the
+      // same person enters a one-time spending goal. Plans migrated from schema
+      // v4 get `false` instead, which is what they already projected.
+      return { type, id: newId(), label: 'Inheritance', year: new Date().getFullYear() + 1, amount: 0, inflationAdjusted: true, taxTreatment: 'none' }
   }
 }
 
@@ -92,7 +95,11 @@ function IncomeFields({ stream, index }: { stream: IncomeStream; index: number }
       return (
         <div className="form-grid">
           <TextField label="Label" value={stream.label} onCommit={(v) => set('label', v || 'Income')} />
-          <MoneyField label="Annual amount" value={stream.annualAmount} onCommit={(v) => set('annualAmount', v ?? 0)} />
+          <MoneyField
+            label={stream.inflationAdjusted ? "Annual amount (today's $)" : 'Annual amount (fixed $)'}
+            value={stream.annualAmount}
+            onCommit={(v) => set('annualAmount', v ?? 0)}
+          />
           <NumberField label="Start year" value={stream.startYear} allowNull min={1900} max={2200} onCommit={(v) => set('startYear', v === null ? null : Math.round(v))} />
           <NumberField label="End year" value={stream.endYear} allowNull min={1900} max={2200} onCommit={(v) => set('endYear', v === null ? null : Math.round(v))} />
           <SelectField
@@ -112,7 +119,11 @@ function IncomeFields({ stream, index }: { stream: IncomeStream; index: number }
         <div className="form-grid">
           <TextField label="Label" value={stream.label} onCommit={(v) => set('label', v || 'Event')} />
           <NumberField label="Year" value={stream.year} min={1900} max={2200} onCommit={(v) => set('year', Math.round(v ?? new Date().getFullYear()))} />
-          <MoneyField label="Amount" value={stream.amount} onCommit={(v) => set('amount', v ?? 0)} />
+          <MoneyField
+            label={stream.inflationAdjusted ? "Amount (today's $)" : `Amount (${stream.year} $)`}
+            value={stream.amount}
+            onCommit={(v) => set('amount', v ?? 0)}
+          />
           <SelectField
             label="Tax treatment"
             value={stream.taxTreatment}
@@ -122,6 +133,12 @@ function IncomeFields({ stream, index }: { stream: IncomeStream; index: number }
               { value: 'capitalGain', label: 'Capital gain' },
             ]}
             onCommit={(v) => set('taxTreatment', v)}
+          />
+          <CheckboxField
+            label="Inflation-adjusted"
+            help="On: you entered the amount in today's dollars and the plan grows it to the event year. Off: you entered it in that year's dollars and the plan uses it as written. Plans saved before this setting existed have it off, so their numbers do not change."
+            value={stream.inflationAdjusted}
+            onCommit={(v) => set('inflationAdjusted', v)}
           />
         </div>
       )

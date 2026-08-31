@@ -52,10 +52,12 @@ import {
   planV1JsonSchema,
   planV2JsonSchema,
   planV3JsonSchema,
+  planV4JsonSchema,
 } from './index.js'
 // The shipped offline artifact, imported through the bundler as a plain module so
 // this parity check needs no node fs types (keeps the engine's pure typing).
-import shippedPlanJsonSchema from '../../schema/plan.v4.json' with { type: 'json' }
+import shippedPlanJsonSchema from '../../schema/plan.v5.json' with { type: 'json' }
+import shippedPlanV4JsonSchema from '../../schema/plan.v4.json' with { type: 'json' }
 import shippedPlanV1JsonSchema from '../../schema/plan.v1.json' with { type: 'json' }
 import shippedPlanV2JsonSchema from '../../schema/plan.v2.json' with { type: 'json' }
 import shippedPlanV3JsonSchema from '../../schema/plan.v3.json' with { type: 'json' }
@@ -93,7 +95,7 @@ function kitchenSinkPlanRaw(): Record<string, unknown> {
     weights: { usStocks: 60, intlStocks: 20, bonds: 15, cash: 5 },
   }
   return {
-    schemaVersion: 4,
+    schemaVersion: 5,
     id: 'plan-kitchen',
     name: 'Kitchen sink',
     origin: 'user',
@@ -305,7 +307,7 @@ function kitchenSinkPlanRaw(): Record<string, unknown> {
         claimAge: { years: 67, months: 0 },
       },
       { type: 'recurring', id: 'inc-rec', label: 'Rental', annualAmount: 18000, startYear: null, endYear: null, inflationAdjusted: true, taxTreatment: 'ordinary' },
-      { type: 'oneTime', id: 'inc-one', label: 'Inheritance', year: 2031, amount: 75000, taxTreatment: 'capitalGain' },
+      { type: 'oneTime', id: 'inc-one', label: 'Inheritance', year: 2031, inflationAdjusted: false, amount: 75000, taxTreatment: 'capitalGain' },
     ],
     incomeFloor: {
       ladders: [
@@ -448,7 +450,7 @@ function kitchenSinkPlanRaw(): Record<string, unknown> {
  */
 function sparseAuthoringPlanRaw(): Record<string, unknown> {
   return {
-    schemaVersion: 4,
+    schemaVersion: 5,
     id: 'sparse',
     name: 'Sparse authoring plan',
     createdAtIso: '2026-01-01T00:00:00.000Z',
@@ -522,7 +524,7 @@ function acceptedFixtures(): Array<[string, Plan]> {
 
 describe('planJsonSchema — version', () => {
   it('carries the plan schema version at the document root', () => {
-    expect(PLAN_SCHEMA_VERSION).toBe(4)
+    expect(PLAN_SCHEMA_VERSION).toBe(5)
     expect(planJsonSchema.properties.schemaVersion).toMatchObject({ const: PLAN_SCHEMA_VERSION })
     expect(planJsonSchema.$id).toBe(PLAN_SCHEMA_ID)
     expect(planJsonSchema.$id).toContain(`/v${PLAN_SCHEMA_VERSION}.json`)
@@ -541,6 +543,34 @@ describe('planJsonSchema — version', () => {
   it('keeps the historical v3 schema available under an explicit export', () => {
     expect(planV3JsonSchema.properties.schemaVersion).toMatchObject({ const: 3 })
     expect(planV3JsonSchema).toEqual(shippedPlanV3JsonSchema)
+  })
+
+  it('keeps the historical v4 schema available under an explicit export', () => {
+    expect(planV4JsonSchema.properties.schemaVersion).toMatchObject({ const: 4 })
+    expect(planV4JsonSchema).toEqual(shippedPlanV4JsonSchema)
+  })
+
+  // The one field v5 added, asserted on both sides of the boundary: a v4
+  // document's one-time income has no inflation election and a v5 document's
+  // requires one. A consumer authoring against the historical artifact must not
+  // silently acquire the new requirement.
+  it('adds the one-time inflation election in v5 and not before', () => {
+    const oneTime = (schema: typeof planJsonSchema): Record<string, unknown> => {
+      const variants = (schema.properties as Record<string, Record<string, unknown>>)['incomes']
+      const items = (variants!['items'] as Record<string, unknown>)['oneOf'] as Record<string, unknown>[]
+      const found = items.find(
+        (variant) =>
+          ((variant['properties'] as Record<string, Record<string, unknown>>)['type']?.['const']) === 'oneTime',
+      )
+      if (found === undefined) throw new Error('no oneTime income variant in the schema')
+      return found
+    }
+    const v4 = oneTime(planV4JsonSchema)
+    const v5 = oneTime(planJsonSchema)
+    expect(Object.keys(v4['properties'] as object)).not.toContain('inflationAdjusted')
+    expect(v4['required']).not.toContain('inflationAdjusted')
+    expect(Object.keys(v5['properties'] as object)).toContain('inflationAdjusted')
+    expect(v5['required']).toContain('inflationAdjusted')
   })
 
   it('keeps the zod-free PLAN_SCHEMA_VERSION in lockstep with the plan model', () => {
@@ -562,6 +592,7 @@ describe('schema barrel — zero-dependency data surface', () => {
         'planV1JsonSchema',
         'planV2JsonSchema',
         'planV3JsonSchema',
+        'planV4JsonSchema',
       ].sort(),
     )
     expect('generatePlanJsonSchema' in schemaBarrel).toBe(false)
@@ -668,7 +699,7 @@ describe('planJsonSchema — sync with planSchema', () => {
     expect(planJsonSchema).toEqual(generatePlanJsonSchema())
   })
 
-  it('the shipped schema/plan.v4.json equals the checked-in constant', () => {
+  it('the shipped schema/plan.v5.json equals the checked-in constant', () => {
     expect(shippedPlanJsonSchema).toEqual(planJsonSchema)
   })
 })

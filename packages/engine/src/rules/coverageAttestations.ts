@@ -258,6 +258,7 @@ export const COVERAGE_ATTESTATIONS: Readonly<Record<string, CoverageAttestation>
   'schema/plan.v2.generated.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: 'generated file' }),
   'schema/plan.v3.generated.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: 'generated file' }),
   'schema/plan.v4.generated.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: 'generated file' }),
+  'schema/plan.v5.generated.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-31', note: 'generated file' }),
   'schema/planSchemaMeta.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'socialSecurity/benefitFactor.ts': Object.freeze({ status: 'registered', sweptOn: '2026-08-24', note: null }),
   'socialSecurity/claimFactor.ts': Object.freeze({ status: 'registered', sweptOn: '2026-08-29', note: 'Worker 62y0m-70y0m claim window registered under usc-42-402-worker-claim-window-62-to-70; DRC and early-reduction composition registered under cfr-20-404-313 and cfr-20-404-410 which now name the factor; spousal and ARF records already named it' }),

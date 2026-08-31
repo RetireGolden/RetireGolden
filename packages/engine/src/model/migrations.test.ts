@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import { createEmptyPlan } from './plan.js'
+import { createEmptyPlan, type Plan } from './plan.js'
+import { simulatePlan } from '../projection/simulate.js'
+import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import {
   applyScenarioPatchDocument,
   createScenarioPatch,
@@ -14,6 +16,7 @@ import {
   migratePlanV1ToV2,
   migratePlanV2ToV3,
   migratePlanV3ToV4,
+  migratePlanV4ToV5,
   type MigrationStep,
 } from './migrations.js'
 
@@ -636,10 +639,11 @@ describe('migratePlanToCurrent', () => {
       name: `${String(raw['name'])} plan`,
     })
     const step3to4: MigrationStep = (raw) => raw
+    const step4to5: MigrationStep = (raw) => raw
     const result = migratePlanToCurrent(
       old,
-      { 1: step1to2, 2: step2to3, 3: step3to4 },
-      4,
+      { 1: step1to2, 2: step2to3, 3: step3to4, 4: step4to5 },
+      5,
     )
     expect(result.ok).toBe(true)
     if (result.ok) expect(result.plan.name).toBe('Renamed plan plan')
@@ -712,7 +716,7 @@ describe('v1 -> v2 retirement-action migration', () => {
 
     expect(result.ok).toBe(true)
     if (result.ok) {
-      expect(result.plan.schemaVersion).toBe(4)
+      expect(result.plan.schemaVersion).toBe(5)
       expect(result.plan.strategies.retirementActions).toEqual([])
       expect(result.plan.strategies.withdrawalOrder).toEqual(scalarSnapshot['withdrawalOrder'])
       expect(result.plan.strategies.rothConversion).toEqual(scalarSnapshot['rothConversion'])
@@ -758,7 +762,7 @@ describe('v1 -> v2 retirement-action migration', () => {
     if (!parsedPatch.ok) return
     expect(parsedPatch.patch.base).toEqual({
       planId: migrated.plan.id,
-      planSchemaVersion: 4,
+      planSchemaVersion: 5,
       snapshotHash: scenarioPlanSnapshotHash(migrated.plan),
     })
 
@@ -1478,7 +1482,7 @@ describe('v2 -> v3 retirement-action eligibility facts migration', () => {
     const result = migratePlanToCurrent(raw)
     expect(result.ok).toBe(true)
     if (result.ok) {
-      expect(result.plan.schemaVersion).toBe(4)
+      expect(result.plan.schemaVersion).toBe(5)
       expect(result.plan).not.toHaveProperty('retirementActionEligibilityFacts')
     }
   })
@@ -1505,7 +1509,7 @@ describe('v2 -> v3 retirement-action eligibility facts migration', () => {
       const result = migratePlanToCurrent(raw)
       expect(result.ok).toBe(true)
       if (result.ok) {
-        expect(result.plan.schemaVersion).toBe(4)
+        expect(result.plan.schemaVersion).toBe(5)
         expect(result.plan).not.toHaveProperty(
           'retirementActionEligibilityFacts',
         )
@@ -1550,7 +1554,7 @@ describe('v2 -> v3 retirement-action eligibility facts migration', () => {
     if (!parsedPatch.ok) return
     expect(parsedPatch.patch.base).toEqual({
       planId: migrated.plan.id,
-      planSchemaVersion: 4,
+      planSchemaVersion: 5,
       snapshotHash: scenarioPlanSnapshotHash(migrated.plan),
     })
     const applied = applyScenarioPatchDocument(migrated.plan, parsedPatch.patch)
@@ -1577,7 +1581,7 @@ describe('v3 -> v4 retirement-action annual tax facts migration', () => {
     const result = migratePlanToCurrent(raw)
     expect(result.ok).toBe(true)
     if (result.ok) {
-      expect(result.plan.schemaVersion).toBe(4)
+      expect(result.plan.schemaVersion).toBe(5)
       expect(result.plan).not.toHaveProperty('retirementActionAnnualTaxFacts')
     }
   })
@@ -1600,9 +1604,183 @@ describe('v3 -> v4 retirement-action annual tax facts migration', () => {
       const result = migratePlanToCurrent(raw)
       expect(result.ok).toBe(true)
       if (result.ok) {
-        expect(result.plan.schemaVersion).toBe(4)
+        expect(result.plan.schemaVersion).toBe(5)
         expect(result.plan).not.toHaveProperty('retirementActionAnnualTaxFacts')
       }
     },
   )
+})
+
+describe('v4 -> v5 one-time income inflation election', () => {
+  /** A v4 document: one-time income streams carry no `inflationAdjusted`. */
+  function rawV4Plan(): Record<string, unknown> {
+    const current = createEmptyPlan({ newId: testIds, now: fixedNow })
+    const raw = JSON.parse(JSON.stringify(current)) as Record<string, unknown>
+    raw['schemaVersion'] = 4
+    raw['incomes'] = [
+      { type: 'wages', id: 'w1', personId: current.household.people[0]!.id, annualGross: 90_000, endAge: null, realGrowthPct: 0 },
+      { type: 'recurring', id: 'r1', label: 'Rental', annualAmount: 24_000, startYear: null, endYear: null, inflationAdjusted: true, taxTreatment: 'ordinary' },
+      { type: 'oneTime', id: 'o1', label: 'Inheritance', year: 2040, amount: 100_000, taxTreatment: 'none' },
+    ]
+    return raw
+  }
+
+  const oneTimeOf = (incomes: readonly unknown[]): Record<string, unknown> =>
+    incomes.find((i) => (i as Record<string, unknown>)['type'] === 'oneTime') as Record<string, unknown>
+
+  it('writes false onto a stored one-time stream and leaves the other kinds alone', () => {
+    const raw = rawV4Plan()
+    const before = JSON.parse(JSON.stringify(raw['incomes'])) as unknown[]
+    const migrated = migratePlanV4ToV5(raw)
+    const incomes = migrated['incomes'] as Record<string, unknown>[]
+    // FALSE, not true. This is the whole decision: it is the only value that
+    // reprojects a stored plan to the numbers its owner last saw, because
+    // before v5 a one-time amount was never inflated.
+    expect(oneTimeOf(incomes)['inflationAdjusted']).toBe(false)
+    // Nothing else moved, including the recurring stream's own election.
+    expect(incomes[0]).toEqual(before[0])
+    expect(incomes[1]).toEqual(before[1])
+    expect(raw['incomes']).toEqual(before) // pure: the input document is untouched
+  })
+
+  it('is a no-op on a document with nothing to migrate', () => {
+    const raw = rawV4Plan()
+    raw['incomes'] = [(raw['incomes'] as unknown[])[0]]
+    expect(migratePlanV4ToV5(raw)).toBe(raw) // identity, not a fresh equal object
+  })
+
+  it('does not overwrite an election that is already present', () => {
+    const raw = rawV4Plan()
+    oneTimeOf(raw['incomes'] as unknown[])['inflationAdjusted'] = true
+    expect(migratePlanV4ToV5(raw)).toBe(raw)
+  })
+
+  it('lands a v4 document on version 5 and parses', () => {
+    const result = migratePlanToCurrent(rawV4Plan())
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.plan.schemaVersion).toBe(5)
+    const stream = result.plan.incomes.find((i) => i.type === 'oneTime')!
+    expect(stream.type === 'oneTime' && stream.inflationAdjusted).toBe(false)
+  })
+
+  // The migration's PURPOSE, asserted against the PROJECTION rather than the
+  // document: a migrated plan must still project what it projected at v4. The
+  // authored default is checked in the same test from the same plan, so this
+  // cannot pass by the election being ignored altogether.
+  it('preserves a migrated plan’s projected one-time income, and inflates an authored one', () => {
+    const raw = rawV4Plan()
+    ;(raw['assumptions'] as Record<string, unknown>)['inflationPct'] = 3
+    const result = migratePlanToCurrent(raw)
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+
+    const project = (plan: Plan): number => {
+      const run = simulatePlan(plan, { startYear: 2026, taxCalculator: createFlatTaxCalculator(0) })
+      const year = run.years.find((y) => y.year === 2040)
+      if (year === undefined) throw new Error('the projection published no year 2040')
+      return year.incomes.oneTime
+    }
+
+    // Migrated: taken as entered, exactly as v4 projected it.
+    expect(project(result.plan)).toBe(100_000)
+
+    // The same plan carrying the election an AUTHOR would get instead: 14 years
+    // of 3% inflation, so strictly more, at the plan's own factor.
+    const authored: Plan = {
+      ...result.plan,
+      incomes: result.plan.incomes.map((i) => (i.type === 'oneTime' ? { ...i, inflationAdjusted: true } : i)),
+    }
+    expect(project(authored)).toBeCloseTo(100_000 * Math.pow(1.03, 2040 - 2026), 6)
+    expect(project(authored)).toBeGreaterThan(project(result.plan))
+  })
+
+  describe('stored scenarios', () => {
+    const envelope = (operations: unknown[]): Record<string, unknown> => ({
+      kind: 'retiregolden.scenario-patch',
+      version: 1,
+      base: { planId: 'plan-1', planSchemaVersion: 4, snapshotHash: 'fnv1a64:0000000000000000' },
+      title: 'Income edit',
+      rationale: null,
+      createdAtIso: '2026-07-23T00:00:00.000Z',
+      actor: { kind: 'user' },
+      operations,
+    })
+    const v4OneTime = () => ({ type: 'oneTime', id: 'o1', label: 'Inheritance', year: 2040, amount: 100_000, taxTreatment: 'none' })
+    const withScenario = (patch: unknown): Record<string, unknown> => ({
+      ...rawV4Plan(),
+      scenarios: [{ id: 's1', name: 'Scenario', patch }],
+    })
+    const patchOf = (migrated: Record<string, unknown>): Record<string, unknown> =>
+      (migrated['scenarios'] as Record<string, unknown>[])[0]!['patch'] as Record<string, unknown>
+    const operationOf = (migrated: Record<string, unknown>): Record<string, unknown> =>
+      (patchOf(migrated)['operations'] as Record<string, unknown>[])[0]!
+
+    it('migrates a whole-array operation on both the value and the before legs', () => {
+      const raw = withScenario(
+        envelope([
+          {
+            op: 'set',
+            path: '/incomes',
+            before: { present: true, value: [v4OneTime()] },
+            value: [v4OneTime(), v4OneTime()],
+          },
+        ]),
+      )
+      const operation = operationOf(migratePlanV4ToV5(raw))
+      for (const stream of operation['value'] as Record<string, unknown>[]) {
+        expect(stream['inflationAdjusted']).toBe(false)
+      }
+      // `before` matters as much as `value`: it is what conflict detection
+      // compares against the live plan, so a scenario whose before-image stayed
+      // at v4 would read as conflicted the moment anyone opened it.
+      const before = operation['before'] as Record<string, unknown>
+      for (const stream of before['value'] as Record<string, unknown>[]) {
+        expect(stream['inflationAdjusted']).toBe(false)
+      }
+    })
+
+    it('migrates a single-index operation', () => {
+      const raw = withScenario(
+        envelope([{ op: 'set', path: '/incomes/2', before: { present: false }, value: v4OneTime() }]),
+      )
+      expect((operationOf(migratePlanV4ToV5(raw))['value'] as Record<string, unknown>)['inflationAdjusted']).toBe(false)
+    })
+
+    it('leaves a leaf pointer and a prefix-sharing root alone', () => {
+      // `/incomes/2/amount` addresses a number, not a stream; `/incomeFloor`
+      // merely shares its first eight characters with `/incomes`.
+      const raw = withScenario(
+        envelope([
+          { op: 'set', path: '/incomeFloor', before: { present: false }, value: { ladders: [] } },
+          { op: 'set', path: '/incomes/2/amount', before: { present: true, value: 100_000 }, value: 125_000 },
+        ]),
+      )
+      // The plan's OWN one-time stream still migrates, so the document changes;
+      // what must not change is the scenario, asserted by identity.
+      const migrated = migratePlanV4ToV5(raw)
+      expect(migrated['scenarios']).toBe(raw['scenarios'])
+    })
+
+    it('migrates a legacy loose deep-override patch', () => {
+      const raw = withScenario({ incomes: [v4OneTime()] })
+      const incomes = patchOf(migratePlanV4ToV5(raw))['incomes'] as Record<string, unknown>[]
+      expect(incomes[0]!['inflationAdjusted']).toBe(false)
+    })
+
+    it('carries a migrated scenario through to an applied plan', () => {
+      const raw = {
+        ...rawV4Plan(),
+        scenarios: [{ id: 's1', name: 'Scenario', patch: { incomes: [v4OneTime()] } }],
+      }
+      const result = migratePlanToCurrent(raw)
+      expect(result.ok).toBe(true)
+      if (!result.ok) return
+      const applied = applyScenarioPatch(result.plan, result.plan.scenarios[0]!)
+      expect(applied.ok).toBe(true)
+      if (!applied.ok) return
+      const stream = applied.plan.incomes.find((i) => i.type === 'oneTime')!
+      expect(stream.type === 'oneTime' && stream.inflationAdjusted).toBe(false)
+    })
+  })
 })

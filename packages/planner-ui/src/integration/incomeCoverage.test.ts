@@ -115,6 +115,7 @@ describe('income-coverage fixture suite', () => {
       id: 'coverage-lump',
       label: 'Deferred comp',
       year: 2028,
+      inflationAdjusted: false,
       amount: 40_000,
       taxTreatment: 'ordinary',
     })

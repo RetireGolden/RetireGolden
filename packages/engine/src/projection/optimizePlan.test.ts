@@ -331,7 +331,7 @@ function pensionBridgePlan(): Plan {
     { type: 'pension', id: testIds(), name: 'Pension', ownerPersonId: 'p1', annualReturnPct: 0, startAge: 60, monthlyAmount: 1_000, colaPct: 0, survivorPct: 0 },
   ]
   plan.incomes = [
-    { type: 'oneTime', id: testIds(), label: 'Consulting', year: 2026, amount: 15_000, taxTreatment: 'ordinary' },
+    { type: 'oneTime', id: testIds(), label: 'Consulting', year: 2026, inflationAdjusted: false, amount: 15_000, taxTreatment: 'ordinary' },
   ]
   return plan
 }

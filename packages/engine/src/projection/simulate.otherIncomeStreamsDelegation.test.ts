@@ -397,6 +397,11 @@ function plan(): Plan {
       // Deliberately starting at START_YEAR + 1, so QUIET_YEAR has no pass-2
       // row at all and G4a's fold base can be re-derived from published output.
       year: START_YEAR + 1 + i,
+      // FLAT on purpose: G7 reads `incomes.oneTime` as an EXACT constant every
+      // living year, which only holds while these amounts do not move with the
+      // (deliberately non-flat) inflation path. The election's own arithmetic
+      // is pinned in the helper's unit tests.
+      inflationAdjusted: false,
       amount,
       taxTreatment,
     }))

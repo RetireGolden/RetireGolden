@@ -22,7 +22,7 @@ import {
 } from './retirementActionAnnualTaxFacts.js'
 export type { RetirementActionAnnualTaxFacts } from './retirementActionAnnualTaxFacts.js'
 
-export const CURRENT_PLAN_SCHEMA_VERSION = 4
+export const CURRENT_PLAN_SCHEMA_VERSION = 5
 
 /**
  * The latest `startAge` a QUALIFIED annuity purchase that is not a QLAC may
@@ -1546,6 +1546,17 @@ export const oneTimeIncomeSchema = z.object({
   id: idSchema,
   label: z.string().min(1),
   year: calendarYear,
+  /**
+   * True: today's dollars, inflated to `year` by the engine — the same reading
+   * as `oneTimeGoalSchema.amount` on the spending side, and the default the
+   * editor authors. False: dollars of `year` itself, taken as entered.
+   *
+   * REQUIRED rather than defaulted, because the safe default differs by where
+   * the plan came from and no single one is right for both. Schema v5 added
+   * this field; `migratePlanV4ToV5` sets it FALSE on every stored plan, which
+   * is the only value that preserves what those plans already projected.
+   */
+  inflationAdjusted: z.boolean(),
   amount: nonNegative,
   taxTreatment: z.enum(['ordinary', 'capitalGain', 'none']),
 })

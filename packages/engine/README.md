@@ -113,8 +113,8 @@ import { planJsonSchema, PLAN_SCHEMA_VERSION } from '@retiregolden/engine/schema
 
 This subpath is **zod-free** — it resolves only to the generated constant and
 plain metadata, so importing it pulls in neither zod nor the plan model. The same
-bytes ship as `@retiregolden/engine/schema/plan.v4.json` for offline, no-import
-reads; the historical v1/v2/v3 artifacts remain available at their versioned subpaths.
+bytes ship as `@retiregolden/engine/schema/plan.v5.json` for offline, no-import
+reads; the historical v1/v2/v3/v4 artifacts remain available at their versioned subpaths.
 The schema describes the plan's *structure*; it is necessary but not
 sufficient — cross-field rules (id references, funding rules, allocation weights
 summing to 100%, …) live only in `parsePlan`, which stays the full validator.
@@ -147,7 +147,7 @@ supported runtime API.
 | Subpath | Contents |
 |---------|----------|
 | `model/` | Plan schema (Zod), types, migrations |
-| `schema/` | Derived, versioned JSON Schema for the `Plan` document (`planJsonSchema`, `PLAN_SCHEMA_VERSION`) + shipped current `schema/plan.v4.json` and historical v1/v2/v3 artifacts |
+| `schema/` | Derived, versioned JSON Schema for the `Plan` document (`planJsonSchema`, `PLAN_SCHEMA_VERSION`) + shipped current `schema/plan.v5.json` and historical v1/v2/v3/v4 artifacts |
 | `params/` | Annual parameter packs (tax brackets, limits, RMD, Medicare, SS, state) + typed accessors |
 | `tax/` | Federal + state tax engine, ACA credit, Medicare/IRMAA |
 | `rmd/` | Required minimum distributions (SECURE 2.0) |

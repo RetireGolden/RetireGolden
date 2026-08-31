@@ -2723,8 +2723,8 @@ describe('RMDs', () => {
     const plan = basePlan() // single person p1, born 1966
     plan.expenses.baseAnnual = 0
     plan.incomes = [
-      { type: 'oneTime', id: 'alive', label: 'Sale while living', year: 2040, amount: 100_000, taxTreatment: 'ordinary' },
-      { type: 'oneTime', id: 'dead', label: 'Sale after death', year: 2056, amount: 100_000, taxTreatment: 'ordinary' },
+      { type: 'oneTime', id: 'alive', label: 'Sale while living', year: 2040, inflationAdjusted: false, amount: 100_000, taxTreatment: 'ordinary' },
+      { type: 'oneTime', id: 'dead', label: 'Sale after death', year: 2056, inflationAdjusted: false, amount: 100_000, taxTreatment: 'ordinary' },
     ]
     plan.accounts = [cash(500_000)]
     const result = simulatePlan(validate(plan), {
@@ -3097,7 +3097,7 @@ describe('healthcare and penalties', () => {
     currentYearAca(plan)
     plan.expenses.spendingPolicy = { mode: 'fixedTarget' }
     plan.incomes = [
-      { type: 'oneTime', id: testIds(), label: 'Income', year: 2026, amount: 30_000, taxTreatment: 'ordinary' },
+      { type: 'oneTime', id: testIds(), label: 'Income', year: 2026, inflationAdjusted: false, amount: 30_000, taxTreatment: 'ordinary' },
     ]
     plan.accounts = [cash(200_000)]
     const year = simulatePlan(validate(plan), {
@@ -3120,7 +3120,7 @@ describe('healthcare and penalties', () => {
     plan.household.people[0]!.dob = '1961-06-15'
     currentYearAca(plan, { coveredMonths: 5 })
     plan.incomes = [
-      { type: 'oneTime', id: testIds(), label: 'Income', year: 2026, amount: 30_000, taxTreatment: 'ordinary' },
+      { type: 'oneTime', id: testIds(), label: 'Income', year: 2026, inflationAdjusted: false, amount: 30_000, taxTreatment: 'ordinary' },
     ]
     plan.accounts = [cash(200_000)]
 
@@ -3140,7 +3140,7 @@ describe('healthcare and penalties', () => {
     plan.household.people[0]!.dob = '1961-06-15'
     currentYearAca(plan, { coveredMonths: 6 })
     plan.incomes = [
-      { type: 'oneTime', id: testIds(), label: 'Income', year: 2026, amount: 30_000, taxTreatment: 'ordinary' },
+      { type: 'oneTime', id: testIds(), label: 'Income', year: 2026, inflationAdjusted: false, amount: 30_000, taxTreatment: 'ordinary' },
     ]
     plan.accounts = [cash(200_000)]
 
@@ -3160,7 +3160,7 @@ describe('healthcare and penalties', () => {
     plan.household.people[0]!.dob = '1960-06-15'
     currentYearAca(plan)
     plan.incomes = [
-      { type: 'oneTime', id: testIds(), label: 'Income', year: 2026, amount: 30_000, taxTreatment: 'ordinary' },
+      { type: 'oneTime', id: testIds(), label: 'Income', year: 2026, inflationAdjusted: false, amount: 30_000, taxTreatment: 'ordinary' },
     ]
     plan.accounts = [cash(200_000)]
 
@@ -3188,7 +3188,7 @@ describe('healthcare and penalties', () => {
     })
     currentYearAca(plan, { coveredPersonIds: ['p1', 'p2'] })
     plan.incomes = [
-      { type: 'oneTime', id: testIds(), label: 'Income', year: 2026, amount: 40_000, taxTreatment: 'ordinary' },
+      { type: 'oneTime', id: testIds(), label: 'Income', year: 2026, inflationAdjusted: false, amount: 40_000, taxTreatment: 'ordinary' },
     ]
     plan.accounts = [cash(200_000)]
 
@@ -3288,7 +3288,7 @@ describe('healthcare and penalties', () => {
     const contract = plan.expenses.healthcare.acaYears![0]!
     contract.taxFamilyMembers = [contract.taxFamilyMembers[0]!]
     plan.incomes = [
-      { type: 'oneTime', id: testIds(), label: 'Income', year: 2026, amount: 40_000, taxTreatment: 'ordinary' },
+      { type: 'oneTime', id: testIds(), label: 'Income', year: 2026, inflationAdjusted: false, amount: 40_000, taxTreatment: 'ordinary' },
     ]
     plan.accounts = [cash(200_000)]
 
@@ -3438,7 +3438,7 @@ describe('healthcare and penalties', () => {
   it('applies the ACA credit against current-year household MAGI before 65', () => {
     const plan = basePlan() // born 1966 -> 60 in 2026
     currentYearAca(plan)
-    plan.incomes = [{ type: 'oneTime', id: testIds(), label: 'Income', year: 2026, amount: 30_000, taxTreatment: 'ordinary' }]
+    plan.incomes = [{ type: 'oneTime', id: testIds(), label: 'Income', year: 2026, inflationAdjusted: false, amount: 30_000, taxTreatment: 'ordinary' }]
     plan.accounts = [cash(2_000_000)]
     const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
 
@@ -3460,7 +3460,7 @@ describe('healthcare and penalties', () => {
     })
     plan.household.filingStatus = 'marriedFilingJointly'
     currentYearAca(plan, { coveredPersonIds: ['p1', 'p2'] })
-    plan.incomes = [{ type: 'oneTime', id: testIds(), label: 'Income', year: 2026, amount: 30_000, taxTreatment: 'ordinary' }]
+    plan.incomes = [{ type: 'oneTime', id: testIds(), label: 'Income', year: 2026, inflationAdjusted: false, amount: 30_000, taxTreatment: 'ordinary' }]
     plan.accounts = [cash(2_000_000)]
     const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
 
@@ -3475,7 +3475,7 @@ describe('healthcare and penalties', () => {
   it('charges the full premium over the 400% FPL cliff, with a warning', () => {
     const plan = basePlan()
     currentYearAca(plan)
-    plan.incomes = [{ type: 'oneTime', id: testIds(), label: 'Income', year: 2026, amount: 70_000, taxTreatment: 'ordinary' }]
+    plan.incomes = [{ type: 'oneTime', id: testIds(), label: 'Income', year: 2026, inflationAdjusted: false, amount: 70_000, taxTreatment: 'ordinary' }]
     plan.accounts = [cash(2_000_000)]
     const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
 
@@ -3527,7 +3527,7 @@ describe('healthcare and penalties', () => {
     const plan = basePlan()
     currentYearAca(plan)
     plan.incomes = [
-      { type: 'oneTime', id: testIds(), label: 'Gain', year: 2026, amount: 70_000, taxTreatment: 'capitalGain' },
+      { type: 'oneTime', id: testIds(), label: 'Gain', year: 2026, inflationAdjusted: false, amount: 70_000, taxTreatment: 'capitalGain' },
     ]
     plan.accounts = [cash(100_000)]
     const year = simulatePlan(validate(plan), {
@@ -3554,7 +3554,7 @@ describe('healthcare and penalties', () => {
       magi: 2_000,
     })
     plan.incomes = [
-      { type: 'oneTime', id: testIds(), label: 'Income', year: 2026, amount: 20_000, taxTreatment: 'ordinary' },
+      { type: 'oneTime', id: testIds(), label: 'Income', year: 2026, inflationAdjusted: false, amount: 20_000, taxTreatment: 'ordinary' },
       {
         type: 'socialSecurity',
         id: testIds(),
@@ -3708,7 +3708,7 @@ describe('healthcare and penalties', () => {
     const requiredPlan = basePlan()
     currentYearAca(requiredPlan)
     requiredPlan.incomes = [
-      { type: 'oneTime', id: testIds(), label: 'Income', year: 2026, amount: 30_000, taxTreatment: 'ordinary' },
+      { type: 'oneTime', id: testIds(), label: 'Income', year: 2026, inflationAdjusted: false, amount: 30_000, taxTreatment: 'ordinary' },
     ]
     requiredPlan.accounts = [cash(100_000)]
     requiredPlan.expenses.healthcare.acaYears![0]!.taxFamilyMembers.push({
@@ -3754,7 +3754,7 @@ describe('healthcare and penalties', () => {
     dependent.requiredToFile = 'required'
     dependent.magi = 30_000
     plan.incomes = [
-      { type: 'oneTime', id: testIds(), label: 'Income', year: 2026, amount: 30_000, taxTreatment: 'ordinary' },
+      { type: 'oneTime', id: testIds(), label: 'Income', year: 2026, inflationAdjusted: false, amount: 30_000, taxTreatment: 'ordinary' },
     ]
     plan.accounts = [cash(100_000)]
     const year = simulatePlan(validate(plan), {
@@ -3774,7 +3774,7 @@ describe('healthcare and penalties', () => {
     const plan = basePlan()
     currentYearAca(plan)
     plan.incomes = [
-      { type: 'oneTime', id: testIds(), label: 'Income', year: 2026, amount: 30_000, taxTreatment: 'ordinary' },
+      { type: 'oneTime', id: testIds(), label: 'Income', year: 2026, inflationAdjusted: false, amount: 30_000, taxTreatment: 'ordinary' },
     ]
     plan.accounts = [
       cash(100_000),
@@ -3856,7 +3856,7 @@ describe('healthcare and penalties', () => {
     const plan = basePlan()
     currentYearAca(plan)
     plan.incomes = [
-      { type: 'oneTime', id: testIds(), label: 'Income', year: 2026, amount: 10_000, taxTreatment: 'ordinary' },
+      { type: 'oneTime', id: testIds(), label: 'Income', year: 2026, inflationAdjusted: false, amount: 10_000, taxTreatment: 'ordinary' },
     ]
     plan.accounts = [cash(100_000)]
     const year = simulatePlan(validate(plan), {
@@ -3881,7 +3881,7 @@ describe('healthcare and penalties', () => {
     }
     disabled.accounts = [cash(100_000)]
     disabled.incomes = [
-      { type: 'oneTime', id: testIds(), label: 'Income', year: 2026, amount: 20_000, taxTreatment: 'ordinary' },
+      { type: 'oneTime', id: testIds(), label: 'Income', year: 2026, inflationAdjusted: false, amount: 20_000, taxTreatment: 'ordinary' },
       {
         type: 'socialSecurity',
         id: testIds(),
@@ -3953,7 +3953,7 @@ describe('healthcare and penalties', () => {
     plan.household.people[0]!.dob = '1961-06-15' // turns 65 in June 2026: 5 marketplace months
     plan.household.people[0]!.retirementAge = null
     currentYearAca(plan, { coveredMonths: 5 })
-    plan.incomes = [{ type: 'oneTime', id: testIds(), label: 'Income', year: 2026, amount: 30_000, taxTreatment: 'ordinary' }]
+    plan.incomes = [{ type: 'oneTime', id: testIds(), label: 'Income', year: 2026, inflationAdjusted: false, amount: 30_000, taxTreatment: 'ordinary' }]
     plan.accounts = [cash(2_000_000)]
     const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
 
@@ -3994,7 +3994,7 @@ describe('healthcare and penalties', () => {
       plan.household.people[0]!.dob = '1960-06-15' // 66 in 2026, on Medicare
       plan.household.people[0]!.retirementAge = null
       plan.incomes = [
-        { type: 'oneTime', id: testIds(), label: 'Windfall', year: 2027, amount: 300_000, taxTreatment: 'ordinary' },
+        { type: 'oneTime', id: testIds(), label: 'Windfall', year: 2027, inflationAdjusted: false, amount: 300_000, taxTreatment: 'ordinary' },
       ]
       plan.accounts = [cash(3_000_000)]
       const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
@@ -4056,7 +4056,7 @@ describe('healthcare and penalties', () => {
         amount: 5_000,
       }
       withInterest.incomes = [
-        { type: 'oneTime', id: testIds(), label: 'Income', year: 2026, amount: 105_000, taxTreatment: 'ordinary' },
+        { type: 'oneTime', id: testIds(), label: 'Income', year: 2026, inflationAdjusted: false, amount: 105_000, taxTreatment: 'ordinary' },
       ]
       withInterest.accounts = [cash(500_000)]
       const withoutInterest = structuredClone(withInterest)
@@ -4526,7 +4526,7 @@ describe('tax-exempt interest generation and characterization', () => {
       const plan = basePlan()
       plan.household.people[0]!.dob = '1964-06-15' // 62 in 2026 so benefits pay
       plan.incomes = [
-        { type: 'oneTime', id: testIds(), label: 'Income', year: 2026, amount: 12_900, taxTreatment: 'ordinary' },
+        { type: 'oneTime', id: testIds(), label: 'Income', year: 2026, inflationAdjusted: false, amount: 12_900, taxTreatment: 'ordinary' },
         {
           type: 'socialSecurity',
           id: testIds(),
@@ -4589,7 +4589,7 @@ describe('tax-exempt interest generation and characterization', () => {
         amount: 5_000,
       }
       plan.incomes = [
-        { type: 'oneTime', id: testIds(), label: 'Income', year: 2026, amount: 20_000, taxTreatment: 'ordinary' },
+        { type: 'oneTime', id: testIds(), label: 'Income', year: 2026, inflationAdjusted: false, amount: 20_000, taxTreatment: 'ordinary' },
       ]
       plan.accounts =
         yieldPct === null
@@ -4648,7 +4648,7 @@ describe('tax-exempt interest generation and characterization', () => {
         amount: null,
       }
       plan.incomes = [
-        { type: 'oneTime', id: testIds(), label: 'Income', year: 2026, amount: 20_000, taxTreatment: 'ordinary' },
+        { type: 'oneTime', id: testIds(), label: 'Income', year: 2026, inflationAdjusted: false, amount: 20_000, taxTreatment: 'ordinary' },
       ]
       plan.accounts = withYieldField
         ? [
@@ -4693,7 +4693,7 @@ describe('tax-exempt interest generation and characterization', () => {
     const plan = basePlan()
     plan.expenses.baseAnnual = 40_000
     plan.incomes = [
-      { type: 'oneTime', id: testIds(), label: 'Income', year: 2026, amount: 15_000, taxTreatment: 'ordinary' },
+      { type: 'oneTime', id: testIds(), label: 'Income', year: 2026, inflationAdjusted: false, amount: 15_000, taxTreatment: 'ordinary' },
       {
         type: 'socialSecurity',
         id: testIds(),
@@ -4732,7 +4732,7 @@ describe('tax-exempt interest generation and characterization', () => {
     }
     disabled.accounts = [cash(100_000)]
     disabled.incomes = [
-      { type: 'oneTime', id: testIds(), label: 'Income', year: 2026, amount: 20_000, taxTreatment: 'ordinary' },
+      { type: 'oneTime', id: testIds(), label: 'Income', year: 2026, inflationAdjusted: false, amount: 20_000, taxTreatment: 'ordinary' },
     ]
     const disabledWithContract = structuredClone(disabled)
     currentYearAca(disabledWithContract)
@@ -4760,7 +4760,7 @@ describe('tax-exempt interest generation and characterization', () => {
     const make = (withExemptYield: boolean) => {
       const plan = basePlan()
       plan.incomes = [
-        { type: 'oneTime', id: testIds(), label: 'Income', year: 2026, amount: 30_000, taxTreatment: 'ordinary' },
+        { type: 'oneTime', id: testIds(), label: 'Income', year: 2026, inflationAdjusted: false, amount: 30_000, taxTreatment: 'ordinary' },
       ]
       plan.accounts = withExemptYield
         ? [
@@ -4982,7 +4982,7 @@ describe('capital loss carryforward', () => {
     plan.expenses.baseAnnual = 40_000
     plan.incomes = [
       { type: 'recurring', id: testIds(), label: 'Pension', annualAmount: 120_000, startYear: 2026, endYear: null, inflationAdjusted: false, taxTreatment: 'ordinary' },
-      { type: 'oneTime', id: testIds(), label: 'Stock sale', year: 2026, amount: 50_000, taxTreatment: 'capitalGain' },
+      { type: 'oneTime', id: testIds(), label: 'Stock sale', year: 2026, inflationAdjusted: false, amount: 50_000, taxTreatment: 'capitalGain' },
     ]
     plan.accounts = [cash(500_000)]
     return plan
