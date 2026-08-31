@@ -96,13 +96,13 @@ import {
   loadEngine,
   resolvedDependencyVersions,
 } from './equivalence/engine-tree.mjs'
-import { MODE_IDS, runMember, selectModes } from './equivalence/modes.mjs'
+import { MODE_IDS, runMember } from './equivalence/modes.mjs'
 import { ReachRecorder } from './equivalence/reach.mjs'
 import { CORPORA, CORPUS_NAMES, buildCorpus, examplesTierLocation } from './equivalence/corpus/index.mjs'
+import { UsageError, modesFromFlag, assertReachSpecSchema } from './equivalence/usage.mjs'
 
 const SCHEMA = 'retiregolden.equivalence-dump/1'
 const CORPUS_SCHEMA = 'retiregolden.equivalence-corpus/1'
-const REACH_SPEC_SCHEMA = 'retiregolden.equivalence-reach-spec/1'
 
 const scriptDir = dirname(fileURLToPath(import.meta.url))
 const engineDir = resolve(scriptDir, '..')
@@ -130,17 +130,6 @@ Exit: 0 identical / all reached with no cold lines  ·  1 a difference, an unrea
       cold line inside a reached one  ·  2 usage, incomparable inputs, or a corrupt dump.
 --out is mandatory for corpus and capture (optional for reach): a dump is large and must never land
 inside the repository by default.`
-}
-
-class UsageError extends Error {}
-
-/** Operator `--modes` typos must hit the UsageError path, not a raw stack. */
-function modesFromFlag(flag) {
-  try {
-    return selectModes(flag.split(',').map((id) => id.trim()).filter((id) => id !== ''))
-  } catch (error) {
-    throw new UsageError(error instanceof Error ? error.message : String(error))
-  }
 }
 
 function takeValue(argv, i, name) {
@@ -506,9 +495,7 @@ async function commandReach(argv) {
   const src = configureEngineTree(opts.engineSrc)
 
   const spec = readJson(opts.spec)
-  if (spec.schema !== REACH_SPEC_SCHEMA) {
-    throw new UsageError(`${opts.spec} is not a ${REACH_SPEC_SCHEMA} spec (found "${spec.schema}")`)
-  }
+  assertReachSpecSchema(spec, opts.spec)
   const entries = spec.entries.map((entry) => ({
     ...entry,
     file: resolve(src, entry.file).split('\\').join('/'),

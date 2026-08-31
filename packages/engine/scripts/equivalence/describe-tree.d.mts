@@ -14,4 +14,5 @@ export interface TreeDescription {
   declaredLabelIgnored?: string
 }
 
+export declare function normalizeDir(dir: string): string
 export declare function describeTree(dir: string, declaredLabel?: string | null): TreeDescription
