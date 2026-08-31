@@ -958,10 +958,12 @@ export const investmentIncomeAndBasisRecords = {
     verifiedOn: '2026-08-27',
     implementedBy: [
       'packages/engine/src/ladder/ladderMath.ts',
+      'packages/engine/src/projection/internal/tipsLadderAnnualCashFlow.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/ladder/ladderMath.ts#ladderRealFlowsAtOffset',
+      'packages/engine/src/projection/internal/tipsLadderAnnualCashFlow.ts#tipsLadderAnnualCashFlows',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
@@ -974,7 +976,7 @@ export const investmentIncomeAndBasisRecords = {
     contraryReading: null,
     errorDirection: 'overstatesTax',
     conventionRationale:
-      'DEFECT — no behavior change in this registration slice. projection/simulate.ts computes `accretion` as `outstandingFace * Math.max(0, inflFactor - prevInflFactor)`, so a deflation year contributes no negative adjustment, no ordinary-loss carry, and no interest reduction. A paired market path with prior positive inflation followed by deflation drives the gap: the authority reduces current interest (and may permit a bounded ordinary loss), while the engine still reports the coupon as taxable ordinary income. The fixture adds 100,000 of ordinary wages so the tax line remains above zero and pins the produced annual MAGI. The basis decrease under (f)(2) is registered separately at treas-reg-1-1275-7-f-2-deflation-basis-decrease-not-modeled.',
+      'DEFECT — no behavior change in this registration slice. projection/internal/tipsLadderAnnualCashFlow.ts computes `accretion` as `outstandingFace * Math.max(0, inflFactor - prevInflFactor)`, so a deflation year contributes no negative adjustment, no ordinary-loss carry, and no interest reduction. A paired market path with prior positive inflation followed by deflation drives the gap: the authority reduces current interest (and may permit a bounded ordinary loss), while the engine still reports the coupon as taxable ordinary income. The fixture adds 100,000 of ordinary wages so the tax line remains above zero and pins the produced annual MAGI. The basis decrease under (f)(2) is registered separately at treas-reg-1-1275-7-f-2-deflation-basis-decrease-not-modeled.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'regulation',
@@ -989,12 +991,14 @@ export const investmentIncomeAndBasisRecords = {
     verifiedOn: '2026-08-27',
     implementedBy: [
       'packages/engine/src/ladder/ladderMath.ts',
+      'packages/engine/src/projection/internal/tipsLadderAnnualCashFlow.ts',
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/model/plan.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/ladder/ladderMath.ts#ladderRealFlowsAtOffset',
       'packages/engine/src/model/plan.ts#tipsLadderSchema',
+      'packages/engine/src/projection/internal/tipsLadderAnnualCashFlow.ts#tipsLadderAnnualCashFlows',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },

@@ -134,7 +134,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 770
+              "line": 771
             }
           ]
         },
@@ -435,7 +435,7 @@
           "functions": [
             {
               "name": "BalanceState",
-              "line": 540
+              "line": 541
             }
           ]
         }
@@ -492,7 +492,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 770
+              "line": 771
             }
           ]
         },
@@ -567,7 +567,7 @@
           "functions": [
             {
               "name": "planWithdrawals",
-              "line": 610
+              "line": 611
             }
           ]
         },
@@ -638,7 +638,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 770
+              "line": 771
             }
           ]
         },
@@ -912,7 +912,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 770
+              "line": 771
             }
           ]
         },
@@ -1415,7 +1415,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 770
+              "line": 771
             }
           ]
         }
@@ -1477,7 +1477,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 770
+              "line": 771
             }
           ]
         }
@@ -1629,6 +1629,7 @@
       "dueOn": "2027-08-27",
       "implementedBy": [
         "packages/engine/src/ladder/ladderMath.ts",
+        "packages/engine/src/projection/internal/tipsLadderAnnualCashFlow.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
@@ -1642,11 +1643,20 @@
           ]
         },
         {
+          "path": "packages/engine/src/projection/internal/tipsLadderAnnualCashFlow.ts",
+          "functions": [
+            {
+              "name": "tipsLadderAnnualCashFlows",
+              "line": 89
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 770
+              "line": 771
             }
           ]
         }
@@ -1695,7 +1705,7 @@
       "title": "TIPS deflation adjustments reduce interest with an ordinary-loss carry limit",
       "classification": "approximated",
       "errorDirection": "overstatesTax",
-      "conventionRationale": "DEFECT — no behavior change in this registration slice. projection/simulate.ts computes `accretion` as `outstandingFace * Math.max(0, inflFactor - prevInflFactor)`, so a deflation year contributes no negative adjustment, no ordinary-loss carry, and no interest reduction. A paired market path with prior positive inflation followed by deflation drives the gap: the authority reduces current interest (and may permit a bounded ordinary loss), while the engine still reports the coupon as taxable ordinary income. The fixture adds 100,000 of ordinary wages so the tax line remains above zero and pins the produced annual MAGI. The basis decrease under (f)(2) is registered separately at treas-reg-1-1275-7-f-2-deflation-basis-decrease-not-modeled.",
+      "conventionRationale": "DEFECT — no behavior change in this registration slice. projection/internal/tipsLadderAnnualCashFlow.ts computes `accretion` as `outstandingFace * Math.max(0, inflFactor - prevInflFactor)`, so a deflation year contributes no negative adjustment, no ordinary-loss carry, and no interest reduction. A paired market path with prior positive inflation followed by deflation drives the gap: the authority reduces current interest (and may permit a bounded ordinary loss), while the engine still reports the coupon as taxable ordinary income. The fixture adds 100,000 of ordinary wages so the tax line remains above zero and pins the produced annual MAGI. The basis decrease under (f)(2) is registered separately at treas-reg-1-1275-7-f-2-deflation-basis-decrease-not-modeled.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -1706,6 +1716,7 @@
       "implementedBy": [
         "packages/engine/src/ladder/ladderMath.ts",
         "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/internal/tipsLadderAnnualCashFlow.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
@@ -1728,11 +1739,20 @@
           ]
         },
         {
+          "path": "packages/engine/src/projection/internal/tipsLadderAnnualCashFlow.ts",
+          "functions": [
+            {
+              "name": "tipsLadderAnnualCashFlows",
+              "line": 89
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 770
+              "line": 771
             }
           ]
         }
@@ -1803,7 +1823,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 770
+              "line": 771
             }
           ]
         }
@@ -1860,7 +1880,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 770
+              "line": 771
             }
           ]
         }

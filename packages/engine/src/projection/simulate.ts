@@ -63,7 +63,8 @@ import {
 } from './annualCashFlowIds.js'
 import { createAnnualCashFlowYearSites, type AnnualCashFlowYearSites } from './annualCashFlowYearSites.js'
 import { annuityExclusionMultiple, annuityPayoutForm, annuityPayoutFraction } from './annuityForms.js'
-import { buildLadder, ladderRealFlowsAtOffset, ladderRemainingFace, type LadderRung } from '../ladder/ladderMath.js'
+import { buildLadder } from '../ladder/ladderMath.js'
+import { tipsLadderAnnualCashFlows, type TipsLadderState } from './internal/tipsLadderAnnualCashFlow.js'
 import { stateParamsFor } from '../params/state/index.js'
 import type { ParameterPack } from '../params/types.js'
 import { requiredMinimumDistribution } from '../rmd/rmd.js'
@@ -1096,14 +1097,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
   // funding account couldn't cover the full quoted cost. A purchase dated
   // before the projection start is assumed already funded (like a seeded
   // annuity premium), so no transfer runs for it.
-  const ladderStates: Array<{
-    id: string
-    anchorYear: number
-    rungs: LadderRung[]
-    costReal: number
-    purchase: { year: number; fundingAccountId: string } | undefined
-    scale: number
-  }> = []
+  const ladderStates: TipsLadderState[] = []
   // Last calendar year anyone is alive: after it, rungs stop maturing and the
   // remaining face is frozen as an estate asset (MC horizons run well past
   // death, and offset-space maturation must not evaporate unmatured principal).
@@ -3038,48 +3032,31 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       }
     }
     // --- TIPS-ladder cash flows ---------------------------------------------
-    // Coupons + maturing principal are cash income; the taxable amount is the
-    // coupons plus this year's inflation accretion on the outstanding face
-    // (the phantom-income OID a taxable TIPS holder reports) — maturing
-    // principal itself is a tax-free return of already-taxed dollars. Federal
-    // ordinary income (incl. NIIT); state-exempt as U.S. government interest.
+    // The arithmetic lives in `internal/tipsLadderAnnualCashFlow.ts`, which
+    // returns one row per ladder and deliberately does not sum across them:
+    // `ordinaryIncome` is already non-zero here and IEEE-754 addition is not
+    // associative, so the folding order below is part of the ledger.
     let ladderTaxableInterest = 0
     let ladderValueTotal = 0
-    for (const ls of ladderStates) {
-      const offset = year - ls.anchorYear
-      if (offset < 1) {
-        // Purchase year (offset 0): the rungs are owned — no flows yet, but
-        // their full face rides in net worth so the transfer is value-neutral.
-        if (ls.purchase && year >= ls.purchase.year) {
-          ladderValueTotal += ladderRemainingFace(ls.rungs, 0) * ls.scale * inflFactor
-        }
+    for (const row of tipsLadderAnnualCashFlows({
+      ladderStates,
+      year,
+      startYear,
+      anyAlive,
+      inflFactor,
+      inflFactorFrom,
+      ladderLastAliveYear,
+    })) {
+      if (row.kind === 'none') continue
+      if (row.kind === 'flow') {
+        incomes.tipsLadder += row.cash
+        ordinaryIncome += row.taxable
+        ladderTaxableInterest += row.taxable
+        ladderValueTotal += row.ladderValue
+        yearSites?.recordTipsLadderCash(row.record)
         continue
       }
-      if (anyAlive) {
-        const flows = ladderRealFlowsAtOffset(ls.rungs, offset)
-        const cash = (flows.coupons + flows.maturingPrincipal) * ls.scale * inflFactor
-        const prevInflFactor = inflFactorFrom(startYear, year - 1)
-        const accretion = flows.outstandingFace * ls.scale * Math.max(0, inflFactor - prevInflFactor)
-        const taxable = flows.coupons * ls.scale * inflFactor + accretion
-        incomes.tipsLadder += cash
-        ordinaryIncome += taxable
-        ladderTaxableInterest += taxable
-        ladderValueTotal += ladderRemainingFace(ls.rungs, offset) * ls.scale * inflFactor
-        yearSites?.recordTipsLadderCash({
-          ladderId: ls.id,
-          cash,
-          coupons: flows.coupons * ls.scale * inflFactor,
-          maturingPrincipal: flows.maturingPrincipal * ls.scale * inflFactor,
-          accretion,
-        })
-      } else {
-        // No one alive: rungs stop maturing — freeze the remaining face as of
-        // the last living year (the rung maturing that year already paid cash)
-        // so unmatured principal rides in the estate at its inflation-indexed
-        // book value instead of shrinking as offset-space maturities pass.
-        const lastAliveOffset = Math.max(0, ladderLastAliveYear - ls.anchorYear)
-        ladderValueTotal += ladderRemainingFace(ls.rungs, lastAliveOffset) * ls.scale * inflFactor
-      }
+      ladderValueTotal += row.ladderValue
     }
 
     incomes.total =
