@@ -54,7 +54,7 @@ import {
   resolveAssetClassParams,
   targetWeightsAt,
 } from '../allocation/assetClasses.js'
-import { packForYear, LATEST_PACK_YEAR, hecmPrincipalLimitFactorPct, EMBEDDED_REAL_YIELD_CURVE, irmaaTierThreshold, rmdStartAgeForBirthYear } from '../params/index.js'
+import { packForYear, LATEST_PACK_YEAR, EMBEDDED_REAL_YIELD_CURVE, irmaaTierThreshold, rmdStartAgeForBirthYear } from '../params/index.js'
 import { assembleYearCashFlow, type AnnualCashFlowPenaltySnapshot } from './annualCashFlowCapture.js'
 import {
   collidingEncodedCashFlowSegments,
@@ -64,6 +64,7 @@ import { createAnnualCashFlowYearSites, type AnnualCashFlowYearSites } from './a
 import { annuityExclusionMultiple, annuityPayoutForm, annuityPayoutFraction } from './annuityForms.js'
 import { buildLadder } from '../ladder/ladderMath.js'
 import { annualRebalanceToTarget } from './internal/annualRebalanceToTarget.js'
+import { hecmLineOpenings } from './internal/hecmLineOpenings.js'
 import { pensionLumpSumRollovers } from './internal/pensionLumpSumRollovers.js'
 import { tipsLadderAnnualCashFlows, type TipsLadderState } from './internal/tipsLadderAnnualCashFlow.js'
 import { fixedAssetDispositions } from './internal/fixedAssetDispositions.js'
@@ -2024,21 +2025,22 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // borrower's age); financed upfront costs start the loan balance. A line
     // dated before the projection opens in the first projection year at
     // today's value (its pre-projection growth is not reconstructed).
-    for (const account of plan.accounts) {
-      if (account.type !== 'property' || !account.hecm) continue
-      if (year !== Math.max(account.hecm.openYear, startYear)) continue
-      if (hecmStates.has(account.id)) continue
-      const value = propertyValues.get(account.id) ?? 0
-      if (value <= 0) continue
-      const youngestAge = Math.min(...people.map((p) => year - dobYear(p)))
-      if (youngestAge < 62) {
-        warnings.add('A HECM line of credit was modeled before the youngest borrower turns 62 (real HECMs require age 62+).')
-      }
-      const plfPct = account.hecm.principalLimitPct ?? hecmPrincipalLimitFactorPct(pack, youngestAge)
-      hecmStates.set(account.id, {
-        principalLimit: (plfPct / 100) * value,
-        loanBalance: ((account.hecm.upfrontCostPct ?? 0) / 100) * value,
-      })
+    // The phase itself lives in `internal/hecmLineOpenings.ts`; the warning and
+    // the map write interleave in ONE loop here, exactly as they did inline,
+    // because `warnings` is a Set spread into the result and `hecmStates` is
+    // insertion-ordered, so both positions are observable.
+    for (const row of hecmLineOpenings({
+      accounts: plan.accounts,
+      year,
+      startYear,
+      propertyValues,
+      openHecmLines: hecmStates,
+      people,
+      dobYear,
+      pack,
+    })) {
+      if (row.warning !== null) warnings.add(row.warning)
+      hecmStates.set(row.propertyAccountId, row.state)
     }
 
     // --- TIPS-ladder purchase funding ---------------------------------------
