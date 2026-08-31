@@ -5,8 +5,14 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 ## 2026-08
 
 **2026-08-31**
-- Released **`@retiregolden/engine` 0.2.0** — the first **minor** bump in the
-  0.1.x line, and deliberately not a patch. Plan schema v5 (PR #382) added a
+- Import & migrate (`/import`) landing source cards share the same 2×2 grid as
+  Getting started on `/`. The step back control sits with the source heading as
+  a readable secondary button, and returning from a step restores keyboard
+  focus to the card that was opened.
+- Prepared **`@retiregolden/engine` 0.2.0** — the first **minor** bump in the
+  0.1.x line, and deliberately not a patch. **Not yet published** — the owner
+  tags `engine-v0.2.0` and approves the `npm-publish` environment, and npm
+  serves 0.1.12 until they do. Plan schema v5 (PR #382) added a
   **required** `inflationAdjusted` boolean to a one-time income stream, which
   breaks a `^0.1.x` consumer in two ways: a TypeScript caller constructing a
   `oneTime` income literal stops compiling, and a caller handing `parsePlan` a
@@ -38,6 +44,17 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   from the registry once 0.2.0 is live, with nothing to change. The currently
   published planner-ui 0.9.0 is unaffected and internally consistent — it was
   built against the v4 engine and resolves one.
+- **Hardened the fallback this release leans on.** The registry probe caught
+  every error and answered "not published", so a network blip, a rate limit or
+  an auth failure was indistinguishable from an absent version: `auto` would
+  quietly pack the local engine and CI would stay green while the
+  registry-resolution path went unexercised. It now reads npm's structured
+  `error.code` (available because the probe already passes `--json`) and treats
+  only **E404** as absence, throwing otherwise with a message pointing at
+  `PLANNER_PACK_SMOKE_ENGINE_SOURCE=local` for a deliberate local pack. Both
+  branches measured: an unpublished version reports `E404` and still falls back;
+  an unreachable registry reports `ECONNREFUSED` and now fails loudly instead of
+  silently downgrading the check.
 - **planner-ui is not re-released here.** Its `^0.2.0` range ships whenever it
   next publishes; nothing about the currently published 0.9.0 changes.
 - **Downstream to coordinate:** the RetireGolden MCP reads the shipped Plan JSON

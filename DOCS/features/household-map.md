@@ -59,7 +59,10 @@ invents an edge the schema does not carry, and never infers a legal relationship
 `buildHouseholdGraph(plan)` is a pure, deterministic selector producing typed nodes and edges. It
 lives in planner-ui by the same convention as the report model: a reading of the Plan with no
 ledger math, importing only *types* from the published engine surface — so the packed planner-ui
-artifact builds against the registry engine release (CI's pack-smoke gate).
+artifact builds against the engine release its declared range names (CI's pack-smoke gate). During
+a release, when that version is not on the registry yet, the gate packs the local engine at exactly
+that version instead — it verifies the two match first, and refuses to guess if the registry cannot
+be reached.
 
 - **Nodes** — `person`, `formerSpouse`, `income` (wages / Social Security / recurring / one-time),
   `guaranteedIncome` (pension / annuity), `account` (cash / taxable / equity comp / traditional /
