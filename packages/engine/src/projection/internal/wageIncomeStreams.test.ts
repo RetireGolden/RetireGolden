@@ -258,14 +258,32 @@ describe('wageIncomeStreams — the row and its ledger payload', () => {
   // Number identity is not observable; that is why the identity half below is
   // asserted on the record OBJECT, which is.
   //
-  // The value check still earns its place — it fails on a record built from a
-  // DIFFERENT double, a re-bracketed product or a rounded one — and it is what
-  // makes the caller's fold and the ledger line it publishes statements about
-  // ONE number rather than two. What makes the delegation test's `toBe` on the
-  // record work is the CALLER publishing this object unrebuilt, which that test
-  // asserts and this one cannot.
+  // The value check still earns its place: it fails on a record built from a
+  // DIFFERENT double, and both of the ways that happens are measured on this
+  // test rather than asserted. Rounding the record amount to cents fails it by
+  // name (`expected 241770.76 to be 241770.7554183168`), and so does
+  // re-bracketing the product to `annualGross * (raiseFactor * inflFactor)`
+  // (`expected 241770.75541831684 to be 241770.7554183168`) — 1 failed, 21
+  // passed, on each.
+  //
+  // THE 4% REAL RAISE BELOW IS WHAT BUYS THE SECOND OF THOSE, and it is here
+  // deliberately rather than incidentally. `wages()` defaults `realGrowthPct` to
+  // 0, which makes the raise factor exactly 1, and `gross * 1 * infl` and
+  // `gross * (1 * infl)` are then the SAME double — measured on the default
+  // fixture, the re-bracketing injection left this whole file green (22 passed)
+  // and failed, in the delegation test, only G3 and G5, which run that fixture's
+  // own non-zero growth rates and cumulative inflation factors. Those two files
+  // are the whole of that measurement. A test cannot claim to catch a defect its
+  // own fixture makes invisible, so this one's fixture was sized until it does.
+  //
+  // The value check is also what makes the caller's fold and the ledger line it
+  // publishes statements about ONE number rather than two. What makes the
+  // delegation test's `toBe` on the record work is the CALLER publishing this
+  // object unrebuilt, which that test asserts and this one cannot.
   it('gives each row its own record, carrying the row’s amount and ids', () => {
-    const rows = wageIncomeStreams(input({ incomes: [wages({ id: 'w-x', personId: 'p1', annualGross: 137_777.77 })] }))
+    const rows = wageIncomeStreams(
+      input({ incomes: [wages({ id: 'w-x', personId: 'p1', annualGross: 137_777.77, realGrowthPct: 4 })] }),
+    )
     const row = rows[0]!
     expect(row.record.amount, 'the record amount is not the row amount').toBe(row.amount)
     expect(row.record.incomeStreamId).toBe('w-x')

@@ -113,11 +113,13 @@
  * its ten tests" and "32 tests" come from. Two things changed afterwards, in
  * answer to review: G8b was added here, so the file now holds eleven guards and
  * G8b appears in none of the failure lists above; and the helper's record test
- * was renamed and given a second assertion. Neither is in any count above and
- * nothing above was re-measured with them present. The two named helper tests
- * the table cites — `treats a missing realGrowthPct as no real raise at all` and
- * `returns a materialized array` — are untouched. What WAS measured for G8b is a
- * single injection, recorded at G8b itself.
+ * was renamed, given a second assertion, and re-fixtured with a non-zero real
+ * raise so its value check can see a re-bracketed product (that fixture's own
+ * measurements are recorded there). Neither is in any count above and nothing
+ * above was re-measured with them present. The two named helper tests the table
+ * cites — `treats a missing realGrowthPct as no real raise at all` and `returns
+ * a materialized array` — are untouched. What WAS measured for G8b is two
+ * fixture edits, recorded at G8 and at G8b themselves.
  *
  * THE MAP-BACKED-`stateOf` ROW IS A MEASURED BLIND SPOT, recorded rather than
  * left implicit.
@@ -983,10 +985,17 @@ describe('simulatePlan delegates income pass 1 (wages)', () => {
   // first row folds onto 0 and pre-summing is exactly equivalent (measured: the
   // pre-sum injection moved 0 of 308 differential-corpus entries).
   //
-  // The "each alone falls below" half is a FIXTURE SIZING fact, not something
-  // this test observes — every assertion here is satisfied by a single Pat
-  // stream large enough on its own. G8b, the test that follows this one, is
-  // what holds the fixture to that sizing.
+  // The "each alone falls below" half is a FIXTURE SIZING fact this test only
+  // PARTLY observes, and WHICH of Pat's two streams is lifted decides it. Both
+  // edits named here are fixture-only, with no caller defect present, and both
+  // are measured. Lift `w-pat-side` alone to a flat 30_000, so it clears the
+  // exempt amount unaided, and every assertion here stays green (1 of 33 fails:
+  // G8b, and G8b alone) — that is the sizing this test cannot see. Lift
+  // `w-pat-tail` alone instead and THIS test fails, at 2041: `earnings-test
+  // withholding 2041: expected 3997.302939534784 to be +0`, because 2041 sits
+  // outside `EARNINGS_TEST_YEARS` and the tail is Pat's ONLY open stream there,
+  // so the `=== 0` branch below trips. G8b, the test that follows this one,
+  // holds the fixture to both sizings.
   it('feeds each person’s own wage total to the Social Security earnings test', () => {
     const { result } = run()
     let withheldYears = 0
@@ -1007,13 +1016,31 @@ describe('simulatePlan delegates income pass 1 (wages)', () => {
     )
   })
 
-  // G8b — G8'S PREMISE, PINNED. G8 above reads only that
-  // `ssEarningsTestWithheld` is non-zero in `EARNINGS_TEST_YEARS`, and ONE of
-  // Pat's two open streams could produce that on its own. Were it ever sized to,
-  // a caller that folded only one of Pat's rows into `wagesByPerson` would leave
-  // G8 green — G8 catches the partial fold only because NEITHER stream alone
-  // clears the indexed exempt amount in those years. That is a property of the
-  // fixture's constants, so it is asserted here rather than left in a comment.
+  // G8b — G8'S PREMISE, PINNED, and the two halves of that premise are not
+  // equally at risk. G8 above reads only that `ssEarningsTestWithheld` is
+  // non-zero in `EARNINGS_TEST_YEARS`, which a `w-pat-side` sized to clear the
+  // indexed exempt amount unaided also satisfies — measured below, and in that
+  // fixture a caller folding only one of Pat's rows into `wagesByPerson` would
+  // leave G8 green. The `w-pat-side` iteration is what covers that, and it is
+  // the load-bearing one.
+  //
+  // THE `w-pat-tail` ITERATION IS BELT-AND-BRACES, said plainly rather than
+  // implied. MEASURED: the mirror edit, `w-pat-tail` alone lifted to 30_000,
+  // already fails G8 at 2041 — `expected 3997.302939534784 to be +0` — where
+  // the tail is Pat's ONLY open stream and the year sits outside
+  // `EARNINGS_TEST_YEARS`. REASONED, and marked as such because it generalises
+  // beyond that one size: the wage and the exempt amount are scaled by the SAME
+  // inflation path (`inflFactor` for the row, `limitScale` for
+  // `earningsTestBelowFraAnnual`, `simulate.ts`), so their ratio does not move
+  // between years and a tail sized to clear alone in 2038-2040 clears in 2041
+  // too, bar a sizing within an ulp of the threshold. That fixedness shows in
+  // the mirror edit's own numbers: 2041 is a year where the tail is Pat's only
+  // open stream, so G8's 2041 figure and G8b's 2038 figure are withholdings on
+  // that one stream alone, and they stand in the years' inflation ratio —
+  // 3711.8931549197805 × 1.025³ lands one ulp from the reported
+  // 3997.302939534784. Both iterations are kept so that each constant is
+  // asserted where the `STREAMS` comment claims it, instead of one of them
+  // resting on a year G8 happens to reach.
   //
   // THE COUNTERFACTUAL IS RUN, NOT COMPUTED. Nothing here restates the exempt
   // amount or the withholding formula; the same fixture is re-run with only ONE
@@ -1031,14 +1058,17 @@ describe('simulatePlan delegates income pass 1 (wages)', () => {
   // MEASURED, by making exactly the edit this guard exists to catch: lifting
   // `w-pat-side` alone, from 14_111.11 to a flat 30_000, so that Pat's side
   // stream clears the exempt amount with no help from the tail stream. All TEN
-  // guards above stayed green — G8 included, which is the whole point — and this
-  // one failed by name at the first year it checks:
+  // guards above stayed green — G8 included, which is the whole point — and so
+  // did the helper's 22 unit tests; 1 of the 33 failed, this one, by name at
+  // the first year it checks:
   //
   //   w-pat-side alone withholds in 2038 … expected 3711.8931549197805 to be +0
   //
   // The assertion aborts there, so 2038 is what was OBSERVED; 2039 and 2040 were
-  // never reached on that run. That is the whole of the G8b measurement — one
-  // injection, this file only.
+  // never reached on that run. That plus the `w-pat-tail` mirror edit recorded
+  // above — 2 of 33 failing, this test and G8 — is the whole of the G8b
+  // measurement: two fixture edits, over this file and the helper's unit tests,
+  // with the engine source untouched in both.
   it('sizes each of Pat’s streams to fall under the earnings-test exempt amount alone', () => {
     const factors = expectedInflFactors(FLAT_PATH)
     for (const streamId of ['w-pat-side', 'w-pat-tail'] as const) {
