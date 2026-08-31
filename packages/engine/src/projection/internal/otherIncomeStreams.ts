@@ -121,27 +121,52 @@ export interface OtherIncomeStreamYearInput {
  * the row objects and the array are new on the default path too, and no
  * arrangement of a pure helper avoids them. Measured on this phase in
  * isolation, at 40M rows per sample: 8.7-8.9 ns per contributing row as
- * written, against 5.1-5.3 ns for a variant that keeps the row but rebuilds the
- * payload back at the call site under the same optional chaining. So the eager
- * payload is ~3.5 ns per row, about 40% of what this phase costs; the residual
- * 5 ns is the loop the inlined phase also ran, plus the rows and array that
- * being a helper requires. End to end even the 3.5 ns does not surface: across
- * the phase-3 differential corpus this phase yields 0.491 rows per projected
- * year, so a 40-year projection carries ~20 of these objects, and on a
- * purpose-built plan running ~80 pass-2 rows a year (~160x the corpus rate) the
- * two trees timed the same to within run-to-run noise, the lazy one slower in
- * half the rounds.
+ * written, against 5.1-5.3 ns for a variant that rebuilds the payload back at
+ * the call site under the same optional chaining, and 6.1-6.2 ns for the
+ * memoizing-accessor variant described below. So the eager payload is roughly
+ * 2.6-3.5 ns per row depending on which lazy shape it is measured against, and
+ * the residual ~5 ns is the loop the inlined phase also ran plus the rows and
+ * array that being a helper requires.
  *
- * SO IT STAYS EAGER, and the reason is the guard rather than the nanoseconds.
+ * END TO END IT DOES NOT SURFACE, and the honest form of that claim is a
+ * predicted effect against a measured noise floor, not a win/loss tally. Across
+ * the phase-3 differential corpus this phase yields 0.491 rows per projected
+ * year, so a 40-year projection carries ~20 of these objects. Even on a
+ * purpose-built plan running ~80 pass-2 rows a year (~160x the corpus rate),
+ * ~2.6 ns per row predicts well under 1% of that workload's run time — an order
+ * of magnitude below the benchmark's own round-to-round spread. Four
+ * interleaved rounds could not separate the two trees, and which one came out
+ * ahead flipped between rounds. Do not read a conclusion out of that tally in
+ * either direction; at this effect size it is noise.
+ *
+ * SO IT STAYS EAGER — but NOT because laziness necessarily costs the guard.
  * The row OWNS its payload, which is what lets
  * `simulate.otherIncomeStreamsDelegation.test.ts` assert with `toBe` that the
  * object reaching the ledger IS this one — the only check in the repository
  * that separates real delegation from a caller which invokes the helper for
- * effect and then records its own byte-identical rebuild. Making the payload
- * conditional would take that away: `record` would be present only when an
- * input flag agreed with the caller's `yearSites`, an invariant no type can
- * check and a silently dropped ledger line whenever it did not. That is a worse
- * trade than 3.5 ns per row.
+ * effect and then records its own byte-identical rebuild. Two lazy shapes do
+ * lose that assertion, and one does not:
+ *
+ *   - A FLAG-CONDITIONAL payload loses it. `record` would be present only when
+ *     an input flag agreed with the caller's `yearSites` — an invariant no type
+ *     can check, and a silently dropped ledger line whenever it did not.
+ *   - REBUILDING AT THE CALL SITE loses it outright: that is precisely the
+ *     half-orphan shape G3 exists to catch.
+ *   - A MEMOIZING ACCESSOR on the row's prototype KEEPS it. Because
+ *     `yearSites?.recordRecurringIncome(row.record)` does not evaluate its
+ *     argument when the receiver is nullish, and because the accessor memoizes,
+ *     the caller and the test read the SAME object. Measured rather than
+ *     reasoned: that variant passes all 29 guards, builds ZERO payloads on the
+ *     default path, and runs at 6.1-6.2 ns per row.
+ *
+ * The accessor is rejected on other grounds, and they are judgement rather than
+ * measurement, so they are stated as such. Rows would stop being plain object
+ * literals and become class instances, in a file whose whole value is being an
+ * obviously-pure extraction; and G3's `toBe` would stop holding because the row
+ * owns one object and start holding because the accessor keeps memoizing — a
+ * subtler invariant, bought with a saving that does not surface. If this phase
+ * ever gets hot enough for ~2.6 ns per row to matter, the accessor is the shape
+ * to reach for, and this note is the record that it works.
  *
  * IF A THIRD KIND IS EVER ADDED HERE, GO AND LOOK AT THE CALLER. `simulate.ts`
  * tests `row.kind === 'oneTime'` on its second arm rather than falling through

@@ -87,20 +87,24 @@
  * difference is worth stating rather than implying. Income pass 2 writes four
  * year-scoped accumulators and only ONE of them can carry an association guard:
  *
- *   - `ordinaryIncome` is LIVE ON THIS FIXTURE, and only on a fixture like it.
- *     Its two earlier writers in the year are the distributed-yield pass and
- *     pass 1 wages, and BOTH ARE OPTIONAL; this plan has wages, so the
- *     accumulator is non-zero when the phase folds into it and `B + a + b`
- *     genuinely differs from `B + (a + b)` in IEEE-754. G4a is the one real
- *     association guard here, and its liveness is FIXTURE-DEPENDENT rather than
- *     a property of the engine — a plan with neither wages nor taxable yield
- *     enters zero-based and leaves the guard blind. (Measured over the
- *     differential corpus: `ordinaryIncome` is zero at phase entry in 3990 of
- *     6336 year-runs.) That is why G4a COUNTS the years that actually separate
- *     the two associations and asserts the count is non-zero, rather than
- *     assuming the property holds — and why its fold base goes through
- *     `ordinaryFoldBase`, which pins the no-taxable-yield half of the premise
- *     instead of leaving it to this paragraph.
+ *   - `ordinaryIncome` is LIVE ON PART OF THIS FIXTURE'S HORIZON, and only on a
+ *     fixture like it. Its two earlier writers in the year are the
+ *     distributed-yield pass and pass 1 wages, and BOTH ARE OPTIONAL. This plan
+ *     has wages, but they STOP at `WAGE_END_AGE`: measured, the base is
+ *     non-zero for the first 30 of the 35 projected years and ZERO for the last
+ *     five, which is the same three-regime horizon the fixture comment below
+ *     describes. Only where the base is non-zero does `B + a + b` genuinely
+ *     differ from `B + (a + b)` in IEEE-754 — at a zero base, folding row by
+ *     row IS pre-summing. G4a is the one real association guard here, and its
+ *     liveness is FIXTURE-DEPENDENT rather than a property of the engine — a
+ *     plan with neither wages nor taxable yield enters zero-based in EVERY year
+ *     and leaves the guard blind. (Measured over the differential corpus:
+ *     `ordinaryIncome` is zero at phase entry in 3990 of 6336 year-runs.) That
+ *     is why G4a COUNTS the years that actually separate the two associations
+ *     and asserts the count is non-zero, rather than assuming every year is one
+ *     — and why its fold base goes through `ordinaryFoldBase`, which pins the
+ *     no-taxable-yield half of the premise instead of leaving it to this
+ *     paragraph.
  *   - `oneTimeGains` is ZERO-BASED. It is declared 0 each year and this phase
  *     is its FIRST writer; the disposition fold is far downstream. `0 + a + b`
  *     IS `0 + (a + b)`, so G4b's exact match proves SELECTION and PER-ROW
@@ -118,12 +122,15 @@
  * that hands over FEWER rows than it should: an early-out returning nothing for
  * some year loses that year's entire pass-2 contribution to all four
  * accumulators and both recorders, and every one of those guards agrees with
- * the loss. G1 pins that the call HAPPENS, not what comes back. Measured: a
- * one-line `if (year === 2040) return rows` at the top of the helper failed
- * NOTHING in this file, and nothing in the helper's own unit tests either —
- * they happen to exercise 2030, where the same injection fails 16 of them.
+ * the loss. G1 pins that the call HAPPENS, not what comes back. Measured ON THE
+ * VERSION OF THIS FILE BEFORE G7 EXISTED — the scope matters, and the
+ * calibration table above reports the same injection against the file as it
+ * stands now: a one-line `if (year === 2040) return rows` at the top of the
+ * helper failed NOTHING here, and nothing in the helper's own unit tests either
+ * — they happen to exercise 2030, where the same injection fails 16 of them.
  * G7 is the answer to that, and it is the only guard here whose expectations
- * are derived from the fixture rather than from the helper's output.
+ * are derived from the fixture rather than from the helper's output. Against
+ * the current file that same 2040 injection fails G7, and G7 alone.
  *
  * WHAT IS AND IS NOT CAUGHT BY THE PERMUTATION GUARD. Recurring and one-time
  * rows INTERLEAVE in `plan.incomes` order and both reach `ordinaryIncome`, so a
@@ -479,15 +486,28 @@ function rowsFor(
  *
  * "The one" is a property of THIS FIXTURE, not a guarantee the engine makes,
  * and saying so is the difference between a pin and an assumption. `simulate.ts`
- * has a SECOND `taxCalculator.compute` call site, inside `taxOf` — the
- * Roth-conversion safety-net trimmer — which runs a baseline evaluation and
- * then up to three more in the SAME year as it shrinks the conversion, each of
- * the three at a different `ordinaryIncome`. It is gated behind a desired
- * conversion above a cent, and this plan takes `createEmptyPlan`'s
- * `rothConversion: { mode: 'none' }` and never overrides it, so nothing ever
- * asks for one. MEASURED on this fixture rather than argued: 35 evaluations
- * across 35 projected years — exactly one per year — in default and capture
- * modes alike.
+ * has exactly two `taxCalculator.compute` call sites, and BOTH can evaluate
+ * more than once in a year:
+ *
+ *   - The PRIMARY site sits inside a 16-pass HSA fixed-point loop within
+ *     `evaluateWithdrawalNeed`, and it runs UNCONDITIONALLY on each pass of
+ *     that loop, while the withdrawal search calls the enclosing function
+ *     repeatedly — a bisection midpoint among them. This site alone can
+ *     therefore evaluate many times in one year.
+ *   - The SECOND site is inside `taxOf`, the Roth-conversion safety-net
+ *     trimmer, which runs a baseline evaluation and then up to three more in
+ *     the SAME year as it shrinks the conversion, each at a different
+ *     `ordinaryIncome`. It is gated behind a desired conversion above a cent,
+ *     and this plan takes `createEmptyPlan`'s `rothConversion: { mode: 'none' }`
+ *     and never overrides it, so nothing ever asks for one.
+ *
+ * So `mode: 'none'` is only half the reason, and the COUNT is what carries the
+ * rest. Because the primary site is unconditional per pass, a measured total of
+ * ONE evaluation in a year pins both that the withdrawal search made a single
+ * evaluation and that its HSA loop took a single pass — this fixture has no HSA
+ * account and sets `expenses.baseAnnual = 0`. MEASURED rather than argued: 35
+ * evaluations across 35 projected years — exactly one per year — in default and
+ * capture modes alike.
  *
  * So the COUNT is what is asserted, rather than the values merely agreeing. If
  * a later fixture change opened the conversion path, this fails by name here

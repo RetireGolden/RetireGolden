@@ -2395,9 +2395,14 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // That accumulator has exactly two earlier writers in the year, the
     // distributed-yield pass above and pass 1 wages, and BOTH ARE OPTIONAL: a
     // plan with neither enters this loop at zero. (Measured over the phase-3
-    // differential corpus: zero at entry in 3990 of 6336 year-runs.) So
-    // PRE-SUMMING the rows moves the number wherever that base is non-zero, and
-    // RE-ORDERING them can move it from three addends up, base or no base.
+    // differential corpus: zero at entry in 3990 of 6336 year-runs.) That base
+    // is what makes the fold order observable, and the two hazards have
+    // DIFFERENT thresholds. PRE-SUMMING is exact at a zero base — folding row
+    // by row IS pre-summing there — and CAN move the number once the base is
+    // non-zero: measured, it does in 41 of the 250 default-mode corpus
+    // year-runs that fold two or more ordinary rows, and not in the other 209.
+    // RE-ORDERING can move it from TWO addends up once the base is non-zero,
+    // and from three up even at a zero base.
     for (const row of otherIncomeStreams({ incomes: plan.incomes, year, anyAlive, inflFactor })) {
       if (row.kind === 'recurring') {
         incomes.recurring += row.amount
