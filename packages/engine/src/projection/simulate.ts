@@ -49,7 +49,6 @@ import {
 } from '../model/plan.js'
 import {
   accountAllocation,
-  blendedTaxableYield,
   driftWeights,
   resolveAssetClassParams,
   targetWeightsAt,
@@ -64,10 +63,15 @@ import { createAnnualCashFlowYearSites, type AnnualCashFlowYearSites } from './a
 import { annuityExclusionMultiple, annuityPayoutForm, annuityPayoutFraction } from './annuityForms.js'
 import { buildLadder } from '../ladder/ladderMath.js'
 import { annualRebalanceToTarget } from './internal/annualRebalanceToTarget.js'
+import { annualPermanentLifeTransitions } from './internal/annualPermanentLifeTransitions.js'
+import { annualSnapshot } from './internal/annualSnapshot.js'
+import { distributedTaxableYieldRows } from './internal/distributedTaxableYieldRows.js'
 import { hecmLineOpenings } from './internal/hecmLineOpenings.js'
 import { propertyEventsAndGrowth } from './internal/propertyEventsAndGrowth.js'
+import { publishedEntityFacts } from './internal/publishedEntityFacts.js'
 import { pensionLumpSumRollovers } from './internal/pensionLumpSumRollovers.js'
 import { tipsLadderAnnualCashFlows, type TipsLadderState } from './internal/tipsLadderAnnualCashFlow.js'
+import { tipsLadderPurchaseFunding } from './internal/tipsLadderPurchaseFunding.js'
 import { fixedAssetDispositions } from './internal/fixedAssetDispositions.js'
 import { otherIncomeStreams } from './internal/otherIncomeStreams.js'
 import { wageIncomeStreams } from './internal/wageIncomeStreams.js'
@@ -261,9 +265,6 @@ import {
   type InheritedAccountYearEvidence,
   type SocialSecurityBenefitSource,
   type SocialSecurityStreamActivity,
-  type OwnedRothIraPoolActivity,
-  type EmployerRothAccountActivity,
-  type OwnedTraditionalIraAggregateActivity,
   type QualifiedAnnuityPaymentActivity,
   type YearCashFlowTransferEndpoint,
 } from './types.js'
@@ -576,27 +577,6 @@ function payableMonthsAtAge(ageAttained: number, claimAge: ClaimAge): number {
   if (ageAttained < claimAge.years) return 0
   if (ageAttained > claimAge.years) return 12
   return Math.max(0, 12 - claimAge.months)
-}
-
-/**
- * Linear interpolation of an illustration cash-value table by age. Clamps to the
- * endpoints outside the table's range (front-loaded-poor / back-loaded-rich whole-
- * life cash value is exactly why a schedule beats a flat rate).
- */
-function interpolateByAge(schedule: { age: number; value: number }[], age: number): number {
-  if (schedule.length === 0) return 0
-  const sorted = [...schedule].sort((a, b) => a.age - b.age)
-  if (age <= sorted[0]!.age) return sorted[0]!.value
-  if (age >= sorted[sorted.length - 1]!.age) return sorted[sorted.length - 1]!.value
-  for (let i = 0; i < sorted.length - 1; i++) {
-    const lo = sorted[i]!
-    const hi = sorted[i + 1]!
-    if (age >= lo.age && age <= hi.age) {
-      const t = (age - lo.age) / (hi.age - lo.age)
-      return lo.value + t * (hi.value - lo.value)
-    }
-  }
-  return sorted[sorted.length - 1]!.value
 }
 
 const SEQUENTIAL_ORDER = ['cash', 'taxable', 'equityComp', 'traditional', 'roth', 'hsa'] as const
@@ -2051,55 +2031,36 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // for cash, realizing gains pro-rata for taxable/equity-comp. A partial
     // fill scales every rung down so the ladder delivers exactly what the
     // money bought.
-    for (const ls of ladderStates) {
-      if (!ls.purchase || ls.purchase.year !== year) continue
-      const funding = balances.find((b) => b.account.id === ls.purchase!.fundingAccountId)
-      if (!funding) continue
-      const cost = ls.costReal * inflFactor
-      const funded = Math.min(cost, spendableBalance(funding, year))
-      if (funded < cost - EPSILON) {
-        ls.scale = cost > 0 ? funded / cost : 0
-        warnings.add(
-          'A TIPS ladder purchase exceeded its funding account balance; the ladder was scaled down to what the available money buys.',
-        )
+    // The helper shadows balances by ARRAY POSITION. Applying every purchase
+    // row in order retains first-match duplicate ids and shared-source
+    // read-after-write behavior without letting the helper mutate annual state.
+    for (const row of tipsLadderPurchaseFunding({
+      ladderStates,
+      balances,
+      year,
+      inflFactor,
+    })) {
+      if (row.kind === 'none') continue
+      const ladder = ladderStates[row.ladderIndex]!
+      const funding = balances[row.fundingIndex]!
+      if (row.scale !== null) ladder.scale = row.scale
+      if (row.warning !== null) warnings.add(row.warning)
+      // The former inline phase folded a zero gain for taxable accounts, but
+      // did not perform an addition for cash/traditional/Roth/HSA accounts.
+      // Test the PRE-WRITE balance here to retain that exact signed-zero and
+      // IEEE-754 behavior for equity-compensation accounts too.
+      if (
+        funding.account.type === 'taxable' ||
+        (funding.account.type === 'equityComp' && funding.balance > 0)
+      ) {
+        rebalanceRealizedGains += row.capitalGainOrLoss
       }
-      let tipsPurchaseCapitalGainOrLoss = 0
-      if (funding.account.type === 'taxable') {
-        const sale = aggregateBasisSale({
-          openingFairMarketValue: funding.balance,
-          openingCostBasis: funding.costBasis,
-          saleProceeds: funded,
-        })
-        tipsPurchaseCapitalGainOrLoss = sale.realizedCapitalGainOrLoss
-        rebalanceRealizedGains += sale.realizedCapitalGainOrLoss
-        funding.costBasis = sale.remainingCostBasis
-      } else if (funding.account.type === 'equityComp' && funding.balance > 0) {
-        const basisRatio = Math.min(1, funding.costBasis / funding.balance)
-        tipsPurchaseCapitalGainOrLoss = funded * (1 - basisRatio)
-        rebalanceRealizedGains += tipsPurchaseCapitalGainOrLoss
-        funding.costBasis = Math.max(0, funding.costBasis - funded * basisRatio)
-      }
-      funding.balance -= funded
-      yearSites?.recordTipsLadderPurchase({
-        fundingAccountId: funding.account.id,
-        ladderId: ls.id,
-        funded,
-        capitalGainOrLoss: tipsPurchaseCapitalGainOrLoss,
-      })
-      // The same booking the annuity premium above gets, for the reason this
-      // block's own opening sentence gives: these ARE the same transfer
-      // semantics. The purchase price leaves an LP bucket for a ladder the LP
-      // carries in no bucket, and the ladder pays back later through
-      // `incomes.tipsLadder`, which is already inside `exogenousCash`. Captured
-      // here because this block publishes no runtime record whatsoever — there
-      // is no occurrence to read back off, so the mutation site is the only
-      // place the fact exists for any funding account type.
-      if (funded > 0) {
-        exogenousStrategyDebits.push({
-          accountId: funding.account.id,
-          amountPlanDollars: funded,
-        })
-      }
+      funding.costBasis = row.closingCostBasis
+      funding.balance = row.closingBalance
+      yearSites?.recordTipsLadderPurchase(row.record)
+      // This purchase has no runtime occurrence to read back, so the mutation
+      // site remains the only source for the optimizer's exogenous debit.
+      if (row.debit !== null) exogenousStrategyDebits.push(row.debit)
     }
 
     const peopleStates: PersonYearState[] = people.map((p) => {
@@ -2312,48 +2273,29 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     const distributedYieldByAccountId = new Map<string, { gross: number; distributedYieldPct: number; reinvest: boolean }>()
     const wagesByPerson = new Map<string, number>()
 
-    for (const state of balances) {
-      if (state.account.type !== 'taxable') continue
-      const startBalance = Math.max(0, startOfYearBalance.get(state.account.id) ?? state.balance)
-      if (startBalance <= 0) continue
-      // An allocated brokerage account derives its yield fields from the class
-      // blend at this year's weights (step 2 of the allocation plan); explicit
-      // account-level fields still override the blend.
-      const track = allocationTrack.get(state.account.id)
-      const blendedYield = track ? blendedTaxableYield(track.weights, classParams) : null
-      const interestYieldPct = Math.max(0, state.account.interestYieldPct ?? blendedYield?.interestYieldPct ?? 0)
-      const dividendYieldPct = Math.max(0, state.account.dividendYieldPct ?? blendedYield?.dividendYieldPct ?? 0)
-      const taxExemptYieldPct = Math.max(0, state.account.taxExemptInterestYieldPct ?? 0)
-      const totalTaxableYieldPct = interestYieldPct + dividendYieldPct
-      const totalDistributedYieldPct = totalTaxableYieldPct + taxExemptYieldPct
-      if (totalDistributedYieldPct <= 0) continue
-      const interest = startBalance * (interestYieldPct / 100)
-      const dividends = startBalance * (dividendYieldPct / 100)
-      const exempt = startBalance * (taxExemptYieldPct / 100)
-      const qualified = dividends * Math.min(1, Math.max(0, state.account.qualifiedRatio ?? blendedYield?.qualifiedRatio ?? 0.85))
-      const ordinaryDividends = dividends - qualified
-      const taxableGross = interest + dividends
-      const gross = taxableGross + exempt
-
-      incomes.taxableInterest += interest
-      incomes.ordinaryDividends += ordinaryDividends
-      incomes.qualifiedDividends += qualified
-      incomes.taxableYield += taxableGross
-      incomes.taxExemptInterest += exempt
-      ordinaryIncome += interest + ordinaryDividends
-
-      const reinvest = state.account.reinvestDividends ?? true
-      if (reinvest) taxableYieldReinvested += gross
-      distributedYieldByAccountId.set(state.account.id, { gross, distributedYieldPct: totalDistributedYieldPct, reinvest })
-      yearSites?.recordDistributedYield({
-        accountId: state.account.id,
-        taxableGross,
-        interest,
-        ordinaryDividends,
-        qualified,
-        exempt,
-        reinvest,
+    // The helper returns one row per balance state, including explicit `none`
+    // rows. Folding each contributing row here preserves the original
+    // account-order IEEE-754 additions and last-write map behavior.
+    for (const row of distributedTaxableYieldRows({
+      states: balances,
+      startOfYearBalance,
+      allocationTrack,
+      classParams,
+    })) {
+      if (row.kind === 'none') continue
+      incomes.taxableInterest += row.interest
+      incomes.ordinaryDividends += row.ordinaryDividends
+      incomes.qualifiedDividends += row.qualified
+      incomes.taxableYield += row.taxableGross
+      incomes.taxExemptInterest += row.exempt
+      ordinaryIncome += row.interest + row.ordinaryDividends
+      if (row.reinvest) taxableYieldReinvested += row.gross
+      distributedYieldByAccountId.set(row.accountId, {
+        gross: row.gross,
+        distributedYieldPct: row.distributedYieldPct,
+        reinvest: row.reinvest,
       })
+      yearSites?.recordDistributedYield(row.record)
     }
 
     // Pass 1: wages (must precede Social Security for the earnings test). The
@@ -10151,44 +10093,33 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     }
 
     // --- insurance: permanent-life cash value + death benefit --------------
-    let deathBenefitPaid = 0
-    for (const policy of plan.insurance) {
-      if (policy.kind !== 'permanentLife') continue
-      const insured = personById.get(policy.insured)
-      const deathAge = insured ? lifeAgeOf(insured) : Infinity
-      const ageAttained = insured ? stateOf(policy.insured).ageAttained : -Infinity
-      if (ageAttained < deathAge) {
-        // Alive, before the settlement year: cash value tracks the illustration
-        // (schedule) or compounds (flatRate).
-        if (policy.cashValueMode === 'schedule' && policy.cashValueSchedule) {
-          insuranceCashValues.set(policy.id, interpolateByAge(policy.cashValueSchedule, ageAttained))
-        } else {
-          const prev = insuranceCashValues.get(policy.id) ?? 0
-          insuranceCashValues.set(policy.id, prev * (1 + (policy.cashValueGrowthPct ?? 0) / 100))
-        }
-      } else if (ageAttained === deathAge) {
-        // Final alive year = death settlement. Pay here (not at deathAge + 1,
-        // which is past endYear for the last survivor — exactly the estate case
-        // the policy models) so the benefit always lands in the projection. The
-        // cash value rolls into the benefit and is zeroed so it isn't double-
-        // counted in net worth; a real death benefit is never less than the cash
-        // value, so max() also guards the flat-rate model drifting above face.
-        const cashValue = insuranceCashValues.get(policy.id) ?? 0
-        const payout = Math.max(policy.deathBenefit, cashValue)
-        deposit(payout)
-        deathBenefitPaid += payout
-        if (payout > 0) {
+    const permanentLife = annualPermanentLifeTransitions({
+      policies: plan.insurance,
+      insuranceCashValues,
+      resolveInsured: (personId) => {
+        const insured = personById.get(personId)
+        return insured === undefined
+          ? null
+          : {
+              deathAge: lifeAgeOf(insured),
+              ageAttained: stateOf(personId).ageAttained,
+            }
+      },
+    })
+    const deathBenefitPaid = permanentLife.deathBenefitPaid
+    for (const transition of permanentLife.transitions) {
+      if (transition.payout !== null) {
+        deposit(transition.payout)
+        if (transition.payout > 0) {
           deathBenefits?.push({
-            policyId: policy.id,
-            insuredPersonId: policy.insured,
-            amount: payout,
+            policyId: transition.policyId,
+            insuredPersonId: transition.insuredPersonId,
+            amount: transition.payout,
             destination: surplusDestination!,
           })
         }
-        insuranceCashValues.set(policy.id, 0)
-      } else {
-        insuranceCashValues.set(policy.id, 0)
       }
+      insuranceCashValues.set(transition.policyId, transition.cashValue)
     }
 
     const ownedNonRothIraBalanceBeforeGrowthByState =
@@ -10331,37 +10262,22 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     })
 
     // --- snapshot ------------------------------------------------------------
-    const balanceEntries: [string, number][] = []
-    let investableTotal = unassignedCash
-    for (const state of balances) {
-      balanceEntries.push([state.account.id, state.balance])
-      investableTotal += state.balance
-    }
-    let propertyTotal = 0
-    for (const [id, value] of propertyValues) {
-      balanceEntries.push([id, value])
-      propertyTotal += value
-    }
-    let debtTotal = 0
-    for (const [id, value] of debtBalances) {
-      balanceEntries.push([id, value])
-      debtTotal += value
-    }
-    // HECM loans net against net worth with the non-recourse floor honored:
-    // the lender's claim never exceeds the home's value, so heirs are never
-    // charged for a loan that outgrew the house.
-    let hecmLoanTotal = 0
-    let hecmEffectiveDebt = 0
-    for (const [id, line] of hecmStates) {
-      hecmLoanTotal += line.loanBalance
-      hecmEffectiveDebt += Math.min(line.loanBalance, propertyValues.get(id) ?? 0)
-    }
-    let insuranceCashValueTotal = 0
-    for (const [id, value] of insuranceCashValues) {
-      balanceEntries.push([id, value])
-      insuranceCashValueTotal += value
-    }
-    const balanceRecord = Object.fromEntries(balanceEntries)
+    const {
+      balanceRecord,
+      investableTotal,
+      propertyTotal,
+      debtTotal,
+      hecmLoanTotal,
+      hecmEffectiveDebt,
+      insuranceCashValueTotal,
+    } = annualSnapshot({
+      balances,
+      unassignedCash,
+      propertyValues,
+      debtBalances,
+      hecmStates,
+      insuranceCashValues,
+    })
 
     const reportedWithdrawals = {
       ...withdrawalPlan.byCategory,
@@ -10702,51 +10618,17 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // --- per-entity published facts (insight one-source-of-truth channel) ---
     // Only assumed-basis consequential verdicts are published on these rows —
     // every remaining member has a production consumer (missingDataBasis).
-    const employerRothOwnerByAccount = new Map<string, string>()
-    for (const account of plan.accounts) {
-      if (account.type === 'roth' && account.kind === 'employer') {
-        employerRothOwnerByAccount.set(
-          account.id,
-          account.ownerPersonId ?? primary.id,
-        )
-      }
-    }
-    const ownedRothIraPoolActivity: OwnedRothIraPoolActivity[] = [
-      ...ownedRothAssumedBasisConsequentialByOwner,
-    ]
-      .filter(([, withdrawal]) => withdrawal > 0)
-      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
-      .map(([ownerPersonId, withdrawal]) => ({
-        ownerPersonId,
-        assumedBasisConsequential: { withdrawal },
-      }))
-    const employerRothAccountActivity: EmployerRothAccountActivity[] = [
-      ...employerRothAssumedBasisConsequentialByAccount,
-    ]
-      .filter(([, withdrawal]) => withdrawal > 0)
-      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
-      .map(([accountId, withdrawal]) => ({
-        accountId,
-        ownerPersonId: employerRothOwnerByAccount.get(accountId) ?? primary.id,
-        assumedBasisConsequential: { withdrawal },
-      }))
-
-    const ownedTraditionalIraAggregateActivity:
-      OwnedTraditionalIraAggregateActivity[] = [...form8606ConsequentialByOwner]
-      .filter(([, channels]) =>
-        channels.distributions > 0 ||
-        channels.conversions > 0 ||
-        channels.annuityPayments > 0,
-      )
-      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
-      .map(([ownerPersonId, channels]) => ({
-        ownerPersonId,
-        assumedBasisConsequential: {
-          distributions: channels.distributions,
-          conversions: channels.conversions,
-          annuityPayments: channels.annuityPayments,
-        },
-      }))
+    const {
+      ownedRothIraPoolActivity,
+      employerRothAccountActivity,
+      ownedTraditionalIraAggregateActivity,
+    } = publishedEntityFacts({
+      accounts: plan.accounts,
+      primaryPersonId: primary.id,
+      ownedRothAssumedBasisConsequentialByOwner,
+      employerRothAssumedBasisConsequentialByAccount,
+      form8606ConsequentialByOwner,
+    })
 
     const yearResult: YearResult = {
       year,

@@ -1,0 +1,72 @@
+{
+  "schema": "retiregolden.equivalence-reach-spec/1",
+  "name": "simulate-small-annual-boundaries",
+  "why": "Measured reach for the five small annual boundaries extracted from simulatePlan. Ranges point at the helper files after extraction, not the removed inline sites. Each range was pinned against this working tree after all five helpers landed. Reach reports the remaining cold sub-line operands; material validated-input-impossible branches are called out in entry notes, while the helper unit suites cover their supported structural contracts. Treating rejected Plan input as differential coverage would weaken, not strengthen, this proof.",
+  "entries": [
+    {
+      "id": "A.filters",
+      "label": "per-entity account indexing and positive verdict filters",
+      "file": "projection/internal/publishedEntityFacts.ts",
+      "lines": [56, 101],
+      "note": "The corpus reaches positive owned-Roth, employer-Roth, Form 8606 distribution, and Form 8606 conversion channels. The annuityPayments predicate on line 102 is deliberately excluded: validated projection members do execute qualified annuity payments, but the annual settlement currently publishes no matching assumed-basis effect for them (the existing integration characterization is likewise conditional), so the simulator cannot presently populate a positive annuity-only channel. The pure helper unit test covers that supported structural input."
+    },
+    {
+      "id": "A.rows",
+      "label": "per-entity deterministic sorting, row construction, and return",
+      "file": "projection/internal/publishedEntityFacts.ts",
+      "lines": [103, 118]
+    },
+    {
+      "id": "B",
+      "label": "annual balance snapshot",
+      "file": "projection/internal/annualSnapshot.ts",
+      "lines": [68, 113]
+    },
+    {
+      "id": "C",
+      "label": "permanent-life annual state transitions",
+      "file": "projection/internal/annualPermanentLifeTransitions.ts",
+      "lines": [69, 110],
+      "note": "The corpus reaches the permanent-life kind filter, flat-rate and schedule modes, positive and zero settlement, and post-death zeroing. The missing-insured nullish operands on lines 81-82 are a defensive structural-input contract: Plan validation rejects an insurance subject absent from household.people, so no validated differential member can select those sub-line operands."
+    },
+    {
+      "id": "C.interpolateSort",
+      "label": "permanent-life schedule copy and numeric sort",
+      "file": "projection/internal/annualPermanentLifeTransitions.ts",
+      "lines": [52, 52]
+    },
+    {
+      "id": "C.interpolateClamps",
+      "label": "permanent-life schedule lower and upper endpoint clamps",
+      "file": "projection/internal/annualPermanentLifeTransitions.ts",
+      "lines": [53, 54]
+    },
+    {
+      "id": "C.interpolateInterior",
+      "label": "permanent-life schedule interior interpolation",
+      "file": "projection/internal/annualPermanentLifeTransitions.ts",
+      "lines": [55, 62],
+      "note": "Lines 51 (empty schedule) and 63 (mathematical fall-through after a sorted finite schedule) are excluded. Plan validation requires a non-empty schedule, and finite ages plus the endpoint clamps make line 63 unreachable for validated Plan input."
+    },
+    {
+      "id": "D",
+      "label": "distributed taxable-yield row production",
+      "file": "projection/internal/distributedTaxableYieldRows.ts",
+      "lines": [81, 145]
+    },
+    {
+      "id": "E.select",
+      "label": "TIPS purchase selection and funding-account resolution",
+      "file": "projection/internal/tipsLadderPurchaseFunding.ts",
+      "lines": [76, 87],
+      "note": "The absent/wrong-year branch and a successful funding-account lookup are both reached. The missing-account body on lines 89-90 is excluded: Plan validation requires every purchase fundingAccountId to resolve to a cash, taxable, or equity-comp account, all of which necessarily appear in balances."
+    },
+    {
+      "id": "E.purchase",
+      "label": "TIPS purchase funding arithmetic and ordered shadow-state update",
+      "file": "projection/internal/tipsLadderPurchaseFunding.ts",
+      "lines": [93, 143]
+    }
+  ],
+  "readingTheCounts": "A member count is evidence that some line in the named range executed. The reach command additionally fails on any cold executable line inside that range. JavaScript line coverage cannot distinguish nullish/ternary operands sharing one physical line, so read the reported cold sub-line regions together with the entry notes and focused helper tests rather than treating a green range as branch coverage."
+}

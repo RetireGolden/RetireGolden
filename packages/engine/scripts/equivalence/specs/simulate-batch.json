@@ -76,9 +76,10 @@
       "label": "B: the aggregated-IRA credit application, applied at the call site",
       "file": "projection/simulate.ts",
       "lines": [
-        2009,
-        2020
-      ]
+        1989,
+        2000
+      ],
+      "note": "REPINNED by the simulate-small-annual-boundaries extraction after new imports and removal of the former inline insurance interpolator shifted this caller-side branch. These lines are the creditsAggregatedIra gate and the complete runtime-application call; the previous 2009-2020 range had become unrelated HECM commentary/arguments and could false-green."
     },
     {
       "id": "C",

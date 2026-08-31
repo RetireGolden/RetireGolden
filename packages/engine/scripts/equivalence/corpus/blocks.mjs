@@ -1,30 +1,35 @@
 /**
- * Purpose-built corpus members for the five `simulate.ts` annual phases this
- * corpus was built around, plus the blind spots that belong to the corpus
- * itself rather than to any one phase:
+ * Purpose-built corpus members for the annual `simulate.ts` phases this corpus
+ * was built around, plus the blind spots that belong to the corpus itself
+ * rather than to any one phase:
  *
  *   A  annual rebalance to target (start-of-year trade)
  *   B  pension lump-sum rollover
  *   C  HECM line open
  *   D  income pass 1 — wages
  *   E  property events + growth
+ *   F  distributed taxable yield
+ *   G  TIPS-ladder purchase funding
+ *   H  permanent-life transitions + annual snapshot
+ *   I  per-entity published facts
  *   S  shared: whole-corpus holes found by measurement (see `blockS`)
  *
- * FOUR of those five are the ones the "simulate batch" slice extracts: A, B, C
- * and E. Block D's phase was extracted concurrently and independently on main,
- * as `projection/internal/wageIncomeStreams.ts`, and this slice's duplicate
- * helper was withdrawn — so D has no entry in the reach spec any more. Its
- * MEMBERS stay: the wages phase still runs in every capture, and dropping the
- * members that reach it would narrow the differential check for no gain.
+ * A, B, C and E are the earlier "simulate batch" extraction. Block D's phase
+ * was extracted concurrently and independently on main as
+ * `projection/internal/wageIncomeStreams.ts`; D's members stay because the
+ * wages phase still runs in every capture. F through I are the later
+ * `simulate-small-annual-boundaries` extraction and are measured by its own
+ * reach spec.
  *
  * The 29 curated example plans exercise A, D and E's growth leg incidentally,
  * but NONE of them carries a HECM line or a pension lump-sum election — grepped,
  * not assumed — so without this tier the differential check would pass on two of
  * the five blocks by never running them. Each member names the branch or hazard
  * it exists to reach in `covers`, and
- * `scripts/equivalence/specs/simulate-batch.json` is the line-range spec that
- * turns those claims into measured hit counts (`equivalence.mjs reach`) for
- * every block but D.
+ * `scripts/equivalence/specs/simulate-batch.json` and
+ * `scripts/equivalence/specs/simulate-small-annual-boundaries.json` are the
+ * line-range specs that turn those claims into measured hit counts
+ * (`equivalence.mjs reach`).
  *
  * Everything here is built from `@retiregolden/engine/testing/planFixtures`, so
  * this tier has no dependency outside the engine package. Plans are
@@ -75,6 +80,35 @@ function qualified(type, id, balance, extra = {}) {
   }
 }
 
+function cash(id, balance, extra = {}) {
+  return {
+    id,
+    name: id,
+    ownerPersonId: null,
+    annualReturnPct: null,
+    type: 'cash',
+    balance,
+    annualContribution: 0,
+    ...extra,
+  }
+}
+
+function equityComp(id, balance, costBasis, extra = {}) {
+  return {
+    id,
+    name: id,
+    ownerPersonId: 'p1',
+    annualReturnPct: null,
+    type: 'equityComp',
+    balance,
+    costBasis,
+    annualContribution: 0,
+    vestingMode: 'final',
+    vestDate: null,
+    ...extra,
+  }
+}
+
 function property(id, value, extra = {}) {
   return {
     id,
@@ -85,6 +119,64 @@ function property(id, value, extra = {}) {
     value,
     plannedSaleYear: null,
     expectedNetProceeds: null,
+    ...extra,
+  }
+}
+
+function debt(id, balance, extra = {}) {
+  return {
+    id,
+    name: id,
+    ownerPersonId: 'p1',
+    annualReturnPct: null,
+    type: 'debt',
+    balance,
+    interestPct: 0,
+    monthlyPayment: 0,
+    ...extra,
+  }
+}
+
+function permanentLife(id, insured, extra = {}) {
+  return {
+    kind: 'permanentLife',
+    id,
+    name: id,
+    insured,
+    beneficiary: 'estate',
+    annualPremium: 0,
+    premiumMode: 'paidUp',
+    deathBenefit: 0,
+    cashValue: 0,
+    cashValueMode: 'flatRate',
+    cashValueGrowthPct: 0,
+    ...extra,
+  }
+}
+
+function ltc(id, owner) {
+  return {
+    kind: 'ltc',
+    id,
+    name: id,
+    owner,
+    annualPremium: 0,
+    premiumMode: 'paidUp',
+    benefitMonthly: 0,
+    benefitPeriodYears: 'lifetime',
+    eliminationPeriodDays: 0,
+  }
+}
+
+function ladder(id, annualRealAmount, purchase, extra = {}) {
+  return {
+    id,
+    name: id,
+    purpose: 'floor',
+    startYear: START_YEAR + 2,
+    endYear: START_YEAR + 4,
+    annualRealAmount,
+    ...(purchase === null ? {} : { purchase }),
     ...extra,
   }
 }
@@ -604,6 +696,326 @@ function blockE() {
 }
 
 // ---------------------------------------------------------------------------
+// F — distributed taxable yield
+// ---------------------------------------------------------------------------
+
+function blockF() {
+  const plan = shell(90)
+  plan.accounts = [
+    // Explicit taxable interest + dividends, paid to cash rather than
+    // reinvested. The qualified-ratio clamp and every taxable-income fold are
+    // live on this row.
+    taxable('yield-explicit', 123_456.78, 70_000, {
+      interestYieldPct: 2.25,
+      dividendYieldPct: 3.75,
+      qualifiedRatio: 0.4,
+      reinvestDividends: false,
+    }),
+    // No account-level yield fields: derive them from the asset-class blend.
+    taxable('yield-blended', 234_567.89, 120_000, {
+      allocation: { ...STATIC_5050_NONE },
+      reinvestDividends: true,
+    }),
+    // Muni sleeve: exempt yield only, with explicit zero taxable fields so the
+    // allocation/default path cannot price the same dollars a second time.
+    taxable('yield-exempt', 98_765.43, 80_000, {
+      interestYieldPct: 0,
+      dividendYieldPct: 0,
+      taxExemptInterestYieldPct: 4.125,
+      reinvestDividends: true,
+    }),
+    // Both skip gates: a zero start balance despite a stated yield, then a
+    // positive taxable balance whose total distributed yield is zero.
+    taxable('yield-zero-balance', 0, 0, { interestYieldPct: 5 }),
+    taxable('yield-zero-rate', 50_000, 40_000, {
+      interestYieldPct: 0,
+      dividendYieldPct: 0,
+      taxExemptInterestYieldPct: 0,
+    }),
+    cash('yield-nontaxable-skip', 10_000),
+  ]
+  return [
+    member(
+      'f1-distributedYieldArms',
+      'F: explicit/blended/exempt taxable yields, reinvest and cash-pay rows, plus type/balance/rate skips',
+      plan,
+      { horizonEndYear: START_YEAR + 1 },
+    ),
+  ]
+}
+
+// ---------------------------------------------------------------------------
+// G — TIPS-ladder purchase funding
+// ---------------------------------------------------------------------------
+
+function blockG() {
+  const out = []
+
+  {
+    const plan = shell(90)
+    plan.accounts = [
+      cash('tips-cash', 1_000_000),
+      cash('tips-cash-zero', 0),
+      taxable('tips-taxable', 1_500, 500),
+      equityComp('tips-equity', 80_000, 20_000),
+      equityComp('tips-equity-cliff', 40_000, 10_000, {
+        vestingMode: 'cliff',
+        vestDate: `${START_YEAR + 2}-01-01`,
+      }),
+    ]
+    plan.incomeFloor = {
+      ladders: [
+        // Already owned: a live ladder state with no purchase exercises the
+        // purchase-absent skip on every simulated year.
+        ladder('tips-owned', 5_000, null),
+        // Full fill from cash/book value.
+        ladder('tips-cash-full', 10_000, { year: START_YEAR, fundingAccountId: 'tips-cash' }),
+        // Positive quote with no spendable dollars: zero scale and no debit.
+        ladder('tips-cash-zero', 10_000, { year: START_YEAR, fundingAccountId: 'tips-cash-zero' }),
+        // Deliberately larger than the brokerage balance: partial fill, scale
+        // warning, and pro-rata taxable basis sale.
+        ladder('tips-taxable-partial', 100_000, { year: START_YEAR, fundingAccountId: 'tips-taxable' }),
+        // Full equity-comp sale with its distinct basis-ratio arithmetic.
+        ladder('tips-equity-full', 8_000, { year: START_YEAR, fundingAccountId: 'tips-equity' }),
+        // Positive unvested equity-comp balance is not spendable in the
+        // purchase year: zero fill without pretending its book value is cash.
+        ladder('tips-equity-unvested', 8_000, { year: START_YEAR, fundingAccountId: 'tips-equity-cliff' }),
+      ],
+    }
+    out.push(
+      member(
+        'g1-cashTaxableEquityFunding',
+        'G: no-purchase skip; full/zero cash; partial taxable; full/unvested equity-comp funding',
+        plan,
+        { horizonEndYear: START_YEAR + 1 },
+      ),
+    )
+  }
+
+  {
+    const plan = shell(90)
+    plan.accounts = [taxable('tips-shared', 25_000, 10_000)]
+    plan.incomeFloor = {
+      ladders: [
+        ladder('tips-shared-first', 7_500, { year: START_YEAR, fundingAccountId: 'tips-shared' }),
+        ladder('tips-shared-second', 7_500, { year: START_YEAR, fundingAccountId: 'tips-shared' }),
+      ],
+    }
+    out.push(
+      member(
+        'g2-sharedFundingAccount',
+        'G: two same-year ladders consume one taxable account in ladder order; the second observes the first sale',
+        plan,
+        { horizonEndYear: START_YEAR },
+      ),
+    )
+  }
+
+  return out
+}
+
+// ---------------------------------------------------------------------------
+// H — permanent-life transitions + annual snapshot
+// ---------------------------------------------------------------------------
+
+function blockH() {
+  const plan = couplePlan({
+    p1PlanningAge: 60,
+    p2PlanningAge: 90,
+  })
+  plan.assumptions.inflationPct = 0
+  plan.accounts = [
+    cash('snapshot-dup', 11_111.11),
+    taxable('snapshot-taxable', 22_222.22, 12_345.67),
+    qualified('traditional', 'snapshot-ira', 33_333.33),
+    // Same id as the cash row. `Object.fromEntries` must publish the later
+    // property value while investable/property totals still count both rows.
+    property('snapshot-dup', 44_444.44),
+    property('__proto__', 55_555.55),
+    property('hecm-fast', 500_000, {
+      primaryResidence: true,
+      hecm: hecm({ principalLimitPct: 50, upfrontCostPct: 10, growthRatePct: 15 }),
+    }),
+    property('hecm-small-a', 310_000, {
+      primaryResidence: true,
+      hecm: hecm({ principalLimitPct: 37.3, upfrontCostPct: 1.7, growthRatePct: 6.1 }),
+    }),
+    property('hecm-small-b', 470_000, {
+      primaryResidence: true,
+      hecm: hecm({ principalLimitPct: 42.1, upfrontCostPct: 2.3, growthRatePct: 7.2 }),
+    }),
+    debt('snapshot-debt', 66_666.66),
+  ]
+  plan.insurance = [
+    // p2 remains alive: flat-rate compounding and schedule interpolation both
+    // run throughout the bounded horizon.
+    permanentLife('life-flat', 'p2', {
+      cashValue: 12_345.67,
+      cashValueGrowthPct: 4.25,
+    }),
+    // Duplicate policy id: the second row must read the first row's shadow
+    // write, not the entry map's last-write opening value.
+    permanentLife('life-flat', 'p2', {
+      cashValue: 98_765.43,
+      cashValueGrowthPct: 1.5,
+    }),
+    permanentLife('life-flat-default', 'p2', {
+      cashValue: 321.09,
+      cashValueGrowthPct: undefined,
+    }),
+    permanentLife('life-schedule', 'p2', {
+      cashValue: 9_000,
+      cashValueMode: 'schedule',
+      cashValueGrowthPct: undefined,
+      cashValueSchedule: [
+        { age: 65, value: 8_000 },
+        { age: 70, value: 28_000 },
+      ],
+    }),
+    // p1's planning age equals their 2026 attained age. One row settles a
+    // positive max(face, cash), one settles zero (the no-ledger arm); both are
+    // then observed post-death in later years and remain zero.
+    permanentLife('life-settle-positive', 'p1', {
+      deathBenefit: 50_000,
+      cashValue: 75_000,
+    }),
+    permanentLife('life-settle-zero', 'p1'),
+    // Non-permanent policy exercises the helper's kind filter.
+    ltc('life-kind-skip', 'p2'),
+  ]
+  return [
+    member(
+      'h1-insuranceAndSnapshot',
+      'H: permanent-life flat/schedule/positive+zero settlement/post-death transitions; snapshot balances/property/debt/3 HECMs/insurance, duplicate and __proto__ ids, non-recourse clamp',
+      plan,
+      { horizonEndYear: START_YEAR + 20 },
+    ),
+  ]
+}
+
+// ---------------------------------------------------------------------------
+// I — per-entity published facts
+// ---------------------------------------------------------------------------
+
+function blockI() {
+  const out = []
+
+  {
+    // Pre-60 draws with omitted contribution basis make both owner-pool and
+    // employer-account assumed-basis maps consequential. IDs/account order are
+    // intentionally reverse-lexical so the helper's output sort is observable.
+    const plan = couplePlan({
+      p1Dob: '1971-01-01',
+      p2Dob: '1972-01-01',
+      p1PlanningAge: 90,
+      p2PlanningAge: 90,
+    })
+    plan.expenses.baseAnnual = 100_000
+    plan.accounts = [
+      qualified('roth', 'z-owned-roth', 20_000, { ownerPersonId: 'p2' }),
+      qualified('roth', 'a-owned-roth', 20_000, { ownerPersonId: 'p1' }),
+      qualified('roth', 'z-employer-roth', 20_000, { ownerPersonId: 'p2', kind: 'employer' }),
+      qualified('roth', 'a-employer-roth', 20_000, { ownerPersonId: 'p1', kind: 'employer' }),
+      cash('entity-cash-empty', 0),
+    ]
+    out.push(
+      member(
+        'i1-rothEntityOwnersAndFilters',
+        'I: positive owned/employer Roth verdict filters, two owners, reverse account order, employer owner lookup',
+        plan,
+        { horizonEndYear: START_YEAR },
+      ),
+    )
+  }
+
+  {
+    // Both owners are RMD age. Omitted Form 8606 basis makes their independent
+    // distribution channels consequential and gives the publication helper
+    // multiple owner rows to filter, sort, and map.
+    const plan = couplePlan({
+      p1Dob: '1953-01-01',
+      p2Dob: '1950-01-01',
+      p1PlanningAge: 90,
+      p2PlanningAge: 90,
+    })
+    plan.accounts = [
+      qualified('traditional', 'z-traditional', 265_000, { ownerPersonId: 'p2' }),
+      qualified('traditional', 'a-traditional', 265_000, { ownerPersonId: 'p1' }),
+    ]
+    out.push(
+      member(
+        'i2-traditionalEntityOwnersAndFilters',
+        'I: two positive Form 8606 assumed-basis owner channels, filtered/sorted/mapped independently',
+        plan,
+        { horizonEndYear: START_YEAR },
+      ),
+    )
+  }
+
+  {
+    // A young owner has no RMD/distribution channel. A manual conversion from
+    // an owned IRA with omitted basis makes the conversion operand the first
+    // true arm of the publication filter.
+    const plan = singlePersonPlan({ dob: '1966-01-01', planningAge: 90 })
+    plan.accounts = [
+      qualified('traditional', 'entity-conversion-trad', 200_000),
+      qualified('roth', 'entity-conversion-roth', 10_000, { contributionBasis: 10_000 }),
+      cash('entity-conversion-cash', 100_000),
+    ]
+    plan.strategies.rothConversion = {
+      mode: 'manual',
+      conversions: [{ year: START_YEAR, amount: 20_000 }],
+    }
+    out.push(
+      member(
+        'i3-form8606ConversionOnly',
+        'I: Form 8606 filter reaches conversions > 0 with distributions equal to zero',
+        plan,
+        { horizonEndYear: START_YEAR },
+      ),
+    )
+  }
+
+  {
+    // The contract is bought from an owned IRA in year one and begins paying
+    // in year two. At age 61 there is no RMD and no conversion, so a settled
+    // qualified-contract payment is the only possible Form 8606 channel.
+    const plan = singlePersonPlan({ dob: '1966-01-01', planningAge: 90 })
+    plan.accounts = [
+      qualified('traditional', 'entity-annuity-trad', 100_000),
+      {
+        type: 'annuity',
+        id: 'entity-annuity',
+        name: 'entity-annuity',
+        ownerPersonId: 'p1',
+        annualReturnPct: 0,
+        startAge: 61,
+        monthlyAmount: 1_000,
+        colaPct: 0,
+        taxablePct: 100,
+        purchase: {
+          year: START_YEAR,
+          premium: 50_000,
+          fundingAccountId: 'entity-annuity-trad',
+          taxQualification: 'qualified',
+        },
+      },
+      cash('entity-annuity-cash', 100_000),
+    ]
+    out.push(
+      member(
+        'i4-form8606AnnuityOnly',
+        'I: qualified annuity payment with no distribution/conversion; settlement currently leaves assumed annuity channel silent',
+        plan,
+        { horizonEndYear: START_YEAR + 1 },
+      ),
+    )
+  }
+
+  return out
+}
+
+// ---------------------------------------------------------------------------
 // S — shared blind spots, owned by no single block
 // ---------------------------------------------------------------------------
 
@@ -671,5 +1083,16 @@ function blockS() {
 /** @returns {Promise<object[]>} every member in this tier, in a stable order. */
 export async function blockMembers() {
   fixtures = await import('@retiregolden/engine/testing/planFixtures')
-  return [...blockA(), ...blockB(), ...blockC(), ...blockD(), ...blockE(), ...blockS()]
+  return [
+    ...blockA(),
+    ...blockB(),
+    ...blockC(),
+    ...blockD(),
+    ...blockE(),
+    ...blockF(),
+    ...blockG(),
+    ...blockH(),
+    ...blockI(),
+    ...blockS(),
+  ]
 }
