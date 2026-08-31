@@ -39,17 +39,18 @@ import { ladderRealFlowsAtOffset, ladderRemainingFace, type LadderRung } from '.
 import type { RecordedTipsLadderCash } from '../annualCashFlowYearSites.js'
 
 /**
- * One entry of the simulator's ladder-state list. `scale` is < 1 when a
- * purchase-year funding account could not cover the full quoted cost; it is
- * written by the purchase-funding block and only read here, but stays mutable
- * because the simulator owns these objects.
+ * One entry of the simulator's ladder-state list. Every field this module reads
+ * is `readonly`, so the non-mutation claim above is checked by the compiler
+ * rather than asserted in prose. `scale` is the one exception: it is < 1 when a
+ * purchase-year funding account could not cover the full quoted cost, and the
+ * simulator's purchase-funding block writes it once — this module only reads it.
  */
 export interface TipsLadderState {
-  id: string
-  anchorYear: number
-  rungs: LadderRung[]
-  costReal: number
-  purchase: { year: number; fundingAccountId: string } | undefined
+  readonly id: string
+  readonly anchorYear: number
+  readonly rungs: LadderRung[]
+  readonly costReal: number
+  readonly purchase: { year: number; fundingAccountId: string } | undefined
   scale: number
 }
 

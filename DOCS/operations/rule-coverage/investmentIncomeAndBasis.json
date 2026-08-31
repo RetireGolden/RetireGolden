@@ -1647,7 +1647,7 @@
           "functions": [
             {
               "name": "tipsLadderAnnualCashFlows",
-              "line": 89
+              "line": 90
             }
           ]
         },
@@ -1743,7 +1743,7 @@
           "functions": [
             {
               "name": "tipsLadderAnnualCashFlows",
-              "line": 89
+              "line": 90
             }
           ]
         },
@@ -1786,7 +1786,7 @@
       "title": "TIPS deflation basis decrease is not modeled",
       "classification": "outOfScope",
       "errorDirection": null,
-      "conventionRationale": "The absence surface is ladder/ladderMath.ts and projection/simulate.ts: ladder accretion is clamped at zero and no holder-basis ledger records deflation adjustments taken into account under (f)(1). Omitting the (f)(2) basis decrease leaves basis too high and can understate later gain tax when that basis is recovered, but that limb is separate from the income-year clamp registered at treas-reg-1-1275-7-f-1-deflation-adjustment-income.",
+      "conventionRationale": "The absence surface is ladder/ladderMath.ts and projection/internal/tipsLadderAnnualCashFlow.ts: ladder accretion is clamped at zero and no holder-basis ledger records deflation adjustments taken into account under (f)(1). Omitting the (f)(2) basis decrease leaves basis too high and can understate later gain tax when that basis is recovered, but that limb is separate from the income-year clamp registered at treas-reg-1-1275-7-f-1-deflation-adjustment-income.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -1797,6 +1797,7 @@
       "implementedBy": [
         "packages/engine/src/ladder/ladderMath.ts",
         "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/internal/tipsLadderAnnualCashFlow.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
@@ -1815,6 +1816,15 @@
             {
               "name": "tipsLadderSchema",
               "line": 1387
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/tipsLadderAnnualCashFlow.ts",
+          "functions": [
+            {
+              "name": "tipsLadderAnnualCashFlows",
+              "line": 90
             }
           ]
         },

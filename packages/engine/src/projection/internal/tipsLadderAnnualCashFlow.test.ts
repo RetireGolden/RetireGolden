@@ -4,8 +4,9 @@
  *
  * WHAT IS PROVED HERE, against controlled rung fixtures: the four row kinds and
  * the exact boundary between them, the `scale` multiplication reaching every
- * term, the deflation clamp, the post-death frozen offset and its lower clamp,
- * the refusal to sum across ladders, and the refusal to mutate its input.
+ * term, the deflation clamp, which year the accretion differences against, the
+ * post-death frozen offset and its (defensive, see below) lower clamp, the
+ * refusal to sum across ladders, and the refusal to mutate its input.
  * Expected values are hand-computed from the two cited ladder primitives —
  * `ladderRealFlowsAtOffset` (outstanding face, coupons, and the maturing rung
  * at an offset) and `ladderRemainingFace` (face still outstanding after that
@@ -47,17 +48,9 @@ function ladder(overrides: Partial<TipsLadderState> = {}): TipsLadderState {
   return { id: 'L1', anchorYear: ANCHOR, rungs: RUNGS, costReal: 5000, purchase: undefined, scale: 1, ...overrides }
 }
 
-/** A stub for the caller's cumulative-inflation lookup: only `year - 1` is read. */
-function inflFactorFromStub(expectedPrev: number, seen: Array<[number, number]> = []) {
-  return (fromYear: number, toYear: number): number => {
-    seen.push([fromYear, toYear])
-    return expectedPrev
-  }
-}
-
 function runYear(
   states: TipsLadderState[],
-  opts: { year: number; anyAlive?: boolean; inflFactor: number; prevInflFactor: number; lastAlive?: number; seen?: Array<[number, number]> },
+  opts: { year: number; anyAlive?: boolean; inflFactor: number; prevInflFactor: number; lastAlive?: number },
 ): readonly TipsLadderYearRow[] {
   return tipsLadderAnnualCashFlows({
     ladderStates: states,
@@ -65,7 +58,8 @@ function runYear(
     startYear: START,
     anyAlive: opts.anyAlive ?? true,
     inflFactor: opts.inflFactor,
-    inflFactorFrom: inflFactorFromStub(opts.prevInflFactor, opts.seen),
+    // Which year this lookup is asked for is pinned separately, below.
+    inflFactorFrom: () => opts.prevInflFactor,
     ladderLastAliveYear: opts.lastAlive ?? 2100,
   })
 }
@@ -107,10 +101,34 @@ describe('tipsLadderAnnualCashFlows — the flow row', () => {
     expect(row.record.coupons + row.record.accretion).toBe(row.taxable)
   })
 
+  // Deliberately at offset 3 (year 2028), where `year - 1` is 2027 and so is a
+  // DIFFERENT number from `startYear`. At year 2027 the two coincide, and the
+  // assertion could not tell `inflFactorFrom(startYear, year - 1)` apart from
+  // `inflFactorFrom(startYear, startYear)` — a substitution that silently turns
+  // the year's incremental accretion into cumulative-since-startYear accretion.
+  // The stub answers 1.125 for 2027 only, so a lookup of any other year also
+  // wrecks the accretion below rather than only the recorded argument pair.
   it('reads last year’s inflation factor from the caller, at (startYear, year - 1)', () => {
     const seen: Array<[number, number]> = []
-    runYear([ladder()], { year: 2027, inflFactor: 1.25, prevInflFactor: 1.125, seen })
-    expect(seen).toEqual([[START, 2026]])
+    const rows = tipsLadderAnnualCashFlows({
+      ladderStates: [ladder()],
+      year: 2028,
+      startYear: START,
+      anyAlive: true,
+      inflFactor: 1.25,
+      inflFactorFrom: (fromYear, toYear) => {
+        seen.push([fromYear, toYear])
+        return toYear === 2027 ? 1.125 : 0
+      },
+      ladderLastAliveYear: 2100,
+    })
+    expect(seen).toEqual([[START, 2027]])
+    const row = rows[0]!
+    if (row.kind !== 'flow') throw new Error('expected a flow row')
+    // Offset 3 leaves only the 4000 rung outstanding, so the accretion is
+    // 4000 * (1.25 - 1.125) = 500. Reading any other year returns 0 from the
+    // stub and would make this 4000 * 1.25 = 5000.
+    expect(row.record.accretion).toBe(500)
   })
 
   // A partially funded purchase scales every rung down, so it must scale cash,
@@ -183,9 +201,31 @@ describe('tipsLadderAnnualCashFlows — the frozen estate row', () => {
     expect(rows).toEqual([{ kind: 'frozen', ladderValue: 5000 }]) // 4000 * 1.25
   })
 
-  it('clamps the frozen offset at zero when death precedes the anchor year', () => {
+  it('freezes the full face when death precedes the anchor year', () => {
     const rows = runYear([ladder()], { year: 2040, anyAlive: false, inflFactor: 1.25, prevInflFactor: 1.125, lastAlive: 2020 })
     expect(rows).toEqual([{ kind: 'frozen', ladderValue: 8750 }]) // full 7000 face * 1.25
+  })
+
+  // The case above cannot see the `Math.max(0, ...)` lower clamp: every rung a
+  // real ladder holds matures at offset >= 1 (`buildLadder` forces
+  // `firstPayoutOffset` to at least 1) and `ladderRemainingFace` counts rungs
+  // with `maturityOffset > offset`, so for real rung sets a negative offset and
+  // a clamped 0 return the same face — the clamp is defensive. This fixture
+  // adds a rung AT offset 0, which no ladder build produces, precisely so the
+  // clamp becomes observable and a deleted clamp fails here.
+  it('clamps the frozen offset at zero rather than resurrecting an already-matured rung', () => {
+    const withMaturedRung: LadderRung[] = [{ maturityOffset: 0, face: 800, couponRatePct: 12.5, cost: 0 }, ...RUNGS]
+    const rows = runYear([ladder({ rungs: withMaturedRung })], {
+      year: 2040,
+      anyAlive: false,
+      inflFactor: 1.25,
+      prevInflFactor: 1.125,
+      lastAlive: 2020,
+    })
+    // Clamped to offset 0 the 800 rung has already matured: 7000 * 1.25.
+    // Unclamped the offset would be 2020 - 2025 = -5 and the 800 rung would ride
+    // in the estate as well, giving 7800 * 1.25 = 9750.
+    expect(rows).toEqual([{ kind: 'frozen', ladderValue: 8750 }])
   })
 
   it('scales the frozen face like any other term', () => {

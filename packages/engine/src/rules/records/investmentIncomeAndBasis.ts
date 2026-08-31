@@ -1011,7 +1011,7 @@ export const investmentIncomeAndBasisRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The absence surface is ladder/ladderMath.ts and projection/simulate.ts: ladder accretion is clamped at zero and no holder-basis ledger records deflation adjustments taken into account under (f)(1). Omitting the (f)(2) basis decrease leaves basis too high and can understate later gain tax when that basis is recovered, but that limb is separate from the income-year clamp registered at treas-reg-1-1275-7-f-1-deflation-adjustment-income.',
+      'The absence surface is ladder/ladderMath.ts and projection/internal/tipsLadderAnnualCashFlow.ts: ladder accretion is clamped at zero and no holder-basis ledger records deflation adjustments taken into account under (f)(1). Omitting the (f)(2) basis decrease leaves basis too high and can understate later gain tax when that basis is recovered, but that limb is separate from the income-year clamp registered at treas-reg-1-1275-7-f-1-deflation-adjustment-income.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'regulation',
@@ -1026,12 +1026,14 @@ export const investmentIncomeAndBasisRecords = {
     verifiedOn: '2026-08-27',
     implementedBy: [
       'packages/engine/src/ladder/ladderMath.ts',
+      'packages/engine/src/projection/internal/tipsLadderAnnualCashFlow.ts',
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/model/plan.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/ladder/ladderMath.ts#LadderRung',
       'packages/engine/src/model/plan.ts#tipsLadderSchema',
+      'packages/engine/src/projection/internal/tipsLadderAnnualCashFlow.ts#tipsLadderAnnualCashFlows',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },

@@ -54,7 +54,9 @@ mode; par-rung pricing on the par curve; planning-grade OID; taxable-side ladder
 
 **Code:** math in [engine/ladder/](../../../packages/engine/src/ladder/); schema in
 [engine/model/plan.ts](../../../packages/engine/src/model/plan.ts) (`tipsLadderSchema`, `incomeFloorSchema`); ledger
-integration in [engine/projection/simulate.ts](../../../packages/engine/src/projection/simulate.ts); state exemption
+integration in [engine/projection/simulate.ts](../../../packages/engine/src/projection/simulate.ts), whose once-per-year
+coupon/maturity/accretion phase lives in
+[engine/projection/internal/tipsLadderAnnualCashFlow.ts](../../../packages/engine/src/projection/internal/tipsLadderAnnualCashFlow.ts); state exemption
 in [engine/tax/stateTax.ts](../../../packages/engine/src/tax/stateTax.ts); UI in
 [planner/sections/IncomeFloorSection.tsx](../../../packages/planner-ui/src/planner/sections/IncomeFloorSection.tsx) and the
 bridge panel in [planner/SsAnalysisPage.tsx](../../../packages/planner-ui/src/planner/SsAnalysisPage.tsx).
