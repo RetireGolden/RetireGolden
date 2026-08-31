@@ -67,23 +67,46 @@ if (minimumEngineMatch === null) {
 }
 const minimumEngineVersion = minimumEngineMatch[1]
 
+// Is the declared minimum actually on the registry? Only a genuine
+// "that version does not exist" may answer no. This used to catch every
+// error and return false, which made a network blip, a rate limit or an
+// auth failure indistinguishable from an unpublished version: `auto` would
+// quietly fall back to the local engine and CI would stay green while the
+// registry-resolution path — the thing this smoke test exists to prove —
+// went unexercised. Anything that is not a clear absence now throws.
+//
+// `--json` is what makes the distinction reliable: npm reports the failure
+// as structured JSON on stdout, so this reads `error.code` rather than
+// pattern-matching a message. E404 on a specific version of a PUBLIC
+// package means that version is not published. (npm also returns E404 for
+// a package you cannot see, which is why this stays scoped to the one
+// public package name it asks about.)
 const registryHasMinimumEngine = () => {
+  const spec = `@retiregolden/engine@${minimumEngineVersion}`
+  let stdout
   try {
-    const found = JSON.parse(
-      execFileSync(
-        'pnpm',
-        ['view', `@retiregolden/engine@${minimumEngineVersion}`, 'version', '--json'],
-        {
-          encoding: 'utf8',
-          shell,
-          stdio: ['ignore', 'pipe', 'ignore'],
-        },
-      ),
+    stdout = execFileSync('pnpm', ['view', spec, 'version', '--json'], {
+      encoding: 'utf8',
+      shell,
+      stdio: ['ignore', 'pipe', 'ignore'],
+    })
+  } catch (error) {
+    let code
+    try {
+      code = JSON.parse(String(error?.stdout ?? ''))?.error?.code
+    } catch {
+      code = undefined
+    }
+    if (code === 'E404') return false
+    throw new Error(
+      `pack smoke FAILED: could not determine whether ${spec} is published ` +
+        `(npm error code ${String(code ?? 'unknown')}). Refusing to guess: treating this as ` +
+        `"unpublished" would silently skip the registry-resolution check. ` +
+        `Set PLANNER_PACK_SMOKE_ENGINE_SOURCE=local to pack the workspace engine deliberately.`,
+      { cause: error },
     )
-    return found === minimumEngineVersion
-  } catch {
-    return false
   }
+  return JSON.parse(stdout) === minimumEngineVersion
 }
 
 const viteConfig = `
