@@ -4,6 +4,12 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## 2026-08
 
+**2026-08-31**
+- Import & migrate (`/import`) landing source cards share the same 2×2 grid as
+  Getting started on `/`. The step back control sits with the source heading as
+  a readable secondary button, and returning from a step restores keyboard
+  focus to the card that was opened.
+
 **2026-08-30**
 - Moved the flat-rate tax stub out of the projection engine and into the
   testing-support surface, without breaking anyone. The body moved from

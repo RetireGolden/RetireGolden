@@ -133,6 +133,48 @@ describe('ImportPage', () => {
     expect(cards.join(' ')).toContain('tax return')
   })
 
+  it('lands source cards on the shared 2×2 grid classes, not a page-specific wrapper', () => {
+    const el = render()
+    const grid = el.querySelector('.plan-grid.home-paths-grid')
+    expect(grid, 'Import landing uses plan-grid home-paths-grid').not.toBeNull()
+    expect(grid!.closest('.home-paths')).toBeNull()
+    expect(grid!.parentElement?.classList.contains('import-page')).toBe(true)
+  })
+
+  it('sits Choose a different source with the step h2 as a readable secondary button', () => {
+    const el = render()
+    click(findButton(el, 'Broker CSV'))
+
+    const head = el.querySelector('.import-source-head')
+    expect(head, 'step chrome uses import-source-head, not item-row-head').not.toBeNull()
+    expect(el.querySelector('.item-row-head')).toBeNull()
+    expect(head!.querySelector('h2')?.textContent).toContain('Broker CSV')
+
+    const back = findButton(el, 'Choose a different source')
+    expect(back, 'keeps the Choose a different source label').toBeTruthy()
+    expect(back!.className.split(/\s+/)).toEqual(expect.arrayContaining(['btn', 'btn-secondary']))
+    expect(back!.classList.contains('btn-ghost')).toBe(false)
+    expect(head!.contains(back!)).toBe(true)
+  })
+
+  it('restores keyboard focus to the card that was opened after Choose a different source', () => {
+    const el = render()
+    const broker = el.querySelector<HTMLButtonElement>('[data-source="broker"]')
+    const tenforty = el.querySelector<HTMLButtonElement>('[data-source="tenforty"]')
+    expect(broker).toBeTruthy()
+    expect(tenforty).toBeTruthy()
+
+    click(broker)
+    expect(findButton(el, 'Choose a different source')).toBeTruthy()
+    click(findButton(el, 'Choose a different source'))
+    expect(document.activeElement).toBe(el.querySelector('[data-source="broker"]'))
+
+    click(el.querySelector('[data-source="tenforty"]'))
+    click(findButton(el, 'Choose a different source'))
+    expect(document.activeElement).toBe(el.querySelector('[data-source="tenforty"]'))
+    expect(document.activeElement).not.toBe(el.querySelector('[data-source="generic"]'))
+  })
+
   it('walks the 1040 guided path to a reviewed, saved draft plan', async () => {
     const el = render()
     click(findButton(el, 'tax return'))
