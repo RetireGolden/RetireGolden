@@ -14,7 +14,7 @@
  */
 
 /** The Plan document's schema version. Kept in lockstep with `CURRENT_PLAN_SCHEMA_VERSION`. */
-export const PLAN_SCHEMA_VERSION = 4
+export const PLAN_SCHEMA_VERSION = 5
 
 /** Stable, versioned identifier for the emitted schema (embeds the version). */
 export const PLAN_SCHEMA_ID = `https://retiregolden.org/schemas/plan/v${PLAN_SCHEMA_VERSION}.json`

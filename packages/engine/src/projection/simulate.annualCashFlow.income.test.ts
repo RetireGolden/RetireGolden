@@ -282,6 +282,7 @@ describe('simulatePlan annual cash-flow income sources', () => {
         id: 'gift-1',
         label: 'Gift',
         year: 2026,
+        inflationAdjusted: false,
         amount: 5_000,
         taxTreatment: 'capitalGain',
       },

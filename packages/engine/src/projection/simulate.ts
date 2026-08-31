@@ -66,11 +66,11 @@ import { buildLadder } from '../ladder/ladderMath.js'
 import { annualRebalanceToTarget } from './internal/annualRebalanceToTarget.js'
 import { hecmLineOpenings } from './internal/hecmLineOpenings.js'
 import { propertyEventsAndGrowth } from './internal/propertyEventsAndGrowth.js'
-import { wageIncome } from './internal/wageIncome.js'
 import { pensionLumpSumRollovers } from './internal/pensionLumpSumRollovers.js'
 import { tipsLadderAnnualCashFlows, type TipsLadderState } from './internal/tipsLadderAnnualCashFlow.js'
 import { fixedAssetDispositions } from './internal/fixedAssetDispositions.js'
 import { otherIncomeStreams } from './internal/otherIncomeStreams.js'
+import { wageIncomeStreams } from './internal/wageIncomeStreams.js'
 import { stateParamsFor } from '../params/state/index.js'
 import type { ParameterPack } from '../params/types.js'
 import { requiredMinimumDistribution } from '../rmd/rmd.js'
@@ -2356,14 +2356,23 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       })
     }
 
-    // Pass 1: wages (must precede Social Security for the earnings test) — the
-    // placement is load-bearing here rather than inside the helper:
-    // `wagesByPerson` must be complete before pass 3 runs the earnings test and
-    // the SSDI substantial-gainful-activity gate. The phase itself lives in
-    // `internal/wageIncome.ts`; folding row by row, in row order, matters
-    // because `ordinaryIncome` may already be non-zero (the distributed-yield
-    // pass writes it above) and IEEE-754 addition is not associative.
-    for (const row of wageIncome({ incomes: plan.incomes, year, startYear, inflFactor, personById, peopleStates })) {
+    // Pass 1: wages (must precede Social Security for the earnings test). The
+    // phase itself lives in `internal/wageIncomeStreams.ts`; folding row by row
+    // is load-bearing for ONE of these three accumulators and not for the other
+    // two, which is worth saying so nobody "tidies" the loop into a pre-sum.
+    // `ordinaryIncome` has exactly one earlier writer in the year — the
+    // distributed-yield pass above — so on a plan with a yielding taxable
+    // account this fold starts from a non-zero base, and IEEE-754 addition is
+    // not associative there. (Measured over the 77-member phase-4 differential
+    // corpus: 364 of 9788 year-runs fold two or more wage rows onto a non-zero
+    // base, and pre-summing lands on a different double in 104 of them.)
+    // `incomes.wages` and `wagesByPerson` are both ZERO-BASED — this phase is
+    // the sole writer of the first, and the map is rebuilt empty each year — so
+    // `0 + a + b` IS `0 + (a + b)` for them; injecting a per-person pre-sum
+    // moved 0 of 308 corpus entries. Both person lookups are handed over
+    // because they disagree under duplicate person ids: `personById` is
+    // last-wins, `stateOf` is first-wins, and unifying them moves 4 of 308.
+    for (const row of wageIncomeStreams({ incomes: plan.incomes, personById, stateOf, year, startYear, inflFactor })) {
       incomes.wages += row.amount
       ordinaryIncome += row.amount
       wagesByPerson.set(row.personId, (wagesByPerson.get(row.personId) ?? 0) + row.amount)

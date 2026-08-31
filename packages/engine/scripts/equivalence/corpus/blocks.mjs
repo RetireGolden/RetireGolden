@@ -1,7 +1,7 @@
 /**
- * Purpose-built corpus members for the five `simulate.ts` annual phases being
- * extracted in the "simulate batch" slice, plus the blind spots that belong to
- * the corpus itself rather than to any one phase:
+ * Purpose-built corpus members for the five `simulate.ts` annual phases this
+ * corpus was built around, plus the blind spots that belong to the corpus
+ * itself rather than to any one phase:
  *
  *   A  annual rebalance to target (start-of-year trade)
  *   B  pension lump-sum rollover
@@ -10,13 +10,21 @@
  *   E  property events + growth
  *   S  shared: whole-corpus holes found by measurement (see `blockS`)
  *
+ * FOUR of those five are the ones the "simulate batch" slice extracts: A, B, C
+ * and E. Block D's phase was extracted concurrently and independently on main,
+ * as `projection/internal/wageIncomeStreams.ts`, and this slice's duplicate
+ * helper was withdrawn — so D has no entry in the reach spec any more. Its
+ * MEMBERS stay: the wages phase still runs in every capture, and dropping the
+ * members that reach it would narrow the differential check for no gain.
+ *
  * The 29 curated example plans exercise A, D and E's growth leg incidentally,
  * but NONE of them carries a HECM line or a pension lump-sum election — grepped,
  * not assumed — so without this tier the differential check would pass on two of
  * the five blocks by never running them. Each member names the branch or hazard
  * it exists to reach in `covers`, and
  * `scripts/equivalence/specs/simulate-batch.json` is the line-range spec that
- * turns those claims into measured hit counts (`equivalence.mjs reach`).
+ * turns those claims into measured hit counts (`equivalence.mjs reach`) for
+ * every block but D.
  *
  * Everything here is built from `@retiregolden/engine/testing/planFixtures`, so
  * this tier has no dependency outside the engine package. Plans are
@@ -637,8 +645,15 @@ function blockS() {
         inflationAdjusted: true,
         taxTreatment: 'ordinary',
       },
-      { type: 'oneTime', id: 'lump-alive', label: 'lump while alive', year: START_YEAR + 3, amount: 40_000, taxTreatment: 'ordinary' },
-      { type: 'oneTime', id: 'lump-dead', label: 'lump after death', year: START_YEAR + 8, amount: 250_000, taxTreatment: 'ordinary' },
+      // `inflationAdjusted` became REQUIRED on a one-time stream in plan schema
+      // v5 (origin/main, "Give one-time income the inflation election recurring
+      // income always had"), so these two carry it explicitly or the corpus no
+      // longer validates. Both take `false`, which is what migratePlanV4ToV5
+      // writes onto every stored plan and the only value that leaves these two
+      // members paying the amounts they were authored to pay: the $250,000
+      // measurement quoted above is about `lump-dead` landing whole.
+      { type: 'oneTime', id: 'lump-alive', label: 'lump while alive', year: START_YEAR + 3, amount: 40_000, inflationAdjusted: false, taxTreatment: 'ordinary' },
+      { type: 'oneTime', id: 'lump-dead', label: 'lump after death', year: START_YEAR + 8, amount: 250_000, inflationAdjusted: false, taxTreatment: 'ordinary' },
     ]
     out.push(
       member(

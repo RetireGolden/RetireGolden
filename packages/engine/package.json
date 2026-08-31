@@ -28,6 +28,7 @@
     "schema/plan.v2.json",
     "schema/plan.v3.json",
     "schema/plan.v4.json",
+    "schema/plan.v5.json",
     "LICENSE",
     "README.md"
   ],
@@ -66,6 +67,7 @@
     "./schema/plan.v2.json": "./schema/plan.v2.json",
     "./schema/plan.v3.json": "./schema/plan.v3.json",
     "./schema/plan.v4.json": "./schema/plan.v4.json",
+    "./schema/plan.v5.json": "./schema/plan.v5.json",
     "./actions/*": null,
     "./actions/annualHsaOpeningAuthority": {
       "types": "./dist/actions/annualHsaOpeningAuthority.d.ts",

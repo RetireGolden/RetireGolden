@@ -188,7 +188,7 @@ export function oneTimeIncomePlan(): Plan {
     { type: 'cash', id: testIds(), name: 'Cash', ownerPersonId: null, annualReturnPct: 0, balance: 250_000, annualContribution: 0 },
   ]
   plan.incomes = [
-    { type: 'oneTime', id: testIds(), label: 'Deferred comp payout', year: 2028, amount: 80_000, taxTreatment: 'ordinary' },
+    { type: 'oneTime', id: testIds(), label: 'Deferred comp payout', year: 2028, inflationAdjusted: false, amount: 80_000, taxTreatment: 'ordinary' },
   ]
   return validate(plan)
 }

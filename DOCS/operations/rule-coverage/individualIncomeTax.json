@@ -46,12 +46,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 1680,
+          "line": 1682,
           "note": null,
           "tests": [
             {
               "title": "taxes each bracket slice at its own rate",
-              "line": 1684
+              "line": 1686
             }
           ]
         }
@@ -122,16 +122,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 1942,
+          "line": 1944,
           "note": null,
           "tests": [
             {
               "title": "prices nominal wages on the rate tables prescribed for that year",
-              "line": 1946
+              "line": 1948
             },
             {
               "title": "leaves a published year exactly as published",
-              "line": 1961
+              "line": 1963
             }
           ]
         }
@@ -232,16 +232,16 @@
         },
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 1286,
+          "line": 1288,
           "note": "the exact ledger amount",
           "tests": [
             {
               "title": "reduces each qualified individual amount, not the combined total",
-              "line": 1291
+              "line": 1293
             },
             {
               "title": "exhausts two shares at the same modified AGI as one share",
-              "line": 1301
+              "line": 1303
             }
           ]
         }
@@ -307,12 +307,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 2022,
+          "line": 2024,
           "note": null,
           "tests": [
             {
               "title": "holds the amount and the phase-out threshold flat in a projected year",
-              "line": 2026
+              "line": 2028
             }
           ]
         }
@@ -358,7 +358,7 @@
           "functions": [
             {
               "name": "itemizedDeductionsSchema",
-              "line": 1903
+              "line": 1914
             }
           ]
         },
@@ -378,24 +378,24 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 1170,
+          "line": 1172,
           "note": "qualifying PMI omitted from itemized total for a household already itemizing",
           "tests": [
             {
               "title": "omits qualifying PMI from the itemized total",
-              "line": 1188
+              "line": 1190
             },
             {
               "title": "ignores PMI however it is supplied under plausible field names",
-              "line": 1201
+              "line": 1203
             },
             {
               "title": "reaches the statutory deduction only when the premium is smuggled in as mortgage interest",
-              "line": 1215
+              "line": 1217
             },
             {
               "title": "overstates tax, by the deduction it cannot see at the marginal rate",
-              "line": 1225
+              "line": 1227
             }
           ]
         }
@@ -456,7 +456,7 @@
           "functions": [
             {
               "name": "itemizedDeductionsSchema",
-              "line": 1903
+              "line": 1914
             }
           ]
         },
@@ -544,20 +544,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 1084,
+          "line": 1086,
           "note": "2026 MAGI $705,000 reaches the $10,000 SALT floor; mid-phase locks 30%",
           "tests": [
             {
               "title": "keeps the full scheduled cap rather than applying the high-MAGI floor",
-              "line": 1116
+              "line": 1118
             },
             {
               "title": "keeps the full scheduled cap mid-phase rather than the 30% reduction",
-              "line": 1133
+              "line": 1135
             },
             {
               "title": "understates tax compared with the itemized return using the statutory floor",
-              "line": 1144
+              "line": 1146
             }
           ]
         }
@@ -643,20 +643,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 1022,
+          "line": 1024,
           "note": null,
           "tests": [
             {
               "title": "drops the cap to ten thousand for years after 2029",
-              "line": 1026
+              "line": 1028
             },
             {
               "title": "compounds the one percent steps on the preceding year through 2029",
-              "line": 1042
+              "line": 1044
             },
             {
               "title": "does not carry the 2025 figure back before the schedule begins",
-              "line": 1057
+              "line": 1059
             }
           ]
         }
@@ -721,12 +721,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 523,
+          "line": 525,
           "note": null,
           "tests": [
             {
               "title": "owes nothing when the regular tax already exceeds the tentative amount",
-              "line": 527
+              "line": 529
             }
           ]
         }
@@ -777,12 +777,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 1850,
+          "line": 1852,
           "note": null,
           "tests": [
             {
               "title": "caps the tentative minimum tax on capital gain at the preferential rates",
-              "line": 1854
+              "line": 1856
             }
           ]
         }
@@ -843,12 +843,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 542,
+          "line": 544,
           "note": null,
           "tests": [
             {
               "title": "reduces the exemption by fifty cents per dollar above the threshold",
-              "line": 546
+              "line": 548
             }
           ]
         }
@@ -914,12 +914,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 1816,
+          "line": 1818,
           "note": null,
           "tests": [
             {
               "title": "adds back capped state and local taxes but leaves charitable gifts alone",
-              "line": 1824
+              "line": 1826
             }
           ]
         }
@@ -970,16 +970,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 1391,
+          "line": 1393,
           "note": null,
           "tests": [
             {
               "title": "adds the senior deduction back on a return that itemizes",
-              "line": 1395
+              "line": 1397
             },
             {
               "title": "adds it back on a return that takes the standard deduction too",
-              "line": 1411
+              "line": 1413
             }
           ]
         }
@@ -1035,12 +1035,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 1903,
+          "line": 1905,
           "note": null,
           "tests": [
             {
               "title": "adds no tax-exempt interest to AMTI, even when it is all PAB interest",
-              "line": 1908
+              "line": 1910
             }
           ]
         }
@@ -1091,12 +1091,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 1759,
+          "line": 1761,
           "note": null,
           "tests": [
             {
               "title": "itemizes when larger and adds the senior deduction on top",
-              "line": 1767
+              "line": 1769
             }
           ]
         }
@@ -1162,12 +1162,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 964,
+          "line": 966,
           "note": null,
           "tests": [
             {
               "title": "keeps the joint amount at exactly twice the unmarried one",
-              "line": 968
+              "line": 970
             }
           ]
         }
@@ -1375,12 +1375,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 1251,
+          "line": 1253,
           "note": null,
           "tests": [
             {
               "title": "takes the addition once for each person who has attained 65",
-              "line": 1255
+              "line": 1257
             }
           ]
         }
@@ -1431,12 +1431,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 1787,
+          "line": 1789,
           "note": null,
           "tests": [
             {
               "title": "offers no channel by which a miscellaneous itemized deduction is allowed",
-              "line": 1791
+              "line": 1793
             }
           ]
         }

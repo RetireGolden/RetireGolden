@@ -1,7 +1,7 @@
 {
   "schema": "retiregolden.equivalence-reach-spec/1",
   "name": "simulate-batch",
-  "why": "The five annual phases extracted in the simulate-batch slice, plus the sub-arms whose reach cannot be assumed. REPOINTED after the extractions landed: every range now names the extracted helper under projection/internal/, not the removed inlined block in projection/simulate.ts, and one entry (B.application) names the call site because that arm stayed there. Line numbers are against the working tree and MUST be re-checked before reuse (they were last re-checked, and seven of them corrected, when the review pass edited two helper headers and the block-E call site) - a stale range silently reports the wrong code as reached, which is exactly what the first version of this file would have started doing the moment the first phase moved.",
+  "why": "The four annual phases extracted in the simulate-batch slice, plus the sub-arms whose reach cannot be assumed. REPOINTED after the extractions landed: every range now names the extracted helper under projection/internal/, not the removed inlined block in projection/simulate.ts, and one entry (B.application) names the call site because that arm stayed there. Block D - income pass 1, wages - was REMOVED when this branch merged origin/main. That phase was extracted concurrently and independently on main as projection/internal/wageIncomeStreams.ts; this slice's duplicate helper was withdrawn rather than kept, and main's version is not this spec's to prove. The surviving ids A, B, C and E were left as they are rather than renumbered, so reach output stays comparable with the runs taken before the merge. Line numbers are against the working tree and MUST be re-checked before reuse (all sixteen were re-checked line by line during that merge and none needed correcting: the merge left the four helper files byte-identical, and the only change it made to projection/simulate.ts sits below the B.application range) - a stale range silently reports the wrong code as reached, which is exactly what the first version of this file would have started doing the moment the first phase moved.",
   "entries": [
     {
       "id": "A",
@@ -108,25 +108,6 @@
         169
       ],
       "note": "SAME ARTIFACT AS BEFORE: this range follows five `continue` guards and carries no brace of its own, so its count is the enclosing loop count. Members that genuinely open a line are the blocks:c* members plus any example with a HECM (there are none)."
-    },
-    {
-      "id": "D",
-      "label": "income pass 1 - wages",
-      "file": "projection/internal/wageIncome.ts",
-      "lines": [
-        147,
-        165
-      ],
-      "note": "a member's count here is LOOP-HEADER iterations, not phase work: V8 attributes straight-line code after a conditional `continue` to the enclosing block, so this range reports every plan the loop iterates over at all. Read the sub-entries and the cold regions for what the phase body actually did."
-    },
-    {
-      "id": "D.contributing",
-      "label": "D: a wages stream that actually pays this year",
-      "file": "projection/internal/wageIncome.ts",
-      "lines": [
-        153,
-        164
-      ]
     },
     {
       "id": "E",
