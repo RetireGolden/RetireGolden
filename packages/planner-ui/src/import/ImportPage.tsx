@@ -133,8 +133,9 @@ function EnabledImportPage() {
   // selection (a file still being read/hashed) cannot install a stale draft.
   const importEpoch = useRef(0)
   // The card the user opened — restored to keyboard focus when they come back
-  // via "Choose a different source". Without this, unmounting the step button
-  // leaves focus on the last card in DOM order.
+  // via "Choose a different source". We restore explicitly because unmounting
+  // the step control drops keyboard focus (Design QA reproduced last-card /
+  // lost focus; do not rely on browser fallback).
   const lastOpenedSource = useRef<SourceId | null>(null)
   const sourceCardRefs = useRef<Partial<Record<SourceId, HTMLButtonElement | null>>>({})
 
