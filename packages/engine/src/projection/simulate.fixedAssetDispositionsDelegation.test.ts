@@ -79,12 +79,52 @@ import type {
  * phase call it came from without the sink having to know the year. The annual
  * pass is re-entrant and builds a fresh sink per year, so position in this log
  * — not a year map — is what ties the two together.
+ *
+ * WHY POSITION IS A SOUND ATTRIBUTION, and not an assumption. Three facts about
+ * the caller make a record event impossible to interleave with a phase event:
+ *
+ *   1. The helper is EAGER. `fixedAssetDispositions` returns a materialized
+ *      `FixedAssetDispositionRow[]` that its own loop finishes building before
+ *      it returns — not a generator and not a lazy iterable. So by the time the
+ *      `phase` event is pushed, every row that call will ever yield exists.
+ *   2. `simulate.ts` has exactly ONE call to the helper and exactly ONE call to
+ *      `recordPropertySaleProceeds` (grep: they are its only occurrences), and
+ *      the second is inside the `for…of` over the first's returned array.
+ *   3. `recordPropertySaleProceeds` is a sink, not a re-entry point: it pushes
+ *      onto a private array in `annualCashFlowYearSites.ts` and calls nothing.
+ *
+ * Given (1)-(3) the events for one call are a contiguous run: the `phase`, then
+ * that call's records, then nothing else until the next `phase`. None of the
+ * three is taken on trust, but they are not all pinned the same way, and the
+ * difference is worth stating rather than implying:
+ *
+ *   - (1) is pinned STRUCTURALLY, by `rowCountAtCall` below and the
+ *     `Array.isArray` check in G3. Turning the helper into a generator and
+ *     letting the caller drive it lazily fails `rows are not a materialized
+ *     array` by name (measured).
+ *   - (2) and (3) are pinned by their observable CONSEQUENCE, not by anything
+ *     that reads `simulate.ts`. G3 requires each call's run to hold exactly
+ *     that call's rows, and its whole-log accounting requires every record to
+ *     fall inside some run. A second phase call site, a recorder that
+ *     re-entered the phase, or a record emitted outside any call all break one
+ *     count or the other. Measured on the case that hides best — a record
+ *     emitted before the FIRST phase call, all-zero so the sink drops it and no
+ *     ledger line or projection number moves: all seven guards passed it as
+ *     they stood before the accounting below was added, and it now fails
+ *     `a recorded sale fell outside every phase call`, and nothing else.
  */
 type SeamEvent =
   | {
       readonly kind: 'phase'
       readonly input: FixedAssetDispositionYearInput
       readonly rows: readonly FixedAssetDispositionRow[]
+      /**
+       * `rows.length` read the instant the helper returned. It is compared with
+       * `rows.length` after the run: a helper that streamed rows to the caller
+       * while the caller recorded them — the one shape that would actually
+       * interleave the two event kinds — would have grown the array in between.
+       */
+      readonly rowCountAtCall: number
       /**
        * `propertyValues` and `hecmStates` cross the seam BY REFERENCE — they
        * are the simulator's own live maps, which later phases go on mutating
@@ -111,6 +151,7 @@ vi.mock('./internal/fixedAssetDispositions.js', async (importOriginal) => {
         kind: 'phase',
         input,
         rows,
+        rowCountAtCall: rows.length,
         propertyValuesAtCall: new Map(input.propertyValues),
         hecmBalancesAtCall: new Map([...input.hecmStates].map(([id, line]) => [id, line.loanBalance])),
       })
@@ -213,7 +254,17 @@ function recordingTaxCalculator(): TaxCalculator {
   }
 }
 
-function property(id: string, over: Partial<Extract<Account, { type: 'property' }>>): Account {
+/**
+ * A property account, fully shaped — no `as Account`. The cast this fixture
+ * used to carry hid one REQUIRED field of the property variant,
+ * `plannedSaleYear`, which the literal omitted and every caller happened to
+ * supply through `over`; the compiler could not have said so while the cast
+ * stood. Defaulting it to null (no planned sale) restores the check.
+ */
+function property(
+  id: string,
+  over: Partial<Extract<Account, { type: 'property' }>>,
+): Extract<Account, { type: 'property' }> {
   return {
     type: 'property',
     id,
@@ -221,10 +272,11 @@ function property(id: string, over: Partial<Extract<Account, { type: 'property' 
     ownerPersonId: null,
     annualReturnPct: null,
     value: 500_000,
+    plannedSaleYear: null,
     expectedNetProceeds: 0,
     sellingCostPct: 6,
     ...over,
-  } as Account
+  }
 }
 
 function plan(): Plan {
@@ -353,6 +405,21 @@ function taxInputsForYear(year: number): TaxYearInput[] {
   return taxInputs.filter((input) => input.year === year)
 }
 
+/**
+ * The rows the helper returned for `year`. A missing year is a real regression
+ * — the caller stopped invoking the phase for that year — and it deserves to
+ * say so, rather than surfacing as `TypeError: rows is not iterable` from a
+ * `byYear.get(...)!` several lines further on.
+ */
+function rowsFor(
+  byYear: ReadonlyMap<number, readonly FixedAssetDispositionRow[]>,
+  year: number,
+): readonly FixedAssetDispositionRow[] {
+  const rows = byYear.get(year)
+  if (rows === undefined) throw new Error(`no fixedAssetDispositions call was recorded for ${year}`)
+  return rows
+}
+
 /** The one value every tax evaluation in a year saw, or a failure if they disagree. */
 function soleTaxInput<K extends keyof TaxYearInput>(year: number, key: K): TaxYearInput[K] {
   const calls = taxInputsForYear(year)
@@ -393,11 +460,16 @@ describe('simulatePlan delegates the fixed-asset disposition phase', () => {
     expect(first.pack.federalTax.section121Exclusion.single).toBeGreaterThan(0)
     // The property values are the projected ones, and grow year over year.
     expect(phases[0]!.propertyValuesAtCall.get(SALE_A)).toBe(480_000)
-    const saleYear = phases.find((p) => p.input.year === TWO_SALE_YEAR)!
-    expect(saleYear.propertyValuesAtCall.get(SALE_A)!).toBeGreaterThan(480_000)
+    const phaseFor = (year: number): Extract<SeamEvent, { kind: 'phase' }> => {
+      const phase = phases.find((p) => p.input.year === year)
+      if (phase === undefined) throw new Error(`no fixedAssetDispositions call was recorded for ${year}`)
+      return phase
+    }
+    // A missing value reads as `undefined` here, which fails the comparison by
+    // name rather than as a bare TypeError from a non-null assertion.
+    expect(phaseFor(TWO_SALE_YEAR).propertyValuesAtCall.get(SALE_A)).toBeGreaterThan(480_000)
     // The open HECM line is still in the map when its own sale year arrives.
-    const hecmYear = phases.find((p) => p.input.year === HECM_SALE_YEAR)!
-    expect(hecmYear.hecmBalancesAtCall.get(HECM_HOME)!).toBeGreaterThan(0)
+    expect(phaseFor(HECM_SALE_YEAR).hecmBalancesAtCall.get(HECM_HOME)).toBeGreaterThan(0)
     // The two maps cross the seam BY REFERENCE — the simulator's own, declared
     // once outside the year loop, not a snapshot rebuilt per call. Without this
     // a caller that handed the helper `new Map(propertyValues)` each year
@@ -417,9 +489,18 @@ describe('simulatePlan delegates the fixed-asset disposition phase', () => {
   it('publishes the helper’s own record objects, not look-alike rebuilds', () => {
     run({ capture: true })
     let recordedRows = 0
+    let attributedRecords = 0
     for (let i = 0; i < seam.events.length; i++) {
       const event = seam.events[i]!
       if (event.kind !== 'phase') continue
+      // PREMISE (1) of the attribution, checked rather than assumed: the helper
+      // handed back a materialized array, complete at the moment it returned.
+      // A lazy or streaming return is the only structure that could interleave
+      // a record between two of this call's own rows, and it fails here.
+      expect(Array.isArray(event.rows), `year ${event.input.year} rows are not a materialized array`).toBe(true)
+      expect(event.rows.length, `year ${event.input.year} rows grew after the call returned`).toBe(
+        event.rowCountAtCall,
+      )
       // The records that follow this phase call, before the next one, are its.
       const followed: RecordedPropertySale[] = []
       for (let j = i + 1; j < seam.events.length; j++) {
@@ -427,6 +508,7 @@ describe('simulatePlan delegates the fixed-asset disposition phase', () => {
         if (next.kind === 'phase') break
         followed.push(next.row)
       }
+      attributedRecords += followed.length
       // Every row is recorded; the sink, not the caller, decides what to keep.
       const expected = event.rows
       const where = `year ${event.input.year}`
@@ -448,6 +530,13 @@ describe('simulatePlan delegates the fixed-asset disposition phase', () => {
         recordedRows++
       }
     }
+    // WHOLE-LOG ACCOUNTING. The loop above walks phase events and claims the
+    // records that follow each one, so a record emitted BEFORE the first phase
+    // call belongs to no run and would be skipped in silence — the one gap the
+    // per-call counts cannot see. Every record must be claimed by exactly one
+    // call, so the two totals are equal.
+    const recordEvents = seam.events.filter((e) => e.kind === 'recorded').length
+    expect(attributedRecords, 'a recorded sale fell outside every phase call').toBe(recordEvents)
     // An explicit floor, so the identity check can never silently degrade to a
     // call-count check if the fixture ever stops selling anything.
     expect(recordedRows, 'the fixture no longer records any property sale').toBeGreaterThan(3)
@@ -463,15 +552,14 @@ describe('simulatePlan delegates the fixed-asset disposition phase', () => {
     let yearsWithTwoRows = 0
     let yearsThatDiscriminateAssociation = 0
     for (const year of result.years) {
-      const rows = byYear.get(year.year)
-      expect(rows, `no helper call recorded for ${year.year}`).toBeDefined()
+      const rows = rowsFor(byYear, year.year)
       let rowByRow = base
       let summed = 0
-      for (const row of rows!) {
+      for (const row of rows) {
         rowByRow += row.ordinaryGain
         summed += row.ordinaryGain
       }
-      if (rows!.length > 1) yearsWithTwoRows++
+      if (rows.length > 1) yearsWithTwoRows++
       if (!Object.is(rowByRow, base + summed)) yearsThatDiscriminateAssociation++
       // `toBe`, never `toBeCloseTo`: addition ORDER is what is being pinned.
       expect(soleTaxInput(year.year, 'ordinaryIncome'), `ordinaryIncome ${year.year}`).toBe(rowByRow)
@@ -494,7 +582,7 @@ describe('simulatePlan delegates the fixed-asset disposition phase', () => {
     expect(base).toBe(ONE_TIME_GAIN)
     let yearsThatDiscriminateAssociation = 0
     for (const year of result.years) {
-      const rows = byYear.get(year.year)!
+      const rows = rowsFor(byYear, year.year)
       let rowByRow = base
       let summed = 0
       for (const row of rows) {
@@ -513,7 +601,11 @@ describe('simulatePlan delegates the fixed-asset disposition phase', () => {
   // G4(d) — HECM closure, observed from published output rather than the seam.
   it('closes the HECM line on the sold home', () => {
     const { result, byYear } = run()
-    const balanceIn = (year: number): number => result.years.find((y) => y.year === year)!.hecmLoanBalance
+    const balanceIn = (year: number): number => {
+      const projected = result.years.find((y) => y.year === year)
+      if (projected === undefined) throw new Error(`the projection published no year ${year}`)
+      return projected.hecmLoanBalance
+    }
     // The drawn line: open and compounding right up to its sale year, and gone
     // from the year-end total the moment its own collateral sells. A line that
     // stayed open would have GROWN, so a strict decrease can only be closure.
@@ -530,15 +622,23 @@ describe('simulatePlan delegates the fixed-asset disposition phase', () => {
     // its closure is NOT observable in `ProjectionResult`; the helper's own
     // unit test pins the contract, and the differential oracle measured that
     // dropping the delete moves output for the drawn cases.
-    const closures = [...byYear].flatMap(([year, rows]) =>
-      rows.filter((r) => r.closesHecmForAccountId !== null).map((r) => [year, r.closesHecmForAccountId] as const),
+    //
+    // The year order below is the PUBLISHED projection order — this walks
+    // `result.years` rather than `[...byYear]`, whose order is `byYear`'s Map
+    // insertion order and so an artefact of how `run()` happens to build it.
+    const closures = result.years.flatMap((y) =>
+      rowsFor(byYear, y.year)
+        .filter((r) => r.closesHecmForAccountId !== null)
+        .map((r) => [y.year, r.closesHecmForAccountId] as const),
     )
     expect(closures).toEqual([
       [HECM_SALE_YEAR, HECM_HOME],
       [HECM_ZERO_SALE_YEAR, HECM_ZERO_HOME],
       [HECM_UNDERWATER_SALE_YEAR, HECM_UNDERWATER_HOME],
     ])
-    const zeroRow = byYear.get(HECM_ZERO_SALE_YEAR)![0]!
+    const zeroRows = rowsFor(byYear, HECM_ZERO_SALE_YEAR)
+    expect(zeroRows, `${HECM_ZERO_SALE_YEAR} no longer sells exactly one property`).toHaveLength(1)
+    const zeroRow = zeroRows[0]!
     expect(zeroRow.propertyAccountId).toBe(HECM_ZERO_HOME)
     expect(zeroRow.netProceedsAfterHecm).toBeGreaterThan(0)
   })
@@ -558,7 +658,7 @@ describe('simulatePlan delegates the fixed-asset disposition phase', () => {
     for (const year of result.years) {
       const cashFlow = year.cashFlow
       expect(cashFlow, `no cash flow captured for ${year.year}`).toBeDefined()
-      const rows = byYear.get(year.year)!
+      const rows = rowsFor(byYear, year.year)
       const sourceLines = cashFlow!.sourceLines.filter((l) => l.kind === 'propertySaleProceeds')
       const positive = rows.filter((r) => r.netProceedsAfterHecm > 0)
       // Line IDs come from the exported builder, never hand-spliced, so this

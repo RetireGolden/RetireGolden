@@ -19,19 +19,33 @@ import { fixedAssetDispositions, type FixedAssetDispositionYearInput } from './f
 const pack = packForYear(2026).pack
 const YEAR = 2030
 
-function property(id: string, over: Partial<Extract<Account, { type: 'property' }>> = {}): Account {
+/**
+ * A property account, fully shaped — no `as Account`. The cast this fixture
+ * used to carry was load-bearing rather than cosmetic: it silenced two REQUIRED
+ * fields of the property variant (`annualReturnPct` and `expectedNetProceeds`)
+ * that the literal simply omitted, so the compiler was not checking that what
+ * the helper gets handed is a whole property account. Supplying the two
+ * restores that check; the `Partial` override still types every call site.
+ */
+function property(
+  id: string,
+  over: Partial<Extract<Account, { type: 'property' }>> = {},
+): Extract<Account, { type: 'property' }> {
   return {
     type: 'property',
     id,
     name: id,
     ownerPersonId: null,
+    annualReturnPct: null,
     value: 500_000,
+    // The legacy tax-free path this phase deliberately does not take.
+    expectedNetProceeds: null,
     plannedSaleYear: YEAR,
     costBasis: 300_000,
     sellingCostPct: 6,
     primaryResidence: false,
     ...over,
-  } as Account
+  }
 }
 
 function input(over: Partial<FixedAssetDispositionYearInput> = {}): FixedAssetDispositionYearInput {
@@ -81,6 +95,31 @@ describe('fixedAssetDispositions — which accounts sell', () => {
 
   it('skips a property with no cost basis — the legacy expectedNetProceeds path', () => {
     expect(fixedAssetDispositions(input({ accounts: [property('home', { costBasis: undefined })] }))).toEqual([])
+  })
+
+  it('sells a property whose cost basis is ZERO — 0 is a basis, not an absence', () => {
+    // `propertySchema` types `costBasis` as `nonNegative.optional()`, so 0 is a
+    // legal basis (a fully depreciated property, or one taken in at nil) and
+    // the selection filter must test for ABSENCE — `=== undefined` — not for
+    // falsiness. Measured, rewriting it as `if (!account.costBasis) continue`
+    // turns the row count below from 1 into 0.
+    //
+    // Be exact about what this adds. It is NOT the only test that catches that
+    // edit: `simulate.annualCashFlow.propertyHecm.test.ts` already sells a
+    // `costBasis: 0` home end to end, and the same injection fails it too
+    // (measured: 2 files failed, 281 passed). What was missing is the case in
+    // THIS file — the helper's own selection contract, failing by name on the
+    // row count rather than downstream on a ledger line that stopped being
+    // published.
+    const rows = fixedAssetDispositions(input({ accounts: [property('home', { costBasis: 0 })] }))
+    expect(rows).toHaveLength(1)
+    // Nothing was paid for the house, so every dollar it nets is gain, and the
+    // whole gain is capital: not a primary residence, so no §121 exclusion, and
+    // no depreciation to recapture. Exactly equal, so a filter that quietly
+    // substituted some other basis could not satisfy this.
+    expect(rows[0]!.capitalGain).toBe(rows[0]!.netProceedsAfterHecm)
+    expect(rows[0]!.ordinaryGain).toBe(0)
+    expect(rows[0]!.capitalGain).toBeGreaterThan(0)
   })
 
   it('skips a property whose value is zero or absent', () => {
