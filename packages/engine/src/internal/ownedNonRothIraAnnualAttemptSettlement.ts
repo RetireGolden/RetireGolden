@@ -335,6 +335,7 @@ function snapshotInvariantState(
   allocationTrack: readonly [string, unknown][]
   seppAmortAmount: readonly [string, unknown][]
   magiHistory: readonly [number, unknown][]
+  deferredFirstRmdByApplicablePlan: readonly [string, unknown][]
   namedQcdOffsetConsumedByDonor: readonly [string, unknown][]
   namedQcdOffsetHistoryUnprovable: readonly string[]
   warnings: readonly string[]
@@ -362,6 +363,8 @@ function snapshotInvariantState(
     allocationTrack: snapshotStringMap(state.allocationTrack),
     seppAmortAmount: snapshotStringMap(state.seppAmortAmount),
     magiHistory: snapshotNumberMap(state.magiHistory),
+    deferredFirstRmdByApplicablePlan:
+      snapshotStringMap(state.deferredFirstRmdByApplicablePlan),
     namedQcdOffsetConsumedByDonor:
       snapshotStringMap(state.namedQcdOffsetConsumedByDonor),
     namedQcdOffsetHistoryUnprovable:
