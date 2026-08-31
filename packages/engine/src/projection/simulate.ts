@@ -64,6 +64,7 @@ import { createAnnualCashFlowYearSites, type AnnualCashFlowYearSites } from './a
 import { annuityExclusionMultiple, annuityPayoutForm, annuityPayoutFraction } from './annuityForms.js'
 import { buildLadder } from '../ladder/ladderMath.js'
 import { annualRebalanceToTarget } from './internal/annualRebalanceToTarget.js'
+import { pensionLumpSumRollovers } from './internal/pensionLumpSumRollovers.js'
 import { tipsLadderAnnualCashFlows, type TipsLadderState } from './internal/tipsLadderAnnualCashFlow.js'
 import { fixedAssetDispositions } from './internal/fixedAssetDispositions.js'
 import { otherIncomeStreams } from './internal/otherIncomeStreams.js'
@@ -1971,54 +1972,46 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // tax-free direct rollover into the named traditional account in the
     // election year (external plan money — nothing leaves another account),
     // and the pension income stream never pays (skipped in the income block).
-    for (const account of plan.accounts) {
-      if (account.type !== 'pension' || !account.lumpSumElection || !account.lumpSumOffer) continue
-      if (account.lumpSumOffer.electionYear !== year) continue
-      const target = balances.find((b) => b.account.id === account.lumpSumElection!.rolloverAccountId)
-      if (!target) continue
+    // The phase itself lives in `internal/pensionLumpSumRollovers.ts`: it owns
+    // the selection, the target resolution and its skip, the offer amount, the
+    // occurrence key and both publication gates. The credit stays here, because
+    // two pensions may elect into ONE account in the same year and the second
+    // application's before-balance is the first one's after-balance — so the
+    // running balance must be read and written by the loop that mutates it.
+    //
+    // The credit reaches the optimizer through the occurrence recorded below,
+    // not through a mutation-site capture like the two purchases: the occurrence
+    // covers every case this line can reach, because `rolloverAccountId` is
+    // validated as an existing OWNED TRADITIONAL account (`model/plan.ts`, "a
+    // pension lump sum must roll over into an existing traditional account you
+    // own (not an inherited IRA)"), so `row.runtime` can never be null where the
+    // balance moved, and the account it resolves is always an owned one. An
+    // offer of zero moves nothing and reports nothing.
+    for (const row of pensionLumpSumRollovers({ accounts: plan.accounts, year, balances, runtimeOccurrenceKey })) {
+      const target = balances[row.destinationIndex]!
       const targetBalanceBefore = target.balance
-      target.balance += account.lumpSumOffer.amount
-      yearSites?.recordPensionRollover({
-        pensionAccountId: account.id,
-        destinationAccountId: target.account.id,
-        ownerPersonId: target.account.ownerPersonId ?? null,
-        amount: account.lumpSumOffer.amount,
-      })
-      // This credit reaches the optimizer through the occurrence recorded just
-      // below, not through a mutation-site capture like the two purchases: the
-      // occurrence covers every case this line can reach, because
-      // `rolloverAccountId` is validated as an existing OWNED TRADITIONAL
-      // account (`model/plan.ts`, "a pension lump sum must roll over into an
-      // existing traditional account you own (not an inherited IRA)"), so the
-      // `type === 'traditional'` gate below can never be false where the balance
-      // moved, and the account it resolves is always an owned one. An offer of
-      // zero moves nothing and reports nothing.
-      if (account.lumpSumOffer.amount > 0 && target.account.type === 'traditional') {
-        const kind = 'rolloverInflow' as const
-        const producerOccurrenceKey = runtimeOccurrenceKey(
-          kind,
-          account.id,
-          target.account.id,
-        )
+      target.balance += row.amount
+      yearSites?.recordPensionRollover(row.record)
+      if (row.runtime !== null) {
         recordAnnualRetirementRuntimeOccurrence({
-          producerOccurrenceKey,
-          kind,
-          grossAmountPlanDollars: account.lumpSumOffer.amount,
-          ownerPersonId: target.account.ownerPersonId,
-          sourceAccountId: target.account.id,
+          producerOccurrenceKey: row.runtime.producerOccurrenceKey,
+          kind: 'rolloverInflow',
+          grossAmountPlanDollars: row.amount,
+          ownerPersonId: row.ownerPersonId,
+          sourceAccountId: row.destinationAccountId,
           executionDate: null,
           executionSequence: null,
           movementAuthorityId: null,
         })
-        if (isAggregatedIra(target.account)) {
+        if (row.runtime.creditsAggregatedIra) {
           recordAnnualRetirementRuntimeApplication({
             applicationKind: 'credit',
-            producerOccurrenceKey,
+            producerOccurrenceKey: row.runtime.producerOccurrenceKey,
             simulatorPhase: 'pensionLumpSumRollover',
-            ownerPersonId: target.account.ownerPersonId,
-            sourceAccountId: target.account.id,
+            ownerPersonId: row.ownerPersonId,
+            sourceAccountId: row.destinationAccountId,
             sourceBalanceBeforePlanDollars: targetBalanceBefore,
-            creditedAmountPlanDollars: account.lumpSumOffer.amount,
+            creditedAmountPlanDollars: row.amount,
             sourceBalanceAfterPlanDollars: target.balance,
           })
         }
