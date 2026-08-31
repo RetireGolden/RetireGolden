@@ -66,6 +66,7 @@ import { annuityExclusionMultiple, annuityPayoutForm, annuityPayoutFraction } fr
 import { buildLadder } from '../ladder/ladderMath.js'
 import { tipsLadderAnnualCashFlows, type TipsLadderState } from './internal/tipsLadderAnnualCashFlow.js'
 import { fixedAssetDispositions } from './internal/fixedAssetDispositions.js'
+import { otherIncomeStreams } from './internal/otherIncomeStreams.js'
 import { stateParamsFor } from '../params/state/index.js'
 import type { ParameterPack } from '../params/types.js'
 import { requiredMinimumDistribution } from '../rmd/rmd.js'
@@ -2387,29 +2388,21 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       })
     }
 
-    // Pass 2: other non-SS streams.
-    for (const stream of plan.incomes) {
-      if (stream.type === 'recurring') {
-        if ((stream.startYear !== null && year < stream.startYear) || (stream.endYear !== null && year > stream.endYear)) continue
-        if (!anyAlive) continue
-        const amount = stream.annualAmount * (stream.inflationAdjusted ? inflFactor : 1)
-        incomes.recurring += amount
-        if (stream.taxTreatment === 'ordinary') ordinaryIncome += amount
-        yearSites?.recordRecurringIncome({
-          incomeStreamId: stream.id,
-          amount,
-          taxTreatment: stream.taxTreatment,
-        })
-      } else if (stream.type === 'oneTime') {
-        if (stream.year !== year) continue
-        incomes.oneTime += stream.amount
-        if (stream.taxTreatment === 'ordinary') ordinaryIncome += stream.amount
-        if (stream.taxTreatment === 'capitalGain') oneTimeGains += stream.amount
-        yearSites?.recordOneTimeIncome({
-          incomeStreamId: stream.id,
-          amount: stream.amount,
-          taxTreatment: stream.taxTreatment,
-        })
+    // Pass 2: other non-SS streams. The phase itself lives in
+    // `internal/otherIncomeStreams.ts`; folding row by row, in row order, is
+    // load-bearing here — recurring and one-time rows interleave in plan order
+    // and both reach `ordinaryIncome`, which wages and taxable yield above have
+    // already made non-zero, and IEEE-754 addition is not associative.
+    for (const row of otherIncomeStreams({ incomes: plan.incomes, year, anyAlive, inflFactor })) {
+      if (row.kind === 'recurring') {
+        incomes.recurring += row.amount
+        if (row.taxTreatment === 'ordinary') ordinaryIncome += row.amount
+        yearSites?.recordRecurringIncome(row.record)
+      } else {
+        incomes.oneTime += row.amount
+        if (row.taxTreatment === 'ordinary') ordinaryIncome += row.amount
+        if (row.taxTreatment === 'capitalGain') oneTimeGains += row.amount
+        yearSites?.recordOneTimeIncome(row.record)
       }
     }
 
