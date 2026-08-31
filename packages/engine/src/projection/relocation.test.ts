@@ -231,7 +231,7 @@ describe('compareRelocationCandidates', () => {
       expect(r.successRate).not.toBeNull()
       expect(other.successRate).not.toBeNull()
     }
-  }, 20_000)
+  })
 
   it('clears a flat state-rate override for candidates and says so via modeled flags', () => {
     const plan = caPublicPensionRetiree()

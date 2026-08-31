@@ -3499,7 +3499,7 @@ describe('objective-mode tournament (sustainable-spending plan, Step 5)', () => 
     // 5s locally but exceeds it on a cold CI runner under coverage
     // instrumentation, so it gets explicit headroom rather than being made to
     // measure less.
-  }, 15_000)
+  })
 
   it('keeps an identity-withheld MILP schedule in policy ranking and preserves its diagnostics', async () => {
     const plan = validate(tradHeavyPlan())
