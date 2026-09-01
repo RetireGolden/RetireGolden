@@ -29,6 +29,13 @@
   --chart-8: #b91c1c;
   --radius: 10px;
   --shadow-card: 0 1px 2px rgb(15 23 42 / 0.06), 0 2px 8px rgb(15 23 42 / 0.06);
+  /* Shared native-control treatment (2026-09): one height rhythm for text
+     inputs, selects, and affixed inputs; one box size for checks and radios;
+     the select chevron is an inline SVG in the muted color, so it is a token
+     mirrored per theme like any other color. */
+  --control-height: 2.3rem;
+  --control-check-size: 1.1rem;
+  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%235b6470' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
   font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
   line-height: 1.5;
 }
@@ -60,6 +67,7 @@
   --chart-7: #22d3ee;
   --chart-8: #f87171;
   --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4), 0 2px 8px rgb(0 0 0 / 0.3);
+  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%2397a1ad' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
 }
 
 @media (prefers-color-scheme: dark) {
@@ -86,6 +94,7 @@
     --chart-7: #22d3ee;
     --chart-8: #f87171;
     --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4), 0 2px 8px rgb(0 0 0 / 0.3);
+    --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%2397a1ad' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
   }
 }
 
@@ -447,6 +456,216 @@ code {
   max-width: 75ch;
 }
 
+/* --- Native controls -------------------------------------------------------
+   One styled treatment for every checkbox, radio, select, range, and number
+   input in the app, so a UA-drawn control never shows up off-palette
+   (design-QA #447, #451, #458, #466, #467, #469). Low-specificity element
+   selectors: the .field / .input-affix rules layer on top for sizing, and
+   nothing per screen should restyle a control — if one looks native, fix it
+   here. */
+
+:root {
+  accent-color: var(--accent);
+}
+
+input[type='checkbox'],
+input[type='radio'] {
+  appearance: none;
+  display: inline-grid;
+  place-content: center;
+  flex: none;
+  width: var(--control-check-size);
+  height: var(--control-check-size);
+  margin: 0;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface-1);
+  color: var(--accent-fg);
+  vertical-align: middle;
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+input[type='radio'] {
+  border-radius: 999px;
+}
+
+/* The mark is a clip-path on a pseudo-element, filled with --accent-fg: no
+   image, no hardcoded color, and it scales with the box. */
+input[type='checkbox']::before,
+input[type='radio']::before {
+  content: '';
+  width: calc(var(--control-check-size) * 0.56);
+  height: calc(var(--control-check-size) * 0.56);
+  transform: scale(0);
+  transition: transform 120ms ease;
+  background: currentColor;
+}
+
+input[type='checkbox']::before {
+  clip-path: polygon(14% 44%, 0 62%, 40% 100%, 100% 22%, 84% 8%, 40% 66%);
+}
+
+input[type='radio']::before {
+  border-radius: 50%;
+  width: calc(var(--control-check-size) * 0.45);
+  height: calc(var(--control-check-size) * 0.45);
+}
+
+input[type='checkbox']:checked,
+input[type='radio']:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+input[type='checkbox']:checked::before,
+input[type='radio']:checked::before {
+  transform: scale(1);
+}
+
+input[type='checkbox']:hover:not(:disabled),
+input[type='radio']:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--fg) 30%, var(--border));
+}
+
+input[type='checkbox']:focus-visible,
+input[type='radio']:focus-visible,
+input[type='range']:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+input[type='checkbox']:disabled,
+input[type='radio']:disabled {
+  background: var(--surface-2);
+  border-color: var(--border);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+input[type='checkbox']:checked:disabled,
+input[type='radio']:checked:disabled {
+  background: var(--surface-2);
+}
+
+select {
+  appearance: none;
+  font: inherit;
+  color: var(--fg);
+  background-color: var(--surface-1);
+  background-image: var(--select-chevron);
+  background-repeat: no-repeat;
+  background-position: right 0.6rem center;
+  background-size: 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  /* Exact, not min: a select's UA line box runs taller than a text input's,
+     which is the 3px baseline stagger the row-height findings measured. */
+  height: var(--control-height);
+  padding: 0.45rem 2rem 0.45rem 0.55rem;
+  cursor: pointer;
+}
+
+select:disabled {
+  background-color: var(--surface-2);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+/* Number inputs keep their semantics (step, min/max, spinbutton role) but
+   drop the UA spin buttons, which were the one piece of native chrome left
+   in the numeric fields (#451). */
+input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  appearance: none;
+  margin: 0;
+}
+
+input[type='range'] {
+  appearance: none;
+  width: 100%;
+  height: 1.25rem;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+input[type='range']::-webkit-slider-runnable-track {
+  height: 0.4rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+}
+
+input[type='range']::-moz-range-track {
+  height: 0.4rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+}
+
+input[type='range']::-webkit-slider-thumb {
+  appearance: none;
+  width: 1.05rem;
+  height: 1.05rem;
+  margin-top: calc((0.4rem - 1.05rem) / 2);
+  border-radius: 50%;
+  border: 2px solid var(--surface-1);
+  background: var(--accent);
+  box-shadow: 0 0 0 1px var(--border);
+}
+
+input[type='range']::-moz-range-thumb {
+  width: 1.05rem;
+  height: 1.05rem;
+  border-radius: 50%;
+  border: 2px solid var(--surface-1);
+  background: var(--accent);
+  box-shadow: 0 0 0 1px var(--border);
+}
+
+input[type='range']:disabled {
+  cursor: not-allowed;
+}
+
+input[type='range']:disabled::-webkit-slider-thumb {
+  background: var(--muted);
+}
+
+input[type='range']:disabled::-moz-range-thumb {
+  background: var(--muted);
+}
+
+/* Windows High Contrast and other forced-color modes replace author colors,
+   which would erase the token fills and pseudo-element marks above. Give the
+   controls back to the UA there: system colors, system glyphs, and the focus
+   ring the platform draws. */
+@media (forced-colors: active) {
+  input[type='checkbox'],
+  input[type='radio'],
+  select,
+  input[type='range'],
+  input[type='number'] {
+    appearance: auto;
+    background-image: none;
+  }
+
+  input[type='checkbox']::before,
+  input[type='radio']::before {
+    display: none;
+  }
+
+  input[type='range']::-webkit-slider-thumb {
+    appearance: auto;
+  }
+}
+
 .radio-stack {
   display: flex;
   flex-direction: column;
@@ -464,7 +683,7 @@ code {
 }
 
 .radio-option input {
-  margin-top: 0.2rem;
+  margin-top: 0.15rem;
 }
 
 .wizard-actions {

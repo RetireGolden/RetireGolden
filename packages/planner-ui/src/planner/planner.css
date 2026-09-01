@@ -781,16 +781,27 @@
   font-weight: 600;
 }
 
-.field input:not([type='checkbox']):not([type='radio']),
+/* Excludes range: a slider inside a .field keeps the app-wide slider
+   treatment from index.css (transparent, 1.25rem track box), not a text
+   field's border, padding, and height. */
+.field input:not([type='checkbox']):not([type='radio']):not([type='range']),
 .field select {
   padding: 0.45rem 0.55rem;
   border-radius: 8px;
   border: 1px solid var(--border);
-  background: var(--surface-1);
+  /* background-color, not the shorthand: the shorthand would erase the
+     select chevron image that index.css sets. */
+  background-color: var(--surface-1);
   color: var(--fg);
   font-size: 0.98rem;
+  height: var(--control-height);
   width: 100%;
   max-width: 100%;
+}
+
+/* Keep the chevron gutter the app-wide select rule reserves. */
+.field select {
+  padding-right: 2rem;
 }
 
 /* Safety net: a long option label degrades to an ellipsis instead of clipping
@@ -807,11 +818,11 @@
   font-size: 0.98rem;
 }
 
+/* The box sits under its label row, nudged off the left edge so it reads as
+   that label's control and not the next field's (#451). */
 .field--checkbox input[type='checkbox'] {
   align-self: flex-start;
-  width: auto;
-  margin: 0;
-  cursor: pointer;
+  margin: 0.15rem 0 0 0.1rem;
 }
 
 .field-readonly {
@@ -834,7 +845,8 @@
 
 .input-affix {
   display: flex;
-  align-items: center;
+  align-items: stretch;
+  min-height: var(--control-height);
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--surface-1);
@@ -862,6 +874,17 @@
   background: transparent !important;
   flex: 1;
   min-width: 0;
+  /* The wrapper carries the border and the height token; the inner input
+     just fills it, so affixed and plain fields share one baseline. */
+  min-height: 0;
+}
+
+/* Matches the shared .field input rule's specificity (its two :not() args
+   count) and sits later in the sheet, so it wins: the inner input must not
+   also carry the token height, or the wrapper border adds 2px on top of it
+   and affixed fields sit taller than plain ones. */
+.field .input-affix > input:not([type='checkbox']):not([type='radio']):not([type='range']) {
+  height: auto;
 }
 
 .item-row {

@@ -258,12 +258,23 @@ transitions, restrained hover states that shift a border or tint a background by
   Insights no-results card) keeps its card chrome; the well is for placeholders inside a card.
 
 ### Inputs / Fields
-- **Style:** 1px Slate Border, 6px radius, page-background fill, Ink text, 1rem size; labels
-  stack above with 0.35rem gap; hints run 0.88rem muted below, capped at 75ch.
+- **Style:** 1px Slate Border, 8px radius, Surface White fill, Ink text, 0.98rem size, one
+  shared height (`--control-height`); labels stack above with 0.35rem gap; hints run 0.88rem
+  muted below, capped at 75ch.
 - **Focus:** the 2px gold outline signature. The plan-name input is borderless until
   hover/focus reveals its field chrome — inline editing without a form feel.
 - **Help ladder:** label → one-line hint → a single `HelpTip` (ⓘ) → "Learn more" link. Never
   stack more than one tip on a field.
+- **Native control chrome is styled once, app-wide.** Checkboxes, radios, selects, range
+  sliders, and number inputs take the shared treatment in `index.css`: `appearance: none`
+  (number inputs keep `textfield` and only drop the spin buttons), Slate Border box on Surface White, Ledger Gold fill when checked or as the slider thumb, the
+  muted-color chevron on selects (an inline SVG token, mirrored per theme and pinned equal to
+  `--muted`), no UA spin buttons, the 2px gold focus ring, the flat disabled tokens, and a
+  `forced-colors` fallback that hands the controls back to the UA. Text inputs, selects, and
+  affixed inputs share one height (`--control-height`) so a row of mixed fields sits on one
+  baseline. A context may still set a control's *size and placement* (a field's full width, the
+  allocation row's grid, a toolbar's inline flow); what it never does is restyle the control's
+  chrome. If a control looks native, the shared rule is where the fix goes.
 
 ### Navigation
 - **Top nav** (`.nav-link`): muted text, 6px radius, hover tints 6% Ink; active is 600 weight on

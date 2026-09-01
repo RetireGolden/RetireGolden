@@ -321,6 +321,9 @@ export function NumberField({
 }: NumericProps & { suffix?: string; step?: number; min?: number; max?: number }) {
   const id = useId()
   const { text, setText, setFocused } = useLocalText(value === null ? '' : String(value))
+  // The suffix names the unit ("%"); it is the input's description, not
+  // decoration, so a screen reader announces "22, percent" and not just "22".
+  const suffixId = suffix ? `${id}-unit` : undefined
   const input = (
     <input
       id={id}
@@ -330,6 +333,7 @@ export function NumberField({
       step={step}
       min={min}
       max={max}
+      aria-describedby={suffixId}
       onFocus={() => setFocused(true)}
       onBlur={() => setFocused(false)}
       onChange={(e) => {
@@ -345,7 +349,7 @@ export function NumberField({
       {suffix ? (
         <div className="input-affix">
           {input}
-          <span aria-hidden>{suffix}</span>
+          <span id={suffixId}>{suffix}</span>
         </div>
       ) : (
         input
@@ -433,6 +437,7 @@ export function SelectField<T extends string>({
         value={value}
         required={placeholder !== undefined}
         aria-describedby={describedBy}
+        title={options.find((o) => o.value === value)?.label ?? placeholder}
         onChange={(e) => {
           const v = e.target.value
           // With a placeholder, '' is the disabled not-yet-answered option —

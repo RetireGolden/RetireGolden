@@ -481,6 +481,7 @@ function InYourPlanTab({ personIds, personName, applyStrategy }: TabProps) {
         Results assume your expected returns; use the robustness check to see how the ranking holds up across markets.
       </p>
       <div className="form-grid" style={{ marginBottom: '0.75rem', maxWidth: '26rem' }}>
+        <div className="field-span-full">
         <SelectField
           label="Rank claim ages by"
           help="Every whole-year Social Security claim-age candidate is evaluated on your full year-by-year projection, then those same evaluations are re-ranked by this objective."
@@ -489,6 +490,7 @@ function InYourPlanTab({ personIds, personName, applyStrategy }: TabProps) {
           options={OBJECTIVE_CHOICES}
           onCommit={setObjectiveId}
         />
+        </div>
       </div>
 
       {best ? (
@@ -935,7 +937,16 @@ function BenefitsOnlyTab({ personIds, personName, applyStrategy }: TabProps) {
             <span className="field-label">Real discount rate: {discountPct}%</span>
             <HelpTip text="The real (after-inflation) rate used to value future benefits, conventionally near the long-term TIPS yield (~2%). Higher rates favor claiming earlier; a very high personal rate (impatience or poor health) can make 62 optimal." />
           </span>
-          <input type="range" min={0} max={8} step={0.5} value={discountPct} onChange={(e) => setDiscountPct(Number(e.target.value))} />
+          <input
+            type="range"
+            min={0}
+            max={8}
+            step={0.5}
+            value={discountPct}
+            aria-label="Real discount rate"
+            aria-valuetext={`${discountPct}%`}
+            onChange={(e) => setDiscountPct(Number(e.target.value))}
+          />
         </div>
       </div>
 

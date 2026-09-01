@@ -53,6 +53,11 @@ function rule(selector: string, source = css): string {
   return ruleBodyAt(source, -1, selector)
 }
 
+/** Start offset of the shared .field text-input rule, or -1 when its selector list drifts. */
+function indexOfSharedFieldRule(): number {
+  return css.indexOf(".field input:not([type='checkbox']):not([type='radio']):not([type='range']),\n.field select {")
+}
+
 describe('Design-QA chrome pins', () => {
   it('plan-name input truncates with an ellipsis, not a mid-word clip (#431)', () => {
     const body = rule('.plan-name-input')
@@ -142,5 +147,109 @@ describe('Design-QA chrome pins: theme and focus tokens', () => {
     expect(ghost).toMatch(/opacity:\s*0\.45/)
     // A ghost that also carries .btn must not pick up the filled treatment.
     expect(ghost).toMatch(/background:\s*transparent/)
+  })
+})
+
+describe('Shared native-control treatment (#447, #451, #458, #466, #467, #469)', () => {
+  it('checks and radios are drawn by the app, not the UA, in both states', () => {
+    const box = rule("input[type='checkbox'],\ninput[type='radio']", indexCss)
+    expect(box).toMatch(/appearance:\s*none/)
+    expect(box).toMatch(/width:\s*var\(--control-check-size\)/)
+    expect(box).toMatch(/border:\s*1px solid var\(--border\)/)
+    expect(box).toMatch(/background:\s*var\(--surface-1\)/)
+    const checked = rule("input[type='checkbox']:checked,\ninput[type='radio']:checked", indexCss)
+    expect(checked).toMatch(/background:\s*var\(--accent\)/)
+    // The mark is a clip-path filled with the token that already clears AA on --accent.
+    const mark = rule("input[type='checkbox']::before,\ninput[type='radio']::before", indexCss)
+    expect(mark).toMatch(/background:\s*currentColor/)
+    expect(box).toMatch(/color:\s*var\(--accent-fg\)/)
+    // Disabled follows the flat token treatment, never opacity on the fill.
+    const disabled = rule("input[type='checkbox']:disabled,\ninput[type='radio']:disabled", indexCss)
+    expect(disabled).toMatch(/background:\s*var\(--surface-2\)/)
+    expect(disabled).not.toMatch(/opacity/)
+  })
+
+  it('selects drop the UA chrome and carry the theme-mirrored chevron token', () => {
+    const select = rule('select', indexCss)
+    expect(select).toMatch(/appearance:\s*none/)
+    expect(select).toMatch(/background-image:\s*var\(--select-chevron\)/)
+    expect(select).toMatch(/\bheight:\s*var\(--control-height\)/)
+    expect(select).toMatch(/padding:\s*0\.45rem 2rem 0\.45rem 0\.55rem/)
+    // The token exists in the light block and both dark mechanisms, and its
+    // stroke is that block's --muted: a select cannot take currentColor on a
+    // background glyph, so the data URI carries the hex, and this is what
+    // keeps it from drifting when the palette moves.
+    for (const block of [':root {', ":root[data-theme='dark'] {", ":root:not([data-theme='light']) {"]) {
+      const at = indexCss.indexOf(block)
+      expect(at, block).toBeGreaterThanOrEqual(0)
+      const body = indexCss.slice(at, indexCss.indexOf('}', at))
+      const muted = body.match(/--muted:\s*#([0-9a-fA-F]{6})/)?.[1]?.toLowerCase()
+      const stroke = body.match(/--select-chevron:\s*url\("data:image\/svg\+xml[^"]*stroke='%23([0-9a-fA-F]{6})'/)?.[1]?.toLowerCase()
+      expect(muted, `${block} defines --muted`).toBeTruthy()
+      expect(stroke, `${block} defines --select-chevron with a stroke`).toBeTruthy()
+      expect(stroke, `${block}: chevron stroke equals --muted`).toBe(muted)
+    }
+    // The field rule must not use the background shorthand (it would erase the
+    // chevron) and must leave range sliders to the app-wide slider rule.
+    const shared = rule(".field input:not([type='checkbox']):not([type='radio']):not([type='range']),\n.field select")
+    expect(shared).toMatch(/background-color:\s*var\(--surface-1\)/)
+    expect(shared).not.toMatch(/\bbackground:\s/)
+    expect(shared).toMatch(/\bheight:\s*var\(--control-height\)/)
+    expect(indexOfSharedFieldRule()).toBeGreaterThanOrEqual(0)
+  })
+
+  it('range sliders paint the track and thumb from tokens, inside .field too', () => {
+    const range = rule("input[type='range']", indexCss)
+    expect(range).toMatch(/appearance:\s*none/)
+    expect(range).toMatch(/background:\s*transparent/)
+    // No .field rule may re-box a slider: every .field input selector that
+    // sets height/padding/border excludes type=range (Monte Carlo and the SS
+    // Optimizer sliders sit inside .field and rendered as text boxes without this).
+    const fieldInputSelectors = [...css.matchAll(/^\.field[^{\n]*\binput\b[^{\n]*\{/gm)].map((m) => m[0])
+    expect(fieldInputSelectors.length).toBeGreaterThan(0)
+    for (const sel of fieldInputSelectors) {
+      if (/focus-visible|checkbox|\[type='radio'\]\s*\{|\[type='checkbox'\]\s*\{/.test(sel) && !/:not\(/.test(sel)) continue
+      const body = ruleBodyAt(css, css.indexOf(sel), sel)
+      if (/\b(height|padding|border)\s*:/.test(body)) {
+        expect(sel, `${sel} must exclude range`).toMatch(/:not\(\[type='range'\]\)/)
+      }
+    }
+    // High-contrast modes get the UA controls back instead of erased fills.
+    const forced = indexCss.slice(indexCss.indexOf('@media (forced-colors: active)'))
+    expect(forced).toMatch(/appearance:\s*auto/)
+    expect(forced).toMatch(/input\[type='checkbox'\]::before,\s*input\[type='radio'\]::before\s*\{\s*display:\s*none/)
+    for (const thumb of ["input[type='range']::-webkit-slider-thumb", "input[type='range']::-moz-range-thumb"]) {
+      const body = rule(thumb, indexCss)
+      expect(body, thumb).toMatch(/background:\s*var\(--accent\)/)
+      expect(body, thumb).toMatch(/border:\s*2px solid var\(--surface-1\)/)
+    }
+    for (const track of ["input[type='range']::-webkit-slider-runnable-track", "input[type='range']::-moz-range-track"]) {
+      expect(rule(track, indexCss), track).toMatch(/background:\s*var\(--surface-2\)/)
+    }
+  })
+
+  it('number inputs keep semantics but lose the UA spin buttons (#451)', () => {
+    expect(rule("input[type='number']", indexCss)).toMatch(/appearance:\s*textfield/)
+    expect(
+      rule("input[type='number']::-webkit-inner-spin-button,\ninput[type='number']::-webkit-outer-spin-button", indexCss),
+    ).toMatch(/appearance:\s*none/)
+  })
+
+  it('every control shares the 2px gold focus ring', () => {
+    const focus = rule(
+      "input[type='checkbox']:focus-visible,\ninput[type='radio']:focus-visible,\ninput[type='range']:focus-visible,\nselect:focus-visible",
+      indexCss,
+    )
+    expect(focus).toMatch(/outline:\s*2px solid var\(--accent\)/)
+    expect(focus).toMatch(/outline-offset:\s*2px/)
+  })
+
+  it('text, select, and affixed inputs share one height token', () => {
+    const affix = rule('.input-affix')
+    expect(affix).toMatch(/min-height:\s*var\(--control-height\)/)
+    expect(affix).toMatch(/align-items:\s*stretch/)
+    expect(rule('.input-affix > input')).toMatch(/min-height:\s*0/)
+    // The field checkbox no longer forces width:auto, which undid the box size.
+    expect(rule(".field--checkbox input[type='checkbox']")).not.toMatch(/width:\s*auto/)
   })
 })

@@ -476,6 +476,7 @@ export function OptimizePage() {
           <Link to={`/plan/${plan.id}/assumptions`}>Assumptions</Link>.
         </p>
         <div className="form-grid" style={{ marginTop: '0.5rem' }}>
+          <div className="field-span-full">
           <SelectField
             label="Optimize for"
             help="What 'better' means when candidate schedules are ranked on your full year-by-year projection. The default maximizes the after-tax estate. Other objectives re-rank the same evaluations by money lasting longer, lowest lifetime tax without breaking the estate floor, the worst-case balance in survivor years, or the worst-case balance across pre-Social-Security bridge years. Every objective still hard-rejects candidates that shorten how long the money lasts."
@@ -485,6 +486,7 @@ export function OptimizePage() {
             options={OBJECTIVE_CHOICES}
             onCommit={setObjectiveId}
           />
+          </div>
           {hasSocialSecurityIncome ? (
             <CheckboxField
               label="Also optimize Social Security claim age"
