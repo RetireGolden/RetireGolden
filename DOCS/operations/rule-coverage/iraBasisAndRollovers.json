@@ -263,7 +263,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 946
+              "line": 945
             }
           ]
         }
@@ -353,6 +353,7 @@
         "packages/engine/src/internal/iraAnnuityContractValue.ts",
         "packages/engine/src/internal/ownedNonRothIraContiguousReplay.ts",
         "packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts",
+        "packages/engine/src/projection/internal/annualPensionAndAnnuityIncome.ts",
         "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/strategies/accountEligibility.ts"
       ],
@@ -385,11 +386,20 @@
           ]
         },
         {
+          "path": "packages/engine/src/projection/internal/annualPensionAndAnnuityIncome.ts",
+          "functions": [
+            {
+              "name": "annualPensionAndAnnuityIncome",
+              "line": 119
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 946
+              "line": 945
             }
           ]
         },
@@ -584,6 +594,7 @@
       "implementedBy": [
         "packages/engine/src/internal/ownedNonRothIraContiguousReplay.ts",
         "packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts",
+        "packages/engine/src/projection/internal/annualPensionAndAnnuityIncome.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
@@ -606,11 +617,20 @@
           ]
         },
         {
+          "path": "packages/engine/src/projection/internal/annualPensionAndAnnuityIncome.ts",
+          "functions": [
+            {
+              "name": "annualPensionAndAnnuityIncome",
+              "line": 119
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 946
+              "line": 945
             }
           ]
         }
@@ -679,6 +699,7 @@
         "packages/engine/src/internal/ownedNonRothIraContiguousReplay.ts",
         "packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts",
         "packages/engine/src/projection/internal/annualAnnuityPurchaseFunding.ts",
+        "packages/engine/src/projection/internal/annualPensionAndAnnuityIncome.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
@@ -719,11 +740,20 @@
           ]
         },
         {
+          "path": "packages/engine/src/projection/internal/annualPensionAndAnnuityIncome.ts",
+          "functions": [
+            {
+              "name": "annualPensionAndAnnuityIncome",
+              "line": 119
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 946
+              "line": 945
             }
           ]
         }
@@ -835,7 +865,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 946
+              "line": 945
             }
           ]
         },
@@ -1073,7 +1103,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 946
+              "line": 945
             }
           ]
         }

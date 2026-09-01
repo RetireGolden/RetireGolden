@@ -55,6 +55,7 @@ export const annuityRecords = {
     implementedBy: [
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/projection/internal/annualAnnuityPurchaseFunding.ts',
+      'packages/engine/src/projection/internal/annualPensionAndAnnuityIncome.ts',
       'packages/engine/src/projection/annuityForms.ts',
       'packages/engine/src/params/index.ts',
       'packages/engine/src/params/data/year2026.ts',
@@ -64,6 +65,7 @@ export const annuityRecords = {
       'packages/engine/src/params/index.ts#annuityExpectedReturnMultiple',
       'packages/engine/src/projection/annuityForms.ts#annuityExclusionMultiple',
       'packages/engine/src/projection/internal/annualAnnuityPurchaseFunding.ts#annualAnnuityPurchaseFunding',
+      'packages/engine/src/projection/internal/annualPensionAndAnnuityIncome.ts#annualPensionAndAnnuityIncome',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
@@ -95,10 +97,12 @@ export const annuityRecords = {
     verifiedOn: '2026-08-03',
     implementedBy: [
       'packages/engine/src/projection/annuityForms.ts',
+      'packages/engine/src/projection/internal/annualPensionAndAnnuityIncome.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/projection/annuityForms.ts#annuityExclusionMultiple',
+      'packages/engine/src/projection/internal/annualPensionAndAnnuityIncome.ts#annualPensionAndAnnuityIncome',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
@@ -130,11 +134,13 @@ export const annuityRecords = {
     verifiedOn: '2026-08-03',
     implementedBy: [
       'packages/engine/src/projection/annuityForms.ts',
+      'packages/engine/src/projection/internal/annualPensionAndAnnuityIncome.ts',
       'packages/engine/src/montecarlo/mortality.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/montecarlo/mortality.ts#jointLastSurvivorExpectancy',
       'packages/engine/src/projection/annuityForms.ts#annuityExclusionMultiple',
+      'packages/engine/src/projection/internal/annualPensionAndAnnuityIncome.ts#annualPensionAndAnnuityIncome',
     ],
   },
 
