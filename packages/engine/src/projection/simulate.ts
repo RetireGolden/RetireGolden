@@ -1712,6 +1712,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       (sum, state) => sum + state.balance,
       0,
     )
+    const startOfYearPositionalBalances = balances.map((state) => state.balance)
     const startOfYearBalance = new Map(
       annualIdKeyedBalances.map((state) => [state.account.id, state.balance]),
     )
@@ -2209,7 +2210,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     const incomeSetup = annualIncomeSetup({
       distributedYield: {
         states: balances,
-        startOfYearBalance,
+        startOfYearBalances: startOfYearPositionalBalances,
         allocationTrack,
         classParams,
       },
@@ -2560,7 +2561,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       abwHorizonYear,
       year,
       balances,
-      startOfYearBalance,
+      startOfYearBalances: startOfYearPositionalBalances,
     })
     let debtService = 0
     for (const row of annualDebtServiceRows({

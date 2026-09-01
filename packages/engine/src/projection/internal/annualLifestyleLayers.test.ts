@@ -37,7 +37,7 @@ function call(overrides: Partial<AnnualLifestyleLayersInput> = {}) {
     abwHorizonYear: 2027,
     year: 2026,
     balances: [],
-    startOfYearBalance: new Map(),
+    startOfYearBalances: [],
     ...overrides,
   })
 }
@@ -141,22 +141,16 @@ describe('annualLifestyleLayers — ABW', () => {
         { account: { id: 'duplicate' } },
         { account: { id: 'missing' } },
       ],
-      startOfYearBalance: new Map([
-        ['large', 1e16],
-        ['small', 1],
-        ['negative-large', -1e16],
-        ['tail', 2],
-        ['duplicate', 3],
-      ]),
+      startOfYearBalances: [1e16, 1, -1e16, 2, 3, 4, 0],
     })
 
-    // ((((1e16 + 1) - 1e16) + 2) + 3) + 3 = 8. Reordering the
-    // cancellation rows would yield 9; each duplicate balance row re-reads
-    // the map's single last-write value.
+    // ((((1e16 + 1) - 1e16) + 2) + 3) + 4 = 9. Reordering the
+    // cancellation rows would yield 10; duplicate IDs retain each physical
+    // row's own opening value.
     expect(result).toEqual({
       requiredLifestyle: 0,
-      discretionaryLifestyle: 8,
-      targetLifestyle: 8,
+      discretionaryLifestyle: 9,
+      targetLifestyle: 9,
       idealLifestyle: 0,
       excessLifestyle: 0,
     })
@@ -168,7 +162,7 @@ describe('annualLifestyleLayers — ABW', () => {
       aliveCount: 0,
       abwActive: true,
       balances: [{ account: { id: 'cash' } }],
-      startOfYearBalance: new Map([['cash', 100]]),
+      startOfYearBalances: [100],
     }).targetLifestyle).toBe(0)
   })
 
@@ -179,7 +173,7 @@ describe('annualLifestyleLayers — ABW', () => {
       abwTiltPct: 1,
       abwHorizonYear: 2028,
       balances: [{ account: { id: 'portfolio' } }],
-      startOfYearBalance: new Map([['portfolio', 1_000]]),
+      startOfYearBalances: [1_000],
     } as const
 
     expect(call({ ...shared, year: 2026 }).targetLifestyle)
@@ -193,15 +187,23 @@ describe('annualLifestyleLayers — purity and freshness', () => {
   it('returns fresh results without mutating the expense object or balance inputs', () => {
     const expenseInput = expenses({ phases: [{ fromAge: 60, multiplier: 1.2 }] })
     const balances = [{ account: { id: 'cash' } }]
-    const startOfYearBalance = new Map([['cash', 100]])
+    const startOfYearBalances = [100]
     const before = JSON.stringify(expenseInput)
-    const first = call({ expenses: expenseInput, balances, startOfYearBalance })
-    const second = call({ expenses: expenseInput, balances, startOfYearBalance })
+    const first = call({ expenses: expenseInput, balances, startOfYearBalances })
+    const second = call({ expenses: expenseInput, balances, startOfYearBalances })
 
     expect(second).toEqual(first)
     expect(second).not.toBe(first)
     expect(JSON.stringify(expenseInput)).toBe(before)
     expect(balances).toEqual([{ account: { id: 'cash' } }])
-    expect([...startOfYearBalance]).toEqual([['cash', 100]])
+    expect(startOfYearBalances).toEqual([100])
+  })
+
+  it('fails when opening balances lose positional cardinality', () => {
+    expect(() => call({
+      abwActive: true,
+      balances: [{ account: { id: 'cash' } }],
+      startOfYearBalances: [],
+    })).toThrow('positional cardinality')
   })
 })

@@ -9,10 +9,11 @@
  * time, preserving both IEEE-754 addition order and duplicate-account-id
  * behavior.
  *
- * `startOfYearBalance` and `allocationTrack` are supplied by the caller rather
- * than reconstructed here. Both are last-wins maps when account ids are
- * duplicated, while the balance loop still prices every duplicate state. A
- * row is therefore keyed by position, never reconciled by account id.
+ * `startOfYearBalances` and `allocationTrack` are supplied by the caller rather
+ * than reconstructed here. Opening balances are positional so duplicate IDs
+ * retain each physical row's own economic principal; allocation policy remains
+ * the existing ID-keyed last-write view. A row is keyed by position, never
+ * reconciled by account ID.
  */
 import {
   blendedTaxableYield,
@@ -35,8 +36,8 @@ export interface DistributedTaxableYieldAllocationTrack {
 export interface DistributedTaxableYieldInput {
   /** Full `balances` array; output remains positional and has the same length. */
   readonly states: readonly DistributedTaxableYieldState[]
-  /** Start-of-year values keyed by account id, with the caller's last-wins semantics. */
-  readonly startOfYearBalance: ReadonlyMap<string, number>
+  /** One start-of-year value per physical state, in the same order. */
+  readonly startOfYearBalances: readonly number[]
   /** Allocation tracks keyed by account id, also last-wins. */
   readonly allocationTrack: ReadonlyMap<string, DistributedTaxableYieldAllocationTrack>
   /** Resolved class parameters for this projection. */
@@ -78,17 +79,20 @@ export type DistributedTaxableYieldResultRow =
 export function distributedTaxableYieldRows(
   input: DistributedTaxableYieldInput,
 ): readonly DistributedTaxableYieldResultRow[] {
-  const { states, startOfYearBalance, allocationTrack, classParams } = input
+  const { states, startOfYearBalances, allocationTrack, classParams } = input
+  if (startOfYearBalances.length !== states.length) {
+    throw new Error('distributed-yield opening balances lost positional cardinality')
+  }
   const rows: DistributedTaxableYieldResultRow[] = []
 
-  for (const state of states) {
+  for (const [stateIndex, state] of states.entries()) {
     if (state.account.type !== 'taxable') {
       rows.push({ kind: 'none' })
       continue
     }
 
     const account = state.account
-    const startBalance = Math.max(0, startOfYearBalance.get(account.id) ?? state.balance)
+    const startBalance = Math.max(0, startOfYearBalances[stateIndex]!)
     if (startBalance <= 0) {
       rows.push({ kind: 'none' })
       continue

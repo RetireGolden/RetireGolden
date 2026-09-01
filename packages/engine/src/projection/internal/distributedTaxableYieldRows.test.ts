@@ -55,7 +55,7 @@ const state = (account: Account, balance = 'balance' in account ? account.balanc
 function input(over: Partial<DistributedTaxableYieldInput> = {}): DistributedTaxableYieldInput {
   return {
     states: [state(taxable('brokerage', { interestYieldPct: 2, dividendYieldPct: 3 }))],
-    startOfYearBalance: new Map([['brokerage', 200_000]]),
+    startOfYearBalances: [200_000],
     allocationTrack: new Map(),
     classParams: params(),
     ...over,
@@ -70,7 +70,7 @@ describe('distributedTaxableYieldRows — selection and positional contract', ()
         state(taxable('yielding', { interestYieldPct: 1 })),
         state(taxable('zero')),
       ],
-      startOfYearBalance: new Map([['yielding', 100], ['zero', 100]]),
+      startOfYearBalances: [10_000, 100, 100],
     }))
 
     expect(rows).toHaveLength(3)
@@ -78,7 +78,7 @@ describe('distributedTaxableYieldRows — selection and positional contract', ()
     expect(rows[1]?.kind === 'yield' ? rows[1].accountId : null).toBe('yielding')
   })
 
-  it('uses the start-of-year map when present, falls back only when absent, and floors negative openings', () => {
+  it('uses each positional start-of-year value and floors negative openings', () => {
     const accounts = [
       taxable('mapped-zero', { interestYieldPct: 10 }),
       taxable('fallback', { interestYieldPct: 10 }),
@@ -86,7 +86,7 @@ describe('distributedTaxableYieldRows — selection and positional contract', ()
     ]
     const rows = distributedTaxableYieldRows(input({
       states: [state(accounts[0]!, 700), state(accounts[1]!, 700), state(accounts[2]!, 700)],
-      startOfYearBalance: new Map([['mapped-zero', 0], ['mapped-negative', -1]]),
+      startOfYearBalances: [0, 700, -1],
     }))
 
     expect(rows.map((row) => row.kind)).toEqual(['none', 'yield', 'none'])
@@ -100,7 +100,7 @@ describe('distributedTaxableYieldRows — selection and positional contract', ()
     const second = taxable('dup', { interestYieldPct: 2, dividendYieldPct: 0 })
     const rows = distributedTaxableYieldRows(input({
       states: [state(first, 10), state(second, 20)],
-      startOfYearBalance: new Map([['dup', 1_000]]),
+      startOfYearBalances: [1_000, 2_000],
       allocationTrack: new Map([
         ['dup', { weights: [0, 0, 1, 0] }],
         ['dup', { weights: [1, 0, 0, 0] }],
@@ -110,7 +110,7 @@ describe('distributedTaxableYieldRows — selection and positional contract', ()
     expect(rows).toHaveLength(2)
     expect(rows.map((row) => row.kind === 'yield' ? [row.accountId, row.interest] : null)).toEqual([
       ['dup', 10],
-      ['dup', 20],
+      ['dup', 40],
     ])
   })
 
@@ -120,7 +120,7 @@ describe('distributedTaxableYieldRows — selection and positional contract', ()
     classParams.bonds = { ...classParams.bonds, interestYieldPct: 7, dividendYieldPct: 0 }
     const rows = distributedTaxableYieldRows(input({
       states: [state(taxable('dup')), state(taxable('dup'))],
-      startOfYearBalance: new Map([['dup', 1_000]]),
+      startOfYearBalances: [1_000, 1_000],
       // allocationTrack is already a last-wins map by the time the helper
       // receives it. A second dead Map-constructor entry would not exercise
       // helper behavior; the duplicate *states* below do.
@@ -139,7 +139,7 @@ describe('distributedTaxableYieldRows — yield sources and defaults', () => {
     classParams.bonds = { ...classParams.bonds, interestYieldPct: 4.75, dividendYieldPct: 0.5, qualifiedRatioPct: 20 }
     const [row] = distributedTaxableYieldRows(input({
       states: [state(taxable('allocated'))],
-      startOfYearBalance: new Map([['allocated', 12_345.67]]),
+      startOfYearBalances: [12_345.67],
       allocationTrack: new Map([['allocated', { weights: [0.3, 0, 0.7, 0] }]]),
       classParams,
     }))
@@ -165,7 +165,7 @@ describe('distributedTaxableYieldRows — yield sources and defaults', () => {
         dividendYieldPct: 0,
         taxExemptInterestYieldPct: 3.125,
       }))],
-      startOfYearBalance: new Map([['muni', 8_000]]),
+      startOfYearBalances: [8_000],
       allocationTrack: new Map([['muni', { weights: [0, 0, 1, 0] }]]),
     }))
     if (row?.kind !== 'yield') throw new Error('expected yield row')
@@ -180,7 +180,7 @@ describe('distributedTaxableYieldRows — yield sources and defaults', () => {
   it('uses 0.85 as the unallocated qualified-ratio default and reinvests by default', () => {
     const [row] = distributedTaxableYieldRows(input({
       states: [state(taxable('plain', { dividendYieldPct: 4 }))],
-      startOfYearBalance: new Map([['plain', 1_000]]),
+      startOfYearBalances: [1_000],
     }))
     if (row?.kind !== 'yield') throw new Error('expected yield row')
 
@@ -199,7 +199,7 @@ describe('distributedTaxableYieldRows — yield sources and defaults', () => {
     })
     const [row] = distributedTaxableYieldRows(input({
       states: [state(malformed)],
-      startOfYearBalance: new Map([['malformed', 1_000]]),
+      startOfYearBalances: [1_000],
     }))
     if (row?.kind !== 'yield') throw new Error('expected yield row')
 
@@ -211,7 +211,7 @@ describe('distributedTaxableYieldRows — yield sources and defaults', () => {
 
     const [negativeRatio] = distributedTaxableYieldRows(input({
       states: [state(taxable('negative-ratio', { dividendYieldPct: 4, qualifiedRatio: -2 }))],
-      startOfYearBalance: new Map([['negative-ratio', 1_000]]),
+      startOfYearBalances: [1_000],
     }))
     if (negativeRatio?.kind !== 'yield') throw new Error('expected yield row')
     expect(negativeRatio.qualified).toBe(0)
@@ -233,7 +233,7 @@ describe('distributedTaxableYieldRows — exact arithmetic, records, and purity'
         taxExemptInterestYieldPct: exemptPct,
         qualifiedRatio: ratio,
       }))],
-      startOfYearBalance: new Map([['fractional', opening]]),
+      startOfYearBalances: [opening],
     }))
     if (row?.kind !== 'yield') throw new Error('expected yield row')
 
@@ -276,14 +276,19 @@ describe('distributedTaxableYieldRows — exact arithmetic, records, and purity'
     const weights = [0.5, 0, 0.5, 0]
     const classParams = params()
     const states = [state(account, 321)]
-    const startOfYearBalance = new Map([['immutable', 654]])
+    const startOfYearBalances = [654]
     const allocationTrack = new Map([['immutable', { weights }]])
     const before = JSON.stringify({ states, weights, classParams })
 
-    distributedTaxableYieldRows({ states, startOfYearBalance, allocationTrack, classParams })
+    distributedTaxableYieldRows({ states, startOfYearBalances, allocationTrack, classParams })
 
     expect(JSON.stringify({ states, weights, classParams })).toBe(before)
-    expect(startOfYearBalance.get('immutable')).toBe(654)
+    expect(startOfYearBalances).toEqual([654])
     expect(allocationTrack.get('immutable')?.weights).toBe(weights)
+  })
+
+  it('fails when opening balances lose positional cardinality', () => {
+    expect(() => distributedTaxableYieldRows(input({ startOfYearBalances: [] })))
+      .toThrow('positional cardinality')
   })
 })

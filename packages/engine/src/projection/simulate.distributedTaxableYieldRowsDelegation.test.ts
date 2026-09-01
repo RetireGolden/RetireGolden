@@ -30,7 +30,7 @@ type PhaseEvent = {
   readonly rows: readonly DistributedTaxableYieldResultRow[]
   readonly stateIdsAtCall: readonly string[]
   readonly stateBalancesAtCall: readonly number[]
-  readonly startEntriesAtCall: readonly (readonly [string, number])[]
+  readonly startBalancesAtCall: readonly number[]
 }
 type SeamEvent = PhaseEvent | { readonly kind: 'recorded'; readonly row: RecordedDistributedYield }
 
@@ -111,7 +111,7 @@ vi.mock('./internal/distributedTaxableYieldRows.js', async (importOriginal) => {
         rows,
         stateIdsAtCall: input.states.map((state) => state.account.id),
         stateBalancesAtCall: input.states.map((state) => state.balance),
-        startEntriesAtCall: [...input.startOfYearBalance.entries()],
+        startBalancesAtCall: [...input.startOfYearBalances],
       })
       return rows
     },
@@ -247,17 +247,15 @@ describe('simulatePlan delegates distributed taxable yields', () => {
     for (const phase of phases) {
       expect(phase.stateIdsAtCall).toEqual(['cash', 'tax-a', 'tax-b', 'tax-c'])
       expect(phase.rows).toHaveLength(phase.stateIdsAtCall.length)
-      expect(phase.startEntriesAtCall).toEqual(
-        phase.stateIdsAtCall.map((id, index) => [id, phase.stateBalancesAtCall[index]!]),
-      )
+      expect(phase.startBalancesAtCall).toEqual(phase.stateBalancesAtCall)
       expect(phase.input.allocationTrack.has('tax-a')).toBe(true)
     }
 
     // balances and allocationTrack are the long-lived simulation objects;
-    // startOfYearBalance is a fresh live snapshot at each annual boundary.
+    // startOfYearBalances is a fresh positional snapshot at each annual boundary.
     expect(phases.every((phase) => phase.input.states === phases[0]!.input.states)).toBe(true)
     expect(phases.every((phase) => phase.input.allocationTrack === phases[0]!.input.allocationTrack)).toBe(true)
-    expect(new Set(phases.map((phase) => phase.input.startOfYearBalance)).size).toBe(phases.length)
+    expect(new Set(phases.map((phase) => phase.input.startOfYearBalances)).size).toBe(phases.length)
     expect(phases[1]!.stateBalancesAtCall).not.toEqual(phases[0]!.stateBalancesAtCall)
   })
 

@@ -5,6 +5,7 @@ import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import {
   cashAccount,
   singlePersonPlan,
+  taxableAccount,
   traditionalAccount,
 } from '../testing/planFixtures.js'
 import { simulatePlan } from './simulate.js'
@@ -500,6 +501,36 @@ describe('simulatePlan owner RMD duplicate account IDs', () => {
     expect(years[1]!.balances['duplicate-ira']).toBeCloseTo(181_500, 8)
     expect(years[0]!.investableTotal).toBeCloseTo(165_000, 8)
     expect(years[1]!.investableTotal).toBeCloseTo(181_500, 8)
+  })
+
+  it('prices distributed yield from each physical row opening exactly once', () => {
+    const plan = singlePersonPlan({ planningAge: 70 })
+    const first = taxableAccount('duplicate-taxable', 100_000, 70_000)
+    const second = taxableAccount('duplicate-taxable', 10_000, 8_000)
+    if (first.type !== 'taxable' || second.type !== 'taxable') {
+      throw new Error('fixture did not create taxable accounts')
+    }
+    first.interestYieldPct = 1
+    first.dividendYieldPct = 0
+    first.reinvestDividends = false
+    second.interestYieldPct = 2
+    second.dividendYieldPct = 0
+    second.reinvestDividends = false
+    plan.accounts = [first, second]
+
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(true)
+    if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+    const year = simulatePlan(parsed.plan, {
+      startYear: YEAR,
+      horizonEndYear: YEAR,
+      taxCalculator: createFlatTaxCalculator(0),
+    }).years[0]!
+
+    // 100,000 × 1% + 10,000 × 2% = 1,200. Reusing the aggregate logical
+    // opening (110,000) for both physical rows would incorrectly report 3,300.
+    expect(year.taxableYield).toBe(1_200)
+    expect(year.advisoryFederalTax?.input.taxableInterestIncome).toBe(1_200)
   })
 
   it('counts each positional opening row once in the guardrail signal', () => {
