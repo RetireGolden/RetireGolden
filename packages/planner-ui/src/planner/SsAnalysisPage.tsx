@@ -727,7 +727,7 @@ function CoupleHeatmap({
     <>
       <p className="card-hint" style={{ marginTop: '0.5rem' }}>
         After-tax estate by claim age, rows: {personName(rowId!)}, columns: {personName(colId!)}. Greener is better;
-        click a cell to apply it.
+        select a cell with your mouse, Enter, or Space to apply it.
       </p>
       <div className="year-table-wrap" style={{ border: 'none' }}>
         <table className="claim-table heatmap">
@@ -747,14 +747,22 @@ function CoupleHeatmap({
                   const v = estate(ra, ca)
                   const isBest = `${ra}-${ca}` === bestKey
                   const isCurrent = current[rowId!] === ra && current[colId!] === ca
+                  const actionLabel = `Apply claim ages: ${personName(rowId!)} at ${ra}, ${personName(colId!)} at ${ca}; after-tax estate ${fmtMoneyCompact(v)}${isBest ? ', best strategy' : ''}`
                   return (
                     <td
                       key={ca}
-                      style={{ background: heatColor(norm(v)), cursor: readOnly ? 'default' : 'pointer', outline: isCurrent ? '2px solid var(--accent)' : undefined, fontWeight: isBest ? 700 : undefined }}
-                      title={`${personName(rowId!)} ${ra} / ${personName(colId!)} ${ca}: ${fmtMoneyCompact(v)}${isBest ? ' (best)' : ''}`}
-                      onClick={readOnly ? undefined : () => applyStrategy({ [rowId!]: ra, [colId!]: ca })}
+                      style={{ background: heatColor(norm(v)), outline: isCurrent ? '2px solid var(--accent)' : undefined, fontWeight: isBest ? 700 : undefined }}
                     >
-                      {fmtMoneyCompact(v)}
+                      <button
+                        type="button"
+                        className="heatmap-cell-button"
+                        aria-label={actionLabel}
+                        title={actionLabel}
+                        disabled={readOnly}
+                        onClick={() => applyStrategy({ [rowId!]: ra, [colId!]: ca })}
+                      >
+                        {fmtMoneyCompact(v)}
+                      </button>
                     </td>
                   )
                 })}

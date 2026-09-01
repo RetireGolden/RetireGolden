@@ -1943,11 +1943,34 @@ html:has(.kpi-bar) {
   text-align: center;
   border: 1px solid var(--border);
   font-size: 0.82rem;
+  padding: 0;
 }
 
 .claim-table.heatmap tbody th {
   font-weight: 600;
   color: var(--muted);
+}
+
+.heatmap-cell-button {
+  width: 100%;
+  min-height: 2rem;
+  padding: 0.4rem 0.7rem;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.heatmap-cell-button:focus-visible {
+  position: relative;
+  z-index: 1;
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.heatmap-cell-button:disabled {
+  cursor: default;
 }
 
 .earnings-entry {
