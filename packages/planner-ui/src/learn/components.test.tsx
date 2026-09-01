@@ -129,6 +129,16 @@ describe('SourceList', () => {
 })
 
 describe('LearnAboutScreen', () => {
+  it('is a card with a real heading that names the aside (#446)', () => {
+    const html = renderToString(
+      <MemoryRouter>
+        <LearnAboutScreen route="/plan/:planId/results" />
+      </MemoryRouter>,
+    )
+    expect(html).toMatch(/<aside class="card learn-screen" aria-labelledby="([^"]+)">\s*<h2 id="\1" class="learn-screen-title">Learn about this screen<\/h2>/)
+    expect(html).not.toContain('<span class="learn-screen-title"')
+  })
+
   it('drops slugs the screen already links inline, and renders nothing when none remain (#429)', () => {
     const route = '/plan/:planId/relocation'
     const withAll = renderToString(

@@ -11,6 +11,7 @@ import { runMonteCarlo } from '../../mc/pool'
 import { registry } from '@retiregolden/engine/insights/registry'
 import type { InsightAction, InsightCard, InsightImpact } from '@retiregolden/engine/insights/types'
 import { LearnLink } from '../../learn/LearnLink'
+import { sectionTitleOf } from '../sectionTitles'
 import { fmtMoney, fmtMoneyCompact } from '../format'
 
 function makeScenarioId(): string {
@@ -297,7 +298,7 @@ export function InsightCardView({ card, onDismiss }: { card: InsightCard; onDism
           {card.learnSlug && <LearnLink slug={card.learnSlug} label="Learn more" />}
           {card.plannerRoute && (
             <Link to={`/plan/${plan.id}/${card.plannerRoute}`} className="learn-link">
-              Go to screen
+              Go to {sectionTitleOf(card.plannerRoute) ?? 'screen'}
             </Link>
           )}
         </div>

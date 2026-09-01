@@ -9,6 +9,8 @@
  * when no ready article relates yet — every screen can host it safely.
  */
 
+import { useId } from 'react'
+
 import { articlesForRoute, byListingOrder } from './learningRegistry'
 import { LearnLink } from './LearnLink'
 
@@ -30,14 +32,20 @@ export function LearnAboutScreen({
    */
   exclude?: readonly string[]
 }) {
+  const headingId = useId()
   const articles = articlesForRoute(route)
     .filter((a) => !exclude.includes(a.slug))
     .sort(byListingOrder)
     .slice(0, limit)
   if (articles.length === 0) return null
+  // A card with a real heading (#446): the title joins the page outline at
+  // the same level as the screen's other sections, and the cluster reads as
+  // a section rather than loose text after the last card.
   return (
-    <aside className="learn-screen" aria-label={title}>
-      <span className="learn-screen-title">{title}</span>
+    <aside className="card learn-screen" aria-labelledby={headingId}>
+      <h2 id={headingId} className="learn-screen-title">
+        {title}
+      </h2>
       <ul className="learn-screen-list">
         {articles.map((a) => (
           <li key={a.slug}>

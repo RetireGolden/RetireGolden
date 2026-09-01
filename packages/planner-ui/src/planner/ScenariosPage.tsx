@@ -998,7 +998,7 @@ function ComparableScenariosPage() {
           <div className="skeleton" style={{ height: '10rem' }} aria-label="Comparing scenarios" />
         ) : (
           <div className="year-table-wrap" style={{ border: 'none' }}>
-            <table className="compare-table">
+            <table className="compare-table scenarios-table">
               <caption>Deterministic overview (nominal dollars)</caption>
               <thead>
                 <tr>

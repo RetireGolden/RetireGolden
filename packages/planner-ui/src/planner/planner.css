@@ -1009,8 +1009,11 @@
   cursor: not-allowed;
 }
 
-/* Plan-card Delete only (#312). Form Remove/Discard stay muted at rest. */
-.plan-card-actions .btn-ghost.btn-ghost-danger {
+/* Destructive actions on PERSISTED items are --bad at rest: the plan-card
+   Delete (#312) and a saved scenario's Remove (#460). Form Remove/Discard on
+   an unsaved row stay muted at rest and go red on hover. */
+.plan-card-actions .btn-ghost.btn-ghost-danger,
+.scenarios-table .btn-ghost.btn-ghost-danger {
   color: var(--bad);
 }
 
@@ -1630,6 +1633,23 @@ html:has(.kpi-bar) {
   white-space: nowrap;
 }
 
+/* "Learn about this screen" cluster on planner screens (#446). The aside is a
+   .card, so its h2 takes the card heading style and joins the outline; these
+   rules only space the list. Lives here, not learn.css, because learn.css is
+   loaded only on /learn routes and the cluster renders on plan screens. */
+.learn-screen-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.1rem;
+}
+
+.learn-screen-list li {
+  margin: 0;
+}
+
 .survivor-timeline-segment {
   display: block;
 }
@@ -1721,6 +1741,20 @@ html:has(.kpi-bar) {
   background: var(--surface-1);
   border: 1px solid var(--border);
   padding: 1.1rem 1.25rem 1.25rem;
+}
+
+/* One alignment inside the card (#444): the prose is centered, so the action
+   row centers too, and the details strip is a centered, readable block
+   rather than an edge-to-edge bar under left-aligned buttons. */
+.card.empty-state .picker-actions {
+  justify-content: center;
+}
+
+.card.empty-state .ss-explainer {
+  max-width: 34rem;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: left;
 }
 
 /* Chrome back link on a content page that is reached from another page

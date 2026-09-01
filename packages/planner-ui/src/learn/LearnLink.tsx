@@ -17,6 +17,7 @@
 
 import { Link, useLocation } from 'react-router'
 import { getArticle } from './learningRegistry'
+import { SEGMENT_LABELS } from './segmentLabels'
 
 export type LearnHook = {
   /** Article slug in the Learning Center registry. */
@@ -37,26 +38,6 @@ type LearnLinkProps = LearnHook & {
   className?: string
 }
 
-/** Title-case a single planner route segment into a human label for the back link. */
-const SEGMENT_LABELS: Record<string, string> = {
-  household: 'Household',
-  'social-security': 'Social Security',
-  accounts: 'Accounts',
-  insurance: 'Insurance',
-  income: 'Income',
-  spending: 'Spending',
-  strategy: 'Strategy',
-  assumptions: 'Assumptions',
-  'assumptions-card': 'Your assumptions',
-  insights: 'Insights',
-  'social-security-analysis': 'Social Security Optimizer',
-  results: 'Results',
-  'monte-carlo': 'Monte Carlo',
-  scenarios: 'Scenarios',
-  survivor: 'Survivor transition',
-  optimize: 'Roth & Tax Optimizer',
-  report: 'Report',
-}
 
 /** A short, human label for where a return path points (planner screen name). */
 function originLabel(pathname: string): string | undefined {
