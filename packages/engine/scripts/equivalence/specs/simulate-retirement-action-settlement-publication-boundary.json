@@ -129,7 +129,7 @@
     },
     {
       "id": "AB.callsite",
-      "label": "post-settlement invocation immediately before YearResult publication",
+      "label": "post-settlement invocation before entity facts and YearResult publication",
       "file": "projection/simulate.ts",
       "lines": [8656, 8674],
       "anchors": [

@@ -175,13 +175,13 @@
       "engineSourceTree": "33d9b00d8054b592361e37710c78f99cc01cee65"
     },
     "head": {
-      "sourceObservedAtCommit": "1565dacc947d5a4454656fb3ad2d73e55186e8db",
-      "engineSourceTree": "cb355e9536e02b141a8c7f92aaceda5694e9b61b"
+      "sourceObservedAtCommit": "5c805b12e76b47da286244e642beae1e078b99c2",
+      "engineSourceTree": "bf4733926ef1968234a8609bedb4feeb98452c18"
     },
     "inputs": {
       "harnessBlobs": {
         "packages/engine/scripts/equivalence.mjs": "8fd7dff5a1b152a794afacd9b9938397b47894f4",
-        "packages/engine/scripts/equivalence/corpus/blocks.mjs": "2d554c3de6905b8a07e849f84b38160ba7ffc229",
+        "packages/engine/scripts/equivalence/corpus/blocks.mjs": "7b09026ed0949344283f64b62d6dac6baa63dda8",
         "packages/engine/scripts/equivalence/corpus/examples.mjs": "453bcb81103f490447d679276ca1a3ffbad9104a",
         "packages/engine/scripts/equivalence/corpus/index.mjs": "3d434147ef86cac8116cefac867b2076256feb21",
         "packages/engine/scripts/equivalence/describe-tree.mjs": "1b2e00f1170bbadae67cd04269cf91aa1f03a168",
@@ -192,21 +192,21 @@
         "packages/engine/scripts/equivalence/usage.mjs": "0b3b3072c3e716d4bace88f6887a41bdda5d60d1",
         "packages/engine/scripts/typescript-source-resolution.mjs": "f5c6c88ddb5e43e894e2c89658aa869ff06e430a"
       },
-      "specMeasurementSha256": "32297929273f365c5783d9f5dafba16a4be974dc920572cbce52b8c0e778db79"
+      "specMeasurementSha256": "b6d8e2b6cdd9635eb831067db6fbaae011d645996a66abc7e6cc5ec1a6f35477"
     },
     "corpus": {
       "name": "blocks",
-      "members": 118,
-      "membersSha256": "c4081f83c329eac576a75eb6a7ea6224e0fd8b7e73aec920bc810c008868bd9b",
-      "entries": 472
+      "members": 120,
+      "membersSha256": "083021042951c31d4891ec6480d38f831900bc2b00ca9eac64587b6c8e3c777a",
+      "entries": 480
     },
     "capture": {
-      "baseDumpSha256": "013965585b44eefbf5c80cfe5f38e1ef1b87233bccd9f83348b0a80be9389dd3",
-      "headDumpSha256": "013965585b44eefbf5c80cfe5f38e1ef1b87233bccd9f83348b0a80be9389dd3",
-      "baseOverallSha256": "2f6633e8abc56f036b81491613b84915d035c96e36ed65bcfa95c00c0e421bcc",
-      "headOverallSha256": "2f6633e8abc56f036b81491613b84915d035c96e36ed65bcfa95c00c0e421bcc",
+      "baseDumpSha256": "526fafbcda1eb4ed612b1b84a98ab9196d1f072ae061cd6abe408737935260d9",
+      "headDumpSha256": "526fafbcda1eb4ed612b1b84a98ab9196d1f072ae061cd6abe408737935260d9",
+      "baseOverallSha256": "5a1f1fd50b0a7b2e39db3f0d2a15d58c08a6b74b7c45f7d6a0fd234e6a1f7494",
+      "headOverallSha256": "5a1f1fd50b0a7b2e39db3f0d2a15d58c08a6b74b7c45f7d6a0fd234e6a1f7494",
       "entriesMoved": 0,
-      "entriesIdentical": 472,
+      "entriesIdentical": 480,
       "result": "IDENTICAL"
     },
     "reach": {
