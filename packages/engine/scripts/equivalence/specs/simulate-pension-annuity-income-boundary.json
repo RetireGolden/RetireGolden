@@ -1,0 +1,154 @@
+{
+  "schema": "retiregolden.equivalence-reach-spec/1",
+  "name": "simulate-pension-annuity-income-boundary",
+  "why": "Measured reach for the annual pension/annuity-income extraction. Existing full-corpus members cover living and survivor pensions, elected and unelected lump-sum offers, already-owned and purchased annuities, life-only and survivor payout forms, non-qualified exclusion-state carry, qualified IRA-funded contract distributions, pre-start contracts, multi-year re-entry, and all four equivalence modes.",
+  "entries": [
+    {
+      "id": "Z.helper.selection",
+      "label": "ordered account selection and annual opening-state folds",
+      "file": "projection/internal/annualPensionAndAnnuityIncome.ts",
+      "lines": [
+        129,
+        192
+      ],
+      "anchors": [
+        {
+          "line": 134,
+          "text": "const qualifiedAnnuityPayments: QualifiedAnnuityPaymentActivity[] = []"
+        },
+        {
+          "line": 161,
+          "text": "for (const account of input.accounts) {"
+        },
+        {
+          "line": 177,
+          "text": "const startCalendarYear = dobYear(owner) + account.startAge"
+        }
+      ]
+    },
+    {
+      "id": "Z.helper.pensions",
+      "label": "living/survivor pension selection and ordered state-tax folds",
+      "file": "projection/internal/annualPensionAndAnnuityIncome.ts",
+      "lines": [
+        193,
+        227
+      ],
+      "anchors": [
+        {
+          "line": 193,
+          "text": "if (account.type === 'pension') {"
+        },
+        {
+          "line": 209,
+          "text": "pensionIncome += amount"
+        },
+        {
+          "line": 214,
+          "text": "rows.push({"
+        }
+      ]
+    },
+    {
+      "id": "Z.helper.annuities",
+      "label": "payout form, tax character, exclusion carry and qualified contract-debit plans",
+      "file": "projection/internal/annualPensionAndAnnuityIncome.ts",
+      "lines": [
+        229,
+        338
+      ],
+      "anchors": [
+        {
+          "line": 232,
+          "text": "const paidFraction = annuityPayoutFraction(annuityPayoutForm(account), {"
+        },
+        {
+          "line": 250,
+          "text": "if (account.purchase?.taxQualification === 'qualified') {"
+        },
+        {
+          "line": 303,
+          "text": "} else if (account.purchase) {"
+        },
+        {
+          "line": 338,
+          "text": "rows.push({"
+        }
+      ]
+    },
+    {
+      "id": "Z.helper.annuityRow",
+      "label": "annuity cash-flow record and ordered commit-row publication",
+      "file": "projection/internal/annualPensionAndAnnuityIncome.ts",
+      "lines": [
+        338,
+        355
+      ],
+      "anchors": [
+        {
+          "line": 343,
+          "text": ": {"
+        },
+        {
+          "line": 349,
+          "text": "account.purchase?.taxQualification === 'qualified',"
+        },
+        {
+          "line": 355,
+          "text": "})"
+        }
+      ]
+    },
+    {
+      "id": "Z.helper.return",
+      "label": "explicit final folds, publications and ordered commit rows",
+      "file": "projection/internal/annualPensionAndAnnuityIncome.ts",
+      "lines": [
+        358,
+        366
+      ],
+      "anchors": [
+        {
+          "line": 358,
+          "text": "return {"
+        },
+        {
+          "line": 365,
+          "text": "rows,"
+        }
+      ]
+    },
+    {
+      "id": "Z.callsite",
+      "label": "annual invocation, scalar selection and ordered caller-owned commits",
+      "file": "projection/simulate.ts",
+      "lines": [
+        2473,
+        2533
+      ],
+      "anchors": [
+        {
+          "line": 2473,
+          "text": "const pensionAndAnnuity = annualPensionAndAnnuityIncome({"
+        },
+        {
+          "line": 2497,
+          "text": "incomes.annuity = pensionAndAnnuity.annuityIncome"
+        },
+        {
+          "line": 2503,
+          "text": "for (const row of pensionAndAnnuity.rows) {"
+        },
+        {
+          "line": 2516,
+          "text": "recordAnnualRetirementRuntimeOccurrence(distribution.occurrence)"
+        },
+        {
+          "line": 2533,
+          "text": "if (row.record !== null) yearSites?.recordAnnuityPayment(row.record)"
+        }
+      ]
+    }
+  ],
+  "readingTheCounts": "A member count proves that at least one line in the named range executed. Reach additionally fails on a cold executable whole line inside a reached range. The record-null arm is measured in capture-disabled modes; its recipient-undefined alternative remains defensive because every positive payout has either its living owner or an alive survivor recipient under annuityPayoutFraction's anyAlive gate. Direct coordinator tests pin the hand-worked Pub 939 result, full qualified-payment income character, capture-gated record construction and input-map purity; the hostile delegation test separately proves exact output selection, commit-row consumption, object identity across years, runtime journaling and cash-flow forwarding."
+}

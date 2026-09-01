@@ -178,13 +178,13 @@
       "id": "I.snapshot-helper",
       "label": "caller-owned plain immutable snapshot materialization before annual writes",
       "file": "projection/simulate.ts",
-      "lines": [446, 460],
+      "lines": [445, 459],
       "anchors": [
-        { "line": 446, "text": "function immutablePlainSnapshot<T>(value: T): T {" },
-        { "line": 447, "text": "const snapshot = structuredClone(value)" },
-        { "line": 454, "text": "for (const child of Object.values(candidate as Record<string, unknown>)) {" },
-        { "line": 457, "text": "Object.freeze(candidate)" },
-        { "line": 460, "text": "return snapshot" }
+        { "line": 445, "text": "function immutablePlainSnapshot<T>(value: T): T {" },
+        { "line": 446, "text": "const snapshot = structuredClone(value)" },
+        { "line": 453, "text": "for (const child of Object.values(candidate as Record<string, unknown>)) {" },
+        { "line": 456, "text": "Object.freeze(candidate)" },
+        { "line": 459, "text": "return snapshot" }
       ],
       "note": "Hostile delegation getters throw on any second property read and during an initial nested operation read, proving every helper-owned channel is detached before validation or mutation and that a failed materialization leaves both logical balances unchanged."
     },
@@ -192,16 +192,16 @@
       "id": "I.delegate",
       "label": "grouped logical input, pure planning, immutable channel capture, and complete prevalidation setup",
       "file": "projection/simulate.ts",
-      "lines": [4068, 4090],
+      "lines": [3928, 3950],
       "anchors": [
-        { "line": 4068, "text": "const inheritedPlan = immutablePlainSnapshot(" },
-        { "line": 4069, "text": "annualInheritedIraDistributions({" },
-        { "line": 4074, "text": "balances: rmdBalances," },
-        { "line": 4080, "text": "const inheritedOperations = inheritedPlan.rows.flatMap((row) =>" },
-        { "line": 4082, "text": "const inheritedTotal = inheritedPlan.totals.inherited" },
-        { "line": 4085, "text": "const inheritedYearEvidenceDraft: InheritedAccountYearEvidence[] =" },
-        { "line": 4087, "text": "const inheritedRmdShortfallObligations =" },
-        { "line": 4090, "text": "for (const operation of inheritedOperations) {" }
+        { "line": 3928, "text": "const inheritedPlan = immutablePlainSnapshot(" },
+        { "line": 3929, "text": "annualInheritedIraDistributions({" },
+        { "line": 3934, "text": "balances: rmdBalances," },
+        { "line": 3940, "text": "const inheritedOperations = inheritedPlan.rows.flatMap((row) =>" },
+        { "line": 3942, "text": "const inheritedTotal = inheritedPlan.totals.inherited" },
+        { "line": 3945, "text": "const inheritedYearEvidenceDraft: InheritedAccountYearEvidence[] =" },
+        { "line": 3947, "text": "const inheritedRmdShortfallObligations =" },
+        { "line": 3950, "text": "for (const operation of inheritedOperations) {" }
       ],
       "note": "Hostile delegation tests own the deliberately unreachable validation failures, prove the full operation set is checked before any logical balance setter runs, and enforce one getter read for operation identity/balances/execution plus rows, evidence, totals, and obligations."
     },
@@ -209,13 +209,13 @@
       "id": "J.consume",
       "label": "cached one-logical-setter write and runtime occurrence per operation plus obligation and excise handoff",
       "file": "projection/simulate.ts",
-      "lines": [4119, 4144],
+      "lines": [3979, 4004],
       "anchors": [
-        { "line": 4119, "text": "for (const operation of inheritedOperations) {" },
-        { "line": 4121, "text": "state.balance = operation.sourceBalanceAfter" },
-        { "line": 4124, "text": "recordAnnualRetirementRuntimeOccurrence({" },
-        { "line": 4135, "text": "rmdShortfallObligations.push(...inheritedRmdShortfallObligations)" },
-        { "line": 4142, "text": "const rmdShortfallExciseTax = rmdShortfallExciseResults.reduce(" }
+        { "line": 3979, "text": "for (const operation of inheritedOperations) {" },
+        { "line": 3981, "text": "state.balance = operation.sourceBalanceAfter" },
+        { "line": 3984, "text": "recordAnnualRetirementRuntimeOccurrence({" },
+        { "line": 3995, "text": "rmdShortfallObligations.push(...inheritedRmdShortfallObligations)" },
+        { "line": 4002, "text": "const rmdShortfallExciseTax = rmdShortfallExciseResults.reduce(" }
       ]
     }
   ],
@@ -226,11 +226,11 @@
       "engineSourceTree": "d8e8d22f1bd0931f79bca576612b66a60e430987"
     },
     "head": {
-      "observedAtCommit": "e4b5842652db5d3a887c87271fe0009456efabe5",
-      "engineSourceTree": "33d9b00d8054b592361e37710c78f99cc01cee65"
+      "observedAtCommit": "1565dacc947d5a4454656fb3ad2d73e55186e8db",
+      "engineSourceTree": "cb355e9536e02b141a8c7f92aaceda5694e9b61b"
     },
     "inputs": {
-      "corpusSourceBlob": "5a83d359243cb70ae8f3f319d14c89515aa8e7d0",
+      "corpusSourceBlob": "2d554c3de6905b8a07e849f84b38160ba7ffc229",
       "corpusIndexBlob": "3d434147ef86cac8116cefac867b2076256feb21",
       "corpusExamplesBlob": "453bcb81103f490447d679276ca1a3ffbad9104a",
       "equivalenceRunnerBlob": "8fd7dff5a1b152a794afacd9b9938397b47894f4",
@@ -241,21 +241,21 @@
       "reachRecorderBlob": "81d6c4cce57b40f770be21b7a89ea2da9c0c217d",
       "typescriptSourceResolutionBlob": "f5c6c88ddb5e43e894e2c89658aa869ff06e430a",
       "usageBlob": "0b3b3072c3e716d4bace88f6887a41bdda5d60d1",
-      "specMeasurementSha256": "76a36662152a8038f820c434ada521177c6c6c779a2e9de114028dd1decfb2f9"
+      "specMeasurementSha256": "ae3ff5dd4b5ab184b42b6953e087bcbb83bb92b2e3e22841565d5c012376b782"
     },
     "corpus": {
       "name": "blocks",
-      "members": 110,
-      "membersSha256": "e2c615069674f192ff8a55315ea966d56c271503f4ff4ea5a6ac258c40c09e54",
-      "entries": 440
+      "members": 118,
+      "membersSha256": "c4081f83c329eac576a75eb6a7ea6224e0fd8b7e73aec920bc810c008868bd9b",
+      "entries": 472
     },
     "capture": {
-      "baseDumpSha256": "701fd57def10a68cf218c051c09475756be3559cf6c701361f68f4148a1be2fa",
-      "headDumpSha256": "701fd57def10a68cf218c051c09475756be3559cf6c701361f68f4148a1be2fa",
-      "baseOverallSha256": "b49c5c9eec039b4ca9b47fd39a898463021e907defec98806fb6ac992040c0e7",
-      "headOverallSha256": "b49c5c9eec039b4ca9b47fd39a898463021e907defec98806fb6ac992040c0e7",
+      "baseDumpSha256": "013965585b44eefbf5c80cfe5f38e1ef1b87233bccd9f83348b0a80be9389dd3",
+      "headDumpSha256": "013965585b44eefbf5c80cfe5f38e1ef1b87233bccd9f83348b0a80be9389dd3",
+      "baseOverallSha256": "2f6633e8abc56f036b81491613b84915d035c96e36ed65bcfa95c00c0e421bcc",
+      "headOverallSha256": "2f6633e8abc56f036b81491613b84915d035c96e36ed65bcfa95c00c0e421bcc",
       "entriesMoved": 0,
-      "entriesIdentical": 440,
+      "entriesIdentical": 472,
       "result": "IDENTICAL"
     },
     "allowedMovedEntries": [],

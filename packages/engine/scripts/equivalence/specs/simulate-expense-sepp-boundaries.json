@@ -52,20 +52,20 @@
       "label": "annual lifestyle helper invocation and result consumption",
       "file": "projection/simulate.ts",
       "lines": [
-        2715,
-        2734
+        2575,
+        2594
       ],
       "anchors": [
         {
-          "line": 2715,
+          "line": 2575,
           "text": "const {"
         },
         {
-          "line": 2720,
+          "line": 2580,
           "text": "} = annualLifestyleLayers({"
         },
         {
-          "line": 2734,
+          "line": 2594,
           "text": "})"
         }
       ]
@@ -99,24 +99,24 @@
       "label": "ordered insurance-premium fold and publication",
       "file": "projection/simulate.ts",
       "lines": [
-        2801,
-        2808
+        2661,
+        2668
       ],
       "anchors": [
         {
-          "line": 2801,
+          "line": 2661,
           "text": "let insurancePremiums = 0"
         },
         {
-          "line": 2802,
+          "line": 2662,
           "text": "for (const row of annualInsurancePremiumRows({"
         },
         {
-          "line": 2807,
+          "line": 2667,
           "text": "yearSites?.recordInsurancePremium(row.record)"
         },
         {
-          "line": 2808,
+          "line": 2668,
           "text": "}"
         }
       ]
@@ -150,24 +150,24 @@
       "label": "ordered property-cost fold and publication",
       "file": "projection/simulate.ts",
       "lines": [
-        2837,
-        2846
+        2697,
+        2706
       ],
       "anchors": [
         {
-          "line": 2837,
+          "line": 2697,
           "text": "let propertyCosts = 0"
         },
         {
-          "line": 2838,
+          "line": 2698,
           "text": "for (const row of annualPropertyCarryingCosts({"
         },
         {
-          "line": 2845,
+          "line": 2705,
           "text": "yearSites?.recordPropertyCosts(row.record)"
         },
         {
-          "line": 2846,
+          "line": 2706,
           "text": "}"
         }
       ]
@@ -201,24 +201,24 @@
       "label": "expense-summary invocation and spending-base consumption",
       "file": "projection/simulate.ts",
       "lines": [
-        2989,
-        3019
+        2849,
+        2879
       ],
       "anchors": [
         {
-          "line": 2989,
+          "line": 2849,
           "text": "const expenseSummary = annualExpenseSummary({"
         },
         {
-          "line": 3014,
+          "line": 2874,
           "text": "})"
         },
         {
-          "line": 3015,
+          "line": 2875,
           "text": "const expenses = expenseSummary.expenses"
         },
         {
-          "line": 3019,
+          "line": 2879,
           "text": "const excessSpendingBase = expenseSummary.excessSpendingBase"
         }
       ]
@@ -272,32 +272,32 @@
       "label": "SEPP operation application and effect publication",
       "file": "projection/simulate.ts",
       "lines": [
-        3998,
-        4061
+        3858,
+        3921
       ],
       "anchors": [
         {
-          "line": 3998,
+          "line": 3858,
           "text": "const seppPlan = annualSeppDistributions({"
         },
         {
-          "line": 4009,
+          "line": 3869,
           "text": "const seppTotal = seppPlan.total"
         },
         {
-          "line": 4010,
+          "line": 3870,
           "text": "for (const operation of seppPlan.operations) {"
         },
         {
-          "line": 4020,
+          "line": 3880,
           "text": "recordAnnualRetirementRuntimeOccurrence({"
         },
         {
-          "line": 4052,
+          "line": 3912,
           "text": "deferredSeppDistributions.push({"
         },
         {
-          "line": 4061,
+          "line": 3921,
           "text": "}"
         }
       ],

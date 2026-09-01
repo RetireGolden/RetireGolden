@@ -27,6 +27,7 @@
  *   W  annual voluntary-withdrawal apply-flow boundary
  *   X  annual owner-RMD planning and deferral lifecycle
  *   Y  legacy aggregate QCD owner-character plan
+ *   Z  annual pension and annuity income
  *
  * A, B, C and E are the earlier "simulate batch" extraction. Block D's phase
  * was extracted concurrently and independently on main as
@@ -36,7 +37,7 @@
  * reach spec. In `simulate-expense-sepp-boundaries.json`, block J's expense
  * members measure entries A through D and block K's SEPP members measure entry
  * E; the entry letters identify extracted boundaries, not corpus block names.
- * Blocks J through O, plus P, R, T, U, V, W, X and Y, each have a phase-specific reach
+ * Blocks J through O, plus P, R, T, U, V, W, X, Y and Z, each have a phase-specific reach
  * spec beside the earlier batch instruments.
  *
  * The 29 curated example plans exercise A, D and E's growth leg incidentally,
@@ -57,8 +58,9 @@
  * `scripts/equivalence/specs/simulate-remaining-expense-boundaries.json`,
  * `scripts/equivalence/specs/simulate-apply-flows-boundary.json`,
  * `scripts/equivalence/specs/simulate-owner-rmd.json`,
- * `scripts/equivalence/specs/simulate-qcd-owner-character-boundary.json`, and
- * `scripts/equivalence/specs/simulate-inherited-ira-boundary.json`
+ * `scripts/equivalence/specs/simulate-qcd-owner-character-boundary.json`,
+ * `scripts/equivalence/specs/simulate-inherited-ira-boundary.json`, and
+ * `scripts/equivalence/specs/simulate-pension-annuity-income-boundary.json`
  * are the
  * line-range specs that turn those claims into measured hit counts
  * (`equivalence.mjs reach`).
@@ -4352,6 +4354,79 @@ function blockY() {
   return out
 }
 
+// ---------------------------------------------------------------------------
+// Z — annual pension and annuity income
+// ---------------------------------------------------------------------------
+
+function blockZ() {
+  const out = []
+
+  {
+    // The payment start age is already reached, but the purchase is still a
+    // year away. This distinguishes the purchase-date guard from the earlier
+    // start-calendar guard; both must remain separate none paths.
+    const plan = singlePersonPlan({
+      dob: `${START_YEAR - 56}-01-01`,
+      planningAge: 75,
+    })
+    plan.accounts = [
+      cash('z1-cash', 100),
+      purchasedAnnuity('z1-future-purchase', 'z1-cash', 50, {
+        startAge: 56,
+        monthlyAmount: 10,
+        purchase: { year: START_YEAR + 1 },
+      }),
+    ]
+    out.push(member(
+      'z1-startedBeforeFuturePurchase',
+      'Z: attained payment start still waits for a future purchase date',
+      plan,
+      { horizonEndYear: START_YEAR + 1 },
+    ))
+  }
+
+  {
+    // Pat is alive in 2026 and dead in 2027. Both the public pension and the
+    // already-owned joint annuity then select Robin as the survivor recipient;
+    // the annuity's reduced payment remains 25% taxable.
+    const plan = couplePlan({
+      p1PlanningAge: 60,
+      p2PlanningAge: 90,
+      p1RetirementAge: null,
+      p2RetirementAge: null,
+    })
+    plan.accounts = [
+      pension('z2-public-pension', {
+        startAge: 60,
+        monthlyAmount: 1_000,
+        survivorPct: 50,
+        source: 'public',
+      }),
+      {
+        type: 'annuity',
+        id: 'z2-joint-annuity',
+        name: 'z2-joint-annuity',
+        ownerPersonId: 'p1',
+        annualReturnPct: null,
+        startAge: 60,
+        monthlyAmount: 1_000,
+        colaPct: 0,
+        taxablePct: 25,
+        payoutForm: { kind: 'jointSurvivor', survivorPct: 50 },
+      },
+      cash('z2-cash', 0),
+    ]
+    out.push(member(
+      'z2-publicPensionAndJointSurvivors',
+      'Z: living then survivor public-pension and joint-annuity payments preserve recipient and taxable folds',
+      plan,
+      { horizonEndYear: START_YEAR + 1 },
+    ))
+  }
+
+  return out
+}
+
 /** @returns {Promise<object[]>} every member in this tier, in a stable order. */
 export async function blockMembers() {
   fixtures = await import('@retiregolden/engine/testing/planFixtures')
@@ -4381,5 +4456,6 @@ export async function blockMembers() {
     ...blockW(),
     ...blockX(),
     ...blockY(),
+    ...blockZ(),
   ]
 }

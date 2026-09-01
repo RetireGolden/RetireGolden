@@ -21,6 +21,7 @@
         "packages/engine/src/params/index.ts",
         "packages/engine/src/projection/annuityForms.ts",
         "packages/engine/src/projection/internal/annualAnnuityPurchaseFunding.ts",
+        "packages/engine/src/projection/internal/annualPensionAndAnnuityIncome.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
@@ -61,11 +62,20 @@
           ]
         },
         {
+          "path": "packages/engine/src/projection/internal/annualPensionAndAnnuityIncome.ts",
+          "functions": [
+            {
+              "name": "annualPensionAndAnnuityIncome",
+              "line": 126
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 946
+              "line": 945
             }
           ]
         }
@@ -250,7 +260,8 @@
       "dueOn": "2027-08-03",
       "implementedBy": [
         "packages/engine/src/montecarlo/mortality.ts",
-        "packages/engine/src/projection/annuityForms.ts"
+        "packages/engine/src/projection/annuityForms.ts",
+        "packages/engine/src/projection/internal/annualPensionAndAnnuityIncome.ts"
       ],
       "implementations": [
         {
@@ -268,6 +279,15 @@
             {
               "name": "annuityExclusionMultiple",
               "line": 48
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/annualPensionAndAnnuityIncome.ts",
+          "functions": [
+            {
+              "name": "annualPensionAndAnnuityIncome",
+              "line": 126
             }
           ]
         }
@@ -324,6 +344,7 @@
       "dueOn": "2027-08-03",
       "implementedBy": [
         "packages/engine/src/projection/annuityForms.ts",
+        "packages/engine/src/projection/internal/annualPensionAndAnnuityIncome.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
@@ -337,11 +358,20 @@
           ]
         },
         {
+          "path": "packages/engine/src/projection/internal/annualPensionAndAnnuityIncome.ts",
+          "functions": [
+            {
+              "name": "annualPensionAndAnnuityIncome",
+              "line": 126
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 946
+              "line": 945
             }
           ]
         }

@@ -58,7 +58,6 @@ import {
   collectPlanCashFlowProducerIds,
 } from './annualCashFlowIds.js'
 import { createAnnualCashFlowYearSites, type AnnualCashFlowYearSites } from './annualCashFlowYearSites.js'
-import { annuityExclusionMultiple, annuityPayoutForm, annuityPayoutFraction } from './annuityForms.js'
 import { buildLadder } from '../ladder/ladderMath.js'
 import {
   annualCoordinatedHecmAllocations,
@@ -101,6 +100,7 @@ import {
   withAnnualAggregateRothConversionReservations,
 } from './internal/annualAggregateRothConversionPlan.js'
 import { annualIncomeSetup } from './internal/annualIncomeSetup.js'
+import { annualPensionAndAnnuityIncome } from './internal/annualPensionAndAnnuityIncome.js'
 import {
   annualDebtServiceRows,
   annualLongTermCarePlan,
@@ -271,7 +271,6 @@ import {
   type YearResult,
   type YearWithdrawals,
   type InheritedAccountYearEvidence,
-  type QualifiedAnnuityPaymentActivity,
   type YearCashFlowTransferEndpoint,
 } from './types.js'
 
@@ -2468,209 +2467,70 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       withheldMonthsByPerson.set(write.personId, write.value)
     }
     for (const warning of socialSecurity.warnings) warnings.add(warning)
-    const {
-      socialSecurityStreams,
-      ssEarningsTestWithheld,
-      ssdiPaid,
-    } = socialSecurity
+    const { socialSecurityStreams, ssEarningsTestWithheld, ssdiPaid } =
+      socialSecurity
 
-    /** Qualified annuity payments actually paid this year (published fact). */
-    const qualifiedAnnuityPayments: QualifiedAnnuityPaymentActivity[] = []
+    const pensionAndAnnuity = annualPensionAndAnnuityIncome({
+      accounts: plan.accounts,
+      people,
+      personById,
+      peopleStates, anyAlive,
+      primaryPersonId: primary.id,
+      lifeAgeOf,
+      runtimeOccurrenceKey,
+      pack,
+      year,
+      recordCashFlow: yearSites !== null,
+      opening: {
+        annuityIncome: incomes.annuity,
+        pensionIncome: incomes.pension,
+        ordinaryIncome,
+        privateRetirementOrdinary,
+        publicPensionOrdinary,
+      },
+      annuityInvestmentInContract,
+      annuityExclusionState,
+      annuityContractValue,
+      annuityContractPoolOwner,
+    })
 
-    for (const account of plan.accounts) {
-      if (account.type === 'pension' || account.type === 'annuity') {
-        // A commuted pension (lump-sum election) stops paying once the
-        // election takes effect — the offer amount rolls over in the election
-        // year instead. A pension already in pay before a later election year
-        // keeps its normal payments until then.
-        if (
-          account.type === 'pension' &&
-          account.lumpSumElection &&
-          account.lumpSumOffer &&
-          year >= account.lumpSumOffer.electionYear
-        ) {
-          continue
-        }
-        const ownerId = account.ownerPersonId ?? primary.id
-        const owner = personById.get(ownerId)!
-        const ownerState = stateOf(ownerId)
-        const startCalendarYear = dobYear(owner) + account.startAge
-        if (year < startCalendarYear) continue
-        // A purchased annuity cannot pay before its premium is funded — the
-        // contract begins in the purchase year. Guard against a startAge that
-        // would otherwise pay (and cache an investment=0 exclusion state that
-        // stays fully taxable) in years before the premium is withdrawn.
-        if (account.type === 'annuity' && account.purchase && year < account.purchase.year) continue
-        const yearsSinceStart = year - startCalendarYear
-        const grown = account.monthlyAmount * 12 * Math.pow(1 + account.colaPct / 100, yearsSinceStart)
-        if (account.type === 'annuity') {
-          // Payout form (life-only / period-certain / joint & survivor) sets
-          // how much of the full payment is paid this year; life-only (the
-          // default) pays only while the owner is alive, exactly as before.
-          const otherState = peopleStates.find((s) => s.personId !== ownerId)
-          const paidFraction = annuityPayoutFraction(annuityPayoutForm(account), {
-            ownerAlive: ownerState.alive,
-            otherAlive: otherState?.alive ?? false,
-            anyAlive,
-            yearsSinceStart,
-          })
-          if (paidFraction <= 0) continue
-          const paid = grown * paidFraction
-          incomes.annuity += paid
-          // Taxable portion of the payment:
-          //  - qualified purchase  → fully ordinary (pre-tax dollars funded it);
-          //  - non-qualified purchase → IRS Pub 939 exclusion ratio, so a fixed
-          //    share of each payment is a tax-free return of the premium until
-          //    the whole investment has been recovered, then fully taxable
-          //    (the ratio reflects the payout form; a survivor/beneficiary
-          //    continues the same excludable share);
-          //  - no purchase (already-owned stream) → the entered taxablePct.
-          let annuityTaxable: number
-          let nonqualifiedExcludable = 0
-          if (account.purchase?.taxQualification === 'qualified') {
-            // Publish the paid amount for IRA-funded contracts so detectors
-            // never re-derive the payout-form gate or funding owner.
-            const fundingOwnerPersonId = annuityContractPoolOwner.get(account.id)
-            if (fundingOwnerPersonId !== undefined && paid > 0) {
-              qualifiedAnnuityPayments.push({
-                annuityAccountId: account.id,
-                payment: paid,
-                fundingOwnerPersonId,
-              })
-            }
-            // FULLY ORDINARY IS THE GROSS, NOT THE ANSWER. Section 408(d)(2)(B)
-            // treats all distributions during a taxable year as one
-            // distribution, and Publication 590-B says in terms that where the
-            // traditional IRAs hold both deductible and nondeductible
-            // contributions "the annuity payments are taxed as explained
-            // earlier under Distributions Fully or Partly Taxable" -- so this
-            // payment takes the same share of basis as everything else the
-            // aggregate pays out this year. It cannot take it here: the year's
-            // fraction is not known until the December 31 pool and the year's
-            // other distributions are, both of which are decided in the annual
-            // pass below. So the whole payment enters income here and the
-            // settled basis share is subtracted there, exactly as a required
-            // distribution's is.
-            //
-            // A CONTRACT WITH NO CHANNEL keeps the whole amount, and the only
-            // contract without one is a contract this pool never bought: a
-            // non-qualified purchase, or a purchase from something that is not
-            // an owned non-inherited IRA. A CROSS-OWNER purchase is not on that
-            // list and never was -- the aggregate a contract belongs to is read
-            // off the funding account, so a contract naming the other spouse
-            // has a channel, an occurrence, and a settled character like any
-            // other. The two owners it carries are `ownerId` here, who receives
-            // the payment and whose age started it, and `poolOwnerPersonId`
-            // below, whose Form 8606 the gross lands on; the character is
-            // looked up under the second, because the settlement publishes it
-            // under the owner whose aggregate allocated the basis.
-            annuityTaxable = paid
-            const contractValueBefore = annuityContractValue.get(account.id)
-            const poolOwnerPersonId = annuityContractPoolOwner.get(account.id)
-            if (contractValueBefore !== undefined &&
-                poolOwnerPersonId !== undefined && paid > 0) {
-              const kind = 'annuityContractDistribution' as const
-              const producerOccurrenceKey = runtimeOccurrenceKey(kind, account.id)
-              recordAnnualRetirementRuntimeOccurrence({
-                producerOccurrenceKey,
-                kind,
-                grossAmountPlanDollars: paid,
-                ownerPersonId: ownerId,
-                sourceAccountId: account.id,
-                executionDate: null,
-                executionSequence: null,
-                movementAuthorityId: null,
-              })
-              // The channel is floored at zero, so a contract that has paid out
-              // more than its premium debits only what it still carries while
-              // the whole payment stays on line 7. The two figures answer
-              // different questions: line 7 is what the return reports, and the
-              // channel is what line 6 still holds.
-              const applied = Math.min(paid, contractValueBefore)
-              const contractValueAfter = contractValueBefore - applied
-              annuityContractValue.set(account.id, contractValueAfter)
-              const recorded = recordAnnualRetirementRuntimeApplication({
-                applicationKind: 'debit',
-                producerOccurrenceKey,
-                simulatorPhase: 'annuityContractDistribution',
-                ownerPersonId: ownerId,
-                sourceAccountId: account.id,
-                sourceBalanceBeforePlanDollars: contractValueBefore,
-                appliedAmountPlanDollars: applied,
-                sourceBalanceAfterPlanDollars: contractValueAfter,
-              })
-              annuityContractDistributions.push({
-                producerOccurrenceKey,
-                annuityAccountId: account.id,
-                poolOwnerPersonId,
-                grossAmountPlanDollars: paid,
-                mutationOrdinal: recorded.mutationOrdinal,
-              })
-            }
-          } else if (account.purchase) {
-            let ex = annuityExclusionState.get(account.id)
-            if (!ex) {
-              const investment = annuityInvestmentInContract.get(account.id) ?? 0
-              const jointAnnuitant = plan.household.people.find((p) => p.id !== ownerId)
-              // Expected return = full annual payment × the form's multiple
-              // (the multiple already weights any reduced survivor share).
-              const expectedReturn = grown * annuityExclusionMultiple(pack, account, owner, jointAnnuitant)
-              const ratio = expectedReturn > 0 ? Math.min(1, investment / expectedReturn) : 0
-              ex = { ratio, remaining: investment }
-              annuityExclusionState.set(account.id, ex)
-            }
-            const excludable = Math.min(paid * ex.ratio, ex.remaining)
-            ex.remaining -= excludable
-            nonqualifiedExcludable = excludable
-            annuityTaxable = paid - excludable
-          } else {
-            annuityTaxable = paid * (account.taxablePct / 100)
-          }
-          ordinaryIncome += annuityTaxable
-          privateRetirementOrdinary += annuityTaxable
-          const recipientPersonId = ownerState.alive
-            ? ownerId
-            : peopleStates.find((s) => s.personId !== ownerId && s.alive)?.personId
-          if (recipientPersonId !== undefined) {
-            yearSites?.recordAnnuityPayment({
-              accountId: account.id,
-              recipientPersonId,
-              paid,
-              nonqualifiedExcludable,
-              qualifiedIraFunded: account.purchase?.taxQualification === 'qualified',
-              fundingOwnerPersonId: annuityContractPoolOwner.get(account.id) ?? null,
-            })
-          }
-        } else {
-          const survivor = peopleStates.find((s) => s.personId !== ownerId && s.alive)
-          // Survivor benefit requires payments to have started before the owner died.
-          const ownerStartedBeforeDeath = lifeAgeOf(owner) >= account.startAge
-          if (ownerState.alive) {
-            incomes.pension += grown
-            ordinaryIncome += grown
-            if ((account.source ?? 'private') === 'public') publicPensionOrdinary += grown
-            else privateRetirementOrdinary += grown
-            yearSites?.recordPension({
-              accountId: account.id,
-              payeePersonId: ownerId,
-              amount: grown,
-              source: account.source ?? 'private',
-            })
-          } else if (survivor && ownerStartedBeforeDeath) {
-            const amount = grown * (account.survivorPct / 100)
-            incomes.pension += amount
-            ordinaryIncome += amount
-            if ((account.source ?? 'private') === 'public') publicPensionOrdinary += amount
-            else privateRetirementOrdinary += amount
-            yearSites?.recordPension({
-              accountId: account.id,
-              payeePersonId: survivor.personId,
-              amount,
-              source: account.source ?? 'private',
-            })
-          }
-        }
+    incomes.annuity = pensionAndAnnuity.annuityIncome
+    incomes.pension = pensionAndAnnuity.pensionIncome
+    ordinaryIncome = pensionAndAnnuity.ordinaryIncome
+    privateRetirementOrdinary = pensionAndAnnuity.privateRetirementOrdinary
+    publicPensionOrdinary = pensionAndAnnuity.publicPensionOrdinary
+    const qualifiedAnnuityPayments = pensionAndAnnuity.qualifiedAnnuityPayments
+    for (const row of pensionAndAnnuity.rows) {
+      if (row.kind === 'pension') {
+        if (row.record !== null) yearSites?.recordPension(row.record)
+        continue
       }
+      if (row.exclusionStateWrite !== null) {
+        annuityExclusionState.set(
+          row.exclusionStateWrite.accountId,
+          row.exclusionStateWrite.value,
+        )
+      }
+      const distribution = row.contractDistribution
+      if (distribution !== null) {
+        recordAnnualRetirementRuntimeOccurrence(distribution.occurrence)
+        annuityContractValue.set(
+          distribution.annuityAccountId,
+          distribution.contractValueAfter,
+        )
+        const recorded = recordAnnualRetirementRuntimeApplication(
+          distribution.application,
+        )
+        annuityContractDistributions.push({
+          producerOccurrenceKey:
+            distribution.occurrence.producerOccurrenceKey,
+          annuityAccountId: distribution.annuityAccountId,
+          poolOwnerPersonId: distribution.poolOwnerPersonId,
+          grossAmountPlanDollars: distribution.grossAmountPlanDollars,
+          mutationOrdinal: recorded.mutationOrdinal,
+        })
+      }
+      if (row.record !== null) yearSites?.recordAnnuityPayment(row.record)
     }
     // --- TIPS-ladder cash flows ---------------------------------------------
     // The arithmetic lives in `internal/tipsLadderAnnualCashFlow.ts`, which
