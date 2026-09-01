@@ -134,7 +134,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 776
+              "line": 756
             }
           ]
         },
@@ -435,7 +435,7 @@
           "functions": [
             {
               "name": "BalanceState",
-              "line": 546
+              "line": 547
             }
           ]
         }
@@ -483,16 +483,26 @@
       "verifiedOn": "2026-08-27",
       "dueOn": "2027-08-27",
       "implementedBy": [
+        "packages/engine/src/projection/internal/distributedTaxableYieldRows.ts",
         "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/tax/federalTax.ts"
       ],
       "implementations": [
         {
+          "path": "packages/engine/src/projection/internal/distributedTaxableYieldRows.ts",
+          "functions": [
+            {
+              "name": "distributedTaxableYieldRows",
+              "line": 78
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 776
+              "line": 756
             }
           ]
         },
@@ -567,7 +577,7 @@
           "functions": [
             {
               "name": "planWithdrawals",
-              "line": 616
+              "line": 596
             }
           ]
         },
@@ -638,7 +648,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 776
+              "line": 756
             }
           ]
         },
@@ -912,7 +922,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 776
+              "line": 756
             }
           ]
         },
@@ -1415,7 +1425,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 776
+              "line": 756
             }
           ]
         }
@@ -1450,7 +1460,7 @@
       "title": "Savings-bond interest is deferred until redemption, maturity, or disposition unless elected",
       "classification": "outOfScope",
       "errorDirection": null,
-      "conventionRationale": "The absence surface spans model/plan.ts and projection/simulate.ts. taxableAccountSchema.interestYieldPct is a generic current-year yield and simulate.ts immediately adds that yield to ordinary income; neither surface identifies a savings bond, redemption or maturity date, accounting method, or the section 454 election that would select current inclusion. Treating generic interest as a savings bond would conflate an ordinary brokerage yield with a deferred savings-bond obligation.",
+      "conventionRationale": "The absence surface spans model/plan.ts, projection/internal/distributedTaxableYieldRows.ts, and projection/simulate.ts. taxableAccountSchema.interestYieldPct is a generic current-year yield; distributedTaxableYieldRows prices it for the current year, and simulate.ts immediately adds the returned interest to ordinary income. None of those surfaces identifies a savings bond, redemption or maturity date, accounting method, or the section 454 election that would select current inclusion. Treating generic interest as a savings bond would conflate an ordinary brokerage yield with a deferred savings-bond obligation.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -1460,6 +1470,7 @@
       "dueOn": "2027-08-27",
       "implementedBy": [
         "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/internal/distributedTaxableYieldRows.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
@@ -1473,11 +1484,20 @@
           ]
         },
         {
+          "path": "packages/engine/src/projection/internal/distributedTaxableYieldRows.ts",
+          "functions": [
+            {
+              "name": "distributedTaxableYieldRows",
+              "line": 78
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 776
+              "line": 756
             }
           ]
         }
@@ -1656,7 +1676,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 776
+              "line": 756
             }
           ]
         }
@@ -1752,7 +1772,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 776
+              "line": 756
             }
           ]
         }
@@ -1833,7 +1853,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 776
+              "line": 756
             }
           ]
         }
@@ -1890,7 +1910,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 776
+              "line": 756
             }
           ]
         }

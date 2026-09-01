@@ -1,7 +1,7 @@
 {
   "schema": "retiregolden.equivalence-reach-spec/1",
   "name": "simulate-batch",
-  "why": "The four annual phases extracted in the simulate-batch slice, plus the sub-arms whose reach cannot be assumed. REPOINTED after the extractions landed: every range now names the extracted helper under projection/internal/, not the removed inlined block in projection/simulate.ts, and one entry (B.application) names the call site because that arm stayed there. Block D - income pass 1, wages - was REMOVED when this branch merged origin/main. That phase was extracted concurrently and independently on main as projection/internal/wageIncomeStreams.ts; this slice's duplicate helper was withdrawn rather than kept, and main's version is not this spec's to prove. The surviving ids A, B, C and E were left as they are rather than renumbered, so reach output stays comparable with the runs taken before the merge. Line numbers are against the working tree and MUST be re-checked before reuse (all sixteen were re-checked line by line during that merge and none needed correcting: the merge left the four helper files byte-identical, and in projection/simulate.ts it changed only the import block and the wages call site - the import edit is line-count-neutral, one import removed and one added, and the call site sits below the B.application range, so no range shifted) - a stale range silently reports the wrong code as reached, which is exactly what the first version of this file would have started doing the moment the first phase moved.",
+  "why": "The four annual phases extracted in the simulate-batch slice, plus the sub-arms whose reach cannot be assumed. REPOINTED after the extractions landed: every range now names the extracted helper under projection/internal/, not the removed inlined block in projection/simulate.ts, and one entry (B.application) names the call site because that arm stayed there. Block D - income pass 1, wages - was REMOVED when this branch merged origin/main. That phase was extracted concurrently and independently on main as projection/internal/wageIncomeStreams.ts; this slice's duplicate helper was withdrawn rather than kept, and main's version is not this spec's to prove. The surviving ids A, B, C and E were left as they are rather than renumbered, so reach output stays comparable with the runs taken before the merge. Line numbers are against the working tree and MUST be re-checked before reuse. This PR re-pinned B.application from the stale 2009-2020 window to 1989-2000 after simulate.ts shifted; the other fifteen helper-file ranges were re-checked and remained correct. A stale range silently reports the wrong code as reached, which is exactly what happened to the earlier B.application window.",
   "entries": [
     {
       "id": "A",
@@ -76,9 +76,10 @@
       "label": "B: the aggregated-IRA credit application, applied at the call site",
       "file": "projection/simulate.ts",
       "lines": [
-        2009,
-        2020
-      ]
+        1989,
+        2000
+      ],
+      "note": "REPINNED by the simulate-small-annual-boundaries extraction after new imports and removal of the former inline insurance interpolator shifted this caller-side branch. These lines are the creditsAggregatedIra gate and the complete runtime-application call; the previous 2009-2020 range had become unrelated HECM commentary/arguments and could false-green."
     },
     {
       "id": "C",
