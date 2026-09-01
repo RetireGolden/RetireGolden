@@ -201,9 +201,9 @@ describe('a named QCD publishes its prerequisite without moving a dollar', () =>
     // and reaches 70½ on 2026-12-01, and the gift is dated 2026-08-01.
     //
     // Two readings, two answers:
-    //   - the aggregate arm's month proxy (simulate.ts, `ageAttained === 70 &&
-    //     birthMonth <= 6`) makes the donor eligible for the whole of 2026, so
-    //     the scalar gift is excluded from income;
+    //   - the aggregate arm's month proxy (annualLegacyQcdGiftPlan.ts,
+    //     `ageAttained === 70 && birthMonth <= 6`) makes the donor eligible for
+    //     the whole of 2026, so the scalar gift is excluded from income;
     //   - the named path's exact 846-month threshold
     //     (annualQcdExecutionPrerequisite.ts, `addCalendarMonths(dob, 846)`)
     //     puts 2026-08-01 four months before the half-birthday, so the request

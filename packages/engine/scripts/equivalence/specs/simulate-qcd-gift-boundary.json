@@ -1,0 +1,221 @@
+{
+  "schema": "retiregolden.equivalence-reach-spec/1",
+  "name": "simulate-qcd-gift-boundary",
+  "why": "Measured reach for the grouped legacy aggregate scalar-QCD gift planner extracted from simulatePlan. Six dedicated block-Q members run in all four equivalence modes and discriminate current-year named-action suppression, annual age-70.5 and death eligibility, indexed independent donor caps, proportional routed-RMD attribution and sorted reallocation, first-ID logical beyond-RMD sources, compatible duplicate physical rows, full-drain cent flooring and sub-cent suppression, multi-year freshness, complete caller prevalidation, logical pro-rata mutation, one runtime identity per ID, deferred character rows and history writes. Hostile delegation tests pin fail-closed source identity, balance and amount validation because behavior-equivalent capture cannot execute those throws.",
+  "entries": [
+    {
+      "id": "Q.helper.emptyResult",
+      "label": "fresh empty result factory",
+      "file": "projection/internal/annualLegacyQcdGiftPlan.ts",
+      "lines": [65, 74],
+      "anchors": [
+        { "line": 65, "text": "function emptyResult(): AnnualLegacyQcdGiftPlanResult {" },
+        { "line": 69, "text": "qcdGrossByOwner: new Map()," },
+        { "line": 74, "text": "}" }
+      ]
+    },
+    {
+      "id": "Q.helper.grossFold",
+      "label": "insertion-ordered owner gross addition",
+      "file": "projection/internal/annualLegacyQcdGiftPlan.ts",
+      "lines": [76, 80],
+      "anchors": [
+        { "line": 76, "text": "function addGiftGross(" },
+        { "line": 79, "text": "target.set(ownerId, (target.get(ownerId) ?? 0) + amount)" },
+        { "line": 80, "text": "}" }
+      ]
+    },
+    {
+      "id": "Q.helper.donorsAndRequest",
+      "label": "named suppression, annual donor eligibility and per-donor request cap",
+      "file": "projection/internal/annualLegacyQcdGiftPlan.ts",
+      "lines": [83, 110],
+      "anchors": [
+        { "line": 83, "text": "input: Readonly<AnnualLegacyQcdGiftPlanInput>," },
+        { "line": 85, "text": "if (input.qcdAnnual <= 0 || input.hasNamedQcdRequest) return emptyResult()" },
+        { "line": 90, "text": "const donorIds = new Set(input.people" },
+        { "line": 93, "text": "(person.ageAttained === 70 && person.birthMonth <= 6)" },
+        { "line": 96, "text": "if (donorIds.size === 0) return emptyResult()" },
+        { "line": 101, "text": "const donorCapacity = new Map<string, number>(" },
+        { "line": 104, "text": "const requested = Math.min(" },
+        { "line": 108, "text": "let qcdFromRmd = Math.min(requested, input.ownedIraRmdTotal)" }
+      ]
+    },
+    {
+      "id": "Q.helper.routedRmd",
+      "label": "sorted proportional owner attribution, personal-cap clamp and residual reallocation",
+      "file": "projection/internal/annualLegacyQcdGiftPlan.ts",
+      "lines": [112, 158],
+      "anchors": [
+        { "line": 112, "text": "if (qcdFromRmd > 0 && input.ownedIraRmdTotal > 0) {" },
+        { "line": 116, "text": "const owners = [...input.ownedIraRmdGrossByOwner.keys()].sort()" },
+        { "line": 123, "text": "owners.forEach((ownerId, index) => {" },
+        { "line": 129, "text": "qcdFromRmd * (" },
+        { "line": 138, "text": "let unassigned = Math.max(0, qcdFromRmd - assigned)" },
+        { "line": 139, "text": "for (const ownerId of owners) {" },
+        { "line": 148, "text": "qcdFromRmd = assigned" },
+        { "line": 149, "text": "for (const [ownerId, share] of shares) {" },
+        { "line": 155, "text": "Math.max(0, (donorCapacity.get(ownerId) ?? 0) - share)," }
+      ]
+    },
+    {
+      "id": "Q.helper.beyondRmd",
+      "label": "first-ID logical source selection, cent-floor drain and one debit intent per ID",
+      "file": "projection/internal/annualLegacyQcdGiftPlan.ts",
+      "lines": [160, 198],
+      "anchors": [
+        { "line": 160, "text": "const beyondRmd = requested - qcdFromRmd" },
+        { "line": 166, "text": "const sources = input.balances.filter((state) =>" },
+        { "line": 168, "text": "const available = sources.reduce((sum, state) => sum + state.balance, 0)" },
+        { "line": 170, "text": "for (const state of sources) {" },
+        { "line": 177, "text": "const take = allowance >= state.balance" },
+        { "line": 182, "text": "if (planDollarsMoveNoLedgerCent(take)) continue" },
+        { "line": 189, "text": "addGiftGross(qcdGrossByOwner, state.ownerId, take)" },
+        { "line": 190, "text": "debitIntents.push({" }
+      ]
+    },
+    {
+      "id": "Q.helper.result",
+      "label": "left-associated gift total and fresh ordered output",
+      "file": "projection/internal/annualLegacyQcdGiftPlan.ts",
+      "lines": [200, 209],
+      "anchors": [
+        { "line": 200, "text": "const qcd = qcdBeyondRmd + qcdFromRmd" },
+        { "line": 201, "text": "return {" },
+        { "line": 207, "text": "offsetHistoryUnprovableDonorIds: qcd > 0 ? [...donorIds] : []," },
+        { "line": 209, "text": "}" }
+      ]
+    },
+    {
+      "id": "Q.callsite.invoke",
+      "label": "logical live-state snapshot and exact map handoff",
+      "file": "projection/simulate.ts",
+      "lines": [4218, 4249],
+      "anchors": [
+        { "line": 4218, "text": "const qcdGiftPlan = annualLegacyQcdGiftPlan({" },
+        { "line": 4223, "text": "people: peopleStates.map((state) => ({" },
+        { "line": 4230, "text": "ownedIraRmdGrossByOwner," },
+        { "line": 4231, "text": "balances: rmdBalances.map((state, balanceIndex) => ({" },
+        { "line": 4239, "text": "qcd = qcdGiftPlan.qcd" },
+        { "line": 4247, "text": "const qcdGrossByOwner = qcdGiftPlan.qcdGrossByOwner" },
+        { "line": 4249, "text": "const qcdFromRmdByOwner = qcdGiftPlan.qcdFromRmdByOwner" }
+      ]
+    },
+    {
+      "id": "Q.callsite.validate",
+      "label": "whole-plan logical IRA identity normalization, sequential balance and amount validation",
+      "file": "projection/simulate.ts",
+      "lines": [4254, 4287],
+      "anchors": [
+        { "line": 4254, "text": "const validatedQcdGiftDebitIntents: Array<{" },
+        { "line": 4263, "text": "const remainingQcdGiftBalanceByIndex = new Map<number, number>()" },
+        { "line": 4264, "text": "for (const intent of qcdGiftPlan.debitIntents) {" },
+        { "line": 4268, "text": "const balanceIndex = intent.balanceIndex" },
+        { "line": 4269, "text": "const sourceAccountId = intent.sourceAccountId" },
+        { "line": 4270, "text": "const ownerId = intent.ownerId" },
+        { "line": 4271, "text": "const sourceBalanceBefore = intent.sourceBalanceBefore" },
+        { "line": 4272, "text": "const amount = intent.amount" },
+        { "line": 4273, "text": "const state = rmdBalances[balanceIndex]" },
+        { "line": 4277, "text": "if (" },
+        { "line": 4279, "text": "!isAggregatedIra(state.account) ||" },
+        { "line": 4285, "text": "planDollarsMoveNoLedgerCent(amount) ||" },
+        { "line": 4287, "text": "amount > remainingBalance" }
+      ],
+      "note": "Validated differential members take the successful seam. The fail-closed throw cannot execute in a behavior-equivalent capture; hostile delegation independently injects wrong logical positions, owner, non-IRA source, stale balance, zero, positive sub-cent, cumulative overdraw and getter-backed identity intents. It proves complete normalization before mutation and that apply never re-reads helper-owned intent objects."
+    },
+    {
+      "id": "Q.callsite.validateSequentialCommit",
+      "label": "sequential shadow-balance advance and immutable scalar record cache",
+      "file": "projection/simulate.ts",
+      "lines": [4293, 4307],
+      "anchors": [
+        { "line": 4293, "text": "const sourceBalanceAfter = remainingBalance - amount" },
+        { "line": 4294, "text": "remainingQcdGiftBalanceByIndex.set(" },
+        { "line": 4298, "text": "validatedQcdGiftDebitIntents.push({" },
+        { "line": 4306, "text": "})" },
+        { "line": 4307, "text": "}" }
+      ]
+    },
+    {
+      "id": "Q.callsite.validateHistory",
+      "label": "caller-owned history snapshot and donor identity validation",
+      "file": "projection/simulate.ts",
+      "lines": [4308, 4315],
+      "anchors": [
+        { "line": 4308, "text": "const qcdGiftOffsetHistoryUnprovableDonorIds = [" },
+        { "line": 4309, "text": "...qcdGiftPlan.offsetHistoryUnprovableDonorIds," },
+        { "line": 4311, "text": "const qcdGiftPersonIds = new Set(" },
+        { "line": 4314, "text": "if (qcdGiftOffsetHistoryUnprovableDonorIds.some((donorId) =>" },
+        { "line": 4315, "text": "!qcdGiftPersonIds.has(donorId))) {" }
+      ],
+      "note": "The unknown-donor throw is excluded because a behavior-equivalent corpus cannot take a hostile helper seam. Focused delegation injects throwing history property and iterator channels and proves neither reaches the first logical debit/runtime publication."
+    },
+    {
+      "id": "Q.callsite.apply",
+      "label": "logical pro-rata debit, single runtime identity, deferred character and history writes",
+      "file": "projection/simulate.ts",
+      "lines": [4321, 4363],
+      "anchors": [
+        { "line": 4321, "text": "for (const debit of validatedQcdGiftDebitIntents) {" },
+        { "line": 4322, "text": "const state = rmdBalances[debit.balanceIndex]!" },
+        { "line": 4325, "text": "state.balance = debit.sourceBalanceAfter" },
+        { "line": 4331, "text": "recordAnnualRetirementRuntimeOccurrence({" },
+        { "line": 4341, "text": "const giftApplication = recordAnnualRetirementRuntimeApplication({" },
+        { "line": 4351, "text": "if (giftApplication.applicationKind === 'debit') {" },
+        { "line": 4352, "text": "deferredLegacyQcdDistributions.push({" },
+        { "line": 4361, "text": "for (const donorId of qcdGiftOffsetHistoryUnprovableDonorIds) {" },
+        { "line": 4362, "text": "namedQcdOffsetHistoryUnprovable.add(donorId)" }
+      ]
+    }
+  ],
+  "measuredProof": {
+    "method": "The blocks corpus and both engine source trees are materialized from immutable Git objects, then captured in default, cashFlow, optimizerProbe, and counterfactual modes. The head tree is pinned to the semantic source commit, which the verifier requires to be an ancestor of the exact current HEAD, and the current HEAD engine source tree must remain byte-identical to that semantic tree. Before any harness module executes, the verifier authenticates this spec against its path-aware clean-filter working-tree blob and the immutable HEAD blob, derives the complete local transitive import closure from committed source, and requires every closure member to match both its pinned HEAD blob and its clean-filter working-tree blob. It then recomputes corpus, captures, byte-identical structural comparison, reach, and all recorded hashes.",
+    "base": {
+      "commit": "815a52b25359c4bbaf103efbf69e2a5bf7d65487",
+      "engineSourceTree": "33d9b00d8054b592361e37710c78f99cc01cee65"
+    },
+    "head": {
+      "sourceObservedAtCommit": "2f05d45109757c81e153ff945e7cf884c16f3cb9",
+      "engineSourceTree": "680276494aa021fd3a48352f2048a926bb1ca2b3"
+    },
+    "inputs": {
+      "harnessBlobs": {
+        "packages/engine/scripts/equivalence.mjs": "8fd7dff5a1b152a794afacd9b9938397b47894f4",
+        "packages/engine/scripts/equivalence/corpus/blocks.mjs": "a1f3fc656fd2ac7d4f1931265d99e6b8c940326c",
+        "packages/engine/scripts/equivalence/corpus/examples.mjs": "453bcb81103f490447d679276ca1a3ffbad9104a",
+        "packages/engine/scripts/equivalence/corpus/index.mjs": "3d434147ef86cac8116cefac867b2076256feb21",
+        "packages/engine/scripts/equivalence/describe-tree.mjs": "1b2e00f1170bbadae67cd04269cf91aa1f03a168",
+        "packages/engine/scripts/equivalence/encode.mjs": "8bb6b7f19eb068444ee7fa6970a704945ab28f06",
+        "packages/engine/scripts/equivalence/engine-tree.mjs": "9450176f7dfdc1b3374d87b2cbc80f3f03b72f98",
+        "packages/engine/scripts/equivalence/modes.mjs": "0c75aac27538942bf96517fd00c417fa8b967ab9",
+        "packages/engine/scripts/equivalence/reach.mjs": "81d6c4cce57b40f770be21b7a89ea2da9c0c217d",
+        "packages/engine/scripts/equivalence/usage.mjs": "0b3b3072c3e716d4bace88f6887a41bdda5d60d1",
+        "packages/engine/scripts/typescript-source-resolution.mjs": "f5c6c88ddb5e43e894e2c89658aa869ff06e430a"
+      },
+      "specMeasurementSha256": "c5aee7aa84cd631cdb271432e4b2f5b7fb0f283c841ea0f0799839f3972dd283"
+    },
+    "corpus": {
+      "name": "blocks",
+      "members": 116,
+      "membersSha256": "f7520e1447b07a1d17ad6e815b28da74e8ccdd2cf9dec29c0fcae2152c362a6b",
+      "entries": 464
+    },
+    "capture": {
+      "baseDumpSha256": "64acfa43e366e0cb113f07a009a37b9eed4c7146e08bc7644f301f5c997dc746",
+      "headDumpSha256": "64acfa43e366e0cb113f07a009a37b9eed4c7146e08bc7644f301f5c997dc746",
+      "baseOverallSha256": "ce34b2d27721228081b16a0457b98c1ece2a9f1cf23bcd5126d26a842ba906fb",
+      "headOverallSha256": "ce34b2d27721228081b16a0457b98c1ece2a9f1cf23bcd5126d26a842ba906fb",
+      "entriesMoved": 0,
+      "entriesIdentical": 464,
+      "result": "IDENTICAL"
+    },
+    "reach": {
+      "entries": 11,
+      "unreached": 0,
+      "entriesWithColdWholeLines": 0,
+      "entriesWithReportedColdSubLineRegions": 6
+    },
+    "scope": "The scalar-QCD source extraction changes no captured output in any block member or mode. The helper and caller retain named-request stand-down, donor eligibility and per-person caps, routed-RMD attribution, grouped logical beyond-RMD debits, exact-cent suppression, runtime/deferred-character publication, and ordered history writes. Focused helper and hostile delegation tests independently pin identity, atomicity, defensive rejection, and publication contracts that a byte-identical dump cannot prove."
+  },
+  "readingTheCounts": "A member count proves that at least one line in the named range executed. Reach additionally fails on any cold executable whole line in a reached range. JavaScript line coverage cannot distinguish every ternary, nullish or compound-condition operand sharing one physical line, so focused hostile tests must be read alongside the differential proof."
+}

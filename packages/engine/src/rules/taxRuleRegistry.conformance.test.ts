@@ -1087,6 +1087,25 @@ describe('tax rule registry conformance', () => {
     expect(violations).toEqual([])
   })
 
+  it('assigns the legacy scalar QCD planner to its complete rule-owner set', () => {
+    const helper =
+      'packages/engine/src/projection/internal/annualLegacyQcdGiftPlan.ts#annualLegacyQcdGiftPlan'
+    const actualOwners = Object.entries(TAX_RULE_REGISTRY)
+      .filter(([, record]) => record.implementedByFunctions.includes(helper))
+      .map(([ruleId]) => ruleId)
+
+    // Hand-audited across the complete cross-domain registry. This boundary
+    // owns stand-down, the annual age proxy, household attribution, and the
+    // exact-cent sub-cent discharge; character and section-219 logic remain in
+    // the already-registered owner-character boundary.
+    expect(actualOwners).toEqual([
+      'irc-408-d-8-A-named-qcd-limit-after-the-pack-year',
+      'irc-408-d-8-B-ii-projection-annual-age-proxy',
+      'irc-408-d-8-A-projection-household-qcd-aggregation',
+      'treas-reg-1-408-8-projection-sub-cent-distribution-discharge',
+    ])
+  })
+
   it('rejects a fixture claiming a rule that is not registered', () => {
     const unknown = [...claimedRuleIds.keys()].filter((ruleId) => !(ruleId in TAX_RULE_REGISTRY))
     expect(unknown).toEqual([])

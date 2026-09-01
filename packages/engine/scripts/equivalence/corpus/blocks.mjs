@@ -2542,6 +2542,184 @@ function blockX() {
 }
 
 // ---------------------------------------------------------------------------
+// Q — legacy aggregate scalar-QCD gift plan
+// ---------------------------------------------------------------------------
+
+function blockQ() {
+  const out = []
+
+  {
+    // The owned-IRA requirement is exactly $10,000. The first half of the
+    // scalar is routed out of that already-committed requirement and the next
+    // $10,000 must become a separately journalled beyond-RMD debit.
+    const plan = singlePersonPlan({ dob: '1953-06-15', planningAge: 95 })
+    plan.assumptions.defaultReturnPct = 0
+    plan.accounts = [
+      cash('q1-cash', 0),
+      qualified('traditional', 'q1-ira', 265_000, { annualReturnPct: 0 }),
+    ]
+    plan.strategies.qcdAnnual = 20_000
+    out.push(member(
+      'q1-routedThenBeyondRmd',
+      'Q: sorted routed-RMD attribution followed by a live beyond-RMD debit, runtime occurrence/application, owner gross and exact caller mutation',
+      plan,
+      { horizonEndYear: START_YEAR },
+    ))
+  }
+
+  {
+    // p2's proportional routed share exceeds one donor limit. The stranded
+    // share is offered to p1 in sorted-owner order; the remaining household
+    // ask then walks the deliberately p2-first live account order, skips p2's
+    // exhausted capacity, and debits p1's IRA beyond its requirement.
+    const plan = couplePlan({
+      p1Dob: '1953-01-01',
+      p2Dob: '1953-01-01',
+      p1PlanningAge: 95,
+      p2PlanningAge: 95,
+    })
+    plan.assumptions.defaultReturnPct = 0
+    plan.accounts = [
+      cash('q2-cash', 0),
+      qualified('traditional', 'q2-p2-ira', 7_950_000, {
+        ownerPersonId: 'p2',
+        annualReturnPct: 0,
+      }),
+      qualified('traditional', 'q2-p1-ira', 2_650_000, {
+        ownerPersonId: 'p1',
+        annualReturnPct: 0,
+      }),
+    ]
+    plan.strategies.qcdAnnual = 222_000
+    out.push(member(
+      'q2-donorCapReallocation',
+      'Q: two indexed donor limits, proportional cap, sorted reallocation, exhausted-capacity skip and beyond-RMD source allocation',
+      plan,
+      { horizonEndYear: START_YEAR },
+    ))
+  }
+
+  {
+    // Only the January-June age-70 owner is eligible. The dead spouse's IRA
+    // and the non-IRA row are ignored. The first eligible IRA has no whole
+    // ledger cent and is skipped, the second drains its exact $1.23, and the
+    // third drains its fractional balance to the floored $3.45.
+    const plan = couplePlan({
+      p1Dob: '1956-06-15',
+      p2Dob: '1956-01-15',
+      p1PlanningAge: 95,
+      p2PlanningAge: 95,
+    })
+    plan.assumptions.defaultReturnPct = 0
+    plan.accounts = [
+      cash('q3-non-ira', 100, { annualReturnPct: 0, ownerPersonId: 'p1' }),
+      qualified('traditional', 'q3-dead-owner-ira', 100, {
+        ownerPersonId: 'p2',
+        annualReturnPct: 0,
+      }),
+      qualified('traditional', 'q3-sub-cent-ira', 0.009, {
+        ownerPersonId: 'p1',
+        annualReturnPct: 0,
+      }),
+      qualified('traditional', 'q3-whole-cent-ira', 1.23, {
+        ownerPersonId: 'p1',
+        annualReturnPct: 0,
+      }),
+      qualified('traditional', 'q3-fractional-ira', 3.456, {
+        ownerPersonId: 'p1',
+        annualReturnPct: 0,
+      }),
+    ]
+    plan.strategies.qcdAnnual = 10
+    out.push(member(
+      'q3-deadAndFractionalSources',
+      'Q: annual 70.5 proxy, dead-owner and non-IRA filters, sub-cent suppression, full-drain cent flooring and residual source order',
+      plan,
+      {
+        horizonEndYear: START_YEAR,
+        deathAgeByPersonId: { p2: 69 },
+      },
+    ))
+  }
+
+  {
+    // The donor is 69 in 2026, then crosses the annual January-June proxy at
+    // age 70 in 2027. A nonzero inflation factor makes the second invocation's
+    // request distinct and catches stale helper results across annual re-entry.
+    const plan = singlePersonPlan({ dob: '1957-01-15', planningAge: 95 })
+    plan.assumptions.defaultReturnPct = 0
+    plan.assumptions.inflationPct = 10
+    plan.accounts = [
+      cash('q4-cash', 0),
+      qualified('traditional', 'q4-ira', 10_000, { annualReturnPct: 0 }),
+    ]
+    plan.strategies.qcdAnnual = 1_000
+    out.push(member(
+      'q4-crossingYearFreshness',
+      'Q: no-donor empty result followed by an inflated next-year gift, proving annual age-state and result freshness across re-entry',
+      plan,
+      { horizonEndYear: START_YEAR + 1 },
+    ))
+  }
+
+  {
+    // A named request is authoritative in the current year. The helper must
+    // take its early empty arm even though the scalar, donor and IRA would all
+    // otherwise qualify, leaving only the exact named execution to move money.
+    const plan = singlePersonPlan({ dob: '1953-01-01', planningAge: 95 })
+    plan.assumptions.defaultReturnPct = 0
+    plan.accounts = [
+      cash('q5-cash', 0),
+      qualified('traditional', 'q5-ira', 265_000, { annualReturnPct: 0 }),
+    ]
+    plan.strategies.qcdAnnual = 50_000
+    plan.strategies.retirementActions = [preStartNamedQcd('q5-ira', START_YEAR)]
+    plan.retirementActionEligibilityFacts = {
+      iraClassifications: [{
+        sourceAccountId: 'q5-ira',
+        subtype: 'traditional',
+        evidenceId: 'q5-traditional-classification',
+        provenance: { source: 'manual' },
+      }],
+      sepSimpleActivities: [],
+      deductibleIraContributions: [],
+    }
+    out.push(member(
+      'q5-currentNamedSuppression',
+      'Q: current-year named QCD authority suppresses the otherwise-qualified scalar planner before any scalar allocation or caller debit',
+      plan,
+      { horizonEndYear: START_YEAR },
+    ))
+  }
+
+  {
+    // Compatible physical rows share one logical source. A June-born owner is
+    // admitted by the annual age-70 proxy, and the $1,100 gift crosses the
+    // first row's $1,000 capacity while producing one aggregate debit identity.
+    const plan = singlePersonPlan({ dob: '1956-06-15', planningAge: 95 })
+    plan.assumptions.defaultReturnPct = 0
+    plan.accounts = [
+      cash('q6-cash', 0),
+      qualified('traditional', 'q6-shared-ira', 1_000, {
+        annualReturnPct: 0,
+      }),
+      qualified('traditional', 'q6-shared-ira', 200, {
+        annualReturnPct: 0,
+      }),
+    ]
+    plan.strategies.qcdAnnual = 1_100
+    out.push(member(
+      'q6-groupedJuneCrossingCapacity',
+      'Q: June-born age-70 donor debits one grouped logical IRA across the first physical row capacity with one occurrence and application',
+      plan,
+      { horizonEndYear: START_YEAR },
+    ))
+  }
+
+  return out
+}
+
+// ---------------------------------------------------------------------------
 // T — aggregate Roth-conversion planning
 // ---------------------------------------------------------------------------
 
@@ -4194,6 +4372,7 @@ export async function blockMembers() {
     ...blockN(),
     ...blockO(),
     ...blockP(),
+    ...blockQ(),
     ...blockR(),
     ...blockS(),
     ...blockT(),

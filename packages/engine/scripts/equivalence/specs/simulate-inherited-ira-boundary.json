@@ -178,13 +178,13 @@
       "id": "I.snapshot-helper",
       "label": "caller-owned plain immutable snapshot materialization before annual writes",
       "file": "projection/simulate.ts",
-      "lines": [445, 459],
+      "lines": [446, 460],
       "anchors": [
-        { "line": 445, "text": "function immutablePlainSnapshot<T>(value: T): T {" },
-        { "line": 446, "text": "const snapshot = structuredClone(value)" },
-        { "line": 453, "text": "for (const child of Object.values(candidate as Record<string, unknown>)) {" },
-        { "line": 456, "text": "Object.freeze(candidate)" },
-        { "line": 459, "text": "return snapshot" }
+        { "line": 446, "text": "function immutablePlainSnapshot<T>(value: T): T {" },
+        { "line": 447, "text": "const snapshot = structuredClone(value)" },
+        { "line": 454, "text": "for (const child of Object.values(candidate as Record<string, unknown>)) {" },
+        { "line": 457, "text": "Object.freeze(candidate)" },
+        { "line": 460, "text": "return snapshot" }
       ],
       "note": "Hostile delegation getters throw on any second property read and during an initial nested operation read, proving every helper-owned channel is detached before validation or mutation and that a failed materialization leaves both logical balances unchanged."
     },
@@ -192,16 +192,16 @@
       "id": "I.delegate",
       "label": "grouped logical input, pure planning, immutable channel capture, and complete prevalidation setup",
       "file": "projection/simulate.ts",
-      "lines": [4067, 4089],
+      "lines": [4068, 4090],
       "anchors": [
-        { "line": 4067, "text": "const inheritedPlan = immutablePlainSnapshot(" },
-        { "line": 4068, "text": "annualInheritedIraDistributions({" },
-        { "line": 4073, "text": "balances: rmdBalances," },
-        { "line": 4079, "text": "const inheritedOperations = inheritedPlan.rows.flatMap((row) =>" },
-        { "line": 4081, "text": "const inheritedTotal = inheritedPlan.totals.inherited" },
-        { "line": 4084, "text": "const inheritedYearEvidenceDraft: InheritedAccountYearEvidence[] =" },
-        { "line": 4086, "text": "const inheritedRmdShortfallObligations =" },
-        { "line": 4089, "text": "for (const operation of inheritedOperations) {" }
+        { "line": 4068, "text": "const inheritedPlan = immutablePlainSnapshot(" },
+        { "line": 4069, "text": "annualInheritedIraDistributions({" },
+        { "line": 4074, "text": "balances: rmdBalances," },
+        { "line": 4080, "text": "const inheritedOperations = inheritedPlan.rows.flatMap((row) =>" },
+        { "line": 4082, "text": "const inheritedTotal = inheritedPlan.totals.inherited" },
+        { "line": 4085, "text": "const inheritedYearEvidenceDraft: InheritedAccountYearEvidence[] =" },
+        { "line": 4087, "text": "const inheritedRmdShortfallObligations =" },
+        { "line": 4090, "text": "for (const operation of inheritedOperations) {" }
       ],
       "note": "Hostile delegation tests own the deliberately unreachable validation failures, prove the full operation set is checked before any logical balance setter runs, and enforce one getter read for operation identity/balances/execution plus rows, evidence, totals, and obligations."
     },
@@ -209,13 +209,13 @@
       "id": "J.consume",
       "label": "cached one-logical-setter write and runtime occurrence per operation plus obligation and excise handoff",
       "file": "projection/simulate.ts",
-      "lines": [4118, 4143],
+      "lines": [4119, 4144],
       "anchors": [
-        { "line": 4118, "text": "for (const operation of inheritedOperations) {" },
-        { "line": 4120, "text": "state.balance = operation.sourceBalanceAfter" },
-        { "line": 4123, "text": "recordAnnualRetirementRuntimeOccurrence({" },
-        { "line": 4134, "text": "rmdShortfallObligations.push(...inheritedRmdShortfallObligations)" },
-        { "line": 4141, "text": "const rmdShortfallExciseTax = rmdShortfallExciseResults.reduce(" }
+        { "line": 4119, "text": "for (const operation of inheritedOperations) {" },
+        { "line": 4121, "text": "state.balance = operation.sourceBalanceAfter" },
+        { "line": 4124, "text": "recordAnnualRetirementRuntimeOccurrence({" },
+        { "line": 4135, "text": "rmdShortfallObligations.push(...inheritedRmdShortfallObligations)" },
+        { "line": 4142, "text": "const rmdShortfallExciseTax = rmdShortfallExciseResults.reduce(" }
       ]
     }
   ],

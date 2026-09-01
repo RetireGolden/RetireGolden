@@ -145,6 +145,7 @@
       "dueOn": "2026-12-03",
       "implementedBy": [
         "packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts",
+        "packages/engine/src/projection/internal/annualLegacyQcdGiftPlan.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
@@ -158,11 +159,20 @@
           ]
         },
         {
+          "path": "packages/engine/src/projection/internal/annualLegacyQcdGiftPlan.ts",
+          "functions": [
+            {
+              "name": "annualLegacyQcdGiftPlan",
+              "line": 82
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 945
+              "line": 946
             }
           ]
         }
@@ -272,23 +282,56 @@
       "verifiedOn": "2026-08-07",
       "dueOn": "2026-12-05",
       "implementedBy": [
+        "packages/engine/src/projection/internal/annualLegacyQcdGiftPlan.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
+        {
+          "path": "packages/engine/src/projection/internal/annualLegacyQcdGiftPlan.ts",
+          "functions": [
+            {
+              "name": "annualLegacyQcdGiftPlan",
+              "line": 82
+            }
+          ]
+        },
         {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 945
+              "line": 946
             }
           ]
         }
       ],
       "fixtureFiles": [
+        "packages/engine/src/projection/internal/annualLegacyQcdGiftPlan.test.ts",
         "packages/engine/src/rules/approximations/simulateContributionsAndQcd.approximation.test.ts"
       ],
       "fixtures": [
+        {
+          "path": "packages/engine/src/projection/internal/annualLegacyQcdGiftPlan.test.ts",
+          "line": 84,
+          "note": "two eligible donors each receive the Notice 2025-67 limit",
+          "tests": [
+            {
+              "title": "allows two eligible taxpayers one indexed cap apiece",
+              "line": 92
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/annualLegacyQcdGiftPlan.test.ts",
+          "line": 124,
+          "note": "stranded routed dollars are reallocated",
+          "tests": [
+            {
+              "title": "offers a capped owner’s stranded routed share to the other owner",
+              "line": 132
+            }
+          ]
+        },
         {
           "path": "packages/engine/src/rules/approximations/simulateContributionsAndQcd.approximation.test.ts",
           "line": 370,
@@ -393,7 +436,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 945
+              "line": 946
             }
           ]
         }
@@ -509,7 +552,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 945
+              "line": 946
             }
           ]
         }
@@ -859,23 +902,49 @@
       "verifiedOn": "2026-08-04",
       "dueOn": "2027-08-04",
       "implementedBy": [
+        "packages/engine/src/projection/internal/annualLegacyQcdGiftPlan.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
+        {
+          "path": "packages/engine/src/projection/internal/annualLegacyQcdGiftPlan.ts",
+          "functions": [
+            {
+              "name": "annualLegacyQcdGiftPlan",
+              "line": 82
+            }
+          ]
+        },
         {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 945
+              "line": 946
             }
           ]
         }
       ],
       "fixtureFiles": [
+        "packages/engine/src/projection/internal/annualLegacyQcdGiftPlan.test.ts",
         "packages/engine/src/rules/approximations/hsaLimitAndQcdOffset.approximation.test.ts"
       ],
       "fixtures": [
+        {
+          "path": "packages/engine/src/projection/internal/annualLegacyQcdGiftPlan.test.ts",
+          "line": 36,
+          "note": "scalar planner annual age proxy",
+          "tests": [
+            {
+              "title": "admits a June-born age-70 donor for the annual scalar",
+              "line": 45
+            },
+            {
+              "title": "excludes a July-born age-70 donor from the annual scalar",
+              "line": 64
+            }
+          ]
+        },
         {
           "path": "packages/engine/src/rules/approximations/hsaLimitAndQcdOffset.approximation.test.ts",
           "line": 468,
@@ -1033,7 +1102,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 945
+              "line": 946
             }
           ]
         }
@@ -1678,7 +1747,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 945
+              "line": 946
             }
           ]
         }

@@ -1021,12 +1021,15 @@ export const requiredMinimumDistributionRecords = {
       'packages/engine/src/projection/simulate.ts',
       // Where an annual SEPP payment applies the same no-ledger-cent discharge.
       'packages/engine/src/projection/internal/annualSeppDistributions.ts',
+      // Where the aggregate scalar-QCD source planner applies that discharge.
+      'packages/engine/src/projection/internal/annualLegacyQcdGiftPlan.ts',
       // Where "rounds to zero whole cents" is defined, against the same
       // conversion every journal consumer measures a movement with.
       'packages/engine/src/actions/planBalanceAdapter.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/actions/planBalanceAdapter.ts#planDollarsMoveNoLedgerCent',
+      'packages/engine/src/projection/internal/annualLegacyQcdGiftPlan.ts#annualLegacyQcdGiftPlan',
       'packages/engine/src/projection/internal/annualSeppDistributions.ts#annualSeppDistributions',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],

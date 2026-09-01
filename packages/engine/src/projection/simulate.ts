@@ -68,6 +68,7 @@ import {
   annualOrdinaryWithdrawalBoundary,
   type AnnualOrdinaryWithdrawalBoundaryResult,
 } from './internal/annualOrdinaryWithdrawalBoundary.js'
+import { annualLegacyQcdGiftPlan } from './internal/annualLegacyQcdGiftPlan.js'
 import {
   annualLegacyQcdOwnerCharacterPlan,
   materializeAnnualLegacyQcdOwnerCharacterPlanResult,
@@ -4161,14 +4162,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // person born in months 1-6 reaches 70½ inside the year they attain 70.
     // Within-year timing is not modelled, so a gift dated before the
     // half-birthday counts; that is the annual-granularity convention.
-    let qcd = 0
-    // Gross dollars routed out of the owned-IRA RMD. That RMD already counted
-    // these as a cash inflow, so this is what cash must give back. The cap is
-    // the owned-IRA share of the forced total, not the whole of it:
-    // 408(d)(8)(B) reaches only a distribution from an individual retirement
-    // plan, so an employer-plan RMD cannot carry a gift out of income and a
-    // donor with no IRA RMD at all has nothing here to route.
-    let qcdFromRmd = 0
+    let qcd: number
     // Income reduction. Only the RMD entered income, so this is the routed
     // owned-IRA GROSS that qualified under 408(d)(8)(D) -- never the part taken
     // beyond the RMD, which never entered income at all and would be a phantom
@@ -4221,221 +4215,151 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
      * of the owned-IRA required distribution the gift is capped against; the
      * beyond-RMD half is attributed exactly, at the account it drains.
      */
-    const qcdGrossByOwner = new Map<string, number>()
+    const qcdGiftPlan = annualLegacyQcdGiftPlan({
+      qcdAnnual: plan.strategies.qcdAnnual,
+      inflFactor,
+      perDonorLimit: pack.rmd.qcdAnnualLimit * limitGrowth,
+      hasNamedQcdRequest,
+      people: peopleStates.map((state) => ({
+        personId: state.personId,
+        alive: state.alive,
+        ageAttained: state.ageAttained,
+        birthMonth: birthMonthByPerson.get(state.personId) ?? 1,
+      })),
+      ownedIraRmdTotal,
+      ownedIraRmdGrossByOwner,
+      balances: rmdBalances.map((state, balanceIndex) => ({
+        balanceIndex,
+        accountId: state.account.id,
+        ownerId: state.account.ownerPersonId ?? primary.id,
+        isAggregatedIra: isAggregatedIra(state.account),
+        balance: state.balance,
+      })),
+    })
+    qcd = qcdGiftPlan.qcd
+    // Gross dollars routed out of the owned-IRA RMD. That RMD already counted
+    // these as a cash inflow, so this is what cash must give back. The cap is
+    // the owned-IRA share of the forced total, not the whole of it:
+    // 408(d)(8)(B) reaches only a distribution from an individual retirement
+    // plan, so an employer-plan RMD cannot carry a gift out of income and a
+    // donor with no IRA RMD at all has nothing here to route.
+    const qcdFromRmd = qcdGiftPlan.qcdFromRmd
+    const qcdGrossByOwner = qcdGiftPlan.qcdGrossByOwner
     /** The part of each owner's gift routed out of their required distribution. */
-    const qcdFromRmdByOwner = new Map<string, number>()
-    const addGiftGross = (
-      target: Map<string, number>, ownerId: string, amount: number,
-    ) => { target.set(ownerId, (target.get(ownerId) ?? 0) + amount) }
-    if (plan.strategies.qcdAnnual > 0 && !hasNamedQcdRequest) {
-      const donorIds = new Set(peopleStates
-        .filter((s) => s.alive && (s.ageAttained >= 71 ||
-          (s.ageAttained === 70 && (birthMonthByPerson.get(s.personId) ?? 1) <= 6)))
-        .map((s) => s.personId))
-      if (donorIds.size > 0) {
-        /**
-         * IRC 408(d)(8)(A) excludes qualified charitable distributions "with
-         * respect to a taxpayer" up to a dollar amount that (G) indexes, so the
-         * limit is one PERSON'S and a married couple filing jointly has two of
-         * them. The household ask is therefore capped at the sum of the living
-         * donors' own limits and each donor is separately held to theirs below;
-         * capping the household scalar at a single limit, which is what this
-         * arm did until 2026-08-07, understated a couple giving more than one
-         * limit out of genuinely separate IRAs.
-         *
-         * Every donor takes the same indexed figure because (A) states one
-         * amount and (G) indexes that one amount; nothing in the section makes
-         * it depend on the donor's age, filing status, or which IRA gave.
-         */
-        const perDonorLimit = pack.rmd.qcdAnnualLimit * limitGrowth
-        /** What each donor may still exclude this year, spent down as the gift is charged. */
-        const donorCapacity = new Map<string, number>(
-          [...donorIds].map((donorId) => [donorId, perDonorLimit]),
+    const qcdFromRmdByOwner = qcdGiftPlan.qcdFromRmdByOwner
+
+    // Validate the complete intent sequence before its first mutation or
+    // runtime write. The shadow also makes repeated hostile intents validate
+    // sequentially without partially applying an earlier one.
+    const validatedQcdGiftDebitIntents: Array<{
+      balanceIndex: number
+      sourceAccountId: string
+      ownerId: string
+      runtimeOwnerPersonId: string | null
+      sourceBalanceBefore: number
+      sourceBalanceAfter: number
+      amount: number
+    }> = []
+    const remainingQcdGiftBalanceByIndex = new Map<number, number>()
+    for (const intent of qcdGiftPlan.debitIntents) {
+      // Read every helper-owned property exactly once. Only these normalized
+      // scalars cross into apply, so a getter-backed result cannot change
+      // identity or throw after an earlier intent has already committed.
+      const balanceIndex = intent.balanceIndex
+      const sourceAccountId = intent.sourceAccountId
+      const ownerId = intent.ownerId
+      const sourceBalanceBefore = intent.sourceBalanceBefore
+      const amount = intent.amount
+      const state = rmdBalances[balanceIndex]
+      const remainingBalance = remainingQcdGiftBalanceByIndex.get(
+        balanceIndex,
+      ) ?? state?.balance
+      if (
+        state === undefined ||
+        !isAggregatedIra(state.account) ||
+        state.account.id !== sourceAccountId ||
+        (state.account.ownerPersonId ?? primary.id) !== ownerId ||
+        remainingBalance !== sourceBalanceBefore ||
+        !Number.isFinite(amount) ||
+        amount <= 0 ||
+        planDollarsMoveNoLedgerCent(amount) ||
+        remainingBalance === undefined ||
+        amount > remainingBalance
+      ) {
+        throw new Error(
+          'Legacy scalar QCD debit intent lost its live source identity',
         )
-        const requested = Math.min(
-          plan.strategies.qcdAnnual * inflFactor,
-          perDonorLimit * donorIds.size,
-        )
-        qcdFromRmd = Math.min(requested, ownedIraRmdTotal)
-        // Charged to owners in proportion to the owned-IRA requirement it is
-        // capped against. Every owner carrying such a requirement has reached
-        // the applicable age, which is above 70½ in every year the pack covers,
-        // so each of them is already a donor and none of this gift lands on an
-        // IRA that could not lawfully have funded it under 408(d)(8)(B)(ii).
-        // The last owner takes the rounding residue so the shares sum exactly,
-        // and the owners iterate in sorted id order so the residue's home does
-        // not depend on plan account ordering.
-        if (qcdFromRmd > 0 && ownedIraRmdTotal > 0) {
-          const owners = [...ownedIraRmdGrossByOwner.keys()].sort()
-          /**
-           * The most this owner may route out of a required distribution: their
-           * own requirement, because 1.408-8(e)(2)(i) aggregates only one
-           * individual's own IRAs and no proportional share may reach past it,
-           * and their own remaining (A) limit. An owner who is somehow not a
-           * donor routes nothing rather than defaulting to a whole limit.
-           */
-          const routable = (ownerId: string): number => Math.min(
-            ownedIraRmdGrossByOwner.get(ownerId) ?? 0,
-            donorCapacity.get(ownerId) ?? 0,
-          )
-          const shares = new Map<string, number>()
-          let assigned = 0
-          owners.forEach((ownerId, index) => {
-            // Each share is clamped to what is left, and the last owner's
-            // residue to zero: floating error in the proportional shares can
-            // push `assigned` a hair past the gift, and a negative share would
-            // leak into the 408(d)(8)(D) ceiling and denominator arithmetic.
-            const remaining = Math.max(0, qcdFromRmd - assigned)
-            const proportional = index === owners.length - 1
-              ? remaining
-              : Math.min(
-                  remaining,
-                  qcdFromRmd * (ownedIraRmdGrossByOwner.get(ownerId)! / ownedIraRmdTotal),
-                )
-            const share = Math.min(proportional, routable(ownerId))
-            assigned += share
-            shares.set(ownerId, share)
-          })
-          // REALLOCATION CONVENTION. What one donor's own limit refused is
-          // offered to the other donors, in sorted owner id order, up to what
-          // each of them may still route — their unrouted requirement and their
-          // unspent limit. Sorted order rather than proportional a second time
-          // because the household scalar carries no donor intent to honour: the
-          // statute says nothing about whose gift it is, so the tie is broken by
-          // the same stable key the residue rule above already uses rather than
-          // by plan account ordering. Whatever no donor can route falls through
-          // to the beyond-requirement arm below, which charges it against the
-          // same capacities; whatever that arm cannot place either is not given.
-          let unassigned = Math.max(0, qcdFromRmd - assigned)
-          for (const ownerId of owners) {
-            if (unassigned <= 0) break
-            const slack = routable(ownerId) - (shares.get(ownerId) ?? 0)
-            if (slack <= 0) continue
-            const extra = Math.min(unassigned, slack)
-            shares.set(ownerId, (shares.get(ownerId) ?? 0) + extra)
-            unassigned -= extra
-            assigned += extra
-          }
-          // The routed total is what the owners could actually carry, not what
-          // the household asked for. `qcdFromRmd` is the cash the year gives
-          // back out of the required distribution and the gross the nonmoving
-          // overlay publishes, so both follow the attribution rather than the
-          // request.
-          qcdFromRmd = assigned
-          for (const [ownerId, share] of shares) {
-            if (share <= 0) continue
-            addGiftGross(qcdFromRmdByOwner, ownerId, share)
-            addGiftGross(qcdGrossByOwner, ownerId, share)
-            donorCapacity.set(
-              ownerId, Math.max(0, (donorCapacity.get(ownerId) ?? 0) - share),
-            )
-          }
-        }
-        const beyondRmd = requested - qcdFromRmd
-        if (beyondRmd > 0) {
-          const sources = rmdBalances.filter((state) =>
-            isAggregatedIra(state.account) && state.balance > 0 &&
-            donorIds.has(state.account.ownerPersonId ?? primary.id))
-          const available = sources.reduce((sum, state) => sum + state.balance, 0)
-          let remaining = Math.min(beyondRmd, available)
-          for (const state of sources) {
-            if (remaining <= 0) break
-            // The donor's own 408(d)(8)(A) limit binds these dollars exactly as
-            // it binds the routed half: this account belongs to one taxpayer, so
-            // what it may give is what that taxpayer has left to exclude. An
-            // owner already at their limit is passed over rather than drained,
-            // and the ungiven remainder is offered to the next donor's accounts.
-            const beyondRmdOwnerId = state.account.ownerPersonId ?? primary.id
-            const ownerCapacity = donorCapacity.get(beyondRmdOwnerId) ?? 0
-            if (ownerCapacity <= 0) continue
-            const allowance = Math.min(remaining, ownerCapacity)
-            // A gift that drains its source takes every whole cent the account
-            // can fund and not the fraction it cannot. That is the same
-            // truncation the named arm applies to its opening snapshot, reached
-            // here through the drain instead of through a snapshot: the whole
-            // float balance includes a fraction of a cent that no custodian can
-            // transfer, and publishing an occurrence for it asks the exact-cent
-            // journal to hold a gross it has no way to express.
-            //
-            // The exact-cent conversion is unconditional inside this branch
-            // rather than guarded, because the branch is reached only where the
-            // allowance meets or exceeds the balance, and that allowance is
-            // capped above at one donor's sourced annual QCD limit -- so the
-            // balance crossing the boundary here is bounded by that limit and
-            // cannot leave the safe-integer cent range.
-            const take = allowance >= state.balance
-              ? ledgerCentsToPlanDollars(planDollarsToFlooredLedgerCents(state.balance))
-              : allowance
-            // And a draw the ledger records as zero gives nothing: the residue
-            // left by a drain, or an ungiven remainder that has fallen below a
-            // cent, is skipped whole rather than moved and journalled as a
-            // gift of nothing.
-            if (planDollarsMoveNoLedgerCent(take)) continue
-            const sourceBalanceBefore = state.balance
-            state.balance -= take
-            remaining -= take
-            qcd += take
-            donorCapacity.set(
-              beyondRmdOwnerId, Math.max(0, ownerCapacity - take),
-            )
-            addGiftGross(qcdGrossByOwner, beyondRmdOwnerId, take)
-            // These dollars leave the owned IRA on their own account, with no
-            // RMD debit to explain them. Owned-IRA balance re-join validation
-            // requires every such change to be captured here, at the mutation
-            // site, exactly as the RMD and SEPP distributions above are.
-            const kind = 'legacyQcd' as const
-            const producerOccurrenceKey =
-              runtimeOccurrenceKey(kind, state.account.id)
-            recordAnnualRetirementRuntimeOccurrence({
-              producerOccurrenceKey,
-              kind,
-              grossAmountPlanDollars: take,
-              ownerPersonId: state.account.ownerPersonId,
-              sourceAccountId: state.account.id,
-              executionDate: null,
-              executionSequence: null,
-              movementAuthorityId: null,
-            })
-            const giftApplication = recordAnnualRetirementRuntimeApplication({
-              applicationKind: 'debit',
-              producerOccurrenceKey,
-              simulatorPhase: 'legacyQcdDistribution',
-              ownerPersonId: state.account.ownerPersonId,
-              sourceBalanceBeforePlanDollars: sourceBalanceBefore,
-              sourceAccountId: state.account.id,
-              appliedAmountPlanDollars: take,
-              sourceBalanceAfterPlanDollars: state.balance,
-            })
-            // Held back for the 408(d)(8)(D) block below, exactly as the forced
-            // distributions above are and for the same reason: how much of this
-            // draw is a QUALIFIED charitable distribution is not knowable until
-            // the whole gift has been measured against the owner's aggregate
-            // includible amount, and (B)'s closing sentence makes the unqualified
-            // part an ordinary distribution rather than a gift.
-            if (giftApplication.applicationKind === 'debit') {
-              deferredLegacyQcdDistributions.push({
-                ownerId: beyondRmdOwnerId,
-                amount: take,
-                producerOccurrenceKey,
-                sourceAccountId: state.account.id,
-                mutationOrdinal: giftApplication.mutationOrdinal,
-              })
-            }
-          }
-        }
-        qcd += qcdFromRmd
-        // The scalar gift has no donor, so it is charged to every eligible one.
-        // This arm now applies the §408(d)(8)(A) offset and records consumption,
-        // but it counts projected traditional IRA contributions that the named
-        // arm's declared-fact history may not include. From this year on no
-        // named gift by these donors can state its own prior offset
-        // consumption. Recorded here rather than inferred later: the named arm
-        // stands the scalar down, so a year that reaches this line is the only
-        // place the fact exists.
-        if (qcd > 0) for (const donorId of donorIds) {
-          namedQcdOffsetHistoryUnprovable.add(donorId)
-        }
       }
+      const sourceBalanceAfter = remainingBalance - amount
+      remainingQcdGiftBalanceByIndex.set(
+        balanceIndex,
+        sourceBalanceAfter,
+      )
+      validatedQcdGiftDebitIntents.push({
+        balanceIndex,
+        sourceAccountId,
+        ownerId,
+        runtimeOwnerPersonId: state.account.ownerPersonId,
+        sourceBalanceBefore,
+        sourceBalanceAfter,
+        amount,
+      })
+    }
+    const qcdGiftOffsetHistoryUnprovableDonorIds = [
+      ...qcdGiftPlan.offsetHistoryUnprovableDonorIds,
+    ]
+    const qcdGiftPersonIds = new Set(
+      peopleStates.map((person) => person.personId),
+    )
+    if (qcdGiftOffsetHistoryUnprovableDonorIds.some((donorId) =>
+      !qcdGiftPersonIds.has(donorId))) {
+      throw new Error(
+        'Legacy scalar QCD history write lost its donor identity',
+      )
+    }
+
+    for (const debit of validatedQcdGiftDebitIntents) {
+      const state = rmdBalances[debit.balanceIndex]!
+      // This logical setter commits the exact aggregate closing balance pro
+      // rata across every compatible physical row for the account ID.
+      state.balance = debit.sourceBalanceAfter
+      const kind = 'legacyQcd' as const
+      const producerOccurrenceKey = runtimeOccurrenceKey(
+        kind,
+        debit.sourceAccountId,
+      )
+      recordAnnualRetirementRuntimeOccurrence({
+        producerOccurrenceKey,
+        kind,
+        grossAmountPlanDollars: debit.amount,
+        ownerPersonId: debit.runtimeOwnerPersonId,
+        sourceAccountId: debit.sourceAccountId,
+        executionDate: null,
+        executionSequence: null,
+        movementAuthorityId: null,
+      })
+      const giftApplication = recordAnnualRetirementRuntimeApplication({
+        applicationKind: 'debit',
+        producerOccurrenceKey,
+        simulatorPhase: 'legacyQcdDistribution',
+        ownerPersonId: debit.runtimeOwnerPersonId,
+        sourceBalanceBeforePlanDollars: debit.sourceBalanceBefore,
+        sourceAccountId: debit.sourceAccountId,
+        appliedAmountPlanDollars: debit.amount,
+        sourceBalanceAfterPlanDollars: debit.sourceBalanceAfter,
+      })
+      if (giftApplication.applicationKind === 'debit') {
+        deferredLegacyQcdDistributions.push({
+          ownerId: debit.ownerId,
+          amount: debit.amount,
+          producerOccurrenceKey,
+          sourceAccountId: debit.sourceAccountId,
+          mutationOrdinal: giftApplication.mutationOrdinal,
+        })
+      }
+    }
+    for (const donorId of qcdGiftOffsetHistoryUnprovableDonorIds) {
+      namedQcdOffsetHistoryUnprovable.add(donorId)
     }
 
     // --- IRC 408(d)(8)(D): the gift first, then this year's section 72 -------
