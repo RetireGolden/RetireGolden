@@ -288,23 +288,19 @@ export function annualOrdinaryWithdrawalBoundary(
     }
   }
 
-  const closingCentsByAccountId = execution?.committed
-    ? new Map(
-        execution.balances
-          .filter((snapshot) =>
-            snapshot.closingBalance !== snapshot.openingBalance)
-          .map((snapshot) =>
-            [String(snapshot.accountId), snapshot.closingBalance]),
-      )
-    : new Map<string, never>()
-  const closingTaxableBasisCentsByAccountId = execution?.committed
-    ? new Map(
-        execution.taxableBases.map((snapshot) => [
-          String(snapshot.accountId),
-          snapshot.closingCostBasis,
-        ]),
-      )
-    : new Map<string, never>()
+  const committedBalances = execution?.committed ? execution.balances : []
+  const committedTaxableBases = execution?.committed ? execution.taxableBases : []
+  const closingCentsByAccountId = new Map(
+    committedBalances
+      .filter((snapshot) => snapshot.closingBalance !== snapshot.openingBalance)
+      .map((snapshot) => [String(snapshot.accountId), snapshot.closingBalance]),
+  )
+  const closingTaxableBasisCentsByAccountId = new Map(
+    committedTaxableBases.map((snapshot) => [
+      String(snapshot.accountId),
+      snapshot.closingCostBasis,
+    ]),
+  )
   const balanceOperations = input.balances.map(
     (state): AnnualOrdinaryWithdrawalBalanceOperation => {
       const closingCents = closingCentsByAccountId.get(state.account.id)

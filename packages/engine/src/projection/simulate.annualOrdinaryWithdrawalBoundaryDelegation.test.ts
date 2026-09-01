@@ -311,6 +311,33 @@ function run(mode: typeof seam.mode) {
 }
 
 describe('simulatePlan delegates the annual ordinary-withdrawal boundary', () => {
+  it('retains the dominant no-action fast path outside the helper', () => {
+    seam.mode = 'dynamic'
+    seam.phases.length = 0
+    seam.conversionInputs.length = 0
+    const probes: OptimizerYearProbe[] = []
+
+    const result = simulatePlan(
+      validatePlan(singlePersonPlan({ dob: '1970-01-01', planningAge: 90 })),
+      {
+        startYear: START_YEAR,
+        horizonEndYear: START_YEAR + 1,
+        taxCalculator: { compute: () => 0 },
+        captureOptimizerInputs: (probe) => probes.push(probe),
+      },
+    )
+
+    expect(seam.phases).toEqual([])
+    for (const year of result.years) {
+      expect(year.retirementActionExecution).toBeUndefined()
+      expect(year.withdrawals.cash).toBe(0)
+      expect(year.withdrawals.taxable).toBe(0)
+      expect(year.withdrawals.total).toBe(0)
+      expect(year.realizedGains).toBe(0)
+    }
+    expect(probes.every((probe) => probe.committedActionProceeds === 0)).toBe(true)
+  })
+
   it('consumes each fresh current-year result, every scalar, and positional writes', () => {
     const { result, taxInputs, probes } = run('dynamic')
 
@@ -382,10 +409,15 @@ describe('simulatePlan delegates the annual ordinary-withdrawal boundary', () =>
         ({ input }) => input.year === yearResult.year,
       )
       expect(finalTaxInputs.length).toBeGreaterThan(0)
-      for (const taxInput of finalTaxInputs) {
-        expect(taxInput.precedingPhase).toBeDefined()
+      const boundaryTaxInputs = finalTaxInputs.filter(
+        (taxInput): taxInput is typeof taxInput & {
+          readonly precedingPhase: BoundaryPhase
+        } => taxInput.precedingPhase?.year === yearResult.year,
+      )
+      expect(boundaryTaxInputs.length).toBeGreaterThan(0)
+      for (const taxInput of boundaryTaxInputs) {
         const phaseEquityCompensation =
-          taxInput.precedingPhase!.output.totals.equityCompensation
+          taxInput.precedingPhase.output.totals.equityCompensation
         // The released linked conversion contributes one separate dollar of
         // ordinary income; counterfactual and refused passes contribute none.
         expect([
@@ -393,7 +425,7 @@ describe('simulatePlan delegates the annual ordinary-withdrawal boundary', () =>
           phaseEquityCompensation + 1,
         ]).toContain(taxInput.input.ordinaryIncome)
         expect(taxInput.input.capitalGains).toBe(
-          taxInput.precedingPhase!.output.totals.capitalGainOrLoss,
+          taxInput.precedingPhase.output.totals.capitalGainOrLoss,
         )
       }
     }

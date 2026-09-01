@@ -62,7 +62,10 @@ import {
 import { createAnnualCashFlowYearSites, type AnnualCashFlowYearSites } from './annualCashFlowYearSites.js'
 import { annuityExclusionMultiple, annuityPayoutForm, annuityPayoutFraction } from './annuityForms.js'
 import { buildLadder } from '../ladder/ladderMath.js'
-import { annualOrdinaryWithdrawalBoundary } from './internal/annualOrdinaryWithdrawalBoundary.js'
+import {
+  annualOrdinaryWithdrawalBoundary,
+  type AnnualOrdinaryWithdrawalBoundaryResult,
+} from './internal/annualOrdinaryWithdrawalBoundary.js'
 import { annualInsurancePremiumRows } from './internal/annualInsurancePremiumRows.js'
 import { annualLifestyleLayers } from './internal/annualLifestyleLayers.js'
 import { annualRebalanceToTarget } from './internal/annualRebalanceToTarget.js'
@@ -6382,41 +6385,50 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
      */
     const ownedRothAssumedBasisConsequentialByOwner = new Map<string, number>()
     const employerRothAssumedBasisConsequentialByAccount = new Map<string, number>()
-    const ordinaryWithdrawalBoundary = annualOrdinaryWithdrawalBoundary({
-      year,
-      plan: passPlan,
-      ordinaryActions: currentYearOrdinaryActions,
-      executionRequests: currentYearOrdinaryExecutionActions,
-      balances,
-      taxUnit: annualActionTaxUnit,
-      conversionLinkedWithdrawalGroups,
-      actionPersonAliveEvidence,
-    })
-    const retirementActionExecution = ordinaryWithdrawalBoundary.execution
-    const retirementActionCash = ordinaryWithdrawalBoundary.totals.cash
-    const retirementActionEquityCompensation =
-      ordinaryWithdrawalBoundary.totals.equityCompensation
+    let retirementActionExecution:
+      AnnualOrdinaryWithdrawalBoundaryResult['execution']
+    let retirementActionCash = 0
+    let retirementActionEquityCompensation = 0
+    let retirementActionProceeds = 0
+    let retirementActionTaxableProceeds = 0
+    let retirementActionCapitalGainOrLoss = 0
+    if (currentYearOrdinaryExecutionActions.length > 0) {
+      const ordinaryWithdrawalBoundary = annualOrdinaryWithdrawalBoundary({
+        year,
+        plan: passPlan,
+        ordinaryActions: currentYearOrdinaryActions,
+        executionRequests: currentYearOrdinaryExecutionActions,
+        balances,
+        taxUnit: annualActionTaxUnit,
+        conversionLinkedWithdrawalGroups,
+        actionPersonAliveEvidence,
+      })
+      retirementActionExecution = ordinaryWithdrawalBoundary.execution
+      retirementActionCash = ordinaryWithdrawalBoundary.totals.cash
+      retirementActionEquityCompensation =
+        ordinaryWithdrawalBoundary.totals.equityCompensation
+      retirementActionProceeds = ordinaryWithdrawalBoundary.totals.proceeds
+      retirementActionTaxableProceeds =
+        ordinaryWithdrawalBoundary.totals.taxableProceeds
+      retirementActionCapitalGainOrLoss =
+        ordinaryWithdrawalBoundary.totals.capitalGainOrLoss
+      if (ordinaryWithdrawalBoundary.balanceOperations.length !== balances.length) {
+        throw new Error('Ordinary-withdrawal balance operations lost cardinality')
+      }
+      for (const [index, operation] of
+        ordinaryWithdrawalBoundary.balanceOperations.entries()) {
+        if (operation.kind === 'none') continue
+        const state = balances[index]
+        if (state === undefined || state.account.id !== operation.accountId) {
+          throw new Error('Ordinary-withdrawal balance operation lost its position')
+        }
+        if (operation.closingCostBasis !== null) {
+          state.costBasis = operation.closingCostBasis
+        }
+        state.balance = operation.closingBalance
+      }
+    }
     const retirementActionOrdinaryIncome = retirementActionEquityCompensation
-    const retirementActionProceeds = ordinaryWithdrawalBoundary.totals.proceeds
-    const retirementActionTaxableProceeds =
-      ordinaryWithdrawalBoundary.totals.taxableProceeds
-    const retirementActionCapitalGainOrLoss =
-      ordinaryWithdrawalBoundary.totals.capitalGainOrLoss
-    if (ordinaryWithdrawalBoundary.balanceOperations.length !== balances.length) {
-      throw new Error('Ordinary-withdrawal balance operations lost cardinality')
-    }
-    for (const [index, operation] of
-      ordinaryWithdrawalBoundary.balanceOperations.entries()) {
-      if (operation.kind === 'none') continue
-      const state = balances[index]
-      if (state === undefined || state.account.id !== operation.accountId) {
-        throw new Error('Ordinary-withdrawal balance operation lost its position')
-      }
-      if (operation.closingCostBasis !== null) {
-        state.costBasis = operation.closingCostBasis
-      }
-      state.balance = operation.closingBalance
-    }
 
     // Named conversions do not inherit the legacy aggregate strategy's
     // first-source/first-Roth movement authority. Publish request-keyed,
