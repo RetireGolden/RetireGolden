@@ -70,6 +70,10 @@ import {
 } from './internal/annualOrdinaryWithdrawalBoundary.js'
 import { annualInsurancePremiumRows } from './internal/annualInsurancePremiumRows.js'
 import { annualLifestyleLayers } from './internal/annualLifestyleLayers.js'
+import {
+  AnnualLogicalBalanceLedger,
+  type PhysicalBalanceState,
+} from './internal/annualLogicalBalanceLedger.js'
 import { annualRebalanceToTarget } from './internal/annualRebalanceToTarget.js'
 import { annualAnnuityPurchaseFunding } from './internal/annualAnnuityPurchaseFunding.js'
 import { annualPermanentLifeTransitions } from './internal/annualPermanentLifeTransitions.js'
@@ -544,11 +548,7 @@ function canonicalRuntimeOccurrenceOrder(
 const MAX_TAX_ITERATIONS = 8
 const MAX_ACA_FIXED_POINT_EVALUATIONS = 160
 
-interface BalanceState {
-  account: Extract<Account, { type: 'cash' | 'taxable' | 'equityComp' | 'traditional' | 'roth' | 'hsa' }>
-  balance: number
-  costBasis: number // meaningful for taxable only
-}
+type BalanceState = PhysicalBalanceState
 
 interface WithdrawalPlanResult {
   byCategory: YearWithdrawals
@@ -1198,13 +1198,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
    * spouse treat-as-own IRAs that join the owned pool mid-horizon are covered.
    */
   const ownersWithOmittedNondeductibleBasis = new Set<string>()
-  // Form 8606 is account-ID keyed everywhere else in the annual pass. Seed
-  // basis from that same last-row view so a superseded duplicate cannot add a
-  // second numerator to the selected row's single balance/denominator.
-  const initialIraAccountById = new Map(
-    plan.accounts.map((account) => [account.id, account] as const),
-  )
-  for (const account of initialIraAccountById.values()) {
+  // Compatible duplicate IRA rows are physical members of one logical ID.
+  // Their basis is therefore an aggregate numerator, just like their grouped
+  // balance is the Form 8606 denominator.
+  for (const account of plan.accounts) {
     if (!isAggregatedIra(account)) continue
     const ownerId = account.ownerPersonId ?? primary.id
     const basis = account.nondeductibleBasis ?? 0
@@ -1703,12 +1700,14 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     }[] = []
 
     // Prior Dec 31 balances (RMD base) — captured before this year's flows.
-    // Account-ID keyed consumers share one last-row view. The underlying array
-    // remains intact for explicitly positional phases such as contributions.
+    // Physical rows remain positional. ID-keyed phases share live aggregate
+    // states whose facts come from the last row and whose order comes from the
+    // first; writes are committed pro rata back to every physical member.
+    const annualLogicalBalanceLedger = new AnnualLogicalBalanceLedger(balances)
+    const annualIdKeyedBalances = annualLogicalBalanceLedger.liveStates()
     const annualBalanceByAccountId = new Map(
-      balances.map((state) => [state.account.id, state] as const),
+      annualIdKeyedBalances.map((state) => [state.account.id, state] as const),
     )
-    const annualIdKeyedBalances = [...annualBalanceByAccountId.values()]
     const startOfYearPositionalBalanceTotal = balances.reduce(
       (sum, state) => sum + state.balance,
       0,
@@ -6800,12 +6799,11 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         // only way the two can be the same numbers rather than two numbers
         // that agree today.
         //
-        // Each selected ID retains its first Plan insertion position; that
-        // order is how the entries are built and not
-        // something the published field promises: a plain object enumerates
-        // integer-like keys first whatever order they went in, so a consumer
-        // recovers Plan order by joining on `plan.accounts`. Stated on the
-        // field itself.
+        // Each selected ID retains its first Plan insertion position; that is
+        // how this snapshot is built, but plain-object enumeration does not
+        // promise that order for integer-like keys. Promotion reconstructs the
+        // same last-row-per-ID view before joining. Consumers must not join the
+        // raw Plan array, which still contains superseded duplicate rows.
         aggregateRothConversionAllocationDesired = desired
         const plannedAllocation = annualAggregateRothConversionPlan({
           balances,
@@ -9186,6 +9184,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       insuranceCashValueTotal,
     } = annualSnapshot({
       balances,
+      publishedBalances: annualIdKeyedBalances,
       unassignedCash,
       propertyValues,
       debtBalances,
@@ -10176,13 +10175,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
   // ending aggregated-IRA balance (basis can exceed the balance after market
   // losses, but only balance-worth of dollars actually pass to the heir).
   let endingNondeductibleIraBasis = 0
-  const endingBalanceByAccountId = new Map(
-    balances.map((state) => [state.account.id, state] as const),
-  )
   for (const [ownerId, basis] of iraBasisByOwner) {
     if (basis <= 0) continue
     let ownerIraBalance = 0
-    for (const state of endingBalanceByAccountId.values()) {
+    for (const state of balances) {
       // Horizon bookkeeping: a still-marked inherited account whose treat-as-own
       // election took effect in a prior year is the spouse's own IRA.
       if (state.account.type !== 'traditional' || state.account.kind !== 'ira') continue

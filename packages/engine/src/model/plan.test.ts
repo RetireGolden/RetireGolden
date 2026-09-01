@@ -820,7 +820,11 @@ describe('guaranteed-income and estate-depth fields', () => {
       taxQualification: 'nonQualified',
     })
     const annuity = plan.accounts.find((account) => account.id === 'ann1')!
-    plan.accounts.push({ ...annuity, name: 'Duplicate purchased annuity' })
+    plan.accounts.push({
+      ...annuity,
+      name: 'Duplicate unpurchased annuity',
+      purchase: undefined,
+    })
 
     const parsed = parsePlan(plan)
     expect(parsed.ok).toBe(false)
@@ -1557,6 +1561,55 @@ describe('Plan retirement-action persistence', () => {
     })
 
     expect(parsePlan(plan).ok).toBe(true)
+  })
+
+  it('rejects cross-type duplicate IDs when both rows become financial balances', () => {
+    const plan = validCouplePlan()
+    plan.accounts.push({
+      type: 'cash',
+      id: 'ambiguous-balance',
+      name: 'Cash interpretation',
+      ownerPersonId: null,
+      annualReturnPct: 0,
+      balance: 10_000,
+      annualContribution: 0,
+    }, {
+      type: 'taxable',
+      id: 'ambiguous-balance',
+      name: 'Taxable interpretation',
+      ownerPersonId: null,
+      annualReturnPct: 0,
+      balance: 10_000,
+      costBasis: 5_000,
+      annualContribution: 0,
+    })
+
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(false)
+    expect(parsed.ok ? [] : parsed.issues.join('\n')).toContain(
+      'duplicate account id "ambiguous-balance"',
+    )
+  })
+
+  it('rejects duplicate financial balances owned by different people', () => {
+    const plan = validCouplePlan()
+    const taxable = (ownerPersonId: 'p1' | 'p2') => ({
+      type: 'taxable' as const,
+      id: 'ambiguous-owner',
+      name: `Taxable for ${ownerPersonId}`,
+      ownerPersonId,
+      annualReturnPct: 0,
+      balance: 10_000,
+      costBasis: 5_000,
+      annualContribution: 0,
+    })
+    plan.accounts.push(taxable('p1'), taxable('p2'))
+
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(false)
+    expect(parsed.ok ? [] : parsed.issues.join('\n')).toContain(
+      'duplicate account id "ambiguous-owner"',
+    )
   })
 
   it('rejects duplicate person IDs before action references can depend on array order', () => {

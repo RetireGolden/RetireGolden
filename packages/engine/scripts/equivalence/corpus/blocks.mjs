@@ -1491,19 +1491,32 @@ function blockK() {
     // opening balance would produce a ledger-visible payment, while the
     // correctly reused first-year cache remains sub-cent. Reversing row order
     // or dropping the cache therefore changes complete output.
+    const firstDuplicate = qualified('traditional', 'sepp-shared-cache', 750_000, {
+      sepp: { startAge: 56, method: 'amortization' },
+    })
+    const secondDuplicate = {
+      ...qualified('traditional', 'sepp-shared-cache', 0.004, {
+        annualReturnPct: 999,
+        sepp: { startAge: 56, method: 'amortization' },
+      }),
+      name: 'sepp-shared-cache-subcent',
+    }
+    const sameForcedDistributionFacts =
+      firstDuplicate.type === secondDuplicate.type &&
+      firstDuplicate.kind === secondDuplicate.kind &&
+      firstDuplicate.ownerPersonId === secondDuplicate.ownerPersonId &&
+      JSON.stringify(firstDuplicate.inherited ?? null) ===
+        JSON.stringify(secondDuplicate.inherited ?? null) &&
+      JSON.stringify(firstDuplicate.sepp ?? null) ===
+        JSON.stringify(secondDuplicate.sepp ?? null)
+    if (!sameForcedDistributionFacts) {
+      throw new Error('K4 duplicate rows must retain identical forced-distribution facts')
+    }
     const plan = singlePersonPlan({ dob: '1970-03-15', planningAge: 75 })
     plan.accounts = [
       cash('sepp-subcent-cash', 1_000_000),
-      qualified('traditional', 'sepp-shared-cache', 750_000, {
-        sepp: { startAge: 56, method: 'amortization' },
-      }),
-      {
-        ...qualified('traditional', 'sepp-shared-cache', 0.004, {
-          annualReturnPct: 999,
-          sepp: { startAge: 56, method: 'amortization' },
-        }),
-        name: 'sepp-shared-cache-subcent',
-      },
+      firstDuplicate,
+      secondDuplicate,
     ]
     // Keep the cash-flow capture channel nonempty while every SEPP occurrence
     // remains suppressed by the exact-cent gate.

@@ -2274,10 +2274,18 @@ export const planSchema = z
         const sepp = account.type === 'traditional' ? account.sepp : undefined
         const isRetirementAccount =
           account.type === 'traditional' || account.type === 'roth'
+        // Cash/property duplicates are the one legacy cross-channel pair that
+        // never becomes two BalanceState rows. Every balance-bearing account
+        // type keeps its own identity so row order cannot choose tax character.
+        const accountIdentityClass = isRetirementAccount
+          ? account.type
+          : account.type === 'cash' || account.type === 'property'
+            ? 'legacy-cash-property'
+            : account.type
         return [
-          isRetirementAccount ? account.type : 'non-retirement',
+          accountIdentityClass,
           isRetirementAccount ? account.kind : null,
-          isRetirementAccount ? account.ownerPersonId ?? null : null,
+          account.ownerPersonId ?? null,
           account.type === 'traditional' ? account.employerPlanType ?? null : null,
           account.type === 'traditional' ? account.spouseSoleBeneficiary ?? false : null,
           sepp?.startAge ?? null,
