@@ -366,6 +366,7 @@ export const iraBasisAndRolloverRecords = {
     verifiedOn: '2026-08-04',
     implementedBy: [
       'packages/engine/src/actions/aggregateRothConversionOwnerAllocation.ts',
+      'packages/engine/src/projection/internal/annualAggregateRothConversionPlan.ts',
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts',
       'packages/engine/src/actions/retirementActionManualReview.ts',
@@ -376,6 +377,7 @@ export const iraBasisAndRolloverRecords = {
     ],
     implementedByFunctions: [
       'packages/engine/src/actions/aggregateRothConversionOwnerAllocation.ts#allocateAggregateRothConversionByOwner',
+      'packages/engine/src/projection/internal/annualAggregateRothConversionPlan.ts#annualAggregateRothConversionPlan',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts#conversionSourceIssue',
       'packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts#conversionDestinationIssue',

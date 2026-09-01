@@ -245,6 +245,7 @@ export const requiredMinimumDistributionRecords = {
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
     implementedBy: [
+      'packages/engine/src/projection/internal/annualAggregateRothConversionPlan.ts',
       'packages/engine/src/projection/simulate.ts',
       // A named conversion does not inherit the aggregate pass's position in
       // the annual loop as its proof of A-6(b). It reads the owner's
@@ -254,6 +255,7 @@ export const requiredMinimumDistributionRecords = {
     ],
     implementedByFunctions: [
       'packages/engine/src/actions/rothConversionExecution.ts#executeRothConversions',
+      'packages/engine/src/projection/internal/annualAggregateRothConversionPlan.ts#annualAggregateRothConversionPlan',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
@@ -377,6 +379,7 @@ export const requiredMinimumDistributionRecords = {
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
     implementedBy: [
+      'packages/engine/src/projection/internal/annualAggregateRothConversionPlan.ts',
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/strategies/accountEligibility.ts',
       'packages/engine/src/actions/rothConversionExecution.ts',
@@ -384,6 +387,7 @@ export const requiredMinimumDistributionRecords = {
     ],
     implementedByFunctions: [
       'packages/engine/src/actions/rothConversionExecution.ts#executeRothConversions',
+      'packages/engine/src/projection/internal/annualAggregateRothConversionPlan.ts#annualAggregateRothConversionPlan',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/strategies/accountEligibility.ts#resolveOwnerIraRmdSatisfaction',
       'packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts#validateOwnedNonRothIraRuntimeSourceSeries',

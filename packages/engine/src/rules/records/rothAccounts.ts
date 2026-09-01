@@ -380,6 +380,7 @@ export const rothAccountRecords = {
     verifiedOn: '2026-08-05',
     implementedBy: [
       'packages/engine/src/actions/aggregateRothConversionOwnerAllocation.ts',
+      'packages/engine/src/projection/internal/annualAggregateRothConversionPlan.ts',
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/strategies/accountEligibility.ts',
       'packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts',
@@ -387,6 +388,7 @@ export const rothAccountRecords = {
     ],
     implementedByFunctions: [
       'packages/engine/src/actions/aggregateRothConversionOwnerAllocation.ts#allocateAggregateRothConversionByOwner',
+      'packages/engine/src/projection/internal/annualAggregateRothConversionPlan.ts#annualAggregateRothConversionPlan',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/strategies/accountEligibility.ts#evaluateRetirementActionEligibility',
       'packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts#conversionDestinationIssue',

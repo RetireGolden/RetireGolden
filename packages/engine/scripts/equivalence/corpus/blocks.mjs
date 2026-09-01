@@ -17,6 +17,7 @@
  *   L  annual Social Security pass
  *   M  exact-cent annual ordinary-withdrawal boundary
  *   S  shared: whole-corpus holes found by measurement (see `blockS`)
+ *   T  aggregate Roth-conversion planning
  *
  * A, B, C and E are the earlier "simulate batch" extraction. Block D's phase
  * was extracted concurrently and independently on main as
@@ -26,8 +27,8 @@
  * reach spec. In `simulate-expense-sepp-boundaries.json`, block J's expense
  * members measure entries A through D and block K's SEPP members measure entry
  * E; the entry letters identify extracted boundaries, not corpus block names.
- * Blocks J through M each have a phase-specific reach spec beside the earlier
- * batch instruments.
+ * Blocks J through M and T each have a phase-specific reach spec beside the
+ * earlier batch instruments.
  *
  * The 29 curated example plans exercise A, D and E's growth leg incidentally,
  * but NONE of them carries a HECM line or a pension lump-sum election — grepped,
@@ -38,7 +39,8 @@
  * `scripts/equivalence/specs/simulate-small-annual-boundaries.json` and
  * `scripts/equivalence/specs/simulate-expense-sepp-boundaries.json` and
  * `scripts/equivalence/specs/simulate-social-security-boundary.json` and
- * `scripts/equivalence/specs/simulate-ordinary-withdrawal-boundary.json` are the
+ * `scripts/equivalence/specs/simulate-ordinary-withdrawal-boundary.json` and
+ * `scripts/equivalence/specs/simulate-roth-conversion-boundary.json` are the
  * line-range specs that turn those claims into measured hit counts
  * (`equivalence.mjs reach`).
  *
@@ -1960,6 +1962,184 @@ function blockM() {
 }
 
 // ---------------------------------------------------------------------------
+// T — aggregate Roth-conversion planning
+// ---------------------------------------------------------------------------
+
+function blockT() {
+  const out = []
+
+  {
+    // p2 enters the deferred-RMD Map first, while p1's one-dollar tail forces
+    // p1's reserve to span accounts in reverse Plan order. Distinct opening
+    // balances on duplicate Roth ids make the policy snapshot's last-write
+    // semantics visible, while the first duplicate remains p1's destination.
+    // A zero IRA forces the reservation scan's nonpositive-amount continue
+    // before p1's large source.
+    // Both owners convert, so owner slice order and every identity-bearing
+    // cash-flow row are observable in all four modes.
+    const plan = couplePlan({
+      p1Dob: '1953-01-01',
+      p2Dob: '1953-02-01',
+      p1PlanningAge: 80,
+      p2PlanningAge: 80,
+    })
+    plan.assumptions.defaultReturnPct = 0
+    plan.accounts = [
+      cash('t1-cash', 100_000),
+      qualified('traditional', 't1-p2-source', 300_000, {
+        ownerPersonId: 'p2', annualReturnPct: 0,
+      }),
+      qualified('traditional', 't1-p1-source', 500_000, {
+        ownerPersonId: 'p1', annualReturnPct: 0,
+      }),
+      qualified('roth', 't1-p1-roth-duplicate', 10, {
+        ownerPersonId: 'p1', annualReturnPct: 0,
+      }),
+      qualified('roth', 't1-p1-roth-duplicate', 20, {
+        ownerPersonId: 'p1', annualReturnPct: 0,
+        name: 't1-p1-roth-duplicate-last-row',
+      }),
+      qualified('roth', 't1-p2-roth', 30, {
+        ownerPersonId: 'p2', annualReturnPct: 0,
+      }),
+      qualified('traditional', 't1-p1-zero', 0, {
+        ownerPersonId: 'p1', annualReturnPct: 0,
+      }),
+      qualified('traditional', 't1-p1-tail', 1, {
+        ownerPersonId: 'p1', annualReturnPct: 0,
+      }),
+    ]
+    plan.strategies.rothConversion = {
+      mode: 'manual',
+      conversions: [{ year: START_YEAR, amount: 100_000 }],
+    }
+    out.push(
+      member(
+        't1-ownerReverseReserveDuplicateSnapshot',
+        'T: deferred-RMD Map owner order, reverse Plan-order multi-account reservation, duplicate Roth-id last-write snapshot, two-owner allocation and ordered identities',
+        plan,
+        {
+          horizonEndYear: START_YEAR,
+          rmdFirstYearDeferrals: [
+            {
+              distributionCalendarYear: START_YEAR,
+              applicablePlan: {
+                kind: 'ownedTraditionalIras', payeePersonId: 'p2',
+              },
+            },
+            {
+              distributionCalendarYear: START_YEAR,
+              applicablePlan: {
+                kind: 'ownedTraditionalIras', payeePersonId: 'p1',
+              },
+            },
+          ],
+        },
+      ),
+    )
+  }
+
+  {
+    // The deferred reserve subtraction and restoration move the source one
+    // binary64 leaf before the hundred-dollar conversion. Replacing the replay
+    // with assignment to the opening balance, regrouping it, or omitting it is
+    // therefore visible in the final IRA balance and tax-input hashes.
+    const opening = 371_153_914_996_534.69
+    const plan = singlePersonPlan({ dob: '1953-01-01', planningAge: 80 })
+    plan.assumptions.defaultReturnPct = 0
+    plan.accounts = [
+      cash('t2-cash', 100_000),
+      qualified('traditional', 't2-fp-source', opening, {
+        ownerPersonId: 'p1', annualReturnPct: 0,
+      }),
+      qualified('roth', 't2-roth', 0, {
+        ownerPersonId: 'p1', annualReturnPct: 0,
+      }),
+    ]
+    plan.strategies.rothConversion = {
+      mode: 'manual',
+      conversions: [{ year: START_YEAR, amount: 100 }],
+    }
+    out.push(
+      member(
+        't2-reservationBinary64RoundTrip',
+        'T: deferred-RMD reserve subtraction/addition changes a binary64 leaf before conversion and counterfactual re-entry',
+        plan,
+        {
+          horizonEndYear: START_YEAR,
+          rmdFirstYearDeferrals: [{
+            distributionCalendarYear: START_YEAR,
+            applicablePlan: {
+              kind: 'ownedTraditionalIras', payeePersonId: 'p1',
+            },
+          }],
+        },
+      ),
+    )
+  }
+
+  {
+    // A positive request with no Roth account takes the helper's household
+    // refusal arm. The one-dollar expense keeps every opened capture channel
+    // nonempty without supplying a destination.
+    const plan = singlePersonPlan({ dob: '1970-01-01', planningAge: 70 })
+    plan.accounts = [
+      cash('t3-cash', 100_000),
+      qualified('traditional', 't3-source', 50_000, {
+        ownerPersonId: 'p1', annualReturnPct: 0,
+      }),
+    ]
+    plan.expenses.baseAnnual = 1
+    plan.strategies.rothConversion = {
+      mode: 'manual',
+      conversions: [{ year: START_YEAR, amount: 10_000 }],
+    }
+    out.push(
+      member(
+        't3-noRothRefusal',
+        'T: positive aggregate conversion refuses without any household Roth while other annual output keeps all capture channels live',
+        plan,
+        { horizonEndYear: START_YEAR },
+      ),
+    )
+  }
+
+  {
+    // The household has a lawful Roth IRA, so allocation does not refuse, but
+    // its only traditional balance is a still-locked employer plan. The shared
+    // allocator returns an allocated result with zero slices and zero draws,
+    // exercising a materially different no-conversion result from T3.
+    const plan = singlePersonPlan({
+      dob: '1970-01-01', planningAge: 70, retirementAge: null,
+    })
+    plan.accounts = [
+      cash('t4-cash', 100_000),
+      qualified('traditional', 't4-locked-employer', 50_000, {
+        ownerPersonId: 'p1', kind: 'employer', annualReturnPct: 0,
+      }),
+      qualified('roth', 't4-roth', 0, {
+        ownerPersonId: 'p1', annualReturnPct: 0,
+      }),
+    ]
+    plan.expenses.baseAnnual = 1
+    plan.strategies.rothConversion = {
+      mode: 'manual',
+      conversions: [{ year: START_YEAR, amount: 10_000 }],
+    }
+    out.push(
+      member(
+        't4-zeroConvertibleAllocation',
+        'T: Roth destination present but no year-convertible source, yielding allocated zero slices and draws rather than refusal',
+        plan,
+        { horizonEndYear: START_YEAR },
+      ),
+    )
+  }
+
+  return out
+}
+
+// ---------------------------------------------------------------------------
 // S — shared blind spots, owned by no single block
 // ---------------------------------------------------------------------------
 
@@ -2042,5 +2222,6 @@ export async function blockMembers() {
     ...blockL(),
     ...blockM(),
     ...blockS(),
+    ...blockT(),
   ]
 }

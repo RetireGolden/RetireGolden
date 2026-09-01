@@ -75,6 +75,7 @@ import { annualSeppDistributions } from './internal/annualSeppDistributions.js'
 import { annualSocialSecurity } from './internal/annualSocialSecurity.js'
 import { annualSnapshot } from './internal/annualSnapshot.js'
 import { annualExpenseSummary } from './internal/annualExpenseSummary.js'
+import { annualAggregateRothConversionPlan } from './internal/annualAggregateRothConversionPlan.js'
 import { distributedTaxableYieldRows } from './internal/distributedTaxableYieldRows.js'
 import { hecmLineOpenings } from './internal/hecmLineOpenings.js'
 import { propertyEventsAndGrowth } from './internal/propertyEventsAndGrowth.js'
@@ -176,10 +177,6 @@ import {
   type QualifiedCharitableDistributionRequest,
   type RetirementActionRequest,
 } from '../actions/index.js'
-import {
-  allocateAggregateRothConversionByOwner,
-  participatesInAggregateRothConversionAllocation,
-} from '../actions/aggregateRothConversionOwnerAllocation.js'
 import { addCalendarMonths } from '../actions/civilDate.js'
 import { applyIrc408d8AContributionOffset } from '../actions/qcdDeductibleContributionOffset.js'
 import type { NonpersistedPriorQcdOffsetEvidence } from '../strategies/accountEligibility.js'
@@ -7178,56 +7175,26 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         // recovers Plan order by joining on `plan.accounts`. Stated on the
         // field itself.
         aggregateRothConversionAllocationDesired = desired
-        const allocation = (() => {
-          // A first RMD elected to the following April 1 is still an RMD and
-          // cannot be converted. The ordinary RMD pass leaves those dollars in
-          // the accounts, so make that owner-wide reserve unavailable while
-          // the shared aggregate allocator snapshots, weights, and draws. The
-          // live balances are restored before the returned movements execute;
-          // only the allocator's available-balance view carries the reserve.
-          const reservations: Array<{
-            state: (typeof balances)[number]
-            amount: number
-          }> = []
-          for (const [ownerPersonId, unsatisfiedRmd] of iraRmdUnsatisfiedByOwner) {
-            let remaining = Math.max(0, unsatisfiedRmd)
-            for (let index = balances.length - 1; index >= 0 && remaining > EPSILON; index -= 1) {
-              const state = balances[index]!
-              const account = state.account
-              if (
-                account.type !== 'traditional' ||
-                account.kind !== 'ira' ||
-                account.inherited !== undefined ||
-                (account.ownerPersonId ?? primary.id) !== ownerPersonId
-              ) continue
-              const amount = Math.min(state.balance, remaining)
-              if (amount <= 0) continue
-              state.balance -= amount
-              remaining -= amount
-              reservations.push({ state, amount })
-            }
-          }
-          try {
-            aggregateRothConversionAllocationBalances = Object.freeze(
-              Object.fromEntries(
-                balances
-                  .filter((state) =>
-                    participatesInAggregateRothConversionAllocation(state.account))
-                  .map((state) => [state.account.id, state.balance]),
-              ),
-            )
-            return allocateAggregateRothConversionByOwner({
-              balances,
-              desiredPlanDollars: desired,
-              primaryPersonId: primary.id,
-              sourceContextForOwner: conversionSourceContextForOwner,
-            })
-          } finally {
-            for (const reservation of reservations) {
-              reservation.state.balance += reservation.amount
-            }
-          }
-        })()
+        const plannedAllocation = annualAggregateRothConversionPlan({
+          balances,
+          iraRmdUnsatisfiedByOwner,
+          desiredPlanDollars: desired,
+          primaryPersonId: primary.id,
+          sourceContextForOwner: conversionSourceContextForOwner,
+        })
+        aggregateRothConversionAllocationBalances =
+          plannedAllocation.allocationBalances
+        // Preserve the legacy temporary reservation's exact binary64
+        // subtract/add round trip. The pure planner used private shadows, so
+        // the caller alone mutates the live states, and restores them before
+        // any conversion draw or publication below.
+        for (const reservation of plannedAllocation.reservations) {
+          reservation.state.balance -= reservation.amountPlanDollars
+        }
+        for (const reservation of plannedAllocation.reservations) {
+          reservation.state.balance += reservation.amountPlanDollars
+        }
+        const allocation = plannedAllocation.allocation
         if (allocation.status === 'refused') {
           warnings.add(allocation.reason === 'householdHoldsNoRothAccount'
             ? 'Roth conversions were requested but the plan has no Roth account; conversions skipped.'
