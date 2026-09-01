@@ -9,7 +9,7 @@ import { CheckboxField, DateField, MoneyField, NumberField, PercentField, Select
 import { LEARN } from '../learnLinks'
 import { usePlan } from '../planContextCore'
 import { currentStartYear } from '../useProjection'
-import type { CommitAccountField } from './AccountEditorTypes'
+import type { CommitAccountFieldFor } from './AccountEditorTypes'
 import { localCalendarDateIso } from './sectionHelpers'
 
 type InheritedRetirementAccount = Extract<Account, { type: 'traditional' | 'roth' }>
@@ -337,7 +337,7 @@ export function RetirementAccountEditor({
 }: {
   account: Extract<Account, { type: 'traditional' | 'roth' }>
   index: number
-  onCommit: CommitAccountField
+  onCommit: CommitAccountFieldFor<InheritedRetirementAccount>
 }) {
   const { plan, update } = usePlan()
   const planningYear = currentStartYear()

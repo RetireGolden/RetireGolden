@@ -88,6 +88,39 @@ function controlByLabel<T extends HTMLElement = HTMLElement>(rootEl: HTMLElement
   return control as T
 }
 
+function controlsByLabel<T extends HTMLElement = HTMLElement>(rootEl: HTMLElement, label: string): T[] {
+  return Array.from(rootEl.querySelectorAll('label'))
+    .filter((element) => element.textContent?.trim() === label)
+    .map((element) => {
+      const id = element.getAttribute('for')
+      if (!id) throw new Error(`label "${label}" has no for=`)
+      const control = rootEl.querySelector(`[id="${id.replace(/"/g, '\\"')}"]`)
+      if (!control) throw new Error(`no control for label "${label}"`)
+      return control as T
+    })
+}
+
+function changeControl(control: HTMLInputElement | HTMLSelectElement, value: string) {
+  act(() => {
+    const prototype = control instanceof HTMLSelectElement
+      ? HTMLSelectElement.prototype
+      : HTMLInputElement.prototype
+    const valueSetter = Object.getOwnPropertyDescriptor(prototype, 'value')?.set
+    if (!valueSetter) throw new Error('missing control value setter')
+    valueSetter.call(control, value)
+    control.dispatchEvent(
+      new Event(control instanceof HTMLSelectElement ? 'change' : 'input', { bubbles: true }),
+    )
+  })
+}
+
+function expectLabelBefore(rootEl: HTMLElement, earlier: string, later: string) {
+  const labels = Array.from(rootEl.querySelectorAll('label')).map((label) => label.textContent?.trim())
+  expect(labels.indexOf(earlier), `missing label "${earlier}"`).toBeGreaterThanOrEqual(0)
+  expect(labels.indexOf(later), `missing label "${later}"`).toBeGreaterThanOrEqual(0)
+  expect(labels.indexOf(earlier)).toBeLessThan(labels.indexOf(later))
+}
+
 /** Mount AccountFields with a live draft so commits can be asserted as parse-valid. */
 function mountEditable(plan: Plan) {
   let current = structuredClone(plan)
@@ -1064,6 +1097,120 @@ describe('AccountFields pension and annuity editor boundaries', () => {
 })
 
 describe('AccountFields extracted editor commit wiring', () => {
+  it('enables asset-class modeling and clears taxable yield overrides (parse-valid)', () => {
+    const mounted = mountEditable(
+      planWithAccount(
+        taxableAccount({
+          interestYieldPct: 2,
+          dividendYieldPct: 3,
+          qualifiedRatio: 0.8,
+          taxExemptInterestYieldPct: 1.5,
+        }),
+      ),
+    )
+
+    act(() => {
+      controlByLabel<HTMLInputElement>(mounted.container(), 'Model asset classes').click()
+    })
+
+    const account = mounted.plan.accounts[0]
+    expect(account?.type).toBe('taxable')
+    if (account?.type !== 'taxable') throw new Error('expected taxable')
+    expect(account.allocation).toEqual({
+      mode: 'static',
+      rebalancing: 'annual',
+      weights: EVEN_START_WEIGHTS,
+    })
+    expect(account).toHaveProperty('interestYieldPct', undefined)
+    expect(account).toHaveProperty('dividendYieldPct', undefined)
+    expect(account).toHaveProperty('qualifiedRatio', undefined)
+    expect(account.taxExemptInterestYieldPct).toBe(1.5)
+    expect(parsePlan(structuredClone(mounted.plan)).ok).toBe(true)
+  })
+
+  it('commits every estate-beneficiary shape and resets to the default (parse-valid)', () => {
+    const mounted = mountEditable(planWithAccount(taxableAccount()))
+    const selectBeneficiary = (value: string) =>
+      changeControl(
+        controlByLabel<HTMLSelectElement>(mounted.container(), 'Estate beneficiary'),
+        value,
+      )
+
+    selectBeneficiary('spouse')
+    expect(mounted.plan.accounts[0]?.estateBeneficiary).toEqual({ destination: 'spouse' })
+
+    selectBeneficiary('nonSpouse')
+    expect(mounted.plan.accounts[0]?.estateBeneficiary).toEqual({ destination: 'nonSpouse' })
+
+    selectBeneficiary('charity')
+    expect(mounted.plan.accounts[0]?.estateBeneficiary).toEqual({
+      destination: 'charity',
+      charityPct: 100,
+    })
+    changeControl(
+      controlByLabel<HTMLInputElement>(mounted.container(), 'Charity share'),
+      '65',
+    )
+    expect(mounted.plan.accounts[0]?.estateBeneficiary).toEqual({
+      destination: 'charity',
+      charityPct: 65,
+    })
+
+    selectBeneficiary('')
+    expect(mounted.plan.accounts[0]).toHaveProperty('estateBeneficiary', undefined)
+    expect(parsePlan(structuredClone(mounted.plan)).ok).toBe(true)
+  })
+
+  it('adds, updates, removes, and resets contribution-schedule phases (parse-valid)', () => {
+    const mounted = mountEditable(planWithAccount(taxableAccount({ annualContribution: 1_000 })))
+
+    act(() => {
+      controlByLabel<HTMLInputElement>(
+        mounted.container(),
+        'Schedule contributions over time',
+      ).click()
+    })
+    let account = mounted.plan.accounts[0]
+    expect(account?.type).toBe('taxable')
+    if (account?.type !== 'taxable') throw new Error('expected taxable')
+    expect(account.contributionSchedule).toEqual([
+      { annualAmount: 1_000, fromAge: null, toAge: null, escalationPct: 0 },
+    ])
+
+    const buttonByText = (text: string) => {
+      const button = Array.from(mounted.container().querySelectorAll('button')).find(
+        (candidate) => candidate.textContent?.trim() === text,
+      )
+      if (!button) throw new Error(`no button "${text}"`)
+      return button
+    }
+    act(() => buttonByText('Add Contribution Phase').click())
+    changeControl(
+      controlsByLabel<HTMLInputElement>(mounted.container(), 'Amount / year')[1]!,
+      '250',
+    )
+    account = mounted.plan.accounts[0]
+    if (account?.type !== 'taxable') throw new Error('expected taxable')
+    expect(account.contributionSchedule?.map((phase) => phase.annualAmount)).toEqual([1_000, 250])
+
+    let removeButtons = Array.from(mounted.container().querySelectorAll('button')).filter(
+      (button) => button.textContent?.trim() === 'Remove Phase',
+    )
+    act(() => removeButtons[1]!.click())
+    account = mounted.plan.accounts[0]
+    if (account?.type !== 'taxable') throw new Error('expected taxable')
+    expect(account.contributionSchedule?.map((phase) => phase.annualAmount)).toEqual([1_000])
+
+    removeButtons = Array.from(mounted.container().querySelectorAll('button')).filter(
+      (button) => button.textContent?.trim() === 'Remove Phase',
+    )
+    act(() => removeButtons[0]!.click())
+    account = mounted.plan.accounts[0]
+    if (account?.type !== 'taxable') throw new Error('expected taxable')
+    expect(account).toHaveProperty('contributionSchedule', undefined)
+    expect(parsePlan(structuredClone(mounted.plan)).ok).toBe(true)
+  })
+
   it.each([
     ['below', '20', 40],
     ['above', '95', 80],
@@ -1302,6 +1449,8 @@ describe('AccountFields retirement editor boundary', () => {
     expect(controlByLabel(fields, 'Use beneficiary details')).toBeTruthy()
     expect(() => controlByLabel(fields, 'Withdrawal treatment')).toThrow('no label "Withdrawal treatment"')
     expect(() => controlByLabel(fields, 'Beneficiary')).toThrow('no label "Beneficiary"')
+    expectLabelBefore(fields, 'Kind', 'Expected return')
+    expectLabelBefore(fields, 'Inherited account', 'Expected return')
   })
 })
 
@@ -1345,5 +1494,65 @@ describe('AccountFields HSA editor boundary', () => {
     expect(account.withdrawalTreatment).toBe('assumeAllQualified')
     expect(account).toHaveProperty('reimburseLater', undefined)
     expect(parsePlan(structuredClone(mounted.plan)).ok).toBe(true)
+  })
+})
+
+describe('AccountFields liquid-account editor boundaries', () => {
+  it('combines taxable fields with shared investment and contribution groups', () => {
+    const fields = renderFields(planWithAccount(taxableAccount()))
+
+    expect(controlByLabel(fields, 'Cost basis')).toBeTruthy()
+    expect(controlByLabel(fields, 'Interest yield')).toBeTruthy()
+    expect(controlByLabel(fields, 'Expected return')).toBeTruthy()
+    expect(controlByLabel(fields, 'Schedule contributions over time')).toBeTruthy()
+    expect(() => controlByLabel(fields, 'Availability')).toThrow('no label "Availability"')
+    expectLabelBefore(fields, 'Cost basis', 'Expected return')
+    expectLabelBefore(fields, 'Interest yield', 'Model asset classes')
+  })
+
+  it('combines equity-compensation fields with the shared investment and contribution groups', () => {
+    const equityComp: Extract<Account, { type: 'equityComp' }> = {
+      type: 'equityComp',
+      id: 'rsus',
+      name: 'RSUs',
+      ownerPersonId: null,
+      annualReturnPct: null,
+      balance: 50_000,
+      costBasis: 20_000,
+      annualContribution: 0,
+      vestingMode: 'cliff',
+      vestDate: '2028-01-01',
+    }
+
+    const fields = renderFields(planWithAccount(equityComp))
+
+    expect(controlByLabel(fields, 'Availability')).toBeTruthy()
+    expect(controlByLabel(fields, 'Vest date')).toBeTruthy()
+    expect(controlByLabel(fields, 'Expected return')).toBeTruthy()
+    expect(controlByLabel(fields, 'Schedule contributions over time')).toBeTruthy()
+    expect(() => controlByLabel(fields, 'Interest yield')).toThrow('no label "Interest yield"')
+    expectLabelBefore(fields, 'Availability', 'Expected return')
+    expectLabelBefore(fields, 'Vest date', 'Expected return')
+  })
+
+  it('routes cash through only the genuinely shared account fields', () => {
+    const cash: Extract<Account, { type: 'cash' }> = {
+      type: 'cash',
+      id: 'cash',
+      name: 'Cash reserve',
+      ownerPersonId: null,
+      annualReturnPct: null,
+      balance: 30_000,
+      annualContribution: 0,
+    }
+
+    const fields = renderFields(planWithAccount(cash))
+
+    expect(controlByLabel(fields, 'Balance')).toBeTruthy()
+    expect(controlByLabel(fields, 'Expected return')).toBeTruthy()
+    expect(controlByLabel(fields, 'Annual contribution')).toBeTruthy()
+    expect(controlByLabel(fields, 'Estate beneficiary')).toBeTruthy()
+    expect(() => controlByLabel(fields, 'Cost basis')).toThrow('no label "Cost basis"')
+    expect(() => controlByLabel(fields, 'Availability')).toThrow('no label "Availability"')
   })
 })
