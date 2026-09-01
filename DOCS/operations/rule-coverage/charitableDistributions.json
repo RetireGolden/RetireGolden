@@ -162,7 +162,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 918
+              "line": 921
             }
           ]
         }
@@ -280,7 +280,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 918
+              "line": 921
             }
           ]
         }
@@ -357,6 +357,7 @@
       "implementedBy": [
         "packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts",
         "packages/engine/src/actions/qcdDeductibleContributionOffset.ts",
+        "packages/engine/src/projection/internal/annualLegacyQcdOwnerCharacterPlan.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
@@ -379,11 +380,20 @@
           ]
         },
         {
+          "path": "packages/engine/src/projection/internal/annualLegacyQcdOwnerCharacterPlan.ts",
+          "functions": [
+            {
+              "name": "annualLegacyQcdOwnerCharacterPlan",
+              "line": 177
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 918
+              "line": 921
             }
           ]
         }
@@ -471,7 +481,9 @@
       "verifiedOn": "2026-08-04",
       "dueOn": "2027-08-04",
       "implementedBy": [
-        "packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts"
+        "packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts",
+        "packages/engine/src/projection/internal/annualLegacyQcdOwnerCharacterPlan.ts",
+        "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
         {
@@ -480,6 +492,24 @@
             {
               "name": "stageAnnualQcdTaxCharacterPostPass",
               "line": 477
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/annualLegacyQcdOwnerCharacterPlan.ts",
+          "functions": [
+            {
+              "name": "annualLegacyQcdOwnerCharacterPlan",
+              "line": 177
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 921
             }
           ]
         }
@@ -837,7 +867,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 918
+              "line": 921
             }
           ]
         }
@@ -985,15 +1015,25 @@
       "verifiedOn": "2026-08-07",
       "dueOn": "2027-08-07",
       "implementedBy": [
+        "packages/engine/src/projection/internal/annualLegacyQcdOwnerCharacterPlan.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
+        {
+          "path": "packages/engine/src/projection/internal/annualLegacyQcdOwnerCharacterPlan.ts",
+          "functions": [
+            {
+              "name": "annualLegacyQcdOwnerCharacterPlan",
+              "line": 177
+            }
+          ]
+        },
         {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 918
+              "line": 921
             }
           ]
         }
@@ -1638,7 +1678,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 918
+              "line": 921
             }
           ]
         }

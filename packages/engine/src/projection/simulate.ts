@@ -68,6 +68,10 @@ import {
   annualOrdinaryWithdrawalBoundary,
   type AnnualOrdinaryWithdrawalBoundaryResult,
 } from './internal/annualOrdinaryWithdrawalBoundary.js'
+import {
+  annualLegacyQcdOwnerCharacterPlan,
+  materializeAnnualLegacyQcdOwnerCharacterPlanResult,
+} from './internal/annualLegacyQcdOwnerCharacterPlan.js'
 import { annualInsurancePremiumRows } from './internal/annualInsurancePremiumRows.js'
 import { annualLifestyleLayers } from './internal/annualLifestyleLayers.js'
 import {
@@ -149,7 +153,7 @@ import {
   type NonpersistedOwnerIraRmdSatisfactionEvidence,
 } from '../strategies/accountEligibility.js'
 import type { EmployerElectiveAllocation } from './employerRothCatchUp.js'
-import { openIraProRataYear, splitIraDistribution, type IraProRataYear } from '../strategies/iraBasis.js'
+import { splitIraDistribution, type IraProRataYear } from '../strategies/iraBasis.js'
 import { ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS } from './moneyTolerance.js'
 import {
   aggregateBasisSale,
@@ -192,7 +196,6 @@ import {
   type RetirementActionRequest,
 } from '../actions/index.js'
 import { addCalendarMonths } from '../actions/civilDate.js'
-import { applyIrc408d8AContributionOffset } from '../actions/qcdDeductibleContributionOffset.js'
 import type { NonpersistedPriorQcdOffsetEvidence } from '../strategies/accountEligibility.js'
 import {
   compareUtf16CodeUnits,
@@ -3357,6 +3360,16 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     const employerAllocationByOwner =
       contributionPlan.employerAllocationByOwner
     const iraProRata = new Map<string, IraProRataYear>()
+    const qcdProRataIdentityByReadSnapshot =
+      new WeakMap<IraProRataYear, IraProRataYear>()
+    const splitAnnualIraDistribution = (
+      readState: IraProRataYear,
+      amount: number,
+    ) => splitIraDistribution(
+      qcdProRataIdentityByReadSnapshot.get(readState) ?? readState,
+      amount,
+      readState,
+    )
     let conversionNontaxable = 0
 
     const runPostContributionAnnualPass = (
@@ -3655,7 +3668,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       // assumed-basis verdict here (same silence as the annuity refused-settlement
       // site): the settlement never priced this transaction over the assumption.
       if (assumed === null) {
-        return splitIraDistribution(state, amount)
+        return splitAnnualIraDistribution(state, amount)
       }
       const split = {
         nontaxable: assumed.basisReturn,
@@ -4845,91 +4858,73 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // leftover is not booked here.
     const qcdQualifiedFromRmdByOwner = new Map<string, number>()
     const qcdNonQualifiedBeyondRmdByOwner = new Map<string, number>()
-    const proRataOwnerIds = new Set<string>([...qcdGrossByOwner.keys()])
+    const expectedQcdOwnerIds = new Set<string>(qcdGrossByOwner.keys())
     for (const [ownerId, basis] of iraBasisByOwner) {
-      if (basis > 0) proRataOwnerIds.add(ownerId)
+      if (basis > 0) expectedQcdOwnerIds.add(ownerId)
     }
-    for (const ownerId of proRataOwnerIds) {
-      const basis = Math.max(0, iraBasisByOwner.get(ownerId) ?? 0)
-      const preDistribution =
-        preDistributionAggregateIraBalance.get(ownerId) ?? 0
-      const gift = qcdGrossByOwner.get(ownerId) ?? 0
-      const fromRmd = Math.min(gift, qcdFromRmdByOwner.get(ownerId) ?? 0)
-      const aggregateIncludible = Math.max(0, preDistribution - basis)
-      const qualified = Math.min(gift, aggregateIncludible)
-      const section219 = qcdSection219ByDonor.get(ownerId) ?? 0
-      const consumedDollars = (namedQcdOffsetConsumedByDonor.get(ownerId) ?? 0) / 100
-      // Limb (ii) is already-taken reductions. A pre-start named QCD is a real
-      // gift this run cannot measure, and a zero consumed start would invent
-      // unused capacity. Named-arm reading: fail closed. The scalar gift has
-      // already moved, so the tax-character reading is the same — do not claim
-      // the exclusion, and do not write a guessed leftover into consumed.
-      const offsetUnprovable =
-        gift > 0 &&
-        section219 > 0 &&
-        preProjectionQcdOffsetUnprovable.has(ownerId)
-      const offset = offsetUnprovable
-        ? {
-            excludableAmount: 0,
-            offsetApplied: qualified,
-            reductionsAfter: consumedDollars,
-          }
-        : gift > 0
-          ? applyIrc408d8AContributionOffset({
-              candidateExclusion: qualified,
-              deductibleSection219Total: section219,
-              reductionsAlreadyTaken: consumedDollars,
-            })
-          : {
-              excludableAmount: 0,
-              offsetApplied: 0,
-              reductionsAfter: consumedDollars,
-            }
-      if (gift > 0 && !offsetUnprovable) {
-        namedQcdOffsetConsumedByDonor.set(
-          ownerId, Math.round(offset.reductionsAfter * 100),
+    const qcdOwnerCharacterPlan =
+      materializeAnnualLegacyQcdOwnerCharacterPlanResult(
+        annualLegacyQcdOwnerCharacterPlan({
+          qcdGrossByOwner,
+          qcdFromRmdByOwner,
+          iraBasisByOwner,
+          preDistributionAggregateIraBalance,
+          qcdSection219ByDonor,
+          qcdOffsetConsumedByDonor: namedQcdOffsetConsumedByDonor,
+          preProjectionQcdOffsetUnprovable,
+          publishCashFlow,
+        }),
+        [...expectedQcdOwnerIds],
+      )
+    for (const row of qcdOwnerCharacterPlan.rows) {
+      if (row.contradictoryOffsetLedger) {
+        const ownerName = personById.get(row.ownerId)?.name ?? row.ownerId
+        warnings.add(
+          `${ownerName}’s recurring QCD was treated as ordinary income because its recorded post-70½ deductible-contribution offset exceeds the deductible-contribution total. Review the contribution and QCD history.`,
         )
       }
-      const leftover = offset.offsetApplied
-      const nonQualified = gift - qualified
-      // The excess lands on the from-RMD dollars first; whatever it cannot
-      // absorb there is beyond-RMD gift that has to be booked as income.
-      const nonQualifiedFromRmd = Math.min(fromRmd, nonQualified)
-      const fromRmdQualified = fromRmd - nonQualifiedFromRmd
-      const fromRmdExcludable = Math.min(fromRmdQualified, offset.excludableAmount)
-      const beyondRmdLeftover = leftover - (fromRmdQualified - fromRmdExcludable)
-      qcdQualifiedFromRmdByOwner.set(ownerId, fromRmdQualified)
+      if (row.qcdOffsetConsumedWrite !== null) {
+        namedQcdOffsetConsumedByDonor.set(
+          row.ownerId,
+          row.qcdOffsetConsumedWrite,
+        )
+      }
+      qcdQualifiedFromRmdByOwner.set(row.ownerId, row.qualifiedFromRmd)
       qcdNonQualifiedBeyondRmdByOwner.set(
-        ownerId, nonQualified - nonQualifiedFromRmd,
+        row.ownerId,
+        row.nonQualifiedBeyondRmd,
       )
-      qcdIncomeOffset += fromRmdExcludable
-      if (beyondRmdLeftover > 0) qcdNonQualifiedOrdinaryIncome += beyondRmdLeftover
-      if (publishCashFlow) {
-        // Reporting snapshots of FINAL character. Economic maps above stay
-        // pre-offset qualified / gross-beyond for the Form 8606 carve.
-        if (fromRmd > 0) {
-          qcdExclusionFromRmdByOwner!.set(ownerId, fromRmdExcludable)
-          // §219 leftover on the from-RMD qualified dollars is fully ordinary
-          // (those dollars were carved out of Form 8606). Form 8606 taxable
-          // on the nonqualified diverted portion is added at commit below.
-          const leftoverFromRmd = Math.max(0, fromRmdQualified - fromRmdExcludable)
-          if (leftoverFromRmd > 0) {
-            qcdOrdinaryFromRmdByOwner!.set(ownerId, leftoverFromRmd)
+      qcdIncomeOffset += row.incomeOffsetDelta
+      if (row.nonQualifiedOrdinaryIncomeDelta > 0) {
+        qcdNonQualifiedOrdinaryIncome +=
+          row.nonQualifiedOrdinaryIncomeDelta
+      }
+      for (const write of row.cashFlowWrites) {
+        switch (write.target) {
+          case 'exclusionFromRmd':
+            qcdExclusionFromRmdByOwner!.set(write.ownerId, write.value)
+            break
+          case 'ordinaryFromRmd':
+            qcdOrdinaryFromRmdByOwner!.set(write.ownerId, write.value)
+            break
+          case 'exclusionBeyondRmd':
+            qcdExclusionBeyondRmdByOwner!.set(write.ownerId, write.value)
+            break
+          case 'ordinaryBeyondRmd':
+            qcdOrdinaryBeyondRmdByOwner!.set(write.ownerId, write.value)
+            break
+          default: {
+            const exhaustive: never = write.target
+            throw new Error(`Unknown legacy QCD cash-flow target: ${String(exhaustive)}`)
           }
         }
-        const beyondAmount = gift - fromRmd
-        if (beyondAmount > 0) {
-          const beyondStatutoryExcess = nonQualified - nonQualifiedFromRmd
-          const beyondExclusion = Math.max(
-            0, beyondAmount - Math.max(0, beyondRmdLeftover) - beyondStatutoryExcess,
-          )
-          qcdExclusionBeyondRmdByOwner!.set(ownerId, beyondExclusion)
-          qcdOrdinaryBeyondRmdByOwner!.set(ownerId, Math.max(0, beyondRmdLeftover))
-        }
       }
-      if (basis > 0) {
-        iraProRata.set(
-          ownerId, openIraProRataYear(basis, preDistribution - qualified),
+      if (row.iraProRataWrite !== null) {
+        const readSnapshot = row.iraProRataReadSnapshot!
+        iraProRata.set(row.ownerId, readSnapshot)
+        qcdProRataIdentityByReadSnapshot.set(
+          readSnapshot,
+          row.iraProRataWrite,
         )
       }
     }
@@ -7103,7 +7098,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         const proRata = iraProRata.get(ownerPersonId)
         const split = proRata === undefined
           ? { nontaxable: 0, taxable: grossAmount }
-          : splitIraDistribution(proRata, grossAmount)
+          : splitAnnualIraDistribution(proRata, grossAmount)
         nontaxable += split.nontaxable
         const taxableFraction = grossAmount > 0
           ? split.taxable / grossAmount
@@ -8860,7 +8855,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         noteForm8606Taxable(ownerId, executedTaxable, 'distributions')
         const proRata = iraProRata.get(ownerId)
         if (proRata === undefined) continue
-        const split = splitIraDistribution(proRata, taken)
+        const split = splitAnnualIraDistribution(proRata, taken)
         iraBasisByOwner.set(ownerId, split.next.basis)
       }
       // Owners with open pro-rata but no need-based draw still need basis

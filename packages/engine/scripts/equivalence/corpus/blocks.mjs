@@ -25,6 +25,7 @@
  *   V  annual purchased-annuity funding
  *   W  annual voluntary-withdrawal apply-flow boundary
  *   X  annual owner-RMD planning and deferral lifecycle
+ *   Y  legacy aggregate QCD owner-character plan
  *
  * A, B, C and E are the earlier "simulate batch" extraction. Block D's phase
  * was extracted concurrently and independently on main as
@@ -34,7 +35,7 @@
  * reach spec. In `simulate-expense-sepp-boundaries.json`, block J's expense
  * members measure entries A through D and block K's SEPP members measure entry
  * E; the entry letters identify extracted boundaries, not corpus block names.
- * Blocks J through N, plus P, R, T, U, V, W and X, each have a phase-specific reach
+ * Blocks J through N, plus P, R, T, U, V, W, X and Y, each have a phase-specific reach
  * spec beside the earlier batch instruments.
  *
  * The 29 curated example plans exercise A, D and E's growth leg incidentally,
@@ -53,8 +54,9 @@
  * `scripts/equivalence/specs/simulate-contributions-boundary.json`,
  * `scripts/equivalence/specs/simulate-annuity-purchase-funding-boundary.json`,
  * `scripts/equivalence/specs/simulate-remaining-expense-boundaries.json`,
- * `scripts/equivalence/specs/simulate-apply-flows-boundary.json`, and
- * `scripts/equivalence/specs/simulate-owner-rmd.json`
+ * `scripts/equivalence/specs/simulate-apply-flows-boundary.json`,
+ * `scripts/equivalence/specs/simulate-owner-rmd.json`,
+ * `scripts/equivalence/specs/simulate-qcd-owner-character-boundary.json`
  * are the
  * line-range specs that turn those claims into measured hit counts
  * (`equivalence.mjs reach`).
@@ -346,6 +348,35 @@ function ordinaryWithdrawal(id, sequence, allocations, extra = {}) {
     purpose: { kind: 'spending' },
     provenance: { source: 'manual' },
     ...extra,
+  }
+}
+
+function preStartNamedQcd(sourceAccountId, year, amount = 6_000) {
+  const requestedAmount = Math.round(amount * 100)
+  return {
+    actionId: `qcd-pre-start-${year}`,
+    kind: 'qcd',
+    year,
+    executionDate: `${year}-08-01`,
+    executionSequence: 1,
+    requestedAmount,
+    provenance: { source: 'manual' },
+    donorPersonId: 'p1',
+    allocation: {
+      allocationId: `qcd-pre-start-${year}-allocation`,
+      sourceAccountId,
+      requestedAmount,
+    },
+    charity: {
+      designationId: `qcd-pre-start-${year}-charity`,
+      name: 'Eligible public charity',
+      designationKind: 'eligiblePublicCharity',
+      directFromCustodianAttested: true,
+      eligibleOrganizationAttested: true,
+      notDonorAdvisedFundOrSupportingOrganizationAttested: true,
+      notSplitInterestEntityAttested: true,
+      entireDistributionOtherwiseDeductibleAttested: true,
+    },
   }
 }
 
@@ -3711,6 +3742,178 @@ function blockS() {
   return out
 }
 
+function blockY() {
+  const out = []
+
+  {
+    // Compatible physical rows share one logical IRA id. The grouped opening
+    // balance is $318,000, producing a $12,000 RMD; the $5,000 gift leaves the
+    // Form 8606 numerator and denominator before the residual distribution.
+    const plan = singlePersonPlan({ dob: '1953-06-15', planningAge: 95 })
+    plan.assumptions.defaultReturnPct = 0
+    plan.accounts = [
+      cash('y1-cash', 0),
+      qualified('traditional', 'y1-shared-ira', 265_000, {
+        annualReturnPct: 0,
+        nondeductibleBasis: 53_000,
+      }),
+      qualified('traditional', 'y1-shared-ira', 53_000, {
+        annualReturnPct: 0,
+        nondeductibleBasis: 0,
+      }),
+    ]
+    plan.strategies.qcdAnnual = 5_000
+    out.push(member(
+      'y1-groupedGiftFirstPositiveBasis',
+      'Y: compatible duplicate IRA rows enter QCD character as one grouped owner balance and basis denominator',
+      plan,
+      { horizonEndYear: START_YEAR },
+    ))
+  }
+
+  {
+    // The first compatible physical row contributes $6,000 before a $50,000
+    // gift. That current-year deductible IRA contribution must already appear
+    // in qcdSection219ByDonor at the character seam, while the helper still
+    // receives one logical $106,000 balance for the duplicated id.
+    const plan = singlePersonPlan({
+      dob: '1955-01-01', planningAge: 95, retirementAge: null,
+    })
+    plan.assumptions.defaultReturnPct = 0
+    plan.incomes = [wages('y2-earned-income', 'p1', 10_000)]
+    plan.accounts = [
+      cash('y2-cash', 10_000),
+      qualified('traditional', 'y2-shared-ira', 60_000, {
+        annualReturnPct: 0,
+        annualContribution: 6_000,
+        nondeductibleBasis: 36_000,
+      }),
+      qualified('traditional', 'y2-shared-ira', 40_000, {
+        annualReturnPct: 0,
+        nondeductibleBasis: 24_000,
+      }),
+    ]
+    plan.strategies.qcdAnnual = 50_000
+    out.push(member(
+      'y2-groupedContributionSection219',
+      'Y: grouped compatible IRA contribution is visible to the same-year section 219 QCD offset and beyond-RMD character',
+      plan,
+      { horizonEndYear: START_YEAR },
+    ))
+  }
+
+  {
+    // Account order gives the whole gift to p2. p1 has no gift but has basis,
+    // so rows remain [p2, p1], not lexical order, and p1 adds a basis-only row.
+    const plan = couplePlan({
+      p1Dob: '1955-01-01',
+      p2Dob: '1955-01-01',
+      p1PlanningAge: 95,
+      p2PlanningAge: 95,
+    })
+    plan.assumptions.defaultReturnPct = 0
+    plan.accounts = [
+      cash('y3-cash', 0),
+      qualified('traditional', 'y3-p2-ira', 100_000, {
+        ownerPersonId: 'p2', annualReturnPct: 0,
+      }),
+      qualified('traditional', 'y3-p1-basis-ira', 100_000, {
+        ownerPersonId: 'p1', annualReturnPct: 0, nondeductibleBasis: 25_000,
+      }),
+    ]
+    plan.strategies.qcdAnnual = 10_000
+    out.push(member(
+      'y3-ownerInsertionBeforeBasisOnly',
+      'Y: QCD owner insertion order precedes a lexical-earlier basis-only owner and gift-zero row',
+      plan,
+      { horizonEndYear: START_YEAR },
+    ))
+  }
+
+  {
+    // Two years force the exact-cent consumed-offset state to survive annual
+    // retry/re-entry: year one consumes $6,000; year two excludes only $2,500.
+    const plan = singlePersonPlan({ dob: '1953-03-15', planningAge: 95 })
+    plan.assumptions.defaultReturnPct = 0
+    plan.assumptions.inflationPct = ((6_500 / 6_000) - 1) * 100
+    plan.accounts = [
+      cash('y4-cash', 0),
+      qualified('traditional', 'y4-ira', 265_000, { annualReturnPct: 0 }),
+    ]
+    plan.strategies.qcdAnnual = 6_000
+    plan.retirementActionEligibilityFacts = {
+      iraClassifications: [],
+      sepSimpleActivities: [],
+      deductibleIraContributions: [2024, 2025].map((taxYear) => ({
+        donorPersonId: 'p1',
+        taxYear,
+        amountCents: 500_000,
+        evidenceId: `y4-section-219-${taxYear}`,
+        provenance: { source: 'manual', sourceId: `y4-ledger-${taxYear}` },
+      })),
+    }
+    out.push(member(
+      'y4-section219Carryforward',
+      'Y: two-year section 219 consumed-cent carryforward and annual-pass re-entry',
+      plan,
+      { horizonEndYear: START_YEAR + 1 },
+    ))
+  }
+
+  {
+    // A declared pre-projection QCD makes prior reductions unprovable. The gift
+    // moves but the current exclusion fails closed and publishes ordinary RMD.
+    const plan = singlePersonPlan({ dob: '1953-03-15', planningAge: 95 })
+    plan.assumptions.defaultReturnPct = 0
+    plan.accounts = [
+      cash('y5-cash', 0),
+      qualified('traditional', 'y5-ira', 265_000, { annualReturnPct: 0 }),
+    ]
+    plan.strategies.qcdAnnual = 6_500
+    plan.strategies.retirementActions = [preStartNamedQcd('y5-ira', 2025)]
+    plan.retirementActionEligibilityFacts = {
+      iraClassifications: [{
+        sourceAccountId: 'y5-ira',
+        subtype: 'traditional',
+        evidenceId: 'y5-traditional-classification',
+        provenance: { source: 'manual' },
+      }],
+      sepSimpleActivities: [],
+      deductibleIraContributions: [{
+        donorPersonId: 'p1',
+        taxYear: 2025,
+        amountCents: 300_000,
+        evidenceId: 'y5-section-219-2025',
+        provenance: { source: 'manual', sourceId: 'y5-ledger-2025' },
+      }],
+    }
+    out.push(member(
+      'y5-unprovableOffsetFailsClosed',
+      'Y: pre-start QCD makes prior section 219 reductions unprovable and forces ordinary character',
+      plan,
+      { horizonEndYear: START_YEAR },
+    ))
+  }
+
+  {
+    const plan = singlePersonPlan({ dob: '1953-01-01', planningAge: 95 })
+    plan.assumptions.defaultReturnPct = 0
+    plan.accounts = [
+      cash('y6-cash', 0),
+      qualified('traditional', 'y6-ira', 500_000, { annualReturnPct: 0 }),
+    ]
+    plan.strategies.qcdAnnual = 200_000
+    out.push(member(
+      'y6-upstreamAnnualCap',
+      'Y: indexed per-donor QCD cap reaches from-RMD and beyond-RMD character',
+      plan,
+      { horizonEndYear: START_YEAR },
+    ))
+  }
+
+  return out
+}
+
 /** @returns {Promise<object[]>} every member in this tier, in a stable order. */
 export async function blockMembers() {
   fixtures = await import('@retiregolden/engine/testing/planFixtures')
@@ -3737,5 +3940,6 @@ export async function blockMembers() {
     ...blockV(),
     ...blockW(),
     ...blockX(),
+    ...blockY(),
   ]
 }

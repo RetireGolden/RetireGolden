@@ -72,13 +72,28 @@ export interface IraDistributionSplit {
  * Split one distribution (or Roth conversion) from the owner's aggregated IRAs
  * under the year's fixed pro-rata fraction. Nontaxable is capped at the
  * remaining basis so repeated draws can never recover more basis than exists.
+ * `identityState` is deliberately observation-only: it lets a caller forward a
+ * load-bearing source identity to instrumentation while `readState` supplies
+ * every scalar used for arithmetic. The returned `next` always derives from
+ * `readState`; for a nonpositive amount it is that exact object because no
+ * arithmetic transition occurred.
  */
-export function splitIraDistribution(state: IraProRataYear, amount: number): IraDistributionSplit {
-  if (amount <= 0) return { nontaxable: 0, taxable: 0, next: state }
-  const nontaxable = Math.min(state.basis, amount * state.nontaxableFraction)
+export function splitIraDistribution(
+  identityState: IraProRataYear,
+  amount: number,
+  readState: IraProRataYear = identityState,
+): IraDistributionSplit {
+  if (amount <= 0) return { nontaxable: 0, taxable: 0, next: readState }
+  const nontaxable = Math.min(
+    readState.basis,
+    amount * readState.nontaxableFraction,
+  )
   return {
     nontaxable,
     taxable: amount - nontaxable,
-    next: { basis: state.basis - nontaxable, nontaxableFraction: state.nontaxableFraction },
+    next: {
+      basis: readState.basis - nontaxable,
+      nontaxableFraction: readState.nontaxableFraction,
+    },
   }
 }
